@@ -206,6 +206,7 @@ class CommandsSubMenu:
         Developer instead.
         """
         menu = parent_menu.addMenu(get_icon("build.svg"), _("Maintenance"))
+        menu_tiles.add_icon_tiles_on_first_show(menu)
         self._maintenance_action = menu.menuAction()
 
         hand_menu = menu.addMenu(get_icon("flip.svg"), _("Fix Left/Right Side"))

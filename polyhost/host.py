@@ -783,6 +783,7 @@ class PolyHost(QApplication):
         self.updates_menu.addAction(self.fontpack_update_action)
         # noinspection PyUnresolvedReferences
         self.updates_menu.aboutToShow.connect(self._refresh_fontpack_action)
+        menu_tiles.add_icon_tiles_on_first_show(self.updates_menu)
         self._pending_fw_release = None
         # The tray tooltip has TWO writers (a font-pack flash's percentage and
         # the pending-update marker). This holds the flash's claim; see
@@ -913,6 +914,7 @@ class PolyHost(QApplication):
 
         # --- Help & About: the read-only, always-available corner --------------
         self.help_menu = self.menu.addMenu(get_icon("help.svg"), _("Help && About"))
+        menu_tiles.add_icon_tiles_on_first_show(self.help_menu)
         self.help_menu.addAction(self.about)
         self.help_menu.addAction(self.report_problem_action)
         self.help_menu.addAction(self.log_dialog)

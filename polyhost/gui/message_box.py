@@ -189,7 +189,11 @@ class MessageBox(QDialog):
 
 def message(icon, title, text, buttons=QMessageBox.Ok, default=None, parent=None,
             informative=""):
-    """Show a modal box and return the clicked standard button's code."""
+    """Show a modal box and return the clicked standard button's code.
+
+    For a box with buttons from ``MessageBox.add_button``, build the box and
+    read ``clicked_button()`` instead: this returns only standard codes.
+    """
     box = MessageBox(icon, title, text, buttons, parent, informative, default)
     result = box.exec_()
     # exec_() returns the button code from _on_clicked/reject. A plain

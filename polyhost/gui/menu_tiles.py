@@ -84,37 +84,88 @@ def tiles_supported(platform=None, env=None):
     return False
 
 
-class TileGrid(QWidget):
-    """A grid of tiles, one per bound QAction."""
+def wrap_caption(text, metrics, width, max_lines=3):
+    """Break ``text`` into at most ``max_lines`` lines that fit ``width`` px.
 
-    def __init__(self, actions, icons, columns, icon_size, parent=None):
+    QToolButton draws its text on one line, so a long menu label under an icon
+    would widen the tile. A word that does not fit is elided.
+    """
+    # The "…" that marks an entry opening a dialog reads as a cut-off word
+    # under an icon.
+    text = text.rstrip().rstrip("\u2026").rstrip(".").rstrip() if text.rstrip().endswith(("\u2026", "...")) else text
+    lines, line = [], ""
+    for word in text.split():
+        candidate = f"{line} {word}".strip()
+        if line and metrics.horizontalAdvance(candidate) > width:
+            lines.append(line)
+            line = word
+        else:
+            line = candidate
+    if line:
+        lines.append(line)
+    if len(lines) > max_lines:
+        lines = lines[:max_lines - 1] + [" ".join(lines[max_lines - 1:])]
+    return "\n".join(metrics.elidedText(ln, Qt.ElideRight, width) for ln in lines)
+
+
+class TileGrid(QWidget):
+    """A grid of tiles, one per bound QAction.
+
+    A tile follows its action's text, tooltip, checked, enabled and visible
+    state. A tile whose action is hidden is left out and the others close up.
+    """
+
+    def __init__(self, actions, icons, columns, icon_size, parent=None, tile_width=None):
         super().__init__(parent)
         self.setStyleSheet(_TILE_STYLE)
-        grid = QGridLayout(self)
-        grid.setContentsMargins(8, 6, 8, 6)
-        grid.setSpacing(4)
+        self._grid = QGridLayout(self)
+        self._grid.setContentsMargins(8, 6, 8, 6)
+        self._grid.setSpacing(4)
+        self._columns = columns
+        # Measured before the stylesheet polishes the tile, so leave a margin.
+        self._text_width = (tile_width or icon_size.width() + 20) - 24
         self.tiles = []
-        for i, (action, icon) in enumerate(zip(actions, icons)):
+        self._actions = list(actions)
+        for action, icon in zip(self._actions, icons):
             tile = QToolButton(self)
             tile.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
             tile.setAutoRaise(True)
             tile.setIconSize(icon_size)
-            tile.setFixedWidth(icon_size.width() + 20)
-            if icon is not None:
-                tile.setIcon(icon)
+            tile.setFixedWidth(tile_width or icon_size.width() + 20)
+            tile.setIcon(icon if icon is not None else action.icon())
             tile.clicked.connect(lambda _checked=False, a=action: self._trigger(a))
             action.changed.connect(lambda t=tile, a=action: self._sync(t, a))
-            self._sync(tile, action)
-            grid.addWidget(tile, i // columns, i % columns)
             self.tiles.append(tile)
+            self._sync(tile, action, relayout=False)
+        self._relayout()
 
-    @staticmethod
-    def _sync(tile, action):
-        tile.setText(action.iconText())
-        tile.setToolTip(action.toolTip() if action.toolTip() != action.iconText() else "")
+    def _sync(self, tile, action, relayout=True):
+        text = action.iconText()
+        caption = wrap_caption(text, tile.fontMetrics(), self._text_width)
+        tile.setText(caption)
+        tip = action.toolTip()
+        if tip and tip != text:
+            tile.setToolTip(tip)
+        elif caption.replace("\n", " ") != text.rstrip(".\u2026 "):
+            tile.setToolTip(text)    # the caption was shortened: show it whole
+        else:
+            tile.setToolTip("")
         tile.setCheckable(action.isCheckable())
         tile.setChecked(action.isChecked())
-        tile.setEnabled(action.isEnabled())
+        # Qt reports a hidden action as disabled; the tile is hidden instead.
+        tile.setEnabled(action.isEnabled() or not action.isVisible())
+        if tile.isHidden() == action.isVisible() and relayout:
+            self._relayout()
+
+    def _relayout(self):
+        for tile in self.tiles:
+            self._grid.removeWidget(tile)
+        shown = [(t, a) for t, a in zip(self.tiles, self._actions) if a.isVisible()]
+        for tile, action in zip(self.tiles, self._actions):
+            tile.setVisible(action.isVisible())
+        for i, (tile, _action) in enumerate(shown):
+            self._grid.addWidget(tile, i // self._columns, i % self._columns)
+        self.adjustSize()
 
     @staticmethod
     def _trigger(action):
@@ -129,7 +180,7 @@ class TileGrid(QWidget):
             action.trigger()
 
 
-def add_tiles(menu, actions, icons, columns, icon_size, labels=None):
+def add_tiles(menu, actions, icons, columns, icon_size, labels=None, tile_width=None):
     """Put a tile grid for ``actions`` at the top of ``menu`` and hide the
     actions' own rows. ``labels`` (optional) gives a tile a shorter caption
     than the menu entry, set as the action's iconText.
@@ -142,10 +193,11 @@ def add_tiles(menu, actions, icons, columns, icon_size, labels=None):
     for i, action in enumerate(actions):
         if labels and labels[i]:
             action.setIconText(labels[i])
-    grid = TileGrid(actions, icons, columns, QSize(icon_size), menu)
+    grid = TileGrid(actions, icons, columns, QSize(icon_size), menu, tile_width)
     holder = QWidgetAction(menu)
     holder.setDefaultWidget(grid)
-    first = next((a for a in menu.actions() if a in actions), None)
+    # The grid goes first; a submenu row (Fix Left/Right Side) sits under it.
+    first = menu.actions()[0] if menu.actions() else None
     menu.insertAction(first, holder)
     # Take the rows out of the menu rather than hiding them: Qt disables a
     # hidden action (setVisible(False) forces isEnabled() to False), and a
@@ -178,5 +230,35 @@ def add_tiles_on_first_show(menu, actions, make_icons, columns, icon_size, label
             logging.getLogger("polyhost.menu_tiles").exception("Tile previews failed")
             return
         add_tiles(menu, actions, icons, columns, icon_size, labels)
+
+    menu.aboutToShow.connect(build)
+
+
+# The icon tiles of the plain submenus (Updates, Maintenance, Help & About).
+ICON_TILE_PX = 32
+ICON_TILE_WIDTH = 150
+
+
+def add_icon_tiles_on_first_show(menu, columns=3):
+    """Tiles for a menu's own entries, from their Material icons.
+
+    Built on the first show, so it takes every entry added by then, including
+    ones added after the menu was created. A submenu entry (Fix Left/Right Side)
+    stays a row under the grid, because a tile cannot open a submenu.
+    """
+    if not tiles_supported():
+        return
+    state = {"done": False}
+
+    def build():
+        if state["done"]:
+            return
+        state["done"] = True
+        actions = [a for a in menu.actions()
+                   if not a.isSeparator() and a.menu() is None
+                   and not isinstance(a, QWidgetAction)]
+        if actions:
+            add_tiles(menu, actions, [None] * len(actions), columns,
+                      QSize(ICON_TILE_PX, ICON_TILE_PX), tile_width=ICON_TILE_WIDTH)
 
     menu.aboutToShow.connect(build)

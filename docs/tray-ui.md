@@ -370,7 +370,10 @@ and relative links were adjusted to suit a standalone file.
   unreliably (QTBUG-63578), so both keep the text rows. ⚠️ A tile is bound to the
   menu's QAction and the action is REMOVED from the menu, not hidden: Qt disables
   a hidden action, and a disabled action ignores `trigger()`.
-  `POLYHOST_MENU_TILES=1|0` forces the choice.
+  `POLYHOST_MENU_TILES=1|0` forces the choice. Updates, Maintenance and Help & About
+  show their plain entries as icon tiles the same way
+  (`add_icon_tiles_on_first_show`, built on the first show so entries added later
+  are included); a submenu entry stays a row.
 
 - ⚠️ **Show a message with `gui/message_box.py`, not `QMessageBox`.** Its
   `question` / `information` / `warning` / `critical` take QMessageBox's static

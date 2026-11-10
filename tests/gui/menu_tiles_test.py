@@ -109,5 +109,62 @@ class PanelTest(unittest.TestCase):
         self.assertLess(tops[0], tops[2])
 
 
+class IconTilesTest(unittest.TestCase):
+    """add_icon_tiles_on_first_show: the plain entries of a static submenu."""
+
+    def _menu(self):
+        menu = QMenu()
+        self.addCleanup(menu.deleteLater)
+        sub = menu.addMenu("Fix Left/Right Side")
+        a = menu.addAction("Reset overlays")
+        menu.addSeparator()
+        b = menu.addAction("Flash firmware file (.bin)\u2026")
+        hidden = menu.addAction("Allow access to the keyboard (udev rule)\u2026")
+        hidden.setVisible(False)
+        return menu, sub, [a, b, hidden]
+
+    def _show(self, menu):
+        with mock.patch.dict(os.environ, {"POLYHOST_MENU_TILES": "1"}):
+            menu_tiles.add_icon_tiles_on_first_show(menu)
+            menu.aboutToShow.emit()
+            menu.aboutToShow.emit()     # a second show builds nothing more
+        return [a for a in menu.actions() if isinstance(a, menu_tiles.QWidgetAction)]
+
+    def test_plain_entries_become_tiles_and_a_submenu_stays_a_row(self):
+        menu, sub, actions = self._menu()
+        holders = self._show(menu)
+        self.assertEqual(len(holders), 1)
+        self.assertEqual(menu.actions()[:2], [holders[0], sub.menuAction()])
+        for act in actions:
+            self.assertNotIn(act, menu.actions())
+
+    def test_a_hidden_entry_has_no_tile_until_it_is_shown(self):
+        menu, _sub, actions = self._menu()
+        grid = self._show(menu)[0].defaultWidget()
+        self.assertTrue(grid.tiles[2].isHidden())
+        actions[2].setVisible(True)
+        self.assertFalse(grid.tiles[2].isHidden())
+        self.assertTrue(grid.tiles[2].isEnabled())
+
+    def test_the_dialog_ellipsis_is_dropped_from_the_caption(self):
+        menu, _sub, _actions = self._menu()
+        grid = self._show(menu)[0].defaultWidget()
+        self.assertNotIn("\u2026", grid.tiles[1].text())
+        self.assertIn("firmware", grid.tiles[1].text())
+
+
+class WrapCaptionTest(unittest.TestCase):
+
+    def test_long_text_wraps_and_is_elided_past_three_lines(self):
+        from PyQt5.QtGui import QFontMetrics, QFont
+        fm = QFontMetrics(QFont())
+        out = menu_tiles.wrap_caption("Check for keyboard firmware update and more words here",
+                                      fm, 90)
+        lines = out.split("\n")
+        self.assertLessEqual(len(lines), 3)
+        for ln in lines:
+            self.assertLessEqual(fm.horizontalAdvance(ln), 90)
+
+
 if __name__ == "__main__":
     unittest.main()
