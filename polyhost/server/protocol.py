@@ -63,11 +63,11 @@ M_IDLE_STYLE_SET = "idle.style.set"    # {"value": 0|1|2} -> (ok, payload)  (0=p
 M_IDLE_STYLE_GET = "idle.style.get"    # {} -> (ok, value)
 M_IDLE_TIMEOUT_SET = "idle.timeout.set"  # {"value": 0..5} -> (ok, payload)  (IdleTimeout preset)
 M_IDLE_TIMEOUT_GET = "idle.timeout.get"  # {} -> (ok, [preset, seconds])
-# Tap-hold timing (firmware protocol v29+). Both ranges CLOSED (TapTerms):
-# tapping term 100..500 ms, Flow Tap term 0..300 ms (0 = off), 10 ms steps.
-# An omitted or null term is left unchanged.
-M_TAP_TERMS_SET = "tap_terms.set"  # {"tapping_term": ms|null, "flow_tap_term": ms|null} -> (ok, terms)
-M_TAP_TERMS_GET = "tap_terms.get"  # {} -> (ok, {"tapping_term", "flow_tap_term", "flow_tap_available"})
+# Tap-hold timing (firmware protocol v29+; Auto Shift v30+). All ranges CLOSED
+# (TapTerms): tapping term 100..500 ms, Flow Tap term 0..300 ms (0 = off), Auto
+# Shift timeout 100..500 ms, 10 ms steps. An omitted or null value is left unchanged.
+M_TAP_TERMS_SET = "tap_terms.set"  # {"tapping_term", "flow_tap_term", "auto_shift": bool, "auto_shift_ms"} (each ms|null) -> (ok, terms)
+M_TAP_TERMS_GET = "tap_terms.get"  # {} -> (ok, {"tapping_term", "flow_tap_term", "flow_tap_available", "auto_shift_available", "auto_shift", "auto_shift_ms"})
 M_GLYPH_SCRIPT_SET = "glyph.script.set"  # {"value": 0|1|...} -> (ok, payload)  (0=standard, 1=tengwar)
 M_GLYPH_SCRIPT_GET = "glyph.script.get"  # {} -> (ok, value)
 # Keycap legend SIZE (firmware protocol v13+). A closed range, unlike the script

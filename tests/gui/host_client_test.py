@@ -625,8 +625,13 @@ def _smoke_client():
         def get_tap_terms(self):
             return (True, dict(self.tap_terms))
 
-        def set_tap_terms(self, tapping_term=None, flow_tap_term=None):
+        def set_tap_terms(self, tapping_term=None, flow_tap_term=None,
+                          auto_shift=None, auto_shift_ms=None):
+            # Auto Shift values the dialog did not change arrive as None; a
+            # 4-tuple here would show the dialog re-sending unchanged values.
             self.tap_set = (tapping_term, flow_tap_term)
+            if auto_shift is not None or auto_shift_ms is not None:
+                self.tap_set += (auto_shift, auto_shift_ms)
             return (True, dict(self.tap_terms, tapping_term=tapping_term))
 
         def fontpack_bundle_status(self):

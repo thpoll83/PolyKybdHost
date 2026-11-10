@@ -157,10 +157,10 @@ class IdleTimeout(Enum):
 
 
 class TapTerms:
-    """The ranges of the tap-hold terms (HID cmd 44, protocol v29+). Mirrors the
-    firmware's base/tap_terms.h.
+    """The ranges of the tap-hold terms (HID cmd 44, protocol v29+) and of Auto
+    Shift (v30+). Mirrors the firmware's base/tap_terms.h.
 
-    Both ranges are CLOSED, like IdleTimeout: the firmware NACKs a value outside
+    All ranges are CLOSED, like IdleTimeout: the firmware NACKs a value outside
     them, so the host refuses it before sending."""
 
     STEP_MS = 10
@@ -173,6 +173,18 @@ class TapTerms:
     KEEP = 0xFFFF           # wire value: leave this term unchanged
     FLAG_FLOW_TAP = 0x01    # reply flag: this firmware build has Flow Tap
 
+    # Auto Shift (protocol v30). QMK's own default is 175 ms, off the 10 ms grid,
+    # so the firmware's default is 180 ms. Off by default.
+    AUTO_SHIFT_MIN_MS = 100
+    AUTO_SHIFT_MAX_MS = 500
+    DEFAULT_AUTO_SHIFT_MS = 180
+    AUTO_SHIFT_OP_KEEP = 0  # wire values of data[7]; 0 keeps, so a v29 host's
+    AUTO_SHIFT_OP_OFF = 1   # zero-padded report leaves Auto Shift alone
+    AUTO_SHIFT_OP_ON = 2
+    AUTO_SHIFT_MS_KEEP = 0  # wire value of data[8..9]: keep the timeout
+    FLAG_AUTO_SHIFT = 0x02     # reply flag: this firmware build has Auto Shift
+    FLAG_AUTO_SHIFT_ON = 0x04  # reply flag: Auto Shift is on
+
     @classmethod
     def tapping_valid(cls, ms) -> bool:
         return cls._valid(ms, cls.TAPPING_MIN_MS, cls.TAPPING_MAX_MS)
@@ -180,6 +192,10 @@ class TapTerms:
     @classmethod
     def flow_tap_valid(cls, ms) -> bool:
         return cls._valid(ms, cls.FLOW_TAP_MIN_MS, cls.FLOW_TAP_MAX_MS)
+
+    @classmethod
+    def auto_shift_valid(cls, ms) -> bool:
+        return cls._valid(ms, cls.AUTO_SHIFT_MIN_MS, cls.AUTO_SHIFT_MAX_MS)
 
     @classmethod
     def _valid(cls, ms, lo, hi) -> bool:

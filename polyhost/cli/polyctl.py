@@ -442,23 +442,32 @@ def _print_tap_terms(prefix, terms):
     flow_text = "off" if flow == 0 else f"{flow} ms"
     if not terms.get("flow_tap_available", True):
         flow_text += " (this firmware has no Flow Tap)"
-    print(f"{prefix}tapping term {terms['tapping_term']} ms, flow tap term {flow_text}")
+    line = f"{prefix}tapping term {terms['tapping_term']} ms, flow tap term {flow_text}"
+    if terms.get("auto_shift_available"):
+        state = "on" if terms.get("auto_shift") else "off"
+        line += f", auto shift {state} ({terms.get('auto_shift_ms')} ms)"
+    print(line)
 
 
 def _cmd_tap_terms(client, args):
-    if args.tapping is None and args.flow_tap is None:
+    if args.tapping is None and args.flow_tap is None and args.auto_shift is None \
+            and args.auto_shift_ms is None:
         _print_tap_terms("", client.call(protocol.M_TAP_TERMS_GET, {}))
         return 0
     for name, value, valid in (("--tapping", args.tapping, TapTerms.tapping_valid),
-                               ("--flow-tap", args.flow_tap, TapTerms.flow_tap_valid)):
+                               ("--flow-tap", args.flow_tap, TapTerms.flow_tap_valid),
+                               ("--auto-shift-ms", args.auto_shift_ms, TapTerms.auto_shift_valid)):
         if value is not None and not valid(value):
             print(f"polyctl: {name} {value} is outside the allowed range "
                   f"(tapping {TapTerms.TAPPING_MIN_MS}..{TapTerms.TAPPING_MAX_MS} ms, "
                   f"flow tap {TapTerms.FLOW_TAP_MIN_MS}..{TapTerms.FLOW_TAP_MAX_MS} ms, "
+                  f"auto shift {TapTerms.AUTO_SHIFT_MIN_MS}..{TapTerms.AUTO_SHIFT_MAX_MS} ms, "
                   f"{TapTerms.STEP_MS} ms steps)", file=sys.stderr)
             return 2
+    auto_shift = None if args.auto_shift is None else args.auto_shift == "on"
     terms = client.call(protocol.M_TAP_TERMS_SET,
-                        {"tapping_term": args.tapping, "flow_tap_term": args.flow_tap})
+                        {"tapping_term": args.tapping, "flow_tap_term": args.flow_tap,
+                         "auto_shift": auto_shift, "auto_shift_ms": args.auto_shift_ms})
     _print_tap_terms("set: ", terms)
     return 0
 
@@ -1228,7 +1237,8 @@ def build_parser():
 
     p_tap_terms = sub.add_parser(
         "tap-terms",
-        help="get or set the tap-hold timing: tapping term and Flow Tap term (firmware v29+)")
+        help="get or set the tap-hold timing: tapping term and Flow Tap term (firmware v29+), "
+             "Auto Shift (firmware v30+)")
     p_tap_terms.add_argument(
         "--tapping", type=int, default=None, metavar="MS",
         help=f"tapping term, {TapTerms.TAPPING_MIN_MS}..{TapTerms.TAPPING_MAX_MS} ms "
@@ -1237,6 +1247,13 @@ def build_parser():
         "--flow-tap", type=int, default=None, metavar="MS",
         help=f"Flow Tap term, {TapTerms.FLOW_TAP_MIN_MS}..{TapTerms.FLOW_TAP_MAX_MS} ms "
              f"in {TapTerms.STEP_MS} ms steps, 0 = off (default {TapTerms.DEFAULT_FLOW_TAP_MS})")
+    p_tap_terms.add_argument(
+        "--auto-shift", choices=("on", "off"), default=None,
+        help="turn Auto Shift on or off (firmware v30+, off by default)")
+    p_tap_terms.add_argument(
+        "--auto-shift-ms", type=int, default=None, metavar="MS",
+        help=f"Auto Shift timeout, {TapTerms.AUTO_SHIFT_MIN_MS}..{TapTerms.AUTO_SHIFT_MAX_MS} ms "
+             f"in {TapTerms.STEP_MS} ms steps (default {TapTerms.DEFAULT_AUTO_SHIFT_MS})")
     p_tap_terms.set_defaults(func=_cmd_tap_terms)
 
     p_glyph_script = sub.add_parser(

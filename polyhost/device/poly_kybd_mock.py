@@ -394,31 +394,46 @@ class PolyKybdMock:
             return False, refusal
         return True, self._tap_terms_now()
 
-    def set_tap_terms(self, tapping_term=None, flow_tap_term=None) -> tuple[bool, dict | str]:
-        # Refuses what the firmware refuses: both ranges are CLOSED.
+    def set_tap_terms(self, tapping_term=None, flow_tap_term=None,
+                      auto_shift=None, auto_shift_ms=None) -> tuple[bool, dict | str]:
+        # Refuses what the firmware refuses: every range is CLOSED.
         from polyhost.device.command_ids import TapTerms
-        self._log_call("set_tap_terms", tapping_term, flow_tap_term)
-        if tapping_term is None and flow_tap_term is None:
+        self._log_call("set_tap_terms", tapping_term, flow_tap_term, auto_shift, auto_shift_ms)
+        if tapping_term is None and flow_tap_term is None and auto_shift is None \
+                and auto_shift_ms is None:
             return False, "Nothing to set"
         if tapping_term is not None and not TapTerms.tapping_valid(tapping_term):
             return False, f"{tapping_term!r} ms is not a valid tapping term"
         if flow_tap_term is not None and not TapTerms.flow_tap_valid(flow_tap_term):
             return False, f"{flow_tap_term!r} ms is not a valid Flow Tap term"
+        if auto_shift_ms is not None and not TapTerms.auto_shift_valid(auto_shift_ms):
+            return False, f"{auto_shift_ms!r} ms is not a valid Auto Shift timeout"
         if (refusal := self._too_old("tap_terms")):
             return False, refusal
-        self._forward("set_tap_terms", tapping_term, flow_tap_term)
+        if (auto_shift is not None or auto_shift_ms is not None) \
+                and (refusal := self._too_old("auto_shift")):
+            return False, refusal
+        self._forward("set_tap_terms", tapping_term, flow_tap_term, auto_shift, auto_shift_ms)
         if tapping_term is not None:
             self._tapping_term = tapping_term
         if flow_tap_term is not None:
             self._flow_tap_term = flow_tap_term
+        if auto_shift is not None:
+            self._auto_shift = bool(auto_shift)
+        if auto_shift_ms is not None:
+            self._auto_shift_ms = auto_shift_ms
         return True, self._tap_terms_now()
 
     def _tap_terms_now(self) -> dict:
         from polyhost.device.command_ids import TapTerms
+        available = self.supports("auto_shift")
         return {
             "tapping_term": getattr(self, "_tapping_term", TapTerms.DEFAULT_TAPPING_MS),
             "flow_tap_term": getattr(self, "_flow_tap_term", TapTerms.DEFAULT_FLOW_TAP_MS),
             "flow_tap_available": True,
+            "auto_shift_available": available,
+            "auto_shift": available and getattr(self, "_auto_shift", False),
+            "auto_shift_ms": getattr(self, "_auto_shift_ms", TapTerms.DEFAULT_AUTO_SHIFT_MS),
         }
 
     def set_glyph_script(self, script) -> tuple[bool, str]:
