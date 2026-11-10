@@ -46,6 +46,7 @@ class AgentKeysController:
         self.registry = registry
         self.cache_for = cache_for
         self.raise_agent = raise_agent
+        self.raise_remote = None   # set by PolyCore: queue a raise for a forwarder
         self.dictate = dictate
         self._last_waiting_slot = None   # the agent '+' raised last
         # The last AI-key press and what came of it, for `polyctl agents list`: a
@@ -218,9 +219,7 @@ class AgentKeysController:
             with self._lock:
                 self.page = agent.slot // self.registry.page_size   # show where it is
             self.log.info("Agent keys: '+' raises %s %s", agent.vendor, agent.display_headline)
-            if self.raise_agent is not None:
-                threading.Thread(target=self._raise, args=(agent,), name="agent-raise",
-                                 daemon=True).start()
+            self.raise_now(agent)
             return
         view = self.registry.page(self.page)
         agent = view[key] if 0 <= key < len(view) else None
@@ -230,12 +229,18 @@ class AgentKeysController:
         self.registry.mark_seen(agent.vendor, agent.session_id)
         self.log.info("Agent keys: key %d raises %s %s", key + 1, agent.vendor,
                       agent.display_headline)
-        if self.raise_agent is not None:
-            threading.Thread(target=self._raise, args=(agent,), name="agent-raise",
-                             daemon=True).start()
+        self.raise_now(agent)
 
     def raise_now(self, agent):
-        """Raise `agent` from outside the keyboard (the tray), on its own thread."""
+        """Raise `agent`: here on its own thread, or, for an agent on a forwarder's
+        machine, by handing it to `raise_remote(agent)`, which the forwarder picks
+        up with its next window report (PolyCore.report_window)."""
+        if agent.machine and agent.machine != "local":
+            if self.raise_remote is not None:
+                self.raise_remote(agent)
+                self._note(self.last_press["key"] if self.last_press else None,
+                           f"sent to {agent.machine}", agent)
+            return
         if self.raise_agent is not None:
             threading.Thread(target=self._raise, args=(agent,), name="agent-raise",
                              daemon=True).start()

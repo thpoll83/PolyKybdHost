@@ -521,7 +521,13 @@ def _cmd_agents_hooks(_client, args):
     import difflib
     import os
     from polyhost.services.agents import hook_install
-    changes = hook_install.plan(args.vendor, install=args.hooks_cmd == "install")
+    extra = []
+    if args.host:
+        extra += ["--host", args.host]
+    if args.authkey_file:
+        extra += ["--authkey-file", os.path.abspath(args.authkey_file)]
+    changes = hook_install.plan(args.vendor, install=args.hooks_cmd == "install",
+                                extra_args=extra)
     if args.vendor == "codex" and args.hooks_cmd == "install" and not changes:
         conflict = hook_install.codex_conflict(os.path.expanduser("~"))
         if conflict:
@@ -583,6 +589,23 @@ def _agents_hook_main(args) -> int:
         title = transcript_title(payload.get("transcript_path"))
         if title:
             report["headline"] = title
+        if args.host:
+            # This machine runs a forwarder, the keyboard is on another: send the
+            # report over the authenticated window-report endpoint, named with
+            # this machine (the forwarder uses the same name, socket.gethostname).
+            import socket
+            from polyhost.server.window_report_client import connect as connect_report
+            authkey = None
+            if args.authkey_file:
+                with open(args.authkey_file, "rb") as fh:
+                    authkey = fh.read().strip()
+            report["machine"] = socket.gethostname()
+            remote = connect_report(args.host, authkey=authkey, timeout=2.0)
+            try:
+                remote.call(protocol.M_AGENTS_REPORT, report)
+            finally:
+                remote.close()
+            return 0
         client = connect()
         try:
             client.call(protocol.M_AGENTS_REPORT, report)
@@ -1401,6 +1424,12 @@ def build_parser():
                      "(or as the last argument) and reports it; always exits 0")
     p_ah.add_argument("vendor")
     p_ah.add_argument("payload", nargs="?", default=None)
+    p_ah.add_argument("--host", default=None,
+                      help="the keyboard's computer, when this one runs a forwarder: "
+                           "report over its window-report endpoint")
+    p_ah.add_argument("--authkey-file", default=None,
+                      help="that computer's polykybd-winreport.authkey (as for the "
+                           "forwarder's --report-authkey-file)")
     p_ah.add_argument("--event", default=None,
                       help="the event name, for agents whose hook JSON does not name it "
                            "(Copilot CLI: --event agentStop)")
@@ -1412,6 +1441,11 @@ def build_parser():
     p_ahs.add_argument("vendor", choices=("claude-code", "codex", "copilot"))
     p_ahs.add_argument("--dry-run", action="store_true", help="only show the diff")
     p_ahs.add_argument("--yes", action="store_true", help="write without asking")
+    p_ahs.add_argument("--host", default=None,
+                       help="this computer runs a forwarder: the hooks report to the "
+                            "keyboard's computer at HOST")
+    p_ahs.add_argument("--authkey-file", default=None,
+                       help="that computer's polykybd-winreport.authkey")
     p_ahs.set_defaults(func=_cmd_agents_hooks)
 
     p_glyph_script = sub.add_parser(

@@ -223,7 +223,8 @@ class AgentRegistry:
                     del self._agents[key]
                     changed = True
                     continue
-                if self._is_alive is not None and agent.source == "hook" and agent.pid:
+                if (self._is_alive is not None and agent.source == "hook" and agent.pid
+                        and agent.machine == "local"):   # a remote pid means nothing here
                     if self._is_alive(agent.pid):
                         agent.pid_seen_alive = True
                     elif agent.pid_seen_alive:

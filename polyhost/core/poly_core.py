@@ -1565,7 +1565,7 @@ class PolyCore(Observable):
             self._apply_unicode_mode(mode)
 
     def report_window(self, handle, name, title, os=None, url=None,
-                      names=(), icon_key=None, icon=None, shortcuts=None):
+                      names=(), icon_key=None, icon=None, shortcuts=None, machine=None):
         """Inject an external active-window report into remote window tracking
         (the ``window.report`` RPC / ``polyctl window report``).
 
@@ -1603,6 +1603,10 @@ class PolyCore(Observable):
         # lost field.
         if isinstance(ret, dict):
             payload.update(ret)
+        # Agents on the forwarder's machine: a queued raise and the 1 s heartbeat
+        # ride this reply, the only channel that reaches the forwarder.
+        if machine and getattr(self, "_agent_remote_raises", None) is not None:
+            payload.update(self.agent_relay_for(str(machine)[:64]))
         return True, payload
 
     def submit_overlay_cmd(self, cmd):
@@ -2333,6 +2337,9 @@ class PolyCore(Observable):
         self._agent_keys = AgentKeysController(
             self.agents, self._agent_card_cache, raise_agent=raise_agent, log=self.log,
             dictate=dictate)
+        from polyhost.services.agents.remote import RemoteRaiseQueue
+        self._agent_remote_raises = RemoteRaiseQueue()
+        self._agent_keys.raise_remote = self._agent_remote_raises.request
         self.worker.add_periodic("agents", 1.0, self._agents_periodic)
         self._agent_titles = TitleScanner(
             self.agents, self.log,
@@ -2377,6 +2384,33 @@ class PolyCore(Observable):
         except (ValueError, TypeError) as e:
             return False, str(e)
         return True, agent
+
+    def agents_report_remote(self, params):
+        """An `agents.report` from the NETWORK endpoint (a forwarder's machine).
+        Every field is bounded first (services/agents/remote.sanitize_report); the
+        machine name it carries keeps the agent out of the local process check and
+        sends its raise back to that forwarder. (ok, agent or reason)."""
+        from polyhost.services.agents.remote import sanitize_report
+        clean = sanitize_report(params)
+        if clean is None:
+            return False, "invalid agents.report"
+        if clean["machine"] == "local":
+            clean["machine"] = "remote"     # "local" means THIS computer
+        return self.agents_report(clean)
+
+    def agent_relay_for(self, machine):
+        """What the reply to a forwarder's window.report adds for `machine`: the
+        newest raise queued for it, and whether it should report every second
+        because it has agents on the keys."""
+        if not machine:
+            return {}
+        out = {}
+        pending = self._agent_remote_raises.for_machine(machine)
+        if pending is not None:
+            out["agent_raise"] = pending
+        if any(a.machine == machine for a in self.agents.agents()):
+            out["agents_fast"] = True
+        return out
 
     def agents_raise(self, vendor, session_id):
         """Bring an agent's window forward (the tray's agent list). The raise runs

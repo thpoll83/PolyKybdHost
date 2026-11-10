@@ -59,6 +59,10 @@ else:
 
 UPDATE_CYCLE_MSEC = 250
 HEARTBEAT_MSEC = 15000  # resend current window state periodically so the host can catch up
+# While this machine has agents on the keyboard's keys, the host asks for a report
+# every second: a key press for one of them reaches this forwarder only in a reply
+# (services/agents/remote.py), so the heartbeat is the raise's latency.
+AGENT_HEARTBEAT_MSEC = 1000
 
 
 # The settings the forwarder actually acts on. It owns no keyboard, so the vast
@@ -155,6 +159,13 @@ class PolyForwarder(QApplication):
             from polyhost.server.window_report_client import WindowReportSession
             self._report_session = WindowReportSession(
                 self._report_port, self._report_authkey)
+            # Agent keys (services/agents/remote.py): this machine's name goes with
+            # every report, the hooks here use the same name, and a raise for one
+            # of this machine's agents comes back in a reply.
+            from polyhost.services.agents.remote import RemoteRaiseFollower
+            self._agent_machine = socket.gethostname()
+            self._agent_follower = RemoteRaiseFollower()
+            self._agents_fast = False
             self.log.info("Forwarder using the authenticated window-report endpoint (H4d).")
 
         # Browser-URL feed for THIS machine. The extension is already willing to
@@ -465,7 +476,9 @@ class PolyForwarder(QApplication):
         try:
             result = self._report_session.report(
                 host, handle, name, title, os=self._os_value, url=url,
-                names=ident.get("names"), icon_key=ident.get("icon_key"))
+                names=ident.get("names"), icon_key=ident.get("icon_key"),
+                machine=getattr(self, "_agent_machine", None))
+            self._follow_agent_relay(result)
             # ⚠️ The RECEIVER decides, and it is asked on every report. See
             # RemoteHandler._note_identity for why a sender-side "already sent"
             # flag cannot be trusted: its daemon restarts, --host-file repoints
@@ -512,6 +525,30 @@ class PolyForwarder(QApplication):
             return True
         except Exception as e:
             return self._note_send_failure("RPC to %s: %s" % (host, e))
+
+    def _follow_agent_relay(self, result):
+        """A raise for one of this machine's agents, and the heartbeat speed, from a
+        window.report reply. Never raises: window reporting must not depend on it."""
+        try:
+            reply = result if isinstance(result, dict) else {}
+            self._agents_fast = bool(reply.get("agents_fast"))
+            payload = self._agent_follower.follow(reply)
+            if payload is None:
+                return
+            import threading
+            from polyhost.services.agents.raiser import raise_agent
+            from polyhost.services.agents.remote import RemoteAgent
+            agent = RemoteAgent.from_payload(payload)
+            self.log.info("Agent key: raising %s %s", agent.vendor, agent.display_headline)
+
+            def run():
+                try:
+                    self.log.info("Agent key raise: %s", raise_agent(agent))
+                except Exception as e:   # noqa: BLE001
+                    self.log.info("Agent key raise failed: %s", e)
+            threading.Thread(target=run, name="agent-raise", daemon=True).start()
+        except Exception as e:   # noqa: BLE001
+            self.log.debug("Agent relay reply ignored: %s", e)
 
     def _identity_for(self, name):
         """What THIS machine's OS says the app is -- cached, one lookup per app.
@@ -1044,7 +1081,9 @@ class PolyForwarder(QApplication):
                         or win.title != self.title
                         or self._url_dirty
                     )
-                    if changed or self.heartbeat_msec >= HEARTBEAT_MSEC:
+                    heartbeat = (AGENT_HEARTBEAT_MSEC if getattr(self, "_agents_fast", False)
+                                 else HEARTBEAT_MSEC)
+                    if changed or self.heartbeat_msec >= heartbeat:
                         self.win = win
                         self.title = win.title
                         self._url_dirty = False

@@ -55,8 +55,13 @@ class WindowReportServer(MpcListenerServer):
     """Serve only ``window.report`` over an authenticated AF_INET socket."""
 
     def __init__(self, on_report, host_version, log, *,
-                 bind_host="0.0.0.0", port=None, authkey=None):
+                 bind_host="0.0.0.0", port=None, authkey=None, on_agents_report=None):
+        """``on_agents_report(params)``: optional second sink, for agents on the
+        forwarder's machine (services/agents/remote.py). Like ``on_report`` it is an
+        injected callback, never a PolyCore: the endpoint still reaches nothing
+        that controls the keyboard. Without it the method is not served."""
         self._on_report = on_report
+        self._on_agents_report = on_agents_report
         port = port if port is not None else p.WINDOW_REPORT_PORT
         super().__init__(
             address=(bind_host, port),
@@ -84,6 +89,12 @@ class WindowReportServer(MpcListenerServer):
             self.address[0], self.port, p.M_WINDOW_REPORT)
 
     def dispatch(self, conn, req_id, method, params):
+        if method == p.M_AGENTS_REPORT and self._on_agents_report is not None:
+            # Bounded by the sink (remote.sanitize_report) before anything is stored.
+            ok, payload = self._on_agents_report(params if isinstance(params, dict) else {})
+            if not ok:
+                return p.make_error(req_id, p.ERR_INVALID_PARAMS, str(payload))
+            return p.make_response(req_id, {"ok": True})
         if method != p.M_WINDOW_REPORT:
             # The entire security model rests on nothing else being reachable.
             return p.make_error(
@@ -107,12 +118,16 @@ class WindowReportServer(MpcListenerServer):
         # parses a nested structure, which is the second reason it is bounded.
         shortcuts = shortcut_relay.decode(params.get("shortcuts")) \
             if "shortcuts" in params else None
+        # `machine` only when the forwarder names one (agent keys, services/agents/
+        # remote.py): an older forwarder sends none, and the sink's signature
+        # without it stays valid.
+        extra = {"machine": str(params["machine"])[:64]} if params.get("machine") else {}
         ret = self._on_report(params["handle"], params["name"],
                               params.get("title", ""), os=params.get("os"),
                               url=params.get("url"),
                               names=tuple(str(n) for n in names[:MAX_NAMES]),
                               icon_key=params.get("icon_key"), icon=icon,
-                              shortcuts=shortcuts)
+                              shortcuts=shortcuts, **extra)
         # report_window returns the (ok, payload) contract; surface failure.
         if isinstance(ret, tuple) and len(ret) == 2:
             if not ret[0]:

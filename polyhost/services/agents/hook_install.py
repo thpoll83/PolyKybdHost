@@ -67,7 +67,8 @@ def _read(path: str) -> str:
 
 # ---- Claude Code ---------------------------------------------------------------
 
-def plan_claude(home: str, install: bool = True, argv: list[str] | None = None) -> list[FileChange]:
+def plan_claude(home: str, install: bool = True, argv: list[str] | None = None,
+                extra: list[str] = ()) -> list[FileChange]:
     path = os.path.join(home, ".claude", "settings.json")
     before = _read(path)
     data = json.loads(before) if before.strip() else {}
@@ -83,7 +84,8 @@ def plan_claude(home: str, install: bool = True, argv: list[str] | None = None) 
         else:
             del hooks[event]
     if install:
-        command = _shell_command((argv or polyctl_argv()) + ["agents", "hook", "claude-code"])
+        command = _shell_command((argv or polyctl_argv()) + ["agents", "hook", "claude-code"]
+                                 + list(extra))
         for event in CLAUDE_EVENTS:
             group = {"hooks": [{"type": "command", "command": command}]}
             if event in CLAUDE_TOOL_EVENTS:
@@ -97,7 +99,8 @@ def plan_claude(home: str, install: bool = True, argv: list[str] | None = None) 
 
 # ---- Codex ---------------------------------------------------------------------
 
-def plan_codex(home: str, install: bool = True, argv: list[str] | None = None) -> list[FileChange]:
+def plan_codex(home: str, install: bool = True, argv: list[str] | None = None,
+               extra: list[str] = ()) -> list[FileChange]:
     """`notify` in ~/.codex/config.toml. A notify line of the user's own is left
     alone (Codex takes one notify program): the plan is then empty and
     `codex_conflict()` says why."""
@@ -110,7 +113,7 @@ def plan_codex(home: str, install: bool = True, argv: list[str] | None = None) -
         return []
     lines = [l for i, l in enumerate(lines) if i not in ours]
     if install:
-        args = (argv or polyctl_argv()) + ["agents", "hook", "codex"]
+        args = (argv or polyctl_argv()) + ["agents", "hook", "codex"] + list(extra)
         lines.insert(0, "notify = " + json.dumps(args))
     after = "\n".join(lines) + ("\n" if lines else "")
     return [FileChange(path, before, after)] if after != before else []
@@ -137,16 +140,17 @@ def codex_conflict(home: str) -> str:
 
 # ---- Copilot CLI ---------------------------------------------------------------
 
-def plan_copilot(home: str, install: bool = True, argv: list[str] | None = None) -> list[FileChange]:
+def plan_copilot(home: str, install: bool = True, argv: list[str] | None = None,
+                 extra: list[str] = ()) -> list[FileChange]:
     """Its own file, ~/.copilot/hooks/polykybd.json, so no merge is needed."""
     path = os.path.join(home, ".copilot", "hooks", "polykybd.json")
     before = _read(path)
     if not install:
         return [FileChange(path, before, "")] if before else []
-    base = (argv or polyctl_argv()) + ["agents", "hook", "copilot", "--event"]
+    base = (argv or polyctl_argv()) + ["agents", "hook", "copilot"] + list(extra)
     hooks = {e: [{"type": "command",
-                  "powershell": _shell_command(base + [e], powershell=True),
-                  "bash": _shell_command(base + [e]),
+                  "powershell": _shell_command(base + ["--event", e], powershell=True),
+                  "bash": _shell_command(base + ["--event", e]),
                   "timeoutSec": 5}] for e in COPILOT_EVENTS}
     after = json.dumps({"version": 1, "hooks": hooks}, indent=2) + "\n"
     return [FileChange(path, before, after)] if after != before else []
@@ -156,10 +160,12 @@ PLANNERS = {"claude-code": plan_claude, "codex": plan_codex, "copilot": plan_cop
 
 
 def plan(vendor: str, home: str | None = None, install: bool = True,
-         argv: list[str] | None = None) -> list[FileChange]:
+         argv: list[str] | None = None, extra_args: list[str] = ()) -> list[FileChange]:
+    """`extra_args` go after `agents hook <vendor>` in every command, e.g.
+    ["--host", "desktop"] on a forwarder's machine."""
     if vendor not in PLANNERS:
         raise ValueError(f"no installer for {vendor!r}; supported: {', '.join(VENDORS)}")
-    return PLANNERS[vendor](home or os.path.expanduser("~"), install, argv)
+    return PLANNERS[vendor](home or os.path.expanduser("~"), install, argv, extra_args)
 
 
 def apply(changes: list[FileChange]) -> list[str]:

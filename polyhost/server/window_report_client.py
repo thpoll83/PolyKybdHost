@@ -38,8 +38,11 @@ class WindowReportClient:
             raise WindowReportError(why)
 
     def report(self, handle, name, title, os=None, url=None,
-               names=None, icon_key=None, icon=None, shortcuts=None):
+               names=None, icon_key=None, icon=None, shortcuts=None, machine=None):
         """Send one window report; raise WindowReportError on failure/timeout.
+
+        ``machine`` names this computer, so the reply can carry a raise for one of
+        its agents (services/agents/remote.py). Omitted when None.
 
         ``os`` (optional, an OsType value int) lets the forwarder forward its host
         OS; omitted from the params when None so the field is simply absent for
@@ -93,8 +96,17 @@ class WindowReportClient:
         if shortcuts is not None:
             params["shortcuts"] = [[int(m), int(k), str(t)]
                                    for m, k, t in shortcuts]
-        p.send_message(self._conn, p.make_request(
-            req_id, p.M_WINDOW_REPORT, params))
+        if machine:
+            params["machine"] = str(machine)
+        return self.call(p.M_WINDOW_REPORT, params, req_id=req_id)
+
+    def call(self, method, params, req_id=None):
+        """One request on this connection; the result, or WindowReportError.
+        The endpoint serves only window.report and agents.report."""
+        if req_id is None:
+            req_id = self._next_id
+            self._next_id += 1
+        p.send_message(self._conn, p.make_request(req_id, method, params))
         while True:
             if not self._conn.poll(self._timeout):
                 raise WindowReportError("timed out waiting for window.report reply")
@@ -141,7 +153,7 @@ class WindowReportSession:
         return self._host
 
     def report(self, host, handle, name, title, os=None, url=None,
-               names=None, icon_key=None, icon=None, shortcuts=None):
+               names=None, icon_key=None, icon=None, shortcuts=None, machine=None):
         """Send one report to ``host``, (re)connecting as needed.
 
         Raises whatever the connect or the report raised, having closed the
@@ -156,7 +168,8 @@ class WindowReportSession:
                 self._host = host
             return self._client.report(handle, name, title, os=os, url=url,
                                        names=names, icon_key=icon_key, icon=icon,
-                                       shortcuts=shortcuts)
+                                       shortcuts=shortcuts,
+                                       **({"machine": machine} if machine else {}))
         except Exception:
             self.close()
             raise

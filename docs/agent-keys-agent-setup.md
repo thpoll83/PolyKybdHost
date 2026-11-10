@@ -77,6 +77,26 @@ For Claude Code it writes a shorter set than the block below: no `PreToolUse`,
 because `PermissionRequest` and `Notification` already report "waiting". Each hook
 call starts Python (about 0.3 s), so this removes that delay before every tool call.
 
+## Agents on a second computer (forwarder)
+
+On a computer that runs the PolyKybdHost **forwarder** with `--report-rpc` (the
+keyboard is on another computer), the hooks report over the same authenticated
+network endpoint the forwarder uses:
+
+```
+polyctl agents hooks install claude-code --host <keyboard computer> [--authkey-file <its polykybd-winreport.authkey>]
+```
+
+- The keyboard computer must have `window_report_network_enabled` on, as for the
+  forwarder itself.
+- Its agents appear on the keys with this computer's name (`polyctl agents list`
+  on the keyboard computer shows it in the `machine` field).
+- A key press is sent back to this computer's forwarder in the reply to its next
+  window report; while this computer has agents on the keys, the forwarder reports
+  every second, so the window comes forward within about a second.
+- The forwarder and the hooks must run on the same computer: both name it with its
+  host name.
+
 ## Claude Code (tested format)
 
 Merge this into `~/.claude/settings.json` (all projects) or `.claude/settings.json`

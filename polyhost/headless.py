@@ -123,7 +123,8 @@ class HeadlessHost:
         from polyhost.server.window_report_server import WindowReportServer
         try:
             self._winreport_server = WindowReportServer(
-                self.core.report_window, __version__, self.log)
+                self.core.report_window, __version__, self.log,
+                on_agents_report=self.core.agents_report_remote)
             self._winreport_server.start()
         except Exception:
             self.log.exception("Could not start the window-report network listener")
