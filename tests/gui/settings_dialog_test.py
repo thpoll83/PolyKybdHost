@@ -105,13 +105,11 @@ class LanguageSettingTest(unittest.TestCase):
         self.assertEqual(combo.currentData(), "light")
         self.assertNotEqual(combo.currentText(), "Light")
 
-    def test_every_setting_and_group_has_a_label(self):
+    def test_every_setting_has_a_label(self):
         """A key missing here is shown in English under every language."""
         from polyhost.settings import DEFAULT_SETTINGS
-        from polyhost.gui.settings_dialog import GROUP_LABELS, SETTING_LABELS, split_key
+        from polyhost.gui.settings_dialog import SETTING_LABELS
         self.assertEqual(set(DEFAULT_SETTINGS) - set(SETTING_LABELS), set())
-        groups = {split_key(k)[0] for k in DEFAULT_SETTINGS}
-        self.assertEqual(groups - set(GROUP_LABELS), set())
 
 
 class LanguageRestartDecisionTest(unittest.TestCase):
@@ -230,7 +228,9 @@ class BuiltDialogTest(unittest.TestCase):
         buttons = dlg.findChildren(QToolButton)
         self.assertEqual(len([b for b in buttons if b.text() == "…"]), len(sd.FOLDER_KEYS))
         edit = dlg.edit_widgets["game_d2k_data_dir"]
-        button = next(b for b in edit.parentWidget().findChildren(QToolButton))
+        # By its text: a text field's own clear button is a QToolButton too.
+        button = next(b for b in edit.parentWidget().findChildren(QToolButton)
+                      if b.text() == "…")
         with mock.patch.object(sd.QFileDialog, "getExistingDirectory",
                                return_value="/games/d2k/") as chooser:
             button.click()
@@ -256,6 +256,192 @@ class BuiltDialogTest(unittest.TestCase):
             self.assertEqual(browse_start(os.path.join(d, "gone", "deeper")), d)
         self.assertEqual(browse_start(""), os.path.expanduser("~"))
         self.assertEqual(browse_start(os.path.join("no-such-dir-here", "deeper")), os.getcwd())
+
+
+class SectionLayoutTest(unittest.TestCase):
+    """Which section and group each setting is shown in."""
+
+    def _layout(self, keys, developer_mode=True):
+        from polyhost.gui.settings_dialog import layout_sections
+        return layout_sections(keys, developer_mode)
+
+    @staticmethod
+    def _placed(layout):
+        return {key: section_id for section_id, _t, groups in layout
+                for _sub, keys in groups for key in keys}
+
+    def test_every_shipped_setting_has_a_section_of_its_own(self):
+        """"Other" exists so a new setting is never hidden; a shipped one
+        belongs in a section that says what it is."""
+        from polyhost.settings import DEFAULT_SETTINGS
+        placed = self._placed(self._layout(list(DEFAULT_SETTINGS)))
+        self.assertEqual(set(placed), set(DEFAULT_SETTINGS))
+        self.assertEqual([k for k, s in placed.items() if s == "other"], [])
+
+    def test_an_unknown_setting_is_shown_under_other(self):
+        layout = self._layout(["ui_theme", "brand_new_setting"])
+        self.assertEqual(layout[-1][0], "other")
+        self.assertEqual(layout[-1][2], [(None, ["brand_new_setting"])])
+
+    def test_developer_settings_only_in_developer_mode(self):
+        keys = ["ui_theme", "dev_mock_enabled", "developer_mode"]
+        self.assertNotIn("dev_mock_enabled", self._placed(self._layout(keys, False)))
+        self.assertEqual(self._placed(self._layout(keys, True))["dev_mock_enabled"],
+                         "developer")
+
+    def test_empty_sections_and_groups_are_left_out(self):
+        layout = self._layout(["telemetry_enabled"])
+        self.assertEqual([(s, [sub for sub, _k in g]) for s, _t, g in layout],
+                         [("privacy", ["Usage report"])])
+
+    def test_a_prefix_keeps_the_settings_order(self):
+        keys = ["game_sc1_race", "game_assets_enabled", "game_cnc_data_dir"]
+        games = dict((s, g) for s, _t, g in self._layout(keys))["games"]
+        self.assertEqual(games, [(None, ["game_assets_enabled"]),
+                                 ("Installed games", ["game_sc1_race", "game_cnc_data_dir"])])
+
+    def test_every_section_and_subheading_is_marked_for_translation(self):
+        from polyhost.gui.settings_dialog import OTHER_SECTION, SECTIONS
+        strings = [OTHER_SECTION[1]] + [t for _i, t, _g in SECTIONS] + [
+            sub for _i, _t, groups in SECTIONS for sub, _k in groups if sub]
+        with open(os.path.join(os.path.dirname(__file__), "..", "..", "polyhost",
+                               "res", "locale", "polyhost.pot"), encoding="utf-8") as f:
+            pot = f.read()
+        for text in strings:
+            with self.subTest(text=text):
+                self.assertIn(f'msgid "{text}"', pot)
+
+
+class SearchMatchTest(unittest.TestCase):
+
+    def _match(self, query, text):
+        from polyhost.gui.settings_dialog import search_matches, search_words
+        return search_matches(query, search_words(text))
+
+    def test_matches_the_start_of_a_word_only(self):
+        self.assertTrue(self._match("port", "Receiver port"))
+        self.assertFalse(self._match("port", "USB transport reports"))
+
+    def test_every_word_of_the_query_must_match(self):
+        self.assertTrue(self._match("rec po", "Receiver port"))
+        self.assertFalse(self._match("receiver token", "Receiver port"))
+
+    def test_case_and_an_empty_query(self):
+        self.assertTrue(self._match("RECEIVER", "Receiver port"))
+        self.assertTrue(self._match("  ", "anything"))
+
+
+@unittest.skipUnless(os.environ.get("DISPLAY")
+                     or os.environ.get("QT_QPA_PLATFORM") == "offscreen",
+                     "building the dialog needs a display (xvfb-run)")
+class DialogBehaviourTest(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        from PyQt5.QtWidgets import QApplication
+        cls.app = QApplication.instance() or QApplication([])
+
+    def _dialog(self, settings=None, developer_mode=False):
+        from PyQt5.QtCore import QSize
+        from polyhost.gui.settings_dialog import SettingsDialog
+        from polyhost.settings import DEFAULT_SETTINGS
+        dlg = SettingsDialog()
+        self.addCleanup(dlg.deleteLater)
+        dlg.setup(dict(settings if settings is not None else DEFAULT_SETTINGS),
+                  developer_mode=developer_mode)
+        dlg.resize(QSize(1000, 600))
+        dlg.show()
+        self.app.processEvents()
+        return dlg
+
+    def _wheel(self, widget):
+        """One notch up: the last rows sit at the bottom of the page, where a
+        notch down cannot move it."""
+        from PyQt5.QtCore import QPoint, QPointF, Qt
+        from PyQt5.QtGui import QWheelEvent
+        from PyQt5.QtWidgets import QApplication
+        pos = QPointF(widget.width() / 2, widget.height() / 2)
+        event = QWheelEvent(pos, QPointF(widget.mapToGlobal(pos.toPoint())),
+                            QPoint(0, 0), QPoint(0, 120), Qt.NoButton,
+                            Qt.NoModifier, Qt.NoScrollPhase, False)
+        QApplication.sendEvent(widget, event)
+        self.app.processEvents()
+
+    def test_the_wheel_over_an_unfocused_field_scrolls_the_page(self):
+        """Scrolling past a number or a list must not change it."""
+        dlg = self._dialog()
+        bar = dlg.scroll.verticalScrollBar()
+        for key in ("irradiance_min", "hid_reconnect_retries", "problem_scan_level"):
+            with self.subTest(key=key):
+                editor = dlg.edit_widgets[key]
+                dlg.scroll.ensureWidgetVisible(editor)
+                dlg.nav.setFocus()
+                self.app.processEvents()
+                before = dlg.get_updated_settings()[key]
+                top = bar.value()
+                self._wheel(editor)
+                self.assertEqual(dlg.get_updated_settings()[key], before)
+                self.assertNotEqual(bar.value(), top)
+
+    def test_the_wheel_over_a_focused_field_changes_it(self):
+        dlg = self._dialog()
+        editor = dlg.edit_widgets["irradiance_min"]
+        dlg.scroll.ensureWidgetVisible(editor)
+        editor.setFocus()
+        self.app.processEvents()
+        self._wheel(editor)
+        self.assertNotEqual(editor.value(), 1.8)
+
+    def test_search_hides_what_does_not_match(self):
+        dlg = self._dialog()
+        dlg.search.setText("receiver port")
+        shown = [k for k, w in dlg.edit_widgets.items() if w.isVisibleTo(dlg)]
+        self.assertEqual(shown, ["browser_report_port"])
+        visible_nav = [dlg.nav.item(i).text() for i in range(dlg.nav.count())
+                       if not dlg.nav.item(i).isHidden()]
+        self.assertEqual(visible_nav, ["Connections"])
+        dlg.search.setText("no such setting anywhere")
+        self.assertTrue(dlg._no_match.isVisibleTo(dlg))
+        dlg.search.clear()
+        self.assertEqual(len([w for w in dlg.edit_widgets.values() if w.isVisibleTo(dlg)]),
+                         len(dlg.edit_widgets))
+
+    def test_a_hidden_row_still_round_trips(self):
+        """OK while a search hides a row must still write that row's value."""
+        from polyhost.settings import DEFAULT_SETTINGS
+        dlg = self._dialog(developer_mode=True)
+        dlg.search.setText("receiver port")
+        self.assertEqual(dlg.get_updated_settings(), dict(DEFAULT_SETTINGS))
+
+    def test_enter_in_the_search_field_does_not_close_the_dialog(self):
+        from PyQt5.QtCore import Qt
+        from PyQt5.QtTest import QTest
+        dlg = self._dialog()
+        dlg.search.setFocus()
+        QTest.keyClick(dlg.search, Qt.Key_Return)
+        self.assertTrue(dlg.isVisible())
+        self.assertEqual(dlg.result(), 0)
+
+    def test_choosing_a_section_scrolls_to_it(self):
+        dlg = self._dialog()
+        dlg.nav.setCurrentRow(dlg.nav.count() - 2)
+        self.app.processEvents()
+        self.assertGreater(dlg.scroll.verticalScrollBar().value(), 0)
+
+    def test_one_section_needs_no_sidebar(self):
+        """The forwarder shows a handful of General settings."""
+        dlg = self._dialog({"ui_theme": "auto", "ui_language": "auto"})
+        self.assertFalse(dlg.nav.parentWidget().isVisibleTo(dlg))
+
+    def test_a_switch_is_still_a_checkbox(self):
+        from PyQt5.QtCore import Qt
+        from PyQt5.QtTest import QTest
+        dlg = self._dialog()
+        switch = dlg.edit_widgets["telemetry_enabled"]
+        dlg.scroll.ensureWidgetVisible(switch)
+        self.app.processEvents()
+        QTest.mouseClick(switch, Qt.LeftButton)
+        self.assertFalse(dlg.get_updated_settings()["telemetry_enabled"])
 
 
 if __name__ == "__main__":
