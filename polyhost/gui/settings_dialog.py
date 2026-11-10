@@ -316,10 +316,18 @@ def setting_description(full_key):
     return _(text) if text else ""
 
 
-def initial_dialog_size(available):
-    """Half the available screen area, never below `MIN_DIALOG_SIZE`."""
-    return QSize(max(MIN_DIALOG_SIZE.width(), available.width() // 2),
-                 max(MIN_DIALOG_SIZE.height(), available.height() // 2))
+def minimum_dialog_size(available):
+    """`MIN_DIALOG_SIZE` at the display's scale, but never more than 90 % of the
+    available screen: at 150 % the scaled minimum is 960 x 720, taller than a
+    1366 x 768 laptop screen leaves, and the OK and Cancel row went off screen."""
+    return QSize(min(px(MIN_DIALOG_SIZE.width()), available.width() * 9 // 10),
+                 min(px(MIN_DIALOG_SIZE.height()), available.height() * 9 // 10))
+
+
+def initial_dialog_size(available, minimum=MIN_DIALOG_SIZE):
+    """Half the available screen area, never below `minimum`."""
+    return QSize(max(minimum.width(), available.width() // 2),
+                 max(minimum.height(), available.height() // 2))
 
 
 def setting_label(full_key):
@@ -750,11 +758,15 @@ class SettingsDialog(QDialog):
 
     def _fit_to_screen(self):
         """Open at half the screen the cursor is on, with the old size as minimum."""
-        self.setMinimumSize(px(MIN_DIALOG_SIZE.width()), px(MIN_DIALOG_SIZE.height()))
         screen = (QGuiApplication.screenAt(QCursor.pos())
                   or QGuiApplication.primaryScreen())
-        if screen is not None:
-            self.resize(initial_dialog_size(screen.availableGeometry().size()))
+        if screen is None:
+            self.setMinimumSize(px(MIN_DIALOG_SIZE.width()), px(MIN_DIALOG_SIZE.height()))
+            return
+        available = screen.availableGeometry().size()
+        minimum = minimum_dialog_size(available)
+        self.setMinimumSize(minimum)
+        self.resize(initial_dialog_size(available, minimum))
 
     def setup(self, settings_dict, developer_mode=False, flag_source=None):
         """Build the dialog for `settings_dict`.

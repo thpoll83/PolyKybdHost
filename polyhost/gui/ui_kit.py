@@ -12,6 +12,8 @@ on some standard buttons and nothing on the others; ``set_button_icon`` and
 icon.
 """
 
+import logging
+
 from PyQt5.QtCore import QEvent, QObject, QSize, Qt
 from PyQt5.QtGui import QPalette
 from PyQt5.QtWidgets import (QBoxLayout, QDialog, QDialogButtonBox, QFrame, QHBoxLayout,
@@ -341,7 +343,7 @@ class _ButtonWidthFilter(QObject):
             try:
                 match_button_widths(obj)
             except Exception:   # a cosmetic pass must never break a dialog
-                pass
+                logging.getLogger("PolyHost").debug("match_button_widths failed", exc_info=True)
         return False
 
 
