@@ -188,6 +188,11 @@ DEFAULT_SETTINGS = {
         # The shortcut the '-' key sends in AI mode to start dictation, in pynput's
         # syntax ("<cmd>+h"). Empty: Win+H on Windows, nothing elsewhere.
         "agents_dictation_shortcut": "",
+        # Agents on a forwarder's machine (a second computer): their hooks report
+        # over the network window-report endpoint, and a key press is relayed back
+        # in its replies. Off by default, and only with agents_enabled on too;
+        # see the security audit, HOST-6.
+        "agents_remote_enabled": False,
         # Linux only: before the first harvest, switch the session's
         # accessibility flag (org.a11y.Status.IsEnabled) on, because a Qt app
         # joins the AT-SPI bus only while it is set and Plasma leaves it off

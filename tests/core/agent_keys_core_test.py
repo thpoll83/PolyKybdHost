@@ -73,6 +73,22 @@ class AgentKeysCoreTest(unittest.TestCase):
         self.assertFalse(core._agents_active())
         self.assertEqual(core.keeb.firmware.refused, [])
 
+    def test_remote_agents_need_their_own_opt_in(self):
+        params = {"vendor": "codex", "session_id": "r1", "state": "waiting",
+                  "machine": "laptop"}
+        core = self._core(30)                                    # agents on, remote off
+        ok, msg = core.agents_report_remote(params)
+        self.assertFalse(ok)
+        self.assertIn("agents_remote_enabled", msg)
+        self.assertEqual(core.agents_list()["agents"], [])
+        self.assertEqual(core.agent_relay_for("laptop"), {})
+        core = self._core(30, agents_remote_enabled=True)
+        ok, _ = core.agents_report_remote(params)
+        self.assertTrue(ok)
+        self.assertEqual(core.agent_relay_for("laptop"), {"agents_fast": True})
+        core = self._core(30, agents_enabled=False, agents_remote_enabled=True)
+        self.assertFalse(core.agents_report_remote(params)[0])
+
     def test_off_sends_nothing(self):
         core = self._core(30, agents_enabled=False)
         core.agents_report({"vendor": "codex", "session_id": "a", "state": "working"})

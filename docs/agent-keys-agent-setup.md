@@ -87,8 +87,10 @@ network endpoint the forwarder uses:
 polyctl agents hooks install claude-code --host <keyboard computer> [--authkey-file <its polykybd-winreport.authkey>]
 ```
 
-- The keyboard computer must have `window_report_network_enabled` on, as for the
-  forwarder itself.
+- The keyboard computer needs three settings on: `window_report_network_enabled`
+  (as for the forwarder itself), `agents_enabled`, and `agents_remote_enabled`,
+  which is off by default (Settings > AI agents > "Agents from other computers").
+  With it off, the endpoint refuses `agents.report` and relays no raise.
 - Its agents appear on the keys with this computer's name (`polyctl agents list`
   on the keyboard computer shows it in the `machine` field).
 - A key press is sent back to this computer's forwarder in the reply to its next

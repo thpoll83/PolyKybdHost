@@ -100,7 +100,8 @@ SECTIONS = (
         (N_("Logs"), ("log_detail",)),
     )),
     ("agents", N_("AI agents"), (
-        (None, ("agents_enabled", "agents_title_scan", "agents_dictation_shortcut")),
+        (None, ("agents_enabled", "agents_title_scan", "agents_dictation_shortcut",
+                "agents_remote_enabled")),
     )),
     ("developer", N_("Developer"), (
         (None, ("dev_*",)),
@@ -157,6 +158,7 @@ SETTING_LABELS = {
     "agents_enabled": N_("Show on the number row"),
     "agents_title_scan": N_("Find by window title"),
     "agents_dictation_shortcut": N_("Dictation shortcut"),
+    "agents_remote_enabled": N_("Agents from other computers"),
 }
 
 
@@ -171,6 +173,10 @@ SETTING_DESCRIPTIONS = {
     "agents_title_scan": N_(
         "Also finds agents that run in a terminal from the window title, without a "
         "hook. Not on macOS."),
+    "agents_remote_enabled": N_(
+        "Also shows agents that run on a computer with the forwarder, and brings "
+        "their windows forward there. They report over the network endpoint for "
+        "forwarders, which must be on too. Off: only this computer's agents."),
     "agents_dictation_shortcut": N_(
         "The shortcut the minus key sends in AI mode to start dictation, for example "
         "<cmd>+h or <ctrl>+<alt>+d. Empty: Win+H on Windows, nothing on macOS and "

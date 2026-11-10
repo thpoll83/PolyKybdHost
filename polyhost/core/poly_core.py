@@ -2391,6 +2391,9 @@ class PolyCore(Observable):
         machine name it carries keeps the agent out of the local process check and
         sends its raise back to that forwarder. (ok, agent or reason)."""
         from polyhost.services.agents.remote import sanitize_report
+        if not self._agents_remote_on():
+            return False, ("agents from other computers are off "
+                           "(settings agents_enabled and agents_remote_enabled)")
         clean = sanitize_report(params)
         if clean is None:
             return False, "invalid agents.report"
@@ -2398,11 +2401,18 @@ class PolyCore(Observable):
             clean["machine"] = "remote"     # "local" means THIS computer
         return self.agents_report(clean)
 
+    def _agents_remote_on(self) -> bool:
+        """Agents from a forwarder's machine are an explicit second opt-in, off by
+        default: they add a sink and a raise channel to the NETWORK endpoint
+        (security audit HOST-6), so agents_enabled alone does not turn them on."""
+        return bool(self.poly_settings.get("agents_enabled")
+                    and self.poly_settings.get("agents_remote_enabled"))
+
     def agent_relay_for(self, machine):
         """What the reply to a forwarder's window.report adds for `machine`: the
         newest raise queued for it, and whether it should report every second
-        because it has agents on the keys."""
-        if not machine:
+        because it has agents on the keys. Nothing while remote agents are off."""
+        if not machine or not self._agents_remote_on():
             return {}
         out = {}
         pending = self._agent_remote_raises.for_machine(machine)
