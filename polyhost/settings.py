@@ -179,6 +179,15 @@ DEFAULT_SETTINGS = {
         "generic_overlays_fill_shortcuts": True,
         "shortcut_icons_enabled": True,
         "shortcut_icon_auto_fetch": True,
+        # AI agents on the number row (docs/agent-registry-plan.md, firmware
+        # protocol v30+). Off by default: when on, the top 10 overlay pool slots
+        # are kept for the agent cards, from the next keyboard connect.
+        "agents_enabled": False,
+        # Also find agents from terminal window titles (not on macOS).
+        "agents_title_scan": True,
+        # The shortcut the '-' key sends in AI mode to start dictation, in pynput's
+        # syntax ("<cmd>+h"). Empty: Win+H on Windows, nothing elsewhere.
+        "agents_dictation_shortcut": "",
         # Linux only: before the first harvest, switch the session's
         # accessibility flag (org.a11y.Status.IsEnabled) on, because a Qt app
         # joins the AT-SPI bus only while it is set and Plasma leaves it off

@@ -219,6 +219,16 @@ full wiring, the preview rendering and the label-measurement rules are in
   `auto_shift_available` is False. The dialog sends only what changed, and the
   default timeout is 180 ms (QMK's 175 is off the grid). Caps Word needs no host
   side: it is a keycode (`CW_TOGG`) or both Shift keys.
+- **The agent keys (cmd 45 AI, cmd 46 AI_CARD, v30+, prototype)** put AI agent
+  sessions on the number row: `PolyKybd.ai_query/ai_set_keys/ai_read_events/
+  ai_upload_card` behind the `agent_keys` gate, driven by
+  `services/agents/controller.py` from PolyCore's 1 s `agents` periodic. The states
+  are a CLOSED range (`AgentState`). Cards are written straight into pool slots
+  588..599 (10 number keys, then `-` dictation and `+` next waiting agent; cmd 46
+  bypasses the display->pool mapping), and the MRU cache stays below
+  them only while `agents_enabled` is on, from the next connect
+  (`DeviceManager.reserved_tail_slots`). Design and open values:
+  [`agent-registry-plan.md`](agent-registry-plan.md).
 - ⚠️ **`expect(Cmd.X)` matches only the two `P<cmd>` bytes, which a NACK carries
   too** — so `send_and_read_validate` returning True says the reply arrived, never
   that the firmware accepted it. On a CLOSED range that is the difference between a

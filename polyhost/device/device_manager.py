@@ -23,6 +23,19 @@ class DeviceManager:
     def __init__(self, settings: DeviceSettings) -> None:
         self._entries: list[DeviceEntry] = []
         self.device_settings = settings
+        # Pool slots at the top of the pool the MRU cache must not use (the agent
+        # cards, services/agents). Applied when a cache is created, i.e. at the
+        # next connect, because the keyboard's mapping may still point there.
+        self.reserved_tail_slots = 0
+
+    def _new_cache(self) -> OverlayMRUCache:
+        return OverlayMRUCache(self.device_settings.OVERLAY_MAPPING_CAPACITY
+                               - self.reserved_tail_slots)
+
+    def cache_capacity(self) -> int:
+        """The capacity the caches have now (0 when there is no entry)."""
+        p = self.primary
+        return p.cache.capacity if p and p.cache is not None else 0
 
     def add(self, device: Any, name: str, *, is_primary: bool = False) -> None:
         # The cache is created up front, not lazily on the first reconnect: overlay
@@ -31,7 +44,7 @@ class DeviceManager:
         # overlays at all.
         self._entries.append(DeviceEntry(
             device=device, name=name, is_primary=is_primary,
-            cache=OverlayMRUCache(self.device_settings.OVERLAY_MAPPING_CAPACITY)))
+            cache=self._new_cache()))
 
     @property
     def primary(self) -> DeviceEntry | None:
@@ -54,4 +67,4 @@ class DeviceManager:
         """Reset MRU caches for all devices — called on primary reconnect since
         a power-cycle means the firmware's overlay pool is gone on every device."""
         for e in self._entries:
-            e.cache = OverlayMRUCache(self.device_settings.OVERLAY_MAPPING_CAPACITY)
+            e.cache = self._new_cache()

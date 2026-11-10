@@ -125,6 +125,8 @@ CMD_MIN_PROTOCOL: dict[int, int] = {
     Cmd.FILL_POOL_FROM_ICON.value: 20,
     Cmd.REBOOT.value: 22,
     Cmd.TAP_TERMS.value: 29,
+    Cmd.AI.value: 30,
+    Cmd.AI_CARD.value: 30,
     fw.CMD_FW_UP_BEGIN: 0,
     fw.CMD_FW_UP_CHUNK: 0,
     fw.CMD_FW_UP_COMMIT: 0,
@@ -345,6 +347,14 @@ class MockFirmware:
         self.crash_record = None  # the master's archived 48-byte record (cmd 39)
         self.crash_fresh = False
         self.state_generation = 0
+        # Agent keys (cmd 45/46, v30): RAM only, as on the keyboard.
+        self.ai_mode = False
+        self.ai_states = [0] * 10
+        self.ai_slots = [0xFFFF] * 12
+        self.ai_flags = 0
+        self.ai_events = []        # [(seq, key)], the newest 8
+        self.ai_seq = 0
+        self.ai_cards = {}         # pool slot -> bytearray(360)
         # What owns the keycaps, as the GET_ID 'A' block reports it (v28): 0 none,
         # 1 the Eden intro, 2 the Eden screensaver. Tests set it.
         self.anim_state = 0
@@ -602,6 +612,50 @@ class MockFirmware:
             as_ms_now = getattr(self, "auto_shift_ms", TapTerms.DEFAULT_AUTO_SHIFT_MS)
         body = struct.pack("<HHBH", tap, flow, flags, as_ms_now)
         return _reply(p[1], ok, body=body)
+
+    def ai_press(self, key: int) -> int:
+        """Test hook: a press in AI mode (key 0..9, 10 pager, 11 '-', 12 '+'), as the
+        firmware records it. Returns the event's seq."""
+        self.ai_seq = self.ai_seq % 255 + 1
+        self.ai_events = (self.ai_events + [(self.ai_seq, key)])[-8:]
+        self.state_generation += 1
+        return self.ai_seq
+
+    def _ai(self, p):
+        """cmd 45: op p[2]. 0 query, 1 set keys (CLOSED ranges), 2 read events."""
+        op = p[2]
+        if op == 0:
+            return _reply(p[1], body=bytes([int(self.ai_mode), self.ai_seq, 10, 1]))
+        if op == 1:
+            states = list(p[3:13])
+            flags = p[13]
+            slots = [p[14 + 2 * i] | (p[15 + 2 * i] << 8) for i in range(12)]
+            capacity = self.settings.OVERLAY_MAPPING_CAPACITY
+            if (any(s > 5 for s in states) or flags & ~0x0F
+                    or any(s != 0xFFFF and s >= capacity for s in slots)):
+                return _reply(p[1], False)
+            self.ai_states, self.ai_flags, self.ai_slots = states, flags, slots
+            return _reply(p[1])
+        if op == 2:
+            seen = p[3]
+            seqs = [s for s, _ in self.ai_events]
+            newer = (self.ai_events[seqs.index(seen) + 1:] if seen in seqs
+                     else list(self.ai_events))
+            body = bytes([self.ai_seq, len(newer)])
+            for seq, key in newer:
+                body += bytes([seq, key])
+            return _reply(p[1], body=body)
+        return _reply(p[1], False)
+
+    def _ai_card(self, p):
+        """cmd 46: p[2..3] slot (bits 0..9) and segment (bits 12..14), 60 bytes."""
+        word = p[2] | (p[3] << 8)
+        slot, segment = word & 0x3FF, (word >> 12) & 0x7
+        if slot >= self.settings.OVERLAY_MAPPING_CAPACITY or segment > 5:
+            return _reply(p[1], False)
+        card = self.ai_cards.setdefault(slot, bytearray(360))
+        card[segment * 60:(segment + 1) * 60] = bytes(p[4:64]).ljust(60, b"\x00")
+        return _reply(p[1])
 
     def _default_layer(self, p):
         return _reply(p[1], body=b"\x00")
@@ -1084,6 +1138,8 @@ class MockFirmware:
         Cmd.GLYPH_SIZE.value: _get_or_set,
         Cmd.IDLE_TIMEOUT.value: _get_or_set,
         Cmd.TAP_TERMS.value: _tap_terms,
+        Cmd.AI.value: _ai,
+        Cmd.AI_CARD.value: _ai_card,
         Cmd.GET_DEFAULT_LAYER.value: _default_layer,
         Cmd.ENTER_BOOTLOADER.value: _bootloader,
         Cmd.REBOOT.value: _reboot,

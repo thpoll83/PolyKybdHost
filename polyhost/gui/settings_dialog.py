@@ -99,6 +99,9 @@ SECTIONS = (
         (N_("Problem detection"), ("problem_scan_*",)),
         (N_("Logs"), ("log_detail",)),
     )),
+    ("agents", N_("AI agents"), (
+        (None, ("agents_enabled", "agents_title_scan", "agents_dictation_shortcut")),
+    )),
     ("developer", N_("Developer"), (
         (None, ("dev_*",)),
     )),
@@ -151,6 +154,9 @@ SETTING_LABELS = {
     "problem_scan_host_logs": N_("Watch this app's log"),
     "problem_scan_level": N_("What counts as a problem"),
     "game_assets_enabled": N_("Art from installed games"),
+    "agents_enabled": N_("Show on the number row"),
+    "agents_title_scan": N_("Find by window title"),
+    "agents_dictation_shortcut": N_("Dictation shortcut"),
 }
 
 
@@ -158,6 +164,17 @@ SETTING_LABELS = {
 # editor. tests/gui/settings_dialog_test.py fails on a DEFAULT_SETTINGS key
 # missing here, so a new setting cannot ship without one.
 SETTING_DESCRIPTIONS = {
+    "agents_enabled": N_(
+        "Shows the state of AI coding agents on the number row and, while the AI key "
+        "is pressed, one card per agent. Needs keyboard firmware with protocol 30. "
+        "Takes effect at the next keyboard connect."),
+    "agents_title_scan": N_(
+        "Also finds agents that run in a terminal from the window title, without a "
+        "hook. Not on macOS."),
+    "agents_dictation_shortcut": N_(
+        "The shortcut the minus key sends in AI mode to start dictation, for example "
+        "<cmd>+h or <ctrl>+<alt>+d. Empty: Win+H on Windows, nothing on macOS and "
+        "Linux."),
     "unicode_send_composition_mode": N_(
         "Tells the keyboard how this computer takes Unicode input (for example "
         "WinCompose), on connect and whenever it changes. Off: the keyboard keeps "

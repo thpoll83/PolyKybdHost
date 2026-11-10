@@ -1,0 +1,82 @@
+"""PolyCore drives the agent keys on the mock keyboard: the reserved pool slots,
+the push, a key press read back, and nothing sent to firmware older than v30."""
+import threading
+import time
+import unittest
+import unittest.mock as mock
+
+from polyhost.core.poly_core import PolyCore
+from polyhost.services.agents.model import AgentState
+from polyhost.settings import PolySettings
+
+
+class AgentKeysCoreTest(unittest.TestCase):
+
+    def _core(self, protocol, **overrides):
+        real_get = PolySettings.get
+        values = {"dev_mock_primary": True, "dev_mock_protocol": protocol,
+                  "unicode_send_composition_mode": True,
+                  "brightness_set_daylight_dependent": False,
+                  "agents_enabled": True, "agents_title_scan": False, **overrides}
+
+        def get(settings, name):
+            return values[name] if name in values else real_get(settings, name)
+
+        for p in (mock.patch.object(PolySettings, "get", get),
+                  mock.patch.object(PolySettings, "save", lambda *a, **k: True)):
+            p.start()
+            self.addCleanup(p.stop)
+        core = PolyCore(mock.MagicMock(), start_worker=False)
+        core.worker.start()
+        self.addCleanup(core.shutdown)
+        core.apply_reconnect(core._reconnect_probe(threading.Event()))
+        core.worker.run_sync("barrier", lambda c: None, timeout=30)
+        self.assertTrue(core.connected)
+        return core
+
+    def _pass(self, core):
+        core.worker.run_sync("agents", core._agents_periodic, timeout=30)
+
+    def test_push_and_press(self):
+        core = self._core(30)
+        fw = core.keeb.firmware
+        self.assertEqual(core.device_mgr.cache_capacity(), 588)
+        self.assertTrue(core._agents_active())
+        ok, agent = core.agents_report({"vendor": "claude-code", "session_id": "s1",
+                                        "state": "waiting", "cwd": "/w/polykybd-docs"})
+        self.assertTrue(ok)
+        self._pass(core)
+        self.assertEqual(fw.ai_states[0], AgentState.WAITING)
+        self.assertEqual(fw.ai_slots[0], 588)
+        self.assertEqual(len(fw.ai_cards[588]), 360)
+        self.assertTrue(any(fw.ai_cards[588]))
+        self.assertEqual(fw.ai_slots[10:], [598, 599])           # '-' and '+'
+        self.assertTrue(any(fw.ai_cards[598]) and any(fw.ai_cards[599]))
+        self.assertEqual(fw.ai_flags, 0x04 | 0x08)               # one waits; extra cards
+
+        raised = threading.Event()
+        core._agent_keys.raise_agent = lambda a: raised.set() or True
+        fw.ai_press(0)
+        core._agent_keys.note_console("ai ev 1 0\n")
+        self._pass(core)
+        self.assertTrue(raised.wait(5))
+        listing = core.agents_list()
+        self.assertEqual(listing["agents"][0]["state"], "waiting")   # waiting is not "seen"
+        self.assertTrue(listing["active"])
+
+    def test_old_firmware_gets_nothing(self):
+        core = self._core(29)
+        core.agents_report({"vendor": "codex", "session_id": "a", "state": "working"})
+        self._pass(core)
+        self.assertFalse(core._agents_active())
+        self.assertEqual(core.keeb.firmware.refused, [])
+
+    def test_off_keeps_the_whole_pool(self):
+        core = self._core(30, agents_enabled=False)
+        self.assertEqual(core.device_mgr.cache_capacity(), 600)
+        self.assertFalse(core._agents_active())
+        self.assertEqual(core.agents_list()["enabled"], False)
+
+
+if __name__ == "__main__":
+    unittest.main()

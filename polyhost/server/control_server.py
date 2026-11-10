@@ -215,6 +215,12 @@ class ControlServer(MpcListenerServer):
                 params.get("tapping_term"), params.get("flow_tap_term"),
                 params.get("auto_shift"), params.get("auto_shift_ms"))),
             p.M_TAP_TERMS_GET: lambda conn, params: _unwrap(c.get_tap_terms()),
+            p.M_AGENTS_LIST: lambda conn, params: c.agents_list(),
+            p.M_AGENTS_REPORT: lambda conn, params: _unwrap(c.agents_report(params)),
+            p.M_AGENTS_LABEL: lambda conn, params: _unwrap(c.agents_label(
+                params["vendor"], params["session_id"], params.get("text", ""))),
+            p.M_AGENTS_FORGET: lambda conn, params: _unwrap(c.agents_forget(
+                params["vendor"], params["session_id"])),
             p.M_GLYPH_SCRIPT_SET: lambda conn, params: _unwrap(c.set_glyph_script(params["value"])),
             p.M_GLYPH_SCRIPT_GET: lambda conn, params: _unwrap(c.get_glyph_script()),
             p.M_GLYPH_PLACEMENT_SET: lambda conn, params: _unwrap(c.set_glyph_placement(params["value"])),

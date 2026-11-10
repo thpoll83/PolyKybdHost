@@ -50,6 +50,8 @@ from polyhost.services.sunlight_helper import Sunlight
 from polyhost.settings import PolySettings
 from polyhost.services.crash_report import CrashRecord, CrashScanner
 from polyhost.services import problem_scan
+from polyhost.services.agents.controller import AgentKeysController
+from polyhost.services.agents.registry import AgentRegistry
 from polyhost.util.observable import Observable
 from polyhost.core.window_timing import NEW_WINDOW_ACCEPT_TIME_MSEC
 
@@ -275,6 +277,9 @@ class PolyCore(Observable):
             self.keeb = PolyKybd(self.device_settings, self.poly_settings)
 
         self.device_mgr = DeviceManager(self.device_settings)
+        # The agent cards take the top pool slots; the MRU cache stays below them.
+        # Read once here and again at every connect (_agent_keys_reservation).
+        self.device_mgr.reserved_tail_slots = self._agent_card_reserve()
         self.device_mgr.add(self.keeb, "PolyKybdMock" if mock_primary else "PolyKybd",
                             is_primary=True)
         if self.poly_settings.get("dev_mock_enabled") and not mock_primary:
@@ -358,6 +363,7 @@ class PolyCore(Observable):
                                  self._console_periodic)
         self.worker.add_periodic("brightness", PERIODIC_10MIN_CYCLE_MSEC / 1000.0,
                                  self._brightness_periodic)
+        self._init_agents()
 
         # Persist the keyboard MRU just before the system sleeps (Linux/logind).
         # The callback fires on the listener's daemon thread; save_mru only
@@ -1924,8 +1930,13 @@ class PolyCore(Observable):
                     from polyhost.input.unicode_input import get_host_os
                     self._last_pushed_os = None
                     self._push_os(get_host_os())
+                self.device_mgr.reserved_tail_slots = self._agent_card_reserve()
                 self.device_mgr.reset_all_caches()
                 caches_reset = True
+                # The agent keys live in the keyboard's RAM only: send them again.
+                # (getattr: a test fixture may build the core without __init__.)
+                if getattr(self, "_agent_keys", None) is not None:
+                    self._agent_keys.forget_device()
                 # ⚠️ The MRU cache is now empty and the keyboard's pool is about
                 # to be cleared, so whatever generic overlays we believed were on
                 # the device are NOT. Without this the dedupe kept claiming they
@@ -2066,6 +2077,10 @@ class PolyCore(Observable):
         if kb_serial or kb_log:
             self.emit("console", (kb_serial, kb_log))
         if kb_log:
+            # getattr: a test fixture may build the core without __init__.
+            agent_keys = getattr(self, "_agent_keys", None)
+            if agent_keys is not None:
+                agent_keys.note_console(kb_log)
             self._scan_console_for_crashes(kb_log)
             self._scan_console_for_problems(kb_log)
 
@@ -2296,6 +2311,90 @@ class PolyCore(Observable):
     # ------------------------------------------------------------------
 
     DEVICE_CALL_TIMEOUT = 5  # seconds for a bounded run_sync device command
+
+    # ---- AI agents on the number row (services/agents, cmd 45/46, v30+) --------
+
+    # The cards' pool slots: the 10 number keys, then '-' (dictation) and '+' (next
+    # waiting agent). ⚠️ A prototype value: it lowers the per-app image limit from
+    # 600 to 588 while agents_enabled is on (docs/agent-registry-plan.md).
+    AGENT_CARD_SLOTS = 12
+
+    def _agent_card_reserve(self) -> int:
+        return self.AGENT_CARD_SLOTS if self.poly_settings.get("agents_enabled") else 0
+
+    def _agent_card_slots(self) -> list[int]:
+        top = self.device_settings.OVERLAY_MAPPING_CAPACITY
+        return list(range(top - self.AGENT_CARD_SLOTS, top))
+
+    def _init_agents(self):
+        """The registry always exists, so hooks and `polyctl agents list` work with
+        the feature off; only the keyboard side waits for `agents_enabled`."""
+        from polyhost.services.agents import dictation
+        from polyhost.services.agents.raiser import raise_agent
+        from polyhost.services.agents.titles import TitleScanner
+        self.agents = AgentRegistry()
+
+        def dictate():
+            return dictation.send_shortcut(dictation.shortcut_for(
+                self.poly_settings.get("agents_dictation_shortcut")))
+        self._agent_keys = AgentKeysController(
+            self.agents, self._agent_card_slots(), raise_agent=raise_agent, log=self.log,
+            dictate=dictate)
+        self.worker.add_periodic("agents", 1.0, self._agents_periodic)
+        self._agent_titles = TitleScanner(
+            self.agents, self.log,
+            enabled=lambda: bool(self.poly_settings.get("agents_enabled")
+                                 and self.poly_settings.get("agents_title_scan")))
+        self._agent_titles.start()
+
+    def _agents_active(self) -> bool:
+        """The keyboard side runs only when the feature is on, the keyboard speaks
+        v30, and the MRU cache really stays below the card slots (that changes at
+        a connect, not when the setting is flipped)."""
+        return (bool(self.poly_settings.get("agents_enabled"))
+                and self.connected and not self.paused
+                and self.keeb.supports("agent_keys")
+                and self.device_mgr.cache_capacity()
+                <= self.device_settings.OVERLAY_MAPPING_CAPACITY - self.AGENT_CARD_SLOTS)
+
+    def _agents_periodic(self, cancel):
+        """Worker periodic (1 s): read key presses, push the shown page."""
+        if not self._agents_active():
+            return
+        self._agent_keys.note_state_generation(getattr(self.keeb, "state_generation", None))
+        self._agent_keys.sync(self.keeb, cancel)
+
+    def agents_list(self) -> dict:
+        """No device I/O: the registry and the page the keyboard shows."""
+        return {"agents": self.agents.snapshot(), "page": self._agent_keys.page,
+                "pages": self.agents.page_count(),
+                "enabled": bool(self.poly_settings.get("agents_enabled")),
+                "active": self._agents_active()}
+
+    def agents_report(self, params: dict):
+        """A report from polyctl (a hook adapter or a user). (ok, agent or reason)."""
+        from polyhost.services.agents.model import ENDED
+        try:
+            state = params.get("state")
+            if state not in (None, ENDED):
+                from polyhost.services.agents.model import AgentState
+                state = AgentState.parse(state)
+            agent = self.agents.report(
+                params.get("vendor", ""), params.get("session_id", ""), state,
+                event=params.get("event", ""), headline=params.get("headline"),
+                cwd=params.get("cwd"), surface=params.get("surface"),
+                machine=params.get("machine"), pid=params.get("pid"))
+        except (ValueError, TypeError) as e:
+            return False, str(e)
+        return True, agent
+
+    def agents_label(self, vendor, session_id, text):
+        ok = self.agents.label(vendor, session_id, text)
+        return ok, ("ok" if ok else "No such agent")
+
+    def agents_forget(self, vendor, session_id):
+        ok = self.agents.forget(vendor, session_id)
+        return ok, ("ok" if ok else "No such agent")
 
     def _device_call(self, name, fn):
         """run_sync wrapper returning a uniform (ok, payload) result.
@@ -3002,6 +3101,14 @@ class PolyCore(Observable):
             self._forget_generic_overlays()
         if keys is None or "dev_force_hid_link" in keys:
             self._refresh_link_choice()
+        if keys is None or "agents_enabled" in keys:
+            # The card slots are kept out of the MRU cache only from the next
+            # connect (the keyboard's mapping may point there now), so the agent
+            # keys start or stop then. Nothing to do on the device here.
+            mgr = getattr(self, "device_mgr", None)
+            if mgr is not None and getattr(mgr, "reserved_tail_slots", None) != (
+                    PolyCore.AGENT_CARD_SLOTS if self.poly_settings.get("agents_enabled") else 0):
+                self.log.info("Agent keys: the change takes effect at the next keyboard connect")
         if (keys is not None and "emoji_search_dict_file" in keys
                 and self.poly_settings.get("emoji_search_dict_file")):
             # A newly set dictionary file goes on the retry list, whichever writer

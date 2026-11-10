@@ -472,6 +472,73 @@ def _cmd_tap_terms(client, args):
     return 0
 
 
+def _cmd_agents(client, args):
+    """List, report, label or forget AI agent sessions (services/agents)."""
+    if args.agents_cmd == "list":
+        info = client.call(protocol.M_AGENTS_LIST, {})
+        if args.json:
+            print(json.dumps(info, indent=2))
+            return 0
+        state = "on" if info.get("enabled") else "off (polyctl settings set agents_enabled true)"
+        print(f"agent keys: {state}; keyboard {'active' if info.get('active') else 'not active'}; "
+              f"page {info.get('page', 0) + 1} of {info.get('pages', 1)}")
+        for a in info.get("agents", []):
+            wait = "?" if a.get("waiting_inferred") else ""
+            print(f"  p{a['page'] + 1} key {(a['key'] + 1) % 10}  {a['state'] + wait:<9} "
+                  f"{a['vendor']:<12} {a['headline'][:40]:<40} {a['session_id'][:24]}")
+        if not info.get("agents"):
+            print("  (no agents reported)")
+        return 0
+    if args.agents_cmd == "report":
+        agent = client.call(protocol.M_AGENTS_REPORT, {
+            "vendor": args.vendor, "session_id": args.session, "state": args.state,
+            "headline": args.headline, "cwd": args.cwd, "pid": args.pid})
+        print(json.dumps(agent) if agent else "removed")
+        return 0
+    if args.agents_cmd == "label":
+        client.call(protocol.M_AGENTS_LABEL, {"vendor": args.vendor,
+                                              "session_id": args.session, "text": args.text})
+        return 0
+    if args.agents_cmd == "forget":
+        client.call(protocol.M_AGENTS_FORGET, {"vendor": args.vendor, "session_id": args.session})
+        return 0
+    return 2
+
+
+def _read_hook_payload(args):
+    """The hook's JSON: an argument (Codex `notify` passes it last) or stdin."""
+    text = args.payload
+    if not text and not sys.stdin.isatty():
+        text = sys.stdin.read()
+    try:
+        payload = json.loads(text or "{}")
+    except ValueError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _agents_hook_main(args) -> int:
+    """`polyctl agents hook <vendor>`: the command an agent's hook runs.
+
+    ⚠️ Always exits 0 and prints nothing: a hook that fails or writes to stdout
+    can block or steer the agent, and a keyboard light is not worth that."""
+    try:
+        import os
+        from polyhost.services.agents.hooks import interpret
+        report = interpret(_read_hook_payload(args))
+        if report is None:
+            return 0
+        report.update(vendor=args.vendor, pid=os.getppid(), surface="cli")
+        client = connect()
+        try:
+            client.call(protocol.M_AGENTS_REPORT, report)
+        finally:
+            client.close()
+    except Exception:  # noqa: BLE001 - see the docstring
+        pass
+    return 0
+
+
 def _cmd_handedness(client, args):
     """Assign which half is left. The side named is the CONNECTED (master) one.
 
@@ -1256,6 +1323,32 @@ def build_parser():
              f"in {TapTerms.STEP_MS} ms steps (default {TapTerms.DEFAULT_AUTO_SHIFT_MS})")
     p_tap_terms.set_defaults(func=_cmd_tap_terms)
 
+    p_agents = sub.add_parser(
+        "agents", help="AI agent sessions shown on the number row (firmware v30+)")
+    agents_sub = p_agents.add_subparsers(dest="agents_cmd", required=True)
+    p_al = agents_sub.add_parser("list", help="the agents the host knows, by page and key")
+    p_al.add_argument("--json", action="store_true")
+    p_ar = agents_sub.add_parser("report", help="report an agent's state by hand")
+    p_ar.add_argument("vendor", help="claude-code, codex, gemini, antigravity, copilot, ...")
+    p_ar.add_argument("session", help="a session id; the same id updates the same key")
+    p_ar.add_argument("state", help="working, waiting, done, idle, stale or ended")
+    p_ar.add_argument("--headline", default=None)
+    p_ar.add_argument("--cwd", default=None)
+    p_ar.add_argument("--pid", type=int, default=None)
+    p_alb = agents_sub.add_parser("label", help="set the text an agent's key shows")
+    p_alb.add_argument("vendor")
+    p_alb.add_argument("session")
+    p_alb.add_argument("text")
+    p_af = agents_sub.add_parser("forget", help="remove an agent and free its key")
+    p_af.add_argument("vendor")
+    p_af.add_argument("session")
+    p_ah = agents_sub.add_parser(
+        "hook", help="run from an agent's hook: reads the hook JSON from stdin "
+                     "(or as the last argument) and reports it; always exits 0")
+    p_ah.add_argument("vendor")
+    p_ah.add_argument("payload", nargs="?", default=None)
+    p_agents.set_defaults(func=_cmd_agents)
+
     p_glyph_script = sub.add_parser(
         "glyph-script", help="get or set the glyph-script override (firmware v9+)")
     p_glyph_script.add_argument(
@@ -1632,6 +1725,9 @@ def _is_local_command(args) -> bool:
 def main(argv=None):
     # Parse first so --help / bad args exit before we open a socket.
     args = build_parser().parse_args(argv)
+
+    if getattr(args, "command", None) == "agents" and args.agents_cmd == "hook":
+        return _agents_hook_main(args)
 
     if _is_local_command(args):
         try:

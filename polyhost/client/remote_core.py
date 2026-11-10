@@ -348,6 +348,19 @@ class RemoteCore(Observable):
     def get_tap_terms(self):
         return self._device(p.M_TAP_TERMS_GET)
 
+    def agents_list(self):
+        return self._rpc_call(p.M_AGENTS_LIST) or {}
+
+    def agents_report(self, params):
+        return self._device(p.M_AGENTS_REPORT, dict(params))
+
+    def agents_label(self, vendor, session_id, text):
+        return self._device(p.M_AGENTS_LABEL, {"vendor": vendor, "session_id": session_id,
+                                               "text": text})
+
+    def agents_forget(self, vendor, session_id):
+        return self._device(p.M_AGENTS_FORGET, {"vendor": vendor, "session_id": session_id})
+
     def refresh_unicode_mode(self):
         """Ask the daemon to re-detect + re-push the unicode input mode.
 
