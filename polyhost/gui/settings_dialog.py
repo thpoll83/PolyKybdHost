@@ -695,11 +695,10 @@ class _Group(QWidget):
             r.setVisible(r in shown)
         # A divider sits above every row but the first; show one only between
         # two visible rows.
-        seen = False
+        seen = self.rows[0] in shown
         for line, r in zip(self._dividers, self.rows[1:]):
-            idx = self.rows.index(r)
-            seen = any(x in shown for x in self.rows[:idx])
             line.setVisible(seen and r in shown)
+            seen = seen or r in shown
         self.setVisible(bool(shown))
         return bool(shown)
 

@@ -38,6 +38,17 @@ def resolve_dev(dev, debug_legacy, setting, log_detail="normal"):
     return level, level > 0, source
 
 
+def log_level_for(verbosity):
+    """The logging level for a resolved verbosity: 2 DEBUG_DETAILED (it shows
+    the debug_detailed lines, e.g. window-report receipts), 1 DEBUG, else INFO.
+    The headless daemon and the forwarder use it; the tray app maps the same
+    way inside PolyHost."""
+    from polyhost.util.log_util import DEBUG_DETAILED  # Qt-free
+    if verbosity > 1:
+        return DEBUG_DETAILED
+    return logging.DEBUG if verbosity > 0 else logging.INFO
+
+
 def _setup_startup_logging(debug=0):
     """Configure a persistent diagnostic log for the **pre-GUI launch phase**.
 
@@ -395,17 +406,7 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
         slog.info("Launch path: headless daemon (no Qt).")
         print("Executing PolyHost (headless)...")
         from polyhost.headless import run_headless
-        from polyhost.util.log_util import DEBUG_DETAILED  # Qt-free
-        # Mirror the GUI's level mapping: --dev 2 drops to DEBUG_DETAILED so the
-        # daemon surfaces debug_detailed lines (e.g. window-report receipts);
-        # --dev 1 = DEBUG, no flag = INFO.
-        if verbosity > 1:
-            hl_level = DEBUG_DETAILED
-        elif verbosity > 0:
-            hl_level = logging.DEBUG
-        else:
-            hl_level = logging.INFO
-        run_headless(hl_level, ignore_version=args.ignore_version, developer=developer,
+        run_headless(log_level_for(verbosity), ignore_version=args.ignore_version, developer=developer,
                      claim=instance_claim)
         crash_log.note_clean_exit(slog, "headless daemon")
         sys.exit(0)
@@ -451,7 +452,7 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
         addr = args.host or f"IP set in {args.host_file}"
         slog.info("Launch path: forwarder -> %s", addr)
         print(f"Executing Forwarder. Sending to {addr}.")
-        app = PolyForwarder(logging.DEBUG if verbosity>0 else logging.INFO, args.host, args.host_file,
+        app = PolyForwarder(log_level_for(verbosity), args.host, args.host_file,
                             report_rpc=args.report_rpc, report_port=args.report_port,
                             report_authkey_file=args.report_authkey_file)
     else:

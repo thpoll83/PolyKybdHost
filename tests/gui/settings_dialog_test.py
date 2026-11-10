@@ -526,6 +526,30 @@ class DialogBehaviourTest(unittest.TestCase):
         self.assertLessEqual(worst(ltr.mirrored(True, False), rtl), 2)
         self.assertGreater(worst(ltr, rtl), 100)
 
+    def test_a_divider_shows_only_between_two_visible_rows(self):
+        from PyQt5.QtWidgets import QWidget
+        from polyhost.gui.settings_dialog import _Group
+
+        class Row(QWidget):
+            def __init__(self, hit):
+                super().__init__()
+                self.available, self.hit = True, hit
+
+            def matches(self, _query):
+                return self.hit
+
+        for hits, expected in (((True, False, True), [False, True]),
+                               ((False, True, True), [False, True]),
+                               ((True, True, False), [True, False]),
+                               ((True, True, True), [True, True])):
+            with self.subTest(hits=hits):
+                group = _Group(None)
+                self.addCleanup(group.deleteLater)
+                for hit in hits:
+                    group.add_row(Row(hit))
+                group.apply_filter("q")
+                self.assertEqual([d.isVisibleTo(group) for d in group._dividers], expected)
+
     def test_a_switch_is_still_a_checkbox(self):
         from PyQt5.QtCore import Qt
         from PyQt5.QtTest import QTest

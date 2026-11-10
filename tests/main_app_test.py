@@ -138,6 +138,14 @@ class ResolveDevTest(unittest.TestCase):
         self.assertEqual(main_app.resolve_dev(0, None, False, "detailed"), (0, False, "--dev"))
         self.assertEqual(main_app.resolve_dev(2, None, False, "normal"), (2, True, "--dev"))
 
+    def test_log_level_for_each_verbosity(self):
+        """Detailed must reach the debug_detailed lines in every launch path,
+        the forwarder included."""
+        import logging
+        from polyhost.util.log_util import DEBUG_DETAILED
+        self.assertEqual([main_app.log_level_for(v) for v in (0, 1, 2)],
+                         [logging.INFO, logging.DEBUG, DEBUG_DETAILED])
+
     def test_every_log_detail_choice_has_a_level(self):
         from polyhost.gui.settings_dialog import CHOICES
         self.assertEqual({v for v, _l in CHOICES["log_detail"]},
