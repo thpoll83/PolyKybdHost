@@ -346,6 +346,15 @@ class ControllerTest(unittest.TestCase):
             AgentKeysController(self.r, list(range(590, 600)))
 
 
+def _pynput_usable():
+    """pynput picks a backend at import and raises without a display (X11)."""
+    try:
+        from pynput import keyboard  # noqa: F401  (import is the check)
+        return True
+    except Exception:  # noqa: BLE001 - any backend failure means "not here"
+        return False
+
+
 class DictationTest(unittest.TestCase):
     def test_shortcut_choice(self):
         self.assertEqual(dictation.shortcut_for("", "win32"), "<cmd>+h")
@@ -353,6 +362,7 @@ class DictationTest(unittest.TestCase):
         self.assertEqual(dictation.shortcut_for("", "linux"), "")
         self.assertEqual(dictation.shortcut_for(" <ctrl>+<alt>+d ", "linux"), "<ctrl>+<alt>+d")
 
+    @unittest.skipUnless(_pynput_usable(), "pynput needs a display (run under xvfb-run)")
     def test_send_presses_and_releases_in_order(self):
         events = []
 
