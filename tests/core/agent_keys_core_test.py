@@ -1,7 +1,6 @@
 """PolyCore drives the agent keys on the mock keyboard: the reserved pool slots,
 the push, a key press read back, and nothing sent to firmware older than v30."""
 import threading
-import time
 import unittest
 import unittest.mock as mock
 

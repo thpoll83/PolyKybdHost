@@ -72,9 +72,11 @@ class AgentKeysTest(unittest.TestCase):
         for key in (3, 10, 0):
             fw.ai_press(key)
         ok, (newest, events) = kb.ai_read_events(0)
+        self.assertTrue(ok)
         self.assertEqual((newest, events), (3, [(1, 3), (2, 10), (3, 0)]))
         ok, (newest, events) = kb.ai_read_events(2)
-        self.assertEqual(events, [(3, 0)])
+        self.assertTrue(ok)
+        self.assertEqual((newest, events), (3, [(3, 0)]))
 
     def test_query(self):
         kb, fw = _keyboard()
