@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QLabel, QPlainT
                              QPushButton, QSpinBox, QVBoxLayout)
 
 from polyhost.i18n import _, _f, _nf, N_
-from polyhost.gui.ui_kit import set_button_icon
+from polyhost.gui.ui_kit import set_button_icon, px
 from polyhost.services import crash_report
 
 DEFAULT_ROUNDS = 50
@@ -48,7 +48,7 @@ class BootLoopDialog(QDialog):
         self._core = core
         self._running = False
         self.setWindowTitle(_("PolyKybd — boot-loop test"))
-        self.setMinimumWidth(620)
+        self.setMinimumWidth(px(620))
         layout = QVBoxLayout(self)
 
         intro = QLabel(_(_INTRO))
@@ -66,7 +66,7 @@ class BootLoopDialog(QDialog):
 
         self.output = QPlainTextEdit(self)
         self.output.setReadOnly(True)
-        self.output.setMinimumHeight(180)
+        self.output.setMinimumHeight(px(180))
         self.output.setLineWrapMode(QPlainTextEdit.NoWrap)
         layout.addWidget(self.output)
 

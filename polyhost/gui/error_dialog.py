@@ -10,7 +10,7 @@ rather than as two copies.
 from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QPlainTextEdit,
                              QPushButton, QVBoxLayout)
 
-from polyhost.gui.ui_kit import Headline, StatusLabel, fit_text_lines, set_button_icon
+from polyhost.gui.ui_kit import Headline, StatusLabel, fit_text_lines, set_button_icon, px
 from polyhost.i18n import _
 
 
@@ -26,8 +26,8 @@ class CopyableErrorDialog(QDialog):
         super().__init__(parent)
         self._commands = commands
         self.setWindowTitle(title)
-        self.setMinimumWidth(560)
-        self.resize(680, 10)
+        self.setMinimumWidth(px(560))
+        self.resize(px(680), 10)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(18, 16, 18, 14)
         layout.setSpacing(10)

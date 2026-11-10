@@ -20,7 +20,7 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                              QLabel, QPushButton, QVBoxLayout)
 
 from polyhost.gui.file_dialogs import get_save_file_name
-from polyhost.gui.ui_kit import set_button_icon, style_button_box
+from polyhost.gui.ui_kit import set_button_icon, style_button_box, px
 from polyhost.i18n import _, _f, _nf, N_
 from polyhost.services import log_bundle
 
@@ -120,7 +120,7 @@ class LogBundleDialog(QDialog):
         self._last_bundle = None
 
         self.setWindowTitle(_("Collect Logs"))
-        self.setMinimumWidth(520)
+        self.setMinimumWidth(px(520))
         layout = QVBoxLayout(self)
 
         intro = QLabel(_(

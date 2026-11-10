@@ -24,7 +24,7 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
 
 from polyhost.gui.file_dialogs import downloads_dir
 from polyhost.gui.log_bundle_dialog import TIMEFRAMES, _CollectWorker, timeframe_index
-from polyhost.gui.ui_kit import set_button_icon, style_button_box
+from polyhost.gui.ui_kit import set_button_icon, style_button_box, px
 from polyhost.i18n import _, _f
 from polyhost.services import log_bundle, problem_report
 
@@ -52,7 +52,7 @@ class ReportProblemDialog(QDialog):
         self._prefilled_text = ""     # what set_description() put in; the override rides on it
 
         self.setWindowTitle(_("Report a Problem"))
-        self.setMinimumWidth(620)
+        self.setMinimumWidth(px(620))
         layout = QVBoxLayout(self)
 
         intro = QLabel(_(
@@ -65,7 +65,7 @@ class ReportProblemDialog(QDialog):
         self.description = QPlainTextEdit(self)
         self.description.setPlaceholderText(
             _("What went wrong? What were you doing when it happened?"))
-        self.description.setMinimumHeight(90)
+        self.description.setMinimumHeight(px(90))
         self.description.textChanged.connect(self._refresh_enabled)
         layout.addWidget(QLabel("<b>" + _("What happened") + "</b>"))
         layout.addWidget(self.description)

@@ -27,12 +27,13 @@ from __future__ import annotations
 from PyQt5.QtCore import QElapsedTimer, QSize, Qt
 from PyQt5.QtWidgets import (
     QAbstractItemView, QComboBox, QDialog, QDialogButtonBox, QHBoxLayout, QHeaderView,
-    QInputDialog, QLabel, QPlainTextEdit, QPushButton, QSpinBox, QTabWidget,
+    QLabel, QPlainTextEdit, QPushButton, QSpinBox, QTabWidget,
     QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
 )
 
+from polyhost.gui import message_box
 from polyhost.gui.get_icon import get_icon
-from polyhost.gui.ui_kit import style_button_box
+from polyhost.gui.ui_kit import style_button_box, px
 from polyhost.i18n import _, _f, _nf, N_
 from polyhost.services import macro_body as mb
 from polyhost.services import macro_keys as mk
@@ -154,12 +155,12 @@ class MacroStepsDialog(QDialog):
         self.down_btn.setToolTip(_("Move the selected step down"))
         self.down_btn.clicked.connect(lambda: self._move(1))
         for b in (self.add_btn, self.text_btn, self.remove_btn):
-            b.setMinimumHeight(ROW_BUTTON_HEIGHT)
+            b.setMinimumHeight(px(ROW_BUTTON_HEIGHT))
             row.addWidget(b, 3)
         # The two arrows carry one glyph each, so an equal share would leave them
         # absurdly wide beside three labelled buttons -- they take a smaller slice.
         for b in (self.up_btn, self.down_btn):
-            b.setMinimumHeight(ROW_BUTTON_HEIGHT)
+            b.setMinimumHeight(px(ROW_BUTTON_HEIGHT))
             row.addWidget(b, 1)
 
         table_page = QWidget()
@@ -188,8 +189,8 @@ class MacroStepsDialog(QDialog):
         # and the standard red dot.
         self.record_btn = QPushButton(get_icon("radio_button_checked.svg"), _("Record"))
         self.record_btn.setCheckable(True)
-        self.record_btn.setMinimumHeight(RECORD_BUTTON_HEIGHT)
-        self.record_btn.setMinimumWidth(RECORD_BUTTON_WIDTH)
+        self.record_btn.setMinimumHeight(px(RECORD_BUTTON_HEIGHT))
+        self.record_btn.setMinimumWidth(px(RECORD_BUTTON_WIDTH))
         self.record_btn.setIconSize(QSize(RECORD_ICON_PX, RECORD_ICON_PX))
         self.record_btn.setToolTip(
             _("Press the keys you want, then click Stop. Esc stops recording."))
@@ -201,7 +202,7 @@ class MacroStepsDialog(QDialog):
         self.timing_box.setToolTip(_(
             "Record the real pauses between keystrokes as Wait steps.\n"
             "Off by default: most macros want to run as fast as the keyboard can."))
-        self.timing_box.setMinimumHeight(RECORD_BUTTON_HEIGHT)
+        self.timing_box.setMinimumHeight(px(RECORD_BUTTON_HEIGHT))
         shared.addWidget(self.timing_box)
         page.addLayout(shared)
 
@@ -220,7 +221,7 @@ class MacroStepsDialog(QDialog):
         for step in (steps or []):
             self._append_row(step)
         self._refresh()
-        self.resize(*DEFAULT_SIZE)
+        self.resize(*(px(v) for v in DEFAULT_SIZE))
 
     # -- the table is the model ---------------------------------------------
 
@@ -411,7 +412,7 @@ class MacroStepsDialog(QDialog):
         self._refresh()
 
     def _on_add_text(self):
-        text, ok = QInputDialog.getText(self, _("Add text"), _("Characters to type:"))
+        text, ok = message_box.get_text(self, _("Add text"), _("Characters to type:"))
         if not ok or not text:
             return
         try:

@@ -122,7 +122,98 @@ def apply_theme(app, setting=THEME_AUTO):
     theme = resolve_theme(setting, detected)
     app.setStyle("Fusion")
     app.setPalette(palette_for(theme))
+    style = control_style(theme)
+    # The tray re-applies the theme on every menu open; setting the same
+    # sheet again would re-polish every widget for nothing.
+    if app.styleSheet() != style:
+        app.setStyleSheet(style)
+    from polyhost.gui.ui_kit import install_button_width_matching
+    install_button_width_matching(app)
     return theme
+
+
+# Rounded controls. Fusion draws buttons and fields with a 2 px corner and has
+# no setting for it, so the corner comes from a style sheet. A sheet that sets
+# a border on a widget replaces Fusion's drawing of it entirely, so every state
+# (hover, pressed, default, focus, disabled) and the combo and spin box arrows
+# are drawn here too. A control inside a table cell stays flat and tight.
+# The colours are per theme: the shared palettes leave
+# Light/Midlight/Mid/Dark at Qt's light-theme greys, which on the dark theme
+# made a hovered button light grey under light text.
+CONTROL_RADIUS = 6
+_CONTROL_COLOURS = {
+    # button, border, hover, pressed, field, disabled text, disabled border
+    THEME_LIGHT: ("#fafafa", "#b8b8b8", "#e8e8e8", "#d6d6d6", "#ffffff", "#9a9a9a", "#d4d4d4"),
+    THEME_DARK: ("#5e5e5e", "#747474", "#6a6a6a", "#454545", "#232323", "#8c8c8c", "#5c5c5c"),
+}
+_ARROW_DOWN = "expand_more.svg"
+_ARROW_UP = "expand_less.svg"
+
+
+def control_style(theme=THEME_LIGHT):
+    """The application style sheet: rounded buttons, fields, combos and spin boxes."""
+    from polyhost.gui.get_icon import icon_path
+    from polyhost.gui.ui_kit import px
+    r = px(CONTROL_RADIUS)
+    down = icon_path(_ARROW_DOWN)
+    up = icon_path(_ARROW_UP)
+    arrow = px(12)
+    button, border, hover, pressed, field, dis_text, dis_border = _CONTROL_COLOURS.get(
+        theme, _CONTROL_COLOURS[THEME_LIGHT])
+    accent = ACCENT_COLOR.name()
+    return f"""
+QPushButton {{
+    background: {button};
+    border: 1px solid {border};
+    border-radius: {r}px;
+    padding: {px(4)}px {px(12)}px;
+    min-height: {px(18)}px;
+}}
+QPushButton:hover {{ background: {hover}; }}
+QPushButton:pressed, QPushButton:checked {{ background: {pressed}; }}
+QPushButton:default, QPushButton:focus {{ border-color: {accent}; }}
+QPushButton:disabled {{ color: {dis_text}; border-color: {dis_border}; }}
+
+QLineEdit, QComboBox, QAbstractSpinBox {{
+    background: {field};
+    border: 1px solid {border};
+    border-radius: {r}px;
+    padding: {px(3)}px {px(6)}px;
+    min-height: {px(18)}px;
+}}
+QLineEdit:focus, QComboBox:focus, QAbstractSpinBox:focus {{ border-color: {accent}; }}
+QLineEdit:disabled, QComboBox:disabled, QAbstractSpinBox:disabled {{
+    color: {dis_text}; border-color: {dis_border};
+}}
+
+QComboBox {{ padding-right: {px(22)}px; }}
+QComboBox::drop-down {{
+    subcontrol-origin: padding;
+    subcontrol-position: center right;
+    width: {px(20)}px;
+    border: none;
+}}
+QComboBox::down-arrow {{ image: url("{down}"); width: {arrow}px; height: {arrow}px; }}
+
+QAbstractSpinBox {{ padding-right: {px(20)}px; }}
+QAbstractSpinBox::up-button, QAbstractSpinBox::down-button {{
+    subcontrol-origin: border;
+    width: {px(18)}px;
+    border: none;
+    background: transparent;
+}}
+QAbstractSpinBox::up-button {{ subcontrol-position: top right; }}
+QAbstractSpinBox::down-button {{ subcontrol-position: bottom right; }}
+QAbstractSpinBox::up-arrow {{ image: url("{up}"); width: {arrow}px; height: {arrow}px; }}
+QAbstractSpinBox::down-arrow {{ image: url("{down}"); width: {arrow}px; height: {arrow}px; }}
+
+QAbstractItemView QComboBox, QAbstractItemView QAbstractSpinBox, QAbstractItemView QLineEdit {{
+    border: none;
+    border-radius: 0;
+    padding: 0 {px(18)}px 0 {px(4)}px;
+    min-height: 0;
+}}
+"""
 
 
 def is_dark(palette) -> bool:

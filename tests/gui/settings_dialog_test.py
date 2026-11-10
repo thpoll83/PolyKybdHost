@@ -175,6 +175,17 @@ class DialogSizeTest(unittest.TestCase):
         self.assertEqual(initial_dialog_size(QSize(1024, 768)), QSize(640, 480))
         self.assertEqual(initial_dialog_size(QSize(1600, 800)), QSize(800, 480))
 
+    def test_the_scaled_minimum_fits_a_small_screen(self):
+        # 150 % scales 640 x 480 to 960 x 720, taller than a 1366 x 768 laptop
+        # leaves; the minimum is capped at 90 % so OK and Cancel stay on screen.
+        from unittest import mock
+        from PyQt5.QtCore import QSize
+        from polyhost.gui import ui_kit
+        from polyhost.gui.settings_dialog import minimum_dialog_size
+        with mock.patch.object(ui_kit, "ui_scale", return_value=1.5):
+            self.assertEqual(minimum_dialog_size(QSize(2560, 1400)), QSize(960, 720))
+            self.assertEqual(minimum_dialog_size(QSize(1366, 728)), QSize(960, 655))
+
 
 @unittest.skipUnless(os.environ.get("DISPLAY")
                      or os.environ.get("QT_QPA_PLATFORM") == "offscreen",
@@ -208,7 +219,8 @@ class BuiltDialogTest(unittest.TestCase):
         dlg = self._dialog()
         self.assertGreaterEqual(dlg.width(), 640)
         self.assertGreaterEqual(dlg.height(), 480)
-        self.assertEqual((dlg.minimumWidth(), dlg.minimumHeight()), (640, 480))
+        from polyhost.gui.ui_kit import px
+        self.assertEqual((dlg.minimumWidth(), dlg.minimumHeight()), (px(640), px(480)))
 
     def test_no_push_button_besides_ok_and_cancel(self):
         """The glyph-script reset button is gone: the tray's Keycap Script menu

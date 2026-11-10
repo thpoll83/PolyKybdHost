@@ -20,7 +20,7 @@ import logging
 from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QLabel,
                              QPlainTextEdit, QPushButton, QVBoxLayout)
 
-from polyhost.gui.ui_kit import Headline, StatusLabel, fit_text_lines, muted, set_button_icon
+from polyhost.gui.ui_kit import Headline, StatusLabel, fit_text_lines, muted, set_button_icon, px
 from polyhost.i18n import _, _nf
 from polyhost.services import problem_scan
 
@@ -35,7 +35,7 @@ class ProblemAlertDialog(QDialog):
         self.problems: list[problem_scan.Problem] = []
 
         self.setWindowTitle(_("PolyKybd — a problem was detected"))
-        self.setMinimumWidth(640)
+        self.setMinimumWidth(px(640))
         layout = QVBoxLayout(self)
         layout.setContentsMargins(18, 16, 18, 14)
         layout.setSpacing(10)

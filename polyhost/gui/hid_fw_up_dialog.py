@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
 from polyhost.device.hid_fw_up import flash_firmware, apply_staged_firmware
 from polyhost.device.split_link import is_split_link_failure
 from polyhost.gui.dialog_util import position_near_tray
-from polyhost.gui.ui_kit import StatusLabel, set_button_icon
+from polyhost.gui.ui_kit import StatusLabel, set_button_icon, px
 from polyhost.i18n import _, _f, translate_message
 
 # The device layer reports its status in English (device/hid_fw_up.py, which
@@ -165,7 +165,7 @@ class HidFwUpDialog(QDialog):
         self._positioned          = False  # move-to-corner only on the first showEvent
 
         self.setWindowTitle(_("Firmware Update"))
-        self.setMinimumWidth(500)
+        self.setMinimumWidth(px(500))
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         # Prevent accidental close during flash
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowCloseButtonHint)

@@ -173,6 +173,15 @@ class TestApplyTheme(unittest.TestCase):
             def setPalette(self, palette):
                 self._outer.applied = palette
 
+            def styleSheet(self):
+                return getattr(self, "_sheet", "")
+
+            def setStyleSheet(self, sheet):
+                self._sheet = sheet
+
+            def installEventFilter(self, _filter):
+                pass
+
         self.app = _FakeApp(self)
 
     def _apply(self, setting, detected):

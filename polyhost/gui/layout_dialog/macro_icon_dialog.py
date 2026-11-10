@@ -20,7 +20,7 @@ from PyQt5.QtWidgets import (
     QListView, QListWidget, QListWidgetItem, QVBoxLayout,
 )
 
-from polyhost.gui.ui_kit import style_button_box
+from polyhost.gui.ui_kit import style_button_box, px
 from polyhost.i18n import _, _nf
 from polyhost.services import fontpack_render as fpr
 from polyhost.services import macro_look as mk
@@ -56,7 +56,7 @@ class MacroIconDialog(QDialog):
     def __init__(self, current: int = 0, parent=None):
         super().__init__(parent)
         self.setWindowTitle(_("Choose a keycap icon"))
-        self.resize(640, 520)
+        self.resize(px(640), px(520))
         self._current = current
         self._pending: list = []
         self._all: list = []
