@@ -183,7 +183,16 @@ autocheck job, the retry/verify logic and `polyctl fontpack` are in
   the slave's versions. Until then (after boot or a link drop, a slave too old to answer
   the query, firmware before v20) it is the master's alone. So a current version does
   not prove the slave got the bundle; say `slave-unconfirmed` rather than claiming
-  success, and keep such a bundle queued for a re-flash.
+  success, and keep such a bundle queued for a re-flash. Firmware after 1.11.4 reports
+  the lower version minus one when the halves DIFFER, so a slave that is newer than
+  the master also reads as out of date.
+- **The check runs again when the block changes during a session**
+  (`PolyCore._recheck_fontpack_on_generation`, from the 1 s probe). The connect-time
+  check reads the block once, possibly before the master has read the slave. Each
+  change of the block increments GET_ID's `G` counter; a steady probe whose counter
+  moved compares the block with the one the last check was queued for and checks
+  again only when it differs, so a keymap edit (which also moves the counter) starts
+  nothing.
 - ⚠️ **Bundle 8 is the overlay ICON library (`icons.plyi`, magic `PlyI`, cmd 42,
   protocol v20), not a font.** It is built by `scripts/build_icon_library.py` from the
   templates (`--check` is a test), its ids are frozen in `res/fontpack/icon_ids.yaml`

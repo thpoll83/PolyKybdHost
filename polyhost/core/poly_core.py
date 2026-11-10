@@ -245,6 +245,12 @@ class PolyCore(Observable):
         # The connect-time check waits while Eden owns the keycaps (GET_ID 'A'
         # block, v28); the probe releases it (_release_held_fontpack_check).
         self._fontpack_check_held = False
+        # The version block the last font-pack check (or notice) was queued for, and
+        # the last GET_ID 'G' counter the probe saw. A steady probe whose counter
+        # moved re-runs the check when the block differs from the checked one
+        # (_recheck_fontpack_on_generation).
+        self._fontpack_checked_versions = None
+        self._fontpack_seen_generation = None
         # Bundles whose last flash attempt genuinely failed: {slot index: message}.
         # Re-flashed on the next pass regardless of the version comparison, because a
         # bundle can report a failure and still read as current (see
@@ -1776,6 +1782,7 @@ class PolyCore(Observable):
         steady = (connected_now and not snapshot["state_changed"]
                   and not snapshot["fresh_boot"])
         self._release_held_fontpack_check(steady)
+        self._recheck_fontpack_on_generation(steady)
         if not snapshot["state_changed"] and not snapshot["fresh_boot"]:
             return snapshot
 
@@ -3622,6 +3629,9 @@ class PolyCore(Observable):
         makes the versions equal — so it never loops. The actual decision +
         flash run on the worker (`_fontpack_autocheck_job`) so they don't block
         the caller (apply_reconnect may be on the Qt thread)."""
+        # getattr: tests build cores without __init__ and drive the probe.
+        self._fontpack_checked_versions = dict(
+            getattr(self.keeb, "fontpack_bundle_versions", None) or {})
         if not self.poly_settings.get("fontpack_auto_flash"):
             # Off: flash nothing, but say when the keyboard is behind. Without
             # this a keyboard fell behind by four bundles on two computers and
@@ -3663,6 +3673,34 @@ class PolyCore(Observable):
             # later probe would queue the notice again.
             self._fontpack_check_held = False
             self._maybe_auto_flash_fontpack()
+
+    def _recheck_fontpack_on_generation(self, steady: bool):
+        """From the probe: run the font-pack check again when the version block moved.
+
+        The connect-time check reads the block once. The master reports its own
+        versions until it has read the slave's, and changes the block again after a
+        link drop or a COMMIT; each change increments GET_ID's 'G' counter. So a
+        steady probe whose counter moved compares the block with the one the last
+        check was queued for, and checks again only when it differs: a keymap edit
+        or a setting also moves the counter and must not start a check. Costs one
+        integer comparison per probe (the probe already reads both blocks)."""
+        # getattr: tests build cores without __init__ and drive the probe.
+        gen = getattr(self.keeb, "state_generation", None)
+        if not steady or gen is None or gen == getattr(self, "_fontpack_seen_generation", None):
+            self._fontpack_seen_generation = gen
+            return
+        self._fontpack_seen_generation = gen
+        if (getattr(self, "_fontpack_check_held", False)
+                or getattr(self, "_fontpack_flash_in_progress", False)
+                or not self.keeb.supports("fontpack")):
+            return
+        versions = dict(getattr(self.keeb, "fontpack_bundle_versions", None) or {})
+        checked = getattr(self, "_fontpack_checked_versions", None)
+        if checked is None or versions == checked:
+            return
+        self.log.info("Font pack versions changed on the keyboard (%s -> %s); "
+                      "checking again.", checked, versions)
+        self._maybe_auto_flash_fontpack()
 
     def _fontpack_stale_notice_job(self, cancel):
         """With Auto Flash off: log and emit FONTPACK_STALE when bundles are stale.
