@@ -80,13 +80,21 @@ call starts Python (about 0.3 s), so this removes that delay before every tool c
 ## Agents on a second computer (forwarder)
 
 On a computer that runs the PolyKybdHost **forwarder** with `--report-rpc` (the
-keyboard is on another computer), the hooks report over the same authenticated
-network endpoint the forwarder uses:
+keyboard is on another computer), install the hooks as on any computer:
 
 ```
-polyctl agents hooks install claude-code --host <keyboard computer> [--authkey-file <its polykybd-winreport.authkey>]
+polyctl agents hooks install claude-code
 ```
 
+Each hook call reads the forwarder's current target from
+`polykybd-agents-target.json` in the config folder, and reports over the same
+authenticated network endpoint the forwarder uses. The forwarder rewrites that file
+whenever its target changes (for example through `--host-file`), so the hooks follow
+it. `--host <keyboard computer> [--authkey-file <file>]` on the install fixes the
+hooks to one computer instead.
+
+- The forwarder must run with `--report-rpc`. Without it the forwarder uses its
+  plain TCP relay, writes no target, and the hooks find no host.
 - The keyboard computer needs three settings on: `window_report_network_enabled`
   (as for the forwarder itself), `agents_enabled`, and `agents_remote_enabled`,
   which is off by default (Settings > AI agents > "Agents from other computers").

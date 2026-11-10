@@ -568,6 +568,17 @@ def _read_hook_payload(args):
     return payload if isinstance(payload, dict) else {}
 
 
+def _agent_hook_target(args):
+    """Where a hook reports on a forwarder's machine: `--host` when given, else the
+    target the running forwarder wrote (services/agents/remote.py), read on every
+    call so a forwarder that moves to another computer takes the hooks along.
+    None: report to this machine's own host."""
+    if args.host:
+        return {"host": args.host, "authkey_file": args.authkey_file}
+    from polyhost.services.agents.remote import read_forwarder_target
+    return read_forwarder_target()
+
+
 def _agents_hook_main(args) -> int:
     """`polyctl agents hook <vendor>`: the command an agent's hook runs.
 
@@ -584,23 +595,30 @@ def _agents_hook_main(args) -> int:
         # The agent's own process, past the shell that runs this hook: the host
         # removes the key when it exits (a closed terminal sends no SessionEnd).
         report.update(vendor=args.vendor, pid=agent_pid(), surface="cli")
+        # By name on the wire: the network endpoint accepts only state names
+        # (remote.sanitize_report), and the local core parses names too.
+        state = report.get("state")
+        if hasattr(state, "name"):
+            report["state"] = state.name.lower()
         # The session's own title (Claude Code), so two sessions in one folder are
         # told apart. Only the title is sent, never the transcript.
         title = transcript_title(payload.get("transcript_path"))
         if title:
             report["headline"] = title
-        if args.host:
+        target = _agent_hook_target(args)
+        if target:
             # This machine runs a forwarder, the keyboard is on another: send the
             # report over the authenticated window-report endpoint, named with
             # this machine (the forwarder uses the same name, socket.gethostname).
             import socket
             from polyhost.server.window_report_client import connect as connect_report
             authkey = None
-            if args.authkey_file:
-                with open(args.authkey_file, "rb") as fh:
+            if target.get("authkey_file"):
+                with open(target["authkey_file"], "rb") as fh:
                     authkey = fh.read().strip()
-            report["machine"] = socket.gethostname()
-            remote = connect_report(args.host, authkey=authkey, timeout=2.0)
+            report["machine"] = target.get("machine") or socket.gethostname()
+            remote = connect_report(target["host"], port=target.get("port"),
+                                    authkey=authkey, timeout=2.0)
             try:
                 remote.call(protocol.M_AGENTS_REPORT, report)
             finally:
@@ -1425,8 +1443,9 @@ def build_parser():
     p_ah.add_argument("vendor")
     p_ah.add_argument("payload", nargs="?", default=None)
     p_ah.add_argument("--host", default=None,
-                      help="the keyboard's computer, when this one runs a forwarder: "
-                           "report over its window-report endpoint")
+                      help="report to this keyboard computer instead of the one the "
+                           "running forwarder reports to (not needed with a forwarder "
+                           "running)")
     p_ah.add_argument("--authkey-file", default=None,
                       help="that computer's polykybd-winreport.authkey (as for the "
                            "forwarder's --report-authkey-file)")
@@ -1442,8 +1461,8 @@ def build_parser():
     p_ahs.add_argument("--dry-run", action="store_true", help="only show the diff")
     p_ahs.add_argument("--yes", action="store_true", help="write without asking")
     p_ahs.add_argument("--host", default=None,
-                       help="this computer runs a forwarder: the hooks report to the "
-                            "keyboard's computer at HOST")
+                       help="fix the hooks to the keyboard computer HOST; without it, "
+                            "they follow the forwarder running on this computer")
     p_ahs.add_argument("--authkey-file", default=None,
                        help="that computer's polykybd-winreport.authkey")
     p_ahs.set_defaults(func=_cmd_agents_hooks)

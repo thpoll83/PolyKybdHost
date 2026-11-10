@@ -1,8 +1,10 @@
 """Agents on a forwarder's machine (a second computer without the keyboard).
 
-Reports: the agent's hook runs `polyctl agents hook <vendor> --host <keyboard PC>`,
-which sends `agents.report` over the authenticated window-report endpoint
-(server/window_report_server.py). `sanitize_report()` bounds every field there,
+Reports: the agent's hook runs `polyctl agents hook <vendor>`. On a forwarder's
+machine it finds the forwarder's current target in `forwarder_target_path()`, which
+the forwarder rewrites whenever its target changes (a --host-file can point it at
+another computer), and sends `agents.report` over the authenticated window-report
+endpoint (server/window_report_server.py). `--host` on the hook overrides the file. `sanitize_report()` bounds every field there,
 because that endpoint is reachable from the network.
 
 Raises: the keyboard host cannot open a connection to the forwarder, so a raise
@@ -19,6 +21,8 @@ one of ITS windows; it cannot type, read, or choose an arbitrary program.
 from __future__ import annotations
 
 import itertools
+import json
+import os
 import threading
 from dataclasses import dataclass
 
@@ -51,6 +55,59 @@ def sanitize_report(params) -> dict | None:
         return None
     out["machine"] = out.get("machine") or "remote"
     return out
+
+
+TARGET_FILE = "polykybd-agents-target.json"
+
+
+def forwarder_target_path() -> str:
+    from polyhost.server import protocol
+    return os.path.join(protocol._config_dir(), TARGET_FILE)
+
+
+def write_forwarder_target(host: str, port, authkey_file, machine: str,
+                           path: str | None = None) -> None:
+    """The forwarder's current target, for this machine's hooks. Written by the
+    running forwarder; atomic, so a hook never reads half a file."""
+    path = path or forwarder_target_path()
+    data = {"pid": os.getpid(), "host": host, "port": port,
+            "authkey_file": authkey_file, "machine": machine}
+    tmp = f"{path}.{os.getpid()}.tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(data, fh)
+    os.replace(tmp, path)
+
+
+def read_forwarder_target(path: str | None = None, is_alive=None) -> dict | None:
+    """The target of the forwarder running on this machine, or None: no file, an
+    unreadable file, no host, or the forwarder that wrote it is gone."""
+    path = path or forwarder_target_path()
+    try:
+        with open(path, encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError):
+        return None
+    if not isinstance(data, dict) or not isinstance(data.get("host"), str) or not data["host"]:
+        return None
+    pid = data.get("pid")
+    if is_alive is None:
+        from polyhost.services.agents.procs import is_alive
+    if not isinstance(pid, int) or not is_alive(pid):
+        return None
+    return data
+
+
+def clear_forwarder_target(path: str | None = None) -> None:
+    """Remove the file if this process wrote it (the forwarder stops, or has no
+    host any more)."""
+    path = path or forwarder_target_path()
+    try:
+        with open(path, encoding="utf-8") as fh:
+            if json.load(fh).get("pid") != os.getpid():
+                return
+        os.remove(path)
+    except (OSError, ValueError, AttributeError):
+        pass
 
 
 def agent_payload(agent) -> dict:

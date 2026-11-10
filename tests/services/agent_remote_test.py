@@ -69,6 +69,76 @@ class NetworkEndpointTest(unittest.TestCase):
         self.assertIsNone(follower.follow(client.report(1, "term", "t", machine="laptop")))
 
 
+class ForwarderTargetTest(unittest.TestCase):
+    """The forwarder's target file, and a hook that follows it (no --host)."""
+
+    def _path(self):
+        import os
+        import tempfile
+        d = tempfile.mkdtemp()
+        self.addCleanup(__import__("shutil").rmtree, d, True)
+        return os.path.join(d, "target.json")
+
+    def test_write_read_clear(self):
+        from polyhost.services.agents import remote
+        path = self._path()
+        self.assertIsNone(remote.read_forwarder_target(path))           # no file
+        remote.write_forwarder_target("desk", 50163, None, "laptop", path=path)
+        got = remote.read_forwarder_target(path)
+        self.assertEqual((got["host"], got["port"], got["machine"]), ("desk", 50163, "laptop"))
+        # The forwarder that wrote it is gone: ignored.
+        self.assertIsNone(remote.read_forwarder_target(path, is_alive=lambda pid: False))
+        remote.write_forwarder_target("other", None, None, "laptop", path=path)
+        self.assertEqual(remote.read_forwarder_target(path)["host"], "other")
+        remote.clear_forwarder_target(path)
+        self.assertIsNone(remote.read_forwarder_target(path))
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write("{not json")
+        self.assertIsNone(remote.read_forwarder_target(path))
+
+    def test_hook_reports_to_the_forwarders_target(self):
+        import argparse
+        import io
+        import json
+        import os
+        import socket
+        import unittest.mock as mock
+        from polyhost.cli import polyctl
+        from polyhost.server.window_report_server import WindowReportServer
+        from polyhost.services.agents import remote
+        got = []
+
+        def on_agents(params):
+            got.append(sanitize_report(params))
+            return True, None
+
+        s = socket.socket()
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+        s.close()
+        server = WindowReportServer(lambda *a, **k: (True, {}), "0.0.1", _NullLog(),
+                                    bind_host="127.0.0.1", port=port, authkey=b"k",
+                                    on_agents_report=on_agents)
+        server.start()
+        self.addCleanup(server.stop)
+        path = self._path()
+        keyfile = path + ".key"
+        with open(keyfile, "wb") as fh:
+            fh.write(b"k\n")
+        remote.write_forwarder_target("127.0.0.1", port, keyfile, "laptop", path=path)
+        args = argparse.Namespace(vendor="claude-code", event=None, host=None,
+                                  authkey_file=None,
+                                  payload=json.dumps({"session_id": "s1", "cwd": "/w/r",
+                                                      "hook_event_name": "Stop"}))
+        with mock.patch.object(remote, "forwarder_target_path", lambda: path), \
+                mock.patch("sys.stdin", io.StringIO("")):
+            self.assertEqual(polyctl._agents_hook_main(args), 0)
+        self.assertEqual(len(got), 1)
+        self.assertEqual((got[0]["session_id"], got[0]["state"], got[0]["machine"]),
+                         ("s1", "done", "laptop"))
+        os.remove(path)
+
+
 class SanitizeTest(unittest.TestCase):
     def test_bounds_and_refusals(self):
         r = sanitize_report({"vendor": "claude-code", "session_id": "s" * 500,

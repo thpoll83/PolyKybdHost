@@ -117,6 +117,9 @@ class PolyForwarder(QApplication):
         self._report_port = report_port
         self._report_session = None
         self._report_authkey = None
+        self._report_authkey_file = (os.path.abspath(report_authkey_file)
+                                     if report_authkey_file else None)
+        self._agent_target = None     # the host last written for this machine's hooks
 
         # This machine's OS, forwarded alongside the active window so the keyboard
         # reflects the OS of the computer you are working on (not just the one it is
@@ -471,6 +474,7 @@ class PolyForwarder(QApplication):
             # machine, and a stale connection would keep serving the old one.
             if self._report_session is not None:
                 self._report_session.close()
+            self._note_agent_target(None)
             return self._note_send_failure("no host to report to")
         ident = self._identity_for(name)
         try:
@@ -479,6 +483,7 @@ class PolyForwarder(QApplication):
                 names=ident.get("names"), icon_key=ident.get("icon_key"),
                 machine=getattr(self, "_agent_machine", None))
             self._follow_agent_relay(result)
+            self._note_agent_target(host)
             # ⚠️ The RECEIVER decides, and it is asked on every report. See
             # RemoteHandler._note_identity for why a sender-side "already sent"
             # flag cannot be trusted: its daemon restarts, --host-file repoints
@@ -525,6 +530,25 @@ class PolyForwarder(QApplication):
             return True
         except Exception as e:
             return self._note_send_failure("RPC to %s: %s" % (host, e))
+
+    def _note_agent_target(self, host):
+        """Tell this machine's agent hooks where to report: the host this forwarder
+        reached last (services/agents/remote.py). Rewritten only when it changes,
+        so a --host-file that points elsewhere moves the hooks with it. Never
+        raises: window reporting must not depend on it."""
+        if host == self._agent_target:
+            return
+        try:
+            from polyhost.services.agents import remote
+            if host:
+                remote.write_forwarder_target(host, self._report_port,
+                                              self._report_authkey_file,
+                                              getattr(self, "_agent_machine", None))
+            else:
+                remote.clear_forwarder_target()
+            self._agent_target = host
+        except Exception as e:  # noqa: BLE001 - see the docstring
+            self.log.warning("Could not write the agent hooks' target: %s", e)
 
     def _follow_agent_relay(self, result):
         """A raise for one of this machine's agents, and the heartbeat speed, from a
@@ -1009,6 +1033,7 @@ class PolyForwarder(QApplication):
         self.is_closing = True
         if self._report_session is not None:
             self._report_session.close()
+        self._note_agent_target(None)
         self._url_source.close()
         # Tear the tray icon down before the loop exits so a re-exec (update
         # restart) doesn't leave a stale icon behind / a doubled tray.
