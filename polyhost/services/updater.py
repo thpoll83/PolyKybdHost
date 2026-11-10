@@ -217,16 +217,31 @@ def is_build_only(rel: str, is_dir: bool = False) -> bool:
 # the API ``body``) carry the human-readable "what's in this update" text through
 # to the confirmation dialogs. They default to "" so the web-fallback paths (which
 # can't cheaply fetch the body) and existing positional constructions still work.
-ReleaseInfo   = namedtuple("ReleaseInfo",   ["tag", "version", "tarball_url", "html_url", "published_at", "name", "notes"],
-                           defaults=("", ""))
+# ``notes_releases`` counts the releases ``notes`` covers: more than 1 when the
+# update skips releases and their notes were added (``_with_skipped_notes``).
+ReleaseInfo   = namedtuple("ReleaseInfo",   ["tag", "version", "tarball_url", "html_url", "published_at", "name", "notes", "notes_releases"],
+                           defaults=("", "", 1))
 # ``sig_url`` is the detached Ed25519 signature (``<bin>.sig``) the release
 # workflow uploads beside the image. It is LAST + defaulted so existing
 # positional constructions keep working, but it is not optional in practice:
 # without it FwUpDownloader hands hid_fw_up an image with no signature beside
 # it, the enforcing firmware treats a release build as an unsigned one, and the
 # menu flow stalls on the physical A/ACCEPT prompt.
-FwUpReleaseInfo = namedtuple("FwUpReleaseInfo", ["tag", "version", "bin_url", "uf2_url", "html_url", "published_at", "name", "notes", "sig_url"],
-                             defaults=("", "", ""))
+FwUpReleaseInfo = namedtuple("FwUpReleaseInfo", ["tag", "version", "bin_url", "uf2_url", "html_url", "published_at", "name", "notes", "sig_url", "notes_releases"],
+                             defaults=("", "", "", 1))
+
+
+def dialog_release_name(release) -> str:
+    """The release title for the confirm dialog's "What's new" heading.
+
+    Empty when the notes cover more than one release: each section then has
+    its own heading, and naming only the newest release over all of them would
+    be wrong. ``release.name`` itself always stays the newest release's title,
+    because the installer writes it into the release marker.
+    """
+    if getattr(release, "notes_releases", 1) > 1:
+        return ""
+    return getattr(release, "name", "") or ""
 
 # A firmware release that IS newer than the keyboard but carries no flashable
 # .bin asset — normally because its release build failed and never uploaded one
@@ -351,6 +366,89 @@ def _release_text_via_web(repo: str, tag: str, cached: Optional[dict] = None) ->
         lines = lines[1:]
     out["notes"] = "\n".join(lines).strip("\n")
     return out
+
+
+_RELEASES_API = "https://api.github.com/repos/{repo}/releases"
+_RELEASES_PAGE = 100   # GitHub's maximum page size for the releases list
+
+
+def _skipped_releases(repo: str, current: Version, latest: Version) -> list:
+    """Published releases strictly between ``current`` and ``latest``, newest first.
+
+    Each release's notes cover only what merged since the previous release, so
+    a user who jumps from 1.10.2 to 1.11.3 also needs the notes of 1.11.0 and
+    1.11.2. Drafts and prereleases are skipped: ``releases/latest`` never
+    offers them either. Pages are read until a page holds no release above
+    ``current``, or the list ends. Returns ``[{"tag", "name", "notes"}]``;
+    raises ``requests.RequestException`` or ``ValueError`` on failure.
+    """
+    found = {}             # tag -> (version, release); a tag seen twice counts once
+    page = 1
+    while True:
+        resp = requests.get(_RELEASES_API.format(repo=repo),
+                            params={"per_page": _RELEASES_PAGE, "page": page},
+                            headers={"User-Agent": USER_AGENT,
+                                     "Accept": "application/vnd.github+json"},
+                            timeout=HTTP_TIMEOUT)
+        if resp.status_code != 200:
+            raise ValueError(f"HTTP {resp.status_code}")
+        items = resp.json()
+        if not isinstance(items, list):
+            raise ValueError("releases list is not a list")
+        page_has_newer = False
+        for rel in items:
+            if not isinstance(rel, dict):
+                raise ValueError("release entry is not an object")
+            if rel.get("draft") or rel.get("prerelease"):
+                continue
+            tag = rel.get("tag_name", "")
+            if not isinstance(tag, str):
+                continue
+            try:
+                ver = Version(_version_from_tag(tag))
+            except InvalidVersion:
+                continue
+            if ver > current:
+                page_has_newer = True
+                if ver < latest:
+                    found[tag] = (ver, {"tag": tag, "name": str(rel.get("name") or ""),
+                                        "notes": str(rel.get("body") or "")})
+        # The list is ordered by creation date, not by version, so an old
+        # version can sit among newer ones. Stop at the first page that holds
+        # nothing newer than the installed version.
+        if not page_has_newer or len(items) < _RELEASES_PAGE:
+            break
+        page += 1
+    ordered = sorted(found.values(), key=lambda pair: pair[0], reverse=True)
+    return [rel for _ver, rel in ordered]
+
+
+def _with_skipped_notes(repo: str, current: Version, latest: Version,
+                        tag: str, name: str, notes: str) -> tuple:
+    """``(notes, count)`` for the confirm dialog, covering every skipped release.
+
+    When releases lie between ``current`` and ``latest``, the notes become one
+    section per release, newest first, each headed by its release title, and
+    ``count`` is the number of sections (see :func:`dialog_release_name`).
+    With no release in between, or when the list cannot be read, the newest
+    release's own notes are returned unchanged with ``count`` 1.
+    """
+    try:
+        skipped = _skipped_releases(repo, current, latest)
+    except (requests.RequestException, ValueError) as e:
+        log.info("Could not read the releases between %s and %s of %s: %s",
+                 current, latest, repo, e)
+        return notes, 1
+    if not skipped:
+        return notes, 1
+    sections = []
+    for rel in [{"tag": tag, "name": name, "notes": notes}] + skipped:
+        title = rel["name"].strip() or rel["tag"]
+        body = rel["notes"].strip()
+        sections.append(f"# {title}\n\n{body}" if body else f"# {title}")
+    log.info("Update notes cover %d release(s) from %s to %s",
+             len(sections), current, latest)
+    return "\n\n".join(sections), len(sections)
 
 
 def parse_asset_urls(html: str) -> list:
@@ -506,6 +604,9 @@ def check_latest() -> Optional[ReleaseInfo]:
             if cached_ver and Version(cached_ver) > _current_version():
                 log.info("Update check (cached): new version available: %s -> %s",
                          __version__, cached_ver)
+                notes, notes_releases = _with_skipped_notes(
+                    HOST_REPO, _current_version(), Version(cached_ver), host["tag"],
+                    host.get("name", ""), host.get("notes", ""))
                 return ReleaseInfo(
                     tag=host["tag"],
                     version=cached_ver,
@@ -513,7 +614,8 @@ def check_latest() -> Optional[ReleaseInfo]:
                     html_url=host.get("html_url", ""),
                     published_at=host.get("published_at", ""),
                     name=host.get("name", ""),
-                    notes=host.get("notes", ""),
+                    notes=notes,
+                    notes_releases=notes_releases,
                 )
         except (KeyError, InvalidVersion) as e:
             log.warning("Corrupt ETag cache for host update — discarding: %s", e)
@@ -566,12 +668,15 @@ def check_latest() -> Optional[ReleaseInfo]:
         return None
 
     log.info("Update check: new version available: %s -> %s", __version__, latest)
+    notes, notes_releases = _with_skipped_notes(HOST_REPO, _current_version(), latest,
+                                                tag, rel_name, notes)
     return ReleaseInfo(tag=tag, version=str(latest), tarball_url=tarball_url,
                        html_url=html_url, published_at=published_at,
-                       name=rel_name, notes=notes)
+                       name=rel_name, notes=notes, notes_releases=notes_releases)
 
 
-def check_fw_latest(current_version: str) -> Optional[FwUpCheckResult]:
+def check_fw_latest(current_version: str,
+                    skipped_notes: bool = True) -> Optional[FwUpCheckResult]:
     """Return FwUpReleaseInfo if the latest firmware release is strictly newer; else None.
 
     Uses ETag caching — 304 Not Modified responses don't count against the rate limit.
@@ -580,6 +685,9 @@ def check_fw_latest(current_version: str) -> Optional[FwUpCheckResult]:
     exists but ships no flashable .bin (a failed release build). Callers must check
     ``isinstance(result, FwUpReleaseInfo)`` before treating it as flashable —
     FwUpBlocked is truthy but must never reach the flash prompt.
+    ``skipped_notes`` adds the notes of every release between ``current_version``
+    and the latest one (one more API request per page of 100 releases); pass
+    False when nobody reads the notes.
     """
     try:
         current = Version(current_version.lstrip("vV"))
@@ -623,6 +731,11 @@ def check_fw_latest(current_version: str) -> Optional[FwUpCheckResult]:
                                        reason="no_bin_asset")
                 log.info("Firmware update check (cached): new version available: %s -> %s",
                          current_version, cached_ver)
+                notes, notes_releases = fw.get("notes", ""), 1
+                if skipped_notes:
+                    notes, notes_releases = _with_skipped_notes(
+                        FW_REPO, current, Version(cached_ver), fw["tag"],
+                        fw.get("name", ""), notes)
                 return FwUpReleaseInfo(
                     tag=fw["tag"],
                     version=cached_ver,
@@ -631,7 +744,8 @@ def check_fw_latest(current_version: str) -> Optional[FwUpCheckResult]:
                     html_url=fw.get("html_url", ""),
                     published_at=fw.get("published_at", ""),
                     name=fw.get("name", ""),
-                    notes=fw.get("notes", ""),
+                    notes=notes,
+                    notes_releases=notes_releases,
                     # .get, not [] — a cache written before signatures were
                     # plumbed through has no sig_url, and the ETag means every
                     # repeat check lands in THIS branch, so a KeyError here
@@ -701,9 +815,14 @@ def check_fw_latest(current_version: str) -> Optional[FwUpCheckResult]:
                            reason="no_bin_asset")
 
     log.info("Firmware update check: new version available: %s -> %s", current_version, latest)
+    notes_releases = 1
+    if skipped_notes:
+        notes, notes_releases = _with_skipped_notes(FW_REPO, current, latest, tag,
+                                                    rel_name, notes)
     return FwUpReleaseInfo(tag=tag, version=str(latest), bin_url=bin_url,
                            uf2_url=uf2_url or "", html_url=html_url, published_at=published_at,
-                           name=rel_name, notes=notes, sig_url=sig_url or "")
+                           name=rel_name, notes=notes, sig_url=sig_url or "",
+                           notes_releases=notes_releases)
 
 
 def _tree_rel(member_name: str) -> str:
@@ -1799,7 +1918,7 @@ class FwUf2Downloader(threading.Thread):
             # against 0: every published release is newer. Its log line will read
             # "0 -> <version>"; this one says why.
             log.info("Firmware recovery: looking up the newest release's .uf2.")
-            release = check_fw_latest("0")
+            release = check_fw_latest("0", skipped_notes=False)
             if release is None:
                 raise UpdateCheckError("no firmware release found")
             page = getattr(release, "html_url", "") or page

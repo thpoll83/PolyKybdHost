@@ -96,7 +96,8 @@ from polyhost._version import __version__, __protocol__
 
 from polyhost.services.updater import (
     UpdateChecker, UpdateInstaller, FwUpDownloader, discard_fw_download,
-    AUTO_CHECK_INTERVAL_S, claim_automatic_check, fix_commands_from_message)
+    AUTO_CHECK_INTERVAL_S, claim_automatic_check, fix_commands_from_message,
+    dialog_release_name)
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
 from polyhost.gui.split_link_dialog import show_split_link_help
 from polyhost.gui.progress_dialog import StableProgressDialog
@@ -2881,7 +2882,7 @@ class PolyHost(QApplication):
         if not confirm_update(_("Update PolyKybdHost"), message,
                               notes=getattr(release, "notes", ""),
                               html_url=getattr(release, "html_url", ""),
-                              release_name=getattr(release, "name", ""),
+                              release_name=dialog_release_name(release),
                               question=_("Download, install, and restart now?")):
             return
         self._run_update_installer(release)
@@ -3303,7 +3304,7 @@ class PolyHost(QApplication):
         if not confirm_update(_("Update PolyKybd Firmware"), message,
                               notes=getattr(release, "notes", ""),
                               html_url=getattr(release, "html_url", ""),
-                              release_name=getattr(release, "name", ""),
+                              release_name=dialog_release_name(release),
                               question=_("Download and flash now?")):
             return
         self._run_fw_up_downloader(release)
