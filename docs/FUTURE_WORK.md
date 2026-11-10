@@ -269,6 +269,26 @@ shortcuts. That cap had no measurement behind it. The one limit now is 600 disti
 images per switch, enforced in the send path; see the comment at the top of
 `shortcut_overlays.py`.)
 
+---
+
+## Steno (Plover) support and steno macros
+
+**Status:** designed, not built (2026-11-10). Steno support through Plover's HID
+protocol (QMK `PLOVER_HID_ENABLE`), a steno layer with its own keycap legends, and
+**steno macros**: keys that press a stored chord and show their own label,
+configured in the host. The full plan, with the measured EEPROM budget, the
+rendered layer and the open decisions, is in
+[`steno-macros-plan.md`](steno-macros-plan.md).
+
+**Why it waits.** Nobody on the project uses steno, so the layout and the macro
+count cannot be judged yet. The serial steno protocols are not an option, because
+the bulk pipe uses the board's one virtual serial port.
+
+**What would settle it.** A steno user reviews the layout images in the plan, or
+users ask for steno.
+
+---
+
 ## Overlays over the fast link
 
 **Status:** measured, not worth it (2026-10-21). The firmware image's CHUNK step
