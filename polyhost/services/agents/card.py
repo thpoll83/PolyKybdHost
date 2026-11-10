@@ -1,14 +1,15 @@
 """Render an agent card: the 72x40 1-bit image a number key shows in AI mode.
 
     +------------------------------------+
-    |  [vendor mark]        [state icon] |   rows 1..23
-    |                                    |
-    |  headline, one line, centred       |   rows 27..38
+    | [lower half of mark]  [state icon] |   rows 0..15
+    |  headline, up to two lines,        |
+    |  centred                           |   rows 15..39
     +------------------------------------+
 
-No state word: the icon says it (first hardware test, 2026-11-10). Text is
-Pillow's bundled sans font (Aileron) drawn without anti-aliasing, not the old
-serif bitmap face.
+Only the lower half of the vendor mark shows, as a hint at the top edge, so the
+headline gets two lines in size 11 (card experiments, 2026-11-10: variant L for
+the mark and the font, M for the 16 px state icon). No state word: the icon says
+it. Text is Pillow's bundled sans font (Aileron) drawn without anti-aliasing.
 
 The result is 360 bytes, the same packing as OverlayData.all_bytes (np.packbits,
 row-major, MSB first), uploaded with cmd 46 straight into a pool slot.
@@ -23,10 +24,11 @@ from polyhost.services.agents.model import AgentState, vendor
 log = logging.getLogger("PolyHost")
 
 PANEL_W, PANEL_H = 72, 40
-MARK_BOX = 22
-ICON = 20
-HEADLINE_Y = 26
-FONT_SIZE = 10
+MARK_BOX = 26          # the mark is rendered at this size; its lower half shows
+ICON = 16              # state icon height and width
+FONT_SIZE = 11
+LINE_PITCH = 12
+TEXT_TOP = 15          # first of two lines; one line is centred in rows 15..39
 _FONTS = {}
 
 
@@ -64,14 +66,36 @@ def _text_centred(draw, text, y, size=FONT_SIZE):
     draw.text(((PANEL_W - (box[2] - box[0])) // 2 - box[0], y), text, font=_font(size), fill=1)
 
 
-def fit_text(text: str, width: int = PANEL_W - 2) -> str:
+def fit_text(text: str, width: int = PANEL_W - 2, size: int = FONT_SIZE) -> str:
     """Cut `text` to what fits `width` pixels in the card font, with a trailing '.'."""
     text = " ".join((text or "").split())
-    if _measure(text)[2] <= width:
+    if _measure(text, size)[2] <= width:
         return text
-    while text and _measure(text + ".")[2] > width:
+    while text and _measure(text + ".", size)[2] > width:
         text = text[:-1]
     return text.rstrip() + "."
+
+
+def wrap_text(text: str, max_lines: int = 2, width: int = PANEL_W - 2,
+              size: int = FONT_SIZE) -> list[str]:
+    """`text` in at most `max_lines` lines of `width` pixels. Lines break after a
+    space, '-', '_', '/' or '.', never inside a word; the last line is cut with a
+    trailing '.' when the rest does not fit."""
+    import re
+    text = " ".join((text or "").split())
+    tokens = [t for t in re.findall(r"[^ \-_/.]*[\-_/.]?(?: |$)?", text) if t]
+    lines, cur = [], ""
+    for tok in tokens:
+        if not cur or _measure((cur + tok).strip(), size)[2] <= width:
+            cur += tok
+        else:
+            lines.append(cur.strip())
+            cur = tok
+    if cur.strip():
+        lines.append(cur.strip())
+    if len(lines) > max_lines:
+        lines = lines[:max_lines - 1] + [" ".join(lines[max_lines - 1:])]
+    return [fit_text(line, width, size) for line in lines]
 
 
 class VendorMarks:
@@ -113,10 +137,15 @@ class VendorMarks:
                 mask = app_icons.render_overlay(path, box=MARK_BOX)
                 if mask is not None:
                     # render_overlay centres the mark in the full 40-row panel; keep
-                    # only its ink rows, so the card places it at the top.
+                    # its ink box, then only the lower half: the card shows that
+                    # half at the top edge.
                     mask = mask[:, PANEL_W - MARK_BOX:]
                     rows = mask.any(1).nonzero()[0]
-                    return mask[rows[0]:rows[-1] + 1] if len(rows) else None
+                    cols = mask.any(0).nonzero()[0]
+                    if not len(rows):
+                        return None
+                    mask = mask[rows[0]:rows[-1] + 1, cols[0]:cols[-1] + 1]
+                    return mask[mask.shape[0] - (mask.shape[0] + 1) // 2:]
             except Exception as e:  # noqa: BLE001 - cosmetic
                 log.debug("Agent mark %s for %s failed: %s", slug, vid, e)
         return None
@@ -146,14 +175,13 @@ _STATE_ICONS = {}
 
 
 def _state_icon(state):
-    """The 19x19 mask for a state (services/agents/icons.py), or None."""
+    """The ICON x ICON mask for a state (services/agents/icons.py), or None."""
     from polyhost.services.agents import icons
     if not _STATE_ICONS:
-        _STATE_ICONS.update({
+        _STATE_ICONS.update({k: icons.scaled(v, ICON) for k, v in {
             AgentState.WORKING: icons.working(), AgentState.WAITING: icons.waiting(),
             AgentState.DONE: icons.done(), AgentState.IDLE: icons.idle(),
-            AgentState.STALE: icons.stale(),
-        })
+            AgentState.STALE: icons.stale()}.items()})
     return _STATE_ICONS.get(state)
 
 
@@ -172,15 +200,22 @@ def render_card(vendor_id: str, state: AgentState, headline: str, marks: VendorM
     draw = _draw(img)
     mask = marks.get(vendor_id) if marks is not None else None
     if mask is None:
-        draw.text((8, 6), vendor(vendor_id).short[:3], font=_font(12), fill=1)
-    _text_centred(draw, fit_text(headline), HEADLINE_Y)
+        draw.text((6, 1), vendor(vendor_id).short[:3], font=_font(10), fill=1)
+    lines = wrap_text(headline)
+    y = TEXT_TOP if len(lines) > 1 else TEXT_TOP + LINE_PITCH // 2
+    for k, line in enumerate(lines):
+        _text_centred(draw, line, y + k * LINE_PITCH, FONT_SIZE)
     canvas = np.array(img, dtype=bool)
     if mask is not None:
-        _paste(canvas, np.asarray(mask, dtype=bool), 8, 1)
+        _paste(canvas, np.asarray(mask, dtype=bool), 6, 0)
     icon = _state_icon(state)
     if icon is not None:
-        _paste(canvas, icon, PANEL_W - icon.shape[1] - 8, 2)
+        _paste(canvas, icon, PANEL_W - icon.shape[1] - 4, 0)
     return canvas
+
+
+MIC_SCALE = 1.7
+WAITING_RADIUS = 16
 
 
 def render_dictation_card():
@@ -188,25 +223,30 @@ def render_dictation_card():
     import numpy as np
     from polyhost.services.agents import icons
     canvas = np.zeros((PANEL_H, PANEL_W), dtype=bool)
-    mic = icons.microphone()
+    mic = icons.microphone(MIC_SCALE)
     _paste(canvas, mic, (PANEL_W - mic.shape[1]) // 2, (PANEL_H - mic.shape[0]) // 2)
     return canvas
 
 
 def render_next_waiting_card(waiting: int):
-    """The '+' key in AI mode: go to the next agent that waits. The waiting icon,
-    an arrow and how many wait, centred vertically, no text line."""
+    """The '+' key in AI mode: go to the next agent that waits. The waiting icon
+    and how many wait, both large, no text line and no arrow."""
     import numpy as np
     from PIL import Image
     from polyhost.services.agents import icons
+    icon = icons.waiting_disk(WAITING_RADIUS)
     img = Image.new("1", (PANEL_W, PANEL_H), 0)
     count = str(waiting) if waiting < 100 else "99+"
-    _draw(img).text((54, 12), count, font=_font(14), fill=1)
+    room = PANEL_W - icon.shape[1] - 3 - 6
+    size = 30
+    while size > 10 and _measure(count, size)[2] - _measure(count, size)[0] > room:
+        size -= 2
+    box = _measure(count, size)
+    _draw(img).text((PANEL_W - 3 - (box[2] - box[0]) - box[0],
+                     (PANEL_H - (box[3] - box[1])) // 2 - box[1]), count,
+                    font=_font(size), fill=1)
     canvas = np.array(img, dtype=bool)
-    icon = icons.waiting()
-    _paste(canvas, icon, 8, (PANEL_H - icon.shape[0]) // 2)
-    arrow = icons.right_arrow()
-    _paste(canvas, arrow, 31, (PANEL_H - arrow.shape[0]) // 2)
+    _paste(canvas, icon, 3, (PANEL_H - icon.shape[0]) // 2)
     return canvas
 
 

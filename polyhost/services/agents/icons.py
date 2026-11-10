@@ -120,28 +120,57 @@ def working():
     return _stamp(mask, _ARROW_HEAD, _C, 0)
 
 
-def microphone():
-    """A microphone: capsule, U-shaped holder, stand and foot."""
+def microphone(scale: float = 1.0):
+    """A microphone: capsule, U-shaped holder, stand and foot, about 22 x 19 px
+    times `scale`, from distance tests at pixel centres."""
     import numpy as np
-    mask = np.zeros((SIZE + 3, SIZE), dtype=bool)
-    # Capsule: 7 wide, rounded top and bottom, rows 0..11.
-    for y in range(12):
-        for x in range(SIZE):
-            dx = x - _C
-            if abs(dx) <= 3:
-                if 3 <= y <= 8 or (y < 3 and dx * dx + (y - 3) ** 2 <= 12.25) \
-                        or (y > 8 and dx * dx + (y - 8) ** 2 <= 12.25):
-                    mask[y, x] = True
-    # Holder: the lower half of a ring around the capsule.
-    for y in range(6, 16):
-        for x in range(SIZE):
-            dx, dy = x - _C, y - 7
-            d2 = dx * dx + dy * dy
-            if dy >= 0 and 5.5 ** 2 < d2 <= 7.5 ** 2:
-                mask[y, x] = True
-    mask[15:19, _C - 1:_C + 1] = True     # stand
-    mask[19:21, _C - 4:_C + 5] = True     # foot
+    h, w = int(22 * scale), int(19 * scale)
+    mask = np.zeros((h, w), dtype=bool)
+    cx = (w - 1) / 2
+    r = 3.5 * scale                     # capsule half width
+    top, bottom = r, 11.5 * scale - r   # centres of its round ends
+    ring_y = 7 * scale
+    for y in range(h):
+        yy = y + 0.5
+        for x in range(w):
+            dx = x - cx
+            if abs(dx) <= r and (top <= yy <= bottom
+                                 or dx * dx + (yy - top) ** 2 <= r * r
+                                 or dx * dx + (yy - bottom) ** 2 <= r * r):
+                mask[y, x] = True       # capsule
+            d = (dx * dx + (yy - ring_y) ** 2) ** 0.5
+            if yy >= ring_y and 5.5 * scale < d <= 7.5 * scale:
+                mask[y, x] = True       # holder: the lower half of a ring
+    stand = max(2, round(2 * scale))
+    sx = int(round(cx - stand / 2 + 0.5))
+    mask[int(15 * scale):int(19 * scale), sx:sx + stand] = True
+    foot = int(9 * scale)
+    fx = int(round(cx - foot / 2 + 0.5))
+    mask[int(19 * scale):int(21 * scale) + 1, fx:fx + foot] = True
     return mask
+
+
+def waiting_disk(r: int):
+    """The waiting icon at radius `r`: a filled disk with '!' cut out."""
+    import numpy as np
+    n = 2 * r + 1
+    yy, xx = np.mgrid[0:n, 0:n]
+    mask = (xx - r) ** 2 + (yy - r) ** 2 <= (r + 0.5) ** 2
+    bar = max(3, r // 3) | 1
+    x0 = r - bar // 2
+    mask[int(r * 0.45):int(r * 1.25), x0:x0 + bar] = False
+    dot = int(r * 1.45)
+    mask[dot:dot + bar, x0:x0 + bar] = False
+    return mask
+
+
+def scaled(mask, px: int):
+    """`mask` resampled to px x px (Lanczos, then a threshold), for the 16 px
+    state icons on the agent cards."""
+    import numpy as np
+    from PIL import Image
+    img = Image.fromarray(np.asarray(mask, dtype=np.uint8) * 255).resize((px, px), Image.LANCZOS)
+    return np.array(img) >= 110
 
 
 def right_arrow(width=13):
