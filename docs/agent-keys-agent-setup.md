@@ -64,6 +64,19 @@ If your hook system has no event for a permission prompt (Antigravity, Copilot
 CLI, Cursor), still hook PreToolUse and PostToolUse. The host shows "waiting" when a
 PreToolUse has no PostToolUse after 5 s.
 
+## The quick way
+
+`polyctl agents hooks install claude-code` (or `codex`, `copilot`) writes the hooks
+into the agent's own config file. It shows the diff and asks before it writes,
+keeps hooks you wrote yourself, keeps a copy as `<file>.polykybd.bak`, and puts the
+absolute path of `polyctl` into each command, so the agent's shell needs no PATH
+entry. `--dry-run` only shows the diff; `polyctl agents hooks uninstall <vendor>`
+removes them again. No PolyKybdHost needs to be running.
+
+For Claude Code it writes a shorter set than the block below: no `PreToolUse`,
+because `PermissionRequest` and `Notification` already report "waiting". Each hook
+call starts Python (about 0.3 s), so this removes that delay before every tool call.
+
 ## Claude Code (tested format)
 
 Merge this into `~/.claude/settings.json` (all projects) or `.claude/settings.json`

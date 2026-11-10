@@ -515,6 +515,41 @@ def _cmd_agents(client, args):
     return 2
 
 
+def _cmd_agents_hooks(_client, args):
+    """`polyctl agents hooks install|uninstall <vendor>`: edit the agent's own config.
+    Local: needs no running host. Shows the diff and asks before writing."""
+    import difflib
+    import os
+    from polyhost.services.agents import hook_install
+    changes = hook_install.plan(args.vendor, install=args.hooks_cmd == "install")
+    if args.vendor == "codex" and args.hooks_cmd == "install" and not changes:
+        conflict = hook_install.codex_conflict(os.path.expanduser("~"))
+        if conflict:
+            print(conflict, file=sys.stderr)
+            return 1
+    if not changes:
+        print("Nothing to change: the hooks are already as they should be.")
+        return 0
+    for change in changes:
+        diff = difflib.unified_diff(change.before.splitlines(), change.after.splitlines(),
+                                    change.path + " (now)", change.path + " (new)",
+                                    lineterm="")
+        print("\n".join(diff) or f"(remove {change.path})")
+    if args.dry_run:
+        return 0
+    if not args.yes:
+        answer = input("Write these changes? A copy of each file is kept as "
+                       "<file>.polykybd.bak. [y/N] ")
+        if answer.strip().lower() not in ("y", "yes"):
+            print("Nothing written.")
+            return 1
+    for path in hook_install.apply(changes):
+        print(f"wrote {path}")
+    if args.vendor == "claude-code":
+        print("Start a new Claude Code session (or run /hooks) to load the hooks.")
+    return 0
+
+
 def _read_hook_payload(args):
     """The hook's JSON: an argument (Codex `notify` passes it last) or stdin."""
     text = args.payload
@@ -1367,6 +1402,14 @@ def build_parser():
                       help="the event name, for agents whose hook JSON does not name it "
                            "(Copilot CLI: --event agentStop)")
     p_agents.set_defaults(func=_cmd_agents)
+    p_ahs = agents_sub.add_parser(
+        "hooks", help="write or remove the PolyKybd hooks in an agent's own config "
+                      "(claude-code, codex, copilot); shows the diff first")
+    p_ahs.add_argument("hooks_cmd", choices=("install", "uninstall"))
+    p_ahs.add_argument("vendor", choices=("claude-code", "codex", "copilot"))
+    p_ahs.add_argument("--dry-run", action="store_true", help="only show the diff")
+    p_ahs.add_argument("--yes", action="store_true", help="write without asking")
+    p_ahs.set_defaults(func=_cmd_agents_hooks)
 
     p_glyph_script = sub.add_parser(
         "glyph-script", help="get or set the glyph-script override (firmware v9+)")
@@ -1736,8 +1779,11 @@ def _is_offline_command(args) -> bool:
 
 
 def _is_local_command(args) -> bool:
-    """True for commands that never talk to the host: ``shell-integration``
-    and ``editor-plugins`` edit the user's own files and have nothing to ask it."""
+    """True for commands that never talk to the host: ``shell-integration``,
+    ``editor-plugins`` and ``agents hooks`` edit the user's own files and have
+    nothing to ask it."""
+    if getattr(args, "command", None) == "agents":
+        return getattr(args, "agents_cmd", None) == "hooks"
     return getattr(args, "command", None) in ("shell-integration", "editor-plugins")
 
 
