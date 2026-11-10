@@ -251,7 +251,8 @@ def renumber_by_usage(selected: dict[bytes, str], usage: dict[bytes, int],
     the master has read the slave's (after boot, after a link drop), and the
     slave draws a fill from its OWN library. A slave still holding the old
     library then draws the wrong icon for a renumbered id, where append-only
-    ids only ever miss. docs/fontpack.md names the precondition. Live icons get ids 0..n-1 by (-apps, name, key); retired icons
+    ids only ever miss. Firmware 1.11.4+ refuses such fills; docs/fontpack.md
+    names the firmware the renumbering needs. Live icons get ids 0..n-1 by (-apps, name, key); retired icons
     keep their entries and follow, in their old order. After this, new icons
     are appended as before."""
     frames_by_key = {_key(f): f for f in selected}

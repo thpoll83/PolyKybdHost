@@ -224,13 +224,15 @@ autocheck job, the retry/verify logic and `polyctl fontpack` are in
   the append-only rule once. Retired icons follow the live ones with their own pixels,
   and the builder stops if a shipped frame does not match its key in `icon_ids.yaml`.
   Run it once, then rebuild without it again.
-  ⚠️ **Do not run it before the slave can refuse a fill from another library.** The
-  host fills only when the keyboard reports exactly the shipped `content_version`, but
-  until the master has read the slave's versions that number is the master's alone,
-  and each half draws a cmd 42 fill from its OWN library. With append-only ids a slave
-  on the old library only misses a new id and NACKs; with renumbered ids it draws the
-  WRONG icon for an old one. The firmware has to carry the master's icon-library
-  version in the fill sync and the slave refuse a mismatch first.
+  ⚠️ **It needs firmware 1.11.5 (`PolyKybd-fw-v1.11.5`) or later on the keyboards
+  that matter.** Each half draws a cmd 42 fill from its OWN library, and the version
+  GET_ID reports is the master's alone until the master has read the slave's. With
+  append-only ids a slave on the old library only misses a new id; with renumbered
+  ids it draws the WRONG icon for an old one. Since 1.11.4 the master refuses a fill
+  until it has read the slave's icon-library version and it equals its own (qmk#423),
+  and since 1.11.5 halves with different versions read as out of date, so the host
+  flashes both (qmk#426). A keyboard on older firmware keeps the window: up to about
+  a second after link-up, and only when a library flash missed the slave.
   **An icon enters the library only if more than one app uses it** (maintainer's
   rule, 2026-10-09), and the library never decides what a key shows. The send
   path's hit test is the image BYTES, whatever made them (a template, a generic
