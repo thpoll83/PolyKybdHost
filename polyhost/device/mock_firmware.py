@@ -125,8 +125,8 @@ CMD_MIN_PROTOCOL: dict[int, int] = {
     Cmd.FILL_POOL_FROM_ICON.value: 20,
     Cmd.REBOOT.value: 22,
     Cmd.TAP_TERMS.value: 29,
-    Cmd.AI.value: 30,
-    Cmd.AI_CARD.value: 30,
+    Cmd.AI.value: 31,
+    Cmd.AI_CARD.value: 31,
     fw.CMD_FW_UP_BEGIN: 0,
     fw.CMD_FW_UP_CHUNK: 0,
     fw.CMD_FW_UP_COMMIT: 0,
@@ -347,7 +347,7 @@ class MockFirmware:
         self.crash_record = None  # the master's archived 48-byte record (cmd 39)
         self.crash_fresh = False
         self.state_generation = 0
-        # Agent keys (cmd 45/46, v30): RAM only, as on the keyboard.
+        # Agent keys (cmd 45/46, v31): RAM only, as on the keyboard.
         self.ai_mode = False
         self.ai_states = [0] * 10
         self.ai_slots = [0xFFFF] * 12

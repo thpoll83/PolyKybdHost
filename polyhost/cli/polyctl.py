@@ -1401,7 +1401,7 @@ def build_parser():
     p_tap_terms.set_defaults(func=_cmd_tap_terms)
 
     p_agents = sub.add_parser(
-        "agents", help="AI agent sessions shown on the number row (firmware v30+)")
+        "agents", help="AI agent sessions shown on the number row (firmware v31+)")
     agents_sub = p_agents.add_subparsers(dest="agents_cmd", required=True)
     p_al = agents_sub.add_parser("list", help="the agents the host knows, by page and key")
     p_al.add_argument("--json", action="store_true")

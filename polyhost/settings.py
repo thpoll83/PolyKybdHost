@@ -180,7 +180,7 @@ DEFAULT_SETTINGS = {
         "shortcut_icons_enabled": True,
         "shortcut_icon_auto_fetch": True,
         # AI agents on the number row (docs/agent-registry-plan.md, firmware
-        # protocol v30+). Off by default: when on, the top 10 overlay pool slots
+        # protocol v31+). Off by default: when on, the top 10 overlay pool slots
         # are kept for the agent cards, from the next keyboard connect.
         "agents_enabled": False,
         # Also find agents from terminal window titles (not on macOS).

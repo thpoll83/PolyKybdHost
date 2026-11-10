@@ -424,7 +424,7 @@ class PolyKybdMock:
             self._auto_shift_ms = auto_shift_ms
         return True, self._tap_terms_now()
 
-    # Agent keys (cmd 45/46, v30+): answered by the emulated firmware over the
+    # Agent keys (cmd 45/46, v31+): answered by the emulated firmware over the
     # wire, so the mock keyboard's state is the firmware model's state.
     def _ai_call(self, name, *args):
         self._log_call(name, *args)

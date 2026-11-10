@@ -1,5 +1,5 @@
 """PolyCore drives the agent keys on the mock keyboard: the reserved pool slots,
-the push, a key press read back, and nothing sent to firmware older than v30."""
+the push, a key press read back, and nothing sent to firmware older than v31."""
 import threading
 import unittest
 import unittest.mock as mock
@@ -37,7 +37,7 @@ class AgentKeysCoreTest(unittest.TestCase):
         core.worker.run_sync("agents", core._agents_periodic, timeout=30)
 
     def test_push_and_press(self):
-        core = self._core(30)
+        core = self._core(31)
         fw = core.keeb.firmware
         self.assertEqual(core.device_mgr.primary.cache.capacity, 600)   # nothing reserved
         self.assertTrue(core._agents_active())
@@ -67,7 +67,7 @@ class AgentKeysCoreTest(unittest.TestCase):
         self.assertTrue(listing["active"])
 
     def test_old_firmware_gets_nothing(self):
-        core = self._core(29)
+        core = self._core(30)
         core.agents_report({"vendor": "codex", "session_id": "a", "state": "working"})
         self._pass(core)
         self.assertFalse(core._agents_active())
@@ -76,21 +76,21 @@ class AgentKeysCoreTest(unittest.TestCase):
     def test_remote_agents_need_their_own_opt_in(self):
         params = {"vendor": "codex", "session_id": "r1", "state": "waiting",
                   "machine": "laptop"}
-        core = self._core(30)                                    # agents on, remote off
+        core = self._core(31)                                    # agents on, remote off
         ok, msg = core.agents_report_remote(params)
         self.assertFalse(ok)
         self.assertIn("agents_remote_enabled", msg)
         self.assertEqual(core.agents_list()["agents"], [])
         self.assertEqual(core.agent_relay_for("laptop"), {})
-        core = self._core(30, agents_remote_enabled=True)
+        core = self._core(31, agents_remote_enabled=True)
         ok, _ = core.agents_report_remote(params)
         self.assertTrue(ok)
         self.assertEqual(core.agent_relay_for("laptop"), {"agents_fast": True})
-        core = self._core(30, agents_enabled=False, agents_remote_enabled=True)
+        core = self._core(31, agents_enabled=False, agents_remote_enabled=True)
         self.assertFalse(core.agents_report_remote(params)[0])
 
     def test_off_sends_nothing(self):
-        core = self._core(30, agents_enabled=False)
+        core = self._core(31, agents_enabled=False)
         core.agents_report({"vendor": "codex", "session_id": "a", "state": "working"})
         self._pass(core)
         self.assertFalse(core._agents_active())

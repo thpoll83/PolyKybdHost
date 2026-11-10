@@ -220,6 +220,7 @@ full wiring, the preview rendering and the label-measurement rules are in
   default timeout is 180 ms (QMK's 175 is off the grid). Caps Word needs no host
   side: it is a keycode (`CW_TOGG`) or both Shift keys.
 - **The agent keys (cmd 45 AI, cmd 46 AI_CARD, v30+, prototype)** put AI agent
+- **The agent keys (cmd 45 AI, cmd 46 AI_CARD, v31+, prototype)** put AI agent
   sessions on the number row: `PolyKybd.ai_query/ai_set_keys/ai_read_events/
   ai_upload_card` behind the `agent_keys` gate, driven by
   `services/agents/controller.py` from PolyCore's 1 s `agents` periodic. The states

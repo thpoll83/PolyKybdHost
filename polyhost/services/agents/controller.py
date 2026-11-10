@@ -1,4 +1,4 @@
-"""Put one page of agents on the keyboard's number row (HID cmd 45/46, v30+).
+"""Put one page of agents on the keyboard's number row (HID cmd 45/46, v31+).
 
 Runs on the HID worker thread (PolyCore's "agents" periodic). Pushes only what
 changed: a card is uploaded when its (vendor, state, headline, mark) changes, and

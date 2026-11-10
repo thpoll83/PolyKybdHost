@@ -168,7 +168,7 @@ SETTING_LABELS = {
 SETTING_DESCRIPTIONS = {
     "agents_enabled": N_(
         "Shows the state of AI coding agents on the number row and, while the AI key "
-        "is pressed, one card per agent. Needs keyboard firmware with protocol 30. "
+        "is pressed, one card per agent. Needs keyboard firmware with protocol 31. "
         "Takes effect at the next keyboard connect."),
     "agents_title_scan": N_(
         "Also finds agents that run in a terminal from the window title, without a "

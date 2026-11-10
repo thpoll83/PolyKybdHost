@@ -1,5 +1,5 @@
 """The agent registry, the hook and title adapters, the card, and the controller
-against the emulated firmware (cmd 45/46, protocol v30)."""
+against the emulated firmware (cmd 45/46, protocol v31)."""
 import unittest
 
 from polyhost.services.agents import hooks, registry as reg_mod

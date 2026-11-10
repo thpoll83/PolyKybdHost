@@ -2312,7 +2312,7 @@ class PolyCore(Observable):
 
     DEVICE_CALL_TIMEOUT = 5  # seconds for a bounded run_sync device command
 
-    # ---- AI agents on the number row (services/agents, cmd 45/46, v30+) --------
+    # ---- AI agents on the number row (services/agents, cmd 45/46, v31+) --------
 
     def _agent_card_cache(self):
         """The primary keyboard's MRU cache. The agent cards borrow pool slots from
@@ -2348,7 +2348,7 @@ class PolyCore(Observable):
         self._agent_titles.start()
 
     def _agents_active(self) -> bool:
-        """The keyboard side runs when the feature is on and the keyboard speaks v30."""
+        """The keyboard side runs when the feature is on and the keyboard speaks v31."""
         return (bool(self.poly_settings.get("agents_enabled"))
                 and self.connected and not self.paused
                 and self.keeb.supports("agent_keys"))

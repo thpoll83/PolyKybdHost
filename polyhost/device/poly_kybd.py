@@ -158,7 +158,7 @@ AUTO_SHIFT_MIN_PROTOCOL = 30
 # Minimum firmware PROTOCOL_VERSION for the agent keys (cmd 45 AI, cmd 46
 # AI_CARD): the number row shows AI agent states and, in AI mode, agent cards.
 # docs/agent-registry-plan.md.
-AGENT_KEYS_MIN_PROTOCOL = 30
+AGENT_KEYS_MIN_PROTOCOL = 31
 AGENT_KEY_COUNT = 10
 # Card slots: the 10 number keys, then '-' (dictation) and '+' (next waiting agent).
 AGENT_CARD_COUNT = 12
@@ -937,7 +937,7 @@ class PolyKybd:
             return False, "The keyboard refused that tap-hold timing"
         return True, self._parse_tap_terms(reply)
 
-    # ---- agent keys (cmd 45 / 46, v30+) ---------------------------------------
+    # ---- agent keys (cmd 45 / 46, v31+) ---------------------------------------
 
     def _agent_keys_refusal(self) -> str | None:
         if self.supports("agent_keys"):

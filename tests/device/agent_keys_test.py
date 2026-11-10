@@ -1,4 +1,4 @@
-"""cmd 45 (AI) and cmd 46 (AI_CARD), protocol v30: the wire bytes, the gate, the
+"""cmd 45 (AI) and cmd 46 (AI_CARD), protocol v31: the wire bytes, the gate, the
 CLOSED state range, and a round trip through the emulated firmware."""
 import unittest
 

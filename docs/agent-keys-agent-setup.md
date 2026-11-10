@@ -14,7 +14,7 @@ calls it. While the agent waits for a permission answer, the model is not runnin
 so an MCP tool cannot report "waiting".
 
 Requirements: PolyKybdHost from branch `ccr-821a0b53-8mu20l` (PolyKybdHost#763),
-keyboard firmware with protocol 30 (qmk_firmware#424), and the setting turned on:
+keyboard firmware with protocol 31 (qmk_firmware#424), and the setting turned on:
 
 ```
 polyctl settings set agents_enabled true

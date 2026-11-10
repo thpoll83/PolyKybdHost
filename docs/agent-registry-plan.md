@@ -1,7 +1,7 @@
 # Agent registry and the AI key: plan
 
 Status: prototype on branch `ccr-821a0b53-8mu20l` in PolyKybdHost and qmk_firmware,
-protocol 30. Not tested on a keyboard. Written 2026-11-10 against host 1.21.4 and
+protocol 31 (30 is Caps Word / Auto Shift, qmk#425). Not tested on a keyboard. Written 2026-11-10 against host 1.21.4 and
 firmware 1.11.3 (protocol 29).
 
 ## What the prototype has
@@ -254,7 +254,7 @@ sync struct size against `RPC_M2S_BUFFER_SIZE`.
 ### Protocol
 
 One new command, `45` AI (the next free id after 44), with sub-ops. The protocol
-version is whatever is next when it merges (30 today). Write it down only after the
+version is whatever is next when it merges (31 today). Write it down only after the
 firmware bump commit exists: #276 lost 17 to #278 in the same way.
 
 | Op | Request | Reply |

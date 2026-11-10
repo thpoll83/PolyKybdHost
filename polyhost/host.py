@@ -717,7 +717,7 @@ class PolyHost(QApplication):
         self.tap_terms_action.triggered.connect(self.open_tap_terms_dialog)
         self.menu.addAction(self.tap_terms_action)
 
-        # AI agents on the number row (services/agents, firmware v30+ for the keys).
+        # AI agents on the number row (services/agents, firmware v31+ for the keys).
         # The registry is host state, so the submenu works with no keyboard: the
         # switch, the agent list (a click raises the agent's window) and the hook
         # setup. Rebuilt from core.agents_list() each time it opens.
