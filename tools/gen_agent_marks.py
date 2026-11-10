@@ -43,11 +43,28 @@ def opencode():
     return _crop(_crop(_ink("opencode.png") > 0.5)[-ROWS:])
 
 
+# Aider's logo is "aider" in the Glass TTY VT220 font, which draws every dot row
+# as a dash with a dark line below it (scanlines). These 5 x 7 glyphs are that
+# font's letters on its dot grid; each dot row becomes one lit row and one dark.
+_VT220 = {
+    "a": [".....", ".....", ".###.", "....#", ".####", "#...#", ".####"],
+    "i": ["..#..", ".....", ".##..", "..#..", "..#..", "..#..", ".###."],
+    "d": ["....#", "....#", ".####", "#...#", "#...#", "#...#", ".####"],
+    "e": [".....", ".....", ".###.", "#...#", "#####", "#....", ".###."],
+    "r": [".....", ".....", "#.##.", ".#..#", ".#...", ".#...", ".#..."],
+}
+
+
 def aider():
-    """The whole 'Ai' frame at half size; its lines are 2 px, so they stay 1 px."""
-    m = _crop(_ink("aider.png") > 0.5)
-    h, w = (m.shape[0] // 2) * 2, (m.shape[1] // 2) * 2
-    return m[:h, :w].reshape(h // 2, 2, w // 2, 2).any(axis=(1, 3))
+    """'aider' in VT220 dots with scanlines, 13 x 29: Aider's own logo."""
+    word = "aider"
+    out = np.zeros((13, 6 * len(word) - 1), dtype=bool)
+    for i, ch in enumerate(word):
+        for row, line in enumerate(_VT220[ch]):
+            for col, dot in enumerate(line):
+                if dot == "#":
+                    out[2 * row, 6 * i + col] = True
+    return out
 
 
 def antigravity():
