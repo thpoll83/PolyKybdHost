@@ -110,6 +110,25 @@ class RegistryTest(unittest.TestCase):
         self.assertEqual([a.display_headline for a in self.r.agents()],
                          ["team-core2", "agent", "review"])
 
+    def test_an_exited_agent_process_frees_its_key(self):
+        alive = {100: True, 200: False}
+        r = AgentRegistry(clock=self.clock, is_alive=lambda pid: alive.get(pid, False))
+        r.report("claude-code", "a", "working", pid=100)
+        r.report("claude-code", "b", "working", pid=200)   # never seen alive
+        r.tick()
+        alive[100] = False
+        r.tick()
+        # 'a' was seen alive and exited: gone. 'b' never was: kept (wrong pid).
+        self.assertEqual([a.session_id for a in r.agents()], ["b"])
+
+    def test_agent_pid_skips_shells(self):
+        from polyhost.services.agents import procs
+        import os
+        # This test process is not a shell: the walk stops at once.
+        self.assertEqual(procs.agent_pid(os.getpid()), os.getpid())
+        self.assertTrue(procs.is_alive(os.getpid()))
+        self.assertFalse(procs.is_alive(0))
+
     def test_refuses_without_vendor_or_session(self):
         self.assertIsNone(self.r.report("", "a", "working"))
         self.assertIsNone(self.r.report("codex", "", "working"))

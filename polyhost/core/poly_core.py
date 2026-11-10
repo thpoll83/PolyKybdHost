@@ -2324,7 +2324,8 @@ class PolyCore(Observable):
         from polyhost.services.agents import dictation
         from polyhost.services.agents.raiser import raise_agent
         from polyhost.services.agents.titles import TitleScanner
-        self.agents = AgentRegistry()
+        from polyhost.services.agents.procs import is_alive
+        self.agents = AgentRegistry(is_alive=is_alive)
 
         def dictate():
             return dictation.send_shortcut(dictation.shortcut_for(

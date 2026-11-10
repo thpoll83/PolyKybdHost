@@ -49,6 +49,9 @@ class Agent:
     # 1, 2, ... when other agents would show the same headline (set by agents()),
     # 0 when this one is unique.
     dup_number: int = 0
+    # The registry has seen `pid` alive. Only then does its exit remove the entry:
+    # a pid that was never alive (a hook's short-lived shell) proves nothing.
+    pid_seen_alive: bool = False
 
     @property
     def key(self) -> tuple:
@@ -87,8 +90,12 @@ class Agent:
 
 
 class AgentRegistry:
-    def __init__(self, clock=time.monotonic, page_size: int = PAGE_SIZE):
+    def __init__(self, clock=time.monotonic, page_size: int = PAGE_SIZE, is_alive=None):
+        """`is_alive(pid)`: when given, tick() removes a hook-reported agent whose
+        process has exited (closed terminal, no SessionEnd), once it has seen that
+        process alive."""
         self._clock = clock
+        self._is_alive = is_alive
         self.page_size = page_size
         self._lock = threading.RLock()
         self._agents: dict[tuple, Agent] = {}
@@ -151,8 +158,9 @@ class AgentRegistry:
                                 ("machine", machine), ("window", window)):
                 if value:
                     setattr(agent, name, str(value))
-            if pid:
+            if pid and int(pid) != agent.pid:
                 agent.pid = int(pid)
+                agent.pid_seen_alive = False
             if (agent.state, agent.headline, agent.label) != before:
                 self.version += 1
             return agent.to_dict()
@@ -214,6 +222,13 @@ class AgentRegistry:
                         and idle_for >= FORGET_AFTER_S):
                     del self._agents[key]
                     changed = True
+                    continue
+                if self._is_alive is not None and agent.source == "hook" and agent.pid:
+                    if self._is_alive(agent.pid):
+                        agent.pid_seen_alive = True
+                    elif agent.pid_seen_alive:
+                        del self._agents[key]     # its process exited: closed terminal
+                        changed = True
             if changed:
                 self.version += 1
 

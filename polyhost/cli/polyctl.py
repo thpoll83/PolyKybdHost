@@ -574,7 +574,10 @@ def _agents_hook_main(args) -> int:
         report = interpret(payload, event=args.event or "")
         if report is None:
             return 0
-        report.update(vendor=args.vendor, pid=os.getppid(), surface="cli")
+        from polyhost.services.agents.procs import agent_pid
+        # The agent's own process, past the shell that runs this hook: the host
+        # removes the key when it exits (a closed terminal sends no SessionEnd).
+        report.update(vendor=args.vendor, pid=agent_pid(os.getppid()), surface="cli")
         # The session's own title (Claude Code), so two sessions in one folder are
         # told apart. Only the title is sent, never the transcript.
         title = transcript_title(payload.get("transcript_path"))
