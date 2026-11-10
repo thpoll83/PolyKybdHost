@@ -43,6 +43,8 @@ _EVENTS = {
     "permissionasked": (AgentState.WAITING, "posttool"),
     "permissionreplied": (AgentState.WORKING, "posttool"),
     "stop": (AgentState.DONE, "stop"),
+    "agentstop": (AgentState.DONE, "stop"),        # Copilot CLI
+    "erroroccurred": (AgentState.DONE, "stop"),    # Copilot CLI: the turn ended
     "afteragent": (AgentState.DONE, "stop"),
     "agentturncomplete": (AgentState.DONE, "stop"),
     "sessionidle": (AgentState.DONE, "stop"),
@@ -64,9 +66,14 @@ def _first(payload: dict, fields) -> str:
     return ""
 
 
-def interpret(payload: dict) -> dict | None:
+def interpret(payload: dict, event: str = "") -> dict | None:
     """{"session_id", "state", "event", "cwd"} for a hook payload, or None when the
-    payload names no session or an event that changes nothing."""
+    payload names no session or an event that changes nothing.
+
+    `event` is the event name the hook command was given (`--event`), for agents
+    whose hook JSON does not name the event (Copilot CLI). It takes priority over
+    a name in the payload. Without a session id, the working directory stands in
+    for one, so such an agent gets one key per folder."""
     if not isinstance(payload, dict):
         return None
     properties = payload.get("properties")
@@ -75,8 +82,11 @@ def interpret(payload: dict) -> dict | None:
         payload = {**properties, **{k: v for k, v in payload.items() if k != "properties"}}
     session = _first(payload, _SESSION_FIELDS)
     if not session:
-        return None
-    event = normalise_event(_first(payload, _EVENT_FIELDS))
+        cwd = _first(payload, _CWD_FIELDS)
+        if not cwd:
+            return None
+        session = "cwd:" + cwd
+    event = normalise_event(event or _first(payload, _EVENT_FIELDS))
     tag = ""
     if event == "notification":
         state, tag = _notification_state(payload)

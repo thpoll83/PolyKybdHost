@@ -536,7 +536,7 @@ def _agents_hook_main(args) -> int:
         import os
         from polyhost.services.agents.hooks import interpret, transcript_title
         payload = _read_hook_payload(args)
-        report = interpret(payload)
+        report = interpret(payload, event=args.event or "")
         if report is None:
             return 0
         report.update(vendor=args.vendor, pid=os.getppid(), surface="cli")
@@ -1363,6 +1363,9 @@ def build_parser():
                      "(or as the last argument) and reports it; always exits 0")
     p_ah.add_argument("vendor")
     p_ah.add_argument("payload", nargs="?", default=None)
+    p_ah.add_argument("--event", default=None,
+                      help="the event name, for agents whose hook JSON does not name it "
+                           "(Copilot CLI: --event agentStop)")
     p_agents.set_defaults(func=_cmd_agents)
 
     p_glyph_script = sub.add_parser(

@@ -97,6 +97,29 @@ notify = ["polyctl", "agents", "hook", "codex"]
 version documents, with the command `polyctl agents hook codex`; that adds
 "working" and "waiting".
 
+## Copilot CLI
+
+`~/.copilot/hooks/polykybd.json` (all repositories) or `.github/hooks/polykybd.json`
+(one repository). Copilot's hook JSON may not name the event, so each command
+names it with `--event`. Without a session id the folder is the session: one key
+per folder. Copilot has no event for a permission prompt; the host shows
+"waiting" when a `preToolUse` has no `postToolUse` after 5 s.
+
+```json
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart":        [{"type": "command", "powershell": "polyctl agents hook copilot --event sessionStart", "bash": "polyctl agents hook copilot --event sessionStart", "timeoutSec": 5}],
+    "userPromptSubmitted": [{"type": "command", "powershell": "polyctl agents hook copilot --event userPromptSubmitted", "bash": "polyctl agents hook copilot --event userPromptSubmitted", "timeoutSec": 5}],
+    "preToolUse":          [{"type": "command", "powershell": "polyctl agents hook copilot --event preToolUse", "bash": "polyctl agents hook copilot --event preToolUse", "timeoutSec": 5}],
+    "postToolUse":         [{"type": "command", "powershell": "polyctl agents hook copilot --event postToolUse", "bash": "polyctl agents hook copilot --event postToolUse", "timeoutSec": 5}],
+    "agentStop":           [{"type": "command", "powershell": "polyctl agents hook copilot --event agentStop", "bash": "polyctl agents hook copilot --event agentStop", "timeoutSec": 5}],
+    "errorOccurred":       [{"type": "command", "powershell": "polyctl agents hook copilot --event errorOccurred", "bash": "polyctl agents hook copilot --event errorOccurred", "timeoutSec": 5}],
+    "sessionEnd":          [{"type": "command", "powershell": "polyctl agents hook copilot --event sessionEnd", "bash": "polyctl agents hook copilot --event sessionEnd", "timeoutSec": 5}]
+  }
+}
+```
+
 ## Other agents
 
 Gemini CLI, Antigravity, Copilot CLI, Cursor, OpenCode and Qwen Code each have
@@ -106,7 +129,6 @@ stdin. These formats were not tested with the keyboard yet.
 
 - Gemini CLI: `settings.json`, `hooks`.
 - Antigravity: `.agents/hooks.json` (project) or `~/.gemini/config/hooks.json`.
-- Copilot CLI: `.github/hooks/*.json` or `~/.copilot/hooks/*.json`.
 - Cursor: `.cursor/hooks.json` or `~/.cursor/hooks.json`.
 - Qwen Code: `.qwen/settings.json`, `hooks`.
 - OpenCode has no shell hooks. It needs a small plugin that, on the `event` handler,

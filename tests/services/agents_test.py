@@ -164,6 +164,22 @@ class HookTest(unittest.TestCase):
             self.assertEqual(hooks.transcript_title(os.path.join(tmp, "missing")), "")
         self.assertEqual(hooks.transcript_title(None), "")
 
+    def test_copilot_with_the_event_on_the_command_line(self):
+        # Copilot CLI's hook JSON may name neither the event nor a session.
+        r = hooks.interpret({"cwd": "C:\\ws\\app", "toolName": "bash"}, event="preToolUse")
+        self.assertEqual((r["session_id"], r["state"], r["event"]),
+                         ("cwd:C:\\ws\\app", AgentState.WORKING, "pretool"))
+        self.assertEqual(hooks.interpret({"cwd": "/w"}, event="agentStop")["state"],
+                         AgentState.DONE)
+        self.assertEqual(hooks.interpret({"cwd": "/w"}, event="errorOccurred")["state"],
+                         AgentState.DONE)
+        self.assertEqual(hooks.interpret({"cwd": "/w"}, event="sessionEnd")["state"], ENDED)
+        # --event takes priority over a name in the payload.
+        self.assertEqual(hooks.interpret({"session_id": "s", "hook_event_name": "Stop"},
+                                         event="userPromptSubmitted")["state"],
+                         AgentState.WORKING)
+        self.assertIsNone(hooks.interpret({}, event="agentStop"))   # no session, no cwd
+
     def test_garbage(self):
         self.assertIsNone(hooks.interpret({"hook_event_name": "Stop"}))   # no session
         self.assertIsNone(hooks.interpret({"session_id": "a", "hook_event_name": "Whatever"}))
