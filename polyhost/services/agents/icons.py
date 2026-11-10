@@ -120,6 +120,26 @@ def working():
     return _stamp(mask, _ARROW_HEAD, _C, 0)
 
 
+# Points right, 7 rows: the head of the 16 px refresh arrow.
+_ARROW_HEAD_16 = ["#...", "##..", "###.", "####", "###.", "##..", "#..."]
+
+
+def working_16():
+    """The refresh arrow drawn at 16 px with a 2 px line, for the agent cards.
+    Scaling the 19 px working() down left a 1 px ring (hardware, 2026-11-10)."""
+    import numpy as np
+    size, cx, cy = 16, 8.0, 9.0          # pixel-centre coordinates of the ring centre
+    mask = np.zeros((size, size), dtype=bool)
+    for y in range(size):
+        for x in range(size):
+            dx, dy = x + 0.5 - cx, y + 0.5 - cy
+            d = math.hypot(dx, dy)
+            angle = math.degrees(math.atan2(-dy, dx)) % 360
+            if 4.4 < d <= 6.6 and not 15 <= angle <= 90:
+                mask[y, x] = True
+    return _stamp(mask, _ARROW_HEAD_16, 8, 0)
+
+
 def microphone(scale: float = 1.0):
     """A microphone: capsule, U-shaped holder, stand and foot, about 22 x 19 px
     times `scale`, from distance tests at pixel centres."""

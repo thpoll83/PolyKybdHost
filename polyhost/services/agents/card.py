@@ -208,9 +208,10 @@ def _state_icon(state):
     from polyhost.services.agents import icons
     if not _STATE_ICONS:
         _STATE_ICONS.update({k: icons.scaled(v, ICON) for k, v in {
-            AgentState.WORKING: icons.working(), AgentState.WAITING: icons.waiting(),
-            AgentState.DONE: icons.done(), AgentState.IDLE: icons.idle(),
-            AgentState.STALE: icons.stale()}.items()})
+            AgentState.WAITING: icons.waiting(), AgentState.DONE: icons.done(),
+            AgentState.IDLE: icons.idle(), AgentState.STALE: icons.stale()}.items()})
+        # Drawn at 16 px: scaled from 19 px its ring was 1 px wide.
+        _STATE_ICONS[AgentState.WORKING] = icons.working_16()
     return _STATE_ICONS.get(state)
 
 
