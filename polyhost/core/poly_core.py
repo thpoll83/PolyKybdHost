@@ -2369,7 +2369,8 @@ class PolyCore(Observable):
         return {"agents": self.agents.snapshot(), "page": self._agent_keys.page,
                 "pages": self.agents.page_count(),
                 "enabled": bool(self.poly_settings.get("agents_enabled")),
-                "active": self._agents_active()}
+                "active": self._agents_active(),
+                "last_press": self._agent_keys.last_press}
 
     def agents_report(self, params: dict):
         """A report from polyctl (a hook adapter or a user). (ok, agent or reason)."""

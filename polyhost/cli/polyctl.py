@@ -488,6 +488,16 @@ def _cmd_agents(client, args):
                   f"{a['vendor']:<12} {a['headline'][:40]:<40} {a['session_id'][:24]}")
         if not info.get("agents"):
             print("  (no agents reported)")
+        press = info.get("last_press")
+        if press:
+            names = {10: "ESC (next page)", 11: "- (dictation)", 12: "+ (next waiting)"}
+            key = press.get("key")
+            label = names.get(key, f"key {(key + 1) % 10}" if isinstance(key, int) else "?")
+            when = time.strftime("%H:%M:%S", time.localtime(press.get("at", 0)))
+            print(f"last AI-key press: {label} at {when}: {press.get('result')}"
+                  + (f" ({press['agent']})" if press.get("agent") else ""))
+        else:
+            print("last AI-key press: none read since the host started")
         return 0
     if args.agents_cmd == "report":
         agent = client.call(protocol.M_AGENTS_REPORT, {

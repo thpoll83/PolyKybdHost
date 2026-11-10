@@ -47,6 +47,10 @@ class AgentKeysController:
         self.raise_agent = raise_agent
         self.dictate = dictate
         self._last_waiting_slot = None   # the agent '+' raised last
+        # The last AI-key press and what came of it, for `polyctl agents list`: a
+        # press that "does nothing" is then one of: never read, no agent on the key,
+        # no window found, or the OS refused the focus.
+        self.last_press = None
         self.log = log or logging.getLogger("PolyHost")
         self.marks = marks or VendorMarks()
         self.page = 0
@@ -174,7 +178,14 @@ class AgentKeysController:
         for _seq, key in events:
             self._handle_key(key)
 
+    def _note(self, key, result, agent=None):
+        import time
+        self.last_press = {"at": time.time(), "key": key, "result": result,
+                           "agent": (f"{agent.vendor} {agent.display_headline}"
+                                     if agent is not None else "")}
+
     def _handle_key(self, key: int):
+        self._note(key, "read")
         if key == PAGER_KEY:
             self.next_page()
             self.log.info("Agent keys: page %d", self.page + 1)
@@ -189,6 +200,7 @@ class AgentKeysController:
             agent = self.registry.next_waiting(self._last_waiting_slot)
             if agent is None:
                 self.log.info("Agent keys: no agent waits")
+                self._note(key, "no agent waits")
                 return
             self._last_waiting_slot = agent.slot
             with self._lock:
@@ -201,6 +213,7 @@ class AgentKeysController:
         view = self.registry.page(self.page)
         agent = view[key] if 0 <= key < len(view) else None
         if agent is None:
+            self._note(key, "no agent on this key")
             return
         self.registry.mark_seen(agent.vendor, agent.session_id)
         self.log.info("Agent keys: key %d raises %s %s", key + 1, agent.vendor,
@@ -218,10 +231,15 @@ class AgentKeysController:
             self.log.info("Agent keys: dictation failed: %s", e)
 
     def _raise(self, agent):
+        key = self.last_press["key"] if self.last_press else None
         try:
-            ok = self.raise_agent(agent)
-            if not ok:
-                self.log.info("Agent keys: no window found for %s %s",
-                              agent.vendor, agent.display_headline)
+            result = self.raise_agent(agent)
+            if result is True:
+                result = "raised"
+            elif not result:
+                result = "no window found"
+            self.log.info("Agent keys: %s %s: %s", agent.vendor, agent.display_headline, result)
+            self._note(key, str(result), agent)
         except Exception as e:  # noqa: BLE001 - a failed raise must not kill anything
             self.log.info("Agent keys: raising %s failed: %s", agent.vendor, e)
+            self._note(key, f"failed: {e}", agent)

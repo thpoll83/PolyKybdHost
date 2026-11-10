@@ -37,11 +37,48 @@ def _ancestors(pid: int, depth: int = 8) -> list[int]:
     return chain
 
 
-def raise_agent(agent, windows=None) -> bool:
-    """True when a window was activated. `windows` is for tests: an iterable of
-    objects with getHandle(), getPID(), title and activate()."""
+def _win32_force_foreground(hwnd: int) -> bool:
+    """Bring `hwnd` to the front on Windows, and say whether it got there.
+
+    ⚠️ Windows refuses SetForegroundWindow from a process that did not receive the
+    last input event, and the host daemon is such a process: pywinctl's activate()
+    then only flashes the taskbar button. The usual way round it: restore a minimized
+    window, attach to the foreground thread's input queue for the call, and if that
+    is not enough, send a lone Alt press, which makes this process the last input.
+    """
+    import ctypes
+    user32 = ctypes.windll.user32
+    kernel32 = ctypes.windll.kernel32
+    SW_RESTORE, VK_MENU, KEYEVENTF_KEYUP = 9, 0x12, 0x0002
+    if user32.IsIconic(hwnd):
+        user32.ShowWindow(hwnd, SW_RESTORE)
+    fg = user32.GetForegroundWindow()
+    fg_thread = user32.GetWindowThreadProcessId(fg, None) if fg else 0
+    me = kernel32.GetCurrentThreadId()
+    attached = bool(fg_thread and fg_thread != me
+                    and user32.AttachThreadInput(me, fg_thread, True))
+    try:
+        user32.BringWindowToTop(hwnd)
+        user32.SetForegroundWindow(hwnd)
+    finally:
+        if attached:
+            user32.AttachThreadInput(me, fg_thread, False)
+    if user32.GetForegroundWindow() == hwnd:
+        return True
+    user32.keybd_event(VK_MENU, 0, 0, 0)
+    user32.keybd_event(VK_MENU, 0, KEYEVENTF_KEYUP, 0)
+    user32.SetForegroundWindow(hwnd)
+    return user32.GetForegroundWindow() == hwnd
+
+
+def raise_agent(agent, windows=None):
+    """True when a window was brought to the front; False when none was found; a
+    text when one was found but the system kept the focus elsewhere. `windows` is
+    for tests: an iterable of objects with getHandle(), getPID(), title and
+    activate()."""
     if os.environ.get("WAYLAND_DISPLAY") and not os.environ.get("DISPLAY"):
         return False
+    windows_from_system = windows is None
     if windows is None:
         import pywinctl
         windows = pywinctl.getAllWindows()
@@ -83,5 +120,12 @@ def raise_agent(agent, windows=None) -> bool:
                       own[0][0] if own else None)
     if target is None:
         return False
+    if sys.platform == "win32" and windows_from_system:
+        try:
+            if _win32_force_foreground(int(target.getHandle())):
+                return True
+            return f"Windows kept the focus elsewhere (window '{target.title}')"
+        except Exception:   # noqa: BLE001 - fall back to pywinctl below
+            pass
     target.activate()
     return True

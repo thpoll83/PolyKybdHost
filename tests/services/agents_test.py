@@ -284,6 +284,17 @@ class ControllerTest(unittest.TestCase):
         self.c.note_console("v 3 1\n")
         self.assertTrue(self.c._read_events)
 
+    def test_last_press_says_what_happened(self):
+        self.r.report("codex", "a", "done")
+        self.c.sync(self.kb)
+        self.kb.press(4)                       # key 5: nobody there
+        self.c.sync(self.kb)
+        self.assertEqual(self.c.last_press["result"], "no agent on this key")
+        self.kb.press(0)
+        self.c.sync(self.kb)
+        self.assertEqual(self.c.last_press["result"], "raised")
+        self.assertIn("codex", self.c.last_press["agent"])
+
     def test_presses_before_the_first_read_are_ignored(self):
         self.r.report("codex", "a", "done")
         self.kb.press(0)
