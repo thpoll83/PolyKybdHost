@@ -73,17 +73,35 @@ def _ps_parent(pid: int):
         return None
 
 
+def _parent_lookup():
+    """A function pid -> (ppid, name) or None, for this platform. On Windows it
+    reads one Toolhelp snapshot up front, so a walk costs one system call."""
+    if sys.platform == "win32":
+        table = _windows_table()
+        return lambda p: table.get(p)
+    if sys.platform.startswith("linux"):
+        return _linux_parent
+    return _ps_parent
+
+
+def ancestors(pid: int, depth: int = MAX_DEPTH) -> list[int]:
+    """`pid` and its parents, nearest first, at most `depth` long."""
+    parent = _parent_lookup()
+    chain = []
+    while pid and pid > 1 and len(chain) < depth:
+        chain.append(pid)
+        info = parent(pid)
+        if info is None:
+            break
+        pid = info[0]
+    return chain
+
+
 def agent_pid(start: int | None = None) -> int:
     """The first process at or above `start` (default: this process's parent)
     that is not a shell. `start` itself when the walk finds nothing better."""
     start = start or os.getppid()
-    if sys.platform == "win32":
-        table = _windows_table()
-        parent = lambda p: table.get(p)   # noqa: E731
-    elif sys.platform.startswith("linux"):
-        parent = _linux_parent
-    else:
-        parent = _ps_parent
+    parent = _parent_lookup()
     pid = start
     for _ in range(MAX_DEPTH):
         info = parent(pid)

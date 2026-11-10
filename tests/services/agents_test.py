@@ -508,6 +508,17 @@ class RaiserTest(unittest.TestCase):
         r.report("x", "d", "done", headline="nowhere")
         self.assertFalse(raise_agent(r.agents()[3], windows=wins))
 
+    def test_one_process_with_several_windows_prefers_the_agents_folder(self):
+        # VS Code: one main process owns every window; the folder picks the window.
+        import os
+        r = AgentRegistry()
+        r.report("claude-code", "s", "working", cwd="C:\\ws\\qmk_firmware", pid=os.getpid())
+        wins = [_Win("1", os.getpid(), "README.md - PolyKybdHost - Visual Studio Code"),
+                _Win("2", os.getpid(), "config.h - qmk_firmware - Visual Studio Code")]
+        self.assertTrue(raise_agent(r.agents()[0], windows=wins))
+        self.assertTrue(wins[1].active)
+        self.assertFalse(wins[0].active)
+
     def test_by_the_vendors_own_title(self):
         # Windows Terminal is not an ancestor of the agent's process, so the window is
         # found by Claude Code's own title; the one naming the headline first.

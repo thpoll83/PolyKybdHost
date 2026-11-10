@@ -22,19 +22,15 @@ import sys
 
 
 def _ancestors(pid: int, depth: int = 8) -> list[int]:
-    """pid and its parents, on Linux from /proc. Elsewhere only pid itself."""
-    chain = []
-    while pid and pid > 1 and len(chain) < depth:
-        chain.append(pid)
-        if not sys.platform.startswith("linux"):
-            break
-        try:
-            with open(f"/proc/{pid}/stat", encoding="utf-8") as fh:
-                # The command name may contain spaces; the ppid follows the last ')'.
-                pid = int(fh.read().rsplit(")", 1)[1].split()[1])
-        except (OSError, ValueError, IndexError):
-            break
-    return chain
+    """pid and its parents, on every platform (services/agents/procs.py). An agent
+    inside an editor or a desktop app has no window of its own: the window belongs
+    to an ancestor (Code.exe, claude.exe), found here on Windows too since the
+    first hardware test showed only the CLI instance being raised."""
+    from polyhost.services.agents.procs import ancestors
+    try:
+        return ancestors(pid, depth)
+    except Exception:   # noqa: BLE001 - fall back to the pid alone
+        return [pid] if pid else []
 
 
 def _win32_force_foreground(hwnd: int) -> bool:
@@ -100,10 +96,17 @@ def raise_agent(agent, windows=None):
     if agent.window:
         target = next((w for w in windows if handle(w) == agent.window), None)
     if target is None and agent.pid:
-        chain = _ancestors(agent.pid)
-        for pid in chain:
-            target = next((w for w in windows if pid_of(w) == pid), None)
-            if target is not None:
+        # One process can own several windows (VS Code runs every window in one
+        # main process): prefer the one whose title names the agent's folder or
+        # title, which VS Code and most editors show.
+        hints = [h.lower() for h in (agent.display_headline,
+                                     agent.cwd.replace("\\", "/").rstrip("/").rsplit("/", 1)[-1]
+                                     if agent.cwd else "") if h]
+        for pid in _ancestors(agent.pid):
+            owned = [w for w in windows if pid_of(w) == pid]
+            if owned:
+                target = next((w for w in owned
+                               if any(h in (w.title or "").lower() for h in hints)), owned[0])
                 break
     if target is None and agent.display_headline:
         text = agent.display_headline.lower()
