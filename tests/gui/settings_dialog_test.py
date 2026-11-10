@@ -261,9 +261,9 @@ class BuiltDialogTest(unittest.TestCase):
 class SectionLayoutTest(unittest.TestCase):
     """Which section and group each setting is shown in."""
 
-    def _layout(self, keys, developer_mode=True):
+    def _layout(self, keys):
         from polyhost.gui.settings_dialog import layout_sections
-        return layout_sections(keys, developer_mode)
+        return layout_sections(keys)
 
     @staticmethod
     def _placed(layout):
@@ -283,11 +283,11 @@ class SectionLayoutTest(unittest.TestCase):
         self.assertEqual(layout[-1][0], "other")
         self.assertEqual(layout[-1][2], [(None, ["brand_new_setting"])])
 
-    def test_developer_settings_only_in_developer_mode(self):
-        keys = ["ui_theme", "dev_mock_enabled", "developer_mode"]
-        self.assertNotIn("dev_mock_enabled", self._placed(self._layout(keys, False)))
-        self.assertEqual(self._placed(self._layout(keys, True))["dev_mock_enabled"],
-                         "developer")
+    def test_developer_settings_go_to_the_developer_section(self):
+        keys = ["ui_theme", "dev_mock_enabled", "developer_mode", "log_detail"]
+        placed = self._placed(self._layout(keys))
+        self.assertEqual((placed["dev_mock_enabled"], placed["developer_mode"],
+                          placed["log_detail"]), ("developer", "general", "privacy"))
 
     def test_empty_sections_and_groups_are_left_out(self):
         layout = self._layout(["telemetry_enabled"])
@@ -394,6 +394,7 @@ class DialogBehaviourTest(unittest.TestCase):
 
     def test_search_hides_what_does_not_match(self):
         dlg = self._dialog()
+        before = {k for k, w in dlg.edit_widgets.items() if w.isVisibleTo(dlg)}
         dlg.search.setText("receiver port")
         shown = [k for k, w in dlg.edit_widgets.items() if w.isVisibleTo(dlg)]
         self.assertEqual(shown, ["browser_report_port"])
@@ -403,8 +404,8 @@ class DialogBehaviourTest(unittest.TestCase):
         dlg.search.setText("no such setting anywhere")
         self.assertTrue(dlg._no_match.isVisibleTo(dlg))
         dlg.search.clear()
-        self.assertEqual(len([w for w in dlg.edit_widgets.values() if w.isVisibleTo(dlg)]),
-                         len(dlg.edit_widgets))
+        self.assertEqual({k for k, w in dlg.edit_widgets.items() if w.isVisibleTo(dlg)},
+                         before)
 
     def test_a_hidden_row_still_round_trips(self):
         """OK while a search hides a row must still write that row's value."""
@@ -432,6 +433,75 @@ class DialogBehaviourTest(unittest.TestCase):
         """The forwarder shows a handful of General settings."""
         dlg = self._dialog({"ui_theme": "auto", "ui_language": "auto"})
         self.assertFalse(dlg.nav.parentWidget().isVisibleTo(dlg))
+
+    @staticmethod
+    def _shown(dlg):
+        return {k for k, w in dlg.edit_widgets.items() if w.isVisibleTo(dlg)}
+
+    def test_developer_settings_hidden_while_developer_mode_is_off(self):
+        dlg = self._dialog()
+        self.assertEqual({k for k in self._shown(dlg) if k.startswith("dev_")}, set())
+        from PyQt5.QtCore import Qt
+        self.assertTrue(dlg.nav.findItems("Developer", Qt.MatchExactly)[0].isHidden())
+
+    def test_an_active_developer_setting_stays_visible_with_developer_mode_off(self):
+        """It takes effect whatever developer mode says, so it must stay
+        switchable: the plaintext relay listens on every interface."""
+        from polyhost.settings import DEFAULT_SETTINGS
+        settings = dict(DEFAULT_SETTINGS, dev_legacy_plaintext_relay=True)
+        dlg = self._dialog(settings)
+        self.assertEqual({k for k in self._shown(dlg) if k.startswith("dev_")},
+                         {"dev_legacy_plaintext_relay"})
+        developer = next(sec for sec in dlg._sections if sec.section_id == "developer")
+        self.assertTrue(developer.note.isVisibleTo(dlg))
+        # Turned back to its default it stays until the dialog closes, rather
+        # than vanishing under the pointer.
+        dlg.edit_widgets["dev_legacy_plaintext_relay"].setChecked(False)
+        dlg._refilter()
+        self.assertNotIn("dev_legacy_plaintext_relay", self._shown(dlg))
+
+    def test_the_developer_switch_shows_the_section_at_once(self):
+        dlg = self._dialog()
+        switch = dlg.edit_widgets["developer_mode"]
+        switch.setChecked(True)
+        dev_keys = {k for k in dlg.edit_widgets if k.startswith("dev_")}
+        self.assertTrue(dev_keys)
+        self.assertLessEqual(dev_keys, self._shown(dlg))
+        switch.setChecked(False)
+        self.assertEqual(dev_keys & self._shown(dlg), set())
+
+    def test_toggling_the_switch_keeps_the_scroll_position(self):
+        dlg = self._dialog()
+        bar = dlg.scroll.verticalScrollBar()
+        bar.setValue(bar.maximum() // 2)
+        top = bar.value()
+        dlg.edit_widgets["developer_mode"].setChecked(True)
+        self.app.processEvents()
+        self.assertEqual(bar.value(), top)
+
+    def test_a_flag_shows_the_developer_section_and_says_so(self):
+        from PyQt5.QtWidgets import QLabel
+        from polyhost.settings import DEFAULT_SETTINGS
+        from polyhost.gui.settings_dialog import SettingsDialog
+        dlg = SettingsDialog()
+        self.addCleanup(dlg.deleteLater)
+        dlg.setup(dict(DEFAULT_SETTINGS), developer_mode=True, flag_source="--dev")
+        dlg.show()
+        self.assertIn("dev_mock_enabled", self._shown(dlg))
+        notes = [lbl.text() for lbl in dlg.findChildren(QLabel)
+                 if lbl.objectName() == "settingsRowNote" and "--dev" in lbl.text()]
+        self.assertEqual(len(notes), 2)  # developer mode and log detail
+
+    def test_no_flag_note_without_a_flag(self):
+        from PyQt5.QtWidgets import QLabel
+        dlg = self._dialog(developer_mode=True)
+        self.assertEqual([lbl for lbl in dlg.findChildren(QLabel)
+                          if "--dev" in lbl.text()], [])
+
+    def test_log_detail_round_trips(self):
+        from polyhost.settings import DEFAULT_SETTINGS
+        dlg = self._dialog(dict(DEFAULT_SETTINGS, log_detail="detailed"))
+        self.assertEqual(dlg.get_updated_settings()["log_detail"], "detailed")
 
     def test_a_switch_is_still_a_checkbox(self):
         from PyQt5.QtCore import Qt

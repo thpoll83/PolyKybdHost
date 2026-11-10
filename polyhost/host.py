@@ -318,7 +318,7 @@ def _flash_kind(payload):
 
 class PolyHost(QApplication):
     def __init__(self, log_level, verbosity=0, developer=False, ignore_version=False,
-                 client_mode=False, endpoint=None, connect_retry=False):
+                 client_mode=False, endpoint=None, connect_retry=False, dev_source="setting"):
         super().__init__(sys.argv)
         # Wall-clock start, for the About dialog's uptime line.
         self._start_time = time.monotonic()
@@ -493,6 +493,9 @@ class PolyHost(QApplication):
         # (clean, fully-unwound loop) instead of os.execv from inside a slot.
         self.wants_restart = False
         self.developer_mode = developer
+        # "setting" when developer mode and the log detail came from the
+        # settings, else the flag that set them for this run ("--dev").
+        self.dev_source = dev_source
 
         # Create the menu
         self.log.debug("Building menu...")
@@ -1827,7 +1830,8 @@ class PolyHost(QApplication):
         # Client mode edits the DAEMON's settings over RPC (the local file may
         # be shared when co-located, but the daemon holds the live copy).
         current = self.core.settings_list() if self.client_mode else self.poly_settings.get_all()
-        dlg.setup(current, self.developer_mode)
+        dlg.setup(current, self.developer_mode,
+                  flag_source=None if self.dev_source == "setting" else self.dev_source)
         if dlg.exec_() == QDialog.Accepted:
             updated = dlg.get_updated_settings()
             saved = True

@@ -207,6 +207,7 @@ DEFAULT_SETTINGS = {
         # the tray restarts; the settings dialog offers that restart.
         "ui_language": "auto",
         "developer_mode": False,
+        "log_detail": "normal",
         "dev_mock_enabled": False,
         # Run with NO keyboard: the mock (device/poly_kybd_mock.py over the
         # firmware emulator in device/mock_firmware.py) becomes the primary

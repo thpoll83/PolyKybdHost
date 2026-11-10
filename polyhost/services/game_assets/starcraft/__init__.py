@@ -10,13 +10,13 @@ from polyhost.services.game_assets.readers import Reader, Setting
 READER = Reader(
     module="polyhost.services.game_assets.starcraft.reader",
     settings=(
-        Setting("game_sc1_data_dir", "", N_("StarCraft Folder"), N_(
+        Setting("game_sc1_data_dir", "", N_("StarCraft folder"), N_(
             "A folder with the StarCraft 1.16.1 files StarDat.mpq and, for the "
             "Brood War units, BrooDat.mpq. Empty: the usual install folders on "
             "Windows, macOS and under Wine are searched. StarCraft: Remastered "
             "keeps its files in a format this app does not read; the shipped "
             "art is used then."), None),
-        Setting("game_sc1_race", "terran", N_("StarCraft Race"),
+        Setting("game_sc1_race", "terran", N_("StarCraft race"),
                 N_("Whose units the StarCraft II overlay shows when it draws them "
                    "from the StarCraft files."),
                 (("terran", N_("Terran")), ("protoss", N_("Protoss")), ("zerg", N_("Zerg")))),

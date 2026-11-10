@@ -124,6 +124,25 @@ class ResolveDevTest(unittest.TestCase):
     def test_dev_wins_over_legacy_debug(self):
         self.assertEqual(main_app.resolve_dev(0, 2, False), (0, False, "--dev"))
 
+    def test_no_flag_takes_the_log_detail_setting_on_its_own(self):
+        # Log detail and developer mode are independent: an autostarted install
+        # can collect a debug log without the developer tools, and back.
+        self.assertEqual(main_app.resolve_dev(None, None, False, "debug"), (1, False, "setting"))
+        self.assertEqual(main_app.resolve_dev(None, None, True, "detailed"), (2, True, "setting"))
+        self.assertEqual(main_app.resolve_dev(None, None, True, "normal"), (0, True, "setting"))
+
+    def test_an_unknown_log_detail_counts_as_normal(self):
+        self.assertEqual(main_app.resolve_dev(None, None, False, "loud"), (0, False, "setting"))
+
+    def test_the_flag_wins_over_the_log_detail_setting_both_ways(self):
+        self.assertEqual(main_app.resolve_dev(0, None, False, "detailed"), (0, False, "--dev"))
+        self.assertEqual(main_app.resolve_dev(2, None, False, "normal"), (2, True, "--dev"))
+
+    def test_every_log_detail_choice_has_a_level(self):
+        from polyhost.gui.settings_dialog import CHOICES
+        self.assertEqual({v for v, _l in CHOICES["log_detail"]},
+                         set(main_app.LOG_DETAIL_LEVELS))
+
 
 class SpawnedDaemonFlagsTest(unittest.TestCase):
     """What a GUI-spawned daemon inherits.

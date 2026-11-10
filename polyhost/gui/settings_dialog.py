@@ -16,6 +16,7 @@ from polyhost.i18n import _, _f, N_
 from polyhost.services.game_assets import readers as game_asset_readers
 from polyhost.services.os_theme import THEME_AUTO, THEME_DARK, THEME_LIGHT
 from polyhost.services.problem_scan import LEVEL_ERRORS, LEVEL_ERRORS_AND_WARNINGS
+from polyhost.settings import DEFAULT_SETTINGS
 
 
 def language_choices():
@@ -49,6 +50,8 @@ CHOICES = {
     "emoji_search_dict": emoji_dict_choices,
     "problem_scan_level": ((LEVEL_ERRORS, N_("Errors")),
                            (LEVEL_ERRORS_AND_WARNINGS, N_("Errors and warnings"))),
+    "log_detail": (("normal", N_("Normal")), ("debug", N_("Debug")),
+                   ("detailed", N_("Detailed"))),
 }
 
 # The dialog's sections, in sidebar order. Each is (id, title, groups), and each
@@ -93,6 +96,7 @@ SECTIONS = (
     ("privacy", N_("Privacy and diagnostics"), (
         (N_("Usage report"), ("telemetry_*",)),
         (N_("Problem detection"), ("problem_scan_*",)),
+        (N_("Logs"), ("log_detail",)),
     )),
     ("developer", N_("Developer"), (
         (None, ("dev_*",)),
@@ -121,14 +125,14 @@ SETTING_LABELS = {
     "ui_theme": N_("Theme"),
     "ui_language": N_("Language"),
     "developer_mode": N_("Developer mode"),
-    "dev_mock_enabled": N_("Mock Enabled"),
-    "dev_mock_primary": N_("Mock Primary"),
-    "dev_mock_protocol": N_("Mock Protocol"),
-    "dev_run_window_detection_if_not_connected_to_poly_kybd":
-        N_("Run Window Detection If Not Connected To Poly Kybd"),
-    "dev_win_native_set_language": N_("Win Native Set Language"),
-    "dev_legacy_plaintext_relay": N_("Legacy Plaintext Relay"),
-    "dev_force_hid_link": N_("Force HID Link"),
+    "log_detail": N_("Log detail"),
+    "dev_mock_enabled": N_("Add a simulated keyboard"),
+    "dev_mock_primary": N_("Simulated keyboard only"),
+    "dev_mock_protocol": N_("Simulated protocol version"),
+    "dev_run_window_detection_if_not_connected_to_poly_kybd": N_("Track windows without a keyboard"),
+    "dev_win_native_set_language": N_("Native Windows language switch"),
+    "dev_legacy_plaintext_relay": N_("Legacy plaintext relay"),
+    "dev_force_hid_link": N_("Force the HID link"),
     "daemon_mode": N_("Background service"),
     "window_report_network_enabled": N_("Accept forwarders"),
     "fontpack_auto_flash": N_("Update on connect"),
@@ -212,8 +216,11 @@ SETTING_DESCRIPTIONS = {
     "ui_language": N_(
         "The language of the menus and dialogs. Applies when the tray app restarts."),
     "developer_mode": N_(
-        "Shows the Developer submenu in the tray menu and the developer settings in "
-        "this dialog."),
+        "Shows the developer settings in this dialog, and the Developer submenu in "
+        "the tray menu after a restart."),
+    "log_detail": N_(
+        "How much the app writes to its log. Debug and Detailed help when you report "
+        "a problem, and make the log grow faster. Applies after a restart."),
     "dev_mock_enabled": N_("Adds a simulated keyboard next to the real one."),
     "dev_mock_primary": N_(
         "Uses a simulated keyboard instead of a real one, so the app runs without "
@@ -342,14 +349,15 @@ def _matches(pattern, key):
     return key.startswith(pattern[:-1]) if pattern.endswith("*") else key == pattern
 
 
-def layout_sections(keys, developer_mode=False):
+def layout_sections(keys):
     """Place `keys` into the dialog's sections.
 
     Returns ``[(section_id, title, [(subheading, [key, ...]), ...]), ...]`` in
-    sidebar order, with empty groups and sections left out. The ``dev_`` keys
-    appear only in developer mode. Keys no section names go to "Other", last.
+    sidebar order, with empty groups and sections left out. Keys no section
+    names go to "Other", last. Which ``dev_`` rows are shown is decided by the
+    dialog (:meth:`SettingsDialog._update_developer_rows`), not here.
     """
-    keys = [k for k in keys if developer_mode or not k.startswith("dev_")]
+    keys = list(keys)
     placed = set()
     out = []
     for section_id, title, groups in SECTIONS:
@@ -543,6 +551,7 @@ QFrame#settingsCard {
 QFrame#settingsDivider { background: palette(midlight); border: none; }
 QLabel#settingsSectionTitle { font-size: 15pt; font-weight: 600; }
 QLabel#settingsSubheading { font-weight: 600; color: palette(text); }
+QLabel#settingsRowNote { color: palette(link); }
 QListWidget#settingsNav {
     background: transparent;
     border: none;
@@ -578,9 +587,13 @@ class _SettingRow(QWidget):
     URL squeezed beside a description is unreadable.
     """
 
-    def __init__(self, full_key, editor, extra=None, parent=None):
+    def __init__(self, full_key, editor, extra=None, note="", parent=None):
         super().__init__(parent)
         self.full_key = full_key
+        self.editor = editor
+        # False hides the row whatever the search says (a developer setting
+        # while developer mode is off and the setting is at its default).
+        self.available = True
         title = setting_label(full_key)
         description = setting_description(full_key)
         self.search_words = search_words(f"{title} {description} {full_key}")
@@ -604,6 +617,11 @@ class _SettingRow(QWidget):
                            muted.color(QPalette.Disabled, QPalette.WindowText))
             desc_lbl.setPalette(muted)
             text_col.addWidget(desc_lbl)
+        if note:
+            note_lbl = QLabel(note)
+            note_lbl.setWordWrap(True)
+            note_lbl.setObjectName("settingsRowNote")
+            text_col.addWidget(note_lbl)
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(14, 10, 14, 10)
@@ -630,7 +648,7 @@ class _SettingRow(QWidget):
             outer.addLayout(row)
 
     def matches(self, query):
-        return search_matches(query, self.search_words)
+        return self.available and search_matches(query, self.search_words)
 
 
 class _Group(QWidget):
@@ -668,7 +686,7 @@ class _Group(QWidget):
     def apply_filter(self, query):
         """Show the matching rows; a subheading match shows the whole group."""
         whole = bool(query) and search_matches(query, search_words(self.subheading))
-        shown = [r for r in self.rows if whole or r.matches(query)]
+        shown = [r for r in self.rows if r.available and (whole or r.matches(query))]
         for r in self.rows:
             r.setVisible(r in shown)
         # A divider sits above every row but the first; show one only between
@@ -694,6 +712,15 @@ class _Section(QWidget):
         head = QLabel(self.title)
         head.setObjectName("settingsSectionTitle")
         self._lay.addWidget(head)
+        self.note = QLabel()
+        self.note.setWordWrap(True)
+        self.note.setObjectName("settingsRowNote")
+        self.note.hide()
+        self._lay.addWidget(self.note)
+
+    def set_note(self, text):
+        self.note.setText(text)
+        self.note.setVisible(bool(text))
 
     def add_group(self, group):
         self.groups.append(group)
@@ -712,7 +739,10 @@ class SettingsDialog(QDialog):
         self.edit_widgets = {}
         self._all_settings = {}
         self._sections = []
+        self._rows = {}
         self._syncing_nav = False
+        self._developer_mode = False
+        self._flag_source = None
 
     def sizeHint(self):
         return MIN_DIALOG_SIZE
@@ -725,14 +755,22 @@ class SettingsDialog(QDialog):
         if screen is not None:
             self.resize(initial_dialog_size(screen.availableGeometry().size()))
 
-    def setup(self, settings_dict, developer_mode=False):
+    def setup(self, settings_dict, developer_mode=False, flag_source=None):
+        """Build the dialog for `settings_dict`.
+
+        `developer_mode` is whether this run is in developer mode. `flag_source`
+        names the command-line flag ("--dev") that decided developer mode and the
+        log detail for this run, or None when the settings did.
+        """
         self._all_settings = dict(settings_dict)
+        self._developer_mode = bool(developer_mode)
+        self._flag_source = flag_source
         # No setWindowIcon here: the dialog inherits QApplication's, which
         # IconStateManager already sets to the right mark for whichever app
         # opened it (the P for the tray app, the F for the forwarder). Pinning
         # pcolor.png put the tray app's mark on the forwarder's Settings window.
         self.setStyleSheet(_STYLE)
-        layout = layout_sections(settings_dict, developer_mode)
+        layout = layout_sections(settings_dict)
 
         main = QVBoxLayout(self)
         main.setContentsMargins(0, 0, 0, 0)
@@ -817,6 +855,10 @@ class SettingsDialog(QDialog):
         footer.addWidget(buttons)
         main.addLayout(footer)
 
+        switch = self.edit_widgets.get("developer_mode")
+        if isinstance(switch, QCheckBox):
+            switch.toggled.connect(lambda _on: self._refilter())
+        self._refilter()
         if self.nav.count():
             self.nav.setCurrentRow(0)
         self._fit_to_screen()
@@ -831,7 +873,43 @@ class SettingsDialog(QDialog):
         if full_key in FOLDER_KEYS and isinstance(editor, QLineEdit):
             extra = self._browse_button(full_key, editor)
         self.edit_widgets[full_key] = editor
-        return _SettingRow(full_key, editor, extra)
+        note = ""
+        if self._flag_source and full_key in ("developer_mode", "log_detail"):
+            note = _f("Set by {flag} for this run. This setting applies when the app "
+                      "starts without it.", flag=self._flag_source)
+        row = _SettingRow(full_key, editor, extra, note)
+        self._rows[full_key] = row
+        return row
+
+    def _developer_settings_shown(self):
+        """Whether the dialog shows every developer setting: the switch is on,
+        or a flag put this run in developer mode."""
+        switch = self.edit_widgets.get("developer_mode")
+        on = switch.isChecked() if isinstance(switch, QCheckBox) else False
+        return on or (self._flag_source is not None and self._developer_mode)
+
+    def _update_developer_rows(self):
+        """Show the dev_ rows for developer mode, and any that is not at its
+        default otherwise.
+
+        ⚠️ Every dev_ setting takes effect with developer mode off too. Hiding an
+        active one (the plaintext relay, the simulated keyboard) left it running
+        with no switch in sight to turn it off.
+        """
+        shown = self._developer_settings_shown()
+        current = self.get_updated_settings()
+        active = False
+        for key, row in self._rows.items():
+            if not key.startswith("dev_"):
+                continue
+            changed = key in DEFAULT_SETTINGS and current.get(key) != DEFAULT_SETTINGS[key]
+            row.available = shown or changed
+            active = active or (changed and not shown)
+        for section in self._sections:
+            if section.section_id == "developer":
+                section.set_note(_("These developer settings are not at their default, "
+                                   "so they stay in effect while developer mode is "
+                                   "off.") if active else "")
 
     def _nav_selected(self, row):
         if self._syncing_nav or not 0 <= row < len(self._sections):
@@ -859,15 +937,21 @@ class SettingsDialog(QDialog):
         self.nav.setCurrentRow(current)
         self._syncing_nav = False
 
-    def _apply_filter(self, text):
-        query = text.strip().casefold()
+    def _apply_filter(self, _text):
+        """A new search: filter, then start at the top of the results."""
+        self._refilter()
+        self.scroll.verticalScrollBar().setValue(0)
+
+    def _refilter(self):
+        """Show the rows that are available and match the search."""
+        self._update_developer_rows()
+        query = self.search.text().strip().casefold()
         any_shown = False
         for i, section in enumerate(self._sections):
             shown = section.apply_filter(query)
             any_shown = any_shown or shown
             self.nav.item(i).setHidden(not shown)
         self._no_match.setVisible(not any_shown)
-        self.scroll.verticalScrollBar().setValue(0)
 
     def _browse_button(self, full_key, line_edit):
         button = QToolButton()

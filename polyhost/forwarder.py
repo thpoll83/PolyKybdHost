@@ -66,8 +66,9 @@ HEARTBEAT_MSEC = 15000  # resend current window state periodically so the host c
 # at all. `ui_theme` is read at startup here and `ui_language` in main_app,
 # since each machine follows its own OS language; the browser-URL keys drive
 # BrowserUrlSource, which the forwarder runs for the machine it sits on.
+# `log_detail` sets this machine's log level at startup (main_app.resolve_dev).
 FORWARDER_SETTING_KEYS = ("ui_theme", "ui_language", "shortcut_icons_enabled",
-                          "shortcut_enable_accessibility") + tuple(_URL_SETTINGS)
+                          "shortcut_enable_accessibility", "log_detail") + tuple(_URL_SETTINGS)
 
 from polyhost.util.log_util import DEBUG_DETAILED, make_stream_handler, make_collapse_handler  # noqa: F401  (registers debug_detailed on import)
 from polyhost.handler.active_window import log_env_info
