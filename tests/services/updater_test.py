@@ -2170,7 +2170,11 @@ class TestSkippedReleaseNotes(unittest.TestCase):
         get, _calls = self._serve(self._latest_fw(), [page])
         with mock.patch.object(updater.requests, "get", side_effect=get):
             release = updater.check_fw_latest("1.10.2")
-        self.assertEqual(release.name, "")
+        # The name stays the newest release's: the installer writes it into the
+        # release marker. Only the dialog heading drops it.
+        self.assertEqual(release.name, "PolyKybd v1.11.3")
+        self.assertEqual(release.notes_releases, 3)
+        self.assertEqual(updater.dialog_release_name(release), "")
         self.assertEqual(release.notes,
                          "# PolyKybd v1.11.3\n\ntap-hold timing\n\n"
                          "# PolyKybd v1.11.2\n\nsearch on Shift\n\n"
@@ -2183,6 +2187,8 @@ class TestSkippedReleaseNotes(unittest.TestCase):
             release = updater.check_fw_latest("1.11.2")
         self.assertEqual(release.name, "PolyKybd v1.11.3")
         self.assertEqual(release.notes, "tap-hold timing")
+        self.assertEqual(release.notes_releases, 1)
+        self.assertEqual(updater.dialog_release_name(release), "PolyKybd v1.11.3")
 
     def test_reads_further_pages_until_it_reaches_the_current_version(self):
         full = [self._rel(f"1.{i}.0", f"n{i}") for i in range(200, 100, -1)]
@@ -2230,6 +2236,45 @@ class TestSkippedReleaseNotes(unittest.TestCase):
                          "# PolyKybd v1.11.3\n\ntap-hold timing\n\n"
                          "# PolyKybd v1.11.2\n\nsearch")
 
+    def test_an_old_release_created_late_does_not_stop_the_paging(self):
+        # The list is ordered by creation date. A 1.0.5 published after 1.50.0
+        # sits on page 1 among newer releases; page 2 must still be read.
+        full = [self._rel(f"1.{i}.0", f"n{i}") for i in range(149, 50, -1)]
+        full.insert(3, self._rel("1.0.5", "old line"))
+        self.assertEqual(len(full), updater._RELEASES_PAGE)
+        page2 = [self._rel("1.50.0", "n50"), self._rel("1.49.0", "n49")]
+        get, _calls = self._serve(_fw_release_json("PolyKybd-fw-v1.150.0"), [full, page2])
+        with mock.patch.object(updater.requests, "get", side_effect=get):
+            release = updater.check_fw_latest("1.49.0")
+        self.assertIn("# PolyKybd v1.50.0", release.notes)
+        self.assertNotIn("old line", release.notes)
+
+    def test_a_malformed_entry_falls_back_instead_of_failing_the_check(self):
+        get, _calls = self._serve(self._latest_fw(),
+                                  [[self._rel("1.11.2", "x"), "not an object"]])
+        with mock.patch.object(updater.requests, "get", side_effect=get):
+            release = updater.check_fw_latest("1.10.2")
+        self.assertEqual(release.notes, "tap-hold timing")
+        self.assertEqual(release.notes_releases, 1)
+
+    def test_a_release_listed_twice_appears_once(self):
+        # A release published between two page requests shifts the list, so
+        # one release can come back on both pages.
+        page1 = [self._rel(f"1.{i}.0", f"n{i}") for i in range(200, 100, -1)]
+        page2 = [self._rel("1.101.0", "n101"), self._rel("1.100.0", "n100")]
+        get, _calls = self._serve(_fw_release_json("PolyKybd-fw-v1.201.0"), [page1, page2])
+        with mock.patch.object(updater.requests, "get", side_effect=get):
+            release = updater.check_fw_latest("1.99.0")
+        self.assertEqual(release.notes.count("# PolyKybd v1.101.0\n"), 1)
+        self.assertEqual(release.notes_releases, 102)
+
+    def test_dialog_name_for_a_release_without_the_count_field(self):
+        # A positional construction from older code, or a RemoteCore payload,
+        # has no notes_releases and keeps its name.
+        release = updater.ReleaseInfo("v1", "1", "t", "h", "", "Title", "notes")
+        self.assertEqual(updater.dialog_release_name(release), "Title")
+        self.assertEqual(updater.dialog_release_name(object()), "")
+
     def test_host_update_gets_the_skipped_notes(self):
         latest = {"tag_name": "v1.21.4", "tarball_url": "t", "name": "v1.21.4",
                   "body": "four"}
@@ -2247,6 +2292,8 @@ class TestSkippedReleaseNotes(unittest.TestCase):
              mock.patch.object(updater.requests, "get", side_effect=get):
             release = updater.check_latest()
         self.assertEqual(release.notes, "# v1.21.4\n\nfour\n\n# v1.21.3\n\nthree")
+        self.assertEqual(release.name, "v1.21.4")
+        self.assertEqual(release.notes_releases, 2)
         self.assertIn(updater._RELEASES_API.format(repo=updater.HOST_REPO),
                       [c[0] for c in calls])
 
