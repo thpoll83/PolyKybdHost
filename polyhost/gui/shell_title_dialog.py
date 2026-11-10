@@ -17,6 +17,8 @@ from PyQt5.QtCore import Qt, QThread, QTimer, pyqtSignal
 from PyQt5.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QGridLayout,
                              QLabel, QPushButton, QVBoxLayout)
 
+from polyhost.gui.ui_kit import (CARD_STYLE, WrapLabel, card, muted, set_button_icon,
+                                 style_button_box)
 from polyhost.i18n import _, _f, translate_message
 from polyhost.services import editor_plugins, shell_title
 
@@ -128,8 +130,15 @@ class ShellTitleDialog(QDialog):
         self._thread = None
         self.setWindowTitle(_("Terminal and editor setup"))
 
+        self.setStyleSheet(CARD_STYLE)
         layout = QVBoxLayout(self)
-        intro = QLabel(_(
+        layout.setContentsMargins(16, 14, 16, 12)
+        layout.setSpacing(12)
+        # One card per kind of program, as in the settings dialog: a heading,
+        # the explanation in grey, then the rows.
+        shell_card, shell_lay = card(self)
+        shell_lay.addWidget(self._heading(_("Terminals")))
+        intro = WrapLabel(_(
             "The keyboard shows the shortcuts of a program running in a terminal "
             "(nano, for example) only when the terminal's window title names the "
             "program. bash, zsh and PowerShell do not do this without setup.\n\n"
@@ -139,11 +148,10 @@ class ShellTitleDialog(QDialog):
             "windows opened afterwards. To change the Codex option, select the "
             "shells and press Install again."))
         intro.setWordWrap(True)
-        layout.addWidget(intro)
+        shell_lay.addWidget(muted(intro))
 
-        self._grid = QGridLayout()
-        self._grid.setColumnStretch(1, 1)
-        layout.addLayout(self._grid)
+        self._grid = self._row_grid()
+        shell_lay.addLayout(self._grid)
         # Codex replaces the title with its own, which does not name it; the
         # option makes the installed line wrap the codex command.
         self.codex_box = QCheckBox(_("Also show Codex in the title (wraps the codex command)"))
@@ -156,9 +164,10 @@ class ShellTitleDialog(QDialog):
         self._codex_touched = False
         # noinspection PyUnresolvedReferences
         self.codex_box.clicked.connect(self._on_codex_clicked)
-        layout.addWidget(self.codex_box)
+        shell_lay.addWidget(self.codex_box)
+        layout.addWidget(shell_card)
 
-        editor_intro = QLabel(_(
+        editor_intro = WrapLabel(_(
             "Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert "
             "mode, the Org or Dired keys) only with the PolyKybd plugin. GDB shows "
             "whether the program runs or waits at the prompt only with it.\n\n"
@@ -168,34 +177,36 @@ class ShellTitleDialog(QDialog):
             "When this app is updated, it copies the new plugin files at its next "
             "start. Restart the program for the change to take effect."))
         editor_intro.setWordWrap(True)
-        layout.addSpacing(10)
-        layout.addWidget(editor_intro)
-        self._editor_grid = QGridLayout()
-        self._editor_grid.setColumnStretch(1, 1)
-        layout.addLayout(self._editor_grid)
-        self._settings_note = QLabel()
+        editor_card, editor_lay = card(self)
+        editor_lay.addWidget(self._heading(_("Editors")))
+        editor_lay.addWidget(muted(editor_intro))
+        self._editor_grid = self._row_grid()
+        editor_lay.addLayout(self._editor_grid)
+        self._settings_note = WrapLabel()
         self._settings_note.setWordWrap(True)
         self._settings_note.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self._settings_note.hide()
-        layout.addWidget(self._settings_note)
+        editor_lay.addWidget(self._settings_note)
+        layout.addWidget(editor_card)
 
-        self._checking = QLabel(_("Checking the shells…"))
+        self._checking = muted(QLabel(_("Checking the shells…")))
         layout.addWidget(self._checking)
-        self._info = QLabel()
+        self._info = WrapLabel()
         self._info.setWordWrap(True)
         self._info.hide()
         layout.addWidget(self._info)
-        self._results = QLabel()
+        self._results = WrapLabel()
         self._results.setWordWrap(True)
         self._results.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self._results.hide()
         layout.addWidget(self._results)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Close)
-        self.install_button = QPushButton(_("Install"))
-        self.remove_button = QPushButton(_("Remove"))
+        self.install_button = set_button_icon(QPushButton(_("Install")), "install")
+        self.remove_button = set_button_icon(QPushButton(_("Remove")), "delete")
         buttons.addButton(self.install_button, QDialogButtonBox.ActionRole)
         buttons.addButton(self.remove_button, QDialogButtonBox.ActionRole)
+        style_button_box(buttons)
         # noinspection PyUnresolvedReferences
         buttons.rejected.connect(self.reject)
         # noinspection PyUnresolvedReferences
@@ -206,6 +217,25 @@ class ShellTitleDialog(QDialog):
         self.setMinimumWidth(620)
         self._update_buttons()
         self.refresh()
+
+    # The first column of both grids, so the paths of shells and editors
+    # start at the same x.
+    _NAME_COLUMN_W = 170
+
+    @staticmethod
+    def _heading(text):
+        label = QLabel(text)
+        font = label.font()
+        font.setBold(True)
+        label.setFont(font)
+        return label
+
+    def _row_grid(self):
+        grid = QGridLayout()
+        grid.setColumnStretch(1, 1)
+        grid.setColumnMinimumWidth(0, self._NAME_COLUMN_W)
+        grid.setVerticalSpacing(2)
+        return grid
 
     # --- status ---------------------------------------------------------
     def _status_both(self):
@@ -292,7 +322,7 @@ class ShellTitleDialog(QDialog):
             path = QLabel(str(st.rc_path) if st.rc_path is not None else "")
             path.setTextInteractionFlags(Qt.TextSelectableByMouse)
             path.setToolTip(path.text())    # a long profile path is cut at the edge
-            state = QLabel(state_text(st))
+            state = muted(WrapLabel(state_text(st)))
             state.setWordWrap(True)
             state.setTextInteractionFlags(Qt.TextSelectableByMouse)
             self._grid.addWidget(box, row, 0, Qt.AlignTop)
@@ -333,7 +363,7 @@ class ShellTitleDialog(QDialog):
             path = QLabel(str(st.target) if st.target is not None else "")
             path.setTextInteractionFlags(Qt.TextSelectableByMouse)
             path.setToolTip(path.text())
-            state = QLabel(editor_state_text(st))
+            state = muted(WrapLabel(editor_state_text(st)))
             state.setWordWrap(True)
             state.setTextInteractionFlags(Qt.TextSelectableByMouse)
             self._editor_grid.addWidget(box, row, 0, Qt.AlignTop)

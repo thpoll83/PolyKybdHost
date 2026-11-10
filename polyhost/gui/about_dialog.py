@@ -16,11 +16,14 @@ keyboard at all, and a report that reads like one from the keyboard machine is
 the specific failure `problem_report.forwarder_diagnostics` exists to prevent.
 """
 
+from pathlib import Path
+
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import (
     QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout)
 
 from polyhost.gui.get_icon import get_icon
+from polyhost.gui.ui_kit import style_button_box
 from polyhost.i18n import _, _f, N_
 
 # Project links surfaced in the About dialog. "Get Support" used to be its own
@@ -36,27 +39,34 @@ HARDWARE_REPO_URL     = "https://github.com/thpoll83/PolyKybd"
 # (url, emoji, short label). Links whose URL does not say what they are get a
 # label; the rest are shown scheme-less with the full https URL in the href.
 PROJECT_LINKS = (
-    (POLYKYBD_HOMEPAGE_URL, "🌐", None),
-    (KOFI_BLOG_URL, "📝", N_("Blog")),
-    (SUPPORT_URL, "💬", "Discord"),  # i18n: skip (brand name)
-    (POLYHOST_REPO_URL, "💻", None),
-    (FIRMWARE_REPO_URL, "⌨️", None),
-    (HARDWARE_REPO_URL, "🔧", None),
+    (POLYKYBD_HOMEPAGE_URL, None),
+    (KOFI_BLOG_URL, N_("Blog")),
+    (SUPPORT_URL, "Discord"),  # i18n: skip (brand name)
+    (POLYHOST_REPO_URL, None),
+    (FIRMWARE_REPO_URL, None),
+    (HARDWARE_REPO_URL, None),
 )
 
 # Link labels that are product names and stay as they are in every language.
 _BRAND_LABELS = {"Discord"}  # i18n: skip
 
 
+# One glyph for every link, the dialogs' "open" icon. Six different emoji
+# (globe, memo, speech bubble ...) rendered in six styles, depending on the
+# platform's emoji font.
+_LINK_ICON = (Path(__file__).resolve().parent.parent / "res" / "icons" / "open_in_new.svg").as_posix()
+
+
 def links_html(links=PROJECT_LINKS) -> str:
     """The project-links block. Shown scheme-less, href carries the full URL."""
     rows = []
-    for url, emoji, label in links:
+    for url, label in links:
         shown = url.split("://", 1)[-1]
         if label and label not in _BRAND_LABELS:
             label = _(label)
         text = f"{label} — {shown}" if label else shown
-        rows.append(f"{emoji} <a href='{url}'>{text}</a>")
+        rows.append(f"<img src='{_LINK_ICON}' width='14' height='14'>&nbsp;"
+                    f"<a href='{url}'>{text}</a>")
     return "<div style='line-height:170%;'>" + "<br>".join(rows) + "</div>"
 
 
@@ -139,6 +149,7 @@ def build_about_dialog(*, heading, description, boxed=None, muted=None,
     # Copy diagnostics sits left of OK on ActionRole, so it does not close.
     btn_box = QDialogButtonBox(QDialogButtonBox.Ok)
     copy_btn = btn_box.addButton(_("Copy diagnostics"), QDialogButtonBox.ActionRole)
+    style_button_box(btn_box, {copy_btn: "copy"})
 
     def _copy_diag():
         clipboard.setText(diagnostics_cb())

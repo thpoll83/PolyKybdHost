@@ -13,32 +13,52 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QSizePolicy,
-    QStyle,
     QTextBrowser,
     QVBoxLayout,
 )
 
+from polyhost.gui.get_icon import get_icon
+from polyhost.gui.ui_kit import HEADLINE_ICON_PX, style_button_box
 from polyhost.i18n import _, _f
 
 
-# Release notes run to a few screens of markdown, so the notes pane gets most
-# of the screen: 60 % x 70 % of the available area, capped at 1100 x 900.
-# The 540 x 480 minimum alone left ~15 visible lines of notes.
+# Release notes can run to a few screens of markdown (every skipped release
+# since #757), so the dialog may grow to 60 % x 70 % of the available area,
+# capped at 1100 x 900. It opens at the height the notes need, inside that cap:
+# a fixed screen share left six bullet lines in a 1100 x 756 window.
 _SCREEN_FRACTION_W = 0.60
 _SCREEN_FRACTION_H = 0.70
 _MAX_W, _MAX_H = 1100, 900
+_READING_W = 760          # notes read best at this width; wider only if asked
+_MIN_NOTES_H = 140        # never a pane shorter than about seven lines
 
 
-def _size_to_screen(dlg) -> None:
-    """Resize ``dlg`` to a share of the primary screen's available area."""
+def _available():
     from PyQt5.QtWidgets import QApplication
     screen = QApplication.primaryScreen()
-    if screen is None:
-        return
-    avail = screen.availableGeometry()
-    min_size = dlg.minimumSize()
-    w = min(_MAX_W, max(min_size.width(), int(avail.width() * _SCREEN_FRACTION_W)))
-    h = min(_MAX_H, max(min_size.height(), int(avail.height() * _SCREEN_FRACTION_H)))
+    return screen.availableGeometry() if screen is not None else None
+
+
+def _size_to_notes(dlg, browser) -> None:
+    """Open ``dlg`` at a reading width and at the height its notes need,
+    inside the screen share above. The user can still resize it."""
+    avail = _available()
+    max_w = _MAX_W if avail is None else min(_MAX_W, int(avail.width() * _SCREEN_FRACTION_W))
+    max_h = _MAX_H if avail is None else min(_MAX_H, int(avail.height() * _SCREEN_FRACTION_H))
+    w = max(dlg.minimumWidth(), min(_READING_W, max_w))
+    # The notes' height at that width: the dialog's margins and the browser's
+    # frame and scroll bar come off the text width.
+    margins = dlg.layout().contentsMargins()
+    text_w = (w - margins.left() - margins.right() - browser.frameWidth() * 2
+              - browser.verticalScrollBar().sizeHint().width())
+    browser.document().setTextWidth(max(200, text_w))
+    notes_h = int(browser.document().size().height()) + browser.frameWidth() * 2 + 4
+    browser.setMinimumHeight(max(_MIN_NOTES_H, notes_h))
+    dlg.resize(w, 10)
+    h = min(max_h, dlg.sizeHint().height())
+    # Released again so the user can shrink the window; the scroll bar takes
+    # over when the notes no longer fit.
+    browser.setMinimumHeight(_MIN_NOTES_H)
     dlg.resize(w, h)
 
 
@@ -90,8 +110,7 @@ def confirm_update(title: str, message: str, notes: str = "", html_url: str = ""
     dlg = QDialog(None)
     dlg.setWindowTitle(title)
     dlg.setWindowFlag(Qt.WindowStaysOnTopHint, True)
-    dlg.setMinimumSize(540, 480)
-    _size_to_screen(dlg)
+    dlg.setMinimumSize(540, 360)
 
     outer = QVBoxLayout(dlg)
     outer.setContentsMargins(16, 16, 16, 12)
@@ -101,9 +120,7 @@ def confirm_update(title: str, message: str, notes: str = "", html_url: str = ""
     row = QHBoxLayout()
     row.setSpacing(12)
     icon_lbl = QLabel()
-    px = dlg.style().standardPixmap(QStyle.SP_MessageBoxQuestion)
-    if not px.isNull():
-        icon_lbl.setPixmap(px)
+    icon_lbl.setPixmap(get_icon("update.svg").pixmap(HEADLINE_ICON_PX, HEADLINE_ICON_PX))
     icon_lbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
     row.addWidget(icon_lbl, 0, Qt.AlignTop)
     msg_lbl = _WrapLabel(message)
@@ -147,6 +164,7 @@ def confirm_update(title: str, message: str, notes: str = "", html_url: str = ""
         outer.addWidget(q_lbl)
 
     btn_box = QDialogButtonBox(QDialogButtonBox.Yes | QDialogButtonBox.No)
+    style_button_box(btn_box)
     btn_box.accepted.connect(dlg.accept)
     btn_box.rejected.connect(dlg.reject)
     yes_btn = btn_box.button(QDialogButtonBox.Yes)
@@ -155,4 +173,5 @@ def confirm_update(title: str, message: str, notes: str = "", html_url: str = ""
         yes_btn.setFocus()
     outer.addWidget(btn_box, 0, Qt.AlignRight)
 
+    _size_to_notes(dlg, browser)
     return dlg.exec_() == QDialog.Accepted

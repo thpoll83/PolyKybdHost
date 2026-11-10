@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
 from polyhost.device.hid_fw_up import flash_firmware, apply_staged_firmware
 from polyhost.device.split_link import is_split_link_failure
 from polyhost.gui.dialog_util import position_near_tray
+from polyhost.gui.ui_kit import StatusLabel, set_button_icon
 from polyhost.i18n import _, _f, translate_message
 
 # The device layer reports its status in English (device/hid_fw_up.py, which
@@ -187,9 +188,9 @@ class HidFwUpDialog(QDialog):
         self._show_pct(0.0)
         layout.addWidget(self._progress_bar)
 
-        self._eta_label = QLabel("")
+        # Hidden while empty, so a staging dialog has no blank band under the bar.
+        self._eta_label = StatusLabel("")
         self._eta_label.setAlignment(Qt.AlignRight)
-        self._eta_label.setStyleSheet("color: gray;")
         layout.addWidget(self._eta_label)
 
         # Drives the smooth catch-up of the bar toward the reported percent.
@@ -204,7 +205,7 @@ class HidFwUpDialog(QDialog):
         self._eta_timer.timeout.connect(self._update_eta)
 
         btn_row = QHBoxLayout()
-        self._cancel_btn = QPushButton(_("Cancel"))
+        self._cancel_btn = set_button_icon(QPushButton(_("Cancel")), "cancel")
         self._cancel_btn.clicked.connect(self._on_cancel)
         btn_row.addStretch()
         btn_row.addWidget(self._cancel_btn)
@@ -322,9 +323,10 @@ class HidFwUpDialog(QDialog):
                 self._observed_rate = (pct - self._transfer_first_pct) / elapsed
 
     def _show_pct(self, pct: float):
-        """Render a percentage on the bar at 10x resolution with one decimal."""
+        """Move the bar at 10x resolution and label it in whole percent, as the
+        other progress dialogs do ("43%", not "43.00%")."""
         self._progress_bar.setValue(int(round(pct * self._SCALE)))
-        self._progress_bar.setFormat(f"{pct:.2f}%")
+        self._progress_bar.setFormat(f"{pct:.0f}%")
 
     def _set_busy(self, busy: bool):
         """Toggle the bar between an indeterminate spinner and the normal 0–100
@@ -483,6 +485,7 @@ class HidFwUpDialog(QDialog):
         self._cancel_btn.setVisible(True)
         self._cancel_btn.setEnabled(True)
         self._cancel_btn.setText(_("Close"))
+        set_button_icon(self._cancel_btn, "close")
         self._cancel_btn.clicked.disconnect()
         self._cancel_btn.clicked.connect(self.reject)
         self._positioned = False

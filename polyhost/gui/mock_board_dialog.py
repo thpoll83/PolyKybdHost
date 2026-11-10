@@ -117,7 +117,9 @@ class MockBoardDialog(QDialog):
         top.addWidget(save)
 
         self.scene = QGraphicsScene()
-        self.view = ZoomableGraphicsView(self.scene)
+        # Fitted to the window, as in the layout editor: at its own 1400 x 560
+        # the unscaled board was cut off on the right with two scroll bars.
+        self.view = ZoomableGraphicsView(self.scene, fit_scene=True)
         layout = QVBoxLayout(self)
         layout.addLayout(top)
         layout.addWidget(self.view, 1)

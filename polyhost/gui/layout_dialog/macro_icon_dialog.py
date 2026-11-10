@@ -20,6 +20,7 @@ from PyQt5.QtWidgets import (
     QListView, QListWidget, QListWidgetItem, QVBoxLayout,
 )
 
+from polyhost.gui.ui_kit import style_button_box
 from polyhost.i18n import _, _nf
 from polyhost.services import fontpack_render as fpr
 from polyhost.services import macro_look as mk
@@ -93,6 +94,8 @@ class MacroIconDialog(QDialog):
         outer.addWidget(self.status)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+
+        style_button_box(buttons)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         outer.addWidget(buttons)

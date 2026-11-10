@@ -7,10 +7,11 @@ them from the device when it opens and writes them back on OK. It goes through
 Ranges: ``TapTerms`` in ``device/command_ids.py``.
 """
 
-from PyQt5.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QFormLayout, QLabel,
+from PyQt5.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QFormLayout,
                              QSpinBox, QVBoxLayout)
 
 from polyhost.device.command_ids import TapTerms
+from polyhost.gui.ui_kit import WrapLabel, style_button_box
 from polyhost.i18n import _, N_
 
 _INTRO = N_(
@@ -26,17 +27,13 @@ _AUTO_SHIFT_INTRO = N_(
     "Auto Shift timeout types its shifted character.")
 
 
-_TEXT_WIDTH = 440   # px, the width the explanation labels wrap at
-
-
 class TapTermsDialog(QDialog):
     def __init__(self, terms, parent=None):
         """``terms`` is the dict from ``core.get_tap_terms()``."""
         super().__init__(parent)
         self.setWindowTitle(_("Tap-Hold Timing"))
 
-        intro = QLabel(_(_INTRO))
-        intro.setWordWrap(True)
+        intro = WrapLabel(_(_INTRO))
 
         self.tapping = QSpinBox()
         self.tapping.setRange(TapTerms.TAPPING_MIN_MS, TapTerms.TAPPING_MAX_MS)
@@ -87,6 +84,8 @@ class TapTermsDialog(QDialog):
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel
                                    | QDialogButtonBox.RestoreDefaults)
+
+        style_button_box(buttons)
         # noinspection PyUnresolvedReferences
         buttons.accepted.connect(self.accept)
         # noinspection PyUnresolvedReferences
@@ -97,8 +96,7 @@ class TapTermsDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.addWidget(intro)
         layout.addLayout(form)
-        auto_intro = QLabel(_(_AUTO_SHIFT_INTRO))
-        auto_intro.setWordWrap(True)
+        auto_intro = WrapLabel(_(_AUTO_SHIFT_INTRO))
         layout.addSpacing(8)
         layout.addWidget(auto_intro)
         auto_form = QFormLayout()
@@ -107,12 +105,6 @@ class TapTermsDialog(QDialog):
         layout.addLayout(auto_form)
         layout.addWidget(buttons)
 
-        # A word-wrapped label has no height until it has a width, and the rich-text
-        # intro (<br><br>) was clipped in an auto-sized dialog. Fix the text width
-        # and reserve the height the labels need at that width.
-        for label in (intro, auto_intro):
-            label.setFixedWidth(_TEXT_WIDTH)
-            label.setMinimumHeight(label.heightForWidth(_TEXT_WIDTH))
 
     def restore_defaults(self):
         self.tapping.setValue(TapTerms.DEFAULT_TAPPING_MS)
