@@ -317,18 +317,21 @@ def match_button_widths(window):
     keeps its own width. A button whose text is one character (the macro
     editor's arrows) is left out. The window widens when the row no longer fits.
     """
-    changed = False
     for layout in window.findChildren(QBoxLayout):
         if layout.direction() not in (QBoxLayout.LeftToRight, QBoxLayout.RightToLeft):
             continue
         for group in _button_groups(layout):
             for w in group:
-                w.setMinimumWidth(0)
-            widest = max(w.sizeHint().width() for w in group)
+                w.ensurePolished()      # the style sheet's padding is in the hint
+            widest = max(max(w.sizeHint().width(), w.minimumSizeHint().width())
+                         for w in group)
             for w in group:
-                w.setMinimumWidth(widest)
-            changed = True
-    if changed and window.layout() is not None:
+                if w.minimumWidth() != widest:   # unchanged: no new layout request
+                    w.setMinimumWidth(widest)
+    # A row can also grow after the dialog opened (the log bundle's "Show in
+    # Folder" appears after a save). Widen the window to what its layout needs,
+    # or Qt squeezes the buttons into each other.
+    if window.layout() is not None:
         window.layout().activate()
         need = window.minimumSizeHint().width()
         if need > window.width() and window.maximumWidth() >= need:
@@ -336,14 +339,24 @@ def match_button_widths(window):
 
 
 class _ButtonWidthFilter(QObject):
-    """Runs match_button_widths whenever a dialog or main window is shown."""
+    """Runs match_button_widths when a dialog or main window is shown, and
+    again when its layout changes while it is open (a button shown or hidden,
+    a text changed)."""
+
+    _busy = False
 
     def eventFilter(self, obj, event):  # noqa: N802 - Qt name
-        if (event.type() == QEvent.Show and isinstance(obj, (QDialog, QMainWindow))):
+        kind = event.type()
+        if (kind == QEvent.Show
+                or (kind == QEvent.LayoutRequest and obj.isWidgetType() and obj.isVisible())) \
+                and isinstance(obj, (QDialog, QMainWindow)) and not self._busy:
+            self._busy = True     # the pass itself can post a layout request
             try:
                 match_button_widths(obj)
             except Exception:   # a cosmetic pass must never break a dialog
                 logging.getLogger("PolyHost").debug("match_button_widths failed", exc_info=True)
+            finally:
+                self._busy = False
         return False
 
 

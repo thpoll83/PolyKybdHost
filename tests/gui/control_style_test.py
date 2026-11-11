@@ -70,5 +70,31 @@ class ButtonWidthTest(unittest.TestCase):
         ui_kit.install_button_width_matching(_APP)   # a second call adds nothing
 
 
+class RowGrowsTest(unittest.TestCase):
+    """The log bundle's "Show in Folder" appears after a save; the matched row
+    then needed more than the window had, and the buttons overlapped
+    (reported on Windows at 150 %)."""
+
+    def test_show_in_folder_appearing_widens_the_log_bundle_dialog(self):
+        from polyhost.gui.log_bundle_dialog import LogBundleDialog
+        theme.apply_theme(_APP, theme.THEME_LIGHT)
+        dlg = LogBundleDialog()
+        self.addCleanup(dlg.deleteLater)
+        dlg.show()
+        _APP.processEvents()
+        dlg.reveal_btn.setVisible(True)
+        for _ in range(3):
+            _APP.processEvents()
+        close = next(b for b in dlg.findChildren(QPushButton)
+                     if b.isVisible() and b not in (dlg.reveal_btn, dlg.copy_btn, dlg.save_btn))
+        row = [dlg.reveal_btn, dlg.copy_btn, dlg.save_btn, close]
+        xs = [(b.mapTo(dlg, b.rect().topLeft()).x(), b.width()) for b in row]
+        for (x1, w1), (x2, _w2) in zip(xs, xs[1:]):
+            self.assertLessEqual(x1 + w1, x2, xs)
+        for b in row:
+            self.assertGreaterEqual(b.width(), b.sizeHint().width(), b.text())
+        self.assertLessEqual(xs[-1][0] + xs[-1][1], dlg.width())
+
+
 if __name__ == "__main__":
     unittest.main()
