@@ -122,6 +122,15 @@ class RegistryTest(unittest.TestCase):
         # 'a' was seen alive and exited: gone. 'b' never was: kept (wrong pid).
         self.assertEqual([a.session_id for a in r.agents()], ["b"])
 
+    def test_a_bad_state_or_pid_leaves_the_registry_unchanged(self):
+        r = AgentRegistry(clock=self.clock)
+        for kw in ({"state": "bogus"}, {"state": "working", "pid": "x"}):
+            with self.assertRaises(ValueError):
+                r.report("codex", "a", **kw)
+        self.assertEqual(r.agents(), [])
+        r.report("codex", "a", "working")
+        self.assertEqual(r.agents()[0].slot, 0)          # no slot was taken
+
     def test_every_removal_is_logged_with_its_reason(self):
         alive = {100: True}
         r = AgentRegistry(clock=self.clock, is_alive=lambda pid: alive.get(pid, False))

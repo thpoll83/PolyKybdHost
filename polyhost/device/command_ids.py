@@ -98,9 +98,10 @@ class Cmd(Enum):
     # Ranges: TapTerms below.
     TAP_TERMS = 44
     # Agent keys (protocol v31+): data[2] op. 0 QUERY (ai_mode, newest event seq,
-    # number keys found, ESC found); 1 SET_KEYS (10 states, ESC attention, 10 pool
-    # slots u16 LE, 0xFFFF = none); 2 READ_EVENTS (data[3] last seq seen; reply:
-    # newest seq, count, then (seq, key) pairs oldest first, key 10 = pager).
+    # number keys found, ESC found); 1 SET_KEYS (10 states, one AGENT_FLAG_* byte,
+    # 12 pool slots u16 LE: the 10 number keys, then '-' and '+'; 0xFFFF = none);
+    # 2 READ_EVENTS (data[3] last seq seen; reply: newest seq, count, then (seq, key)
+    # pairs oldest first; key 10 = pager, 11 = '-', 12 = '+').
     # States: services/agents/model.AgentState, a CLOSED range.
     AI = 45
     # Agent card upload (protocol v31+): data[2..3] u16 LE, bits 0..9 pool slot,

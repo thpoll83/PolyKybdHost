@@ -32,9 +32,12 @@ polyctl agents hook <vendor>
   `cursor`, `opencode`, `qwen`, `aider`.
 - It reads the hook's JSON from **stdin**, or from its **last argument** when the
   agent passes the JSON as an argument (Codex `notify` does).
-- It always exits 0, prints nothing to stdout and never blocks the agent. It sends
-  only the session id, the event, the working directory and its parent process id.
-  It never sends the prompt or tool arguments.
+- It always exits 0, prints nothing to stdout and gives up after 4 s, so it never
+  blocks the agent. It sends only the session id, the event, the state, the working
+  directory, the surface (`cli`) and the agent's process id; for Claude Code also the
+  session's title (the text the terminal tab shows, which can describe your work); and
+  through a forwarder also this computer's name. It never sends the prompt, the
+  transcript or tool arguments.
 - If `polyctl` is not on `PATH` (a checkout without `pip install -e .`), use
   `<path-to-PolyKybdHost>/.venv/bin/python -m polyhost.cli.polyctl agents hook <vendor>`,
   or `.venv\Scripts\python.exe` on Windows.

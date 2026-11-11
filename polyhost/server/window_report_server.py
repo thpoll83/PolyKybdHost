@@ -5,12 +5,16 @@ The cross-machine forwarder historically relayed the active window over a
 ``polyhost/handler/remote_window.py``). This is the H4d "safe first slice": a
 real control-protocol listener that is **authenticated** (HMAC authkey) and
 **version-gated** (the same ``hello`` handshake as the local control socket),
-but whose method registry contains *exactly one* method — ``window.report``.
+but whose method registry contains *exactly one* method — ``window.report`` —
+plus ``agents.report`` when the host injects ``on_agents_report`` (the agent keys,
+only with ``agents_enabled`` and ``agents_remote_enabled`` on; security audit
+HOST-6). Every other method is refused either way.
 
 The security boundary is the whole point. This server holds **no reference to
 PolyCore** — only an injected ``on_report(handle, name, title)`` callback — so
 by construction it cannot reach brightness / language / firmware-flash /
-bootloader or any other device control. Binding the full control registry to
+bootloader or any other device control. ``agents.report`` adds only a bounded write
+to the agent registry (``services/agents/remote.sanitize_report``). Binding the full control registry to
 the network would expose all of that; this exposes only the window report. The
 device-control surface stays on the local-only UDS / named-pipe endpoint served
 by :class:`polyhost.server.control_server.ControlServer`.
@@ -84,9 +88,11 @@ class WindowReportServer(MpcListenerServer):
 
     def start(self):
         super().start()
+        methods = [p.M_WINDOW_REPORT] + ([p.M_AGENTS_REPORT]
+                                         if self._on_agents_report is not None else [])
         self.log.info(
-            "Window-report network listener on %s:%d (auth-gated, '%s' only)",
-            self.address[0], self.port, p.M_WINDOW_REPORT)
+            "Window-report network listener on %s:%d (auth-gated, only %s)",
+            self.address[0], self.port, ", ".join(f"'{m}'" for m in methods))
 
     def dispatch(self, conn, req_id, method, params):
         if method == p.M_AGENTS_REPORT and self._on_agents_report is not None:

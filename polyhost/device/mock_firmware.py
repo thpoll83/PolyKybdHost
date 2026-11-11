@@ -348,14 +348,7 @@ class MockFirmware:
         self.crash_record = None  # the master's archived 48-byte record (cmd 39)
         self.crash_fresh = False
         self.state_generation = 0
-        # Agent keys (cmd 45/46, v31): RAM only, as on the keyboard.
-        self.ai_mode = False
-        self.ai_states = [0] * 10
-        self.ai_slots = [0xFFFF] * 12
-        self.ai_flags = 0
-        self.ai_events = []        # [(seq, key)], the newest 8
-        self.ai_seq = 0
-        self.ai_cards = {}         # pool slot -> bytearray(360)
+        self._reset_agent_keys()
         # What owns the keycaps, as the GET_ID 'A' block reports it (v28): 0 none,
         # 1 the Eden intro, 2 the Eden screensaver. Tests set it.
         self.anim_state = 0
@@ -364,7 +357,6 @@ class MockFirmware:
         self.handedness_left: bool | None = None
         self.settings_bytes: dict[int, int] = {}   # cmd -> stored value byte
         self.glyph_placement = 0                   # cmd 30 v26: 0 centre, 1 top-left
-        self.key_attention = None                 # cmd 47: (row, col, count, period ms)
         self.layer_names = ["Qwerty", "Stag!", "ColemkDH", "Neo", "Workman", "Fn", "Numpad", "Utility"]
 
         # Font-pack slots: {bundle id: content_version}; data only once flashed.
@@ -438,9 +430,22 @@ class MockFirmware:
     def deaf(self) -> bool:
         return self.clock() < self._deaf_until
 
+    def _reset_agent_keys(self) -> None:
+        """Agent keys (cmd 45/46, v31) and key attention (cmd 47, v32): RAM only, as
+        on the keyboard, so a reboot clears them."""
+        self.ai_mode = False
+        self.ai_states = [0] * 10
+        self.ai_slots = [0xFFFF] * 12
+        self.ai_flags = 0
+        self.ai_events = []        # [(seq, key)], the newest 8
+        self.ai_seq = 0
+        self.ai_cards = {}         # pool slot -> bytearray(360)
+        self.key_attention = None  # cmd 47: (row, col, count, period ms)
+
     def reboot(self) -> None:
         """A reset: RAM state goes, flash (bundles, staged image) stays."""
         self.fresh_boot = True
+        self._reset_agent_keys()
         self.overlay_flags = 0
         self.sim.reset_all()
         # The no-legend bits are stored in the mapping table, which reset_all clears.

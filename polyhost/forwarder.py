@@ -439,6 +439,9 @@ class PolyForwarder(QApplication):
             # somebody pausing it would not expect.
             if self._report_session is not None:
                 self._report_session.close()
+            # And stop this computer's agent hooks reporting through it; the next
+            # report after Resume writes the target again.
+            self._note_agent_target(None)
         else:
             # Force the next tick to re-send rather than dedupe against the
             # window it was already showing when pause was pressed.
@@ -581,6 +584,14 @@ class PolyForwarder(QApplication):
         try:
             reply = result if isinstance(result, dict) else {}
             self._agents_fast = bool(reply.get("agents_fast"))
+            # A new connection (the keyboard computer's host may have restarted
+            # and counts raises from 0 again): its first reply is a new baseline.
+            session = getattr(self, "_report_session", None)
+            connections = getattr(session, "connections", 0)
+            if connections != getattr(self, "_agent_follower_connection", connections):
+                from polyhost.services.agents.remote import RemoteRaiseFollower
+                self._agent_follower = RemoteRaiseFollower()
+            self._agent_follower_connection = connections
             payload = self._agent_follower.follow(reply)
             if payload is None:
                 return

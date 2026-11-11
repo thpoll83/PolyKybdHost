@@ -339,7 +339,8 @@ or was one edit away from it, so reaching for the shared piece is the point:
   connection), `after_dispatch`, `secure_listener` and `wake_address`.
   ⚠️ **The surfaces stay separate — that separation is the security boundary.**
   The base carries no registry and no `PolyCore` reference; the network endpoint
-  still serves exactly one method. This is the direct fix for the class of bug
+  still serves only `window.report` (and `agents.report` behind the agent keys'
+  opt-ins, HOST-6). This is the direct fix for the class of bug
   CLAUDE.md already documents ("grep the other two servers before designing
   anything"): the bounded-raw-connect `accept()` wake lived in one server and not
   the other, and its absence hung the suite intermittently for ~3 sessions.
@@ -554,6 +555,6 @@ control-socket method. Five rules bind code outside it:
   (`control_server` / `window_report_server` / `browser_report_server`) for the same
   shape before designing anything — a deadlock was diagnosed across three sessions
   while a sibling module carried the remedy and its rationale in prose.
-- ⚠️ **The network `WindowReportServer` serves exactly one method and holds no
-  `PolyCore` reference.** That separation is the security boundary, not tidiness.
+- ⚠️ **The network `WindowReportServer` serves `window.report` (and `agents.report`
+  behind the agent keys' opt-ins, HOST-6) and holds no `PolyCore` reference.** That separation is the security boundary, not tidiness.
 

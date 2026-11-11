@@ -620,18 +620,36 @@ def _agent_hook_target(args):
     return read_forwarder_target()
 
 
+# The whole report (stdin, connect, HELLO, the call) gets this long; then the hook
+# exits 0 anyway. Below the 5 s the Gemini and Copilot hook configs allow.
+AGENT_HOOK_DEADLINE_S = 4.0
+
+
 def _agents_hook_main(args) -> int:
     """`polyctl agents hook <vendor>`: the command an agent's hook runs.
 
     ⚠️ Always exits 0 and prints nothing: a hook that fails or writes to stdout
-    can block or steer the agent, and a keyboard light is not worth that."""
+    can block or steer the agent, and a keyboard light is not worth that.
+    ⚠️ Bounded: a host that accepts the connection and never answers would hold
+    the agent. The report runs on a daemon thread, which cannot keep the process
+    alive, and is abandoned after AGENT_HOOK_DEADLINE_S."""
+    import threading
+    worker = threading.Thread(target=_agents_hook_report, args=(args,),
+                              name="agents-hook", daemon=True)
+    worker.start()
+    worker.join(AGENT_HOOK_DEADLINE_S)
+    return 0
+
+
+def _agents_hook_report(args) -> None:
+    """The report itself (see _agents_hook_main). Never raises."""
     try:
         import os
         from polyhost.services.agents.hooks import interpret, transcript_title
         payload = _read_hook_payload(args)
         report = interpret(payload, event=args.event or "")
         if report is None:
-            return 0
+            return
         from polyhost.services.agents.procs import agent_pid
         # The agent's own process, past the shell that runs this hook: the host
         # removes the key when it exits (a closed terminal sends no SessionEnd).
@@ -664,7 +682,7 @@ def _agents_hook_main(args) -> int:
                 remote.call(protocol.M_AGENTS_REPORT, report)
             finally:
                 remote.close()
-            return 0
+            return
         client = connect()
         try:
             client.call(protocol.M_AGENTS_REPORT, report)
@@ -672,7 +690,7 @@ def _agents_hook_main(args) -> int:
             client.close()
     except Exception:  # noqa: BLE001 - see the docstring
         pass
-    return 0
+    return
 
 
 def _cmd_handedness(client, args):

@@ -1,6 +1,7 @@
 """Agents on a forwarder's machine: the bounded network report, the raise queue on
 the keyboard host, and the forwarder's follower (services/agents/remote.py)."""
 import unittest
+import unittest.mock as mock
 
 from polyhost.services.agents.controller import AgentKeysController
 from polyhost.services.agents.registry import AgentRegistry
@@ -246,6 +247,19 @@ class RelayTest(unittest.TestCase):
         self.assertEqual(pending["agent"]["pid"], 4242)
         self.assertIsNone(queue.for_machine("desktop"))
         self.assertEqual(controller.last_press["result"], "sent to laptop")
+
+    def test_hook_gives_up_on_a_host_that_never_answers(self):
+        import threading
+        import time
+        from polyhost.cli import polyctl
+        hang = threading.Event()
+        self.addCleanup(hang.set)
+        args = object()
+        with mock.patch.object(polyctl, "_agents_hook_report", lambda a: hang.wait(30)), \
+                mock.patch.object(polyctl, "AGENT_HOOK_DEADLINE_S", 0.2):
+            start = time.monotonic()
+            self.assertEqual(polyctl._agents_hook_main(args), 0)
+            self.assertLess(time.monotonic() - start, 2.0)
 
     def test_follower_raises_each_new_seq_once_and_skips_the_backlog(self):
         f = RemoteRaiseFollower()

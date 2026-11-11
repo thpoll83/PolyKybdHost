@@ -492,6 +492,9 @@ class PolyCore(Observable):
         handler = getattr(self, "_problem_log_handler", None)
         if handler is not None:
             logging.getLogger().removeHandler(handler)
+        titles = getattr(self, "_agent_titles", None)
+        if titles is not None:
+            titles.stop()     # no title-scan report may reach the registry after this
         self._tick_stop.set()
         if self._tick_thread is not None:
             self._tick_thread.join(timeout=1)

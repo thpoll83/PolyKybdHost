@@ -44,6 +44,14 @@ class AgentKeysTest(unittest.TestCase):
         self.assertEqual(fw.ai_slots[:6], [588, 589, 590, 591, 592, 0xFFFF])
         self.assertEqual(fw.ai_slots[10:], [598, 599])
 
+    def test_a_reboot_clears_the_agent_keys(self):
+        kb, fw = _keyboard()
+        kb.ai_set_keys([1] * 10, 0x0B, [588] * 12)
+        fw.key_attention = (1, 1, 0, 2300)
+        fw.reboot()
+        self.assertEqual((fw.ai_states, fw.ai_flags, fw.ai_slots, fw.key_attention),
+                         ([0] * 10, 0, [0xFFFF] * 12, None))
+
     def test_closed_range(self):
         kb, fw = _keyboard()
         ok, msg = kb.ai_set_keys([6] + [0] * 9, 0, [0xFFFF] * 12)

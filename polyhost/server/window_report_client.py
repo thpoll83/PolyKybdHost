@@ -146,6 +146,7 @@ class WindowReportSession:
         self._connect = connect_fn if connect_fn is not None else connect
         self._client = None
         self._host = None
+        self.connections = 0   # incremented on every new connection
 
     @property
     def host(self):
@@ -166,6 +167,7 @@ class WindowReportSession:
                 self._client = self._connect(
                     host, self._port, self._authkey, self._timeout)
                 self._host = host
+                self.connections += 1
             return self._client.report(handle, name, title, os=os, url=url,
                                        names=names, icon_key=icon_key, icon=icon,
                                        shortcuts=shortcuts,

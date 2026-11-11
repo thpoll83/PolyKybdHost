@@ -122,6 +122,11 @@ class AgentRegistry:
         session_id = str(session_id or "").strip()
         if not vendor_id or not session_id:
             return None
+        # Validated before anything changes: a bad state or pid raises and leaves the
+        # registry as it was (no entry, no slot).
+        if state is not None and state != ENDED:
+            state = AgentState.parse(state)
+        pid = int(pid) if pid else None
         now = self._clock()
         with self._lock:
             key = (vendor_id, session_id)
