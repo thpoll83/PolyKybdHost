@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-11 21:08+0000\n"
+"POT-Creation-Date: 2026-11-11 21:54+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans_CN\n"
@@ -18,17 +18,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: polyhost/device/command_ids.py:168
+#: polyhost/device/command_ids.py:174
 #, python-brace-format
 msgid "preset {value}"
 msgstr "预设 {value}"
 
-#: polyhost/device/command_ids.py:170
+#: polyhost/device/command_ids.py:176
 #, python-brace-format
 msgid "{minutes} min"
 msgstr "{minutes} 分钟"
 
-#: polyhost/device/command_ids.py:171
+#: polyhost/device/command_ids.py:177
 #, python-brace-format
 msgid "{seconds} sec"
 msgstr "{seconds} 秒"
@@ -969,6 +969,7 @@ msgid "Report on GitHub…"
 msgstr "在 GitHub 上报告…"
 
 #: polyhost/gui/crash_alert_dialog.py:86
+#: polyhost/gui/layout_dialog/combo_tab.py:93
 #: polyhost/gui/layout_dialog/macro_tab.py:217
 #: polyhost/gui/layout_dialog/macro_tab.py:241
 msgid "Clear"
@@ -1807,6 +1808,146 @@ msgstr "语言"
 msgid "The new language is used after a restart. Restart now?"
 msgstr "新语言将在重新启动后生效。立即重新启动吗？"
 
+#: polyhost/gui/layout_dialog/combo_tab.py:89
+msgid "Save"
+msgstr "保存"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:134
+msgid "This firmware build has no runtime combos or tap dance (the DOOM developer build)."
+msgstr "此固件版本没有运行时组合键和 Tap Dance（DOOM 开发者版本）。"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:169
+#: polyhost/gui/layout_dialog/combo_tab.py:187
+msgid "Not saved"
+msgstr "未保存"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:174
+msgid "Saved on this half only: the other half did not answer. Save again once both halves are connected."
+msgstr "仅保存在此半边：另一个半边没有响应。请在两个半边都连接后再次保存。"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:207
+msgid "optional"
+msgstr "可选"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:209
+#, python-brace-format
+msgid "Key {n}"
+msgstr "按键 {n}"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:211
+msgid "Sends"
+msgstr "发送"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:215
+#, python-brace-format
+msgid "Press the keys within {ms} ms of each other. A key is written as on the keymap: KC_J, KC_ESC, S(KC_9), MO(1)."
+msgstr "请在彼此相隔 {ms} ms 以内按下这些键。按键的写法与键位映射中相同：KC_J, KC_ESC, S(KC_9), MO(1)。"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:217
+msgid "Press the keys at the same time. A key is written as on the keymap: KC_J, KC_ESC, S(KC_9), MO(1)."
+msgstr "请同时按下这些键。按键的写法与键位映射中相同：KC_J, KC_ESC, S(KC_9), MO(1)。"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:227
+#: polyhost/gui/layout_dialog/combo_tab.py:304
+#, python-brace-format
+msgid "{n}: (empty)"
+msgstr "{n}: (空)"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:243
+#, python-brace-format
+msgid "Key {n}: {text} is not a keycode."
+msgstr "按键 {n}：{text} 不是键码。"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:250
+#, python-brace-format
+msgid "Sends: {text} is not a keycode."
+msgstr "发送：{text} 不是键码。"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:253
+msgid "A combo needs at least two keys and a keycode to send."
+msgstr "组合键至少需要两个按键和一个要发送的键码。"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:255
+msgid "A combo cannot list the same key twice."
+msgstr "组合键中不能重复列出同一个按键。"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:276
+#: polyhost/gui/layout_dialog/combo_tab.py:319
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
+msgid "Tap"
+msgstr "轻按"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:276
+#: polyhost/gui/layout_dialog/combo_tab.py:319
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
+msgid "Hold"
+msgstr "按住"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:276
+#: polyhost/gui/layout_dialog/combo_tab.py:320
+msgid "Double tap"
+msgstr "轻按两次"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:276
+#: polyhost/gui/layout_dialog/combo_tab.py:320
+msgid "Tap, then hold"
+msgstr "轻按后按住"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:279
+msgid "same as Tap"
+msgstr "与“轻按”相同"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:286
+msgid "Tapping term"
+msgstr "点按时间"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:287
+msgid "Decide after"
+msgstr "判定时间"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:289
+#: polyhost/gui/layout_dialog/macro_tab.py:245
+msgid "Use on selected key"
+msgstr "用于所选按键"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:295
+msgid "Place the tap dance on a key with \"Use on selected key\". An action can be a key, a key with modifiers such as S(KC_9), or MO, TO or TG."
+msgstr "使用“用于所选按键”将 Tap Dance 放到按键上。动作可以是按键、带修饰键的按键（例如 S(KC_9)），或 MO、TO、TG。"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:307
+#, python-brace-format
+msgid "hold {key}"
+msgstr "按住 {key}"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:309
+#, python-brace-format
+msgid "2× {key}"
+msgstr "2× {key}"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:325
+#, python-brace-format
+msgid "{action}: {text} is not a keycode."
+msgstr "{action}：{text} 不是键码。"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:328
+#, python-brace-format
+msgid "{action}: a tap dance can send a key, a key with modifiers, MO, TO or TG, not {text}."
+msgstr "{action}：Tap Dance 只能发送按键、带修饰键的按键、MO、TO 或 TG，不能发送 {text}。"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:333
+msgid "A tap dance needs at least the Tap action."
+msgstr "Tap Dance 至少需要“轻按”动作。"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:337
+#, python-brace-format
+msgid "The time must be {lo} to {hi} ms in steps of {step} ms."
+msgstr "时间必须在 {lo} 到 {hi} ms 之间，步长为 {step} ms。"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:354
+#, python-brace-format
+msgid "Tap dance {n}"
+msgstr "Tap Dance {n}"
+
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:77
 msgid "PolyKybd Split72 Layout"
 msgstr "PolyKybd Split72 布局"
@@ -1925,13 +2066,21 @@ msgstr ""
 msgid "(a firmware checkout is present but is not newer)"
 msgstr "（存在固件检出副本，但版本不更新）"
 
-#: polyhost/gui/layout_dialog/keycode_browser.py:58
+#: polyhost/gui/layout_dialog/keycode_browser.py:59
 msgid "Layers && Mods"
 msgstr "层 && 修饰键"
 
-#: polyhost/gui/layout_dialog/keycode_browser.py:73
+#: polyhost/gui/layout_dialog/keycode_browser.py:76
 msgid "Macros"
 msgstr "宏"
+
+#: polyhost/gui/layout_dialog/keycode_browser.py:80
+msgid "Combos"
+msgstr "组合键"
+
+#: polyhost/gui/layout_dialog/keycode_browser.py:83
+msgid "Tap Dance"
+msgstr "Tap Dance"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:32
 msgid "MO — Momentary layer"
@@ -2052,14 +2201,6 @@ msgstr "按码位筛选 — 1F4E7、U+2699 或一个字符"
 msgid "{n} glyph"
 msgid_plural "{n} glyphs"
 msgstr[0] "{n} 个字形"
-
-#: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
-msgid "Tap"
-msgstr "轻按"
-
-#: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
-msgid "Hold"
-msgstr "按住"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
 msgid "Release"
@@ -2234,10 +2375,6 @@ msgstr "选择图标…"
 #: polyhost/gui/layout_dialog/macro_tab.py:237
 msgid "Save macro"
 msgstr "保存宏"
-
-#: polyhost/gui/layout_dialog/macro_tab.py:245
-msgid "Use on selected key"
-msgstr "用于所选按键"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:257
 msgid "All the macros share one pool on the keyboard, so a long one leaves less for the others"
@@ -3580,6 +3717,7 @@ msgstr "点按/按住时间"
 
 #. TRANSLATORS: unit after a number of milliseconds in a spin box.
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
+#: polyhost/gui/layout_dialog/combo_tab.py:285
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
 #: polyhost/gui/tap_terms_dialog.py:42 polyhost/gui/tap_terms_dialog.py:48
 #: polyhost/gui/tap_terms_dialog.py:63

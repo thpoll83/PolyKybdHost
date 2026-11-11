@@ -250,6 +250,12 @@ full wiring, the preview rendering and the label-measurement rules are in
   records to the other half, and reports whether that copy arrived. Tap dance slot n is
   the keycode `TD(n)` (0x5700 + n), drawn "Tap dance n+1"; polyctl numbers slots from 1
   to match. The DOOM monolith firmware answers INFO with "not available".
+  The layout editor has a Combos tab and a Tap Dance tab beside Macros
+  (`gui/layout_dialog/combo_tab.py`). Each reloads on show, saves one slot per
+  `combos_set` call, and shows the core's refusal on older firmware instead of an
+  editor. The Tap Dance tab's "Use on selected key" writes `TD(n)` to the grid. The
+  key fields and polyctl read keycodes with one parser,
+  `services/keycode_text.py` (names, hex, `MO(n)`/`TO(n)`/`TG(n)`/`TD(n)`, `S(KC_9)`).
 - ⚠️ **`expect(Cmd.X)` matches only the two `P<cmd>` bytes, which a NACK carries
   too** — so `send_and_read_validate` returning True says the reply arrived, never
   that the firmware accepted it. On a CLOSED range that is the difference between a

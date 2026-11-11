@@ -22,6 +22,7 @@ import time
 
 from polyhost.device.command_ids import GlyphPlacement, GlyphScript, GlyphSize, IdleStyle, IdleTimeout, TapTerms  # stdlib-only (Enum), no Qt
 from polyhost.server import protocol
+from polyhost.services.keycode_text import keycode_text as _keycode_text, parse_keycode as _parse_keycode  # Qt-free
 
 # Default timeframe for `polyctl logs` — long enough for "it broke this
 # morning", short enough that a bundle stays small (and carries less history).
@@ -450,81 +451,6 @@ def _print_tap_terms(prefix, terms):
 
 
 # ---- combo / tapdance (cmd 48, firmware protocol v33+) ------------------------------
-
-_KC_NAMES = None
-
-
-def _keycode_tables():
-    """QMK keycode names <-> values from the shipped keycodes.h (Qt-free)."""
-    global _KC_NAMES
-    if _KC_NAMES is None:
-        from polyhost.gui.layout_dialog.qmk_keycode_helper import HEADER_FILE, parse_qmk_keycodes
-        try:
-            by_name = parse_qmk_keycodes(HEADER_FILE)
-        except OSError:
-            by_name = {}
-        by_value = {}
-        for name, value in by_name.items():
-            # Prefer the long KC_ name over aliases for display.
-            if value not in by_value or (name.startswith("KC_") and len(name) > len(by_value[value])):
-                by_value[value] = name
-        _KC_NAMES = (by_name, by_value)
-    return _KC_NAMES
-
-
-_LAYER_FNS = {"TO": 0x5200, "MO": 0x5220, "TG": 0x5260, "TD": 0x5700}
-
-
-_MOD_FNS = {"LCTL": 0x0100, "C": 0x0100, "LSFT": 0x0200, "S": 0x0200, "LALT": 0x0400,
-            "A": 0x0400, "LGUI": 0x0800, "G": 0x0800, "RCTL": 0x1100, "RSFT": 0x1200,
-            "RALT": 0x1400, "RGUI": 0x1800}
-
-
-def _parse_keycode(text: str) -> int:
-    """A keycode as a number (0x hex or decimal), a QMK name (KC_J, KC_ESC),
-    MO(n) / TO(n) / TG(n) / TD(n), or a modifier wrapper such as S(KC_9) or
-    LCTL(KC_C). QMK's shorthands like KC_LPRN are not in keycodes.h: write S(KC_9)."""
-    t = text.strip()
-    import re
-    m = re.fullmatch(r"([A-Z]+)\((.+)\)", t, re.IGNORECASE)
-    if m and m.group(1).upper() in _MOD_FNS:
-        inner = _parse_keycode(m.group(2))
-        if inner > 0xFF:
-            raise ValueError(f"{t}: a modifier wraps a basic keycode only")
-        return _MOD_FNS[m.group(1).upper()] | inner
-    m = re.fullmatch(r"(TO|MO|TG|TD)\((\d+)\)", t, re.IGNORECASE)
-    if m:
-        n = int(m.group(2))
-        limit = 0xFF if m.group(1).upper() == "TD" else 0x1F
-        if n > limit:
-            raise ValueError(f"{t}: layer/slot out of range")
-        return _LAYER_FNS[m.group(1).upper()] + n
-    try:
-        value = int(t, 0)
-    except ValueError:
-        by_name, _ = _keycode_tables()
-        key = t.upper() if t.upper() in by_name else ("KC_" + t.upper())
-        if key not in by_name:
-            raise ValueError(f"unknown keycode {t!r}") from None
-        value = by_name[key]
-    if not 0 <= value <= 0xFFFF:
-        raise ValueError(f"keycode {t!r} out of range")
-    return value
-
-
-def _keycode_text(value: int) -> str:
-    if value == 0:
-        return "-"
-    if 0x0100 <= value <= 0x1FFF:
-        mods = {v: k for k, v in _MOD_FNS.items() if len(k) > 1}
-        if (value & 0x1F00) in mods:
-            return f"{mods[value & 0x1F00]}({_keycode_text(value & 0xFF)})"
-    for fn, base in _LAYER_FNS.items():
-        if base <= value < base + (0x100 if fn == "TD" else 0x20):
-            return f"{fn}({value - base})"
-    _, by_value = _keycode_tables()
-    return by_value.get(value, f"0x{value:04X}")
-
 
 def _combos_or_fail(client):
     data = client.call(protocol.M_COMBOS_GET, {})

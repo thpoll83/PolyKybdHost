@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-11 21:08+0000\n"
+"POT-Creation-Date: 2026-11-11 21:54+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cs\n"
@@ -18,17 +18,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: polyhost/device/command_ids.py:168
+#: polyhost/device/command_ids.py:174
 #, python-brace-format
 msgid "preset {value}"
 msgstr "předvolba {value}"
 
-#: polyhost/device/command_ids.py:170
+#: polyhost/device/command_ids.py:176
 #, python-brace-format
 msgid "{minutes} min"
 msgstr "{minutes} min"
 
-#: polyhost/device/command_ids.py:171
+#: polyhost/device/command_ids.py:177
 #, python-brace-format
 msgid "{seconds} sec"
 msgstr "{seconds} s"
@@ -971,6 +971,7 @@ msgid "Report on GitHub…"
 msgstr "Nahlásit na GitHubu…"
 
 #: polyhost/gui/crash_alert_dialog.py:86
+#: polyhost/gui/layout_dialog/combo_tab.py:93
 #: polyhost/gui/layout_dialog/macro_tab.py:217
 #: polyhost/gui/layout_dialog/macro_tab.py:241
 msgid "Clear"
@@ -1821,6 +1822,146 @@ msgstr "Jazyk"
 msgid "The new language is used after a restart. Restart now?"
 msgstr "Nový jazyk se použije po restartu. Restartovat nyní?"
 
+#: polyhost/gui/layout_dialog/combo_tab.py:89
+msgid "Save"
+msgstr "Uložit"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:134
+msgid "This firmware build has no runtime combos or tap dance (the DOOM developer build)."
+msgstr "Tato sestava firmwaru nemá kombinace ani tap dance nastavitelné za běhu (vývojářská sestava DOOM)."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:169
+#: polyhost/gui/layout_dialog/combo_tab.py:187
+msgid "Not saved"
+msgstr "Neuloženo"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:174
+msgid "Saved on this half only: the other half did not answer. Save again once both halves are connected."
+msgstr "Uloženo jen na této polovině: druhá polovina neodpověděla. Uložte znovu, až budou připojeny obě poloviny."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:207
+msgid "optional"
+msgstr "volitelné"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:209
+#, python-brace-format
+msgid "Key {n}"
+msgstr "Klávesa {n}"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:211
+msgid "Sends"
+msgstr "Odešle"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:215
+#, python-brace-format
+msgid "Press the keys within {ms} ms of each other. A key is written as on the keymap: KC_J, KC_ESC, S(KC_9), MO(1)."
+msgstr "Stiskněte klávesy v rozmezí {ms} ms. Klávesa se zapisuje stejně jako v rozložení kláves: KC_J, KC_ESC, S(KC_9), MO(1)."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:217
+msgid "Press the keys at the same time. A key is written as on the keymap: KC_J, KC_ESC, S(KC_9), MO(1)."
+msgstr "Stiskněte klávesy současně. Klávesa se zapisuje stejně jako v rozložení kláves: KC_J, KC_ESC, S(KC_9), MO(1)."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:227
+#: polyhost/gui/layout_dialog/combo_tab.py:304
+#, python-brace-format
+msgid "{n}: (empty)"
+msgstr "{n}: (prázdné)"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:243
+#, python-brace-format
+msgid "Key {n}: {text} is not a keycode."
+msgstr "Klávesa {n}: {text} není kód klávesy."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:250
+#, python-brace-format
+msgid "Sends: {text} is not a keycode."
+msgstr "Odešle: {text} není kód klávesy."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:253
+msgid "A combo needs at least two keys and a keycode to send."
+msgstr "Kombinace potřebuje alespoň dvě klávesy a kód klávesy k odeslání."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:255
+msgid "A combo cannot list the same key twice."
+msgstr "Kombinace nemůže obsahovat stejnou klávesu dvakrát."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:276
+#: polyhost/gui/layout_dialog/combo_tab.py:319
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
+msgid "Tap"
+msgstr "Klepnout"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:276
+#: polyhost/gui/layout_dialog/combo_tab.py:319
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
+msgid "Hold"
+msgstr "Podržet"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:276
+#: polyhost/gui/layout_dialog/combo_tab.py:320
+msgid "Double tap"
+msgstr "Dvakrát klepnout"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:276
+#: polyhost/gui/layout_dialog/combo_tab.py:320
+msgid "Tap, then hold"
+msgstr "Klepnout, pak podržet"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:279
+msgid "same as Tap"
+msgstr "stejné jako \"Klepnout\""
+
+#: polyhost/gui/layout_dialog/combo_tab.py:286
+msgid "Tapping term"
+msgstr "Doba klepnutí"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:287
+msgid "Decide after"
+msgstr "Rozhodnout po"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:289
+#: polyhost/gui/layout_dialog/macro_tab.py:245
+msgid "Use on selected key"
+msgstr "Použít na vybranou klávesu"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:295
+msgid "Place the tap dance on a key with \"Use on selected key\". An action can be a key, a key with modifiers such as S(KC_9), or MO, TO or TG."
+msgstr "Tap dance přiřaďte klávese tlačítkem \"Použít na vybranou klávesu\". Akcí může být klávesa, klávesa s modifikátory, například S(KC_9), nebo MO, TO či TG."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:307
+#, python-brace-format
+msgid "hold {key}"
+msgstr "podržet {key}"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:309
+#, python-brace-format
+msgid "2× {key}"
+msgstr "2× {key}"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:325
+#, python-brace-format
+msgid "{action}: {text} is not a keycode."
+msgstr "{action}: {text} není kód klávesy."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:328
+#, python-brace-format
+msgid "{action}: a tap dance can send a key, a key with modifiers, MO, TO or TG, not {text}."
+msgstr "{action}: tap dance může odeslat klávesu, klávesu s modifikátory, MO, TO nebo TG, ne {text}."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:333
+msgid "A tap dance needs at least the Tap action."
+msgstr "Tap dance potřebuje alespoň akci \"Klepnout\"."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:337
+#, python-brace-format
+msgid "The time must be {lo} to {hi} ms in steps of {step} ms."
+msgstr "Čas musí být od {lo} do {hi} ms v krocích po {step} ms."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:354
+#, python-brace-format
+msgid "Tap dance {n}"
+msgstr "Tap dance {n}"
+
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:77
 msgid "PolyKybd Split72 Layout"
 msgstr "Rozložení PolyKybd Split72"
@@ -1939,13 +2080,21 @@ msgstr ""
 msgid "(a firmware checkout is present but is not newer)"
 msgstr "(zdrojový strom firmwaru je k dispozici, ale není novější)"
 
-#: polyhost/gui/layout_dialog/keycode_browser.py:58
+#: polyhost/gui/layout_dialog/keycode_browser.py:59
 msgid "Layers && Mods"
 msgstr "Vrstvy && modifikátory"
 
-#: polyhost/gui/layout_dialog/keycode_browser.py:73
+#: polyhost/gui/layout_dialog/keycode_browser.py:76
 msgid "Macros"
 msgstr "Makra"
+
+#: polyhost/gui/layout_dialog/keycode_browser.py:80
+msgid "Combos"
+msgstr "Kombinace"
+
+#: polyhost/gui/layout_dialog/keycode_browser.py:83
+msgid "Tap Dance"
+msgstr "Tap Dance"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:32
 msgid "MO — Momentary layer"
@@ -2068,14 +2217,6 @@ msgid_plural "{n} glyphs"
 msgstr[0] "{n} glyf"
 msgstr[1] "{n} glyfy"
 msgstr[2] "{n} glyfů"
-
-#: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
-msgid "Tap"
-msgstr "Klepnout"
-
-#: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
-msgid "Hold"
-msgstr "Podržet"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
 msgid "Release"
@@ -2254,10 +2395,6 @@ msgstr "Vybrat ikonu…"
 #: polyhost/gui/layout_dialog/macro_tab.py:237
 msgid "Save macro"
 msgstr "Uložit makro"
-
-#: polyhost/gui/layout_dialog/macro_tab.py:245
-msgid "Use on selected key"
-msgstr "Použít na vybranou klávesu"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:257
 msgid "All the macros share one pool on the keyboard, so a long one leaves less for the others"
@@ -3614,6 +3751,7 @@ msgstr "Časování klepnutí a podržení"
 
 #. TRANSLATORS: unit after a number of milliseconds in a spin box.
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
+#: polyhost/gui/layout_dialog/combo_tab.py:285
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
 #: polyhost/gui/tap_terms_dialog.py:42 polyhost/gui/tap_terms_dialog.py:48
 #: polyhost/gui/tap_terms_dialog.py:63

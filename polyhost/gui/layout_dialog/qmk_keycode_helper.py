@@ -596,9 +596,10 @@ def describe_keycode(value: int, keycode_to_name: dict):
     # Swap-hands tap-hold SH_T() — tap key / hold swap.
     if 0x5600 <= value <= 0x56EF:
         return basic_display(value & 0xFF), "SH", BADGE_COLOR_TAP
-    # Tap dance TD() — firmware-defined dance index.
+    # Tap dance TD(n): numbered from 1, as the keycap ("Tap dance 1" is TD(0)) and
+    # the Tap Dance tab number it.
     if 0x5700 <= value <= 0x57FF:
-        return "TD", str(value & 0xFF), BADGE_COLOR_FW
+        return "TD", str((value & 0xFF) + 1), BADGE_COLOR_FW
 
     # Plain key (or anything else) — single line, no badge.
     name = keycode_to_name.get(value)
