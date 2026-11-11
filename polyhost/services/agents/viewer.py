@@ -41,8 +41,13 @@ def mapping_viewer_apps(mapping) -> set[str]:
 
 
 def _app_of(w) -> str:
+    """⚠️ Through win_process.app_name_for, never pywinctl's getAppName() directly:
+    on Windows that walks every process over WMI, which fails off a COM-initialised
+    thread (every window read as no app, so no viewer was ever found) and once
+    killed the daemon (handler/win_process.py)."""
+    from polyhost.handler.win_process import app_name_for
     try:
-        return normalise_app(w.getAppName() or "")
+        return normalise_app(app_name_for(w) or "")
     except Exception:   # noqa: BLE001 - a window can close while we read it
         return ""
 
