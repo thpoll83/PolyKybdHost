@@ -277,8 +277,9 @@ class ReviewFixes786Test(unittest.TestCase):
         # Revix on #786: "Firmware 固件" was drawn as "Firmware固件".
         fm = self._fm()
         text = "Firmware \u56fa\u4ef6\u66f4\u65b0\u68c0\u67e5\u5de5\u5177"
-        out = menu_tiles.wrap_caption(text, fm, fm.horizontalAdvance(text) * 7 // 10)
-        self.assertTrue(out.startswith("Firmware \u56fa") or out.startswith("Firmware\n"), out)
+        # Room for the Latin word and three CJK characters on the first line.
+        out = menu_tiles.wrap_caption(text, fm, fm.horizontalAdvance("Firmware \u56fa\u4ef6\u66f4"))
+        self.assertTrue(out.startswith("Firmware \u56fa\u4ef6"), out)
 
     def test_latin_words_still_break_only_at_spaces(self):
         fm = self._fm()
