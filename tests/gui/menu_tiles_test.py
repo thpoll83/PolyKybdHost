@@ -252,5 +252,56 @@ class ReviewFixesTest(unittest.TestCase):
         self.assertEqual(menu.actions(), rows)
 
 
+class ReviewFixes786Test(unittest.TestCase):
+    """Four findings CodeRabbit made on #786."""
+
+    def _fm(self):
+        from PyQt5.QtGui import QFontMetrics, QFont
+        return QFontMetrics(QFont())
+
+    def test_a_caption_without_spaces_wraps(self):
+        fm = self._fm()
+        text = "\u30ad\u30fc\u30dc\u30fc\u30c9\u306e\u30af\u30e9\u30c3\u30b7\u30e5\u8a18\u9332"
+        width = fm.horizontalAdvance(text) * 6 // 10
+        out = menu_tiles.wrap_caption(text, fm, width)
+        self.assertEqual(out.replace("\n", ""), text)       # whole, on two lines
+        self.assertEqual(len(out.split("\n")), 2)
+
+    def test_latin_words_still_break_only_at_spaces(self):
+        fm = self._fm()
+        out = menu_tiles.wrap_caption("Report a Problem", fm, fm.horizontalAdvance("Report a"))
+        self.assertEqual(out, "Report a\nProblem")
+
+    def _grid(self, texts, lo=60, hi=400):
+        menu = QMenu()
+        self.addCleanup(menu.deleteLater)
+        actions = [menu.addAction(t) for t in texts]
+        with mock.patch.dict(os.environ, {"POLYHOST_MENU_TILES": "1"}):
+            holder = menu_tiles.add_tiles(menu, actions, [None] * len(actions), 3,
+                                          keycap_tiles.tile_size(), tile_width=lo,
+                                          max_tile_width=hi)
+        return holder.defaultWidget(), actions
+
+    def test_the_width_follows_a_text_that_grows(self):
+        grid, actions = self._grid(["About", "Log file"])
+        before = grid.tiles[0].width()
+        actions[0].setText("Update firmware to version 1.11.6 with a longer text")
+        self.assertGreater(grid.tiles[0].width(), before)
+        self.assertEqual(grid.tiles[0].width(), grid.tiles[1].width())
+        self.assertNotIn("\u2026", grid.tiles[0].text())
+
+    def test_a_shortened_caption_keeps_its_full_label_beside_a_rich_tooltip(self):
+        menu = QMenu()
+        self.addCleanup(menu.deleteLater)
+        act = menu.addAction("Tengwar (fantasy)")
+        act.setToolTip('<img src="data:image/png;base64,AAAA">')
+        with mock.patch.dict(os.environ, {"POLYHOST_MENU_TILES": "1"}):
+            holder = menu_tiles.add_tiles(menu, [act], [None], 1, keycap_tiles.tile_size(),
+                                          labels=["Tengwar"])
+        tip = holder.defaultWidget().tiles[0].toolTip()
+        self.assertIn("Tengwar (fantasy)", tip)
+        self.assertIn("<img", tip)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -862,7 +862,7 @@ class PolyHost(QApplication):
         self.shell_title_action = QAction(get_icon("terminal.svg"),
                                           _("Set up the terminal and editors\u2026"),
                                           parent=self)
-        self.shell_title_action.setIconText(_("Terminal setup"))
+        self.shell_title_action.setIconText(_("Terminal and editors"))
         # noinspection PyUnresolvedReferences
         self.shell_title_action.triggered.connect(self.open_shell_title_dialog)
         self.updates_menu.addAction(self.shell_title_action)

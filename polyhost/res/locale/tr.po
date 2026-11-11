@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-11 07:58+0000\n"
+"POT-Creation-Date: 2026-11-11 08:18+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: tr\n"
@@ -3828,8 +3828,8 @@ msgid "Set up the terminal and editors…"
 msgstr "Terminali ve düzenleyicileri ayarla…"
 
 #: polyhost/host.py:865
-msgid "Terminal setup"
-msgstr "Terminal ayarı"
+msgid "Terminal and editors"
+msgstr "Terminal ve düzenleyiciler"
 
 #: polyhost/host.py:883
 msgid "Change System Input Language"

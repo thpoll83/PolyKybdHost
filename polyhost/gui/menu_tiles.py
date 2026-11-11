@@ -28,6 +28,8 @@ tiles on a Mac or to turn them off.
 
 import os
 import sys
+import html
+import unicodedata
 
 from PyQt5.QtCore import QSize, Qt
 from polyhost.gui.ui_kit import px
@@ -85,6 +87,35 @@ def tiles_supported(platform=None, env=None):
     return False
 
 
+def _is_wide(ch):
+    """A Chinese, Japanese or Korean character: text in these scripts has no
+    spaces, and a line may break between any two such characters."""
+    return bool(ch) and unicodedata.east_asian_width(ch) in ("W", "F")
+
+
+def _break_units(text, metrics, width):
+    """The pieces a caption may break between: words, and each wide character
+    on its own. Without the second, a Japanese caption was one unbreakable word
+    and was shortened even where it fits on two lines."""
+    units = []
+    for word in text.split():
+        if any(_is_wide(c) for c in word) and metrics.horizontalAdvance(word) > width:
+            run = ""
+            for c in word:
+                if _is_wide(c):
+                    if run:
+                        units.append(run)
+                        run = ""
+                    units.append(c)
+                else:
+                    run += c
+            if run:
+                units.append(run)
+        else:
+            units.append(word)
+    return units
+
+
 def wrap_caption(text, metrics, width, max_lines=2):
     """Break ``text`` into at most ``max_lines`` lines that fit ``width`` px.
 
@@ -95,8 +126,9 @@ def wrap_caption(text, metrics, width, max_lines=2):
     # under an icon.
     text = text.rstrip().rstrip("\u2026").rstrip(".").rstrip() if text.rstrip().endswith(("\u2026", "...")) else text
     lines, line = [], ""
-    for word in text.split():
-        candidate = f"{line} {word}".strip()
+    for word in _break_units(text, metrics, width):
+        joiner = "" if _is_wide(word[:1]) or _is_wide(line[-1:]) else " "
+        candidate = f"{line}{joiner}{word}" if line else word
         if line and metrics.horizontalAdvance(candidate) > width:
             lines.append(line)
             line = word
@@ -105,7 +137,11 @@ def wrap_caption(text, metrics, width, max_lines=2):
     if line:
         lines.append(line)
     if len(lines) > max_lines:
-        lines = lines[:max_lines - 1] + [" ".join(lines[max_lines - 1:])]
+        rest = lines[max_lines - 1:]
+        tail = rest[0]
+        for piece in rest[1:]:
+            tail += ("" if _is_wide(piece[:1]) or _is_wide(tail[-1:]) else " ") + piece
+        lines = lines[:max_lines - 1] + [tail]
     return "\n".join(metrics.elidedText(ln, Qt.ElideRight, width) for ln in lines)
 
 
@@ -137,14 +173,11 @@ class TileGrid(QWidget):
         self._columns = columns
         self._actions = list(actions)
         # Measured before the stylesheet polishes the tile, so leave a margin.
-        margin = px(24)
-        if tile_width and max_tile_width:
-            # As narrow as the captions allow on two lines, every tile the same.
-            text_w = fit_caption_width([a.iconText() for a in self._actions],
-                                       self.fontMetrics(), tile_width - margin,
-                                       max_tile_width - margin)
-            tile_width = text_w + margin
-        self._text_width = (tile_width or icon_size.width() + px(20)) - margin
+        self._margin = px(24)
+        self._width_range = ((tile_width, max_tile_width) if tile_width and max_tile_width
+                             else None)
+        tile_width = self._fitted_width() or tile_width
+        self._text_width = (tile_width or icon_size.width() + px(20)) - self._margin
         self.tiles = []
         for action, icon in zip(self._actions, icons):
             tile = QToolButton(self)
@@ -163,7 +196,26 @@ class TileGrid(QWidget):
             self._sync(tile, action, relayout=False)
         self._relayout()
 
+    def _fitted_width(self):
+        """The tile width at which every caption fits on two lines, between the
+        narrowest and widest allowed; None for a grid of fixed width."""
+        if self._width_range is None:
+            return None
+        lo, hi = self._width_range
+        return fit_caption_width([a.iconText() for a in self._actions], self.fontMetrics(),
+                                 lo - self._margin, hi - self._margin) + self._margin
+
     def _sync(self, tile, action, relayout=True):
+        # An entry whose text changes at runtime (the firmware entry's "Update
+        # firmware to v…") may need a wider tile than the grid was built with.
+        width = self._fitted_width()
+        if width is not None and width - self._margin != self._text_width:
+            self._text_width = width - self._margin
+            for t, a in zip(self.tiles, self._actions):
+                t.setFixedWidth(width)
+                if t is not tile:
+                    self._sync(t, a, relayout=False)
+            tile.setFixedWidth(width)
         text = action.iconText()
         caption = wrap_caption(text, tile.fontMetrics(), self._text_width)
         tile.setText(caption)
@@ -172,9 +224,15 @@ class TileGrid(QWidget):
         # wrap shortened it.
         full = action.text().replace("&", "").rstrip(".\u2026 ")
         tip = action.toolTip()
+        shortened = caption.replace("\n", " ") != full
         if tip and tip.rstrip(".\u2026 ") not in (text.rstrip(".\u2026 "), full):
+            # An explicit tooltip (a script's preview image) does not name the
+            # entry, so a shortened caption still gets its full label on top.
+            if shortened:
+                rich = Qt.mightBeRichText(tip)
+                tip = (f"{html.escape(full)}<br>{tip}" if rich else f"{full}\n{tip}")
             tile.setToolTip(tip)
-        elif caption.replace("\n", " ") != full:
+        elif shortened:
             tile.setToolTip(full)
         else:
             tile.setToolTip("")
