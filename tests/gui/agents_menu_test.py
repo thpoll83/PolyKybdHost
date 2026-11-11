@@ -87,7 +87,8 @@ class AgentHooksMenuTest(unittest.TestCase):
         sub = agent_hooks.add_setup_menu(menu, mock.MagicMock(), title="Set Up Agent Hooks")
         self.assertEqual(sub.title(), "Set Up Agent Hooks")
         self.assertEqual([a.text() for a in sub.actions()],
-                         ["Claude Code", "Codex", "Copilot CLI"])
+                         ["Claude Code", "Codex", "Copilot CLI", "Gemini CLI", "Qwen Code",
+                      "OpenCode"])
         with mock.patch.object(agent_hooks, "install") as install:
             sub.actions()[1].trigger()
         self.assertEqual(install.call_args[0][0], "codex")

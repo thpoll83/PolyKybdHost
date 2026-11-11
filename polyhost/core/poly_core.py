@@ -3221,6 +3221,7 @@ class PolyCore(Observable):
             # the OTHER stale bundles.
             self.sync_fontpack()
         if ((keys is None or "agents_enabled" in keys)
+                and getattr(self, "_agent_keys", None) is not None
                 and not self.poly_settings.get("agents_enabled")):
             # Turned off: the periodic stops, so it cannot clear the keys itself.
             self._clear_agent_keys()
