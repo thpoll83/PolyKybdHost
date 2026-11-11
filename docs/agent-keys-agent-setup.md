@@ -201,6 +201,16 @@ stdin. These formats were not tested with the keyboard yet.
    `polyctl agents label <vendor> <session_id> "<text>"` (the session id is in the
    list).
 
-Without any hook, Claude Code, Gemini CLI and Codex running in a terminal are still
-found by their window title (not on macOS), but then "waiting" and "done" look the
-same.
+Without any hook, an agent running in a terminal is still found by its window
+title (not on macOS): Claude Code, Codex, Gemini CLI, Qwen Code, OpenCode, Copilot
+CLI, Kimi Code, Grok Build and Mistral Vibe. What the title shows differs:
+
+- Gemini CLI, Qwen Code and Grok Build show working and waiting.
+- Claude Code shows working, but "waiting" and "done" look the same (`✳`).
+- Codex shows waiting (`[ ! ] Action Required`); otherwise only with the shell
+  integration's Codex option.
+- OpenCode, Copilot CLI, Kimi Code and Mistral Vibe show only that they run
+  (idle), Vibe also working.
+- Kimi Code's title stops naming it once the session has a title.
+
+A hook gives the real state. Formats: `res/overlay_sources/aicli/SOURCES.md`.

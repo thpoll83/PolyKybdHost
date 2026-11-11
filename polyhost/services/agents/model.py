@@ -63,6 +63,9 @@ VENDORS = {v.vid: v for v in (
     Vendor("opencode", "OpenCode", "OC", ("agent:opencode",)),
     Vendor("qwen", "Qwen Code", "Qwn", ("agent:qwen",)),
     Vendor("aider", "Aider", "Aid", ("agent:aider",)),
+    Vendor("kimi", "Kimi Code", "Kimi", ("agent:kimi",)),
+    Vendor("grok", "Grok Build", "Grok", ("agent:grok",)),
+    Vendor("vibe", "Mistral Vibe", "Vibe", ("si:mistralai",)),
 )}
 
 

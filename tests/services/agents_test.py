@@ -236,11 +236,39 @@ class TitleTest(unittest.TestCase):
                          ("claude-code", AgentState.DONE, "Fix the build"))
         self.assertEqual(parse_title("◐ Fix the build")[:2],
                          ("claude-code", AgentState.WORKING))
-        self.assertIsNone(parse_title("✳︎ qwen session"))       # Qwen, not Claude
+        self.assertEqual(parse_title("✳︎ qwen session")[0], "qwen")   # Qwen, not Claude
         self.assertEqual(parse_title("✋  Action Required (repo)")[:2],
                          ("gemini", AgentState.WAITING))
         self.assertEqual(parse_title("[ ! ] Action Required")[:2], ("codex", AgentState.WAITING))
         self.assertIsNone(parse_title("vim claude.md"))
+
+    def test_parse_title_other_clis(self):
+        W, I, B = AgentState.WAITING, AgentState.IDLE, AgentState.WORKING
+        cases = {
+            "\u2733\ufe0e Approve rm": ("qwen", W, "Approve rm"),
+            "\u25d0\ufe0e Reading files": ("qwen", B, "Reading files"),
+            "Qwen - polykybd" + " " * 60: ("qwen", I, "polykybd"),
+            "⏲  Working… (repo)": ("gemini", B, "repo"),
+            "Gemini CLI (repo)": ("gemini", I, "repo"),
+            "● [ . ] Action Required": ("codex", W, ""),
+            "OpenCode": ("opencode", I, ""),
+            "OC | Fix the tests": ("opencode", I, "Fix the tests"),
+            "GitHub Copilot": ("copilot", I, ""),
+            "🤖 Refactor card": ("copilot", I, "Refactor card"),
+            "Copilot: Refactor": ("copilot", I, "Refactor"),
+            "Kimi Code": ("kimi", I, ""),
+            "grok": ("grok", I, ""),
+            "my session - grok": ("grok", I, "my session"),
+            "⠋ - Thinking - my session - grok": ("grok", B, "my session"),
+            "⚠ Action Required - my session - grok": ("grok", W, "my session"),
+            "Vibe": ("vibe", I, ""),
+            ">> Vibe": ("vibe", B, ""),
+        }
+        for title, want in cases.items():
+            self.assertEqual(parse_title(title), want, title)
+        for title in ("~/codex", "Vibe - Google Chrome", "man grok", "Qwen",
+                      "OpenCode Docs - Firefox", "bash", "grok.py - Visual Studio Code"):
+            self.assertIsNone(parse_title(title), title)
         self.assertIsNone(parse_title(""))
 
     def test_scanner_adds_and_drops(self):

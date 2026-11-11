@@ -28,14 +28,35 @@ def _crop(m):
     return m[r[0]:r[-1] + 1, c[0]:c[-1] + 1]
 
 
-def qwen():
-    """Simple Icons' qwen (CC0) at the cards' 26 px, its lower 16 rows."""
-    ink = _crop(_ink("qwen.png") > 0.02).astype(float) * 255
+def _brand(name):
+    """A Simple Icons mark (CC0, 256 px in the aicli icons) at the cards' 26 px,
+    its lower 16 rows."""
+    ink = _crop(_ink(name) > 0.02).astype(float) * 255
     img = Image.fromarray(ink.astype(np.uint8))
     s = BOX / max(img.size)
     img = img.resize((round(img.width * s), round(img.height * s)), Image.LANCZOS)
     m = np.array(img) >= 110
     return _crop(m)[-ROWS:]
+
+
+def qwen():
+    return _brand("qwen.png")
+
+
+def kimi():
+    return _brand("kimi.png")
+
+
+def _halve(m):
+    """A drawn mark with 2 px lines at half size: the lines stay 1 px."""
+    h, w = (m.shape[0] // 2) * 2, (m.shape[1] // 2) * 2
+    return m[:h, :w].reshape(h // 2, 2, w // 2, 2).any(axis=(1, 3))
+
+
+def grok():
+    """The ESC mark (a circle and a slash, drawn from the grok binary's braille
+    art) at half size."""
+    return _crop(_halve(_crop(_ink("grok.png") > 0.5)))
 
 
 def opencode():
@@ -80,7 +101,7 @@ def antigravity():
 def main():
     os.makedirs(OUT, exist_ok=True)
     for name, fn in (("qwen", qwen), ("opencode", opencode), ("aider", aider),
-                     ("antigravity", antigravity)):
+                     ("antigravity", antigravity), ("kimi", kimi), ("grok", grok)):
         m = fn()
         assert m.shape[0] <= ROWS, (name, m.shape)
         Image.fromarray(m.astype(np.uint8) * 255).convert("1").save(os.path.join(OUT, f"{name}.png"))

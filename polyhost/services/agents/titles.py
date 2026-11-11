@@ -18,15 +18,49 @@ from polyhost.services.agents.model import AgentState
 
 # Claude Code: "✳ <topic>" idle, a spinner glyph while working. Qwen Code uses the
 # same glyphs followed by U+FE0E, which must not match.
-_CLAUDE_IDLE = re.compile(r"^✳(?!︎)\s*(.*)$")
-_CLAUDE_BUSY = re.compile(r"^[⠐-⣿◐-◓·✢✶✻✽](?!︎)\s+(.+)$")
-_GEMINI = (
-    (re.compile(r"^◇\s+Ready\s*\((.*)\)"), AgentState.IDLE),
-    (re.compile(r"^✋\s+Action Required\s*(.*)"), AgentState.WAITING),
-    (re.compile(r"^✦\s+(.*)"), AgentState.WORKING),
+_CLAUDE_IDLE = re.compile(r"^✳(?!\ufe0e)\s*(.*)$")
+_CLAUDE_BUSY = re.compile(r"^[⠐-⣿◐-◓·✢✶✻✽](?!\ufe0e)\s+(.+)$")
+
+# (pattern, vendor, state) in order; the first match wins. The topic is group 1
+# when the pattern has one. Formats: res/overlay_sources/aicli/SOURCES.md. A
+# title that names the CLI but not its state reads IDLE: the agent is there, and
+# a hook, when installed, gives the real state.
+_RULES = (
+    # Gemini CLI: two spaces after the glyph, padded to 80 characters.
+    (r"^◇\s+Ready\s*\((.*)\)", "gemini", AgentState.IDLE),
+    (r"^✋\s+Action Required\s*(.*)", "gemini", AgentState.WAITING),
+    (r"^⏲\s+Working…?\s*(.*)", "gemini", AgentState.WORKING),
+    (r"^✦\s+(.*)", "gemini", AgentState.WORKING),
+    (r"^Gemini CLI\s*\((.*)\)$", "gemini", AgentState.IDLE),
+    # Codex: "[ ! ] Action Required" (blinking to "[ . ]") while blocked on the
+    # user; "codex ..." with the shell integration's Codex option.
+    (r"^●?\s*\[ [!.] \] Action Required\s*(.*)", "codex", AgentState.WAITING),
+    (r"^codex\b\s*[-:|]?\s*(.*)", "codex", AgentState.WORKING),
+    # Qwen Code: Claude Code's glyphs followed by U+FE0E. "✳︎" waits for a
+    # confirmation, "◐︎" responds; otherwise "Qwen - <dir>".
+    (r"^✳\ufe0e\s*(.*)", "qwen", AgentState.WAITING),
+    (r"^◐\ufe0e\s*(.*)", "qwen", AgentState.WORKING),
+    (r"^Qwen - (.*)", "qwen", AgentState.IDLE),
+    # OpenCode: "OpenCode" on the home screen, "OC | <session>" in a session.
+    (r"^OpenCode$", "opencode", AgentState.IDLE),
+    (r"^OC \| (.+)", "opencode", AgentState.IDLE),
+    # GitHub Copilot CLI: "GitHub Copilot", then "🤖 <topic>" ("Copilot: <topic>"
+    # in screen-reader mode).
+    (r"^GitHub Copilot$", "copilot", AgentState.IDLE),
+    (r"^🤖\s+(.+)", "copilot", AgentState.IDLE),
+    (r"^Copilot: (.+)", "copilot", AgentState.IDLE),
+    # Kimi Code: "Kimi Code" until the session has a title, then only the title,
+    # which does not name it.
+    (r"^Kimi Code$", "kimi", AgentState.IDLE),
+    # Grok Build: parts joined with " - ", always ending with "grok".
+    (r"^⚠ Action Required(?: - (.*?))?(?: - grok)?$", "grok", AgentState.WAITING),
+    (r"^\S - Thinking(?: - (.*?))? - grok$", "grok", AgentState.WORKING),
+    (r"^(?:(.+) - )?grok$", "grok", AgentState.IDLE),
+    # Mistral Vibe: "Vibe" idle, ">> Vibe" (up to three symbols) while working.
+    (r"^Vibe$", "vibe", AgentState.IDLE),
+    (r"^[^\w\s]{1,3}\s*Vibe$", "vibe", AgentState.WORKING),
 )
-_CODEX_WAIT = re.compile(r"^\[ ! \] Action Required\s*(.*)")
-_CODEX = re.compile(r"^codex\b\s*[-:|]?\s*(.*)", re.IGNORECASE)
+_COMPILED = tuple((re.compile(p), v, st) for p, v, st in _RULES)
 
 
 def parse_title(title: str):
@@ -40,16 +74,13 @@ def parse_title(title: str):
     m = _CLAUDE_BUSY.match(title)
     if m:
         return "claude-code", AgentState.WORKING, m.group(1).strip()
-    for pattern, state in _GEMINI:
+    for pattern, vid, state in _COMPILED:
         m = pattern.match(title)
         if m:
-            return "gemini", state, m.group(1).strip()
-    m = _CODEX_WAIT.match(title)
-    if m:
-        return "codex", AgentState.WAITING, m.group(1).strip()
-    m = _CODEX.match(title)
-    if m:
-        return "codex", AgentState.WORKING, m.group(1).strip()
+            topic = ((m.group(1) or "") if pattern.groups else "").strip()
+            if topic.startswith("(") and topic.endswith(")"):
+                topic = topic[1:-1].strip()     # Gemini's "(<dir>)"
+            return vid, state, topic
     return None
 
 
