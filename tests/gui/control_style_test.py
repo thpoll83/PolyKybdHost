@@ -96,5 +96,29 @@ class RowGrowsTest(unittest.TestCase):
         self.assertLessEqual(xs[-1][0] + xs[-1][1], dlg.width())
 
 
+class OverlappingGroupsTest(unittest.TestCase):
+    """CodeRabbit on #788: a button box's buttons are in their own row and in
+    the outer row; with two widths a pass changed them back and forth."""
+
+    def test_a_button_box_beside_a_button_settles_on_one_width(self):
+        from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout
+        from polyhost.gui import ui_kit
+        theme.apply_theme(_APP, theme.THEME_LIGHT)
+        dlg = QDialog()
+        self.addCleanup(dlg.deleteLater)
+        row = QHBoxLayout(dlg)
+        wide = QPushButton("Collect logs and open the report form")
+        row.addWidget(wide)
+        box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        row.addWidget(box)
+        dlg.show()
+        _APP.processEvents()
+        widths = [b.minimumWidth() for b in [wide] + box.buttons()]
+        self.assertEqual(len(set(widths)), 1, widths)
+        with mock.patch.object(QPushButton, "setMinimumWidth") as set_width:
+            ui_kit.match_button_widths(dlg)      # a second pass changes nothing
+        set_width.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()

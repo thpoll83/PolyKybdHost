@@ -317,17 +317,28 @@ def match_button_widths(window):
     keeps its own width. A button whose text is one character (the macro
     editor's arrows) is left out. The window widens when the row no longer fits.
     """
+    # A button in a QDialogButtonBox beside other buttons is in two groups:
+    # the box's own row and the outer row. Merge groups that share a button,
+    # so each button gets one width; two different ones would be set in turn
+    # on every pass, and each would post a new layout request.
+    merged = []
     for layout in window.findChildren(QBoxLayout):
         if layout.direction() not in (QBoxLayout.LeftToRight, QBoxLayout.RightToLeft):
             continue
         for group in _button_groups(layout):
-            for w in group:
-                w.ensurePolished()      # the style sheet's padding is in the hint
-            widest = max(max(w.sizeHint().width(), w.minimumSizeHint().width())
-                         for w in group)
-            for w in group:
-                if w.minimumWidth() != widest:   # unchanged: no new layout request
-                    w.setMinimumWidth(widest)
+            members = set(group)
+            for other in [m for m in merged if m & members]:
+                members |= other
+                merged.remove(other)
+            merged.append(members)
+    for group in merged:
+        for w in group:
+            w.ensurePolished()      # the style sheet's padding is in the hint
+        widest = max(max(w.sizeHint().width(), w.minimumSizeHint().width())
+                     for w in group)
+        for w in group:
+            if w.minimumWidth() != widest:   # unchanged: no new layout request
+                w.setMinimumWidth(widest)
     # A row can also grow after the dialog opened (the log bundle's "Show in
     # Folder" appears after a save). Widen the window to what its layout needs,
     # or Qt squeezes the buttons into each other.
