@@ -56,7 +56,8 @@ MAX_NAMES = 8
 
 
 class WindowReportServer(MpcListenerServer):
-    """Serve only ``window.report`` over an authenticated AF_INET socket."""
+    """Serve ``window.report`` (plus ``agents.report`` when ``on_agents_report``
+    is given) over an authenticated AF_INET socket."""
 
     def __init__(self, on_report, host_version, log, *,
                  bind_host="0.0.0.0", port=None, authkey=None, on_agents_report=None):
@@ -86,13 +87,16 @@ class WindowReportServer(MpcListenerServer):
             return ("127.0.0.1", self.port)
         return self.address
 
+    def _served_methods(self):
+        return [p.M_WINDOW_REPORT] + ([p.M_AGENTS_REPORT]
+                                      if self._on_agents_report is not None else [])
+
     def start(self):
         super().start()
-        methods = [p.M_WINDOW_REPORT] + ([p.M_AGENTS_REPORT]
-                                         if self._on_agents_report is not None else [])
         self.log.info(
             "Window-report network listener on %s:%d (auth-gated, only %s)",
-            self.address[0], self.port, ", ".join(f"'{m}'" for m in methods))
+            self.address[0], self.port,
+            ", ".join(f"'{m}'" for m in self._served_methods()))
 
     def dispatch(self, conn, req_id, method, params):
         if method == p.M_AGENTS_REPORT and self._on_agents_report is not None:
@@ -105,7 +109,8 @@ class WindowReportServer(MpcListenerServer):
             # The entire security model rests on nothing else being reachable.
             return p.make_error(
                 req_id, p.ERR_METHOD_NOT_FOUND,
-                f"only '{p.M_WINDOW_REPORT}' is served on the network endpoint")
+                "only " + ", ".join(f"'{m}'" for m in self._served_methods())
+                + " served on the network endpoint")
         try:
             icon = self._decode_icon(params.get("icon"))
         except ValueError as err:
