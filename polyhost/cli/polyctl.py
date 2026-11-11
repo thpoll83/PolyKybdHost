@@ -472,6 +472,227 @@ def _cmd_tap_terms(client, args):
     return 0
 
 
+def _cmd_forwarder(_client, args):
+    """Pair a forwarder with the keyboard computer (services/forwarder_pairing.py).
+    Local file access: needs no running host."""
+    from polyhost.services import forwarder_pairing as fp
+    if args.forwarder_cmd == "pairing-code":
+        print(fp.pairing_code())
+        print("Enter it on the forwarder's computer: polyctl forwarder pair <code>, or the "
+              "forwarder's tray menu. Anyone with it can send reports to this computer.",
+              file=sys.stderr)
+        return 0
+    if args.forwarder_cmd == "pair":
+        key = fp.parse_code(args.code)
+        if key is None:
+            print("polyctl: not a pairing code (64 letters a-f and digits, in groups of 8)",
+                  file=sys.stderr)
+            return 2
+        print(f"paired: key saved to {fp.save_paired_key(key)}; restart the forwarder")
+        return 0
+    if args.forwarder_cmd == "unpair":
+        print("pairing removed" if fp.forget_pairing() else "no pairing to remove")
+        return 0
+    return 2
+
+
+def _cmd_attention(client, args):
+    """Run the focus ripple on a key (firmware v32+), or cancel it."""
+    if args.cancel:
+        client.call(protocol.M_KEY_ATTENTION, {"cancel": True})
+        print("key attention cancelled")
+        return 0
+    if args.row is None or args.col is None:
+        print("polyctl: give ROW and COL, or --cancel", file=sys.stderr)
+        return 2
+    client.call(protocol.M_KEY_ATTENTION, {"row": args.row, "col": args.col,
+                                           "count": args.count, "period_ms": args.period_ms})
+    times = "until cancelled" if args.count == 0 else f"{args.count} time(s)"
+    print(f"key attention on row {args.row}, col {args.col}: {times}, "
+          f"every {args.period_ms} ms")
+    return 0
+
+
+def _cmd_agents(client, args):
+    """List, report, label or forget AI agent sessions (services/agents)."""
+    if args.agents_cmd == "list":
+        info = client.call(protocol.M_AGENTS_LIST, {})
+        if args.json:
+            print(json.dumps(info, indent=2))
+            return 0
+        state = "on" if info.get("enabled") else "off (polyctl settings set agents_enabled true)"
+        print(f"agent keys: {state}; keyboard {'active' if info.get('active') else 'not active'}; "
+              f"page {info.get('page', 0) + 1} of {info.get('pages', 1)}")
+        for a in info.get("agents", []):
+            wait = "?" if a.get("waiting_inferred") else ""
+            print(f"  p{a['page'] + 1} key {(a['key'] + 1) % 10}  {a['state'] + wait:<9} "
+                  f"{a['vendor']:<12} {a['headline'][:40]:<40} {a['session_id'][:24]}")
+        if not info.get("agents"):
+            print("  (no agents reported)")
+        press = info.get("last_press")
+        if press:
+            names = {10: "ESC (next page)", 11: "- (dictation)", 12: "+ (next waiting)"}
+            key = press.get("key")
+            label = names.get(key, f"key {(key + 1) % 10}" if isinstance(key, int) else "?")
+            when = time.strftime("%H:%M:%S", time.localtime(press.get("at", 0)))
+            print(f"last AI-key press: {label} at {when}: {press.get('result')}"
+                  + (f" ({press['agent']})" if press.get("agent") else ""))
+        else:
+            print("last AI-key press: none read since the host started")
+        return 0
+    if args.agents_cmd == "report":
+        agent = client.call(protocol.M_AGENTS_REPORT, {
+            "vendor": args.vendor, "session_id": args.session, "state": args.state,
+            "headline": args.headline, "cwd": args.cwd, "pid": args.pid})
+        print(json.dumps(agent) if agent else "removed")
+        return 0
+    if args.agents_cmd == "label":
+        client.call(protocol.M_AGENTS_LABEL, {"vendor": args.vendor,
+                                              "session_id": args.session, "text": args.text})
+        return 0
+    if args.agents_cmd == "forget":
+        client.call(protocol.M_AGENTS_FORGET, {"vendor": args.vendor, "session_id": args.session})
+        return 0
+    return 2
+
+
+def _cmd_agents_hooks(_client, args):
+    """`polyctl agents hooks install|uninstall <vendor>`: edit the agent's own config.
+    Local: needs no running host. Shows the diff and asks before writing."""
+    import difflib
+    import os
+    from polyhost.services.agents import hook_install
+    extra = []
+    if args.host:
+        extra += ["--host", args.host]
+    if args.authkey_file:
+        extra += ["--authkey-file", os.path.abspath(args.authkey_file)]
+    changes = hook_install.plan(args.vendor, install=args.hooks_cmd == "install",
+                                extra_args=extra)
+    if args.vendor == "codex" and args.hooks_cmd == "install" and not changes:
+        conflict = hook_install.codex_conflict(os.path.expanduser("~"))
+        if conflict:
+            print(conflict, file=sys.stderr)
+            return 1
+    if not changes:
+        print("Nothing to change: the hooks are already as they should be.")
+        return 0
+    for change in changes:
+        diff = difflib.unified_diff(change.before.splitlines(), change.after.splitlines(),
+                                    change.path + " (now)", change.path + " (new)",
+                                    lineterm="")
+        print("\n".join(diff) or f"(remove {change.path})")
+    if args.dry_run:
+        return 0
+    if not args.yes:
+        answer = input("Write these changes? A copy of each file is kept as "
+                       "<file>.polykybd.bak. [y/N] ")
+        if answer.strip().lower() not in ("y", "yes"):
+            print("Nothing written.")
+            return 1
+    for path in hook_install.apply(changes):
+        print(f"wrote {path}")
+    if args.vendor == "claude-code":
+        print("Start a new Claude Code session (or run /hooks) to load the hooks.")
+    return 0
+
+
+def _read_hook_payload(args):
+    """The hook's JSON: an argument (Codex `notify` passes it last) or stdin."""
+    text = args.payload
+    if not text and not sys.stdin.isatty():
+        text = sys.stdin.read()
+    try:
+        payload = json.loads(text or "{}")
+    except ValueError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _agent_hook_target(args):
+    """Where a hook reports on a forwarder's machine: `--host` when given, else the
+    target the running forwarder wrote (services/agents/remote.py), read on every
+    call so a forwarder that moves to another computer takes the hooks along.
+    None: report to this machine's own host."""
+    if args.host:
+        return {"host": args.host, "authkey_file": args.authkey_file}
+    from polyhost.services.agents.remote import read_forwarder_target
+    return read_forwarder_target()
+
+
+# The whole report (stdin, connect, HELLO, the call) gets this long; then the hook
+# exits 0 anyway. Below the 5 s the Gemini and Copilot hook configs allow.
+AGENT_HOOK_DEADLINE_S = 4.0
+
+
+def _agents_hook_main(args) -> int:
+    """`polyctl agents hook <vendor>`: the command an agent's hook runs.
+
+    ⚠️ Always exits 0 and prints nothing: a hook that fails or writes to stdout
+    can block or steer the agent, and a keyboard light is not worth that.
+    ⚠️ Bounded: a host that accepts the connection and never answers would hold
+    the agent. The report runs on a daemon thread, which cannot keep the process
+    alive, and is abandoned after AGENT_HOOK_DEADLINE_S."""
+    import threading
+    worker = threading.Thread(target=_agents_hook_report, args=(args,),
+                              name="agents-hook", daemon=True)
+    worker.start()
+    worker.join(AGENT_HOOK_DEADLINE_S)
+    return 0
+
+
+def _agents_hook_report(args) -> None:
+    """The report itself (see _agents_hook_main). Never raises."""
+    try:
+        import os
+        from polyhost.services.agents.hooks import interpret, transcript_title
+        payload = _read_hook_payload(args)
+        report = interpret(payload, event=args.event or "")
+        if report is None:
+            return
+        from polyhost.services.agents.procs import agent_pid
+        # The agent's own process, past the shell that runs this hook: the host
+        # removes the key when it exits (a closed terminal sends no SessionEnd).
+        report.update(vendor=args.vendor, pid=agent_pid(), surface="cli")
+        # By name on the wire: the network endpoint accepts only state names
+        # (remote.sanitize_report), and the local core parses names too.
+        state = report.get("state")
+        if hasattr(state, "name"):
+            report["state"] = state.name.lower()
+        # The session's own title (Claude Code), so two sessions in one folder are
+        # told apart. Only the title is sent, never the transcript.
+        title = transcript_title(payload.get("transcript_path"))
+        if title:
+            report["headline"] = title
+        target = _agent_hook_target(args)
+        if target:
+            # This machine runs a forwarder, the keyboard is on another: send the
+            # report over the authenticated window-report endpoint, named with
+            # this machine (the forwarder uses the same name, socket.gethostname).
+            import socket
+            from polyhost.server.window_report_client import connect as connect_report
+            authkey = None
+            if target.get("authkey_file"):
+                with open(target["authkey_file"], "rb") as fh:
+                    authkey = fh.read().strip()
+            report["machine"] = target.get("machine") or socket.gethostname()
+            remote = connect_report(target["host"], port=target.get("port"),
+                                    authkey=authkey, timeout=2.0)
+            try:
+                remote.call(protocol.M_AGENTS_REPORT, report)
+            finally:
+                remote.close()
+            return
+        client = connect()
+        try:
+            client.call(protocol.M_AGENTS_REPORT, report)
+        finally:
+            client.close()
+    except Exception:  # noqa: BLE001 - see the docstring
+        pass
+    return
+
+
 def _cmd_handedness(client, args):
     """Assign which half is left. The side named is the CONNECTED (master) one.
 
@@ -1235,6 +1456,29 @@ def build_parser():
              "display-off deadline, which is fixed.")
     p_idle_timeout.set_defaults(func=_cmd_idle_timeout)
 
+    p_fwd = sub.add_parser(
+        "forwarder", help="pair a forwarder with the keyboard computer (local, no host needed)")
+    fwd_sub = p_fwd.add_subparsers(dest="forwarder_cmd", required=True)
+    fwd_sub.add_parser("pairing-code", help="on the keyboard computer: print the code")
+    p_fwd_pair = fwd_sub.add_parser("pair", help="on the forwarder's computer: save the code")
+    p_fwd_pair.add_argument("code")
+    fwd_sub.add_parser("unpair", help="on the forwarder's computer: remove the pairing")
+    p_fwd.set_defaults(func=_cmd_forwarder)
+
+    p_attention = sub.add_parser(
+        "attention", help="run the first-run tutorial's focus ripple on a key, by its "
+                          "matrix position (firmware v32+, split72)")
+    p_attention.add_argument("row", type=int, nargs="?", default=None)
+    p_attention.add_argument("col", type=int, nargs="?", default=None)
+    p_attention.add_argument("--count", type=int, default=3,
+                             help="ripples to run, 0 = until --cancel (default 3)")
+    p_attention.add_argument("--period-ms", type=int, default=4000,
+                             help="time from one ripple to the next, 2300..10000 ms in "
+                                  "100 ms steps (default 4000)")
+    p_attention.add_argument("--cancel", action="store_true",
+                             help="end the running request; a ripple already running finishes")
+    p_attention.set_defaults(func=_cmd_attention)
+
     p_tap_terms = sub.add_parser(
         "tap-terms",
         help="get or set the tap-hold timing: tapping term and Flow Tap term (firmware v29+), "
@@ -1255,6 +1499,56 @@ def build_parser():
         help=f"Auto Shift timeout, {TapTerms.AUTO_SHIFT_MIN_MS}..{TapTerms.AUTO_SHIFT_MAX_MS} ms "
              f"in {TapTerms.STEP_MS} ms steps (default {TapTerms.DEFAULT_AUTO_SHIFT_MS})")
     p_tap_terms.set_defaults(func=_cmd_tap_terms)
+
+    p_agents = sub.add_parser(
+        "agents", help="AI agent sessions shown on the number row (firmware v31+)")
+    agents_sub = p_agents.add_subparsers(dest="agents_cmd", required=True)
+    p_al = agents_sub.add_parser("list", help="the agents the host knows, by page and key")
+    p_al.add_argument("--json", action="store_true")
+    p_ar = agents_sub.add_parser("report", help="report an agent's state by hand")
+    p_ar.add_argument("vendor", help="claude-code, codex, gemini, antigravity, copilot, ...")
+    p_ar.add_argument("session", help="a session id; the same id updates the same key")
+    p_ar.add_argument("state", help="working, waiting, done, idle, stale or ended")
+    p_ar.add_argument("--headline", default=None)
+    p_ar.add_argument("--cwd", default=None)
+    p_ar.add_argument("--pid", type=int, default=None)
+    p_alb = agents_sub.add_parser("label", help="set the text an agent's key shows")
+    p_alb.add_argument("vendor")
+    p_alb.add_argument("session")
+    p_alb.add_argument("text")
+    p_af = agents_sub.add_parser("forget", help="remove an agent and free its key")
+    p_af.add_argument("vendor")
+    p_af.add_argument("session")
+    p_ah = agents_sub.add_parser(
+        "hook", help="run from an agent's hook: reads the hook JSON from stdin "
+                     "(or as the last argument) and reports it; always exits 0")
+    p_ah.add_argument("vendor")
+    p_ah.add_argument("payload", nargs="?", default=None)
+    p_ah.add_argument("--host", default=None,
+                      help="report to this keyboard computer instead of the one the "
+                           "running forwarder reports to (not needed with a forwarder "
+                           "running)")
+    p_ah.add_argument("--authkey-file", default=None,
+                      help="that computer's polykybd-winreport.authkey (as for the "
+                           "forwarder's --report-authkey-file)")
+    p_ah.add_argument("--event", default=None,
+                      help="the event name, for agents whose hook JSON does not name it "
+                           "(Copilot CLI: --event agentStop)")
+    p_agents.set_defaults(func=_cmd_agents)
+    p_ahs = agents_sub.add_parser(
+        "hooks", help="write or remove the PolyKybd hooks in an agent's own config "
+                      "(claude-code, codex, copilot); shows the diff first")
+    p_ahs.add_argument("hooks_cmd", choices=("install", "uninstall"))
+    p_ahs.add_argument("vendor", choices=("claude-code", "codex", "copilot", "gemini", "qwen",
+                                          "opencode"))
+    p_ahs.add_argument("--dry-run", action="store_true", help="only show the diff")
+    p_ahs.add_argument("--yes", action="store_true", help="write without asking")
+    p_ahs.add_argument("--host", default=None,
+                       help="fix the hooks to the keyboard computer HOST; without it, "
+                            "they follow the forwarder running on this computer")
+    p_ahs.add_argument("--authkey-file", default=None,
+                       help="that computer's polykybd-winreport.authkey")
+    p_ahs.set_defaults(func=_cmd_agents_hooks)
 
     p_glyph_script = sub.add_parser(
         "glyph-script", help="get or set the glyph-script override (firmware v9+)")
@@ -1624,14 +1918,20 @@ def _is_offline_command(args) -> bool:
 
 
 def _is_local_command(args) -> bool:
-    """True for commands that never talk to the host: ``shell-integration``
-    and ``editor-plugins`` edit the user's own files and have nothing to ask it."""
-    return getattr(args, "command", None) in ("shell-integration", "editor-plugins")
+    """True for commands that never talk to the host: ``shell-integration``,
+    ``editor-plugins``, ``agents hooks`` and ``forwarder`` (pairing) edit the user's
+    own files and have nothing to ask it."""
+    if getattr(args, "command", None) == "agents":
+        return getattr(args, "agents_cmd", None) == "hooks"
+    return getattr(args, "command", None) in ("shell-integration", "editor-plugins", "forwarder")
 
 
 def main(argv=None):
     # Parse first so --help / bad args exit before we open a socket.
     args = build_parser().parse_args(argv)
+
+    if getattr(args, "command", None) == "agents" and args.agents_cmd == "hook":
+        return _agents_hook_main(args)
 
     if _is_local_command(args):
         try:

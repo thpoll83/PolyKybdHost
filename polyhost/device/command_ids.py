@@ -97,6 +97,21 @@ class Cmd(Enum):
     # The reply carries both terms and a flags byte (bit 0: Flow Tap compiled in).
     # Ranges: TapTerms below.
     TAP_TERMS = 44
+    # Agent keys (protocol v31+): data[2] op. 0 QUERY (ai_mode, newest event seq,
+    # number keys found, ESC found); 1 SET_KEYS (10 states, one AGENT_FLAG_* byte,
+    # 12 pool slots u16 LE: the 10 number keys, then '-' and '+'; 0xFFFF = none);
+    # 2 READ_EVENTS (data[3] last seq seen; reply: newest seq, count, then (seq, key)
+    # pairs oldest first; key 10 = pager, 11 = '-', 12 = '+').
+    # States: services/agents/model.AgentState, a CLOSED range.
+    AI = 45
+    # Agent card upload (protocol v31+): data[2..3] u16 LE, bits 0..9 pool slot,
+    # bits 12..14 segment 0..5; data[4..63] 60 bytes of the 360-byte image. Written
+    # straight into the pool slot, not through the display->pool mapping.
+    AI_CARD = 46
+    # Key attention (protocol v32+): the focus ripple on one key. data[2] op: 0 START
+    # (data[3] row, data[4] col, data[5] count, 0 = until cancelled, data[6] period
+    # in 100 ms units, CLOSED 23..100), 1 CANCEL. firmware anim/key_attention.h.
+    KEY_ATTENTION = 47
 
 
 

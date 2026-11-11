@@ -179,6 +179,29 @@ DEFAULT_SETTINGS = {
         "generic_overlays_fill_shortcuts": True,
         "shortcut_icons_enabled": True,
         "shortcut_icon_auto_fetch": True,
+        # AI agents on the number row (docs/agent-registry-plan.md, firmware
+        # protocol v31+). Off by default. No pool slots are reserved: the 12 agent
+        # cards borrow slots the program in front is not showing.
+        "agents_enabled": False,
+        # Also find agents from terminal window titles (not on macOS).
+        "agents_title_scan": True,
+        # The shortcut the '-' key sends in AI mode to start dictation, in pynput's
+        # syntax ("<cmd>+h"). Empty: Win+H on Windows, nothing elsewhere.
+        "agents_dictation_shortcut": "",
+        # Agents on a forwarder's machine (a second computer): their hooks report
+        # over the network window-report endpoint, and a key press is relayed back
+        # in its replies. Off by default, and only with agents_enabled on too;
+        # see the security audit, HOST-6.
+        "agents_remote_enabled": False,
+        # On a forwarder's computer: a key press on one of this computer's agents
+        # also brings the agent's own window forward here. Off: the keyboard's
+        # computer brings forward only its viewer window showing this computer
+        # (NoMachine, Remote Desktop, VNC). See the security audit, HOST-6.
+        "agents_raise_here": False,
+        # A working agent with no event for this many minutes shows as stale; an
+        # idle or stale one is removed after agents_forget_minutes. 0 turns it off.
+        "agents_stale_minutes": 30,
+        "agents_forget_minutes": 240,
         # Linux only: before the first harvest, switch the session's
         # accessibility flag (org.a11y.Status.IsEnabled) on, because a Qt app
         # joins the AT-SPI bus only while it is set and Plasma leaves it off

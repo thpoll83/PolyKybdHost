@@ -50,6 +50,8 @@ from polyhost.services.sunlight_helper import Sunlight
 from polyhost.settings import PolySettings
 from polyhost.services.crash_report import CrashRecord, CrashScanner
 from polyhost.services import problem_scan
+from polyhost.services.agents.controller import AgentKeysController
+from polyhost.services.agents.registry import AgentRegistry
 from polyhost.util.observable import Observable
 from polyhost.core.window_timing import NEW_WINDOW_ACCEPT_TIME_MSEC
 
@@ -358,6 +360,7 @@ class PolyCore(Observable):
                                  self._console_periodic)
         self.worker.add_periodic("brightness", PERIODIC_10MIN_CYCLE_MSEC / 1000.0,
                                  self._brightness_periodic)
+        self._init_agents()
 
         # Persist the keyboard MRU just before the system sleeps (Linux/logind).
         # The callback fires on the listener's daemon thread; save_mru only
@@ -489,6 +492,9 @@ class PolyCore(Observable):
         handler = getattr(self, "_problem_log_handler", None)
         if handler is not None:
             logging.getLogger().removeHandler(handler)
+        titles = getattr(self, "_agent_titles", None)
+        if titles is not None:
+            titles.stop()     # no title-scan report may reach the registry after this
         self._tick_stop.set()
         if self._tick_thread is not None:
             self._tick_thread.join(timeout=1)
@@ -524,6 +530,7 @@ class PolyCore(Observable):
                                      lambda c: face.restore(self.keeb), timeout=2)
             except Exception as e:  # never let it break shutdown; the next connect retries
                 self.log.debug("Keycap face restore failed: %s: %s", type(e).__name__, e)
+        self._clear_agent_keys(sync=True)
         try:
             self.worker.run_sync("save_mru", lambda c: self.keeb.save_mru(), timeout=2)
         except Exception as e:  # never let a save attempt break shutdown
@@ -1562,7 +1569,7 @@ class PolyCore(Observable):
             self._apply_unicode_mode(mode)
 
     def report_window(self, handle, name, title, os=None, url=None,
-                      names=(), icon_key=None, icon=None, shortcuts=None):
+                      names=(), icon_key=None, icon=None, shortcuts=None, machine=None):
         """Inject an external active-window report into remote window tracking
         (the ``window.report`` RPC / ``polyctl window report``).
 
@@ -1600,6 +1607,10 @@ class PolyCore(Observable):
         # lost field.
         if isinstance(ret, dict):
             payload.update(ret)
+        # Agents on the forwarder's machine: a queued raise and the 1 s heartbeat
+        # ride this reply, the only channel that reaches the forwarder.
+        if machine and getattr(self, "_agent_remote_raises", None) is not None:
+            payload.update(self.agent_relay_for(str(machine)[:64]))
         return True, payload
 
     def submit_overlay_cmd(self, cmd):
@@ -1926,6 +1937,10 @@ class PolyCore(Observable):
                     self._push_os(get_host_os())
                 self.device_mgr.reset_all_caches()
                 caches_reset = True
+                # The agent keys live in the keyboard's RAM only: send them again.
+                # (getattr: a test fixture may build the core without __init__.)
+                if getattr(self, "_agent_keys", None) is not None:
+                    self._agent_keys.forget_device()
                 # ⚠️ The MRU cache is now empty and the keyboard's pool is about
                 # to be cleared, so whatever generic overlays we believed were on
                 # the device are NOT. Without this the dedupe kept claiming they
@@ -2066,6 +2081,10 @@ class PolyCore(Observable):
         if kb_serial or kb_log:
             self.emit("console", (kb_serial, kb_log))
         if kb_log:
+            # getattr: a test fixture may build the core without __init__.
+            agent_keys = getattr(self, "_agent_keys", None)
+            if agent_keys is not None:
+                agent_keys.note_console(kb_log)
             self._scan_console_for_crashes(kb_log)
             self._scan_console_for_problems(kb_log)
 
@@ -2297,6 +2316,175 @@ class PolyCore(Observable):
 
     DEVICE_CALL_TIMEOUT = 5  # seconds for a bounded run_sync device command
 
+    # ---- AI agents on the number row (services/agents, cmd 45/46, v31+) --------
+
+    def _agent_card_cache(self):
+        """The primary keyboard's MRU cache. The agent cards borrow pool slots from
+        it as "aside" entries (OverlayMRUCache.allocate_aside), so no slot is
+        reserved and the per-app image limit stays 600: a switch evicts a card
+        before any app image, and the next agents pass uploads it again."""
+        primary = self.device_mgr.primary
+        return primary.cache if primary is not None else None
+
+    def _init_agents(self):
+        """The registry always exists, so hooks and `polyctl agents list` work with
+        the feature off; only the keyboard side waits for `agents_enabled`."""
+        from polyhost.services.agents import dictation
+        from polyhost.services.agents.raiser import raise_agent
+        from polyhost.services.agents.titles import TitleScanner
+        from polyhost.services.agents.procs import is_alive
+        def limits():
+            def minutes(name, default):
+                try:
+                    return max(0, int(self.poly_settings.get(name))) * 60
+                except (TypeError, ValueError):
+                    return default
+            from polyhost.services.agents.registry import FORGET_AFTER_S, STALE_AFTER_S
+            return (minutes("agents_stale_minutes", STALE_AFTER_S),
+                    minutes("agents_forget_minutes", FORGET_AFTER_S))
+        self.agents = AgentRegistry(is_alive=is_alive, limits=limits)
+
+        def dictate():
+            return dictation.send_shortcut(dictation.shortcut_for(
+                self.poly_settings.get("agents_dictation_shortcut")))
+        self._agent_keys = AgentKeysController(
+            self.agents, self._agent_card_cache, raise_agent=raise_agent, log=self.log,
+            dictate=dictate)
+        from polyhost.services.agents.remote import RemoteRaiseQueue
+        self._agent_remote_raises = RemoteRaiseQueue()
+        self._agent_keys.raise_remote = self._agent_remote_raises.request
+
+        def raise_viewer(machine):
+            from polyhost.services.agents.raiser import raise_viewer as _raise_viewer
+            from polyhost.services.agents.viewer import mapping_viewer_apps
+            return _raise_viewer(machine, mapping_viewer_apps(self.mapping))
+        self._agent_keys.raise_viewer = raise_viewer
+        self.worker.add_periodic("agents", 1.0, self._agents_periodic)
+        self._agent_titles = TitleScanner(
+            self.agents, self.log,
+            enabled=lambda: bool(self.poly_settings.get("agents_enabled")
+                                 and self.poly_settings.get("agents_title_scan")))
+        self._agent_titles.start()
+
+    def _agents_active(self) -> bool:
+        """The keyboard side runs when the feature is on and the keyboard speaks v31."""
+        return (bool(self.poly_settings.get("agents_enabled"))
+                and self.connected and not self.paused
+                and self.keeb.supports("agent_keys"))
+
+    def _agents_periodic(self, cancel):
+        """Worker periodic (1 s): read key presses, push the shown page."""
+        if not self._agents_active():
+            return
+        self._agent_keys.note_state_generation(getattr(self.keeb, "state_generation", None))
+        self._agent_keys.sync(self.keeb, cancel)
+
+    def _clear_agent_keys(self, sync: bool = False) -> None:
+        """Turn the agent keys off on a connected keyboard that has them (host
+        shutdown, feature turned off). Never raises."""
+        ctl = getattr(self, "_agent_keys", None)
+        if ctl is None or not self.connected or not self.keeb.supports("agent_keys"):
+            return
+        try:
+            if sync:
+                self.worker.run_sync("agents_clear", lambda c: ctl.clear_keyboard(self.keeb),
+                                     timeout=2)
+            else:
+                self.worker.submit("agents_clear", lambda c: ctl.clear_keyboard(self.keeb))
+        except Exception as e:  # never let it break shutdown; the keyboard clears at suspend
+            self.log.debug("Agent keys clear failed: %s: %s", type(e).__name__, e)
+
+    def agents_list(self) -> dict:
+        """No device I/O: the registry and the page the keyboard shows."""
+        return {"agents": self.agents.snapshot(), "page": self._agent_keys.page,
+                "pages": self.agents.page_count(),
+                "enabled": bool(self.poly_settings.get("agents_enabled")),
+                "active": self._agents_active(),
+                "last_press": self._agent_keys.last_press}
+
+    def agents_report(self, params: dict):
+        """A report from polyctl (a hook adapter or a user). (ok, agent or reason)."""
+        from polyhost.services.agents.model import ENDED
+        try:
+            state = params.get("state")
+            if state not in (None, ENDED):
+                from polyhost.services.agents.model import AgentState
+                state = AgentState.parse(state)
+            agent = self.agents.report(
+                params.get("vendor", ""), params.get("session_id", ""), state,
+                event=params.get("event", ""), headline=params.get("headline"),
+                cwd=params.get("cwd"), surface=params.get("surface"),
+                machine=params.get("machine"), pid=params.get("pid"))
+        except (ValueError, TypeError) as e:
+            return False, str(e)
+        return True, agent
+
+    def agents_report_remote(self, params):
+        """An `agents.report` from the NETWORK endpoint (a forwarder's machine).
+        Every field is bounded first (services/agents/remote.sanitize_report); the
+        machine name it carries keeps the agent out of the local process check and
+        sends its raise back to that forwarder. (ok, agent or reason)."""
+        from polyhost.services.agents.remote import sanitize_report
+        if not self._agents_remote_on():
+            # The hook on the other computer must print nothing, so this log line
+            # is the only place the refusal shows. Once per computer per run.
+            machine = str((params or {}).get("machine") or "remote")[:64] \
+                if isinstance(params, dict) else "remote"
+            refused = self.__dict__.setdefault("_agents_remote_refused", set())
+            if machine not in refused and len(refused) < 32:
+                refused.add(machine)
+                self.log.info("Agent report from %s refused: turn on Settings > AI agents > "
+                              "\"Agents from other computers\" (agents_remote_enabled)",
+                              machine)
+            return False, ("agents from other computers are off "
+                           "(settings agents_enabled and agents_remote_enabled)")
+        clean = sanitize_report(params)
+        if clean is None:
+            return False, "invalid agents.report"
+        if clean["machine"] == "local":
+            clean["machine"] = "remote"     # "local" means THIS computer
+        return self.agents_report(clean)
+
+    def _agents_remote_on(self) -> bool:
+        """Agents from a forwarder's machine are an explicit second opt-in, off by
+        default: they add a sink and a raise channel to the NETWORK endpoint
+        (security audit HOST-6), so agents_enabled alone does not turn them on."""
+        return bool(self.poly_settings.get("agents_enabled")
+                    and self.poly_settings.get("agents_remote_enabled"))
+
+    def agent_relay_for(self, machine):
+        """What the reply to a forwarder's window.report adds for `machine`: the
+        newest raise queued for it, and whether it should report every second
+        because it has agents on the keys. Nothing while remote agents are off."""
+        if not machine or not self._agents_remote_on():
+            return {}
+        out = {}
+        pending = self._agent_remote_raises.for_machine(machine)
+        if pending is not None:
+            out["agent_raise"] = pending
+        if any(a.machine == machine for a in self.agents.agents()):
+            out["agents_fast"] = True
+        return out
+
+    def agents_raise(self, vendor, session_id):
+        """Bring an agent's window forward (the tray's agent list). The raise runs
+        on its own thread; (True, "raising") means it was started."""
+        agent = next((a for a in self.agents.agents()
+                      if a.vendor == vendor and a.session_id == session_id), None)
+        if agent is None:
+            return False, "No such agent"
+        self.agents.mark_seen(vendor, session_id)
+        self._agent_keys.raise_now(agent)
+        return True, "raising"
+
+    def agents_label(self, vendor, session_id, text):
+        ok = self.agents.label(vendor, session_id, text)
+        return ok, ("ok" if ok else "No such agent")
+
+    def agents_forget(self, vendor, session_id):
+        ok = self.agents.forget(vendor, session_id)
+        return ok, ("ok" if ok else "No such agent")
+
     def _device_call(self, name, fn):
         """run_sync wrapper returning a uniform (ok, payload) result.
 
@@ -2414,6 +2602,20 @@ class PolyCore(Observable):
             "tap_terms_set",
             lambda c, t=tap, f=flow, a=as_on, m=as_ms: self.keeb.set_tap_terms(
                 tapping_term=t, flow_tap_term=f, auto_shift=a, auto_shift_ms=m))
+
+    def key_attention(self, row, col, count=3, period_ms=4000):
+        """The focus ripple on the key at matrix (row, col), `count` times (0 = until
+        cancelled). (ok, msg)."""
+        try:
+            row, col, count, period_ms = int(row), int(col), int(count), int(period_ms)
+        except (TypeError, ValueError):
+            return False, f"Invalid key attention request: {row!r}, {col!r}"
+        return self._device_call(
+            "key_attention", lambda c: self.keeb.key_attention(row, col, count, period_ms))
+
+    def key_attention_cancel(self):
+        return self._device_call("key_attention_cancel",
+                                 lambda c: self.keeb.key_attention_cancel())
 
     def get_tap_terms(self):
         """(ok, {"tapping_term", "flow_tap_term", "flow_tap_available",
@@ -3021,6 +3223,11 @@ class PolyCore(Observable):
             # dialog too). Not on firmware without slot 9: the pass would flash only
             # the OTHER stale bundles.
             self.sync_fontpack()
+        if ((keys is None or "agents_enabled" in keys)
+                and getattr(self, "_agent_keys", None) is not None
+                and not self.poly_settings.get("agents_enabled")):
+            # Turned off: the periodic stops, so it cannot clear the keys itself.
+            self._clear_agent_keys()
         from polyhost.services import game_assets
         if keys is None or game_assets.SETTING_KEYS.intersection(keys):
             # The next send of an opted-in overlay builds again; reset() makes

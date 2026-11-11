@@ -99,6 +99,11 @@ SECTIONS = (
         (N_("Problem detection"), ("problem_scan_*",)),
         (N_("Logs"), ("log_detail",)),
     )),
+    ("agents", N_("AI agents"), (
+        (None, ("agents_enabled", "agents_title_scan", "agents_dictation_shortcut",
+                "agents_remote_enabled", "agents_raise_here", "agents_stale_minutes",
+                "agents_forget_minutes")),
+    )),
     ("developer", N_("Developer"), (
         (None, ("dev_*",)),
     )),
@@ -151,6 +156,13 @@ SETTING_LABELS = {
     "problem_scan_host_logs": N_("Watch this app's log"),
     "problem_scan_level": N_("What counts as a problem"),
     "game_assets_enabled": N_("Art from installed games"),
+    "agents_enabled": N_("Show on the number row"),
+    "agents_title_scan": N_("Find by window title"),
+    "agents_dictation_shortcut": N_("Dictation shortcut"),
+    "agents_remote_enabled": N_("Agents from other computers"),
+    "agents_raise_here": N_("Raise agent windows on this computer"),
+    "agents_stale_minutes": N_("Stale after (minutes)"),
+    "agents_forget_minutes": N_("Remove idle agents after (minutes)"),
 }
 
 
@@ -158,6 +170,32 @@ SETTING_LABELS = {
 # editor. tests/gui/settings_dialog_test.py fails on a DEFAULT_SETTINGS key
 # missing here, so a new setting cannot ship without one.
 SETTING_DESCRIPTIONS = {
+    "agents_enabled": N_(
+        "Shows the state of AI coding agents on the number row and, while the AI key "
+        "is pressed, one card per agent. Needs keyboard firmware with protocol 31. "
+        "Takes effect at the next keyboard connect."),
+    "agents_title_scan": N_(
+        "Also finds agents that run in a terminal from the window title, without a "
+        "hook. Not on macOS."),
+    "agents_remote_enabled": N_(
+        "Also shows agents that run on a computer with the forwarder. A key press "
+        "brings forward the remote-desktop viewer that shows that computer "
+        "(NoMachine, Remote Desktop, VNC). They report over the network endpoint for "
+        "forwarders, which must be on too. Off: only this computer's agents."),
+    "agents_raise_here": N_(
+        "On a computer with the forwarder: a key press on one of this computer's "
+        "agents also brings the agent's own window forward here. Off: only the "
+        "viewer on the keyboard's computer comes forward."),
+    "agents_stale_minutes": N_(
+        "A working agent that reports nothing for this many minutes shows as stale "
+        "(dim white). 0: never."),
+    "agents_forget_minutes": N_(
+        "An idle or stale agent that reports nothing for this many minutes is removed "
+        "and frees its key. An agent whose process ends is removed at once. 0: never."),
+    "agents_dictation_shortcut": N_(
+        "The shortcut the minus key sends in AI mode to start dictation, for example "
+        "<cmd>+h or <ctrl>+<alt>+d. Empty: Win+H on Windows, nothing on macOS and "
+        "Linux."),
     "unicode_send_composition_mode": N_(
         "Tells the keyboard how this computer takes Unicode input (for example "
         "WinCompose), on connect and whenever it changes. Off: the keyboard keeps "

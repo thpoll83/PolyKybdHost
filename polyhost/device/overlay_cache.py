@@ -13,6 +13,11 @@ def _slot_to_keycode(keycode_slot: int) -> int:
         return keycode_slot - 82 + KeyCode.KC_LEFT_CTRL.value
 
 
+# The batch id of images no program switch maps (the agent cards,
+# services/agents): older than every real batch, so a switch evicts them first.
+ASIDE_BATCH = -1
+
+
 class OverlayMRUCache:
     """
     Tracks which overlay images occupy which pool slots in the keyboard firmware.
@@ -245,6 +250,44 @@ class OverlayMRUCache:
             self._bytes_to_slot.pop(self._slot_to_bytes.pop(victim), None)
         self._slot_to_info.pop(victim, None)
         return victim
+
+    def holds(self, content_key: tuple) -> int | None:
+        """The slot ``content_key`` occupies, or None. Changes nothing (no aging)."""
+        return self._cache.get(content_key)
+
+    def allocate_aside(self, content_key: tuple) -> int | None:
+        """A slot for an image that no switch maps (an agent card), or None.
+
+        The entry gets ASIDE_BATCH, so a program switch evicts it before any app
+        image; its owner checks ``holds()`` and allocates again when it is gone.
+        ⚠️ It never evicts the NEWEST switch's slots, which are on the keys right
+        now, and never another aside entry (two owners would take turns evicting
+        each other). With nothing else to take, it returns None and the owner
+        shows nothing. No byte dedup: an app image must not alias a card's slot."""
+        slot = self._cache.get(content_key)
+        if slot is not None:
+            return slot
+        if self._next_free < self.capacity:
+            slot = self._next_free
+            self._next_free += 1
+        else:
+            app = [b for b in self._slot_batch.values() if b != ASIDE_BATCH]
+            newest = max(app) if app else None
+            candidates = {s: b for s, b in self._slot_batch.items()
+                          if b not in (ASIDE_BATCH, newest)}
+            if not candidates:
+                return None
+            slot = min(candidates, key=candidates.get)
+            for k in [k for k, v in self._cache.items() if v == slot]:
+                del self._cache[k]
+            del self._slot_batch[slot]
+            if slot in self._slot_to_bytes:
+                self._bytes_to_slot.pop(self._slot_to_bytes.pop(slot), None)
+            self._slot_to_info.pop(slot, None)
+        self._cache[content_key] = slot
+        self._slot_batch[slot] = ASIDE_BATCH
+        self._version += 1
+        return slot
 
     def used_slots(self) -> int:
         """Number of pool slots currently occupied."""

@@ -452,9 +452,18 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
         addr = args.host or f"IP set in {args.host_file}"
         slog.info("Launch path: forwarder -> %s", addr)
         print(f"Executing Forwarder. Sending to {addr}.")
+        # A forwarder paired with the keyboard computer (services/forwarder_pairing.py)
+        # uses the authenticated RPC mode with the paired key, without flags; the
+        # flags still take priority.
+        from polyhost.services.forwarder_pairing import paired_key_file
+        paired = paired_key_file()
+        report_rpc = args.report_rpc or paired is not None
+        authkey_file = args.report_authkey_file or (paired if report_rpc else None)
+        if paired and not args.report_authkey_file:
+            slog.info("Forwarder: paired with the keyboard computer, using RPC mode")
         app = PolyForwarder(log_level_for(verbosity), args.host, args.host_file,
-                            report_rpc=args.report_rpc, report_port=args.report_port,
-                            report_authkey_file=args.report_authkey_file)
+                            report_rpc=report_rpc, report_port=args.report_port,
+                            report_authkey_file=authkey_file)
     else:
         from polyhost.host import PolyHost
         # Spawn the deferred daemon now — AFTER the heavy GUI imports above, so

@@ -424,6 +424,40 @@ class PolyKybdMock:
             self._auto_shift_ms = auto_shift_ms
         return True, self._tap_terms_now()
 
+    # Agent keys (cmd 45/46, v31+): answered by the emulated firmware over the
+    # wire, so the mock keyboard's state is the firmware model's state.
+    def _ai_call(self, name, *args):
+        self._log_call(name, *args)
+        if (refusal := self._too_old("agent_keys")):
+            return False, refusal
+        self._wire.protocol_version = self.protocol_version
+        return getattr(self._wire, name)(*args)
+
+    def ai_query(self):
+        return self._ai_call("ai_query")
+
+    def _attention_call(self, name, *args):
+        self._log_call(name, *args)
+        if (refusal := self._too_old("key_attention")):
+            return False, refusal
+        self._wire.protocol_version = self.protocol_version
+        return getattr(self._wire, name)(*args)
+
+    def key_attention(self, row, col, count=3, period_ms=4000):
+        return self._attention_call("key_attention", row, col, count, period_ms)
+
+    def key_attention_cancel(self):
+        return self._attention_call("key_attention_cancel")
+
+    def ai_set_keys(self, states, flags, slots):
+        return self._ai_call("ai_set_keys", states, flags, slots)
+
+    def ai_read_events(self, last_seq):
+        return self._ai_call("ai_read_events", last_seq)
+
+    def ai_upload_card(self, slot, data):
+        return self._ai_call("ai_upload_card", slot, data)
+
     def _tap_terms_now(self) -> dict:
         from polyhost.device.command_ids import TapTerms
         available = self.supports("auto_shift")

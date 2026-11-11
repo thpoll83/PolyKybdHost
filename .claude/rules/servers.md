@@ -19,5 +19,6 @@ paths:
 - ⚠️ **`wake_address()` exists because a wildcard `0.0.0.0` bind is not connectable** —
   the network server overrides it to dial loopback.
 - ⚠️ **The surfaces stay separate — that separation is the security boundary.** The
-  network endpoint serves exactly ONE method, has no registry and holds no
+  network endpoint serves `window.report` (and `agents.report` only behind the agent
+  keys' opt-ins, HOST-6), has no registry and holds no
   `PolyCore` reference, so it can never reach device control, flash or bootloader.

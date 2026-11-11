@@ -133,6 +133,24 @@ class WindowReportServerTest(unittest.TestCase):
         self.assertEqual(msg["error"]["code"], p.ERR_METHOD_NOT_FOUND)
         self.assertEqual(self.reports, [])  # callback never ran
 
+    def test_with_the_agents_callback_still_only_the_two_methods_are_served(self):
+        # The agent keys add agents.report (HOST-6); nothing else may come with it.
+        self.server.stop()
+        agents = []
+        self.port = _free_port()
+        self.server = WindowReportServer(
+            self._on_report, "0.8.31", _NullLog(), bind_host="127.0.0.1", port=self.port,
+            authkey=self.authkey, on_agents_report=lambda prm: agents.append(prm) or (True, None))
+        self.server.start()
+        c = self._client()
+        p.send_message(c._conn, p.make_request(98, p.M_BRIGHTNESS_SET, {"value": 50}))
+        self.assertTrue(c._conn.poll(3.0))
+        self.assertEqual(p.recv_message(c._conn)["error"]["code"], p.ERR_METHOD_NOT_FOUND)
+        self.assertEqual(c.call(p.M_AGENTS_REPORT, {"vendor": "codex", "session_id": "a"}),
+                         {"ok": True})
+        self.assertEqual(len(agents), 1)
+        self.assertEqual(self.reports, [])
+
     def test_wrong_authkey_cannot_connect(self):
         # answer_challenge() raises AuthenticationError specifically on a key
         # mismatch — assert that exact type so an unrelated socket failure

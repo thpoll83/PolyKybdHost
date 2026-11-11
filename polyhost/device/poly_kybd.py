@@ -155,6 +155,25 @@ TAP_TERMS_MIN_PROTOCOL = 29
 # keyboard ignores those bytes and ACKs, so without this gate a set would report
 # success and change nothing.
 AUTO_SHIFT_MIN_PROTOCOL = 30
+# Minimum firmware PROTOCOL_VERSION for the agent keys (cmd 45 AI, cmd 46
+# AI_CARD): the number row shows AI agent states and, in AI mode, agent cards.
+# docs/agent-registry-plan.md.
+AGENT_KEYS_MIN_PROTOCOL = 31
+# Minimum firmware PROTOCOL_VERSION for key attention (cmd 47): the focus ripple of
+# the first-run tutorial on any key, for a program tutorial or the layout editor.
+KEY_ATTENTION_MIN_PROTOCOL = 32
+KEY_ATTENTION_PERIOD_MIN_MS = 2300    # one ripple runs 2.2 s
+KEY_ATTENTION_PERIOD_MAX_MS = 10000
+AGENT_KEY_COUNT = 10
+# Card slots: the 10 number keys, then '-' (dictation) and '+' (next waiting agent).
+AGENT_CARD_COUNT = 12
+AGENT_CARD_SEGMENT = 60
+# Cmd 45 op 1 flags byte (firmware base/ai_events.h AI_FLAG_*). A CLOSED set.
+AGENT_FLAG_ESC_ATTENTION = 0x01
+AGENT_FLAG_MORE_PAGES = 0x02
+AGENT_FLAG_ANY_WAITING = 0x04
+AGENT_FLAG_EXTRA_CARDS = 0x08
+AGENT_FLAGS_VALID = 0x0F
 LEGACY_ICON_SLOT_SIZE = 0x40000
 # Widest cmd 42 pair the firmware decodes (config.h OVERLAY_MAP_WIDTH_MAX).
 ICON_FILL_MAX_WIDTH = 16
@@ -194,6 +213,8 @@ FEATURE_MIN_PROTOCOL = {
     "icon_slot_512k": ICON_SLOT_512K_MIN_PROTOCOL,
     "tap_terms": TAP_TERMS_MIN_PROTOCOL,
     "auto_shift": AUTO_SHIFT_MIN_PROTOCOL,
+    "agent_keys": AGENT_KEYS_MIN_PROTOCOL,
+    "key_attention": KEY_ATTENTION_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -921,6 +942,133 @@ class PolyKybd:
         if not (len(reply) > 7 and reply[2:3] == b'.'):
             return False, "The keyboard refused that tap-hold timing"
         return True, self._parse_tap_terms(reply)
+
+    # ---- key attention (cmd 47, v32+) ----------------------------------------
+
+    def key_attention(self, row: int, col: int, count: int = 3,
+                      period_ms: int = 4000) -> tuple[bool, str]:
+        """Run the focus ripple on the key at matrix (row, col) `count` times (0 =
+        until key_attention_cancel()), one every `period_ms` (2300..10000 ms, in
+        100 ms steps). The keyboard NACKs a key without a display."""
+        if not self.supports("key_attention"):
+            return False, (f"Firmware protocol too old for key attention "
+                           f"(need v{KEY_ATTENTION_MIN_PROTOCOL}+). Please update the "
+                           f"PolyKybd firmware.")
+        if not (0 <= row < 256 and 0 <= col < 256 and 0 <= count < 256):
+            return False, f"Invalid key attention request: row {row}, col {col}, count {count}"
+        if not KEY_ATTENTION_PERIOD_MIN_MS <= period_ms <= KEY_ATTENTION_PERIOD_MAX_MS:
+            return False, (f"The period must be {KEY_ATTENTION_PERIOD_MIN_MS}.."
+                           f"{KEY_ATTENTION_PERIOD_MAX_MS} ms, not {period_ms}")
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.KEY_ATTENTION, 0, row, col, count, round(period_ms / 100)),
+            100, expect(Cmd.KEY_ATTENTION))
+        if not result:
+            return False, "The keyboard did not answer the key attention request"
+        if reply[2:3] != b'.':
+            return False, f"The keyboard refused key attention on row {row}, col {col}"
+        return True, "ok"
+
+    def key_attention_cancel(self) -> tuple[bool, str]:
+        """End a key attention request; a ripple already running finishes."""
+        if not self.supports("key_attention"):
+            return False, (f"Firmware protocol too old for key attention "
+                           f"(need v{KEY_ATTENTION_MIN_PROTOCOL}+).")
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.KEY_ATTENTION, 1), 100, expect(Cmd.KEY_ATTENTION))
+        if not (result and reply[2:3] == b'.'):
+            return False, "The keyboard did not cancel the key attention request"
+        return True, "ok"
+
+    # ---- agent keys (cmd 45 / 46, v31+) ---------------------------------------
+
+    def _agent_keys_refusal(self) -> str | None:
+        if self.supports("agent_keys"):
+            return None
+        return (f"Firmware protocol too old for the agent keys "
+                f"(need v{AGENT_KEYS_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+
+    def ai_query(self) -> tuple[bool, dict | str]:
+        """cmd 45 op 0: {"ai_mode", "newest_seq", "number_keys", "esc_found"}."""
+        if (refusal := self._agent_keys_refusal()):
+            return False, refusal
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.AI, 0), 100, expect(Cmd.AI))
+        if not (result and len(reply) > 6 and reply[2:3] == b'.'):
+            return False, "The keyboard did not answer the agent-key query"
+        return True, {"ai_mode": bool(reply[3]), "newest_seq": reply[4],
+                      "number_keys": reply[5], "esc_found": bool(reply[6])}
+
+    @staticmethod
+    def _ai_keys_payload(states, flags: int, slots) -> tuple[int, ...]:
+        from polyhost.services.agents.model import AgentState
+        states = [int(s) for s in states]
+        slots = [int(s) for s in slots]
+        if len(states) != AGENT_KEY_COUNT or len(slots) != AGENT_CARD_COUNT:
+            raise ValueError(f"need {AGENT_KEY_COUNT} states and {AGENT_CARD_COUNT} slots")
+        if any(not AgentState.EMPTY <= s <= AgentState.STALE for s in states):
+            raise ValueError(f"agent state out of range: {states}")
+        flags = int(flags)
+        if flags & ~AGENT_FLAGS_VALID:
+            raise ValueError(f"agent key flags out of range: {flags:#x}")
+        payload = [1, *states, flags]
+        for slot in slots:
+            payload += [slot & 0xFF, (slot >> 8) & 0xFF]
+        return tuple(payload)
+
+    def ai_set_keys(self, states, flags: int, slots) -> tuple[bool, str]:
+        """cmd 45 op 1: the state of each number key, the AGENT_FLAG_* byte and the
+        12 card slots (number keys, then '-' and '+'). CLOSED ranges: an unknown state
+        or flag is refused here, and the firmware NACKs it too. ⚠️ The ACK marker is
+        checked: expect() also matches a NACK."""
+        if (refusal := self._agent_keys_refusal()):
+            return False, refusal
+        try:
+            payload = self._ai_keys_payload(states, flags, slots)
+        except ValueError as e:
+            return False, str(e)
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.AI, *payload), 100, expect(Cmd.AI))
+        if not result:
+            return False, "The keyboard did not answer the agent-key update"
+        if reply[2:3] != b'.':
+            return False, "The keyboard refused the agent-key update"
+        return True, "ok"
+
+    def ai_read_events(self, last_seq: int) -> tuple[bool, tuple | str]:
+        """cmd 45 op 2: (newest seq, [(seq, key), ...] newer than last_seq, oldest
+        first). Key 0..9 is a number key, 10 the pager (ESC), 11 '-' (dictation),
+        12 '+' (next waiting agent)."""
+        if (refusal := self._agent_keys_refusal()):
+            return False, refusal
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.AI, 2, int(last_seq) & 0xFF), 100, expect(Cmd.AI))
+        if not (result and len(reply) > 4 and reply[2:3] == b'.'):
+            return False, "The keyboard did not answer the agent-key event read"
+        newest, count = reply[3], min(reply[4], 8)
+        events = [(reply[5 + 2 * i], reply[6 + 2 * i]) for i in range(count)
+                  if 6 + 2 * i < len(reply)]
+        return True, (newest, events)
+
+    def ai_upload_card(self, slot: int, data: bytes) -> tuple[bool, str]:
+        """cmd 46: write a 360-byte card image straight into pool slot `slot`,
+        six 60-byte segments."""
+        if (refusal := self._agent_keys_refusal()):
+            return False, refusal
+        if not 0 <= slot < self.device_settings.OVERLAY_MAPPING_CAPACITY:
+            return False, f"Pool slot {slot} is out of range"
+        if len(data) != 6 * AGENT_CARD_SEGMENT:
+            return False, f"A card is {6 * AGENT_CARD_SEGMENT} bytes, not {len(data)}"
+        for segment in range(6):
+            word = (slot & 0x3FF) | (segment << 12)
+            chunk = data[segment * AGENT_CARD_SEGMENT:(segment + 1) * AGENT_CARD_SEGMENT]
+            result, reply = self.hid.send_and_read_validate(
+                compose_cmd(Cmd.AI_CARD, word & 0xFF, word >> 8, *chunk),
+                100, expect(Cmd.AI_CARD))
+            if not result:
+                return False, "The keyboard did not answer the agent card upload"
+            if reply[2:3] != b'.':
+                return False, f"The keyboard refused agent card segment {segment}"
+        return True, "ok"
 
     def get_idle_timeout(self) -> tuple[bool, tuple[int, int]]:
         """Read the current idle timeout as (preset index, seconds).

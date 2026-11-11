@@ -219,6 +219,27 @@ full wiring, the preview rendering and the label-measurement rules are in
   `auto_shift_available` is False. The dialog sends only what changed, and the
   default timeout is 180 ms (QMK's 175 is off the grid). Caps Word needs no host
   side: it is a keycode (`CW_TOGG`) or both Shift keys.
+- **Key attention (cmd 47, v32+)** runs the first-run tutorial's focus ripple on one
+  key: `PolyKybd.key_attention(row, col, count, period_ms)` and
+  `key_attention_cancel()`, control method `key.attention`, `polyctl attention ROW COL
+  [--count N] [--period-ms MS]` / `--cancel`. `row`/`col` are the matrix position;
+  the keyboard NACKs a key without a display. `count` 0 runs until cancelled; the
+  period is a CLOSED 2300..10000 ms range (one ripple runs 2.2 s), refused on the host
+  before it is sent. A cancel lets a running ripple finish. split72 draws it; split42
+  ACKs and draws nothing. No tray entry: it is for programs (tutorials, the layout
+  editor), not a setting.
+- **The agent keys (cmd 45 AI, cmd 46 AI_CARD, v31+, prototype)** put AI agent
+  sessions on the number row: `PolyKybd.ai_query/ai_set_keys/ai_read_events/
+  ai_upload_card` behind the `agent_keys` gate, driven by
+  `services/agents/controller.py` from PolyCore's 1 s `agents` periodic. The states
+  are a CLOSED range (`AgentState`). The 12 cards (10 number keys,
+  then `-` dictation and `+` next waiting agent) borrow pool slots from the MRU cache
+  as "aside" entries (`OverlayMRUCache.allocate_aside`) and are written straight into
+  them (cmd 46 bypasses the display->pool mapping). Nothing is reserved: a program
+  switch evicts a card before any app image, and the next `agents` pass uploads it
+  again. A card never evicts the newest switch's images; with no room it is not
+  shown. Design and open values:
+  [`agent-registry-plan.md`](agent-registry-plan.md).
 - ⚠️ **`expect(Cmd.X)` matches only the two `P<cmd>` bytes, which a NACK carries
   too** — so `send_and_read_validate` returning True says the reply arrived, never
   that the firmware accepted it. On a CLOSED range that is the difference between a

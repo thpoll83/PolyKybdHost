@@ -11,6 +11,7 @@ import time
 from PyQt5.QtCore import QTimer, QObject, pyqtSignal
 from PyQt5.QtWidgets import (
     QApplication,
+    QMessageBox,
     QSystemTrayIcon,
     QDialog,
     QMenu,
@@ -59,6 +60,10 @@ else:
 
 UPDATE_CYCLE_MSEC = 250
 HEARTBEAT_MSEC = 15000  # resend current window state periodically so the host can catch up
+# While this machine has agents on the keyboard's keys, the host asks for a report
+# every second: a key press for one of them reaches this forwarder only in a reply
+# (services/agents/remote.py), so the heartbeat is the raise's latency.
+AGENT_HEARTBEAT_MSEC = 1000
 
 
 # The settings the forwarder actually acts on. It owns no keyboard, so the vast
@@ -69,7 +74,8 @@ HEARTBEAT_MSEC = 15000  # resend current window state periodically so the host c
 # BrowserUrlSource, which the forwarder runs for the machine it sits on.
 # `log_detail` sets this machine's log level at startup (main_app.resolve_dev).
 FORWARDER_SETTING_KEYS = ("ui_theme", "ui_language", "shortcut_icons_enabled",
-                          "shortcut_enable_accessibility", "log_detail") + tuple(_URL_SETTINGS)
+                          "shortcut_enable_accessibility", "log_detail",
+                          "agents_raise_here") + tuple(_URL_SETTINGS)
 
 from polyhost.util.log_util import DEBUG_DETAILED, make_stream_handler, make_collapse_handler  # noqa: F401  (registers debug_detailed on import)
 from polyhost.handler.active_window import log_env_info
@@ -113,6 +119,9 @@ class PolyForwarder(QApplication):
         self._report_port = report_port
         self._report_session = None
         self._report_authkey = None
+        self._report_authkey_file = (os.path.abspath(report_authkey_file)
+                                     if report_authkey_file else None)
+        self._agent_target = None     # the host last written for this machine's hooks
 
         # This machine's OS, forwarded alongside the active window so the keyboard
         # reflects the OS of the computer you are working on (not just the one it is
@@ -155,6 +164,13 @@ class PolyForwarder(QApplication):
             from polyhost.server.window_report_client import WindowReportSession
             self._report_session = WindowReportSession(
                 self._report_port, self._report_authkey)
+            # Agent keys (services/agents/remote.py): this machine's name goes with
+            # every report, the hooks here use the same name, and a raise for one
+            # of this machine's agents comes back in a reply.
+            from polyhost.services.agents.remote import RemoteRaiseFollower
+            self._agent_machine = socket.gethostname()
+            self._agent_follower = RemoteRaiseFollower()
+            self._agents_fast = False
             self.log.info("Forwarder using the authenticated window-report endpoint (H4d).")
 
         # Browser-URL feed for THIS machine. The extension is already willing to
@@ -285,6 +301,19 @@ class PolyForwarder(QApplication):
         self.shell_title_action.triggered.connect(self.open_shell_title_dialog)
         self.updates_menu.addAction(self.shell_title_action)
 
+        # The hooks of the AI agents on THIS computer (Claude Code, Codex, Copilot
+        # CLI): they report to the keyboard computer this forwarder reports to
+        # (services/agents/remote.py), so the keys show this computer's agents.
+        from polyhost.gui.agent_hooks import add_setup_menu
+        self.agent_hooks_menu = add_setup_menu(
+            self.menu, self.log, title=_("Set Up Agent Hooks"), note=self._agent_hooks_note)
+        self.agent_hooks_menu.setIcon(get_icon("terminal.svg"))
+        self.pair_action = QAction(get_icon("sync_alt.svg"), _("Pair with the Keyboard Computer…"),
+                                   parent=self)
+        # noinspection PyUnresolvedReferences
+        self.pair_action.triggered.connect(self._pair_clicked)
+        self.menu.addAction(self.pair_action)
+
         self.settings_action = QAction(get_icon("settings.svg"), _("Settings..."), parent=self)
         # noinspection PyUnresolvedReferences
         self.settings_action.triggered.connect(self.open_settings)
@@ -410,6 +439,9 @@ class PolyForwarder(QApplication):
             # somebody pausing it would not expect.
             if self._report_session is not None:
                 self._report_session.close()
+            # And stop this computer's agent hooks reporting through it; the next
+            # report after Resume writes the target again.
+            self._note_agent_target(None)
         else:
             # Force the next tick to re-send rather than dedupe against the
             # window it was already showing when pause was pressed.
@@ -460,12 +492,16 @@ class PolyForwarder(QApplication):
             # machine, and a stale connection would keep serving the old one.
             if self._report_session is not None:
                 self._report_session.close()
+            self._note_agent_target(None)
             return self._note_send_failure("no host to report to")
         ident = self._identity_for(name)
         try:
             result = self._report_session.report(
                 host, handle, name, title, os=self._os_value, url=url,
-                names=ident.get("names"), icon_key=ident.get("icon_key"))
+                names=ident.get("names"), icon_key=ident.get("icon_key"),
+                machine=getattr(self, "_agent_machine", None))
+            self._follow_agent_relay(result)
+            self._note_agent_target(host)
             # ⚠️ The RECEIVER decides, and it is asked on every report. See
             # RemoteHandler._note_identity for why a sender-side "already sent"
             # flag cannot be trusted: its daemon restarts, --host-file repoints
@@ -512,6 +548,75 @@ class PolyForwarder(QApplication):
             return True
         except Exception as e:
             return self._note_send_failure("RPC to %s: %s" % (host, e))
+
+    def _agent_hooks_note(self):
+        """Shown after the hooks were written: what the keyboard computer needs, and
+        that reports need --report-rpc."""
+        if not self._report_rpc:
+            return _("The hooks are written, but this forwarder runs without "
+                     "--report-rpc, so it cannot pass agent reports on. Start it with "
+                     "--report-rpc to show this computer's agents on the keys.")
+        return _("The hooks are written. On the keyboard computer, turn on "
+                 "Settings > AI agents > \"Agents from other computers\".")
+
+    def _note_agent_target(self, host):
+        """Tell this machine's agent hooks where to report: the host this forwarder
+        reached last (services/agents/remote.py). Rewritten only when it changes,
+        so a --host-file that points elsewhere moves the hooks with it. Never
+        raises: window reporting must not depend on it."""
+        if host == self._agent_target:
+            return
+        try:
+            from polyhost.services.agents import remote
+            if host:
+                remote.write_forwarder_target(host, self._report_port,
+                                              self._report_authkey_file,
+                                              getattr(self, "_agent_machine", None))
+            else:
+                remote.clear_forwarder_target()
+            self._agent_target = host
+        except Exception as e:  # noqa: BLE001 - see the docstring
+            self.log.warning("Could not write the agent hooks' target: %s", e)
+
+    def _follow_agent_relay(self, result):
+        """A raise for one of this machine's agents, and the heartbeat speed, from a
+        window.report reply. Never raises: window reporting must not depend on it."""
+        try:
+            reply = result if isinstance(result, dict) else {}
+            self._agents_fast = bool(reply.get("agents_fast"))
+            # A new connection (the keyboard computer's host may have restarted
+            # and counts raises from 0 again): its first reply is a new baseline.
+            session = getattr(self, "_report_session", None)
+            connections = getattr(session, "connections", 0)
+            if connections != getattr(self, "_agent_follower_connection", connections):
+                from polyhost.services.agents.remote import RemoteRaiseFollower
+                self._agent_follower = RemoteRaiseFollower()
+            self._agent_follower_connection = connections
+            payload = self._agent_follower.follow(reply)
+            if payload is None:
+                return
+            import threading
+            from polyhost.services.agents.raiser import raise_agent
+            from polyhost.services.agents.remote import RemoteAgent
+            agent = RemoteAgent.from_payload(payload)
+            # ⚠️ Opt-in on THIS computer (HOST-6): a reply is authenticated only
+            # at the handshake, so without the setting a reply never moves a
+            # window here; the keyboard's computer raises its viewer instead.
+            if not read_setting("agents_raise_here", False):
+                self.log.info("Agent key for %s %s: not raised here "
+                              "(agents_raise_here is off)", agent.vendor,
+                              agent.display_headline)
+                return
+            self.log.info("Agent key: raising %s %s", agent.vendor, agent.display_headline)
+
+            def run():
+                try:
+                    self.log.info("Agent key raise: %s", raise_agent(agent))
+                except Exception as e:   # noqa: BLE001
+                    self.log.info("Agent key raise failed: %s", e)
+            threading.Thread(target=run, name="agent-raise", daemon=True).start()
+        except Exception as e:   # noqa: BLE001
+            self.log.debug("Agent relay reply ignored: %s", e)
 
     def _identity_for(self, name):
         """What THIS machine's OS says the app is -- cached, one lookup per app.
@@ -794,6 +899,20 @@ class PolyForwarder(QApplication):
                 i18n_qt.offer_language_restart(changed["ui_language"], self._restart_for_language)
         dlg.close()
 
+    def _pair_clicked(self):
+        """Save the keyboard computer's code; RPC mode with it needs a restart."""
+        from polyhost.gui.forwarder_pairing import ask_pairing_code
+        if not ask_pairing_code(log=self.log):
+            return
+        answer = QMessageBox.question(
+            None, _("Pair with the Keyboard Computer"),
+            _("Paired. The forwarder uses the authenticated connection from its next "
+              "start. Restart it now?"))
+        if answer == QMessageBox.Yes:
+            self.log.info("Restarting the forwarder to use the pairing.")
+            self.wants_restart = True
+            self.quit_app()
+
     def _restart_for_language(self):
         """Restart the forwarder (main_app re-execs once the loop unwinds)."""
         self.log.info("Restarting the forwarder to apply the UI language.")
@@ -972,6 +1091,7 @@ class PolyForwarder(QApplication):
         self.is_closing = True
         if self._report_session is not None:
             self._report_session.close()
+        self._note_agent_target(None)
         self._url_source.close()
         # Tear the tray icon down before the loop exits so a re-exec (update
         # restart) doesn't leave a stale icon behind / a doubled tray.
@@ -1044,7 +1164,9 @@ class PolyForwarder(QApplication):
                         or win.title != self.title
                         or self._url_dirty
                     )
-                    if changed or self.heartbeat_msec >= HEARTBEAT_MSEC:
+                    heartbeat = (AGENT_HEARTBEAT_MSEC if getattr(self, "_agents_fast", False)
+                                 else HEARTBEAT_MSEC)
+                    if changed or self.heartbeat_msec >= heartbeat:
                         self.win = win
                         self.title = win.title
                         self._url_dirty = False

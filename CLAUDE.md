@@ -58,8 +58,9 @@ control-socket method.
   comments that passed review, so re-run the checks on the extracted copy.
 - ⚠️ **A bug in one listener server: grep the other two** (`control_server`,
   `window_report_server`, `browser_report_server`) before designing a fix.
-- ⚠️ **The network `WindowReportServer` serves one method and holds no `PolyCore`.**
-  That separation is the security boundary.
+- ⚠️ **The network `WindowReportServer` serves `window.report` (plus `agents.report`
+  behind the agent keys' opt-ins, HOST-6) and holds no `PolyCore`.** That separation
+  is the security boundary.
 - ⚠️ **An EMPTY window title and NO window are different, and the matcher treats them
   differently.** `find_matching_entry` skips a declared `title:` regex when the title is
   falsy, on purpose (macOS and some Wayland setups report no titles at all). A caller
@@ -128,7 +129,7 @@ brightness 10 min). [`docs/hid-worker-refactor.md`](docs/hid-worker-refactor.md)
 
 The host connects to any firmware with protocol ≥ `MIN_SUPPORTED_PROTOCOL` (2), then
 gates each feature with `FEATURE_MIN_PROTOCOL` (`device/poly_kybd.py`). `__protocol__`
-(`polyhost/_version.py`) is the newest protocol the host knows, 30 today, changed
+(`polyhost/_version.py`) is the newest protocol the host knows, 32 today, changed
 together with firmware `PROTOCOL_VERSION`. [`docs/protocol-gate.md`](docs/protocol-gate.md).
 
 - ⚠️ **Every new device command must be version-gated**: the `FEATURE_MIN_PROTOCOL`
