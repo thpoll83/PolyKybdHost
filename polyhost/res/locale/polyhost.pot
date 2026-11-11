@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-11 15:59+0000\n"
+"POT-Creation-Date: 2026-11-11 21:08+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,17 +17,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: polyhost/device/command_ids.py:167
+#: polyhost/device/command_ids.py:168
 #, python-brace-format
 msgid "preset {value}"
 msgstr ""
 
-#: polyhost/device/command_ids.py:169
+#: polyhost/device/command_ids.py:170
 #, python-brace-format
 msgid "{minutes} min"
 msgstr ""
 
-#: polyhost/device/command_ids.py:170
+#: polyhost/device/command_ids.py:171
 #, python-brace-format
 msgid "{seconds} sec"
 msgstr ""
@@ -342,80 +342,80 @@ msgstr ""
 msgid "Cannot reach {target}"
 msgstr ""
 
-#: polyhost/forwarder.py:553
+#: polyhost/forwarder.py:556
 msgid "The hooks are written, but this forwarder runs without --report-rpc, so it cannot pass agent reports on. Start it with --report-rpc to show this computer's agents on the keys."
 msgstr ""
 
-#: polyhost/forwarder.py:556
+#: polyhost/forwarder.py:559
 msgid "The hooks are written. On the keyboard computer, turn on Settings > AI agents > \"Agents from other computers\"."
 msgstr ""
 
-#: polyhost/forwarder.py:879
+#: polyhost/forwarder.py:890
 msgid "PolyForwarder settings"
 msgstr ""
 
-#: polyhost/forwarder.py:880
+#: polyhost/forwarder.py:891
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
 msgstr ""
 
-#: polyhost/forwarder.py:898
+#: polyhost/forwarder.py:909
 msgid "Paired. The forwarder uses the authenticated connection from its next start. Restart it now?"
 msgstr ""
 
-#: polyhost/forwarder.py:913
+#: polyhost/forwarder.py:924
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
 msgstr ""
 
-#: polyhost/forwarder.py:915
+#: polyhost/forwarder.py:926
 msgid "legacy plaintext TCP relay"
 msgstr ""
 
-#: polyhost/forwarder.py:918
+#: polyhost/forwarder.py:929
 msgid "reaching the keyboard machine"
 msgstr ""
 
-#: polyhost/forwarder.py:919
+#: polyhost/forwarder.py:930
 msgid "not reaching the keyboard machine"
 msgstr ""
 
-#: polyhost/forwarder.py:920
+#: polyhost/forwarder.py:931
 msgid "starting up"
 msgstr ""
 
-#: polyhost/forwarder.py:922
+#: polyhost/forwarder.py:933
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
 msgstr ""
 
-#: polyhost/forwarder.py:923
+#: polyhost/forwarder.py:934
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
 msgstr ""
 
-#: polyhost/forwarder.py:925
+#: polyhost/forwarder.py:936
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
 msgstr ""
 
-#: polyhost/forwarder.py:928
+#: polyhost/forwarder.py:939
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
 msgstr ""
 
-#: polyhost/forwarder.py:949
+#: polyhost/forwarder.py:960
 msgid "About PolyKybdHost (forwarder)"
 msgstr ""
 
 #. TRANSLATORS: the run mode in the About dialog's environment line
-#: polyhost/forwarder.py:956
+#: polyhost/forwarder.py:967
 msgid "forwarder"
 msgstr ""
 
-#: polyhost/forwarder.py:958
+#: polyhost/forwarder.py:969
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr ""
 
-#: polyhost/forwarder.py:998
+#: polyhost/forwarder.py:1009
 msgid "Download, install, and restart the forwarder now?"
 msgstr ""
 
@@ -1687,14 +1687,14 @@ msgid "Pair a Forwarder"
 msgstr ""
 
 #: polyhost/gui/forwarder_pairing.py:19
-msgid "On the other computer, open the forwarder's menu, choose \"Pair with the Keyboard Computer…\" and enter this code. Anyone with this code can send window and agent reports to this computer, so pass it on only over a channel you trust. \"Allow forwarders over the network\" must be on in Settings."
+msgid "On the other computer, open the forwarder's menu, choose \"Pair with the Keyboard Computer…\" and enter this code. Anyone with this code can send window and agent reports to this computer, so pass it on only over a channel you trust. \"Accept forwarders\" must be on in Settings."
 msgstr ""
 
 #: polyhost/gui/forwarder_pairing.py:26
 msgid "Copy"
 msgstr ""
 
-#: polyhost/forwarder.py:897 polyhost/gui/forwarder_pairing.py:37
+#: polyhost/forwarder.py:908 polyhost/gui/forwarder_pairing.py:37
 #: polyhost/gui/forwarder_pairing.py:44 polyhost/gui/forwarder_pairing.py:51
 msgid "Pair with the Keyboard Computer"
 msgstr ""
@@ -3951,7 +3951,7 @@ msgid ""
 "Developer → Font Pack → Re-flash all bundles forces a re-send if the keycaps still render wrong."
 msgstr ""
 
-#: polyhost/forwarder.py:842 polyhost/host.py:1302
+#: polyhost/forwarder.py:853 polyhost/host.py:1302
 msgid "Config folder"
 msgstr ""
 
@@ -4071,7 +4071,7 @@ msgstr ""
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:917 polyhost/host.py:2200
+#: polyhost/forwarder.py:928 polyhost/host.py:2200
 msgid "paused"
 msgstr ""
 
@@ -4139,17 +4139,17 @@ msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] ""
 msgstr[1] ""
 
-#: polyhost/forwarder.py:934 polyhost/host.py:2239
+#: polyhost/forwarder.py:945 polyhost/host.py:2239
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr ""
 
-#: polyhost/forwarder.py:935 polyhost/host.py:2240
+#: polyhost/forwarder.py:946 polyhost/host.py:2240
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr ""
 
-#: polyhost/forwarder.py:953 polyhost/host.py:2294
+#: polyhost/forwarder.py:964 polyhost/host.py:2294
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr ""
@@ -4257,8 +4257,8 @@ msgstr ""
 msgid "Update firmware to v{version}…"
 msgstr ""
 
-#: polyhost/forwarder.py:992 polyhost/forwarder.py:1003
-#: polyhost/forwarder.py:1009 polyhost/host.py:2777 polyhost/host.py:2898
+#: polyhost/forwarder.py:1003 polyhost/forwarder.py:1014
+#: polyhost/forwarder.py:1020 polyhost/host.py:2777 polyhost/host.py:2898
 #: polyhost/host.py:2902
 msgid "Check for updates..."
 msgstr ""
@@ -4268,8 +4268,8 @@ msgstr ""
 msgid "Update to v{version} available"
 msgstr ""
 
-#: polyhost/forwarder.py:1005 polyhost/forwarder.py:1011
-#: polyhost/forwarder.py:1022 polyhost/host.py:2856 polyhost/host.py:2896
+#: polyhost/forwarder.py:1016 polyhost/forwarder.py:1022
+#: polyhost/forwarder.py:1033 polyhost/host.py:2856 polyhost/host.py:2896
 #: polyhost/host.py:2903 polyhost/host.py:2926
 msgid "PolyKybdHost Update"
 msgstr ""
@@ -4279,7 +4279,7 @@ msgstr ""
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr ""
 
-#: polyhost/forwarder.py:979 polyhost/host.py:2882
+#: polyhost/forwarder.py:990 polyhost/host.py:2882
 msgid "Checking for updates..."
 msgstr ""
 
@@ -4287,12 +4287,12 @@ msgstr ""
 msgid "No updates available"
 msgstr ""
 
-#: polyhost/forwarder.py:1006 polyhost/host.py:2897
+#: polyhost/forwarder.py:1017 polyhost/host.py:2897
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr ""
 
-#: polyhost/forwarder.py:1012 polyhost/host.py:2904
+#: polyhost/forwarder.py:1023 polyhost/host.py:2904
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -4307,12 +4307,12 @@ msgstr ""
 msgid "Released: {date}"
 msgstr ""
 
-#: polyhost/forwarder.py:993 polyhost/host.py:2910
+#: polyhost/forwarder.py:1004 polyhost/host.py:2910
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr ""
 
-#: polyhost/forwarder.py:994 polyhost/host.py:2911
+#: polyhost/forwarder.py:1005 polyhost/host.py:2911
 msgid "Update PolyKybdHost"
 msgstr ""
 
@@ -4320,20 +4320,20 @@ msgstr ""
 msgid "Download, install, and restart now?"
 msgstr ""
 
-#: polyhost/forwarder.py:1021 polyhost/host.py:2926
+#: polyhost/forwarder.py:1032 polyhost/host.py:2926
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr ""
 
-#: polyhost/forwarder.py:1062 polyhost/host.py:3051
+#: polyhost/forwarder.py:1073 polyhost/host.py:3051
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr ""
 
-#: polyhost/forwarder.py:1074 polyhost/host.py:3066
+#: polyhost/forwarder.py:1085 polyhost/host.py:3066
 msgid "Update failed"
 msgstr ""
 
-#: polyhost/forwarder.py:1074 polyhost/host.py:3066
+#: polyhost/forwarder.py:1085 polyhost/host.py:3066
 msgid "The update did not finish."
 msgstr ""
 

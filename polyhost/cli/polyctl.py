@@ -1537,7 +1537,7 @@ def build_parser():
     p_agents.set_defaults(func=_cmd_agents)
     p_ahs = agents_sub.add_parser(
         "hooks", help="write or remove the PolyKybd hooks in an agent's own config "
-                      "(claude-code, codex, copilot); shows the diff first")
+                      "(claude-code, codex, copilot, gemini, qwen, opencode); shows the diff first")
     p_ahs.add_argument("hooks_cmd", choices=("install", "uninstall"))
     p_ahs.add_argument("vendor", choices=("claude-code", "codex", "copilot", "gemini", "qwen",
                                           "opencode"))

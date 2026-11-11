@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-11 15:59+0000\n"
+"POT-Creation-Date: 2026-11-11 21:08+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -18,17 +18,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: polyhost/device/command_ids.py:167
+#: polyhost/device/command_ids.py:168
 #, python-brace-format
 msgid "preset {value}"
 msgstr "préréglage {value}"
 
-#: polyhost/device/command_ids.py:169
+#: polyhost/device/command_ids.py:170
 #, python-brace-format
 msgid "{minutes} min"
 msgstr "{minutes} min"
 
-#: polyhost/device/command_ids.py:170
+#: polyhost/device/command_ids.py:171
 #, python-brace-format
 msgid "{seconds} sec"
 msgstr "{seconds} s"
@@ -341,11 +341,11 @@ msgstr "Rechercher une mise à jour de l'hôte…"
 
 #: polyhost/forwarder.py:309
 msgid "Set Up Agent Hooks"
-msgstr ""
+msgstr "Configurer les hooks des agents"
 
 #: polyhost/forwarder.py:311
 msgid "Pair with the Keyboard Computer…"
-msgstr ""
+msgstr "Associer à la machine du clavier…"
 
 #: polyhost/forwarder.py:393
 #, python-brace-format
@@ -380,80 +380,80 @@ msgstr "Relais vers {target}"
 msgid "Cannot reach {target}"
 msgstr "Impossible de joindre {target}"
 
-#: polyhost/forwarder.py:553
-msgid "The hooks are written, but this forwarder runs without --report-rpc, so it cannot pass agent reports on. Start it with --report-rpc to show this computer's agents on the keys."
-msgstr ""
-
 #: polyhost/forwarder.py:556
-msgid "The hooks are written. On the keyboard computer, turn on Settings > AI agents > \"Agents from other computers\"."
-msgstr ""
+msgid "The hooks are written, but this forwarder runs without --report-rpc, so it cannot pass agent reports on. Start it with --report-rpc to show this computer's agents on the keys."
+msgstr "Les hooks sont écrits, mais ce relais fonctionne sans --report-rpc et ne peut donc pas transmettre les rapports des agents. Démarrez-le avec --report-rpc pour afficher les agents de cette machine sur les touches."
 
-#: polyhost/forwarder.py:879
+#: polyhost/forwarder.py:559
+msgid "The hooks are written. On the keyboard computer, turn on Settings > AI agents > \"Agents from other computers\"."
+msgstr "Les hooks sont écrits. Sur la machine du clavier, activez Paramètres > Agents IA > « Agents d'autres machines »."
+
+#: polyhost/forwarder.py:890
 msgid "PolyForwarder settings"
 msgstr "Paramètres de PolyForwarder"
 
-#: polyhost/forwarder.py:880
+#: polyhost/forwarder.py:891
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
 msgstr "Les paramètres n'ont pas pu être enregistrés dans le fichier de paramètres et ne seront donc pas appliqués. Un autre programme le garde peut-être ouvert. Réessayez ou consultez le journal."
 
-#: polyhost/forwarder.py:898
+#: polyhost/forwarder.py:909
 msgid "Paired. The forwarder uses the authenticated connection from its next start. Restart it now?"
-msgstr ""
+msgstr "Association effectuée. Le relais utilise la connexion authentifiée à partir de son prochain démarrage. Le redémarrer maintenant ?"
 
-#: polyhost/forwarder.py:913
+#: polyhost/forwarder.py:924
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
 msgstr "RPC authentifié (port {port})"
 
-#: polyhost/forwarder.py:915
+#: polyhost/forwarder.py:926
 msgid "legacy plaintext TCP relay"
 msgstr "ancien relais TCP en clair"
 
-#: polyhost/forwarder.py:918
+#: polyhost/forwarder.py:929
 msgid "reaching the keyboard machine"
 msgstr "machine du clavier joignable"
 
-#: polyhost/forwarder.py:919
+#: polyhost/forwarder.py:930
 msgid "not reaching the keyboard machine"
 msgstr "machine du clavier injoignable"
 
-#: polyhost/forwarder.py:920
+#: polyhost/forwarder.py:931
 msgid "starting up"
 msgstr "démarrage en cours"
 
-#: polyhost/forwarder.py:922
+#: polyhost/forwarder.py:933
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
 msgstr "<b>Mode :</b> relais — aucun clavier connecté à cette machine"
 
-#: polyhost/forwarder.py:923
+#: polyhost/forwarder.py:934
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
 msgstr "<b>Cible :</b> {target}"
 
-#: polyhost/forwarder.py:925
+#: polyhost/forwarder.py:936
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
 msgstr "<b>Rapports de fenêtre :</b> {transport}"
 
-#: polyhost/forwarder.py:928
+#: polyhost/forwarder.py:939
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
 msgstr "<b>Fichier d'hôte :</b> {path}"
 
-#: polyhost/forwarder.py:949
+#: polyhost/forwarder.py:960
 msgid "About PolyKybdHost (forwarder)"
 msgstr "À propos de PolyKybdHost (relais)"
 
 #. TRANSLATORS: the run mode in the About dialog's environment line
-#: polyhost/forwarder.py:956
+#: polyhost/forwarder.py:967
 msgid "forwarder"
 msgstr "relais"
 
-#: polyhost/forwarder.py:958
+#: polyhost/forwarder.py:969
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "Mode relais : cette machine n'a pas de clavier. Elle surveille la fenêtre active ici et la transmet au PolyKybdHost qui tourne sur la machine à laquelle le clavier est branché."
 
-#: polyhost/forwarder.py:998
+#: polyhost/forwarder.py:1009
 msgid "Download, install, and restart the forwarder now?"
 msgstr "Télécharger, installer et redémarrer le relais maintenant ?"
 
@@ -480,16 +480,16 @@ msgstr "Copié ✓"
 
 #: polyhost/gui/agent_hooks.py:23 polyhost/gui/agent_hooks.py:35
 msgid "Set Up Hooks"
-msgstr ""
+msgstr "Configurer les hooks"
 
 #: polyhost/gui/agent_hooks.py:44
 msgid "The hooks are already set up."
-msgstr ""
+msgstr "Les hooks sont déjà configurés."
 
 #: polyhost/gui/agent_hooks.py:47
 #, python-brace-format
 msgid "Write the PolyKybd hooks into {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
-msgstr ""
+msgstr "Écrire les hooks PolyKybd dans {files} ? Vos propres hooks sont conservés, et une copie de chaque fichier est enregistrée sous <file>.polykybd.bak."
 
 #: polyhost/gui/boot_loop_dialog.py:26
 msgid "Reboots the keyboard again and again to catch an intermittent boot hang. After each reboot it waits for the keyboard to come back and reads its crash record. It stops at the first boot that left a fresh crash record, at a boot that does not come back within a minute, or after the last round.<br><br>The keyboard does not type while this runs, and each round takes a few seconds."
@@ -1747,28 +1747,28 @@ msgstr "Abandonner toutes les modifications en attente de « {label} » ?"
 
 #: polyhost/gui/forwarder_pairing.py:16 polyhost/gui/forwarder_pairing.py:18
 msgid "Pair a Forwarder"
-msgstr ""
+msgstr "Associer un relais"
 
 #: polyhost/gui/forwarder_pairing.py:19
-msgid "On the other computer, open the forwarder's menu, choose \"Pair with the Keyboard Computer…\" and enter this code. Anyone with this code can send window and agent reports to this computer, so pass it on only over a channel you trust. \"Allow forwarders over the network\" must be on in Settings."
-msgstr ""
+msgid "On the other computer, open the forwarder's menu, choose \"Pair with the Keyboard Computer…\" and enter this code. Anyone with this code can send window and agent reports to this computer, so pass it on only over a channel you trust. \"Accept forwarders\" must be on in Settings."
+msgstr "Sur l'autre machine, ouvrez le menu du relais, choisissez « Associer à la machine du clavier… » et saisissez ce code. Toute personne qui a ce code peut envoyer des rapports de fenêtre et d'agent à cette machine : ne le transmettez que par un canal de confiance. « Accepter les relais » doit être activé dans les Paramètres."
 
 #: polyhost/gui/forwarder_pairing.py:26
 msgid "Copy"
-msgstr ""
+msgstr "Copier"
 
-#: polyhost/forwarder.py:897 polyhost/gui/forwarder_pairing.py:37
+#: polyhost/forwarder.py:908 polyhost/gui/forwarder_pairing.py:37
 #: polyhost/gui/forwarder_pairing.py:44 polyhost/gui/forwarder_pairing.py:51
 msgid "Pair with the Keyboard Computer"
-msgstr ""
+msgstr "Associer à la machine du clavier"
 
 #: polyhost/gui/forwarder_pairing.py:38
 msgid "Enter the code that \"Pair a Forwarder…\" shows on the keyboard computer (tray menu, AI Agents):"
-msgstr ""
+msgstr "Saisissez le code que « Associer un relais… » affiche sur la machine du clavier (menu de la zone de notification, Agents IA) :"
 
 #: polyhost/gui/forwarder_pairing.py:45
 msgid "That is not a pairing code: it has 64 letters and digits (a to f, 0 to 9), in groups of 8."
-msgstr ""
+msgstr "Ce n'est pas un code d'association : un tel code comporte 64 lettres et chiffres (a à f, 0 à 9), en groupes de 8."
 
 #: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:3281
 #: polyhost/host.py:3322 polyhost/host.py:3349
@@ -2938,7 +2938,7 @@ msgstr "Journaux"
 
 #: polyhost/gui/settings_dialog.py:102
 msgid "AI agents"
-msgstr ""
+msgstr "Agents IA"
 
 #: polyhost/gui/settings_dialog.py:107 polyhost/host.py:884
 msgid "Developer"
@@ -3126,59 +3126,59 @@ msgstr "Images des jeux installés"
 
 #: polyhost/gui/settings_dialog.py:159
 msgid "Show on the number row"
-msgstr ""
+msgstr "Afficher sur la rangée des chiffres"
 
 #: polyhost/gui/settings_dialog.py:160
 msgid "Find by window title"
-msgstr ""
+msgstr "Trouver par le titre de la fenêtre"
 
 #: polyhost/gui/settings_dialog.py:161
 msgid "Dictation shortcut"
-msgstr ""
+msgstr "Raccourci de dictée"
 
 #: polyhost/gui/settings_dialog.py:162
 msgid "Agents from other computers"
-msgstr ""
+msgstr "Agents d'autres machines"
 
 #: polyhost/gui/settings_dialog.py:163
 msgid "Raise agent windows on this computer"
-msgstr ""
+msgstr "Mettre au premier plan les fenêtres des agents sur cette machine"
 
 #: polyhost/gui/settings_dialog.py:164
 msgid "Stale after (minutes)"
-msgstr ""
+msgstr "Obsolète après (minutes)"
 
 #: polyhost/gui/settings_dialog.py:165
 msgid "Remove idle agents after (minutes)"
-msgstr ""
+msgstr "Retirer les agents au repos après (minutes)"
 
 #: polyhost/gui/settings_dialog.py:174
 msgid "Shows the state of AI coding agents on the number row and, while the AI key is pressed, one card per agent. Needs keyboard firmware with protocol 31. Takes effect at the next keyboard connect."
-msgstr ""
+msgstr "Affiche l'état des agents de programmation IA sur la rangée des chiffres et, tant que la touche IA est enfoncée, une carte par agent. Nécessite un firmware de clavier avec le protocole 31. Prend effet à la prochaine connexion du clavier."
 
 #: polyhost/gui/settings_dialog.py:178
 msgid "Also finds agents that run in a terminal from the window title, without a hook. Not on macOS."
-msgstr ""
+msgstr "Trouve aussi, par le titre de la fenêtre, les agents qui s'exécutent dans un terminal, sans hook. Pas sous macOS."
 
 #: polyhost/gui/settings_dialog.py:181
 msgid "Also shows agents that run on a computer with the forwarder. A key press brings forward the remote-desktop viewer that shows that computer (NoMachine, Remote Desktop, VNC). They report over the network endpoint for forwarders, which must be on too. Off: only this computer's agents."
-msgstr ""
+msgstr "Affiche aussi les agents qui s'exécutent sur une machine avec le relais. Un appui sur une touche met au premier plan le client de bureau à distance qui affiche cette machine (NoMachine, Remote Desktop, VNC). Ces agents envoient leurs rapports par le point d'accès réseau des relais, qui doit aussi être activé. Désactivé : uniquement les agents de cette machine."
 
 #: polyhost/gui/settings_dialog.py:186
 msgid "On a computer with the forwarder: a key press on one of this computer's agents also brings the agent's own window forward here. Off: only the viewer on the keyboard's computer comes forward."
-msgstr ""
+msgstr "Sur une machine avec le relais : un appui sur la touche d'un agent de cette machine met aussi au premier plan, ici, la fenêtre de cet agent. Désactivé : seul le client de bureau à distance de la machine du clavier passe au premier plan."
 
 #: polyhost/gui/settings_dialog.py:190
 msgid "A working agent that reports nothing for this many minutes shows as stale (dim white). 0: never."
-msgstr ""
+msgstr "Un agent au travail qui ne signale rien pendant ce nombre de minutes est affiché comme obsolète (blanc atténué). 0 : jamais."
 
 #: polyhost/gui/settings_dialog.py:193
 msgid "An idle or stale agent that reports nothing for this many minutes is removed and frees its key. An agent whose process ends is removed at once. 0: never."
-msgstr ""
+msgstr "Un agent au repos ou obsolète qui ne signale rien pendant ce nombre de minutes est retiré et libère sa touche. Un agent dont le processus se termine est retiré immédiatement. 0 : jamais."
 
 #: polyhost/gui/settings_dialog.py:196
 msgid "The shortcut the minus key sends in AI mode to start dictation, for example <cmd>+h or <ctrl>+<alt>+d. Empty: Win+H on Windows, nothing on macOS and Linux."
-msgstr ""
+msgstr "Le raccourci que la touche moins envoie en mode IA pour démarrer la dictée, par exemple <cmd>+h ou <ctrl>+<alt>+d. Vide : Win+H sous Windows, rien sous macOS et Linux."
 
 #: polyhost/gui/settings_dialog.py:200
 msgid "Tells the keyboard how this computer takes Unicode input (for example WinCompose), on connect and whenever it changes. Off: the keyboard keeps the mode it has stored."
@@ -3931,7 +3931,7 @@ msgstr "Délais appui-maintien…"
 
 #: polyhost/host.py:724
 msgid "AI Agents"
-msgstr ""
+msgstr "Agents IA"
 
 #: polyhost/host.py:731
 msgid "Configure Keymap"
@@ -4034,7 +4034,7 @@ msgstr ""
 "Tous les paquets de polices fournis sont déjà sur le clavier.\n"
 "Développeur → Pack de polices → Reflasher TOUS les paquets force un nouvel envoi si les touches s'affichent toujours mal."
 
-#: polyhost/forwarder.py:842 polyhost/host.py:1302
+#: polyhost/forwarder.py:853 polyhost/host.py:1302
 msgid "Config folder"
 msgstr "Dossier de configuration"
 
@@ -4157,7 +4157,7 @@ msgstr "autonome"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:917 polyhost/host.py:2200
+#: polyhost/forwarder.py:928 polyhost/host.py:2200
 msgid "paused"
 msgstr "en pause"
 
@@ -4225,17 +4225,17 @@ msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>Affectations de superpositions :</b> {n} application"
 msgstr[1] "<b>Affectations de superpositions :</b> {n} applications"
 
-#: polyhost/forwarder.py:934 polyhost/host.py:2239
+#: polyhost/forwarder.py:945 polyhost/host.py:2239
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>Configuration :</b> {path}"
 
-#: polyhost/forwarder.py:935 polyhost/host.py:2240
+#: polyhost/forwarder.py:946 polyhost/host.py:2240
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>Journaux :</b> {path}"
 
-#: polyhost/forwarder.py:953 polyhost/host.py:2294
+#: polyhost/forwarder.py:964 polyhost/host.py:2294
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "Protocole HID P{protocol}"
@@ -4260,41 +4260,41 @@ msgstr "Impossible de définir {language} : {error}"
 
 #: polyhost/host.py:2414
 msgid "Show on the Number Row"
-msgstr ""
+msgstr "Afficher sur la rangée des chiffres"
 
 #: polyhost/host.py:2422
 msgid "No agents reported"
-msgstr ""
+msgstr "Aucun agent signalé"
 
 #: polyhost/host.py:2425
 msgid "working"
-msgstr ""
+msgstr "au travail"
 
 #: polyhost/host.py:2425
 msgid "waiting"
-msgstr ""
+msgstr "en attente"
 
 #: polyhost/host.py:2425
 msgid "done"
-msgstr ""
+msgstr "terminé"
 
 #: polyhost/host.py:2426
 msgid "idle"
-msgstr ""
+msgstr "au repos"
 
 #: polyhost/host.py:2429
 #, python-brace-format
 msgid "Key {key}: {name}, {state}, {title}"
-msgstr ""
+msgstr "Touche {key} : {name}, {state}, {title}"
 
 #: polyhost/host.py:2434
 #, python-brace-format
 msgid "Page {page}, {text}"
-msgstr ""
+msgstr "Page {page}, {text}"
 
 #: polyhost/host.py:2443
 msgid "Pair a Forwarder…"
-msgstr ""
+msgstr "Associer un relais…"
 
 #: polyhost/host.py:2567
 msgid "No emoji search dictionaries shipped"
@@ -4345,8 +4345,8 @@ msgstr "Affectation de superpositions PolyKybd (*.poly.yaml)"
 msgid "Update firmware to v{version}…"
 msgstr "Mettre à jour le firmware vers la v{version}…"
 
-#: polyhost/forwarder.py:992 polyhost/forwarder.py:1003
-#: polyhost/forwarder.py:1009 polyhost/host.py:2777 polyhost/host.py:2898
+#: polyhost/forwarder.py:1003 polyhost/forwarder.py:1014
+#: polyhost/forwarder.py:1020 polyhost/host.py:2777 polyhost/host.py:2898
 #: polyhost/host.py:2902
 msgid "Check for updates..."
 msgstr "Rechercher des mises à jour..."
@@ -4356,8 +4356,8 @@ msgstr "Rechercher des mises à jour..."
 msgid "Update to v{version} available"
 msgstr "Mise à jour vers la v{version} disponible"
 
-#: polyhost/forwarder.py:1005 polyhost/forwarder.py:1011
-#: polyhost/forwarder.py:1022 polyhost/host.py:2856 polyhost/host.py:2896
+#: polyhost/forwarder.py:1016 polyhost/forwarder.py:1022
+#: polyhost/forwarder.py:1033 polyhost/host.py:2856 polyhost/host.py:2896
 #: polyhost/host.py:2903 polyhost/host.py:2926
 msgid "PolyKybdHost Update"
 msgstr "Mise à jour de PolyKybdHost"
@@ -4367,7 +4367,7 @@ msgstr "Mise à jour de PolyKybdHost"
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "La version {version} est disponible. Cliquez sur l'icône de la zone de notification pour mettre à jour."
 
-#: polyhost/forwarder.py:979 polyhost/host.py:2882
+#: polyhost/forwarder.py:990 polyhost/host.py:2882
 msgid "Checking for updates..."
 msgstr "Recherche de mises à jour..."
 
@@ -4375,12 +4375,12 @@ msgstr "Recherche de mises à jour..."
 msgid "No updates available"
 msgstr "Aucune mise à jour disponible"
 
-#: polyhost/forwarder.py:1006 polyhost/host.py:2897
+#: polyhost/forwarder.py:1017 polyhost/host.py:2897
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "Vous utilisez la dernière version (v{version})."
 
-#: polyhost/forwarder.py:1012 polyhost/host.py:2904
+#: polyhost/forwarder.py:1023 polyhost/host.py:2904
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -4400,12 +4400,12 @@ msgstr ""
 msgid "Released: {date}"
 msgstr "Publiée le : {date}"
 
-#: polyhost/forwarder.py:993 polyhost/host.py:2910
+#: polyhost/forwarder.py:1004 polyhost/host.py:2910
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "La version {version} est disponible."
 
-#: polyhost/forwarder.py:994 polyhost/host.py:2911
+#: polyhost/forwarder.py:1005 polyhost/host.py:2911
 msgid "Update PolyKybdHost"
 msgstr "Mettre à jour PolyKybdHost"
 
@@ -4413,20 +4413,20 @@ msgstr "Mettre à jour PolyKybdHost"
 msgid "Download, install, and restart now?"
 msgstr "Télécharger, installer et redémarrer maintenant ?"
 
-#: polyhost/forwarder.py:1021 polyhost/host.py:2926
+#: polyhost/forwarder.py:1032 polyhost/host.py:2926
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "Téléchargement de la v{version}…"
 
-#: polyhost/forwarder.py:1062 polyhost/host.py:3051
+#: polyhost/forwarder.py:1073 polyhost/host.py:3051
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "Impossible de démarrer le relais de mise à jour ; la mise à jour est incomplète. Consultez le journal pour plus de détails."
 
-#: polyhost/forwarder.py:1074 polyhost/host.py:3066
+#: polyhost/forwarder.py:1085 polyhost/host.py:3066
 msgid "Update failed"
 msgstr "Échec de la mise à jour"
 
-#: polyhost/forwarder.py:1074 polyhost/host.py:3066
+#: polyhost/forwarder.py:1085 polyhost/host.py:3066
 msgid "The update did not finish."
 msgstr "La mise à jour ne s’est pas terminée."
 
