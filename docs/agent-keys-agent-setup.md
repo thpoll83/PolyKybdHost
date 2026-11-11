@@ -79,8 +79,21 @@ call starts Python (about 0.3 s), so this removes that delay before every tool c
 
 ## Agents on a second computer (forwarder)
 
-On a computer that runs the PolyKybdHost **forwarder** with `--report-rpc` (the
-keyboard is on another computer), install the hooks as on any computer:
+On a computer that runs the PolyKybdHost **forwarder** (the keyboard is on another
+computer), first pair the forwarder with the keyboard computer, once:
+
+1. On the keyboard computer: tray > AI Agents > "Pair a Forwarder…" (or
+   `polyctl forwarder pairing-code`) shows a code. It is the key of the network
+   endpoint: anyone with it can send reports to that computer.
+2. On the forwarder's computer: forwarder tray > "Pair with the Keyboard Computer…"
+   (or `polyctl forwarder pair <code>`), then restart the forwarder.
+
+A paired forwarder uses the authenticated connection (`--report-rpc`) with that key,
+without command-line flags. Without the key it would be refused with "digest sent
+was rejected". `--report-rpc` and `--report-authkey-file` still work and take
+priority over the pairing.
+
+Then install the hooks as on any computer (forwarder tray > "Set Up Agent Hooks", or):
 
 ```
 polyctl agents hooks install claude-code
@@ -93,8 +106,9 @@ whenever its target changes (for example through `--host-file`), so the hooks fo
 it. `--host <keyboard computer> [--authkey-file <file>]` on the install fixes the
 hooks to one computer instead.
 
-- The forwarder must run with `--report-rpc`. Without it the forwarder uses its
-  plain TCP relay, writes no target, and the hooks find no host.
+- The forwarder must be paired (or run with `--report-rpc`). Otherwise it uses its
+  plain TCP relay, which has no reply channel and no key, writes no target, and the
+  hooks find no host.
 - The keyboard computer needs three settings on: `window_report_network_enabled`
   (as for the forwarder itself), `agents_enabled`, and `agents_remote_enabled`,
   which is off by default (Settings > AI agents > "Agents from other computers").

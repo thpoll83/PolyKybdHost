@@ -34,7 +34,8 @@ class AgentsMenuTest(unittest.TestCase):
         host._core_click = lambda fn, done: (host.calls.append(fn), done(*fn()))
         host.log = mock.MagicMock()
         host.report_device_result = mock.MagicMock()
-        for name in ("_apply_agents_menu", "_toggle_agents_enabled", "_raise_agent_clicked"):
+        for name in ("_apply_agents_menu", "_toggle_agents_enabled", "_raise_agent_clicked",
+                     "_show_pairing_code"):
             setattr(host, name, types.MethodType(getattr(PolyHost, name), host))
         return host
 
@@ -55,6 +56,7 @@ class AgentsMenuTest(unittest.TestCase):
         self.assertIn("Key 1: Claude Code, waiting, fix the build", texts)
         self.assertIn("Page 2, Key 1: Codex, idle, docs", texts)
         self.assertIn("Set Up Hooks", texts)
+        self.assertIn("Pair a Forwarder…", texts)
         act = next(a for a in host.agents_menu.actions() if a.text().startswith("Key 1: Claude"))
         host.sender = lambda: act
         host._raise_agent_clicked()

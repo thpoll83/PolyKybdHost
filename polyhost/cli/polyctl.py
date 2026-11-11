@@ -472,6 +472,30 @@ def _cmd_tap_terms(client, args):
     return 0
 
 
+def _cmd_forwarder(_client, args):
+    """Pair a forwarder with the keyboard computer (services/forwarder_pairing.py).
+    Local file access: needs no running host."""
+    from polyhost.services import forwarder_pairing as fp
+    if args.forwarder_cmd == "pairing-code":
+        print(fp.pairing_code())
+        print("Enter it on the forwarder's computer: polyctl forwarder pair <code>, or the "
+              "forwarder's tray menu. Anyone with it can send reports to this computer.",
+              file=sys.stderr)
+        return 0
+    if args.forwarder_cmd == "pair":
+        key = fp.parse_code(args.code)
+        if key is None:
+            print("polyctl: not a pairing code (64 letters a-f and digits, in groups of 8)",
+                  file=sys.stderr)
+            return 2
+        print(f"paired: key saved to {fp.save_paired_key(key)}; restart the forwarder")
+        return 0
+    if args.forwarder_cmd == "unpair":
+        print("pairing removed" if fp.forget_pairing() else "no pairing to remove")
+        return 0
+    return 2
+
+
 def _cmd_attention(client, args):
     """Run the focus ripple on a key (firmware v32+), or cancel it."""
     if args.cancel:
@@ -1414,6 +1438,15 @@ def build_parser():
              "display-off deadline, which is fixed.")
     p_idle_timeout.set_defaults(func=_cmd_idle_timeout)
 
+    p_fwd = sub.add_parser(
+        "forwarder", help="pair a forwarder with the keyboard computer (local, no host needed)")
+    fwd_sub = p_fwd.add_subparsers(dest="forwarder_cmd", required=True)
+    fwd_sub.add_parser("pairing-code", help="on the keyboard computer: print the code")
+    p_fwd_pair = fwd_sub.add_parser("pair", help="on the forwarder's computer: save the code")
+    p_fwd_pair.add_argument("code")
+    fwd_sub.add_parser("unpair", help="on the forwarder's computer: remove the pairing")
+    p_fwd.set_defaults(func=_cmd_forwarder)
+
     p_attention = sub.add_parser(
         "attention", help="run the first-run tutorial's focus ripple on a key, by its "
                           "matrix position (firmware v32+, split72)")
@@ -1867,11 +1900,11 @@ def _is_offline_command(args) -> bool:
 
 def _is_local_command(args) -> bool:
     """True for commands that never talk to the host: ``shell-integration``,
-    ``editor-plugins`` and ``agents hooks`` edit the user's own files and have
-    nothing to ask it."""
+    ``editor-plugins``, ``agents hooks`` and ``forwarder`` (pairing) edit the user's
+    own files and have nothing to ask it."""
     if getattr(args, "command", None) == "agents":
         return getattr(args, "agents_cmd", None) == "hooks"
-    return getattr(args, "command", None) in ("shell-integration", "editor-plugins")
+    return getattr(args, "command", None) in ("shell-integration", "editor-plugins", "forwarder")
 
 
 def main(argv=None):

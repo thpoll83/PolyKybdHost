@@ -2440,6 +2440,16 @@ class PolyHost(QApplication):
         menu.addSeparator()
         from polyhost.gui.agent_hooks import add_setup_menu
         add_setup_menu(menu, self.log)
+        pair = QAction(_("Pair a Forwarder…"), parent=menu)
+        # noinspection PyUnresolvedReferences
+        pair.triggered.connect(self._show_pairing_code)
+        menu.addAction(pair)
+
+    def _show_pairing_code(self):
+        """The window-report key as a code, for a forwarder on another computer
+        (services/forwarder_pairing.py). A local file read: no core needed."""
+        from polyhost.gui.forwarder_pairing import show_pairing_code
+        show_pairing_code()
 
     def _toggle_agents_enabled(self, checked):
         def done(ok, msg):

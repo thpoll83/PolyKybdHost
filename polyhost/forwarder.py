@@ -11,6 +11,7 @@ import time
 from PyQt5.QtCore import QTimer, QObject, pyqtSignal
 from PyQt5.QtWidgets import (
     QApplication,
+    QMessageBox,
     QSystemTrayIcon,
     QDialog,
     QMenu,
@@ -307,6 +308,11 @@ class PolyForwarder(QApplication):
         self.agent_hooks_menu = add_setup_menu(
             self.menu, self.log, title=_("Set Up Agent Hooks"), note=self._agent_hooks_note)
         self.agent_hooks_menu.setIcon(get_icon("terminal.svg"))
+        self.pair_action = QAction(get_icon("sync_alt.svg"), _("Pair with the Keyboard Computer…"),
+                                   parent=self)
+        # noinspection PyUnresolvedReferences
+        self.pair_action.triggered.connect(self._pair_clicked)
+        self.menu.addAction(self.pair_action)
 
         self.settings_action = QAction(get_icon("settings.svg"), _("Settings..."), parent=self)
         # noinspection PyUnresolvedReferences
@@ -881,6 +887,20 @@ class PolyForwarder(QApplication):
                 from polyhost.gui import i18n_qt
                 i18n_qt.offer_language_restart(changed["ui_language"], self._restart_for_language)
         dlg.close()
+
+    def _pair_clicked(self):
+        """Save the keyboard computer's code; RPC mode with it needs a restart."""
+        from polyhost.gui.forwarder_pairing import ask_pairing_code
+        if not ask_pairing_code(log=self.log):
+            return
+        answer = QMessageBox.question(
+            None, _("Pair with the Keyboard Computer"),
+            _("Paired. The forwarder uses the authenticated connection from its next "
+              "start. Restart it now?"))
+        if answer == QMessageBox.Yes:
+            self.log.info("Restarting the forwarder to use the pairing.")
+            self.wants_restart = True
+            self.quit_app()
 
     def _restart_for_language(self):
         """Restart the forwarder (main_app re-execs once the loop unwinds)."""
