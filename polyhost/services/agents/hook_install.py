@@ -26,7 +26,19 @@ CLAUDE_EVENTS = ("SessionStart", "UserPromptSubmit", "PermissionRequest", "PostT
 CLAUDE_TOOL_EVENTS = ("PermissionRequest", "PostToolUse", "PreToolUse")
 COPILOT_EVENTS = ("sessionStart", "userPromptSubmitted", "preToolUse", "postToolUse",
                   "agentStop", "errorOccurred", "sessionEnd")
-VENDORS = ("claude-code", "codex", "copilot")
+# Gemini CLI (docs/hooks/reference.md): permission prompts arrive as a Notification
+# with notification_type ToolPermission, so no BeforeTool hook is needed.
+GEMINI_EVENTS = ("SessionStart", "BeforeAgent", "AfterTool", "AfterAgent", "Notification",
+                 "SessionEnd")
+# Qwen Code (docs/users/features/hooks.md) uses Claude Code's event names.
+QWEN_EVENTS = ("SessionStart", "UserPromptSubmit", "PermissionRequest", "PostToolUse",
+               "Notification", "Stop", "SessionEnd")
+# OpenCode events the plugin passes on. Only session.idle is in the current docs;
+# the permission and status names are the older ones, kept so either version works
+# (hooks.interpret ignores an event it does not know).
+OPENCODE_EVENTS = ("session.status", "session.idle", "session.error", "permission.asked",
+                   "permission.updated", "permission.replied")
+VENDORS = ("claude-code", "codex", "copilot", "gemini", "qwen", "opencode")
 
 
 @dataclass
@@ -156,7 +168,96 @@ def plan_copilot(home: str, install: bool = True, argv: list[str] | None = None,
     return [FileChange(path, before, after)] if after != before else []
 
 
-PLANNERS = {"claude-code": plan_claude, "codex": plan_codex, "copilot": plan_copilot}
+# ---- Gemini CLI and Qwen Code ----------------------------------------------------
+
+def _plan_settings_hooks(path: str, vendor: str, events, timeout, install: bool,
+                         argv, extra) -> list[FileChange]:
+    """A `hooks` object in a settings.json, Claude Code's shape: event -> [{matcher,
+    hooks: [{type, command, name, timeout}]}]. Other hooks and settings are kept."""
+    before = _read(path)
+    data = json.loads(before) if before.strip() else {}
+    hooks = data.setdefault("hooks", {})
+    for event in list(hooks):
+        kept = []
+        for group in hooks[event]:
+            inner = [h for h in group.get("hooks", []) if not _is_ours(h)]
+            if inner:
+                kept.append({**group, "hooks": inner})
+        if kept:
+            hooks[event] = kept
+        else:
+            del hooks[event]
+    if install:
+        command = _shell_command((argv or polyctl_argv()) + ["agents", "hook", vendor]
+                                 + list(extra))
+        for event in events:
+            hooks.setdefault(event, []).append(
+                {"matcher": "*", "hooks": [{"type": "command", "name": "polykybd",
+                                            "command": command, "timeout": timeout}]})
+    if not hooks:
+        del data["hooks"]
+    after = json.dumps(data, indent=2) + "\n"
+    if not before.strip() and not data:
+        after = ""
+    return [FileChange(path, before, after)] if after != before else []
+
+
+def plan_gemini(home: str, install: bool = True, argv: list[str] | None = None,
+                extra: list[str] = ()) -> list[FileChange]:
+    """~/.gemini/settings.json; Gemini's hook timeout is in milliseconds."""
+    return _plan_settings_hooks(os.path.join(home, ".gemini", "settings.json"), "gemini",
+                                GEMINI_EVENTS, 5000, install, argv, extra)
+
+
+def plan_qwen(home: str, install: bool = True, argv: list[str] | None = None,
+              extra: list[str] = ()) -> list[FileChange]:
+    """~/.qwen/settings.json; Qwen's hook timeout is in seconds."""
+    return _plan_settings_hooks(os.path.join(home, ".qwen", "settings.json"), "qwen",
+                                QWEN_EVENTS, 5, install, argv, extra)
+
+
+# ---- OpenCode ------------------------------------------------------------------
+
+OPENCODE_PLUGIN = """// PolyKybd agent keys. Written by PolyHost (polyctl agents hooks install opencode);
+// remove it with: polyctl agents hooks uninstall opencode. Marker: agents hook
+// Each event below goes as JSON on stdin to `polyctl agents hook opencode`, which
+// never writes to stdout and always exits 0. A failed start is ignored.
+import { spawn } from "node:child_process";
+
+const ARGV = __ARGV__;
+const EVENTS = new Set(__EVENTS__);
+
+export const PolyKybd = async ({ directory }) => ({
+  event: async ({ event }) => {
+    if (!event || !EVENTS.has(event.type)) return;
+    try {
+      const child = spawn(ARGV[0], ARGV.slice(1),
+                          { stdio: ["pipe", "ignore", "ignore"], windowsHide: true });
+      child.on("error", () => {});
+      child.stdin.on("error", () => {});
+      child.stdin.end(JSON.stringify({ ...event, cwd: directory }));
+    } catch (e) {}
+  },
+});
+"""
+
+
+def plan_opencode(home: str, install: bool = True, argv: list[str] | None = None,
+                  extra: list[str] = ()) -> list[FileChange]:
+    """Its own plugin file, ~/.config/opencode/plugins/polykybd.js (OpenCode has no
+    shell hooks). On Windows OpenCode also reads ~/.config/opencode."""
+    path = os.path.join(home, ".config", "opencode", "plugins", "polykybd.js")
+    before = _read(path)
+    if not install:
+        return [FileChange(path, before, "")] if before else []
+    args = (argv or polyctl_argv()) + ["agents", "hook", "opencode"] + list(extra)
+    after = (OPENCODE_PLUGIN.replace("__ARGV__", json.dumps(args))
+             .replace("__EVENTS__", json.dumps(list(OPENCODE_EVENTS))))
+    return [FileChange(path, before, after)] if after != before else []
+
+
+PLANNERS = {"claude-code": plan_claude, "codex": plan_codex, "copilot": plan_copilot,
+            "gemini": plan_gemini, "qwen": plan_qwen, "opencode": plan_opencode}
 
 
 def plan(vendor: str, home: str | None = None, install: bool = True,

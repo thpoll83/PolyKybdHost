@@ -1,5 +1,5 @@
-"""polyctl agents hooks install/uninstall: the plans for Claude Code, Codex and
-Copilot CLI, on a temporary home directory."""
+"""polyctl agents hooks install/uninstall: the plans for Claude Code, Codex,
+Copilot CLI, Gemini CLI, Qwen Code and OpenCode, on a temporary home directory."""
 import json
 import os
 import tempfile
@@ -100,7 +100,45 @@ class HookInstallTest(unittest.TestCase):
 
     def test_unknown_vendor(self):
         with self.assertRaises(ValueError):
-            hi.plan("gemini", self.home)
+            hi.plan("cursor", self.home)
+
+
+    def test_gemini_and_qwen_keep_the_users_hooks(self):
+        for vendor, rel, events, timeout in (("gemini", ".gemini/settings.json", hi.GEMINI_EVENTS, 5000),
+                                             ("qwen", ".qwen/settings.json", hi.QWEN_EVENTS, 5)):
+            own = {"theme": "dark", "hooks": {"SessionStart": [
+                {"matcher": "*", "hooks": [{"type": "command", "command": "mine.sh"}]}]}}
+            path = self._write(rel, json.dumps(own))
+            hi.apply(hi.plan(vendor, self.home, argv=ARGV))
+            data = json.loads(_read(path))
+            self.assertEqual(data["theme"], "dark")
+            self.assertEqual(set(data["hooks"]), set(events))
+            ours = data["hooks"]["Notification"][0]["hooks"][0]
+            self.assertEqual(ours["command"], f"/opt/poly/polyctl agents hook {vendor}")
+            self.assertEqual(ours["timeout"], timeout)
+            self.assertEqual(len(data["hooks"]["SessionStart"]), 2)      # mine kept
+            self.assertEqual(hi.plan(vendor, self.home, argv=ARGV), [])  # idempotent
+            hi.apply(hi.plan(vendor, self.home, install=False))
+            self.assertEqual(json.loads(_read(path)), own)
+
+    def test_opencode_plugin(self):
+        hi.apply(hi.plan("opencode", self.home, argv=ARGV))
+        path = os.path.join(self.home, ".config", "opencode", "plugins", "polykybd.js")
+        text = _read(path)
+        self.assertIn('const ARGV = ["/opt/poly/polyctl", "agents", "hook", "opencode"];', text)
+        self.assertIn('"session.idle"', text)
+        self.assertIn(hi.HOOK_MARK, text)
+        hi.apply(hi.plan("opencode", self.home, install=False))
+        self.assertFalse(os.path.exists(path))
+
+    def test_opencode_status_events(self):
+        from polyhost.services.agents import hooks
+        from polyhost.services.agents.model import AgentState
+        ev = lambda t, **p: hooks.interpret({"type": t, "properties": {"sessionID": "s", **p}})
+        self.assertEqual(ev("session.status", status={"type": "busy"})["state"], AgentState.WORKING)
+        self.assertEqual(ev("session.status", status={"type": "idle"})["state"], AgentState.DONE)
+        self.assertEqual(ev("permission.updated")["state"], AgentState.WAITING)
+        self.assertIsNone(ev("session.status", status={"type": "other"}))
 
 
 if __name__ == "__main__":

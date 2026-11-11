@@ -13,7 +13,8 @@ from PyQt5.QtWidgets import QAction, QMessageBox
 
 from polyhost.i18n import _, _f
 
-VENDORS = (("claude-code", "Claude Code"), ("codex", "Codex"), ("copilot", "Copilot CLI"))
+VENDORS = (("claude-code", "Claude Code"), ("codex", "Codex"), ("copilot", "Copilot CLI"),
+           ("gemini", "Gemini CLI"), ("qwen", "Qwen Code"), ("opencode", "OpenCode"))
 
 
 def add_setup_menu(menu, log, title=None, note=None):

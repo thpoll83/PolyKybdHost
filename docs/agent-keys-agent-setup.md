@@ -188,18 +188,22 @@ per folder. Copilot has no event for a permission prompt; the host shows
 
 ## Other agents
 
-Gemini CLI, Antigravity, Copilot CLI, Cursor, OpenCode and Qwen Code each have
-their own hook file. Use the format your own documentation gives, and for each
-event in the table above run `polyctl agents hook <vendor>` with the hook JSON on
-stdin. These formats were not tested with the keyboard yet.
+`polyctl agents hooks install <vendor>` (or the tray's Set Up Hooks menu) also
+writes the hooks for these, keeping any hooks of your own. Their formats were not
+tested with the keyboard yet.
 
-- Gemini CLI: `settings.json`, `hooks`.
-- Antigravity: `.agents/hooks.json` (project) or `~/.gemini/config/hooks.json`.
-- Cursor: `.cursor/hooks.json` or `~/.cursor/hooks.json`.
-- Qwen Code: `.qwen/settings.json`, `hooks`.
-- OpenCode has no shell hooks. It needs a small plugin that, on the `event` handler,
-  pipes `JSON.stringify(event)` into `polyctl agents hook opencode` for
-  `permission.asked`, `permission.replied` and `session.idle`.
+- Gemini CLI (`gemini`): `~/.gemini/settings.json`, `hooks`, for SessionStart,
+  BeforeAgent, AfterTool, AfterAgent, Notification and SessionEnd. A tool permission
+  prompt arrives as a Notification of type `ToolPermission`.
+- Qwen Code (`qwen`): `~/.qwen/settings.json`, `hooks`, with Claude Code's events.
+- OpenCode (`opencode`) has no shell hooks: the installer writes the plugin
+  `~/.config/opencode/plugins/polykybd.js`, which pipes `session.status`,
+  `session.idle`, `session.error` and the permission events as JSON into
+  `polyctl agents hook opencode`.
+
+Antigravity (`.agents/hooks.json` or `~/.gemini/config/hooks.json`) and Cursor
+(`.cursor/hooks.json` or `~/.cursor/hooks.json`) have no installer: for each event
+in the table above run `polyctl agents hook <vendor>` with the hook JSON on stdin.
 
 ## Check that it works
 

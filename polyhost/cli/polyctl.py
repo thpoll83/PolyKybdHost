@@ -1521,7 +1521,8 @@ def build_parser():
         "hooks", help="write or remove the PolyKybd hooks in an agent's own config "
                       "(claude-code, codex, copilot); shows the diff first")
     p_ahs.add_argument("hooks_cmd", choices=("install", "uninstall"))
-    p_ahs.add_argument("vendor", choices=("claude-code", "codex", "copilot"))
+    p_ahs.add_argument("vendor", choices=("claude-code", "codex", "copilot", "gemini", "qwen",
+                                          "opencode"))
     p_ahs.add_argument("--dry-run", action="store_true", help="only show the diff")
     p_ahs.add_argument("--yes", action="store_true", help="write without asking")
     p_ahs.add_argument("--host", default=None,

@@ -41,6 +41,7 @@ _EVENTS = {
     "postinvocation": (AgentState.WORKING, "posttool"),
     "permissionrequest": (AgentState.WAITING, "posttool"),
     "permissionasked": (AgentState.WAITING, "posttool"),
+    "permissionupdated": (AgentState.WAITING, "posttool"),    # OpenCode, older name
     "permissionreplied": (AgentState.WORKING, "posttool"),
     "stop": (AgentState.DONE, "stop"),
     "agentstop": (AgentState.DONE, "stop"),        # Copilot CLI
@@ -59,6 +60,17 @@ _EVENTS = {
 # agent process and resumes the same session: the key stays, without a process.
 _HARD_END_REASONS = frozenset({"clear", "logout", "promptinputexit", "exit", "userexit",
                                "bypasspermissionsdisabled"})
+
+
+def _session_status(payload: dict):
+    """OpenCode's session.status: {status: {type: "busy" | "idle" | "retry"}}."""
+    status = payload.get("status")
+    kind = normalise_event(str(status.get("type") if isinstance(status, dict) else status or ""))
+    if kind in ("busy", "retry"):
+        return AgentState.WORKING, "prompt"
+    if kind == "idle":
+        return AgentState.DONE, "stop"
+    return None, ""
 
 
 def _session_end(payload: dict):
@@ -106,6 +118,8 @@ def interpret(payload: dict, event: str = "") -> dict | None:
         state, tag = _notification_state(payload)
     elif event == "sessionend":
         state, tag = _session_end(payload)
+    elif event == "sessionstatus":
+        state, tag = _session_status(payload)
     elif event in _EVENTS:
         state, tag = _EVENTS[event]
     else:
