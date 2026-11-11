@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-11 15:20+0000\n"
+"POT-Creation-Date: 2026-11-11 15:59+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -18,17 +18,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: polyhost/device/command_ids.py:153
+#: polyhost/device/command_ids.py:167
 #, python-brace-format
 msgid "preset {value}"
 msgstr "プリセット {value}"
 
-#: polyhost/device/command_ids.py:155
+#: polyhost/device/command_ids.py:169
 #, python-brace-format
 msgid "{minutes} min"
 msgstr "{minutes} 分"
 
-#: polyhost/device/command_ids.py:156
+#: polyhost/device/command_ids.py:170
 #, python-brace-format
 msgid "{seconds} sec"
 msgstr "{seconds} 秒"
@@ -327,113 +327,133 @@ msgstr ""
 msgid "{prefix} — the USB half answered, but the other keyboard half did not confirm that it had erased the {what} within 90 s. Check the cable between the two halves. If the other half stays dark, it is not running firmware and needs the firmware .uf2 copied onto it by hand."
 msgstr "{prefix} — USB 接続側の本体は応答しましたが、もう一方の本体が 90 s 以内に{what}の消去を確認しませんでした。両本体間のケーブルを確認してください。もう一方の本体が暗いままの場合、ファームウェアが動作していないため、ファームウェアの .uf2 を手動でコピーする必要があります。"
 
-#: polyhost/forwarder.py:245
+#: polyhost/forwarder.py:261
 msgid "Press to pause forwarding"
 msgstr "クリックで転送を一時停止"
 
-#: polyhost/forwarder.py:252
+#: polyhost/forwarder.py:268
 msgid "Stop sending this machine's active window to the keyboard machine."
 msgstr "このコンピューターのアクティブウィンドウをキーボード側のコンピューターに送信するのを停止します。"
 
-#: polyhost/forwarder.py:267
+#: polyhost/forwarder.py:283
 msgid "Check for host update…"
 msgstr "ホストの更新を確認…"
 
-#: polyhost/forwarder.py:364
+#: polyhost/forwarder.py:309
+msgid "Set Up Agent Hooks"
+msgstr ""
+
+#: polyhost/forwarder.py:311
+msgid "Pair with the Keyboard Computer…"
+msgstr ""
+
+#: polyhost/forwarder.py:393
 #, python-brace-format
 msgid "no host (waiting for {path})"
 msgstr "ホストなし ({path} を待機中)"
 
-#: polyhost/forwarder.py:365
+#: polyhost/forwarder.py:394
 msgid "no host configured"
 msgstr "ホストが設定されていません"
 
-#: polyhost/forwarder.py:368
+#: polyhost/forwarder.py:397
 #, python-brace-format
 msgid "PolyKybdHost {version} (forwarder) → {target}"
 msgstr "PolyKybdHost {version} (フォワーダー) → {target}"
 
-#: polyhost/forwarder.py:373
+#: polyhost/forwarder.py:402
 msgid "Forwarding paused"
 msgstr "転送を一時停止中"
 
-#: polyhost/forwarder.py:376
+#: polyhost/forwarder.py:405
 #, python-brace-format
 msgid "Forwarding to {target}…"
 msgstr "{target} に転送しています…"
 
-#: polyhost/forwarder.py:378
+#: polyhost/forwarder.py:407
 #, python-brace-format
 msgid "Forwarding to {target}"
 msgstr "{target} に転送中"
 
-#: polyhost/forwarder.py:379
+#: polyhost/forwarder.py:408
 #, python-brace-format
 msgid "Cannot reach {target}"
 msgstr "{target} に接続できません"
 
-#: polyhost/forwarder.py:785
+#: polyhost/forwarder.py:553
+msgid "The hooks are written, but this forwarder runs without --report-rpc, so it cannot pass agent reports on. Start it with --report-rpc to show this computer's agents on the keys."
+msgstr ""
+
+#: polyhost/forwarder.py:556
+msgid "The hooks are written. On the keyboard computer, turn on Settings > AI agents > \"Agents from other computers\"."
+msgstr ""
+
+#: polyhost/forwarder.py:879
 msgid "PolyForwarder settings"
 msgstr "PolyForwarder の設定"
 
-#: polyhost/forwarder.py:786
+#: polyhost/forwarder.py:880
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
 msgstr "設定を設定ファイルに保存できなかったため、設定は反映されません。別のプログラムがファイルを開いている可能性があります。もう一度試すか、ログを確認してください。"
 
-#: polyhost/forwarder.py:805
+#: polyhost/forwarder.py:898
+msgid "Paired. The forwarder uses the authenticated connection from its next start. Restart it now?"
+msgstr ""
+
+#: polyhost/forwarder.py:913
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
 msgstr "認証付き RPC (ポート {port})"
 
-#: polyhost/forwarder.py:807
+#: polyhost/forwarder.py:915
 msgid "legacy plaintext TCP relay"
 msgstr "従来の平文 TCP リレー"
 
-#: polyhost/forwarder.py:810
+#: polyhost/forwarder.py:918
 msgid "reaching the keyboard machine"
 msgstr "キーボード側のコンピューターに到達しています"
 
-#: polyhost/forwarder.py:811
+#: polyhost/forwarder.py:919
 msgid "not reaching the keyboard machine"
 msgstr "キーボード側のコンピューターに到達できません"
 
-#: polyhost/forwarder.py:812
+#: polyhost/forwarder.py:920
 msgid "starting up"
 msgstr "起動中"
 
-#: polyhost/forwarder.py:814
+#: polyhost/forwarder.py:922
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
 msgstr "<b>モード:</b> フォワーダー — このコンピューターにはキーボードが接続されていません"
 
-#: polyhost/forwarder.py:815
+#: polyhost/forwarder.py:923
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
 msgstr "<b>転送先:</b> {target}"
 
-#: polyhost/forwarder.py:817
+#: polyhost/forwarder.py:925
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
 msgstr "<b>ウィンドウ通知:</b> {transport}"
 
-#: polyhost/forwarder.py:820
+#: polyhost/forwarder.py:928
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
 msgstr "<b>ホストファイル:</b> {path}"
 
-#: polyhost/forwarder.py:841
+#: polyhost/forwarder.py:949
 msgid "About PolyKybdHost (forwarder)"
 msgstr "PolyKybdHost (フォワーダー) について"
 
 #. TRANSLATORS: the run mode in the About dialog's environment line
-#: polyhost/forwarder.py:848
+#: polyhost/forwarder.py:956
 msgid "forwarder"
 msgstr "フォワーダー"
 
-#: polyhost/forwarder.py:850
+#: polyhost/forwarder.py:958
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "フォワーダーモード: このコンピューターにはキーボードがありません。ここでアクティブウィンドウを監視し、キーボードが接続されたコンピューターで動作している PolyKybdHost に中継します。"
 
-#: polyhost/forwarder.py:890
+#: polyhost/forwarder.py:998
 msgid "Download, install, and restart the forwarder now?"
 msgstr "フォワーダーを今すぐダウンロード、インストールして再起動しますか?"
 
@@ -457,6 +477,19 @@ msgstr "診断情報をコピー"
 #: polyhost/gui/about_dialog.py:156
 msgid "Copied ✓"
 msgstr "コピーしました ✓"
+
+#: polyhost/gui/agent_hooks.py:23 polyhost/gui/agent_hooks.py:35
+msgid "Set Up Hooks"
+msgstr ""
+
+#: polyhost/gui/agent_hooks.py:44
+msgid "The hooks are already set up."
+msgstr ""
+
+#: polyhost/gui/agent_hooks.py:47
+#, python-brace-format
+msgid "Write the PolyKybd hooks into {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
+msgstr ""
 
 #: polyhost/gui/boot_loop_dialog.py:26
 msgid "Reboots the keyboard again and again to catch an intermittent boot hang. After each reboot it waits for the keyboard to come back and reads its crash record. It stops at the first boot that left a fresh crash record, at a boot that does not come back within a minute, or after the last round.<br><br>The keyboard does not type while this runs, and each round takes a few seconds."
@@ -799,17 +832,17 @@ msgstr "フォントパックの状態を読み取れませんでした: {error}
 msgid "This host ships no font-pack bundles."
 msgstr "このホストにはフォントパックバンドルが同梱されていません。"
 
-#. TRANSLATORS: font-pack bundle state in a status table
-#: polyhost/gui/cmd_menu.py:555
-msgid "stale"
-msgstr "古い"
-
 #. TRANSLATORS: CRC check result in the bundle header ("crc ok")
 #. TRANSLATORS: CRC check result ("crc ok")
 #: polyhost/gui/cmd_menu.py:555 polyhost/gui/fontpack_inspector_dialog.py:202
 #: polyhost/gui/fontpack_inspector_dialog.py:785
 msgid "ok"
 msgstr "OK"
+
+#. TRANSLATORS: font-pack bundle state in a status table
+#: polyhost/gui/cmd_menu.py:555 polyhost/host.py:2426
+msgid "stale"
+msgstr "古い"
 
 #: polyhost/gui/cmd_menu.py:558
 msgid "bundle"
@@ -827,7 +860,7 @@ msgstr "同梱"
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "PolyKybd コマンド (*.poly.cmd)"
 
-#: polyhost/gui/cmd_menu.py:566 polyhost/host.py:2597
+#: polyhost/gui/cmd_menu.py:566 polyhost/host.py:2670
 msgid "Open file"
 msgstr "ファイルを開く"
 
@@ -1040,7 +1073,7 @@ msgid "pick one from Source fonts below, or Browse…"
 msgstr "下のソースフォントから選ぶか、[参照…] を使用してください"
 
 #: polyhost/gui/fontpack_extend_dialog.py:120
-#: polyhost/gui/settings_dialog.py:974 polyhost/gui/settings_dialog.py:975
+#: polyhost/gui/settings_dialog.py:1012 polyhost/gui/settings_dialog.py:1013
 msgid "Browse…"
 msgstr "参照…"
 
@@ -1705,8 +1738,33 @@ msgstr "書き込みを開始しました — トレイ / ログで進行状況�
 msgid "Discard all pending edits to '{label}'?"
 msgstr "'{label}' の保留中の編集をすべて破棄しますか?"
 
-#: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:3208
-#: polyhost/host.py:3249 polyhost/host.py:3276
+#: polyhost/gui/forwarder_pairing.py:16 polyhost/gui/forwarder_pairing.py:18
+msgid "Pair a Forwarder"
+msgstr ""
+
+#: polyhost/gui/forwarder_pairing.py:19
+msgid "On the other computer, open the forwarder's menu, choose \"Pair with the Keyboard Computer…\" and enter this code. Anyone with this code can send window and agent reports to this computer, so pass it on only over a channel you trust. \"Allow forwarders over the network\" must be on in Settings."
+msgstr ""
+
+#: polyhost/gui/forwarder_pairing.py:26
+msgid "Copy"
+msgstr ""
+
+#: polyhost/forwarder.py:897 polyhost/gui/forwarder_pairing.py:37
+#: polyhost/gui/forwarder_pairing.py:44 polyhost/gui/forwarder_pairing.py:51
+msgid "Pair with the Keyboard Computer"
+msgstr ""
+
+#: polyhost/gui/forwarder_pairing.py:38
+msgid "Enter the code that \"Pair a Forwarder…\" shows on the keyboard computer (tray menu, AI Agents):"
+msgstr ""
+
+#: polyhost/gui/forwarder_pairing.py:45
+msgid "That is not a pairing code: it has 64 letters and digits (a to f, 0 to 9), in groups of 8."
+msgstr ""
+
+#: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:3281
+#: polyhost/host.py:3322 polyhost/host.py:3349
 msgid "Firmware Update"
 msgstr "ファームウェアの更新"
 
@@ -1719,7 +1777,7 @@ msgstr "<b>ファイル:</b> {path}"
 msgid "Applying staged firmware…"
 msgstr "ステージング済みファームウェアを適用しています…"
 
-#: polyhost/forwarder.py:244 polyhost/gui/hid_fw_up_dialog.py:181
+#: polyhost/forwarder.py:260 polyhost/gui/hid_fw_up_dialog.py:181
 msgid "Starting…"
 msgstr "開始しています…"
 
@@ -1741,7 +1799,7 @@ msgstr "適用中 — ステージング済みファームウェアを有効化�
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "キャンセル中 — 現在のチャンクの完了を待っています…"
 
-#: polyhost/gui/i18n_qt.py:89 polyhost/gui/settings_dialog.py:127
+#: polyhost/gui/i18n_qt.py:89 polyhost/gui/settings_dialog.py:132
 msgid "Language"
 msgstr "言語"
 
@@ -1850,7 +1908,7 @@ msgstr "プレビューデータがありません (同梱版・チェックア�
 msgid "the shipped language table is missing"
 msgstr "同梱の言語テーブルが見つかりません"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:3224
+#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:3297
 msgid "unknown"
 msgstr "不明"
 
@@ -2510,7 +2568,7 @@ msgstr "一致なし"
 msgid "{index} of {total}"
 msgstr "{index} / {total}"
 
-#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:2090
+#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:2100
 msgid "Mock keyboard"
 msgstr "模擬キーボード"
 
@@ -2861,392 +2919,452 @@ msgstr "問題の検出"
 msgid "Logs"
 msgstr "ログ"
 
-#: polyhost/gui/settings_dialog.py:102 polyhost/host.py:876
+#: polyhost/gui/settings_dialog.py:102
+msgid "AI agents"
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:107 polyhost/host.py:884
 msgid "Developer"
 msgstr "開発者"
 
-#: polyhost/gui/settings_dialog.py:106 polyhost/services/lang_regions.py:148
+#: polyhost/gui/settings_dialog.py:111 polyhost/services/lang_regions.py:148
 msgid "Other"
 msgstr "その他"
 
-#: polyhost/gui/settings_dialog.py:109
+#: polyhost/gui/settings_dialog.py:114
 msgid "Send Unicode input mode"
 msgstr "Unicode 入力方式を送信"
 
-#: polyhost/gui/settings_dialog.py:110
+#: polyhost/gui/settings_dialog.py:115
 msgid "Follow daylight"
 msgstr "日照に合わせる"
 
-#: polyhost/gui/settings_dialog.py:111
+#: polyhost/gui/settings_dialog.py:116
 msgid "Online sunlight data"
 msgstr "オンラインの日射量データ"
 
-#: polyhost/gui/settings_dialog.py:112
+#: polyhost/gui/settings_dialog.py:117
 msgid "Online location lookup"
 msgstr "オンラインでの位置情報の検索"
 
-#: polyhost/gui/settings_dialog.py:113
+#: polyhost/gui/settings_dialog.py:118
 msgid "Sunlight at dimmest"
 msgstr "最も暗いときの日射量"
 
-#: polyhost/gui/settings_dialog.py:114
+#: polyhost/gui/settings_dialog.py:119
 msgid "Sunlight at brightest"
 msgstr "最も明るいときの日射量"
 
-#: polyhost/gui/settings_dialog.py:115
+#: polyhost/gui/settings_dialog.py:120
 msgid "Sunlight scale"
 msgstr "日射量の倍率"
 
-#: polyhost/gui/settings_dialog.py:116
+#: polyhost/gui/settings_dialog.py:121
 msgid "Curve gamma"
 msgstr "カーブのガンマ"
 
-#: polyhost/gui/settings_dialog.py:117
+#: polyhost/gui/settings_dialog.py:122
 msgid "Generic icons"
 msgstr "汎用アイコン"
 
-#: polyhost/gui/settings_dialog.py:118
+#: polyhost/gui/settings_dialog.py:123
 msgid "Add the Escape mark"
 msgstr "Esc マークを追加"
 
-#: polyhost/gui/settings_dialog.py:119
+#: polyhost/gui/settings_dialog.py:124
 msgid "Add shortcut icons"
 msgstr "ショートカットアイコンを追加"
 
-#: polyhost/gui/settings_dialog.py:120
+#: polyhost/gui/settings_dialog.py:125
 msgid "Shortcut icons"
 msgstr "ショートカットアイコン"
 
-#: polyhost/gui/settings_dialog.py:121
+#: polyhost/gui/settings_dialog.py:126
 msgid "Download missing icons"
 msgstr "不足しているアイコンをダウンロード"
 
-#: polyhost/gui/settings_dialog.py:122
+#: polyhost/gui/settings_dialog.py:127
 msgid "Turn on accessibility"
 msgstr "アクセシビリティをオンにする"
 
-#: polyhost/gui/settings_dialog.py:123
+#: polyhost/gui/settings_dialog.py:128
 msgid "Messages before a pause"
 msgstr "一時停止までのメッセージ数"
 
-#: polyhost/gui/settings_dialog.py:124
+#: polyhost/gui/settings_dialog.py:129
 msgid "Pause length (s)"
 msgstr "一時停止の長さ (秒)"
 
-#: polyhost/gui/settings_dialog.py:125
+#: polyhost/gui/settings_dialog.py:130
 msgid "ID requests before reconnect"
 msgstr "再接続までの ID 要求回数"
 
-#: polyhost/gui/settings_dialog.py:126
+#: polyhost/gui/settings_dialog.py:131
 msgid "Theme"
 msgstr "テーマ"
 
-#: polyhost/gui/settings_dialog.py:128
+#: polyhost/gui/settings_dialog.py:133
 msgid "Developer mode"
 msgstr "開発者モード"
 
-#: polyhost/gui/settings_dialog.py:129
+#: polyhost/gui/settings_dialog.py:134
 msgid "Log detail"
 msgstr "ログの詳細度"
 
-#: polyhost/gui/settings_dialog.py:130
+#: polyhost/gui/settings_dialog.py:135
 msgid "Add a simulated keyboard"
 msgstr "模擬キーボードを追加"
 
-#: polyhost/gui/settings_dialog.py:131
+#: polyhost/gui/settings_dialog.py:136
 msgid "Simulated keyboard only"
 msgstr "模擬キーボードのみ"
 
-#: polyhost/gui/settings_dialog.py:132
+#: polyhost/gui/settings_dialog.py:137
 msgid "Simulated protocol version"
 msgstr "模擬プロトコルバージョン"
 
-#: polyhost/gui/settings_dialog.py:133
+#: polyhost/gui/settings_dialog.py:138
 msgid "Track windows without a keyboard"
 msgstr "キーボードなしでウィンドウを追跡"
 
-#: polyhost/gui/settings_dialog.py:134
+#: polyhost/gui/settings_dialog.py:139
 msgid "Native Windows language switch"
 msgstr "Windows ネイティブの言語切り替え"
 
-#: polyhost/gui/settings_dialog.py:135
+#: polyhost/gui/settings_dialog.py:140
 msgid "Legacy plaintext relay"
 msgstr "従来の平文リレー"
 
-#: polyhost/gui/settings_dialog.py:136
+#: polyhost/gui/settings_dialog.py:141
 msgid "Force the HID link"
 msgstr "HID リンクを強制"
 
-#: polyhost/gui/settings_dialog.py:137
+#: polyhost/gui/settings_dialog.py:142
 msgid "Background service"
 msgstr "バックグラウンドサービス"
 
-#: polyhost/gui/settings_dialog.py:138
+#: polyhost/gui/settings_dialog.py:143
 msgid "Accept forwarders"
 msgstr "フォワーダーを受け付ける"
 
-#: polyhost/gui/settings_dialog.py:139
+#: polyhost/gui/settings_dialog.py:144
 msgid "Update on connect"
 msgstr "接続時に更新"
 
-#: polyhost/gui/settings_dialog.py:140
+#: polyhost/gui/settings_dialog.py:145
 msgid "Search language"
 msgstr "検索言語"
 
-#: polyhost/gui/settings_dialog.py:141
+#: polyhost/gui/settings_dialog.py:146
 msgid "Own dictionary file"
 msgstr "独自の辞書ファイル"
 
-#: polyhost/gui/settings_dialog.py:142
+#: polyhost/gui/settings_dialog.py:147
 msgid "Font pack file"
 msgstr "フォントパックファイル"
 
-#: polyhost/gui/settings_dialog.py:143
+#: polyhost/gui/settings_dialog.py:148
 msgid "Match websites"
 msgstr "Web サイトを照合"
 
-#: polyhost/gui/settings_dialog.py:144
+#: polyhost/gui/settings_dialog.py:149
 msgid "Receive browser reports"
 msgstr "ブラウザーからの通知を受信"
 
-#: polyhost/gui/settings_dialog.py:145
+#: polyhost/gui/settings_dialog.py:150
 msgid "Receiver port"
 msgstr "受信ポート"
 
-#: polyhost/gui/settings_dialog.py:146
+#: polyhost/gui/settings_dialog.py:151
 msgid "Receiver token"
 msgstr "受信トークン"
 
-#: polyhost/gui/settings_dialog.py:147
+#: polyhost/gui/settings_dialog.py:152
 msgid "Send usage report"
 msgstr "利用状況レポートを送信"
 
-#: polyhost/gui/settings_dialog.py:148
+#: polyhost/gui/settings_dialog.py:153
 msgid "Report address"
 msgstr "レポートの送信先"
 
-#: polyhost/gui/settings_dialog.py:149
+#: polyhost/gui/settings_dialog.py:154
 msgid "Installation ID"
 msgstr "インストール ID"
 
-#: polyhost/gui/settings_dialog.py:150
+#: polyhost/gui/settings_dialog.py:155
 msgid "Watch the keyboard console"
 msgstr "キーボードコンソールを監視"
 
-#: polyhost/gui/settings_dialog.py:151
+#: polyhost/gui/settings_dialog.py:156
 msgid "Watch this app's log"
 msgstr "このアプリのログを監視"
 
-#: polyhost/gui/settings_dialog.py:152
+#: polyhost/gui/settings_dialog.py:157
 msgid "What counts as a problem"
 msgstr "問題とみなす範囲"
 
-#: polyhost/gui/settings_dialog.py:153
+#: polyhost/gui/settings_dialog.py:158
 msgid "Art from installed games"
 msgstr "インストール済みゲームの画像"
 
+#: polyhost/gui/settings_dialog.py:159
+msgid "Show on the number row"
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:160
+msgid "Find by window title"
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:161
+msgid "Dictation shortcut"
+msgstr ""
+
 #: polyhost/gui/settings_dialog.py:162
+msgid "Agents from other computers"
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:163
+msgid "Raise agent windows on this computer"
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:164
+msgid "Stale after (minutes)"
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:165
+msgid "Remove idle agents after (minutes)"
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:174
+msgid "Shows the state of AI coding agents on the number row and, while the AI key is pressed, one card per agent. Needs keyboard firmware with protocol 31. Takes effect at the next keyboard connect."
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:178
+msgid "Also finds agents that run in a terminal from the window title, without a hook. Not on macOS."
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:181
+msgid "Also shows agents that run on a computer with the forwarder. A key press brings forward the remote-desktop viewer that shows that computer (NoMachine, Remote Desktop, VNC). They report over the network endpoint for forwarders, which must be on too. Off: only this computer's agents."
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:186
+msgid "On a computer with the forwarder: a key press on one of this computer's agents also brings the agent's own window forward here. Off: only the viewer on the keyboard's computer comes forward."
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:190
+msgid "A working agent that reports nothing for this many minutes shows as stale (dim white). 0: never."
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:193
+msgid "An idle or stale agent that reports nothing for this many minutes is removed and frees its key. An agent whose process ends is removed at once. 0: never."
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:196
+msgid "The shortcut the minus key sends in AI mode to start dictation, for example <cmd>+h or <ctrl>+<alt>+d. Empty: Win+H on Windows, nothing on macOS and Linux."
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:200
 msgid "Tells the keyboard how this computer takes Unicode input (for example WinCompose), on connect and whenever it changes. Off: the keyboard keeps the mode it has stored."
 msgstr "このコンピューターの Unicode 入力方式 (例: WinCompose) を、接続時と変更のたびにキーボードへ伝えます。オフの場合: キーボードは保存済みのモードを使い続けます。"
 
-#: polyhost/gui/settings_dialog.py:166
+#: polyhost/gui/settings_dialog.py:204
 msgid "Sets the keycap brightness from the daylight at your location, every ten minutes."
 msgstr "現在地の日照に合わせて、10 分ごとにキーキャップの明るさを設定します。"
 
-#: polyhost/gui/settings_dialog.py:169
+#: polyhost/gui/settings_dialog.py:207
 msgid "Asks open-meteo.com for this hour's sunlight at your location, including clouds. Off: the host computes a cloudless-sky value from the location and time."
 msgstr "現在地のこの時間の日射量 (雲を含む) を open-meteo.com に問い合わせます。オフの場合: ホストが位置と時刻から晴天時の値を計算します。"
 
-#: polyhost/gui/settings_dialog.py:173
+#: polyhost/gui/settings_dialog.py:211
 msgid "Looks up your approximate location from your IP address (ip-api.com), once per run. Off: the brightness follows the hour of the day."
 msgstr "IP アドレスからおおよその現在地を調べます (ip-api.com)。起動ごとに 1 回です。オフの場合: 明るさは時刻に従います。"
 
-#: polyhost/gui/settings_dialog.py:175
+#: polyhost/gui/settings_dialog.py:213
 msgid "The sunlight value that gives the dimmest brightness level."
 msgstr "最も暗い明るさレベルになる日射量の値です。"
 
-#: polyhost/gui/settings_dialog.py:177
+#: polyhost/gui/settings_dialog.py:215
 msgid "The sunlight value that gives the brightest level. Lower it to reach full brightness on a cloudy day."
 msgstr "最も明るいレベルになる日射量の値です。曇りの日にも最大の明るさにするには、この値を下げてください。"
 
-#: polyhost/gui/settings_dialog.py:179
+#: polyhost/gui/settings_dialog.py:217
 msgid "Multiplies the sunlight value before the dimmest and brightest values apply."
 msgstr "最も暗い値と最も明るい値を適用する前に、日射量の値に掛ける係数です。"
 
-#: polyhost/gui/settings_dialog.py:181
+#: polyhost/gui/settings_dialog.py:219
 msgid "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, below 1 brighter. The dimmest and brightest levels do not change."
 msgstr "日照カーブの形を決めます。1 より大きいと日中が暗く、1 より小さいと明るくなります。最も暗いレベルと最も明るいレベルは変わりません。"
 
-#: polyhost/gui/settings_dialog.py:184
+#: polyhost/gui/settings_dialog.py:222
 msgid "Icons for apps without their own overlay: the app's mark on Escape and an icon for each of its shortcuts. Off: nothing generic is drawn for any app."
 msgstr "専用のオーバーレイがないアプリ向けのアイコンです: Esc キーにアプリのマーク、各ショートカットにアイコンを表示します。オフの場合: どのアプリにも汎用の表示は描画されません。"
 
-#: polyhost/gui/settings_dialog.py:187
+#: polyhost/gui/settings_dialog.py:225
 msgid "An app with its own overlay also gets its mark on Escape, when the overlay leaves Escape blank."
 msgstr "専用のオーバーレイがあるアプリでも、オーバーレイが Esc キーを空けている場合は、そこにアプリのマークを表示します。"
 
-#: polyhost/gui/settings_dialog.py:190
+#: polyhost/gui/settings_dialog.py:228
 msgid "An app with its own overlay is also read for its shortcuts, with icons on the keys the overlay leaves blank. Reading a large app, such as a browser with a long page, can take minutes."
 msgstr "専用のオーバーレイがあるアプリからもショートカットを読み取り、オーバーレイが空けているキーにアイコンを表示します。大きなアプリ (長いページを開いたブラウザーなど) の読み取りには数分かかることがあります。"
 
-#: polyhost/gui/settings_dialog.py:194
+#: polyhost/gui/settings_dialog.py:232
 msgid "Reads the focused app's shortcuts to draw an icon for each. Off: no app is read and no shortcut icons are drawn. To remove every generic icon, the Escape mark included, turn off Generic icons."
 msgstr "フォーカスのあるアプリのショートカットを読み取り、それぞれにアイコンを描画します。オフの場合: アプリは読み取られず、ショートカットのアイコンも描画されません。Esc マークを含むすべての汎用アイコンを消すには、「汎用アイコン」をオフにしてください。"
 
-#: polyhost/gui/settings_dialog.py:198
+#: polyhost/gui/settings_dialog.py:236
 msgid "Downloads icons that are missing. Off: icons already downloaded keep working, new ones are skipped."
 msgstr "不足しているアイコンをダウンロードします。オフの場合: ダウンロード済みのアイコンは引き続き使えますが、新しいアイコンは取得しません。"
 
-#: polyhost/gui/settings_dialog.py:201
+#: polyhost/gui/settings_dialog.py:239
 msgid "Linux only. Turns on the desktop's accessibility switch so Qt and KDE apps publish their shortcuts. Off: only apps that publish them anyway (GTK) are read."
 msgstr "Linux のみ。デスクトップのアクセシビリティ設定をオンにして、Qt と KDE のアプリがショートカットを公開するようにします。オフの場合: もともと公開しているアプリ (GTK) だけが読み取られます。"
 
-#: polyhost/gui/settings_dialog.py:205
+#: polyhost/gui/settings_dialog.py:243
 msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
 msgstr "USB 転送: 短い休止を入れるまでに送る画像メッセージの数です。キーボードが入力への反応を保てるようにするためのものです。問題の報告中に依頼された場合にのみ変更してください。"
 
-#: polyhost/gui/settings_dialog.py:209
+#: polyhost/gui/settings_dialog.py:247
 msgid "USB transport: the length of that pause, in seconds. Change it only when asked to while reporting a problem."
 msgstr "USB 転送: その休止の長さ (秒) です。問題の報告中に依頼された場合にのみ変更してください。"
 
-#: polyhost/gui/settings_dialog.py:212
+#: polyhost/gui/settings_dialog.py:250
 msgid "How many times the host asks the keyboard for its ID before it reopens the USB connection."
 msgstr "USB 接続を開き直すまでに、ホストがキーボードに ID を問い合わせる回数です。"
 
-#: polyhost/gui/settings_dialog.py:215
+#: polyhost/gui/settings_dialog.py:253
 msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
 msgstr "トレイメニューとダイアログの外観です。「自動」はデスクトップのライト / ダーク設定に従います。"
 
-#: polyhost/gui/settings_dialog.py:218
+#: polyhost/gui/settings_dialog.py:256
 msgid "The language of the menus and dialogs. Applies when the tray app restarts."
 msgstr "メニューとダイアログの言語です。トレイアプリの再起動時に反映されます。"
 
-#: polyhost/gui/settings_dialog.py:220
+#: polyhost/gui/settings_dialog.py:258
 msgid "Shows the developer settings in this dialog, and the Developer submenu in the tray menu after a restart."
 msgstr "このダイアログに開発者向け設定を表示し、再起動後にはトレイメニューに「開発者」サブメニューを表示します。"
 
-#: polyhost/gui/settings_dialog.py:223
+#: polyhost/gui/settings_dialog.py:261
 msgid "How much the app writes to its log. Debug and Detailed help when you report a problem, and make the log grow faster. Applies after a restart."
 msgstr "アプリがログに書き込む量です。「デバッグ」と「詳細」は問題を報告するときに役立ちますが、ログが速く大きくなります。再起動後に反映されます。"
 
-#: polyhost/gui/settings_dialog.py:225
+#: polyhost/gui/settings_dialog.py:263
 msgid "Adds a simulated keyboard next to the real one."
 msgstr "実際のキーボードとは別に、模擬キーボードを追加します。"
 
-#: polyhost/gui/settings_dialog.py:227
+#: polyhost/gui/settings_dialog.py:265
 msgid "Uses a simulated keyboard instead of a real one, so the app runs without hardware."
 msgstr "実際のキーボードの代わりに模擬キーボードを使い、ハードウェアなしでアプリを動かします。"
 
-#: polyhost/gui/settings_dialog.py:230
+#: polyhost/gui/settings_dialog.py:268
 msgid "The protocol version the simulated keyboard reports. 0 uses the newest version this host knows."
 msgstr "模擬キーボードが報告するプロトコルバージョンです。0 にすると、このホストが知っている最新のバージョンを使います。"
 
-#: polyhost/gui/settings_dialog.py:233
+#: polyhost/gui/settings_dialog.py:271
 msgid "Tracks the active window even when no keyboard is connected."
 msgstr "キーボードが接続されていなくても、アクティブなウィンドウを追跡します。"
 
-#: polyhost/gui/settings_dialog.py:235
+#: polyhost/gui/settings_dialog.py:273
 msgid "Windows only, experimental. Switches the input language with Win32 calls instead of the standard method, and falls back to it on a failure."
 msgstr "Windows のみ、試験的。標準の方法の代わりに Win32 呼び出しで入力言語を切り替え、失敗した場合は標準の方法に戻ります。"
 
-#: polyhost/gui/settings_dialog.py:238
+#: polyhost/gui/settings_dialog.py:276
 msgid "Uses the USB HID channel only, as if the keyboard had no fast link: firmware updates go over HID. For testing the HID path by hand."
 msgstr "USB HIDチャネルのみを使用し、キーボードに高速リンクがないものとして扱います。ファームウェア更新はHID経由になります。HID経路を手動でテストするためのものです。"
 
-#: polyhost/gui/settings_dialog.py:241
+#: polyhost/gui/settings_dialog.py:279
 msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
 msgstr "古いフォワーダーからのウィンドウ通知を、暗号化も認証もない TCP (ポート 50162) で、すべてのネットワークインターフェイス上で受け付けます。古いフォワーダーを使う場合にのみオンにしてください。"
 
-#: polyhost/gui/settings_dialog.py:245
+#: polyhost/gui/settings_dialog.py:283
 msgid "Runs the keyboard connection in a background process that the tray app connects to, so the connection stays up when the tray app restarts."
 msgstr "キーボードとの接続をバックグラウンドプロセスで実行し、トレイアプリはそこに接続します。これにより、トレイアプリが再起動しても接続が維持されます。"
 
-#: polyhost/gui/settings_dialog.py:248
+#: polyhost/gui/settings_dialog.py:286
 msgid "Accepts window reports from a forwarder on another computer. Opens a network port. Applies after a restart."
 msgstr "別のコンピューター上のフォワーダーからのウィンドウ通知を受け付けます。ネットワークポートを開きます。再起動後に反映されます。"
 
-#: polyhost/gui/settings_dialog.py:251
+#: polyhost/gui/settings_dialog.py:289
 msgid "The language the keyboard's emoji layer searches in. The keyboard gets the dictionary right away when you change this, and when it connects if Update on connect is on. Own dictionary file, when set, is used instead."
 msgstr "キーボードの絵文字レイヤーが検索に使う言語です。この設定を変更するとすぐに、また「接続時に更新」がオンなら接続時に、キーボードが辞書を受け取ります。「独自の辞書ファイル」を設定すると、そちらが使われます。"
 
-#: polyhost/gui/settings_dialog.py:255
+#: polyhost/gui/settings_dialog.py:293
 msgid "A dictionary you built yourself (.plyd), used instead of Search language. Empty: the shipped dictionary is used. Choose it in the tray to flash it right away."
 msgstr "自分で作成した辞書（.plyd）で、「検索言語」の代わりに使われます。空欄の場合は同梱の辞書を使います。トレイで選ぶとすぐに書き込まれます。"
 
-#: polyhost/gui/settings_dialog.py:259
+#: polyhost/gui/settings_dialog.py:297
 msgid "Flashes missing or outdated font-pack bundles when the keyboard connects."
 msgstr "キーボードの接続時に、不足しているフォントパックバンドルや古いバンドルを書き込みます。"
 
-#: polyhost/gui/settings_dialog.py:261
+#: polyhost/gui/settings_dialog.py:299
 msgid "A .plyf file to flash instead of the font pack that ships with the app. Empty uses the shipped pack."
 msgstr "アプリに同梱されたフォントパックの代わりに書き込む .plyf ファイルです。空の場合は同梱のパックを使います。"
 
-#: polyhost/gui/settings_dialog.py:264
+#: polyhost/gui/settings_dialog.py:302
 msgid "Matches overlays to the website in the focused browser tab. Off: browser overlays match on the window title only."
 msgstr "フォーカスのあるブラウザータブの Web サイトにオーバーレイを合わせます。オフの場合: ブラウザーのオーバーレイはウィンドウタイトルだけで照合されます。"
 
-#: polyhost/gui/settings_dialog.py:267
+#: polyhost/gui/settings_dialog.py:305
 msgid "Runs the receiver the browser extension reports to. It listens on 127.0.0.1 only."
 msgstr "ブラウザー拡張機能の通知先となる受信機能を実行します。127.0.0.1 でのみ待ち受けます。"
 
-#: polyhost/gui/settings_dialog.py:270
+#: polyhost/gui/settings_dialog.py:308
 msgid "The receiver's port. It must match the Host port in the browser extension."
 msgstr "受信機能のポートです。ブラウザー拡張機能の Host port と一致させる必要があります。"
 
-#: polyhost/gui/settings_dialog.py:272
+#: polyhost/gui/settings_dialog.py:310
 msgid "A shared secret. When set, the browser extension must send the same token."
 msgstr "共有シークレットです。設定した場合、ブラウザー拡張機能は同じトークンを送る必要があります。"
 
-#: polyhost/gui/settings_dialog.py:274
+#: polyhost/gui/settings_dialog.py:312
 msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
 msgstr "匿名の利用状況レポートを 1 日 1 回送信します: バージョン、オペレーティングシステム、いくつかのカウンターです。ウィンドウタイトルやアプリ名は決して送信しません。"
 
-#: polyhost/gui/settings_dialog.py:276
+#: polyhost/gui/settings_dialog.py:314
 msgid "Where the usage report goes. Empty sends nothing."
 msgstr "利用状況レポートの送信先です。空の場合は何も送信しません。"
 
-#: polyhost/gui/settings_dialog.py:278
+#: polyhost/gui/settings_dialog.py:316
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
 msgstr "このインストールのランダムな ID で、最初のレポートの送信時に作成されます。削除すると新しいインストールとして数えられます。"
 
-#: polyhost/gui/settings_dialog.py:281
+#: polyhost/gui/settings_dialog.py:319
 msgid "Watches the keyboard's console for known failure messages and offers to report a problem."
 msgstr "キーボードのコンソールを監視して既知の障害メッセージを検出し、問題の報告を提案します。"
 
-#: polyhost/gui/settings_dialog.py:283
+#: polyhost/gui/settings_dialog.py:321
 msgid "Watches this app's own log for known failure messages."
 msgstr "このアプリ自身のログを監視して、既知の障害メッセージを検出します。"
 
-#: polyhost/gui/settings_dialog.py:284
+#: polyhost/gui/settings_dialog.py:322
 msgid "What counts as a problem: errors only, or errors and warnings."
 msgstr "問題とみなす範囲: エラーのみ、またはエラーと警告。"
 
-#: polyhost/gui/settings_dialog.py:286
+#: polyhost/gui/settings_dialog.py:324
 msgid "Draws some game overlays from the game's own files when the game is installed on this computer. The images stay on this computer. Off: the shipped overlays are used."
 msgstr "ゲームがこのコンピューターにインストールされている場合、一部のゲームオーバーレイをゲーム自身のファイルから描画します。画像はこのコンピューターから出ません。オフ: 同梱のオーバーレイを使います。"
 
-#: polyhost/gui/settings_dialog.py:747
+#: polyhost/gui/settings_dialog.py:785
 msgid "PolyKybd Settings"
 msgstr "PolyKybd の設定"
 
-#: polyhost/gui/settings_dialog.py:804
+#: polyhost/gui/settings_dialog.py:842
 msgid "Search settings"
 msgstr "設定を検索"
 
-#: polyhost/gui/settings_dialog.py:845
+#: polyhost/gui/settings_dialog.py:883
 msgid "No setting matches the search."
 msgstr "検索に一致する設定はありません。"
 
-#: polyhost/gui/settings_dialog.py:860
+#: polyhost/gui/settings_dialog.py:898
 msgid "Some settings might need a restart to take effect."
 msgstr "一部の設定は、反映に再起動が必要な場合があります。"
 
-#: polyhost/gui/settings_dialog.py:893
+#: polyhost/gui/settings_dialog.py:931
 #, python-brace-format
 msgid "Set by {flag} for this run. This setting applies when the app starts without it."
 msgstr "この実行では {flag} によって設定されています。この設定は、このフラグなしでアプリを起動したときに適用されます。"
 
-#: polyhost/gui/settings_dialog.py:925
+#: polyhost/gui/settings_dialog.py:963
 msgid "These developer settings are not at their default, so they stay in effect while developer mode is off."
 msgstr "これらの開発者向け設定は既定値ではないため、開発者モードがオフでも有効なままです。"
 
@@ -3456,7 +3574,7 @@ msgstr "タップとホールドの動作を持つキーは、タッピング時
 msgid "With Auto Shift on, holding a letter, digit or symbol key longer than the Auto Shift timeout types its shifted character."
 msgstr "Auto Shift がオンのとき、文字・数字・記号キーを Auto Shift 時間より長く押し続けると、Shift 付きの文字が入力されます。"
 
-#: polyhost/gui/tap_terms_dialog.py:34 polyhost/host.py:2064
+#: polyhost/gui/tap_terms_dialog.py:34 polyhost/host.py:2074
 msgid "Tap-Hold Timing"
 msgstr "タップ/ホールドのタイミング"
 
@@ -3508,8 +3626,8 @@ msgstr "{prefix} — ホスト v{host_version} が利用可能です"
 msgid "{prefix} — firmware v{fw_version} available"
 msgstr "{prefix} — ファームウェア v{fw_version} が利用可能です"
 
-#: polyhost/forwarder.py:264 polyhost/gui/tray_notify.py:81
-#: polyhost/host.py:731
+#: polyhost/forwarder.py:280 polyhost/gui/tray_notify.py:81
+#: polyhost/host.py:739
 msgid "Updates"
 msgstr "更新"
 
@@ -3672,15 +3790,15 @@ msgstr "キーボードのエンジンパックは最新です。"
 msgid "Engine pack update failed: {error}"
 msgstr "エンジンパックの更新に失敗しました: {error}"
 
-#: polyhost/host.py:426 polyhost/host.py:1580
+#: polyhost/host.py:426 polyhost/host.py:1590
 msgid "Waiting for PolyKybd..."
 msgstr "PolyKybd を待っています..."
 
-#: polyhost/host.py:427 polyhost/host.py:1427
+#: polyhost/host.py:427 polyhost/host.py:1437
 msgid "Press to pause connection"
 msgstr "クリックで接続を一時停止"
 
-#: polyhost/forwarder.py:332 polyhost/host.py:430
+#: polyhost/forwarder.py:361 polyhost/host.py:430
 msgid "Quit"
 msgstr "終了"
 
@@ -3688,23 +3806,23 @@ msgstr "終了"
 msgid "Quit && stop background daemon"
 msgstr "終了 && バックグラウンドデーモンを停止"
 
-#: polyhost/forwarder.py:299 polyhost/host.py:444
+#: polyhost/forwarder.py:328 polyhost/host.py:444
 msgid "About"
 msgstr "バージョン情報"
 
-#: polyhost/forwarder.py:288 polyhost/host.py:448
+#: polyhost/forwarder.py:317 polyhost/host.py:448
 msgid "Settings..."
 msgstr "設定..."
 
-#: polyhost/forwarder.py:303 polyhost/host.py:452
+#: polyhost/forwarder.py:332 polyhost/host.py:452
 msgid "Log file..."
 msgstr "ログファイル..."
 
-#: polyhost/forwarder.py:309 polyhost/host.py:461
+#: polyhost/forwarder.py:338 polyhost/host.py:461
 msgid "Report a Problem..."
 msgstr "問題を報告..."
 
-#: polyhost/forwarder.py:315 polyhost/host.py:481
+#: polyhost/forwarder.py:344 polyhost/host.py:481
 msgid "Collect logs..."
 msgstr "ログを収集..."
 
@@ -3721,8 +3839,8 @@ msgid "Inspect Font Packs..."
 msgstr "フォントパックを調べる..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
-#: polyhost/forwarder.py:250 polyhost/forwarder.py:390 polyhost/host.py:511
-#: polyhost/host.py:1429
+#: polyhost/forwarder.py:266 polyhost/forwarder.py:419 polyhost/host.py:511
+#: polyhost/host.py:1439
 msgid "Pause"
 msgstr "一時停止"
 
@@ -3794,98 +3912,102 @@ msgstr "絵文字検索の言語"
 msgid "Tap-Hold Timing…"
 msgstr "タップ/ホールドのタイミング…"
 
-#: polyhost/host.py:723
+#: polyhost/host.py:724
+msgid "AI Agents"
+msgstr ""
+
+#: polyhost/host.py:731
 msgid "Configure Keymap"
 msgstr "キーマップの設定"
 
-#: polyhost/host.py:733
+#: polyhost/host.py:741
 msgid "Check for host update..."
 msgstr "ホストの更新を確認..."
 
-#: polyhost/host.py:772 polyhost/host.py:2686 polyhost/host.py:3221
-#: polyhost/host.py:3394
+#: polyhost/host.py:780 polyhost/host.py:2759 polyhost/host.py:3294
+#: polyhost/host.py:3467
 msgid "Check for firmware update…"
 msgstr "ファームウェアの更新を確認…"
 
-#: polyhost/host.py:781
+#: polyhost/host.py:789
 msgid "Keyboard fonts"
 msgstr "キーボードのフォント"
 
-#: polyhost/host.py:816
+#: polyhost/host.py:824
 msgid "Install WinCompose…"
 msgstr "WinCompose をインストール…"
 
-#: polyhost/host.py:838
+#: polyhost/host.py:846
 msgid "Allow access to the keyboard (udev rule)…"
 msgstr "キーボードへのアクセスを許可 (udev ルール)…"
 
-#: polyhost/forwarder.py:282 polyhost/host.py:859
+#: polyhost/forwarder.py:298 polyhost/host.py:867
 msgid "Set up the terminal and editors…"
 msgstr "ターミナルとエディターを設定…"
 
-#: polyhost/host.py:878
+#: polyhost/host.py:886
 msgid "Change System Input Language"
 msgstr "システムの入力言語を変更"
 
-#: polyhost/host.py:884
+#: polyhost/host.py:892
 msgid "Inspect MRU Cache..."
 msgstr "MRU キャッシュを調べる..."
 
-#: polyhost/host.py:890
+#: polyhost/host.py:898
 msgid "Mock Keyboard..."
 msgstr "模擬キーボード..."
 
-#: polyhost/host.py:898
+#: polyhost/host.py:906
 msgid "Refresh unicode input mode"
 msgstr "Unicode 入力モードを更新"
 
-#: polyhost/host.py:902
+#: polyhost/host.py:910
 msgid "Save MRU cache now"
 msgstr "今すぐ MRU キャッシュを保存"
 
-#: polyhost/forwarder.py:325 polyhost/host.py:916
+#: polyhost/forwarder.py:354 polyhost/host.py:924
 msgid "Help && About"
 msgstr "ヘルプ && バージョン情報"
 
-#: polyhost/forwarder.py:321 polyhost/host.py:925
+#: polyhost/forwarder.py:350 polyhost/host.py:933
 msgid "Open config folder"
 msgstr "設定フォルダーを開く"
 
-#: polyhost/host.py:934
+#: polyhost/host.py:942
 msgid "Only quit GUI"
 msgstr "GUI のみ終了"
 
-#: polyhost/host.py:1044
+#: polyhost/host.py:1052
 msgid "System language query not supported for this platform."
 msgstr "このプラットフォームではシステム言語の取得はサポートされていません。"
 
-#: polyhost/host.py:1242
+#: polyhost/host.py:1250
 #, python-brace-format
 msgid "Retry keyboard fonts ({n} failed)…"
 msgid_plural "Retry keyboard fonts ({n} failed)…"
 msgstr[0] "キーボードのフォントを再試行 ({n} 件失敗)…"
 
-#: polyhost/host.py:1244
+#: polyhost/host.py:1252
 #, python-brace-format
 msgid "Re-flash the font bundles whose last attempt failed: {bundles}"
 msgstr "前回の試行で失敗したフォントバンドルを再書き込みします: {bundles}"
 
-#: polyhost/host.py:1250
+#: polyhost/host.py:1258
 #, python-brace-format
 msgid "Update keyboard fonts ({n})…"
 msgid_plural "Update keyboard fonts ({n})…"
 msgstr[0] "キーボードのフォントを更新 ({n})…"
 
-#: polyhost/host.py:1252
+#: polyhost/host.py:1260
 #, python-brace-format
 msgid "Flash the font bundles the keyboard is missing, behind on, or failed to take: {bundles}"
 msgstr "キーボードに不足している、古い、または書き込みに失敗したフォントバンドルを書き込みます: {bundles}"
 
-#: polyhost/host.py:1257
+#: polyhost/host.py:1265
 msgid "Keyboard fonts: up to date"
 msgstr "キーボードのフォント: 最新"
 
-#: polyhost/host.py:1258
+#: polyhost/host.py:1266
 msgid ""
 "Every shipped font bundle is already on the keyboard.\n"
 "Developer → Font Pack → Re-flash all bundles forces a re-send if the keycaps still render wrong."
@@ -3893,84 +4015,84 @@ msgstr ""
 "同梱のフォントバンドルはすべてキーボード上にあります。\n"
 "キーキャップの表示がまだおかしい場合は、[開発者] → [フォントパック] → [すべてのバンドルを再書き込み] で強制的に再送信できます。"
 
-#: polyhost/forwarder.py:748 polyhost/host.py:1294
+#: polyhost/forwarder.py:842 polyhost/host.py:1302
 msgid "Config folder"
 msgstr "設定フォルダー"
 
 #. TRANSLATORS: {rate} is like "0.6 MB/s"; the fast USB link's measured speed.
-#: polyhost/host.py:1396
+#: polyhost/host.py:1406
 #, python-brace-format
 msgid "{rate} link"
 msgstr "{rate} リンク"
 
 #. TRANSLATORS: {kbps} is the HID channel's ceiling in KB/s (64).
-#: polyhost/host.py:1398
+#: polyhost/host.py:1408
 #, python-brace-format
 msgid "HID link, up to {kbps} KB/s"
 msgstr "HID リンク、最大 {kbps} KB/s"
 
 #. TRANSLATORS: tray tooltip line; {link} is "0.6 MB/s link" or "HID link, up
 #. to 64 KB/s".
-#: polyhost/host.py:1405
+#: polyhost/host.py:1415
 #, python-brace-format
 msgid "Connected: {link}"
 msgstr "接続中: {link}"
 
 #. TRANSLATORS: status row while paused; clicking it reconnects (verb).
-#: polyhost/host.py:1421
+#: polyhost/host.py:1431
 msgid "Reconnect"
 msgstr "再接続"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:390 polyhost/host.py:1424
+#: polyhost/forwarder.py:419 polyhost/host.py:1434
 msgid "Resume"
 msgstr "再開"
 
-#: polyhost/host.py:1507 polyhost/host.py:1572
+#: polyhost/host.py:1517 polyhost/host.py:1582
 #, python-brace-format
 msgid "Could not change OS language {language}."
 msgstr "OS の言語 {language} を変更できませんでした。"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.bin)" unchanged.
-#: polyhost/host.py:1596
+#: polyhost/host.py:1606
 msgid "Firmware image (*.bin)"
 msgstr "ファームウェアイメージ (*.bin)"
 
-#: polyhost/host.py:1597
+#: polyhost/host.py:1607
 msgid "Select firmware .bin"
 msgstr "ファームウェア .bin の選択"
 
-#: polyhost/host.py:1648
+#: polyhost/host.py:1658
 msgid "Firmware apply failed"
 msgstr "ファームウェアの適用に失敗しました"
 
-#: polyhost/host.py:1649
+#: polyhost/host.py:1659
 msgid "Firmware flash failed"
 msgstr "ファームウェアの書き込みに失敗しました"
 
-#: polyhost/host.py:1697 polyhost/host.py:1754
+#: polyhost/host.py:1707 polyhost/host.py:1764
 #, python-brace-format
 msgid "Selected Language: {language} {country}"
 msgstr "選択中の言語: {language} {country}"
 
-#: polyhost/host.py:1809
+#: polyhost/host.py:1819
 msgid "PolyHost settings"
 msgstr "PolyHost の設定"
 
-#: polyhost/host.py:1810
+#: polyhost/host.py:1820
 msgid "The settings are applied, but they could not be saved to the settings file. Another program may be holding it open. Change a setting again later to retry, or see the log."
 msgstr "設定は適用されましたが、設定ファイルに保存できませんでした。別のプログラムがファイルを開いている可能性があります。後で設定をもう一度変更して再試行するか、ログを確認してください。"
 
-#: polyhost/host.py:1912
+#: polyhost/host.py:1922
 #, python-brace-format
 msgid "{side}: unreadable record {record}"
 msgstr "{side}: 読み取れない記録 {record}"
 
-#: polyhost/host.py:1915
+#: polyhost/host.py:1925
 msgid "Neither keyboard half holds a crash record."
 msgstr "どちらのキーボード本体にもクラッシュ記録はありません。"
 
-#: polyhost/host.py:1917
+#: polyhost/host.py:1927
 #, python-brace-format
 msgid ""
 "Could not read the crash record.\n"
@@ -3981,127 +4103,127 @@ msgstr ""
 "\n"
 "{errors}"
 
-#: polyhost/host.py:1919
+#: polyhost/host.py:1929
 msgid "Keyboard crash record"
 msgstr "キーボードのクラッシュ記録"
 
-#: polyhost/host.py:1928
+#: polyhost/host.py:1938
 #, python-brace-format
 msgid "Copied to the clipboard. Not read: {errors}"
 msgstr "クリップボードにコピーしました。読み取れなかったもの: {errors}"
 
-#: polyhost/host.py:2025
+#: polyhost/host.py:2035
 msgid "Could not read the tap-hold timing from the keyboard."
 msgstr "キーボードからタップ/ホールドのタイミングを読み込めませんでした。"
 
-#: polyhost/host.py:2057
+#: polyhost/host.py:2067
 msgid "The keyboard did not accept the tap-hold timing."
 msgstr "キーボードがタップ/ホールドのタイミングを受け付けませんでした。"
 
-#: polyhost/host.py:2080
+#: polyhost/host.py:2090
 msgid "MRU Cache"
 msgstr "MRU キャッシュ"
 
-#: polyhost/host.py:2080
+#: polyhost/host.py:2090
 msgid "MRU cache is not active (device not connected or MRU mode disabled)."
 msgstr "MRU キャッシュは有効ではありません (デバイスが未接続か、MRU モードが無効です)。"
 
-#: polyhost/host.py:2132
+#: polyhost/host.py:2142
 msgid "daemon client"
 msgstr "デーモンクライアント"
 
-#: polyhost/host.py:2132
+#: polyhost/host.py:2142
 msgid "standalone"
 msgstr "スタンドアロン"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:809 polyhost/host.py:2190
+#: polyhost/forwarder.py:917 polyhost/host.py:2200
 msgid "paused"
 msgstr "一時停止中"
 
-#: polyhost/host.py:2192
+#: polyhost/host.py:2202
 msgid "connected"
 msgstr "接続済み"
 
-#: polyhost/host.py:2193
+#: polyhost/host.py:2203
 msgid "present — not connected (protocol/version)"
 msgstr "検出済み — 未接続 (プロトコル / バージョン)"
 
-#: polyhost/host.py:2200
+#: polyhost/host.py:2210
 msgid "Keyboard"
 msgstr "キーボード"
 
-#: polyhost/host.py:2201
+#: polyhost/host.py:2211
 msgid "No keyboard connected."
 msgstr "キーボードが接続されていません。"
 
-#: polyhost/host.py:2205
+#: polyhost/host.py:2215
 msgid "⚠ mismatch"
 msgstr "⚠ 不一致"
 
-#: polyhost/host.py:2207
+#: polyhost/host.py:2217
 #, python-brace-format
 msgid "{n} languages loaded"
 msgid_plural "{n} languages loaded"
 msgstr[0] "{n} 個の言語を読み込み済み"
 
-#: polyhost/host.py:2210
+#: polyhost/host.py:2220
 #, python-brace-format
 msgid "<b>Connected keyboard:</b> {name} {state}"
 msgstr "<b>接続中のキーボード:</b> {name} {state}"
 
-#: polyhost/host.py:2212
+#: polyhost/host.py:2222
 #, python-brace-format
 msgid "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
 msgstr "<b>ファームウェア:</b> {firmware} &nbsp;·&nbsp; プロトコル {protocol}"
 
-#: polyhost/host.py:2214
+#: polyhost/host.py:2224
 #, python-brace-format
 msgid "<b>Hardware:</b> {hardware}"
 msgstr "<b>ハードウェア:</b> {hardware}"
 
-#: polyhost/host.py:2215
+#: polyhost/host.py:2225
 #, python-brace-format
 msgid "<b>Language:</b> {language}"
 msgstr "<b>言語:</b> {language}"
 
-#: polyhost/host.py:2218
+#: polyhost/host.py:2228
 #, python-brace-format
 msgid "<b>Link:</b> {link}"
 msgstr "<b>リンク:</b> {link}"
 
-#: polyhost/host.py:2225
+#: polyhost/host.py:2235
 #, python-brace-format
 msgid "<b>Uptime:</b> {uptime}"
 msgstr "<b>稼働時間:</b> {uptime}"
 
-#: polyhost/host.py:2227
+#: polyhost/host.py:2237
 #, python-brace-format
 msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>オーバーレイの割り当て:</b> {n} 個のアプリ"
 
-#: polyhost/forwarder.py:826 polyhost/host.py:2229
+#: polyhost/forwarder.py:934 polyhost/host.py:2239
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>設定:</b> {path}"
 
-#: polyhost/forwarder.py:827 polyhost/host.py:2230
+#: polyhost/forwarder.py:935 polyhost/host.py:2240
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>ログ:</b> {path}"
 
-#: polyhost/forwarder.py:845 polyhost/host.py:2284
+#: polyhost/forwarder.py:953 polyhost/host.py:2294
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "HID プロトコル P{protocol}"
 
-#: polyhost/host.py:2289
+#: polyhost/host.py:2299
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
 msgstr "キーキャップごとに OLED ディスプレイを備えた分割キーボード PolyKybd 用のホストソフトウェアです — アクティブウィンドウを追跡し、オーバーレイ、言語、キーマップの更新をキーボードに送信します。"
 
-#: polyhost/host.py:2315
+#: polyhost/host.py:2325
 #, python-brace-format
 msgid ""
 "Changing input language to '{language}' failed with:\n"
@@ -4110,96 +4232,134 @@ msgstr ""
 "入力言語を '{language}' に変更できませんでした:\n"
 "\"{error}\""
 
-#: polyhost/host.py:2335 polyhost/host.py:2352
+#: polyhost/host.py:2345 polyhost/host.py:2362
 #, python-brace-format
 msgid "Could not set {language}: {error}"
 msgstr "{language} を設定できませんでした: {error}"
 
-#: polyhost/host.py:2494
+#: polyhost/host.py:2414
+msgid "Show on the Number Row"
+msgstr ""
+
+#: polyhost/host.py:2422
+msgid "No agents reported"
+msgstr ""
+
+#: polyhost/host.py:2425
+msgid "working"
+msgstr ""
+
+#: polyhost/host.py:2425
+msgid "waiting"
+msgstr ""
+
+#: polyhost/host.py:2425
+msgid "done"
+msgstr ""
+
+#: polyhost/host.py:2426
+msgid "idle"
+msgstr ""
+
+#: polyhost/host.py:2429
+#, python-brace-format
+msgid "Key {key}: {name}, {state}, {title}"
+msgstr ""
+
+#: polyhost/host.py:2434
+#, python-brace-format
+msgid "Page {page}, {text}"
+msgstr ""
+
+#: polyhost/host.py:2443
+msgid "Pair a Forwarder…"
+msgstr ""
+
+#: polyhost/host.py:2567
 msgid "No emoji search dictionaries shipped"
 msgstr "絵文字検索の辞書が同梱されていません"
 
-#: polyhost/host.py:2500
+#: polyhost/host.py:2573
 msgid "Needs newer keyboard firmware"
 msgstr "新しいキーボードファームウェアが必要です"
 
-#: polyhost/host.py:2528
+#: polyhost/host.py:2601
 msgid "Own dictionary file..."
 msgstr "独自の辞書ファイル..."
 
-#: polyhost/host.py:2530
+#: polyhost/host.py:2603
 #, python-brace-format
 msgid "Own dictionary (cannot be used): {name}"
 msgstr "独自の辞書（使用できません）: {name}"
 
-#: polyhost/host.py:2532
+#: polyhost/host.py:2605
 #, python-brace-format
 msgid "Own dictionary: {name}"
 msgstr "独自の辞書: {name}"
 
-#: polyhost/host.py:2549
+#: polyhost/host.py:2622
 msgid "Choose an emoji search dictionary"
 msgstr "絵文字検索辞書を選択"
 
-#: polyhost/host.py:2550
+#: polyhost/host.py:2623
 msgid "Emoji search dictionary (*.plyd)"
 msgstr "絵文字検索辞書 (*.plyd)"
 
-#: polyhost/host.py:2563
+#: polyhost/host.py:2636
 msgid "Emoji search dictionary"
 msgstr "絵文字検索辞書"
 
-#: polyhost/host.py:2564
+#: polyhost/host.py:2637
 #, python-brace-format
 msgid "This file cannot be used: {reason}"
 msgstr "このファイルは使用できません: {reason}"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-#: polyhost/host.py:2596
+#: polyhost/host.py:2669
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "PolyKybd オーバーレイ割り当て (*.poly.yaml)"
 
-#: polyhost/host.py:2684 polyhost/host.py:3180 polyhost/host.py:3323
+#: polyhost/host.py:2757 polyhost/host.py:3253 polyhost/host.py:3396
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "ファームウェアを v{version} に更新…"
 
-#: polyhost/forwarder.py:884 polyhost/forwarder.py:895
-#: polyhost/forwarder.py:901 polyhost/host.py:2704 polyhost/host.py:2825
-#: polyhost/host.py:2829
+#: polyhost/forwarder.py:992 polyhost/forwarder.py:1003
+#: polyhost/forwarder.py:1009 polyhost/host.py:2777 polyhost/host.py:2898
+#: polyhost/host.py:2902
 msgid "Check for updates..."
 msgstr "更新を確認..."
 
-#: polyhost/host.py:2772
+#: polyhost/host.py:2845
 #, python-brace-format
 msgid "Update to v{version} available"
 msgstr "v{version} への更新が利用可能です"
 
-#: polyhost/forwarder.py:897 polyhost/forwarder.py:903
-#: polyhost/forwarder.py:914 polyhost/host.py:2783 polyhost/host.py:2823
-#: polyhost/host.py:2830 polyhost/host.py:2853
+#: polyhost/forwarder.py:1005 polyhost/forwarder.py:1011
+#: polyhost/forwarder.py:1022 polyhost/host.py:2856 polyhost/host.py:2896
+#: polyhost/host.py:2903 polyhost/host.py:2926
 msgid "PolyKybdHost Update"
 msgstr "PolyKybdHost の更新"
 
-#: polyhost/host.py:2784
+#: polyhost/host.py:2857
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "バージョン {version} が利用可能です。トレイアイコンをクリックして更新してください。"
 
-#: polyhost/forwarder.py:871 polyhost/host.py:2809
+#: polyhost/forwarder.py:979 polyhost/host.py:2882
 msgid "Checking for updates..."
 msgstr "更新を確認しています..."
 
-#: polyhost/host.py:2822
+#: polyhost/host.py:2895
 msgid "No updates available"
 msgstr "利用可能な更新はありません"
 
-#: polyhost/forwarder.py:898 polyhost/host.py:2824
+#: polyhost/forwarder.py:1006 polyhost/host.py:2897
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "最新バージョン (v{version}) を使用しています。"
 
-#: polyhost/forwarder.py:904 polyhost/host.py:2831
+#: polyhost/forwarder.py:1012 polyhost/host.py:2904
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -4214,69 +4374,69 @@ msgstr ""
 "\n"
 "詳細は --dev 1 を付けて実行してください。"
 
-#: polyhost/host.py:2836 polyhost/host.py:3253
+#: polyhost/host.py:2909 polyhost/host.py:3326
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "リリース日: {date}"
 
-#: polyhost/forwarder.py:885 polyhost/host.py:2837
+#: polyhost/forwarder.py:993 polyhost/host.py:2910
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "バージョン {version} が利用可能です。"
 
-#: polyhost/forwarder.py:886 polyhost/host.py:2838
+#: polyhost/forwarder.py:994 polyhost/host.py:2911
 msgid "Update PolyKybdHost"
 msgstr "PolyKybdHost の更新"
 
-#: polyhost/host.py:2842
+#: polyhost/host.py:2915
 msgid "Download, install, and restart now?"
 msgstr "今すぐダウンロード、インストールして再起動しますか?"
 
-#: polyhost/forwarder.py:913 polyhost/host.py:2853
+#: polyhost/forwarder.py:1021 polyhost/host.py:2926
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "v{version} をダウンロードしています…"
 
-#: polyhost/forwarder.py:954 polyhost/host.py:2978
+#: polyhost/forwarder.py:1062 polyhost/host.py:3051
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "更新リレーを開始できなかったため、更新は完了していません。詳細はログを参照してください。"
 
-#: polyhost/forwarder.py:966 polyhost/host.py:2993
+#: polyhost/forwarder.py:1074 polyhost/host.py:3066
 msgid "Update failed"
 msgstr "更新に失敗しました"
 
-#: polyhost/forwarder.py:966 polyhost/host.py:2993
+#: polyhost/forwarder.py:1074 polyhost/host.py:3066
 msgid "The update did not finish."
 msgstr "更新が完了しませんでした。"
 
-#: polyhost/host.py:3140
+#: polyhost/host.py:3213
 #, python-brace-format
 msgid "{n} keyboard font bundle is out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
 msgid_plural "{n} keyboard font bundles are out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
 msgstr[0] "キーボードのフォントパック {n} 個が古く、自動書き込みはオフです。更新 → キーボードのフォントを更新 を使ってください。"
 
-#: polyhost/host.py:3191
+#: polyhost/host.py:3264
 msgid "PolyKybd Firmware Update"
 msgstr "PolyKybd ファームウェアの更新"
 
-#: polyhost/host.py:3192
+#: polyhost/host.py:3265
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "新しいファームウェア v{version} が利用可能です。トレイアイコンをクリックして更新してください。"
 
-#: polyhost/host.py:3209 polyhost/host.py:3250
+#: polyhost/host.py:3282 polyhost/host.py:3323
 msgid "The keyboard must be connected to update the firmware."
 msgstr "ファームウェアを更新するには、キーボードを接続する必要があります。"
 
-#: polyhost/host.py:3215
+#: polyhost/host.py:3288
 msgid "Checking for firmware update…"
 msgstr "ファームウェアの更新を確認しています…"
 
-#: polyhost/host.py:3229 polyhost/host.py:3239 polyhost/host.py:3242
+#: polyhost/host.py:3302 polyhost/host.py:3312 polyhost/host.py:3315
 msgid "PolyKybd Firmware"
 msgstr "PolyKybd ファームウェア"
 
-#: polyhost/host.py:3230
+#: polyhost/host.py:3303
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -4287,55 +4447,55 @@ msgstr ""
 "\n"
 "お使いのキーボードは v{current} です。通常、これはリリースのビルドが失敗したことを意味します — 修正されるとリリースページにファームウェアが追加されます。"
 
-#: polyhost/host.py:3240
+#: polyhost/host.py:3313
 msgid "No firmware release could be found."
 msgstr "ファームウェアのリリースが見つかりませんでした。"
 
-#: polyhost/host.py:3243
+#: polyhost/host.py:3316
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "最新のファームウェア (v{version}) を使用しています。"
 
-#: polyhost/host.py:3255
+#: polyhost/host.py:3328
 #, python-brace-format
 msgid "Installed: v{version}"
 msgstr "インストール済み: v{version}"
 
-#: polyhost/host.py:3256
+#: polyhost/host.py:3329
 msgid "Installed: unknown (the keyboard did not report its version)"
 msgstr "インストール済み: 不明 (キーボードがバージョンを報告しませんでした)"
 
-#: polyhost/host.py:3257
+#: polyhost/host.py:3330
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "ファームウェア {version} が利用可能です。"
 
-#: polyhost/host.py:3259
+#: polyhost/host.py:3332
 msgid "Both halves update over HID and reboot automatically."
 msgstr "両方の本体が HID 経由で更新され、自動的に再起動します。"
 
-#: polyhost/host.py:3260
+#: polyhost/host.py:3333
 msgid "Update PolyKybd Firmware"
 msgstr "PolyKybd ファームウェアの更新"
 
-#: polyhost/host.py:3264
+#: polyhost/host.py:3337
 msgid "Download and flash now?"
 msgstr "今すぐダウンロードして書き込みますか?"
 
-#: polyhost/host.py:3275
+#: polyhost/host.py:3348
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "ファームウェア v{version} をダウンロードしています…"
 
-#: polyhost/host.py:3297 polyhost/host.py:3598
+#: polyhost/host.py:3370 polyhost/host.py:3671
 msgid "Cancelling…"
 msgstr "キャンセルしています…"
 
-#: polyhost/host.py:3334
+#: polyhost/host.py:3407
 msgid "Firmware Update Failed"
 msgstr "ファームウェアの更新に失敗しました"
 
-#: polyhost/host.py:3335
+#: polyhost/host.py:3408
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -4346,11 +4506,11 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3441 polyhost/host.py:3483 polyhost/host.py:3491
+#: polyhost/host.py:3514 polyhost/host.py:3556 polyhost/host.py:3564
 msgid "Allow access to the keyboard"
 msgstr "キーボードへのアクセスを許可"
 
-#: polyhost/host.py:3442
+#: polyhost/host.py:3515
 msgid ""
 "On Linux a udev rule lets this app open the keyboard without root: its HID interface, and its serial port for faster firmware and font-pack updates. The rule file is /etc/udev/rules.d/99-hid.rules.\n"
 "\n"
@@ -4360,7 +4520,7 @@ msgstr ""
 "\n"
 "システムからパスワードの入力を求められます (PolicyKit)。その後、キーボードを抜いてもう一度差し込んでください。"
 
-#: polyhost/host.py:3484
+#: polyhost/host.py:3557
 msgid ""
 "The udev rule is installed.\n"
 "\n"
@@ -4370,11 +4530,11 @@ msgstr ""
 "\n"
 "新しい権限を適用するため、キーボードを抜いてもう一度差し込んでください。"
 
-#: polyhost/host.py:3492
+#: polyhost/host.py:3565
 msgid "The udev rule was not installed."
 msgstr "udev ルールをインストールできませんでした。"
 
-#: polyhost/host.py:3493
+#: polyhost/host.py:3566
 #, python-brace-format
 msgid ""
 "{error}\n"
@@ -4387,12 +4547,12 @@ msgstr ""
 "代わりに、次のコマンドをターミナルで実行することもできます:\n"
 "{commands}"
 
-#: polyhost/host.py:3562 polyhost/host.py:3576 polyhost/host.py:3622
-#: polyhost/host.py:3631 polyhost/host.py:3637
+#: polyhost/host.py:3635 polyhost/host.py:3649 polyhost/host.py:3695
+#: polyhost/host.py:3704 polyhost/host.py:3710
 msgid "Install WinCompose"
 msgstr "WinCompose のインストール"
 
-#: polyhost/host.py:3563
+#: polyhost/host.py:3636
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -4402,11 +4562,11 @@ msgstr ""
 "\n"
 "PolyKybd 用にビルドされた WinCompose を GitHub からダウンロードし、インストーラーを起動します (Windows から確認を求められます)。"
 
-#: polyhost/host.py:3576
+#: polyhost/host.py:3649
 msgid "Looking for the latest WinCompose release…"
 msgstr "最新の WinCompose リリースを探しています…"
 
-#: polyhost/host.py:3623
+#: polyhost/host.py:3696
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -4416,7 +4576,7 @@ msgstr ""
 "\n"
 "ブラウザーでリリースページを開きます — そこからセットアップをダウンロードして実行してください。"
 
-#: polyhost/host.py:3632
+#: polyhost/host.py:3705
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -4427,7 +4587,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3638
+#: polyhost/host.py:3711
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -4444,7 +4604,7 @@ msgstr ""
 "保存先:\n"
 "{path}"
 
-#: polyhost/host.py:3646
+#: polyhost/host.py:3719
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "WinCompose のインストーラーを起動しました。インストールが完了して WinCompose が実行されると、PolyKybd は自動的に WinCompose に切り替わります。"
 
