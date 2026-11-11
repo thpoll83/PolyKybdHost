@@ -94,25 +94,28 @@ def _is_wide(ch):
 
 
 def _break_units(text, metrics, width):
-    """The pieces a caption may break between: words, and each wide character
-    on its own. Without the second, a Japanese caption was one unbreakable word
-    and was shortened even where it fits on two lines."""
+    """The pieces a caption may break between, as ``(piece, glued)``: words,
+    and each wide character on its own. ``glued`` marks a piece split out of
+    the same word, which joins its neighbour without a space; a word keeps
+    the space the text had before it. Without the split, a Japanese caption
+    was one unbreakable word and was shortened even where it fits on two lines."""
     units = []
     for word in text.split():
         if any(_is_wide(c) for c in word) and metrics.horizontalAdvance(word) > width:
-            run = ""
+            pieces, run = [], ""
             for c in word:
                 if _is_wide(c):
                     if run:
-                        units.append(run)
+                        pieces.append(run)
                         run = ""
-                    units.append(c)
+                    pieces.append(c)
                 else:
                     run += c
             if run:
-                units.append(run)
+                pieces.append(run)
+            units.extend((p, i > 0) for i, p in enumerate(pieces))
         else:
-            units.append(word)
+            units.append((word, False))
     return units
 
 
@@ -126,22 +129,23 @@ def wrap_caption(text, metrics, width, max_lines=2):
     # under an icon.
     text = text.rstrip().rstrip("\u2026").rstrip(".").rstrip() if text.rstrip().endswith(("\u2026", "...")) else text
     lines, line = [], ""
-    for word in _break_units(text, metrics, width):
-        joiner = "" if _is_wide(word[:1]) or _is_wide(line[-1:]) else " "
-        candidate = f"{line}{joiner}{word}" if line else word
+    for word, glued in _break_units(text, metrics, width):
+        candidate = f"{line}{'' if glued else ' '}{word}" if line else word
         if line and metrics.horizontalAdvance(candidate) > width:
-            lines.append(line)
+            lines.append((line, glued))
             line = word
         else:
             line = candidate
     if line:
-        lines.append(line)
+        lines.append((line, None))
     if len(lines) > max_lines:
-        rest = lines[max_lines - 1:]
-        tail = rest[0]
-        for piece in rest[1:]:
-            tail += ("" if _is_wide(piece[:1]) or _is_wide(tail[-1:]) else " ") + piece
-        lines = lines[:max_lines - 1] + [tail]
+        # Past the last line: join the rest back with the space (or none) the
+        # text had at each break, and let the elision below shorten it.
+        tail = lines[max_lines - 1][0]
+        for (piece, _), (_, glued) in zip(lines[max_lines:], lines[max_lines - 1:]):
+            tail += ("" if glued else " ") + piece
+        lines = lines[:max_lines - 1] + [(tail, None)]
+    lines = [ln for ln, _ in lines]
     return "\n".join(metrics.elidedText(ln, Qt.ElideRight, width) for ln in lines)
 
 
@@ -224,7 +228,11 @@ class TileGrid(QWidget):
         # wrap shortened it.
         full = action.text().replace("&", "").rstrip(".\u2026 ")
         tip = action.toolTip()
-        shortened = caption.replace("\n", " ") != full
+        # Shortened: a short caption (iconText) or an elided line. Comparing the
+        # joined lines with the label would flag a cleanly wrapped CJK caption,
+        # whose lines join without a space.
+        shortened = (text.rstrip(".\u2026 ") != full
+                     or ("\u2026" in caption and "\u2026" not in full))
         if tip and tip.rstrip(".\u2026 ") not in (text.rstrip(".\u2026 "), full):
             # An explicit tooltip (a script's preview image) does not name the
             # entry, so a shortened caption still gets its full label on top.

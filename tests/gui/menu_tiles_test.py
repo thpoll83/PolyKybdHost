@@ -252,6 +252,12 @@ class ReviewFixesTest(unittest.TestCase):
         self.assertEqual(menu.actions(), rows)
 
 
+def fm_w(text):
+    from PyQt5.QtWidgets import QMenu as _Menu
+    m = _Menu()
+    return m.fontMetrics().horizontalAdvance(text)
+
+
 class ReviewFixes786Test(unittest.TestCase):
     """Four findings CodeRabbit made on #786."""
 
@@ -266,6 +272,13 @@ class ReviewFixes786Test(unittest.TestCase):
         out = menu_tiles.wrap_caption(text, fm, width)
         self.assertEqual(out.replace("\n", ""), text)       # whole, on two lines
         self.assertEqual(len(out.split("\n")), 2)
+
+    def test_the_space_before_a_cjk_word_is_kept(self):
+        # Revix on #786: "Firmware 固件" was drawn as "Firmware固件".
+        fm = self._fm()
+        text = "Firmware \u56fa\u4ef6\u66f4\u65b0\u68c0\u67e5\u5de5\u5177"
+        out = menu_tiles.wrap_caption(text, fm, fm.horizontalAdvance(text) * 7 // 10)
+        self.assertTrue(out.startswith("Firmware \u56fa") or out.startswith("Firmware\n"), out)
 
     def test_latin_words_still_break_only_at_spaces(self):
         fm = self._fm()
@@ -289,6 +302,12 @@ class ReviewFixes786Test(unittest.TestCase):
         self.assertGreater(grid.tiles[0].width(), before)
         self.assertEqual(grid.tiles[0].width(), grid.tiles[1].width())
         self.assertNotIn("\u2026", grid.tiles[0].text())
+
+    def test_a_cleanly_wrapped_cjk_caption_gets_no_tooltip(self):
+        text = "\u30ad\u30fc\u30dc\u30fc\u30c9\u306e\u30af\u30e9\u30c3\u30b7\u30e5"
+        grid, _actions = self._grid([text], lo=40, hi=fm_w(text) * 7 // 10 + 24)
+        self.assertNotIn("\u2026", grid.tiles[0].text())
+        self.assertEqual(grid.tiles[0].toolTip(), "")
 
     def test_a_shortened_caption_keeps_its_full_label_beside_a_rich_tooltip(self):
         menu = QMenu()
