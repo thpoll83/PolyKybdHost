@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-11 15:59+0000\n"
+"POT-Creation-Date: 2026-11-11 21:08+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -18,17 +18,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: polyhost/device/command_ids.py:167
+#: polyhost/device/command_ids.py:168
 #, python-brace-format
 msgid "preset {value}"
 msgstr "프리셋 {value}"
 
-#: polyhost/device/command_ids.py:169
+#: polyhost/device/command_ids.py:170
 #, python-brace-format
 msgid "{minutes} min"
 msgstr "{minutes}분"
 
-#: polyhost/device/command_ids.py:170
+#: polyhost/device/command_ids.py:171
 #, python-brace-format
 msgid "{seconds} sec"
 msgstr "{seconds}초"
@@ -341,11 +341,11 @@ msgstr "호스트 업데이트 확인…"
 
 #: polyhost/forwarder.py:309
 msgid "Set Up Agent Hooks"
-msgstr ""
+msgstr "에이전트 훅 설정"
 
 #: polyhost/forwarder.py:311
 msgid "Pair with the Keyboard Computer…"
-msgstr ""
+msgstr "키보드 컴퓨터와 페어링…"
 
 #: polyhost/forwarder.py:393
 #, python-brace-format
@@ -380,80 +380,80 @@ msgstr "{target}(으)로 포워딩 중"
 msgid "Cannot reach {target}"
 msgstr "{target}에 연결할 수 없음"
 
-#: polyhost/forwarder.py:553
-msgid "The hooks are written, but this forwarder runs without --report-rpc, so it cannot pass agent reports on. Start it with --report-rpc to show this computer's agents on the keys."
-msgstr ""
-
 #: polyhost/forwarder.py:556
-msgid "The hooks are written. On the keyboard computer, turn on Settings > AI agents > \"Agents from other computers\"."
-msgstr ""
+msgid "The hooks are written, but this forwarder runs without --report-rpc, so it cannot pass agent reports on. Start it with --report-rpc to show this computer's agents on the keys."
+msgstr "훅을 작성했지만 이 포워더는 --report-rpc 없이 실행 중이므로 에이전트 보고를 전달할 수 없습니다. 이 컴퓨터의 에이전트를 키에 표시하려면 --report-rpc를 사용하여 시작하십시오."
 
-#: polyhost/forwarder.py:879
+#: polyhost/forwarder.py:559
+msgid "The hooks are written. On the keyboard computer, turn on Settings > AI agents > \"Agents from other computers\"."
+msgstr "훅을 작성했습니다. 키보드 컴퓨터에서 설정 > AI 에이전트 > “다른 컴퓨터의 에이전트”를 켜십시오."
+
+#: polyhost/forwarder.py:890
 msgid "PolyForwarder settings"
 msgstr "PolyForwarder 설정"
 
-#: polyhost/forwarder.py:880
+#: polyhost/forwarder.py:891
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
 msgstr "설정을 설정 파일에 저장할 수 없어 적용되지 않습니다. 다른 프로그램이 파일을 열고 있을 수 있습니다. 다시 시도하거나 로그를 확인하십시오."
 
-#: polyhost/forwarder.py:898
+#: polyhost/forwarder.py:909
 msgid "Paired. The forwarder uses the authenticated connection from its next start. Restart it now?"
-msgstr ""
+msgstr "페어링되었습니다. 포워더는 다음 시작부터 인증된 연결을 사용합니다. 지금 다시 시작하시겠습니까?"
 
-#: polyhost/forwarder.py:913
+#: polyhost/forwarder.py:924
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
 msgstr "인증된 RPC(포트 {port})"
 
-#: polyhost/forwarder.py:915
+#: polyhost/forwarder.py:926
 msgid "legacy plaintext TCP relay"
 msgstr "레거시 일반 텍스트 TCP 릴레이"
 
-#: polyhost/forwarder.py:918
+#: polyhost/forwarder.py:929
 msgid "reaching the keyboard machine"
 msgstr "키보드 컴퓨터에 연결됨"
 
-#: polyhost/forwarder.py:919
+#: polyhost/forwarder.py:930
 msgid "not reaching the keyboard machine"
 msgstr "키보드 컴퓨터에 연결되지 않음"
 
-#: polyhost/forwarder.py:920
+#: polyhost/forwarder.py:931
 msgid "starting up"
 msgstr "시작하는 중"
 
-#: polyhost/forwarder.py:922
+#: polyhost/forwarder.py:933
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
 msgstr "<b>모드:</b> 포워더 — 이 컴퓨터에 연결된 키보드 없음"
 
-#: polyhost/forwarder.py:923
+#: polyhost/forwarder.py:934
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
 msgstr "<b>대상:</b> {target}"
 
-#: polyhost/forwarder.py:925
+#: polyhost/forwarder.py:936
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
 msgstr "<b>창 보고:</b> {transport}"
 
-#: polyhost/forwarder.py:928
+#: polyhost/forwarder.py:939
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
 msgstr "<b>호스트 파일:</b> {path}"
 
-#: polyhost/forwarder.py:949
+#: polyhost/forwarder.py:960
 msgid "About PolyKybdHost (forwarder)"
 msgstr "PolyKybdHost(포워더) 정보"
 
 #. TRANSLATORS: the run mode in the About dialog's environment line
-#: polyhost/forwarder.py:956
+#: polyhost/forwarder.py:967
 msgid "forwarder"
 msgstr "포워더"
 
-#: polyhost/forwarder.py:958
+#: polyhost/forwarder.py:969
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "포워더 모드: 이 컴퓨터에는 키보드가 없습니다. 이 컴퓨터의 활성 창을 감시하여 키보드가 연결된 컴퓨터에서 실행 중인 PolyKybdHost로 전달합니다."
 
-#: polyhost/forwarder.py:998
+#: polyhost/forwarder.py:1009
 msgid "Download, install, and restart the forwarder now?"
 msgstr "지금 포워더를 다운로드하여 설치하고 다시 시작하시겠습니까?"
 
@@ -480,16 +480,16 @@ msgstr "복사됨 ✓"
 
 #: polyhost/gui/agent_hooks.py:23 polyhost/gui/agent_hooks.py:35
 msgid "Set Up Hooks"
-msgstr ""
+msgstr "훅 설정"
 
 #: polyhost/gui/agent_hooks.py:44
 msgid "The hooks are already set up."
-msgstr ""
+msgstr "훅이 이미 설정되어 있습니다."
 
 #: polyhost/gui/agent_hooks.py:47
 #, python-brace-format
 msgid "Write the PolyKybd hooks into {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
-msgstr ""
+msgstr "PolyKybd 훅을 {files}에 작성하시겠습니까? 사용자의 훅은 유지되며, 각 파일의 사본이 <file>.polykybd.bak으로 저장됩니다."
 
 #: polyhost/gui/boot_loop_dialog.py:26
 msgid "Reboots the keyboard again and again to catch an intermittent boot hang. After each reboot it waits for the keyboard to come back and reads its crash record. It stops at the first boot that left a fresh crash record, at a boot that does not come back within a minute, or after the last round.<br><br>The keyboard does not type while this runs, and each round takes a few seconds."
@@ -1740,28 +1740,28 @@ msgstr "'{label}'의 보류 중인 편집 내용을 모두 버리시겠습니까
 
 #: polyhost/gui/forwarder_pairing.py:16 polyhost/gui/forwarder_pairing.py:18
 msgid "Pair a Forwarder"
-msgstr ""
+msgstr "포워더 페어링"
 
 #: polyhost/gui/forwarder_pairing.py:19
-msgid "On the other computer, open the forwarder's menu, choose \"Pair with the Keyboard Computer…\" and enter this code. Anyone with this code can send window and agent reports to this computer, so pass it on only over a channel you trust. \"Allow forwarders over the network\" must be on in Settings."
-msgstr ""
+msgid "On the other computer, open the forwarder's menu, choose \"Pair with the Keyboard Computer…\" and enter this code. Anyone with this code can send window and agent reports to this computer, so pass it on only over a channel you trust. \"Accept forwarders\" must be on in Settings."
+msgstr "다른 컴퓨터에서 포워더의 메뉴를 열고 “키보드 컴퓨터와 페어링…”을 선택한 다음 이 코드를 입력하십시오. 이 코드를 가진 사람은 누구나 이 컴퓨터로 창 및 에이전트 보고를 보낼 수 있으므로 신뢰할 수 있는 경로로만 전달하십시오. 설정에서 “포워더 허용”이 켜져 있어야 합니다."
 
 #: polyhost/gui/forwarder_pairing.py:26
 msgid "Copy"
-msgstr ""
+msgstr "복사"
 
-#: polyhost/forwarder.py:897 polyhost/gui/forwarder_pairing.py:37
+#: polyhost/forwarder.py:908 polyhost/gui/forwarder_pairing.py:37
 #: polyhost/gui/forwarder_pairing.py:44 polyhost/gui/forwarder_pairing.py:51
 msgid "Pair with the Keyboard Computer"
-msgstr ""
+msgstr "키보드 컴퓨터와 페어링"
 
 #: polyhost/gui/forwarder_pairing.py:38
 msgid "Enter the code that \"Pair a Forwarder…\" shows on the keyboard computer (tray menu, AI Agents):"
-msgstr ""
+msgstr "키보드 컴퓨터의 “포워더 페어링…”(트레이 메뉴, AI 에이전트)에 표시되는 코드를 입력하십시오:"
 
 #: polyhost/gui/forwarder_pairing.py:45
 msgid "That is not a pairing code: it has 64 letters and digits (a to f, 0 to 9), in groups of 8."
-msgstr ""
+msgstr "페어링 코드가 아닙니다. 페어링 코드는 64개의 문자와 숫자(a~f, 0~9)로 이루어지며 8개씩 묶여 있습니다."
 
 #: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:3281
 #: polyhost/host.py:3322 polyhost/host.py:3349
@@ -2921,7 +2921,7 @@ msgstr "로그"
 
 #: polyhost/gui/settings_dialog.py:102
 msgid "AI agents"
-msgstr ""
+msgstr "AI 에이전트"
 
 #: polyhost/gui/settings_dialog.py:107 polyhost/host.py:884
 msgid "Developer"
@@ -3109,59 +3109,59 @@ msgstr "설치된 게임의 그림"
 
 #: polyhost/gui/settings_dialog.py:159
 msgid "Show on the number row"
-msgstr ""
+msgstr "숫자 행에 표시"
 
 #: polyhost/gui/settings_dialog.py:160
 msgid "Find by window title"
-msgstr ""
+msgstr "창 제목으로 찾기"
 
 #: polyhost/gui/settings_dialog.py:161
 msgid "Dictation shortcut"
-msgstr ""
+msgstr "받아쓰기 바로 가기 키"
 
 #: polyhost/gui/settings_dialog.py:162
 msgid "Agents from other computers"
-msgstr ""
+msgstr "다른 컴퓨터의 에이전트"
 
 #: polyhost/gui/settings_dialog.py:163
 msgid "Raise agent windows on this computer"
-msgstr ""
+msgstr "이 컴퓨터에서 에이전트 창을 앞으로 가져오기"
 
 #: polyhost/gui/settings_dialog.py:164
 msgid "Stale after (minutes)"
-msgstr ""
+msgstr "응답 없음으로 표시할 시간(분)"
 
 #: polyhost/gui/settings_dialog.py:165
 msgid "Remove idle agents after (minutes)"
-msgstr ""
+msgstr "유휴 에이전트를 제거할 시간(분)"
 
 #: polyhost/gui/settings_dialog.py:174
 msgid "Shows the state of AI coding agents on the number row and, while the AI key is pressed, one card per agent. Needs keyboard firmware with protocol 31. Takes effect at the next keyboard connect."
-msgstr ""
+msgstr "AI 코딩 에이전트의 상태를 숫자 행에 표시하고, AI 키를 누르고 있는 동안 에이전트마다 카드 하나를 표시합니다. 프로토콜 31의 키보드 펌웨어가 필요합니다. 다음에 키보드를 연결할 때 적용됩니다."
 
 #: polyhost/gui/settings_dialog.py:178
 msgid "Also finds agents that run in a terminal from the window title, without a hook. Not on macOS."
-msgstr ""
+msgstr "터미널에서 실행되는 에이전트도 훅 없이 창 제목으로 찾습니다. macOS에서는 사용할 수 없습니다."
 
 #: polyhost/gui/settings_dialog.py:181
 msgid "Also shows agents that run on a computer with the forwarder. A key press brings forward the remote-desktop viewer that shows that computer (NoMachine, Remote Desktop, VNC). They report over the network endpoint for forwarders, which must be on too. Off: only this computer's agents."
-msgstr ""
+msgstr "포워더가 있는 컴퓨터에서 실행되는 에이전트도 표시합니다. 키를 누르면 해당 컴퓨터를 표시하는 원격 데스크톱 뷰어(NoMachine, 원격 데스크톱, VNC)가 앞으로 옵니다. 에이전트는 포워더용 네트워크 엔드포인트를 통해 보고하므로 그것도 켜져 있어야 합니다. 끄기: 이 컴퓨터의 에이전트만."
 
 #: polyhost/gui/settings_dialog.py:186
 msgid "On a computer with the forwarder: a key press on one of this computer's agents also brings the agent's own window forward here. Off: only the viewer on the keyboard's computer comes forward."
-msgstr ""
+msgstr "포워더가 있는 컴퓨터에서: 이 컴퓨터의 에이전트 키를 누르면 해당 에이전트 자체의 창도 여기에서 앞으로 옵니다. 끄기: 키보드 컴퓨터의 뷰어만 앞으로 옵니다."
 
 #: polyhost/gui/settings_dialog.py:190
 msgid "A working agent that reports nothing for this many minutes shows as stale (dim white). 0: never."
-msgstr ""
+msgstr "작업 중인 에이전트가 이 시간(분) 동안 아무것도 보고하지 않으면 응답 없음(흐린 흰색)으로 표시됩니다. 0: 사용 안 함."
 
 #: polyhost/gui/settings_dialog.py:193
 msgid "An idle or stale agent that reports nothing for this many minutes is removed and frees its key. An agent whose process ends is removed at once. 0: never."
-msgstr ""
+msgstr "유휴 또는 응답 없음 상태의 에이전트가 이 시간(분) 동안 아무것도 보고하지 않으면 제거되고 해당 키가 비워집니다. 프로세스가 끝난 에이전트는 즉시 제거됩니다. 0: 사용 안 함."
 
 #: polyhost/gui/settings_dialog.py:196
 msgid "The shortcut the minus key sends in AI mode to start dictation, for example <cmd>+h or <ctrl>+<alt>+d. Empty: Win+H on Windows, nothing on macOS and Linux."
-msgstr ""
+msgstr "AI 모드에서 빼기 키가 받아쓰기를 시작하기 위해 보내는 바로 가기 키입니다(예: <cmd>+h 또는 <ctrl>+<alt>+d). 비워 두면: Windows에서는 Win+H, macOS와 Linux에서는 아무것도 보내지 않습니다."
 
 #: polyhost/gui/settings_dialog.py:200
 msgid "Tells the keyboard how this computer takes Unicode input (for example WinCompose), on connect and whenever it changes. Off: the keyboard keeps the mode it has stored."
@@ -3914,7 +3914,7 @@ msgstr "탭-홀드 타이밍…"
 
 #: polyhost/host.py:724
 msgid "AI Agents"
-msgstr ""
+msgstr "AI 에이전트"
 
 #: polyhost/host.py:731
 msgid "Configure Keymap"
@@ -4015,7 +4015,7 @@ msgstr ""
 "제공되는 모든 글꼴 번들이 이미 키보드에 있습니다.\n"
 "키캡이 여전히 잘못 표시되면 개발자 → 글꼴 팩 → 모든 번들 다시 플래시로 강제로 다시 보낼 수 있습니다."
 
-#: polyhost/forwarder.py:842 polyhost/host.py:1302
+#: polyhost/forwarder.py:853 polyhost/host.py:1302
 msgid "Config folder"
 msgstr "구성 폴더"
 
@@ -4138,7 +4138,7 @@ msgstr "독립 실행형"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:917 polyhost/host.py:2200
+#: polyhost/forwarder.py:928 polyhost/host.py:2200
 msgid "paused"
 msgstr "일시 중지됨"
 
@@ -4204,17 +4204,17 @@ msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>오버레이 매핑:</b> 앱 {n}개"
 
-#: polyhost/forwarder.py:934 polyhost/host.py:2239
+#: polyhost/forwarder.py:945 polyhost/host.py:2239
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>구성:</b> {path}"
 
-#: polyhost/forwarder.py:935 polyhost/host.py:2240
+#: polyhost/forwarder.py:946 polyhost/host.py:2240
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>로그:</b> {path}"
 
-#: polyhost/forwarder.py:953 polyhost/host.py:2294
+#: polyhost/forwarder.py:964 polyhost/host.py:2294
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "HID 프로토콜 P{protocol}"
@@ -4239,41 +4239,41 @@ msgstr "{language}을(를) 설정할 수 없음: {error}"
 
 #: polyhost/host.py:2414
 msgid "Show on the Number Row"
-msgstr ""
+msgstr "숫자 행에 표시"
 
 #: polyhost/host.py:2422
 msgid "No agents reported"
-msgstr ""
+msgstr "보고된 에이전트 없음"
 
 #: polyhost/host.py:2425
 msgid "working"
-msgstr ""
+msgstr "작업 중"
 
 #: polyhost/host.py:2425
 msgid "waiting"
-msgstr ""
+msgstr "대기 중"
 
 #: polyhost/host.py:2425
 msgid "done"
-msgstr ""
+msgstr "완료"
 
 #: polyhost/host.py:2426
 msgid "idle"
-msgstr ""
+msgstr "유휴"
 
 #: polyhost/host.py:2429
 #, python-brace-format
 msgid "Key {key}: {name}, {state}, {title}"
-msgstr ""
+msgstr "키 {key}: {name}, {state}, {title}"
 
 #: polyhost/host.py:2434
 #, python-brace-format
 msgid "Page {page}, {text}"
-msgstr ""
+msgstr "{page}페이지, {text}"
 
 #: polyhost/host.py:2443
 msgid "Pair a Forwarder…"
-msgstr ""
+msgstr "포워더 페어링…"
 
 #: polyhost/host.py:2567
 msgid "No emoji search dictionaries shipped"
@@ -4324,8 +4324,8 @@ msgstr "PolyKybd 오버레이 매핑(*.poly.yaml)"
 msgid "Update firmware to v{version}…"
 msgstr "펌웨어를 v{version}(으)로 업데이트…"
 
-#: polyhost/forwarder.py:992 polyhost/forwarder.py:1003
-#: polyhost/forwarder.py:1009 polyhost/host.py:2777 polyhost/host.py:2898
+#: polyhost/forwarder.py:1003 polyhost/forwarder.py:1014
+#: polyhost/forwarder.py:1020 polyhost/host.py:2777 polyhost/host.py:2898
 #: polyhost/host.py:2902
 msgid "Check for updates..."
 msgstr "업데이트 확인..."
@@ -4335,8 +4335,8 @@ msgstr "업데이트 확인..."
 msgid "Update to v{version} available"
 msgstr "v{version}(으)로 업데이트 가능"
 
-#: polyhost/forwarder.py:1005 polyhost/forwarder.py:1011
-#: polyhost/forwarder.py:1022 polyhost/host.py:2856 polyhost/host.py:2896
+#: polyhost/forwarder.py:1016 polyhost/forwarder.py:1022
+#: polyhost/forwarder.py:1033 polyhost/host.py:2856 polyhost/host.py:2896
 #: polyhost/host.py:2903 polyhost/host.py:2926
 msgid "PolyKybdHost Update"
 msgstr "PolyKybdHost 업데이트"
@@ -4346,7 +4346,7 @@ msgstr "PolyKybdHost 업데이트"
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "버전 {version}을(를) 사용할 수 있습니다. 업데이트하려면 트레이 아이콘을 클릭하십시오."
 
-#: polyhost/forwarder.py:979 polyhost/host.py:2882
+#: polyhost/forwarder.py:990 polyhost/host.py:2882
 msgid "Checking for updates..."
 msgstr "업데이트를 확인하는 중..."
 
@@ -4354,12 +4354,12 @@ msgstr "업데이트를 확인하는 중..."
 msgid "No updates available"
 msgstr "사용 가능한 업데이트 없음"
 
-#: polyhost/forwarder.py:1006 polyhost/host.py:2897
+#: polyhost/forwarder.py:1017 polyhost/host.py:2897
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "최신 버전(v{version})을 사용하고 있습니다."
 
-#: polyhost/forwarder.py:1012 polyhost/host.py:2904
+#: polyhost/forwarder.py:1023 polyhost/host.py:2904
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -4379,12 +4379,12 @@ msgstr ""
 msgid "Released: {date}"
 msgstr "릴리스 날짜: {date}"
 
-#: polyhost/forwarder.py:993 polyhost/host.py:2910
+#: polyhost/forwarder.py:1004 polyhost/host.py:2910
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "버전 {version}을(를) 사용할 수 있습니다."
 
-#: polyhost/forwarder.py:994 polyhost/host.py:2911
+#: polyhost/forwarder.py:1005 polyhost/host.py:2911
 msgid "Update PolyKybdHost"
 msgstr "PolyKybdHost 업데이트"
 
@@ -4392,20 +4392,20 @@ msgstr "PolyKybdHost 업데이트"
 msgid "Download, install, and restart now?"
 msgstr "지금 다운로드하여 설치하고 다시 시작하시겠습니까?"
 
-#: polyhost/forwarder.py:1021 polyhost/host.py:2926
+#: polyhost/forwarder.py:1032 polyhost/host.py:2926
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "v{version} 다운로드하는 중…"
 
-#: polyhost/forwarder.py:1062 polyhost/host.py:3051
+#: polyhost/forwarder.py:1073 polyhost/host.py:3051
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "업데이트 릴레이를 시작할 수 없어 업데이트가 완료되지 않았습니다. 자세한 내용은 로그를 참조하십시오."
 
-#: polyhost/forwarder.py:1074 polyhost/host.py:3066
+#: polyhost/forwarder.py:1085 polyhost/host.py:3066
 msgid "Update failed"
 msgstr "업데이트 실패"
 
-#: polyhost/forwarder.py:1074 polyhost/host.py:3066
+#: polyhost/forwarder.py:1085 polyhost/host.py:3066
 msgid "The update did not finish."
 msgstr "업데이트가 완료되지 않았습니다."
 

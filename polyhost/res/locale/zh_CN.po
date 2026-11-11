@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-11 15:59+0000\n"
+"POT-Creation-Date: 2026-11-11 21:08+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans_CN\n"
@@ -18,17 +18,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: polyhost/device/command_ids.py:167
+#: polyhost/device/command_ids.py:168
 #, python-brace-format
 msgid "preset {value}"
 msgstr "预设 {value}"
 
-#: polyhost/device/command_ids.py:169
+#: polyhost/device/command_ids.py:170
 #, python-brace-format
 msgid "{minutes} min"
 msgstr "{minutes} 分钟"
 
-#: polyhost/device/command_ids.py:170
+#: polyhost/device/command_ids.py:171
 #, python-brace-format
 msgid "{seconds} sec"
 msgstr "{seconds} 秒"
@@ -341,11 +341,11 @@ msgstr "检查主机端更新…"
 
 #: polyhost/forwarder.py:309
 msgid "Set Up Agent Hooks"
-msgstr ""
+msgstr "设置智能体钩子"
 
 #: polyhost/forwarder.py:311
 msgid "Pair with the Keyboard Computer…"
-msgstr ""
+msgstr "与键盘所在的电脑配对…"
 
 #: polyhost/forwarder.py:393
 #, python-brace-format
@@ -380,80 +380,80 @@ msgstr "正在转发到 {target}"
 msgid "Cannot reach {target}"
 msgstr "无法连接 {target}"
 
-#: polyhost/forwarder.py:553
-msgid "The hooks are written, but this forwarder runs without --report-rpc, so it cannot pass agent reports on. Start it with --report-rpc to show this computer's agents on the keys."
-msgstr ""
-
 #: polyhost/forwarder.py:556
-msgid "The hooks are written. On the keyboard computer, turn on Settings > AI agents > \"Agents from other computers\"."
-msgstr ""
+msgid "The hooks are written, but this forwarder runs without --report-rpc, so it cannot pass agent reports on. Start it with --report-rpc to show this computer's agents on the keys."
+msgstr "钩子已写入，但此转发器未使用 --report-rpc 运行，因此无法转发智能体报告。请使用 --report-rpc 启动它，以便在按键上显示此电脑的智能体。"
 
-#: polyhost/forwarder.py:879
+#: polyhost/forwarder.py:559
+msgid "The hooks are written. On the keyboard computer, turn on Settings > AI agents > \"Agents from other computers\"."
+msgstr "钩子已写入。请在键盘所在的电脑上打开 设置 > AI 智能体 > “来自其他电脑的智能体”。"
+
+#: polyhost/forwarder.py:890
 msgid "PolyForwarder settings"
 msgstr "PolyForwarder 设置"
 
-#: polyhost/forwarder.py:880
+#: polyhost/forwarder.py:891
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
 msgstr "设置无法保存到设置文件，因此不会生效。可能有其他程序正在占用该文件。请重试，或查看日志。"
 
-#: polyhost/forwarder.py:898
+#: polyhost/forwarder.py:909
 msgid "Paired. The forwarder uses the authenticated connection from its next start. Restart it now?"
-msgstr ""
+msgstr "已配对。转发器从下次启动起使用经过身份验证的连接。立即重新启动吗？"
 
-#: polyhost/forwarder.py:913
+#: polyhost/forwarder.py:924
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
 msgstr "经过身份验证的 RPC（端口 {port}）"
 
-#: polyhost/forwarder.py:915
+#: polyhost/forwarder.py:926
 msgid "legacy plaintext TCP relay"
 msgstr "旧版明文 TCP 中继"
 
-#: polyhost/forwarder.py:918
+#: polyhost/forwarder.py:929
 msgid "reaching the keyboard machine"
 msgstr "可连接到键盘所在的电脑"
 
-#: polyhost/forwarder.py:919
+#: polyhost/forwarder.py:930
 msgid "not reaching the keyboard machine"
 msgstr "无法连接到键盘所在的电脑"
 
-#: polyhost/forwarder.py:920
+#: polyhost/forwarder.py:931
 msgid "starting up"
 msgstr "正在启动"
 
-#: polyhost/forwarder.py:922
+#: polyhost/forwarder.py:933
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
 msgstr "<b>模式：</b>转发器 — 本机未连接键盘"
 
-#: polyhost/forwarder.py:923
+#: polyhost/forwarder.py:934
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
 msgstr "<b>目标：</b>{target}"
 
-#: polyhost/forwarder.py:925
+#: polyhost/forwarder.py:936
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
 msgstr "<b>窗口报告：</b>{transport}"
 
-#: polyhost/forwarder.py:928
+#: polyhost/forwarder.py:939
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
 msgstr "<b>主机文件：</b>{path}"
 
-#: polyhost/forwarder.py:949
+#: polyhost/forwarder.py:960
 msgid "About PolyKybdHost (forwarder)"
 msgstr "关于 PolyKybdHost（转发器）"
 
 #. TRANSLATORS: the run mode in the About dialog's environment line
-#: polyhost/forwarder.py:956
+#: polyhost/forwarder.py:967
 msgid "forwarder"
 msgstr "转发器"
 
-#: polyhost/forwarder.py:958
+#: polyhost/forwarder.py:969
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "转发器模式：本机没有连接键盘。它会监视本机的活动窗口，并将其转发给运行在连接键盘的电脑上的 PolyKybdHost。"
 
-#: polyhost/forwarder.py:998
+#: polyhost/forwarder.py:1009
 msgid "Download, install, and restart the forwarder now?"
 msgstr "立即下载、安装并重新启动转发器吗？"
 
@@ -480,16 +480,16 @@ msgstr "已复制 ✓"
 
 #: polyhost/gui/agent_hooks.py:23 polyhost/gui/agent_hooks.py:35
 msgid "Set Up Hooks"
-msgstr ""
+msgstr "设置钩子"
 
 #: polyhost/gui/agent_hooks.py:44
 msgid "The hooks are already set up."
-msgstr ""
+msgstr "钩子已经设置好了。"
 
 #: polyhost/gui/agent_hooks.py:47
 #, python-brace-format
 msgid "Write the PolyKybd hooks into {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
-msgstr ""
+msgstr "将 PolyKybd 钩子写入 {files} 吗？您自己的钩子会保留，并且每个文件的副本会保存为 <file>.polykybd.bak。"
 
 #: polyhost/gui/boot_loop_dialog.py:26
 msgid "Reboots the keyboard again and again to catch an intermittent boot hang. After each reboot it waits for the keyboard to come back and reads its crash record. It stops at the first boot that left a fresh crash record, at a boot that does not come back within a minute, or after the last round.<br><br>The keyboard does not type while this runs, and each round takes a few seconds."
@@ -1740,28 +1740,28 @@ msgstr "要放弃对“{label}”的所有待保存编辑吗？"
 
 #: polyhost/gui/forwarder_pairing.py:16 polyhost/gui/forwarder_pairing.py:18
 msgid "Pair a Forwarder"
-msgstr ""
+msgstr "与转发器配对"
 
 #: polyhost/gui/forwarder_pairing.py:19
-msgid "On the other computer, open the forwarder's menu, choose \"Pair with the Keyboard Computer…\" and enter this code. Anyone with this code can send window and agent reports to this computer, so pass it on only over a channel you trust. \"Allow forwarders over the network\" must be on in Settings."
-msgstr ""
+msgid "On the other computer, open the forwarder's menu, choose \"Pair with the Keyboard Computer…\" and enter this code. Anyone with this code can send window and agent reports to this computer, so pass it on only over a channel you trust. \"Accept forwarders\" must be on in Settings."
+msgstr "在另一台电脑上，打开转发器的菜单，选择“与键盘所在的电脑配对…”，然后输入此代码。任何拥有此代码的人都可以向此电脑发送窗口和智能体报告，因此请仅通过您信任的渠道传递。必须在“设置”中打开“接受转发器”。"
 
 #: polyhost/gui/forwarder_pairing.py:26
 msgid "Copy"
-msgstr ""
+msgstr "复制"
 
-#: polyhost/forwarder.py:897 polyhost/gui/forwarder_pairing.py:37
+#: polyhost/forwarder.py:908 polyhost/gui/forwarder_pairing.py:37
 #: polyhost/gui/forwarder_pairing.py:44 polyhost/gui/forwarder_pairing.py:51
 msgid "Pair with the Keyboard Computer"
-msgstr ""
+msgstr "与键盘所在的电脑配对"
 
 #: polyhost/gui/forwarder_pairing.py:38
 msgid "Enter the code that \"Pair a Forwarder…\" shows on the keyboard computer (tray menu, AI Agents):"
-msgstr ""
+msgstr "请输入键盘所在的电脑上“与转发器配对…”（托盘菜单，AI 智能体）显示的代码："
 
 #: polyhost/gui/forwarder_pairing.py:45
 msgid "That is not a pairing code: it has 64 letters and digits (a to f, 0 to 9), in groups of 8."
-msgstr ""
+msgstr "这不是配对代码：配对代码由 64 个字母和数字（a 到 f，0 到 9）组成，每 8 个一组。"
 
 #: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:3281
 #: polyhost/host.py:3322 polyhost/host.py:3349
@@ -2921,7 +2921,7 @@ msgstr "日志"
 
 #: polyhost/gui/settings_dialog.py:102
 msgid "AI agents"
-msgstr ""
+msgstr "AI 智能体"
 
 #: polyhost/gui/settings_dialog.py:107 polyhost/host.py:884
 msgid "Developer"
@@ -3109,59 +3109,59 @@ msgstr "来自已安装游戏的图像"
 
 #: polyhost/gui/settings_dialog.py:159
 msgid "Show on the number row"
-msgstr ""
+msgstr "在数字行上显示"
 
 #: polyhost/gui/settings_dialog.py:160
 msgid "Find by window title"
-msgstr ""
+msgstr "按窗口标题查找"
 
 #: polyhost/gui/settings_dialog.py:161
 msgid "Dictation shortcut"
-msgstr ""
+msgstr "听写快捷键"
 
 #: polyhost/gui/settings_dialog.py:162
 msgid "Agents from other computers"
-msgstr ""
+msgstr "来自其他电脑的智能体"
 
 #: polyhost/gui/settings_dialog.py:163
 msgid "Raise agent windows on this computer"
-msgstr ""
+msgstr "在此电脑上将智能体窗口置于前台"
 
 #: polyhost/gui/settings_dialog.py:164
 msgid "Stale after (minutes)"
-msgstr ""
+msgstr "多久后视为无响应（分钟）"
 
 #: polyhost/gui/settings_dialog.py:165
 msgid "Remove idle agents after (minutes)"
-msgstr ""
+msgstr "多久后移除空闲智能体（分钟）"
 
 #: polyhost/gui/settings_dialog.py:174
 msgid "Shows the state of AI coding agents on the number row and, while the AI key is pressed, one card per agent. Needs keyboard firmware with protocol 31. Takes effect at the next keyboard connect."
-msgstr ""
+msgstr "在数字行上显示 AI 编程智能体的状态，并在按住 AI 键时为每个智能体显示一张卡片。需要协议 31 的键盘固件。下次连接键盘时生效。"
 
 #: polyhost/gui/settings_dialog.py:178
 msgid "Also finds agents that run in a terminal from the window title, without a hook. Not on macOS."
-msgstr ""
+msgstr "也通过窗口标题查找在终端中运行的智能体，无需钩子。不适用于 macOS。"
 
 #: polyhost/gui/settings_dialog.py:181
 msgid "Also shows agents that run on a computer with the forwarder. A key press brings forward the remote-desktop viewer that shows that computer (NoMachine, Remote Desktop, VNC). They report over the network endpoint for forwarders, which must be on too. Off: only this computer's agents."
-msgstr ""
+msgstr "也显示在装有转发器的电脑上运行的智能体。按下按键会将显示该电脑的远程桌面查看器（NoMachine、远程桌面、VNC）置于前台。它们通过供转发器使用的网络端点报告，该端点也必须打开。关：仅显示此电脑的智能体。"
 
 #: polyhost/gui/settings_dialog.py:186
 msgid "On a computer with the forwarder: a key press on one of this computer's agents also brings the agent's own window forward here. Off: only the viewer on the keyboard's computer comes forward."
-msgstr ""
+msgstr "在装有转发器的电脑上：按下此电脑某个智能体的按键时，也会在这里将该智能体自己的窗口置于前台。关：仅将键盘所在电脑上的查看器置于前台。"
 
 #: polyhost/gui/settings_dialog.py:190
 msgid "A working agent that reports nothing for this many minutes shows as stale (dim white). 0: never."
-msgstr ""
+msgstr "工作中的智能体在这么多分钟内没有任何报告时，显示为无响应（暗白色）。0：从不。"
 
 #: polyhost/gui/settings_dialog.py:193
 msgid "An idle or stale agent that reports nothing for this many minutes is removed and frees its key. An agent whose process ends is removed at once. 0: never."
-msgstr ""
+msgstr "空闲或无响应的智能体在这么多分钟内没有任何报告时，会被移除并释放其按键。进程结束的智能体会立即移除。0：从不。"
 
 #: polyhost/gui/settings_dialog.py:196
 msgid "The shortcut the minus key sends in AI mode to start dictation, for example <cmd>+h or <ctrl>+<alt>+d. Empty: Win+H on Windows, nothing on macOS and Linux."
-msgstr ""
+msgstr "AI 模式下减号键为开始听写而发送的快捷键，例如 <cmd>+h 或 <ctrl>+<alt>+d。留空：Windows 上为 Win+H，macOS 和 Linux 上不发送任何内容。"
 
 #: polyhost/gui/settings_dialog.py:200
 msgid "Tells the keyboard how this computer takes Unicode input (for example WinCompose), on connect and whenever it changes. Off: the keyboard keeps the mode it has stored."
@@ -3914,7 +3914,7 @@ msgstr "点按/按住时间…"
 
 #: polyhost/host.py:724
 msgid "AI Agents"
-msgstr ""
+msgstr "AI 智能体"
 
 #: polyhost/host.py:731
 msgid "Configure Keymap"
@@ -4015,7 +4015,7 @@ msgstr ""
 "所有随附的字体分包都已在键盘上。\n"
 "如果键帽仍显示错误，可通过“开发者 → 字体包 → 重新刷写所有分包”强制重新发送。"
 
-#: polyhost/forwarder.py:842 polyhost/host.py:1302
+#: polyhost/forwarder.py:853 polyhost/host.py:1302
 msgid "Config folder"
 msgstr "配置文件夹"
 
@@ -4138,7 +4138,7 @@ msgstr "独立运行"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:917 polyhost/host.py:2200
+#: polyhost/forwarder.py:928 polyhost/host.py:2200
 msgid "paused"
 msgstr "已暂停"
 
@@ -4204,17 +4204,17 @@ msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>叠加图标映射：</b>{n} 个应用"
 
-#: polyhost/forwarder.py:934 polyhost/host.py:2239
+#: polyhost/forwarder.py:945 polyhost/host.py:2239
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>配置：</b>{path}"
 
-#: polyhost/forwarder.py:935 polyhost/host.py:2240
+#: polyhost/forwarder.py:946 polyhost/host.py:2240
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>日志：</b>{path}"
 
-#: polyhost/forwarder.py:953 polyhost/host.py:2294
+#: polyhost/forwarder.py:964 polyhost/host.py:2294
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "HID 协议 P{protocol}"
@@ -4239,41 +4239,41 @@ msgstr "无法设置 {language}：{error}"
 
 #: polyhost/host.py:2414
 msgid "Show on the Number Row"
-msgstr ""
+msgstr "在数字行上显示"
 
 #: polyhost/host.py:2422
 msgid "No agents reported"
-msgstr ""
+msgstr "没有智能体报告"
 
 #: polyhost/host.py:2425
 msgid "working"
-msgstr ""
+msgstr "工作中"
 
 #: polyhost/host.py:2425
 msgid "waiting"
-msgstr ""
+msgstr "等待中"
 
 #: polyhost/host.py:2425
 msgid "done"
-msgstr ""
+msgstr "已完成"
 
 #: polyhost/host.py:2426
 msgid "idle"
-msgstr ""
+msgstr "空闲"
 
 #: polyhost/host.py:2429
 #, python-brace-format
 msgid "Key {key}: {name}, {state}, {title}"
-msgstr ""
+msgstr "按键 {key}：{name}，{state}，{title}"
 
 #: polyhost/host.py:2434
 #, python-brace-format
 msgid "Page {page}, {text}"
-msgstr ""
+msgstr "第 {page} 页，{text}"
 
 #: polyhost/host.py:2443
 msgid "Pair a Forwarder…"
-msgstr ""
+msgstr "与转发器配对…"
 
 #: polyhost/host.py:2567
 msgid "No emoji search dictionaries shipped"
@@ -4324,8 +4324,8 @@ msgstr "PolyKybd 叠加图标映射（*.poly.yaml）"
 msgid "Update firmware to v{version}…"
 msgstr "将固件更新到 v{version}…"
 
-#: polyhost/forwarder.py:992 polyhost/forwarder.py:1003
-#: polyhost/forwarder.py:1009 polyhost/host.py:2777 polyhost/host.py:2898
+#: polyhost/forwarder.py:1003 polyhost/forwarder.py:1014
+#: polyhost/forwarder.py:1020 polyhost/host.py:2777 polyhost/host.py:2898
 #: polyhost/host.py:2902
 msgid "Check for updates..."
 msgstr "检查更新..."
@@ -4335,8 +4335,8 @@ msgstr "检查更新..."
 msgid "Update to v{version} available"
 msgstr "有可用更新：v{version}"
 
-#: polyhost/forwarder.py:1005 polyhost/forwarder.py:1011
-#: polyhost/forwarder.py:1022 polyhost/host.py:2856 polyhost/host.py:2896
+#: polyhost/forwarder.py:1016 polyhost/forwarder.py:1022
+#: polyhost/forwarder.py:1033 polyhost/host.py:2856 polyhost/host.py:2896
 #: polyhost/host.py:2903 polyhost/host.py:2926
 msgid "PolyKybdHost Update"
 msgstr "PolyKybdHost 更新"
@@ -4346,7 +4346,7 @@ msgstr "PolyKybdHost 更新"
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "版本 {version} 已可用。点击托盘图标进行更新。"
 
-#: polyhost/forwarder.py:979 polyhost/host.py:2882
+#: polyhost/forwarder.py:990 polyhost/host.py:2882
 msgid "Checking for updates..."
 msgstr "正在检查更新..."
 
@@ -4354,12 +4354,12 @@ msgstr "正在检查更新..."
 msgid "No updates available"
 msgstr "没有可用的更新"
 
-#: polyhost/forwarder.py:1006 polyhost/host.py:2897
+#: polyhost/forwarder.py:1017 polyhost/host.py:2897
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "您正在运行最新版本（v{version}）。"
 
-#: polyhost/forwarder.py:1012 polyhost/host.py:2904
+#: polyhost/forwarder.py:1023 polyhost/host.py:2904
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -4379,12 +4379,12 @@ msgstr ""
 msgid "Released: {date}"
 msgstr "发布日期：{date}"
 
-#: polyhost/forwarder.py:993 polyhost/host.py:2910
+#: polyhost/forwarder.py:1004 polyhost/host.py:2910
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "版本 {version} 已可用。"
 
-#: polyhost/forwarder.py:994 polyhost/host.py:2911
+#: polyhost/forwarder.py:1005 polyhost/host.py:2911
 msgid "Update PolyKybdHost"
 msgstr "更新 PolyKybdHost"
 
@@ -4392,20 +4392,20 @@ msgstr "更新 PolyKybdHost"
 msgid "Download, install, and restart now?"
 msgstr "立即下载、安装并重新启动吗？"
 
-#: polyhost/forwarder.py:1021 polyhost/host.py:2926
+#: polyhost/forwarder.py:1032 polyhost/host.py:2926
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "正在下载 v{version}…"
 
-#: polyhost/forwarder.py:1062 polyhost/host.py:3051
+#: polyhost/forwarder.py:1073 polyhost/host.py:3051
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "无法启动更新中继程序；更新未完成。详细信息请查看日志。"
 
-#: polyhost/forwarder.py:1074 polyhost/host.py:3066
+#: polyhost/forwarder.py:1085 polyhost/host.py:3066
 msgid "Update failed"
 msgstr "更新失败"
 
-#: polyhost/forwarder.py:1074 polyhost/host.py:3066
+#: polyhost/forwarder.py:1085 polyhost/host.py:3066
 msgid "The update did not finish."
 msgstr "更新未完成。"
 

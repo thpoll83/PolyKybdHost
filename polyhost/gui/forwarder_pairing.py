@@ -20,7 +20,7 @@ def show_pairing_code(parent=None):
                         "\"Pair with the Keyboard Computer…\" and enter this code. "
                         "Anyone with this code can send window and agent reports to "
                         "this computer, so pass it on only over a channel you trust. "
-                        "\"Allow forwarders over the network\" must be on in Settings."),
+                        "\"Accept forwarders\" must be on in Settings."),
                       parent=parent)
     box.setInformativeText(code)
     copy = box.addButton(_("Copy"), QMessageBox.ActionRole)

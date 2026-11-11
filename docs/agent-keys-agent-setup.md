@@ -13,8 +13,8 @@ the host. Hooks are used, not MCP, because an MCP tool runs only when the model
 calls it. While the agent waits for a permission answer, the model is not running,
 so an MCP tool cannot report "waiting".
 
-Requirements: PolyKybdHost from branch `ccr-821a0b53-8mu20l` (PolyKybdHost#763),
-keyboard firmware with protocol 31 (qmk_firmware#424), and the setting turned on:
+Requirements: PolyKybdHost 1.22.0 or later, keyboard firmware 1.12.0 or later
+(protocol 31), and the setting turned on:
 
 ```
 polyctl settings set agents_enabled true
@@ -69,7 +69,8 @@ PreToolUse has no PostToolUse after 5 s.
 
 ## The quick way
 
-`polyctl agents hooks install claude-code` (or `codex`, `copilot`) writes the hooks
+`polyctl agents hooks install claude-code` (or `codex`, `copilot`, `gemini`, `qwen`,
+`opencode`) writes the hooks
 into the agent's own config file. It shows the diff and asks before it writes,
 keeps hooks you wrote yourself, keeps a copy as `<file>.polykybd.bak`, and puts the
 absolute path of `polyctl` into each command, so the agent's shell needs no PATH

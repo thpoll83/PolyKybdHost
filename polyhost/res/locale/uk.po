@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-11 15:59+0000\n"
+"POT-Creation-Date: 2026-11-11 21:08+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: uk\n"
@@ -18,17 +18,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: polyhost/device/command_ids.py:167
+#: polyhost/device/command_ids.py:168
 #, python-brace-format
 msgid "preset {value}"
 msgstr "пресет {value}"
 
-#: polyhost/device/command_ids.py:169
+#: polyhost/device/command_ids.py:170
 #, python-brace-format
 msgid "{minutes} min"
 msgstr "{minutes} хв"
 
-#: polyhost/device/command_ids.py:170
+#: polyhost/device/command_ids.py:171
 #, python-brace-format
 msgid "{seconds} sec"
 msgstr "{seconds} с"
@@ -341,11 +341,11 @@ msgstr "Перевірити оновлення хоста…"
 
 #: polyhost/forwarder.py:309
 msgid "Set Up Agent Hooks"
-msgstr ""
+msgstr "Налаштувати хуки агентів"
 
 #: polyhost/forwarder.py:311
 msgid "Pair with the Keyboard Computer…"
-msgstr ""
+msgstr "Сполучити з комп’ютером клавіатури…"
 
 #: polyhost/forwarder.py:393
 #, python-brace-format
@@ -380,80 +380,80 @@ msgstr "Ретрансляція на {target}"
 msgid "Cannot reach {target}"
 msgstr "Не вдається з’єднатися з {target}"
 
-#: polyhost/forwarder.py:553
-msgid "The hooks are written, but this forwarder runs without --report-rpc, so it cannot pass agent reports on. Start it with --report-rpc to show this computer's agents on the keys."
-msgstr ""
-
 #: polyhost/forwarder.py:556
-msgid "The hooks are written. On the keyboard computer, turn on Settings > AI agents > \"Agents from other computers\"."
-msgstr ""
+msgid "The hooks are written, but this forwarder runs without --report-rpc, so it cannot pass agent reports on. Start it with --report-rpc to show this computer's agents on the keys."
+msgstr "Хуки записано, але цей ретранслятор запущено без --report-rpc, тому він не може передавати відомості про агентів. Запустіть його з --report-rpc, щоб показувати агентів цього комп’ютера на клавішах."
 
-#: polyhost/forwarder.py:879
+#: polyhost/forwarder.py:559
+msgid "The hooks are written. On the keyboard computer, turn on Settings > AI agents > \"Agents from other computers\"."
+msgstr "Хуки записано. На комп’ютері клавіатури увімкніть Параметри > ШІ-агенти > «Агенти з інших комп’ютерів»."
+
+#: polyhost/forwarder.py:890
 msgid "PolyForwarder settings"
 msgstr "Параметри PolyForwarder"
 
-#: polyhost/forwarder.py:880
+#: polyhost/forwarder.py:891
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
 msgstr "Не вдалося зберегти параметри у файл параметрів, тому вони не наберуть чинності. Можливо, файл тримає відкритим інша програма. Спробуйте ще раз або перегляньте журнал."
 
-#: polyhost/forwarder.py:898
+#: polyhost/forwarder.py:909
 msgid "Paired. The forwarder uses the authenticated connection from its next start. Restart it now?"
-msgstr ""
+msgstr "Сполучено. Ретранслятор використовуватиме автентифіковане з’єднання з наступного запуску. Перезапустити його зараз?"
 
-#: polyhost/forwarder.py:913
+#: polyhost/forwarder.py:924
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
 msgstr "автентифікований RPC (порт {port})"
 
-#: polyhost/forwarder.py:915
+#: polyhost/forwarder.py:926
 msgid "legacy plaintext TCP relay"
 msgstr "застаріла незашифрована ретрансляція TCP"
 
-#: polyhost/forwarder.py:918
+#: polyhost/forwarder.py:929
 msgid "reaching the keyboard machine"
 msgstr "є зв’язок із комп’ютером клавіатури"
 
-#: polyhost/forwarder.py:919
+#: polyhost/forwarder.py:930
 msgid "not reaching the keyboard machine"
 msgstr "немає зв’язку з комп’ютером клавіатури"
 
-#: polyhost/forwarder.py:920
+#: polyhost/forwarder.py:931
 msgid "starting up"
 msgstr "запуск"
 
-#: polyhost/forwarder.py:922
+#: polyhost/forwarder.py:933
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
 msgstr "<b>Режим:</b> ретранслятор — до цього комп’ютера клавіатуру не під’єднано"
 
-#: polyhost/forwarder.py:923
+#: polyhost/forwarder.py:934
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
 msgstr "<b>Ціль:</b> {target}"
 
-#: polyhost/forwarder.py:925
+#: polyhost/forwarder.py:936
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
 msgstr "<b>Звіти про вікна:</b> {transport}"
 
-#: polyhost/forwarder.py:928
+#: polyhost/forwarder.py:939
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
 msgstr "<b>Файл хоста:</b> {path}"
 
-#: polyhost/forwarder.py:949
+#: polyhost/forwarder.py:960
 msgid "About PolyKybdHost (forwarder)"
 msgstr "Про PolyKybdHost (ретранслятор)"
 
 #. TRANSLATORS: the run mode in the About dialog's environment line
-#: polyhost/forwarder.py:956
+#: polyhost/forwarder.py:967
 msgid "forwarder"
 msgstr "ретранслятор"
 
-#: polyhost/forwarder.py:958
+#: polyhost/forwarder.py:969
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "Режим ретранслятора: до цього комп’ютера клавіатуру не під’єднано. Він стежить за активним вікном тут і передає його в PolyKybdHost, запущений на комп’ютері, до якого під’єднано клавіатуру."
 
-#: polyhost/forwarder.py:998
+#: polyhost/forwarder.py:1009
 msgid "Download, install, and restart the forwarder now?"
 msgstr "Завантажити, інсталювати й перезапустити ретранслятор зараз?"
 
@@ -480,16 +480,16 @@ msgstr "Скопійовано ✓"
 
 #: polyhost/gui/agent_hooks.py:23 polyhost/gui/agent_hooks.py:35
 msgid "Set Up Hooks"
-msgstr ""
+msgstr "Налаштувати хуки"
 
 #: polyhost/gui/agent_hooks.py:44
 msgid "The hooks are already set up."
-msgstr ""
+msgstr "Хуки вже налаштовано."
 
 #: polyhost/gui/agent_hooks.py:47
 #, python-brace-format
 msgid "Write the PolyKybd hooks into {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
-msgstr ""
+msgstr "Записати хуки PolyKybd у {files}? Ваші власні хуки зберігаються, а копію кожного файлу буде збережено як <file>.polykybd.bak."
 
 #: polyhost/gui/boot_loop_dialog.py:26
 msgid "Reboots the keyboard again and again to catch an intermittent boot hang. After each reboot it waits for the keyboard to come back and reads its crash record. It stops at the first boot that left a fresh crash record, at a boot that does not come back within a minute, or after the last round.<br><br>The keyboard does not type while this runs, and each round takes a few seconds."
@@ -1754,28 +1754,28 @@ msgstr "Відкинути всі незбережені зміни в '{label}'
 
 #: polyhost/gui/forwarder_pairing.py:16 polyhost/gui/forwarder_pairing.py:18
 msgid "Pair a Forwarder"
-msgstr ""
+msgstr "Сполучити ретранслятор"
 
 #: polyhost/gui/forwarder_pairing.py:19
-msgid "On the other computer, open the forwarder's menu, choose \"Pair with the Keyboard Computer…\" and enter this code. Anyone with this code can send window and agent reports to this computer, so pass it on only over a channel you trust. \"Allow forwarders over the network\" must be on in Settings."
-msgstr ""
+msgid "On the other computer, open the forwarder's menu, choose \"Pair with the Keyboard Computer…\" and enter this code. Anyone with this code can send window and agent reports to this computer, so pass it on only over a channel you trust. \"Accept forwarders\" must be on in Settings."
+msgstr "На іншому комп’ютері відкрийте меню ретранслятора, виберіть «Сполучити з комп’ютером клавіатури…» і введіть цей код. Будь-хто з цим кодом може надсилати відомості про вікна й агентів на цей комп’ютер, тому передавайте його лише надійним каналом. У параметрах має бути увімкнено «Приймати ретранслятори»."
 
 #: polyhost/gui/forwarder_pairing.py:26
 msgid "Copy"
-msgstr ""
+msgstr "Копіювати"
 
-#: polyhost/forwarder.py:897 polyhost/gui/forwarder_pairing.py:37
+#: polyhost/forwarder.py:908 polyhost/gui/forwarder_pairing.py:37
 #: polyhost/gui/forwarder_pairing.py:44 polyhost/gui/forwarder_pairing.py:51
 msgid "Pair with the Keyboard Computer"
-msgstr ""
+msgstr "Сполучити з комп’ютером клавіатури"
 
 #: polyhost/gui/forwarder_pairing.py:38
 msgid "Enter the code that \"Pair a Forwarder…\" shows on the keyboard computer (tray menu, AI Agents):"
-msgstr ""
+msgstr "Введіть код, який показує «Сполучити ретранслятор…» на комп’ютері клавіатури (меню в області сповіщень, «ШІ-агенти»):"
 
 #: polyhost/gui/forwarder_pairing.py:45
 msgid "That is not a pairing code: it has 64 letters and digits (a to f, 0 to 9), in groups of 8."
-msgstr ""
+msgstr "Це не код сполучення: він має 64 літери й цифри (від a до f, від 0 до 9), групами по 8."
 
 #: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:3281
 #: polyhost/host.py:3322 polyhost/host.py:3349
@@ -2955,7 +2955,7 @@ msgstr "Журнали"
 
 #: polyhost/gui/settings_dialog.py:102
 msgid "AI agents"
-msgstr ""
+msgstr "ШІ-агенти"
 
 #: polyhost/gui/settings_dialog.py:107 polyhost/host.py:884
 msgid "Developer"
@@ -3143,59 +3143,59 @@ msgstr "Графіка зі встановлених ігор"
 
 #: polyhost/gui/settings_dialog.py:159
 msgid "Show on the number row"
-msgstr ""
+msgstr "Показувати в ряду цифр"
 
 #: polyhost/gui/settings_dialog.py:160
 msgid "Find by window title"
-msgstr ""
+msgstr "Шукати за заголовком вікна"
 
 #: polyhost/gui/settings_dialog.py:161
 msgid "Dictation shortcut"
-msgstr ""
+msgstr "Комбінація клавіш для диктування"
 
 #: polyhost/gui/settings_dialog.py:162
 msgid "Agents from other computers"
-msgstr ""
+msgstr "Агенти з інших комп’ютерів"
 
 #: polyhost/gui/settings_dialog.py:163
 msgid "Raise agent windows on this computer"
-msgstr ""
+msgstr "Виводити вікна агентів на цьому комп’ютері"
 
 #: polyhost/gui/settings_dialog.py:164
 msgid "Stale after (minutes)"
-msgstr ""
+msgstr "Неактуальний через (хвилини)"
 
 #: polyhost/gui/settings_dialog.py:165
 msgid "Remove idle agents after (minutes)"
-msgstr ""
+msgstr "Вилучати неактивних агентів через (хвилини)"
 
 #: polyhost/gui/settings_dialog.py:174
 msgid "Shows the state of AI coding agents on the number row and, while the AI key is pressed, one card per agent. Needs keyboard firmware with protocol 31. Takes effect at the next keyboard connect."
-msgstr ""
+msgstr "Показує стан ШІ-агентів для програмування в ряду цифр, а поки натиснуто клавішу AI — по одній картці на агента. Потрібна мікропрограма клавіатури з протоколом 31. Набуває чинності під час наступного під’єднання клавіатури."
 
 #: polyhost/gui/settings_dialog.py:178
 msgid "Also finds agents that run in a terminal from the window title, without a hook. Not on macOS."
-msgstr ""
+msgstr "Також знаходить агентів, запущених у терміналі, за заголовком вікна, без хука. Не працює в macOS."
 
 #: polyhost/gui/settings_dialog.py:181
 msgid "Also shows agents that run on a computer with the forwarder. A key press brings forward the remote-desktop viewer that shows that computer (NoMachine, Remote Desktop, VNC). They report over the network endpoint for forwarders, which must be on too. Off: only this computer's agents."
-msgstr ""
+msgstr "Також показує агентів, запущених на комп’ютері з ретранслятором. Натискання клавіші виводить на передній план вікно віддаленого доступу, яке показує той комп’ютер (NoMachine, Віддалений робочий стіл, VNC). Вони передають відомості через мережевий порт для ретрансляторів, який теж має бути увімкнено. Вимкнено: лише агенти цього комп’ютера."
 
 #: polyhost/gui/settings_dialog.py:186
 msgid "On a computer with the forwarder: a key press on one of this computer's agents also brings the agent's own window forward here. Off: only the viewer on the keyboard's computer comes forward."
-msgstr ""
+msgstr "На комп’ютері з ретранслятором: натискання клавіші одного з агентів цього комп’ютера також виводить тут на передній план власне вікно агента. Вимкнено: на передній план виходить лише вікно віддаленого доступу на комп’ютері клавіатури."
 
 #: polyhost/gui/settings_dialog.py:190
 msgid "A working agent that reports nothing for this many minutes shows as stale (dim white). 0: never."
-msgstr ""
+msgstr "Агент, що працює й нічого не повідомляє стільки хвилин, показується як неактуальний (тьмяний білий). 0: ніколи."
 
 #: polyhost/gui/settings_dialog.py:193
 msgid "An idle or stale agent that reports nothing for this many minutes is removed and frees its key. An agent whose process ends is removed at once. 0: never."
-msgstr ""
+msgstr "Агент у простої або неактуальний, що нічого не повідомляє стільки хвилин, вилучається та звільняє свою клавішу. Агент, процес якого завершився, вилучається одразу. 0: ніколи."
 
 #: polyhost/gui/settings_dialog.py:196
 msgid "The shortcut the minus key sends in AI mode to start dictation, for example <cmd>+h or <ctrl>+<alt>+d. Empty: Win+H on Windows, nothing on macOS and Linux."
-msgstr ""
+msgstr "Комбінація клавіш, яку клавіша «мінус» надсилає в режимі AI, щоб почати диктування, наприклад <cmd>+h або <ctrl>+<alt>+d. Порожньо: Win+H у Windows, нічого в macOS і Linux."
 
 #: polyhost/gui/settings_dialog.py:200
 msgid "Tells the keyboard how this computer takes Unicode input (for example WinCompose), on connect and whenever it changes. Off: the keyboard keeps the mode it has stored."
@@ -3948,7 +3948,7 @@ msgstr "Час натискання та утримання…"
 
 #: polyhost/host.py:724
 msgid "AI Agents"
-msgstr ""
+msgstr "ШІ-агенти"
 
 #: polyhost/host.py:731
 msgid "Configure Keymap"
@@ -4053,7 +4053,7 @@ msgstr ""
 "Усі набори шрифтів із комплекту вже є на клавіатурі.\n"
 "Розробник → Пакет шрифтів → Перепрошити ВСІ набори примусово надсилає їх знову, якщо ковпачки досі відображаються неправильно."
 
-#: polyhost/forwarder.py:842 polyhost/host.py:1302
+#: polyhost/forwarder.py:853 polyhost/host.py:1302
 msgid "Config folder"
 msgstr "Тека конфігурації"
 
@@ -4176,7 +4176,7 @@ msgstr "автономно"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:917 polyhost/host.py:2200
+#: polyhost/forwarder.py:928 polyhost/host.py:2200
 msgid "paused"
 msgstr "призупинено"
 
@@ -4246,17 +4246,17 @@ msgstr[0] "<b>Призначення накладок:</b> {n} програма"
 msgstr[1] "<b>Призначення накладок:</b> {n} програми"
 msgstr[2] "<b>Призначення накладок:</b> {n} програм"
 
-#: polyhost/forwarder.py:934 polyhost/host.py:2239
+#: polyhost/forwarder.py:945 polyhost/host.py:2239
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>Конфігурація:</b> {path}"
 
-#: polyhost/forwarder.py:935 polyhost/host.py:2240
+#: polyhost/forwarder.py:946 polyhost/host.py:2240
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>Журнали:</b> {path}"
 
-#: polyhost/forwarder.py:953 polyhost/host.py:2294
+#: polyhost/forwarder.py:964 polyhost/host.py:2294
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "Протокол HID P{protocol}"
@@ -4281,41 +4281,41 @@ msgstr "Не вдалося встановити {language}: {error}"
 
 #: polyhost/host.py:2414
 msgid "Show on the Number Row"
-msgstr ""
+msgstr "Показувати в ряду цифр"
 
 #: polyhost/host.py:2422
 msgid "No agents reported"
-msgstr ""
+msgstr "Агенти нічого не повідомили"
 
 #: polyhost/host.py:2425
 msgid "working"
-msgstr ""
+msgstr "працює"
 
 #: polyhost/host.py:2425
 msgid "waiting"
-msgstr ""
+msgstr "очікує"
 
 #: polyhost/host.py:2425
 msgid "done"
-msgstr ""
+msgstr "завершено"
 
 #: polyhost/host.py:2426
 msgid "idle"
-msgstr ""
+msgstr "простоює"
 
 #: polyhost/host.py:2429
 #, python-brace-format
 msgid "Key {key}: {name}, {state}, {title}"
-msgstr ""
+msgstr "Клавіша {key}: {name}, {state}, {title}"
 
 #: polyhost/host.py:2434
 #, python-brace-format
 msgid "Page {page}, {text}"
-msgstr ""
+msgstr "Сторінка {page}, {text}"
 
 #: polyhost/host.py:2443
 msgid "Pair a Forwarder…"
-msgstr ""
+msgstr "Сполучити ретранслятор…"
 
 #: polyhost/host.py:2567
 msgid "No emoji search dictionaries shipped"
@@ -4366,8 +4366,8 @@ msgstr "Призначення накладок PolyKybd (*.poly.yaml)"
 msgid "Update firmware to v{version}…"
 msgstr "Оновити мікропрограму до v{version}…"
 
-#: polyhost/forwarder.py:992 polyhost/forwarder.py:1003
-#: polyhost/forwarder.py:1009 polyhost/host.py:2777 polyhost/host.py:2898
+#: polyhost/forwarder.py:1003 polyhost/forwarder.py:1014
+#: polyhost/forwarder.py:1020 polyhost/host.py:2777 polyhost/host.py:2898
 #: polyhost/host.py:2902
 msgid "Check for updates..."
 msgstr "Перевірити оновлення..."
@@ -4377,8 +4377,8 @@ msgstr "Перевірити оновлення..."
 msgid "Update to v{version} available"
 msgstr "Доступне оновлення до v{version}"
 
-#: polyhost/forwarder.py:1005 polyhost/forwarder.py:1011
-#: polyhost/forwarder.py:1022 polyhost/host.py:2856 polyhost/host.py:2896
+#: polyhost/forwarder.py:1016 polyhost/forwarder.py:1022
+#: polyhost/forwarder.py:1033 polyhost/host.py:2856 polyhost/host.py:2896
 #: polyhost/host.py:2903 polyhost/host.py:2926
 msgid "PolyKybdHost Update"
 msgstr "Оновлення PolyKybdHost"
@@ -4388,7 +4388,7 @@ msgstr "Оновлення PolyKybdHost"
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "Доступна версія {version}. Клацніть значок в області сповіщень, щоб оновити."
 
-#: polyhost/forwarder.py:979 polyhost/host.py:2882
+#: polyhost/forwarder.py:990 polyhost/host.py:2882
 msgid "Checking for updates..."
 msgstr "Перевірка оновлень..."
 
@@ -4396,12 +4396,12 @@ msgstr "Перевірка оновлень..."
 msgid "No updates available"
 msgstr "Оновлень немає"
 
-#: polyhost/forwarder.py:1006 polyhost/host.py:2897
+#: polyhost/forwarder.py:1017 polyhost/host.py:2897
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "У вас найновіша версія (v{version})."
 
-#: polyhost/forwarder.py:1012 polyhost/host.py:2904
+#: polyhost/forwarder.py:1023 polyhost/host.py:2904
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -4421,12 +4421,12 @@ msgstr ""
 msgid "Released: {date}"
 msgstr "Випущено: {date}"
 
-#: polyhost/forwarder.py:993 polyhost/host.py:2910
+#: polyhost/forwarder.py:1004 polyhost/host.py:2910
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "Доступна версія {version}."
 
-#: polyhost/forwarder.py:994 polyhost/host.py:2911
+#: polyhost/forwarder.py:1005 polyhost/host.py:2911
 msgid "Update PolyKybdHost"
 msgstr "Оновити PolyKybdHost"
 
@@ -4434,20 +4434,20 @@ msgstr "Оновити PolyKybdHost"
 msgid "Download, install, and restart now?"
 msgstr "Завантажити, інсталювати й перезапустити зараз?"
 
-#: polyhost/forwarder.py:1021 polyhost/host.py:2926
+#: polyhost/forwarder.py:1032 polyhost/host.py:2926
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "Завантаження v{version}…"
 
-#: polyhost/forwarder.py:1062 polyhost/host.py:3051
+#: polyhost/forwarder.py:1073 polyhost/host.py:3051
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "Не вдалося запустити ретранслятор оновлення; оновлення не завершено. Подробиці див. у журналі."
 
-#: polyhost/forwarder.py:1074 polyhost/host.py:3066
+#: polyhost/forwarder.py:1085 polyhost/host.py:3066
 msgid "Update failed"
 msgstr "Не вдалося оновити"
 
-#: polyhost/forwarder.py:1074 polyhost/host.py:3066
+#: polyhost/forwarder.py:1085 polyhost/host.py:3066
 msgid "The update did not finish."
 msgstr "Оновлення не завершено."
 
