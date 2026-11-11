@@ -2398,6 +2398,16 @@ class PolyCore(Observable):
         sends its raise back to that forwarder. (ok, agent or reason)."""
         from polyhost.services.agents.remote import sanitize_report
         if not self._agents_remote_on():
+            # The hook on the other computer must print nothing, so this log line
+            # is the only place the refusal shows. Once per computer per run.
+            machine = str((params or {}).get("machine") or "remote")[:64] \
+                if isinstance(params, dict) else "remote"
+            refused = self.__dict__.setdefault("_agents_remote_refused", set())
+            if machine not in refused and len(refused) < 32:
+                refused.add(machine)
+                self.log.info("Agent report from %s refused: turn on Settings > AI agents > "
+                              "\"Agents from other computers\" (agents_remote_enabled)",
+                              machine)
             return False, ("agents from other computers are off "
                            "(settings agents_enabled and agents_remote_enabled)")
         clean = sanitize_report(params)

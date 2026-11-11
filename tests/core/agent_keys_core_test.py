@@ -82,6 +82,11 @@ class AgentKeysCoreTest(unittest.TestCase):
         self.assertIn("agents_remote_enabled", msg)
         self.assertEqual(core.agents_list()["agents"], [])
         self.assertEqual(core.agent_relay_for("laptop"), {})
+        logged = [c for c in core.log.info.call_args_list if "refused" in str(c)]
+        self.assertEqual(len(logged), 1)
+        core.agents_report_remote(params)                        # logged once only
+        self.assertEqual(len([c for c in core.log.info.call_args_list
+                              if "refused" in str(c)]), 1)
         core = self._core(31, agents_remote_enabled=True)
         ok, _ = core.agents_report_remote(params)
         self.assertTrue(ok)
