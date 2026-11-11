@@ -118,7 +118,7 @@ class IconTilesTest(unittest.TestCase):
         sub = menu.addMenu("Fix Left/Right Side")
         a = menu.addAction("Reset overlays")
         menu.addSeparator()
-        b = menu.addAction("Flash firmware file (.bin)\u2026")
+        b = menu.addAction("Collect logs\u2026")
         hidden = menu.addAction("Allow access to the keyboard (udev rule)\u2026")
         hidden.setVisible(False)
         return menu, sub, [a, b, hidden]
@@ -151,20 +151,38 @@ class IconTilesTest(unittest.TestCase):
         menu, _sub, _actions = self._menu()
         grid = self._show(menu)[0].defaultWidget()
         self.assertNotIn("\u2026", grid.tiles[1].text())
-        self.assertIn("firmware", grid.tiles[1].text())
+        self.assertEqual(grid.tiles[1].text().replace("\n", " "), "Collect logs")
 
 
 class WrapCaptionTest(unittest.TestCase):
 
-    def test_long_text_wraps_and_is_elided_past_three_lines(self):
+    def test_long_text_wraps_to_two_lines_and_is_elided_past_them(self):
         from PyQt5.QtGui import QFontMetrics, QFont
         fm = QFontMetrics(QFont())
         out = menu_tiles.wrap_caption("Check for keyboard firmware update and more words here",
                                       fm, 90)
         lines = out.split("\n")
-        self.assertLessEqual(len(lines), 3)
+        self.assertEqual(len(lines), 2)
+        self.assertTrue(lines[1].endswith("\u2026"))
         for ln in lines:
             self.assertLessEqual(fm.horizontalAdvance(ln), 90)
+
+
+class FitCaptionWidthTest(unittest.TestCase):
+
+    def test_the_narrowest_width_that_keeps_every_caption_on_two_lines(self):
+        from PyQt5.QtGui import QFontMetrics, QFont
+        fm = QFontMetrics(QFont())
+        texts = ["About", "Read keyboard crash record"]
+        w = menu_tiles.fit_caption_width(texts, fm, 40, 400)
+        for t in texts:
+            self.assertNotIn("\u2026", menu_tiles.wrap_caption(t, fm, w))
+        self.assertIn("\u2026", menu_tiles.wrap_caption(texts[1], fm, w - 8))
+
+    def test_too_long_for_the_widest_gives_the_widest(self):
+        from PyQt5.QtGui import QFontMetrics, QFont
+        fm = QFontMetrics(QFont())
+        self.assertEqual(menu_tiles.fit_caption_width(["a " * 80], fm, 40, 120), 120)
 
 
 class ScaleTest(unittest.TestCase):
@@ -176,10 +194,12 @@ class ScaleTest(unittest.TestCase):
             self.assertEqual(ui_kit.px(18), 27)
             self.assertEqual(ui_kit.button_icon_size().width(), 27)
             self.assertEqual(ui_kit.headline_icon_px(), 54)
-            self.assertEqual(keycap_tiles.tile_scale(), 3)
+            self.assertEqual(keycap_tiles.tile_scale(), 2)       # whole, so sharp
+            self.assertEqual(keycap_tiles.tile_size().width(), 144)
+        with mock.patch.object(ui_kit, "ui_scale", return_value=2.0):
             self.assertEqual(keycap_tiles.tile_size().width(), 216)
         with mock.patch.object(ui_kit, "ui_scale", return_value=1.0):
-            self.assertEqual(keycap_tiles.tile_size().width(), 144)
+            self.assertEqual(keycap_tiles.tile_size().width(), 108)
 
     def test_the_scale_follows_the_style(self):
         from PyQt5.QtWidgets import QStyle

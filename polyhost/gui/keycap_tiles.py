@@ -18,21 +18,24 @@ from polyhost.services import fontpack_bundle
 from polyhost.services import glyph_script_preview as gsp
 
 PANEL_W, PANEL_H = 72, 40
-SCALE = 2      # whole pixels per OLED pixel at 100 %
+SCALE = 1.5    # screen pixels per OLED pixel at 100 % (108 x 60)
 
 
 def tile_scale():
-    """Whole pixels per OLED pixel at the display's scale (2 at 100 %, 3 at 150 %).
+    """Screen pixels per OLED pixel at the display's scale.
 
-    A whole number keeps every OLED pixel square and sharp.
+    From 2 up the factor is a whole number, which keeps every OLED pixel square
+    and sharp: 2 at 150 %, 3 at 200 %. Below that (100 %, 125 %) it stays 1.5.
+    At 2 per OLED pixel at 100 % (3 at 150 %) the tiles were too big.
     """
     from polyhost.gui.ui_kit import ui_scale
-    return max(SCALE, int(round(SCALE * ui_scale())))
+    f = SCALE * ui_scale()
+    return float(int(f)) if f >= 2 else SCALE
 
 
 def tile_size():
     s = tile_scale()
-    return QSize(PANEL_W * s, PANEL_H * s)
+    return QSize(int(round(PANEL_W * s)), int(round(PANEL_H * s)))
 
 # The bigger legend faces in latinbig.plyf: ASCII relocated to these bases
 # (GlyphSize MEDIUM and LARGE). SMALL is the resident face.
@@ -67,8 +70,8 @@ def _paste_centred(panel, img, dx=0, dy=0, level=255):
 
 def to_icon(panel):
     """A QIcon of the panel at tile size, scaled without smoothing."""
-    s = tile_scale()
-    big = panel.resize((PANEL_W * s, PANEL_H * s), Image.NEAREST).convert("RGB")
+    size = tile_size()
+    big = panel.resize((size.width(), size.height()), Image.NEAREST).convert("RGB")
     qimg = QImage(big.tobytes(), big.width, big.height, big.width * 3,
                   QImage.Format_RGB888).copy()
     return QIcon(QPixmap.fromImage(qimg))
