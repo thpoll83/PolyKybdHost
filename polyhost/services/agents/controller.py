@@ -145,12 +145,25 @@ class AgentKeysController:
         if extra_ok:
             flags |= FLAG_EXTRA_CARDS
         keys = (tuple(int(s) for s in states), flags, tuple(slots))
-        if keys != self._pushed_keys:
-            ok, msg = keeb.ai_set_keys(list(keys[0]), keys[1], list(keys[2]))
-            if ok:
-                self._pushed_keys = keys     # only what the keyboard confirmed
-            else:
-                self.log.debug("Agent keys not pushed: %s", msg)
+        # Sent on EVERY pass, not only on a change: the keyboard clears them at USB
+        # suspend (ai_reset_keys) without the host seeing a disconnect, and this is
+        # what puts them back. The firmware redraws only when they differ.
+        ok, msg = keeb.ai_set_keys(list(keys[0]), keys[1], list(keys[2]))
+        if ok:
+            self._pushed_keys = keys         # only what the keyboard confirmed
+        elif keys != self._pushed_keys:
+            self.log.debug("Agent keys not pushed: %s", msg)
+
+    def clear_keyboard(self, keeb) -> bool:
+        """Turn every agent key off on the keyboard (host shutdown, feature turned
+        off), so no light stays on that nothing updates. The cards stay in the pool;
+        the next connect sends everything again."""
+        ok, msg = keeb.ai_set_keys([int(AgentState.EMPTY)] * NUMBER_KEYS, 0,
+                                   [NO_SLOT] * CARD_COUNT)
+        if not ok:
+            self.log.debug("Agent keys not cleared: %s", msg)
+        self.forget_device()
+        return ok
 
     def _card(self, keeb, cache, index, drawn, render) -> int:
         """The pool slot of card `index` showing `drawn`, uploading it when the slot

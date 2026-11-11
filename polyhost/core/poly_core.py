@@ -527,6 +527,7 @@ class PolyCore(Observable):
                                      lambda c: face.restore(self.keeb), timeout=2)
             except Exception as e:  # never let it break shutdown; the next connect retries
                 self.log.debug("Keycap face restore failed: %s: %s", type(e).__name__, e)
+        self._clear_agent_keys(sync=True)
         try:
             self.worker.run_sync("save_mru", lambda c: self.keeb.save_mru(), timeout=2)
         except Exception as e:  # never let a save attempt break shutdown
@@ -2375,6 +2376,21 @@ class PolyCore(Observable):
         self._agent_keys.note_state_generation(getattr(self.keeb, "state_generation", None))
         self._agent_keys.sync(self.keeb, cancel)
 
+    def _clear_agent_keys(self, sync: bool = False) -> None:
+        """Turn the agent keys off on a connected keyboard that has them (host
+        shutdown, feature turned off). Never raises."""
+        ctl = getattr(self, "_agent_keys", None)
+        if ctl is None or not self.connected or not self.keeb.supports("agent_keys"):
+            return
+        try:
+            if sync:
+                self.worker.run_sync("agents_clear", lambda c: ctl.clear_keyboard(self.keeb),
+                                     timeout=2)
+            else:
+                self.worker.submit("agents_clear", lambda c: ctl.clear_keyboard(self.keeb))
+        except Exception as e:  # never let it break shutdown; the keyboard clears at suspend
+            self.log.debug("Agent keys clear failed: %s: %s", type(e).__name__, e)
+
     def agents_list(self) -> dict:
         """No device I/O: the registry and the page the keyboard shows."""
         return {"agents": self.agents.snapshot(), "page": self._agent_keys.page,
@@ -3204,6 +3220,10 @@ class PolyCore(Observable):
             # dialog too). Not on firmware without slot 9: the pass would flash only
             # the OTHER stale bundles.
             self.sync_fontpack()
+        if ((keys is None or "agents_enabled" in keys)
+                and not self.poly_settings.get("agents_enabled")):
+            # Turned off: the periodic stops, so it cannot clear the keys itself.
+            self._clear_agent_keys()
         from polyhost.services import game_assets
         if keys is None or game_assets.SETTING_KEYS.intersection(keys):
             # The next send of an opted-in overlay builds again; reset() makes

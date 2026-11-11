@@ -434,7 +434,7 @@ class ControllerTest(unittest.TestCase):
         self.c._run_dictate = lambda: self.c.dictate()
         self.kb = _FakeKeeb()
 
-    def test_pushes_only_changes(self):
+    def test_pushes_every_pass_cards_only_on_change(self):
         self.r.report("claude-code", "a", "working")
         self.c.sync(self.kb)
         # Slots borrowed from the empty cache: key 1, '-', '+' in that order.
@@ -444,15 +444,29 @@ class ControllerTest(unittest.TestCase):
         self.assertEqual(slots[:2], [0, NO_SLOT])
         self.assertEqual(slots[10:], [1, 2])
         self.assertEqual(flags, 0x08)                    # extra cards only: one page, none waits
-        self.c.sync(self.kb)
-        self.assertEqual(len(self.kb.keys), 1)            # nothing changed: nothing sent
-        self.r.report("claude-code", "a", "waiting")
         self.kb.cards.clear()
+        self.c.sync(self.kb)
+        # The keys go out again (a keyboard that cleared them at USB suspend gets
+        # them back); the cards do not, they did not change.
+        self.assertEqual(len(self.kb.keys), 2)
+        self.assertEqual(self.kb.keys[-1], self.kb.keys[0])
+        self.assertEqual(self.kb.cards, {})
+        self.r.report("claude-code", "a", "waiting")
         self.c.sync(self.kb)
         # The card shows the state, and '+' shows the waiting count.
         self.assertEqual(sorted(self.kb.cards), [0, 2])
         self.assertEqual(self.kb.keys[-1][1], 0x08 | 0x04)
-        self.assertEqual(len(self.kb.keys), 2)
+
+    def test_clear_keyboard_turns_every_key_off(self):
+        self.r.report("claude-code", "a", "working")
+        self.c.sync(self.kb)
+        self.assertTrue(self.c.clear_keyboard(self.kb))
+        states, flags, slots = self.kb.keys[-1]
+        self.assertEqual((states, flags, slots),
+                         ([AgentState.EMPTY] * 10, 0, [NO_SLOT] * 12))
+        self.kb.cards.clear()
+        self.c.sync(self.kb)                             # the next connect: all again
+        self.assertEqual(sorted(self.kb.cards), [0, 1, 2])
 
     def test_reconnect_resends(self):
         self.r.report("codex", "a", "working")

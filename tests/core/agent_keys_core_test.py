@@ -94,6 +94,26 @@ class AgentKeysCoreTest(unittest.TestCase):
         core = self._core(31, agents_enabled=False, agents_remote_enabled=True)
         self.assertFalse(core.agents_report_remote(params)[0])
 
+    def test_shutdown_and_turning_off_clear_the_keys(self):
+        core = self._core(31)
+        fw = core.keeb.firmware
+        core.agents_report({"vendor": "codex", "session_id": "a", "state": "working"})
+        self._pass(core)
+        self.assertEqual(fw.ai_states[0], AgentState.WORKING)
+        core.shutdown()
+        self.assertEqual(list(fw.ai_states), [AgentState.EMPTY] * 10)
+
+        core = self._core(31)
+        fw = core.keeb.firmware
+        core.agents_report({"vendor": "codex", "session_id": "a", "state": "waiting"})
+        self._pass(core)
+        with mock.patch.object(PolySettings, "get",
+                               lambda s, n: False if n == "agents_enabled" else None):
+            core.note_settings_changed({"agents_enabled"})
+        core.worker.run_sync("barrier", lambda c: None, timeout=30)
+        self.assertEqual(list(fw.ai_states), [AgentState.EMPTY] * 10)
+        self.assertEqual(fw.ai_flags, 0)
+
     def test_off_sends_nothing(self):
         core = self._core(31, agents_enabled=False)
         core.agents_report({"vendor": "codex", "session_id": "a", "state": "working"})
