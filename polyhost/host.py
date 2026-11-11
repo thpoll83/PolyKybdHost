@@ -784,7 +784,6 @@ class PolyHost(QApplication):
         self.updates_menu.addAction(self.fontpack_update_action)
         # noinspection PyUnresolvedReferences
         self.updates_menu.aboutToShow.connect(self._refresh_fontpack_action)
-        menu_tiles.add_icon_tiles_on_first_show(self.updates_menu)
         self._pending_fw_release = None
         # The tray tooltip has TWO writers (a font-pack flash's percentage and
         # the pending-update marker). This holds the flash's claim; see
@@ -838,9 +837,6 @@ class PolyHost(QApplication):
             self.udev_action = QAction(get_icon("usb.svg"),
                                        _("Allow access to the keyboard (udev rule)\u2026"),
                                        parent=self)
-            # The short caption under its icon in the tiled Updates menu
-            # (gui/menu_tiles.py): the full label does not fit on two lines.
-            self.udev_action.setIconText(_("Keyboard access"))
             # noinspection PyUnresolvedReferences
             self.udev_action.triggered.connect(self._on_install_udev_clicked)
             self.udev_action.setVisible(False)   # until the first check
@@ -862,7 +858,6 @@ class PolyHost(QApplication):
         self.shell_title_action = QAction(get_icon("terminal.svg"),
                                           _("Set up the terminal and editors\u2026"),
                                           parent=self)
-        self.shell_title_action.setIconText(_("Terminal and editors"))
         # noinspection PyUnresolvedReferences
         self.shell_title_action.triggered.connect(self.open_shell_title_dialog)
         self.updates_menu.addAction(self.shell_title_action)
@@ -919,7 +914,6 @@ class PolyHost(QApplication):
 
         # --- Help & About: the read-only, always-available corner --------------
         self.help_menu = self.menu.addMenu(get_icon("help.svg"), _("Help && About"))
-        menu_tiles.add_icon_tiles_on_first_show(self.help_menu)
         self.help_menu.addAction(self.about)
         self.help_menu.addAction(self.report_problem_action)
         self.help_menu.addAction(self.log_dialog)
