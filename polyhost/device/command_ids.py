@@ -107,6 +107,10 @@ class Cmd(Enum):
     # bits 12..14 segment 0..5; data[4..63] 60 bytes of the 360-byte image. Written
     # straight into the pool slot, not through the display->pool mapping.
     AI_CARD = 46
+    # Key attention (protocol v32+): the focus ripple on one key. data[2] op: 0 START
+    # (data[3] row, data[4] col, data[5] count, 0 = until cancelled, data[6] period
+    # in 100 ms units, CLOSED 23..100), 1 CANCEL. firmware anim/key_attention.h.
+    KEY_ATTENTION = 47
 
 
 

@@ -436,6 +436,19 @@ class PolyKybdMock:
     def ai_query(self):
         return self._ai_call("ai_query")
 
+    def _attention_call(self, name, *args):
+        self._log_call(name, *args)
+        if (refusal := self._too_old("key_attention")):
+            return False, refusal
+        self._wire.protocol_version = self.protocol_version
+        return getattr(self._wire, name)(*args)
+
+    def key_attention(self, row, col, count=3, period_ms=4000):
+        return self._attention_call("key_attention", row, col, count, period_ms)
+
+    def key_attention_cancel(self):
+        return self._attention_call("key_attention_cancel")
+
     def ai_set_keys(self, states, flags, slots):
         return self._ai_call("ai_set_keys", states, flags, slots)
 

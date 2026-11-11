@@ -159,6 +159,11 @@ AUTO_SHIFT_MIN_PROTOCOL = 30
 # AI_CARD): the number row shows AI agent states and, in AI mode, agent cards.
 # docs/agent-registry-plan.md.
 AGENT_KEYS_MIN_PROTOCOL = 31
+# Minimum firmware PROTOCOL_VERSION for key attention (cmd 47): the focus ripple of
+# the first-run tutorial on any key, for a program tutorial or the layout editor.
+KEY_ATTENTION_MIN_PROTOCOL = 32
+KEY_ATTENTION_PERIOD_MIN_MS = 2300    # one ripple runs 2.2 s
+KEY_ATTENTION_PERIOD_MAX_MS = 10000
 AGENT_KEY_COUNT = 10
 # Card slots: the 10 number keys, then '-' (dictation) and '+' (next waiting agent).
 AGENT_CARD_COUNT = 12
@@ -209,6 +214,7 @@ FEATURE_MIN_PROTOCOL = {
     "tap_terms": TAP_TERMS_MIN_PROTOCOL,
     "auto_shift": AUTO_SHIFT_MIN_PROTOCOL,
     "agent_keys": AGENT_KEYS_MIN_PROTOCOL,
+    "key_attention": KEY_ATTENTION_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -936,6 +942,42 @@ class PolyKybd:
         if not (len(reply) > 7 and reply[2:3] == b'.'):
             return False, "The keyboard refused that tap-hold timing"
         return True, self._parse_tap_terms(reply)
+
+    # ---- key attention (cmd 47, v32+) ----------------------------------------
+
+    def key_attention(self, row: int, col: int, count: int = 3,
+                      period_ms: int = 4000) -> tuple[bool, str]:
+        """Run the focus ripple on the key at matrix (row, col) `count` times (0 =
+        until key_attention_cancel()), one every `period_ms` (2300..10000 ms, in
+        100 ms steps). The keyboard NACKs a key without a display."""
+        if not self.supports("key_attention"):
+            return False, (f"Firmware protocol too old for key attention "
+                           f"(need v{KEY_ATTENTION_MIN_PROTOCOL}+). Please update the "
+                           f"PolyKybd firmware.")
+        if not (0 <= row < 256 and 0 <= col < 256 and 0 <= count < 256):
+            return False, f"Invalid key attention request: row {row}, col {col}, count {count}"
+        if not KEY_ATTENTION_PERIOD_MIN_MS <= period_ms <= KEY_ATTENTION_PERIOD_MAX_MS:
+            return False, (f"The period must be {KEY_ATTENTION_PERIOD_MIN_MS}.."
+                           f"{KEY_ATTENTION_PERIOD_MAX_MS} ms, not {period_ms}")
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.KEY_ATTENTION, 0, row, col, count, round(period_ms / 100)),
+            100, expect(Cmd.KEY_ATTENTION))
+        if not result:
+            return False, "The keyboard did not answer the key attention request"
+        if reply[2:3] != b'.':
+            return False, f"The keyboard refused key attention on row {row}, col {col}"
+        return True, "ok"
+
+    def key_attention_cancel(self) -> tuple[bool, str]:
+        """End a key attention request; a ripple already running finishes."""
+        if not self.supports("key_attention"):
+            return False, (f"Firmware protocol too old for key attention "
+                           f"(need v{KEY_ATTENTION_MIN_PROTOCOL}+).")
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.KEY_ATTENTION, 1), 100, expect(Cmd.KEY_ATTENTION))
+        if not (result and reply[2:3] == b'.'):
+            return False, "The keyboard did not cancel the key attention request"
+        return True, "ok"
 
     # ---- agent keys (cmd 45 / 46, v31+) ---------------------------------------
 

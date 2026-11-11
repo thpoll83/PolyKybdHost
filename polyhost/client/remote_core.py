@@ -348,6 +348,13 @@ class RemoteCore(Observable):
     def get_tap_terms(self):
         return self._device(p.M_TAP_TERMS_GET)
 
+    def key_attention(self, row, col, count=3, period_ms=4000):
+        return self._device(p.M_KEY_ATTENTION, {"row": row, "col": col, "count": count,
+                                                "period_ms": period_ms})
+
+    def key_attention_cancel(self):
+        return self._device(p.M_KEY_ATTENTION, {"cancel": True})
+
     def agents_list(self):
         return self._rpc_call(p.M_AGENTS_LIST) or {}
 

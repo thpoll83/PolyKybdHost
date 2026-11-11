@@ -91,6 +91,8 @@ CALLS = {
     "set_idle_style": [(list(IdleStyle)[0],)], "get_idle_style": [()],
     "set_idle_timeout": [(IdleTimeout.MIN_2,)], "get_idle_timeout": [()],
     "get_tap_terms": [()],
+    "key_attention": [(0, 1), (5, 3, 0, 2300), (2, 2, 255, 10000)],
+    "key_attention_cancel": [()],
     "ai_query": [()],
     "ai_set_keys": [([1, 2, 3, 4, 5, 0, 0, 0, 0, 0], 0x0F, [588, 589, 590, 591, 592] + [0xFFFF] * 5 + [598, 599])],
     "ai_read_events": [(0,), (3,)],

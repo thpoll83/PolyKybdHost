@@ -472,6 +472,23 @@ def _cmd_tap_terms(client, args):
     return 0
 
 
+def _cmd_attention(client, args):
+    """Run the focus ripple on a key (firmware v32+), or cancel it."""
+    if args.cancel:
+        client.call(protocol.M_KEY_ATTENTION, {"cancel": True})
+        print("key attention cancelled")
+        return 0
+    if args.row is None or args.col is None:
+        print("polyctl: give ROW and COL, or --cancel", file=sys.stderr)
+        return 2
+    client.call(protocol.M_KEY_ATTENTION, {"row": args.row, "col": args.col,
+                                           "count": args.count, "period_ms": args.period_ms})
+    times = "until cancelled" if args.count == 0 else f"{args.count} time(s)"
+    print(f"key attention on row {args.row}, col {args.col}: {times}, "
+          f"every {args.period_ms} ms")
+    return 0
+
+
 def _cmd_agents(client, args):
     """List, report, label or forget AI agent sessions (services/agents)."""
     if args.agents_cmd == "list":
@@ -1396,6 +1413,20 @@ def build_parser():
              "This is the delay before the idle STYLE engages, not the 20-minute "
              "display-off deadline, which is fixed.")
     p_idle_timeout.set_defaults(func=_cmd_idle_timeout)
+
+    p_attention = sub.add_parser(
+        "attention", help="run the first-run tutorial's focus ripple on a key, by its "
+                          "matrix position (firmware v32+, split72)")
+    p_attention.add_argument("row", type=int, nargs="?", default=None)
+    p_attention.add_argument("col", type=int, nargs="?", default=None)
+    p_attention.add_argument("--count", type=int, default=3,
+                             help="ripples to run, 0 = until --cancel (default 3)")
+    p_attention.add_argument("--period-ms", type=int, default=4000,
+                             help="time from one ripple to the next, 2300..10000 ms in "
+                                  "100 ms steps (default 4000)")
+    p_attention.add_argument("--cancel", action="store_true",
+                             help="end the running request; a ripple already running finishes")
+    p_attention.set_defaults(func=_cmd_attention)
 
     p_tap_terms = sub.add_parser(
         "tap-terms",

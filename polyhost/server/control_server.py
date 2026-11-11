@@ -215,6 +215,10 @@ class ControlServer(MpcListenerServer):
                 params.get("tapping_term"), params.get("flow_tap_term"),
                 params.get("auto_shift"), params.get("auto_shift_ms"))),
             p.M_TAP_TERMS_GET: lambda conn, params: _unwrap(c.get_tap_terms()),
+            p.M_KEY_ATTENTION: lambda conn, params: _unwrap(
+                c.key_attention_cancel() if params.get("cancel") else c.key_attention(
+                    params["row"], params["col"], params.get("count", 3),
+                    params.get("period_ms", 4000))),
             p.M_AGENTS_LIST: lambda conn, params: c.agents_list(),
             p.M_AGENTS_REPORT: lambda conn, params: _unwrap(c.agents_report(params)),
             p.M_AGENTS_LABEL: lambda conn, params: _unwrap(c.agents_label(

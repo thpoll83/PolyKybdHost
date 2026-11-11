@@ -127,6 +127,7 @@ CMD_MIN_PROTOCOL: dict[int, int] = {
     Cmd.TAP_TERMS.value: 29,
     Cmd.AI.value: 31,
     Cmd.AI_CARD.value: 31,
+    Cmd.KEY_ATTENTION.value: 32,
     fw.CMD_FW_UP_BEGIN: 0,
     fw.CMD_FW_UP_CHUNK: 0,
     fw.CMD_FW_UP_COMMIT: 0,
@@ -363,6 +364,7 @@ class MockFirmware:
         self.handedness_left: bool | None = None
         self.settings_bytes: dict[int, int] = {}   # cmd -> stored value byte
         self.glyph_placement = 0                   # cmd 30 v26: 0 centre, 1 top-left
+        self.key_attention = None                 # cmd 47: (row, col, count, period ms)
         self.layer_names = ["Qwerty", "Stag!", "ColemkDH", "Neo", "Workman", "Fn", "Numpad", "Utility"]
 
         # Font-pack slots: {bundle id: content_version}; data only once flashed.
@@ -655,6 +657,17 @@ class MockFirmware:
             return _reply(p[1], False)
         card = self.ai_cards.setdefault(slot, bytearray(360))
         card[segment * 60:(segment + 1) * 60] = bytes(p[4:64]).ljust(60, b"\x00")
+        return _reply(p[1])
+
+    def _key_attention(self, p):
+        """cmd 47: op 0 START (row, col, count, period / 100 ms, CLOSED 23..100),
+        op 1 CANCEL. The emulated keyboard has a display on every key."""
+        if p[2] == 1:
+            self.key_attention = None
+            return _reply(p[1])
+        if p[2] != 0 or p[3] >= 12 or p[4] >= 8 or not 23 <= p[6] <= 100:
+            return _reply(p[1], False)
+        self.key_attention = (p[3], p[4], p[5], p[6] * 100)
         return _reply(p[1])
 
     def _default_layer(self, p):
@@ -1140,6 +1153,7 @@ class MockFirmware:
         Cmd.TAP_TERMS.value: _tap_terms,
         Cmd.AI.value: _ai,
         Cmd.AI_CARD.value: _ai_card,
+        Cmd.KEY_ATTENTION.value: _key_attention,
         Cmd.GET_DEFAULT_LAYER.value: _default_layer,
         Cmd.ENTER_BOOTLOADER.value: _bootloader,
         Cmd.REBOOT.value: _reboot,

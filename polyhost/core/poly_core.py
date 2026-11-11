@@ -2565,6 +2565,20 @@ class PolyCore(Observable):
             lambda c, t=tap, f=flow, a=as_on, m=as_ms: self.keeb.set_tap_terms(
                 tapping_term=t, flow_tap_term=f, auto_shift=a, auto_shift_ms=m))
 
+    def key_attention(self, row, col, count=3, period_ms=4000):
+        """The focus ripple on the key at matrix (row, col), `count` times (0 = until
+        cancelled). (ok, msg)."""
+        try:
+            row, col, count, period_ms = int(row), int(col), int(count), int(period_ms)
+        except (TypeError, ValueError):
+            return False, f"Invalid key attention request: {row!r}, {col!r}"
+        return self._device_call(
+            "key_attention", lambda c: self.keeb.key_attention(row, col, count, period_ms))
+
+    def key_attention_cancel(self):
+        return self._device_call("key_attention_cancel",
+                                 lambda c: self.keeb.key_attention_cancel())
+
     def get_tap_terms(self):
         """(ok, {"tapping_term", "flow_tap_term", "flow_tap_available",
         "auto_shift_available", "auto_shift", "auto_shift_ms"})."""

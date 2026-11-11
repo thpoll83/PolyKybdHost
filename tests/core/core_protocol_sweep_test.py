@@ -37,6 +37,7 @@ CORE_CALLS = {
     "get_idle_style": (), "set_idle_style": (0,),
     "get_idle_timeout": (), "set_idle_timeout": (IdleTimeout.MIN_2.value,),
     "get_tap_terms": (), "set_tap_terms": (250, 120),
+    "key_attention": (0, 1), "key_attention_cancel": (),
     "set_idle": (True,),
     "keymap_buffer": (), "keymap_default_layer": (), "keymap_layer_count": (),
     "keymap_layer_names": (), "keymap_set": (0, 0, 0, 4), "reset_dynamic_keymap": (),
