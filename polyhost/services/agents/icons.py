@@ -120,6 +120,41 @@ def working():
     return _stamp(mask, _ARROW_HEAD, _C, 0)
 
 
+# ---- drawn at 16 px for the agent cards (scaling the 19 px shapes thinned them) ----
+
+def _grid16(fn):
+    """A 16 x 16 mask; `fn(dx, dy)` gets the pixel centre's offset from the middle."""
+    import numpy as np
+    out = np.zeros((16, 16), dtype=bool)
+    for y in range(16):
+        for x in range(16):
+            out[y, x] = fn(x + 0.5 - 8.0, y + 0.5 - 8.0)
+    return out
+
+
+_QUESTION_16 = [
+    ".###.",
+    "##.##",
+    "...##",
+    "..##.",
+    "..##.",
+    ".....",
+    "..##.",
+]
+
+
+def stale_16():
+    """A 2 px ring with '?', drawn at 16 px."""
+    ring = _grid16(lambda dx, dy: 5.8 ** 2 < dx * dx + dy * dy <= 7.8 ** 2)
+    return _stamp(ring, _QUESTION_16, 5, 4)
+
+
+def idle_16():
+    """The crescent moon drawn at 16 px."""
+    return _grid16(lambda dx, dy: dx * dx + dy * dy <= 7.2 ** 2
+                   and (dx - 3.5) ** 2 + (dy + 3) ** 2 > 6.4 ** 2)
+
+
 # Points right, 7 rows: the head of the 16 px refresh arrow.
 _ARROW_HEAD_16 = ["#...", "##..", "###.", "####", "###.", "##..", "#..."]
 
