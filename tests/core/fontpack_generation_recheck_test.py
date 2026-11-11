@@ -74,6 +74,16 @@ class FontpackRecheckOnGenerationTest(unittest.TestCase):
         self._probe()
         self.assertEqual(self._checks(), [])
 
+    def test_a_change_during_a_flash_is_checked_once_the_flash_ends(self):
+        self.core._fontpack_flash_in_progress = True
+        self.fw.bundle_versions[0] = self.fw.bundle_versions.get(0, 0) + 1
+        self.fw.state_generation += 1
+        self._probe()
+        self.assertEqual(self._checks(), [], "nothing while the flash runs")
+        self.core._fontpack_flash_in_progress = False
+        self._probe()                                  # the counter did not move again
+        self.assertEqual(self._checks(), ["fontpack_autocheck"])
+
     def test_with_auto_flash_off_the_recheck_shows_the_notice_instead(self):
         self.values["fontpack_auto_flash"] = False
         self.fw.bundle_versions[0] = self.fw.bundle_versions.get(0, 0) + 1

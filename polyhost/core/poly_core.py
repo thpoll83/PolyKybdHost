@@ -3689,10 +3689,14 @@ class PolyCore(Observable):
         if not steady or gen is None or gen == getattr(self, "_fontpack_seen_generation", None):
             self._fontpack_seen_generation = gen
             return
-        self._fontpack_seen_generation = gen
         if (getattr(self, "_fontpack_check_held", False)
-                or getattr(self, "_fontpack_flash_in_progress", False)
-                or not self.keeb.supports("fontpack")):
+                or getattr(self, "_fontpack_flash_in_progress", False)):
+            # Not consumed: the counter stays unseen, so the first probe after the
+            # flash or the hold compares the block again. Recording it here lost a
+            # change that arrived during a flash once the block was stable.
+            return
+        self._fontpack_seen_generation = gen
+        if not self.keeb.supports("fontpack"):
             return
         versions = dict(getattr(self.keeb, "fontpack_bundle_versions", None) or {})
         checked = getattr(self, "_fontpack_checked_versions", None)
