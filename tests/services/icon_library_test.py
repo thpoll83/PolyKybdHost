@@ -257,18 +257,26 @@ class CheckToleratesPendingIconsTest(unittest.TestCase):
         ids = yaml.safe_load(bil.IDS_FILE.read_text(encoding="utf-8"))
         _ver, frames = il.parse(bil.PLYI_FILE.read_bytes())
         manifest = json.loads(bil.MANIFEST.read_text(encoding="utf-8"))
-        # The library as it was before its two newest icons were appended.
-        self.dropped = [e["name"] for e in ids[-2:]]
-        self.dropped_keys = {e["key"] for e in ids[-2:]}
-        old = il.build(frames[:-2], 1)
+        # The library as it was before two of its live icons were added. They
+        # are not the last two ids: after the one-time renumbering by usage
+        # (content v8) the ids end with retired icons, which no template draws.
+        # So drop two live entries anywhere and renumber the rest, which keeps
+        # the table contiguous as a real one-rebuild-behind library is.
+        live = {bil._key(f) for f in _selected(bil)}
+        drop = {k for k, e in enumerate(ids) if e["key"] in live}
+        drop = set(sorted(drop)[-2:])
+        self.dropped = [ids[k]["name"] for k in sorted(drop)]
+        self.dropped_keys = {ids[k]["key"] for k in drop}
+        kept = [e for k, e in enumerate(ids) if k not in drop]
+        ids = [dict(e, id=n) for n, e in enumerate(kept)]
+        self.live_ids = [e["id"] for e in ids if e["key"] in live]
+        old = il.build([f for k, f in enumerate(frames) if k not in drop], 1)
         entry = next(b for b in manifest["bundles"] if b["id"] == "icons")
         entry.update(content_version=1, size=len(old),
                      sha256=hashlib.sha256(old).hexdigest()[:16])
         self.ids_path, self.plyi, self.man = tmp / "ids.yaml", tmp / "i.plyi", tmp / "b.json"
         self.ids_path.write_text(
-            "# Frozen overlay icon ids (HID cmd 42). APPEND-ONLY: an id never changes\n"
-            "# and a retired icon keeps its entry. Written by scripts/build_icon_library.py.\n"
-            + yaml.safe_dump(ids[:-2], sort_keys=False, width=200), encoding="utf-8")
+            bil.IDS_HEADER + yaml.safe_dump(ids, sort_keys=False, width=200), encoding="utf-8")
         self.plyi.write_bytes(old)
         self.man.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
         for name, path in (("IDS_FILE", self.ids_path), ("PLYI_FILE", self.plyi),
@@ -297,7 +305,11 @@ class CheckToleratesPendingIconsTest(unittest.TestCase):
             self.assertIn(name, out)
 
     def test_a_library_that_disagrees_with_its_id_table_fails(self):
-        self.plyi.write_bytes(il.build(il.parse(self.plyi.read_bytes())[1][:-1], 1))
+        # Two live icons' glyphs swapped: each id now names the other's pixels.
+        frames = list(il.parse(self.plyi.read_bytes())[1])
+        a, b = self.live_ids[0], self.live_ids[1]
+        frames[a], frames[b] = frames[b], frames[a]
+        self.plyi.write_bytes(il.build(frames, 1))
         rc, out = self._check()
         self.assertEqual(rc, 1, out)
 

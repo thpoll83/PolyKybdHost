@@ -194,6 +194,15 @@ def select_with_usage() -> tuple[dict[bytes, str], dict[bytes, int]]:
     return out, {f: len(apps[f]) for f in out}
 
 
+# The comment at the top of icon_ids.yaml. --check compares the whole file, so
+# a test fixture that writes one must use this text too.
+IDS_HEADER = (
+    "# Overlay icon ids (HID cmd 42). Written by scripts/build_icon_library.py.\n"
+    "# APPEND-ONLY: an id never changes and a retired icon keeps its entry. The one\n"
+    "# exception was content v8 (2026-11-10), which renumbered every id once by usage\n"
+    "# (--renumber-by-usage, docs/fontpack.md). Never pass that flag again.\n")
+
+
 def _key(frame: bytes) -> str:
     return hashlib.sha256(frame).hexdigest()[:20]
 
@@ -311,9 +320,7 @@ def main(argv=None) -> int:
     if len(data) > SLOT_SIZE:
         sys.exit(f"icons.plyi is {len(data)} B, over its {SLOT_SIZE} B slot")
 
-    ids_text = ("# Frozen overlay icon ids (HID cmd 42). APPEND-ONLY: an id never changes\n"
-                "# and a retired icon keeps its entry. Written by scripts/build_icon_library.py.\n"
-                + yaml.safe_dump(table, sort_keys=False, width=200))
+    ids_text = IDS_HEADER + yaml.safe_dump(table, sort_keys=False, width=200)
     new_entry = {"id": "icons", "index": icon_library.BUNDLE_ID, "file": "icons.plyi",
                  "kind": "icons", "content_version": version, "size": len(data),
                  "slot_offset": SLOT_OFFSET, "slot_size": SLOT_SIZE,
