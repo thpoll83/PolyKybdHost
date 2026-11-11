@@ -2329,7 +2329,16 @@ class PolyCore(Observable):
         from polyhost.services.agents.raiser import raise_agent
         from polyhost.services.agents.titles import TitleScanner
         from polyhost.services.agents.procs import is_alive
-        self.agents = AgentRegistry(is_alive=is_alive)
+        def limits():
+            def minutes(name, default):
+                try:
+                    return max(0, int(self.poly_settings.get(name))) * 60
+                except (TypeError, ValueError):
+                    return default
+            from polyhost.services.agents.registry import FORGET_AFTER_S, STALE_AFTER_S
+            return (minutes("agents_stale_minutes", STALE_AFTER_S),
+                    minutes("agents_forget_minutes", FORGET_AFTER_S))
+        self.agents = AgentRegistry(is_alive=is_alive, limits=limits)
 
         def dictate():
             return dictation.send_shortcut(dictation.shortcut_for(

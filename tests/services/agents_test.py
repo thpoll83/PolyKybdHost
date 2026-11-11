@@ -127,6 +127,24 @@ class RegistryTest(unittest.TestCase):
         with mock.patch.object(procs, "_parent_lookup", lambda: table.get):
             return procs.agent_pid(start)
 
+    def test_limits_are_read_on_every_tick(self):
+        now = [0.0]
+        limits = [(60, 120)]
+        r = AgentRegistry(clock=lambda: now[0], limits=lambda: limits[0])
+        r.report("codex", "w", AgentState.WORKING)
+        r.report("codex", "i", AgentState.IDLE)
+        now[0] = 61
+        r.tick()
+        states = {a.session_id: a.state for a in r.agents()}
+        self.assertEqual(states["w"], AgentState.STALE)
+        limits[0] = (60, 0)                               # 0: never remove
+        now[0] = 500
+        r.tick()
+        self.assertEqual(len(r.agents()), 2)
+        limits[0] = (60, 120)
+        r.tick()
+        self.assertEqual(r.agents(), [])
+
     def test_agent_pid_skips_the_windows_launcher_chain_and_shells(self):
         # claude (node) -> bash -> polyctl.exe -> venv python.exe -> python.exe
         table = {50: (40, "python.exe"), 40: (30, "python.exe"), 30: (20, "polyctl.exe"),

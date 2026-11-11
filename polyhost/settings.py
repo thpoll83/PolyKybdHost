@@ -198,6 +198,10 @@ DEFAULT_SETTINGS = {
         # computer brings forward only its viewer window showing this computer
         # (NoMachine, Remote Desktop, VNC). See the security audit, HOST-6.
         "agents_raise_here": False,
+        # A working agent with no event for this many minutes shows as stale; an
+        # idle or stale one is removed after agents_forget_minutes. 0 turns it off.
+        "agents_stale_minutes": 30,
+        "agents_forget_minutes": 240,
         # Linux only: before the first harvest, switch the session's
         # accessibility flag (org.a11y.Status.IsEnabled) on, because a Qt app
         # joins the AT-SPI bus only while it is set and Plasma leaves it off

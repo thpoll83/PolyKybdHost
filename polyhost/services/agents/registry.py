@@ -89,11 +89,14 @@ class Agent:
 
 
 class AgentRegistry:
-    def __init__(self, clock=time.monotonic, page_size: int = PAGE_SIZE, is_alive=None):
+    def __init__(self, clock=time.monotonic, page_size: int = PAGE_SIZE, is_alive=None,
+                 limits=None):
         """`is_alive(pid)`: when given, tick() removes a hook-reported agent whose
         process has exited (closed terminal, no SessionEnd), once it has seen that
-        process alive."""
+        process alive. `limits()`: when given, (stale after s, forget after s), read
+        on every tick, so a settings change applies at once; 0 turns either off."""
         self._clock = clock
+        self._limits = limits
         self._is_alive = is_alive
         self.page_size = page_size
         self._lock = threading.RLock()
@@ -202,6 +205,7 @@ class AgentRegistry:
     def tick(self) -> None:
         """Time-based transitions: inferred waiting, stale, forget."""
         now = self._clock()
+        stale_s, forget_s = self._limits() if self._limits else (STALE_AFTER_S, FORGET_AFTER_S)
         with self._lock:
             changed = False
             for key, agent in list(self._agents.items()):
@@ -213,12 +217,12 @@ class AgentRegistry:
                     agent.waiting_inferred = True
                     agent.pending_tool_since = 0.0
                     changed = True
-                if agent.state == AgentState.WORKING and idle_for >= STALE_AFTER_S:
+                if stale_s and agent.state == AgentState.WORKING and idle_for >= stale_s:
                     agent.state = AgentState.STALE
                     agent.since = now
                     changed = True
-                if (agent.state in (AgentState.IDLE, AgentState.STALE)
-                        and idle_for >= FORGET_AFTER_S):
+                if (forget_s and agent.state in (AgentState.IDLE, AgentState.STALE)
+                        and idle_for >= forget_s):
                     del self._agents[key]
                     changed = True
                     continue

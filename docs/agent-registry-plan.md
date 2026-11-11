@@ -63,13 +63,15 @@ one agent. This plan drives a row of keys for many agents. Parts of them are reu
 Hold-only does not work with this layout. The AI key is on the right half, and keys
 `6`..`0` are also on the right half, so one hand cannot hold AI and press `8`.
 
-Proposal:
+What the prototype does (firmware `ai_mode.h`):
 
-- **Hold** the AI key: AI mode lasts while it is held. Releasing it ends the mode.
-- **Tap** the AI key (released within the tapping term): AI mode stays on until a
-  number key is pressed, the AI key is tapped again, any other key is pressed (that
-  key is swallowed), or a timeout passes. The timeout value is open, see
-  [Open questions](#open-questions).
+- **Tap** the AI key: a one-shot Hyper (Ctrl+Shift+Alt+GUI on the next key), for
+  global shortcuts. A tap never shows the cards.
+- **Hold** it past the tapping term, or press another key while it is down: AI mode
+  turns on. Released after a key was pressed in the mode, the mode ends.
+- **Long press and release** with nothing pressed: AI mode stays on until a number
+  key, `-`, `+`, any other key (swallowed), or a timeout (10 s, open, see
+  [Open questions](#open-questions)). That keeps one hand free for `6`..`0`.
 
 ESC (the pager) does not end AI mode in either case.
 
