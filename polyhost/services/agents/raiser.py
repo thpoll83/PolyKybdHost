@@ -148,8 +148,16 @@ def raise_viewer(machine: str, extra_apps=(), windows=None):
     if windows is None:
         import pywinctl
         windows = pywinctl.getAllWindows()
-    from polyhost.services.agents.viewer import find_viewer
-    target = find_viewer(machine, list(windows), extra_apps)
+    from polyhost.services.agents.viewer import find_viewer, viewer_windows
+    windows = list(windows)
+    target = find_viewer(machine, windows, extra_apps)
     if target is None:
-        return False
+        viewers = viewer_windows(windows, extra_apps)
+        if not viewers:
+            return False
+        # Say what was there, so a log shows why none was taken.
+        listed = "; ".join(f"{app} '{title}'" for app, title in viewers[:6])
+        return (f"no viewer window names '{machine}' and {len(viewers)} are open "
+                f"({listed}); put the computer's name in the viewer's window title, "
+                "or keep one viewer open")
     return bring_to_front(target, from_system)

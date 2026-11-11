@@ -40,18 +40,29 @@ def mapping_viewer_apps(mapping) -> set[str]:
     return out
 
 
+def _app_of(w) -> str:
+    try:
+        return normalise_app(w.getAppName() or "")
+    except Exception:   # noqa: BLE001 - a window can close while we read it
+        return ""
+
+
+def viewer_windows(windows, extra_apps=()) -> list[tuple[str, str]]:
+    """(app, title) of every viewer window among `windows`, for a log line."""
+    apps = VIEWER_APPS | {normalise_app(a) for a in extra_apps}
+    out = []
+    for w in windows:
+        app = _app_of(w)
+        if app in apps:
+            out.append((app, w.title or ""))
+    return out
+
+
 def find_viewer(machine: str, windows, extra_apps=()):
     """The viewer window for `machine` among `windows`, or None. `windows` holds
     objects with getAppName() and title (pywinctl windows)."""
     apps = VIEWER_APPS | {normalise_app(a) for a in extra_apps}
-
-    def app_of(w):
-        try:
-            return normalise_app(w.getAppName() or "")
-        except Exception:   # noqa: BLE001 - a window can close while we read it
-            return ""
-
-    viewers = [w for w in windows if app_of(w) in apps]
+    viewers = [w for w in windows if _app_of(w) in apps]
     names = {n for n in ((machine or "").lower(), (machine or "").lower().split(".")[0]) if n}
     named = [w for w in viewers if any(n in (w.title or "").lower() for n in names)]
     if named:

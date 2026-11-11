@@ -187,6 +187,11 @@ class ViewerTest(unittest.TestCase):
         self.assertTrue(raise_viewer("laptop", windows=[nx]))
         self.assertTrue(nx.raised)
         self.assertFalse(raise_viewer("nas", windows=[_Win("code", "x")]))
+        # Two viewers, neither names the computer: the reason lists them.
+        why = raise_viewer("nas", windows=[nx, _Win("nxplayer.bin", "NoMachine")])
+        self.assertIsInstance(why, str)
+        self.assertIn("2 are open", why)
+        self.assertIn("nxplayer 'NoMachine'", why)
 
     def test_press_on_a_remote_agent_queues_and_raises_the_viewer(self):
         import threading
