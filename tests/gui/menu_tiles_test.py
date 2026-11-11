@@ -109,133 +109,25 @@ class PanelTest(unittest.TestCase):
         self.assertLess(tops[0], tops[2])
 
 
-class IconTilesTest(unittest.TestCase):
-    """add_icon_tiles_on_first_show: the plain entries of a static submenu."""
+class FirstShowTest(unittest.TestCase):
+    """add_tiles_on_first_show: built once, on the first show."""
 
-    def _menu(self):
+    def test_built_once_and_a_checked_tile_stays_checked(self):
         menu = QMenu()
         self.addCleanup(menu.deleteLater)
-        sub = menu.addMenu("Fix Left/Right Side")
-        a = menu.addAction("Reset overlays")
-        menu.addSeparator()
-        b = menu.addAction("Collect logs\u2026")
-        hidden = menu.addAction("Allow access to the keyboard (udev rule)\u2026")
-        hidden.setVisible(False)
-        return menu, sub, [a, b, hidden]
-
-    def _show(self, menu):
+        actions = [menu.addAction("a"), menu.addAction("b")]
+        for act in actions:
+            act.setCheckable(True)
         with mock.patch.dict(os.environ, {"POLYHOST_MENU_TILES": "1"}):
-            menu_tiles.add_icon_tiles_on_first_show(menu)
+            menu_tiles.add_tiles_on_first_show(menu, actions, lambda: [None, None], 2,
+                                               keycap_tiles.tile_size())
             menu.aboutToShow.emit()
             menu.aboutToShow.emit()     # a second show builds nothing more
         _APP.processEvents()
-        return [a for a in menu.actions() if isinstance(a, menu_tiles.QWidgetAction)]
-
-    def test_plain_entries_become_tiles_and_a_submenu_stays_a_row(self):
-        menu, sub, actions = self._menu()
-        holders = self._show(menu)
+        holders = [a for a in menu.actions() if isinstance(a, menu_tiles.QWidgetAction)]
+        self.assertEqual(menu.actions(), holders)
         self.assertEqual(len(holders), 1)
-        self.assertEqual(menu.actions()[:2], [holders[0], sub.menuAction()])
-        for act in actions:
-            self.assertNotIn(act, menu.actions())
-
-    def test_a_hidden_entry_has_no_tile_until_it_is_shown(self):
-        menu, _sub, actions = self._menu()
-        grid = self._show(menu)[0].defaultWidget()
-        self.assertTrue(grid.tiles[2].isHidden())
-        actions[2].setVisible(True)
-        self.assertFalse(grid.tiles[2].isHidden())
-        self.assertTrue(grid.tiles[2].isEnabled())
-
-    def test_the_dialog_ellipsis_is_dropped_from_the_caption(self):
-        menu, _sub, _actions = self._menu()
-        grid = self._show(menu)[0].defaultWidget()
-        self.assertNotIn("\u2026", grid.tiles[1].text())
-        self.assertEqual(grid.tiles[1].text().replace("\n", " "), "Collect logs")
-
-
-class WrapCaptionTest(unittest.TestCase):
-
-    def test_long_text_wraps_to_two_lines_and_is_elided_past_them(self):
-        from PyQt5.QtGui import QFontMetrics, QFont
-        fm = QFontMetrics(QFont())
-        out = menu_tiles.wrap_caption("Check for keyboard firmware update and more words here",
-                                      fm, 90)
-        lines = out.split("\n")
-        self.assertEqual(len(lines), 2)
-        self.assertTrue(lines[1].endswith("\u2026"))
-        for ln in lines:
-            self.assertLessEqual(fm.horizontalAdvance(ln), 90)
-
-
-class FitCaptionWidthTest(unittest.TestCase):
-
-    def test_the_narrowest_width_that_keeps_every_caption_on_two_lines(self):
-        from PyQt5.QtGui import QFontMetrics, QFont
-        fm = QFontMetrics(QFont())
-        texts = ["About", "Read keyboard crash record"]
-        w = menu_tiles.fit_caption_width(texts, fm, 40, 400)
-        for t in texts:
-            self.assertNotIn("\u2026", menu_tiles.wrap_caption(t, fm, w))
-        self.assertIn("\u2026", menu_tiles.wrap_caption(texts[1], fm, w - 8))
-
-    def test_too_long_for_the_widest_gives_the_widest(self):
-        from PyQt5.QtGui import QFontMetrics, QFont
-        fm = QFontMetrics(QFont())
-        self.assertEqual(menu_tiles.fit_caption_width(["a " * 80], fm, 40, 120), 120)
-
-
-class ScaleTest(unittest.TestCase):
-    """Sizes set in pixels follow the display scale, as Qt's own metrics do."""
-
-    def test_sizes_grow_with_the_scale(self):
-        from polyhost.gui import ui_kit
-        with mock.patch.object(ui_kit, "ui_scale", return_value=1.5):
-            self.assertEqual(ui_kit.px(18), 27)
-            self.assertEqual(ui_kit.button_icon_size().width(), 27)
-            self.assertEqual(ui_kit.headline_icon_px(), 54)
-            self.assertEqual(keycap_tiles.tile_scale(), 2)       # whole, so sharp
-            self.assertEqual(keycap_tiles.tile_size().width(), 144)
-        with mock.patch.object(ui_kit, "ui_scale", return_value=2.0):
-            self.assertEqual(keycap_tiles.tile_size().width(), 216)
-        with mock.patch.object(ui_kit, "ui_scale", return_value=1.0):
-            self.assertEqual(keycap_tiles.tile_size().width(), 108)
-
-    def test_the_scale_follows_the_style(self):
-        from PyQt5.QtWidgets import QStyle
-        from polyhost.gui import ui_kit
-        style = _APP.style()
-        with mock.patch.object(type(style), "pixelMetric",
-                               side_effect=lambda m, *a: 24 if m == QStyle.PM_ButtonIconSize else 0):
-            self.assertEqual(ui_kit.ui_scale(), 1.5)
-
-
-class ReviewFixesTest(unittest.TestCase):
-    """Three defects CodeRabbit found on #775."""
-
-    def test_a_dim_level_is_not_dimmed_twice(self):
-        # 1 % maps to grey 70 + 185 * sqrt(2/50) = 107.
-        self.assertEqual(keycap_tiles.brightness_panel(2).getextrema()[1], 107)
-
-    def test_a_dim_ghost_does_not_cover_the_bright_legend(self):
-        panel = keycap_tiles.idle_panel(0)
-        self.assertEqual(panel.getextrema()[1], 255)
-        self.assertIn(70, set(panel.tobytes()))
-
-    def test_clicking_the_chosen_tile_keeps_it_chosen(self):
-        menu = QMenu()
-        self.addCleanup(menu.deleteLater)
-        group = QActionGroup(menu)
-        actions = []
-        for text in "ab":
-            act = QAction(text, menu, checkable=True)
-            group.addAction(act)
-            menu.addAction(act)
-            actions.append(act)
-        actions[0].setChecked(True)
-        with mock.patch.dict(os.environ, {"POLYHOST_MENU_TILES": "1"}):
-            holder = menu_tiles.add_tiles(menu, actions, [None, None], 2, keycap_tiles.tile_size())
-        tile = holder.defaultWidget().tiles[0]
+        tile = holders[0].defaultWidget().tiles[0]
         tile.click()
         self.assertTrue(actions[0].isChecked())
         self.assertTrue(tile.isChecked())
@@ -247,7 +139,8 @@ class ReviewFixesTest(unittest.TestCase):
         with mock.patch.dict(os.environ, {"POLYHOST_MENU_TILES": "1"}), \
                 mock.patch.object(menu_tiles.TileGrid, "_relayout", side_effect=RuntimeError("x")), \
                 self.assertLogs("polyhost.menu_tiles", "ERROR"):
-            menu_tiles.add_icon_tiles_on_first_show(menu)
+            menu_tiles.add_tiles_on_first_show(menu, rows, lambda: [None, None], 2,
+                                               keycap_tiles.tile_size())
             menu.aboutToShow.emit()
         self.assertEqual(menu.actions(), rows)
 

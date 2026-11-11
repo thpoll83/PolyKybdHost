@@ -353,36 +353,3 @@ def add_tiles_on_first_show(menu, actions, make_icons, columns, icon_size, label
 
     menu.aboutToShow.connect(build)
 
-
-# The icon tiles of the plain submenus (Updates, Maintenance, Help & About),
-# at 100 %; ui_kit.px scales them.
-ICON_TILE_PX = 24
-ICON_TILE_WIDTH = 104       # the narrowest; it grows until every caption fits on two lines
-ICON_TILE_MAX_WIDTH = 160
-
-
-def add_icon_tiles_on_first_show(menu, columns=3):
-    """Tiles for a menu's own entries, from their Material icons.
-
-    Built on the first show, so it takes every entry added by then, including
-    ones added after the menu was created. A submenu entry (Fix Left/Right Side)
-    stays a row under the grid, because a tile cannot open a submenu.
-    """
-    if not tiles_supported():
-        return
-    state = {"done": False}
-
-    def build():
-        if state["done"]:
-            return
-        state["done"] = True
-        actions = [a for a in menu.actions()
-                   if not a.isSeparator() and a.menu() is None
-                   and not isinstance(a, QWidgetAction)]
-        if actions:
-            _add_tiles_safely(menu, actions, [None] * len(actions), columns,
-                              QSize(px(ICON_TILE_PX), px(ICON_TILE_PX)),
-                              tile_width=px(ICON_TILE_WIDTH),
-                              max_tile_width=px(ICON_TILE_MAX_WIDTH))
-
-    menu.aboutToShow.connect(build)

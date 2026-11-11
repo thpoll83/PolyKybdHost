@@ -371,9 +371,8 @@ and relative links were adjusted to suit a standalone file.
   menu's QAction and the action is REMOVED from the menu, not hidden: Qt disables
   a hidden action, and a disabled action ignores `trigger()`.
   `POLYHOST_MENU_TILES=1|0` forces the choice. Updates, Maintenance and Help & About
-  show their plain entries as icon tiles the same way
-  (`add_icon_tiles_on_first_show`, built on the first show so entries added later
-  are included); a submenu entry stays a row.
+  stay standard text submenus: their entries are actions with long labels, not
+  previews, and icon tiles there were tried and removed.
 
 - **Buttons, fields, combo and spin boxes have rounded corners from one style
   sheet**, `theme.control_style(theme)`, set by `apply_theme()`. A sheet that
