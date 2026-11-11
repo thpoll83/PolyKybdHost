@@ -8,11 +8,14 @@ positions. Slot N is key N % page_size on page N // page_size.
 """
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from dataclasses import dataclass, field
 
 from polyhost.services.agents.model import ENDED, AgentState, vendor
+
+log = logging.getLogger(__name__)
 
 # ⚠️ Prototype values, not decided yet (docs/agent-registry-plan.md, open questions).
 # A WORKING agent with no event for this long is shown as STALE.
@@ -123,8 +126,10 @@ class AgentRegistry:
         with self._lock:
             key = (vendor_id, session_id)
             if state == ENDED:
-                if self._agents.pop(key, None) is not None:
+                gone = self._agents.pop(key, None)
+                if gone is not None:
                     self.version += 1
+                    _log_removed(gone, f"session ended ({event or 'end'})")
                 return None
             if source == "hook":
                 self._hook_vendors.add(vendor_id)
@@ -139,6 +144,8 @@ class AgentRegistry:
                               slot=self._free_slot(), source=source)
                 self._agents[key] = agent
                 self.version += 1
+                log.info("Agents: added %s %s (%s, %s, pid %s)", vendor_id, session_id,
+                         source, machine or "local", pid or "-")
             agent.last_event = now
             before = (agent.state, agent.headline, agent.label)
             if state is not None:
@@ -161,6 +168,9 @@ class AgentRegistry:
                 if value:
                     setattr(agent, name, str(value))
             if pid and int(pid) != agent.pid:
+                if agent.pid:
+                    log.info("Agents: %s %s now reports pid %s (was %s)", vendor_id,
+                             session_id, pid, agent.pid)
                 agent.pid = int(pid)
                 agent.pid_seen_alive = False
             if (agent.state, agent.headline, agent.label) != before:
@@ -178,9 +188,11 @@ class AgentRegistry:
 
     def forget(self, vendor_id: str, session_id: str) -> bool:
         with self._lock:
-            if self._agents.pop((vendor_id, session_id), None) is None:
+            gone = self._agents.pop((vendor_id, session_id), None)
+            if gone is None:
                 return False
             self.version += 1
+            _log_removed(gone, "removed by the user")
             return True
 
     def mark_seen(self, vendor_id: str, session_id: str) -> None:
@@ -198,7 +210,7 @@ class AgentRegistry:
             gone = [k for k, a in self._agents.items()
                     if a.source == "title" and a.session_id not in present_ids]
             for k in gone:
-                del self._agents[k]
+                _log_removed(self._agents.pop(k), "its window title no longer matches")
             if gone:
                 self.version += 1
 
@@ -224,6 +236,7 @@ class AgentRegistry:
                 if (forget_s and agent.state in (AgentState.IDLE, AgentState.STALE)
                         and idle_for >= forget_s):
                     del self._agents[key]
+                    _log_removed(agent, f"no event for {idle_for / 60:.0f} min")
                     changed = True
                     continue
                 if (self._is_alive is not None and agent.source == "hook" and agent.pid
@@ -232,6 +245,7 @@ class AgentRegistry:
                         agent.pid_seen_alive = True
                     elif agent.pid_seen_alive:
                         del self._agents[key]     # its process exited: closed terminal
+                        _log_removed(agent, f"process {agent.pid} exited")
                         changed = True
             if changed:
                 self.version += 1
@@ -308,6 +322,11 @@ class AgentRegistry:
         gone = [k for k, a in self._agents.items()
                 if a.vendor == vendor_id and a.source == "title"]
         for k in gone:
-            del self._agents[k]
+            _log_removed(self._agents.pop(k), "hooks now report this vendor")
         if gone:
             self.version += 1
+
+
+def _log_removed(agent, reason: str) -> None:
+    log.info("Agents: removed %s %s (%s, %s, pid %s): %s", agent.vendor, agent.session_id,
+             agent.source, agent.machine or "local", agent.pid or "-", reason)

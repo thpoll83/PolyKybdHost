@@ -160,12 +160,6 @@ SETTING_LABELS = {
     "agents_title_scan": N_("Find by window title"),
     "agents_dictation_shortcut": N_("Dictation shortcut"),
     "agents_remote_enabled": N_("Agents from other computers"),
-    "agents_stale_minutes": N_(
-        "A working agent that reports nothing for this many minutes shows as stale "
-        "(dim white). 0: never."),
-    "agents_forget_minutes": N_(
-        "An idle or stale agent that reports nothing for this many minutes is removed "
-        "and frees its key. An agent whose process ends is removed at once. 0: never."),
     "agents_raise_here": N_("Raise agent windows on this computer"),
     "agents_stale_minutes": N_("Stale after (minutes)"),
     "agents_forget_minutes": N_("Remove idle agents after (minutes)"),
@@ -192,6 +186,12 @@ SETTING_DESCRIPTIONS = {
         "On a computer with the forwarder: a key press on one of this computer's "
         "agents also brings the agent's own window forward here. Off: only the "
         "viewer on the keyboard's computer comes forward."),
+    "agents_stale_minutes": N_(
+        "A working agent that reports nothing for this many minutes shows as stale "
+        "(dim white). 0: never."),
+    "agents_forget_minutes": N_(
+        "An idle or stale agent that reports nothing for this many minutes is removed "
+        "and frees its key. An agent whose process ends is removed at once. 0: never."),
     "agents_dictation_shortcut": N_(
         "The shortcut the minus key sends in AI mode to start dictation, for example "
         "<cmd>+h or <ctrl>+<alt>+d. Empty: Win+H on Windows, nothing on macOS and "

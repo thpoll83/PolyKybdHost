@@ -122,6 +122,24 @@ class RegistryTest(unittest.TestCase):
         # 'a' was seen alive and exited: gone. 'b' never was: kept (wrong pid).
         self.assertEqual([a.session_id for a in r.agents()], ["b"])
 
+    def test_every_removal_is_logged_with_its_reason(self):
+        alive = {100: True}
+        r = AgentRegistry(clock=self.clock, is_alive=lambda pid: alive.get(pid, False))
+        with self.assertLogs("polyhost.services.agents.registry", "INFO") as logs:
+            r.report("claude-code", "a", "working", pid=100)
+            r.tick()
+            alive[100] = False
+            r.tick()
+            r.report("codex", "title:1", "working", source="title")
+            r.drop_missing_titles(set())
+            r.report("gemini", "g", "working")
+            r.report("gemini", "g", "ended", event="end")
+        text = "\n".join(logs.output)
+        self.assertIn("added claude-code a (hook, local, pid 100)", text)
+        self.assertIn("removed claude-code a (hook, local, pid 100): process 100 exited", text)
+        self.assertIn("removed codex title:1 (title, local, pid -): its window title", text)
+        self.assertIn("removed gemini g (hook, local, pid -): session ended (end)", text)
+
     def _walk(self, table, start):
         from polyhost.services.agents import procs
         with mock.patch.object(procs, "_parent_lookup", lambda: table.get):
