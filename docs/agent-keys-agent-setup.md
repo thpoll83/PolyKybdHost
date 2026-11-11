@@ -54,7 +54,7 @@ maps the names itself; it ignores case, `-`, `_` and `.`.
 | Notification with `notification_type` `permission_prompt` or `ToolPermission` | **waiting** |
 | Notification with `notification_type` `idle_prompt` | done |
 | Stop, AfterAgent, `agent-turn-complete`, `session.idle` | done (green) |
-| SessionEnd | removed from the keyboard |
+| SessionEnd | removed from the keyboard when the user ended the session (`/exit`, `/clear`, logout); for any other reason (an editor or the desktop app restarting the process) the key stays as idle |
 
 The payload must contain a session id in one of these fields: `session_id`,
 `sessionId`, `sessionID`, `thread-id`, `conversation_id`. A payload without one is
