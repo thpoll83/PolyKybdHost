@@ -769,7 +769,7 @@ class PolyHost(QApplication):
         # on the same machine, so the daemon can read it (see _on_fw_download_done).
         # Available in both modes as of the daemon-default regression fix.
         self.firmware_update_action = QAction(get_icon("memory.svg"),
-                                              _("Check for keyboard firmware update\u2026"), parent=self)
+                                              _("Check for firmware update\u2026"), parent=self)
         # noinspection PyUnresolvedReferences
         self.firmware_update_action.triggered.connect(self._on_fw_up_clicked)
         self.updates_menu.addAction(self.firmware_update_action)
@@ -838,6 +838,9 @@ class PolyHost(QApplication):
             self.udev_action = QAction(get_icon("usb.svg"),
                                        _("Allow access to the keyboard (udev rule)\u2026"),
                                        parent=self)
+            # The short caption under its icon in the tiled Updates menu
+            # (gui/menu_tiles.py): the full label does not fit on two lines.
+            self.udev_action.setIconText(_("Keyboard access"))
             # noinspection PyUnresolvedReferences
             self.udev_action.triggered.connect(self._on_install_udev_clicked)
             self.udev_action.setVisible(False)   # until the first check
@@ -859,6 +862,7 @@ class PolyHost(QApplication):
         self.shell_title_action = QAction(get_icon("terminal.svg"),
                                           _("Set up the terminal and editors\u2026"),
                                           parent=self)
+        self.shell_title_action.setIconText(_("Terminal and editors"))
         # noinspection PyUnresolvedReferences
         self.shell_title_action.triggered.connect(self.open_shell_title_dialog)
         self.updates_menu.addAction(self.shell_title_action)
