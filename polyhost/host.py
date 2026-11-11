@@ -2438,14 +2438,8 @@ class PolyHost(QApplication):
             act.triggered.connect(self._raise_agent_clicked)
             menu.addAction(act)
         menu.addSeparator()
-        setup = menu.addMenu(_("Set Up Hooks"))
-        for vid, label in (("claude-code", "Claude Code"), ("codex", "Codex"),
-                           ("copilot", "Copilot CLI")):
-            act = QAction(label, parent=setup)
-            act.setData(vid)
-            # noinspection PyUnresolvedReferences
-            act.triggered.connect(self._install_agent_hooks_clicked)
-            setup.addAction(act)
+        from polyhost.gui.agent_hooks import add_setup_menu
+        add_setup_menu(menu, self.log)
 
     def _toggle_agents_enabled(self, checked):
         def done(ok, msg):
@@ -2461,43 +2455,6 @@ class PolyHost(QApplication):
             if not ok:
                 self.log.info("Could not raise the agent: %s", msg)
         self._core_click(lambda: self.core.agents_raise(vendor_id, session_id), done)
-
-    def _install_agent_hooks_clicked(self):
-        """Write the agent's hooks after showing what changes. A local file edit on
-        this machine (the agent runs here), so it needs no core and no keyboard."""
-        import difflib
-        from polyhost.services.agents import hook_install
-        vendor_id = self.sender().data()
-        try:
-            changes = hook_install.plan(vendor_id)
-        except (ValueError, OSError) as e:
-            QMessageBox.warning(None, _("Set Up Hooks"), str(e))
-            return
-        if not changes:
-            conflict = hook_install.codex_conflict(os.path.expanduser("~")) \
-                if vendor_id == "codex" else ""
-            QMessageBox.information(None, _("Set Up Hooks"),
-                                    conflict or _("The hooks are already set up."))
-            return
-        box = QMessageBox(QMessageBox.Question, _("Set Up Hooks"),
-                          _f("Write the PolyKybd hooks into {files}? Your own hooks are "
-                             "kept, and a copy of each file is saved as "
-                             "<file>.polykybd.bak.",
-                             files=", ".join(c.path for c in changes)))
-        box.setDetailedText("\n\n".join(
-            "\n".join(difflib.unified_diff(c.before.splitlines(), c.after.splitlines(),
-                                           c.path, c.path, lineterm=""))
-            for c in changes))
-        box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-        if box.exec_() != QMessageBox.Yes:
-            return
-        try:
-            hook_install.apply(changes)
-        except OSError as e:
-            QMessageBox.warning(None, _("Set Up Hooks"), str(e))
-            return
-        self.log.info("Agent hooks written for %s: %s", vendor_id,
-                      ", ".join(c.path for c in changes))
 
     def change_idle_timeout(self):
         value = self.sender().data()

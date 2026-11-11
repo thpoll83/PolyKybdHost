@@ -300,6 +300,14 @@ class PolyForwarder(QApplication):
         self.shell_title_action.triggered.connect(self.open_shell_title_dialog)
         self.updates_menu.addAction(self.shell_title_action)
 
+        # The hooks of the AI agents on THIS computer (Claude Code, Codex, Copilot
+        # CLI): they report to the keyboard computer this forwarder reports to
+        # (services/agents/remote.py), so the keys show this computer's agents.
+        from polyhost.gui.agent_hooks import add_setup_menu
+        self.agent_hooks_menu = add_setup_menu(
+            self.menu, self.log, title=_("Set Up Agent Hooks"), note=self._agent_hooks_note)
+        self.agent_hooks_menu.setIcon(get_icon("terminal.svg"))
+
         self.settings_action = QAction(get_icon("settings.svg"), _("Settings..."), parent=self)
         # noinspection PyUnresolvedReferences
         self.settings_action.triggered.connect(self.open_settings)
@@ -531,6 +539,16 @@ class PolyForwarder(QApplication):
             return True
         except Exception as e:
             return self._note_send_failure("RPC to %s: %s" % (host, e))
+
+    def _agent_hooks_note(self):
+        """Shown after the hooks were written: what the keyboard computer needs, and
+        that reports need --report-rpc."""
+        if not self._report_rpc:
+            return _("The hooks are written, but this forwarder runs without "
+                     "--report-rpc, so it cannot pass agent reports on. Start it with "
+                     "--report-rpc to show this computer's agents on the keys.")
+        return _("The hooks are written. On the keyboard computer, turn on "
+                 "Settings > AI agents > \"Agents from other computers\".")
 
     def _note_agent_target(self, host):
         """Tell this machine's agent hooks where to report: the host this forwarder

@@ -34,8 +34,7 @@ class AgentsMenuTest(unittest.TestCase):
         host._core_click = lambda fn, done: (host.calls.append(fn), done(*fn()))
         host.log = mock.MagicMock()
         host.report_device_result = mock.MagicMock()
-        for name in ("_apply_agents_menu", "_toggle_agents_enabled", "_raise_agent_clicked",
-                     "_install_agent_hooks_clicked"):
+        for name in ("_apply_agents_menu", "_toggle_agents_enabled", "_raise_agent_clicked"):
             setattr(host, name, types.MethodType(getattr(PolyHost, name), host))
         return host
 
@@ -70,6 +69,26 @@ class AgentsMenuTest(unittest.TestCase):
         host._toggle_agents_enabled(True)
         host.core.settings_set.assert_called_once_with("agents_enabled", True, source="tray")
         host.report_device_result.assert_not_called()
+
+
+@unittest.skipUnless(_QT, "needs PyQt5 and a display (xvfb-run)")
+class AgentHooksMenuTest(unittest.TestCase):
+    """gui/agent_hooks.py: the submenu the tray app and the forwarder share."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.app = QApplication.instance() or QApplication([])
+
+    def test_menu_lists_the_vendors_and_installs_on_click(self):
+        from polyhost.gui import agent_hooks
+        menu = QMenu()
+        sub = agent_hooks.add_setup_menu(menu, mock.MagicMock(), title="Set Up Agent Hooks")
+        self.assertEqual(sub.title(), "Set Up Agent Hooks")
+        self.assertEqual([a.text() for a in sub.actions()],
+                         ["Claude Code", "Codex", "Copilot CLI"])
+        with mock.patch.object(agent_hooks, "install") as install:
+            sub.actions()[1].trigger()
+        self.assertEqual(install.call_args[0][0], "codex")
 
 
 if __name__ == "__main__":
