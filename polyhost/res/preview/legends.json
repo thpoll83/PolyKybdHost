@@ -744,6 +744,7 @@
   "32295": "KC_EMJ_S_CLEAR",
   "32296": "KC_EMJ_S_BKSP",
   "32297": "KC_EMJ_S_SPACE",
+  "32298": "KC_AI",
   "32320": "KCL_ENUS",
   "32321": "KCL_DEDE",
   "32322": "KCL_FRFR",
@@ -957,7 +958,7 @@
   "32680": "KC_IME",
   "32681": "KCL_JAUS"
  },
- "fw_version": "1.11.4",
+ "fw_version": "1.12.0",
  "ime": {
   "families": {
    "en-AU": "RALT",
@@ -1092,6 +1093,9 @@
    101,
    100,
    111
+  ],
+  "KC_AI": [
+   1048617
   ],
   "KC_APP": [
    1048576

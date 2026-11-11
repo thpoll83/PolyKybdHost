@@ -388,6 +388,56 @@ class PolyKybdMock:
             seconds = 0
         return True, (value, seconds)
 
+    # ---- cmd 48: runtime combos / tap dance --------------------------------------
+
+    def _combo_tables(self):
+        from polyhost.device.command_ids import Combos
+        if not hasattr(self, "_combo_records"):
+            self._combo_records = {Combos.KIND_COMBO: [[0] * 5 for _ in range(Combos.COMBO_SLOTS)],
+                                   Combos.KIND_TAP_DANCE: [[0] * 5 for _ in range(Combos.TAP_DANCE_SLOTS)]}
+        return self._combo_records
+
+    def get_combo_info(self) -> tuple[bool, dict | str]:
+        from polyhost.device.command_ids import Combos
+        self._log_call("get_combo_info")
+        if (refusal := self._too_old("combos")):
+            return False, refusal
+        return True, {"available": True, "combo_slots": Combos.COMBO_SLOTS,
+                      "tap_dance_slots": Combos.TAP_DANCE_SLOTS, "combo_term_ms": 50}
+
+    def get_combo_record(self, kind, index) -> tuple[bool, list | str]:
+        self._log_call("get_combo_record", kind, index)
+        if (refusal := self._too_old("combos")):
+            return False, refusal
+        table = self._combo_tables().get(kind)
+        if table is None or not 0 <= index < len(table):
+            return False, f"no record {kind}/{index}"
+        return True, list(table[index])
+
+    def set_combo_record(self, kind, index, words) -> tuple[bool, list | str]:
+        from polyhost.device.command_ids import Combos
+        self._log_call("set_combo_record", kind, index, words)
+        words = list(words)
+        table = self._combo_tables().get(kind)
+        if table is None or not 0 <= index < len(table) or len(words) != 5:
+            return False, f"no record {kind}/{index}"
+        valid = (Combos.combo_valid(words[:4], words[4]) if kind == Combos.KIND_COMBO
+                 else Combos.tap_dance_valid(*words))
+        if not valid:
+            return False, f"invalid record {words}"
+        if (refusal := self._too_old("combos")):
+            return False, refusal
+        self._forward("set_combo_record", kind, index, words)
+        table[index] = words
+        return True, list(words)
+
+    def commit_combos(self) -> tuple[bool, dict | str]:
+        self._log_call("commit_combos")
+        if (refusal := self._too_old("combos")):
+            return False, refusal
+        self._forward("commit_combos")
+        return True, {"other_half": True}
+
     def get_tap_terms(self) -> tuple[bool, dict | str]:
         self._log_call("get_tap_terms")
         if (refusal := self._too_old("tap_terms")):

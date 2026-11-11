@@ -1,5 +1,5 @@
 {
- "fw_version": "1.11.4",
+ "fw_version": "1.12.0",
  "named": {
   "ACUTE_ACCENT": [
    180
@@ -3226,6 +3226,9 @@
   ],
   "ICON_ACCESSIBILITY": [
    9855
+  ],
+  "ICON_AI_KEY": [
+   1048617
   ],
   "ICON_APP_SWITCH": [
    128468

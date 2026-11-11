@@ -1,0 +1,139 @@
+"""Runtime combos and tap dance (cmd 48, protocol v33+): the gate, the wire bytes,
+the closed validation and the round trip against the emulated keyboard. The
+firmware side is qmk_firmware keyboards/polykybd/poly_combos.c and
+base/combo_store.h."""
+
+import unittest
+import unittest.mock as mock
+
+from polyhost.device.command_ids import Cmd, Combos
+from polyhost.device.device_settings import DeviceSettings
+from polyhost.device.mock_firmware import MockFirmware, MockHidHelper
+from polyhost.device.poly_kybd import (COMBOS_MIN_PROTOCOL, FEATURE_MIN_PROTOCOL, PolyKybd,
+                                       protocol_supports)
+from polyhost.settings import PolySettings
+from polyhost._version import __protocol__
+
+KC_J, KC_K, KC_ESC, KC_CAPS = 0x0D, 0x0E, 0x29, 0x39
+MO1, TG2 = 0x5221, 0x5262
+MT_LSFT_A = 0x2204
+
+
+class CombosValidationTest(unittest.TestCase):
+    def test_combo_records(self):
+        self.assertTrue(Combos.combo_valid([], 0))                    # empty slot
+        self.assertTrue(Combos.combo_valid([KC_J, KC_K], KC_ESC))
+        self.assertTrue(Combos.combo_valid([KC_J, KC_K, 0x0F, MT_LSFT_A], 0x7700))
+        self.assertFalse(Combos.combo_valid([KC_J], KC_ESC))          # one key
+        self.assertFalse(Combos.combo_valid([KC_J, 0, KC_K], KC_ESC))  # a gap
+        self.assertFalse(Combos.combo_valid([KC_J, KC_K], 0))         # no result
+        self.assertFalse(Combos.combo_valid([KC_J] * 5, KC_ESC))      # five keys
+        self.assertFalse(Combos.combo_valid([KC_J, True], KC_ESC))
+
+    def test_tap_dance_records(self):
+        self.assertTrue(Combos.tap_dance_valid(0, 0, 0, 0, 0))
+        self.assertTrue(Combos.tap_dance_valid(KC_ESC, MO1, KC_CAPS, TG2, 250))
+        self.assertTrue(Combos.tap_dance_valid(0x0226, 0, 0, 0, 0))   # S(KC_9)
+        self.assertFalse(Combos.tap_dance_valid(KC_ESC, MT_LSFT_A, 0, 0, 0))
+        self.assertFalse(Combos.tap_dance_valid(0x7700, 0, 0, 0, 0))  # macro
+        for term in (90, 510, 205, -10):
+            self.assertFalse(Combos.tap_dance_valid(KC_ESC, 0, 0, 0, term), term)
+
+
+class CombosGateTest(unittest.TestCase):
+    def _keeb(self, protocol):
+        keeb = PolyKybd(DeviceSettings(), PolySettings())
+        keeb.protocol_version = protocol
+        keeb.hid = mock.MagicMock()
+        return keeb
+
+    def test_feature_threshold(self):
+        self.assertEqual(COMBOS_MIN_PROTOCOL, 33)
+        self.assertEqual(FEATURE_MIN_PROTOCOL["combos"], COMBOS_MIN_PROTOCOL)
+        self.assertFalse(protocol_supports(COMBOS_MIN_PROTOCOL - 1, "combos"))
+        self.assertGreaterEqual(__protocol__, COMBOS_MIN_PROTOCOL)
+
+    def test_old_firmware_refuses_without_touching_the_device(self):
+        keeb = self._keeb(COMBOS_MIN_PROTOCOL - 1)
+        for call in (keeb.get_combo_info, lambda: keeb.get_combo_record(0, 0),
+                     lambda: keeb.set_combo_record(0, 0, [KC_J, KC_K, 0, 0, KC_ESC]),
+                     keeb.commit_combos):
+            ok, msg = call()
+            self.assertFalse(ok)
+            self.assertIn("too old", msg)
+        keeb.hid.send_and_read_validate.assert_not_called()
+
+    def test_set_sends_kind_index_and_little_endian_words(self):
+        keeb = self._keeb(COMBOS_MIN_PROTOCOL)
+        reply = bytes([0x50, 48, ord("."), 1, 3]) + bytes([0x29, 0, 0x21, 0x52, 0x39, 0, 0x62, 0x52, 0xFA, 0])
+        keeb.hid.send_and_read_validate.return_value = (True, reply)
+        ok, words = keeb.set_combo_record(Combos.KIND_TAP_DANCE, 3, [KC_ESC, MO1, KC_CAPS, TG2, 250])
+        self.assertTrue(ok)
+        report = keeb.hid.send_and_read_validate.call_args.args[0]
+        self.assertEqual(bytes(report[:15]),
+                         bytes([0x50, 48, 2, 1, 3, 0x29, 0, 0x21, 0x52, 0x39, 0, 0x62, 0x52, 0xFA, 0]))
+        self.assertEqual(words, [KC_ESC, MO1, KC_CAPS, TG2, 250])
+
+    def test_invalid_records_are_refused_before_io(self):
+        keeb = self._keeb(COMBOS_MIN_PROTOCOL)
+        for kind, index, words in ((0, 0, [KC_J, 0, 0, 0, KC_ESC]), (0, 16, [KC_J, KC_K, 0, 0, KC_ESC]),
+                                   (1, 0, [KC_ESC, MT_LSFT_A, 0, 0, 0]), (1, 0, [KC_ESC, 0, 0, 0, 205]),
+                                   (2, 0, [0] * 5), (0, 0, [1, 2, 3])):
+            with self.subTest(kind=kind, index=index, words=words):
+                ok, _ = keeb.set_combo_record(kind, index, words)
+                self.assertFalse(ok)
+        keeb.hid.send_and_read_validate.assert_not_called()
+
+    def test_a_nack_is_a_failure(self):
+        keeb = self._keeb(COMBOS_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (True, bytes([0x50, 48, ord("!")]) + bytes(12))
+        ok, _ = keeb.set_combo_record(0, 0, [KC_J, KC_K, 0, 0, KC_ESC])
+        self.assertFalse(ok)
+        ok, _ = keeb.commit_combos()
+        self.assertFalse(ok)
+
+
+class CombosMockFirmwareTest(unittest.TestCase):
+    def _keyboard(self, protocol=__protocol__):
+        fw = MockFirmware(protocol)
+        kb = PolyKybd(DeviceSettings(), PolySettings())
+        kb.hid = MockHidHelper(fw)
+        kb.protocol_version = protocol
+        return kb, fw
+
+    def test_round_trip_and_commit(self):
+        kb, fw = self._keyboard()
+        ok, info = kb.get_combo_info()
+        self.assertTrue(ok)
+        self.assertEqual((info["available"], info["combo_slots"], info["tap_dance_slots"]), (True, 16, 16))
+        ok, _ = kb.set_combo_record(Combos.KIND_COMBO, 2, [KC_J, KC_K, 0, 0, KC_ESC])
+        self.assertTrue(ok)
+        ok, words = kb.get_combo_record(Combos.KIND_COMBO, 2)
+        self.assertEqual(words, [KC_J, KC_K, 0, 0, KC_ESC])
+        self.assertIsNone(fw.combos_flash)                # set is RAM only
+        ok, res = kb.commit_combos()
+        self.assertTrue(ok)
+        self.assertTrue(res["other_half"])
+        self.assertEqual(fw.combos_flash[Combos.KIND_COMBO][2], [KC_J, KC_K, 0, 0, KC_ESC])
+
+    def test_a_bad_record_changes_nothing(self):
+        kb, fw = self._keyboard()
+        kb.set_combo_record(Combos.KIND_TAP_DANCE, 0, [KC_ESC, 0, 0, 0, 0])
+        # Bypass the host's own check to reach the emulated firmware.
+        ok, reply = kb.hid.send_and_read_validate(
+            bytearray([0x50, 48, 2, 1, 0, 0x29, 0, 0x04, 0x22, 0, 0, 0, 0, 0, 0]), 100, b"P0")
+        self.assertEqual(reply[2:3], b"!")
+        ok, words = kb.get_combo_record(Combos.KIND_TAP_DANCE, 0)
+        self.assertEqual(words, [KC_ESC, 0, 0, 0, 0])
+
+    def test_older_keyboard_nacks_the_command(self):
+        kb, _ = self._keyboard(COMBOS_MIN_PROTOCOL - 1)
+        kb.protocol_version = COMBOS_MIN_PROTOCOL   # pretend the gate is wrong
+        ok, _ = kb.get_combo_info()
+        self.assertTrue(ok)
+        _, info = kb.get_combo_info()
+        self.assertFalse(info["available"])
+
+
+if __name__ == "__main__":
+    unittest.main()

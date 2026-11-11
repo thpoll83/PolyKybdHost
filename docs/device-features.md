@@ -240,6 +240,16 @@ full wiring, the preview rendering and the label-measurement rules are in
   again. A card never evicts the newest switch's images; with no room it is not
   shown. Design and open values:
   [`agent-registry-plan.md`](agent-registry-plan.md).
+- **Runtime combos and tap dance (cmd 48, v33+) are gated on `"combos"`.** The device
+  layer is per record (`get_combo_info`, `get_combo_record`, `set_combo_record`,
+  `commit_combos`); the core is per table (`combos_get` reads all 16 + 16 slots in one
+  call, `combos_set` validates every given slot, writes them and commits), and so are
+  the control methods and `polyctl combo` / `polyctl tapdance`. Both record kinds are
+  CLOSED (`Combos` in `command_ids.py`, mirror of firmware `base/combo_store.h`). A set
+  changes the keyboard's RAM only; the commit writes its flash sector and copies the
+  records to the other half, and reports whether that copy arrived. Tap dance slot n is
+  the keycode `TD(n)` (0x5700 + n), drawn "Tap dance n+1"; polyctl numbers slots from 1
+  to match. The DOOM monolith firmware answers INFO with "not available".
 - ⚠️ **`expect(Cmd.X)` matches only the two `P<cmd>` bytes, which a NACK carries
   too** — so `send_and_read_validate` returning True says the reply arrived, never
   that the firmware accepted it. On a CLOSED range that is the difference between a

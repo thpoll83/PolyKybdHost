@@ -128,6 +128,7 @@ CMD_MIN_PROTOCOL: dict[int, int] = {
     Cmd.AI.value: 31,
     Cmd.AI_CARD.value: 31,
     Cmd.KEY_ATTENTION.value: 32,
+    Cmd.COMBOS.value: 33,
     fw.CMD_FW_UP_BEGIN: 0,
     fw.CMD_FW_UP_CHUNK: 0,
     fw.CMD_FW_UP_COMMIT: 0,
@@ -675,6 +676,39 @@ class MockFirmware:
         self.key_attention = (p[3], p[4], p[5], p[6] * 100)
         return _reply(p[1])
 
+    def _combos(self, p):
+        """cmd 48: runtime combos / tap dance, firmware poly_combos.c. Set changes the
+        RAM records; commit copies them to `combos_flash` (the flash sector). Both
+        kinds are validated as the firmware does, and a bad record changes nothing."""
+        from polyhost.device.command_ids import Combos
+        if not hasattr(self, "combo_records"):
+            self.combo_records = {Combos.KIND_COMBO: [[0] * 5 for _ in range(Combos.COMBO_SLOTS)],
+                                  Combos.KIND_TAP_DANCE: [[0] * 5 for _ in range(Combos.TAP_DANCE_SLOTS)]}
+            self.combos_flash = None
+        op = p[2]
+        if op == Combos.OP_INFO:
+            return _reply(p[1], body=bytes([Combos.COMBO_SLOTS, Combos.TAP_DANCE_SLOTS,
+                                            Combos.REC_BYTES, Combos.FLAG_AVAILABLE, 50, 0]))
+        if op == Combos.OP_COMMIT:
+            import copy
+            self.combos_flash = copy.deepcopy(self.combo_records)
+            return _reply(p[1], body=bytes([Combos.FLAG_COMMIT_OTHER_HALF]))
+        kind, index = p[3], p[4]
+        table = self.combo_records.get(kind)
+        ok = table is not None and index < len(table)
+        if ok and op == Combos.OP_SET:
+            words = [p[5 + 2 * i] | (p[6 + 2 * i] << 8) for i in range(5)]
+            valid = (Combos.combo_valid(words[:4], words[4]) if kind == Combos.KIND_COMBO
+                     else Combos.tap_dance_valid(*words))
+            if valid:
+                table[index] = words
+            ok = valid
+        elif op != Combos.OP_GET:
+            ok = False
+        words = table[index] if table is not None and index < len(table) else [0] * 5
+        body = bytes([kind, index]) + struct.pack("<5H", *words)
+        return _reply(p[1], ok, body=body)
+
     def _default_layer(self, p):
         return _reply(p[1], body=b"\x00")
 
@@ -1159,6 +1193,7 @@ class MockFirmware:
         Cmd.AI.value: _ai,
         Cmd.AI_CARD.value: _ai_card,
         Cmd.KEY_ATTENTION.value: _key_attention,
+        Cmd.COMBOS.value: _combos,
         Cmd.GET_DEFAULT_LAYER.value: _default_layer,
         Cmd.ENTER_BOOTLOADER.value: _bootloader,
         Cmd.REBOOT.value: _reboot,

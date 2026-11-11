@@ -449,6 +449,174 @@ def _print_tap_terms(prefix, terms):
     print(line)
 
 
+# ---- combo / tapdance (cmd 48, firmware protocol v33+) ------------------------------
+
+_KC_NAMES = None
+
+
+def _keycode_tables():
+    """QMK keycode names <-> values from the shipped keycodes.h (Qt-free)."""
+    global _KC_NAMES
+    if _KC_NAMES is None:
+        from polyhost.gui.layout_dialog.qmk_keycode_helper import HEADER_FILE, parse_qmk_keycodes
+        try:
+            by_name = parse_qmk_keycodes(HEADER_FILE)
+        except OSError:
+            by_name = {}
+        by_value = {}
+        for name, value in by_name.items():
+            # Prefer the long KC_ name over aliases for display.
+            if value not in by_value or (name.startswith("KC_") and len(name) > len(by_value[value])):
+                by_value[value] = name
+        _KC_NAMES = (by_name, by_value)
+    return _KC_NAMES
+
+
+_LAYER_FNS = {"TO": 0x5200, "MO": 0x5220, "TG": 0x5260, "TD": 0x5700}
+
+
+_MOD_FNS = {"LCTL": 0x0100, "C": 0x0100, "LSFT": 0x0200, "S": 0x0200, "LALT": 0x0400,
+            "A": 0x0400, "LGUI": 0x0800, "G": 0x0800, "RCTL": 0x1100, "RSFT": 0x1200,
+            "RALT": 0x1400, "RGUI": 0x1800}
+
+
+def _parse_keycode(text: str) -> int:
+    """A keycode as a number (0x hex or decimal), a QMK name (KC_J, KC_ESC),
+    MO(n) / TO(n) / TG(n) / TD(n), or a modifier wrapper such as S(KC_9) or
+    LCTL(KC_C). QMK's shorthands like KC_LPRN are not in keycodes.h: write S(KC_9)."""
+    t = text.strip()
+    import re
+    m = re.fullmatch(r"([A-Z]+)\((.+)\)", t, re.IGNORECASE)
+    if m and m.group(1).upper() in _MOD_FNS:
+        inner = _parse_keycode(m.group(2))
+        if inner > 0xFF:
+            raise ValueError(f"{t}: a modifier wraps a basic keycode only")
+        return _MOD_FNS[m.group(1).upper()] | inner
+    m = re.fullmatch(r"(TO|MO|TG|TD)\((\d+)\)", t, re.IGNORECASE)
+    if m:
+        n = int(m.group(2))
+        limit = 0xFF if m.group(1).upper() == "TD" else 0x1F
+        if n > limit:
+            raise ValueError(f"{t}: layer/slot out of range")
+        return _LAYER_FNS[m.group(1).upper()] + n
+    try:
+        value = int(t, 0)
+    except ValueError:
+        by_name, _ = _keycode_tables()
+        key = t.upper() if t.upper() in by_name else ("KC_" + t.upper())
+        if key not in by_name:
+            raise ValueError(f"unknown keycode {t!r}") from None
+        value = by_name[key]
+    if not 0 <= value <= 0xFFFF:
+        raise ValueError(f"keycode {t!r} out of range")
+    return value
+
+
+def _keycode_text(value: int) -> str:
+    if value == 0:
+        return "-"
+    if 0x0100 <= value <= 0x1FFF:
+        mods = {v: k for k, v in _MOD_FNS.items() if len(k) > 1}
+        if (value & 0x1F00) in mods:
+            return f"{mods[value & 0x1F00]}({_keycode_text(value & 0xFF)})"
+    for fn, base in _LAYER_FNS.items():
+        if base <= value < base + (0x100 if fn == "TD" else 0x20):
+            return f"{fn}({value - base})"
+    _, by_value = _keycode_tables()
+    return by_value.get(value, f"0x{value:04X}")
+
+
+def _combos_or_fail(client):
+    data = client.call(protocol.M_COMBOS_GET, {})
+    if not data.get("available"):
+        print("polyctl: this firmware build has no runtime combos or tap dance "
+              "(the DOOM developer build)", file=sys.stderr)
+        return None
+    return data
+
+
+def _cmd_combo(client, args):
+    from polyhost.device.command_ids import Combos
+    if args.combo_action == "list":
+        data = _combos_or_fail(client)
+        if data is None:
+            return 1
+        print(f"combo term {data.get('combo_term_ms', 0)} ms")
+        for c in data["combos"]:
+            if c["keys"]:
+                keys = " + ".join(_keycode_text(k) for k in c["keys"])
+                print(f"{c['slot'] + 1:2d}: {keys} -> {_keycode_text(c['result'])}")
+            else:
+                print(f"{c['slot'] + 1:2d}: (empty)")
+        return 0
+    slot = args.slot - 1
+    if not 0 <= slot < Combos.COMBO_SLOTS:
+        print(f"polyctl: slot must be 1..{Combos.COMBO_SLOTS}", file=sys.stderr)
+        return 2
+    if args.combo_action == "clear":
+        entry = {"slot": slot, "keys": [], "result": 0}
+    else:
+        try:
+            keys = [_parse_keycode(k) for k in args.keys]
+            result = _parse_keycode(args.result)
+        except ValueError as e:
+            print(f"polyctl: {e}", file=sys.stderr)
+            return 2
+        if not Combos.combo_valid(keys, result):
+            print("polyctl: a combo needs 2 to 4 keys and a result", file=sys.stderr)
+            return 2
+        entry = {"slot": slot, "keys": keys, "result": result}
+    res = client.call(protocol.M_COMBOS_SET, {"combos": [entry]})
+    print(f"combo {args.slot} {'cleared' if args.combo_action == 'clear' else 'set'}"
+          + ("" if res.get("other_half") else " (the other half did not take the copy)"))
+    return 0
+
+
+def _cmd_tapdance(client, args):
+    from polyhost.device.command_ids import Combos
+    if args.tapdance_action == "list":
+        data = _combos_or_fail(client)
+        if data is None:
+            return 1
+        for t in data["tap_dances"]:
+            acts = [t["on_tap"], t["on_hold"], t["on_double_tap"], t["on_tap_hold"]]
+            if not any(acts):
+                print(f"{t['slot'] + 1:2d}: (empty)  TD({t['slot']})")
+                continue
+            term = f"{t['term_ms']} ms" if t["term_ms"] else "tapping term"
+            print(f"{t['slot'] + 1:2d}: tap {_keycode_text(acts[0])}, hold {_keycode_text(acts[1])}, "
+                  f"double {_keycode_text(acts[2])}, tap-hold {_keycode_text(acts[3])}, "
+                  f"term {term}  TD({t['slot']})")
+        return 0
+    slot = args.slot - 1
+    if not 0 <= slot < Combos.TAP_DANCE_SLOTS:
+        print(f"polyctl: slot must be 1..{Combos.TAP_DANCE_SLOTS}", file=sys.stderr)
+        return 2
+    if args.tapdance_action == "clear":
+        entry = {"slot": slot}
+    else:
+        try:
+            entry = {"slot": slot,
+                     "on_tap": _parse_keycode(args.tap),
+                     "on_hold": _parse_keycode(args.hold) if args.hold else 0,
+                     "on_double_tap": _parse_keycode(args.double) if args.double else 0,
+                     "on_tap_hold": _parse_keycode(args.tap_hold) if args.tap_hold else 0,
+                     "term_ms": args.term}
+        except ValueError as e:
+            print(f"polyctl: {e}", file=sys.stderr)
+            return 2
+        words = [entry[k] for k in ("on_tap", "on_hold", "on_double_tap", "on_tap_hold", "term_ms")]
+        if not Combos.tap_dance_valid(*words):
+            print("polyctl: actions must be plain or modified keys, MO(n), TO(n) or TG(n); "
+                  f"the term 0 or {Combos.TERM_MIN_MS}..{Combos.TERM_MAX_MS} ms in "
+                  f"{Combos.TERM_STEP_MS} ms steps", file=sys.stderr)
+            return 2
+    res = client.call(protocol.M_COMBOS_SET, {"tap_dances": [entry]})
+    print(f"tap dance {args.slot} (TD({slot})) {'cleared' if args.tapdance_action == 'clear' else 'set'}"
+          + ("" if res.get("other_half") else " (the other half did not take the copy)"))
+    return 0
+
+
 def _cmd_tap_terms(client, args):
     if args.tapping is None and args.flow_tap is None and args.auto_shift is None \
             and args.auto_shift_ms is None:
@@ -1499,6 +1667,40 @@ def build_parser():
         help=f"Auto Shift timeout, {TapTerms.AUTO_SHIFT_MIN_MS}..{TapTerms.AUTO_SHIFT_MAX_MS} ms "
              f"in {TapTerms.STEP_MS} ms steps (default {TapTerms.DEFAULT_AUTO_SHIFT_MS})")
     p_tap_terms.set_defaults(func=_cmd_tap_terms)
+
+    p_combo = sub.add_parser(
+        "combo", help="list or set the keyboard's runtime combos (firmware protocol 33+)")
+    combo_sub = p_combo.add_subparsers(dest="combo_action", required=True)
+    combo_sub.add_parser("list", help="show the 16 combo slots")
+    p_combo_set = combo_sub.add_parser(
+        "set", help="set a combo: 2 to 4 keys pressed together send RESULT")
+    p_combo_set.add_argument("slot", type=int, help="slot 1..16")
+    p_combo_set.add_argument("keys", nargs="+", metavar="KEY",
+                             help="trigger keycodes: KC_J, J, 0x0D; a mod-tap key as its number (0x2204)")
+    p_combo_set.add_argument("--result", required=True, metavar="KEY",
+                             help="what the combo sends: a keycode, MO(n), TG(n), ...")
+    p_combo_clear = combo_sub.add_parser("clear", help="empty a combo slot")
+    p_combo_clear.add_argument("slot", type=int, help="slot 1..16")
+    p_combo.set_defaults(func=_cmd_combo)
+
+    p_td = sub.add_parser(
+        "tapdance", help="list or set the keyboard's tap dances TD(0)..TD(15) "
+                         "(firmware protocol 33+)")
+    td_sub = p_td.add_subparsers(dest="tapdance_action", required=True)
+    td_sub.add_parser("list", help="show the 16 tap-dance slots")
+    p_td_set = td_sub.add_parser(
+        "set", help="set a tap dance; assign its key TD(slot-1) in the layout editor")
+    p_td_set.add_argument("slot", type=int, help="slot 1..16 (keycode TD(slot-1))")
+    p_td_set.add_argument("--tap", required=True, metavar="KEY", help="on one tap")
+    p_td_set.add_argument("--hold", metavar="KEY", help="while held (default: the tap key)")
+    p_td_set.add_argument("--double", metavar="KEY", help="on two taps (default: tap twice)")
+    p_td_set.add_argument("--tap-hold", metavar="KEY", help="on a tap then hold")
+    p_td_set.add_argument("--term", type=int, default=0, metavar="MS",
+                          help="own time limit, 100..500 ms in 10 ms steps (default 0: "
+                               "the keyboard's tapping term)")
+    p_td_clear = td_sub.add_parser("clear", help="empty a tap-dance slot")
+    p_td_clear.add_argument("slot", type=int, help="slot 1..16")
+    p_td.set_defaults(func=_cmd_tapdance)
 
     p_agents = sub.add_parser(
         "agents", help="AI agent sessions shown on the number row (firmware v31+)")
