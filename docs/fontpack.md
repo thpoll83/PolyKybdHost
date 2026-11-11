@@ -183,7 +183,16 @@ autocheck job, the retry/verify logic and `polyctl fontpack` are in
   the slave's versions. Until then (after boot or a link drop, a slave too old to answer
   the query, firmware before v20) it is the master's alone. So a current version does
   not prove the slave got the bundle; say `slave-unconfirmed` rather than claiming
-  success, and keep such a bundle queued for a re-flash.
+  success, and keep such a bundle queued for a re-flash. Firmware after 1.11.4 reports
+  the lower version minus one when the halves DIFFER, so a slave that is newer than
+  the master also reads as out of date.
+- **The check runs again when the block changes during a session**
+  (`PolyCore._recheck_fontpack_on_generation`, from the 1 s probe). The connect-time
+  check reads the block once, possibly before the master has read the slave. Each
+  change of the block increments GET_ID's `G` counter; a steady probe whose counter
+  moved compares the block with the one the last check was queued for and checks
+  again only when it differs, so a keymap edit (which also moves the counter) starts
+  nothing.
 - ⚠️ **Bundle 8 is the overlay ICON library (`icons.plyi`, magic `PlyI`, cmd 42,
   protocol v20), not a font.** It is built by `scripts/build_icon_library.py` from the
   templates (`--check` is a test), its ids are frozen in `res/fontpack/icon_ids.yaml`
@@ -207,21 +216,23 @@ autocheck job, the retry/verify logic and `polyctl fontpack` are in
   356,896 B. Over 256 KB, firmware below protocol 27 (before 1.10.2) refuses the
   bundle at BEGIN and keeps its old library (`PolyCore._bundle_fits_device`).
   Check the new size against both slot sizes before you rebuild.
-  **`--renumber-by-usage` is a ONE-TIME renumbering, still to be run with the next
-  planned rebuild.** It gives the icons most apps draw the lowest ids, so cmd 42 fits
+  **`--renumber-by-usage` is a ONE-TIME renumbering, run for content v8
+  (2026-11-10); every later rebuild runs without it.** It gives the icons most apps draw the lowest ids, so cmd 42 fits
   more (slot, id) pairs per report: 27 at 9 bits against 20 at 12. Measured on the
   shipped templates (2026-11-09): 6,868 fill reports over 2,861 overlay entries with
   the append-only ids, 5,666 ranked (-17.5 %, about 0.4 report per switch). It breaks
   the append-only rule once. Retired icons follow the live ones with their own pixels,
   and the builder stops if a shipped frame does not match its key in `icon_ids.yaml`.
   Run it once, then rebuild without it again.
-  ⚠️ **Do not run it before the slave can refuse a fill from another library.** The
-  host fills only when the keyboard reports exactly the shipped `content_version`, but
-  until the master has read the slave's versions that number is the master's alone,
-  and each half draws a cmd 42 fill from its OWN library. With append-only ids a slave
-  on the old library only misses a new id and NACKs; with renumbered ids it draws the
-  WRONG icon for an old one. The firmware has to carry the master's icon-library
-  version in the fill sync and the slave refuse a mismatch first.
+  ⚠️ **It needs firmware 1.11.5 (`PolyKybd-fw-v1.11.5`) or later on the keyboards
+  that matter.** Each half draws a cmd 42 fill from its OWN library, and the version
+  GET_ID reports is the master's alone until the master has read the slave's. With
+  append-only ids a slave on the old library only misses a new id; with renumbered
+  ids it draws the WRONG icon for an old one. Since 1.11.4 the master refuses a fill
+  until it has read the slave's icon-library version and it equals its own (qmk#423),
+  and since 1.11.5 halves with different versions read as out of date, so the host
+  flashes both (qmk#426). A keyboard on older firmware keeps the window: up to about
+  a second after link-up, and only when a library flash missed the slave.
   **An icon enters the library only if more than one app uses it** (maintainer's
   rule, 2026-10-09), and the library never decides what a key shows. The send
   path's hit test is the image BYTES, whatever made them (a template, a generic
