@@ -276,9 +276,7 @@ class CheckToleratesPendingIconsTest(unittest.TestCase):
                      sha256=hashlib.sha256(old).hexdigest()[:16])
         self.ids_path, self.plyi, self.man = tmp / "ids.yaml", tmp / "i.plyi", tmp / "b.json"
         self.ids_path.write_text(
-            "# Frozen overlay icon ids (HID cmd 42). APPEND-ONLY: an id never changes\n"
-            "# and a retired icon keeps its entry. Written by scripts/build_icon_library.py.\n"
-            + yaml.safe_dump(ids, sort_keys=False, width=200), encoding="utf-8")
+            bil.IDS_HEADER + yaml.safe_dump(ids, sort_keys=False, width=200), encoding="utf-8")
         self.plyi.write_bytes(old)
         self.man.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
         for name, path in (("IDS_FILE", self.ids_path), ("PLYI_FILE", self.plyi),

@@ -1,5 +1,7 @@
-# Frozen overlay icon ids (HID cmd 42). APPEND-ONLY: an id never changes
-# and a retired icon keeps its entry. Written by scripts/build_icon_library.py.
+# Overlay icon ids (HID cmd 42). Written by scripts/build_icon_library.py.
+# APPEND-ONLY: an id never changes and a retired icon keeps its entry. The one
+# exception was content v8 (2026-11-10), which renumbered every id once by usage
+# (--renumber-by-usage, docs/fontpack.md). Never pass that flag again.
 - id: 0
   key: 1aad51fc4a278d8fb205
   name: concept:fluent:arrow_undo
