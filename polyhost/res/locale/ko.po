@@ -1744,7 +1744,7 @@ msgstr "포워더 페어링"
 
 #: polyhost/gui/forwarder_pairing.py:19
 msgid "On the other computer, open the forwarder's menu, choose \"Pair with the Keyboard Computer…\" and enter this code. Anyone with this code can send window and agent reports to this computer, so pass it on only over a channel you trust. \"Accept forwarders\" must be on in Settings."
-msgstr "다른 컴퓨터에서 포워더의 메뉴를 열고 “키보드 컴퓨터와 페어링…”을 선택한 다음 이 코드를 입력하십시오. 이 코드를 가진 사람은 누구나 이 컴퓨터로 창 및 에이전트 보고를 보낼 수 있으므로 신뢰할 수 있는 경로로만 전달하십시오. 설정에서 “네트워크를 통한 포워더 허용”이 켜져 있어야 합니다."
+msgstr "다른 컴퓨터에서 포워더의 메뉴를 열고 “키보드 컴퓨터와 페어링…”을 선택한 다음 이 코드를 입력하십시오. 이 코드를 가진 사람은 누구나 이 컴퓨터로 창 및 에이전트 보고를 보낼 수 있으므로 신뢰할 수 있는 경로로만 전달하십시오. 설정에서 “포워더 허용”이 켜져 있어야 합니다."
 
 #: polyhost/gui/forwarder_pairing.py:26
 msgid "Copy"
