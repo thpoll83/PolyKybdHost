@@ -54,6 +54,20 @@ _EVENTS = {
 }
 
 
+# SessionEnd reasons that mean the user ended the session. Any other reason
+# ("other" and the rest) also comes when an editor or the desktop app restarts the
+# agent process and resumes the same session: the key stays, without a process.
+_HARD_END_REASONS = frozenset({"clear", "logout", "promptinputexit", "exit", "userexit",
+                               "bypasspermissionsdisabled"})
+
+
+def _session_end(payload: dict):
+    reason = normalise_event(_first(payload, ("reason",)))
+    if not reason or reason in _HARD_END_REASONS:
+        return ENDED, ("end:" + reason)[:24]
+    return None, ("detach:" + reason)[:24]
+
+
 def normalise_event(name: str) -> str:
     return re.sub(r"[^a-z]", "", (name or "").lower())
 
@@ -90,6 +104,8 @@ def interpret(payload: dict, event: str = "") -> dict | None:
     tag = ""
     if event == "notification":
         state, tag = _notification_state(payload)
+    elif event == "sessionend":
+        state, tag = _session_end(payload)
     elif event in _EVENTS:
         state, tag = _EVENTS[event]
     else:

@@ -198,6 +198,35 @@ class RegistryTest(unittest.TestCase):
 
 
 class HookTest(unittest.TestCase):
+    def test_session_end_reasons(self):
+        def end(reason):
+            payload = {"session_id": "s1", "hook_event_name": "SessionEnd"}
+            if reason is not None:
+                payload["reason"] = reason
+            r = hooks.interpret(payload)
+            return r["state"], r["event"]
+        self.assertEqual(end("prompt_input_exit"), (ENDED, "end:promptinputexit"))
+        self.assertEqual(end("clear"), (ENDED, "end:clear"))
+        self.assertEqual(end(None), (ENDED, "end:"))
+        self.assertEqual(end("other"), (None, "detach:other"))
+
+    def test_a_detached_session_keeps_its_key_and_resumes(self):
+        alive = {10: True, 20: True}
+        r = AgentRegistry(clock=_Clock(), is_alive=lambda pid: alive.get(pid, False))
+        r.report("claude-code", "s", "working", pid=10)
+        r.tick()
+        r.report("claude-code", "s", None, event="detach:other", pid=10)
+        alive[10] = False
+        r.tick()
+        (agent,) = r.agents()
+        self.assertEqual((agent.state, agent.pid), (AgentState.IDLE, 0))
+        r.report("claude-code", "s", "working", pid=20)   # resumed in a new process
+        r.tick()
+        (agent,) = r.agents()
+        self.assertEqual((agent.state, agent.pid, agent.slot), (AgentState.WORKING, 20, 0))
+        r.report("claude-code", "s", ENDED, event="end:promptinputexit")
+        self.assertEqual(r.agents(), [])
+
     def test_claude_code(self):
         base = {"session_id": "s1", "cwd": "/w/repo"}
         cases = {

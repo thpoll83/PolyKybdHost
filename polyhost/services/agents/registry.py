@@ -167,6 +167,16 @@ class AgentRegistry:
                                 ("machine", machine), ("window", window)):
                 if value:
                     setattr(agent, name, str(value))
+            if event.startswith("detach"):
+                # The agent's process ended but the session may resume in a new one
+                # (an editor or the desktop app restarting it). Keep the key, drop
+                # the pid so the process check does not remove it.
+                _log_removed(agent, f"process ended, key kept ({event})", verb="detached")
+                agent.pid, agent.pid_seen_alive, pid = 0, False, None
+                agent.pending_tool_since = 0.0
+                if agent.state in (AgentState.WORKING, AgentState.WAITING):
+                    agent.state = AgentState.IDLE
+                    agent.since = now
             if pid and int(pid) != agent.pid:
                 if agent.pid:
                     log.info("Agents: %s %s now reports pid %s (was %s)", vendor_id,
@@ -327,6 +337,7 @@ class AgentRegistry:
             self.version += 1
 
 
-def _log_removed(agent, reason: str) -> None:
-    log.info("Agents: removed %s %s (%s, %s, pid %s): %s", agent.vendor, agent.session_id,
-             agent.source, agent.machine or "local", agent.pid or "-", reason)
+def _log_removed(agent, reason: str, verb: str = "removed") -> None:
+    log.info("Agents: %s %s %s (%s, %s, pid %s): %s",
+             verb, agent.vendor, agent.session_id, agent.source, agent.machine or "local",
+             agent.pid or "-", reason)
