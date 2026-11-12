@@ -293,8 +293,8 @@ class AgentRegistry:
         now = self._clock()
         offline_s = max(0.0, float(offline_s))
         restored = 0
-        vendors = data.get("hook_vendors") or []
-        entries = data.get("agents") or []
+        vendors = data.get("hook_vendors", [])
+        entries = data.get("agents", [])
         if not isinstance(vendors, list) or not isinstance(entries, list):
             log.warning("Agents: the saved agents have a wrong structure; nothing restored")
             return 0

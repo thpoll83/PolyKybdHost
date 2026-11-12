@@ -92,7 +92,8 @@ class AgentStoreTest(unittest.TestCase):
         self.assertEqual(reg.agents(), [])
 
     def test_a_wrong_structure_restores_nothing_and_does_not_raise(self):
-        for data in ({"agents": 1}, {"hook_vendors": 5}, {"agents": {"a": 1}}):
+        for data in ({"agents": 1}, {"hook_vendors": 5}, {"agents": {"a": 1}},
+                     {"hook_vendors": 0, "agents": [{"vendor": "codex", "session_id": "s"}]}):
             with open(self.path, "w", encoding="utf-8") as f:
                 json.dump(dict(format=1, saved_at=0, **data), f)
             reg = self._registry()
