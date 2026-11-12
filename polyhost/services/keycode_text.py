@@ -1,7 +1,7 @@
 """Keycodes as text and back, for polyctl and the combo / tap-dance editor.
 
-Qt-free. The names come from the shipped `res/keycodes.h` (via qmk_keycode_helper,
-which imports only the i18n marker), so polyctl and the GUI accept the same spellings.
+Qt-free and outside polyhost.gui. The names come from the shipped `res/keycodes.h`
+(services/qmk_keycodes.py), so polyctl and the GUI accept the same spellings.
 
 Accepted input: a number (0x hex or decimal), a QMK name with or without `KC_`
 (`KC_J`, `esc`), `MO(n)` / `TO(n)` / `TG(n)` / `TD(n)`, and a modifier wrapper around
@@ -28,7 +28,7 @@ def keycode_tables():
     """(name -> value, value -> preferred name) from the shipped keycodes.h."""
     global _TABLES
     if _TABLES is None:
-        from polyhost.gui.layout_dialog.qmk_keycode_helper import HEADER_FILE, parse_qmk_keycodes
+        from polyhost.services.qmk_keycodes import HEADER_FILE, parse_qmk_keycodes
         try:
             by_name = parse_qmk_keycodes(HEADER_FILE)
         except OSError:

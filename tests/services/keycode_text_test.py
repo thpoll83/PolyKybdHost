@@ -31,5 +31,19 @@ class KeycodeTextTest(unittest.TestCase):
         self.assertEqual(keycode_text(0x5710), "0x5710")
 
 
+class NoGuiImportTest(unittest.TestCase):
+    def test_reading_keycodes_loads_no_gui_module(self):
+        """polyctl combo/tapdance read keycodes through this module, and polyctl must
+        not import polyhost.gui (it runs on headless machines without PyQt5)."""
+        import subprocess
+        import sys
+        code = ("import sys\n"
+                "from polyhost.services.keycode_text import keycode_text, parse_keycode\n"
+                "assert parse_keycode(keycode_text(0x0D)) == 0x0D\n"
+                "print(sorted(m for m in sys.modules if m.startswith('polyhost.gui') or m.startswith('PyQt5')))\n")
+        out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True)
+        self.assertEqual(out.stdout.strip(), "[]")
+
+
 if __name__ == "__main__":
     unittest.main()
