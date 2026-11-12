@@ -81,6 +81,22 @@ def parse_qmk_keycodes(header_path: Path) -> dict[str, int]:
     return parse_qmk_keycode_header(header_path, "qk_keycode_defines")
 
 
+# PolyKybd keycodes the editor offers that QMK's header does not name. keycodes.h
+# names only QK_KB_0..QK_KB_31 (0x7E00..0x7E1F); the firmware's own keycodes go up
+# to 0x7E3F, so a key above 31 had no tile and showed as `KB(42)`. Each value is
+# pinned by a static_assert in the firmware's keycode_helper.h. Not merged into
+# parse_qmk_keycodes(): macros resolve key names through that table, and these are
+# firmware actions, not keys a macro can type.
+POLYKYBD_KEYCODES = {
+    "KC_AI": 0x7E2A,   # the AI key (agent keys, firmware protocol 31)
+}
+
+
+def editor_keycodes(header_path: Path) -> dict[str, int]:
+    """The keycodes the layout editor shows: QMK's header plus POLYKYBD_KEYCODES."""
+    return {**parse_qmk_keycodes(header_path), **POLYKYBD_KEYCODES}
+
+
 # Values QMK gives several names for that are NOT the same key, so no choice among
 # the real names is honest. QMK defines KC_BRMD = KC_SCROLL_LOCK and KC_BRMU =
 # KC_PAUSE -- brightness down/up ARE those HID usages upstream -- so a tile saying
@@ -170,6 +186,8 @@ def parse_layer_names() -> dict[int, str]:
 def categorize(key_name: str) -> str:
     """Categorize a key_name into a functional group."""
     name = key_name[3:] if key_name.startswith("KC_") else key_name
+    if key_name in POLYKYBD_KEYCODES:
+        return N_("User / Macro")
 
     # QMK 0.0.9 keycodes (2026q3) grew steno from 4 codes to 83, plus 88
     # `ST_*` aliases. Checked first: the aliases carry no `QK` prefix, so without

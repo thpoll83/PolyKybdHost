@@ -46,3 +46,24 @@ jobs:
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:python"
+          upload: failure-only
+          output: sarif-results
+
+      # Findings that are the purpose of the code, dropped before the upload, one
+      # rule in one file each. CodeQL does not honour suppression comments in Python.
+      # - polyctl.py, py/clear-text-logging-sensitive-data: `polyctl forwarder
+      #   pairing-code` prints the window-report key; showing it to the user who
+      #   pairs a forwarder is what the command is for (security audit HOST-6).
+      - name: Drop intended findings
+        uses: advanced-security/filter-sarif@v1
+        with:
+          patterns: |
+            -polyhost/cli/polyctl.py:py/clear-text-logging-sensitive-data
+          input: sarif-results/python.sarif
+          output: sarif-results/python.sarif
+
+      - name: Upload results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: sarif-results/python.sarif
+          category: "/language:python"
