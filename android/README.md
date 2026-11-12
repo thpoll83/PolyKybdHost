@@ -41,6 +41,43 @@ The app refuses to start below 20% phone battery, because some phones cut USB po
 when the battery runs low. An interrupted transfer is harmless: nothing is applied
 until COMMIT has verified the CRC and the signature.
 
+## Maintenance menu
+
+The ⋮ button in the header opens **Maintenance**. It is for the maintainer, not for
+flashing: sign in with GitHub, then publish the prepared firmware or host release.
+
+- **Sign in with GitHub** uses the device flow. The app shows a code, copies it and
+  opens github.com/login/device, where you paste it. The screen continues by itself.
+  The token is stored encrypted with a key in the Android Keystore. **Sign out** forgets
+  it on the phone; revoke it on GitHub under Settings → Applications → Authorized
+  GitHub Apps.
+- Each repo card shows the newest notes on the `release-notes` branch (`<TAG>.md`, as
+  `scripts/publish_release.py` picks them), whether that tag is already published, and
+  the current latest release.
+- **Dry run** and **Publish…** dispatch `.github/workflows/publish-release.yml` on the
+  repo's default branch, with the tag shown on the card. The workflow runs
+  `scripts/publish_release.py` on GitHub, so the release rules stay in that one script.
+  Publish asks for confirmation first. The card follows the run and links to it; the
+  script's output is in the run's summary.
+
+### Setting it up (once)
+
+1. **Create a GitHub App** (Settings → Developer settings → GitHub Apps → New). Tick
+   **Enable Device Flow**. No webhook. Repository permissions: **Actions: Read and
+   write** (dispatch and read runs), **Contents: Read-only** (notes and releases).
+   Install it on `thpoll83/qmk_firmware` and `thpoll83/PolyKybdHost` only. A token
+   from it reaches only those repos, and only with those permissions.
+2. Put the app's **Client ID** (not the App ID, and no secret) in
+   `android/gradle.properties` as `polykybd.githubClientId=…`. It is public. Without
+   it the menu says sign-in is not set up.
+3. **Add a `RELEASE_TOKEN` secret to each repo**: a fine-grained personal access token
+   with Contents read/write on that repo. A release created with the workflow's
+   built-in token does not start `release.yml`, so the firmware `.bin`/`.uf2` would
+   never be built. A dry run works without the secret.
+
+The workflow publishes only when the repository owner started it
+(`github.actor == github.repository_owner`).
+
 ## Layout
 
 | File | Role |
@@ -52,6 +89,9 @@ until COMMIT has verified the CRC and the signature.
 | `FlashService.kt` | Background mode: `FlashJob` inside a foreground service, plus its progress notification. |
 | `Releases.kt` | Finds the latest release's `.bin` + `.bin.sig` for a variant, downloads both, checks size and SHA-256. |
 | `MainActivity.kt` | File picker, battery and device checks, run-mode choice, progress. |
+| `GitHub.kt` | Device-flow sign-in, reading the prepared releases, dispatching `publish-release.yml`, following the run. No Android types; `GitHubTest` drives it. |
+| `MaintenanceState.kt`, `MaintenanceActivity.kt` | The maintenance menu: sign-in state, token refresh, the release cards. |
+| `TokenStore.kt` | The GitHub token, encrypted with an Android Keystore key. |
 | `tools/gen_launcher_icon.py` | Writes the launcher, themed and notification icons as vector drawables. |
 
 ⚠️ `Flasher.kt` and `hid_fw_up.py` implement the same protocol. A change to the

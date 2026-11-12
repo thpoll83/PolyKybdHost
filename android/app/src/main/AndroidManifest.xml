@@ -4,7 +4,8 @@
 
     <uses-feature android:name="android.hardware.usb.host" android:required="true" />
 
-    <!-- Only for "Get latest release": the GitHub API and the release assets. -->
+    <!-- "Get latest release" (the GitHub API and the release assets) and the
+         maintenance menu (GitHub sign-in and publishing). -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
@@ -36,6 +37,11 @@
                 android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
                 android:resource="@xml/device_filter" />
         </activity>
+
+        <!-- Reached only from the main screen's header menu. -->
+        <activity
+            android:name=".MaintenanceActivity"
+            android:exported="false" />
 
         <!-- Lint lists only the manifest/runtime permissions that satisfy connectedDevice.
              The platform docs add a third route, having called UsbManager.requestPermission(),

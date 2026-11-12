@@ -16,6 +16,7 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.CheckBox
+import android.widget.PopupMenu
 import android.widget.ProgressBar
 import android.widget.RadioGroup
 import android.widget.TextView
@@ -69,6 +70,14 @@ class MainActivity : Activity() {
         findViewById<Button>(R.id.pick).setOnClickListener { pickBin() }
         findViewById<Button>(R.id.latest).setOnClickListener { getLatest() }
         findViewById<Button>(R.id.refresh).setOnClickListener { render() }
+        findViewById<View>(R.id.menu).setOnClickListener { v ->
+            PopupMenu(this, v).apply {
+                menu.add("Maintenance").setOnMenuItemClickListener {
+                    startActivity(Intent(this@MainActivity, MaintenanceActivity::class.java))
+                    true
+                }
+            }.show()
+        }
         applyBox.isChecked = FlashState.applyAfterFlash
         applyBox.setOnCheckedChangeListener { _, checked -> FlashState.applyAfterFlash = checked }
         flashButton.setOnClickListener { startFlash() }
