@@ -26,6 +26,9 @@ These are known and documented. They are not new findings:
   image and the DOOM engine pack (`.plyx`) are signed.
 - An unsigned firmware image is not refused. The keyboard shows an ACCEPT/REJECT
   prompt, and only a key press on the keyboard can accept it.
+- Signature checks apply only to updates through the host app's firmware updater.
+  An image written through the RP2040 boot ROM (BOOTSEL, a UF2 file copied to the
+  boot drive) is not checked. That path is kept as the recovery path.
 
 ## What happens next
 
