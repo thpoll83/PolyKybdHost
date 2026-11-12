@@ -1,3 +1,4 @@
+import re
 import unittest
 
 from polyhost.gui.layout_dialog.qmk_keycode_helper import (
@@ -8,7 +9,7 @@ from polyhost.gui.layout_dialog.qmk_keycode_helper import (
     decompose_keycode, describe_keycode, decode_for_composer,
     build_keycode_to_name, mod_stack_name, DISPLAY_NAME_OVERRIDE,
     BADGE_COLOR_LAYER, BADGE_COLOR_TAP, BADGE_COLOR_MOD, BADGE_COLOR_FW,
-    HEADER_FILE, parse_qmk_keycodes, categorize, category_order,
+    HEADER_FILE, parse_qmk_keycodes, categorize, category_order, mod_stack_token,
 )
 
 # Minimal code->name mapping for the inner keys used in the tests.
@@ -268,10 +269,49 @@ class TestBuildKeycodeToName(unittest.TestCase):
         naive = {v: k for k, v in names.items()}
         picked = build_keycode_to_name(names)
         differing = {v for v in naive if naive[v] != picked[v]}
-        # The inversion rule itself moves ONE value; everything else that differs
-        # must be a deliberate composite label, never collateral.
-        self.assertEqual(differing, {0x0000} | set(DISPLAY_NAME_OVERRIDE))
+        # The KC_ rule moves ONE value and the MIDI sharp rule the 30 sharp/flat
+        # pairs; everything else that differs must be a deliberate composite label,
+        # never collateral.
+        sharps = {v for k, v in names.items() if re.fullmatch(r"MI_[A-G]s\d?", k)}
+        self.assertEqual(len(sharps), 30)
+        self.assertEqual(differing, {0x0000} | sharps | set(DISPLAY_NAME_OVERRIDE))
         self.assertEqual(picked[0x0000], "KC_NO")
+
+
+class TestLowerCaseAliases(unittest.TestCase):
+    """QMK spells the MIDI sharps and flats in mixed case (MI_Cs, MI_Db). The parser
+    matched names with [A-Z0-9_]+ and dropped all 60, so a keymap token MI_Cs
+    resolved to no keycode."""
+
+    def test_midi_sharps_and_flats_resolve(self):
+        names = parse_qmk_keycodes(HEADER_FILE)
+        self.assertEqual(names["MI_Cs"], names["QK_MIDI_NOTE_C_SHARP_0"])
+        self.assertEqual(names["MI_Db"], names["QK_MIDI_NOTE_C_SHARP_0"])
+        self.assertEqual(names["MI_As5"], names["QK_MIDI_NOTE_A_SHARP_5"])
+        mixed = [n for n in names if n.startswith("MI_") and n != n.upper()]
+        self.assertEqual(len(mixed), 60)
+
+    def test_a_tile_names_the_sharp_the_keycap_draws(self):
+        names = parse_qmk_keycodes(HEADER_FILE)
+        picked = build_keycode_to_name(names)
+        self.assertEqual(picked[names["MI_Db"]], "MI_Cs")
+        self.assertEqual(picked[names["MI_Bb5"]], "MI_As5")
+        self.assertEqual(picked[names["MI_C"]], "MI_C")
+
+
+class TestModStackToken(unittest.TestCase):
+    """The firmware's legends are keyed on QMK's `#define` names KC_HYPR / KC_MEH,
+    which no enum lookup returns, so the Hyper key previewed as its text."""
+
+    def test_left_stacks(self):
+        self.assertEqual(mod_stack_token(0x0F00), "KC_HYPR")
+        self.assertEqual(mod_stack_token(0x0700), "KC_MEH")
+
+    def test_others_have_none(self):
+        self.assertIsNone(mod_stack_token(0x1F00))     # right-hand stack: no QMK name
+        self.assertIsNone(mod_stack_token(0x0F04))     # Hyper + A is a mod combo
+        self.assertIsNone(mod_stack_token(0x0300))     # Ctrl+Shift only
+        self.assertIsNone(mod_stack_token(0x0004))
 
 
 class TestModStackNaming(unittest.TestCase):

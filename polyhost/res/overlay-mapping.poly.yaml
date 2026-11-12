@@ -2451,6 +2451,23 @@ filmcraft,ai.storyteller.filmcraft:
   os:
     macos:
       overlay: [filmcraft_template_mac.mods.png, filmcraft_template_mac.combo.mods.png, filmcraft_template_mac.extra.mods.png, filmcraft_template_mac.gui.mods.png]
+anicraft,ai.storyteller.anicraft:
+  overlay: [anicraft_template.mods.png, anicraft_template.combo.mods.png, anicraft_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [anicraft_template_mac.mods.png, anicraft_template_mac.combo.mods.png, anicraft_template_mac.extra.mods.png, anicraft_template_mac.gui.mods.png]
+# TextureCraft and MaterialCraft set no app id, so X11 reports the binary name
+# (StartupWMClass=texturecraft / materialcraft); ai.storyteller.* is the bundle id.
+texturecraft,ai.storyteller.texturecraft:
+  overlay: [texturecraft_template.mods.png, texturecraft_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [texturecraft_template_mac.mods.png, texturecraft_template_mac.combo.mods.png, texturecraft_template_mac.extra.mods.png]
+materialcraft,ai.storyteller.materialcraft:
+  overlay: [materialcraft_template.mods.png, materialcraft_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [materialcraft_template_mac.mods.png, materialcraft_template_mac.combo.mods.png, materialcraft_template_mac.extra.mods.png]
 
 # VS Code forks and Zed (sources: overlay_sources/cursor|windsurf|zed/). The
 # `code` entry's title gate never sees these: the lookup is an exact match on

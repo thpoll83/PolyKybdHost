@@ -1,5 +1,5 @@
 {
- "fw_version": "1.13.0",
+ "fw_version": "1.13.2",
  "keys": [
   {
    "keycode": 41,
@@ -398,13 +398,13 @@
    "token": "KC_BSPC"
   },
   {
-   "keycode": null,
+   "keycode": 32298,
    "label": "y",
    "matrix": [
     6,
     1
    ],
-   "token": "KC_HYPR"
+   "token": "KC_AI"
   },
   {
    "keycode": 28,

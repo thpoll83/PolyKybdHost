@@ -36,6 +36,7 @@ from polyhost.services import log_bundle
 from polyhost.gui.theme import apply_theme
 from polyhost.services import os_theme
 from polyhost.services.os_theme import THEME_AUTO
+from polyhost.services.fw_keymap_changes import keymap_changes
 from polyhost.settings import read_setting
 from polyhost.gui.update_ui import UpdateProgressController
 from polyhost.gui.update_dialog import confirm_update
@@ -3355,6 +3356,11 @@ class PolyHost(QApplication):
         message = (_f("Firmware {version} is available.", version=release.version) + "\n"
                    + info + installed + "\n\n"
                    + _("Both halves update over HID and reboot automatically."))
+        changes = keymap_changes(current, release.version)
+        if changes:
+            message += ("\n\n" + _("This update changes your stored keymap once:")
+                        + "".join("\n• " + _(text) for text in changes) + "\n"
+                        + _("Keys you remapped and your macros stay as they are."))
         if not confirm_update(_("Update PolyKybd Firmware"), message,
                               notes=getattr(release, "notes", ""),
                               html_url=getattr(release, "html_url", ""),
