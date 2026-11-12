@@ -74,6 +74,9 @@ class PreviewData:
         # {lang: family}, "legends": {family: codepoints}}. Empty on an older export.
         self.ime: dict = {}
         self.layer_tags: dict[int, str] = {}
+        # How many of those layers the firmware stores in EEPROM; None on an
+        # export from before the field (qmk_keycode_helper.fold_layer_tags).
+        self.stored_layers: int | None = None
         self.langs: list[str] = []
         self._grid: dict = {}      # (row, col) -> raw cell, as Lang holds it
         self.shift_suppressed: list = []   # (base, shift) cell pairs the board hides
@@ -98,6 +101,8 @@ class PreviewData:
         self.aliases = {str(k): str(v) for k, v in (legends.get("aliases") or {}).items()}
         self.ime = dict(legends.get("ime") or {})
         self.layer_tags = {int(k): str(v) for k, v in layers.get("tags", {}).items()}
+        stored = layers.get("stored")
+        self.stored_layers = int(stored) if stored else None
         self.langs = list(lut.get("langs", []))
         self._grid = {(int(r), int(c)): v
                       for key, v in (lut.get("grid") or {}).items()

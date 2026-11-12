@@ -34,7 +34,7 @@ from polyhost.device.poly_kybd import GUI_COMBO_MODIFIERS_MIN_PROTOCOL
 from polyhost.gui import theme as gui_theme
 from polyhost.gui.layout_dialog.board_plate import add_board
 from polyhost.gui.layout_dialog.qmk_keycode_helper import (HEADER_FILE, build_keycode_to_name,
-                                                           describe_keycode, parse_qmk_keycodes)
+                                                           describe_keycode, editor_keycodes)
 from polyhost.gui.layout_dialog.renderable_key import RenderableKey, key_transform
 from polyhost.gui.zoomable_graphics_view import ZoomableGraphicsView
 from polyhost.i18n import _, _f
@@ -89,7 +89,7 @@ class MockBoardDialog(QDialog):
         self.core = core
         self.setWindowTitle(_("Mock keyboard"))
         self.resize(1400, 560)
-        self._names = build_keycode_to_name(parse_qmk_keycodes(HEADER_FILE))
+        self._names = build_keycode_to_name(editor_keycodes(HEADER_FILE))
         self._last = None
 
         self.status = QLabel("")

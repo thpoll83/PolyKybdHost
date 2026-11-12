@@ -1,5 +1,5 @@
 {
- "fw_version": "1.12.0",
+ "fw_version": "1.13.0",
  "keys": [
   {
    "keycode": 41,
@@ -254,7 +254,7 @@
    "token": "KC_B"
   },
   {
-   "keycode": 21003,
+   "keycode": 21004,
    "label": "b",
    "matrix": [
     3,
@@ -470,7 +470,7 @@
    "token": "KC_NO"
   },
   {
-   "keycode": 21034,
+   "keycode": 21035,
    "label": "h",
    "matrix": [
     7,

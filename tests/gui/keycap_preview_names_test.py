@@ -270,8 +270,12 @@ class LayerTagSourceTest(unittest.TestCase):
         p = KeycapPreview()
         if not p._load():
             self.skipTest(f"previews unavailable: {p.reason}")
-        for kc, tok in ((0x5225, "MO(_FL)"), (0x5226, "MO(_NL)"),
-                        (0x522A, "MO(_ADDLANG1)"), (0x520B, "TO(_EMJ)")):
+        # From the checkout's own enum, so the expected values follow it.
+        tags = {t: i for i, t in qh.parse_layers_h(
+            pathlib.Path(self._fw()) / "layers.h").items()}
+        for kc, tok in ((0x5220 + tags["FL"], "MO(_FL)"), (0x5220 + tags["NL"], "MO(_NL)"),
+                        (0x5220 + tags["ADDLANG1"], "MO(_ADDLANG1)"),
+                        (0x5200 + tags["EMJ"], "TO(_EMJ)")):
             self.assertEqual(p._layer_token(kc), tok)
             self.assertIn(tok, p._known)
 
@@ -324,6 +328,54 @@ class LayerTagSourceTest(unittest.TestCase):
         self.assertNotIn("\u26a0", p.source_info())
 
 
+
+
+class LayerTagFoldTest(unittest.TestCase):
+    """Layer keys on a keyboard that stores fewer layers than the shipped tags.
+
+    Firmware 1.13.0 inserted `_ML` as stored layer 8, so every layer after the
+    stored ones moved up by one. A 1.11.x keyboard stores 8 layers and its index 8
+    is `_SL`; previewing its `TO(8)` with the new tags would draw the MIDI key.
+    """
+
+    NEW = dict(qh.LAYER_TAGS)
+
+    def test_the_new_enum(self):
+        self.assertEqual((self.NEW[8], self.NEW[9], self.NEW[12]), ("ML", "SL", "EMJ"))
+        self.assertEqual(qh.STORED_LAYER_COUNT, 9)
+
+    def test_an_8_layer_keyboard_gets_the_old_numbering(self):
+        old = qh.fold_layer_tags(self.NEW, 9, 8)
+        self.assertEqual(old, {0: "L0", 1: "L1", 2: "L2", 3: "L3", 4: "L4", 5: "FL",
+                               6: "NL", 7: "UL", 8: "SL", 9: "LL", 10: "ADDLANG1",
+                               11: "EMJ"})
+
+    def test_same_or_unknown_or_newer_counts_change_nothing(self):
+        for stored, device in ((9, 9), (9, None), (None, 8), (9, 10)):
+            self.assertEqual(qh.fold_layer_tags(self.NEW, stored, device), self.NEW)
+
+    def test_the_preview_follows_the_connected_keyboard(self):
+        p = object.__new__(KeycapPreview)
+        p._ranges = None
+        p._layer_tags = dict(self.NEW)
+        p._stored_layers = 9
+        self.assertEqual(p._layer_token(0x5208), "TO(_ML)")
+        p.set_stored_layer_count(8)
+        self.assertEqual(p._layer_token(0x5208), "TO(_SL)")
+        self.assertEqual(p._layer_token(0x520B), "TO(_EMJ)")
+        p.set_stored_layer_count(9)
+        self.assertEqual(p._layer_token(0x5208), "TO(_ML)")
+
+    def test_layers_h_comments_do_not_drop_a_layer(self):
+        """`_ML,  // MIDI ...` put the comment in front of `_SL` after the split at
+        commas, so `_SL` was dropped and every later layer read one index low."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "layers.h"
+            path.write_text("enum kb_layers {\n    _BL = 0x00,\n    _L0 = _BL,\n"
+                            "    _L1, /* one */\n    _ML,      // MIDI: stored\n"
+                            "    _SL,\n    _EMJ };\n", encoding="utf-8")
+            self.assertEqual(qh.parse_layers_h(path),
+                             {0: "L0", 1: "L1", 2: "ML", 3: "SL", 4: "EMJ"})
 
 
 class PreviewSourceTest(unittest.TestCase):

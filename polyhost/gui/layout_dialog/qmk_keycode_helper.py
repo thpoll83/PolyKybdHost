@@ -20,11 +20,43 @@ HEADER_FILE = pathlib.Path(__file__).parent.parent.parent.resolve() / "res" / "k
 # renamed the device's layers under it -- `MO(_NL)` read as `MO(_FL1)` and drew
 # nothing. Neither source is versioned with this file; this constant is, and it is
 # reviewed with the host release that ships it.
+#
+# Firmware 1.13.0 inserted the MIDI layer `_ML` as stored layer 8, so every layer
+# after it moved one index up. `STORED_LAYER_COUNT` is how many layers this table
+# stores in EEPROM. A keyboard that stores fewer has the same flash layers right
+# after its own stored ones: `fold_layer_tags` renumbers them.
 LAYER_TAGS: dict[int, str] = {
     0: "L0", 1: "L1", 2: "L2", 3: "L3", 4: "L4",
-    5: "FL", 6: "NL", 7: "UL", 8: "SL", 9: "LL",
-    10: "ADDLANG1", 11: "EMJ",
+    5: "FL", 6: "NL", 7: "UL", 8: "ML", 9: "SL",
+    10: "LL", 11: "ADDLANG1", 12: "EMJ",
 }
+STORED_LAYER_COUNT = 9   # firmware DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT
+
+
+def fold_layer_tags(tags: dict[int, str], stored: int | None,
+                    device_stored: int | None) -> dict[int, str]:
+    """`tags` for a keyboard that stores `device_stored` layers, where `tags` came
+    from a firmware storing `stored`.
+
+    A stored layer is added at the END of the stored block (layers.h), so a board
+    with fewer stored layers lacks the last ones, and its flash layers start at
+    `device_stored` instead of `stored`: firmware 1.11.x stores 8, so index 8 is
+    `_SL` there and `_ML` on 1.13.0. A board that stores MORE than the tags know
+    is newer than this data, and its extra layers cannot be named here, so the
+    tags are returned unchanged.
+    """
+    if not stored or not device_stored or device_stored >= stored:
+        return dict(tags)
+    shift = stored - device_stored
+    return {**{i: t for i, t in tags.items() if i < device_stored},
+            **{i - shift: t for i, t in tags.items() if i >= stored}}
+
+
+def parse_stored_layer_count(config_h: Path) -> int | None:
+    """DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT from a firmware tree's config.h."""
+    m = re.search(r"#define\s+DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT\s+(\d+)",
+                  config_h.read_text(encoding="utf-8", errors="ignore"))
+    return int(m.group(1)) if m else None
 
 
 def parse_qmk_keycode_header(header_path: Path, enum_to_parse: str) -> dict[str, int]:
@@ -79,6 +111,22 @@ def parse_qmk_keycode_header(header_path: Path, enum_to_parse: str) -> dict[str,
 def parse_qmk_keycodes(header_path: Path) -> dict[str, int]:
     """Parse QMK keycode enum from the qmk header file and return dict of keycode names to hex values."""
     return parse_qmk_keycode_header(header_path, "qk_keycode_defines")
+
+
+# PolyKybd keycodes the editor offers that QMK's header does not name. keycodes.h
+# names only QK_KB_0..QK_KB_31 (0x7E00..0x7E1F); the firmware's own keycodes go up
+# to 0x7E3F, so a key above 31 had no tile and showed as `KB(42)`. Each value is
+# pinned by a static_assert in the firmware's keycode_helper.h. Not merged into
+# parse_qmk_keycodes(): macros resolve key names through that table, and these are
+# firmware actions, not keys a macro can type.
+POLYKYBD_KEYCODES = {
+    "KC_AI": 0x7E2A,   # the AI key (agent keys, firmware protocol 31)
+}
+
+
+def editor_keycodes(header_path: Path) -> dict[str, int]:
+    """The keycodes the layout editor shows: QMK's header plus POLYKYBD_KEYCODES."""
+    return {**parse_qmk_keycodes(header_path), **POLYKYBD_KEYCODES}
 
 
 # Values QMK gives several names for that are NOT the same key, so no choice among
@@ -139,7 +187,11 @@ def parse_layers_h(path: Path) -> dict[int, str]:
     sets the running index, and an alias (`_L0 = _BL`) names the SAME index rather
     than advancing it.
     """
-    m = re.search(r"enum\s+kb_layers\s*\{(.*?)\}", path.read_text(encoding="utf-8"), re.S)
+    # Comments first: `_ML,  // MIDI: the last stored layer` puts the comment in
+    # front of the NEXT enumerator after the split at commas, which then does not
+    # start with `_`, so `_SL` was dropped and every later layer read one index low.
+    text = re.sub(r"/\*.*?\*/|//[^\n]*", "", path.read_text(encoding="utf-8"), flags=re.S)
+    m = re.search(r"enum\s+kb_layers\s*\{(.*?)\}", text, re.S)
     if not m:
         return {}
     idx, tags = 0, {}
@@ -170,6 +222,8 @@ def parse_layer_names() -> dict[int, str]:
 def categorize(key_name: str) -> str:
     """Categorize a key_name into a functional group."""
     name = key_name[3:] if key_name.startswith("KC_") else key_name
+    if key_name in POLYKYBD_KEYCODES:
+        return N_("User / Macro")
 
     # QMK 0.0.9 keycodes (2026q3) grew steno from 4 codes to 83, plus 88
     # `ST_*` aliases. Checked first: the aliases carry no `QK` prefix, so without

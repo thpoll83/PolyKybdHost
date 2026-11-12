@@ -742,6 +742,26 @@ tab by prefix. A name that matches no rule lands in "Additional", the second tab
     - **The checkout's own `layers.h`**: correct, because tags and legends then agree
       by construction. `qmk_keycode_helper.parse_layers_h()`; `LAYER_TAGS` remains
       only as the no-checkout fallback and as the yardstick below.
+  - ⚠️ **Firmware 1.13.0 inserted the MIDI layer `_ML` as stored layer 8, so every
+    layer after the stored ones moved up by one** (`_SL` 8 → 9 … `_EMJ` 11 → 12).
+    `layers.json` records how many layers its tags store (`stored`, from
+    `DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT`), and the editor passes the count the
+    keyboard reports to `KeycapPreview.set_stored_layer_count()`. When the keyboard
+    stores fewer, `qmk_keycode_helper.fold_layer_tags()` renumbers the flash layers
+    to follow its stored ones, so a 1.11.x board's `TO(8)` previews as `_SL`, not
+    `_ML`. This assumes a new stored layer is added at the END of the stored block,
+    as `_ML` was. `parse_layers_h()` strips C comments first: the comment on `_ML`
+    otherwise swallowed `_SL` and every later layer read one index low.
+  - **The MIDI keys' legends are computed by the firmware at runtime**
+    (`midi_legend()` in `midi_legend.c`, from the octave, transpose, velocity and
+    channel), so neither static-text switch has them. `tools/midi_legend_dump.py`
+    compiles that C with the system compiler and runs it for the resting legends
+    (QMK's start values, octave as PolyKybd sets it, so `MI_C` is C4), keyed by
+    QMK's long `QK_MIDI_*` name. The export and the checkout path both call it.
+    Without a C compiler it returns None and the 144 keys show their keycode text,
+    so run the export on a machine with one. `tests/tools/midi_legend_dump_test.py`
+    checks the shipped legends against the firmware when the checkout matches the
+    export's version.
   - ⚠️ **An out-of-step checkout previews WRONG, which is why it now has to WIN a
     version comparison to be read at all** (above). The keycodes come from the
     connected keyboard while every legend comes from the data source, so an old clone

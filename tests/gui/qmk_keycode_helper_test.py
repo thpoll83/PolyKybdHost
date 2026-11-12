@@ -374,5 +374,33 @@ class TestStenoCategory(unittest.TestCase):
         self.assertNotIn("QK_STENO_COMB_MAX", kc)
 
 
+class TestPolyKybdKeycodes(unittest.TestCase):
+    """The AI key (0x7E2A) is past QMK's QK_KB_31, so keycodes.h has no name for it."""
+
+    def test_editor_table_names_the_ai_key(self):
+        from polyhost.gui.layout_dialog.qmk_keycode_helper import editor_keycodes
+        kc = editor_keycodes(HEADER_FILE)
+        self.assertEqual(kc["KC_AI"], 0x7E2A)
+        self.assertNotIn("KC_AI", parse_qmk_keycodes(HEADER_FILE))   # macros stay QMK-only
+
+    def test_ai_key_tile_and_description(self):
+        from polyhost.gui.layout_dialog.qmk_keycode_helper import editor_keycodes
+        names = build_keycode_to_name(editor_keycodes(HEADER_FILE))
+        self.assertEqual(categorize("KC_AI"), "User / Macro")
+        self.assertEqual(describe_keycode(0x7E2A, names), ("AI", "", None))
+
+    def test_values_match_the_firmware(self):
+        import pathlib
+        from polyhost.gui.layout_dialog.keycap_preview import parse_custom_keycodes
+        from polyhost.gui.layout_dialog.qmk_keycode_helper import POLYKYBD_KEYCODES
+        header = (pathlib.Path(__file__).resolve().parents[3] / "qmk_firmware" / "keyboards"
+                  / "polykybd" / "keycode_helper.h")
+        if not header.is_file():
+            self.skipTest("no ../qmk_firmware checkout")
+        fw = parse_custom_keycodes(header.read_text(encoding="utf-8"))
+        for name, value in POLYKYBD_KEYCODES.items():
+            self.assertEqual(fw.get(value), name)
+
+
 if __name__ == "__main__":
     unittest.main()

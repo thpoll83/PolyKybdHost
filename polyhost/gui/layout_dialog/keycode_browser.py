@@ -10,7 +10,7 @@ from polyhost.gui.layout_dialog.keycode_browser_button import KeycodeBrowserButt
 from polyhost.gui.layout_dialog.keycode_composer import KeycodeComposer
 from polyhost.gui.layout_dialog.macro_tab import MacroTab
 from polyhost.gui.layout_dialog.combo_tab import ComboTab, TapDanceTab
-from polyhost.gui.layout_dialog.qmk_keycode_helper import HEADER_FILE, parse_qmk_keycodes, categorize, create_nice_name, \
+from polyhost.gui.layout_dialog.qmk_keycode_helper import HEADER_FILE, editor_keycodes, POLYKYBD_KEYCODES, categorize, create_nice_name, \
     category_order, standard_category, last_key_in_standard_category, build_keycode_to_name
 
 
@@ -21,7 +21,7 @@ class KeycodeBrowser(QWidget):
     def __init__(self, num_layers: int = 9, core=None):
         super().__init__()
 
-        self.keycodes = parse_qmk_keycodes(HEADER_FILE)
+        self.keycodes = editor_keycodes(HEADER_FILE)
         self.codes_to_name = build_keycode_to_name(self.keycodes)
 
         tabs = QTabWidget()
@@ -42,6 +42,13 @@ class KeycodeBrowser(QWidget):
             categories.setdefault(cat, {})[name] = keycode
             if name == LAST_KEY_IN_STD:
                 cat = ""
+
+        # PolyKybd's own keys first in their tab: appended last, the AI key sat
+        # behind 64 macro, KB and USER tiles.
+        for name in POLYKYBD_KEYCODES:
+            home = categorize(name)
+            tab = categories.get(home, {})
+            categories[home] = {n: tab[n] for n in POLYKYBD_KEYCODES if n in tab} | tab
 
         for category in CAT_ORDER:
             if category not in categories:

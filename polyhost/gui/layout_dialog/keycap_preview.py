@@ -239,6 +239,11 @@ class KeycapPreview:
     toggle is off or the firmware checkout is absent.
     """
 
+    # How many layers the source's tags store, and how many the connected keyboard
+    # stores (set_stored_layer_count). None leaves the tags as they are.
+    _stored_layers: int | None = None
+    _device_stored: int | None = None
+
     def __init__(self, lang: str = DEFAULT_LANG, source: str | None = None):
         """`source` forces "shipped" or "checkout" instead of the version compare.
 
@@ -276,6 +281,10 @@ class KeycapPreview:
         # preview built before either source loads still decodes layer keys.
         self._layer_tags: dict = dict(qh.LAYER_TAGS)
         self._tag_drift = ""       # set when the checkout disagrees with LAYER_TAGS
+        # How many layers the source's tags store, and how many the connected
+        # keyboard stores (set_stored_layer_count). They differ on a keyboard
+        # older than the data: see qh.fold_layer_tags.
+        self._stored_layers: int | None = qh.STORED_LAYER_COUNT
 
     # -- loading ------------------------------------------------------------
 
@@ -354,7 +363,7 @@ class KeycapPreview:
         # Every name the keycode header gives each value, from the SAME source the
         # browser names tiles from -- so the two cannot drift apart.
         self._alt_names = {}
-        for nm, val in qh.parse_qmk_keycodes(qh.HEADER_FILE).items():
+        for nm, val in qh.editor_keycodes(qh.HEADER_FILE).items():
             self._alt_names.setdefault(val, []).append(nm)
         # The derived aliases fold only ONTO a name we can draw, so this needs the
         # legend tokens AND the LUT's own key set.
@@ -380,7 +389,14 @@ class KeycapPreview:
         self._legends = self._drawable(pd.legends)
         self._custom = dict(pd.custom)
         self._set_ime(pd.ime.get("families", {}), pd.ime.get("legends", {}))
-        self._layer_tags = dict(pd.layer_tags) or dict(qh.LAYER_TAGS)
+        if pd.layer_tags:
+            self._layer_tags = dict(pd.layer_tags)
+            self._stored_layers = pd.stored_layers
+        else:
+            self._layer_tags = dict(qh.LAYER_TAGS)
+            self._stored_layers = qh.STORED_LAYER_COUNT
+        # The MIDI keys: their legends were computed at export time (see
+        # tools/midi_legend_dump.py) and are already in pd.legends.
         self._ld.set_qmk_aliases(pd.aliases)
         self._L = pd.lang_reader() or self._resolver
         self._lang_ok = self._L is not self._resolver
@@ -441,6 +457,14 @@ class KeycapPreview:
                 cps = None
             if cps:
                 resolved[token] = list(cps)
+        # The MIDI keys (firmware 1.13.0+): `midi_legend()` builds them at runtime,
+        # so neither switch above has them. The tree's own C is compiled and run
+        # (tools/midi_legend_dump.py, the same call the export makes).
+        try:
+            import midi_legend_dump as mld
+            resolved.update(mld.midi_legends(pk, log=self.log.debug) or {})
+        except Exception as e:
+            self.log.debug("MIDI legends unavailable (%s: %s)", type(e).__name__, e)
         self._legends = self._drawable(resolved)
         self._custom = parse_custom_keycodes(_read(pk, "keycode_helper.h"))
         # QMK's short aliases, derived from its own headers (see
@@ -470,6 +494,11 @@ class KeycapPreview:
             self.log.debug("layers.h unreadable (%s: %s)", type(e).__name__, e)
         if derived:
             self._layer_tags = derived
+            try:
+                self._stored_layers = qh.parse_stored_layer_count(
+                    pathlib.Path(pk) / "config.h")
+            except OSError:
+                self._stored_layers = None
             drift = sorted(i for i in set(derived) | set(qh.LAYER_TAGS)
                            if derived.get(i) != qh.LAYER_TAGS.get(i))
             if drift and authoritative:
@@ -637,11 +666,23 @@ class KeycapPreview:
                                  "will show their keycode", qh.HEADER_FILE)
         return self._ranges
 
+    def set_stored_layer_count(self, count: int | None):
+        """How many layers the connected keyboard stores (its dynamic layer count).
+
+        Layer keys are named by index, and firmware 1.13.0 moved every layer after
+        the stored ones up by one (the MIDI layer). The editor passes the count the
+        keyboard reports, so a 1.11.x board's `TO(8)` previews as `_SL`, not `_ML`.
+        """
+        self._device_stored = count or None
+
+    def _tags(self) -> dict:
+        return qh.fold_layer_tags(self._layer_tags, self._stored_layers, self._device_stored)
+
     def _layer_token(self, keycode: int):
         """`MO(_FL)` for a layer keycode, or None. Needs the tag map."""
         for lo, hi, kind in self._layer_ranges:
             if lo <= keycode <= hi:
-                tag = self._layer_tags.get(keycode - lo)
+                tag = self._tags().get(keycode - lo)
                 return f"{kind}(_{tag})" if tag else None
         return None
 

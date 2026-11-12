@@ -69,20 +69,23 @@ class _FakeCore:
 
     # -- state ---------------------------------------------------------
     def get_status(self):
+        # The newest protocol this host knows, and every feature it enables: an
+        # older number greys out every newer submenu, which is not what a user
+        # with current firmware sees.
+        from polyhost._version import __protocol__
+        from polyhost.device.poly_kybd import FEATURE_MIN_PROTOCOL
         return {
             "connected": True, "device_present": True, "paused": False,
-            "name": self.NAME, "hw_version": "1.0", "protocol": 12,
-            "fw_version": "0.9.85", "current_lang": "enUS",
-            # Feature gating: without these the Idle/Keycap-Script submenus
-            # render disabled, which is not what a normal user sees.
-            "capabilities": {"idle_style": True, "glyph_script": True},
+            "name": self.NAME, "hw_version": "1.0", "protocol": __protocol__,
+            "fw_version": "1.13.0", "current_lang": "enUS",
+            "capabilities": {f: True for f in FEATURE_MIN_PROTOCOL},
         }
 
     def list_languages(self):
         return ["enUS", "deDE", "frFR", "esES", "jaJP"]
 
     def settings_list(self):
-        return {"brightness_set_daylight_dependent": True}
+        return {"brightness_set_daylight_dependent": True, "agents_enabled": True}
 
     def settings_get(self, key):
         return self.settings_list().get(key)
@@ -106,6 +109,23 @@ class _FakeCore:
     def keymap_layer_count(self):
         return (True, 9)
 
+    def get_glyph_size(self):
+        return (True, 0)          # Small
+
+    def agents_list(self):
+        """Four sample agents from the real registry, so the AI Agents submenu
+        shows its list rather than "No agents reported"."""
+        from polyhost.services.agents.registry import AgentRegistry
+        reg = AgentRegistry(clock=lambda: 0.0)
+        for vendor, session, state, title in (
+                ("claude-code", "a", "working", "Fix the login test"),
+                ("codex", "b", "waiting", "Refactor the parser"),
+                ("gemini", "c", "done", "Release notes"),
+                ("opencode", "d", "idle", "docs")):
+            reg.report(vendor, session, state, headline=title)
+        return {"agents": reg.snapshot(), "page": 0, "pages": reg.page_count(),
+                "enabled": True, "active": True, "last_press": None}
+
 
 def _grab(menu, path, log):
     """Render one QMenu to a PNG.
@@ -119,6 +139,19 @@ def _grab(menu, path, log):
     # (gui/menu_tiles.py) build their tiles on it.
     menu.aboutToShow.emit()
     QApplication.processEvents()
+    # Some submenus (AI Agents) are filled off the GUI thread by MenuFetcher
+    # (gui/menu_fetch.py), so right after aboutToShow they are still empty and
+    # grab() gives 0x0. Wait, at most 3 s, for their entries to arrive.
+    import time
+    deadline = time.monotonic() + 3.0
+    while time.monotonic() < deadline:
+        QApplication.processEvents()
+        if any(a.text() for a in menu.actions()):
+            break
+        time.sleep(0.02)
+    for _ in range(5):            # let the last fill finish
+        QApplication.processEvents()
+        time.sleep(0.02)
     menu.ensurePolished()
     menu.show()
     QApplication.processEvents()
