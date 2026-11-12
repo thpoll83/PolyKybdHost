@@ -38,6 +38,9 @@ polyctl agents hook <vendor>
   session's title (the text the terminal tab shows, which can describe your work); and
   through a forwarder also this computer's name. It never sends the prompt, the
   transcript or tool arguments.
+- The host keeps these fields for the hook-reported agents in `agents.json` in its
+  config folder, so the keys come back after a host restart without waiting for
+  each agent's next event. A local agent whose process has ended is not restored.
 - If `polyctl` is not on `PATH` (a checkout without `pip install -e .`), use
   `<path-to-PolyKybdHost>/.venv/bin/python -m polyhost.cli.polyctl agents hook <vendor>`,
   or `.venv\Scripts\python.exe` on Windows.

@@ -34,9 +34,10 @@ class AgentsMenuTest(unittest.TestCase):
         host._core_click = lambda fn, done: (host.calls.append(fn), done(*fn()))
         host.log = mock.MagicMock()
         host.report_device_result = mock.MagicMock()
-        for name in ("_apply_agents_menu", "_toggle_agents_enabled", "_raise_agent_clicked",
-                     "_show_pairing_code"):
+        for name in ("_build_agents_menu", "_set_agent_rows", "_apply_agents_menu",
+                     "_toggle_agents_enabled", "_raise_agent_clicked", "_show_pairing_code"):
             setattr(host, name, types.MethodType(getattr(PolyHost, name), host))
+        host._build_agents_menu()
         return host
 
     def _texts(self, menu):
@@ -71,6 +72,37 @@ class AgentsMenuTest(unittest.TestCase):
         host._toggle_agents_enabled(True)
         host.core.settings_set.assert_called_once_with("agents_enabled", True, source="tray")
         host.report_device_result.assert_not_called()
+
+    def test_set_up_hooks_is_there_before_the_agent_list_arrives(self):
+        host = self._host()            # built, no core.agents_list() answer yet
+        texts = self._texts(host.agents_menu)
+        self.assertEqual(texts, ["Show on the Number Row", "No agents reported",
+                                 "Set Up Hooks", "Pair a Forwarder…"])
+
+    def test_set_up_hooks_and_pair_have_icons(self):
+        host = self._host()
+        acts = {a.text(): a for a in host.agents_menu.actions()}
+        self.assertFalse(acts["Set Up Hooks"].icon().isNull())
+        self.assertFalse(acts["Pair a Forwarder…"].icon().isNull())
+
+    def test_a_failed_fetch_keeps_the_menu(self):
+        host = self._host()
+        host._apply_agents_menu({"enabled": True, "agents": [
+            {"vendor": "codex", "session_id": "s", "state": "done", "key": 2, "headline": "x"}]})
+        before = self._texts(host.agents_menu)
+        host._apply_agents_menu(RuntimeError("daemon busy"))
+        self.assertEqual(self._texts(host.agents_menu), before)
+
+    def test_rows_are_replaced_not_added(self):
+        host = self._host()
+        rows = [{"vendor": "codex", "session_id": "s", "state": "done", "key": 0,
+                 "headline": "x"}]
+        host._apply_agents_menu({"enabled": True, "agents": rows})
+        host._apply_agents_menu({"enabled": True, "agents": rows})
+        texts = self._texts(host.agents_menu)
+        self.assertEqual(texts.count("Key 1: Codex, done, x"), 1)
+        self.assertEqual(texts.count("Set Up Hooks"), 1)
+        self.assertNotIn("No agents reported", texts)
 
 
 @unittest.skipUnless(_QT, "needs PyQt5 and a display (xvfb-run)")
