@@ -477,10 +477,8 @@ def _cmd_forwarder(_client, args):
     Local file access: needs no running host."""
     from polyhost.services import forwarder_pairing as fp
     if args.forwarder_cmd == "pairing-code":
-        print(fp.pairing_code())
-        print("Enter it on the forwarder's computer: polyctl forwarder pair <code>, or the "
-              "forwarder's tray menu. Anyone with it can send reports to this computer.",
-              file=sys.stderr)
+        from polyhost.cli.pairing_output import print_pairing_code
+        print_pairing_code(fp.pairing_code())
         return 0
     if args.forwarder_cmd == "pair":
         key = fp.parse_code(args.code)
