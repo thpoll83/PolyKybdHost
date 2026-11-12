@@ -236,9 +236,15 @@ class PolyCore(Observable):
         from polyhost.services.midi_guide import SeenPrograms, seen_path
         self._midi_seen = SeenPrograms(seen_path(), log)
         self._midi_guide_key = None
-        # (program key, monotonic deadline) of the guide this host started and that
-        # may still ring; None once it ended, was cancelled or never started.
+        # (program key, monotonic deadline, _manual_ring_seq at its start) of the
+        # guide this host started and that may still ring; None once it ended, was
+        # cancelled or never started.
         self._midi_guide_owner = None
+        # Counts the manual ring requests the keyboard accepted (key attention, its
+        # cancel, polyctl attention --midi). Bumped and compared on the worker only:
+        # a guide cancel that runs after such a request, even one that jumped the
+        # queue (run_sync goes to the front), sees a newer count and does nothing.
+        self._manual_ring_seq = 0
         # Apps already told they get no shortcut icons because they are
         # forwarded -- one line each, not one per window change.
         self._told_no_remote_shortcuts = set()
@@ -900,7 +906,7 @@ class PolyCore(Observable):
         # queued for the next program cannot replace the cancel.
         if owner is not None and time.monotonic() < owner[1]:
             self.worker.submit("midi_guide_cancel",
-                               lambda c: self.keeb.key_attention_cancel(),
+                               lambda c, s=owner[2]: self._cancel_midi_guide(s),
                                coalesce_key="midi_guide_cancel")
         if key is None or self._midi_seen.has(key):
             return
@@ -908,6 +914,21 @@ class PolyCore(Observable):
             return
         self.worker.submit("midi_guide", lambda c, k=key: self._run_midi_guide(k),
                            coalesce_key="midi_guide")
+
+    def _cancel_midi_guide(self, seq):
+        """Worker: cancel the guide that started at count `seq`, unless a manual
+        request took the ring since."""
+        if self._manual_ring_seq != seq:
+            return True, "a manual request owns the ring"
+        return self.keeb.key_attention_cancel()
+
+    def _manual_ring(self, fn):
+        """Worker: run a manual ring request and, once the keyboard took it, mark the
+        ring as no longer the guide's."""
+        ok, msg = fn()
+        if ok:
+            self._manual_ring_seq += 1
+        return ok, msg
 
     def _run_midi_guide(self, key):
         """Worker: start the guide for `key` if it is still the program in front, and
@@ -922,7 +943,8 @@ class PolyCore(Observable):
             return ok, msg
         self._midi_seen.add(key)
         if key == self._midi_guide_key:
-            self._midi_guide_owner = (key, time.monotonic() + GUIDE_SECONDS)
+            self._midi_guide_owner = (key, time.monotonic() + GUIDE_SECONDS,
+                                      self._manual_ring_seq)
             self.log.info("MIDI guide started for %s", key)
         else:
             # The program left while the request was on the wire.
@@ -937,7 +959,11 @@ class PolyCore(Observable):
         if reset:
             self._midi_seen.clear()
         from polyhost.services.midi_guide import run_guide
-        return self._device_call("midi_guide", lambda c: run_guide(self.keeb, self.log))
+        ok, msg = self._device_call(
+            "midi_guide", lambda c: self._manual_ring(lambda: run_guide(self.keeb, self.log)))
+        if ok:
+            self._midi_guide_owner = None
+        return ok, msg
 
     def _send_template_with_fill(self, handler):
         """Send the focused window's templates WITH the generic gap fill.
@@ -2709,7 +2735,9 @@ class PolyCore(Observable):
         except (TypeError, ValueError):
             return False, f"Invalid key attention request: {row!r}, {col!r}"
         ok, msg = self._device_call(
-            "key_attention", lambda c: self.keeb.key_attention(row, col, count, period_ms))
+            "key_attention",
+            lambda c: self._manual_ring(
+                lambda: self.keeb.key_attention(row, col, count, period_ms)))
         if ok:
             # This request replaced any MIDI guide: leaving that program must not
             # cancel it.
@@ -2717,8 +2745,9 @@ class PolyCore(Observable):
         return ok, msg
 
     def key_attention_cancel(self):
-        ok, msg = self._device_call("key_attention_cancel",
-                                    lambda c: self.keeb.key_attention_cancel())
+        ok, msg = self._device_call(
+            "key_attention_cancel",
+            lambda c: self._manual_ring(self.keeb.key_attention_cancel))
         if ok:
             self._midi_guide_owner = None
         return ok, msg

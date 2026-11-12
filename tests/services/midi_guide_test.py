@@ -168,6 +168,10 @@ class _Keyboard:
         self.calls.append("cancel")
         return True, "ok"
 
+    def key_attention(self, row, col, count, period_ms):
+        self.calls.append(("attention", row, col))
+        return (True, "ok") if row < ROWS else (False, "refused")
+
 
 class RunGuideTest(unittest.TestCase):
     def test_sends_the_path(self):
@@ -195,13 +199,17 @@ class TrackMidiGuideTest(unittest.TestCase):
         core = types.SimpleNamespace(
             log=types.SimpleNamespace(info=lambda *a: None), jobs=[], keeb=kb,
             _midi_seen=SeenPrograms(seen_path), _midi_guide_key=None,
-            _midi_guide_owner=None, safe_mode=False, coalesce={})
+            _midi_guide_owner=None, _manual_ring_seq=0, safe_mode=False, coalesce={})
 
         def submit(name, fn, coalesce_key=None):
             core.jobs.append((name, fn))
             core.coalesce[name] = coalesce_key
         core.worker = types.SimpleNamespace(submit=submit)
         core._run_midi_guide = lambda key: poly_core.PolyCore._run_midi_guide(core, key)
+        core._cancel_midi_guide = lambda seq: poly_core.PolyCore._cancel_midi_guide(core, seq)
+        core._manual_ring = lambda fn: poly_core.PolyCore._manual_ring(core, fn)
+        # run_sync: the manual request runs at once, ahead of every queued job.
+        core._device_call = lambda name, fn: fn(None)
         core.track = lambda handler: poly_core.PolyCore._track_midi_guide(core, handler)
 
         def run_jobs():
@@ -267,8 +275,8 @@ class TrackMidiGuideTest(unittest.TestCase):
         core = self._core()
         core.track(self._window("bitwig studio", {"midi": True}))
         core.run_jobs()
-        key, _ = core._midi_guide_owner
-        core._midi_guide_owner = (key, 0.0)                 # its ripples ran out
+        key, _, seq = core._midi_guide_owner
+        core._midi_guide_owner = (key, 0.0, seq)            # its ripples ran out
         core.track(self._window("explorer", {}))
         self.assertEqual(core.run_jobs(), [])               # a later polyctl attention stays
 
@@ -278,7 +286,6 @@ class TrackMidiGuideTest(unittest.TestCase):
         core.track(self._window("bitwig studio", {"midi": True}))
         core.run_jobs()
         self.assertIsNotNone(core._midi_guide_owner)        # still within its deadline
-        core._device_call = lambda name, fn: (True, "ok")
         self.assertEqual(poly_core.PolyCore.key_attention(core, 1, 1), (True, "ok"))
         self.assertIsNone(core._midi_guide_owner)
         core.track(self._window("explorer", {}))
@@ -289,9 +296,42 @@ class TrackMidiGuideTest(unittest.TestCase):
         core = self._core()
         core.track(self._window("bitwig studio", {"midi": True}))
         core.run_jobs()
-        core._device_call = lambda name, fn: (False, "refused")
-        poly_core.PolyCore.key_attention(core, 99, 1)
+        self.assertFalse(poly_core.PolyCore.key_attention(core, 99, 1)[0])
         self.assertIsNotNone(core._midi_guide_owner)
+        core.track(self._window("explorer", {}))
+        self.assertEqual(core.run_jobs(), ["midi_guide_cancel"])
+        self.assertEqual(core.keeb.calls[-1], "cancel")     # the guide is still cancelled
+
+    def test_a_queued_cancel_spares_a_manual_request_that_ran_first(self):
+        from polyhost.core import poly_core
+        core = self._core()
+        core.track(self._window("bitwig studio", {"midi": True}))
+        core.run_jobs()
+        core.track(self._window("explorer", {}))            # cancel queued, worker busy
+        self.assertEqual([n for n, _ in core.jobs], ["midi_guide_cancel"])
+        # run_sync puts the manual request at the front: it runs before the cancel.
+        self.assertTrue(poly_core.PolyCore.key_attention(core, 1, 1)[0])
+        core.run_jobs()
+        self.assertEqual(core.keeb.calls[-1], ("attention", 1, 1))   # no cancel sent
+
+    def test_a_manual_request_accepted_before_the_cancel_was_queued(self):
+        # The worker accepted the manual request, but the caller has not yet
+        # cleared the owner when the tick queues the cancel.
+        core = self._core()
+        core.track(self._window("bitwig studio", {"midi": True}))
+        core.run_jobs()
+        core._manual_ring(lambda: core.keeb.key_attention(1, 1, 3, 4000))
+        core.track(self._window("explorer", {}))
+        core.run_jobs()
+        self.assertEqual(core.keeb.calls[-1], ("attention", 1, 1))
+
+    def test_a_queued_cancel_still_runs_without_a_manual_request(self):
+        core = self._core()
+        core.track(self._window("bitwig studio", {"midi": True}))
+        core.run_jobs()
+        core.track(self._window("explorer", {}))
+        core.run_jobs()
+        self.assertEqual(core.keeb.calls[-1], "cancel")
 
     def test_a_stale_job_does_nothing(self):
         core = self._core()
