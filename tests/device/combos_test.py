@@ -253,6 +253,23 @@ class CombosCoreTest(unittest.TestCase):
         _ok, words = real_set.__self__.get_combo_record(Combos.KIND_COMBO, 0)
         self.assertEqual(words, [0, 0, 0, 0, 0])     # the first record was put back
 
+    def test_a_restore_that_fails_is_reported(self):
+        core, _fw = self._core()
+        real_set = core.keeb.set_combo_record
+        calls = []
+
+        def flaky_set(kind, slot, words):
+            calls.append((kind, slot, list(words)))
+            if len(calls) >= 2:          # the second write and the restore both fail
+                return False, "link dropped"
+            return real_set(kind, slot, words)
+        core.keeb.set_combo_record = flaky_set
+        ok, msg = core.combos_set(combos=[{"slot": 0, "keys": [KC_J, KC_K], "result": KC_ESC},
+                                          {"slot": 1, "keys": [KC_J, TG2], "result": KC_CAPS}])
+        self.assertFalse(ok)
+        self.assertTrue(msg.startswith("link dropped. 1 earlier record(s) could not be put back"))
+        self.assertEqual(len(calls), 3)  # write, failed write, failed restore
+
 
 if __name__ == "__main__":
     unittest.main()

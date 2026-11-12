@@ -2718,9 +2718,17 @@ class PolyCore(Observable):
             ok, msg = self._device_call(
                 "combo_set", lambda c, k=kind, s=slot, w=words: self.keeb.set_combo_record(k, s, w))
             if not ok:
+                unrestored = 0
                 for k, s, w in before[:i]:
-                    self._device_call(
+                    restored, _ = self._device_call(
                         "combo_set", lambda c, k=k, s=s, w=w: self.keeb.set_combo_record(k, s, w))
+                    unrestored += not restored
+                if unrestored:
+                    # The keyboard's RAM now mixes old and new records, and the next
+                    # COMMIT from any save would store that mix.
+                    return False, (f"{msg}. {unrestored} earlier record(s) could not be put "
+                                   f"back, so the unsaved tables mix old and new records. "
+                                   f"Save again before saving anything else.")
                 return False, msg
         return self._device_call("combo_commit", lambda c: self.keeb.commit_combos())
 
