@@ -12,6 +12,7 @@ title, folder, process id, computer name), never a prompt or a transcript.
 import json
 import logging
 import os
+import threading
 import time
 
 FILE_NAME = "agents.json"
@@ -25,6 +26,7 @@ class AgentStore:
         self._log = log or logging.getLogger(__name__)
         self._wall = wall_clock
         self._saved = None          # (version, edits) at the last save
+        self._lock = threading.Lock()   # the periodic save and the shutdown save
 
     def load(self) -> int:
         """Restore the agents of the last run. A missing or broken file restores
@@ -41,15 +43,21 @@ class AgentStore:
             return 0
         try:
             offline = self._wall() - float(data.get("saved_at", 0))
-        except (TypeError, ValueError):
+            restored = self._registry.restore(data, offline)
+        except Exception as e:      # an optional cache must never stop the start
+            self._log.warning("Agents: could not restore %s: %s", self._path, e)
             return 0
-        restored = self._registry.restore(data, offline)
-        self._saved = self._mark()
+        with self._lock:
+            self._saved = self._mark()
         return restored
 
     def save_if_changed(self) -> bool:
         """Write the file when the registry changed since the last write. Never
         raises. Returns whether it wrote."""
+        with self._lock:
+            return self._save_locked()
+
+    def _save_locked(self) -> bool:
         mark = self._mark()
         if mark == self._saved:
             return False

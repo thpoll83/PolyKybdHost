@@ -91,6 +91,23 @@ class AgentStoreTest(unittest.TestCase):
         self.assertEqual(AgentStore(reg, self.path).load(), 0)
         self.assertEqual(reg.agents(), [])
 
+    def test_a_wrong_structure_restores_nothing_and_does_not_raise(self):
+        for data in ({"agents": 1}, {"hook_vendors": 5}, {"agents": {"a": 1}}):
+            with open(self.path, "w", encoding="utf-8") as f:
+                json.dump(dict(format=1, saved_at=0, **data), f)
+            reg = self._registry()
+            self.assertEqual(AgentStore(reg, self.path).load(), 0, data)
+            self.assertEqual(reg.agents(), [])
+
+    def test_a_malformed_entry_is_skipped_and_the_rest_restored(self):
+        with open(self.path, "w", encoding="utf-8") as f:
+            json.dump({"format": 1, "saved_at": 0, "hook_vendors": ["codex", 3],
+                       "agents": [7, "x", None,
+                                  {"vendor": "codex", "session_id": "ok", "state": "idle"}]}, f)
+        reg = self._registry()
+        self.assertEqual(AgentStore(reg, self.path, wall_clock=_Clock(0.0)).load(), 1)
+        self.assertEqual([a.session_id for a in reg.agents()], ["ok"])
+
 
 if __name__ == "__main__":
     unittest.main()

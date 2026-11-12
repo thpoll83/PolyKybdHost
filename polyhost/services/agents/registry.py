@@ -293,9 +293,16 @@ class AgentRegistry:
         now = self._clock()
         offline_s = max(0.0, float(offline_s))
         restored = 0
+        vendors = data.get("hook_vendors") or []
+        entries = data.get("agents") or []
+        if not isinstance(vendors, list) or not isinstance(entries, list):
+            log.warning("Agents: the saved agents have a wrong structure; nothing restored")
+            return 0
         with self._lock:
-            self._hook_vendors.update(str(v) for v in data.get("hook_vendors") or [])
-            for entry in data.get("agents") or []:
+            self._hook_vendors.update(str(v) for v in vendors if isinstance(v, str))
+            for entry in entries:
+                if not isinstance(entry, dict):
+                    continue
                 try:
                     key = (str(entry["vendor"]), str(entry["session_id"]))
                     state = AgentState.parse(entry.get("state") or "idle")
