@@ -139,8 +139,8 @@ designcraft,ai.storyteller.designcraft:
 ## ESC mark: silhouette
 
 The ESC key shows `icons/designcraft_mark.png`, made from the app's own icon `icons/designcraft.png`
-by `program_marks.silhouette_mark(..., cut=70)` in `fetch_icons.py`. The animal is
+by `program_marks.silhouette_mark(..., cut=120)` in `fetch_icons.py`. The animal is
 cut off the coloured tile as one solid shape, fitted into 40 x 40 (40 x 38), and
-interior pixels darker than luma 70 at that size are cut back out (eyes, mouth,
+interior pixels darker than luma 120 at that size are cut back out (eyes, mouth,
 lines). The spec places it 1:1 (`program_icon_region: [40, 38]`). The
 generator's thresholds turned the engraving into dither at keycap size.

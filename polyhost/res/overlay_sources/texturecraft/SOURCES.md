@@ -98,8 +98,8 @@ PYTHONPATH=. python scripts/generate_app_overlays.py \
 ## ESC mark: silhouette
 
 The ESC key shows `icons/texturecraft_mark.png`, made from the app's own icon `icons/texturecraft.png`
-by `program_marks.silhouette_mark(..., cut=95)` in `fetch_icons.py`. The animal is
+by `program_marks.silhouette_mark(..., cut=120)` in `fetch_icons.py`. The animal is
 cut off the coloured tile as one solid shape, fitted into 40 x 40 (36 x 40), and
-interior pixels darker than luma 95 at that size are cut back out (eyes, mouth,
+interior pixels darker than luma 120 at that size are cut back out (eyes, mouth,
 lines). The spec places it 1:1 (`program_icon_region: [36, 40]`). The
 generator's thresholds turned the engraving into dither at keycap size.

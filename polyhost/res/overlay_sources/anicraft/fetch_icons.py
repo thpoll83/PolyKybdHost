@@ -143,7 +143,7 @@ def main() -> int:
                            credit="storytold/anicraft assets/app-icon/anicraft.ico (MIT OR Apache-2.0)")
     # The ESC mark: the icon's animal as one solid shape at keycap size, with its
     # darkest lines cut back out (program_marks.silhouette_mark).
-    program_marks.silhouette_mark(out / "anicraft_mark.png", out / "anicraft.png", cut=70)
+    program_marks.silhouette_mark(out / "anicraft_mark.png", out / "anicraft.png", cut=120)
     print(f"Wrote {n} icons (+ frame cells, program mark) to {out}")
     return 0
 
