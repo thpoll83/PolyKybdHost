@@ -13,6 +13,7 @@ import os
 import sys
 import threading
 import unittest
+from unittest import mock
 from multiprocessing import Pipe
 
 from polyhost.cli import polyctl
@@ -479,6 +480,20 @@ class FwFlashUpdateTest(unittest.TestCase):
                                  {protocol.M_UPDATE_CHECK: {"available": True, "version": "0.9.0", "url": "http://x"}})
         self.assertEqual(rc, 0)
         self.assertIn("0.9.0", out)
+
+
+class VersionFlagTest(unittest.TestCase):
+    def test_version_prints_host_version_without_connecting(self):
+        from polyhost._version import __protocol__, __version__
+        out = io.StringIO()
+        with mock.patch.object(polyctl, "connect",
+                               side_effect=AssertionError("must not connect")), \
+                contextlib.redirect_stdout(out), \
+                self.assertRaises(SystemExit) as cm:
+            polyctl.main(["--version"])
+        self.assertEqual(cm.exception.code, 0)
+        self.assertEqual(out.getvalue().strip(),
+                         f"PolyKybdHost {__version__} (protocol {__protocol__})")
 
 
 class ImportGuardTest(unittest.TestCase):

@@ -21,6 +21,7 @@ import sys
 import time
 
 from polyhost.device.command_ids import GlyphPlacement, GlyphScript, GlyphSize, IdleStyle, IdleTimeout, TapTerms  # stdlib-only (Enum), no Qt
+from polyhost._version import __protocol__, __version__
 from polyhost.server import protocol
 
 # Default timeframe for `polyctl logs` — long enough for "it broke this
@@ -1414,6 +1415,9 @@ def build_parser():
     parser = argparse.ArgumentParser(
         prog="polyctl",
         description="Control a running PolyKybdHost over its local socket.")
+    # Local: argparse prints and exits during parsing, so no host has to run.
+    parser.add_argument("--version", action="version",
+                        version=f"PolyKybdHost {__version__} (protocol {__protocol__})")
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("status", help="print device/host status").set_defaults(func=_cmd_status)
