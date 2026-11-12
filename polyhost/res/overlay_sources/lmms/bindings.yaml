@@ -1,0 +1,95 @@
+# LMMS shortcut overlays for PolyKybd (Windows, macOS, Linux). See SOURCES.md.
+#
+# Shortcuts: LMMS's own source, read at two points: the release tag v1.2.2 (the
+# current stable release) and master @ f2a4cd24 (the 1.3 development builds).
+# The key is drawn where both agree; where they differ, both keys are drawn and
+# SOURCES.md says which version each belongs to.
+#
+# LMMS sets its keys through Qt. Qt::CTRL / ControlModifier is Cmd on macOS,
+# so it is written CMDCTRL. QKeySequence::Redo is Ctrl+Y and Ctrl+Shift+Z on
+# Windows, Ctrl+Shift+Z on Linux and Cmd+Shift+Z on macOS; v1.2.2 adds both on
+# every system.
+#
+# The Song Editor, the Pattern editor, the Piano Roll and the Mixer are
+# subwindows of one main window, so the host cannot tell them apart. The set has
+# the main-window keys and the Song Editor keys; Cut, Copy and Paste act in the
+# Piano Roll.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/lmms/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/lmms/bindings.yaml --preview /tmp/lmms_preview
+app: lmms
+match: [lmms, io.lmms.lmms]
+output: lmms_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+# Program mark: LMMS's own icon (GPL-2.0-or-later), see SOURCES.md.
+program_icon: lmms.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- File (MainWindow.cpp) ---
+  - { key: N, mods: [CMDCTRL], label: New }
+  - { key: O, mods: [CMDCTRL], label: Open }
+  - { key: S, mods: [CMDCTRL], label: Save }
+  - { key: S, mods: [CMDCTRL, SHIFT], label: "Save as" }
+  - { key: S, mods: [CMDCTRL, ALT], icon: saveversion.png, label: "Save as new version" }
+  - { key: E, mods: [CMDCTRL], icon: exportaudio.png, label: Export }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: exportall.png, label: "Export tracks" }
+  - { key: M, mods: [CMDCTRL], icon: exportmidi.png, label: "Export MIDI" }
+  - { key: Q, mods: [CMDCTRL], label: Quit }
+
+  # --- Edit ---
+  - { key: Z, mods: [CMDCTRL], label: Undo }
+  - { key: Z, mods: [CMDCTRL, SHIFT], label: Redo }
+  - { key: Y, mods: [CTRL], label: Redo, except: [macos] }
+  - { key: X, mods: [CMDCTRL], label: Cut }
+  - { key: C, mods: [CMDCTRL], label: Copy }
+  - { key: V, mods: [CMDCTRL], label: Paste }
+
+  # --- Transport (Editor.cpp, MainWindow.cpp) ---
+  - { key: SPACE, mods: [], icon: playstop.png, label: "Play/stop" }
+  - { key: SPACE, mods: [SHIFT], icon: pause.png, label: Pause }
+
+  # --- Song Editor (SongEditor.cpp) ---
+  - { key: HOME, mods: [], icon: tostart.png, label: "Go to start" }
+  - { key: LEFT, mods: [], icon: rewind.png, label: "Back one bar" }
+  - { key: RIGHT, mods: [], icon: fastforward.png, label: "Forward one bar" }
+  - { key: INSERT, mods: [SHIFT], icon: insertsilence.png, label: "Insert bar" }
+  - { key: ENTER, mods: [SHIFT], icon: insertsilence.png, label: "Insert bar" }
+  - { key: DEL, mods: [SHIFT], icon: deltime.png, label: "Remove bar" }
+  - { key: BACKSPACE, mods: [SHIFT], icon: deltime.png, label: "Remove bar" }
+  - { key: DEL, mods: [], label: Delete }
+  - { key: BACKSPACE, mods: [], label: Delete }
+  - { key: A, mods: [CMDCTRL], label: "Select all" }
+  - { key: "0", mods: [CMDCTRL], label: "Zoom reset" }
+
+  # --- Windows, LMMS 1.2 (F keys) ---
+  - { key: F5, mods: [], icon: mainwin.png, label: "Song Editor" }
+  - { key: F6, mods: [], icon: stepseq.png, label: "Beat+Bassline Editor" }
+  - { key: F7, mods: [], icon: pianoroll.png, label: "Piano Roll" }
+  - { key: F8, mods: [], icon: automation.png, label: "Automation Editor" }
+  - { key: F9, mods: [], icon: mixer.png, label: "FX Mixer" }
+  - { key: F10, mods: [], icon: notepad.png, label: "Project notes" }
+
+  # --- Windows, LMMS 1.3 development builds (Ctrl/Cmd+digit) ---
+  - { key: "1", mods: [CMDCTRL], icon: mainwin.png, label: "Song Editor" }
+  - { key: "2", mods: [CMDCTRL], icon: stepseq.png, label: "Pattern Editor" }
+  - { key: "3", mods: [CMDCTRL], icon: pianoroll.png, label: "Piano Roll" }
+  - { key: "4", mods: [CMDCTRL], icon: automation.png, label: "Automation Editor" }
+  - { key: "5", mods: [CMDCTRL], icon: mixer.png, label: Mixer }
+  - { key: "6", mods: [CMDCTRL], icon: midimap.png, label: "Controller rack" }
+  - { key: "7", mods: [CMDCTRL], icon: notepad.png, label: "Project notes" }
+  - { key: F11, mods: [SHIFT], icon: fullscreen.png, label: "Maximize editor" }
+  - { key: D, mods: [CMDCTRL, SHIFT], icon: detach.png, label: "Detach all subwindows" }
+  - { key: D, mods: [CMDCTRL, ALT, SHIFT], icon: attach.png, label: "Attach all subwindows" }
