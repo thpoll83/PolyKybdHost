@@ -139,18 +139,17 @@ def _grab(menu, path, log):
     # (gui/menu_tiles.py) build their tiles on it.
     menu.aboutToShow.emit()
     QApplication.processEvents()
-    # Some submenus (AI Agents) are filled off the GUI thread by MenuFetcher
-    # (gui/menu_fetch.py), so right after aboutToShow they are still empty and
-    # grab() gives 0x0. Wait, at most 3 s, for their entries to arrive.
+    # Some submenus are updated off the GUI thread by MenuFetcher
+    # (gui/menu_fetch.py): AI Agents gets its agent rows a moment after
+    # aboutToShow. Wait, at most 3 s, until the entries stop changing for 0.2 s.
     import time
     deadline = time.monotonic() + 3.0
-    while time.monotonic() < deadline:
+    last, stable = None, 0
+    while time.monotonic() < deadline and stable < 10:
         QApplication.processEvents()
-        if any(a.text() for a in menu.actions()):
-            break
-        time.sleep(0.02)
-    for _ in range(5):            # let the last fill finish
-        QApplication.processEvents()
+        now = [a.text() for a in menu.actions()]
+        stable = stable + 1 if now == last and now else 0
+        last = now
         time.sleep(0.02)
     menu.ensurePolished()
     menu.show()

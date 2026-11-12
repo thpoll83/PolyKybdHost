@@ -106,6 +106,7 @@ class AgentRegistry:
         self._agents: dict[tuple, Agent] = {}
         self._hook_vendors: set[str] = set()   # vendors that reported through a hook
         self.version = 0                       # incremented on every visible change
+        self.edits = 0                         # incremented on every report, for the store
 
     # ---- writers ---------------------------------------------------------------
 
@@ -129,6 +130,7 @@ class AgentRegistry:
         pid = int(pid) if pid else None
         now = self._clock()
         with self._lock:
+            self.edits += 1
             key = (vendor_id, session_id)
             if state == ENDED:
                 gone = self._agents.pop(key, None)
@@ -264,6 +266,69 @@ class AgentRegistry:
                         changed = True
             if changed:
                 self.version += 1
+
+    # ---- persistence (services/agents/store.py) -------------------------------
+
+    def export(self) -> dict:
+        """The hook-reported agents, for the store. Times are ages in seconds
+        (the clock is monotonic and does not survive a restart). Title-scan
+        entries are left out: the scan finds them again."""
+        now = self._clock()
+        with self._lock:
+            agents = [{
+                "vendor": a.vendor, "session_id": a.session_id,
+                "state": a.state.name.lower(), "slot": a.slot,
+                "since_age": max(0.0, now - a.since),
+                "event_age": max(0.0, now - a.last_event),
+                "headline": a.headline, "label": a.label, "cwd": a.cwd,
+                "surface": a.surface, "machine": a.machine, "pid": a.pid,
+            } for a in self._agents.values() if a.source == "hook"]
+            return {"agents": agents, "hook_vendors": sorted(self._hook_vendors)}
+
+    def restore(self, data: dict, offline_s: float) -> int:
+        """Put the agents of export() back, `offline_s` seconds later. A local
+        agent whose process has ended is dropped; the time rules (stale, forget)
+        then apply as if the host had run all along. Entries already present win.
+        Returns how many agents were restored."""
+        now = self._clock()
+        offline_s = max(0.0, float(offline_s))
+        restored = 0
+        with self._lock:
+            self._hook_vendors.update(str(v) for v in data.get("hook_vendors") or [])
+            for entry in data.get("agents") or []:
+                try:
+                    key = (str(entry["vendor"]), str(entry["session_id"]))
+                    state = AgentState.parse(entry.get("state") or "idle")
+                    pid = int(entry.get("pid") or 0)
+                    since = now - float(entry.get("since_age", 0)) - offline_s
+                    last = now - float(entry.get("event_age", 0)) - offline_s
+                except (KeyError, TypeError, ValueError):
+                    continue
+                if not key[0] or not key[1] or key in self._agents:
+                    continue
+                machine = str(entry.get("machine") or "local")
+                alive = False
+                if pid and machine == "local" and self._is_alive is not None:
+                    alive = bool(self._is_alive(pid))
+                    if not alive:
+                        log.info("Agents: not restored %s %s (process %s ended)",
+                                 key[0], key[1], pid)
+                        continue
+                slot = entry.get("slot")
+                used = {a.slot for a in self._agents.values()}
+                if not isinstance(slot, int) or slot < 0 or slot in used:
+                    slot = self._free_slot()
+                self._agents[key] = Agent(
+                    key[0], key[1], state=state, since=since, last_event=last, slot=slot,
+                    headline=str(entry.get("headline") or ""),
+                    label=str(entry.get("label") or ""), cwd=str(entry.get("cwd") or ""),
+                    surface=str(entry.get("surface") or ""), machine=machine, pid=pid,
+                    source="hook", pid_seen_alive=alive)
+                restored += 1
+            if restored:
+                self.version += 1
+                log.info("Agents: restored %d from the last run", restored)
+        return restored
 
     # ---- readers ---------------------------------------------------------------
 
