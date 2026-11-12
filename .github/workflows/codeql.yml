@@ -55,7 +55,7 @@ jobs:
       #   pairing-code` prints the window-report key; showing it to the user who
       #   pairs a forwarder is what the command is for (security audit HOST-6).
       - name: Drop intended findings
-        uses: advanced-security/filter-sarif@v1
+        uses: advanced-security/filter-sarif@f3b8118a9349d88f7b1c0c488476411145b6270d  # v1.0.1
         with:
           patterns: |
             -polyhost/cli/polyctl.py:py/clear-text-logging-sensitive-data
