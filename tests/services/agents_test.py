@@ -1,5 +1,6 @@
 """The agent registry, the hook and title adapters, the card, and the controller
 against the emulated firmware (cmd 45/46, protocol v31)."""
+import os
 import unittest
 import unittest.mock as mock
 
@@ -499,7 +500,8 @@ class ControllerTest(unittest.TestCase):
         # The session ended with reason "other" and nothing reported since: a key
         # press finds no window, so the key is freed instead of staying for hours.
         self.c.raise_agent = lambda a: False
-        self.c._raise = lambda a: AgentKeysController._raise(self.c, a)
+        # In this thread, so the assertions see the finished raise.
+        self.c.raise_now = lambda a: AgentKeysController._raise(self.c, a)
         self.r.report("claude-code", "a", "working", pid=10)
         self.r.report("claude-code", "a", None, event="detach:other")
         self.c.sync(self.kb)
@@ -509,15 +511,31 @@ class ControllerTest(unittest.TestCase):
         self.assertIn("key freed", self.c.last_press["result"])
 
     def test_a_press_that_finds_no_window_keeps_a_live_key(self):
-        self.c.raise_agent = lambda a: False
-        self.c._raise = lambda a: AgentKeysController._raise(self.c, a)
+        calls = []
+        self.c.raise_agent = lambda a: calls.append(a.session_id) or False
+        self.c.raise_now = lambda a: AgentKeysController._raise(self.c, a)
         self.r.report("claude-code", "a", "working", pid=10)
         self.r.report("claude-code", "a", None, event="detach:other")
         self.r.report("claude-code", "a", "working", pid=20)   # resumed: not detached
         self.c.sync(self.kb)
         self.kb.press(0)
         self.c.sync(self.kb)
+        self.assertEqual(calls, ["a"])                          # the raise did run
         self.assertEqual(len(self.r.agents()), 1)
+
+    def test_a_system_that_cannot_list_windows_keeps_a_detached_key(self):
+        env = {k: v for k, v in os.environ.items() if k != "DISPLAY"}
+        env["WAYLAND_DISPLAY"] = "wayland-0"
+        self.c.raise_agent = raise_agent
+        self.c.raise_now = lambda a: AgentKeysController._raise(self.c, a)
+        self.r.report("claude-code", "a", "working", pid=10)
+        self.r.report("claude-code", "a", None, event="detach:other")
+        self.c.sync(self.kb)
+        with mock.patch.dict(os.environ, env, clear=True):
+            self.kb.press(0)
+            self.c.sync(self.kb)
+        self.assertEqual(len(self.r.agents()), 1)
+        self.assertIn("Wayland", self.c.last_press["result"])
 
     def test_press_is_read_without_a_console_line_or_G(self):
         # In steady state the host polls GET_LANG, not GET_ID, so G does not move,
