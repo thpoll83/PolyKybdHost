@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import re
 
+from polyhost.device.command_ids import Combos  # stdlib-only, no Qt
+
 LAYER_FNS = {"TO": 0x5200, "MO": 0x5220, "TG": 0x5260, "TD": 0x5700}
 
 MOD_FNS = {"LCTL": 0x0100, "C": 0x0100, "LSFT": 0x0200, "S": 0x0200, "LALT": 0x0400,
@@ -52,7 +54,8 @@ def parse_keycode(text: str) -> int:
     m = re.fullmatch(r"(TO|MO|TG|TD)\((\d+)\)", t, re.IGNORECASE)
     if m:
         n = int(m.group(2))
-        limit = 0xFF if m.group(1).upper() == "TD" else 0x1F
+        # TD(n) names a tap-dance slot, and the firmware has TAP_DANCE_SLOTS of them.
+        limit = Combos.TAP_DANCE_SLOTS - 1 if m.group(1).upper() == "TD" else 0x1F
         if n > limit:
             raise ValueError(f"{t}: layer/slot out of range")
         return LAYER_FNS[m.group(1).upper()] + n
@@ -76,9 +79,10 @@ def keycode_text(value: int, empty: str = "-") -> str:
     if 0x0100 <= value <= 0x1FFF:
         mods = {v: k for k, v in MOD_FNS.items() if len(k) > 1}
         if (value & 0x1F00) in mods:
-            return f"{mods[value & 0x1F00]}({keycode_text(value & 0xFF)})"
+            # A modifier alone wraps KC_NO, which parse_keycode() reads back.
+            return f"{mods[value & 0x1F00]}({keycode_text(value & 0xFF, empty='KC_NO')})"
     for fn, base in LAYER_FNS.items():
-        if base <= value < base + (0x100 if fn == "TD" else 0x20):
+        if base <= value < base + (Combos.TAP_DANCE_SLOTS if fn == "TD" else 0x20):
             return f"{fn}({value - base})"
     _unused, by_value = keycode_tables()
     return by_value.get(value, f"0x{value:04X}")

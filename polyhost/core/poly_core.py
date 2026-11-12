@@ -74,6 +74,11 @@ PERIODIC_10MIN_CYCLE_MSEC = 1000 * 60 * 10
 # with no window detected while the user switched between several windows).
 SLOW_TICK_WARN_S = 2.0
 
+# The refusal of a feature call while the keyboard runs restricted (newer firmware,
+# the user chose safe mode). _reported_capabilities() turns the same features off.
+SAFE_MODE_REFUSAL = ("The keyboard runs in restricted mode (its firmware is newer than "
+                     "this app), so this feature is off.")
+
 _RES_DIR = pathlib.Path(__file__).parent.parent.resolve() / "res"
 
 
@@ -2627,6 +2632,8 @@ class PolyCore(Observable):
         "on_double_tap", "on_tap_hold", "term_ms"}; slot i is the keycode TD(i). One
         call, 33 reads, so an editor or polyctl does not pay a worker round trip each."""
         from polyhost.device.command_ids import Combos
+        if self.safe_mode:
+            return False, SAFE_MODE_REFUSAL
         ok, info = self._device_call("combo_info", lambda c: self.keeb.get_combo_info())
         if not ok:
             return False, info
@@ -2657,6 +2664,8 @@ class PolyCore(Observable):
         cleared. Every record is validated before the first one is sent, so a bad entry
         changes nothing. (ok, {"other_half": bool}) or (False, reason)."""
         from polyhost.device.command_ids import Combos
+        if self.safe_mode:
+            return False, SAFE_MODE_REFUSAL
         records = []
         try:
             for c in combos or []:

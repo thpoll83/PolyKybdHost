@@ -40,6 +40,7 @@ the deaf window and the pipe's modelled rate, EEPROM, and the console.
 """
 from __future__ import annotations
 
+import copy
 import binascii
 import struct
 import threading
@@ -459,6 +460,12 @@ class MockFirmware:
             self.fw_staged_valid = False
             self._apply_pending = False
         self._deaf_until = 0.0
+        # Runtime combos: RAM goes, the flash sector stays (firmware poly_combos_init).
+        if hasattr(self, "combo_records"):
+            from polyhost.device.command_ids import Combos
+            self.combo_records = (copy.deepcopy(self.combos_flash) if self.combos_flash else
+                                  {Combos.KIND_COMBO: [[0] * 5 for _ in range(Combos.COMBO_SLOTS)],
+                                   Combos.KIND_TAP_DANCE: [[0] * 5 for _ in range(Combos.TAP_DANCE_SLOTS)]})
 
     def reported_bundle_versions(self) -> dict[int, int]:
         """What the GET_ID 'V' block carries ({} below protocol 6)."""
@@ -690,7 +697,6 @@ class MockFirmware:
             return _reply(p[1], body=bytes([Combos.COMBO_SLOTS, Combos.TAP_DANCE_SLOTS,
                                             Combos.REC_BYTES, Combos.FLAG_AVAILABLE, 50, 0]))
         if op == Combos.OP_COMMIT:
-            import copy
             self.combos_flash = copy.deepcopy(self.combo_records)
             return _reply(p[1], body=bytes([Combos.FLAG_COMMIT_OTHER_HALF]))
         kind, index = p[3], p[4]

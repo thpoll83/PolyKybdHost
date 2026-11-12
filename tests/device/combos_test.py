@@ -6,7 +6,7 @@ base/combo_store.h."""
 import unittest
 import unittest.mock as mock
 
-from polyhost.device.command_ids import Cmd, Combos
+from polyhost.device.command_ids import Combos
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.mock_firmware import MockFirmware, MockHidHelper
 from polyhost.device.poly_kybd import (COMBOS_MIN_PROTOCOL, FEATURE_MIN_PROTOCOL, PolyKybd,
@@ -116,6 +116,22 @@ class CombosMockFirmwareTest(unittest.TestCase):
         self.assertTrue(res["other_half"])
         self.assertEqual(fw.combos_flash[Combos.KIND_COMBO][2], [KC_J, KC_K, 0, 0, KC_ESC])
 
+    def test_a_reboot_keeps_only_what_was_committed(self):
+        kb, fw = self._keyboard()
+        kb.set_combo_record(Combos.KIND_COMBO, 0, [KC_J, KC_K, 0, 0, KC_ESC])
+        kb.commit_combos()
+        kb.set_combo_record(Combos.KIND_COMBO, 0, [KC_J, KC_K, 0, 0, KC_CAPS])
+        fw.reboot()
+        _, words = kb.get_combo_record(Combos.KIND_COMBO, 0)
+        self.assertEqual(words, [KC_J, KC_K, 0, 0, KC_ESC])
+
+    def test_a_reboot_with_nothing_committed_empties_the_tables(self):
+        kb, fw = self._keyboard()
+        kb.set_combo_record(Combos.KIND_COMBO, 0, [KC_J, KC_K, 0, 0, KC_ESC])
+        fw.reboot()
+        _, words = kb.get_combo_record(Combos.KIND_COMBO, 0)
+        self.assertEqual(words, [0, 0, 0, 0, 0])
+
     def test_a_bad_record_changes_nothing(self):
         kb, fw = self._keyboard()
         kb.set_combo_record(Combos.KIND_TAP_DANCE, 0, [KC_ESC, 0, 0, 0, 0])
@@ -133,6 +149,32 @@ class CombosMockFirmwareTest(unittest.TestCase):
         self.assertTrue(ok)
         _, info = kb.get_combo_info()
         self.assertFalse(info["available"])
+
+
+class CombosPolyKybdMockTest(unittest.TestCase):
+    def test_a_firmware_nack_reaches_the_caller(self):
+        from polyhost.device.mock_firmware import FaultPlan
+        from polyhost.device.poly_kybd_mock import PolyKybdMock
+        kb = PolyKybdMock(DeviceSettings(), protocol=__protocol__,
+                          faults=FaultPlan(nack={48: 1}))
+        kb.connect()
+        ok, _ = kb.set_combo_record(Combos.KIND_COMBO, 0, [KC_J, KC_K, 0, 0, KC_ESC])
+        self.assertFalse(ok)
+        ok, words = kb.get_combo_record(Combos.KIND_COMBO, 0)
+        self.assertEqual((ok, words), (True, [0, 0, 0, 0, 0]))
+
+
+class CombosSafeModeTest(unittest.TestCase):
+    def test_restricted_mode_refuses_before_any_device_call(self):
+        from polyhost.core.poly_core import PolyCore, SAFE_MODE_REFUSAL
+        core = PolyCore.__new__(PolyCore)
+        core.safe_mode = True
+        core.keeb = mock.MagicMock()
+        core._device_call = mock.MagicMock()
+        self.assertEqual(core.combos_get(), (False, SAFE_MODE_REFUSAL))
+        self.assertEqual(core.combos_set(combos=[{"slot": 0, "keys": [], "result": 0}]),
+                         (False, SAFE_MODE_REFUSAL))
+        core._device_call.assert_not_called()
 
 
 if __name__ == "__main__":

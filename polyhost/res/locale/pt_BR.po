@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-11 21:54+0000\n"
+"POT-Creation-Date: 2026-11-12 05:33+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pt_BR\n"
@@ -970,7 +970,7 @@ msgid "Report on GitHub…"
 msgstr "Relatar no GitHub…"
 
 #: polyhost/gui/crash_alert_dialog.py:86
-#: polyhost/gui/layout_dialog/combo_tab.py:93
+#: polyhost/gui/layout_dialog/combo_tab.py:103
 #: polyhost/gui/layout_dialog/macro_tab.py:217
 #: polyhost/gui/layout_dialog/macro_tab.py:241
 msgid "Clear"
@@ -1815,142 +1815,169 @@ msgstr "Idioma"
 msgid "The new language is used after a restart. Restart now?"
 msgstr "O novo idioma será usado após reiniciar. Reiniciar agora?"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:89
+#: polyhost/gui/layout_dialog/combo_tab.py:99
 msgid "Save"
 msgstr "Salvar"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:134
+#: polyhost/gui/layout_dialog/combo_tab.py:145
+msgid "Reading the keyboard…"
+msgstr "Lendo o teclado…"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:158
+msgid "The keyboard is not connected."
+msgstr "O teclado não está conectado."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:160
+msgid "The keyboard runs in restricted mode (its firmware is newer than this app), so combos and tap dance are off."
+msgstr "O teclado está em modo seguro (o firmware dele é mais recente que este aplicativo), por isso os Combos e o Tap Dance estão desativados."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:162
+#, python-brace-format
+msgid "Combos and tap dance need keyboard firmware with protocol {n} or newer. Update the firmware to use them."
+msgstr "Os Combos e o Tap Dance exigem firmware de teclado com protocolo {n} ou mais recente. Atualize o firmware para usá-los."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:171
+#, python-brace-format
+msgid "Could not read the keyboard: {reason}"
+msgstr "Não foi possível ler o teclado: {reason}"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:173
 msgid "This firmware build has no runtime combos or tap dance (the DOOM developer build)."
 msgstr "Esta compilação do firmware não tem combos nem tap dance em tempo de execução (a compilação de desenvolvimento DOOM)."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:169
-#: polyhost/gui/layout_dialog/combo_tab.py:187
+#: polyhost/gui/layout_dialog/combo_tab.py:220
+#: polyhost/gui/layout_dialog/combo_tab.py:239
 msgid "Not saved"
 msgstr "Não salvo"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:174
+#: polyhost/gui/layout_dialog/combo_tab.py:227
 msgid "Saved on this half only: the other half did not answer. Save again once both halves are connected."
 msgstr "Salvo somente nesta metade: a outra metade não respondeu. Salve novamente quando as duas metades estiverem conectadas."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:207
+#: polyhost/gui/layout_dialog/combo_tab.py:258
 msgid "optional"
 msgstr "opcional"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:209
+#: polyhost/gui/layout_dialog/combo_tab.py:260
 #, python-brace-format
 msgid "Key {n}"
 msgstr "Tecla {n}"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:211
+#: polyhost/gui/layout_dialog/combo_tab.py:262
 msgid "Sends"
 msgstr "Envia"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:215
+#: polyhost/gui/layout_dialog/combo_tab.py:266
 #, python-brace-format
 msgid "Press the keys within {ms} ms of each other. A key is written as on the keymap: KC_J, KC_ESC, S(KC_9), MO(1)."
 msgstr "Pressione as teclas com no máximo {ms} ms de diferença entre elas. Uma tecla é escrita como no mapa de teclas: KC_J, KC_ESC, S(KC_9), MO(1)."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:217
+#: polyhost/gui/layout_dialog/combo_tab.py:268
 msgid "Press the keys at the same time. A key is written as on the keymap: KC_J, KC_ESC, S(KC_9), MO(1)."
 msgstr "Pressione as teclas ao mesmo tempo. Uma tecla é escrita como no mapa de teclas: KC_J, KC_ESC, S(KC_9), MO(1)."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:227
-#: polyhost/gui/layout_dialog/combo_tab.py:304
+#: polyhost/gui/layout_dialog/combo_tab.py:278
+#: polyhost/gui/layout_dialog/combo_tab.py:355
 #, python-brace-format
 msgid "{n}: (empty)"
 msgstr "{n}: (vazio)"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:243
+#: polyhost/gui/layout_dialog/combo_tab.py:294
 #, python-brace-format
 msgid "Key {n}: {text} is not a keycode."
 msgstr "Tecla {n}: {text} não é um keycode."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:250
+#: polyhost/gui/layout_dialog/combo_tab.py:301
 #, python-brace-format
 msgid "Sends: {text} is not a keycode."
 msgstr "Envia: {text} não é um keycode."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:253
+#: polyhost/gui/layout_dialog/combo_tab.py:304
 msgid "A combo needs at least two keys and a keycode to send."
 msgstr "Um combo precisa de pelo menos duas teclas e de um keycode para enviar."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:255
+#: polyhost/gui/layout_dialog/combo_tab.py:306
 msgid "A combo cannot list the same key twice."
 msgstr "Um combo não pode conter a mesma tecla duas vezes."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:276
-#: polyhost/gui/layout_dialog/combo_tab.py:319
+#: polyhost/gui/layout_dialog/combo_tab.py:327
+#: polyhost/gui/layout_dialog/combo_tab.py:372
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
 msgid "Tap"
 msgstr "Tocar"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:276
-#: polyhost/gui/layout_dialog/combo_tab.py:319
+#: polyhost/gui/layout_dialog/combo_tab.py:327
+#: polyhost/gui/layout_dialog/combo_tab.py:372
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
 msgid "Hold"
 msgstr "Segurar"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:276
-#: polyhost/gui/layout_dialog/combo_tab.py:320
+#: polyhost/gui/layout_dialog/combo_tab.py:327
+#: polyhost/gui/layout_dialog/combo_tab.py:373
 msgid "Double tap"
 msgstr "Toque duplo"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:276
-#: polyhost/gui/layout_dialog/combo_tab.py:320
+#: polyhost/gui/layout_dialog/combo_tab.py:327
+#: polyhost/gui/layout_dialog/combo_tab.py:373
 msgid "Tap, then hold"
 msgstr "Tocar e depois segurar"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:279
+#: polyhost/gui/layout_dialog/combo_tab.py:330
 msgid "same as Tap"
 msgstr "igual a Tocar"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:286
+#: polyhost/gui/layout_dialog/combo_tab.py:337
 msgid "Tapping term"
 msgstr "Tempo de toque"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:287
+#: polyhost/gui/layout_dialog/combo_tab.py:338
 msgid "Decide after"
 msgstr "Decidir após"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:289
+#: polyhost/gui/layout_dialog/combo_tab.py:340
 #: polyhost/gui/layout_dialog/macro_tab.py:245
 msgid "Use on selected key"
 msgstr "Usar na tecla selecionada"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:295
+#: polyhost/gui/layout_dialog/combo_tab.py:346
 msgid "Place the tap dance on a key with \"Use on selected key\". An action can be a key, a key with modifiers such as S(KC_9), or MO, TO or TG."
 msgstr "Coloque o tap dance em uma tecla com \"Usar na tecla selecionada\". Uma ação pode ser uma tecla, uma tecla com modificadores como S(KC_9), ou MO, TO ou TG."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:307
+#: polyhost/gui/layout_dialog/combo_tab.py:358
 #, python-brace-format
 msgid "hold {key}"
 msgstr "segurar {key}"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:309
+#: polyhost/gui/layout_dialog/combo_tab.py:360
 #, python-brace-format
 msgid "2× {key}"
 msgstr "2× {key}"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:325
+#: polyhost/gui/layout_dialog/combo_tab.py:362
+#, python-brace-format
+msgid "tap, then hold {key}"
+msgstr "tocar e depois segurar {key}"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:378
 #, python-brace-format
 msgid "{action}: {text} is not a keycode."
 msgstr "{action}: {text} não é um keycode."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:328
+#: polyhost/gui/layout_dialog/combo_tab.py:381
 #, python-brace-format
 msgid "{action}: a tap dance can send a key, a key with modifiers, MO, TO or TG, not {text}."
 msgstr "{action}: um tap dance pode enviar uma tecla, uma tecla com modificadores, MO, TO ou TG, não {text}."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:333
+#: polyhost/gui/layout_dialog/combo_tab.py:386
 msgid "A tap dance needs at least the Tap action."
 msgstr "Um tap dance precisa pelo menos da ação Tocar."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:337
+#: polyhost/gui/layout_dialog/combo_tab.py:390
 #, python-brace-format
 msgid "The time must be {lo} to {hi} ms in steps of {step} ms."
 msgstr "O tempo deve estar entre {lo} e {hi} ms, em passos de {step} ms."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:354
+#: polyhost/gui/layout_dialog/combo_tab.py:407
 #, python-brace-format
 msgid "Tap dance {n}"
 msgstr "Tap dance {n}"
@@ -3734,7 +3761,7 @@ msgstr "Tempos de toque e segurar"
 
 #. TRANSLATORS: unit after a number of milliseconds in a spin box.
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
-#: polyhost/gui/layout_dialog/combo_tab.py:285
+#: polyhost/gui/layout_dialog/combo_tab.py:336
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
 #: polyhost/gui/tap_terms_dialog.py:42 polyhost/gui/tap_terms_dialog.py:48
 #: polyhost/gui/tap_terms_dialog.py:63

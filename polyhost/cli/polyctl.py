@@ -495,7 +495,8 @@ def _cmd_combo(client, args):
     res = client.call(protocol.M_COMBOS_SET, {"combos": [entry]})
     print(f"combo {args.slot} {'cleared' if args.combo_action == 'clear' else 'set'}"
           + ("" if res.get("other_half") else " (the other half did not take the copy)"))
-    return 0
+    # 1 when only this half stored it, so a script can retry.
+    return 0 if res.get("other_half") else 1
 
 
 def _cmd_tapdance(client, args):
@@ -540,7 +541,8 @@ def _cmd_tapdance(client, args):
     res = client.call(protocol.M_COMBOS_SET, {"tap_dances": [entry]})
     print(f"tap dance {args.slot} (TD({slot})) {'cleared' if args.tapdance_action == 'clear' else 'set'}"
           + ("" if res.get("other_half") else " (the other half did not take the copy)"))
-    return 0
+    # 1 when only this half stored it, so a script can retry.
+    return 0 if res.get("other_half") else 1
 
 
 def _cmd_tap_terms(client, args):

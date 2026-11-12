@@ -20,7 +20,9 @@ from PyQt5.QtWidgets import (
 )
 
 from polyhost.device.command_ids import Combos
+from polyhost.device.poly_kybd import COMBOS_MIN_PROTOCOL
 from polyhost.gui import message_box
+from polyhost.gui.menu_fetch import MenuFetcher, ok_value
 from polyhost.gui.ui_kit import px, set_button_icon
 from polyhost.i18n import _, _f
 from polyhost.services.keycode_text import keycode_tables, keycode_text, parse_keycode
@@ -58,6 +60,13 @@ class KeycodeField(QLineEdit):
         return parse_keycode(self.text())
 
 
+class _Unavailable:
+    """What _read() returns when the status snapshot already says no."""
+
+    def __init__(self, status: dict):
+        self.status = status
+
+
 class _SlotTab(QWidget):
     """A slot list on the left, the editor for the selected slot on the right."""
 
@@ -68,6 +77,7 @@ class _SlotTab(QWidget):
         self.core = core
         self._records: list[dict] = []
         self._slots = slots
+        self._fetcher = MenuFetcher(self)
 
         outer = QHBoxLayout(self)
         self.list = QListWidget()
@@ -122,17 +132,51 @@ class _SlotTab(QWidget):
         raise NotImplementedError
 
     # -- loading ------------------------------------------------------------
+    #
+    # Both the read and the write run off the GUI thread through MenuFetcher: a read
+    # is up to 33 device round trips, and in client mode each is an RPC with no
+    # timeout, so a stalled daemon or keyboard would otherwise freeze the editor.
+    # The editor stays disabled while a call is in flight.
 
     def reload(self):
         """Read every slot from the keyboard. Called when the tab is shown."""
-        ok, data = self.core.combos_get()
-        if not ok or not data.get("available"):
+        if self._fetcher.fetch("combos", self._read, self._on_loaded):
+            self._set_editable(False)
+            self.note.setText(_("Reading the keyboard…"))
+
+    def _read(self):
+        """Off the GUI thread. The status snapshot is no device I/O; it answers the
+        cases that have a translated explanation before any round trip."""
+        status = self.core.get_status() or {}
+        if not status.get("connected", True) or status.get("safe_mode") \
+                or not (status.get("capabilities") or {}).get("combos", True):
+            return _Unavailable(status)
+        return self.core.combos_get()
+
+    def _unavailable_text(self, status: dict) -> str:
+        if not status.get("connected", True):
+            return _("The keyboard is not connected.")
+        if status.get("safe_mode"):
+            return _("The keyboard runs in restricted mode (its firmware is newer than "
+                     "this app), so combos and tap dance are off.")
+        return _f("Combos and tap dance need keyboard firmware with protocol {n} or "
+                  "newer. Update the firmware to use them.", n=COMBOS_MIN_PROTOCOL)
+
+    def _on_loaded(self, result):
+        if isinstance(result, _Unavailable):
+            ok, data, text = False, None, self._unavailable_text(result.status)
+        else:
+            ok, data = ok_value(result)
+            if not ok:
+                text = _f("Could not read the keyboard: {reason}", reason=data)
+            elif not isinstance(data, dict) or not data.get("available"):
+                ok, text = False, _("This firmware build has no runtime combos or tap "
+                                    "dance (the DOOM developer build).")
+        if not ok:
             self.list.clear()
             self._records = []
             self._set_editable(False)
-            self.note.setText(str(data) if not ok else _(
-                "This firmware build has no runtime combos or tap dance "
-                "(the DOOM developer build)."))
+            self.note.setText(text)
             return
         self._set_editable(True)
         self._records = self._records_from(data)
@@ -163,19 +207,27 @@ class _SlotTab(QWidget):
 
     # -- writing ------------------------------------------------------------
 
-    def _write(self, rec: dict) -> bool:
-        ok, msg = self.core.combos_set(**self._set_args(rec))
+    def _write(self, rec: dict):
+        args = self._set_args(rec)
+        self._set_editable(False)
+        self._fetcher.call(lambda: self.core.combos_set(**args),
+                           lambda result, rec=rec: self._on_written(rec, result))
+
+    def _on_written(self, rec: dict, result):
+        self._set_editable(True)
+        ok, msg = ok_value(result)
         if not ok:
             message_box.warning(self, _("Not saved"), str(msg))
-            return False
+            return
         self._records[rec["slot"]] = rec
         self.list.item(rec["slot"]).setText(self._row_text(rec))
+        if self.list.currentRow() == rec["slot"]:
+            self._show(rec)
         if isinstance(msg, dict) and not msg.get("other_half", True):
             self.note.setText(_("Saved on this half only: the other half did not answer. "
                                 "Save again once both halves are connected."))
         else:
             self.note.setText(self._default_note())
-        return True
 
     def _on_save(self):
         row = self.list.currentRow()
@@ -192,8 +244,7 @@ class _SlotTab(QWidget):
         row = self.list.currentRow()
         if row < 0:
             return
-        if self._write(self._empty(row)):
-            self._show(self._records[row])
+        self._write(self._empty(row))
 
 
 class ComboTab(_SlotTab):
@@ -307,6 +358,8 @@ class TapDanceTab(_SlotTab):
             parts.append(_f("hold {key}", key=short_text(rec["on_hold"])))
         if rec["on_double_tap"]:
             parts.append(_f("2× {key}", key=short_text(rec["on_double_tap"])))
+        if rec["on_tap_hold"]:
+            parts.append(_f("tap, then hold {key}", key=short_text(rec["on_tap_hold"])))
         return f"{n}: " + ", ".join(p for p in parts if p)
 
     def _show(self, rec: dict):
