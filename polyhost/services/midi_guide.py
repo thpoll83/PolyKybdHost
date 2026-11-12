@@ -11,7 +11,7 @@ An entry in ``overlay-mapping.poly.yaml`` marks a program (or a web page, throug
 The guide is the key path from the active base layer to the MIDI layer, read from the
 keymap the keyboard holds, so a user's own remap is followed. On the default split72
 keymap it is two steps: Fn (on the base layer), then the key above the right Shift
-(on the Fn layer). The keyboard (cmd 47 op 2, firmware protocol 33+) rings the step
+(on the Fn layer). The keyboard (cmd 47 op 2, firmware protocol 34+) rings the step
 whose layer is active and stops on the MIDI layer.
 
 Qt-free; the core calls it on the device worker. Which programs already had the guide
@@ -180,7 +180,7 @@ def run_guide(keeb, log: logging.Logger | None = None) -> tuple[bool, str]:
     Runs on the device worker."""
     log = log or logging.getLogger("PolyHost")
     if not keeb.supports("key_guide"):
-        return False, "The firmware is too old for the MIDI guide (protocol 33)."
+        return False, "The firmware is too old for the MIDI guide (protocol 34)."
     ok, names = keeb.get_layer_names()
     target = midi_layer(names) if ok else None
     if target is None:

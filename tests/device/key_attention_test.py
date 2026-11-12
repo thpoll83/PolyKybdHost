@@ -74,7 +74,7 @@ class KeyAttentionTest(unittest.TestCase):
 
 
 class KeyGuideTest(unittest.TestCase):
-    """cmd 47 op 2 GUIDE, protocol v33."""
+    """cmd 47 op 2 GUIDE, protocol v34."""
     FN_THEN_MIDI = [(2, 0, 4), (7, 7, 5)]
 
     def test_gate(self):

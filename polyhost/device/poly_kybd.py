@@ -166,7 +166,7 @@ KEY_ATTENTION_PERIOD_MIN_MS = 2300    # one ripple runs 2.2 s
 KEY_ATTENTION_PERIOD_MAX_MS = 10000
 # Minimum firmware PROTOCOL_VERSION for the key guide (cmd 47 op 2): the ripple walks a
 # path of layer keys to a target layer, e.g. Fn and then the MIDI key.
-KEY_GUIDE_MIN_PROTOCOL = 33
+KEY_GUIDE_MIN_PROTOCOL = 34
 KEY_GUIDE_MAX_STEPS = 4
 AGENT_KEY_COUNT = 10
 # Card slots: the 10 number keys, then '-' (dictation) and '+' (next waiting agent).
@@ -986,7 +986,7 @@ class PolyKybd:
 
     def key_guide(self, steps, target_layer: int, count: int = 12,
                   period_ms: int = 2500) -> tuple[bool, str]:
-        """Ripple along a path of layer keys to `target_layer` (cmd 47 op 2, v33+).
+        """Ripple along a path of layer keys to `target_layer` (cmd 47 op 2, v34+).
 
         `steps` is a list of up to 4 ``(row, col, layer)``: the key and the layer it
         is on. The keyboard rings the step whose layer is active, so holding Fn moves

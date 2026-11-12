@@ -681,9 +681,9 @@ class MockFirmware:
         return _reply(p[1])
 
     def _key_guide(self, p):
-        """cmd 47 op 2 GUIDE (v33): count, period / 100 ms, target layer, n steps
+        """cmd 47 op 2 GUIDE (v34): count, period / 100 ms, target layer, n steps
         1..4, then {row, col, layer} per step. Same refusals as base/attn_guide.c."""
-        if self.protocol < 33:
+        if self.protocol < 34:
             return _reply(p[1], False)
         count, period, target, n = p[3], p[4], p[5], p[6]
         steps = [tuple(p[7 + 3 * i:10 + 3 * i]) for i in range(n)] if 1 <= n <= 4 else []

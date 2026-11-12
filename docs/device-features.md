@@ -228,7 +228,7 @@ full wiring, the preview rendering and the label-measurement rules are in
   before it is sent. A cancel lets a running ripple finish. split72 draws it; split42
   ACKs and draws nothing. No tray entry: it is for programs (tutorials, the layout
   editor), not a setting.
-- **The key guide (cmd 47 op 2, v33+, gate `key_guide`)** runs the same ripple along a
+- **The key guide (cmd 47 op 2, v34+, gate `key_guide`)** runs the same ripple along a
   path of layer keys: `PolyKybd.key_guide(steps, target_layer, count, period_ms)`,
   `steps` up to 4 `(row, col, layer)`. The keyboard rings the step whose layer is the
   active one and ends on `target_layer`. Its one user is the first-time MIDI guide

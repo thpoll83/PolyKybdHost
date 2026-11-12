@@ -188,7 +188,7 @@ class RunGuideTest(unittest.TestCase):
 class TrackMidiGuideTest(unittest.TestCase):
     """PolyCore._track_midi_guide: once per program, cancelled when it leaves."""
 
-    def _core(self, protocol=33, seen_path=None):
+    def _core(self, protocol=34, seen_path=None):
         from polyhost.core import poly_core
         kb = _Keyboard()
         kb.protocol_version = protocol
@@ -237,7 +237,7 @@ class TrackMidiGuideTest(unittest.TestCase):
         self.assertEqual(core.run_jobs(), [])
 
     def test_old_firmware_gets_nothing(self):
-        core = self._core(protocol=32)
+        core = self._core(protocol=33)
         core.track(self._window("bitwig studio", {"midi": True}))
         self.assertEqual(core.run_jobs(), [])
 

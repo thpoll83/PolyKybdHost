@@ -1487,7 +1487,7 @@ def build_parser():
                              help="end the running request; a ripple already running finishes")
     p_attention.add_argument("--midi", action="store_true",
                              help="run the MIDI guide now: Fn, then the key that opens the "
-                                  "MIDI layer (firmware v33+)")
+                                  "MIDI layer (firmware v34+)")
     p_attention.add_argument("--reset", action="store_true",
                              help="with --midi: forget which programs had the guide, so "
                                   "each MIDI program shows it again")

@@ -877,7 +877,7 @@ class PolyCore(Observable):
         and cancel it when that program leaves the front before the guide ended.
 
         Only on a change of program, so a still window costs a dict lookup per tick.
-        Firmware below protocol 33 gets nothing."""
+        Firmware below protocol 34 gets nothing."""
         if getattr(self, "_midi_seen", None) is None:
             return          # a core built without __init__ (tests)
         from polyhost.services.midi_guide import is_midi_entry, program_key

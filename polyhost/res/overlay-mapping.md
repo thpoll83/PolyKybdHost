@@ -63,7 +63,7 @@ window title (or OS) instead — see below.
 | `layer` | bool | `false` turns off browser layering for a `urls-contains` entry (see below). |
 | `glyph_script` | name | The [keycap face](#keycap-face-per-application) while this entry matches: a `GlyphScript` name (`c64keys`, `amiga`, `ibmvga`, …). |
 | `glyph_script_position` | `centre` / `top-left` | The face's placement while this entry matches (firmware protocol 26+). |
-| `midi` | `true` | The program takes MIDI input: the first time it is in front, the keyboard shows the [MIDI guide](#midi-guide) (firmware protocol 33+). |
+| `midi` | `true` | The program takes MIDI input: the first time it is in front, the keyboard shows the [MIDI guide](#midi-guide) (firmware protocol 34+). |
 
 A sub-map's values are full entries, so they may carry an `overlay` plus further
 constraints of their own — the matcher recurses.
