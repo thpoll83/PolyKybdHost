@@ -246,8 +246,9 @@ full wiring, the preview rendering and the label-measurement rules are in
   call, `combos_set` validates every given slot, writes them and commits), and so are
   the control methods and `polyctl combo` / `polyctl tapdance`. Both record kinds are
   CLOSED (`Combos` in `command_ids.py`, mirror of firmware `base/combo_store.h`). A set
-  changes the keyboard's RAM only; the commit writes its flash sector and copies the
-  records to the other half, and reports whether that copy arrived. Tap dance slot n is
+  changes the keyboard's RAM only; the commit writes its flash and copies the records
+  to the other half, and reports whether the other half stored them (the firmware
+  compares the two halves' flash CRCs). Tap dance slot n is
   the keycode `TD(n)` (0x5700 + n), drawn "Tap dance n+1"; polyctl numbers slots from 1
   to match. The DOOM monolith firmware answers INFO with "not available".
   The layout editor has a Combos tab and a Tap Dance tab beside Macros
