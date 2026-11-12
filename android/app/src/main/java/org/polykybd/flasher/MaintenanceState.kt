@@ -26,8 +26,7 @@ object MaintenanceState {
     private lateinit var store: TokenStore
     private lateinit var github: GitHub
     @Volatile private var tokens: GitHub.Tokens? = null
-    @Volatile private var signInCancelled = false
-    private val pollLock = Object()
+    private val pollGate = PollGate()
     private const val WAITING_FOR_NETWORK =
         "Waiting for the network to reach GitHub. Your code is still valid; this continues by itself."
 
@@ -53,7 +52,7 @@ object MaintenanceState {
 
     /** Starts the device flow; [show] gets the code to enter and the page to enter it on. */
     fun signIn(show: (GitHub.DeviceCode) -> Unit) {
-        signInCancelled = false
+        pollGate.reset()
         background("Asking GitHub for a sign-in code…") {
             val code = github.requestDeviceCode()
             pendingCode = code
@@ -64,8 +63,10 @@ object MaintenanceState {
             var interval = code.intervalSec
             var done: GitHub.Tokens? = null
             while (done == null) {
-                waitForNextPoll(interval * 1000L)
-                if (signInCancelled) { message = "Sign-in cancelled."; return@background }
+                // Measured from the end of the previous request, so it is never too early.
+                if (!pollGate.waitUntil(System.currentTimeMillis() + interval * 1000L)) {
+                    message = "Sign-in cancelled."; return@background
+                }
                 if (System.currentTimeMillis() > deadline) throw GitHub.GitHubException("The code expired. Sign in again.")
                 when (val p = github.pollToken(code, System.currentTimeMillis(), interval)) {
                     is GitHub.Poll.Done -> done = p.tokens
@@ -84,21 +85,8 @@ object MaintenanceState {
         }
     }
 
-    /**
-     * Asks GitHub right away instead of at the next interval. Called when the screen
-     * comes back from the browser, which is when the code has just been entered.
-     */
-    fun pollNow() {
-        synchronized(pollLock) { pollLock.notifyAll() }
-    }
-
-    private fun waitForNextPoll(ms: Long) {
-        synchronized(pollLock) { pollLock.wait(ms) }
-    }
-
     fun cancelSignIn() {
-        signInCancelled = true
-        pollNow()
+        pollGate.cancel()
         pendingCode = null
         changed()
     }
