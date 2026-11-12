@@ -100,6 +100,9 @@ DISPLAY_NAME_OVERRIDE = {
 }
 
 
+_MIDI_SHARP = re.compile(r"MI_[A-G]s\d?")
+
+
 def build_keycode_to_name(name_to_keycode: dict[str, int]) -> dict[int, str]:
     """Invert the name->value map, choosing which name a tile shows for a value.
 
@@ -117,13 +120,19 @@ def build_keycode_to_name(name_to_keycode: dict[str, int]) -> dict[int, str]:
     (field, 2026-08-30).
 
     Measured, not assumed: over the 554 values carrying more than one name, this rule
-    changes exactly ONE -- 0x0000, ``XXXXXXX`` -> ``KC_NO``. The 435 values whose only
+    changes exactly ONE -- 0x0000, ``XXXXXXX`` -> ``KC_NO``. (The MIDI sharp guard in
+    the loop is a second rule, and changes the 30 sharp/flat pairs.) The 435 values whose only
     short name is non-``KC_`` (``MS_UP``, ``SH_TOGG``, the RGB set) have no ``KC_`` name
     at all, so they are untouched; ``_______`` was already losing to ``KC_TRNS``.
     """
     picked: dict[int, str] = {}
     for name, value in name_to_keycode.items():
         current = picked.get(value)
+        # The second guard: a MIDI sharp (MI_Cs) keeps its value against the flat
+        # spelling declared after it (MI_Db), so the tile names the note the keycap
+        # draws, C#. These 30 pairs are the only MI_ values with two short names.
+        if current is not None and _MIDI_SHARP.fullmatch(current):
+            continue
         if current is None or not current.startswith("KC_") or name.startswith("KC_"):
             picked[value] = name
     picked.update({v: n for v, n in DISPLAY_NAME_OVERRIDE.items() if v in picked})
@@ -301,6 +310,18 @@ def mod_stack_name(mods: int) -> str:
         if named:
             return named
     return _mod_str(mods)
+
+
+# The firmware's legends are keyed on QMK's `#define` names for the two stacks
+# (keycode_helper.c switches on KC_HYPR / KC_MEH), which no enum lookup can return.
+_MOD_STACK_TOKENS = {"Hyper": "KC_HYPR", "Meh": "KC_MEH"}
+
+
+def mod_stack_token(value: int) -> str | None:
+    """`KC_HYPR` / `KC_MEH` for a mod stack held with no inner key, else None."""
+    if 0x0100 <= value <= 0x1FFF and value & 0xFF == 0:
+        return _MOD_STACK_TOKENS.get(mod_stack_name((value >> 8) & 0x1F))
+    return None
 
 
 def decompose_keycode(value: int, keycode_to_name: dict) -> str:

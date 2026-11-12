@@ -41,11 +41,14 @@ def parse_qmk_keycode_header(header_path: Path, enum_to_parse: str) -> dict[str,
         if not line or line.startswith("//"):
             continue
 
-        m = re.match(r'([A-Z0-9_]+)\s*=\s*(0x[0-9A-Fa-f]+)', line)
+        # Names may have lower-case letters: QMK's MIDI aliases spell sharps and flats
+        # that way (MI_Cs = QK_MIDI_NOTE_C_SHARP_0, MI_Db, ...). `[A-Z0-9_]+` dropped
+        # all 60 of them, so a keymap token like MI_Cs resolved to no keycode.
+        m = re.match(r'([A-Za-z0-9_]+)\s*=\s*(0x[0-9A-Fa-f]+)', line)
         if m:
             entries[m.group(1)] = int(m.group(2), 16)
             continue
-        m = re.match(r'([A-Z0-9_]+)\s*=\s*([A-Z][A-Z0-9_]*)\s*,?\s*$', line)
+        m = re.match(r'([A-Za-z0-9_]+)\s*=\s*([A-Z][A-Z0-9_]*)\s*,?\s*$', line)
         if m:
             aliases[m.group(1)] = m.group(2)
 
