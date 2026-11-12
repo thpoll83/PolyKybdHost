@@ -2708,12 +2708,20 @@ class PolyCore(Observable):
             row, col, count, period_ms = int(row), int(col), int(count), int(period_ms)
         except (TypeError, ValueError):
             return False, f"Invalid key attention request: {row!r}, {col!r}"
-        return self._device_call(
+        ok, msg = self._device_call(
             "key_attention", lambda c: self.keeb.key_attention(row, col, count, period_ms))
+        if ok:
+            # This request replaced any MIDI guide: leaving that program must not
+            # cancel it.
+            self._midi_guide_owner = None
+        return ok, msg
 
     def key_attention_cancel(self):
-        return self._device_call("key_attention_cancel",
-                                 lambda c: self.keeb.key_attention_cancel())
+        ok, msg = self._device_call("key_attention_cancel",
+                                    lambda c: self.keeb.key_attention_cancel())
+        if ok:
+            self._midi_guide_owner = None
+        return ok, msg
 
     # ---- Runtime combos and tap dance (cmd 48, protocol v33+) ---------------------
 

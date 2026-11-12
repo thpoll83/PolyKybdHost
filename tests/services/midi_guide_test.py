@@ -272,6 +272,27 @@ class TrackMidiGuideTest(unittest.TestCase):
         core.track(self._window("explorer", {}))
         self.assertEqual(core.run_jobs(), [])               # a later polyctl attention stays
 
+    def test_a_manual_request_takes_the_ring_from_the_guide(self):
+        from polyhost.core import poly_core
+        core = self._core()
+        core.track(self._window("bitwig studio", {"midi": True}))
+        core.run_jobs()
+        self.assertIsNotNone(core._midi_guide_owner)        # still within its deadline
+        core._device_call = lambda name, fn: (True, "ok")
+        self.assertEqual(poly_core.PolyCore.key_attention(core, 1, 1), (True, "ok"))
+        self.assertIsNone(core._midi_guide_owner)
+        core.track(self._window("explorer", {}))
+        self.assertEqual(core.run_jobs(), [])               # the manual ripple stays
+
+    def test_a_refused_manual_request_keeps_the_guide(self):
+        from polyhost.core import poly_core
+        core = self._core()
+        core.track(self._window("bitwig studio", {"midi": True}))
+        core.run_jobs()
+        core._device_call = lambda name, fn: (False, "refused")
+        poly_core.PolyCore.key_attention(core, 99, 1)
+        self.assertIsNotNone(core._midi_guide_owner)
+
     def test_a_stale_job_does_nothing(self):
         core = self._core()
         core.track(self._window("bitwig studio", {"midi": True}))
