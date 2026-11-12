@@ -34,10 +34,11 @@ margin: 0
 mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
-program_icon: soundcraft_mark.png   # silhouette of the app's own icon (fetch_icons.py)
-program_icon_mode: alpha
+program_icon: soundcraft.png
+program_icon_mode: luma
+program_icon_threshold: 110
 program_icon_anchor: bottom-right
-program_icon_region: [39, 40]   # the mark's own size: placed 1:1
+program_icon_region: [42, 40]
 program_icon_margin: 0
 
 bindings:

@@ -240,9 +240,6 @@ def main() -> int:
         (out / base).unlink()
     program_marks.own_icon(out / "soundcraft.png", SOUNDCRAFT_ICO, 64,
                            credit="storytold/soundcraft assets/app-icon/soundcraft.ico")
-    # The ESC mark: the icon's animal as one solid shape at keycap size, with its
-    # darkest lines cut back out (program_marks.silhouette_mark).
-    program_marks.silhouette_mark(out / "soundcraft_mark.png", out / "soundcraft.png", cut=70)
     print(f"Wrote {n} icons (+ fades, program mark) to {out}")
     return 0
 

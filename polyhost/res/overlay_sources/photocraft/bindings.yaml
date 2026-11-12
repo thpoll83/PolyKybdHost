@@ -39,10 +39,11 @@ threshold: 150
 # silhouette in a lit tile with both ears and the fanned tails readable; 125
 # fills in the face, 160 starts breaking the tails. 64/128/256 render alike, so
 # 64 is the smallest converged frame.
-program_icon: photocraft_mark.png   # silhouette of the app's own icon (fetch_icons.py)
-program_icon_mode: alpha
-program_icon_anchor: bottom-right
-program_icon_region: [38, 40]   # the mark's own size: placed 1:1
+program_icon: photocraft.png
+program_icon_mode: luma
+program_icon_threshold: 140
+program_icon_anchor: right
+program_icon_region: [40, 40]
 program_icon_margin: 0
 
 bindings:
