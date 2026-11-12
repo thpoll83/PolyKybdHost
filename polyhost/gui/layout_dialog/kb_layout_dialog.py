@@ -183,6 +183,7 @@ class KbLayoutDialog(QMainWindow):
             my_options = [_("Could not read layers from device")]
         else:
             self.keycode_browser.set_layer_count(self.num_layers)
+            self._preview.set_stored_layer_count(self.num_layers)
             my_options = []
             for idx in range(self.num_layers):
                 hint = layer_names.get(idx)

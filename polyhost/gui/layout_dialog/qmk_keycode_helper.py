@@ -20,11 +20,43 @@ HEADER_FILE = pathlib.Path(__file__).parent.parent.parent.resolve() / "res" / "k
 # renamed the device's layers under it -- `MO(_NL)` read as `MO(_FL1)` and drew
 # nothing. Neither source is versioned with this file; this constant is, and it is
 # reviewed with the host release that ships it.
+#
+# Firmware 1.13.0 inserted the MIDI layer `_ML` as stored layer 8, so every layer
+# after it moved one index up. `STORED_LAYER_COUNT` is how many layers this table
+# stores in EEPROM. A keyboard that stores fewer has the same flash layers right
+# after its own stored ones: `fold_layer_tags` renumbers them.
 LAYER_TAGS: dict[int, str] = {
     0: "L0", 1: "L1", 2: "L2", 3: "L3", 4: "L4",
-    5: "FL", 6: "NL", 7: "UL", 8: "SL", 9: "LL",
-    10: "ADDLANG1", 11: "EMJ",
+    5: "FL", 6: "NL", 7: "UL", 8: "ML", 9: "SL",
+    10: "LL", 11: "ADDLANG1", 12: "EMJ",
 }
+STORED_LAYER_COUNT = 9   # firmware DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT
+
+
+def fold_layer_tags(tags: dict[int, str], stored: int | None,
+                    device_stored: int | None) -> dict[int, str]:
+    """`tags` for a keyboard that stores `device_stored` layers, where `tags` came
+    from a firmware storing `stored`.
+
+    A stored layer is added at the END of the stored block (layers.h), so a board
+    with fewer stored layers lacks the last ones, and its flash layers start at
+    `device_stored` instead of `stored`: firmware 1.11.x stores 8, so index 8 is
+    `_SL` there and `_ML` on 1.13.0. A board that stores MORE than the tags know
+    is newer than this data, and its extra layers cannot be named here, so the
+    tags are returned unchanged.
+    """
+    if not stored or not device_stored or device_stored >= stored:
+        return dict(tags)
+    shift = stored - device_stored
+    return {**{i: t for i, t in tags.items() if i < device_stored},
+            **{i - shift: t for i, t in tags.items() if i >= stored}}
+
+
+def parse_stored_layer_count(config_h: Path) -> int | None:
+    """DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT from a firmware tree's config.h."""
+    m = re.search(r"#define\s+DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT\s+(\d+)",
+                  config_h.read_text(encoding="utf-8", errors="ignore"))
+    return int(m.group(1)) if m else None
 
 
 def parse_qmk_keycode_header(header_path: Path, enum_to_parse: str) -> dict[str, int]:
@@ -139,7 +171,11 @@ def parse_layers_h(path: Path) -> dict[int, str]:
     sets the running index, and an alias (`_L0 = _BL`) names the SAME index rather
     than advancing it.
     """
-    m = re.search(r"enum\s+kb_layers\s*\{(.*?)\}", path.read_text(encoding="utf-8"), re.S)
+    # Comments first: `_ML,  // MIDI: the last stored layer` puts the comment in
+    # front of the NEXT enumerator after the split at commas, which then does not
+    # start with `_`, so `_SL` was dropped and every later layer read one index low.
+    text = re.sub(r"/\*.*?\*/|//[^\n]*", "", path.read_text(encoding="utf-8"), flags=re.S)
+    m = re.search(r"enum\s+kb_layers\s*\{(.*?)\}", text, re.S)
     if not m:
         return {}
     idx, tags = 0, {}
