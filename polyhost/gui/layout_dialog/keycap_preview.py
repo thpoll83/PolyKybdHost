@@ -762,7 +762,9 @@ class KeycapPreview:
             show both meanings of a dual-purpose key. Those are SYNTHETIC: they exist
             in no header, so no alias table can ever contain them, and only the
             keycode's other names (`KC_SCROLL_LOCK`, `KC_PAUSE`) resolve;
-          * a layer keycode is decoded rather than named, so it has no entry at all.
+          * a layer keycode is decoded rather than named, so it has no entry at all;
+          * KC_HYPR and KC_MEH are `#define`s over a mod mask, not enum members, so
+            the header names neither and the Hyper key previewed as its text.
 
         Every candidate is a name for the SAME keycode, so whichever one resolves
         names that keycode's own legend -- there is no risk of borrowing another
@@ -773,7 +775,8 @@ class KeycapPreview:
         for cand in (name,
                      self._custom.get(keycode),
                      *self._alt_names.get(keycode, ()),
-                     self._layer_token(keycode)):
+                     self._layer_token(keycode),
+                     qh.mod_stack_token(keycode)):
             if not cand:
                 continue
             kc = self._ld.normalize_kc(cand, self._known)

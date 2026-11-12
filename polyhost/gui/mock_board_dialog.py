@@ -209,7 +209,7 @@ class MockBoardDialog(QDialog):
             else:
                 item.set_keycap(None)
                 main, badge, color = describe_keycode(keycode, self._names) if keycode else ("", "", None)
-                item.set_display(main, badge, color, 9 if len(main) < 5 else 7)
+                item.set_display(main, badge, color)
         stats = payload["stats"]
         refused = payload["refused"]
         # TRANSLATORS: {side} is "Primary" or "Secondary", {state} is "on" or "OFF".
