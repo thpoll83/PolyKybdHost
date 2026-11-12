@@ -1416,8 +1416,10 @@ def build_parser():
         prog="polyctl",
         description="Control a running PolyKybdHost over its local socket.")
     # Local: argparse prints and exits during parsing, so no host has to run.
+    # This is the CLI's own install; the running host's version is the
+    # host_version line of `polyctl status`, which can differ.
     parser.add_argument("--version", action="version",
-                        version=f"PolyKybdHost {__version__} (protocol {__protocol__})")
+                        version=f"polyctl {__version__} (protocol {__protocol__})")
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("status", help="print device/host status").set_defaults(func=_cmd_status)

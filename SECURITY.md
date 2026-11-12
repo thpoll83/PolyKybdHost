@@ -11,7 +11,8 @@ Include:
 
 - what the problem is and what an attacker can do with it,
 - the steps to reproduce it,
-- the host version (tray menu → About, or `polyctl --version`) and your operating system.
+- the host version (tray menu → About, or the `host_version` line of `polyctl status`)
+  and your operating system.
 
 ## Supported versions
 

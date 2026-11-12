@@ -493,7 +493,7 @@ class VersionFlagTest(unittest.TestCase):
             polyctl.main(["--version"])
         self.assertEqual(cm.exception.code, 0)
         self.assertEqual(out.getvalue().strip(),
-                         f"PolyKybdHost {__version__} (protocol {__protocol__})")
+                         f"polyctl {__version__} (protocol {__protocol__})")
 
 
 class ImportGuardTest(unittest.TestCase):
