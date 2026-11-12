@@ -1,5 +1,5 @@
 {
- "fw_version": "1.13.0",
+ "fw_version": "1.13.3",
  "named": {
   "ACUTE_ACCENT": [
    180
@@ -3538,9 +3538,6 @@
   ],
   "ICON_MIDI_BEND_UP": [
    1048648
-  ],
-  "ICON_MIDI_CLEF": [
-   1048650
   ],
   "ICON_MIDI_CRESC": [
    1048636
