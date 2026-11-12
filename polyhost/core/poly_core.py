@@ -2688,10 +2688,23 @@ class PolyCore(Observable):
                 records.append((Combos.KIND_TAP_DANCE, slot, words))
         except (KeyError, TypeError, ValueError) as e:
             return False, f"Invalid combo / tap dance entry: {e}"
-        for kind, slot, words in records:
+        # A SET changes the keyboard's RAM only, and the next COMMIT (from any save)
+        # stores whatever RAM holds. So the old records are read first, and a write
+        # that fails part-way puts the ones already written back before reporting.
+        before = []
+        for kind, slot, _words in records:
+            ok, old = self._device_call(
+                "combo_get", lambda c, k=kind, s=slot: self.keeb.get_combo_record(k, s))
+            if not ok:
+                return False, old
+            before.append((kind, slot, list(old)))
+        for i, (kind, slot, words) in enumerate(records):
             ok, msg = self._device_call(
                 "combo_set", lambda c, k=kind, s=slot, w=words: self.keeb.set_combo_record(k, s, w))
             if not ok:
+                for k, s, w in before[:i]:
+                    self._device_call(
+                        "combo_set", lambda c, k=k, s=s, w=w: self.keeb.set_combo_record(k, s, w))
                 return False, msg
         return self._device_call("combo_commit", lambda c: self.keeb.commit_combos())
 

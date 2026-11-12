@@ -178,5 +178,81 @@ class CombosSafeModeTest(unittest.TestCase):
         core._device_call.assert_not_called()
 
 
+class CombosCoreTest(unittest.TestCase):
+    """PolyCore.combos_get / combos_set over the emulated keyboard."""
+
+    def _core(self):
+        from polyhost.core.poly_core import PolyCore
+        fw = MockFirmware(__protocol__)
+        kb = PolyKybd(DeviceSettings(), PolySettings())
+        kb.hid = MockHidHelper(fw)
+        kb.protocol_version = __protocol__
+        core = PolyCore.__new__(PolyCore)
+        core.safe_mode = False
+        core.keeb = kb
+
+        def device_call(_name, fn):
+            result = fn(None)
+            return (bool(result[0]), result[1]) if isinstance(result, tuple) else (True, result)
+        core._device_call = device_call
+        return core, fw
+
+    def test_get_lists_every_slot(self):
+        core, _fw = self._core()
+        ok, data = core.combos_get()
+        self.assertTrue(ok)
+        self.assertTrue(data["available"])
+        self.assertEqual((len(data["combos"]), len(data["tap_dances"])), (16, 16))
+        self.assertEqual(data["combos"][0], {"slot": 0, "keys": [], "result": 0})
+
+    def test_set_stores_and_commits_both_kinds(self):
+        core, fw = self._core()
+        ok, res = core.combos_set(
+            combos=[{"slot": 1, "keys": [KC_J, KC_K], "result": KC_ESC}],
+            tap_dances=[{"slot": 2, "on_tap": KC_ESC, "on_hold": MO1, "term_ms": 200}])
+        self.assertTrue(ok)
+        self.assertTrue(res["other_half"])
+        self.assertEqual(fw.combos_flash[Combos.KIND_COMBO][1], [KC_J, KC_K, 0, 0, KC_ESC])
+        self.assertEqual(fw.combos_flash[Combos.KIND_TAP_DANCE][2], [KC_ESC, MO1, 0, 0, 200])
+        _ok, data = core.combos_get()
+        self.assertEqual(data["combos"][1]["keys"], [KC_J, KC_K])
+
+    def test_a_slot_with_no_keys_is_cleared(self):
+        core, fw = self._core()
+        core.combos_set(combos=[{"slot": 0, "keys": [KC_J, KC_K], "result": KC_ESC}])
+        ok, _res = core.combos_set(combos=[{"slot": 0, "keys": [], "result": KC_ESC}])
+        self.assertTrue(ok)
+        self.assertEqual(fw.combos_flash[Combos.KIND_COMBO][0], [0, 0, 0, 0, 0])
+
+    def test_a_refused_tap_dance_sends_nothing(self):
+        core, fw = self._core()
+        ok, msg = core.combos_set(
+            combos=[{"slot": 0, "keys": [KC_J, KC_K], "result": KC_ESC}],
+            tap_dances=[{"slot": 0, "on_tap": MT_LSFT_A}])
+        self.assertFalse(ok)
+        self.assertIn("Tap dance 1", msg)
+        _ok, words = core.keeb.get_combo_record(Combos.KIND_COMBO, 0)
+        self.assertEqual(words, [0, 0, 0, 0, 0])
+        self.assertIsNone(getattr(fw, "combos_flash", None))
+
+    def test_a_write_that_fails_part_way_puts_the_earlier_records_back(self):
+        core, _fw = self._core()
+        real_set = core.keeb.set_combo_record
+        calls = []
+
+        def flaky_set(kind, slot, words):
+            calls.append((kind, slot, list(words)))
+            if len(calls) == 2:
+                return False, "link dropped"
+            return real_set(kind, slot, words)
+        core.keeb.set_combo_record = flaky_set
+        ok, msg = core.combos_set(combos=[{"slot": 0, "keys": [KC_J, KC_K], "result": KC_ESC},
+                                          {"slot": 1, "keys": [KC_J, TG2], "result": KC_CAPS}])
+        self.assertFalse(ok)
+        self.assertEqual(msg, "link dropped")
+        _ok, words = real_set.__self__.get_combo_record(Combos.KIND_COMBO, 0)
+        self.assertEqual(words, [0, 0, 0, 0, 0])     # the first record was put back
+
+
 if __name__ == "__main__":
     unittest.main()
