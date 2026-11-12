@@ -944,8 +944,9 @@ class PolyKybd:
 
     def commit_combos(self) -> tuple[bool, dict | str]:
         """Store the RAM records in the keyboard's flash and copy them to the other
-        half (cmd 48 op 3). {"other_half": bool}: False when the split link dropped
-        the copy, so the other half keeps its previous set."""
+        half (cmd 48 op 3). {"other_half": bool}: True once the other half's flash
+        holds the same records (the firmware compares CRCs); False keeps its previous
+        set until the keyboard's own periodic check sends them again."""
         if (refusal := self._combos_too_old()):
             return False, refusal
         result, reply = self.hid.send_and_read_validate(
@@ -953,7 +954,8 @@ class PolyKybd:
         if not result or len(reply) < 4:
             return False, "The keyboard did not answer the combo commit"
         if reply[2:3] != b'.':
-            return False, "The keyboard refused the commit (no combo support in this build)"
+            return False, ("The keyboard refused the commit: a firmware update is running, its "
+                           "flash write failed, or this build has no combo support")
         return True, {"other_half": bool(reply[3] & Combos.FLAG_COMMIT_OTHER_HALF)}
 
     def get_tap_terms(self) -> tuple[bool, dict | str]:
