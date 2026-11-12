@@ -148,8 +148,12 @@ class PolyCore(Observable):
 
     def __init__(self, log, ignore_version=False, start_worker=True,
                  apply_reconnect_in_core=False, allow_key_injection=False,
-                 telemetry_mode="in-process"):
+                 telemetry_mode="in-process", agent_store=False):
         self.log = log
+        # Keep the agent registry in agents.json across restarts (services/agents/
+        # store.py). Only the app entry points turn it on, so a test that builds a
+        # core neither reads nor writes the user's config folder.
+        self._agent_store_on = agent_store
         self.ignore_version = ignore_version
         # SECURITY: the `press`/`release` script commands inject real keystrokes
         # on the keyboard (firmware HID cmd 14 -> the keyboard types into the
@@ -500,6 +504,9 @@ class PolyCore(Observable):
         titles = getattr(self, "_agent_titles", None)
         if titles is not None:
             titles.stop()     # no title-scan report may reach the registry after this
+        store = getattr(self, "_agent_store", None)
+        if store is not None:
+            store.save_if_changed()     # the agents of this run, for the next start
         self._tick_stop.set()
         if self._tick_thread is not None:
             self._tick_thread.join(timeout=1)
@@ -2348,6 +2355,12 @@ class PolyCore(Observable):
             return (minutes("agents_stale_minutes", STALE_AFTER_S),
                     minutes("agents_forget_minutes", FORGET_AFTER_S))
         self.agents = AgentRegistry(is_alive=is_alive, limits=limits)
+        self._agent_store = None
+        if self._agent_store_on:
+            from polyhost.server import protocol
+            from polyhost.services.agents.store import AgentStore
+            self._agent_store = AgentStore(self.agents, protocol.agents_store_path(), self.log)
+            self._agent_store.load()
 
         def dictate():
             return dictation.send_shortcut(dictation.shortcut_for(
@@ -2365,6 +2378,9 @@ class PolyCore(Observable):
             return _raise_viewer(machine, mapping_viewer_apps(self.mapping))
         self._agent_keys.raise_viewer = raise_viewer
         self.worker.add_periodic("agents", 1.0, self._agents_periodic)
+        if self._agent_store is not None:
+            self.worker.add_periodic("agents_store", 5.0,
+                                     lambda cancel: self._agent_store.save_if_changed())
         self._agent_titles = TitleScanner(
             self.agents, self.log,
             enabled=lambda: bool(self.poly_settings.get("agents_enabled")

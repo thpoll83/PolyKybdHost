@@ -45,7 +45,7 @@ class HeadlessHost:
         self.core = PolyCore(log=log, ignore_version=ignore_version,
                              start_worker=False, apply_reconnect_in_core=True,
                              allow_key_injection=allow_key_injection,
-                             telemetry_mode="daemon")
+                             telemetry_mode="daemon", agent_store=True)
         # React to a core-driven self-update (`polyctl update install`): the
         # core only applies + emits; the host owns the restart.
         self.core.subscribe(self._on_update_event)

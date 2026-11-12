@@ -36,6 +36,7 @@ from polyhost.services import log_bundle
 from polyhost.gui.theme import apply_theme
 from polyhost.services import os_theme
 from polyhost.services.os_theme import THEME_AUTO
+from polyhost.services.fw_keymap_changes import keymap_changes
 from polyhost.settings import read_setting
 from polyhost.gui.update_ui import UpdateProgressController
 from polyhost.gui.update_dialog import confirm_update
@@ -394,7 +395,7 @@ class PolyHost(QApplication):
             preload.start(self.log)
             self.core = PolyCore(log=self.log, ignore_version=ignore_version,
                                  start_worker=False,
-                                 allow_key_injection=developer)
+                                 allow_key_injection=developer, agent_store=True)
             self.keeb = self.core.keeb
             self.worker = self.core.worker
             self.device_mgr = self.core.device_mgr
@@ -720,8 +721,11 @@ class PolyHost(QApplication):
         # AI agents on the number row (services/agents, firmware v31+ for the keys).
         # The registry is host state, so the submenu works with no keyboard: the
         # switch, the agent list (a click raises the agent's window) and the hook
-        # setup. Rebuilt from core.agents_list() each time it opens.
+        # setup. The fixed entries are built here, once; each time the menu opens,
+        # core.agents_list() (off the GUI thread) updates only the switch and the
+        # agent rows, so Set Up Hooks is there before the answer arrives.
         self.agents_menu = self.menu.addMenu(get_icon("terminal.svg"), _("AI Agents"))
+        self._build_agents_menu()
         # noinspection PyUnresolvedReferences
         self.agents_menu.aboutToShow.connect(self.refresh_agents_menu)
 
@@ -2406,22 +2410,41 @@ class PolyHost(QApplication):
     def refresh_agents_menu(self):
         self._menu_fetch.fetch("agents", self.core.agents_list, self._apply_agents_menu)
 
-    def _apply_agents_menu(self, info):
-        from polyhost.services.agents.model import vendor as agent_vendor
-        info = info if isinstance(info, dict) else {}
+    def _build_agents_menu(self):
+        """The fixed part of AI Agents: the switch, a placeholder row, Set Up Hooks
+        and Pair a Forwarder. _apply_agents_menu() only changes the switch and the
+        rows between the two separators. Rebuilding the whole menu from the fetch
+        answer left it empty until the answer came, and a rebuild while the menu
+        was open could leave the popup empty on Windows."""
+        from polyhost.gui.agent_hooks import add_setup_menu
         menu = self.agents_menu
-        menu.clear()
-        toggle = QAction(_("Show on the Number Row"), parent=menu, checkable=True)
-        toggle.setChecked(bool(info.get("enabled")))
+        self._agents_toggle = QAction(_("Show on the Number Row"), parent=menu, checkable=True)
         # noinspection PyUnresolvedReferences
-        toggle.triggered.connect(self._toggle_agents_enabled)
-        menu.addAction(toggle)
+        self._agents_toggle.triggered.connect(self._toggle_agents_enabled)
+        menu.addAction(self._agents_toggle)
         menu.addSeparator()
-        agents = info.get("agents") or []
+        self._agents_rows = []
+        self._agents_end = menu.addSeparator()
+        add_setup_menu(menu, self.log).setIcon(get_icon("terminal.svg"))
+        # The same icons as the forwarder's own Set Up Agent Hooks and Pair entries.
+        pair = QAction(get_icon("sync_alt.svg"), _("Pair a Forwarder…"), parent=menu)
+        # noinspection PyUnresolvedReferences
+        pair.triggered.connect(self._show_pairing_code)
+        menu.addAction(pair)
+        self._set_agent_rows([])
+
+    def _set_agent_rows(self, agents):
+        """Replace the agent rows (between the two separators) with `agents`."""
+        from polyhost.services.agents.model import vendor as agent_vendor
+        menu = self.agents_menu
+        for act in self._agents_rows:
+            menu.removeAction(act)
+            act.deleteLater()
+        self._agents_rows = []
         if not agents:
             empty = QAction(_("No agents reported"), parent=menu)
             empty.setEnabled(False)
-            menu.addAction(empty)
+            self._agents_rows.append(empty)
         states = {"working": _("working"), "waiting": _("waiting"), "done": _("done"),
                   "idle": _("idle"), "stale": _("stale")}
         for agent in agents:
@@ -2436,14 +2459,17 @@ class PolyHost(QApplication):
             act.setData((agent.get("vendor"), agent.get("session_id")))
             # noinspection PyUnresolvedReferences
             act.triggered.connect(self._raise_agent_clicked)
-            menu.addAction(act)
-        menu.addSeparator()
-        from polyhost.gui.agent_hooks import add_setup_menu
-        add_setup_menu(menu, self.log)
-        pair = QAction(_("Pair a Forwarder…"), parent=menu)
-        # noinspection PyUnresolvedReferences
-        pair.triggered.connect(self._show_pairing_code)
-        menu.addAction(pair)
+            self._agents_rows.append(act)
+        for act in self._agents_rows:
+            menu.insertAction(self._agents_end, act)
+
+    def _apply_agents_menu(self, info):
+        """The answer of core.agents_list(): the switch and the agent rows. A
+        failed call (an exception or no dict) keeps what the menu shows."""
+        if not isinstance(info, dict):
+            return
+        self._agents_toggle.setChecked(bool(info.get("enabled")))
+        self._set_agent_rows(info.get("agents") or [])
 
     def _show_pairing_code(self):
         """The window-report key as a code, for a forwarder on another computer
@@ -3330,6 +3356,11 @@ class PolyHost(QApplication):
         message = (_f("Firmware {version} is available.", version=release.version) + "\n"
                    + info + installed + "\n\n"
                    + _("Both halves update over HID and reboot automatically."))
+        changes = keymap_changes(current, release.version)
+        if changes:
+            message += ("\n\n" + _("This update changes your stored keymap once:")
+                        + "".join("\n• " + _(text) for text in changes) + "\n"
+                        + _("Keys you remapped and your macros stay as they are."))
         if not confirm_update(_("Update PolyKybd Firmware"), message,
                               notes=getattr(release, "notes", ""),
                               html_url=getattr(release, "html_url", ""),

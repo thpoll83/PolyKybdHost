@@ -54,6 +54,10 @@ class Agent:
     # The registry has seen `pid` alive. Only then does its exit remove the entry:
     # a pid that was never alive (a hook's short-lived shell) proves nothing.
     pid_seen_alive: bool = False
+    # The session ended with a reason that also comes when an app restarts the
+    # agent's process ("other"): the key is kept, without a process, until the
+    # agent reports again.
+    detached: bool = False
 
     @property
     def key(self) -> tuple:
@@ -106,6 +110,7 @@ class AgentRegistry:
         self._agents: dict[tuple, Agent] = {}
         self._hook_vendors: set[str] = set()   # vendors that reported through a hook
         self.version = 0                       # incremented on every visible change
+        self.edits = 0                         # incremented on every report, for the store
 
     # ---- writers ---------------------------------------------------------------
 
@@ -129,6 +134,7 @@ class AgentRegistry:
         pid = int(pid) if pid else None
         now = self._clock()
         with self._lock:
+            self.edits += 1
             key = (vendor_id, session_id)
             if state == ENDED:
                 gone = self._agents.pop(key, None)
@@ -172,7 +178,8 @@ class AgentRegistry:
                                 ("machine", machine), ("window", window)):
                 if value:
                     setattr(agent, name, str(value))
-            if event.startswith("detach"):
+            agent.detached = event.startswith("detach")
+            if agent.detached:
                 # The agent's process ended but the session may resume in a new one
                 # (an editor or the desktop app restarting it). Keep the key, drop
                 # the pid so the process check does not remove it.
@@ -208,6 +215,19 @@ class AgentRegistry:
                 return False
             self.version += 1
             _log_removed(gone, "removed by the user")
+            return True
+
+    def forget_detached(self, vendor_id: str, session_id: str) -> bool:
+        """Remove a detached agent (its process ended, no report since). The key
+        press that found no window for it calls this. Returns whether it was
+        removed."""
+        with self._lock:
+            agent = self._agents.get((vendor_id, session_id))
+            if agent is None or not agent.detached:
+                return False
+            del self._agents[(vendor_id, session_id)]
+            self.version += 1
+            _log_removed(agent, "its process ended and no window was found for it")
             return True
 
     def mark_seen(self, vendor_id: str, session_id: str) -> None:
@@ -264,6 +284,78 @@ class AgentRegistry:
                         changed = True
             if changed:
                 self.version += 1
+
+    # ---- persistence (services/agents/store.py) -------------------------------
+
+    def export(self) -> dict:
+        """The hook-reported agents, for the store. Times are ages in seconds
+        (the clock is monotonic and does not survive a restart). Title-scan
+        entries are left out: the scan finds them again."""
+        now = self._clock()
+        with self._lock:
+            agents = [{
+                "vendor": a.vendor, "session_id": a.session_id,
+                "state": a.state.name.lower(), "slot": a.slot,
+                "since_age": max(0.0, now - a.since),
+                "event_age": max(0.0, now - a.last_event),
+                "headline": a.headline, "label": a.label, "cwd": a.cwd,
+                "surface": a.surface, "machine": a.machine, "pid": a.pid,
+                "detached": a.detached,
+            } for a in self._agents.values() if a.source == "hook"]
+            return {"agents": agents, "hook_vendors": sorted(self._hook_vendors)}
+
+    def restore(self, data: dict, offline_s: float) -> int:
+        """Put the agents of export() back, `offline_s` seconds later. A local
+        agent whose process has ended is dropped; the time rules (stale, forget)
+        then apply as if the host had run all along. Entries already present win.
+        Returns how many agents were restored."""
+        now = self._clock()
+        offline_s = max(0.0, float(offline_s))
+        restored = 0
+        vendors = data.get("hook_vendors", [])
+        entries = data.get("agents", [])
+        if not isinstance(vendors, list) or not isinstance(entries, list):
+            log.warning("Agents: the saved agents have a wrong structure; nothing restored")
+            return 0
+        with self._lock:
+            self._hook_vendors.update(str(v) for v in vendors if isinstance(v, str))
+            for entry in entries:
+                if not isinstance(entry, dict):
+                    continue
+                try:
+                    key = (str(entry["vendor"]), str(entry["session_id"]))
+                    state = AgentState.parse(entry.get("state") or "idle")
+                    pid = int(entry.get("pid") or 0)
+                    since = now - float(entry.get("since_age", 0)) - offline_s
+                    last = now - float(entry.get("event_age", 0)) - offline_s
+                except (KeyError, TypeError, ValueError):
+                    continue
+                if not key[0] or not key[1] or key in self._agents:
+                    continue
+                machine = str(entry.get("machine") or "local")
+                alive = False
+                if pid and machine == "local" and self._is_alive is not None:
+                    alive = bool(self._is_alive(pid))
+                    if not alive:
+                        log.info("Agents: not restored %s %s (process %s ended)",
+                                 key[0], key[1], pid)
+                        continue
+                slot = entry.get("slot")
+                used = {a.slot for a in self._agents.values()}
+                if not isinstance(slot, int) or slot < 0 or slot in used:
+                    slot = self._free_slot()
+                self._agents[key] = Agent(
+                    key[0], key[1], state=state, since=since, last_event=last, slot=slot,
+                    headline=str(entry.get("headline") or ""),
+                    label=str(entry.get("label") or ""), cwd=str(entry.get("cwd") or ""),
+                    surface=str(entry.get("surface") or ""), machine=machine, pid=pid,
+                    source="hook", pid_seen_alive=alive,
+                    detached=entry.get("detached") is True)
+                restored += 1
+            if restored:
+                self.version += 1
+                log.info("Agents: restored %d from the last run", restored)
+        return restored
 
     # ---- readers ---------------------------------------------------------------
 

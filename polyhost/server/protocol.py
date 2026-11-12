@@ -254,6 +254,11 @@ def authkey_path() -> str:
     return os.path.join(_config_dir(), "polykybd.authkey")
 
 
+def agents_store_path() -> str:
+    """The agent registry of the last run (services/agents/store.py)."""
+    return os.path.join(_config_dir(), "agents.json")
+
+
 def window_report_authkey_path() -> str:
     """Authkey for the network window-report endpoint (H4d).
 

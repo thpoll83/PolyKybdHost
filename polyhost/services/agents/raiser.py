@@ -69,11 +69,14 @@ def _win32_force_foreground(hwnd: int) -> bool:
 
 def raise_agent(agent, windows=None):
     """True when a window was brought to the front; False when none was found; a
-    text when one was found but the system kept the focus elsewhere. `windows` is
+    text when one was found but the system kept the focus elsewhere, or when this
+    system cannot list windows at all (pure Wayland). `windows` is
     for tests: an iterable of objects with getHandle(), getPID(), title and
     activate()."""
     if os.environ.get("WAYLAND_DISPLAY") and not os.environ.get("DISPLAY"):
-        return False
+        # Not "no window found": the window may well exist, and a detached agent's
+        # key is freed only on a confirmed miss (controller._raise).
+        return "windows cannot be listed on Wayland"
     windows_from_system = windows is None
     if windows is None:
         import pywinctl
