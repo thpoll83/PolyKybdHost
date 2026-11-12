@@ -689,7 +689,7 @@ class KbLayoutDialog(QMainWindow):
             # nothing assigned: the keyboard shows nothing there, and neither does
             # the photo -- no "NO", "TRNS" or "______" over the picture
             main, badge = "", ""
-        item.set_display(main, badge, color, 9 if len(main) < 5 else 7)
+        item.set_display(main, badge, color)
         # After set_display, which restores the text a keycap hides. The PREVIEW
         # resolves transparency; the TEXT deliberately does not, so the tile still
         # says the slot is transparent rather than claiming it holds that key.
