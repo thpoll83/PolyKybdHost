@@ -13,7 +13,7 @@ from polyhost.settings import PolySettings
 from polyhost.device.bit_packing import (pack_report, pairs_per_report,
                                          plan_mapping_reports)
 from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, compose_cmd_str, compose_roi_header, expectReq
-from polyhost.device.command_ids import (Cmd, HidId, IdleStyle, IdleTimeout, OsType, GlyphPlacement, TapTerms,
+from polyhost.device.command_ids import (Cmd, Combos, HidId, IdleStyle, IdleTimeout, OsType, GlyphPlacement, TapTerms,
                                          GlyphScript, GlyphSize)
 from polyhost.device.hid_helper import DisconnectedHid, HidHelper, IoMeter
 from polyhost.device.hid_fontpack import (parse_id_version_block, parse_id_state_generation,
@@ -162,6 +162,10 @@ AGENT_KEYS_MIN_PROTOCOL = 31
 # Minimum firmware PROTOCOL_VERSION for key attention (cmd 47): the focus ripple of
 # the first-run tutorial on any key, for a program tutorial or the layout editor.
 KEY_ATTENTION_MIN_PROTOCOL = 32
+# Minimum firmware PROTOCOL_VERSION for runtime combos and tap dance (cmd 48). Older
+# firmware NACKs the command; the DOOM monolith developer build answers INFO with
+# "not available".
+COMBOS_MIN_PROTOCOL = 33
 KEY_ATTENTION_PERIOD_MIN_MS = 2300    # one ripple runs 2.2 s
 KEY_ATTENTION_PERIOD_MAX_MS = 10000
 AGENT_KEY_COUNT = 10
@@ -215,6 +219,7 @@ FEATURE_MIN_PROTOCOL = {
     "auto_shift": AUTO_SHIFT_MIN_PROTOCOL,
     "agent_keys": AGENT_KEYS_MIN_PROTOCOL,
     "key_attention": KEY_ATTENTION_MIN_PROTOCOL,
+    "combos": COMBOS_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -867,6 +872,91 @@ class PolyKybd:
             "auto_shift": available and bool(flags & TapTerms.FLAG_AUTO_SHIFT_ON),
             "auto_shift_ms": auto_shift_ms if available else TapTerms.DEFAULT_AUTO_SHIFT_MS,
         }
+
+    # ---- Runtime combos and tap dance (cmd 48, v33+) ------------------------------
+
+    def _combos_too_old(self) -> str | None:
+        if self.supports("combos"):
+            return None
+        return (f"Firmware protocol too old for combos and tap dance "
+                f"(need v{COMBOS_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+
+    def get_combo_info(self) -> tuple[bool, dict | str]:
+        """{"available", "combo_slots", "tap_dance_slots", "combo_term_ms"} (cmd 48 op 0).
+        available is False on a build without the feature (the DOOM monolith)."""
+        if (refusal := self._combos_too_old()):
+            return False, refusal
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.COMBOS, Combos.OP_INFO), 100, expect(Cmd.COMBOS))
+        if not result or len(reply) < 9:
+            return False, "The keyboard did not answer the combo info request"
+        available = reply[2:3] == b'.' and bool(reply[6] & Combos.FLAG_AVAILABLE)
+        return True, {
+            "available": available,
+            "combo_slots": reply[3] if available else 0,
+            "tap_dance_slots": reply[4] if available else 0,
+            "combo_term_ms": reply[7] | (reply[8] << 8),
+        }
+
+    @staticmethod
+    def _combo_words(reply) -> list[int]:
+        return [reply[5 + 2 * i] | (reply[6 + 2 * i] << 8) for i in range(5)]
+
+    def get_combo_record(self, kind: int, index: int) -> tuple[bool, list[int] | str]:
+        """The five u16 of one record (cmd 48 op 1): a combo's four keys and result,
+        or a tap dance's four actions and term."""
+        if (refusal := self._combos_too_old()):
+            return False, refusal
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.COMBOS, Combos.OP_GET, kind, index), 100, expect(Cmd.COMBOS))
+        if not result or len(reply) < 15:
+            return False, "The keyboard did not answer the combo read"
+        if reply[2:3] != b'.':
+            return False, f"The keyboard has no record {kind}/{index}"
+        return True, self._combo_words(reply)
+
+    def set_combo_record(self, kind: int, index: int, words) -> tuple[bool, list[int] | str]:
+        """Write one record into the keyboard's RAM (cmd 48 op 2); commit_combos()
+        stores it. Validated here first: both kinds are CLOSED ranges."""
+        words = list(words)
+        if len(words) != 5:
+            return False, "A record is five values"
+        if kind == Combos.KIND_COMBO:
+            if not (0 <= index < Combos.COMBO_SLOTS) or not Combos.combo_valid(words[:4], words[4]):
+                return False, f"Not a valid combo for slot {index}: {words}"
+        elif kind == Combos.KIND_TAP_DANCE:
+            if not (0 <= index < Combos.TAP_DANCE_SLOTS) or not Combos.tap_dance_valid(*words):
+                return False, f"Not a valid tap dance for slot {index}: {words}"
+        else:
+            return False, f"Unknown record kind {kind!r}"
+        if (refusal := self._combos_too_old()):
+            return False, refusal
+        payload = [Combos.OP_SET, kind, index]
+        for w in words:
+            payload += [w & 0xFF, w >> 8]
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.COMBOS, *payload), 100, expect(Cmd.COMBOS))
+        if not result or len(reply) < 15:
+            return False, "The keyboard did not answer the combo write"
+        if reply[2:3] != b'.':
+            return False, "The keyboard refused that record"
+        return True, self._combo_words(reply)
+
+    def commit_combos(self) -> tuple[bool, dict | str]:
+        """Store the RAM records in the keyboard's flash and copy them to the other
+        half (cmd 48 op 3). {"other_half": bool}: True once the other half's flash
+        holds the same records (the firmware compares CRCs); False keeps its previous
+        set until the keyboard's own periodic check sends them again."""
+        if (refusal := self._combos_too_old()):
+            return False, refusal
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.COMBOS, Combos.OP_COMMIT), 2000, expect(Cmd.COMBOS))
+        if not result or len(reply) < 4:
+            return False, "The keyboard did not answer the combo commit"
+        if reply[2:3] != b'.':
+            return False, ("The keyboard refused the commit: a firmware update is running, its "
+                           "flash write failed, or this build has no combo support")
+        return True, {"other_half": bool(reply[3] & Combos.FLAG_COMMIT_OTHER_HALF)}
 
     def get_tap_terms(self) -> tuple[bool, dict | str]:
         """Read the tap-hold terms (cmd 44, v29+) as

@@ -958,7 +958,7 @@
   "32680": "KC_IME",
   "32681": "KCL_JAUS"
  },
- "fw_version": "1.13.2",
+ "fw_version": "1.13.3",
  "ime": {
   "families": {
    "en-AU": "RALT",

@@ -388,6 +388,27 @@ class PolyKybdMock:
             seconds = 0
         return True, (value, seconds)
 
+    # ---- cmd 48: runtime combos / tap dance --------------------------------------
+    # Answered by the emulated firmware itself (mock_firmware._combos), as
+    # set_handedness is: a NACK or a fault the FaultPlan injects reaches the caller,
+    # and the records survive a reboot only when they were committed.
+
+    def get_combo_info(self) -> tuple[bool, dict | str]:
+        self._log_call("get_combo_info")
+        return self._wire.get_combo_info()
+
+    def get_combo_record(self, kind, index) -> tuple[bool, list | str]:
+        self._log_call("get_combo_record", kind, index)
+        return self._wire.get_combo_record(kind, index)
+
+    def set_combo_record(self, kind, index, words) -> tuple[bool, list | str]:
+        self._log_call("set_combo_record", kind, index, words)
+        return self._wire.set_combo_record(kind, index, words)
+
+    def commit_combos(self) -> tuple[bool, dict | str]:
+        self._log_call("commit_combos")
+        return self._wire.commit_combos()
+
     def get_tap_terms(self) -> tuple[bool, dict | str]:
         self._log_call("get_tap_terms")
         if (refusal := self._too_old("tap_terms")):

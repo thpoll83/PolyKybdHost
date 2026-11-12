@@ -1,10 +1,14 @@
-import pathlib
 import re
 from pathlib import Path
 
 from polyhost.i18n import N_
+from polyhost.services import qmk_keycodes as _qmk_keycodes
 
-HEADER_FILE = pathlib.Path(__file__).parent.parent.parent.resolve() / "res" / "keycodes.h"
+# The header parser lives in services/ so polyctl reads keycodes without polyhost.gui.
+# Bound here, not re-imported by name, for the callers that use them from this module.
+HEADER_FILE = _qmk_keycodes.HEADER_FILE
+parse_qmk_keycode_header = _qmk_keycodes.parse_qmk_keycode_header
+parse_qmk_keycodes = _qmk_keycodes.parse_qmk_keycodes
 # The firmware's `enum kb_layers` (qmk_firmware keyboards/polykybd/layers.h), by
 # index. These are ENUM TAGS, not display labels: the preview rebuilds the token
 # `keycode_helper.c` switches on (`MO(_FL)`, `TO(_EMJ)`) from them, so the spelling
@@ -57,63 +61,6 @@ def parse_stored_layer_count(config_h: Path) -> int | None:
     m = re.search(r"#define\s+DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT\s+(\d+)",
                   config_h.read_text(encoding="utf-8", errors="ignore"))
     return int(m.group(1)) if m else None
-
-
-def parse_qmk_keycode_header(header_path: Path, enum_to_parse: str) -> dict[str, int]:
-    """Parse QMK keycode enum from the qmk header file and return dict of keycode names to hex values."""
-    text = header_path.read_text(encoding="utf-8", errors="ignore")
-
-    enum_match = re.search(
-        rf'enum\s+{enum_to_parse}\s*\{{(.*?)\}};',
-        text,
-        re.S,
-    )
-    if not enum_match:
-        raise RuntimeError(f"{enum_to_parse} enum not found")
-
-    body = enum_match.group(1)
-
-    entries = {}
-    # Two passes, because the enum assigns in two forms. The hex one defines a keycode;
-    # the name-to-name one is QMK's short ALIAS (`KC_ENT = KC_ENTER,` -- 128 of them),
-    # which a hex-only regex silently skips. A caller that resolves a name typed by a
-    # user needs the aliases; one that renders a name back wants the canonical long
-    # form, which is why the aliases are added AFTER and callers keep the first name
-    # they saw for a value.
-    aliases = {}
-    for line in body.splitlines():
-        line = line.strip()
-        if not line or line.startswith("//"):
-            continue
-
-        # Names may have lower-case letters: QMK's MIDI aliases spell sharps and flats
-        # that way (MI_Cs = QK_MIDI_NOTE_C_SHARP_0, MI_Db, ...). `[A-Z0-9_]+` dropped
-        # all 60 of them, so a keymap token like MI_Cs resolved to no keycode.
-        m = re.match(r'([A-Za-z0-9_]+)\s*=\s*(0x[0-9A-Fa-f]+)', line)
-        if m:
-            entries[m.group(1)] = int(m.group(2), 16)
-            continue
-        m = re.match(r'([A-Za-z0-9_]+)\s*=\s*([A-Z][A-Z0-9_]*)\s*,?\s*$', line)
-        if m:
-            aliases[m.group(1)] = m.group(2)
-
-    # One resolution round handles a chain (an alias of an alias); anything still
-    # unresolved names something outside this enum and is dropped rather than guessed.
-    for _ in range(len(aliases)):
-        progressed = False
-        for name, target in list(aliases.items()):
-            if name not in entries and target in entries:
-                entries[name] = entries[target]
-                progressed = True
-        if not progressed:
-            break
-
-    return entries
-
-
-def parse_qmk_keycodes(header_path: Path) -> dict[str, int]:
-    """Parse QMK keycode enum from the qmk header file and return dict of keycode names to hex values."""
-    return parse_qmk_keycode_header(header_path, "qk_keycode_defines")
 
 
 # PolyKybd keycodes the editor offers that QMK's header does not name. keycodes.h
@@ -674,9 +621,10 @@ def describe_keycode(value: int, keycode_to_name: dict):
     # Swap-hands tap-hold SH_T() — tap key / hold swap.
     if 0x5600 <= value <= 0x56EF:
         return basic_display(value & 0xFF), "SH", BADGE_COLOR_TAP
-    # Tap dance TD() — firmware-defined dance index.
+    # Tap dance TD(n): numbered from 1, as the keycap ("Tap dance 1" is TD(0)) and
+    # the Tap Dance tab number it.
     if 0x5700 <= value <= 0x57FF:
-        return "TD", str(value & 0xFF), BADGE_COLOR_FW
+        return "TD", str((value & 0xFF) + 1), BADGE_COLOR_FW
 
     # Plain key (or anything else) — single line, no badge.
     name = keycode_to_name.get(value)

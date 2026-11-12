@@ -226,7 +226,7 @@ class TestFirmwareKeycodeDisplay(unittest.TestCase):
     def test_describe_badges(self):
         self.assertEqual(describe_keycode(0x52E2, KC), ("L2", "PDF", BADGE_COLOR_LAYER))
         self.assertEqual(describe_keycode(0x5604, KC), ("A", "SH", BADGE_COLOR_TAP))
-        self.assertEqual(describe_keycode(0x5703, KC), ("TD", "3", BADGE_COLOR_FW))
+        self.assertEqual(describe_keycode(0x5703, KC), ("TD", "4", BADGE_COLOR_FW))
 
     def test_describe_firmware_fallthrough_single_line(self):
         main, badge, color = describe_keycode(0x7702, KC)   # MACRO(2)
