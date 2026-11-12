@@ -363,7 +363,7 @@ class KeycapPreview:
         # Every name the keycode header gives each value, from the SAME source the
         # browser names tiles from -- so the two cannot drift apart.
         self._alt_names = {}
-        for nm, val in qh.parse_qmk_keycodes(qh.HEADER_FILE).items():
+        for nm, val in qh.editor_keycodes(qh.HEADER_FILE).items():
             self._alt_names.setdefault(val, []).append(nm)
         # The derived aliases fold only ONTO a name we can draw, so this needs the
         # legend tokens AND the LUT's own key set.

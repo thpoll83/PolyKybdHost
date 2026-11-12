@@ -13,7 +13,7 @@ the host. Hooks are used, not MCP, because an MCP tool runs only when the model
 calls it. While the agent waits for a permission answer, the model is not running,
 so an MCP tool cannot report "waiting".
 
-Requirements: PolyKybdHost 1.22.0 or later, keyboard firmware 1.12.0 or later
+Requirements: PolyKybdHost 1.22.2 or later, keyboard firmware 1.13.0 or later
 (protocol 31), and the setting turned on:
 
 ```
