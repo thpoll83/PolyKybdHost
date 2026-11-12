@@ -56,6 +56,17 @@ class AgentStoreTest(unittest.TestCase):
         self.assertEqual(AgentStore(second, self.path, wall_clock=wall).load(), 0)
         self.assertEqual(second.agents(), [])
 
+    def test_a_detached_agent_stays_detached_after_a_restart(self):
+        first = self._registry()
+        first.report("claude-code", "a", "working", pid=10)
+        first.report("claude-code", "a", None, event="detach:other")
+        AgentStore(first, self.path).save_if_changed()
+        second = self._registry()
+        AgentStore(second, self.path).load()
+        (agent,) = second.agents()
+        self.assertTrue(agent.detached)
+        self.assertTrue(second.forget_detached("claude-code", "a"))
+
     def test_title_scan_entries_are_not_saved(self):
         reg = self._registry()
         reg.report("gemini", "win1", "working", source="title")

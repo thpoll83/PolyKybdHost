@@ -54,6 +54,10 @@ class Agent:
     # The registry has seen `pid` alive. Only then does its exit remove the entry:
     # a pid that was never alive (a hook's short-lived shell) proves nothing.
     pid_seen_alive: bool = False
+    # The session ended with a reason that also comes when an app restarts the
+    # agent's process ("other"): the key is kept, without a process, until the
+    # agent reports again.
+    detached: bool = False
 
     @property
     def key(self) -> tuple:
@@ -174,7 +178,8 @@ class AgentRegistry:
                                 ("machine", machine), ("window", window)):
                 if value:
                     setattr(agent, name, str(value))
-            if event.startswith("detach"):
+            agent.detached = event.startswith("detach")
+            if agent.detached:
                 # The agent's process ended but the session may resume in a new one
                 # (an editor or the desktop app restarting it). Keep the key, drop
                 # the pid so the process check does not remove it.
@@ -210,6 +215,19 @@ class AgentRegistry:
                 return False
             self.version += 1
             _log_removed(gone, "removed by the user")
+            return True
+
+    def forget_detached(self, vendor_id: str, session_id: str) -> bool:
+        """Remove a detached agent (its process ended, no report since). The key
+        press that found no window for it calls this. Returns whether it was
+        removed."""
+        with self._lock:
+            agent = self._agents.get((vendor_id, session_id))
+            if agent is None or not agent.detached:
+                return False
+            del self._agents[(vendor_id, session_id)]
+            self.version += 1
+            _log_removed(agent, "its process ended and no window was found for it")
             return True
 
     def mark_seen(self, vendor_id: str, session_id: str) -> None:
@@ -282,6 +300,7 @@ class AgentRegistry:
                 "event_age": max(0.0, now - a.last_event),
                 "headline": a.headline, "label": a.label, "cwd": a.cwd,
                 "surface": a.surface, "machine": a.machine, "pid": a.pid,
+                "detached": a.detached,
             } for a in self._agents.values() if a.source == "hook"]
             return {"agents": agents, "hook_vendors": sorted(self._hook_vendors)}
 
@@ -330,7 +349,8 @@ class AgentRegistry:
                     headline=str(entry.get("headline") or ""),
                     label=str(entry.get("label") or ""), cwd=str(entry.get("cwd") or ""),
                     surface=str(entry.get("surface") or ""), machine=machine, pid=pid,
-                    source="hook", pid_seen_alive=alive)
+                    source="hook", pid_seen_alive=alive,
+                    detached=entry.get("detached") is True)
                 restored += 1
             if restored:
                 self.version += 1

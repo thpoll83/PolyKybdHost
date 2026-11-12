@@ -298,6 +298,11 @@ class AgentKeysController:
                 result = "raised"
             elif not result:
                 result = "no window found"
+                # The session ended and nothing reported since: the key is freed
+                # rather than staying on a session that is gone.
+                if agent.detached and self.registry.forget_detached(agent.vendor,
+                                                                    agent.session_id):
+                    result += "; the session ended, key freed"
             self.log.info("Agent keys: %s %s: %s", agent.vendor, agent.display_headline, result)
             self._note(key, str(result), agent)
         except Exception as e:  # noqa: BLE001 - a failed raise must not kill anything

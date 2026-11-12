@@ -495,6 +495,30 @@ class ControllerTest(unittest.TestCase):
         self.assertEqual(self.raised, ["a"])
         self.assertEqual(self.r.agents()[0].state, AgentState.IDLE)
 
+    def test_a_press_that_finds_no_window_frees_a_detached_key(self):
+        # The session ended with reason "other" and nothing reported since: a key
+        # press finds no window, so the key is freed instead of staying for hours.
+        self.c.raise_agent = lambda a: False
+        self.c._raise = lambda a: AgentKeysController._raise(self.c, a)
+        self.r.report("claude-code", "a", "working", pid=10)
+        self.r.report("claude-code", "a", None, event="detach:other")
+        self.c.sync(self.kb)
+        self.kb.press(0)
+        self.c.sync(self.kb)
+        self.assertEqual(self.r.agents(), [])
+        self.assertIn("key freed", self.c.last_press["result"])
+
+    def test_a_press_that_finds_no_window_keeps_a_live_key(self):
+        self.c.raise_agent = lambda a: False
+        self.c._raise = lambda a: AgentKeysController._raise(self.c, a)
+        self.r.report("claude-code", "a", "working", pid=10)
+        self.r.report("claude-code", "a", None, event="detach:other")
+        self.r.report("claude-code", "a", "working", pid=20)   # resumed: not detached
+        self.c.sync(self.kb)
+        self.kb.press(0)
+        self.c.sync(self.kb)
+        self.assertEqual(len(self.r.agents()), 1)
+
     def test_press_is_read_without_a_console_line_or_G(self):
         # In steady state the host polls GET_LANG, not GET_ID, so G does not move,
         # and the console line can be lost: the ring is read on every pass.
