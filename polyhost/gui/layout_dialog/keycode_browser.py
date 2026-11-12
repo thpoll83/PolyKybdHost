@@ -9,6 +9,7 @@ from polyhost.i18n import _
 from polyhost.gui.layout_dialog.keycode_browser_button import KeycodeBrowserButton
 from polyhost.gui.layout_dialog.keycode_composer import KeycodeComposer
 from polyhost.gui.layout_dialog.macro_tab import MacroTab
+from polyhost.gui.layout_dialog.combo_tab import ComboTab, TapDanceTab
 from polyhost.gui.layout_dialog.qmk_keycode_helper import HEADER_FILE, editor_keycodes, POLYKYBD_KEYCODES, categorize, create_nice_name, \
     category_order, standard_category, last_key_in_standard_category, build_keycode_to_name
 
@@ -73,11 +74,20 @@ class KeycodeBrowser(QWidget):
         # over RPC in the latter -- client mode is the default under daemon-by-default,
         # so a device-coupled page that only worked in-process would be unreachable.
         self.macro_tab = None
+        self.combo_tab = None
+        self.tap_dance_tab = None
         if core is not None:
             self.macro_tab = MacroTab(core)
             self.macro_tab.keycodeSelected.connect(self.keycodeSelected)
             self.macro_tab.macrosChanged.connect(self.macrosChanged)
             tabs.addTab(self.macro_tab, _("Macros"))
+            # Combos and tap dance (firmware protocol 33). On older firmware the tab
+            # shows the core's refusal instead of an editor.
+            self.combo_tab = ComboTab(core)
+            tabs.addTab(self.combo_tab, _("Combos"))
+            self.tap_dance_tab = TapDanceTab(core)
+            self.tap_dance_tab.keycodeSelected.connect(self.keycodeSelected)
+            tabs.addTab(self.tap_dance_tab, _("Tap Dance"))
             tabs.currentChanged.connect(self._on_tab_changed)
 
         layout = QVBoxLayout(self)
@@ -86,8 +96,9 @@ class KeycodeBrowser(QWidget):
     def _on_tab_changed(self, index: int):
         # Load on first show rather than in __init__: the macro list is three device
         # round trips, and most sessions never open the tab at all.
-        if self.macro_tab is not None and self.tabs.widget(index) is self.macro_tab:
-            self.macro_tab.reload()
+        page = self.tabs.widget(index)
+        if page is not None and page in (self.macro_tab, self.combo_tab, self.tap_dance_tab):
+            page.reload()
 
     def set_layer_count(self, num_layers: int):
         """Update the composer's layer range once the device layer count is known."""

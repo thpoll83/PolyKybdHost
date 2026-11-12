@@ -112,6 +112,12 @@ class Cmd(Enum):
     # (data[3] row, data[4] col, data[5] count, 0 = until cancelled, data[6] period
     # in 100 ms units, CLOSED 23..100), 1 CANCEL. firmware anim/key_attention.h.
     KEY_ATTENTION = 47
+    # Runtime combos and tap dance (protocol v33+): data[2] op. 0 INFO (reply [3]
+    # combo slots, [4] tap-dance slots, [5] record bytes, [6] bit 0 available, [7..8]
+    # combo term ms); 1 GET / 2 SET ([3] kind, [4] index, [5..14] five u16 LE); 3 COMMIT
+    # (writes the flash sector, copies to the other half; reply [3] bit 0 = it did).
+    # Records and limits: Combos below. Firmware poly_combos.c / base/combo_store.h.
+    COMBOS = 48
 
 
 
@@ -216,6 +222,68 @@ class TapTerms:
     def _valid(cls, ms, lo, hi) -> bool:
         return (isinstance(ms, int) and not isinstance(ms, bool)
                 and lo <= ms <= hi and ms % cls.STEP_MS == 0)
+
+
+class Combos:
+    """Runtime combos and tap dance (HID cmd 48, protocol v33+). Mirrors firmware
+    base/combo_store.h; both record kinds are CLOSED, so the host refuses what the
+    firmware would NACK.
+
+    A record is five u16: a combo is up to four trigger keycodes packed from the front
+    plus the result; a tap dance is on_tap, on_hold, on_double_tap, on_tap_hold and its
+    term (0 = the global tapping term). All zero is an empty slot. Slot n of the tap
+    dances is the keycode TD(n) = 0x5700 + n, shown on the keycap as "dance n+1"."""
+
+    COMBO_SLOTS = 16
+    TAP_DANCE_SLOTS = 16
+    REC_BYTES = 10
+    MAX_KEYS = 4
+    KIND_COMBO = 0
+    KIND_TAP_DANCE = 1
+    OP_INFO, OP_GET, OP_SET, OP_COMMIT = 0, 1, 2, 3
+    FLAG_AVAILABLE = 0x01
+    FLAG_COMMIT_OTHER_HALF = 0x01
+    TD_KEYCODE_BASE = 0x5700
+    TERM_MIN_MS, TERM_MAX_MS, TERM_STEP_MS = 100, 500, 10
+
+    @staticmethod
+    def _is_u16(v) -> bool:
+        return isinstance(v, int) and not isinstance(v, bool) and 0 <= v <= 0xFFFF
+
+    @classmethod
+    def combo_valid(cls, keys, result) -> bool:
+        """An empty record, or 2..4 trigger keycodes (no gaps) and a result."""
+        keys = list(keys)
+        if len(keys) > cls.MAX_KEYS or not all(cls._is_u16(k) for k in keys) or not cls._is_u16(result):
+            return False
+        keys += [0] * (cls.MAX_KEYS - len(keys))
+        if not any(keys) and result == 0:
+            return True
+        n = 0
+        while n < cls.MAX_KEYS and keys[n] != 0:
+            n += 1
+        # The same key twice is refused, as by the firmware: QMK maps both presses to
+        # one trigger index, so the combo could never fire.
+        return n >= 2 and not any(keys[n:]) and result != 0 and len(set(keys[:n])) == n
+
+    @staticmethod
+    def td_keycode_supported(kc) -> bool:
+        """Basic and modified keycodes, TO(n), MO(n) and TG(n): what the firmware's
+        generic tap-dance handler can press and release."""
+        if not Combos._is_u16(kc):
+            return False
+        return (kc <= 0x1FFF or 0x5200 <= kc <= 0x521F or 0x5220 <= kc <= 0x523F
+                or 0x5260 <= kc <= 0x527F)
+
+    @classmethod
+    def td_term_valid(cls, ms) -> bool:
+        return cls._is_u16(ms) and (ms == 0 or (cls.TERM_MIN_MS <= ms <= cls.TERM_MAX_MS
+                                                and ms % cls.TERM_STEP_MS == 0))
+
+    @classmethod
+    def tap_dance_valid(cls, on_tap, on_hold, on_double_tap, on_tap_hold, term_ms) -> bool:
+        return (all(cls.td_keycode_supported(k) for k in (on_tap, on_hold, on_double_tap, on_tap_hold))
+                and cls.td_term_valid(term_ms))
 
 
 class MacroStyle(Enum):

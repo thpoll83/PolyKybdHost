@@ -345,6 +345,12 @@ class RemoteCore(Observable):
                                                 "auto_shift": auto_shift,
                                                 "auto_shift_ms": auto_shift_ms})
 
+    def combos_get(self):
+        return self._device(p.M_COMBOS_GET)
+
+    def combos_set(self, combos=None, tap_dances=None):
+        return self._device(p.M_COMBOS_SET, {"combos": combos, "tap_dances": tap_dances})
+
     def get_tap_terms(self):
         return self._device(p.M_TAP_TERMS_GET)
 
@@ -354,6 +360,9 @@ class RemoteCore(Observable):
 
     def key_attention_cancel(self):
         return self._device(p.M_KEY_ATTENTION, {"cancel": True})
+
+    def midi_guide(self, reset=False):
+        return self._device(p.M_MIDI_GUIDE, {"reset": bool(reset)})
 
     def agents_list(self):
         return self._rpc_call(p.M_AGENTS_LIST) or {}

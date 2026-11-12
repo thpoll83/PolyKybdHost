@@ -40,11 +40,10 @@ threshold: 150
 # head on black, facing right, with the horn and the ear readable; 125 merges
 # the horn into the head, 155 breaks it up. 64 and above render alike; 128 has
 # the cleaner horn tip.
-program_icon: materialcraft.png
-program_icon_mode: bright
-program_icon_threshold: 140
-program_icon_anchor: right
-program_icon_region: [40, 40]
+program_icon: materialcraft_mark.png   # silhouette of the app's own icon (fetch_icons.py)
+program_icon_mode: alpha
+program_icon_anchor: bottom-right
+program_icon_region: [32, 40]   # the mark's own size: placed 1:1
 program_icon_margin: 0
 
 bindings:

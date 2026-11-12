@@ -73,6 +73,9 @@ def main() -> int:
     (out / "_camera.png").unlink()
     program_marks.own_icon(out / "texturecraft.png", TEXTURECRAFT_ICO, 128,
                            credit="storytold/texturecraft assets/app-icon/texturecraft.ico (MIT OR Apache-2.0)")
+    # The ESC mark: the icon's animal as one solid shape at keycap size, with its
+    # darkest lines cut back out (program_marks.silhouette_mark).
+    program_marks.silhouette_mark(out / "texturecraft_mark.png", out / "texturecraft.png", cut=120)
     print(f"Wrote {n} icons (+ program mark) to {out}")
     return 0
 

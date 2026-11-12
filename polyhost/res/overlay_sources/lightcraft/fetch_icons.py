@@ -29,7 +29,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(ROOT))
 
-from polyhost.res.overlay_sources import icon_fetch, number_badge  # noqa: E402
+from polyhost.res.overlay_sources import icon_fetch, number_badge, program_marks  # noqa: E402
 
 LC_COMMIT = "b3d392b4994ee99dc389890f006600769d0c4ff5"
 MARK_URL = (f"https://raw.githubusercontent.com/storytold/lightcraft/{LC_COMMIT}/"
@@ -177,6 +177,9 @@ def main() -> int:
         req = urllib.request.Request(MARK_URL, headers={"User-Agent": "polykybd"})
         mark.write_bytes(urllib.request.urlopen(req, timeout=60).read())
         print("  lightcraft.png  <- storytold/lightcraft assets/app-icon hicolor 128px")
+    # The ESC mark: the icon's animal as one solid shape at keycap size, with its
+    # darkest lines cut back out (program_marks.silhouette_mark).
+    program_marks.silhouette_mark(out / "lightcraft_mark.png", out / "lightcraft.png", cut=120)
     print(f"Wrote icons to {out}")
     return 0
 

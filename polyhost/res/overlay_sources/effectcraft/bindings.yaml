@@ -41,11 +41,10 @@ threshold: 150
 # the generator's own render_icon): luma lights the pink field as a solid tile at t>=110
 # and loses the head below; bright t130 on the 48px frame lights the paper-coloured
 # unicorn head + horn most solidly (64+ frames are near-identical, sparser at t>=150).
-program_icon: effectcraft.png
-program_icon_mode: bright
-program_icon_threshold: 130
-program_icon_anchor: right
-program_icon_region: [40, 40]
+program_icon: effectcraft_mark.png   # silhouette of the app's own icon (fetch_icons.py)
+program_icon_mode: alpha
+program_icon_anchor: bottom-right
+program_icon_region: [38, 40]   # the mark's own size: placed 1:1
 program_icon_margin: 0
 
 bindings:

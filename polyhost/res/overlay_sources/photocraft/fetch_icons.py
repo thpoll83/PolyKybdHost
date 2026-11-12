@@ -223,6 +223,9 @@ def main() -> int:
     _preserve(out / "fillbg.png", out / "lockbadge.png", out / "fillbgpreserve.png")
     program_marks.own_icon(out / "photocraft.png", PC_ICO, frame=64,
                            credit="storytold/photocraft assets/app-icon/photocraft.ico (MIT OR Apache-2.0)")
+    # The ESC mark: the icon's animal as one solid shape at keycap size, with its
+    # darkest lines cut back out (program_marks.silhouette_mark).
+    program_marks.silhouette_mark(out / "photocraft_mark.png", out / "photocraft.png", cut=120)
     print(f"Wrote icons to {out}")
     return 0
 

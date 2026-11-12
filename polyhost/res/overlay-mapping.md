@@ -63,6 +63,7 @@ window title (or OS) instead — see below.
 | `layer` | bool | `false` turns off browser layering for a `urls-contains` entry (see below). |
 | `glyph_script` | name | The [keycap face](#keycap-face-per-application) while this entry matches: a `GlyphScript` name (`c64keys`, `amiga`, `ibmvga`, …). |
 | `glyph_script_position` | `centre` / `top-left` | The face's placement while this entry matches (firmware protocol 26+). |
+| `midi` | `true` | The program takes MIDI input: the first time it is in front, the keyboard shows the [MIDI guide](#midi-guide) (firmware protocol 34+). |
 
 A sub-map's values are full entries, so they may carry an `overlay` plus further
 constraints of their own — the matcher recurses.
@@ -80,6 +81,19 @@ is on becomes the one restored. Put the keys on the entry that matches: for a
 `titles-contains` route or an `os:` branch that is the sub-entry, not its parent. An
 entry with an `os: macos:` branch therefore repeats the two keys inside the branch.
 `polyhost/services/keycap_face.py`.
+
+## MIDI guide
+
+`midi: true` marks a program, or a web page through its `url:` gate, that takes MIDI
+input from the keyboard. The first time such an entry matches, the host reads the
+keyboard's keymap, finds the shortest path of layer keys from the base layer to the
+layer named MIDI, and asks the keyboard (cmd 47 op 2) to run the focus ripple along it.
+On the default split72 keymap that is Fn, then the key above the right Shift. The
+keyboard rings Fn; while Fn is held it rings the MIDI key; it stops on the MIDI layer,
+after 12 ripples, or when the program leaves the front. Each program (each web host)
+gets the guide once; the list is `midi_guide_seen.json` beside `settings.yaml`, and
+`polyctl attention --midi --reset` clears it. As with `glyph_script`, put the key on the
+entry that matches, inside an `os:` branch too. `polyhost/services/midi_guide.py`.
 
 ## Matching order
 

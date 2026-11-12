@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-12 08:54+0000\n"
+"POT-Creation-Date: 2026-11-12 09:44+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: vi\n"
@@ -18,17 +18,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: polyhost/device/command_ids.py:168
+#: polyhost/device/command_ids.py:174
 #, python-brace-format
 msgid "preset {value}"
 msgstr "mức đặt sẵn {value}"
 
-#: polyhost/device/command_ids.py:170
+#: polyhost/device/command_ids.py:176
 #, python-brace-format
 msgid "{minutes} min"
 msgstr "{minutes} phút"
 
-#: polyhost/device/command_ids.py:171
+#: polyhost/device/command_ids.py:177
 #, python-brace-format
 msgid "{seconds} sec"
 msgstr "{seconds} giây"
@@ -969,6 +969,7 @@ msgid "Report on GitHub…"
 msgstr "Báo cáo trên GitHub…"
 
 #: polyhost/gui/crash_alert_dialog.py:86
+#: polyhost/gui/layout_dialog/combo_tab.py:103
 #: polyhost/gui/layout_dialog/macro_tab.py:217
 #: polyhost/gui/layout_dialog/macro_tab.py:241
 msgid "Clear"
@@ -1807,6 +1808,173 @@ msgstr "Ngôn ngữ"
 msgid "The new language is used after a restart. Restart now?"
 msgstr "Ngôn ngữ mới sẽ được dùng sau khi khởi động lại. Khởi động lại ngay?"
 
+#: polyhost/gui/layout_dialog/combo_tab.py:99
+msgid "Save"
+msgstr "Lưu"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:145
+msgid "Reading the keyboard…"
+msgstr "Đang đọc bàn phím…"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:169
+msgid "The keyboard is not connected."
+msgstr "Bàn phím chưa được kết nối."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:171
+msgid "The keyboard runs in restricted mode (its firmware is newer than this app), so combos and tap dance are off."
+msgstr "Bàn phím đang chạy ở chế độ an toàn (firmware của nó mới hơn ứng dụng này), nên Combos và Tap Dance bị tắt."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:173
+#, python-brace-format
+msgid "Combos and tap dance need keyboard firmware with protocol {n} or newer. Update the firmware to use them."
+msgstr "Combos và Tap Dance cần firmware bàn phím có giao thức {n} trở lên. Hãy cập nhật firmware để sử dụng chúng."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:182
+#, python-brace-format
+msgid "Could not read the keyboard: {reason}"
+msgstr "Không thể đọc bàn phím: {reason}"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:184
+msgid "This firmware build has no runtime combos or tap dance (the DOOM developer build)."
+msgstr "Bản firmware này không có combo và tap dance khi chạy (bản dành cho nhà phát triển DOOM)."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:231
+#: polyhost/gui/layout_dialog/combo_tab.py:250
+msgid "Not saved"
+msgstr "Chưa lưu"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:238
+msgid "Saved on this half only: the other half did not answer. Save again once both halves are connected."
+msgstr "Chỉ lưu trên nửa này: nửa kia không phản hồi. Hãy lưu lại khi cả hai nửa đã kết nối."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:269
+msgid "optional"
+msgstr "tùy chọn"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:271
+#, python-brace-format
+msgid "Key {n}"
+msgstr "Phím {n}"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:273
+msgid "Sends"
+msgstr "Gửi"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:277
+#, python-brace-format
+msgid "Press the keys within {ms} ms of each other. A key is written as on the keymap: KC_J, KC_ESC, S(KC_9), MO(1)."
+msgstr "Nhấn các phím cách nhau không quá {ms} ms. Phím được viết giống như trong sơ đồ phím: KC_J, KC_ESC, S(KC_9), MO(1)."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:279
+msgid "Press the keys at the same time. A key is written as on the keymap: KC_J, KC_ESC, S(KC_9), MO(1)."
+msgstr "Nhấn các phím cùng lúc. Phím được viết giống như trong sơ đồ phím: KC_J, KC_ESC, S(KC_9), MO(1)."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:289
+#: polyhost/gui/layout_dialog/combo_tab.py:366
+#, python-brace-format
+msgid "{n}: (empty)"
+msgstr "{n}: (trống)"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:305
+#, python-brace-format
+msgid "Key {n}: {text} is not a keycode."
+msgstr "Phím {n}: {text} không phải là mã phím."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:312
+#, python-brace-format
+msgid "Sends: {text} is not a keycode."
+msgstr "Gửi: {text} không phải là mã phím."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:315
+msgid "A combo needs at least two keys and a keycode to send."
+msgstr "Combo cần ít nhất hai phím và một mã phím để gửi."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:317
+msgid "A combo cannot list the same key twice."
+msgstr "Combo không thể có cùng một phím hai lần."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:338
+#: polyhost/gui/layout_dialog/combo_tab.py:383
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
+msgid "Tap"
+msgstr "Chạm"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:338
+#: polyhost/gui/layout_dialog/combo_tab.py:383
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
+msgid "Hold"
+msgstr "Giữ"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:338
+#: polyhost/gui/layout_dialog/combo_tab.py:384
+msgid "Double tap"
+msgstr "Chạm hai lần"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:338
+#: polyhost/gui/layout_dialog/combo_tab.py:384
+msgid "Tap, then hold"
+msgstr "Chạm, rồi giữ"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:341
+msgid "same as Tap"
+msgstr "giống Chạm"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:348
+msgid "Tapping term"
+msgstr "Thời gian chạm"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:349
+msgid "Decide after"
+msgstr "Quyết định sau"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:351
+#: polyhost/gui/layout_dialog/macro_tab.py:245
+msgid "Use on selected key"
+msgstr "Dùng cho phím đã chọn"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:357
+msgid "Place the tap dance on a key with \"Use on selected key\". An action can be a key, a key with modifiers such as S(KC_9), or MO, TO or TG."
+msgstr "Đặt tap dance lên một phím bằng \"Dùng cho phím đã chọn\". Hành động có thể là một phím, một phím kèm phím bổ trợ như S(KC_9), hoặc MO, TO hay TG."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:369
+#, python-brace-format
+msgid "hold {key}"
+msgstr "giữ {key}"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:371
+#, python-brace-format
+msgid "2× {key}"
+msgstr "2× {key}"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:373
+#, python-brace-format
+msgid "tap, then hold {key}"
+msgstr "chạm, rồi giữ {key}"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:389
+#, python-brace-format
+msgid "{action}: {text} is not a keycode."
+msgstr "{action}: {text} không phải là mã phím."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:392
+#, python-brace-format
+msgid "{action}: a tap dance can send a key, a key with modifiers, MO, TO or TG, not {text}."
+msgstr "{action}: tap dance chỉ có thể gửi một phím, một phím kèm phím bổ trợ, MO, TO hoặc TG, không thể gửi {text}."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:397
+msgid "A tap dance needs at least the Tap action."
+msgstr "Tap dance cần ít nhất hành động Chạm."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:401
+#, python-brace-format
+msgid "The time must be {lo} to {hi} ms in steps of {step} ms."
+msgstr "Thời gian phải từ {lo} đến {hi} ms, theo bước {step} ms."
+
+#: polyhost/gui/layout_dialog/combo_tab.py:418
+#, python-brace-format
+msgid "Tap dance {n}"
+msgstr "Tap dance {n}"
+
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:77
 msgid "PolyKybd Split72 Layout"
 msgstr "Bố cục PolyKybd Split72"
@@ -1925,13 +2093,21 @@ msgstr ""
 msgid "(a firmware checkout is present but is not newer)"
 msgstr "(có bản checkout firmware nhưng không mới hơn)"
 
-#: polyhost/gui/layout_dialog/keycode_browser.py:65
+#: polyhost/gui/layout_dialog/keycode_browser.py:66
 msgid "Layers && Mods"
 msgstr "Lớp && phím bổ trợ"
 
-#: polyhost/gui/layout_dialog/keycode_browser.py:80
+#: polyhost/gui/layout_dialog/keycode_browser.py:83
 msgid "Macros"
 msgstr "Macro"
+
+#: polyhost/gui/layout_dialog/keycode_browser.py:87
+msgid "Combos"
+msgstr "Combos"
+
+#: polyhost/gui/layout_dialog/keycode_browser.py:90
+msgid "Tap Dance"
+msgstr "Tap Dance"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:32
 msgid "MO — Momentary layer"
@@ -1994,8 +2170,8 @@ msgid "Layer:"
 msgstr "Lớp:"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:82
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:234
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:303
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:184
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:253
 msgid "Modifiers"
 msgstr "Phím bổ trợ"
 
@@ -2052,14 +2228,6 @@ msgstr "lọc theo điểm mã — 1F4E7, U+2699, hoặc một ký tự"
 msgid "{n} glyph"
 msgid_plural "{n} glyphs"
 msgstr[0] "{n} glyph"
-
-#: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
-msgid "Tap"
-msgstr "Chạm"
-
-#: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
-msgid "Hold"
-msgstr "Giữ"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
 msgid "Release"
@@ -2235,10 +2403,6 @@ msgstr "Chọn biểu tượng…"
 msgid "Save macro"
 msgstr "Lưu macro"
 
-#: polyhost/gui/layout_dialog/macro_tab.py:245
-msgid "Use on selected key"
-msgstr "Dùng cho phím đã chọn"
-
 #: polyhost/gui/layout_dialog/macro_tab.py:257
 msgid "All the macros share one pool on the keyboard, so a long one leaves less for the others"
 msgstr "Mọi macro dùng chung một vùng nhớ trên bàn phím, nên một macro dài sẽ chừa ít chỗ hơn cho các macro khác"
@@ -2304,74 +2468,74 @@ msgstr "Không thể lưu macro"
 msgid "Could not clear the macro"
 msgstr "Không thể xóa macro"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:226
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:250
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:305
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:176
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:200
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:255
 msgid "User / Macro"
 msgstr "Người dùng / Macro"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:232
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:305
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:182
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:255
 msgid "Steno"
 msgstr "Steno"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:236
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:303
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:186
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:253
 msgid "Media / System"
 msgstr "Đa phương tiện / Hệ thống"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:238
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:305
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:188
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:255
 msgid "Midi"
 msgstr "Midi"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:240
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:305
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:190
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:255
 msgid "Haptic"
 msgstr "Rung phản hồi"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:242
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:304
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:192
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:254
 msgid "Unicode / International"
 msgstr "Unicode / Quốc tế"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:244
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:303
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:194
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:253
 msgid "RGB"
 msgstr "RGB"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:246
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:304
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:196
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:254
 msgid "Mouse / Joystick"
 msgstr "Chuột / Cần điều khiển"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:248
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:305
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:198
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:255
 msgid "Magic"
 msgstr "Magic"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:252
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:306
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:202
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:256
 msgid "Programmable"
 msgstr "Lập trình được"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:254
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:306
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:204
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:256
 msgid "Space Cadet"
 msgstr "Space Cadet"
 
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:206
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:256
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:306
 msgid "Quantum"
 msgstr "Quantum"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:258
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:303
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:208
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:253
 msgid "Additional"
 msgstr "Bổ sung"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:293
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:303 polyhost/host.py:72
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:243
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:253 polyhost/host.py:72
 msgid "Standard"
 msgstr "Tiêu chuẩn"
 
@@ -3581,6 +3745,7 @@ msgstr "Thời gian chạm-giữ"
 
 #. TRANSLATORS: unit after a number of milliseconds in a spin box.
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
+#: polyhost/gui/layout_dialog/combo_tab.py:347
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
 #: polyhost/gui/tap_terms_dialog.py:42 polyhost/gui/tap_terms_dialog.py:48
 #: polyhost/gui/tap_terms_dialog.py:63

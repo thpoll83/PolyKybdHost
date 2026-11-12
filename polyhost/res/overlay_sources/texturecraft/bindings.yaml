@@ -39,11 +39,10 @@ threshold: 150
 # (a lit tile with the stripes cut out, noisy), and `bright` keeps only a
 # scatter of the paper-coloured stripes. 64/128/256 render alike within a few
 # pixels; 128 keeps the ear outline closed.
-program_icon: texturecraft.png
-program_icon_mode: luma
-program_icon_threshold: 110
-program_icon_anchor: right
-program_icon_region: [40, 40]
+program_icon: texturecraft_mark.png   # silhouette of the app's own icon (fetch_icons.py)
+program_icon_mode: alpha
+program_icon_anchor: bottom-right
+program_icon_region: [36, 40]   # the mark's own size: placed 1:1
 program_icon_margin: 0
 
 bindings:

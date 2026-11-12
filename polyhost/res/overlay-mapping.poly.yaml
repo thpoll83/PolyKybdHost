@@ -210,6 +210,115 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     keybr.com:
       url: '^https?://(www\.)?keybr\.com/([a-z]{2}(-[a-z]{2})?/?)?([?#].*)?$'
       overlay: keybr_template.mods.png
+    # Web MIDI pages: they take notes from the keyboard's MIDI layer, so the
+    # first visit shows the MIDI guide (`midi: true`, overlay-mapping.md). No
+    # overlay of their own: the browser's set stays. Each gate is the page that
+    # opens the MIDI input (checked 2026-11-12 in the site's code or help pages).
+    # BandLab Studio
+    bandlab.com/studio:
+      url: '^https?://(www\.)?bandlab\.com/studio([/?#]|$)'
+      overlay: []
+      midi: true
+    # Chrome Music Lab: Shared Piano, Song Maker
+    musiclab.chromeexperiments.com:
+      url: '^https?://musiclab\.chromeexperiments\.com/(Shared-Piano|Song-Maker)([/?#]|$)'
+      overlay: []
+      midi: true
+    # Soundtrap Studio
+    soundtrap.com/studio:
+      url: '^https?://(www\.)?soundtrap\.com/studio([/?#]|$)'
+      overlay: []
+      midi: true
+    # Noteflight
+    noteflight.com/scores:
+      url: '^https?://(www\.)?noteflight\.com/scores/'
+      overlay: []
+      midi: true
+    # Online Sequencer: the editor, a saved sequence /<number>
+    onlinesequencer.net:
+      url: '^https?://(www\.)?onlinesequencer\.net/(\d+)?([?#]|$)'
+      overlay: []
+      midi: true
+    # Flat.io
+    flat.io/score:
+      url: '^https?://(www\.)?flat\.io/score/'
+      overlay: []
+      midi: true
+    # musictheory.net exercises
+    musictheory.net/exercises:
+      url: '^https?://(www\.)?musictheory\.net/exercises/'
+      overlay: []
+      midi: true
+    # Virtual Piano
+    virtualpiano.net:
+      url: '^https?://(www\.)?virtualpiano\.net/'
+      overlay: []
+      midi: true
+    # Audiotool
+    audiotool.com/studio:
+      url: '^https?://(www\.)?audiotool\.com/studio([/?#]|$)'
+      overlay: []
+      midi: true
+    # Hookpad
+    hookpad.hooktheory.com:
+      url: '^https?://hookpad\.hooktheory\.com/'
+      overlay: []
+      midi: true
+    # Soundation
+    soundation.com/studio:
+      url: '^https?://(www\.)?soundation\.com/studio([/?#]|$)'
+      overlay: []
+      midi: true
+    # Teoria exercises
+    teoria.com:
+      url: '^https?://(www\.)?teoria\.com/[a-z]{2}/exercises/'
+      overlay: []
+      midi: true
+    # flowkey
+    app.flowkey.com:
+      url: '^https?://app\.flowkey\.com/'
+      overlay: []
+      midi: true
+    # Patatap, only with ?midi
+    patatap.com:
+      url: '^https?://(www\.)?patatap\.com/\?(.*&)?midi\b'
+      overlay: []
+      midi: true
+    # muted.io piano
+    muted.io/piano:
+      url: '^https?://(www\.)?muted\.io/piano/?([?#]|$)'
+      overlay: []
+      midi: true
+    # Recursive Arts Virtual Piano
+    recursivearts.com/virtual-piano:
+      url: '^https?://(www\.)?recursivearts\.com/virtual-piano/'
+      overlay: []
+      midi: true
+    # Amped Studio
+    app.ampedstudio.com:
+      url: '^https?://app\.ampedstudio\.com/'
+      overlay: []
+      midi: true
+    # Signal MIDI editor
+    signalmidi.app:
+      url: '^https?://signalmidi\.app/edit'
+      overlay: []
+      midi: true
+    # Ableton Learning Synths
+    learningsynths.ableton.com:
+      url: '^https?://learningsynths\.ableton\.com/'
+      overlay: []
+      midi: true
+    # Google A.I. Duet
+    ai-duet:
+      url: '^https?://(ai)?experiments\.withgoogle\.com/(ai/)?ai-duet/view'
+      overlay: []
+      midi: true
+    # sightreading.training
+    sightreading.training:
+      url: '^https?://(www\.)?sightreading\.training/'
+      overlay: []
+      midi: true
   # Only sites whose page titles carry a stable brand name are listed. Codex
   # cannot be told apart from ChatGPT by title, so without a URL it gets the
   # ChatGPT set. Never key on "Google" alone: every Chrome window title on
@@ -448,6 +557,115 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         keybr.com:
           url: '^https?://(www\.)?keybr\.com/([a-z]{2}(-[a-z]{2})?/?)?([?#].*)?$'
           overlay: keybr_template_mac.mods.png
+        # Web MIDI pages: they take notes from the keyboard's MIDI layer, so the
+        # first visit shows the MIDI guide (`midi: true`, overlay-mapping.md). No
+        # overlay of their own: the browser's set stays. Each gate is the page that
+        # opens the MIDI input (checked 2026-11-12 in the site's code or help pages).
+        # BandLab Studio
+        bandlab.com/studio:
+          url: '^https?://(www\.)?bandlab\.com/studio([/?#]|$)'
+          overlay: []
+          midi: true
+        # Chrome Music Lab: Shared Piano, Song Maker
+        musiclab.chromeexperiments.com:
+          url: '^https?://musiclab\.chromeexperiments\.com/(Shared-Piano|Song-Maker)([/?#]|$)'
+          overlay: []
+          midi: true
+        # Soundtrap Studio
+        soundtrap.com/studio:
+          url: '^https?://(www\.)?soundtrap\.com/studio([/?#]|$)'
+          overlay: []
+          midi: true
+        # Noteflight
+        noteflight.com/scores:
+          url: '^https?://(www\.)?noteflight\.com/scores/'
+          overlay: []
+          midi: true
+        # Online Sequencer: the editor, a saved sequence /<number>
+        onlinesequencer.net:
+          url: '^https?://(www\.)?onlinesequencer\.net/(\d+)?([?#]|$)'
+          overlay: []
+          midi: true
+        # Flat.io
+        flat.io/score:
+          url: '^https?://(www\.)?flat\.io/score/'
+          overlay: []
+          midi: true
+        # musictheory.net exercises
+        musictheory.net/exercises:
+          url: '^https?://(www\.)?musictheory\.net/exercises/'
+          overlay: []
+          midi: true
+        # Virtual Piano
+        virtualpiano.net:
+          url: '^https?://(www\.)?virtualpiano\.net/'
+          overlay: []
+          midi: true
+        # Audiotool
+        audiotool.com/studio:
+          url: '^https?://(www\.)?audiotool\.com/studio([/?#]|$)'
+          overlay: []
+          midi: true
+        # Hookpad
+        hookpad.hooktheory.com:
+          url: '^https?://hookpad\.hooktheory\.com/'
+          overlay: []
+          midi: true
+        # Soundation
+        soundation.com/studio:
+          url: '^https?://(www\.)?soundation\.com/studio([/?#]|$)'
+          overlay: []
+          midi: true
+        # Teoria exercises
+        teoria.com:
+          url: '^https?://(www\.)?teoria\.com/[a-z]{2}/exercises/'
+          overlay: []
+          midi: true
+        # flowkey
+        app.flowkey.com:
+          url: '^https?://app\.flowkey\.com/'
+          overlay: []
+          midi: true
+        # Patatap, only with ?midi
+        patatap.com:
+          url: '^https?://(www\.)?patatap\.com/\?(.*&)?midi\b'
+          overlay: []
+          midi: true
+        # muted.io piano
+        muted.io/piano:
+          url: '^https?://(www\.)?muted\.io/piano/?([?#]|$)'
+          overlay: []
+          midi: true
+        # Recursive Arts Virtual Piano
+        recursivearts.com/virtual-piano:
+          url: '^https?://(www\.)?recursivearts\.com/virtual-piano/'
+          overlay: []
+          midi: true
+        # Amped Studio
+        app.ampedstudio.com:
+          url: '^https?://app\.ampedstudio\.com/'
+          overlay: []
+          midi: true
+        # Signal MIDI editor
+        signalmidi.app:
+          url: '^https?://signalmidi\.app/edit'
+          overlay: []
+          midi: true
+        # Ableton Learning Synths
+        learningsynths.ableton.com:
+          url: '^https?://learningsynths\.ableton\.com/'
+          overlay: []
+          midi: true
+        # Google A.I. Duet
+        ai-duet:
+          url: '^https?://(ai)?experiments\.withgoogle\.com/(ai/)?ai-duet/view'
+          overlay: []
+          midi: true
+        # sightreading.training
+        sightreading.training:
+          url: '^https?://(www\.)?sightreading\.training/'
+          overlay: []
+          midi: true
       titles-contains: &web_titles_mac
         Miro:
           overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
@@ -2428,9 +2646,11 @@ figcraft,ai.storyteller.figcraft:
       overlay: [figcraft_template_mac.mods.png, figcraft_template_mac.combo.mods.png, figcraft_template_mac.extra.mods.png, figcraft_template_mac.gui.mods.png]
 soundcraft,ai.storyteller.soundcraft:
   overlay: [soundcraft_template.mods.png, soundcraft_template.combo.mods.png, soundcraft_template.extra.mods.png]
+  midi: true
   os:
     macos:
       overlay: [soundcraft_template_mac.mods.png, soundcraft_template_mac.combo.mods.png, soundcraft_template_mac.extra.mods.png, soundcraft_template_mac.gui.mods.png]
+      midi: true
 photocraft,ai.storyteller.photocraft:
   overlay: [photocraft_template.mods.png, photocraft_template.combo.mods.png, photocraft_template.extra.mods.png]
   os:
@@ -2517,22 +2737,28 @@ jan,jan-desktop:
 # Its Playlist, Piano roll and Mixer share one OS window, so one set serves all.
 fl64,fl studio 2024,fl studio 2025,fl studio 2026,osxfl:
   overlay: [flstudio_template.mods.png, flstudio_template.combo.mods.png]
+  midi: true
   os:
     macos:
       overlay: [flstudio_template_mac.mods.png, flstudio_template_mac.combo.mods.png, flstudio_template_mac.extra.mods.png]
+      midi: true
 # Ableton Live 12: the Windows exe and the macOS app both carry the edition name.
 ableton live 12 suite,ableton live 12 standard,ableton live 12 intro,ableton live 12 lite,ableton live 12 trial:
   overlay: [ableton_template.mods.png, ableton_template.combo.mods.png, ableton_template.extra.mods.png]
+  midi: true
   os:
     macos:
       overlay: [ableton_template_mac.mods.png, ableton_template_mac.combo.mods.png, ableton_template_mac.extra.mods.png, ableton_template_mac.gui.mods.png]
+      midi: true
 # REAPER: reaper.exe, REAPER.app and `reaper` on Linux. Windows and Linux use the
 # same default keys.
 reaper:
   overlay: [reaper_template.mods.png, reaper_template.combo.mods.png, reaper_template.extra.mods.png]
+  midi: true
   os:
     macos:
       overlay: [reaper_template_mac.mods.png, reaper_template_mac.combo.mods.png, reaper_template_mac.extra.mods.png, reaper_template_mac.gui.mods.png]
+      midi: true
 # Audacity: 3.7.9 and 4.0.1 have different keymaps. On Windows they are
 # Audacity.exe and Audacity4.exe; on macOS both are "Audacity", so macOS gets only
 # the keys that do the same thing in both versions. On Linux (measured on the
@@ -2558,50 +2784,63 @@ audacity4,audacity4portable,org.audacityteam.audacity4portable:
 # Ctrl+Shift+Z there and Ctrl+Y on Windows.
 musescore4,musescore studio,musescore 4,mscore,musescore,org.musescore.musescore,mscore4portable,org.musescore.musescore4portable:
   overlay: [musescore_template.mods.png, musescore_template.combo.mods.png]
+  midi: true
   os:
     macos:
       overlay: [musescore_template_mac.mods.png, musescore_template_mac.combo.mods.png, musescore_template_mac.extra.mods.png]
+      midi: true
     linux:
       overlay: [musescore_template_linux.mods.png, musescore_template_linux.combo.mods.png]
+      midi: true
 # Bitwig Studio: "Bitwig Studio" on Windows and macOS; on Linux the binary
 # BitwigStudio, the launcher bitwig-studio and the Flatpak id
 # com.bitwig.BitwigStudio. Not checked on an install.
 bitwig studio,bitwigstudio,bitwig-studio,com.bitwig.bitwigstudio:
   overlay: [bitwig_template.mods.png, bitwig_template.combo.mods.png]
+  midi: true
   os:
     macos:
       overlay: [bitwig_template_mac.mods.png, bitwig_template_mac.combo.mods.png, bitwig_template_mac.extra.mods.png]
+      midi: true
 # Steinberg Cubase: Cubase<version>.exe on Windows, "Cubase <version>" on macOS;
 # no Linux version. The number has no dot, so the matcher keeps it: each major
 # version is listed. Not checked on an install.
 cubase12,cubase13,cubase14,cubase15,cubase 12,cubase 13,cubase 14,cubase 15:
   overlay: [cubase_template.mods.png, cubase_template.combo.mods.png]
+  midi: true
   os:
     macos:
       overlay: [cubase_template_mac.mods.png, cubase_template_mac.combo.mods.png, cubase_template_mac.extra.mods.png]
+      midi: true
 # Apple Logic Pro and GarageBand: macOS only, so the top-level overlay is the
 # macOS set (as for Safari). "Logic Pro X" is the name before 10.8. Not checked
 # on an install.
 logic pro,logic pro x:
   overlay: [logicpro_template_mac.mods.png, logicpro_template_mac.combo.mods.png, logicpro_template_mac.extra.mods.png, logicpro_template_mac.gui.mods.png]
+  midi: true
 garageband:
   overlay: [garageband_template_mac.mods.png, garageband_template_mac.combo.mods.png, garageband_template_mac.extra.mods.png, garageband_template_mac.gui.mods.png]
+  midi: true
 # LMMS: lmms on every system, the Flatpak id io.lmms.LMMS. Not checked on an
 # install.
 lmms,io.lmms.lmms:
   overlay: [lmms_template.mods.png, lmms_template.combo.mods.png, lmms_template.extra.mods.png]
+  midi: true
   os:
     macos:
       overlay: [lmms_template_mac.mods.png, lmms_template_mac.combo.mods.png, lmms_template_mac.extra.mods.png, lmms_template_mac.gui.mods.png]
+      midi: true
 # Ardour: on Linux the launcher ardour<major> starts the binary
 # ardour-<version>, which the matcher's trailing-version rule turns into
 # `ardour`; Flatpak id org.ardour.Ardour; "Ardour" / "Ardour<major>" on Windows
 # and macOS. Not checked on an install.
 ardour,ardour7,ardour8,ardour9,org.ardour.ardour:
   overlay: [ardour_template.mods.png, ardour_template.combo.mods.png]
+  midi: true
   os:
     macos:
       overlay: [ardour_template_mac.mods.png, ardour_template_mac.combo.mods.png, ardour_template_mac.extra.mods.png]
+      midi: true
 # CAD apps. Autodesk Fusion: `Fusion360.exe` on Windows (unchanged by the 2024
 # rename); "Autodesk Fusion", earlier "Autodesk Fusion 360", on macOS; no Linux
 # version. Every Fusion workspace is one window, so the set has the Design and
@@ -3495,6 +3734,8 @@ maya,maya.bin:
 # host cannot detect it). Not checked on an install.
 protools,pro tools:
   overlay: [protools_template.mods.png, protools_template.combo.mods.png, protools_template.extra.mods.png, protools_template.gui.mods.png]
+  midi: true
   os:
     macos:
       overlay: [protools_template_mac.mods.png, protools_template_mac.combo.mods.png, protools_template_mac.extra.mods.png, protools_template_mac.gui.mods.png]
+      midi: true

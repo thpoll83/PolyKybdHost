@@ -18,9 +18,10 @@ class BoardLayoutTest(unittest.TestCase):
         codes = board_layout.base_keycodes()
         self.assertEqual(codes[(0, 0)], 0x29)       # KC_ESCAPE
         self.assertEqual(codes[(1, 1)], 0x14)       # KC_Q
-        # Only modifier macros stay unresolved, and none of them carries an overlay.
+        # Only modifier macros can stay unresolved. KC_HYPR was the last one on the base
+        # layer, and KC_AI took its place (firmware 1.13.1), so every key resolves.
         unresolved = [k["token"] for k in board_layout.load_board()["keys"] if k["keycode"] is None]
-        self.assertEqual(unresolved, ["KC_HYPR"])
+        self.assertEqual(unresolved, [])
 
     def test_a_missing_export_is_none_not_a_crash(self):
         import pathlib

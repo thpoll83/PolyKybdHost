@@ -35,11 +35,10 @@ threshold: 150
 # the tile lit with the lion's face cut out of it, the only variant where the
 # face reads as a lion; bright lights the mane as a blob, luma <118 drops the
 # field and leaves scattered strokes.
-program_icon: progmark.png
-program_icon_mode: luma
-program_icon_threshold: 140
+program_icon: pdfcraft_mark.png   # silhouette of the app's own icon (fetch_icons.py)
+program_icon_mode: alpha
 program_icon_anchor: bottom-right
-program_icon_region: [46, 40]
+program_icon_region: [39, 40]   # the mark's own size: placed 1:1
 program_icon_margin: 0
 
 bindings:

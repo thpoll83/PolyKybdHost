@@ -74,6 +74,11 @@ PERIODIC_10MIN_CYCLE_MSEC = 1000 * 60 * 10
 # with no window detected while the user switched between several windows).
 SLOW_TICK_WARN_S = 2.0
 
+# The refusal of a feature call while the keyboard runs restricted (newer firmware,
+# the user chose safe mode). _reported_capabilities() turns the same features off.
+SAFE_MODE_REFUSAL = ("The keyboard runs in restricted mode (its firmware is newer than "
+                     "this app), so this feature is off.")
+
 _RES_DIR = pathlib.Path(__file__).parent.parent.resolve() / "res"
 
 
@@ -137,6 +142,19 @@ def flash_progress_relay(emit, cancel, kind):
 # 'restore the user's face' request, so it cannot be the marker).
 _NOT_SENT = object()
 
+
+def focused_entry(handler):
+    """The focused window's mapping entry, its program name and its URL.
+
+    A forwarded window: the local entry is the `remote:` wrapper, and the forwarded
+    application's own match is on the remote handler."""
+    entry = getattr(handler, "current_entry", None)
+    is_remote = getattr(handler, "is_remote_mapping_entry", None)
+    if entry is not None and is_remote is not None and is_remote():
+        rh = getattr(handler, "remote_handler", None)
+        return (getattr(rh, "current_entry", None), getattr(rh, "name", None),
+                getattr(rh, "current_url", None))
+    return entry, getattr(handler, "app_name", None), getattr(handler, "current_url", None)
 
 class PolyCore(Observable):
     """Operational facade: commands in, events out. No Qt, no widgets."""
@@ -213,6 +231,20 @@ class PolyCore(Observable):
         self._keycap_face_sent = _NOT_SENT
         self._keycap_face_entry_seen = None
         self._keycap_face_wanted = None
+        # First-time MIDI guide (overlay-mapping `midi: true`): the program in front,
+        # and whether a guide this host started may still be ringing.
+        from polyhost.services.midi_guide import SeenPrograms, seen_path
+        self._midi_seen = SeenPrograms(seen_path(), log)
+        self._midi_guide_key = None
+        # (program key, monotonic deadline, _manual_ring_seq at its start) of the
+        # guide this host started and that may still ring; None once it ended, was
+        # cancelled or never started.
+        self._midi_guide_owner = None
+        # Counts the manual ring requests the keyboard accepted (key attention, its
+        # cancel, polyctl attention --midi). Bumped and compared on the worker only:
+        # a guide cancel that runs after such a request, even one that jumped the
+        # queue (run_sync goes to the front), sees a newer count and does nothing.
+        self._manual_ring_seq = 0
         # Apps already told they get no shortcut icons because they are
         # forwarded -- one line each, not one per window change.
         self._told_no_remote_shortcuts = set()
@@ -829,6 +861,7 @@ class PolyCore(Observable):
                 self._maybe_send_generic_overlays(handler)
             self._track_active_os(handler)
             self._track_keycap_face(handler)
+            self._track_midi_guide(handler)
         elif self.poly_settings.get("dev_run_window_detection_if_not_connected_to_poly_kybd"):
             handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
 
@@ -841,12 +874,7 @@ class PolyCore(Observable):
         if getattr(self, "_keycap_face", None) is None:
             return          # a core built without __init__ (tests)
         from polyhost.services.keycap_face import wanted_face
-        entry = getattr(handler, "current_entry", None)
-        # A forwarded window: the local entry is the `remote:` wrapper, and the
-        # forwarded application's own match is on the remote handler.
-        is_remote = getattr(handler, "is_remote_mapping_entry", None)
-        if entry is not None and is_remote is not None and is_remote():
-            entry = getattr(getattr(handler, "remote_handler", None), "current_entry", None)
+        entry = focused_entry(handler)[0]
         wanted = wanted_face(entry, self.log) if entry is not self._keycap_face_entry_seen else \
             self._keycap_face_wanted
         self._keycap_face_entry_seen, self._keycap_face_wanted = entry, wanted
@@ -856,6 +884,86 @@ class PolyCore(Observable):
         self.worker.submit("keycap_face",
                            lambda c, w=wanted: self._keycap_face.apply(w, self.keeb),
                            coalesce_key="keycap_face")
+
+    def _track_midi_guide(self, handler):
+        """Start the MIDI guide the first time a `midi: true` program is in front,
+        and cancel it when that program leaves the front before the guide ended.
+
+        Only on a change of program, so a still window costs a dict lookup per tick.
+        Firmware below protocol 34 gets nothing."""
+        if getattr(self, "_midi_seen", None) is None:
+            return          # a core built without __init__ (tests)
+        from polyhost.services.midi_guide import is_midi_entry, program_key
+        entry, app, url = focused_entry(handler)
+        key = program_key(app, entry, url) if is_midi_entry(entry, app) else None
+        if key == self._midi_guide_key:
+            return
+        self._midi_guide_key = key
+        owner, self._midi_guide_owner = self._midi_guide_owner, None
+        # Only a guide that can still be ringing is cancelled: after its ripples
+        # ran out the keyboard is idle, and a cancel then would end someone
+        # else's request (polyctl attention). Its own coalesce key, so a guide
+        # queued for the next program cannot replace the cancel.
+        if owner is not None and time.monotonic() < owner[1]:
+            self.worker.submit("midi_guide_cancel",
+                               lambda c, s=owner[2]: self._cancel_midi_guide(s),
+                               coalesce_key="midi_guide_cancel")
+        if key is None or self._midi_seen.has(key):
+            return
+        if not protocol_supports(self.keeb.protocol_version, "key_guide"):
+            return
+        self.worker.submit("midi_guide", lambda c, k=key: self._run_midi_guide(k),
+                           coalesce_key="midi_guide")
+
+    def _cancel_midi_guide(self, seq):
+        """Worker: cancel the guide that started at count `seq`, unless a manual
+        request took the ring since."""
+        if self._manual_ring_seq != seq:
+            return True, "a manual request owns the ring"
+        return self.keeb.key_attention_cancel()
+
+    def _manual_ring(self, fn):
+        """Worker: run a manual ring request and, once the keyboard took it, mark the
+        ring as no longer the guide's."""
+        ok, msg = fn()
+        if ok:
+            self._manual_ring_seq += 1
+        return ok, msg
+
+    def _run_midi_guide(self, key):
+        """Worker: start the guide for `key` if it is still the program in front, and
+        remember the program once the keyboard took it."""
+        from polyhost.services.midi_guide import GUIDE_SECONDS, run_guide
+        if key != self._midi_guide_key:
+            return False, "focus moved on"
+        ok, msg = run_guide(self.keeb, self.log)
+        if not ok:
+            # Leaves `_midi_guide_owner` alone: it may belong to a newer guide.
+            self.log.info("MIDI guide for %s not started: %s", key, msg)
+            return ok, msg
+        self._midi_seen.add(key)
+        if key == self._midi_guide_key:
+            self._midi_guide_owner = (key, time.monotonic() + GUIDE_SECONDS,
+                                      self._manual_ring_seq)
+            self.log.info("MIDI guide started for %s", key)
+        else:
+            # The program left while the request was on the wire.
+            self.keeb.key_attention_cancel()
+        return ok, msg
+
+    def midi_guide(self, reset=False):
+        """Run the MIDI guide now (polyctl attention --midi); `reset` also forgets
+        which programs had it, so each one gets it again. (ok, msg)."""
+        if self.safe_mode:
+            return False, SAFE_MODE_REFUSAL
+        if reset:
+            self._midi_seen.clear()
+        from polyhost.services.midi_guide import run_guide
+        ok, msg = self._device_call(
+            "midi_guide", lambda c: self._manual_ring(lambda: run_guide(self.keeb, self.log)))
+        if ok:
+            self._midi_guide_owner = None
+        return ok, msg
 
     def _send_template_with_fill(self, handler):
         """Send the focused window's templates WITH the generic gap fill.
@@ -2626,12 +2734,117 @@ class PolyCore(Observable):
             row, col, count, period_ms = int(row), int(col), int(count), int(period_ms)
         except (TypeError, ValueError):
             return False, f"Invalid key attention request: {row!r}, {col!r}"
-        return self._device_call(
-            "key_attention", lambda c: self.keeb.key_attention(row, col, count, period_ms))
+        ok, msg = self._device_call(
+            "key_attention",
+            lambda c: self._manual_ring(
+                lambda: self.keeb.key_attention(row, col, count, period_ms)))
+        if ok:
+            # This request replaced any MIDI guide: leaving that program must not
+            # cancel it.
+            self._midi_guide_owner = None
+        return ok, msg
 
     def key_attention_cancel(self):
-        return self._device_call("key_attention_cancel",
-                                 lambda c: self.keeb.key_attention_cancel())
+        ok, msg = self._device_call(
+            "key_attention_cancel",
+            lambda c: self._manual_ring(self.keeb.key_attention_cancel))
+        if ok:
+            self._midi_guide_owner = None
+        return ok, msg
+
+    # ---- Runtime combos and tap dance (cmd 48, protocol v33+) ---------------------
+
+    def combos_get(self):
+        """(ok, {"available", "combo_term_ms", "combos": [...], "tap_dances": [...]}).
+
+        combos[i] = {"slot": i, "keys": [..2..4 keycodes..], "result": kc}, empty slots
+        with keys [] and result 0. tap_dances[i] = {"slot": i, "on_tap", "on_hold",
+        "on_double_tap", "on_tap_hold", "term_ms"}; slot i is the keycode TD(i). One
+        call, 33 reads, so an editor or polyctl does not pay a worker round trip each."""
+        from polyhost.device.command_ids import Combos
+        if self.safe_mode:
+            return False, SAFE_MODE_REFUSAL
+        ok, info = self._device_call("combo_info", lambda c: self.keeb.get_combo_info())
+        if not ok:
+            return False, info
+        out = {"available": info["available"], "combo_term_ms": info.get("combo_term_ms", 0),
+               "combos": [], "tap_dances": []}
+        if not info["available"]:
+            return True, out
+        for i in range(info["combo_slots"]):
+            ok, w = self._device_call(
+                "combo_get", lambda c, i=i: self.keeb.get_combo_record(Combos.KIND_COMBO, i))
+            if not ok:
+                return False, w
+            out["combos"].append({"slot": i, "keys": [k for k in w[:4] if k], "result": w[4]})
+        for i in range(info["tap_dance_slots"]):
+            ok, w = self._device_call(
+                "tap_dance_get", lambda c, i=i: self.keeb.get_combo_record(Combos.KIND_TAP_DANCE, i))
+            if not ok:
+                return False, w
+            out["tap_dances"].append({"slot": i, "on_tap": w[0], "on_hold": w[1],
+                                      "on_double_tap": w[2], "on_tap_hold": w[3], "term_ms": w[4]})
+        return True, out
+
+    def combos_set(self, combos=None, tap_dances=None):
+        """Write the given slots, then store them on the keyboard (both halves).
+
+        combos: [{"slot", "keys", "result"}], tap_dances: [{"slot", "on_tap", "on_hold",
+        "on_double_tap", "on_tap_hold", "term_ms"}]; a slot with no keys / no actions is
+        cleared. Every record is validated before the first one is sent, so a bad entry
+        changes nothing. (ok, {"other_half": bool}) or (False, reason)."""
+        from polyhost.device.command_ids import Combos
+        if self.safe_mode:
+            return False, SAFE_MODE_REFUSAL
+        records = []
+        try:
+            for c in combos or []:
+                keys = [int(k) for k in c.get("keys", [])]
+                result = int(c.get("result", 0)) if keys else 0
+                words = (keys + [0] * Combos.MAX_KEYS)[:Combos.MAX_KEYS] + [result]
+                slot = int(c["slot"])
+                if len(keys) > Combos.MAX_KEYS or not 0 <= slot < Combos.COMBO_SLOTS \
+                        or not Combos.combo_valid(words[:4], words[4]):
+                    return False, f"Combo {slot + 1}: needs 2 to 4 keys and a result"
+                records.append((Combos.KIND_COMBO, slot, words))
+            for t in tap_dances or []:
+                words = [int(t.get(k, 0)) for k in
+                         ("on_tap", "on_hold", "on_double_tap", "on_tap_hold", "term_ms")]
+                slot = int(t["slot"])
+                if not 0 <= slot < Combos.TAP_DANCE_SLOTS or not Combos.tap_dance_valid(*words):
+                    return False, (f"Tap dance {slot + 1}: actions must be plain or modified "
+                                   f"keys, MO, TO or TG, and the term 0 or "
+                                   f"{Combos.TERM_MIN_MS}..{Combos.TERM_MAX_MS} ms")
+                records.append((Combos.KIND_TAP_DANCE, slot, words))
+        except (KeyError, TypeError, ValueError) as e:
+            return False, f"Invalid combo / tap dance entry: {e}"
+        # A SET changes the keyboard's RAM only, and the next COMMIT (from any save)
+        # stores whatever RAM holds. So the old records are read first, and a write
+        # that fails part-way puts the ones already written back before reporting.
+        before = []
+        for kind, slot, _words in records:
+            ok, old = self._device_call(
+                "combo_get", lambda c, k=kind, s=slot: self.keeb.get_combo_record(k, s))
+            if not ok:
+                return False, old
+            before.append((kind, slot, list(old)))
+        for i, (kind, slot, words) in enumerate(records):
+            ok, msg = self._device_call(
+                "combo_set", lambda c, k=kind, s=slot, w=words: self.keeb.set_combo_record(k, s, w))
+            if not ok:
+                unrestored = 0
+                for k, s, w in before[:i]:
+                    restored, _ = self._device_call(
+                        "combo_set", lambda c, k=k, s=s, w=w: self.keeb.set_combo_record(k, s, w))
+                    unrestored += not restored
+                if unrestored:
+                    # The keyboard's RAM now mixes old and new records, and the next
+                    # COMMIT from any save would store that mix.
+                    return False, (f"{msg}. {unrestored} earlier record(s) could not be put "
+                                   f"back, so the unsaved tables mix old and new records. "
+                                   f"Save again before saving anything else.")
+                return False, msg
+        return self._device_call("combo_commit", lambda c: self.keeb.commit_combos())
 
     def get_tap_terms(self):
         """(ok, {"tapping_term", "flow_tap_term", "flow_tap_available",
