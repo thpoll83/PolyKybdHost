@@ -1,5 +1,5 @@
 {
- "fw_version": "1.11.4",
+ "fw_version": "1.13.0",
  "named": {
   "ACUTE_ACCENT": [
    180
@@ -3227,6 +3227,9 @@
   "ICON_ACCESSIBILITY": [
    9855
   ],
+  "ICON_AI_KEY": [
+   1048617
+  ],
   "ICON_APP_SWITCH": [
    128468
   ],
@@ -3523,6 +3526,105 @@
    15,
    15,
    2
+  ],
+  "ICON_MIDI_8VA": [
+   1048640
+  ],
+  "ICON_MIDI_8VB": [
+   1048641
+  ],
+  "ICON_MIDI_BEND_DOWN": [
+   1048649
+  ],
+  "ICON_MIDI_BEND_UP": [
+   1048648
+  ],
+  "ICON_MIDI_CLEF": [
+   1048650
+  ],
+  "ICON_MIDI_CRESC": [
+   1048636
+  ],
+  "ICON_MIDI_DIM": [
+   1048637
+  ],
+  "ICON_MIDI_F": [
+   1048634
+  ],
+  "ICON_MIDI_FF": [
+   1048635
+  ],
+  "ICON_MIDI_FLAT": [
+   1048638
+  ],
+  "ICON_MIDI_LEGATO": [
+   1048645
+  ],
+  "ICON_MIDI_MF": [
+   1048633
+  ],
+  "ICON_MIDI_MP": [
+   1048632
+  ],
+  "ICON_MIDI_P": [
+   1048631
+  ],
+  "ICON_MIDI_PED": [
+   1048642
+  ],
+  "ICON_MIDI_PORTA": [
+   1048646
+  ],
+  "ICON_MIDI_PP": [
+   1048630
+  ],
+  "ICON_MIDI_SHARP": [
+   1048639
+  ],
+  "ICON_MIDI_SOST": [
+   1048643
+  ],
+  "ICON_MIDI_STAFF_A": [
+   1048627
+  ],
+  "ICON_MIDI_STAFF_AS": [
+   1048628
+  ],
+  "ICON_MIDI_STAFF_B": [
+   1048629
+  ],
+  "ICON_MIDI_STAFF_C": [
+   1048618
+  ],
+  "ICON_MIDI_STAFF_CS": [
+   1048619
+  ],
+  "ICON_MIDI_STAFF_D": [
+   1048620
+  ],
+  "ICON_MIDI_STAFF_DS": [
+   1048621
+  ],
+  "ICON_MIDI_STAFF_E": [
+   1048622
+  ],
+  "ICON_MIDI_STAFF_F": [
+   1048623
+  ],
+  "ICON_MIDI_STAFF_FS": [
+   1048624
+  ],
+  "ICON_MIDI_STAFF_G": [
+   1048625
+  ],
+  "ICON_MIDI_STAFF_GS": [
+   1048626
+  ],
+  "ICON_MIDI_UC": [
+   1048644
+  ],
+  "ICON_MIDI_WAVE": [
+   1048647
   ],
   "ICON_MMB": [
    1048588

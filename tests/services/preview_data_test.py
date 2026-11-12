@@ -89,6 +89,21 @@ class ShippedDataTest(unittest.TestCase):
     def test_the_layer_enum_matches_the_shipped_fallback(self):
         from polyhost.gui.layout_dialog import qmk_keycode_helper as qh
         self.assertEqual(self.d.layer_tags, qh.LAYER_TAGS)
+        self.assertEqual(self.d.stored_layers, qh.STORED_LAYER_COUNT)
+
+    def test_every_midi_keycode_has_a_legend(self):
+        """Firmware 1.13.0 draws all 144 QK_MIDI_* keys through midi_legend(), which
+        no static-text switch has; the export compiles that C for them
+        (tools/midi_legend_dump.py). Missing here means the export ran without a
+        C compiler."""
+        from polyhost.gui.layout_dialog import qmk_keycode_helper as qh
+        midi = {k for k in qh.parse_qmk_keycodes(qh.HEADER_FILE) if k.startswith("QK_MIDI_")}
+        self.assertEqual(len(midi), 144)
+        self.assertEqual(midi - set(self.d.legends), set())
+        # C4, the resting note of MI_C: staff glyph, space, C, half-size op, 4
+        cps = self.d.legends["QK_MIDI_NOTE_C_0"]
+        self.assertEqual(cps[1:], [0x20, ord("C"), 0x10, ord("4")])
+        self.assertGreaterEqual(cps[0], 0x100000)
 
     def test_the_legends_are_codepoints_not_c_source(self):
         """The export resolves the display list, so the host needs no macro table

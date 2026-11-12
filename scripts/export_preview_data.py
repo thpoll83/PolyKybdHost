@@ -64,6 +64,7 @@ def fw_version(pk: pathlib.Path) -> str:
 def build(pk: pathlib.Path) -> dict:
     """Every artifact, as {filename: python object}. Pure -- no writes."""
     import lang_demo as ld
+    import midi_legend_dump as mld
     import oled_preview as op
 
     fonts_dir = str(pk / "base" / "fonts")
@@ -100,6 +101,14 @@ def build(pk: pathlib.Path) -> dict:
             legends[token] = list(cps)
         else:
             unresolved.append(token)
+
+    # The MIDI keys (firmware 1.13.0+): `midi_legend()` builds each legend at
+    # runtime, so no static-text switch has it. The firmware's own C is compiled
+    # and run for the resting legends (tools/midi_legend_dump.py). None on a tree
+    # without the MIDI layer or a machine without a C compiler.
+    midi = mld.midi_legends(pk, log=lambda m: print(f"  note: {m}"))
+    if midi:
+        legends.update(midi)
 
     # The per-language letter table (the LUT), as the grid the renderer reads.
     # ⚠️ The WHOLE grid, raw, plus the named-glyph table -- NOT a reimplementation.
@@ -159,7 +168,11 @@ def build(pk: pathlib.Path) -> dict:
                          "aliases": aliases,
                          "ime": ime,
                          "unresolved": sorted(unresolved)},
+        # `stored` is how many layers the keyboard keeps in EEPROM: the layers after
+        # them are compiled in. The host renumbers those for a keyboard that
+        # stores fewer (KeycapPreview.set_stored_layer_count).
         "layers.json": {"fw_version": version,
+                        "stored": qh.parse_stored_layer_count(pk / "config.h"),
                         "tags": {str(k): v for k, v in
                                  qh.parse_layers_h(pk / "layers.h").items()}},
         # ⚠️ The Shift-preview suppression is BAKED here, not left to the host.
