@@ -167,7 +167,13 @@ class GitHub(private val http: Http = Http.Default, private val clientId: String
         val preparedPublished: Boolean,
         /** Tag of the release GitHub calls "latest", or null. */
         val latestTag: String?,
-    )
+    ) {
+        /**
+         * True when there is something new to publish. Once the newest prepared tag is
+         * released, Dry run and Publish stay off until the next notes are prepared.
+         */
+        val canPublish get() = workflowPresent && prepared != null && !preparedPublished
+    }
 
     data class Run(val id: Long, val status: String, val conclusion: String?, val htmlUrl: String) {
         val finished get() = status == "completed"

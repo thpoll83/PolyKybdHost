@@ -126,6 +126,13 @@ class GitHubTest {
         assertTrue(http.headers.all { it["Authorization"] == "Bearer tok" })
     }
 
+    @Test fun alreadyPublishedTagIsNothingToPublish() {
+        val s = GitHub(FakeHttp(statusRoutes(published = 200)), "id").status("tok", fw)
+        assertTrue(s.preparedPublished)
+        assertFalse(s.canPublish)
+        assertTrue(GitHub(FakeHttp(statusRoutes()), "id").status("tok", fw).canPublish)
+    }
+
     @Test fun statusWithoutWorkflowOrNotes() {
         val routes = statusRoutes().toMutableMap()
         routes.remove("GET /repos/thpoll83/qmk_firmware/actions/workflows/publish-release.yml")
@@ -133,6 +140,7 @@ class GitHubTest {
         val s = GitHub(FakeHttp(routes), "id").status("tok", fw)
         assertFalse(s.workflowPresent)
         assertNull(s.prepared)
+        assertFalse(s.canPublish)
     }
 
     @Test fun unauthorizedIsReportedSoTheCallerCanRefresh() {
