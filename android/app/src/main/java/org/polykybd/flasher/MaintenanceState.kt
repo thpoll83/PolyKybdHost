@@ -59,15 +59,15 @@ object MaintenanceState {
             message = "Enter the code on GitHub. This screen continues by itself."
             changed()
             main.post { show(code) }
-            val deadline = System.currentTimeMillis() + code.expiresInSec * 1000L
+            val deadline = PollGate.monotonicMs() + code.expiresInSec * 1000L
             var interval = code.intervalSec
             var done: GitHub.Tokens? = null
             while (done == null) {
                 // Measured from the end of the previous request, so it is never too early.
-                if (!pollGate.waitUntil(System.currentTimeMillis() + interval * 1000L)) {
+                if (!pollGate.waitUntil(PollGate.monotonicMs() + interval * 1000L)) {
                     message = "Sign-in cancelled."; return@background
                 }
-                if (System.currentTimeMillis() > deadline) throw GitHub.GitHubException("The code expired. Sign in again.")
+                if (PollGate.monotonicMs() > deadline) throw GitHub.GitHubException("The code expired. Sign in again.")
                 when (val p = github.pollToken(code, System.currentTimeMillis(), interval)) {
                     is GitHub.Poll.Done -> done = p.tokens
                     is GitHub.Poll.Pending -> interval = p.intervalSec
@@ -132,8 +132,8 @@ object MaintenanceState {
                 var run = withToken { github.dispatch(it, status, dryRun, System.currentTimeMillis()) }
                 runs[repo] = run
                 changed()
-                val until = System.currentTimeMillis() + RUN_WATCH_MS
-                while (!run.finished && System.currentTimeMillis() < until) {
+                val until = PollGate.monotonicMs() + RUN_WATCH_MS
+                while (!run.finished && PollGate.monotonicMs() < until) {
                     Thread.sleep(RUN_POLL_MS)
                     run = withToken { github.run(it, repo, run.id) }
                     runs[repo] = run

@@ -15,7 +15,7 @@ class PollGateTest {
         val gate = PollGate()
         gate.cancel()
         val t0 = System.nanoTime()
-        assertFalse(gate.waitUntil(System.currentTimeMillis() + 60_000))
+        assertFalse(gate.waitUntil(PollGate.monotonicMs() + 60_000))
         assertTrue(System.nanoTime() - t0 < TimeUnit.SECONDS.toNanos(1))
     }
 
@@ -23,14 +23,14 @@ class PollGateTest {
         val gate = PollGate()
         gate.cancel()
         gate.reset()
-        assertTrue(gate.waitUntil(System.currentTimeMillis() - 1))
+        assertTrue(gate.waitUntil(PollGate.monotonicMs() - 1))
     }
 
     @Test fun cancelEndsARunningWait() {
         val gate = PollGate()
         val pool = Executors.newSingleThreadExecutor()
         try {
-            val result = pool.submit<Boolean> { gate.waitUntil(System.currentTimeMillis() + 60_000) }
+            val result = pool.submit<Boolean> { gate.waitUntil(PollGate.monotonicMs() + 60_000) }
             Thread.sleep(100)
             gate.cancel()
             assertFalse(result.get(2, TimeUnit.SECONDS))
@@ -44,12 +44,12 @@ class PollGateTest {
         val lockField = PollGate::class.java.getDeclaredField("lock").apply { isAccessible = true }
         val gate = PollGate()
         val lock = lockField.get(gate) as Object
-        val start = System.currentTimeMillis()
+        val start = PollGate.monotonicMs()
         val pool = Executors.newSingleThreadExecutor()
         try {
             val result = pool.submit<Long> {
                 gate.waitUntil(start + 400)
-                System.currentTimeMillis() - start
+                PollGate.monotonicMs() - start
             }
             Thread.sleep(50)
             synchronized(lock) { lock.notifyAll() }
