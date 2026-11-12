@@ -265,6 +265,9 @@ def main() -> int:
         (out / f"{base}.png").unlink()
     program_marks.own_icon(out / "filmcraft.png", ICON_URL, frame=64,
                            credit="storytold/filmcraft assets/app-icon/filmcraft.ico")
+    # The ESC mark: the icon's animal as one solid shape at keycap size, with its
+    # darkest lines cut back out (program_marks.silhouette_mark).
+    program_marks.silhouette_mark(out / "filmcraft_mark.png", out / "filmcraft.png", cut=120)
     print(f"Wrote {n} icons (+ program mark) to {out}")
     return 0
 

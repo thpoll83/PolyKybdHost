@@ -105,3 +105,12 @@ All rendered by `fetch_icons.py`:
   quickmask, gradient, brushdec, brushinc, hardnessdec, hardnessinc, swapcolors.
 - **`channel3..9.png`**: Fluent `Square` with a Liberation Sans Bold digit
   (`number_badge.numbered`); `channelbase.png` is that base.
+
+## ESC mark: silhouette
+
+The ESC key shows `icons/photocraft_mark.png`, made from the app's own icon `icons/photocraft.png`
+by `program_marks.silhouette_mark(..., cut=120)` in `fetch_icons.py`. The animal is
+cut off the coloured tile as one solid shape, fitted into 40 x 40 (38 x 40), and
+interior pixels darker than luma 120 at that size are cut back out (eyes, mouth,
+lines). The spec places it 1:1 (`program_icon_region: [38, 40]`). The
+generator's thresholds turned the engraving into dither at keycap size.

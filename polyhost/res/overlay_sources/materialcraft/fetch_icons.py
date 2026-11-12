@@ -73,6 +73,9 @@ def main() -> int:
     n += icon_fetch.borrow(BORROWED, out)
     program_marks.own_icon(out / "materialcraft.png", MATERIALCRAFT_ICO, 128,
                            credit="storytold/materialcraft assets/app-icon/materialcraft.ico (MIT OR Apache-2.0)")
+    # The ESC mark: the icon's animal as one solid shape at keycap size, with its
+    # darkest lines cut back out (program_marks.silhouette_mark).
+    program_marks.silhouette_mark(out / "materialcraft_mark.png", out / "materialcraft.png", cut=120, crop=(40, 0, 128, 112))
     print(f"Wrote {n} icons (+ program mark) to {out}")
     return 0
 

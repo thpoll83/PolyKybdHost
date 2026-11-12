@@ -100,3 +100,12 @@ converge; 64 was taken.
   CFBundleExecutable) → `pdfcraft`.
 - Linux: process `pdfcraft`; WM_CLASS / Wayland app id `ai.storyteller.pdfcraft`
   (`apps/pdfcraft/src/main.rs:301` `with_app_id`, `.desktop` StartupWMClass).
+
+## ESC mark: silhouette
+
+The ESC key shows `icons/pdfcraft_mark.png`, made from the app's own icon `icons/progmark.png`
+by `program_marks.silhouette_mark(..., cut=120)` in `fetch_icons.py`. The animal is
+cut off the coloured tile as one solid shape, fitted into 40 x 40 (39 x 40), and
+interior pixels darker than luma 120 at that size are cut back out (eyes, mouth,
+lines). The spec places it 1:1 (`program_icon_region: [39, 40]`). The
+generator's thresholds turned the engraving into dither at keycap size.

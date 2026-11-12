@@ -33,11 +33,10 @@ margin: 0
 mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
-program_icon: lightcraft.png
-program_icon_mode: luma
-program_icon_threshold: 140
+program_icon: lightcraft_mark.png   # silhouette of the app's own icon (fetch_icons.py)
+program_icon_mode: alpha
 program_icon_anchor: bottom-right
-program_icon_region: [40, 36]
+program_icon_region: [33, 40]   # the mark's own size: placed 1:1
 program_icon_margin: 0
 
 bindings:

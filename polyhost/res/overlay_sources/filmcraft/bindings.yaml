@@ -40,11 +40,10 @@ threshold: 150
 # Own icon, 64 px ICO frame. Swept frame 48/64/128/256 + SVG x luma/bright x
 # t70..210: `bright` t110 keeps the violet tile lit with the owl's face and
 # eyes knocked out; luma lights only the scattered ink, t130+ fills the face.
-program_icon: filmcraft.png
-program_icon_mode: bright
-program_icon_threshold: 110
+program_icon: filmcraft_mark.png   # silhouette of the app's own icon (fetch_icons.py)
+program_icon_mode: alpha
 program_icon_anchor: bottom-right
-program_icon_region: [37, 32]
+program_icon_region: [35, 40]   # the mark's own size: placed 1:1
 program_icon_margin: 0
 
 bindings:

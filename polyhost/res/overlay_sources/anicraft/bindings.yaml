@@ -38,11 +38,10 @@ threshold: 150
 # 170 lights the yellow field and the paper, leaving the rabbit as a dark
 # silhouette in a lit tile with both ears readable; 140 fills the rabbit in,
 # 200 drops the field. 128 and 256 render alike; 64 loses the inner ear.
-program_icon: anicraft.png
-program_icon_mode: bright
-program_icon_threshold: 170
-program_icon_anchor: right
-program_icon_region: [40, 40]
+program_icon: anicraft_mark.png   # silhouette of the app's own icon (fetch_icons.py)
+program_icon_mode: alpha
+program_icon_anchor: bottom-right
+program_icon_region: [34, 40]   # the mark's own size: placed 1:1
 program_icon_margin: 0
 
 bindings:

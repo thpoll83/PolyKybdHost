@@ -332,6 +332,9 @@ def main() -> int:
         print("  keytoggle.png  <- drawn (diamond + plus)")
     program_marks.own_icon(out / "effectcraft.png", EC_ICO, frame=48,
                            credit="storytold/effectcraft assets/app-icon/effectcraft.ico (MIT OR Apache-2.0)")
+    # The ESC mark: the icon's animal as one solid shape at keycap size, with its
+    # darkest lines cut back out (program_marks.silhouette_mark).
+    program_marks.silhouette_mark(out / "effectcraft_mark.png", out / "effectcraft.png", cut=120)
     print(f"Wrote {len(BORROW)} borrowed + {n} fetched + {len(BADGES) + 1} drawn icons to {out}")
     return 0
 
