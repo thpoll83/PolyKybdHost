@@ -10,6 +10,8 @@ KEY_MARGIN_Y = 2
 KEY_RADIUS = 0.1
 BADGE_BOTTOM_GAP = 20  # px from tile bottom to the badge's top edge
 LABEL_ONLY_NUDGE = 14  # px the label sits above the tile centre (no badge beside it)
+LABEL_MAX_PX = 12      # a short label's size (9 pt at 96 dpi, as before)
+LABEL_MIN_PX = 6
 
 
 def key_transform(info, minx, miny, scale) -> QTransform:
@@ -81,7 +83,7 @@ class RenderableKey(QGraphicsObject):
         # but that panel's picture: the photo already shows the cap, switch and plate.
         self._photo = False
         self._label_only = False
-        self.update_text_position()
+        self.fit_label()
 
         # hover state
         self._hovered = False
@@ -148,7 +150,7 @@ class RenderableKey(QGraphicsObject):
         self.prepareGeometryChange()
         self._label_only = bool(on)
         self._sync_labels()
-        self.update_text_position()
+        self.fit_label()            # the nudge changed, so the height budget did too
         self.update()
 
     def label_anchor(self) -> QPointF:
@@ -315,9 +317,9 @@ class RenderableKey(QGraphicsObject):
         # allow default behavior (selection)
         super().mousePressEvent(ev)
 
-    def setKeycode(self, nice_name, name, keycode, font_size_hint=None):
+    def setKeycode(self, nice_name, name, keycode):
         # Legacy single-line setter (kept for compatibility). Prefer set_display.
-        self.set_display(nice_name, "", None, font_size_hint)
+        self.set_display(nice_name, "", None)
 
     def set_keycap(self, pixmap):
         """Show a rendered keycap in the display rect instead of the placeholder fill.
@@ -333,16 +335,15 @@ class RenderableKey(QGraphicsObject):
         self._sync_labels()
         self.update()
 
-    def set_display(self, main_text, badge_text="", badge_color=None, font_size_hint=None):
+    def set_display(self, main_text, badge_text="", badge_color=None):
         """Update the tile to show a base/tap label plus an optional behaviour badge."""
         self.nice_name = main_text
         self.text.document().setPlainText(main_text or "")
-        if font_size_hint is not None and isinstance(font_size_hint, (int, float)):
-            self.text.setFont(QFont("Arial", int(font_size_hint)))
 
         has_badge = bool(badge_text)
         self.badge.document().setPlainText(badge_text or "")
         self.badge.setVisible(has_badge)    # for the layout below; _sync_labels settles it
+        self.fit_label()
         if has_badge and badge_color:
             self.badge.setDefaultTextColor(QColor(badge_color))
 
@@ -350,12 +351,36 @@ class RenderableKey(QGraphicsObject):
         self._sync_labels()
         self.update()
 
+    def _label_nudge(self) -> float:
+        # Nudge the main label up a little when a badge is shown so the two
+        # lines sit either side of the tile's display area.
+        return LABEL_ONLY_NUDGE if self._label_only else 18 if self.badge.isVisible() else 14
+
+    def label_budget(self) -> tuple[float, float]:
+        """(width, height) the label may take. It is centred `nudge` px above the tile
+        centre, so its top reaches the tile edge at height h - 2 * nudge; the badge
+        sits lower than the label's bottom then reaches."""
+        return self.w, max(1.0, self.h - 2 * self._label_nudge())
+
+    def fit_label(self):
+        """The largest size, LABEL_MIN_PX..LABEL_MAX_PX, at which every line of the
+        label fits `label_budget()`. Measured on the text item itself (its document
+        margin included), so what is measured is what is drawn."""
+        width, height = self.label_budget()
+        font = QFont(self.text.font())
+        for px in range(LABEL_MAX_PX, LABEL_MIN_PX - 1, -1):
+            font.setPixelSize(px)
+            self.text.setFont(font)
+            self.text.setTextWidth(-1)          # measure the natural width, unwrapped
+            r = self.text.boundingRect()
+            if r.width() <= width and r.height() <= height:
+                break
+        self.update_text_position()
+
     def update_text_position(self):
         rect = self.boundingRect()
         bounding = self.text.boundingRect()
-        # Nudge the main label up a little when a badge is shown so the two
-        # lines sit either side of the tile's display area.
-        y_nudge = LABEL_ONLY_NUDGE if self._label_only else 18 if self.badge.isVisible() else 14
+        y_nudge = self._label_nudge()
         self.text.setPos(rect.x() + (rect.width() - bounding.width())/2,
                          rect.y() + (rect.height() - bounding.height())/2 - y_nudge)
         self.text.setTextWidth(bounding.width())
