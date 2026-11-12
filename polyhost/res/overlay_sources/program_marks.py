@@ -160,3 +160,117 @@ def own_icon(path: Path, url: str, frame: int = 64, *, credit: str = "") -> None
     image.size = (frame, frame)
     image.convert("RGBA").save(path)
     print(f"  {path.name}  <- {credit or url} ({frame}px frame)")
+
+
+# ---- silhouette marks from an app's own icon ------------------------------------
+#
+# The ArtCraft apps' own icons are engravings of an animal on a coloured tile. Run
+# through the generator's thresholds they come out as dither: the engraving's lines
+# are finer than a 72x40 1-bit panel can carry. `silhouette_mark()` keeps the art
+# but changes how it is reduced: the animal is cut off the tile as one solid shape,
+# scaled to keycap size, and only the darkest lines (eyes, mouth, mane, stripes)
+# are cut back out of it at that size. The result is written 1:1, so the binding
+# places it unscaled (`program_icon_region` equal to the image size).
+
+def _neighbours(mask, y, x):
+    h, w = mask.shape
+    for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        ny, nx = y + dy, x + dx
+        if 0 <= ny < h and 0 <= nx < w:
+            yield ny, nx
+
+
+def _flood(mask, seeds):
+    """The 4-connected part of `mask` reachable from `seeds`."""
+    import numpy as np
+    seen = np.zeros_like(mask)
+    stack = [s for s in seeds if mask[s]]
+    for s in stack:
+        seen[s] = True
+    while stack:
+        y, x = stack.pop()
+        for n in _neighbours(mask, y, x):
+            if mask[n] and not seen[n]:
+                seen[n] = True
+                stack.append(n)
+    return seen
+
+
+def _largest_part(mask):
+    import numpy as np
+    left = mask.copy()
+    best = np.zeros_like(mask)
+    while left.any():
+        part = _flood(left, [tuple(np.argwhere(left)[0])])
+        if part.sum() > best.sum():
+            best = part
+        left &= ~part
+    return best
+
+
+def _fill_holes(mask):
+    import numpy as np
+    h, w = mask.shape
+    border = [(y, x) for y in range(h) for x in (0, w - 1)] + \
+             [(y, x) for x in range(w) for y in (0, h - 1)]
+    outside = _flood(~mask, border)
+    return ~outside
+
+
+def _morph(mask, size, op):
+    import numpy as np
+    from PIL import ImageFilter
+    f = ImageFilter.MinFilter(size) if op == "erode" else ImageFilter.MaxFilter(size)
+    return np.asarray(Image.fromarray((mask * 255).astype("uint8")).filter(f)) > 127
+
+
+def silhouette_mark(path: Path, source: Path, *, box=(40, 40), cut: int | None = None,
+                    crop=None, tile_distance: int = 60) -> None:
+    """A 1-bit keycap mark from an icon whose drawing sits on a coloured tile.
+
+    `source` is the app's own icon (from `own_icon()`). The tile colour is the
+    median of the icon's opaque border; every pixel further than `tile_distance`
+    from it is the drawing. Its largest part, with holes filled, is the
+    silhouette, fitted into `box` (w, h) keeping its aspect. `cut` is the luma
+    (0..255) below which an inner pixel of the downscaled drawing goes dark again;
+    the outline is never cut. `crop` (x0, y0, x1, y1, source pixels) keeps part of
+    the drawing only, e.g. a head without its neck. Written white on transparent
+    at the fitted size: bind it with `program_icon_mode: alpha` and a
+    `program_icon_region` equal to that size so it is placed 1:1.
+
+    Guarded like `ensure()`: a committed mark is left as it is.
+    """
+    import numpy as np
+    if path.exists():
+        print(f"  {path.name}  <- committed asset (left as-is)")
+        return
+    src = np.asarray(Image.open(source).convert("RGBA")).astype(int)
+    if crop:
+        x0, y0, x1, y1 = crop
+        src = src[y0:y1, x0:x1]
+    rgb, opaque = src[..., :3], src[..., 3] > 128
+    ring = np.zeros_like(opaque)
+    ring[:3] = ring[-3:] = True
+    ring[:, :3] = ring[:, -3:] = True
+    ring &= opaque
+    tile = np.median(rgb[ring], axis=0)
+    drawing = opaque & (np.sqrt(((rgb - tile) ** 2).sum(-1)) > tile_distance)
+    drawing = _morph(_morph(drawing, 3, "erode"), 3, "dilate")          # opening
+    drawing = _largest_part(drawing)
+    drawing = _morph(_morph(drawing, 5, "dilate"), 5, "erode")          # closing
+    drawing = _fill_holes(drawing)
+    ys, xs = np.nonzero(drawing)
+    bbox = (xs.min(), ys.min(), xs.max() + 1, ys.max() + 1)
+    sil = Image.fromarray((drawing * 255).astype("uint8")).crop(bbox)
+    scale = min(box[0] / sil.width, box[1] / sil.height)
+    size = (max(1, round(sil.width * scale)), max(1, round(sil.height * scale)))
+    mark = np.asarray(sil.resize(size, Image.BOX)) > 127
+    if cut is not None:
+        luma = rgb @ [0.299, 0.587, 0.114]
+        small = np.asarray(Image.fromarray(np.where(drawing, luma, 255).clip(0, 255)
+                                           .astype("uint8")).crop(bbox).resize(size, Image.BOX))
+        mark &= ~((small < cut) & _morph(mark, 3, "erode"))
+    out = np.zeros((size[1], size[0], 4), "uint8")
+    out[mark] = WHITE
+    Image.fromarray(out).save(path)
+    print(f"  {path.name}  <- silhouette of {source.name} ({size[0]}x{size[1]}, cut {cut})")

@@ -86,3 +86,12 @@ I swept the 48/64/128/256 hicolor frames and the small SVG with luma t90-170 and
 t180-230. Bright mode leaves only specks. Luma 130-150 shows the head and ears, and the 64, 128
 and 256 frames converge. Chosen: the 128 frame, `luma`, threshold 140, region 40x36
 bottom-right, margin 0. Guarded in `fetch_icons.py`.
+
+## ESC mark: silhouette
+
+The ESC key shows `icons/lightcraft_mark.png`, made from the app's own icon `icons/lightcraft.png`
+by `program_marks.silhouette_mark(..., cut=120)` in `fetch_icons.py`. The animal is
+cut off the coloured tile as one solid shape, fitted into 40 x 40 (33 x 40), and
+interior pixels darker than luma 120 at that size are cut back out (eyes, mouth,
+lines). The spec places it 1:1 (`program_icon_region: [33, 40]`). The
+generator's thresholds turned the engraving into dither at keycap size.

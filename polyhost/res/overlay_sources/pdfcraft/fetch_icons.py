@@ -108,6 +108,9 @@ def main() -> int:
     _compose_findprev(out)
     program_marks.own_icon(out / "progmark.png", PDFCRAFT_ICO, 64,
                            credit="storytold/pdfcraft assets/app-icon/pdfcraft.ico")
+    # The ESC mark: the icon's animal as one solid shape at keycap size, with its
+    # darkest lines cut back out (program_marks.silhouette_mark).
+    program_marks.silhouette_mark(out / "pdfcraft_mark.png", out / "progmark.png", cut=120)
     print(f"Wrote {n} icons to {out}")
     return 0
 

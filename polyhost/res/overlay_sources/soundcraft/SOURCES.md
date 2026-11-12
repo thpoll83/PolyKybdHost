@@ -136,3 +136,12 @@ python polyhost/res/overlay_sources/soundcraft/fetch_icons.py
 python scripts/generate_app_overlays.py \
     polyhost/res/overlay_sources/soundcraft/bindings.yaml --preview /tmp/soundcraft_preview
 ```
+
+## ESC mark: silhouette
+
+The ESC key shows `icons/soundcraft_mark.png`, made from the app's own icon `icons/soundcraft.png`
+by `program_marks.silhouette_mark(..., cut=70)` in `fetch_icons.py`. The animal is
+cut off the coloured tile as one solid shape, fitted into 40 x 40 (39 x 40), and
+interior pixels darker than luma 70 at that size are cut back out (eyes, mouth,
+lines). The spec places it 1:1 (`program_icon_region: [39, 40]`). The
+generator's thresholds turned the engraving into dither at keycap size.

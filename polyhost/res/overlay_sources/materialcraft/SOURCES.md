@@ -91,3 +91,12 @@ PYTHONPATH=. python polyhost/res/overlay_sources/materialcraft/fetch_icons.py
 PYTHONPATH=. python scripts/generate_app_overlays.py \
     polyhost/res/overlay_sources/materialcraft/bindings.yaml --preview /tmp/materialcraft_preview
 ```
+
+## ESC mark: silhouette
+
+The ESC key shows `icons/materialcraft_mark.png`, made from the app's own icon `icons/materialcraft.png`
+by `program_marks.silhouette_mark(..., cut=95)` in `fetch_icons.py`. The animal is
+cut off the coloured tile as one solid shape, fitted into 40 x 40 (32 x 40), and
+interior pixels darker than luma 95 at that size are cut back out (eyes, mouth,
+lines). The source is cropped to (40, 0, 128, 112): the head, without the neck. The spec places it 1:1 (`program_icon_region: [32, 40]`). The
+generator's thresholds turned the engraving into dither at keycap size.

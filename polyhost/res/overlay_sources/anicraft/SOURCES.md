@@ -106,3 +106,12 @@ PYTHONPATH=. python polyhost/res/overlay_sources/anicraft/fetch_icons.py
 PYTHONPATH=. python scripts/generate_app_overlays.py \
     polyhost/res/overlay_sources/anicraft/bindings.yaml --preview /tmp/anicraft_preview
 ```
+
+## ESC mark: silhouette
+
+The ESC key shows `icons/anicraft_mark.png`, made from the app's own icon `icons/anicraft.png`
+by `program_marks.silhouette_mark(..., cut=70)` in `fetch_icons.py`. The animal is
+cut off the coloured tile as one solid shape, fitted into 40 x 40 (34 x 40), and
+interior pixels darker than luma 70 at that size are cut back out (eyes, mouth,
+lines). The spec places it 1:1 (`program_icon_region: [34, 40]`). The
+generator's thresholds turned the engraving into dither at keycap size.

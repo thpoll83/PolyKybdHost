@@ -211,6 +211,9 @@ def main() -> int:
             print(f"  {fname}  <- drawn (white-on-transparent glyph)")
     program_marks.own_icon(out / "designcraft.png", ICO_URL, frame=64,
                            credit="storytold/designcraft assets/app-icon/designcraft.ico (MIT OR Apache-2.0)")
+    # The ESC mark: the icon's animal as one solid shape at keycap size, with its
+    # darkest lines cut back out (program_marks.silhouette_mark).
+    program_marks.silhouette_mark(out / "designcraft_mark.png", out / "designcraft.png", cut=70)
     print(f"Wrote icons to {out}")
     return 0
 

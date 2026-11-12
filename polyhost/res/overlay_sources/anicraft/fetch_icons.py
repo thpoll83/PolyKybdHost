@@ -141,6 +141,9 @@ def main() -> int:
         _cell(out / f"{name}.png", kind)
     program_marks.own_icon(out / "anicraft.png", ANICRAFT_ICO, 128,
                            credit="storytold/anicraft assets/app-icon/anicraft.ico (MIT OR Apache-2.0)")
+    # The ESC mark: the icon's animal as one solid shape at keycap size, with its
+    # darkest lines cut back out (program_marks.silhouette_mark).
+    program_marks.silhouette_mark(out / "anicraft_mark.png", out / "anicraft.png", cut=70)
     print(f"Wrote {n} icons (+ frame cells, program mark) to {out}")
     return 0
 
