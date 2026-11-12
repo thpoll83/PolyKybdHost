@@ -1,0 +1,200 @@
+# Steinberg Cubase shortcut overlays for PolyKybd (Windows and macOS; Cubase
+# has no Linux version). See SOURCES.md.
+#
+# Shortcuts: Cubase Pro 14 Operation Manual, chapter "Key Commands" >
+# "Default Key Commands", one table per category. The manual writes the
+# Windows key first and the macOS key second:
+#   Ctrl/Cmd   -> CMDCTRL (Ctrl on Windows, Cmd on macOS)
+#   Alt/Opt    -> ALT     (the same key)
+# No binding needs `only:` / `except:`: every default key is the same chord on
+# both systems.
+#
+# Left out: numeric keypad keys (no cell: Record, Cycle, Stop, the locator
+# keys, Workspaces), the MIDI editor insert-length keys (Alt+1..8), the focus
+# keys, the parameter keys, and Esc (the program mark, which the host draws).
+# SOURCES.md lists every omission.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/cubase/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/cubase/bindings.yaml --preview /tmp/cubase_preview
+app: cubase
+match: [cubase12, cubase13, cubase14, cubase15, cubase 12, cubase 13, cubase 14, cubase 15]
+output: cubase_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+# No program_icon: ESC is left to the host's program mark (OS icon, then the
+# icon catalogs), as for the other proprietary DAWs.
+
+bindings:
+  # --- File ---
+  - { key: N, mods: [CMDCTRL], label: New }
+  - { key: O, mods: [CMDCTRL], label: Open }
+  - { key: S, mods: [CMDCTRL], label: Save }
+  - { key: S, mods: [CMDCTRL, SHIFT], label: "Save as" }
+  - { key: S, mods: [CMDCTRL, ALT], icon: saveversion.png, label: "Save new version" }
+  - { key: W, mods: [CMDCTRL], label: Close }
+  - { key: Q, mods: [CMDCTRL], label: Quit }
+
+  # --- Edit ---
+  - { key: Z, mods: [CMDCTRL], label: Undo }
+  - { key: Z, mods: [CMDCTRL, SHIFT], label: Redo }
+  - { key: X, mods: [CMDCTRL], label: Cut }
+  - { key: C, mods: [CMDCTRL], label: Copy }
+  - { key: V, mods: [CMDCTRL], label: Paste }
+  - { key: V, mods: [ALT], icon: inspaste.png, label: "Paste at origin" }
+  - { key: V, mods: [SHIFT], icon: pasterel.png, label: "Paste relative to cursor" }
+  - { key: A, mods: [CMDCTRL], label: "Select all" }
+  - { key: A, mods: [CMDCTRL, SHIFT], icon: deselect.png, label: "Select none" }
+  - { key: I, mods: [CMDCTRL, ALT], icon: invert.png, label: "Invert selection" }
+  - { key: DEL, mods: [], label: Delete }
+  - { key: BACKSPACE, mods: [], label: Delete }
+  - { key: D, mods: [CMDCTRL], icon: duplicate.png, label: Duplicate }
+  - { key: K, mods: [CMDCTRL], icon: repeat.png, label: Repeat }
+  - { key: G, mods: [CMDCTRL], icon: group.png, label: Group }
+  - { key: U, mods: [CMDCTRL], icon: ungroup.png, label: Ungroup }
+  - { key: L, mods: [CMDCTRL, SHIFT], label: Lock }
+  - { key: U, mods: [CMDCTRL, SHIFT], icon: unlock.png, label: Unlock }
+  - { key: X, mods: [ALT], icon: split.png, label: "Split at cursor" }
+  - { key: X, mods: [SHIFT], icon: splitsel.png, label: "Split range" }
+  - { key: X, mods: [CMDCTRL, SHIFT], icon: cuttime.png, label: "Cut time" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: pastetime.png, label: "Paste time" }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: insertsilence.png, label: "Insert silence" }
+  - { key: BACKSPACE, mods: [SHIFT], icon: deltime.png, label: "Delete time" }
+  - { key: E, mods: [], icon: trimstart.png, label: "Left selection side to cursor" }
+  - { key: D, mods: [], icon: trimend.png, label: "Right selection side to cursor" }
+  - { key: U, mods: [], icon: bringfront.png, label: "Move events to front" }
+  - { key: F, mods: [CMDCTRL], icon: search.png, label: "Find track/channel" }
+  - { key: F2, mods: [], icon: rename.png, label: "Rename selected events" }
+  - { key: F2, mods: [ALT], icon: rename.png, label: "Rename first selected track" }
+  - { key: A, mods: [ALT], icon: deactivate.png, label: "Activate/deactivate" }
+  - { key: J, mods: [], icon: snap.png, label: "Snap on/off" }
+  - { key: F, mods: [], icon: follow.png, label: "Auto-scroll on/off" }
+  - { key: C, mods: [ALT], icon: stationary.png, label: "Stationary cursor" }
+  - { key: M, mods: [], icon: mute.png, label: Mute }
+  - { key: M, mods: [SHIFT], icon: mutesel.png, label: "Mute events" }
+  - { key: U, mods: [SHIFT], icon: unmutesel.png, label: "Unmute events" }
+  - { key: S, mods: [], icon: solo.png, label: Solo }
+  - { key: R, mods: [], icon: arm.png, label: "Record enable" }
+  - { key: W, mods: [], icon: writeauto.png, label: "Write automation" }
+  - { key: Z, mods: [ALT], icon: history.png, label: "Undo MixConsole step" }
+  - { key: Z, mods: [ALT, SHIFT], icon: mixredo.png, label: "Redo MixConsole step" }
+
+  # --- Editors and project ---
+  - { key: ENTER, mods: [], icon: exteditor.png, label: "Open/close editor" }
+  - { key: E, mods: [CMDCTRL], icon: exteditor.png, label: "Open editor" }
+  - { key: R, mods: [CMDCTRL], icon: scoreeditor.png, label: "Open Score Editor" }
+  - { key: I, mods: [CMDCTRL, SHIFT], icon: editinplace.png, label: "Edit in-place" }
+  - { key: T, mods: [], icon: inserttrack.png, label: "Add track" }
+  - { key: DEL, mods: [SHIFT], icon: removetrack.png, label: "Remove selected tracks" }
+  - { key: T, mods: [CMDCTRL], icon: tempoenv.png, label: "Tempo track" }
+  - { key: M, mods: [CMDCTRL], icon: memlocs.png, label: "Markers window" }
+  - { key: INSERT, mods: [], icon: newmarker.png, label: "Add position marker" }
+  - { key: P, mods: [CMDCTRL], icon: pool.png, label: Pool }
+  - { key: S, mods: [SHIFT], icon: projsettings.png, label: "Project setup" }
+  - { key: C, mods: [ALT, SHIFT], icon: color.png, label: "Track/event color" }
+  - { key: Q, mods: [], icon: quantize.png, label: Quantize }
+  - { key: A, mods: [], icon: fade.png, label: "Adjust fades to range" }
+  - { key: X, mods: [], icon: xfade.png, label: Crossfade }
+  - { key: C, mods: [CMDCTRL, SHIFT], icon: chordpads.png, label: "Chord Pads" }
+  - { key: R, mods: [ALT], icon: readall.png, label: "Read automation, all tracks" }
+  - { key: W, mods: [ALT], icon: writeall.png, label: "Write automation, all tracks" }
+
+  # --- Transport ---
+  - { key: SPACE, mods: [], icon: playstop.png, label: "Start/stop" }
+  - { key: SPACE, mods: [ALT], icon: playsel.png, label: "Play selection" }
+  - { key: SPACE, mods: [CMDCTRL, ALT], icon: playselsolo.png, label: "Play selection solo" }
+  - { key: SPACE, mods: [SHIFT], icon: taptempo.png, label: "Tap tempo" }
+  - { key: C, mods: [], icon: metronome.png, label: Metronome }
+  - { key: I, mods: [], icon: punchin.png, label: "Punch in" }
+  - { key: O, mods: [], icon: punchout.png, label: "Punch out" }
+  - { key: N, mods: [], icon: nextevent.png, label: "Locate next event" }
+  - { key: B, mods: [], icon: prevevent.png, label: "Locate previous event" }
+  - { key: N, mods: [SHIFT], icon: nextmarker.png, label: "Locate next marker" }
+  - { key: B, mods: [SHIFT], icon: prevmarker.png, label: "Locate previous marker" }
+  - { key: N, mods: [ALT], icon: nexttransient.png, label: "Locate next hitpoint" }
+  - { key: B, mods: [ALT], icon: prevtransient.png, label: "Locate previous hitpoint" }
+  - { key: L, mods: [], icon: tostart.png, label: "Locate selection start" }
+  - { key: P, mods: [], icon: locsel.png, label: "Locators to selection" }
+  - { key: P, mods: [ALT], icon: loop.png, label: "Loop selection" }
+  - { key: P, mods: [ALT, SHIFT], icon: loopsolo.png, label: "Loop selection solo" }
+  - { key: "1", mods: [CMDCTRL], icon: setmark1.png, label: "Set marker 1" }
+  - { key: "2", mods: [CMDCTRL], icon: setmark2.png, label: "Set marker 2" }
+  - { key: "3", mods: [CMDCTRL], icon: setmark3.png, label: "Set marker 3" }
+  - { key: "4", mods: [CMDCTRL], icon: setmark4.png, label: "Set marker 4" }
+  - { key: "5", mods: [CMDCTRL], icon: setmark5.png, label: "Set marker 5" }
+  - { key: "6", mods: [CMDCTRL], icon: setmark6.png, label: "Set marker 6" }
+  - { key: "7", mods: [CMDCTRL], icon: setmark7.png, label: "Set marker 7" }
+  - { key: "8", mods: [CMDCTRL], icon: setmark8.png, label: "Set marker 8" }
+  - { key: "9", mods: [CMDCTRL], icon: setmark9.png, label: "Set marker 9" }
+  - { key: "1", mods: [SHIFT], icon: goto1.png, label: "To marker 1" }
+  - { key: "2", mods: [SHIFT], icon: goto2.png, label: "To marker 2" }
+  - { key: "3", mods: [SHIFT], icon: goto3.png, label: "To marker 3" }
+  - { key: "4", mods: [SHIFT], icon: goto4.png, label: "To marker 4" }
+  - { key: "5", mods: [SHIFT], icon: goto5.png, label: "To marker 5" }
+  - { key: "6", mods: [SHIFT], icon: goto6.png, label: "To marker 6" }
+  - { key: "7", mods: [SHIFT], icon: goto7.png, label: "To marker 7" }
+  - { key: "8", mods: [SHIFT], icon: goto8.png, label: "To marker 8" }
+  - { key: "9", mods: [SHIFT], icon: goto9.png, label: "To marker 9" }
+
+  # --- Tools ---
+  - { key: "1", mods: [], icon: select.png, label: "Object selection tool" }
+  - { key: "2", mods: [], icon: rangetool.png, label: "Range selection tool" }
+  - { key: "3", mods: [], icon: slice.png, label: "Split tool" }
+  - { key: "4", mods: [], icon: glue.png, label: "Glue tool" }
+  - { key: "5", mods: [], icon: deltool.png, label: "Erase tool" }
+  - { key: "6", mods: [], icon: zoomtool.png, label: "Zoom tool" }
+  - { key: "7", mods: [], icon: mutetool.png, label: "Mute tool" }
+  - { key: "8", mods: [], icon: draw.png, label: "Draw tool" }
+  - { key: "9", mods: [], icon: playtool.png, label: "Play tool" }
+  - { key: "0", mods: [], icon: drumstick.png, label: "Drumstick tool" }
+  - { key: F9, mods: [], icon: prevtool.png, label: "Previous tool" }
+  - { key: F10, mods: [], icon: nexttool.png, label: "Next tool" }
+
+  # --- Zoom ---
+  - { key: H, mods: [], label: "Zoom in" }
+  - { key: G, mods: [], label: "Zoom out" }
+  - { key: H, mods: [SHIFT], icon: vzoomin.png, label: "Zoom in vertically" }
+  - { key: G, mods: [SHIFT], icon: vzoomout.png, label: "Zoom out vertically" }
+  - { key: H, mods: [ALT], icon: wavezoomin.png, label: "Zoom in on waveform" }
+  - { key: G, mods: [ALT], icon: wavezoomout.png, label: "Zoom out of waveform" }
+  - { key: F, mods: [SHIFT], icon: zoomproject.png, label: "Zoom full" }
+  - { key: S, mods: [ALT], icon: zoomsel.png, label: "Zoom to selection" }
+  - { key: E, mods: [SHIFT], icon: zoomitems.png, label: "Zoom to event" }
+  - { key: Z, mods: [], icon: zoomtoggle.png, label: "Zoom tracks exclusive" }
+  - { key: DOWN, mods: [CMDCTRL], icon: maxheight.png, label: "Zoom in tracks" }
+  - { key: UP, mods: [CMDCTRL], icon: minheight.png, label: "Zoom out tracks" }
+
+  # --- Navigate and nudge ---
+  - { key: UP, mods: [], icon: prevtrack.png, label: "Select previous" }
+  - { key: DOWN, mods: [], icon: nexttrack.png, label: "Select next" }
+  - { key: LEFT, mods: [], icon: prevclip.png, label: "Select previous event" }
+  - { key: RIGHT, mods: [], icon: nextclip.png, label: "Select next event" }
+  - { key: HOME, mods: [], icon: extendup.png, label: "Select top track" }
+  - { key: END, mods: [], icon: extenddown.png, label: "Select bottom track" }
+  - { key: LEFT, mods: [CMDCTRL], icon: nudgeleft.png, label: "Nudge left" }
+  - { key: RIGHT, mods: [CMDCTRL], icon: nudgeright.png, label: "Nudge right" }
+
+  # --- Windows and zones ---
+  - { key: F3, mods: [], icon: mixer.png, label: MixConsole }
+  - { key: F3, mods: [ALT], icon: lowermix.png, label: "MixConsole in Project window" }
+  - { key: F4, mods: [], icon: routing.png, label: "Audio connections" }
+  - { key: F5, mods: [], icon: mediaexplorer.png, label: MediaBay }
+  - { key: F6, mods: [], icon: automation.png, label: "Automation panel" }
+  - { key: F7, mods: [], icon: dop.png, label: "Direct offline processing" }
+  - { key: F8, mods: [], icon: video.png, label: "Video player" }
+  - { key: F11, mods: [], icon: midikeyboard.png, label: "VST Instruments" }
+  - { key: F12, mods: [], icon: perfmeter.png, label: "Audio performance monitor" }
+  - { key: K, mods: [ALT], icon: keymap.png, label: "On-screen keyboard" }
+  - { key: L, mods: [CMDCTRL, ALT], icon: browser.png, label: "Left zone" }
+  - { key: R, mods: [CMDCTRL, ALT], icon: rightzone.png, label: "Right zone" }
+  - { key: E, mods: [CMDCTRL, ALT], icon: lowerzone.png, label: "Lower zone" }
+  - { key: T, mods: [CMDCTRL, ALT], icon: transport.png, label: "Transport zone" }
+  - { key: I, mods: [CMDCTRL], icon: itemprops.png, label: "Info line" }
+  - { key: O, mods: [ALT], icon: overview.png, label: Overview }

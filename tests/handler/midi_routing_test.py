@@ -51,7 +51,8 @@ NOT_PAGES = (
     "https://www.teoria.com/en/tutorials/",
     "https://www.google.com/search?q=onlinesequencer.net",
 )
-PROGRAMS = ("ableton live 12 suite", "reaper", "fl64", "protools", "musescore4", "soundcraft")
+PROGRAMS = ("ableton live 12 suite", "reaper", "fl64", "protools", "musescore4", "soundcraft",
+            "bitwig studio", "cubase14", "logic pro", "garageband", "lmms", "ardour")
 
 
 def _overlay_handler_class():

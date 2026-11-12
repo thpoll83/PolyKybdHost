@@ -2792,6 +2792,55 @@ musescore4,musescore studio,musescore 4,mscore,musescore,org.musescore.musescore
     linux:
       overlay: [musescore_template_linux.mods.png, musescore_template_linux.combo.mods.png]
       midi: true
+# Bitwig Studio: "Bitwig Studio" on Windows and macOS; on Linux the binary
+# BitwigStudio, the launcher bitwig-studio and the Flatpak id
+# com.bitwig.BitwigStudio. Not checked on an install.
+bitwig studio,bitwigstudio,bitwig-studio,com.bitwig.bitwigstudio:
+  overlay: [bitwig_template.mods.png, bitwig_template.combo.mods.png]
+  midi: true
+  os:
+    macos:
+      overlay: [bitwig_template_mac.mods.png, bitwig_template_mac.combo.mods.png, bitwig_template_mac.extra.mods.png]
+      midi: true
+# Steinberg Cubase: Cubase<version>.exe on Windows, "Cubase <version>" on macOS;
+# no Linux version. The number has no dot, so the matcher keeps it: each major
+# version is listed. Not checked on an install.
+cubase12,cubase13,cubase14,cubase15,cubase 12,cubase 13,cubase 14,cubase 15:
+  overlay: [cubase_template.mods.png, cubase_template.combo.mods.png]
+  midi: true
+  os:
+    macos:
+      overlay: [cubase_template_mac.mods.png, cubase_template_mac.combo.mods.png, cubase_template_mac.extra.mods.png]
+      midi: true
+# Apple Logic Pro and GarageBand: macOS only, so the top-level overlay is the
+# macOS set (as for Safari). "Logic Pro X" is the name before 10.8. Not checked
+# on an install.
+logic pro,logic pro x:
+  overlay: [logicpro_template_mac.mods.png, logicpro_template_mac.combo.mods.png, logicpro_template_mac.extra.mods.png, logicpro_template_mac.gui.mods.png]
+  midi: true
+garageband:
+  overlay: [garageband_template_mac.mods.png, garageband_template_mac.combo.mods.png, garageband_template_mac.extra.mods.png, garageband_template_mac.gui.mods.png]
+  midi: true
+# LMMS: lmms on every system, the Flatpak id io.lmms.LMMS. Not checked on an
+# install.
+lmms,io.lmms.lmms:
+  overlay: [lmms_template.mods.png, lmms_template.combo.mods.png, lmms_template.extra.mods.png]
+  midi: true
+  os:
+    macos:
+      overlay: [lmms_template_mac.mods.png, lmms_template_mac.combo.mods.png, lmms_template_mac.extra.mods.png, lmms_template_mac.gui.mods.png]
+      midi: true
+# Ardour: on Linux the launcher ardour<major> starts the binary
+# ardour-<version>, which the matcher's trailing-version rule turns into
+# `ardour`; Flatpak id org.ardour.Ardour; "Ardour" / "Ardour<major>" on Windows
+# and macOS. Not checked on an install.
+ardour,ardour7,ardour8,ardour9,org.ardour.ardour:
+  overlay: [ardour_template.mods.png, ardour_template.combo.mods.png]
+  midi: true
+  os:
+    macos:
+      overlay: [ardour_template_mac.mods.png, ardour_template_mac.combo.mods.png, ardour_template_mac.extra.mods.png]
+      midi: true
 # CAD apps. Autodesk Fusion: `Fusion360.exe` on Windows (unchanged by the 2024
 # rename); "Autodesk Fusion", earlier "Autodesk Fusion 360", on macOS; no Linux
 # version. Every Fusion workspace is one window, so the set has the Design and
