@@ -235,7 +235,11 @@ def _layered(base, sub):
     site = _as_list(sub.get(OVERLAY))
     # The browser's files become Underlays, drawn dimmed where they show. A file the
     # site lists too is the site's: it keeps its later position and full strength.
-    for f in [Underlay(f) for f in _as_list(base.get(OVERLAY))] + site:
+    # A site with no overlay of its own (a `midi: true` Web MIDI page) dims nothing:
+    # the browser's set is all there is.
+    under = [Underlay(f) for f in _as_list(base.get(OVERLAY))] if site else \
+        _as_list(base.get(OVERLAY))
+    for f in under + site:
         if f in files:
             # A site entry that repeats a browser file (chatgpt.com/codex lists the
             # browser set) keeps the LATER position, so it still wins its keys.

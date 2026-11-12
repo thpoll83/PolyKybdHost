@@ -361,6 +361,9 @@ class RemoteCore(Observable):
     def key_attention_cancel(self):
         return self._device(p.M_KEY_ATTENTION, {"cancel": True})
 
+    def midi_guide(self, reset=False):
+        return self._device(p.M_MIDI_GUIDE, {"reset": bool(reset)})
+
     def agents_list(self):
         return self._rpc_call(p.M_AGENTS_LIST) or {}
 

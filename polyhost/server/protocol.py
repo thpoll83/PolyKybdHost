@@ -71,6 +71,9 @@ M_TAP_TERMS_SET = "tap_terms.set"  # {"tapping_term", "flow_tap_term", "auto_shi
 M_KEY_ATTENTION = "key.attention"  # {"row", "col", "count" (0 = until cancelled), "period_ms"} | {"cancel": true} -> (ok, msg)
 M_COMBOS_GET = "combos.get"   # {} -> (ok, {"available", "combo_term_ms", "combos", "tap_dances"}) (v33+)
 M_COMBOS_SET = "combos.set"   # {"combos": [...]?, "tap_dances": [...]?} -> (ok, {"other_half"})
+# The MIDI guide (firmware protocol v34+): ripple Fn, then the MIDI key, until the MIDI
+# layer is on. "reset" forgets which programs already had it.
+M_MIDI_GUIDE = "key.midi_guide"  # {"reset": bool} -> (ok, msg)
 M_TAP_TERMS_GET = "tap_terms.get"  # {} -> (ok, {"tapping_term", "flow_tap_term", "flow_tap_available", "auto_shift_available", "auto_shift", "auto_shift_ms"})
 # AI agents on the number row (services/agents). No device I/O: the registry is
 # host state, so these work with the keyboard away and the feature off.

@@ -168,6 +168,10 @@ KEY_ATTENTION_MIN_PROTOCOL = 32
 COMBOS_MIN_PROTOCOL = 33
 KEY_ATTENTION_PERIOD_MIN_MS = 2300    # one ripple runs 2.2 s
 KEY_ATTENTION_PERIOD_MAX_MS = 10000
+# Minimum firmware PROTOCOL_VERSION for the key guide (cmd 47 op 2): the ripple walks a
+# path of layer keys to a target layer, e.g. Fn and then the MIDI key.
+KEY_GUIDE_MIN_PROTOCOL = 34
+KEY_GUIDE_MAX_STEPS = 4
 AGENT_KEY_COUNT = 10
 # Card slots: the 10 number keys, then '-' (dictation) and '+' (next waiting agent).
 AGENT_CARD_COUNT = 12
@@ -220,6 +224,7 @@ FEATURE_MIN_PROTOCOL = {
     "agent_keys": AGENT_KEYS_MIN_PROTOCOL,
     "key_attention": KEY_ATTENTION_MIN_PROTOCOL,
     "combos": COMBOS_MIN_PROTOCOL,
+    "key_guide": KEY_GUIDE_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -1067,6 +1072,37 @@ class PolyKybd:
             compose_cmd(Cmd.KEY_ATTENTION, 1), 100, expect(Cmd.KEY_ATTENTION))
         if not (result and reply[2:3] == b'.'):
             return False, "The keyboard did not cancel the key attention request"
+        return True, "ok"
+
+    def key_guide(self, steps, target_layer: int, count: int = 12,
+                  period_ms: int = 2500) -> tuple[bool, str]:
+        """Ripple along a path of layer keys to `target_layer` (cmd 47 op 2, v34+).
+
+        `steps` is a list of up to 4 ``(row, col, layer)``: the key and the layer it
+        is on. The keyboard rings the step whose layer is active, so holding Fn moves
+        the ring to the next key, and ends when `target_layer` is active, after
+        `count` ripples in total (0 = until cancelled) or on key_attention_cancel()."""
+        if not self.supports("key_guide"):
+            return False, (f"Firmware protocol too old for the key guide "
+                           f"(need v{KEY_GUIDE_MIN_PROTOCOL}+). Please update the "
+                           f"PolyKybd firmware.")
+        steps = [tuple(int(v) for v in s) for s in steps]
+        if not 1 <= len(steps) <= KEY_GUIDE_MAX_STEPS or \
+                any(len(s) != 3 or not all(0 <= v < 256 for v in s) for s in steps) or \
+                not (0 <= target_layer < 256 and 0 <= count < 256):
+            return False, f"Invalid key guide: steps {steps}, target {target_layer}"
+        if not KEY_ATTENTION_PERIOD_MIN_MS <= period_ms <= KEY_ATTENTION_PERIOD_MAX_MS:
+            return False, (f"The period must be {KEY_ATTENTION_PERIOD_MIN_MS}.."
+                           f"{KEY_ATTENTION_PERIOD_MAX_MS} ms, not {period_ms}")
+        flat = [v for s in steps for v in s]
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.KEY_ATTENTION, 2, count, round(period_ms / 100), target_layer,
+                        len(steps), *flat),
+            100, expect(Cmd.KEY_ATTENTION))
+        if not result:
+            return False, "The keyboard did not answer the key guide request"
+        if reply[2:3] != b'.':
+            return False, f"The keyboard refused the key guide {steps} to layer {target_layer}"
         return True, "ok"
 
     # ---- agent keys (cmd 45 / 46, v31+) ---------------------------------------

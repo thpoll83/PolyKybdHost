@@ -443,6 +443,7 @@ class MockFirmware:
         self.ai_seq = 0
         self.ai_cards = {}         # pool slot -> bytearray(360)
         self.key_attention = None  # cmd 47: (row, col, count, period ms)
+        self.key_guide = None      # cmd 47 op 2: (steps, target, count, period ms)
 
     def reboot(self) -> None:
         """A reset: RAM state goes, flash (bundles, staged image) stays."""
@@ -677,10 +678,30 @@ class MockFirmware:
         op 1 CANCEL. The emulated keyboard has a display on every key."""
         if p[2] == 1:
             self.key_attention = None
+            self.key_guide = None
             return _reply(p[1])
+        if p[2] == 2:
+            return self._key_guide(p)
         if p[2] != 0 or p[3] >= 12 or p[4] >= 8 or not 23 <= p[6] <= 100:
             return _reply(p[1], False)
         self.key_attention = (p[3], p[4], p[5], p[6] * 100)
+        self.key_guide = None
+        return _reply(p[1])
+
+    def _key_guide(self, p):
+        """cmd 47 op 2 GUIDE (v34): count, period / 100 ms, target layer, n steps
+        1..4, then {row, col, layer} per step. Same refusals as base/attn_guide.c."""
+        if self.protocol < 34:
+            return _reply(p[1], False)
+        count, period, target, n = p[3], p[4], p[5], p[6]
+        steps = [tuple(p[7 + 3 * i:10 + 3 * i]) for i in range(n)] if 1 <= n <= 4 else []
+        layers = [s[2] for s in steps]
+        if not steps or not 23 <= period <= 100 or target >= 13 or \
+                any(r >= 12 or c >= 8 or lay >= 13 for r, c, lay in steps) or \
+                target in layers or len(set(layers)) != len(layers):
+            return _reply(p[1], False)
+        self.key_guide = (steps, target, count, period * 100)
+        self.key_attention = None
         return _reply(p[1])
 
     def _combos(self, p):

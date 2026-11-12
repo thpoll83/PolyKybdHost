@@ -39,7 +39,7 @@ CORE_CALLS = {
     "get_tap_terms": (), "set_tap_terms": (250, 120),
     "combos_get": (), "combos_set": ([{"slot": 0, "keys": [0x0D, 0x0E], "result": 0x29}],
                                      [{"slot": 1, "on_tap": 0x29, "on_hold": 0x5221}]),
-    "key_attention": (0, 1), "key_attention_cancel": (),
+    "key_attention": (0, 1), "key_attention_cancel": (), "midi_guide": (),
     "set_idle": (True,),
     "keymap_buffer": (), "keymap_default_layer": (), "keymap_layer_count": (),
     "keymap_layer_names": (), "keymap_set": (0, 0, 0, 4), "reset_dynamic_keymap": (),

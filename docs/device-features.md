@@ -228,6 +228,15 @@ full wiring, the preview rendering and the label-measurement rules are in
   before it is sent. A cancel lets a running ripple finish. split72 draws it; split42
   ACKs and draws nothing. No tray entry: it is for programs (tutorials, the layout
   editor), not a setting.
+- **The key guide (cmd 47 op 2, v34+, gate `key_guide`)** runs the same ripple along a
+  path of layer keys: `PolyKybd.key_guide(steps, target_layer, count, period_ms)`,
+  `steps` up to 4 `(row, col, layer)`. The keyboard rings the step whose layer is the
+  active one and ends on `target_layer`. Its one user is the first-time MIDI guide
+  (`services/midi_guide.py`, mapping key `midi: true`, `PolyCore._track_midi_guide`),
+  which finds the path in the keymap read from the keyboard, so a remapped Fn or MIDI
+  key is followed. Each step must go to a higher layer, because the keyboard picks the
+  step by the highest active layer. Control method `key.midi_guide`,
+  `polyctl attention --midi [--reset]`.
 - **The agent keys (cmd 45 AI, cmd 46 AI_CARD, v31+, prototype)** put AI agent
   sessions on the number row: `PolyKybd.ai_query/ai_set_keys/ai_read_events/
   ai_upload_card` behind the `agent_keys` gate, driven by
