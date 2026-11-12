@@ -74,6 +74,11 @@ PERIODIC_10MIN_CYCLE_MSEC = 1000 * 60 * 10
 # with no window detected while the user switched between several windows).
 SLOW_TICK_WARN_S = 2.0
 
+# The refusal of a feature call while the keyboard runs restricted (newer firmware,
+# the user chose safe mode). _reported_capabilities() turns the same features off.
+SAFE_MODE_REFUSAL = ("The keyboard runs in restricted mode (its firmware is newer than "
+                     "this app), so this feature is off.")
+
 _RES_DIR = pathlib.Path(__file__).parent.parent.resolve() / "res"
 
 
@@ -2694,6 +2699,100 @@ class PolyCore(Observable):
     def key_attention_cancel(self):
         return self._device_call("key_attention_cancel",
                                  lambda c: self.keeb.key_attention_cancel())
+
+    # ---- Runtime combos and tap dance (cmd 48, protocol v33+) ---------------------
+
+    def combos_get(self):
+        """(ok, {"available", "combo_term_ms", "combos": [...], "tap_dances": [...]}).
+
+        combos[i] = {"slot": i, "keys": [..2..4 keycodes..], "result": kc}, empty slots
+        with keys [] and result 0. tap_dances[i] = {"slot": i, "on_tap", "on_hold",
+        "on_double_tap", "on_tap_hold", "term_ms"}; slot i is the keycode TD(i). One
+        call, 33 reads, so an editor or polyctl does not pay a worker round trip each."""
+        from polyhost.device.command_ids import Combos
+        if self.safe_mode:
+            return False, SAFE_MODE_REFUSAL
+        ok, info = self._device_call("combo_info", lambda c: self.keeb.get_combo_info())
+        if not ok:
+            return False, info
+        out = {"available": info["available"], "combo_term_ms": info.get("combo_term_ms", 0),
+               "combos": [], "tap_dances": []}
+        if not info["available"]:
+            return True, out
+        for i in range(info["combo_slots"]):
+            ok, w = self._device_call(
+                "combo_get", lambda c, i=i: self.keeb.get_combo_record(Combos.KIND_COMBO, i))
+            if not ok:
+                return False, w
+            out["combos"].append({"slot": i, "keys": [k for k in w[:4] if k], "result": w[4]})
+        for i in range(info["tap_dance_slots"]):
+            ok, w = self._device_call(
+                "tap_dance_get", lambda c, i=i: self.keeb.get_combo_record(Combos.KIND_TAP_DANCE, i))
+            if not ok:
+                return False, w
+            out["tap_dances"].append({"slot": i, "on_tap": w[0], "on_hold": w[1],
+                                      "on_double_tap": w[2], "on_tap_hold": w[3], "term_ms": w[4]})
+        return True, out
+
+    def combos_set(self, combos=None, tap_dances=None):
+        """Write the given slots, then store them on the keyboard (both halves).
+
+        combos: [{"slot", "keys", "result"}], tap_dances: [{"slot", "on_tap", "on_hold",
+        "on_double_tap", "on_tap_hold", "term_ms"}]; a slot with no keys / no actions is
+        cleared. Every record is validated before the first one is sent, so a bad entry
+        changes nothing. (ok, {"other_half": bool}) or (False, reason)."""
+        from polyhost.device.command_ids import Combos
+        if self.safe_mode:
+            return False, SAFE_MODE_REFUSAL
+        records = []
+        try:
+            for c in combos or []:
+                keys = [int(k) for k in c.get("keys", [])]
+                result = int(c.get("result", 0)) if keys else 0
+                words = (keys + [0] * Combos.MAX_KEYS)[:Combos.MAX_KEYS] + [result]
+                slot = int(c["slot"])
+                if len(keys) > Combos.MAX_KEYS or not 0 <= slot < Combos.COMBO_SLOTS \
+                        or not Combos.combo_valid(words[:4], words[4]):
+                    return False, f"Combo {slot + 1}: needs 2 to 4 keys and a result"
+                records.append((Combos.KIND_COMBO, slot, words))
+            for t in tap_dances or []:
+                words = [int(t.get(k, 0)) for k in
+                         ("on_tap", "on_hold", "on_double_tap", "on_tap_hold", "term_ms")]
+                slot = int(t["slot"])
+                if not 0 <= slot < Combos.TAP_DANCE_SLOTS or not Combos.tap_dance_valid(*words):
+                    return False, (f"Tap dance {slot + 1}: actions must be plain or modified "
+                                   f"keys, MO, TO or TG, and the term 0 or "
+                                   f"{Combos.TERM_MIN_MS}..{Combos.TERM_MAX_MS} ms")
+                records.append((Combos.KIND_TAP_DANCE, slot, words))
+        except (KeyError, TypeError, ValueError) as e:
+            return False, f"Invalid combo / tap dance entry: {e}"
+        # A SET changes the keyboard's RAM only, and the next COMMIT (from any save)
+        # stores whatever RAM holds. So the old records are read first, and a write
+        # that fails part-way puts the ones already written back before reporting.
+        before = []
+        for kind, slot, _words in records:
+            ok, old = self._device_call(
+                "combo_get", lambda c, k=kind, s=slot: self.keeb.get_combo_record(k, s))
+            if not ok:
+                return False, old
+            before.append((kind, slot, list(old)))
+        for i, (kind, slot, words) in enumerate(records):
+            ok, msg = self._device_call(
+                "combo_set", lambda c, k=kind, s=slot, w=words: self.keeb.set_combo_record(k, s, w))
+            if not ok:
+                unrestored = 0
+                for k, s, w in before[:i]:
+                    restored, _ = self._device_call(
+                        "combo_set", lambda c, k=k, s=s, w=w: self.keeb.set_combo_record(k, s, w))
+                    unrestored += not restored
+                if unrestored:
+                    # The keyboard's RAM now mixes old and new records, and the next
+                    # COMMIT from any save would store that mix.
+                    return False, (f"{msg}. {unrestored} earlier record(s) could not be put "
+                                   f"back, so the unsaved tables mix old and new records. "
+                                   f"Save again before saving anything else.")
+                return False, msg
+        return self._device_call("combo_commit", lambda c: self.keeb.commit_combos())
 
     def get_tap_terms(self):
         """(ok, {"tapping_term", "flow_tap_term", "flow_tap_available",
