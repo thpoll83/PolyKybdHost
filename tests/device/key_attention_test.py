@@ -5,7 +5,8 @@ import unittest
 from polyhost.device.command_ids import Cmd
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.mock_firmware import MockFirmware, MockHidHelper
-from polyhost.device.poly_kybd import KEY_ATTENTION_MIN_PROTOCOL, PolyKybd
+from polyhost.device.poly_kybd import (KEY_ATTENTION_MIN_PROTOCOL, KEY_GUIDE_MIN_PROTOCOL,
+                                       PolyKybd)
 
 
 class _Settings:
@@ -70,6 +71,52 @@ class KeyAttentionTest(unittest.TestCase):
         # report id, cmd, op START, row, col, count, period / 100 ms
         self.assertEqual(start[1:7], bytes([47, 0, 5, 2, 7, 40]))
         self.assertEqual(cancel[1:3], bytes([47, 1]))
+
+
+class KeyGuideTest(unittest.TestCase):
+    """cmd 47 op 2 GUIDE, protocol v33."""
+    FN_THEN_MIDI = [(2, 0, 4), (7, 7, 5)]
+
+    def test_gate(self):
+        kb, fw = _keyboard(KEY_GUIDE_MIN_PROTOCOL - 1)
+        ok, msg = kb.key_guide(self.FN_THEN_MIDI, 8)
+        self.assertFalse(ok)
+        self.assertIn("too old", msg)
+        self.assertEqual(fw.refused, [])
+        # START is v32 and still works there: the gate is on op 2 only.
+        self.assertEqual(kb.key_attention(4, 3), (True, "ok"))
+
+    def test_round_trip(self):
+        kb, fw = _keyboard(KEY_GUIDE_MIN_PROTOCOL)
+        self.assertEqual(kb.key_guide(self.FN_THEN_MIDI, 8), (True, "ok"))
+        self.assertEqual(fw.key_guide, (self.FN_THEN_MIDI, 8, 12, 2500))
+        self.assertEqual(kb.key_attention_cancel(), (True, "ok"))
+        self.assertIsNone(fw.key_guide)
+
+    def test_refused_on_the_host(self):
+        kb, fw = _keyboard(KEY_GUIDE_MIN_PROTOCOL)
+        for steps, target, period in (([], 8, 2500), ([(0, 0, 0)] * 5, 8, 2500),
+                                      ([(0, 0, 300)], 8, 2500), (self.FN_THEN_MIDI, 8, 2200)):
+            ok, _ = kb.key_guide(steps, target, period_ms=period)
+            self.assertFalse(ok, (steps, period))
+        self.assertIsNone(fw.key_guide)
+
+    def test_refused_by_the_keyboard(self):
+        kb, fw = _keyboard(KEY_GUIDE_MIN_PROTOCOL)
+        for steps, target in (([(2, 0, 4), (7, 7, 4)], 8),      # two steps on one layer
+                              ([(2, 0, 8)], 8)):                 # a step on the target
+            ok, msg = kb.key_guide(steps, target)
+            self.assertFalse(ok)
+            self.assertIn("refused", msg)
+        self.assertIsNone(fw.key_guide)
+
+    def test_wire_bytes(self):
+        kb, _ = _keyboard(KEY_GUIDE_MIN_PROTOCOL)
+        rec = _Recorder()
+        kb.hid = rec
+        kb.key_guide(self.FN_THEN_MIDI, 8, count=12, period_ms=2500)
+        # report id, cmd, op GUIDE, count, period / 100 ms, target, n, {row, col, layer} x n
+        self.assertEqual(rec.sent[0][1:13], bytes([47, 2, 12, 25, 8, 2, 2, 0, 4, 7, 7, 5]))
 
 
 if __name__ == "__main__":

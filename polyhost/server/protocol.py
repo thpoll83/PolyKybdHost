@@ -69,6 +69,9 @@ M_IDLE_TIMEOUT_GET = "idle.timeout.get"  # {} -> (ok, [preset, seconds])
 M_TAP_TERMS_SET = "tap_terms.set"  # {"tapping_term", "flow_tap_term", "auto_shift": bool, "auto_shift_ms"} (each ms|null) -> (ok, terms)
 # Key attention (firmware protocol v32+): the focus ripple on one key.
 M_KEY_ATTENTION = "key.attention"  # {"row", "col", "count" (0 = until cancelled), "period_ms"} | {"cancel": true} -> (ok, msg)
+# The MIDI guide (firmware protocol v33+): ripple Fn, then the MIDI key, until the MIDI
+# layer is on. "reset" forgets which programs already had it.
+M_MIDI_GUIDE = "key.midi_guide"  # {"reset": bool} -> (ok, msg)
 M_TAP_TERMS_GET = "tap_terms.get"  # {} -> (ok, {"tapping_term", "flow_tap_term", "flow_tap_available", "auto_shift_available", "auto_shift", "auto_shift_ms"})
 # AI agents on the number row (services/agents). No device I/O: the registry is
 # host state, so these work with the keyboard away and the feature off.

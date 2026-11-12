@@ -138,6 +138,19 @@ def flash_progress_relay(emit, cancel, kind):
 _NOT_SENT = object()
 
 
+def focused_entry(handler):
+    """The focused window's mapping entry, its program name and its URL.
+
+    A forwarded window: the local entry is the `remote:` wrapper, and the forwarded
+    application's own match is on the remote handler."""
+    entry = getattr(handler, "current_entry", None)
+    is_remote = getattr(handler, "is_remote_mapping_entry", None)
+    if entry is not None and is_remote is not None and is_remote():
+        rh = getattr(handler, "remote_handler", None)
+        return (getattr(rh, "current_entry", None), getattr(rh, "name", None),
+                getattr(rh, "current_url", None))
+    return entry, getattr(handler, "app_name", None), getattr(handler, "current_url", None)
+
 class PolyCore(Observable):
     """Operational facade: commands in, events out. No Qt, no widgets."""
 
@@ -213,6 +226,12 @@ class PolyCore(Observable):
         self._keycap_face_sent = _NOT_SENT
         self._keycap_face_entry_seen = None
         self._keycap_face_wanted = None
+        # First-time MIDI guide (overlay-mapping `midi: true`): the program in front,
+        # and whether a guide this host started may still be ringing.
+        from polyhost.services.midi_guide import SeenPrograms, seen_path
+        self._midi_seen = SeenPrograms(seen_path(), log)
+        self._midi_guide_key = None
+        self._midi_guide_running = False
         # Apps already told they get no shortcut icons because they are
         # forwarded -- one line each, not one per window change.
         self._told_no_remote_shortcuts = set()
@@ -829,6 +848,7 @@ class PolyCore(Observable):
                 self._maybe_send_generic_overlays(handler)
             self._track_active_os(handler)
             self._track_keycap_face(handler)
+            self._track_midi_guide(handler)
         elif self.poly_settings.get("dev_run_window_detection_if_not_connected_to_poly_kybd"):
             handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
 
@@ -841,12 +861,7 @@ class PolyCore(Observable):
         if getattr(self, "_keycap_face", None) is None:
             return          # a core built without __init__ (tests)
         from polyhost.services.keycap_face import wanted_face
-        entry = getattr(handler, "current_entry", None)
-        # A forwarded window: the local entry is the `remote:` wrapper, and the
-        # forwarded application's own match is on the remote handler.
-        is_remote = getattr(handler, "is_remote_mapping_entry", None)
-        if entry is not None and is_remote is not None and is_remote():
-            entry = getattr(getattr(handler, "remote_handler", None), "current_entry", None)
+        entry = focused_entry(handler)[0]
         wanted = wanted_face(entry, self.log) if entry is not self._keycap_face_entry_seen else \
             self._keycap_face_wanted
         self._keycap_face_entry_seen, self._keycap_face_wanted = entry, wanted
@@ -856,6 +871,53 @@ class PolyCore(Observable):
         self.worker.submit("keycap_face",
                            lambda c, w=wanted: self._keycap_face.apply(w, self.keeb),
                            coalesce_key="keycap_face")
+
+    def _track_midi_guide(self, handler):
+        """Start the MIDI guide the first time a `midi: true` program is in front,
+        and cancel it when that program leaves the front before the guide ended.
+
+        Only on a change of program, so a still window costs a dict lookup per tick.
+        Firmware below protocol 33 gets nothing."""
+        if getattr(self, "_midi_seen", None) is None:
+            return          # a core built without __init__ (tests)
+        from polyhost.services.midi_guide import is_midi_entry, program_key
+        entry, app, url = focused_entry(handler)
+        key = program_key(app, entry, url) if is_midi_entry(entry, app) else None
+        if key == self._midi_guide_key:
+            return
+        self._midi_guide_key = key
+        if self._midi_guide_running:
+            self._midi_guide_running = False
+            self.worker.submit("midi_guide_cancel",
+                               lambda c: self.keeb.key_attention_cancel(),
+                               coalesce_key="midi_guide")
+        if key is None or self._midi_seen.has(key):
+            return
+        if not protocol_supports(self.keeb.protocol_version, "key_guide"):
+            return
+        self._midi_guide_running = True
+        self.worker.submit("midi_guide", lambda c, k=key: self._run_midi_guide(k),
+                           coalesce_key="midi_guide")
+
+    def _run_midi_guide(self, key):
+        """Worker: start the guide and remember the program once the keyboard took it."""
+        from polyhost.services.midi_guide import run_guide
+        ok, msg = run_guide(self.keeb, self.log)
+        if ok:
+            self._midi_seen.add(key)
+            self.log.info("MIDI guide started for %s", key)
+        else:
+            self._midi_guide_running = False
+            self.log.info("MIDI guide for %s not started: %s", key, msg)
+        return ok, msg
+
+    def midi_guide(self, reset=False):
+        """Run the MIDI guide now (polyctl attention --midi); `reset` also forgets
+        which programs had it, so each one gets it again. (ok, msg)."""
+        if reset:
+            self._midi_seen.clear()
+        from polyhost.services.midi_guide import run_guide
+        return self._device_call("midi_guide", lambda c: run_guide(self.keeb, self.log))
 
     def _send_template_with_fill(self, handler):
         """Send the focused window's templates WITH the generic gap fill.

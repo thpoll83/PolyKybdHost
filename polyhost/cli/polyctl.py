@@ -501,6 +501,10 @@ def _cmd_attention(client, args):
         client.call(protocol.M_KEY_ATTENTION, {"cancel": True})
         print("key attention cancelled")
         return 0
+    if args.midi:
+        client.call(protocol.M_MIDI_GUIDE, {"reset": args.reset})
+        print("MIDI guide started" + (" (every MIDI program gets it again)" if args.reset else ""))
+        return 0
     if args.row is None or args.col is None:
         print("polyctl: give ROW and COL, or --cancel", file=sys.stderr)
         return 2
@@ -1481,6 +1485,12 @@ def build_parser():
                                   "100 ms steps (default 4000)")
     p_attention.add_argument("--cancel", action="store_true",
                              help="end the running request; a ripple already running finishes")
+    p_attention.add_argument("--midi", action="store_true",
+                             help="run the MIDI guide now: Fn, then the key that opens the "
+                                  "MIDI layer (firmware v33+)")
+    p_attention.add_argument("--reset", action="store_true",
+                             help="with --midi: forget which programs had the guide, so "
+                                  "each MIDI program shows it again")
     p_attention.set_defaults(func=_cmd_attention)
 
     p_tap_terms = sub.add_parser(

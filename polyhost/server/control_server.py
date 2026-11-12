@@ -219,6 +219,8 @@ class ControlServer(MpcListenerServer):
                 c.key_attention_cancel() if params.get("cancel") else c.key_attention(
                     params["row"], params["col"], params.get("count", 3),
                     params.get("period_ms", 4000))),
+            p.M_MIDI_GUIDE: lambda conn, params: _unwrap(
+                c.midi_guide(bool(params.get("reset", False)))),
             p.M_AGENTS_LIST: lambda conn, params: c.agents_list(),
             p.M_AGENTS_REPORT: lambda conn, params: _unwrap(c.agents_report(params)),
             p.M_AGENTS_LABEL: lambda conn, params: _unwrap(c.agents_label(

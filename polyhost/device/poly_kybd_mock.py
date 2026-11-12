@@ -449,6 +449,13 @@ class PolyKybdMock:
     def key_attention_cancel(self):
         return self._attention_call("key_attention_cancel")
 
+    def key_guide(self, steps, target_layer, count=12, period_ms=2500):
+        self._log_call("key_guide", steps, target_layer, count, period_ms)
+        if (refusal := self._too_old("key_guide")):
+            return False, refusal
+        self._wire.protocol_version = self.protocol_version
+        return self._wire.key_guide(steps, target_layer, count, period_ms)
+
     def ai_set_keys(self, states, flags, slots):
         return self._ai_call("ai_set_keys", states, flags, slots)
 
