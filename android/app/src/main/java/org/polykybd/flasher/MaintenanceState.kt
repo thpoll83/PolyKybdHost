@@ -3,6 +3,7 @@ package org.polykybd.flasher
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 
 /**
  * Maintenance menu state: the GitHub sign-in and the release runs. Held here, like
@@ -26,7 +27,9 @@ object MaintenanceState {
     private lateinit var store: TokenStore
     private lateinit var github: GitHub
     @Volatile private var tokens: GitHub.Tokens? = null
-    private val pollGate = PollGate()
+    /** For waits and deadlines: counts deep sleep, and a change of the phone's time does not move it. */
+    private fun elapsedMs() = SystemClock.elapsedRealtime()
+    private val pollGate = PollGate(::elapsedMs)
     private const val WAITING_FOR_NETWORK =
         "Waiting for the network to reach GitHub. Your code is still valid; this continues by itself."
 
@@ -59,15 +62,15 @@ object MaintenanceState {
             message = "Enter the code on GitHub. This screen continues by itself."
             changed()
             main.post { show(code) }
-            val deadline = PollGate.monotonicMs() + code.expiresInSec * 1000L
+            val deadline = elapsedMs() + code.expiresInSec * 1000L
             var interval = code.intervalSec
             var done: GitHub.Tokens? = null
             while (done == null) {
                 // Measured from the end of the previous request, so it is never too early.
-                if (!pollGate.waitUntil(PollGate.monotonicMs() + interval * 1000L)) {
+                if (!pollGate.waitUntil(elapsedMs() + interval * 1000L)) {
                     message = "Sign-in cancelled."; return@background
                 }
-                if (PollGate.monotonicMs() > deadline) throw GitHub.GitHubException("The code expired. Sign in again.")
+                if (elapsedMs() > deadline) throw GitHub.GitHubException("The code expired. Sign in again.")
                 when (val p = github.pollToken(code, System.currentTimeMillis(), interval)) {
                     is GitHub.Poll.Done -> done = p.tokens
                     is GitHub.Poll.Pending -> interval = p.intervalSec
@@ -132,8 +135,8 @@ object MaintenanceState {
                 var run = withToken { github.dispatch(it, status, dryRun, System.currentTimeMillis()) }
                 runs[repo] = run
                 changed()
-                val until = PollGate.monotonicMs() + RUN_WATCH_MS
-                while (!run.finished && PollGate.monotonicMs() < until) {
+                val until = elapsedMs() + RUN_WATCH_MS
+                while (!run.finished && elapsedMs() < until) {
                     Thread.sleep(RUN_POLL_MS)
                     run = withToken { github.run(it, repo, run.id) }
                     runs[repo] = run

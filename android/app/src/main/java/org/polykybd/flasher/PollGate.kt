@@ -7,10 +7,12 @@ package org.polykybd.flasher
  * A cancel made before the wait starts is not lost, because the flag is read under the
  * same lock.
  *
- * Times are in [monotonicMs], which a change of the phone's clock does not move: a wall
- * clock set back by an hour would otherwise stop polling for that hour.
+ * [clock] must be one that a change of the phone's time does not move, or a clock set
+ * back by an hour stops polling for that hour. The app passes
+ * `SystemClock.elapsedRealtime`, which also counts deep sleep, so a code that expired
+ * while the phone slept is seen as expired.
  */
-class PollGate(private val clock: () -> Long = ::monotonicMs) {
+class PollGate(private val clock: () -> Long) {
     private val lock = Object()
     private var cancelled = false
 
@@ -31,10 +33,5 @@ class PollGate(private val clock: () -> Long = ::monotonicMs) {
             lock.wait(left)
         }
         false
-    }
-
-    companion object {
-        /** Milliseconds from a clock that only moves forward; not a time of day. */
-        fun monotonicMs(): Long = System.nanoTime() / 1_000_000
     }
 }
