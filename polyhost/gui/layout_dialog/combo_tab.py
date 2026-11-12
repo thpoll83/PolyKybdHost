@@ -76,6 +76,8 @@ class _SlotTab(QWidget):
         super().__init__(parent)
         self.core = core
         self._records: list[dict] = []
+        self._writing = False
+        self._reload_after_write = False
         self._slots = slots
         self._fetcher = MenuFetcher(self)
 
@@ -139,7 +141,12 @@ class _SlotTab(QWidget):
     # The editor stays disabled while a call is in flight.
 
     def reload(self):
-        """Read every slot from the keyboard. Called when the tab is shown."""
+        """Read every slot from the keyboard. Called when the tab is shown. During a
+        save the read waits for it: a read started before the write ends could show
+        the old record after the saved one."""
+        if self._writing:
+            self._reload_after_write = True
+            return
         if self._fetcher.fetch("combos", self._read, self._on_loaded):
             self._set_editable(False)
             self.note.setText(_("Reading the keyboard…"))
@@ -221,10 +228,18 @@ class _SlotTab(QWidget):
     def _write(self, rec: dict):
         args = self._set_args(rec)
         self._set_editable(False)
+        self._writing = True
         self._fetcher.call(lambda: self.core.combos_set(**args),
                            lambda result, rec=rec: self._on_written(rec, result))
 
     def _on_written(self, rec: dict, result):
+        self._writing = False
+        self._apply_written(rec, result)
+        if self._reload_after_write:
+            self._reload_after_write = False
+            self.reload()
+
+    def _apply_written(self, rec: dict, result):
         self._set_editable(True)
         ok, msg = ok_value(result)
         if not ok:
@@ -337,8 +352,12 @@ class TapDanceTab(_SlotTab):
         super().__init__(core, Combos.TAP_DANCE_SLOTS, parent)
         labels = (_("Tap"), _("Hold"), _("Double tap"), _("Tap, then hold"))
         self.action_fields = {}
+        # The firmware's default for each empty action (base/combo_store.h).
+        placeholders = {"on_tap": "", "on_hold": _("same as Tap"),
+                        "on_double_tap": _("Tap twice"),
+                        "on_tap_hold": _("Tap, then hold Tap")}
         for key, label in zip(self._ACTIONS, labels):
-            field = KeycodeField(_("same as Tap") if key != "on_tap" else "")
+            field = KeycodeField(placeholders[key])
             self.action_fields[key] = field
             self.form.addRow(label, field)
         self.term = QSpinBox()
@@ -393,8 +412,8 @@ class TapDanceTab(_SlotTab):
                                     "modifiers, MO, TO or TG, not {text}.",
                                     action=labels[key], text=field.text().strip()))
             rec[key] = kc
-        if not rec["on_tap"]:
-            raise ValueError(_("A tap dance needs at least the Tap action."))
+        if not any(rec[k] for k in self._ACTIONS):
+            raise ValueError(_("A tap dance needs at least one action."))
         term = self.term.value()
         rec["term_ms"] = 0 if term == _TERM_DEFAULT else term
         if not Combos.td_term_valid(rec["term_ms"]):

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-12 09:44+0000\n"
+"POT-Creation-Date: 2026-11-12 14:42+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ar\n"
@@ -974,7 +974,7 @@ msgid "Report on GitHub…"
 msgstr "الإبلاغ على GitHub…"
 
 #: polyhost/gui/crash_alert_dialog.py:86
-#: polyhost/gui/layout_dialog/combo_tab.py:103
+#: polyhost/gui/layout_dialog/combo_tab.py:105
 #: polyhost/gui/layout_dialog/macro_tab.py:217
 #: polyhost/gui/layout_dialog/macro_tab.py:241
 msgid "Clear"
@@ -1843,169 +1843,177 @@ msgstr "اللغة"
 msgid "The new language is used after a restart. Restart now?"
 msgstr "تُستخدم اللغة الجديدة بعد إعادة التشغيل. هل تريد إعادة التشغيل الآن؟"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:99
+#: polyhost/gui/layout_dialog/combo_tab.py:101
 msgid "Save"
 msgstr "حفظ"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:145
+#: polyhost/gui/layout_dialog/combo_tab.py:152
 msgid "Reading the keyboard…"
 msgstr "جارٍ قراءة لوحة المفاتيح…"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:169
+#: polyhost/gui/layout_dialog/combo_tab.py:176
 msgid "The keyboard is not connected."
 msgstr "لوحة المفاتيح غير متصلة."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:171
+#: polyhost/gui/layout_dialog/combo_tab.py:178
 msgid "The keyboard runs in restricted mode (its firmware is newer than this app), so combos and tap dance are off."
 msgstr "تعمل لوحة المفاتيح في الوضع الآمن (برنامجها الثابت أحدث من هذا التطبيق)، لذلك تم إيقاف Combos و Tap Dance."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:173
+#: polyhost/gui/layout_dialog/combo_tab.py:180
 #, python-brace-format
 msgid "Combos and tap dance need keyboard firmware with protocol {n} or newer. Update the firmware to use them."
 msgstr "تحتاج Combos و Tap Dance إلى برنامج ثابت للوحة المفاتيح بالبروتوكول {n} أو أحدث. حدّث البرنامج الثابت لاستخدامها."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:182
+#: polyhost/gui/layout_dialog/combo_tab.py:189
 #, python-brace-format
 msgid "Could not read the keyboard: {reason}"
 msgstr "تعذّرت قراءة لوحة المفاتيح: {reason}"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:184
+#: polyhost/gui/layout_dialog/combo_tab.py:191
 msgid "This firmware build has no runtime combos or tap dance (the DOOM developer build)."
 msgstr "لا يحتوي إصدار البرنامج الثابت هذا على combos أو tap dance قابلة للتعديل أثناء التشغيل (إصدار المطوّرين DOOM)."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:231
-#: polyhost/gui/layout_dialog/combo_tab.py:250
+#: polyhost/gui/layout_dialog/combo_tab.py:246
+#: polyhost/gui/layout_dialog/combo_tab.py:265
 msgid "Not saved"
 msgstr "لم يتم الحفظ"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:238
+#: polyhost/gui/layout_dialog/combo_tab.py:253
 msgid "Saved on this half only: the other half did not answer. Save again once both halves are connected."
 msgstr "تم الحفظ على هذا النصف فقط: لم يستجب النصف الآخر. احفظ مرة أخرى بعد توصيل كلا النصفين."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:269
+#: polyhost/gui/layout_dialog/combo_tab.py:284
 msgid "optional"
 msgstr "اختياري"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:271
+#: polyhost/gui/layout_dialog/combo_tab.py:286
 #, python-brace-format
 msgid "Key {n}"
 msgstr "المفتاح {n}"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:273
+#: polyhost/gui/layout_dialog/combo_tab.py:288
 msgid "Sends"
 msgstr "يرسل"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:277
+#: polyhost/gui/layout_dialog/combo_tab.py:292
 #, python-brace-format
 msgid "Press the keys within {ms} ms of each other. A key is written as on the keymap: KC_J, KC_ESC, S(KC_9), MO(1)."
 msgstr "اضغط المفاتيح خلال {ms} ms من بعضها. يُكتب المفتاح كما في مخطط المفاتيح: KC_J، KC_ESC، S(KC_9)، MO(1)."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:279
+#: polyhost/gui/layout_dialog/combo_tab.py:294
 msgid "Press the keys at the same time. A key is written as on the keymap: KC_J, KC_ESC, S(KC_9), MO(1)."
 msgstr "اضغط المفاتيح في الوقت نفسه. يُكتب المفتاح كما في مخطط المفاتيح: KC_J، KC_ESC، S(KC_9)، MO(1)."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:289
-#: polyhost/gui/layout_dialog/combo_tab.py:366
+#: polyhost/gui/layout_dialog/combo_tab.py:304
+#: polyhost/gui/layout_dialog/combo_tab.py:385
 #, python-brace-format
 msgid "{n}: (empty)"
 msgstr "{n}: (فارغ)"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:305
+#: polyhost/gui/layout_dialog/combo_tab.py:320
 #, python-brace-format
 msgid "Key {n}: {text} is not a keycode."
 msgstr "المفتاح {n}: {text} ليس رمز مفتاح."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:312
+#: polyhost/gui/layout_dialog/combo_tab.py:327
 #, python-brace-format
 msgid "Sends: {text} is not a keycode."
 msgstr "يرسل: {text} ليس رمز مفتاح."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:315
+#: polyhost/gui/layout_dialog/combo_tab.py:330
 msgid "A combo needs at least two keys and a keycode to send."
 msgstr "يحتاج الـ combo إلى مفتاحين على الأقل ورمز مفتاح لإرساله."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:317
+#: polyhost/gui/layout_dialog/combo_tab.py:332
 msgid "A combo cannot list the same key twice."
 msgstr "لا يمكن أن يذكر الـ combo المفتاح نفسه مرتين."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:338
-#: polyhost/gui/layout_dialog/combo_tab.py:383
+#: polyhost/gui/layout_dialog/combo_tab.py:353
+#: polyhost/gui/layout_dialog/combo_tab.py:402
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
 msgid "Tap"
 msgstr "نقر"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:338
-#: polyhost/gui/layout_dialog/combo_tab.py:383
+#: polyhost/gui/layout_dialog/combo_tab.py:353
+#: polyhost/gui/layout_dialog/combo_tab.py:402
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
 msgid "Hold"
 msgstr "ضغط مطوّل"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:338
-#: polyhost/gui/layout_dialog/combo_tab.py:384
+#: polyhost/gui/layout_dialog/combo_tab.py:353
+#: polyhost/gui/layout_dialog/combo_tab.py:403
 msgid "Double tap"
 msgstr "نقر مزدوج"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:338
-#: polyhost/gui/layout_dialog/combo_tab.py:384
+#: polyhost/gui/layout_dialog/combo_tab.py:353
+#: polyhost/gui/layout_dialog/combo_tab.py:403
 msgid "Tap, then hold"
 msgstr "نقر، ثم ضغط مطوّل"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:341
+#: polyhost/gui/layout_dialog/combo_tab.py:356
 msgid "same as Tap"
 msgstr "مثل نقر"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:348
+#: polyhost/gui/layout_dialog/combo_tab.py:357
+msgid "Tap twice"
+msgstr "نقر مرتين"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:358
+msgid "Tap, then hold Tap"
+msgstr "نقر، ثم ضغط مطوّل على نقر"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:367
 msgid "Tapping term"
 msgstr "مدة النقر"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:349
+#: polyhost/gui/layout_dialog/combo_tab.py:368
 msgid "Decide after"
 msgstr "اتخاذ القرار بعد"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:351
+#: polyhost/gui/layout_dialog/combo_tab.py:370
 #: polyhost/gui/layout_dialog/macro_tab.py:245
 msgid "Use on selected key"
 msgstr "استخدام على المفتاح المحدد"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:357
+#: polyhost/gui/layout_dialog/combo_tab.py:376
 msgid "Place the tap dance on a key with \"Use on selected key\". An action can be a key, a key with modifiers such as S(KC_9), or MO, TO or TG."
 msgstr "ضع الـ tap dance على مفتاح باستخدام \"استخدام على المفتاح المحدد\". يمكن أن يكون الإجراء مفتاحًا، أو مفتاحًا مع معدِّلات مثل S(KC_9)، أو MO أو TO أو TG."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:369
+#: polyhost/gui/layout_dialog/combo_tab.py:388
 #, python-brace-format
 msgid "hold {key}"
 msgstr "ضغط مطوّل {key}"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:371
+#: polyhost/gui/layout_dialog/combo_tab.py:390
 #, python-brace-format
 msgid "2× {key}"
 msgstr "2× {key}"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:373
+#: polyhost/gui/layout_dialog/combo_tab.py:392
 #, python-brace-format
 msgid "tap, then hold {key}"
 msgstr "نقر، ثم ضغط مطوّل {key}"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:389
+#: polyhost/gui/layout_dialog/combo_tab.py:408
 #, python-brace-format
 msgid "{action}: {text} is not a keycode."
 msgstr "{action}: {text} ليس رمز مفتاح."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:392
+#: polyhost/gui/layout_dialog/combo_tab.py:411
 #, python-brace-format
 msgid "{action}: a tap dance can send a key, a key with modifiers, MO, TO or TG, not {text}."
 msgstr "{action}: يمكن للـ tap dance إرسال مفتاح، أو مفتاح مع معدِّلات، أو MO أو TO أو TG، وليس {text}."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:397
-msgid "A tap dance needs at least the Tap action."
-msgstr "يحتاج الـ tap dance إلى إجراء نقر على الأقل."
+#: polyhost/gui/layout_dialog/combo_tab.py:416
+msgid "A tap dance needs at least one action."
+msgstr "يحتاج الـ tap dance إلى إجراء واحد على الأقل."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:401
+#: polyhost/gui/layout_dialog/combo_tab.py:420
 #, python-brace-format
 msgid "The time must be {lo} to {hi} ms in steps of {step} ms."
 msgstr "يجب أن تكون المدة من {lo} إلى {hi} ms بخطوات قدرها {step} ms."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:418
+#: polyhost/gui/layout_dialog/combo_tab.py:437
 #, python-brace-format
 msgid "Tap dance {n}"
 msgstr "Tap dance {n}"
@@ -2205,8 +2213,8 @@ msgid "Layer:"
 msgstr "الطبقة:"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:82
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:184
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:253
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:193
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:262
 msgid "Modifiers"
 msgstr "المعدِّلات"
 
@@ -2533,74 +2541,74 @@ msgstr "تعذّر حفظ الماكرو"
 msgid "Could not clear the macro"
 msgstr "تعذّر مسح الماكرو"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:176
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:200
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:255
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:185
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:209
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:264
 msgid "User / Macro"
 msgstr "المستخدم / الماكرو"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:182
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:255
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:191
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:264
 msgid "Steno"
 msgstr "Steno (الاختزال)"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:186
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:253
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:195
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:262
 msgid "Media / System"
 msgstr "الوسائط / النظام"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:188
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:255
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:197
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:264
 msgid "Midi"
 msgstr "MIDI"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:190
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:255
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:199
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:264
 msgid "Haptic"
 msgstr "اللمس الاهتزازي"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:192
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:254
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:201
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:263
 msgid "Unicode / International"
 msgstr "Unicode / دولي"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:194
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:253
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:203
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:262
 msgid "RGB"
 msgstr "RGB"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:196
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:254
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:205
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:263
 msgid "Mouse / Joystick"
 msgstr "الفأرة / عصا التحكم"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:198
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:255
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:207
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:264
 msgid "Magic"
 msgstr "Magic"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:202
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:256
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:211
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:265
 msgid "Programmable"
 msgstr "قابل للبرمجة"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:204
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:256
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:213
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:265
 msgid "Space Cadet"
 msgstr "Space Cadet"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:206
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:256
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:215
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:265
 msgid "Quantum"
 msgstr "Quantum"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:208
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:253
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:217
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:262
 msgid "Additional"
 msgstr "إضافية"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:243
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:253 polyhost/host.py:72
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:252
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:262 polyhost/host.py:72
 msgid "Standard"
 msgstr "قياسية"
 
@@ -3830,7 +3838,7 @@ msgstr "توقيت النقر والضغط المطوّل"
 
 #. TRANSLATORS: unit after a number of milliseconds in a spin box.
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
-#: polyhost/gui/layout_dialog/combo_tab.py:347
+#: polyhost/gui/layout_dialog/combo_tab.py:366
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
 #: polyhost/gui/tap_terms_dialog.py:42 polyhost/gui/tap_terms_dialog.py:48
 #: polyhost/gui/tap_terms_dialog.py:63
