@@ -30,8 +30,14 @@ margin: 0
 mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
-# No program_icon: ESC is left to the host's program mark (OS icon, then the
-# icon catalogs), as for the other proprietary DAWs.
+# Program mark: Simple Icons `bitwig` (CC0-1.0, nominative use).
+# Drawn at keycap size by fetch_icons.py (program_marks.pictogram_mark)
+# and placed 1:1. See SOURCES.md.
+program_icon: bitwig_mark.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [40, 19]   # the mark's own size: placed 1:1
+program_icon_margin: 0
 
 bindings:
   # --- File (third-party lists, see SOURCES.md) ---

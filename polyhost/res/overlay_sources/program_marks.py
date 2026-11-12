@@ -209,7 +209,6 @@ def _largest_part(mask):
 
 
 def _fill_holes(mask):
-    import numpy as np
     h, w = mask.shape
     border = [(y, x) for y in range(h) for x in (0, w - 1)] + \
              [(y, x) for x in range(w) for y in (0, h - 1)]
@@ -274,3 +273,38 @@ def silhouette_mark(path: Path, source: Path, *, box=(40, 40), cut: int | None =
     out[mark] = WHITE
     Image.fromarray(out).save(path)
     print(f"  {path.name}  <- silhouette of {source.name} ({size[0]}x{size[1]}, cut {cut})")
+
+
+def pictogram_mark(path: Path, svg_url: str, *, box=(40, 40), credit: str = "") -> None:
+    """A 1-bit keycap mark from a single-colour SVG pictogram: a Simple Icons
+    brand mark (CC0-1.0) or a Material Design Icons glyph (Apache-2.0) standing
+    in for a proprietary app icon.
+
+    The SVG's alpha is the shape. It is cropped to its ink, fitted into `box`
+    (w, h) keeping its aspect, and cut at alpha 128 at that size. Written white
+    on transparent at the fitted size: bind it with `program_icon_mode: alpha`
+    and a `program_icon_region` equal to that size so it is placed 1:1.
+
+    Guarded like `ensure()`: a committed mark is left as it is.
+    """
+    import io
+    import urllib.request
+
+    import cairosvg
+    import numpy as np
+    if path.exists():
+        print(f"  {path.name}  <- committed asset (left as-is)")
+        return
+    request = urllib.request.Request(svg_url, headers={"User-Agent": "polykybd"})
+    with urllib.request.urlopen(request, timeout=60) as r:
+        svg = r.read()
+    png = cairosvg.svg2png(bytestring=svg, output_width=SIZE * 2, output_height=SIZE * 2)
+    alpha = Image.open(io.BytesIO(png)).convert("RGBA").split()[3]
+    alpha = alpha.crop(alpha.getbbox())
+    scale = min(box[0] / alpha.width, box[1] / alpha.height)
+    size = (max(1, round(alpha.width * scale)), max(1, round(alpha.height * scale)))
+    mark = np.asarray(alpha.resize(size, Image.BOX)) > 127
+    out = np.zeros((size[1], size[0], 4), "uint8")
+    out[mark] = WHITE
+    Image.fromarray(out).save(path)
+    print(f"  {path.name}  <- {credit or svg_url} ({size[0]}x{size[1]})")

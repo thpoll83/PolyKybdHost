@@ -5,8 +5,8 @@ Glyphs: Microsoft Fluent UI System Icons (MIT), with Material Symbols
 (Apache-2.0) through `ms:` where Fluent has no match. An action another DAW set
 already draws is copied from that set (`BORROW`), so the same action shows the
 same cell in every DAW. The screenset keys 1..9 are numbered squares from
-`../number_badge.py` on the Ableton set's square. No program icon: the host
-draws the ESC mark for the app itself.
+`../number_badge.py` on the Ableton set's square. The ESC mark is drawn
+by `program_marks.pictogram_mark()`.
 
     pip install cairosvg Pillow
     python polyhost/res/overlay_sources/logicpro/fetch_icons.py
@@ -19,7 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import icon_fetch, number_badge  # noqa: E402
+import icon_fetch, number_badge, program_marks  # noqa: E402
 
 # Same action as another DAW set -> the same art (byte-identical copy).
 BORROW = {
@@ -104,6 +104,11 @@ def main() -> int:
     shutil.copyfile(here / "ableton" / "icons" / "_trackbase.png", base)
     n += number_badge.numbered(base, "123456789", out, "screenset")
     base.unlink()
+    # The ESC mark: Material Design Icons album (Apache-2.0), 1 bit at keycap size.
+    program_marks.pictogram_mark(
+        out / "logicpro_mark.png",
+        "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/album.svg",
+        credit="Material Design Icons album (Apache-2.0)")
     print(f"Wrote {n} icons to {out}")
     return 0
 

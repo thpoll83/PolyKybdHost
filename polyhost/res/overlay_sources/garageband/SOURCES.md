@@ -31,7 +31,7 @@ key labelled delete on a Mac keyboard (Backspace), and "Return" is Enter.
   "Move locators"); they are drawn once.
 - The macOS window keys: Command-H, Option-Command-H, Command-M,
   Option-Command-M, Control-Command-M.
-- Esc: the ESC key shows the program mark, which the host draws.
+- Esc: the ESC key shows the program mark.
 
 ## Icons
 
@@ -48,7 +48,11 @@ key labelled delete on a Mac keyboard (Backspace), and "Return" is Enter.
   all, Delete, Help, Zoom in and Zoom out are drawn by the shared concept
   renderer.
 
-**ESC mark.** None is baked in. GarageBand is proprietary Apple software, so
-the host draws the mark for the running app (the icon from its bundle first,
-then the icon catalogs; neither Simple Icons nor Material Design Icons has a
-GarageBand mark).
+**ESC mark.** `icons/garageband_mark.png` is Material Design Icons
+`guitar-acoustic` (@mdi/svg 7.4.47, Apache-2.0), standing in for Apple's icon,
+which may not be redistributed. `program_marks.pictogram_mark()` in
+`fetch_icons.py` draws it 1 bit at 40 x 38, placed 1:1
+(`program_icon_region: [40, 38]`). Apple's icon read through the host's
+thresholds came out as dither. The spec also writes a
+`garageband_template.mods.png` holding only the mark; GarageBand is macOS
+only, so that file is not shipped.

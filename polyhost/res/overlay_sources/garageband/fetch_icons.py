@@ -4,8 +4,8 @@
 Glyphs: Microsoft Fluent UI System Icons (MIT), with Material Symbols
 (Apache-2.0) through `ms:` where Fluent has no match. An action another DAW set
 already draws is copied from that set (`BORROW`), so the same action shows the
-same cell in every DAW. No program icon: the host draws the ESC mark for the
-app itself.
+same cell in every DAW. The ESC mark is drawn by
+`program_marks.pictogram_mark()`.
 
     pip install cairosvg Pillow
     python polyhost/res/overlay_sources/garageband/fetch_icons.py
@@ -18,6 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
+import program_marks  # noqa: E402
 
 # Same action as another DAW set -> the same art (byte-identical copy).
 BORROW = {
@@ -64,6 +65,11 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
     n = icon_fetch.fluent(FLUENT, out)
     n += icon_fetch.borrow(BORROW, out)
+    # The ESC mark: Material Design Icons guitar-acoustic (Apache-2.0), 1 bit at keycap size.
+    program_marks.pictogram_mark(
+        out / "garageband_mark.png",
+        "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/guitar-acoustic.svg",
+        credit="Material Design Icons guitar-acoustic (Apache-2.0)")
     print(f"Wrote {n} icons to {out}")
     return 0
 

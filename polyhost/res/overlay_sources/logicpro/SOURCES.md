@@ -52,7 +52,7 @@ and Right select the previous/next region).
   Equal Sign and Hyphen parameter keys, Command-Grave Accent (system window
   cycling), Command-H, Option-Command-H, Command-M, Option-Command-M,
   Control-Command-M.
-- Esc: the ESC key shows the program mark, which the host draws.
+- Esc: the ESC key shows the program mark.
 
 ## Icons
 
@@ -68,7 +68,10 @@ and Right select the previous/next region).
 - New, Open, Save, Save as, Close, Quit, Undo, Redo, Cut, Copy, Paste, Select
   all, Help, Zoom in and Zoom out are drawn by the shared concept renderer.
 
-**ESC mark.** None is baked in. Logic Pro is proprietary Apple software, so
-the host draws the mark for the running app (the icon from its bundle first,
-then the icon catalogs; neither Simple Icons nor Material Design Icons has a
-Logic Pro mark).
+**ESC mark.** `icons/logicpro_mark.png` is Material Design Icons `album`
+(@mdi/svg 7.4.47, Apache-2.0), a disc standing in for Apple's icon, which may
+not be redistributed. `program_marks.pictogram_mark()` in `fetch_icons.py`
+draws it 1 bit at 40 x 40, placed 1:1 (`program_icon_region: [40, 40]`).
+Apple's icon read through the host's thresholds showed only a ring. The spec
+also writes a `logicpro_template.mods.png` holding only the mark; Logic Pro
+is macOS only, so that file is not shipped.

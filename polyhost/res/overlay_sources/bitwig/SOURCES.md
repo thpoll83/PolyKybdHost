@@ -67,7 +67,7 @@ CTRL/CMD convention gives the Mac key:
   there.
 - Keys that act only in one editor or browser (note transpose, gain, browser
   filters and sources F1..F9, Ctrl+0), Caps Lock (computer note keyboard),
-  Esc (the program mark, which the host draws).
+  Esc (the program mark).
 
 ## Icons
 
@@ -81,6 +81,10 @@ CTRL/CMD convention gives the Mac key:
 - New, Open, Save, Save as, Undo, Cut, Copy, Paste, Select all, Delete and Zoom
   out are drawn by the shared concept renderer.
 
-**ESC mark.** None is baked in. Bitwig Studio is proprietary, so the host
-draws the mark for the running app (its own OS icon first, then the icon
-catalogs; Simple Icons has `bitwig`).
+**ESC mark.** `icons/bitwig_mark.png` is Simple Icons `bitwig`
+(simple-icons 15.22.0, CC0-1.0 artwork; nominative use, see
+`../brand_marks.py`), drawn 1 bit at 40 x 19 by
+`program_marks.pictogram_mark()` in `fetch_icons.py` and placed 1:1
+(`program_icon_region: [40, 19]`). The host's own lookup asks the catalog for
+`bitwigstudio` and so never finds this mark, and the app icon read through its
+thresholds came out as a nearly solid block.
