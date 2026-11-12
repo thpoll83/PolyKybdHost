@@ -9,7 +9,12 @@ computer the keyboard is plugged into.
 
 These commands clone the repo, create a virtual environment, install the Python
 requirements, and (on Linux/macOS) set up the native hidapi library and HID
-permissions.
+permissions. The clone has only the latest commit and leaves out the files the
+app does not read: `tests/` and the overlay build inputs in
+`polyhost/res/overlay_sources/` (about 10,000 of 12,000 files). It downloads
+13 MB instead of 47 MB. `git pull` still updates it. To work on the code or the
+overlays, run `git sparse-checkout disable` and `git fetch --unshallow` in the
+folder.
 
 By default the app is installed into a `PolyKybdHost/` folder **in the
 directory you run the command from**. The installer prints this location and
@@ -79,14 +84,18 @@ crash with an `ImportError` if a dependency slipped through.
 - **Windows** — the native `hidapi.dll` ships in the repo
   (`polyhost/device/win-hidapi-0-15/`) and is loaded automatically. Nothing
   extra to install.
-- **Linux** — install the native hidapi library and the udev rule for non-root
-  HID access:
+- **Linux** — install the native hidapi library and the udev rule. The rule lets
+  the app open the keyboard without root: its HID interface and its serial port
+  (the fast link for firmware and font-pack updates).
   ```bash
   sudo apt install libhidapi-hidraw0          # or: dnf install hidapi / pacman -S hidapi
-  sudo cp polyhost/device/99-hid.rules /etc/udev/rules.d/
+  sudo install -m 0644 polyhost/device/99-hid.rules /etc/udev/rules.d/99-hid.rules
   sudo udevadm control --reload-rules && sudo udevadm trigger
   ```
-  Replug the keyboard afterwards.
+  Replug the keyboard afterwards. The one-line installer does this, and the tray
+  shows **Updates → Allow access to the keyboard (udev rule)…** while the installed
+  rule is missing or older than the shipped file; it writes the file through a
+  PolicyKit password prompt.
 - **macOS** — `brew install hidapi`. Use a Homebrew/python.org Python 3.10+ for
   the venv (see the note above); the system `python3` is 3.9. Installing
   Homebrew's `python` also pulls binary wheels for the `pyobjc-*` frameworks

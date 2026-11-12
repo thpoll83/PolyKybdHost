@@ -392,7 +392,7 @@ class AddTextTest(unittest.TestCase):
 
     @staticmethod
     def _answer(dlg, text, accepted=True):
-        with patch("polyhost.gui.layout_dialog.macro_steps_dialog.QInputDialog.getText",
+        with patch("polyhost.gui.message_box.get_text",
                    return_value=(text, accepted)):
             dlg._on_add_text()
 

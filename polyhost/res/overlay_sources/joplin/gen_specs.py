@@ -1,0 +1,204 @@
+#!/usr/bin/env python3
+"""Write the Joplin desktop overlay spec, `joplin.yaml`, from one table.
+
+Each row is (icon, label, Windows/Linux key, macOS key). The keys are Joplin's
+own defaults: `defaultKeymapItems` in `packages/lib/services/KeymapService.ts`
+(a `darwin` list and a `default` list for Windows and Linux), plus the zoom and
+full-screen items of `packages/app-desktop/gui/MenuBar.tsx`. See SOURCES.md.
+
+A key is written as modifier letters and a key name joined by "+": C Ctrl,
+A Alt (Option on a Mac), S Shift, M Cmd. None means the platform has no key.
+
+* The same chord on both platforms is written once, with literal modifiers.
+* A macOS chord that is the Windows chord with Ctrl replaced by Cmd becomes
+  one `CMDCTRL` binding.
+* Any other row is written twice, under `except: [macos]` and `only: [macos]`.
+
+Linux uses the `default` list, the same as Windows, so there is no Linux set.
+
+    PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/joplin/gen_specs.py
+"""
+from __future__ import annotations
+
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+
+MODS = {"C": "CTRL", "A": "ALT", "S": "SHIFT", "M": "GUI"}
+KEYS = {",": "COMMA", ".": "DOT", "=": "EQUAL", "-": "MINUS", "/": "SLASH",
+        "[": "LBRACKET", "]": "RBRACKET", "`": "GRAVE", "Bksp": "BSPC",
+        "Up": "UP", "Down": "DOWN"}
+
+ROWS = [
+    # --- notes and windows ---
+    ("newnote", "New note", "C+N", "M+N"),
+    ("newtodo", "New to-do", "C+T", "M+T"),
+    ("sync", "Synchronise", "C+S", "M+S"),
+    ("newwindow", "Open note in new window", "CA+N", "MA+N"),
+    ("deletenote", "Permanently delete note", None, "MA+Bksp"),
+    ("settags", "Set tags", "CA+T", "MA+T"),
+    ("linktonote", "Link to note", "SA+L", "SA+L"),
+    ("externaledit", "Edit in external editor", "C+E", "M+E"),
+    ("closewindow", "Close window", "C+W", "M+W"),
+    ("quit", "Quit", "C+Q", None),
+    ("settings", "Options", "C+,", "M+,"),
+    ("help", "Help", "F1", "F1"),
+    # --- search and focus ---
+    ("gotoanything", "Goto Anything", "C+P", "M+P"),
+    ("commandpalette", "Command palette", "CS+P", "MS+P"),
+    ("searchall", "Search all notes", "F6", "MS+F"),
+    ("searchnote", "Search in note", "C+F", "M+F"),
+    ("focussidebar", "Focus sidebar", "CS+S", "MS+S"),
+    ("focusnotelist", "Focus note list", "CS+L", "MS+L"),
+    ("focustitle", "Focus note title", "CS+N", "MS+N"),
+    ("focusbody", "Focus note body", "CS+B", "MS+B"),
+    ("focustoolbar", "Focus toolbar", "CS+O", "MS+O"),
+    # --- view ---
+    ("togglesidebar", "Toggle sidebar", "F10", "MA+S"),
+    ("togglenotelist", "Toggle note list", "F11", "MA+L"),
+    ("layout", "Toggle editor layout", "C+L", "M+L"),
+    ("toggleeditors", "Toggle Markdown / Rich Text editor", "CA+E", "MA+E"),
+    ("editorplugin", "Toggle editor plugin", "CA+V", "MA+V"),
+    ("aichat", "Toggle AI chat", "CA+I", "MS+I"),
+    ("menubar", "Toggle menu bar", "CS+M", None),
+    ("zoomreset", "Actual size", "C+0", "M+0"),
+    ("zoomin", "Zoom in", "C+=", "M+="),
+    ("zoomout", "Zoom out", "C+-", "M+-"),
+    ("fullscreen", "Full screen", None, "MC+F"),
+    ("tabfocus", "Tab moves focus", "C+M", "C+M"),
+    # --- edit ---
+    ("undo", "Undo", "C+Z", "M+Z"),
+    ("redo", "Redo", "C+Y", "MS+Z"),
+    ("cut", "Cut", "C+X", "M+X"),
+    ("copy", "Copy", "C+C", "M+C"),
+    ("paste", "Paste", "C+V", "M+V"),
+    ("pasteastext", "Paste as text", "CS+V", "MS+V"),
+    ("pasteasmd", "Paste as Markdown", "CAS+V", "MAS+V"),
+    ("selectall", "Select all", "C+A", "M+A"),
+    ("datetime", "Insert date and time", "CS+T", "MS+T"),
+    # --- format ---
+    ("bold", "Bold", "C+B", "M+B"),
+    ("italic", "Italic", "C+I", "M+I"),
+    ("link", "Hyperlink", "C+K", "M+K"),
+    ("code", "Code", "C+`", "M+`"),
+    ("bulletlist", "Bulleted list", "CA+-", "MA+-"),
+    # --- Markdown editor ---
+    ("deleteline", "Delete line", "C+D", "M+D"),
+    ("duplicateline", "Duplicate line", "CS+D", "MS+D"),
+    ("indentless", "Reduce indent", "C+[", "M+["),
+    ("indentmore", "Increase indent", "C+]", "M+]"),
+    ("togglecomment", "Toggle comment", "C+/", "M+/"),
+    ("sortlines", "Sort selected lines", "CA+S", "MA+A"),
+    ("lineup", "Move line up", "A+Up", "A+Up"),
+    ("linedown", "Move line down", "A+Down", "A+Down"),
+    # --- profiles ---
+    ("profile1", "Switch to profile 1", "CA+1", "MA+1"),
+    ("profile2", "Switch to profile 2", "CA+2", "MA+2"),
+    ("profile3", "Switch to profile 3", "CA+3", "MA+3"),
+]
+
+# Labels that would fold onto a shared concept but mean something else here.
+NOT_SHARED: set[str] = set()
+
+# Labels whose own icon is the same picture as a shared concept, drawn by the
+# shared renderer instead (`concept:` in the spec).
+CONCEPT: dict[str, str] = {
+    "Search all notes": "find",
+    "Synchronise": "reload",
+    "Toggle Markdown / Rich Text editor": "replace",
+}
+
+HEADER = """\
+# Joplin desktop shortcut overlays for PolyKybd. See SOURCES.md.
+# GENERATED by gen_specs.py from its table -- edit the table, not this file.
+#
+# Keys: Joplin's default keymap (packages/lib/services/KeymapService.ts,
+# defaultKeymapItems) and the zoom items of packages/app-desktop/gui/MenuBar.tsx,
+# tag v3.7.22. Windows and Linux share the `default` list; macOS has its own.
+#
+# Regenerate (from the repo root, with the project venv):
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/joplin/gen_specs.py
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/joplin/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \\
+#       polyhost/res/overlay_sources/joplin/joplin.yaml --preview /tmp/joplin_preview
+app: joplin
+match: [joplin]
+output: joplin_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+program_icon: joplin.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+"""
+
+
+def parse(chord: str) -> tuple[str, list[str]]:
+    """'CS+P' -> ('P', ['CTRL', 'SHIFT']); 'F6' -> ('F6', [])."""
+    if "+" in chord and len(chord) > 1:
+        mods, key = chord.split("+", 1)
+    else:
+        mods, key = "", chord
+    key = KEYS.get(key, key)
+    if key.isdigit():
+        key = f'"{key}"'
+    return key, [MODS[m] for m in mods]
+
+
+def line(icon: str, label: str, chord: str, scope: str = "", cmdctrl: bool = False) -> str:
+    key, mods = parse(chord)
+    if cmdctrl:
+        mods = ["CMDCTRL" if m == "CTRL" else m for m in mods]
+    parts = [f"key: {key}"] + ([f"mods: [{', '.join(mods)}]"] if mods else [])
+    parts += [f"icon: {icon}.png", f'label: "{label}"']
+    if label in NOT_SHARED:
+        parts.append("shared: false")
+    if label in CONCEPT:
+        parts.append(f"concept: {CONCEPT[label]}")
+    if scope:
+        parts.append(scope)
+    return "  - { " + ", ".join(parts) + " }"
+
+
+def ctrl_to_cmd(chord: str) -> str | None:
+    if "+" not in chord or len(chord) == 1:
+        return None
+    mods, key = chord.split("+", 1)
+    if "C" not in mods:
+        return None
+    return "".join("M" if m == "C" else m for m in mods) + "+" + key
+
+
+def render() -> str:
+    out = [HEADER]
+    for icon, label, win, mac in ROWS:
+        if win and win == mac:
+            out.append(line(icon, label, win))
+        elif win and mac and ctrl_to_cmd(win) == mac:
+            out.append(line(icon, label, win, cmdctrl=True))
+        else:
+            if win:
+                out.append(line(icon, label, win, "except: [macos]"))
+            if mac:
+                out.append(line(icon, label, mac, "only: [macos]"))
+    return "\n".join(out) + "\n"
+
+
+def main() -> int:
+    text = render()
+    (HERE / "joplin.yaml").write_text(text, encoding="utf-8")
+    print(f"joplin.yaml: {text.count(chr(10) + '  - {')} bindings")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

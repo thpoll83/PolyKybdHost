@@ -47,15 +47,15 @@ SLAVE = ("   crash: side=slave kind=hardfault core=0 pc=0x10011190 lr=0x10011187
 class CrashAlertClearTest(unittest.TestCase):
     def setUp(self):
         self._answer = QMessageBox.Yes
-        self._orig_question = cad.QMessageBox.question
-        cad.QMessageBox.question = staticmethod(lambda *a, **k: self._answer)
+        self._orig_question = cad.message_box.question
+        cad.message_box.question = lambda *a, **k: self._answer
         self.addCleanup(self._restore)
         self.records = [crash_report.parse_crash_line(MASTER),
                         crash_report.parse_crash_line(SLAVE)]
         self.assertTrue(all(self.records), "fixture lines must parse")
 
     def _restore(self):
-        cad.QMessageBox.question = self._orig_question
+        cad.message_box.question = self._orig_question
 
     def _dialog(self, clear_cb=None):
         d = cad.CrashAlertDialog(clear_cb=clear_cb, host_version="0.0.0")
@@ -123,6 +123,41 @@ class CrashAlertClearTest(unittest.TestCase):
         d = self._dialog(clear_cb=lambda: (True, "ok"))
         d.add_record(crash_report.parse_crash_line(MASTER))
         self.assertEqual(len(d.records), 2)
+
+    def test_the_hid_copy_of_a_console_record_is_not_appended(self):
+        # The connect-time cmd 39 read carries no console line; deduping on the
+        # line let both copies of one crash into the list.
+        d = self._dialog(clear_cb=lambda: (True, "ok"))
+        d.add_record(crash_report.CrashRecord.from_dict(
+            dict(self.records[0].to_dict(), line="")))
+        self.assertEqual(len(d.records), 2)
+
+    def test_the_detail_says_whether_a_record_is_fresh(self):
+        d = self._dialog(clear_cb=lambda: (True, "ok"))
+        d.add_record(crash_report.CrashRecord.from_dict(
+            dict(self.records[0].to_dict(), line="", fresh=False, consecutive=2)))
+        text = d.detail.toPlainText()
+        self.assertIn("fresh (from the boot before this one)", text)
+        self.assertIn("archived (older)", text)
+
+    def test_archived_only_records_do_not_read_as_a_new_crash(self):
+        d = cad.CrashAlertDialog(host_version="0.0.0")
+        self.addCleanup(d.deleteLater)
+        d.add_record(crash_report.CrashRecord.from_dict(
+            dict(self.records[0].to_dict(), line="", fresh=False)))
+        self.assertIn("archived on the keyboard", d.headline.text())
+        self.assertNotIn("crashed and restarted", d.headline.text())
+        self.assertIn("not a new one", d.hint.text())
+        d.add_record(self.records[1])            # a fresh one arrives: back to the alert
+        self.assertIn("crashed and restarted", d.headline.text())
+
+    def test_copy_to_clipboard_puts_the_report_text_there(self):
+        d = self._dialog(clear_cb=lambda: (True, "ok"))
+        d.copy_to_clipboard()
+        text = QApplication.clipboard().text()
+        self.assertIn("PolyKybd firmware crash report", text)
+        self.assertIn("side=slave", text)
+        self.assertEqual(d.status.text(), "Copied to the clipboard.")
 
 
 if __name__ == "__main__":

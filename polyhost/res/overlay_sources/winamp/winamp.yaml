@@ -1,0 +1,97 @@
+# Winamp 5.x shortcut overlay for PolyKybd (Windows). See SOURCES.md.
+#
+# Keys are the default accelerator tables in Winamp's own resource file,
+# Src/Winamp/Winamp.rc of the published Winamp source: IDR_ACCELERATOR_MAIN
+# (main window) and IDR_ACCELERATOR_GLOBAL (every Winamp window). Labels follow
+# the menu text in the same file. The playlist editor has its own table
+# (IDR_ACCELERATOR_PL); the keys where it differs are listed in SOURCES.md.
+# Windows only: Winamp 5.x has no macOS or Linux build.
+#
+# Regenerate:
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/winamp/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/winamp/winamp.yaml --preview /tmp/winamp_preview
+app: winamp
+match: [winamp]
+output: winamp_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 128
+
+program_icon: winamp.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- no modifier: transport (IDR_ACCELERATOR_MAIN) ---
+  - { key: Z, mods: [], icon: previous.png, label: Previous }
+  - { key: X, mods: [], icon: play.png, label: Play }
+  - { key: C, mods: [], icon: pause.png, label: Pause }
+  - { key: V, mods: [], icon: stop.png, label: Stop }
+  - { key: B, mods: [], icon: next.png, label: Next }
+  - { key: LEFT, mods: [], icon: rewind.png, label: "Rewind 5 seconds" }
+  - { key: RIGHT, mods: [], icon: forward.png, label: "Forward 5 seconds" }
+  - { key: UP, mods: [], icon: volumeup.png, label: "Volume up" }
+  - { key: DOWN, mods: [], icon: volumedown.png, label: "Volume down" }
+  - { key: R, mods: [], icon: repeat.png, label: Repeat }
+  - { key: S, mods: [], icon: shuffle.png, label: Shuffle }
+  - { key: L, mods: [], icon: openfile.png, label: "Open file" }
+  - { key: INSERT, mods: [], icon: openfolder.png, label: "Open folder" }
+  - { key: J, mods: [], icon: jumpfile.png, label: "Jump to file" }
+  - { key: F3, mods: [], icon: jumpfile.png, label: "Jump to file" }
+  - { key: F5, mods: [], icon: refreshskin.png, label: "Reload skin" }
+  - { key: F1, mods: [], icon: help.png, label: "Winamp Help" }
+
+  # --- Shift ---
+  - { key: Z, mods: [SHIFT], icon: rewind.png, label: "Rewind 5 seconds" }
+  - { key: B, mods: [SHIFT], icon: forward.png, label: "Forward 5 seconds" }
+  - { key: V, mods: [SHIFT], icon: fadeout.png, label: "Stop with fadeout" }
+  - { key: X, mods: [SHIFT], icon: openfile.png, label: "Open file" }
+  - { key: L, mods: [SHIFT], icon: openfolder.png, label: "Open folder" }
+  - { key: R, mods: [SHIFT], icon: manualadv.png, label: "Manual playlist advance" }
+
+  # --- Ctrl ---
+  - { key: Z, mods: [CTRL], icon: startlist.png, label: "Start of list" }
+  - { key: B, mods: [CTRL], icon: endlist.png, label: "End of list" }
+  - { key: V, mods: [CTRL], icon: stopafter.png, label: "Stop after current" }
+  - { key: L, mods: [CTRL], icon: openurl.png, label: "Open URL" }
+  - { key: X, mods: [CTRL], icon: openurl.png, label: "Open URL" }
+  - { key: J, mods: [CTRL], icon: jumptime.png, label: "Jump to time" }
+  - { key: O, mods: [CTRL], icon: openplaylist.png, label: "Open playlist" }
+  - { key: S, mods: [CTRL], icon: saveplaylist.png, label: "Save playlist" }
+  - { key: P, mods: [CTRL], icon: preferences.png, label: Preferences }
+  - { key: T, mods: [CTRL], icon: timemode.png, label: "Elapsed / remaining time" }
+  - { key: D, mods: [CTRL], icon: doublesize.png, label: "Double size" }
+  - { key: W, mods: [CTRL], icon: windowshade.png, label: "Windowshade mode" }
+  - { key: K, mods: [CTRL], icon: visselect.png, label: "Select visualization plug-in" }
+  - { key: TAB, mods: [CTRL], icon: nextwindow.png, label: "Next window" }
+  - { key: F1, mods: [CTRL], icon: about.png, label: "About Winamp" }
+  - { key: F4, mods: [CTRL], icon: closewindow.png, label: "Close window" }
+
+  # --- Alt (IDR_ACCELERATOR_GLOBAL unless noted) ---
+  - { key: W, mods: [ALT], icon: mainwindow.png, label: "Main window" }
+  - { key: E, mods: [ALT], icon: playlisted.png, label: "Playlist editor" }
+  - { key: G, mods: [ALT], icon: equalizer.png, label: Equalizer }
+  - { key: V, mods: [ALT], icon: video.png, label: Video }
+  - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Video full screen" }
+  - { key: S, mods: [ALT], icon: skins.png, label: "Skin browser" }
+  - { key: "3", mods: [ALT], icon: fileinfo.png, label: "View file info" }
+  - { key: K, mods: [ALT], icon: visconfig.png, label: "Configure visualization plug-in" }
+  - { key: O, mods: [ALT], icon: visselect.png, label: "Select visualization plug-in" }
+  - { key: F, mods: [ALT], icon: mainmenu.png, label: "Main menu" }
+  - { key: M, mods: [ALT], icon: minimize.png, label: Minimize }
+  - { key: F4, mods: [ALT], icon: quit.png, label: Exit }
+
+  # --- Ctrl+Alt ---
+  - { key: B, mods: [CTRL, ALT], icon: addbookmark.png, label: "Add current as bookmark" }
+  - { key: I, mods: [CTRL, ALT], icon: bookmarks.png, label: "Edit bookmarks" }
+  - { key: N, mods: [CTRL, ALT], icon: newinstance.png, label: "New Winamp instance" }
+
+  # --- Ctrl+Shift ---
+  - { key: K, mods: [CTRL, SHIFT], icon: vistoggle.png, label: "Start/stop visualization" }

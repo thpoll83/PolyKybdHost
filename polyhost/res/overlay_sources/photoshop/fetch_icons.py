@@ -6,9 +6,10 @@ GPL-3.0-or-later; Adobe's real tool icons are proprietary and are NOT used). Ren
 96x96 RGBA PNG; the generator's `luma` mode keeps the linework at 1-bit.
 
 Photoshop's signature *tools* (marquee, lasso, magic wand, clone stamp, healing
-brush, dodge/burn, path-selection, swap/default colours, quick mask) have no good
+brush, dodge/burn, path-selection, default colours, quick mask) have no good
 Fluent equivalent, so they are **drawn here** as simple white-on-transparent
-glyphs (alpha is the shape) and the matching binding sets `mode: alpha`.
+glyphs (alpha is the shape) and the matching binding sets `mode: alpha`. Swap
+colours is GIMP's glyph, copied by `icon_fetch.borrow` so both apps share it.
 
 The program icon (ESC) is a generic, license-clean rounded-square "Ps" monogram
 (NOT Adobe's logo styling/colours). All hand-editable / drawn assets are guarded
@@ -26,7 +27,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import rect_mark  # noqa: E402
+import icon_fetch, rect_mark  # noqa: E402
 
 import cairosvg
 import numpy as np
@@ -211,19 +212,6 @@ def _draw_pathselect(path: Path) -> None:
     _save(img, path)
 
 
-def _draw_swapcolors(path: Path) -> None:
-    """Swap FG/BG: two overlapping squares with a curved double-arrow."""
-    img, d, u = _canvas()
-    w = int(u * 0.05)
-    d.rectangle([0.20 * u, 0.20 * u, 0.50 * u, 0.50 * u], outline=WHITE, width=w)  # front
-    d.rectangle([0.46 * u, 0.46 * u, 0.76 * u, 0.76 * u], outline=WHITE, width=w)  # back
-    # curved swap arrow (top-right)
-    d.arc([0.52 * u, 0.16 * u, 0.84 * u, 0.48 * u], start=270, end=90, fill=WHITE, width=w)
-    d.line([(0.84 * u, 0.30 * u), (0.80 * u, 0.20 * u)], fill=WHITE, width=w)
-    d.line([(0.84 * u, 0.30 * u), (0.74 * u, 0.26 * u)], fill=WHITE, width=w)
-    _save(img, path)
-
-
 def _draw_defaultcolors(path: Path) -> None:
     """Default colours: one filled (black=outline) square behind a hollow one."""
     img, d, u = _canvas()
@@ -348,7 +336,6 @@ _DRAWN = {
     "healing": _draw_healing,
     "dodgeburn": _draw_dodgeburn,
     "pathselect": _draw_pathselect,
-    "swapcolors": _draw_swapcolors,
     "defaultcolors": _draw_defaultcolors,
     "quickmask": _draw_quickmask,
     "gradient": _draw_gradient,
@@ -359,6 +346,11 @@ _DRAWN = {
     "fillfg": _draw_fillfg,
     "fillbg": _draw_fillbg,
 }
+
+
+# Shared with other apps: one drawing per action, so the overlay icon library
+# stores it once (see icon_fetch.borrow).
+BORROWED = {"swapcolors.png": "gimp"}
 
 
 def main() -> int:
@@ -380,6 +372,8 @@ def main() -> int:
         else:
             fn(p)
             print(f"  {fname}.png  <- custom (drawn)")
+
+    icon_fetch.borrow(BORROWED, out)
 
     # program mark (guarded)
     if (out / "photoshop.png").exists():

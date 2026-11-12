@@ -24,6 +24,8 @@ the row that used to carry it sits one submenu deeper than anyone looks.
 import sys
 from pathlib import PurePath
 
+from polyhost.i18n import _, _f
+
 
 def balloons_are_delivered(platform_name=None, executable=None):
     """True when ``QSystemTrayIcon.showMessage`` reaches the user here.
@@ -53,31 +55,33 @@ def _inside_app_bundle(executable):
             and parts[-4].endswith(".app"))
 
 
-def _pending(host_version, fw_version):
-    pending = []
+def _pending_sentence(prefix, host_version, fw_version):
+    """`prefix` followed by the pending versions, as ONE translatable sentence
+    per combination (a translator cannot reorder a list joined in code)."""
+    if host_version and fw_version:
+        return _f("{prefix} — host v{host_version}, firmware v{fw_version} available",
+                  prefix=prefix, host_version=host_version, fw_version=fw_version)
     if host_version:
-        pending.append(f"host v{host_version}")
+        return _f("{prefix} — host v{host_version} available",
+                  prefix=prefix, host_version=host_version)
     if fw_version:
-        pending.append(f"firmware v{fw_version}")
-    return pending
+        return _f("{prefix} — firmware v{fw_version} available",
+                  prefix=prefix, fw_version=fw_version)
+    return ""
 
 
-def updates_menu_title(host_version=None, fw_version=None, base="Updates"):
+def updates_menu_title(host_version=None, fw_version=None, base=None):
     """Text for the top-level ``Updates`` tray row.
 
     Where a balloon is dropped this row is the ONLY thing announcing a new
     version, so it names the version rather than hinting that something is
     inside.
     """
-    pending = _pending(host_version, fw_version)
-    if not pending:
-        return base
-    return f"{base} — {', '.join(pending)} available"
+    if base is None:
+        base = _("Updates")
+    return _pending_sentence(base, host_version, fw_version) or base
 
 
 def updates_tooltip(host_version=None, fw_version=None):
     """Tray-icon tooltip for pending updates; ``""`` when there are none."""
-    pending = _pending(host_version, fw_version)
-    if not pending:
-        return ""
-    return f"PolyKybd — {', '.join(pending)} available"
+    return _pending_sentence("PolyKybd", host_version, fw_version)

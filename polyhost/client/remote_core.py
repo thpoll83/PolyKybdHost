@@ -338,6 +338,39 @@ class RemoteCore(Observable):
         Callers index it, so both shapes work; don't compare it to a tuple."""
         return self._device(p.M_IDLE_TIMEOUT_GET)
 
+    def set_tap_terms(self, tapping_term=None, flow_tap_term=None,
+                      auto_shift=None, auto_shift_ms=None):
+        return self._device(p.M_TAP_TERMS_SET, {"tapping_term": tapping_term,
+                                                "flow_tap_term": flow_tap_term,
+                                                "auto_shift": auto_shift,
+                                                "auto_shift_ms": auto_shift_ms})
+
+    def get_tap_terms(self):
+        return self._device(p.M_TAP_TERMS_GET)
+
+    def key_attention(self, row, col, count=3, period_ms=4000):
+        return self._device(p.M_KEY_ATTENTION, {"row": row, "col": col, "count": count,
+                                                "period_ms": period_ms})
+
+    def key_attention_cancel(self):
+        return self._device(p.M_KEY_ATTENTION, {"cancel": True})
+
+    def agents_list(self):
+        return self._rpc_call(p.M_AGENTS_LIST) or {}
+
+    def agents_report(self, params):
+        return self._device(p.M_AGENTS_REPORT, dict(params))
+
+    def agents_label(self, vendor, session_id, text):
+        return self._device(p.M_AGENTS_LABEL, {"vendor": vendor, "session_id": session_id,
+                                               "text": text})
+
+    def agents_raise(self, vendor, session_id):
+        return self._device(p.M_AGENTS_RAISE, {"vendor": vendor, "session_id": session_id})
+
+    def agents_forget(self, vendor, session_id):
+        return self._device(p.M_AGENTS_FORGET, {"vendor": vendor, "session_id": session_id})
+
     def refresh_unicode_mode(self):
         """Ask the daemon to re-detect + re-push the unicode input mode.
 
@@ -357,6 +390,12 @@ class RemoteCore(Observable):
     def get_glyph_script(self):
         return self._device(p.M_GLYPH_SCRIPT_GET)
 
+    def set_glyph_placement(self, value):
+        return self._device(p.M_GLYPH_PLACEMENT_SET, {"value": value})
+
+    def get_glyph_placement(self):
+        return self._device(p.M_GLYPH_PLACEMENT_GET)
+
     def set_glyph_size(self, value):
         return self._device(p.M_GLYPH_SIZE_SET, {"value": value})
 
@@ -366,6 +405,9 @@ class RemoteCore(Observable):
     def replay_startup_anim(self):
         return self._device(p.M_REPLAY_ANIM)
 
+    def mock_keycaps(self, modifier=0):
+        return self._device(p.M_MOCK_KEYCAPS, {"modifier": int(modifier)})
+
     def get_crash_record(self, which=0):
         return self._device(p.M_CRASH_GET, {"which": which})
 
@@ -374,8 +416,16 @@ class RemoteCore(Observable):
 
     # -- overlays -----------------------------------------------------------
     def send_overlay_data(self, files):
+        # The core takes one name or a list; list("sublime") would be its letters.
+        files = [files] if isinstance(files, str) else list(files)
+        # An Underlay (handler/common) is a str subclass and arrives as a plain
+        # name, so the marked names travel beside the list.
+        params = {"files": [str(f) for f in files]}
+        underlay = [str(f) for f in files if getattr(f, "underlay", False)]
+        if underlay:
+            params["underlay"] = underlay
         try:
-            res = self._rpc_call(p.M_OVERLAY_SEND, {"files": list(files)})
+            res = self._rpc_call(p.M_OVERLAY_SEND, params)
             return bool((res or {}).get("queued"))
         except RpcError:
             return False
@@ -478,8 +528,23 @@ class RemoteCore(Observable):
     def activate_bootloader(self):
         return self._device(p.M_ACTIVATE_BOOTLOADER)
 
-    def set_handedness(self, master_is_left):
-        return self._device(p.M_SET_HANDEDNESS, {"master_is_left": bool(master_is_left)})
+    BOOT_LOOP_DEFAULT_ROUNDS = 50
+    BOOT_LOOP_MAX_ROUNDS = 9999   # the daemon enforces it; the GUI only offers it
+
+    def reboot_keyboard(self):
+        return self._device(p.M_REBOOT)
+
+    def start_boot_loop(self, rounds=BOOT_LOOP_DEFAULT_ROUNDS):
+        return self._device(p.M_BOOT_LOOP_START, {"rounds": int(rounds)})
+
+    def cancel_boot_loop(self):
+        return self._device(p.M_BOOT_LOOP_CANCEL)
+
+    def set_handedness(self, master_is_left, split_vbus=None):
+        if split_vbus is None:
+            return self._device(p.M_SET_HANDEDNESS, {"master_is_left": bool(master_is_left)})
+        return self._device(p.M_SET_HANDEDNESS_BOARD, {"master_is_left": bool(master_is_left),
+                                                       "split_vbus": bool(split_vbus)})
 
     def apply_staged_firmware(self):
         return self._device(p.M_FW_APPLY_STAGED)
@@ -495,6 +560,19 @@ class RemoteCore(Observable):
         side either (it compares the cached GET_ID block against the shipped
         manifest), so this is cheap enough for a menu's aboutToShow."""
         return self._device(p.M_FONTPACK_BUNDLES)
+
+    def emoji_search_status(self):
+        """The emoji search dictionaries (selected, on the keyboard, shipped).
+        No device I/O on the daemon side: it reads the cached GET_ID block."""
+        return self._device(p.M_EMOJIDICT_STATUS)
+
+    def emoji_search_choose(self, dict_id=None, path=None, source="gui"):
+        params = {"source": source}
+        if dict_id is not None:
+            params["id"] = dict_id
+        if path is not None:
+            params["path"] = path
+        return self._device(p.M_EMOJIDICT_CHOOSE, params)
 
     # -- lifecycle / settings ----------------------------------------------
     def set_paused(self, paused):
@@ -523,8 +601,9 @@ class RemoteCore(Observable):
         except RpcError:
             return {}
 
-    def settings_set(self, key, value):
-        return self._device(p.M_SETTINGS_SET, {"key": key, "value": value})
+    def settings_set(self, key, value, source="tray (client mode)"):
+        return self._device(p.M_SETTINGS_SET, {"key": key, "value": value,
+                                               "source": source})
 
     # -- telemetry (the daemon owns the reporter; the client only asks) -----
     def telemetry_status(self):

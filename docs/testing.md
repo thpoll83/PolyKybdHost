@@ -137,8 +137,31 @@ and relative links were adjusted to suit a standalone file.
   one automated reviewer here that cannot go quiet — see the CodeQL note in the
   code-review conventions above. So a PR gets static analysis and no unit-test run;
   the suite is yours to run locally (`scripts/run_tests.py`).
+  - ⚠️ **Five CodeQL Python rules new code here keeps tripping, and the fix for
+    each** (#301, 2026-10-01: ten alerts in one scan, then one more from the fix):
+    - `import unittest` beside `from unittest import mock` → write
+      `import unittest.mock as mock`.
+    - A side-effect import such as `import polyhost.util.log_util  # noqa: F401`
+      is still "unused" — **`noqa` silences pyflakes, not CodeQL.** Drop it when
+      the module under test already loads it, and prove that by running the test
+      FILE on its own (a whole-suite run has it loaded by some other module).
+    - A module global that only keeps a `QApplication` alive is "unused" → create
+      it in `setUpClass` and keep it on the class.
+    - A subclass that skips `super().__init__()` is **error** severity and fails
+      the check.
+    - ⚠️ Calling `super().__init__()` and then reassigning an attribute the base
+      set raises a SECOND alert ("overwriting attribute in super-class"), which is
+      what the first fix for the rule above did. What settles both is a hook: the
+      base class does its I/O through an overridable method, the subclass
+      overrides the method, and the base constructor sets every attribute itself
+      (`HidHelper._enumerate()` / `_open()`, overridden by `MockHidHelper`).
 
 - **GUI tests need a display**: `tests/gui/host_client_test.py` constructs the real `PolyHost` (default + `--connect` client mode) in a subprocess (one `QApplication`/process; `pynput` needs X) with Qt forced to `offscreen`. They **skip unless `DISPLAY` is set** — run them under a virtual X server: `xvfb-run -a .venv/bin/python -m unittest tests.gui.host_client_test`. `host.py` can't even be *imported* without an X server (pynput at module load), so plain `unittest discover` skips them. Installing `x11-xserver-utils` (xrandr) lets the in-process path construct under xvfb too (pywinctl/pymonctl `sys.exit(1)` without it).
+  - ⚠️ **`tests/handler/active_window_test.py` needs a display too.** Without one
+    every test in it SKIPS ("active_window needs a display: Bad display name") and
+    the run still prints `OK`: 129 skips on 2026-10-24, including the app-name
+    matching tests for a new overlay set. Run it under `xvfb-run -a` and check
+    the skip count.
   - ⚠️ **Do not chain two `xvfb-run -a` invocations in one shell command** — the
     second one hangs (observed ~10 min at 0.7% CPU / 4 s CPU time, on a suite
     that had run green in 27 s moments earlier; both were auto-picking a display).
@@ -260,17 +283,26 @@ and relative links were adjusted to suit a standalone file.
   all** — and a bare `timeout` kill discards exactly the information you need. The
   runner arms `faulthandler.dump_traceback_later(..., exit=True)`, so a stall
   prints every thread's stack and fails the command:
-  `python scripts/run_tests.py [--timeout 240] [-s tests/device]`.
-  ⚠️ **Set `--timeout` BELOW whatever will kill the shell, or the dump is lost** —
-  under a 120 s tool timeout an outer kill lands first: SIGTERM, exit 143, **no
-  traceback**. Raise the Bash tool's own timeout past it (`timeout: 400000`).
+  `python scripts/run_tests.py [--timeout 120] [-s tests/device]`.
+  ⚠️ **`--timeout` is PER TEST** — the watchdog re-arms as each test starts, so a
+  stall means one test (with its fixtures) ran past it. The WHOLE run still has to
+  finish before whatever kills the shell, or the dump is lost — under a 120 s tool
+  timeout an outer kill lands first: SIGTERM, exit 143, **no traceback**. Run it
+  backgrounded, or raise the Bash tool's own timeout well past the run.
+  ⚠️ **In the cloud container the full suite needs `--timeout 600`.**
+  `tests/services/icon_library_test` builds the icon library: its 19 tests took
+  346 s there, and one of them runs past the default 120 s per test. The default
+  then stops the run at that test with a stall dump that looks like a hang
+  (2026-11-05):
+  `xvfb-run -a .venv/bin/python scripts/run_tests.py --timeout 600 > /tmp/tr.log 2>&1`.
   Redirect to a file (`> /tmp/tr.log 2>&1`) and read the whole thing; do **not**
   pipe it through `tail`, which has eaten the dump before.
-  - ⚠️ **The suite is NOT ~25 s any more, and this note used to say it was — it is
-    2354 tests and 65–90 s under xvfb, so the `--timeout 60` this file recommended
-    now fires on a HEALTHY run.** Measured 2026-09-08 across three runs (65 s,
-    75 s, 90 s) in the same container; the figure drifts with load, so treat 240 as
-    the floor rather than tuning it down. Worse than a wasted run: at 60 s the dump
+  - ⚠️ **Why the watchdog is per test (2026-10-01): every whole-run figure went
+    stale.** This note said ~25 s, then 2354 tests and 65–90 s under xvfb
+    (2026-09-08), and on 2026-10-01 the suite was 3755 tests and 125–131 s with
+    offscreen Qt — past the old 180 s default's comfort and moving. Do not write a
+    new figure down; the per-test window is what stays true. Worse than a wasted
+    run, a whole-run budget below the real length fired with a misleading dump: at 60 s the dump
     lands wherever teardown happens to be, and on the run that produced this note
     that was the main thread in `PolyCore.shutdown` → `worker.run_sync` — i.e. an
     almost exact match for the `ControlServer.stop()` deadlock documented as FIXED
@@ -331,3 +363,85 @@ and relative links were adjusted to suit a standalone file.
     i.e. it pins the race, not the symptom, and it fails against the old
     implementation.
 
+## Tests (the CLAUDE.md summary)
+
+_Moved verbatim from `CLAUDE.md` on 2026-10-10. CLAUDE.md keeps a short pointer._
+
+
+`*_test.py` under `tests/` mirroring `polyhost/`; **unittest, not pytest**. Use
+`scripts/run_tests.py` when a run might hang — it arms a stall watchdog that prints every
+thread's stack. ⚠️ **`--timeout` bounds ONE test, not the run** (it re-arms per test),
+so it needs no tuning as the suite grows. Do not write the suite's length or test count
+down anywhere: every figure this file has carried went stale, and a whole-run budget set
+from one fired on a healthy run. Run the full suite backgrounded, or under a tool timeout
+well past it, since an outer kill throws the dump away.
+GUI tests need `xvfb-run -a`; rendering a widget headless needs `xvfb-run` **and**
+`QT_QPA_PLATFORM=offscreen`, for opposite reasons. The rest — the fixture traps, the
+headless-render recipes, and the `ControlServer.stop()` deadlock post-mortem — is in
+[`docs/testing.md`](testing.md).
+
+- **No keyboard needed: `dev_mock_primary` (+ `dev_mock_protocol`) makes the mock the
+  device**, and its overlay path is the real `PolyKybd` over `MockFirmware`, a Python
+  copy of the firmware's side of the HID channel with a `FaultPlan` for the recovery
+  paths. ⚠️ It copies the firmware's QUIRKS too, on purpose. What it models, what it
+  does not, the board view and the sweeps: [`docs/mock-device.md`](mock-device.md).
+- ⚠️ **HOW YOU INVOKE THE SUITE CHANGES THE ANSWER, and both wrong ways look
+  like results.** `unittest discover -s ./tests` PREPENDS `tests/` to
+  `sys.path`, and `tests/tools/` then SHADOWS the repo's own `tools/`, so
+  anything reaching `tools.gfx_font` blows up: measured on one tree,
+  **3418 tests / 5 failures + 21 errors** against
+  `scripts/run_tests.py`'s **3441 / 1 error**. And a baseline taken in a
+  `git worktree` under `/tmp` silently skips every test gated on
+  `../qmk_firmware` (129 skips vs 44), so the comparison reads as your branch
+  un-skipping 85 tests. **Run the runner, and baseline IN PLACE** — check the
+  two commits' files back out in the real checkout. Both cost a full cycle in
+  2026-09-23. Details in [`docs/testing.md`](testing.md).
+- ⚠️ **A `skipUnless` guard that checks a SUBSET of what the code checks turns a
+  missing dependency into an infinite HANG.** `_FONTGEN` imported numpy+freetype
+  while `_build()` also needs uharfbuzz/fontTools/PIL, so on a partial set the
+  guard said run, the dialog took its error path — a **modal** `QMessageBox`
+  with nobody under xvfb to dismiss it — and the suite sat for 48 minutes with
+  no output. Derive such a guard from the function the code itself calls. A
+  missing dep normally skips or errors; this class hangs, and only
+  `scripts/run_tests.py`'s watchdog (or `py-spy dump --pid`) names it.
+- ⚠️ **A change to CONCURRENT FILE ACCESS is not done when the tests pass.** The
+  per-key settings merge took four review rounds and produced two regressions
+  *while fixing the previous one* — merging against `{}` on a read failure reset
+  every untouched key, and degrading an unreadable file to defaults let the
+  constructor's save destroy it. Its diff looked small. Before calling one done:
+  mutation-sweep it (`mutation-test-suite`), and race it with REAL processes —
+  six concurrent writers of six different keys lose 3–4 per run unlocked and none
+  locked, which no single-process test would ever have shown.
+- **RUN the real entry point once before believing a mocked suite.** A suite whose
+  fixtures you wrote can only be as right as your idea of the real data; one
+  `polyctl logs bundle` in a temp dir caught two format bugs every test passed over.
+- ⚠️ **Appending test methods after a file's trailing `if __name__ == "__main__":`
+  registers NOTHING** — the indented `def`s become part of the `if` body, parse fine and
+  never run. **Check the test COUNT changed**, not just that the suite is green.
+- ⚠️ **`patch.object(Class, "method")` does NOT reach a fixture that already BOUND that
+  method**, which this repo's fixture idiom does constantly. Drive the real input, or
+  override the attribute on the instance.
+- ⚠️ **A `worker.run_sync()` barrier runs BEFORE a job the core already queued.**
+  `run_sync` submits with `front=True` (`hid_worker.py`), so a test that calls
+  `core.flash_firmware(...)` and then `run_sync("barrier", ...)` checks the result
+  before the flash has run. Wait at the back of the queue instead:
+  `core.worker.submit("barrier", lambda cancel: None).done.wait(60)`
+  (`tests/core/core_mock_link_test.py`, #462).
+- **A core test's keyboard is `spec_keyboard()` (`tests/core/spec_keyboard.py`), not
+  a bare `MagicMock()`.** A bare MagicMock accepts any method name and any arguments,
+  so a renamed `PolyKybd` method leaves the test green. The spec'd one is
+  `create_autospec(PolyKybd, instance=True)` with `hid` set. Measured on #462:
+  renaming `reset_overlays_and_usage` failed 4 tests with it and none with MagicMock.
+- ⚠️ **A stale `.pyc` can survive a CORRECT fix** — invalidation is (mtime, size), so a
+  length-neutral edit in the same mtime second is invisible. The tell is a traceback
+  quoting source that no longer exists. Clear `__pycache__` after **restoring** too, not
+  only after editing — a mutation sweep's confirmation run is exactly where this lands.
+- ⚠️ **`polyhost/forwarder.py` is UNTESTABLE in the documented environment** (pywinctl at
+  module load). Put forwarder logic worth testing in a Qt-free module; a test gated on
+  both `DISPLAY` and pywinctl is permanently skipped, which reads as coverage.
+- ⚠️ **The suite cannot execute the platform input paths** — Win32, Carbon and
+  pynput keystrokes are mocked by necessity. All four field defects of
+  2026-09-22 lived in that region while 2949 tests stayed green, so a green
+  board says nothing about it: budget a hardware round.
+- **No unit-test CI**, but `codeql.yml` analyses every PR — the one automated reviewer
+  here that cannot go quiet.

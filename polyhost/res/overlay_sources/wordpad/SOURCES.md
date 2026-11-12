@@ -102,3 +102,9 @@ The preview (`--preview`, `overlay_preview.png`) reads the **rendered** overlay
 back and shows every populated key in its real 72x40 cell. That is the only
 check that catches a cell which drew nothing -- see
 `tests/res/overlay_cells_test.py`, which now pins it for every app at once.
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+**Nothing added.** Every standard chord WordPad has is already drawn (Ctrl+N/O/S/
+P/Z/Y/X/C/V/A/F/H, F3 find next). Ctrl+R is *Align right* and Ctrl+E *centre*,
+not Reload; WordPad has no Close (Ctrl+W) or keyboard zoom chord.

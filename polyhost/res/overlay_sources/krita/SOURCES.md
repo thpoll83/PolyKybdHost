@@ -95,9 +95,11 @@ which stays visually distinct from `edit-copy` (Copy).
 
 For painting actions with no clean Fluent match (drawn in `fetch_icons.py`):
 
-- `brushdec.png` — a small filled dot (decrease brush size).
-- `brushinc.png` — a large filled dot (increase brush size). The two read as a
-  size pair side by side on `[` / `]`.
+- `brushdec.png`, `brushinc.png`, `fillbg.png`, `fillfg.png` are Photoshop's drawings,
+  shared pixel-for-pixel. Fill FG = solid square, fill BG = framed square (Krita
+  had them the other way round). `fetch_icons.py` leaves these committed files as-is.
+  Brush decrease is the small dot and brush increase the large one, a size pair on
+  `[` / `]`.
 - `preset.png` — two swatches (one filled, one outlined) with a swap arrow
   between them (switch-to-previous-preset; distinct from undo/redo arrows).
 
@@ -133,3 +135,47 @@ committed `icons/` freeze the render.
 krita:
   overlay: [krita_template.mods.png, krita_template.combo.mods.png]
 ```
+
+## macOS
+
+The spec serves Windows and macOS from one file: `krita_template.*`
+(Windows/Linux) and `krita_template_mac.*` (macOS). Krita's defaults are Qt key
+sequences, and Qt reads `Ctrl` as **Command** on macOS (Krita does not set
+`AA_MacDontSwapCtrlAndMeta`), so all 20 Ctrl chords are `CMDCTRL`.
+
+Sources (Krita's own source is the authority — docs.krita.org was egress-blocked):
+
+- <https://github.com/KDE/krita> `krita/krita.action`, `krita/kritamenu.action`,
+  `plugins/**/*.action` — the default shortcuts, including the per-OS
+  `<shortcut operatingSystem="macos">` overrides that
+  `libs/widgetutils/kis_action_registry.cpp` applies on macOS.
+- <https://github.com/KDE/kconfig> `src/gui/kstandardshortcut.cpp` — New / Open /
+  Save / Save As / Close / Undo / Redo / Cut / Copy / Paste / Select all / Deselect
+  carry no macOS branch.
+- `krita/data/input/kritadefault.profile` — the 1/2/3 zoom keys are
+  platform-independent canvas-input keys.
+
+| Action | Windows / Linux | macOS | Why |
+|---|---|---|---|
+| Fill with background color | `Backspace` | `Delete` (forward delete) | `kritamenu.action` sets `Del` for `operatingSystem="macos"`; on macOS Backspace is Clear. Written twice with `only:`. |
+
+Nothing is dropped. No macOS chord drawn here is system-reserved.
+
+⚠️ Uncertain: **New layer on `Insert`** is unchanged on macOS in Krita's action
+file, but Mac keyboards have no Insert key and macOS reports the HID Insert usage
+as the Help key, so the Mac cell may never fire. Left as-is; verify on hardware.
+
+Fixed 2026-09-30 against Krita's tool action files: "Rect select" moved from
+bare `R` to `Ctrl+R` (⌘R on the Mac; `KisToolSelectRectangular.action`), and
+bare `V` "Line tool" is gone (`KritaShape/KisToolLine` has no default shortcut in
+`tools.action`).
+
+## Standard editing chords (shared Fluent concepts, 2026-10)
+
+Nothing added. New/Open/Save/Close/Undo/Redo(Ctrl+Shift+Z)/Cut/Copy/Paste/Select all
+were already drawn (KStandardAction set in `libs/ui/KisMainWindow.cpp`).
+
+- **Print**: Krita creates no Print action.
+- **Find / Find next / Replace**: none in Krita.
+- **Zoom**: the defaults are bare `+` / `-` (https://docs.krita.org/en/reference_manual/tools/zoom.html);
+  Ctrl+= has to be user-assigned, so it is not drawn.

@@ -4,12 +4,20 @@ import re
 import subprocess
 import sys
 
-from PyQt5.QtCore import QSize
-from PyQt5.QtGui import QColor, QFont, QSyntaxHighlighter, QTextCharFormat, QTextCursor
-from PyQt5.QtWidgets import (QHBoxLayout, QMainWindow, QPlainTextEdit,
-                              QPushButton, QTabWidget, QVBoxLayout, QWidget)
+from PyQt5.QtCore import QSize, Qt, QTimer
+from PyQt5.QtGui import (QColor, QFont, QKeySequence, QSyntaxHighlighter, QTextCharFormat,
+                         QTextCursor, QTextDocument)
+from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMessageBox,
+                              QPlainTextEdit, QPushButton, QShortcut, QTabWidget, QTextEdit,
+                              QVBoxLayout, QWidget)
 
-from polyhost.util.log_util import LEVEL_HEX_COLORS
+from polyhost.gui import message_box
+from polyhost.services import problem_scan
+from polyhost.services.log_bundle import LOG_SOURCES
+from polyhost.i18n import _, _f, _nf
+from polyhost.gui.theme import is_dark
+from polyhost.gui.ui_kit import set_button_icon, px
+from polyhost.util.log_util import DEBUG_DETAILED, LEVEL_HEX_COLORS
 
 # Matches "[timestamp] LEVELNAME" at the start of a formatted log line.
 # Continuation lines (e.g. tracebacks) won't match and inherit the previous color.
@@ -22,12 +30,40 @@ _LEVEL_RE = re.compile(
 # State 0 means "no color"; states 1..N correspond to levels in LEVEL_HEX_COLORS.
 _LEVEL_TO_STATE = {lvl: i + 1 for i, lvl in enumerate(LEVEL_HEX_COLORS)}
 
-# Pre-built QTextCharFormat per state — reused across every highlightBlock() call.
-_STATE_TO_FORMAT: dict[int, QTextCharFormat] = {}
-for _state, _lvl in ((s, l) for l, s in _LEVEL_TO_STATE.items()):
-    _fmt = QTextCharFormat()
-    _fmt.setForeground(QColor(LEVEL_HEX_COLORS[_lvl]))
-    _STATE_TO_FORMAT[_state] = _fmt
+# LEVEL_HEX_COLORS is picked for a dark terminal. On the light theme's white
+# log view the same colours read poorly (INFO #22cc22 is about 2:1), so the
+# viewer uses these darker variants there (4.4:1 to 5.6:1 on white).
+_LIGHT_LEVEL_HEX = {
+    logging.ERROR: "#c62828",
+    logging.WARNING: "#b85c00",
+    logging.INFO: "#2e7d32",
+    logging.DEBUG: "#00796b",
+    DEBUG_DETAILED: "#00897b",
+}
+_BANNER_HEX = {True: "#00acc1", False: "#00838f"}   # cyan on dark / on light
+
+
+def _dark_theme() -> bool:
+    """Whether the app runs the dark palette (gui/theme.is_dark)."""
+    return is_dark(QApplication.palette())
+
+
+def level_color(level: int, dark: bool) -> str:
+    """The colour a log level is drawn in on a dark or a light log view."""
+    return LEVEL_HEX_COLORS[level] if dark else _LIGHT_LEVEL_HEX[level]
+
+
+def _char_format(hex_color: str) -> QTextCharFormat:
+    fmt = QTextCharFormat()
+    fmt.setForeground(QColor(hex_color))
+    return fmt
+
+
+# Pre-built QTextCharFormat per state and theme — reused across every
+# highlightBlock() call.
+_STATE_FORMATS = {dark: {state: _char_format(level_color(lvl, dark))
+                         for lvl, state in _LEVEL_TO_STATE.items()}
+                  for dark in (True, False)}
 
 
 class _LogHighlighter(QSyntaxHighlighter):
@@ -37,6 +73,10 @@ class _LogHighlighter(QSyntaxHighlighter):
     so opening large log files is near-instant.
     """
 
+    def __init__(self, document):
+        super().__init__(document)
+        self._formats = _STATE_FORMATS[_dark_theme()]
+
     def highlightBlock(self, text: str) -> None:
         m = _LEVEL_RE.match(text)
         if m:
@@ -45,10 +85,71 @@ class _LogHighlighter(QSyntaxHighlighter):
             # Inherit previous block's state (-1 on the very first block → 0 = no color)
             state = max(self.previousBlockState(), 0)
 
-        fmt = _STATE_TO_FORMAT.get(state)
+        fmt = self._formats.get(state)
         if fmt:
             self.setFormat(0, len(text), fmt)
         self.setCurrentBlockState(state)
+
+
+# The keyboard console's file name: its lines carry no level, so they need their own
+# highlighter (below). Taken from LOG_SOURCES rather than spelled out again here.
+_CONSOLE_FILENAME = next(s.filename for s in LOG_SOURCES if s.label == "keyboard-console")
+
+_SEVERITY_FORMATS = {dark: {sev: _char_format(level_color(lvl, dark))
+                            for sev, lvl in ((problem_scan.SEVERITY_ERROR, logging.ERROR),
+                                             (problem_scan.SEVERITY_WARNING, logging.WARNING))}
+                     for dark in (True, False)}
+
+
+# The firmware's boot banner, `== PolyKybd Split72 1.8.0 … | build <branch>@<hash> … ==`,
+# then its detail lines, each indented three spaces (`   link:`, `   hand:`, `   clk:`,
+# `   intl:`, `   keymap:`, `   apply:` …). Coloured as one block so the build
+# identity stands out in a long log.
+_BANNER_RE = re.compile(r"^\[[^\]]*\] == .* ==\s*$")
+_BANNER_DETAIL_RE = re.compile(r"^\[[^\]]*\]    \S")
+_BANNER_FORMATS = {dark: _char_format(_BANNER_HEX[dark]) for dark in (True, False)}
+_IN_BANNER = 1   # block state: this line belongs to a banner block
+
+
+class _ConsoleHighlighter(QSyntaxHighlighter):
+    """Colours keyboard console lines that the problem scan would report.
+
+    Console lines are `[timestamp] text` with no level, so _LogHighlighter
+    leaves them all plain. Each line is classified on its own: there are no
+    continuation lines to inherit a colour, and inheriting would paint every line
+    after a warning. problem_scan.classify_console_line() decides, so the viewer
+    and the problem dialog agree on what counts. The boot banner block is cyan;
+    that is the one colour that carries state across lines."""
+
+    def __init__(self, document):
+        super().__init__(document)
+        dark = _dark_theme()
+        self._severity_formats = _SEVERITY_FORMATS[dark]
+        self._banner_format = _BANNER_FORMATS[dark]
+
+    def highlightBlock(self, text: str) -> None:
+        in_banner = bool(_BANNER_RE.match(text)) or (
+            self.previousBlockState() == _IN_BANNER and bool(_BANNER_DETAIL_RE.match(text)))
+        self.setCurrentBlockState(_IN_BANNER if in_banner else 0)
+        # A problem line keeps its warning/error colour, inside a banner block too.
+        fmt = self._severity_formats.get(problem_scan.classify_console_line(text))
+        if fmt is None and in_banner:
+            fmt = self._banner_format
+        if fmt:
+            self.setFormat(0, len(text), fmt)
+
+
+# Search hits: every match tinted, the current one a stronger shade. Black text on a
+# light fill reads in both themes, whatever colour the log line itself carries.
+_MATCH_FORMAT = QTextCharFormat()
+_MATCH_FORMAT.setBackground(QColor("#fff176"))
+_MATCH_FORMAT.setForeground(QColor("#000000"))
+_CURRENT_FORMAT = QTextCharFormat()
+_CURRENT_FORMAT.setBackground(QColor("#ffb300"))
+_CURRENT_FORMAT.setForeground(QColor("#000000"))
+# The search waits this long after the last keystroke: a word typed at speed costs
+# one pass over the text, not one per letter. Enter, Next and Previous do not wait.
+_SEARCH_DELAY_MS = 250
 
 
 class LogViewerDialog(QMainWindow):
@@ -56,7 +157,7 @@ class LogViewerDialog(QMainWindow):
         super().__init__()
         self.log = logging.getLogger('PolyHost')
         self._collect_cb = collect_cb
-        self.setWindowTitle("Log Viewer")
+        self.setWindowTitle(_("Log Viewer"))
         # Inherits QApplication's window icon — see settings_dialog: both tray
         # apps open this one, and they wear different marks.
 
@@ -64,23 +165,69 @@ class LogViewerDialog(QMainWindow):
         self.setCentralWidget(central_widget)
 
         self.layout = QVBoxLayout(central_widget)
-        self.layout.setContentsMargins(0, 0, 0, 10)
+        self.layout.setContentsMargins(10, 10, 10, 10)
+
+        # Search: case-insensitive, over the visible tab. Enter / Shift+Enter step
+        # through the matches, Ctrl+F focuses the field, Esc clears it.
+        search_layout = QHBoxLayout()
+        search_layout.setContentsMargins(0, 0, 0, 0)
+        self.search_edit = QLineEdit(self)
+        self.search_edit.setPlaceholderText(_("Search (Ctrl+F)"))
+        self.search_edit.setClearButtonEnabled(True)
+        self._search_timer = QTimer(self)
+        self._search_timer.setSingleShot(True)
+        self._search_timer.setInterval(_SEARCH_DELAY_MS)
+        self._search_timer.timeout.connect(self._run_search)
+        self._tint_timer = QTimer(self)
+        self._tint_timer.setSingleShot(True)
+        self._tint_timer.setInterval(60)
+        self._tint_timer.timeout.connect(self._tint_visible)
+        self.search_edit.textChanged.connect(lambda _text: self._schedule_search())
+        self.search_edit.returnPressed.connect(self.find_next)
+        search_layout.addWidget(self.search_edit, 1)
+        prev_button = QPushButton(_("Previous"))
+        prev_button.clicked.connect(self.find_previous)
+        search_layout.addWidget(prev_button)
+        next_button = QPushButton(_("Next"))
+        next_button.clicked.connect(self.find_next)
+        search_layout.addWidget(next_button)
+        self.search_count = QLabel("", self)
+        self.search_count.setMinimumWidth(px(110))
+        search_layout.addWidget(self.search_count)
+        self.layout.addLayout(search_layout)
+        QShortcut(QKeySequence.Find, self, activated=self._focus_search)
+        QShortcut(QKeySequence(Qt.SHIFT + Qt.Key_Return), self.search_edit,
+                  activated=self.find_previous)
+        QShortcut(QKeySequence(Qt.SHIFT + Qt.Key_Enter), self.search_edit,
+                  activated=self.find_previous)
+        QShortcut(QKeySequence(Qt.Key_Escape), self.search_edit,
+                  activated=self.search_edit.clear)
 
         self.tab_widget = QTabWidget(self)
         self.layout.addWidget(self.tab_widget)
+        self.tab_widget.currentChanged.connect(lambda _idx: self._run_search())
+        self._current: QTextCursor | None = None
+        self._index = 0   # 1-based number of the current match
+        self._total = 0
 
         self.log_text = {}
         self.log_files = log_files
         # Keep highlighters alive — QSyntaxHighlighter is GC'd if not referenced.
         self._highlighters = []
 
-        for tab_name in log_files:
+        for tab_name, path in log_files.items():
             log_text = QPlainTextEdit(self)
             log_text.setReadOnly(True)
             log_text.setLineWrapMode(QPlainTextEdit.NoWrap)
             log_text.setFont(QFont("Courier", 10))
 
-            self._highlighters.append(_LogHighlighter(log_text.document()))
+            # Search tints only what is in view, so scrolling re-tints, once the
+            # scroll pauses: a screen of one-letter hits takes ~0.5 s to tint.
+            log_text.verticalScrollBar().valueChanged.connect(lambda _v: self._tint_timer.start())
+
+            is_console = os.path.basename(path) == _CONSOLE_FILENAME
+            highlighter = _ConsoleHighlighter if is_console else _LogHighlighter
+            self._highlighters.append(highlighter(log_text.document()))
 
             tab = QWidget()
             tab_layout = QVBoxLayout(tab)
@@ -88,36 +235,107 @@ class LogViewerDialog(QMainWindow):
             self.tab_widget.addTab(tab, tab_name)
             self.log_text[tab_name] = log_text
 
+        # Actions on the left, Close alone on the right, as in the other dialogs.
         button_layout = QHBoxLayout()
-        button_layout.addStretch(1)
 
         # Reading a log here is one thing; handing it to someone else is the
         # other half, and this is where a user looks for it.
         if collect_cb is not None:
-            button = QPushButton("Collect Logs...")
-            button.setToolTip("Save all logs as a .zip, or copy them to the clipboard")
+            button = set_button_icon(QPushButton(_("Collect Logs...")), "save")
+            button.setToolTip(_("Save all logs as a .zip, or copy them to the clipboard"))
             button.clicked.connect(collect_cb)
             button_layout.addWidget(button)
 
-        button = QPushButton("Open Folder")
+        button = set_button_icon(QPushButton(_("Clear Logs...")), "delete")
+        button.setToolTip(_("Empty every log file, including the crash log"))
+        button.clicked.connect(self.clear_logs)
+        button_layout.addWidget(button)
+
+        button = set_button_icon(QPushButton(_("Open Folder")), "folder")
         button.clicked.connect(self.open_file_directory)
         button_layout.addWidget(button)
 
-        button = QPushButton("Reload")
+        button = set_button_icon(QPushButton(_("Reload")), "reload")
         button.clicked.connect(self.load_log)
         button_layout.addWidget(button)
 
-        button = QPushButton("Close")
+        button_layout.addStretch(1)
+        button = set_button_icon(QPushButton(_("Close")), "close")
         button.clicked.connect(self.close)
         button_layout.addWidget(button)
-
-        button_layout.addStretch(1)
         self.layout.addLayout(button_layout)
 
         self.load_log()
 
     def sizeHint(self):
         return QSize(1600, 1000)
+
+    def _log_dir(self):
+        """The directory the open tabs actually came from.
+
+        Derived from the paths we were HANDED rather than by calling
+        default_log_dir() a second time: the viewer opens exactly the files in
+        ``log_files``, so a clear has to act on those same files. Resolving the
+        directory independently is how the two halves come to disagree — the
+        same trap viewer_files() itself had to be fixed for. None falls back to
+        the default inside clear_logs().
+        """
+        for path in self.log_files.values():
+            parent = os.path.dirname(path)
+            if parent:
+                return parent
+        return None
+
+    def clear_logs(self):
+        """Empty every log file, after a confirmation.
+
+        The offer to collect first is not decoration: the expensive mistake
+        here is clearing the evidence and *then* filing the report, and this is
+        the one moment we can cheaply prevent it.
+        """
+        from polyhost.services import log_bundle
+
+        box = message_box.MessageBox(
+            QMessageBox.Warning, _("Clear Logs"), _("Empty every log file?"),
+            QMessageBox.NoButton, self,
+            informative=_(
+                "This clears the history behind every tab, including the crash log "
+                "— the record of whether this app has crashed. It cannot be undone, "
+                "and a problem report filed afterwards will carry nothing from "
+                "before now."))
+        clear_btn = box.add_button(_("Clear Logs"), QMessageBox.DestructiveRole, "delete")
+        collect_btn = (box.add_button(_("Collect First..."), QMessageBox.ActionRole, "save")
+                       if self._collect_cb is not None else None)
+        cancel_btn = box.add_button(_("Cancel"), QMessageBox.RejectRole, "cancel")
+        box.set_default(cancel_btn)   # destructive, so default to not doing it
+        box.exec_()
+
+        clicked = box.clicked_button()
+        if collect_btn is not None and clicked is collect_btn:
+            self._collect_cb()
+            return
+        if clicked is not clear_btn:
+            return
+
+        result = log_bundle.clear_logs(self._log_dir())
+        self.log.info("Cleared logs: %s", result.summary())
+        for err in result.errors:
+            self.log.warning("Could not clear %s", err)
+        # Reload rather than leaving the tabs showing text that is no longer
+        # on disk.
+        self.load_log()
+
+        if result.files:
+            text = _nf("Cleared {n} file, freed {kb} KB.",
+                       "Cleared {n} files, freed {kb} KB.",
+                       result.files, kb=result.freed_kb)
+        else:
+            text = _("No log files to clear.")
+        details = ""
+        if result.errors:
+            details = _("Some files could not be cleared:") + "\n" + "\n".join(result.errors)
+        message_box.message(QMessageBox.Warning if result.errors else QMessageBox.Information,
+                            _("Clear Logs"), text, parent=self, informative=details)
 
     def load_log(self):
         for tab_name, tab_log_file_name in self.log_files.items():
@@ -126,10 +344,136 @@ class LogViewerDialog(QMainWindow):
                 with open(tab_log_file_name, encoding='utf-8') as f:
                     log_content = f.read()
             except Exception as e:
-                text_edit.setPlainText(f"Failed to load log file '{tab_log_file_name}': {e}")
+                text_edit.setPlainText(_f("Failed to load log file '{path}': {error}",
+                                            path=tab_log_file_name, error=e))
                 continue
             text_edit.setPlainText(log_content)
             text_edit.moveCursor(QTextCursor.End)
+        # Reload replaces every document, so the old match cursors point nowhere.
+        if hasattr(self, "search_edit"):
+            self._run_search()
+
+    # ---- search ----------------------------------------------------------------
+    # Nothing here scales with the number of matches. Host logs rotate at 10 MB, and a
+    # one-letter query there has ~600,000 hits: building a QTextCursor per hit froze
+    # the window for 15 s. So the count is str.count() on the plain text, stepping is
+    # QTextDocument.find() from the current match, and only the matches in view are
+    # tinted (again on scroll). The query runs _SEARCH_DELAY_MS after the last
+    # keystroke. There is no cap anywhere: every match is counted and reachable, and
+    # every match in view is tinted, because the view bounds that work by itself.
+    def _current_editor(self) -> QPlainTextEdit | None:
+        idx = self.tab_widget.currentIndex()
+        if idx < 0:
+            return None
+        return self.log_text.get(self.tab_widget.tabText(idx))
+
+    def _focus_search(self) -> None:
+        self.search_edit.setFocus()
+        self.search_edit.selectAll()
+
+    def _schedule_search(self) -> None:
+        self._search_timer.start()
+
+    def _clear_tint(self) -> None:
+        for editor in self.log_text.values():
+            editor.setExtraSelections([])
+
+    def _run_search(self) -> None:
+        """Count the matches in the visible tab and select the first one to show.
+
+        That is the first match at or after the cursor, so a search typed while
+        reading starts from there. With none after the cursor it is the last one
+        before it: a log opens scrolled to the end, so a fresh search lands on the
+        NEWEST match, which is usually the one wanted."""
+        self._search_timer.stop()
+        self._clear_tint()
+        self._current = None
+        self._total = 0
+        editor = self._current_editor()
+        needle = self.search_edit.text()
+        if editor is None or not needle:
+            self.search_count.setText("")
+            return
+        self._total = editor.toPlainText().lower().count(needle.lower())
+        if self._total == 0:
+            self.search_count.setText(_("No matches"))
+            return
+        doc = editor.document()
+        here = editor.textCursor().selectionStart()
+        found = doc.find(needle, here)
+        if found.isNull():
+            found = doc.find(needle, here, QTextDocument.FindBackward)
+        self._go_to(editor, found)
+
+    def _index_of(self, editor: QPlainTextEdit, match: QTextCursor) -> int:
+        """1-based number of `match` among all matches: those starting before it, + 1."""
+        head = QTextCursor(editor.document())
+        head.setPosition(match.selectionStart(), QTextCursor.KeepAnchor)
+        return head.selectedText().lower().count(self.search_edit.text().lower()) + 1
+
+    def _go_to(self, editor: QPlainTextEdit, match: QTextCursor, index: int | None = None) -> None:
+        """Select `match`. `index` is its number when the caller knows it (a step
+        moves by one); otherwise it is counted, which costs a pass over the text."""
+        if match.isNull():
+            return
+        self._current = match
+        self._index = index if index is not None else self._index_of(editor, match)
+        editor.setTextCursor(match)
+        editor.ensureCursorVisible()
+        self.search_count.setText(_f("{index} of {total}", index=self._index, total=self._total))
+        self._tint_visible()
+
+    def _tint_visible(self) -> None:
+        """Tint the matches in view, plus the current one. Called on scroll too."""
+        editor = self._current_editor()
+        needle = self.search_edit.text()
+        if editor is None or not needle or self._current is None:
+            return
+        doc = editor.document()
+        first = editor.firstVisibleBlock().position()
+        corner = editor.viewport().rect().bottomRight()
+        # To the END of the bottom line: lines do not wrap, so a horizontal
+        # scroll reveals the rest of it without moving the vertical bar.
+        bottom = editor.cursorForPosition(corner).block()
+        last = max(bottom.position() + bottom.length(), first)
+        selections = []
+        found = doc.find(needle, first)
+        current_at = self._current.selectionStart()
+        while not found.isNull() and found.selectionStart() <= last:
+            if found.selectionStart() != current_at:
+                selections.append(self._selection(found, _MATCH_FORMAT))
+            found = doc.find(needle, found)
+        selections.append(self._selection(self._current, _CURRENT_FORMAT))
+        editor.setExtraSelections(selections)
+
+    @staticmethod
+    def _selection(cursor: QTextCursor, fmt: QTextCharFormat) -> QTextEdit.ExtraSelection:
+        sel = QTextEdit.ExtraSelection()
+        sel.cursor = cursor
+        sel.format = fmt
+        return sel
+
+    def _step(self, backward: bool) -> None:
+        editor = self._current_editor()
+        if editor is None:
+            return
+        if self._current is None or self._search_timer.isActive():
+            self._run_search()   # typed and stepped at once: search first
+            return
+        needle = self.search_edit.text()
+        doc = editor.document()
+        flags = QTextDocument.FindBackward if backward else QTextDocument.FindFlags()
+        found = doc.find(needle, self._current, flags)
+        if found.isNull():   # wrap around
+            found = doc.find(needle, doc.characterCount() if backward else 0, flags)
+        step = -1 if backward else 1
+        self._go_to(editor, found, (self._index - 1 + step) % self._total + 1)
+
+    def find_next(self) -> None:
+        self._step(backward=False)
+
+    def find_previous(self) -> None:
+        self._step(backward=True)
 
     def open_file_directory(self):
         file = list(self.log_files.values())[0]

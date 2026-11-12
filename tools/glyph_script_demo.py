@@ -39,7 +39,8 @@ from polyhost.services import fontpack_render as FR
 
 # fantasy.plyf fonts are in poly_glyph_script order (Tengwar..Braille).
 SCRIPTS = ["Tengwar", "Elder Futhark Runes", "Aurebesh", "Standard Galactic",
-           "Cirth", "IBM VGA / CP437", "Commodore 64", "Amiga Topaz", "APL", "Braille"]
+           "Cirth", "IBM VGA / CP437", "Commodore 64 (screen)", "Amiga Topaz", "APL", "Braille",
+           "Commodore 64 (keycap)"]
 
 
 def letter_or_digit(kc: str):
@@ -78,14 +79,47 @@ def script_glyph_image(font, ch: str):
     return canvas
 
 
-def script_frame(base_frame, matrix_kc, font):
+# C64 keycap script (11): its LETTER keys show a smaller letter with the key's two
+# PETSCII graphics below it. Mirrors render_c64_keycap() in the firmware's
+# poly_keymap.c: letters at 0xEAC0, Commodore graphics a..z at 0xEB00, Shift
+# graphics a..z at 0xEB1A; each glyph centred on its column, letter top at y=1,
+# cells top at y=25, cell columns 12 px either side of centre.
+C64KEYS_BASE = 0xEA80
+C64KEYS_LETTER_BASE = 0xEAC0
+C64KEYS_PETSCII_BASE = 0xEB00
+
+
+def _pack_font_for(pack_fonts, cp):
+    return next((f for f in pack_fonts if f.first <= cp <= f.last), None)
+
+
+def c64_keycap_image(pack_fonts, ch: str):
+    """72x40 image of a C64-keycap letter key, or None if the pack lacks a glyph."""
+    i = ord(ch) - ord('a')
+    canvas = Image.new("L", (FR.OLED_W, FR.OLED_H), 0)
+    for cp, cx, top in ((C64KEYS_LETTER_BASE + i, FR.OLED_W // 2, 1),
+                        (C64KEYS_PETSCII_BASE + i, FR.OLED_W // 2 - 12, 25),
+                        (C64KEYS_PETSCII_BASE + 26 + i, FR.OLED_W // 2 + 12, 25)):
+        f = _pack_font_for(pack_fonts, cp)
+        if f is None:
+            return None
+        g = FR.glyph_to_image(f, cp, scale=1, fg=255, bg=0)
+        canvas.paste(g, (cx - g.width // 2, top), g)
+    return canvas
+
+
+def script_frame(base_frame, matrix_kc, font, pack_fonts=()):
     """Copy the base-layer frame and overwrite the letter/digit keys' OLED with
     the script glyph; every other key is untouched."""
     out = {}
     for mp, c in base_frame.items():
         kc = normalize_kc(display_keycode(matrix_kc.get(mp, "")))
         ch = letter_or_digit(kc)
-        img = script_glyph_image(font, ch) if ch else None
+        img = None
+        if ch and ch.isalpha() and font.first == C64KEYS_BASE:
+            img = c64_keycap_image(pack_fonts, ch)
+        if img is None and ch:
+            img = script_glyph_image(font, ch)
         if img is None:
             out[mp] = c
         else:
@@ -144,7 +178,10 @@ def main():
     renderer.compact_halves(lambda mp: 'L' if int(mp.split(',')[0]) < 5 else 'R', gap_px=args.gap)
 
     base_frame = build_frame(L, R, matrix_kc, args.lang, static_map)
-    steps = [("Standard", None)] + [(name, font) for name, font in zip(SCRIPTS, pack.fonts, strict=True)]
+    # One font per script, in poly_glyph_script order; the C64 keycap script's two
+    # extra fonts (small letters, PETSCII cells) follow and are not scripts.
+    script_fonts = [f for f in pack.fonts if f.first < C64KEYS_LETTER_BASE]
+    steps = [("Standard", None)] + [(name, font) for name, font in zip(SCRIPTS, script_fonts, strict=True)]
 
     try:
         cap_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 26)
@@ -155,7 +192,7 @@ def main():
 
     imgs, durations = [], []
     for i, (name, font) in enumerate(steps):
-        frame_map = base_frame if font is None else script_frame(base_frame, matrix_kc, font)
+        frame_map = base_frame if font is None else script_frame(base_frame, matrix_kc, font, pack.fonts)
         board = renderer.render_frame(frame_map)
         frame = Image.new('RGB', (board.width, board.height + CAP_H), Theme().bg)
         frame.paste(board, (0, 0))

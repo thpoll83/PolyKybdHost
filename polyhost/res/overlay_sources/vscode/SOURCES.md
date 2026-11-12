@@ -157,12 +157,26 @@ so the Windows/Linux set keeps exactly the artwork it always had, and the macOS 
 inherits the same drawings:
 
 `gotoline` `newfile` `symbols` `runnodebug` `pause` `zoomout` `zoomin` `settings`
-`history` `stopdebug` `stepout` `run` `breakpoint` `stepover` `stepinto` `palette`
+`history` `stopdebug` `stepout` `rundebug` `breakpoint` `stepover` `stepinto` `palette`
 `goforward` `matchbracket` `goback`
 
 Their original provenance is unrecorded (the old set had no source spec), but they were
 already shipped, so reusing them introduces nothing new. `fetch_icons.py` lists them in
 `RECLAIMED` and never fetches or clobbers them — they must be restored from git if lost.
+
+### Shared with other apps (2026-09-29)
+
+Some icons are kept pixel-identical across apps so one glyph serves every app
+that has the concept (the planned flash icon library, `icons.plyi`).
+
+- `rundebug.png` (F5 Start debugging) was `run.png`: the play triangle with a bug is
+  run AND debug, and it is the same drawing as JetBrains' `debug.png`.
+- `stepover.png`, `stepinto.png`, `stepout.png` are JetBrains' copies. The previous
+  lifts of step over / step into carried a stray fragment of a neighbouring icon.
+- `stopdebug.png` (Shift+F5) is JetBrains' stop square, replacing an unplug symbol.
+- `settings` is drawn by the shared lexicon renderer, like every other app's Settings.
+- `history.png` is Calculator's Fluent History, rendered with the same settings.
+- `breakpoint.png` is the shared breakpoint; JetBrains uses the same drawing.
 
 ### Everything else
 
@@ -189,3 +203,28 @@ Two things worth flagging to the maintainer:
   it, replace `icons/vscode.png` with a generic drawn mark (see
   `../program_marks.py`) and regenerate. `fetch_icons.py` guards the file, so a
   re-run will never clobber your replacement.
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+Label = lexicon concept, no icon (the shared Fluent concept renderer draws it).
+Every chord read from VS Code's own source (`microsoft/vscode`, `main`):
+
+| Concept | Windows / Linux | macOS | Source |
+|---|---|---|---|
+| Save | Ctrl+S | ⌘S | `workbench/contrib/files/browser/fileCommands.ts` (`KeyMod.CtrlCmd \| KeyCode.KeyS`) |
+| Open | Ctrl+O (Open File) | ⌘O (Open…) | `workbench/browser/actions/workspaceActions.ts` (`OpenFileAction` non-mac, `OpenFileFolderAction` mac) |
+| Cut / Copy / Paste | Ctrl+X/C/V | ⌘X/C/V | `editor/contrib/clipboard/browser/clipboard.ts` |
+| Undo | Ctrl+Z | ⌘Z | `editor/browser/editorExtensions.ts` (`UndoCommand`) |
+| Redo | Ctrl+Y and Ctrl+Shift+Z | ⌘⇧Z | `editorExtensions.ts` `RedoCommand`: primary CtrlCmd+Y, secondary CtrlCmd+Shift+Z, mac primary CtrlCmd+Shift+Z |
+| Select all | Ctrl+A | ⌘A | `editorExtensions.ts` (`SelectAllCommand`) |
+| Find | Ctrl+F | ⌘F | `editor/contrib/find/browser/findController.ts` |
+| Find next | F3 | ⌘G (and F3) | `findController.ts` `NextMatchFindAction`: primary F3, mac primary CtrlCmd+G, secondary F3 |
+| Replace | Ctrl+H | ⌘⌥F | `findController.ts` `StartFindReplaceAction`: CtrlCmd+H, mac CtrlCmd+Alt+F |
+
+Ctrl+Y is scoped `only: [windows, linux]`; ⌘G is `only: [macos]` (it does not
+collide with the literal ⌃G "Go to line" binding).
+
+Not added / why:
+- New (Ctrl/⌘N), Close (Ctrl/⌘W), Zoom in/out (Ctrl/⌘ =/-): already bound above.
+- Print: VS Code has no default print chord.
+- Reload: "Developer: Reload Window" has no default chord (Ctrl/⌘R is Open Recent).

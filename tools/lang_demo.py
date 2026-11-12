@@ -483,6 +483,56 @@ def parse_to_static_text_map(poly_keymap_c: str) -> dict:
     return out
 
 
+def parse_ime_key(poly_keymap_c: str, langs) -> dict | None:
+    """What `KC_IME` draws per language, read from the firmware, or None.
+
+    `KC_IME` has no single legend. The firmware picks a FAMILY per language
+    (`poly_ime_family()`): Korean and Japanese draw their own icon (Japanese a
+    second one while Shift is held), the `RALT` family draws as `KC_RIGHT_ALT`, and
+    every other language draws as `KC_NONUS_BACKSLASH` with that layout's legend.
+    The legend case in `to_static_text()` has an `if`, so `parse_to_static_text_map`
+    rightly skips it, and a keycap preview drew nothing for the key at all.
+
+    Both halves are derived, not retyped: the language list is the drift-prone
+    part (a language added to the firmware's switch must reach the editor without
+    a host edit), and the icon names follow the same rule. Returns
+    `{"families": {lang: "KOREAN"|"JAPANESE"|"RALT"},
+      "icons": {"KOREAN": name, "JAPANESE": name, "JAPANESE_SHIFT": name}}`,
+    or None for a tree that predates the key.
+    """
+    with open(poly_keymap_c, encoding='utf-8') as fh:
+        text = strip_c_comments(fh.read())
+    m = re.search(r'\bpoly_ime_family\s*\(\s*uint8_t\s+\w+\s*\)\s*\{', text)
+    # The legend case is searched INSIDE to_static_text() only: a `case KC_IME:`
+    # in a key-event handler earlier in the file would otherwise be taken for it.
+    fn = re.search(r'\bto_static_text\s*\([^)]*\)\s*\{', text)
+    if not m or not fn:
+        return None
+    case = re.search(r'case\s+KC_IME\s*:(.*?)(?=\bcase\s|\bdefault\s*:|\Z)',
+                     _balanced_body(text, fn.end() - 1), re.S)
+    if not case:
+        return None
+    lang_of = {'LANG_' + lang.replace('-', '').upper(): lang for lang in langs}
+    families, pending = {}, []
+    for cm in re.finditer(r'case\s+(LANG_\w+)\s*:|return\s+IME_FAMILY_(\w+)\s*;',
+                          _balanced_body(text, m.end() - 1)):
+        if cm.group(1):
+            pending.append(cm.group(1))
+            continue
+        for sym in pending:
+            if sym in lang_of and cm.group(2) != 'NONE':
+                families[lang_of[sym]] = cm.group(2)
+        pending = []
+    block = case.group(1)
+    ja = re.search(r'\?\s*(ICON_\w+)\s*:\s*(ICON_\w+)', block)
+    ko = re.findall(r'return\s+(ICON_\w+)\s*;', block)
+    if not families or not ja or not ko:
+        return None
+    return {"families": families,
+            "icons": {"JAPANESE_SHIFT": ja.group(1), "JAPANESE": ja.group(2),
+                      "KOREAN": ko[-1]}}
+
+
 def strip_c_comments(s: str) -> str:
     s = re.sub(r'/\*.*?\*/', '', s, flags=re.S)
     s = re.sub(r'//[^\n]*', '', s)
@@ -641,12 +691,57 @@ def render_static(L, R, expr) -> Image.Image:
     return render_static_cps(R, L.resolve(expr))
 
 
+def ime_pick(families: dict, lang: str, shift: bool = False) -> tuple[str, str]:
+    """What `KC_IME` draws on `lang`, by the firmware's rule (`ime_key_stand_in`).
+
+    The ONE copy of that rule on the host: the board render below and the editor's
+    keycap preview both call it. Returns ("key", KC_*) for a family that stands in
+    for a plain key -- RALT draws as Right Alt, JAPANESE_JIS (ja-JP, whose JIS Caps
+    key IS 英数) as Caps Lock, and a language with no family as Non-US Backslash --
+    or ("icon", <icon key>), the key into parse_ime_key()'s "icons". The previews
+    show the Windows/Linux key: on macOS ja-JP keeps the icon and RALT is Option.
+    """
+    family = families.get(lang)
+    if family is None:
+        return ("key", "KC_NONUS_BACKSLASH")
+    if family == "RALT":
+        return ("key", "KC_RIGHT_ALT")
+    if family == "JAPANESE_JIS":
+        return ("key", "KC_CAPS_LOCK")
+    if family == "JAPANESE" and shift:
+        return ("icon", "JAPANESE_SHIFT")
+    return ("icon", family)
+
+
+def ime_stand_in(ime: dict | None, lang: str, shift: bool = False):
+    """`ime_pick()` with the icon resolved to its ICON_* name: ("key", KC_*) or
+    ("icon", ICON_*). None when the tree predates the key, or for a family this
+    parse found no icon for (a newer firmware's), so the key falls back to the
+    plain path instead of raising."""
+    if not ime:
+        return None
+    kind, name = ime_pick(ime["families"], lang, shift)
+    if kind == "icon":
+        icon = ime.get("icons", {}).get(name)
+        return ("icon", icon) if icon else None
+    return (kind, name)
+
+
 def build_frame(L, R, matrix_kc, lang, static_map, size: int = 0,
-                shift: bool = False) -> dict[str, KeyContent]:
+                shift: bool = False, ime: dict | None = None) -> dict[str, KeyContent]:
     out: dict[str, KeyContent] = {}
     for mp, tok in matrix_kc.items():
         kc = normalize_kc(display_keycode(tok))
         whole = normalize_kc(tok)
+        if kc == "KC_IME" and (pick := ime_stand_in(ime, lang, shift)):
+            # KC_IME has no legend of its own: it draws another key's, or an icon.
+            kind, name = pick
+            kc = whole = name
+            if kind == "icon":
+                c = KeyContent()
+                c._oled = render_static(L, R, name)
+                out[mp] = c
+                continue
         if kc in op.ROW:                       # letter / number / symbol (language LUT)
             # `size` is the keycap legend size (HID cmd 34): 0 small, 1 medium,
             # 2 large. It applies to the MAIN legend only — the Shift/AltGr
@@ -719,6 +814,7 @@ def main():
     if unknown:
         raise SystemExit(f"unknown language(s): {unknown}\nhave {len(L.langs)} langs")
     R = Renderer(load_all_fonts(os.path.join(pk, 'base', 'fonts')))
+    ime = parse_ime_key(os.path.join(pk, 'poly_keymap.c'), L.langs)
     print(f"  {len(L.langs)} languages available, touring {len(langs)}")
 
     renderer = LangBoard(json.load(open(args.kle, encoding='utf-8')),
@@ -736,7 +832,8 @@ def main():
 
     imgs, durations = [], []
     for li, lang in enumerate(langs):
-        board = renderer.render_frame(build_frame(L, R, matrix_kc, lang, static_map, args.size))
+        board = renderer.render_frame(build_frame(L, R, matrix_kc, lang, static_map, args.size,
+                                                  ime=ime))
         frame = Image.new('RGB', (board.width, board.height + CAP_H), Theme().bg)
         frame.paste(board, (0, 0))
         d = ImageDraw.Draw(frame)

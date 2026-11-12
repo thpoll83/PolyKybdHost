@@ -1,19 +1,62 @@
+import functools
+import inspect
 import logging
-import os
 import time
 from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import numpy as np  # for the get_display_image return annotation only
 
+from polyhost.device import bulk_pipe
 from polyhost.device.command_ids import IdleTimeout
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.util.dict_util import split_by_n_chars
 from polyhost.device.im_converter import ImageConverter
-from polyhost.device.keys import KeyCode, Modifier
+from polyhost.device.keys import Modifier
+from polyhost.device.mock_firmware import FaultPlan, MockFirmware, MockHidHelper
+from polyhost.device.mock_pipe import MockPipe
 from polyhost.device.overlay_cache import OverlayMRUCache
-from polyhost.device.overlay_sim import OverlayFirmwareSim, display_flat_idx
+from polyhost.device.overlay_sim import OverlayFirmwareSim
 from polyhost.input.unicode_input import InputMethod
+
+
+class _MockLog(logging.LoggerAdapter):
+    """The PolyHost logger with "(mock) " in front, so the mock's half of a
+    send is never mistaken for the keyboard's in a log bundle."""
+
+    def process(self, msg, kwargs):
+        return f"(mock) {msg}", kwargs
+
+    def debug_detailed(self, msg, *args, **kwargs):
+        from polyhost.util.log_util import DEBUG_DETAILED
+        self.log(DEBUG_DETAILED, msg, *args, **kwargs)
+
+
+class _NoPauseSettings:
+    """PolySettings for the mock's wire: no rate-limit pauses. The pause keeps a
+    real keyboard responsive to typing during a burst; the emulator has nothing
+    to protect, and as a secondary device it would double every cold switch."""
+
+    def __init__(self, inner):
+        self._inner = inner
+
+    def get(self, name):
+        if name == "max_hid_message_before_delay":
+            return 1 << 30
+        if name == "delay_time_after_max_hid_messages":
+            return 0
+        return self._inner.get(name) if self._inner is not None else None
+
+
+def _shipped_bundle_versions() -> dict[int, int]:
+    """{bundle index: content_version} of the font pack this host ships, so a
+    mock keyboard reads as up to date and the autocheck flashes nothing."""
+    try:
+        from polyhost.services.fontpack_bundle import load_bundle_manifest
+        manifest = load_bundle_manifest() or {}
+    except Exception:   # noqa: BLE001 -- a missing manifest just means "empty"
+        return {}
+    return {b["index"]: b["content_version"] for b in manifest.get("bundles", [])}
 
 
 class PolyKybdMock:
@@ -24,13 +67,40 @@ class PolyKybdMock:
     Every public method appends an entry to ``self.calls`` as a
     (method_name, args, kwargs) tuple so tests can assert on what was invoked
     and in what order.
+
+    Three layers, and which one a method uses is deliberate:
+
+    * Settings, macros, language and keymap keep their own state here; their
+      semantics are what the tests pin.
+    * Overlays and the device commands (bootloader, handedness, crash record,
+      MRU save) go through a REAL ``PolyKybd`` over ``self.firmware``, a
+      ``MockFirmware``. The keycaps therefore hold what the wire carried -- the
+      encoding choice, PRC, icon fills and the v21 mapping flags are the real
+      code, decoded the way the firmware decodes them.
+    * ``self.hid`` is a ``MockHidHelper`` over the same firmware, so the
+      font-pack and firmware-update modules, which talk to ``keeb.hid``
+      directly, work against the mock too.
+
+    ``protocol`` makes it any firmware generation: ``supports()`` and
+    ``capabilities()`` answer for it, gated accessors refuse the way the real
+    ones do, and the wire carries that protocol's encodings. ``faults`` is a
+    ``FaultPlan``; see mock_firmware.py.
     """
 
     def __init__(self, device_settings: DeviceSettings, poly_settings=None, *,
                  version: str = "1.0.0",
                  lang: str = "enUS",
                  langs: str = "enUSdeATkoKRfrFRitITesES",
-                 num_layers: int = 4):
+                 num_layers: int = 4,
+                 protocol: int | None = None,
+                 faults: FaultPlan | None = None,
+                 fontpack: str = "current",
+                 keymap: str = "empty"):
+        if isinstance(poly_settings, str):
+            # `version` is keyword-only. A version string passed positionally
+            # lands here and the mock silently reports the default "1.0.0".
+            raise TypeError("poly_settings must be a settings object; "
+                            "pass the version as version=...")
         self.device_settings = device_settings
         self.poly_settings = poly_settings
         self.log = logging.getLogger('PolyHost')
@@ -39,10 +109,12 @@ class PolyKybdMock:
         self.sw_version_num = [int(x) for x in version.split(".")]
         self.lang = lang
         self.langs = langs
-        self.hid_image_sends: int = 0
-        self.hid_mapping_sends: int = 0
         self.last_mapping: dict = {}
+        self.last_mapping_flags = (False, False)
         self._sim = OverlayFirmwareSim()
+        from polyhost._version import __protocol__
+        self.protocol_version: int = __protocol__ if protocol is None else int(protocol)
+        self.faults = faults or FaultPlan()
 
         # Version / identity
         self._name = "PolyKybdMock"
@@ -55,22 +127,37 @@ class PolyKybdMock:
         self._lang_str = langs
         self._all_languages = split_by_n_chars(langs, 4)
 
+        # The keyboard behind the wire. "current" = every shipped bundle already
+        # flashed (a quiet autocheck); "empty" = nothing flashed yet.
+        self.firmware = MockFirmware(
+            self.protocol_version, settings=device_settings, sim=self._sim,
+            faults=self.faults, name=self._name, version=version,
+            languages=list(self._all_languages), lang=lang,
+            bundle_versions=_shipped_bundle_versions() if fontpack == "current" else {})
+        self.hid = MockHidHelper(self.firmware, device_settings)
+        from polyhost.device.poly_kybd import PolyKybd
+        self._wire = PolyKybd(device_settings, _NoPauseSettings(poly_settings))
+        self._wire.hid = self.hid
+        self._wire.protocol_version = self.protocol_version
+        self._wire.log = _MockLog(self.log, {})
+
         # Device state
         self._brightness: int = 0
-        self._overlays_enabled: bool = False
         self._idle: bool = False
         self._unicode_mode: InputMethod | None = None
         self._overlay_masking: bool = False
-        self._overlay_mapping: dict = {}
         self._sent_overlays: list[str] = []
 
         # Dynamic keymap: _keymap[layer][row][col] = keycode (int)
         self._num_layers: int = num_layers
-        rows = device_settings.MATRIX_ROWS
-        cols = device_settings.MATRIX_COLUMNS
-        self._keymap: list[list[list[int]]] = [
-            [[0] * cols for _ in range(rows)] for _ in range(num_layers)
-        ]
+        # "board" starts layer 0 as the firmware's default keymap (exported to
+        # res/preview/board.json), so the layout editor and the board view show a
+        # real keyboard; "empty" is all KC_NO, which is what the tests pin.
+        self._default_keys = {}
+        if keymap == "board":
+            from polyhost.services.board_layout import base_keycodes
+            self._default_keys = base_keycodes()
+        self._keymap: list[list[list[int]]] = self._fresh_keymap()
 
         # Call log for test assertions
         self.calls: list[tuple[str, tuple, dict]] = []
@@ -78,17 +165,30 @@ class PolyKybdMock:
     def _log_call(self, name: str, *args, **kwargs) -> None:
         self.calls.append((name, args, kwargs))
 
+    def _forward(self, name: str, *args) -> None:
+        """Send the same command over the wire too, so the emulated keyboard
+        sees everything a caller sends -- that is what lets a protocol sweep of
+        the CORE catch a command its caller should have gated. The mock's own
+        state stays the answer; the wire's reply is not consulted."""
+        try:
+            getattr(self._wire, name)(*args)
+        except Exception as e:   # noqa: BLE001 -- the mock must not fail on its mirror
+            self.log.debug("(mock) forwarding %s failed: %s", name, e)
+
     # -------------------------------------------------------------------------
     # Connection
     # -------------------------------------------------------------------------
 
     def connect(self) -> bool:
         self._log_call("connect")
+        if self.firmware.faults.disconnected or self.firmware.deaf():
+            return False
+        self.hid.reattach()          # a failed transfer may have closed it
         return True
 
     def pop_fresh_boot(self) -> bool:
         self._log_call("pop_fresh_boot")
-        return False
+        return self.firmware.pop_fresh_boot()
 
     # -------------------------------------------------------------------------
     # Identity
@@ -96,11 +196,70 @@ class PolyKybdMock:
 
     def query_id(self) -> tuple[bool, str]:
         self._log_call("query_id")
-        return True, f"{self._name} {self._sw_version} HW0"
+        if self.firmware.deaf():
+            return False, "EMPTY REPLY"
+        return True, f"{self._name} {self._sw_version} P{self.protocol_version} HW0"
 
     def query_version_info(self) -> tuple[bool, str]:
         self._log_call("query_version_info")
         return True, self._sw_version
+
+    # -------------------------------------------------------------------------
+    # Protocol
+    # -------------------------------------------------------------------------
+
+    def get_protocol_version(self) -> int:
+        return self.protocol_version
+
+    def supports(self, feature: str) -> bool:
+        from polyhost.device.poly_kybd import protocol_supports
+        return protocol_supports(self.protocol_version, feature)
+
+    def capabilities(self) -> dict:
+        from polyhost.device.poly_kybd import FEATURE_MIN_PROTOCOL, protocol_supports
+        return {f: protocol_supports(self.protocol_version, f) for f in FEATURE_MIN_PROTOCOL}
+
+    def _too_old(self, feature: str) -> str | None:
+        """The refusal text when this protocol lacks ``feature``, else None."""
+        if self.supports(feature):
+            return None
+        from polyhost.device.poly_kybd import FEATURE_MIN_PROTOCOL
+        return (f"Firmware protocol {self.protocol_version} is too old for {feature} "
+                f"(need v{FEATURE_MIN_PROTOCOL[feature]}+).")
+
+    @property
+    def fontpack_bundle_versions(self) -> dict:
+        return self.firmware.reported_bundle_versions()
+
+    @property
+    def state_generation(self):
+        if self.protocol_version < 16:
+            return None
+        return self.firmware.state_generation
+
+    @property
+    def anim_state(self):
+        if self.protocol_version < 28:
+            return None
+        return self.firmware.anim_state
+
+    # -- the counters the tests read, from what the firmware received ------
+
+    @property
+    def hid_image_sends(self) -> int:
+        return self.firmware.image_reports + self.firmware.fill_reports
+
+    @property
+    def hid_mapping_sends(self) -> int:
+        return self.firmware.mapping_reports
+
+    @property
+    def prc_reports(self) -> list[bytes]:
+        return self.firmware.prc_records
+
+    @property
+    def _overlays_enabled(self) -> bool:
+        return self.firmware.overlays_enabled
 
     def get_name(self) -> str:
         self._log_call("get_name")
@@ -122,67 +281,48 @@ class PolyKybdMock:
     # Overlay flags / reset
     # -------------------------------------------------------------------------
 
-    def reset_overlay_mapping(self) -> tuple[bool, str]:
+    def reset_overlay_mapping(self) -> tuple[bool, Any]:
         self._log_call("reset_overlay_mapping")
-        self._overlay_mapping = {}
-        self.log.info("Reset Overlay Mapping...")
-        self._sim.reset_mapping()
-        return True, ""
+        self._sent_overlays = []
+        return self._wire.reset_overlay_mapping()
 
     def set_all_overlay_usage(self):
-        self.log.info("Set All Overlay Mapping Usage...")
-        self._sim.set_all_usage()
-        return True, ""
+        self._log_call("set_all_overlay_usage")
+        return self._wire.set_all_overlay_usage()
 
     def set_mirror_overlays(self, enable):
-        # The mock simulator doesn't model split-side storage, so the flag is
-        # a no-op functionally — we just log it for parity with the real device.
-        self.log.info("Mirror Overlays: %s", enable)
-        return True, ""
+        self._log_call("set_mirror_overlays", enable)
+        return self._wire.set_mirror_overlays(enable)
 
-    def reset_overlays_and_usage(self) -> tuple[bool, str]:
+    def reset_overlays_and_usage(self) -> tuple[bool, Any]:
         self._log_call("reset_overlays_and_usage")
         self._sent_overlays = []
-        self.log.info("Reset Overlays AND Usage...")
-        self._sim.reset_all()
-        return True, ""
+        return self._wire.reset_overlays_and_usage()
 
     def reset_overlay_mapping_and_usage(self):
-        self.log.info("Reset Overlay Mapping AND Usage...")
-        self._sim.reset_mapping()
-        self._sim.reset_usage()
-        return True, ""
+        self._log_call("reset_overlay_mapping_and_usage")
+        return self._wire.reset_overlay_mapping_and_usage()
 
     def prepare_for_mru_send(self):
-        # The simulator doesn't model MIRROR_OVERLAYS at all — its uploads are
-        # already side-agnostic — so the mirror part is a logged no-op.
-        self.log.info("Prepare for MRU send (mock)...")
-        self._sim.reset_mapping()
-        self._sim.reset_usage()
-        return True, ""
+        self._log_call("prepare_for_mru_send")
+        return self._wire.prepare_for_mru_send()
 
     def reset_overlay_usage(self):
         self._log_call("reset_overlay_usage")
-        self.log.info("Clear Overlay Mapping Usage...")
-        self._sim.reset_usage()
-        return True, ""
+        return self._wire.reset_overlay_usage()
 
-    def reset_overlays(self) -> tuple[bool, str]:
+    def reset_overlays(self) -> tuple[bool, Any]:
         self._log_call("reset_overlays")
         self._sent_overlays = []
-        self.log.info("Reset Overlays...")
-        self._sim._store.clear()
-        return True, ""
+        return self._wire.reset_overlays()
 
-    def enable_overlays(self) -> tuple[bool, str]:
+    def enable_overlays(self) -> tuple[bool, Any]:
         self._log_call("enable_overlays")
-        self._overlays_enabled = True
-        return True, ""
+        return self._wire.enable_overlays()
 
-    def disable_overlays(self) -> tuple[bool, str]:
+    def disable_overlays(self) -> tuple[bool, Any]:
         self._log_call("disable_overlays")
-        self._overlays_enabled = False
-        return True, ""
+        return self._wire.disable_overlays()
 
     def set_overlay_masking(self, set_all: bool) -> tuple[bool, str]:
         self._log_call("set_overlay_masking", set_all)
@@ -197,21 +337,28 @@ class PolyKybdMock:
         self._log_call("set_brightness", brightness, flags)
         max_brightness = getattr(self.device_settings, "MAX_BRIGHTNESS", 50)
         self._brightness = max(0, min(brightness, max_brightness))
+        self._forward("set_brightness", brightness, flags)
         return True, ""
 
     def set_idle(self, idle: bool) -> tuple[bool, str]:
         self._log_call("set_idle", idle)
         self._idle = idle
+        self._forward("set_idle", idle)
         return True, ""
 
     def set_idle_style(self, style) -> tuple[bool, str]:
         value = getattr(style, "value", style)
         self._log_call("set_idle_style", value)
+        if (refusal := self._too_old("idle_style")):
+            return False, refusal
+        self._forward("set_idle_style", style)
         self._idle_style = int(value)
         return True, ""
 
     def get_idle_style(self) -> tuple[bool, int]:
         self._log_call("get_idle_style")
+        if self._too_old("idle_style"):
+            return False, 0
         return True, getattr(self, "_idle_style", 0)
 
     def set_idle_timeout(self, value) -> tuple[bool, str]:
@@ -220,15 +367,20 @@ class PolyKybdMock:
         # real board NACKs.
         v = getattr(value, "value", value)
         self._log_call("set_idle_timeout", v)
+        if (refusal := self._too_old("idle_timeout")):
+            return False, refusal
         try:
             v = IdleTimeout(int(v)).value
         except (ValueError, TypeError):
             return False, f"{value!r} is not an idle-timeout preset"
+        self._forward("set_idle_timeout", v)
         self._idle_timeout = v
         return True, ""
 
     def get_idle_timeout(self) -> tuple[bool, tuple[int, int]]:
         self._log_call("get_idle_timeout")
+        if self._too_old("idle_timeout"):
+            return False, (0, 0)
         value = getattr(self, "_idle_timeout", IdleTimeout.MIN_2.value)
         try:
             seconds = IdleTimeout(value).seconds
@@ -236,24 +388,133 @@ class PolyKybdMock:
             seconds = 0
         return True, (value, seconds)
 
+    def get_tap_terms(self) -> tuple[bool, dict | str]:
+        self._log_call("get_tap_terms")
+        if (refusal := self._too_old("tap_terms")):
+            return False, refusal
+        return True, self._tap_terms_now()
+
+    def set_tap_terms(self, tapping_term=None, flow_tap_term=None,
+                      auto_shift=None, auto_shift_ms=None) -> tuple[bool, dict | str]:
+        # Refuses what the firmware refuses: every range is CLOSED.
+        from polyhost.device.command_ids import TapTerms
+        self._log_call("set_tap_terms", tapping_term, flow_tap_term, auto_shift, auto_shift_ms)
+        if tapping_term is None and flow_tap_term is None and auto_shift is None \
+                and auto_shift_ms is None:
+            return False, "Nothing to set"
+        if tapping_term is not None and not TapTerms.tapping_valid(tapping_term):
+            return False, f"{tapping_term!r} ms is not a valid tapping term"
+        if flow_tap_term is not None and not TapTerms.flow_tap_valid(flow_tap_term):
+            return False, f"{flow_tap_term!r} ms is not a valid Flow Tap term"
+        if auto_shift_ms is not None and not TapTerms.auto_shift_valid(auto_shift_ms):
+            return False, f"{auto_shift_ms!r} ms is not a valid Auto Shift timeout"
+        if (refusal := self._too_old("tap_terms")):
+            return False, refusal
+        if (auto_shift is not None or auto_shift_ms is not None) \
+                and (refusal := self._too_old("auto_shift")):
+            return False, refusal
+        self._forward("set_tap_terms", tapping_term, flow_tap_term, auto_shift, auto_shift_ms)
+        if tapping_term is not None:
+            self._tapping_term = tapping_term
+        if flow_tap_term is not None:
+            self._flow_tap_term = flow_tap_term
+        if auto_shift is not None:
+            self._auto_shift = bool(auto_shift)
+        if auto_shift_ms is not None:
+            self._auto_shift_ms = auto_shift_ms
+        return True, self._tap_terms_now()
+
+    # Agent keys (cmd 45/46, v31+): answered by the emulated firmware over the
+    # wire, so the mock keyboard's state is the firmware model's state.
+    def _ai_call(self, name, *args):
+        self._log_call(name, *args)
+        if (refusal := self._too_old("agent_keys")):
+            return False, refusal
+        self._wire.protocol_version = self.protocol_version
+        return getattr(self._wire, name)(*args)
+
+    def ai_query(self):
+        return self._ai_call("ai_query")
+
+    def _attention_call(self, name, *args):
+        self._log_call(name, *args)
+        if (refusal := self._too_old("key_attention")):
+            return False, refusal
+        self._wire.protocol_version = self.protocol_version
+        return getattr(self._wire, name)(*args)
+
+    def key_attention(self, row, col, count=3, period_ms=4000):
+        return self._attention_call("key_attention", row, col, count, period_ms)
+
+    def key_attention_cancel(self):
+        return self._attention_call("key_attention_cancel")
+
+    def ai_set_keys(self, states, flags, slots):
+        return self._ai_call("ai_set_keys", states, flags, slots)
+
+    def ai_read_events(self, last_seq):
+        return self._ai_call("ai_read_events", last_seq)
+
+    def ai_upload_card(self, slot, data):
+        return self._ai_call("ai_upload_card", slot, data)
+
+    def _tap_terms_now(self) -> dict:
+        from polyhost.device.command_ids import TapTerms
+        available = self.supports("auto_shift")
+        return {
+            "tapping_term": getattr(self, "_tapping_term", TapTerms.DEFAULT_TAPPING_MS),
+            "flow_tap_term": getattr(self, "_flow_tap_term", TapTerms.DEFAULT_FLOW_TAP_MS),
+            "flow_tap_available": True,
+            "auto_shift_available": available,
+            "auto_shift": available and getattr(self, "_auto_shift", False),
+            "auto_shift_ms": getattr(self, "_auto_shift_ms", TapTerms.DEFAULT_AUTO_SHIFT_MS),
+        }
+
     def set_glyph_script(self, script) -> tuple[bool, str]:
         value = getattr(script, "value", script)
         self._log_call("set_glyph_script", value)
+        if (refusal := self._too_old("glyph_script")):
+            return False, refusal
+        self._forward("set_glyph_script", int(value))
         self._glyph_script = int(value)
         return True, ""
 
     def get_glyph_script(self) -> tuple[bool, int]:
         self._log_call("get_glyph_script")
+        if self._too_old("glyph_script"):
+            return False, 0
         return True, getattr(self, "_glyph_script", 0)
+
+    def set_glyph_placement(self, placement) -> tuple[bool, str]:
+        value = placement.value if hasattr(placement, "value") else int(placement)
+        self._log_call("set_glyph_placement", value)
+        if (refusal := self._too_old("glyph_placement")):
+            return False, refusal
+        if value not in (0, 1):
+            return False, f"The keyboard refused glyph-script placement {value}."
+        self._forward("set_glyph_placement", int(value))
+        self._glyph_placement = int(value)
+        return True, "ok"
+
+    def get_glyph_placement(self) -> tuple[bool, int]:
+        self._log_call("get_glyph_placement")
+        if self._too_old("glyph_placement"):
+            return False, 0
+        return True, getattr(self, "_glyph_placement", 0)
 
     def set_glyph_size(self, size) -> tuple[bool, str]:
         value = size.value if hasattr(size, "value") else int(size)
         self._log_call("set_glyph_size", value)
+        if (refusal := self._too_old("glyph_size")):
+            return False, refusal
+        self._forward("set_glyph_size", int(value))
         self._glyph_size = int(value)
         return True, "ok"
 
     def get_glyph_size(self) -> tuple[bool, int]:
         self._log_call("get_glyph_size")
+        if self._too_old("glyph_size"):
+            return False, 0
         return True, getattr(self, "_glyph_size", 0)
 
     # --- dynamic macros ---------------------------------------------------
@@ -275,6 +536,8 @@ class PolyKybdMock:
 
     def get_macro_info(self) -> tuple[bool, dict]:
         self._log_call("get_macro_info")
+        if (refusal := self._too_old("macros")):
+            return False, refusal
         buf = self._macro_buf()
         used = 0
         for i, b in enumerate(buf):
@@ -290,16 +553,22 @@ class PolyKybdMock:
 
     def read_macro_buffer(self, capacity: int) -> tuple[bool, bytes]:
         self._log_call("read_macro_buffer", capacity)
+        if (refusal := self._too_old("macros")):
+            return False, refusal
         return True, bytes(self._macro_buf()[:capacity])
 
     def write_macro_buffer(self, data: bytes) -> tuple[bool, int]:
         self._log_call("write_macro_buffer", len(data))
+        if (refusal := self._too_old("macros")):
+            return False, refusal
         buf = self._macro_buf()
         buf[:len(data)] = data
         return True, len(data)
 
     def get_macro_look(self, macro_id: int) -> tuple[bool, dict]:
         self._log_call("get_macro_look", macro_id)
+        if (refusal := self._too_old("macros")):
+            return False, refusal
         self._macro_buf()
         if not 0 <= macro_id < self.MACRO_COUNT:
             return False, "out of range"
@@ -308,6 +577,8 @@ class PolyKybdMock:
     def set_macro_look(self, macro_id: int, text: str,
                        style: int = 0, icon: int = 0) -> tuple[bool, dict]:
         self._log_call("set_macro_look", macro_id, text, style, icon)
+        if (refusal := self._too_old("macros")):
+            return False, refusal
         self._macro_buf()
         if not 0 <= macro_id < self.MACRO_COUNT:
             return False, "out of range"
@@ -320,25 +591,33 @@ class PolyKybdMock:
         self._macro_looks[macro_id] = look
         return True, dict(look)
 
-    def replay_startup_anim(self) -> tuple[bool, str]:
+    def replay_startup_anim(self) -> tuple[bool, Any]:
         self._log_call("replay_startup_anim")
-        return True, ""
+        return self._wire.replay_startup_anim()
 
     def set_unicode_mode(self, mode: InputMethod,
                          persist: bool = True) -> tuple[bool, str]:
         self._log_call("set_unicode_mode", mode, persist)
+        if not persist and (refusal := self._too_old("unicode_mode_volatile")):
+            return False, refusal
+        self._forward("set_unicode_mode", mode, persist)
         self._unicode_mode = mode
         self.log.info("Setting unicode mode to %d", mode.value)
         return True, ""
 
     def set_os(self, os, pin: bool = False) -> tuple[bool, str]:
         self._log_call("set_os", os, pin)
+        if (refusal := self._too_old("os")):
+            return False, refusal
+        self._forward("set_os", os, pin)
         self._os = getattr(os, "value", os)
         self._os_pin = pin
         return True, ""
 
     def get_os(self) -> tuple[bool, int]:
         self._log_call("get_os")
+        if self._too_old("os"):
+            return False, 0
         return True, getattr(self, "_os", 0)
 
     # -------------------------------------------------------------------------
@@ -364,10 +643,14 @@ class PolyKybdMock:
 
     def query_current_lang(self) -> tuple[bool, str]:
         self._log_call("query_current_lang")
+        if self.firmware.faults.disconnected or self.firmware.deaf():
+            return False, "Could not read reply from PolyKybd"
         return True, self._current_lang
 
     def enumerate_lang(self) -> tuple[bool, str]:
         self._log_call("enumerate_lang")
+        if (refusal := self._too_old("packed_lang_list")):
+            return False, refusal
         return True, self._lang_str
 
     def get_lang_list(self) -> list[str]:
@@ -385,12 +668,15 @@ class PolyKybdMock:
         self._current_lang = lang
         return True, lang
 
-    def send_overlay_mapping(self, from_to: dict) -> tuple[bool, str]:
-        self.hid_mapping_sends += 1
+    def send_overlay_mapping(self, from_to: dict, reset: bool = False,
+                             show: bool = False, dim=frozenset(),
+                             no_legend=frozenset()) -> tuple[bool, str]:
+        self._log_call("send_overlay_mapping", from_to, reset, show)
         self.last_mapping = from_to
-        self._overlay_mapping.update(from_to)
-        self._sim.apply_mapping(from_to)
-        return True, "Mapping sent"
+        self.last_mapping_flags = (reset, show)
+        self.last_mapping_dim = set(dim)
+        self.last_mapping_no_legend = set(no_legend)
+        return self._wire.send_overlay_mapping(from_to, reset, show, dim, no_legend)
 
     def send_overlay(self, filename, on_off=True):
         self.log.info("Send Overlay '%s'...", filename)
@@ -434,53 +720,47 @@ class PolyKybdMock:
             self._sent_overlays.extend(filenames)
         return ok
 
-    def send_overlays_mru(self, filenames: list, cache, cancel=None) -> bool:
-        if cancel is not None and cancel.is_set():
-            return False
-        display_to_pool: dict[int, int] = {}
+    def send_overlays_mru(self, filenames: list, cache, cancel=None,
+                          synthetic: dict | None = None) -> bool:
+        """The real PolyKybd.send_overlays_mru, over the emulated keyboard: the
+        same cache decisions, encodings, cancellation and rollback, so the mock
+        cannot fall behind the device's signature or behaviour again."""
+        self._log_call("send_overlays_mru", filenames)
+        self._wire.fontpack_bundle_versions = self.firmware.reported_bundle_versions()
+        return self._wire.send_overlays_mru(filenames, cache, cancel, synthetic=synthetic)
 
-        # Parity with the real device path; see PolyKybd.send_overlays_mru.
-        self.prepare_for_mru_send()
+    def send_smallest_overlay(self, keycode: int, modifier: Modifier, mapping: dict,
+                              clean_slot: bool = True) -> int:
+        return self._wire.send_smallest_overlay(keycode, modifier, mapping, clean_slot=clean_slot)
 
-        with cache.batch():
-            for filename in filenames:
-                self.log.info("Send Overlay MRU (mock) '%s'...", filename)
-                converter = ImageConverter(self.device_settings)
-                if not converter.open(filename):
-                    self.log.warning("Unable to read %s", filename)
-                    return False
+    # -------------------------------------------------------------------------
+    # Device commands -- the real PolyKybd over the emulated keyboard
+    # -------------------------------------------------------------------------
 
-                for modifier in Modifier:
-                    overlay_map = converter.extract_overlays(modifier)
-                    if not overlay_map:
-                        continue
+    def reboot(self) -> tuple[bool, Any]:
+        self._log_call("reboot")
+        return self._wire.reboot()
 
-                    for keycode, overlay_data in overlay_map.items():
-                        content_key = (os.path.basename(filename), modifier.value, keycode)
-                        pool_slot, is_hit = cache.get_or_allocate(content_key, filename, overlay_data.all_bytes)
+    def activate_bootloader(self) -> tuple[bool, Any]:
+        self._log_call("activate_bootloader")
+        return self._wire.activate_bootloader()
 
-                        if not is_hit:
-                            pool_kc, pool_mod = cache.pool_slot_to_firmware_address(pool_slot)
-                            self.hid_image_sends += self.send_smallest_overlay(
-                                pool_kc, pool_mod, {pool_kc: overlay_data})
+    def set_handedness(self, master_is_left: bool,
+                       split_vbus: bool | None = None) -> tuple[bool, Any]:
+        self._log_call("set_handedness", master_is_left, split_vbus)
+        return self._wire.set_handedness(master_is_left, split_vbus)
 
-                        disp_idx = cache.display_flat_idx(keycode, modifier)
-                        display_to_pool[disp_idx] = pool_slot
+    def save_mru(self) -> tuple[bool, Any]:
+        self._log_call("save_mru")
+        return self._wire.save_mru()
 
-        # Parity with PolyKybd.send_overlays_mru — clears any upload-time
-        # use_overlay contamination before the mapping send establishes the
-        # legitimate from-index bits.
-        # self.reset_overlay_usage()
-        self.send_overlay_mapping(display_to_pool)
-        cache.record_transferred_mapping(display_to_pool)
-        self.enable_overlays()
-        return True
+    def get_crash_record(self, which: int = 0) -> tuple[bool, Any]:
+        self._log_call("get_crash_record", which)
+        return self._wire.get_crash_record(which)
 
-    def send_smallest_overlay(self, keycode: int, modifier: Modifier, mapping: dict) -> int:
-        ov = mapping[keycode]
-        pool_slot = display_flat_idx(keycode, modifier)
-        self._sim.store_image(pool_slot, ov.all_bytes)
-        return min(ov.all_msgs, ov.compressed_msgs, ov.roi_msgs, ov.compressed_roi_msgs)
+    def clear_crash_record(self) -> tuple[bool, Any]:
+        self._log_call("clear_crash_record")
+        return self._wire.clear_crash_record()
 
     # ── inspection helpers ──────────────────────────────────────────────────
 
@@ -500,8 +780,58 @@ class PolyKybdMock:
         self._log_call("read_serial")
         return None
 
+    # Bulk pipe: the real probe (bulk_pipe.probe: PING, then the SINK/STAT rate
+    # measurement) against the emulated keyboard's pipe (mock_pipe.py). The port
+    # it reports opens through bulk_pipe.open_port, so the firmware update and
+    # every resource flash stream their chunks over it, as with a keyboard.
+    # The pipe is present from protocol 23, as on the firmware; setting
+    # `pipe_available` adds or removes it.
+    pipe_info = None
+    transport = None
+
+    @property
+    def pipe_available(self) -> bool:
+        return self.firmware.pipe is not None
+
+    @pipe_available.setter
+    def pipe_available(self, on: bool) -> None:
+        if on and self.firmware.pipe is None:
+            self.firmware.pipe = MockPipe(self.firmware)
+        elif not on:
+            self.firmware.pipe = None
+
+    def probe_bulk_pipe(self) -> str:
+        self._log_call("probe_bulk_pipe")
+        pipe = self.firmware.pipe
+        info = bulk_pipe.probe(pipe.port_name) if pipe is not None else None
+        self.pipe_info = info
+        self.transport = bulk_pipe.TRANSPORT_PIPE if info else bulk_pipe.TRANSPORT_HID
+        return self.transport
+
+    def use_hid_only(self) -> str:
+        self._log_call("use_hid_only")
+        self.pipe_info = None
+        self.transport = "hid"
+        return self.transport
+
+    def get_transport(self):
+        return self.transport
+
+    def get_pipe_info(self):
+        return self.pipe_info
+
+    def get_link_rate_mbps(self):
+        return (self.pipe_info or {}).get("rate_mbps")
+
+    def forget_bulk_pipe(self):
+        self.pipe_info = None
+        self.transport = None
+
     def get_console_output(self, flush_and_return=True):
         return "" if flush_and_return else None
+
+    def flush_console(self):
+        return ""
 
     def execute_commands(self, command_list, cancel=None):
         for cmd_str in command_list:
@@ -560,6 +890,8 @@ class PolyKybdMock:
 
     def get_layer_names(self) -> tuple[bool, list[str]]:
         self._log_call("get_layer_names")
+        if self._too_old("layer_names"):
+            return False, []
         names = ["Qwerty", "Stag!", "ColemkDH", "Neo", "Workman", "Fn", "Numpad", "Utility"]
         return True, names[:self._num_layers]
 
@@ -584,12 +916,27 @@ class PolyKybdMock:
 
     def reset_dynamic_keymap(self) -> tuple[bool, Any]:
         self._log_call("reset_dynamic_keymap")
+        self._keymap = self._fresh_keymap()
+        return True, ""
+
+    def _fresh_keymap(self) -> list[list[list[int]]]:
+        """What a keymap reset leaves: the default layer 0, empty above it --
+        the firmware restores its compiled keymap, not zeros."""
         rows = self.device_settings.MATRIX_ROWS
         cols = self.device_settings.MATRIX_COLUMNS
-        self._keymap = [
-            [[0] * cols for _ in range(rows)] for _ in range(self._num_layers)
-        ]
-        return True, ""
+        keymap = [[[0] * cols for _ in range(rows)] for _ in range(self._num_layers)]
+        for (row, col), keycode in self._default_keys.items():
+            if row < rows and col < cols and self._num_layers:
+                keymap[0][row][col] = keycode
+        return keymap
+
+    def base_layer(self) -> dict[str, int]:
+        """{"row,col": keycode} of layer 0 as it stands now -- edits through the
+        layout editor included -- for the board view."""
+        if not self._keymap:
+            return {}
+        return {f"{r},{c}": kc for r, row in enumerate(self._keymap[0])
+                for c, kc in enumerate(row) if kc}
 
     def get_dynamic_buffer(self) -> tuple[bool, list[int] | None]:
         self._log_call("get_dynamic_buffer")
@@ -599,3 +946,33 @@ class PolyKybdMock:
                 for col in range(self.device_settings.MATRIX_COLUMNS):
                     flat.append(self._keymap[layer][row][col])
         return True, flat
+
+
+# Inspection helpers stay outside the fault plan: they read the simulated
+# keyboard rather than talk to it.
+_NOT_FAULTABLE = {"get_display_bitmap", "get_display_image", "save_overlay_as_png",
+                  "supports", "capabilities", "get_protocol_version"}
+
+
+def _faultable(fn):
+    """Let a FaultPlan fail or raise in ``fn`` by name, the way a device call
+    fails: a bool method returns False, a tuple method (False, message)."""
+    returns_bool = inspect.signature(fn).return_annotation is bool
+    name = fn.__name__
+
+    @functools.wraps(fn)
+    def wrapper(self, *args, **kwargs):
+        if FaultPlan.take(self.faults.raises, name):
+            raise OSError(f"{name}: injected fault")
+        if FaultPlan.take(self.faults.fail, name):
+            self._log_call(name, *args, **kwargs)
+            return False if returns_bool else (False, f"{name}: injected fault")
+        return fn(self, *args, **kwargs)
+    return wrapper
+
+
+for _name, _fn in list(vars(PolyKybdMock).items()):
+    if (inspect.isfunction(_fn) and not _name.startswith("_")
+            and _name not in _NOT_FAULTABLE):
+        setattr(PolyKybdMock, _name, _faultable(_fn))
+del _name, _fn

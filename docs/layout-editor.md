@@ -25,6 +25,23 @@ and two rounds were spent inferring that from the symptoms instead of asking.
 
 ---
 
+## Where the keycode NAMES come from
+
+The keycode browser's tiles and every keycode label in the editor come from
+`polyhost/res/keycodes.h`, a verbatim copy of the firmware's `quantum/keycodes.h`.
+`parse_qmk_keycodes()` reads it at startup, and `categorize()` files each name into a
+tab by prefix. A name that matches no rule lands in "Additional", the second tab.
+
+- ⚠️ **The copy goes stale on every upstream QMK merge that bumps
+  `QMK_KEYCODES_VERSION`, and nothing fails.** The editor keeps working with the old
+  names and values. `check-mirrored-artifacts` compares the two files; the firmware's
+  `merge-upstream-into-branch` skill (step 6c) refreshes the copy.
+- **After a refresh, check the tab counts.** Keycodes 0.0.9 (2026-09-25) added 79 steno
+  codes (83 in all) and 88 `ST_*` aliases. Copied without a `categorize()` rule, the 88
+  aliases fell into "Additional" and the 83 `QK_STENO_*` names into "Quantum". They have a "Steno" tab now.
+- The tabs list every QMK keycode, including features the PolyKybd firmware does not
+  enable (steno, MIDI, haptic, joystick). Those keys can be assigned and do nothing.
+
 ## Where the key GEOMETRY comes from
 
 - ⚠️ **The editor's key GEOMETRY comes from `polyhost/res/polykybd-split72.json`
@@ -236,9 +253,9 @@ and two rounds were spent inferring that from the symptoms instead of asking.
         keymap; a board that cannot be edited still says which layer is selected.
       - ⚠️ **"The panels open on the keyboard's default layer" is NOT pinned by the
         test that says so, and the first draft claimed it was.** `_add_board` does draw
-        them before the default layer is read, but the default mode is Symbol — so they
-        are blank until the user picks Preview, and that pick repaints at
-        `current_layer` regardless. Measured: deleting the startup
+        them before the default layer is read, but the default mode was Symbol then — so
+        they were blank until the user picked Preview, and that pick repaints at
+        `current_layer` regardless. (The editor opens in Real now; see *Real mode*.) Measured: deleting the startup
         `set_keycodes_for_layer` outright leaves the test green. What that actually
         breaks is the KEYS (layer 0's keycodes under a layer-3 tab), which is a keycap
         claim and belongs in a keycap test.
@@ -388,6 +405,16 @@ and two rounds were spent inferring that from the symptoms instead of asking.
       the `altgrhalf` settings rows (which renumber every row under them) and the
       2026-09-03 cursor-nudge tuning. That is the export doing its job; the pixel
       parity test above is what says the result is right.
+    - ⚠️ **A firmware change to RESIDENT ICON codepoints is a same-release host
+      follow-up, and it is data PLUS code.** Four host constants name IconsFont
+      codepoints: `status_screen.ICON_LAYER` / `ICON_NUMLOCK_OFF` /
+      `ICON_CAPSLOCK_OFF`, `shortcut_icons.ICON_UP/DOWN/LEFT/RIGHT`, the icon-face
+      probe in `keycap_preview` (now `ss.ICON_LAYER`, so one number to keep) and
+      `tools/preview_doctor.py`'s brightness-family check. They select glyphs out of
+      the export, so they move in the SAME PR as the re-export, never alone. Firmware
+      1.0.0 moved every icon out of the C1 band into plane-16 PUA; the host previews
+      stayed at 0.28.0 and three shipped-vs-checkout tests sat red on `main` until
+      #277. **After every firmware release, run `export_preview_data.py --check`.**
 
   - ⚠️ **The two sources are pinned to draw IDENTICALLY, by rendering, not by
     comparing structures.** `test_the_two_sources_draw_the_SAME_keycaps` renders
@@ -608,6 +635,62 @@ and two rounds were spent inferring that from the symptoms instead of asking.
 
 ---
 
+## Real mode on the rendered photo (`real_board.py`)
+
+- **In Real mode the board is a PICTURE of the keyboard, not the drawn plate.**
+  `polyhost/res/real_view/board.jpg` is an orthographic Blender render straight down
+  on both halves (PolyKybd `render/topview.py`), and `board.json` gives each key
+  display's 72x40 active area as four image pixels, keyed by the KLE `"row,col"`
+  label. `scripts/import_real_view.py <topview.png> <topview.json> [width]` brings a
+  new render in (rendered at 4800 px and scaled to 4000, 0.13 mm per pixel, JPEG). Symbol
+  and Preview are unchanged and keep the KLE grid and the drawn plate.
+- **The editor opens maximized and in Real** (the maintainer's call, 2026-10-07).
+  `_default_keycap_mode()` falls back to Preview when the panel simulation is
+  unavailable and to Symbol without the fonts, the same rules that enable the
+  header's buttons; `tests/gui/macro_keycap_editor_test.py` pins both.
+- **Each key is MOVED onto its photographed OLED**: its `display_rect()` is mapped
+  onto the quad with `QTransform.quadToQuad`, and the key then paints only the
+  simulated panel (`set_photo_mode`). ⚠️ The keys therefore sit where the PCB puts
+  them, not where the KLE does — the two disagree by up to ~4.5 mm per half, and on
+  a photo that shows as every legend sliding off its screen. `display_rect()` is the
+  one definition of the panel rect for both the tile and the photo; keep it that way.
+- **The two keys with no display** ((3,7) and (8,0), the expansion ports) sit on
+  their half's photographed lid (`board.json` → `expansion_ports`), turned with it
+  and scaled to the photographed displays, and draw their LEGEND ALONE
+  (`set_label_only`): the same simulated-panel picture the displays show, blended
+  with LIGHTEN so only the lit pixels land on the lid, with no tile and no badge.
+  ⚠️ **Only while hovered or selected** (`_label_shown()`): the lid is bare on the
+  keyboard, so a legend there all the time puts something on the photo the board does
+  not have. The hit area stays, so the mouse still finds the lid; the hover and
+  selection handlers re-sync the text label, and the tests drive both.
+  Without lid data they fall back to a per-half affine fit from the KLE.
+  `tests/gui/real_board_test.py` measures each lid's angle on the photo itself, so
+  an outline turned the wrong way fails there.
+- **An empty slot (KC_NO, KC_TRANSPARENT) shows nothing on the photo** — no "NO",
+  "TRNS" or "______" over the picture, as on the keyboard. The other modes keep
+  naming it on the tile.
+- **The zoom is relative to the window** (`ZoomableGraphicsView(fit_scene=True)`):
+  `relative_zoom` 1.0 shows the whole scene rect at 96% of the viewport, and every
+  resize re-applies fit x relative zoom. So the board opens fully visible in the
+  maximized dialog, stays fully visible as the window shrinks, and a wheel zoom keeps
+  its size relative to the window. A mode change re-fits (`refit()`), keeping the
+  relative zoom. `ZoomFollowsTheWindowTest` covers all three.
+  - ⚠️ **What is fitted is the KLE layout's extent, in every mode** (`_set_fit_rect`:
+    the key tiles on the grid plus `FIT_PAD`, centred on the keys as the mode places
+    them), and it is the scene rect too. Fitting each mode's own scene rect showed
+    the keyboard at different sizes across a switch: the photo carries a white margin
+    the drawn board does not, and on the photo a key's extent is its display, not its
+    tile.
+- **The photo is rendered on pure white and the scene background is white in Real
+  mode**, so zooming shows no edge around the picture. `render_keys` resets the
+  brush on every rebuild, and each mode sets its own.
+- **The status screens** are two pixmap slots tagged like the plate's
+  (`SCREEN_SIDE` / `SCREEN_BOX`), so `set_screen_images` paints them unchanged.
+- A mode change across the Real boundary REBUILDS the scene (`render_keys`), keeping
+  the selected key by matrix index. Missing or unreadable files fail soft: `load()`
+  returns None and Real keeps the drawn board. `tests/gui/real_board_test.py` maps
+  every key's display rect into the scene and compares it with the measured quad.
+
 ## Where the preview DATA comes from, and how it goes stale
 
 - ⚠️ **A GENERATOR whose default source path has gone dead fails SILENTLY, and its
@@ -659,6 +742,26 @@ and two rounds were spent inferring that from the symptoms instead of asking.
     - **The checkout's own `layers.h`**: correct, because tags and legends then agree
       by construction. `qmk_keycode_helper.parse_layers_h()`; `LAYER_TAGS` remains
       only as the no-checkout fallback and as the yardstick below.
+  - ⚠️ **Firmware 1.13.0 inserted the MIDI layer `_ML` as stored layer 8, so every
+    layer after the stored ones moved up by one** (`_SL` 8 → 9 … `_EMJ` 11 → 12).
+    `layers.json` records how many layers its tags store (`stored`, from
+    `DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT`), and the editor passes the count the
+    keyboard reports to `KeycapPreview.set_stored_layer_count()`. When the keyboard
+    stores fewer, `qmk_keycode_helper.fold_layer_tags()` renumbers the flash layers
+    to follow its stored ones, so a 1.11.x board's `TO(8)` previews as `_SL`, not
+    `_ML`. This assumes a new stored layer is added at the END of the stored block,
+    as `_ML` was. `parse_layers_h()` strips C comments first: the comment on `_ML`
+    otherwise swallowed `_SL` and every later layer read one index low.
+  - **The MIDI keys' legends are computed by the firmware at runtime**
+    (`midi_legend()` in `midi_legend.c`, from the octave, transpose, velocity and
+    channel), so neither static-text switch has them. `tools/midi_legend_dump.py`
+    compiles that C with the system compiler and runs it for the resting legends
+    (QMK's start values, octave as PolyKybd sets it, so `MI_C` is C4), keyed by
+    QMK's long `QK_MIDI_*` name. The export and the checkout path both call it.
+    Without a C compiler it returns None and the 144 keys show their keycode text,
+    so run the export on a machine with one. `tests/tools/midi_legend_dump_test.py`
+    checks the shipped legends against the firmware when the checkout matches the
+    export's version.
   - ⚠️ **An out-of-step checkout previews WRONG, which is why it now has to WIN a
     version comparison to be read at all** (above). The keycodes come from the
     connected keyboard while every legend comes from the data source, so an old clone

@@ -24,6 +24,7 @@ from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
+import space_hint  # noqa: E402
 
 FLUENT = {
     # --- file ---
@@ -100,7 +101,6 @@ FLUENT = {
     "historywin": "History",
     "layerswin":  "Layer Diagonal",
     "colorswin":  "Color",
-    "swapcolors": "Arrow Swap",
     # --- tabs ---
     "nextimage": "Arrow Right",
     "previmage": "Arrow Left",
@@ -197,9 +197,15 @@ def _brush_width(path: Path, *, wider: bool, step: int) -> None:
     img.resize((cw * 4, ch * 4), Image.LANCZOS).save(path)
 
 
+# Shared with other apps: one drawing per action, so the overlay icon library
+# stores it once (see icon_fetch.borrow).
+BORROWED = {"swapcolors.png": "gimp"}
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
+    n += icon_fetch.borrow(BORROWED, out)
 
     # ⚠️ Guarded like every hand-editable asset here: a committed PNG wins.
     for name, wider, step in (("brushdec1", False, 1), ("brushinc1", True, 1),
@@ -223,6 +229,16 @@ def main() -> int:
             fn(p)
             print(f"  {name}.png  <- custom (drawn: {what})")
         n += 1
+
+    # Space: hold Space pans (with the arrow keys or a drag). The hand from H
+    # with an arrow on each side, beside the centred Space legend.
+    p = out / "space_pan.png"
+    if p.exists():
+        print("  space_pan.png  <- committed asset (left as-is)")
+    else:
+        space_hint.draw(space_hint.glyph_from_png(out / "pan.png", 20), p)
+        print("  space_pan.png  <- custom (drawn: hand + four arrows, space_hint.py)")
+    n += 1
 
     print(f"Wrote {n} icons to {out}")
     return 0

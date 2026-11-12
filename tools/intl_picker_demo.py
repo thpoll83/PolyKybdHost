@@ -61,7 +61,9 @@ def parse_latin_ex_map(lang_lut_c: str) -> list[list[int]]:
     `cog.outl(f"... = {{")` source line too, and sweeping from there swallows template
     text and inflates the counts (it reported 556/37 instead of 549/36 once)."""
     text = open(lang_lut_c, encoding='utf-8').read()
-    m = re.search(r'^const uint32_t\* latin_ex_map\[26\*2\]\[LATIN_EX_VARIATIONS\] = \{$',
+    # `(?:const )?`: the pointer array became const (moved to flash) in firmware
+    # after 1.9.1; older checkouts still declare it without.
+    m = re.search(r'^const uint32_t\* (?:const )?latin_ex_map\[26\*2\]\[LATIN_EX_VARIATIONS\] = \{$',
                   text, re.M)
     if not m:
         raise SystemExit(f"latin_ex_map definition not found in {lang_lut_c}")

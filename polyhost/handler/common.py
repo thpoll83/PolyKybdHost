@@ -7,6 +7,10 @@ TITLE = "title"
 TITLE_SW = "titles-startswith"
 TITLE_EW = "titles-endswith"
 TITLE_HAS = "titles-contains"
+# Regex sub-map: each key is a regex searched against the WHOLE title. For a
+# signal inside a word, which the word sub-maps cannot see: a file extension in
+# "Book1.xlsx - WPS Office".
+TITLE_RE = "titles-match"
 # URL constraints — only ever satisfiable when a URL is known for the focused
 # window (a browser reporting its active tab, see handler/browser_url.py). URL
 # is a regex constraint on the whole URL (like TITLE); URL_HAS is a substring
@@ -19,7 +23,23 @@ URL_HAS = "urls-contains"
 # app name needs different overlay artwork per OS. Keys are canonical OS names
 # (see `normalize_os`); the sub-entry may itself carry title/url constraints.
 OS = "os"
+# `layer: false` on an entry that declares `urls-contains` turns OFF the
+# browser layering (`_layered`): a matched sub-entry then REPLACES the entry's
+# overlay, as a title sub-map does. For an app whose `urls-contains` routes on a
+# context pseudo-URL rather than a website (Blender's `blender://<mode>/<editor>`)
+# the parent overlay is not "the browser underneath" -- it is the fallback for
+# when no context is known, and drawing it dimmed under the Node Editor would
+# put 3D View keys on a board showing the Node Editor's.
+LAYER = "layer"
 FLAGS = "flags"
+OVERLAY = "overlay"
+# Key of a layered view (see `_layered`) holding the names drawn as Underlays.
+UNDERLAYS = "_underlays"
+# Layered views of web-app sub-entries, keyed by (id(base), id(sub)); see
+# `_layered`. ⚠️ Kept OUT of the entries on purpose: a cache on the sub-entry
+# that pointed back at its browser entry would make the handler's
+# `last_entry == matched` comparison recurse through the loop.
+_LAYERED_CACHE: dict = {}
 
 # Accepted spellings -> canonical name. The mapping file is hand-written, so take
 # the obvious synonyms rather than making the author guess our internal wording.
@@ -90,6 +110,39 @@ def os_match_keys(value):
     return [exact, family] if family else [exact]
 
 
+# A trailing release year, as macOS reports Adobe's apps: `Adobe Photoshop 2025`.
+_TRAILING_YEAR = re.compile(r"\s+(?:19|20)\d\d$")
+# A trailing dotted version, as a Snap reports OpenRA mods: `openra-ca-1.08.2`.
+# At least one dot, so `age2_x1` and `photoshop 2` keep their digits.
+_TRAILING_VERSION = re.compile(r"[\s_-]+v?\d+(?:\.\d+)+$")
+# A dotted version written directly after the name, as Foundry names Nuke:
+# `Nuke17.1` on Linux, `Nuke17.1v3` (the install folder) on macOS. At least one
+# dot and a letter before the digits, so `age2_x1`, `fl64` and `foobar2000` keep
+# their digits.
+_GLUED_VERSION = re.compile(r"(?<=[a-z])\d+(?:\.\d+)+(?:v\d+)?$")
+
+
+def mapping_key(app_name, mapping):
+    """The mapping key that `app_name` resolves to, or None.
+
+    An exact match wins. Failing that, a trailing release year is dropped, so one
+    `adobe photoshop` key covers `adobe photoshop 2025` and every later release,
+    and then a trailing dotted version, so `openra-ca` covers `openra-ca-1.08.2`,
+    and then a dotted version glued to the name, so `nuke` covers `nuke17.1v3`.
+    ⚠️ Without it the key would have to be re-added every release, and a missed
+    one fails silently: the app simply loads no overlay.
+    """
+    if not app_name:
+        return None
+    if app_name in mapping:
+        return app_name
+    for pattern in (_TRAILING_YEAR, _TRAILING_VERSION, _GLUED_VERSION):
+        stripped = pattern.sub("", app_name)
+        if stripped != app_name and stripped in mapping:
+            return stripped
+    return None
+
+
 class OverlayCommand(Enum):
     """Command for overlay to turn on or off"""
 
@@ -111,9 +164,97 @@ class Flags(Enum):
     HAS_URL = 6
     HAS_URLS_CONTAINS = 7
     HAS_OS = 8
+    HAS_TITLES_MATCH = 9
 
 
-def find_matching_entry(title, entry, url=None, os_name=None):
+def _phrase_keys(sub_map):
+    """``(words, key)`` for each key of a title sub-map, longest phrase first.
+
+    A key may be several words (``Claude Code``, ``Google Docs``). It matches a
+    run of whole title words, compared after splitting both on whitespace.
+    Longest first, so at one title position ``Claude Code`` is tried before
+    ``Claude`` whatever order the YAML lists them in.
+    """
+    keys = [(str(k).split(), k) for k in sub_map]
+    return sorted((kw for kw in keys if kw[0]), key=lambda kw: -len(kw[0]))
+
+
+class Underlay(str):
+    """An overlay file name drawn UNDER a website's overlay: a browser's own file.
+
+    A plain ``str`` everywhere else -- it compares and hashes as the name, so cache
+    keys, logs and the mapping file see no difference. The send path reads
+    ``underlay`` and asks the keyboard to draw the positions it ends up owning
+    dimmed (cmd 33's DIM flag, protocol v23), so the site's own shortcuts stand out
+    and the browser's stay readable underneath.
+    """
+    underlay = True
+
+
+def as_underlay_path(name, path):
+    """``path`` as an Underlay when ``name`` is one: a resolved path keeps the mark."""
+    return Underlay(path) if getattr(name, "underlay", False) else path
+
+
+def with_underlays(files, underlay_names):
+    """``files`` with every name listed in ``underlay_names`` marked as an Underlay.
+
+    The inverse of flattening a list for JSON: the control socket carries the
+    marked names beside the list (protocol.M_OVERLAY_SEND)."""
+    marked = set(underlay_names)
+    return [Underlay(f) if f in marked else f for f in files]
+
+
+def _as_list(value):
+    if value is None:
+        return []
+    return list(value) if isinstance(value, (list, tuple)) else [value]
+
+
+def _layered(base, sub):
+    """``sub`` with ``base``'s overlay UNDERNEATH its own: base files first.
+
+    A web app runs INSIDE the browser, so the browser's own shortcuts (new tab,
+    reload, find, zoom...) still work on every site and must stay on the keycaps.
+    The site's overlay goes last because template sources resolve last-one-wins
+    per (modifier, key) in `send_overlays_mru`: the site wins exactly the keys it
+    draws and the browser keeps every other one. Before this, a site entry
+    REPLACED the browser's overlay, so opening GitHub took Ctrl+T, Ctrl+L and the
+    tab keys off the board.
+
+    Cached by the identity of both entries, so the matcher returns the same
+    object on every tick for the same window. The cache holds the entries it is
+    keyed by, so an id is never reused while its entry is cached; a mapping
+    reload brings new entries, and the size cap keeps the old ones from piling up.
+    """
+    key = (id(base), id(sub))
+    cached = _LAYERED_CACHE.get(key)
+    if cached is not None:
+        return cached[2]
+    files = []
+    site = _as_list(sub.get(OVERLAY))
+    # The browser's files become Underlays, drawn dimmed where they show. A file the
+    # site lists too is the site's: it keeps its later position and full strength.
+    for f in [Underlay(f) for f in _as_list(base.get(OVERLAY))] + site:
+        if f in files:
+            # A site entry that repeats a browser file (chatgpt.com/codex lists the
+            # browser set) keeps the LATER position, so it still wins its keys.
+            files.remove(f)
+        files.append(f)
+    view = dict(sub)
+    view[OVERLAY] = files
+    # An Underlay compares equal to its plain name, so two views whose files
+    # differ only in which are marked would compare equal, and the handler's
+    # `last_entry == matched` would skip the resend that changes the dimming.
+    # The marked names, as plain strings, make that difference visible.
+    view[UNDERLAYS] = tuple(str(f) for f in files if getattr(f, "underlay", False))
+    if len(_LAYERED_CACHE) > 512:
+        _LAYERED_CACHE.clear()
+    _LAYERED_CACHE[key] = (base, sub, view)
+    return view
+
+
+def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
     """Return the deepest mapping entry that matches ``title`` (and ``url``), or
     ``None``.
 
@@ -122,12 +263,14 @@ def find_matching_entry(title, entry, url=None, os_name=None):
     drift. Pure (no side effects), so it is unit-testable without a display;
     callers add the ENABLE/OFF_ON decision and the current/last bookkeeping.
 
-    ``entry[FLAGS]`` is the 9-bool list
+    ``entry[FLAGS]`` is the 10-bool list
     ``[has_overlay, has_remote, has_title, has_starts_with, has_ends_with,
-    has_contains, has_url, has_urls_contains, has_os]`` from ``annotate()``; the
+    has_contains, has_url, has_urls_contains, has_os, has_match]`` from ``annotate()``; the
     title, url and os sub-maps hold further annotated entries. An entry matches when it
     carries an overlay/remote and every constraint it declares is satisfied —
-    recursing into the more-specific sub-maps first (first match wins):
+    recursing into the more-specific sub-maps first (first match wins). An
+    entry with no overlay and no remote matches only through its
+    ``urls-contains`` and title sub-maps, never by itself:
     ``os`` first of all (the platform decides which keymap the app even has),
     then ``urls-contains`` before the title sub-maps, because a URL identifies a
     browser web-app far more reliably than its window title.
@@ -145,6 +288,28 @@ def find_matching_entry(title, entry, url=None, os_name=None):
     a name); ``None``/unknown skips the ``os`` sub-map entirely, so an entry
     always degrades to its own default artwork rather than guessing.
 
+    ``title_known`` is False when the caller has NO WINDOW and therefore no
+    title to offer -- the macOS windowless path, where `getActiveWindow()`
+    answers None but the OS still names the app. An entry that DECLARES a
+    ``title`` regex then fails outright instead of having the regex skipped.
+
+    ⚠️ **The two are opposite, and the difference is the point.** With a window
+    whose title is merely EMPTY, a declared ``title`` regex is skipped on
+    purpose: macOS without screen-recording permission and some Wayland setups
+    report no titles at all, and gating on one would lose every entry on those
+    machines (see `handler.win_shell`). But with NO WINDOW the same leniency is
+    a false positive: the `kicad` entry declares a ``title`` gate (six window
+    names in every KiCad language, written by
+    ``overlay_sources/kicad/gen_titles.py``) to tell those windows from the rest
+    of KiCad, and skipping it would draw the PCB overlay for any KiCad window.
+    So "the title is empty" keeps its leniency and "there is no title" does
+    not.
+
+    ⚠️ The word sub-maps (``titles-startswith`` and friends) need no such flag:
+    they already match nothing without a title and fall through to the parent's
+    own overlay, which is the documented behaviour for a refinement rather than
+    a constraint.
+
     Raises ``re.error`` if an entry's ``title``/``url`` regex is invalid;
     callers log it and treat it as no match (mirrors the previous behaviour)."""
     flags = entry[FLAGS]
@@ -155,8 +320,16 @@ def find_matching_entry(title, entry, url=None, os_name=None):
     has_url = len(flags) > 6 and flags[6]
     has_urls_contains = len(flags) > 7 and flags[7]
     has_os = len(flags) > 8 and flags[8]
+    has_match = len(flags) > 9 and flags[9]
 
-    if not (has_overlay or has_remote):
+    # An entry with no overlay of its own can still ROUTE: its sub-maps may name
+    # one. The terminal entry only sends a vim:// or emacs:// mode report, or a
+    # title naming nano, to an editor's overlay; DOSBox gives an overlay only to a
+    # title naming DUNE2. It never matches by itself (see the end of this
+    # function), so a terminal with no report and no editor in its title gets
+    # None, exactly as an app with no entry, and keeps the generic shortcut harvest.
+    if not (has_overlay or has_remote or has_urls_contains or has_starts_with
+            or has_ends_with or has_contains or has_os or has_match):
         return None
 
     # OS sub-map first. Which *keymap* an app uses is decided by the platform it
@@ -173,7 +346,7 @@ def find_matching_entry(title, entry, url=None, os_name=None):
         for want in os_match_keys(os_name):
             for needle, sub in entry[OS].items():
                 if normalize_os(needle) == want:
-                    m = find_matching_entry(title, sub, url, os_name)
+                    m = find_matching_entry(title, sub, url, os_name, title_known)
                     if m is not None:
                         return m
 
@@ -183,9 +356,9 @@ def find_matching_entry(title, entry, url=None, os_name=None):
     if has_urls_contains and url:
         for needle, sub in entry[URL_HAS].items():
             if needle in url:
-                m = find_matching_entry(title, sub, url, os_name)
+                m = find_matching_entry(title, sub, url, os_name, title_known)
                 if m is not None:
-                    return m
+                    return _layered(entry, m) if has_overlay and entry.get(LAYER, True) else m
 
     # Split unconditionally: each branch below gates on its own `has_*` flag, so
     # a gate here would have to list every word-based matcher and stay in sync
@@ -195,14 +368,27 @@ def find_matching_entry(title, entry, url=None, os_name=None):
     # that failure mode rather than re-arming it with one more term.
     words = title.split() if title else []
     if words:
-        if has_starts_with and words[0] in entry[TITLE_SW]:
-            m = find_matching_entry(title, entry[TITLE_SW][words[0]], url, os_name)
-            if m is not None:
-                return m
-        if has_ends_with and words[-1] in entry[TITLE_EW]:
-            m = find_matching_entry(title, entry[TITLE_EW][words[-1]], url, os_name)
-            if m is not None:
-                return m
+        if has_starts_with:
+            for kw, key in _phrase_keys(entry[TITLE_SW]):
+                if words[:len(kw)] == kw:
+                    m = find_matching_entry(title, entry[TITLE_SW][key], url, os_name, title_known)
+                    if m is not None:
+                        return m
+        if has_ends_with:
+            for kw, key in _phrase_keys(entry[TITLE_EW]):
+                if words[-len(kw):] == kw:
+                    m = find_matching_entry(title, entry[TITLE_EW][key], url, os_name, title_known)
+                    if m is not None:
+                        return m
+        # `titles-match`: a regex key searched against the whole title, tried in
+        # file order. It sits with the positional matchers above, before the
+        # word-anywhere fallback, and is not suppressed by a known URL.
+        if has_match:
+            for pattern, sub in entry[TITLE_RE].items():
+                if re.search(str(pattern), title):
+                    m = find_matching_entry(title, sub, url, os_name, title_known)
+                    if m is not None:
+                        return m
         # `titles-contains` is the weakest signal here — any single word anywhere
         # in the title — so for an entry that also declares `urls-contains` it is
         # a fallback for when the URL is *unknown*, not merely unmatched. A known
@@ -213,12 +399,27 @@ def find_matching_entry(title, entry, url=None, os_name=None):
         # False for them whatever the URL is -- as are the two positional
         # matchers above, which no shipped entry combines with `urls-contains`.
         url_decided = bool(has_urls_contains and url)
+        # Scan the title left to right, so the earliest key in the title wins
+        # as before; at each position the longest phrase is tried first.
         if has_contains and not url_decided:
-            for word in words:
-                if word in entry[TITLE_HAS]:
-                    m = find_matching_entry(title, entry[TITLE_HAS][word], url, os_name)
-                    if m is not None:
-                        return m
+            keys = _phrase_keys(entry[TITLE_HAS])
+            for i in range(len(words)):
+                for kw, key in keys:
+                    if words[i:i + len(kw)] == kw:
+                        m = find_matching_entry(title, entry[TITLE_HAS][key], url, os_name, title_known)
+                        if m is not None:
+                            # On a BROWSER entry (it declares urls-contains) this
+                            # is the same web-app routing with no URL known, so
+                            # the site layers over the browser here too. Other
+                            # apps' title sub-maps keep replacing: a dialog or a
+                            # mode of one app is not running inside another.
+                            if has_urls_contains and has_overlay and entry.get(LAYER, True):
+                                return _layered(entry, m)
+                            return m
+
+    if not (has_overlay or has_remote):
+        # Nothing routed: an entry with no overlay never matches by itself.
+        return None
 
     # A hard ``url`` regex constraint can only be satisfied when a URL is known;
     # with no URL it simply doesn't match (not a false positive). ``urls-contains``
@@ -227,6 +428,10 @@ def find_matching_entry(title, entry, url=None, os_name=None):
     # browser entry with a default overlay + urls-contains still matches (default)
     # when the URL is unknown or hits no sub-key.
     if has_url and (not url or not re.search(entry[URL], url)):
+        return None
+    if has_title and not title_known:
+        # Declared a title constraint, and the caller has no title to test it
+        # with: that is a failed constraint, not an absent one.
         return None
     if title and has_title and not re.search(entry[TITLE], title):
         return None

@@ -63,23 +63,46 @@ M_IDLE_STYLE_SET = "idle.style.set"    # {"value": 0|1|2} -> (ok, payload)  (0=p
 M_IDLE_STYLE_GET = "idle.style.get"    # {} -> (ok, value)
 M_IDLE_TIMEOUT_SET = "idle.timeout.set"  # {"value": 0..5} -> (ok, payload)  (IdleTimeout preset)
 M_IDLE_TIMEOUT_GET = "idle.timeout.get"  # {} -> (ok, [preset, seconds])
+# Tap-hold timing (firmware protocol v29+; Auto Shift v30+). All ranges CLOSED
+# (TapTerms): tapping term 100..500 ms, Flow Tap term 0..300 ms (0 = off), Auto
+# Shift timeout 100..500 ms, 10 ms steps. An omitted or null value is left unchanged.
+M_TAP_TERMS_SET = "tap_terms.set"  # {"tapping_term", "flow_tap_term", "auto_shift": bool, "auto_shift_ms"} (each ms|null) -> (ok, terms)
+# Key attention (firmware protocol v32+): the focus ripple on one key.
+M_KEY_ATTENTION = "key.attention"  # {"row", "col", "count" (0 = until cancelled), "period_ms"} | {"cancel": true} -> (ok, msg)
+M_TAP_TERMS_GET = "tap_terms.get"  # {} -> (ok, {"tapping_term", "flow_tap_term", "flow_tap_available", "auto_shift_available", "auto_shift", "auto_shift_ms"})
+# AI agents on the number row (services/agents). No device I/O: the registry is
+# host state, so these work with the keyboard away and the feature off.
+M_AGENTS_LIST = "agents.list"      # {} -> {"agents": [...], "page", "pages", "enabled", "active"}
+M_AGENTS_REPORT = "agents.report"  # {"vendor","session_id","state"|null,"event","headline","cwd","pid",...} -> agent|null
+M_AGENTS_LABEL = "agents.label"    # {"vendor","session_id","text"} -> "ok"
+M_AGENTS_FORGET = "agents.forget"  # {"vendor","session_id"} -> "ok"
+M_AGENTS_RAISE = "agents.raise"    # {"vendor","session_id"} -> "raising"
 M_GLYPH_SCRIPT_SET = "glyph.script.set"  # {"value": 0|1|...} -> (ok, payload)  (0=standard, 1=tengwar)
 M_GLYPH_SCRIPT_GET = "glyph.script.get"  # {} -> (ok, value)
 # Keycap legend SIZE (firmware protocol v13+). A closed range, unlike the script
 # above: 0=small (the original face), 1=medium, 2=large — the firmware NACKs
 # anything else. Affects a key's MAIN legend only, not the shift/AltGr previews.
+M_GLYPH_PLACEMENT_SET = "glyph.placement.set"  # {"value": 0|1} -> (ok, payload)  (0=centre, 1=top-left)
+M_GLYPH_PLACEMENT_GET = "glyph.placement.get"  # {} -> (ok, value)
 M_GLYPH_SIZE_SET = "glyph.size.set"      # {"value": 0|1|2} -> (ok, payload)
 M_GLYPH_SIZE_GET = "glyph.size.get"      # {} -> (ok, value)
 M_REPLAY_ANIM = "anim.replay"            # {} -> (ok, payload)  replay the startup ("Eden") animation
+# Developer: what the mock keyboard shows on its keycaps (PolyCore.mock_keycaps).
+M_MOCK_KEYCAPS = "mock.keycaps"          # {"modifier": 0..15} -> (ok, {images, base_layer, ...})
 # Firmware crash records (protocol v16+). GET returns the archived record of one half
 # as crash_report.CrashRecord.to_dict() (or None); CLEAR erases the keyboard's archive.
 M_CRASH_GET = "crash.get"                # {"which": 0|1} -> (ok, record|None)
 M_CRASH_CLEAR = "crash.clear"            # {} -> (ok, payload)
+M_REBOOT = "device.reboot"               # {} -> "rebooting" (cmd 43, protocol v22+)
+# Boot-loop diagnostic: progress and the verdict arrive as boot_loop_* events.
+M_BOOT_LOOP_START = "bootloop.start"     # {"rounds": 1..50} -> {"rounds": n}
+M_BOOT_LOOP_CANCEL = "bootloop.cancel"   # {} -> "cancelling"
 # Re-detect the host unicode input method (WinCompose vs native) and push it to the
 # keyboard. Normally sent once per connect; needed when WinCompose is installed or
 # quit mid-session. {} -> (ok, {"mode": "WinCompose"|"Windows"|...})
 M_UNICODE_MODE_REFRESH = "unicode.mode.refresh"
-M_OVERLAY_SEND = "overlay.send"        # {"files": [name, ...]} -> {"queued": bool}
+M_OVERLAY_SEND = "overlay.send"        # {"files": [name, ...], "underlay"?: [name, ...]} -> {"queued": bool}
+# "underlay" names the files drawn dimmed under a website's overlay (handler/common.Underlay).
 M_OVERLAY_ENABLE = "overlay.enable"    # {} -> (ok, payload)
 M_OVERLAY_DISABLE = "overlay.disable"  # {} -> (ok, payload)
 M_OVERLAY_RESET = "overlay.reset"      # {} -> (ok, payload)
@@ -114,6 +137,11 @@ M_OVERLAY_SET_ALL_USAGE = "overlay.set_all_usage"   # {} -> (ok, payload)
 M_OVERLAY_MAPPING_SEND = "overlay.mapping_send"     # {"mapping": {idx: idx}} -> (ok, payload)
 M_ACTIVATE_BOOTLOADER = "fw.bootloader"             # {} -> {"queued": True}
 M_SET_HANDEDNESS = "fw.set_handedness"              # {"master_is_left": bool} -> {"queued": True}
+# Same, plus the Rev.2 board flag of the connected half (firmware protocol 24). A
+# method of its own, not a param of the one above: a daemon that predates it then
+# answers "unknown method" instead of setting the side and dropping the flag.
+M_SET_HANDEDNESS_BOARD = "fw.set_handedness_board"  # {"master_is_left": bool, "split_vbus": bool}
+                                                    #   -> {"queued": True}
 M_FW_APPLY_STAGED = "fw.apply_staged"               # {} -> {"queued": True} (streams fw_apply_* events)
 M_FONTPACK_FLASH = "fontpack.flash"    # {"path": str, "bundle_id": int=0} or {"bundle": id|index}
                                        #   -> {"queued": bool} (streams fontpack_flash_* events)
@@ -123,6 +151,10 @@ M_FONTPACK_SYNC = "fontpack.sync"      # {"force": bool=False} -> {"queued","for
 M_FONTPACK_WIPE = "fontpack.wipe"      # {} -> {"queued": bool}; empties all bundle slots
 M_FONTPACK_BUNDLES = "fontpack.bundles"  # {} -> {"shipped": bool, "bundles": [{id,index,device_version,
                                          #        shipped_version,stale}]} (per-bundle device vs shipped)
+M_EMOJIDICT_STATUS = "emojidict.status"  # {} -> {"shipped","supported","selected","device",
+                                         #   "dictionaries": [{id,label,name,native,revision,size}]}
+M_EMOJIDICT_CHOOSE = "emojidict.choose"  # {"id": str} | {"path": str} -> chosen id or path;
+                                         #   "path": "" stops using a dictionary file
 M_DOOM_INSTALL = "doom.install"        # {"path": str} -> {"queued": bool}; installs the easter egg's
                                        #   WHX game data (streams fontpack_flash_* events)
 M_DOOM_INSTALL_PACK = "doom.install_pack"  # {"path": str} -> {"queued": bool}; installs the easter
@@ -207,8 +239,22 @@ def gui_lock_path() -> str:
     return os.path.join(_config_dir(), "polykybd.gui.lock")
 
 
+def forwarder_lock_path() -> str:
+    """Path of the file lock that keeps the forwarder to ONE process per user.
+
+    A file of its own, not :func:`gui_lock_path`: forwarding to your own
+    keyboard machine runs a forwarder beside the tray app, and the two must
+    not turn each other away."""
+    return os.path.join(_config_dir(), "polykybd.forwarder.lock")
+
+
 def authkey_path() -> str:
     return os.path.join(_config_dir(), "polykybd.authkey")
+
+
+def agents_store_path() -> str:
+    """The agent registry of the last run (services/agents/store.py)."""
+    return os.path.join(_config_dir(), "agents.json")
 
 
 def window_report_authkey_path() -> str:

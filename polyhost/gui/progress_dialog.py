@@ -18,7 +18,10 @@ The override is a Python method, so it only intercepts calls made from Python.
 Every caller in this repo (``UpdateProgressController``, the firmware and
 WinCompose progress in ``host.py``) is one.
 """
-from PyQt5.QtWidgets import QLabel, QProgressDialog
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QLabel, QProgressDialog, QPushButton
+
+from polyhost.gui.ui_kit import set_button_icon
 
 
 class StableProgressDialog(QProgressDialog):
@@ -29,6 +32,23 @@ class StableProgressDialog(QProgressDialog):
         self._label = self.findChild(QLabel)
         if self._label is not None:
             self._label.setWordWrap(True)
+            # The label gets every pixel between the top margin and the bar
+            # (QProgressDialog has no layout), and centred text left an empty
+            # band above it in the tray's 400 x 160 dialog. Bottom-left keeps
+            # the text next to the bar it describes.
+            self._label.setAlignment(Qt.AlignLeft | Qt.AlignBottom)
+        self._style_cancel()
+
+    def _style_cancel(self):
+        # QProgressDialog makes its own Cancel button, with no icon; give it
+        # the same one as every other Cancel (ui_kit).
+        btn = self.findChild(QPushButton)
+        if btn is not None:
+            set_button_icon(btn, "cancel")
+
+    def setCancelButtonText(self, text):  # noqa: N802 — Qt override
+        super().setCancelButtonText(text)
+        self._style_cancel()
 
     def setLabelText(self, text):  # noqa: N802 — Qt override
         if self._label is None:

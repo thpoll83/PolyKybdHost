@@ -144,6 +144,16 @@ purpose is proving whether the app crashed, shipped into none of them.
       It writes nothing while the file is quiet. A marker line is never answered, so the GUI and the daemon
       cannot ping-pong, and the surviving process dates the dump a fatal fault
       leaves behind.
+    - ⚠️ **On Windows a dump covers the faulting thread only**
+      (`crash_log.dump_all_threads()`). With `all_threads=True`, the dump for a
+      handled `0x80010108` walked the other threads' stacks while they ran, and
+      that walk killed the daemon (2026-09-25): the dump broke off mid-line in
+      the window-polling thread's frame with `Windows fatal exception: access
+      violation`, after three hours and ONE handled COM error. Do not turn the
+      full census back on for Windows to get more context from a dump; the
+      handled errors that trigger it are exactly the ones that must stay
+      harmless. A dump from an older host that breaks off mid-line *during* a
+      first-chance dump is this crash, not the COM error's.
     - **`crash_summary` counts each `Windows fatal exception` line as its own
       dump.** It used to count only `Fatal Python error` / `Current thread`, so
       those 36 dumps summarised as no faults at all.
@@ -188,6 +198,34 @@ purpose is proving whether the app crashed, shipped into none of them.
 
 ---
 
+## The boot-loop test (cmd 43, protocol v22+)
+
+**Developer > Firmware > "Boot-loop test…"**, `polyctl bootloop [--rounds N] |
+--cancel` and `polyctl reboot`. It hunts the intermittent boot stall that the
+firmware's late-boot watchdog guard recovers from: reboot (cmd 43), wait for the
+GET_ID fresh-boot marker, read cmd 39 on both halves, repeat. It stops at the first
+FRESH crash record, at a reboot that does not come back within 60 s, on cancel, on a
+failed reboot request, or after 1..9999 rounds (default 50). Progress and the verdict are the
+`boot_loop_progress` / `boot_loop_done` events, so the tray works the same as a
+daemon client.
+
+- ⚠️ **It runs on its own thread, not as a worker job.** The reconnect probe that
+  notices the keyboard coming back runs on the worker, so one long job would block
+  the very event it waits for. Each step is a short `_device_call`.
+- **The signal is the fresh-boot marker, set in `apply_reconnect()`** (`_boot_seen`),
+  not a disconnect: a fast reboot may never show as one. Both the tray and the
+  daemon apply the probe through `core.apply_reconnect()`, so it fires in both modes.
+- **A deliberate reboot never leaves a record** (`shutdown_user()` disarms the
+  watchdog first), so any fresh record after a round is a boot that went wrong.
+  The loop also listens for `crash_detected`, because another reader of the slave's
+  record may report it first.
+- **A timeout is the worse outcome**: the board wedged where the guard does not
+  reach (before boot step 5) or a second stall in a row (the guard is one-shot).
+  Read the status panel before replugging; the record, if any, survives the replug.
+- `MockFirmware` models it: `FaultPlan.boot_crash_on_reboot` (the Nth reboot comes
+  back with a fresh `phase=1:0x16e1` record) and `boot_hang_on_reboot` (it never
+  comes back). `tests/core/boot_loop_test.py` drives the real core over them.
+
 ## The firmware-crash dialog
 
 - **A firmware crash is ALERTED, not merely logged — `services/crash_report.py` +
@@ -204,13 +242,53 @@ purpose is proving whether the app crashed, shipped into none of them.
   = 16). Three things that are easy to get wrong:
   - ⚠️ **A console read is a report-sized FRAGMENT, not a line** — the scanner
     reassembles across the 250 ms reads and only classifies `\n`-terminated lines,
-    and it **dedupes by the line itself** because the boot banner re-emits for
-    ~30 s. `clear_crash_record()` calls `forget()` so the next boot's line is
-    reported again. Same trap the rig's `ConsoleTap` documents.
+    and it **dedupes by `CrashRecord.key()`** because the boot banner re-emits for
+    ~30 s. The key is rebuilt from the fields in the firmware's own
+    `crash_record_format()` shape, so the console copy and the cmd 39 copy of one
+    crash compare equal (a HID record has no console line to compare).
+    `clear_crash_record()` calls `forget()` so the next boot's line is reported
+    again. Same trap the rig's `ConsoleTap` documents.
+  - ⚠️ **The console line alone MISSED a recovered boot stall, so the host now
+    also asks the keyboard once per keyboard boot.** Field, 2026-10-02: fw 1.3.2
+    wedged at "63%, 4 / 4", the late-boot guard reset it once
+    (`phase=1:0x16e1`), and no dialog appeared. The line is printed only with the
+    banner and its re-emits in the first ~30 s, and after a watchdog reset the
+    keyboard re-enumerates while the host's probe is still debouncing. The record
+    was on the keyboard the whole time. On the GET_ID **fresh-boot marker** (`*`,
+    cleared by the first GET_ID after the keyboard boots), `PolyCore._arm_crash_autocheck()` queues
+    cmd 39 reads of the master at 0, 4 and 10 s until it answers at all (right after
+    a boot the keyboard can be deaf after the overlay resend, and one timeout used
+    to lose the crash), and of the slave at 0, 8 and 20 s until a record arrives
+    (the master pulls the slave's record over the split link three times, 2 s
+    apart, after link-up). The 1 s `crash_autocheck` worker periodic drains them,
+    and a read that falls due while the keyboard is paused or away WAITS rather
+    than being dropped: no new marker will come to re-arm it. Only a **fresh**
+    record alerts; `CrashScanner.note()` is the dedupe for both sources.
+    ⚠️ **Arm it on the marker, never on a connect.** A record stays fresh for the
+    whole keyboard boot, so a read on every connect re-alerts an old crash after a
+    host restart, a pause/resume or a sleep/wake. The marker is seen by exactly one
+    host connect per keyboard boot. The per-process dedupe cannot replace it: it
+    dies with the process, and two stalls at the same breadcrumb are byte-identical.
+    ⚠️ **Known gap, shared with the console path: a SLAVE record is fresh relative
+    to the slave's boot, not the master's.** The master copies the slave's fresh
+    flag (`crash_record_note_slave()`), so when the master alone reboots and the
+    slave stays up, an old slave crash reads fresh again, on cmd 39 and in the
+    `crash: side=slave` console line alike. The host cannot tell that apart from a
+    new one. The fix is firmware-side: clear the slave's fresh flag once the master
+    has pulled it.
+  - **Help & About → "Read keyboard crash record"** is the manual readout. It reads
+    both halves over cmd 39, opens the same dialog with whatever is archived
+    (fresh or older) and copies the report text to the clipboard. Gated on
+    `connected`, not paused, and `supports("crash_record")` in
+    `managed_connection_status`.
   - ⚠️ **The console is starved during a flash** (see the threading notes above),
     so a crash line printed while the host is flashing is lost to the scanner —
     the record is still on the keyboard: `polyctl crash show` reads it over HID,
     where `fresh` says whether it belongs to the boot before this one.
+  - **`boot_breadcrumb_text()` decodes a `phase=boot` argument** into the summary
+    (step, sub-step, which paint was in flight, the core1 flag). It mirrors the
+    ranges in qmk `boot_diag.c` and `tools/hil_probes/crash_record.py`; a new
+    range there needs a branch here, or the summary falls back to "breadcrumb 0x…".
   - `PHASE_NAMES` / `RECORD_STRUCT` mirror the firmware enum and struct
     (`_Static_assert(sizeof == 48)` on that side); a phase added there needs a
     name here or the summary reads `phase N`.
@@ -247,6 +325,64 @@ purpose is proving whether the app crashed, shipped into none of them.
       mutation-never-applied traps in `qmk_firmware/CLAUDE.md`, and the same
       remedy applies one level up: **judge the run by the `Ran N tests` summary
       line existing**, not by the absence of failures.
+
+---
+
+## The problem scan
+
+`services/problem_scan.py` watches for failures that otherwise reach only a log file,
+and the tray offers *Report a Problem* the first time one appears in a session. It was
+added after the status OLED's `oled_render offset command failed` (an I2C write that
+did not land) turned up once in a rig probe and was seen nowhere else. Nothing is sent
+by itself: the dialog leads to the same GitHub issue flow as the crash dialog.
+
+Two sources, each behind its own setting, and one level for both:
+
+| Setting | Default | What it does |
+|---|---|---|
+| `problem_scan_keyboard_console` | on | Match whole firmware console lines against `CONSOLE_PATTERNS`. |
+| `problem_scan_host_logs` | on | A root-logger handler passes on this app's WARNING/ERROR records. |
+| `problem_scan_level` | `errors` | `errors_and_warnings` also reports warning-severity patterns and WARNING records. |
+
+- ⚠️ **Firmware lines carry no severity, so the console side is a CURATED list,
+  never a keyword match.** Healthy output contains the words: the split-link stats
+  line prints `transport_fail=0 … giveup=0` every few seconds. Each entry has its own
+  regex, severity and a sentence a user can read. A new firmware failure message
+  needs an entry in `CONSOLE_PATTERNS`, and a pattern that fires on a healthy board
+  trains people to dismiss the dialog, so `problem_scan_test` pins the healthy
+  stats line as a non-match. Crash records stay with `crash_report.py`.
+- **A pattern can ESCALATE** (`escalate_after`, `escalate_window_s`,
+  `escalated_summary`): a warning becomes an error once it matches that many times
+  in the window, and is published at once with the new sentence, whatever the update
+  interval says. The status OLED uses it. One failed I2C write costs one frame, and
+  the next frame repaints it, so a single `oled_render … failed` is a warning and 3
+  in 60 s are an error. Through 1.12.0 one occurrence was an error, and its dialog
+  took focus and ended the idle animation over a frame the board had already
+  repainted (field report, 2026-10-02). Firmware with `oled_i2c.c` retries a failed
+  write and prints `oled_i2c:` detail lines (`oled_i2c_retried`, 10 in 60 s
+  escalate). It also prints a `status display not responding` line, which is an
+  error at once (`oled_i2c_stuck`).
+- **Both scanners share `services/console_lines.LineAssembler`**: a console read is
+  a report-sized fragment, and the crash scanner already reassembled lines by hand.
+- **Once per process and source key.** A console pattern is keyed by its id; a host
+  record by logger + UNFORMATTED message, so one call site logging different values
+  is one problem. A repeat raises its count, and the raised count is re-sent as an
+  update of the same problem at most once per `UPDATE_INTERVAL_S` (10 s), which the
+  dialog merges by key. So a stuck line costs one event per 10 s, not one per
+  line, and the count shown can lag by the last interval's repeats.
+- ⚠️ **The handler sits on the ROOT logger, and the process that owns it decides
+  what it covers.** The core installs one (`PolyCore.__init__`, removed in
+  `shutdown()`); in-process mode that covers the GUI too. A daemon CLIENT tray is a
+  separate process, so `host.py` installs its own and reads the two settings from
+  the file per record. The forwarder installs none.
+- ⚠️ **The handler must never feed itself.** Its callback emits an event, and a
+  failing event observer is logged at ERROR. A per-thread guard drops every record
+  logged while the callback runs; `PolyKybdConsole` (relayed console chunks) is
+  ignored outright.
+- **The dialog pops up ONCE per session.** Later problems are appended without
+  raising it, so a condition that repeats a line cannot keep stealing focus.
+- A problem seen while no tray is attached to the daemon is not replayed when one
+  connects; the line is still in the logs.
 
 ---
 
@@ -416,4 +552,50 @@ purpose is proving whether the app crashed, shipped into none of them.
     both. Anything configured as a Worker **binding** works; anything Cloudflare
     describes as "protect a route/hostname" needs a zone you own. This has cost a
     round twice.
+
+## When something is reported broken (the CLAUDE.md summary)
+
+_Moved verbatim from `CLAUDE.md` on 2026-10-10. CLAUDE.md keeps a short pointer._
+
+
+Logs, crash reporting and the guided problem report are
+[`docs/diagnostics.md`](diagnostics.md); the three silent failure modes of
+multi-machine forwarding are in the same file; the telemetry client and its collector
+are [`docs/telemetry-internals.md`](telemetry-internals.md). Eight rules bind code
+outside those files:
+
+- ⚠️ **A NEW LOG FILE reaches nobody unless `LOG_SOURCES` knows about it.** That one
+  declaration replaced four hand-kept lists which had already drifted —
+  `crash_log.txt`, the file whose whole purpose is proving whether the app crashed,
+  shipped into **none** of them. Registering is half: check the lines carry a sliceable
+  timestamp prefix, or `slice_lines` silently drops the whole file.
+- ⚠️ **Never rotate, delete or `os.replace` `crash_log.txt`** — `faulthandler` holds the
+  file descriptor, so a rename leaves the live process dumping into a deleted inode.
+  Clear it by TRUNCATION, which is safe only because every writer opens with `"a"`.
+- **Redaction defaults ON for a report and OFF for "Collect logs…"** — same data,
+  different destination, so the safe default flips.
+- ⚠️ **`polyctl logs` must work with NO host running** — the moment a user most needs
+  the logs is the one where the app failed to start.
+- ⚠️ **`Connected to PolyKybd.` does not mean a usable device** —
+  `_open_interfaces()` returns True when `HidHelper` found no raw HID interface
+  (it sets `self.interface = None` and does not raise), so the core logs a
+  connect and every command afterwards returns `'No Interface'`. Nor is
+  `exclusive access and device already open` proof of a second process: the same
+  function reassigns `self.hid` without closing the previous helper, so one
+  process collides with the handle it is replacing. **Reading a bundle is the
+  `triage-log-bundle` skill**, which carries these and the rest of the lines
+  that lie.
+- ⚠️ **The problem scan matches firmware console lines against a CURATED list
+  (`problem_scan.CONSOLE_PATTERNS`), never keywords** — healthy output says
+  `transport_fail=0 giveup=0`. A new firmware failure message needs an entry there
+  to reach the user. Its log handler is on the root logger of whichever process
+  installs it (the core, or a daemon-client tray), and must not log from its own
+  callback. Details: [`docs/diagnostics.md`](diagnostics.md) → *The problem scan*.
+- ⚠️ **"The tray icon is gone" is NOT "the app crashed"** — under daemon-by-default the
+  daemon still owns the device with no GUI attached. Check the process list, in PAIRS.
+- ⚠️ **The telemetry payload is an ALLOW-LIST at both ends — a privacy guarantee.**
+  `build_payload()` copies named fields and never spreads a status dict. **There is no
+  in-app consent step**, so the release notes are the disclosure and the one INFO line
+  printed at every start is all a headless daemon can say: do not gate it, downgrade it
+  or drop it in a logging cleanup.
 

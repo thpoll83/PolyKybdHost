@@ -133,3 +133,10 @@ python scripts/generate_app_overlays.py \
 ```
 
 Verified byte-identical on a re-run.
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+**Nothing added.** Calculator's resource table binds Ctrl+C / Ctrl+V (already
+drawn) and nothing else in the standard set: Ctrl+S/O/N/P/R/Y/... are scientific
+or memory functions (sinh, cosh, e^x, M+, MR, y-th root), and there is no
+undo, find or zoom.

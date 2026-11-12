@@ -26,7 +26,21 @@ catch must be listed:
   `adobe premiere pro`. ⚠️ On Windows JetBrains ships `idea64.exe` /
   `pycharm64.exe` / `studio64.exe`, which are *not* the same names as their
   Linux launchers.
-- **Linux / macOS** — the reported application name, lowercased.
+- **Linux / macOS** — the reported application name, lowercased. On macOS that is
+  the display name (`Microsoft Word`, `Sublime Text`, `zoom.us`), which rarely
+  matches the Windows executable.
+- **A trailing release year is dropped** when the exact name is not a key, so
+  `adobe photoshop` also matches macOS's `Adobe Photoshop 2025` and every later
+  release. Only a final four-digit `19xx`/`20xx` token is dropped.
+- **A trailing dotted version is dropped** the same way, so `openra-ca` also
+  matches the Snap's `openra-ca-1.08.2`. It needs at least one dot and a space,
+  `-` or `_` before it, so `age2_x1` and `photoshop 2` keep their digits.
+- **A dotted version glued to the name is dropped** last, so `nuke` also
+  matches `nuke17.1` (Linux) and `nuke17.1v3` (macOS). It needs a letter
+  directly before the digits and at least one dot, so `fl64` and `foobar2000`
+  keep theirs. ⚠️ On Windows the name is cut at its FIRST dot before any of
+  this, so `Nuke17.1.exe` arrives as `nuke17`, and the entry lists those
+  major-version names itself.
 
 Because it is an exact lookup, **one app name can appear in only one entry**. Two
 entries keyed on `soffice` do not both apply; the later simply wins. Split by
@@ -39,15 +53,33 @@ window title (or OS) instead — see below.
 | `overlay` | file or list | The overlay PNG(s) to load, relative to `res/overlays/`. |
 | `remote` | bool | This entry is a forwarded window rather than a local one. |
 | `title` | regex | Hard gate: `re.search` against the **whole** window title. |
-| `titles-startswith` | sub-map | Keyed on the title's **first word**. |
-| `titles-endswith` | sub-map | Keyed on the title's **last word**. |
-| `titles-contains` | sub-map | Keyed on **any one word** of the title. |
+| `titles-startswith` | sub-map | Keyed on the title's **first word(s)**. |
+| `titles-endswith` | sub-map | Keyed on the title's **last word(s)**. |
+| `titles-contains` | sub-map | Keyed on **one word or an adjacent run of words** anywhere in the title. |
+| `titles-match` | sub-map | Keyed on a **regex**, `re.search` against the whole title, tried in file order. For a signal inside a word, such as a file extension. |
 | `url` | regex | Hard gate on the focused browser tab's URL. |
 | `urls-contains` | sub-map | Keyed on a **substring** of the URL. |
 | `os` | sub-map | Keyed on the OS running the focused app. |
+| `layer` | bool | `false` turns off browser layering for a `urls-contains` entry (see below). |
+| `glyph_script` | name | The [keycap face](#keycap-face-per-application) while this entry matches: a `GlyphScript` name (`c64keys`, `amiga`, `ibmvga`, …). |
+| `glyph_script_position` | `centre` / `top-left` | The face's placement while this entry matches (firmware protocol 26+). |
 
 A sub-map's values are full entries, so they may carry an `overlay` plus further
 constraints of their own — the matcher recurses.
+
+## Keycap face per application
+
+`glyph_script` and `glyph_script_position` switch the keyboard's letter and digit legends
+to a retro or fantasy face while the entry matches, for example the C64 keycap lettering
+for VICE. Either key may be given alone; the part an entry leaves out stays the user's
+own. The host remembers the user's face before the first switch (in memory and in
+`keycap_face_restore.json` beside `settings.yaml`) and sends it back when no matching
+entry asks for a face, at shutdown, and on the next connect if the host stopped while a
+face was on. A face picked by hand in the tray or with `polyctl` while an entry's face
+is on becomes the one restored. Put the keys on the entry that matches: for a
+`titles-contains` route or an `os:` branch that is the sub-entry, not its parent. An
+entry with an `os: macos:` branch therefore repeats the two keys inside the branch.
+`polyhost/services/keycap_face.py`.
 
 ## Matching order
 
@@ -55,12 +87,163 @@ Most specific first; the first branch that yields a match wins:
 
 1. **`os`** — the platform decides which keymap the app even has.
 2. **`urls-contains`** — a tab's URL identifies a web app far better than its title.
-3. `titles-startswith`, then `titles-endswith`, then `titles-contains` (the last
+3. `titles-startswith`, then `titles-endswith`, then `titles-match`, then `titles-contains` (the last
    only when no URL is known, if the entry declares `urls-contains` — see below).
 4. The entry's own `title` / `url` gates, then its own `overlay`.
 
 Nothing matching a sub-map is not a failure: the entry's own `overlay` applies.
 That is what makes a default-plus-refinements entry work.
+
+### A web app sits ON TOP of its browser
+
+A sub-entry normally **replaces** its parent's overlay. The one exception is a
+**browser entry** (any entry that declares `urls-contains`): a site matched under
+it, by `urls-contains` or by the `titles-contains` fallback, gets the browser's
+overlay files **first** and its own **after**. Template files resolve
+last-one-wins per key, so the site wins exactly the keys it draws and the
+browser keeps every other one: on GitHub, Ctrl+T, Ctrl+L, the tab keys and the
+standard editing keys stay on the board. A site that lists a browser file
+itself keeps it in the later position. Title sub-maps of other apps still
+replace: a mode or dialog of one app is not running inside another.
+(`handler/common.py::_layered`, `tests/handler/matcher_test.py::TestBrowserLayering`.)
+
+### `layer: false` — a context app, not a browser
+
+The layering above assumes the parent is a browser that runs underneath the
+site. Blender uses `urls-contains` too, on the `blender://<mode>/<editor>`
+pseudo-URL its add-on reports ([`blender-addon/`](../../blender-addon/README.md)),
+and there the parent overlay is the 3D View fallback for when no context is
+known. Layered, it would draw 3D View keys, dimmed, under the Node Editor's.
+`layer: false` on the entry (and on an `os:` branch that carries its own
+`urls-contains`, since a matching branch replaces the entry) makes a matched
+sub-entry **replace** the parent instead.
+(`tests/handler/matcher_test.py::TestLayerOptOut`, `tests/handler/blender_routing_test.py`.)
+
+`urls-contains` matches only a URL the host attributes to the **focused** app: a
+browser's active tab, or a context report from an app on the allow-list in
+`handler/browser_url.py` (`CONTEXT_REPORTERS`: Blender, and GUI Vim and Emacs).
+The entry's names and that list must agree; the routing test checks it. A
+terminal on `TERMINAL_APPS` takes the report of a vim or emacs running in it
+(`HOSTED_REPORTERS`), so a terminal entry can route `vim://` and `emacs://` the
+same way.
+
+### An entry with no overlay of its own
+
+An entry may have `urls-contains` or a title sub-map and no `overlay`. It
+then matches only through those sub-maps and never by itself: when no URL
+needle and no title key routes, the matcher returns nothing, exactly as for an
+app with no entry, and the app keeps the generic shortcut harvest. The
+terminals without an overlay set use this to route the editors' mode reports
+(`&editor_urls`) and GNU nano's title (`&editor_titles`).
+(`tests/handler/matcher_test.py::TestRoutesOnlyEntry`,
+`tests/handler/vim_routing_test.py`.)
+
+### An editor seen only in the window title (GNU nano)
+
+GNU nano sends no report and sets no title, so it is visible only when the
+shell or the terminal puts the running command into the window title (cmd.exe,
+macOS Terminal and iTerm2, Konsole, fish, Nushell, xonsh and oh-my-zsh do by default; bash,
+PowerShell and plain zsh need the scripts in [`shell/`](shell/), which the
+tray's Updates → "Set up the terminal and editors…" or
+`polyctl shell-integration install` adds to their startup files). The
+terminal entries carry `titles-contains: &editor_titles`: the word
+`nano` selects the route and the sub-entry's `title` regex requires nano at
+the command position, so `vim nano` or a prompt in `~/nano-docs` keeps the
+terminal's set. A mode report still takes priority, because a known URL skips
+`titles-contains`.
+(`tests/handler/nano_routing_test.py`.)
+
+tmux has a route in the same list (`tests/handler/tmux_routing_test.py`). tmux
+does not write the outer title by default (`set-titles` off), so the title keeps
+the command the shell wrote when tmux started, and the tmux set stays loaded for
+the whole session, also while nano runs in a pane
+(`overlay_sources/tmux/SOURCES.md`).
+
+### Terminal file managers (yazi, ranger, lf)
+
+yazi, ranger and lf have routes in the same `&editor_titles` list, with a
+`title` regex that requires the program at the command position, as for nano.
+yazi writes `Yazi: <directory>` itself, so `Yazi:` is a key too. ranger writes
+`ranger:<path>` only with `set update_title true`; that is one word, so the
+shared `&multiplexer_titles` map (the terminals' `titles-match`) has a regex for it. ranger
+has no Windows set: its route has only `macos` and `linux` branches. lf writes
+no title. The formats are in
+[`overlay_sources/tui_file_managers/SOURCES.md`](overlay_sources/tui_file_managers/SOURCES.md).
+(`tests/handler/tui_file_manager_routing_test.py`.)
+
+### Other terminal programs, and Vim's own title
+
+htop, btop, Midnight Commander, micro, Helix, less (and man, which pages
+through less), k9s and GDB have routes in the same list, built the same way
+(`overlay_sources/tui/SOURCES.md`). Midnight Commander writes
+`mc [user@host]:<dir>` itself. Vim and Neovim with `set title` write
+`<file> (<dir>) - VIM` and `<file> - NVIM`; those titles load the Normal-mode
+Vim set, and the plugin's mode report takes priority. The PolyKybd GDB script (`gdb-plugin/`) writes
+`gdb ⏸ <program>` at the prompt and `gdb ▶ <program>` while the program runs;
+the `gdb` route rejects the second, and a `▶` route loads the running set
+(Ctrl+C only). Without a mode report
+the earliest key word in the title selects the route, so a file named after
+one of these programs (`htop notes (~/src) - VIM`) loads that program's set.
+The `man` route assumes man pages through less; with another pager in
+`MANPAGER`, `PAGER` or `-P` the less keycaps are wrong.
+(`tests/handler/tui_routing_test.py`.)
+
+### A program in a terminal dims the terminal's shortcuts
+
+nano, Vim, Emacs, the AI CLIs and the terminal programs run inside the terminal, and the terminal reads
+its own shortcuts (new tab, copy, paste) before the program does. So when one of
+the routes in `&editor_titles` or `&editor_urls` matches, the terminal's
+shortcuts stay on the keycaps, drawn dimmed, and the program's take full
+strength on every key they draw, as a browser's do under a website:
+
+- Windows Terminal, WezTerm and kitty have a set of their own; their entries
+  layer (no `layer: false`), so `_layered` puts that set underneath as an
+  `Underlay`. WezTerm and kitty have an `os: macos` branch for their Cmd set,
+  and that branch repeats `urls-contains` and `titles-contains`, because a
+  matching `os:` branch replaces the entry (`tests/handler/terminal_set_routing_test.py`).
+  `hosted_in_terminal()` counts the entry and its `os:` branches as the
+  terminal's own set.
+- The other terminals have no set; the gap fill draws their harvested shortcuts
+  around the program's template, and `OverlayHandler.template_is_hosted()`
+  makes those dimmed too. A forwarded terminal's relayed shortcuts are dimmed
+  the same way (`RemoteHandler.template_is_hosted()`).
+
+(`tests/handler/ai_cli_routing_test.py`, `tests/core/generic_overlays_test.py`
+→ `HostedTerminalFillTest`.)
+
+### Terminal AI coding CLIs
+
+Claude Code, Codex, OpenCode, Gemini CLI, Qwen Code, GitHub Copilot CLI, Kimi
+Code CLI, Mistral Vibe and Aider have routes in the same `&editor_titles` list. All but Aider replace the
+shell's title with their own, so each route's keys are the first word of the
+CLI's own title (`✳`, `◇`, `OC`, `GitHub Copilot`, `Kimi Code`, `Vibe` ...) and its command name,
+and the `title` regex requires that word at the start of the title or after a
+terminal's separator. Codex's default title does not name it; only its
+"action required" title and a `terminal_title` setting with `app-name` first
+do. The formats, and where each was read, are in
+[`overlay_sources/aicli/SOURCES.md`](overlay_sources/aicli/SOURCES.md).
+
+⚠️ **An `os:` branch is tried before the entry's own `title` regex.** A title
+route with per-OS artwork must repeat the regex in every branch (the mapping
+uses a YAML anchor, `*claude_title`), or every title with the route word takes
+the set on that OS. (`tests/handler/ai_cli_routing_test.py`, which checks the
+negative titles on all three OSes.)
+
+### Zellij
+
+Zellij writes the terminal title itself. Up to 0.42 the title is
+`Zellij (<session>) - <pane title>`, found by the `Zellij` key in
+`&editor_titles`. Since 0.43.1 it is `<session> | <pane title>` and does not
+name Zellij, so the terminal entries also have `titles-match:
+&multiplexer_titles`, whose regex matches a session name that Zellij generated
+(`<adjective>-<noun>` from two fixed lists, printed by
+`overlay_sources/zellij/gen_session_regex.py`). A named session is found only
+where the terminal shows the process name (Konsole, iTerm2, Terminal.app).
+`titles-match` is tried before `titles-contains`, so Zellij is chosen over a
+program in its pane; a vim or emacs report is still chosen over Zellij. The
+formats are in
+[`overlay_sources/zellij/SOURCES.md`](overlay_sources/zellij/SOURCES.md).
+(`tests/handler/zellij_routing_test.py`.)
 
 ## `os:` — per-platform artwork
 
@@ -124,8 +307,14 @@ still gets the Mac artwork. This mirrors `PolyCore._track_active_os`.
 ## Title sub-maps: word matching, not substring
 
 All three title sub-maps match **whole words** of the title, split on whitespace.
-A multi-word key like `LibreOffice Writer` can therefore never match — use the
-distinguishing single word (`Writer`).
+A key may be several words: `Claude Code` matches when those two words stand next
+to each other in the title, and never matches "Claude" alone or "Claude Coder".
+When keys of different lengths fit at the same place, the longest wins, whatever
+the YAML order, so `Claude Code` beats `Claude`. `titles-contains` scans the title
+from left to right, so the key found earliest in the title wins.
+
+(Up to host 1.12.x a key was one word only, and a multi-word key like
+`LibreOffice Writer` silently never matched.)
 
 A `titles-contains` entry needs no companion key — it matches on its own. (Up to
 host 0.11.11 it did not: the matcher only split the title into words when the

@@ -44,7 +44,7 @@ class StatusScreenRenderer:
         """Build from a loaded `PreviewData`, or return an unusable renderer.
 
         The icon and globe faces are found by COVERAGE rather than by name: IconsFont
-        is the firmware's `g_all_fonts[0]` and the C1 band `0x80..0x9F` is its alone,
+        is the firmware's `g_all_fonts[0]` and its plane-16 PUA range is its alone,
         and the World face is the only resident font covering U+1F310 -- so a renamed
         header cannot quietly cost the panel its layer icon.
         """

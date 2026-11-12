@@ -13,13 +13,19 @@ def _slot_to_keycode(keycode_slot: int) -> int:
         return keycode_slot - 82 + KeyCode.KC_LEFT_CTRL.value
 
 
+# The batch id of images no program switch maps (the agent cards,
+# services/agents): older than every real batch, so a switch evicts them first.
+ASIDE_BATCH = -1
+
+
 class OverlayMRUCache:
     """
     Tracks which overlay images occupy which pool slots in the keyboard firmware.
 
     The pool is a contiguous range of firmware overlay slots (0..capacity-1).
     Each slot is addressed by a (keycode, modifier) pair derived from its flat index.
-    Capacity is sourced from DeviceSettings.OVERLAY_MAPPING_CAPACITY (90 x 7 = 630).
+    Capacity is sourced from DeviceSettings.OVERLAY_MAPPING_CAPACITY: 600, the
+    firmware's NUM_OVERLAY_SLOTS, which is not tied to keycode slots x variants.
 
     Content key: (os.path.basename(filename), modifier.value, keycode)
     — uniquely identifies one overlay image (one key+modifier combo from one file).
@@ -43,6 +49,10 @@ class OverlayMRUCache:
         self._in_batch: bool = False
         self._version: int = 0                       # bumps on every state change
         self._transferred_mapping: dict[int, int] = {}  # accumulated display_idx → pool_slot
+        # Slots that have held an image since the pool was last cleared. A new
+        # cache stands for a cleared pool (the connect path clears it, and a
+        # reboot empties it), so this starts empty. See slot_is_clean.
+        self._written: set[int] = set()
 
     @property
     def version(self) -> int:
@@ -73,23 +83,30 @@ class OverlayMRUCache:
             self._in_batch = was_in_batch
 
     def get_or_allocate(self, content_key: tuple, full_path: str = "",
-                        bytes_data: bytes | None = None) -> tuple[int, bool]:
+                        bytes_data: bytes | None = None) -> tuple[int | None, bool]:
         """
-        Return (pool_slot, is_hit).
+        Return (pool_slot, is_hit), or (None, False) when the pool is full of
+        the current batch's own images.
         Hit: content_key already known, OR bytes_data identical to an existing slot.
         Miss: a new slot is allocated. When the pool is full, the slot evicted
-        is taken from the oldest batch (preferring a batch other than the
-        currently-active one, so a single program switch never displaces its own
-        in-progress entries unless its batch has filled the entire pool).
+        is taken from the oldest batch other than the current one.
+
+        ⚠️ A batch NEVER evicts its own slots. Every slot it holds is still
+        mapped to a key in the same program switch, so evicting one put a later
+        image on an earlier key: measured over the emulated keyboard, 650
+        distinct images in one switch showed 600 correct keys and 50 WRONG ones,
+        while the send reported success (2026-10-09). The pool size is therefore
+        a hard limit per switch, and the caller leaves the refused key blank.
+        Nothing is changed on a refusal.
         bytes_data enables cross-key dedup: identical images share one pool slot.
         full_path is stored for the visual inspector (optional for tests).
         """
         if not self._in_batch:
             self._current_batch += 1
 
-        # Exact key hit
-        if content_key in self._cache:
-            slot = self._cache[content_key]
+        # Exact key hit, unless the image under that name has changed
+        slot = self._key_hit(content_key, bytes_data)
+        if slot is not None:
             self._slot_batch[slot] = self._current_batch
             self._version += 1
             return slot, True
@@ -108,6 +125,8 @@ class OverlayMRUCache:
             self._next_free += 1
         else:
             slot = self._evict_oldest_slot()
+            if slot is None:
+                return None, False
 
         self._cache[content_key] = slot
         self._slot_batch[slot] = self._current_batch
@@ -120,6 +139,60 @@ class OverlayMRUCache:
             self._slot_to_info[slot] = (full_path, modifier_value, keycode)
         self._version += 1
         return slot, False
+
+    def claim(self, content_key: tuple, bytes_data: bytes | None = None) -> bool:
+        """Mark an image this switch will show as part of the current batch, if
+        the pool already holds it. Allocates nothing; returns whether it held it.
+
+        ⚠️ Called for EVERY image of a switch before the first
+        ``get_or_allocate``. Images arrive one at a time, so without it a new
+        image could evict an old slot that a LATER key of the same switch would
+        have hit, and that key then uploads its image again: measured with the
+        pool full, a switch reusing 300 images and adding 300 sent 491 uploads
+        in mixed order and 600 with the new ones first, instead of 300
+        (2026-10-09). A claimed slot belongs to the current batch, so
+        ``_evict_oldest_slot`` never picks it. Same hit rules as
+        ``get_or_allocate``: the content key, then the bytes."""
+        slot = self._key_hit(content_key, bytes_data)
+        if slot is None and bytes_data is not None:
+            slot = self._bytes_to_slot.get(bytes_data)
+        if slot is None:
+            return False
+        if self._slot_batch.get(slot) != self._current_batch:
+            self._slot_batch[slot] = self._current_batch
+            self._version += 1
+        return True
+
+    def _key_hit(self, content_key: tuple, bytes_data: bytes | None) -> int | None:
+        """The slot ``content_key`` names, or None. ⚠️ A key whose image has
+        CHANGED is not a hit: a file edited under the same name keeps its key,
+        and the slot still holds the old pixels (review, CodeRabbit). The stale
+        alias is dropped, so the bytes decide from there."""
+        slot = self._cache.get(content_key)
+        if slot is None:
+            return None
+        held = self._slot_to_bytes.get(slot)
+        if bytes_data is not None and held is not None and held != bytes_data:
+            del self._cache[content_key]
+            self._version += 1
+            return None
+        return slot
+
+    def slot_is_clean(self, slot: int) -> bool:
+        """True while ``slot`` has never been written since the pool was cleared.
+
+        ⚠️ A REUSED slot still holds the image it was evicted from, and two of
+        the older encodings write only part of a frame: an ROI upload writes its
+        rectangle (``copy_rectangle_to_overlay_xy``) and a plain upload skips
+        all-zero segments. Into a reused slot they leave the old image around the
+        new one, so the sender keeps them for clean slots only. ``forget`` does
+        not make a slot clean again: an upload that failed may have written part
+        of it."""
+        return slot not in self._written
+
+    def mark_written(self, slot: int) -> None:
+        """Record that an upload into ``slot`` has started."""
+        self._written.add(slot)
 
     def forget(self, content_key: tuple) -> None:
         """Undo a just-recorded allocation whose image never reached the device.
@@ -148,13 +221,25 @@ class OverlayMRUCache:
         if slot == self._next_free - 1:
             self._next_free -= 1
 
-    def _evict_oldest_slot(self) -> int:
-        """Pick a victim slot. Prefer the smallest batch that is not the current
-        batch; only fall back to the current batch when nothing older remains."""
+    def forget_slot(self, slot: int) -> None:
+        """Forget EVERY key that maps to ``slot``: the image queued for it never
+        reached the device.
+
+        ``forget`` alone is not enough for an upload that is queued rather than
+        sent at once (a PRC-coded image waiting for its report to fill): a
+        later key with the same bytes dedups onto the slot in the meantime, and
+        forgetting only the first key would leave that alias as a stale hit."""
+        for key in [k for k, s in self._cache.items() if s == slot]:
+            self.forget(key)
+
+    def _evict_oldest_slot(self) -> int | None:
+        """Pick a victim slot from the oldest batch that is not the current one,
+        or None when every occupied slot belongs to the current batch (see
+        `get_or_allocate`)."""
         candidates = {s: b for s, b in self._slot_batch.items()
                       if b != self._current_batch}
         if not candidates:
-            candidates = self._slot_batch
+            return None
         victim = min(candidates, key=candidates.get)
 
         # Drop every alias key pointing at the victim slot
@@ -165,6 +250,44 @@ class OverlayMRUCache:
             self._bytes_to_slot.pop(self._slot_to_bytes.pop(victim), None)
         self._slot_to_info.pop(victim, None)
         return victim
+
+    def holds(self, content_key: tuple) -> int | None:
+        """The slot ``content_key`` occupies, or None. Changes nothing (no aging)."""
+        return self._cache.get(content_key)
+
+    def allocate_aside(self, content_key: tuple) -> int | None:
+        """A slot for an image that no switch maps (an agent card), or None.
+
+        The entry gets ASIDE_BATCH, so a program switch evicts it before any app
+        image; its owner checks ``holds()`` and allocates again when it is gone.
+        ⚠️ It never evicts the NEWEST switch's slots, which are on the keys right
+        now, and never another aside entry (two owners would take turns evicting
+        each other). With nothing else to take, it returns None and the owner
+        shows nothing. No byte dedup: an app image must not alias a card's slot."""
+        slot = self._cache.get(content_key)
+        if slot is not None:
+            return slot
+        if self._next_free < self.capacity:
+            slot = self._next_free
+            self._next_free += 1
+        else:
+            app = [b for b in self._slot_batch.values() if b != ASIDE_BATCH]
+            newest = max(app) if app else None
+            candidates = {s: b for s, b in self._slot_batch.items()
+                          if b not in (ASIDE_BATCH, newest)}
+            if not candidates:
+                return None
+            slot = min(candidates, key=candidates.get)
+            for k in [k for k, v in self._cache.items() if v == slot]:
+                del self._cache[k]
+            del self._slot_batch[slot]
+            if slot in self._slot_to_bytes:
+                self._bytes_to_slot.pop(self._slot_to_bytes.pop(slot), None)
+            self._slot_to_info.pop(slot, None)
+        self._cache[content_key] = slot
+        self._slot_batch[slot] = ASIDE_BATCH
+        self._version += 1
+        return slot
 
     def used_slots(self) -> int:
         """Number of pool slots currently occupied."""
@@ -222,6 +345,7 @@ class OverlayMRUCache:
         self._slot_to_bytes.clear()
         self._slot_batch.clear()
         self._transferred_mapping.clear()
+        self._written.clear()
         self._next_free = 0
         self._current_batch = 0
         self._in_batch = False

@@ -45,7 +45,7 @@ class HeadlessHost:
         self.core = PolyCore(log=log, ignore_version=ignore_version,
                              start_worker=False, apply_reconnect_in_core=True,
                              allow_key_injection=allow_key_injection,
-                             telemetry_mode="daemon")
+                             telemetry_mode="daemon", agent_store=True)
         # React to a core-driven self-update (`polyctl update install`): the
         # core only applies + emits; the host owns the restart.
         self.core.subscribe(self._on_update_event)
@@ -106,6 +106,10 @@ class HeadlessHost:
         # Core-owned active-window tracking (no-op without a display).
         self.core.start_window_tracking()
         self._maybe_start_window_report_server()
+        # Refresh the editor plugin copies made from this installation, as the
+        # tray app and the forwarder do (services/editor_plugins.py).
+        from polyhost.services import editor_plugins
+        editor_plugins.start_refresh_thread()
         self.log.info("PolyKybdHost running headless. Drive it with `polyctl`.")
 
     def _maybe_start_window_report_server(self):
@@ -119,7 +123,8 @@ class HeadlessHost:
         from polyhost.server.window_report_server import WindowReportServer
         try:
             self._winreport_server = WindowReportServer(
-                self.core.report_window, __version__, self.log)
+                self.core.report_window, __version__, self.log,
+                on_agents_report=self.core.agents_report_remote)
             self._winreport_server.start()
         except Exception:
             self.log.exception("Could not start the window-report network listener")
@@ -286,6 +291,40 @@ def run_headless(log_level=logging.INFO, ignore_version=False, developer=None, c
             log.info("Another PolyKybdHost already serves the control endpoint "
                      "(%s) — standing down.", e.outcome)
             return
+    # numpy and Pillow load on the first overlay decode; load them now instead,
+    # while the keyboard connects (util/preload.py). After the claim, so a
+    # daemon that stands down never pays for them.
+    from polyhost.util import preload
+    preload.start(log)
+    # The daemon declares itself a macOS ACCESSORY app here, as `host.py` and
+    # `forwarder.py` already do -- this was the one entry point without it, and
+    # the only one with no window of its own to need the regular policy back.
+    #
+    # ⚠️ **A non-bundled Python process that calls the window-server APIs gets a
+    # Dock tile**, and the daemon calls plenty of them: pywinctl's AppKit reads,
+    # the Quartz window list in `own_process`, and the Accessibility reads in
+    # `handler.active_window` and the shortcut harvest. The tile shows the
+    # interpreter's generic rocket icon, because a `python -m polyhost` daemon
+    # has no bundle and no icon of its own (same root cause as the tray balloons
+    # that reach nobody). Reported from the field on 2026-10-16, right after the
+    # real-time accept timer made app switches reach the keyboard again: the
+    # switches had barely been accepted before, so the code paths that register
+    # the process had barely run.
+    #
+    # ⚠️ Which call registers it is NOT established, and this does not depend on
+    # knowing: the activation policy suppresses the tile whichever one does, and
+    # it is set BEFORE the host is built, so it is in place before any worker
+    # thread reaches AppKit. It is set after the endpoint claim for the opposite
+    # reason -- a daemon that loses the race must exit having created no
+    # NSApplication at all.
+    if _platform.system() == "Darwin":
+        from polyhost.util.macos_ui import hide_dock_icon
+        if not hide_dock_icon():
+            # Cosmetic, so it never stops the daemon: a visible tile is better
+            # than no keyboard. DEBUG because the commonest cause is a machine
+            # without pyobjc, where there is no tile to hide either.
+            log.debug("Could not make the daemon a macOS accessory app; a Dock "
+                      "tile may appear.")
     try:
         host = HeadlessHost(log, ignore_version=ignore_version,
                             allow_key_injection=developer, claim=claim)

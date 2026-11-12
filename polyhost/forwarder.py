@@ -11,16 +11,19 @@ import time
 from PyQt5.QtCore import QTimer, QObject, pyqtSignal
 from PyQt5.QtWidgets import (
     QApplication,
+    QMessageBox,
     QSystemTrayIcon,
     QDialog,
     QMenu,
-    QAction,
-    QMessageBox)
+    QAction)
+from polyhost.gui import message_box
+from polyhost.gui.ui_kit import px
 from polyhost._version import __version__, __protocol__
 from polyhost.services import problem_report
 from polyhost.services.relay_health import RelayHealth
 from polyhost.services import shortcut_relay
 from polyhost.gui.get_icon import get_icon
+from polyhost.i18n import _, _f, N_, translate_message
 from polyhost.gui.progress_dialog import StableProgressDialog
 from polyhost.services import log_bundle
 from polyhost.gui import about_dialog
@@ -29,6 +32,7 @@ from polyhost.gui.theme import apply_theme
 from polyhost.services.os_theme import THEME_AUTO
 from polyhost.settings import read_setting
 from polyhost.gui.update_ui import UpdateProgressController
+from polyhost.gui.error_dialog import show_copyable_error
 from polyhost.gui.icon_state_manager import IconStateManager
 from polyhost.gui.qt_crash import install_qt_message_handler
 from polyhost.gui.tray_wait import TrayVisibilityWaiter
@@ -39,6 +43,7 @@ from polyhost.handler.browser_url_source import SETTING_DEFAULTS as _URL_SETTING
 from polyhost.handler.own_process import (
     describe_python_owner, is_python_runtime, own_app_name, window_pid)
 from polyhost.handler.win_process import app_name_for
+from polyhost.handler.win_shell import shell_app_name
 
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
@@ -54,19 +59,27 @@ else:
     import pywinctl as pwc
 
 UPDATE_CYCLE_MSEC = 250
-NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 HEARTBEAT_MSEC = 15000  # resend current window state periodically so the host can catch up
+# While this machine has agents on the keyboard's keys, the host asks for a report
+# every second: a key press for one of them reaches this forwarder only in a reply
+# (services/agents/remote.py), so the heartbeat is the raise's latency.
+AGENT_HEARTBEAT_MSEC = 1000
 
 
 # The settings the forwarder actually acts on. It owns no keyboard, so the vast
 # majority of settings.yaml (brightness, unicode mode, font pack, daemon mode)
 # would be rows that silently do nothing on this machine — worse than no dialog
-# at all. `ui_theme` is read at startup here; the browser-URL keys drive
+# at all. `ui_theme` is read at startup here and `ui_language` in main_app,
+# since each machine follows its own OS language; the browser-URL keys drive
 # BrowserUrlSource, which the forwarder runs for the machine it sits on.
-FORWARDER_SETTING_KEYS = ("ui_theme", "shortcut_icons_enabled") + tuple(_URL_SETTINGS)
+# `log_detail` sets this machine's log level at startup (main_app.resolve_dev).
+FORWARDER_SETTING_KEYS = ("ui_theme", "ui_language", "shortcut_icons_enabled",
+                          "shortcut_enable_accessibility", "log_detail",
+                          "agents_raise_here") + tuple(_URL_SETTINGS)
 
 from polyhost.util.log_util import DEBUG_DETAILED, make_stream_handler, make_collapse_handler  # noqa: F401  (registers debug_detailed on import)
 from polyhost.handler.active_window import log_env_info
+from polyhost.core.window_timing import NEW_WINDOW_ACCEPT_TIME_MSEC
 
 class _UpdateBridge(QObject):
     """Marshals the updater threads' callbacks (which fire off the Qt thread) back
@@ -106,6 +119,9 @@ class PolyForwarder(QApplication):
         self._report_port = report_port
         self._report_session = None
         self._report_authkey = None
+        self._report_authkey_file = (os.path.abspath(report_authkey_file)
+                                     if report_authkey_file else None)
+        self._agent_target = None     # the host last written for this machine's hooks
 
         # This machine's OS, forwarded alongside the active window so the keyboard
         # reflects the OS of the computer you are working on (not just the one it is
@@ -148,6 +164,13 @@ class PolyForwarder(QApplication):
             from polyhost.server.window_report_client import WindowReportSession
             self._report_session = WindowReportSession(
                 self._report_port, self._report_authkey)
+            # Agent keys (services/agents/remote.py): this machine's name goes with
+            # every report, the hooks here use the same name, and a raise for one
+            # of this machine's agents comes back in a reply.
+            from polyhost.services.agents.remote import RemoteRaiseFollower
+            self._agent_machine = socket.gethostname()
+            self._agent_follower = RemoteRaiseFollower()
+            self._agents_fast = False
             self.log.info("Forwarder using the authenticated window-report endpoint (H4d).")
 
         # Browser-URL feed for THIS machine. The extension is already willing to
@@ -184,6 +207,9 @@ class PolyForwarder(QApplication):
         self.wants_restart = False
         self.title = None
         self.last_update_msec = 0
+        # When the previous tick ran, so the accept timer and the heartbeat
+        # count real time (see `active_window_reporter`).
+        self._last_tick_at = None
         # Whether the last report reached the keyboard machine. None = nothing
         # sent yet. The tray icon and the status row both read it, so a relay
         # that is quietly failing is visible without opening the log — the
@@ -231,32 +257,64 @@ class PolyForwarder(QApplication):
         # entries sat in different places depending on which app you opened.
         self.menu = QMenu()
 
-        self.status = QAction(get_icon("sync.svg"), "Starting…", parent=self)
-        self.status.setToolTip("Press to pause forwarding")
+        self.status = QAction(get_icon("sync.svg"), _("Starting…"), parent=self)
+        self.status.setToolTip(_("Press to pause forwarding"))
         # noinspection PyUnresolvedReferences
         self.status.triggered.connect(self.toggle_pause)
         self.menu.addAction(self.status)
 
-        self.pause_action = QAction(get_icon("pause_circle.svg"), "Pause", parent=self)
+        self.pause_action = QAction(get_icon("pause_circle.svg"), _("Pause"), parent=self)
         self.pause_action.setToolTip(
-            "Stop sending this machine's active window to the keyboard machine.")
+            _("Stop sending this machine's active window to the keyboard machine."))
         # noinspection PyUnresolvedReferences
         self.pause_action.triggered.connect(self.toggle_pause)
         self.menu.addAction(self.pause_action)
 
         self.menu.addSeparator()
 
-        # The tray app groups this under "Updates" alongside the firmware and
-        # font-pack rows. The forwarder owns no keyboard, so a submenu of one
-        # would be a level of nesting over a single entry — it keeps the label
-        # the tray app uses inside that submenu, in the slot the submenu holds.
+        # --- Updates: same submenu, icon and labels as the tray app's ---------
+        # It used to be a single top-level row, because a forwarder owns no
+        # keyboard and so has no firmware or font-pack rows. Once the shell
+        # title row joined it, the two flat rows no longer matched the tray
+        # app: the same entries sat at a different depth in each app.
+        self.updates_menu = self.menu.addMenu(get_icon("update.svg"), _("Updates"))
+
         self.update_action = QAction(get_icon("browser_updated.svg"),
-                                     "Check for host update\u2026", parent=self)
+                                     _("Check for host update\u2026"), parent=self)
         # noinspection PyUnresolvedReferences
         self.update_action.triggered.connect(self._on_update_clicked)
-        self.menu.addAction(self.update_action)
+        self.updates_menu.addAction(self.update_action)
 
-        self.settings_action = QAction(get_icon("settings.svg"), "Settings...", parent=self)
+        # The forwarder reports THIS machine's window title, so a terminal here
+        # needs the same shell setup as one on the keyboard's machine. Same
+        # label and dialog as the tray app's entry (services/shell_title.py).
+        # The same dialog copies the Vim/Neovim/Emacs mode plugins
+        # (services/editor_plugins.py); the copies made earlier are refreshed
+        # from this installation on a thread at every start.
+        from polyhost.services import editor_plugins
+        editor_plugins.start_refresh_thread()
+        self.shell_title_dialog = None
+        self.shell_title_action = QAction(get_icon("terminal.svg"),
+                                          _("Set up the terminal and editors\u2026"),
+                                          parent=self)
+        # noinspection PyUnresolvedReferences
+        self.shell_title_action.triggered.connect(self.open_shell_title_dialog)
+        self.updates_menu.addAction(self.shell_title_action)
+
+        # The hooks of the AI agents on THIS computer (Claude Code, Codex, Copilot
+        # CLI): they report to the keyboard computer this forwarder reports to
+        # (services/agents/remote.py), so the keys show this computer's agents.
+        from polyhost.gui.agent_hooks import add_setup_menu
+        self.agent_hooks_menu = add_setup_menu(
+            self.menu, self.log, title=_("Set Up Agent Hooks"), note=self._agent_hooks_note)
+        self.agent_hooks_menu.setIcon(get_icon("terminal.svg"))
+        self.pair_action = QAction(get_icon("sync_alt.svg"), _("Pair with the Keyboard Computer…"),
+                                   parent=self)
+        # noinspection PyUnresolvedReferences
+        self.pair_action.triggered.connect(self._pair_clicked)
+        self.menu.addAction(self.pair_action)
+
+        self.settings_action = QAction(get_icon("settings.svg"), _("Settings..."), parent=self)
         # noinspection PyUnresolvedReferences
         self.settings_action.triggered.connect(self.open_settings)
         self.menu.addAction(self.settings_action)
@@ -267,40 +325,40 @@ class PolyForwarder(QApplication):
         # failure modes (which window backend this desktop selects, the report
         # transport, the authkey) are exactly the log-diagnosable kind. Every
         # entry here is worth as much as it is in the tray app.
-        self.about = QAction(get_icon("info.svg"), "About", parent=self)
+        self.about = QAction(get_icon("info.svg"), _("About"), parent=self)
         # noinspection PyUnresolvedReferences
         self.about.triggered.connect(self.show_about_dialog)
 
-        self.log_dialog = QAction(get_icon("log.svg"), "Log file...", parent=self)
+        self.log_dialog = QAction(get_icon("log.svg"), _("Log file..."), parent=self)
         # noinspection PyUnresolvedReferences
         self.log_dialog.triggered.connect(self.open_log)
         self.log_viewer = None
 
         self.report_problem_action = QAction(get_icon("feedback.svg"),
-                                             "Report a Problem...", parent=self)
+                                             _("Report a Problem..."), parent=self)
         # noinspection PyUnresolvedReferences
         self.report_problem_action.triggered.connect(self.open_report_problem)
         self.report_problem_dialog = None
 
         self.collect_logs_action = QAction(get_icon("archive.svg"),
-                                           "Collect logs...", parent=self)
+                                           _("Collect logs..."), parent=self)
         # noinspection PyUnresolvedReferences
         self.collect_logs_action.triggered.connect(self.open_log_bundle)
         self.log_bundle_dialog = None
 
         self.open_config_action = QAction(get_icon("file_open.svg"),
-                                          "Open config folder", parent=self)
+                                          _("Open config folder"), parent=self)
         # noinspection PyUnresolvedReferences
         self.open_config_action.triggered.connect(self._open_config_folder)
 
-        self.help_menu = self.menu.addMenu(get_icon("help.svg"), "Help && About")
+        self.help_menu = self.menu.addMenu(get_icon("help.svg"), _("Help && About"))
         self.help_menu.addAction(self.about)
         self.help_menu.addAction(self.report_problem_action)
         self.help_menu.addAction(self.log_dialog)
         self.help_menu.addAction(self.collect_logs_action)
         self.help_menu.addAction(self.open_config_action)
 
-        self.exit = QAction(get_icon("power.svg"), "Quit", parent=self)
+        self.exit = QAction(get_icon("power.svg"), _("Quit"), parent=self)
         # noinspection PyUnresolvedReferences
         self.exit.triggered.connect(self.quit_app)
         self.menu.addAction(self.exit)
@@ -332,21 +390,22 @@ class PolyForwarder(QApplication):
         if host:
             return host
         if self.host_file:
-            return f"no host (waiting for {self.host_file})"
-        return "no host configured"
+            return _f("no host (waiting for {path})", path=self.host_file)
+        return _("no host configured")
 
     def _tray_tooltip(self) -> str:
-        return f"PolyKybdHost {__version__} (forwarder) \u2192 {self._target_text()}"
+        return _f("PolyKybdHost {version} (forwarder) \u2192 {target}",
+                  version=__version__, target=self._target_text())
 
     def _status_text(self) -> str:
         if self.paused:
-            return "Forwarding paused"
+            return _("Forwarding paused")
         target = self._target_text()
         if self.relay_ok is None:
-            return f"Forwarding to {target}\u2026"
+            return _f("Forwarding to {target}\u2026", target=target)
         if self.relay_ok:
-            return f"Forwarding to {target}"
-        return f"Cannot reach {target}"
+            return _f("Forwarding to {target}", target=target)
+        return _f("Cannot reach {target}", target=target)
 
     def refresh_status(self):
         """Re-label the status row and repaint the tray icon from the current
@@ -357,7 +416,7 @@ class PolyForwarder(QApplication):
         and never touch it again, so a relay that had been refusing connections
         for hours still wore the connected icon."""
         self.status.setText(self._status_text())
-        self.pause_action.setText("Resume" if self.paused else "Pause")
+        self.pause_action.setText(_("Resume") if self.paused else _("Pause"))
         self.pause_action.setIcon(get_icon(
             "play_circle.svg" if self.paused else "pause_circle.svg"))
         self.tray.setToolTip(self._tray_tooltip())
@@ -380,6 +439,9 @@ class PolyForwarder(QApplication):
             # somebody pausing it would not expect.
             if self._report_session is not None:
                 self._report_session.close()
+            # And stop this computer's agent hooks reporting through it; the next
+            # report after Resume writes the target again.
+            self._note_agent_target(None)
         else:
             # Force the next tick to re-send rather than dedupe against the
             # window it was already showing when pause was pressed.
@@ -430,12 +492,16 @@ class PolyForwarder(QApplication):
             # machine, and a stale connection would keep serving the old one.
             if self._report_session is not None:
                 self._report_session.close()
+            self._note_agent_target(None)
             return self._note_send_failure("no host to report to")
         ident = self._identity_for(name)
         try:
             result = self._report_session.report(
                 host, handle, name, title, os=self._os_value, url=url,
-                names=ident.get("names"), icon_key=ident.get("icon_key"))
+                names=ident.get("names"), icon_key=ident.get("icon_key"),
+                machine=getattr(self, "_agent_machine", None))
+            self._follow_agent_relay(result)
+            self._note_agent_target(host)
             # ⚠️ The RECEIVER decides, and it is asked on every report. See
             # RemoteHandler._note_identity for why a sender-side "already sent"
             # flag cannot be trusted: its daemon restarts, --host-file repoints
@@ -482,6 +548,75 @@ class PolyForwarder(QApplication):
             return True
         except Exception as e:
             return self._note_send_failure("RPC to %s: %s" % (host, e))
+
+    def _agent_hooks_note(self):
+        """Shown after the hooks were written: what the keyboard computer needs, and
+        that reports need --report-rpc."""
+        if not self._report_rpc:
+            return _("The hooks are written, but this forwarder runs without "
+                     "--report-rpc, so it cannot pass agent reports on. Start it with "
+                     "--report-rpc to show this computer's agents on the keys.")
+        return _("The hooks are written. On the keyboard computer, turn on "
+                 "Settings > AI agents > \"Agents from other computers\".")
+
+    def _note_agent_target(self, host):
+        """Tell this machine's agent hooks where to report: the host this forwarder
+        reached last (services/agents/remote.py). Rewritten only when it changes,
+        so a --host-file that points elsewhere moves the hooks with it. Never
+        raises: window reporting must not depend on it."""
+        if host == self._agent_target:
+            return
+        try:
+            from polyhost.services.agents import remote
+            if host:
+                remote.write_forwarder_target(host, self._report_port,
+                                              self._report_authkey_file,
+                                              getattr(self, "_agent_machine", None))
+            else:
+                remote.clear_forwarder_target()
+            self._agent_target = host
+        except Exception as e:  # noqa: BLE001 - see the docstring
+            self.log.warning("Could not write the agent hooks' target: %s", e)
+
+    def _follow_agent_relay(self, result):
+        """A raise for one of this machine's agents, and the heartbeat speed, from a
+        window.report reply. Never raises: window reporting must not depend on it."""
+        try:
+            reply = result if isinstance(result, dict) else {}
+            self._agents_fast = bool(reply.get("agents_fast"))
+            # A new connection (the keyboard computer's host may have restarted
+            # and counts raises from 0 again): its first reply is a new baseline.
+            session = getattr(self, "_report_session", None)
+            connections = getattr(session, "connections", 0)
+            if connections != getattr(self, "_agent_follower_connection", connections):
+                from polyhost.services.agents.remote import RemoteRaiseFollower
+                self._agent_follower = RemoteRaiseFollower()
+            self._agent_follower_connection = connections
+            payload = self._agent_follower.follow(reply)
+            if payload is None:
+                return
+            import threading
+            from polyhost.services.agents.raiser import raise_agent
+            from polyhost.services.agents.remote import RemoteAgent
+            agent = RemoteAgent.from_payload(payload)
+            # ⚠️ Opt-in on THIS computer (HOST-6): a reply is authenticated only
+            # at the handshake, so without the setting a reply never moves a
+            # window here; the keyboard's computer raises its viewer instead.
+            if not read_setting("agents_raise_here", False):
+                self.log.info("Agent key for %s %s: not raised here "
+                              "(agents_raise_here is off)", agent.vendor,
+                              agent.display_headline)
+                return
+            self.log.info("Agent key: raising %s %s", agent.vendor, agent.display_headline)
+
+            def run():
+                try:
+                    self.log.info("Agent key raise: %s", raise_agent(agent))
+                except Exception as e:   # noqa: BLE001
+                    self.log.info("Agent key raise failed: %s", e)
+            threading.Thread(target=run, name="agent-raise", daemon=True).start()
+        except Exception as e:   # noqa: BLE001
+            self.log.debug("Agent relay reply ignored: %s", e)
 
     def _identity_for(self, name):
         """What THIS machine's OS says the app is -- cached, one lookup per app.
@@ -635,7 +770,10 @@ class PolyForwarder(QApplication):
             s.connect((str(ip), TCP_PORT))
             # 4th field = this machine's OS (an OsType value int); older daemons
             # split on ';' and read the first three fields, ignoring the extra one.
-            s.send(f"{handle};{name};{title};{self._os_value}".encode("utf-8"))
+            # pywinctl gives None for a window without a title; it must arrive
+            # as an empty title, not as the text "None" (field log, 2026-11-05).
+            title_text = "" if title is None else title
+            s.send(f"{handle};{name};{title_text};{self._os_value}".encode("utf-8"))
             s.close()
             return True
         except socket.timeout as err:
@@ -679,6 +817,16 @@ class PolyForwarder(QApplication):
         self.log_bundle_dialog.show()
         bring_to_front(self.log_bundle_dialog)
 
+    def open_shell_title_dialog(self):
+        """Shell title integration (retained instance, see PolyHost.open_shell_title_dialog)."""
+        from polyhost.gui.shell_title_dialog import ShellTitleDialog
+        if self.shell_title_dialog is None:
+            self.shell_title_dialog = ShellTitleDialog(parent=None)
+        elif not self.shell_title_dialog.isVisible():
+            self.shell_title_dialog.reopen()
+        self.shell_title_dialog.show()
+        bring_to_front(self.shell_title_dialog)
+
     def open_log(self):
         # assignment is needed otherwise the dialog would go away immediately
         delta = time.perf_counter()
@@ -702,7 +850,7 @@ class PolyForwarder(QApplication):
         path = platformdirs.user_config_dir("PolyHost")
         self.log.info("Opening config folder %s", path)
         if not QDesktopServices.openUrl(QUrl.fromLocalFile(path)):
-            QMessageBox.information(None, "Config folder", path)
+            message_box.information(None, _("Config folder"), path)
 
     def open_settings(self):
         """Settings, narrowed to the keys that do something on this machine.
@@ -724,42 +872,78 @@ class PolyForwarder(QApplication):
         if dlg.exec_() == QDialog.Accepted:
             updated = dlg.get_updated_settings()
             changed = {k: v for k, v in updated.items() if current.get(k) != v}
+            saved = True
             if changed:
                 # set_all over the FULL dict: the dialog only saw a slice, so
                 # writing `updated` alone would drop every key it was not shown.
                 current.update(changed)
-                settings.set_all(current)
-                self.log.info("Forwarder settings changed: %s",
-                              ", ".join(sorted(changed)))
+                saved = settings.set_all(current, source="forwarder Settings dialog")
+                if saved:
+                    self.log.info("Forwarder settings changed: %s",
+                                  ", ".join(sorted(changed)))
+                else:
+                    # This PolySettings is thrown away when the dialog closes,
+                    # and the forwarder reads everything back from the file, so
+                    # an unsaved change here is simply lost. save() no longer
+                    # raises, so say so rather than close as if it worked.
+                    message_box.warning(
+                        None, _("PolyForwarder settings"),
+                        _("The settings could not be saved to the settings file, "
+                          "so they will not take effect. Another program may be "
+                          "holding it open. Try again, or see the log."))
             # `ui_theme` may be among them — apply it now rather than at the
             # next restart.
             self.set_style()
+            if "ui_language" in changed and saved:
+                from polyhost.gui import i18n_qt
+                i18n_qt.offer_language_restart(changed["ui_language"], self._restart_for_language)
         dlg.close()
+
+    def _pair_clicked(self):
+        """Save the keyboard computer's code; RPC mode with it needs a restart."""
+        from polyhost.gui.forwarder_pairing import ask_pairing_code
+        if not ask_pairing_code(log=self.log):
+            return
+        answer = QMessageBox.question(
+            None, _("Pair with the Keyboard Computer"),
+            _("Paired. The forwarder uses the authenticated connection from its next "
+              "start. Restart it now?"))
+        if answer == QMessageBox.Yes:
+            self.log.info("Restarting the forwarder to use the pairing.")
+            self.wants_restart = True
+            self.quit_app()
+
+    def _restart_for_language(self):
+        """Restart the forwarder (main_app re-execs once the loop unwinds)."""
+        self.log.info("Restarting the forwarder to apply the UI language.")
+        self.wants_restart = True
+        self.quit_app()
 
     def _about_info_html(self):
         """The boxed block: what this forwarder is relaying, and how."""
-        transport = (f"authenticated RPC (port {self._report_port})"
+        transport = (_f("authenticated RPC (port {port})", port=self._report_port)
                      if self._report_rpc
-                     else "legacy plaintext TCP relay")
-        state = ("paused" if self.paused else
-                 "reaching the keyboard machine" if self.relay_ok else
-                 "not reaching the keyboard machine" if self.relay_ok is False
-                 else "starting up")
+                     else _("legacy plaintext TCP relay"))
+        # TRANSLATORS: the forwarder's relay state, shown in brackets after its target
+        state = (_("paused") if self.paused else
+                 _("reaching the keyboard machine") if self.relay_ok else
+                 _("not reaching the keyboard machine") if self.relay_ok is False
+                 else _("starting up"))
         rows = [
-            "<b>Mode:</b> forwarder — no keyboard attached to this machine",
-            f"<b>Target:</b> {self._target_text()} "
-            f"<span style='color:gray;'>({state})</span>",
-            f"<b>Window reports:</b> {transport}",
+            _("<b>Mode:</b> forwarder — no keyboard attached to this machine"),
+            _f("<b>Target:</b> {target}", target=self._target_text())
+            + f" <span style='color:gray;'>({state})</span>",
+            _f("<b>Window reports:</b> {transport}", transport=transport),
         ]
         if self.host_file:
-            rows.append(f"<b>Host file:</b> {self.host_file}")
+            rows.append(_f("<b>Host file:</b> {path}", path=self.host_file))
         return about_dialog.rows_html(rows)
 
     def _about_env_html(self):
         import platformdirs
         return about_dialog.rows_html([
-            f"<b>Config:</b> {platformdirs.user_config_dir('PolyHost')}",
-            f"<b>Logs:</b> {os.getcwd()}",
+            _f("<b>Config:</b> {path}", path=platformdirs.user_config_dir('PolyHost')),
+            _f("<b>Logs:</b> {path}", path=os.getcwd()),
         ], muted=True)
 
     def show_about_dialog(self):
@@ -773,14 +957,15 @@ class PolyForwarder(QApplication):
         import platform
         from PyQt5.QtCore import qVersion
         dlg = about_dialog.build_about_dialog(
-            title="About PolyKybdHost (forwarder)",
+            title=_("About PolyKybdHost (forwarder)"),
             icon_name="fcolor.png",
             heading=about_dialog.heading_html(
                 __version__,
-                f" &nbsp;·&nbsp; HID protocol P{__protocol__}",
+                " &nbsp;·&nbsp; " + _f("HID protocol P{protocol}", protocol=__protocol__),
                 f"Python {platform.python_version()} · Qt {qVersion()} · "
-                f"{platform.system()} · forwarder"),
-            description=(
+                # TRANSLATORS: the run mode in the About dialog's environment line
+                f"{platform.system()} · {_('forwarder')}"),
+            description=_(
                 "Forwarder mode: this machine has no keyboard. It watches the "
                 "active window here and relays it to the PolyKybdHost running "
                 "on the machine the keyboard is plugged into."),
@@ -802,7 +987,7 @@ class PolyForwarder(QApplication):
             return
         if self._update_checker is not None and self._update_checker.is_alive():
             return
-        self.update_action.setText("Checking for updates...")
+        self.update_action.setText(_("Checking for updates..."))
         ub = self._update_bridge
         self._update_checker = UpdateChecker(
             current_fw_version=None,   # host-only: the forwarder owns no keyboard
@@ -814,40 +999,43 @@ class PolyForwarder(QApplication):
 
     def _on_update_available(self, release):
         from polyhost.gui.update_dialog import confirm_update
-        self.update_action.setText("Check for updates...")
-        message = f"Version {release.version} is available."
-        if not confirm_update("Update PolyKybdHost", message,
+        from polyhost.services.updater import dialog_release_name
+        self.update_action.setText(_("Check for updates..."))
+        message = _f("Version {version} is available.", version=release.version)
+        if not confirm_update(_("Update PolyKybdHost"), message,
                               notes=getattr(release, "notes", ""),
                               html_url=getattr(release, "html_url", ""),
-                              release_name=getattr(release, "name", ""),
-                              question="Download, install, and restart the forwarder now?"):
+                              release_name=dialog_release_name(release),
+                              question=_("Download, install, and restart the forwarder now?")):
             return
         self._run_update_installer(release)
 
     def _on_no_update(self):
-        self.update_action.setText("Check for updates...")
-        QMessageBox.information(
-            None, "PolyKybdHost Update",
-            f"You are running the latest version (v{__version__}).")
+        self.update_action.setText(_("Check for updates..."))
+        message_box.information(
+            None, _("PolyKybdHost Update"),
+            _f("You are running the latest version (v{version}).", version=__version__))
 
     def _on_check_error(self, msg):
-        self.update_action.setText("Check for updates...")
-        QMessageBox.warning(
-            None, "PolyKybdHost Update",
-            f"Could not check for updates:\n\n{msg}\n\nRun with --dev 1 for details.")
+        self.update_action.setText(_("Check for updates..."))
+        message_box.warning(
+            None, _("PolyKybdHost Update"),
+            _f("Could not check for updates:\n\n{error}\n\nRun with --dev 1 for details.",
+               error=msg))
 
     def _run_update_installer(self, release):
         from polyhost.services.updater import UpdateInstaller
         if self._update_installer is not None and self._update_installer.is_alive():
             return
         self.update_action.setEnabled(False)
-        dlg = StableProgressDialog(f"Downloading v{release.version}…", "", 0, 100)
-        dlg.setWindowTitle("PolyKybdHost Update")
+        dlg = StableProgressDialog(
+            _f("Downloading v{version}…", version=release.version), "", 0, 100)
+        dlg.setWindowTitle(_("PolyKybdHost Update"))
         dlg.setCancelButton(None)
         dlg.setMinimumDuration(0)
         # Same size as the tray's update dialog. The label no longer resizes
         # the dialog, so it needs room for the longest message up front.
-        dlg.setFixedSize(400, 160)
+        dlg.setFixedSize(px(400), px(160))
         dlg.show()
         self._update_ui.attach(dlg)
         ub = self._update_bridge
@@ -881,25 +1069,29 @@ class PolyForwarder(QApplication):
         if not self._update_ui.stage_relay(relay_path):
             # Nothing will finish the locked-file copy if we exit now, and the
             # tree is already partially rewritten — surface it and stay up.
-            self._on_update_failed(
-                "Could not start the update relay; the update is incomplete. "
-                "See the log for details.")
+            # The log keeps the English; the dialog shows the translation.
+            relay_failed = N_("Could not start the update relay; the update is "
+                              "incomplete. See the log for details.")
+            self._on_update_failed(relay_failed, shown=_(relay_failed))
             return
         # Brief pause so the user sees the "Restarting" label before we vanish.
         QTimer.singleShot(1200, self.quit)
 
-    def _on_update_failed(self, message):
+    def _on_update_failed(self, message, shown=None):
         self._update_ui.close()
         self.update_action.setEnabled(True)
         self.log.error("Update failed: %s", message)
-        QMessageBox.warning(
-            None, "Update failed", f"Could not apply the update:\n\n{message}")
+        from polyhost.services.updater import fix_commands_from_message
+        show_copyable_error(_("Update failed"), _("The update did not finish."),
+                            translate_message(message) if shown is None else shown,
+                            commands=fix_commands_from_message(message))
 
     def quit_app(self):
         self.icon_manager.set_disconnected()
         self.is_closing = True
         if self._report_session is not None:
             self._report_session.close()
+        self._note_agent_target(None)
         self._url_source.close()
         # Tear the tray icon down before the loop exits so a re-exec (update
         # restart) doesn't leave a stale icon behind / a doubled tray.
@@ -919,15 +1111,32 @@ class PolyForwarder(QApplication):
             if not self.is_closing:
                 QTimer.singleShot(UPDATE_CYCLE_MSEC, self.active_window_reporter)
             return
-        self.last_update_msec += UPDATE_CYCLE_MSEC
-        self.heartbeat_msec += UPDATE_CYCLE_MSEC
+        # ⚠️ The accept timer counts REAL time, floored at the nominal cycle.
+        # Adding the nominal alone assumed the tick cost nothing: it takes six
+        # ticks to accept a switch, so on macOS, where pywinctl spends two
+        # `osascript` processes per `getActiveWindow()` and a tick measured
+        # 2.30 s median, a 1 s debounce became 15 s and any app the user left
+        # sooner never reached the keyboard at all (field bundle 2026-10-16).
+        # The same fix and the same reasoning as
+        # `handler.active_window.OverlayHandler._tick_elapsed_msec` -- this is
+        # the second copy of that timer, on the other machine.
+        #
+        # `heartbeat_msec` counts the same way, and had the same inflation:
+        # HEARTBEAT_MSEC is 15 s, and 60 ticks of 2.5 s made the resend that
+        # lets the keyboard machine catch up fire every 150 s instead.
+        now = time.monotonic()
+        previous, self._last_tick_at = self._last_tick_at, now
+        elapsed = (UPDATE_CYCLE_MSEC if previous is None
+                   else max(UPDATE_CYCLE_MSEC, int((now - previous) * 1000)))
+        self.last_update_msec += elapsed
+        self.heartbeat_msec += elapsed
         win = pwc.getActiveWindow()
         if win:
             try:
                 if self.prev_win != win:
                     self.prev_win = win
                     self.last_update_msec = 0
-                if self.last_update_msec > NEW_WINDOW_ACCEPT_TIME_MSEC:
+                if self.last_update_msec >= NEW_WINDOW_ACCEPT_TIME_MSEC:
                     #just to limit the time value:
                     self.last_update_msec = NEW_WINDOW_ACCEPT_TIME_MSEC * 2
                     # PolyHost's own windows travel as `polyhost`, not as
@@ -937,6 +1146,9 @@ class PolyForwarder(QApplication):
                     pid = window_pid(win)
                     app_name = own_app_name(app_name_for(win), pid,
                                             self.activeWindow() is not None)
+                    # Same rename as the handler: the taskbar and desktop are
+                    # explorer.exe but must not get File Explorer's keycaps.
+                    app_name = shell_app_name(app_name, win.getHandle())
                     if is_python_runtime(app_name) and pid not in self._told_python_owner:
                         self._told_python_owner.add(pid)
                         self.log.info("Window '%s' belongs to a Python process"
@@ -952,7 +1164,9 @@ class PolyForwarder(QApplication):
                         or win.title != self.title
                         or self._url_dirty
                     )
-                    if changed or self.heartbeat_msec >= HEARTBEAT_MSEC:
+                    heartbeat = (AGENT_HEARTBEAT_MSEC if getattr(self, "_agents_fast", False)
+                                 else HEARTBEAT_MSEC)
+                    if changed or self.heartbeat_msec >= heartbeat:
                         self.win = win
                         self.title = win.title
                         self._url_dirty = False
@@ -972,11 +1186,22 @@ class PolyForwarder(QApplication):
             except Exception as e:
                 self.log.warning("Exception in window reporter: %s", e)
         elif self.win:
-            self.log.info("No active window")
-            self.win = None
-            self.title = None
-            self.heartbeat_msec = 0
-            self.send_to_host(0, "", "")
+            # ⚠️ A lost window waits for the same accept delay as a new one,
+            # as `OverlayHandler._decide_active_window` does since #531. On
+            # KDE Wayland the backend reports no window for ONE tick and then
+            # the same window again, about every 10 s. Sent at once, the empty
+            # report and the window that follows are two remote changes on the
+            # keyboard machine: a DISABLE, then the whole overlay set again,
+            # whose `set_idle(False)` takes the keyboard out of Eden.
+            if self.prev_win is not None:
+                self.prev_win = None
+                self.last_update_msec = 0
+            if self.last_update_msec >= NEW_WINDOW_ACCEPT_TIME_MSEC:
+                self.log.info("No active window")
+                self.win = None
+                self.title = None
+                self.heartbeat_msec = 0
+                self.send_to_host(0, "", "")
 
         if not self.is_closing:
             QTimer.singleShot(UPDATE_CYCLE_MSEC, self.active_window_reporter)

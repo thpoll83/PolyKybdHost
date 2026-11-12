@@ -278,6 +278,82 @@ def thinned_mask(svg_path, shave=FINDER_SHAVE, box=PROGRAM_ICON_BOX):
 
 
 # --------------------------------------------------------------------------
+# JetBrains IDEs -- Simple Icons' plate, turned into an outline
+# --------------------------------------------------------------------------
+# Simple Icons draws each JetBrains IDE as a filled square with its letters and
+# underline cut out. Rendered as is, that is a 38 x 38 lit block with dark
+# letters: `mark_rank` reads it inside-out (False, ~0.21) and the OS icon beats
+# it, which is how CLion ended up with its dithered colour icon on hardware
+# (2026-09-29). Inverting inside the plate lights the letters and underline,
+# and a frame keeps the square -- the look of the real product logos, white
+# letters in a black square. Ranks 0.66-0.82 against 0.39-0.72 for the other
+# shipped marks. The filename is the slug `candidates()` derives (`clion64` ->
+# poly:clion; "IntelliJ IDEA" -> poly:intellijidea): no table anywhere.
+JETBRAINS_IDES = ("clion", "datagrip", "goland", "intellijidea", "phpstorm",
+                  "pycharm", "rider", "rubymine", "webstorm")
+PLATE_FRAME = 2                 # px; 1 px ranked 0.42-0.50 and read as a hairline
+# ⚠️ IntelliJ IDEA is the one IDE whose EXECUTABLE is not its product name
+# (`idea`, `idea64`). The display name reaches `poly:intellijidea` only when the
+# OS supplies one, and a Linux install with no desktop entry supplies none, so a
+# forwarded IDEA drew no mark while CLion (exe `clion`) did (field, 2026-09-30).
+# The same mark ships a second time under the exe's slug.
+JETBRAINS_EXE_SLUGS = {"idea": "intellijidea"}
+
+# Simple Icons' solid `googlechrome`, shipped VERBATIM (see the README). Chrome
+# reports `chrome` as its Windows executable but `google-chrome` / "Google
+# Chrome" on Linux and macOS, which normalise to `googlechrome` -- so a single
+# `chrome.svg` was never offered on Plasma, and mdi's thin-stroke logo won
+# there instead (field, 2026-10-05). Same answer as `idea.png`: one source,
+# written under every slug the browser reports.
+CHROME_SRC = "si-googlechrome.svg"
+CHROME_SLUGS = ("chrome", "googlechrome")
+
+# mdi's `palette-outline`, shipped VERBATIM as Windows Paint's mark (see the
+# README). No catalog carries Paint, so the OS icon of `mspaint.exe` was the
+# only candidate and it does not survive 1 bit. The executable is `mspaint` on
+# every Windows version, so one slug reaches it.
+MSPAINT_SRC = "mdi-palette-outline.svg"
+
+# mdi's `image-outline`, shipped VERBATIM as WINDOWS Photos' mark. `photos` is
+# Apple Photos on macOS and Microsoft Photos on Windows, and the rosette in
+# `photos.png` read as the Mac's app on a Windows keycap (field, 2026-10-21).
+# The `.windows` qualifier makes `app_icons.candidates` offer this file instead
+# of `photos.png` when the app runs on Windows.
+PHOTOS_WINDOWS_SRC = "mdi-image-outline.svg"
+
+
+def plate_outline_mask(svg_path, frame=PLATE_FRAME):
+    """A filled-plate mark with the plate hollowed out: its holes lit, plus a frame.
+
+    Produced through `app_icons.render_overlay` itself, so the shipped mask is
+    exactly what the renderer makes of the source before the inversion.
+    """
+    from polyhost.services.app_icons import render_overlay
+    plate = render_overlay(svg_path)
+    rows, cols = np.flatnonzero(plate.any(1)), np.flatnonzero(plate.any(0))
+    y0, y1, x0, x1 = rows[0], rows[-1] + 1, cols[0], cols[-1] + 1
+    out = np.zeros_like(plate)
+    out[y0:y1, x0:x1] = ~plate[y0:y1, x0:x1]
+    # The plate's anti-aliased edges leave single-pixel artefacts at 38 px.
+    # Clear the 1 px gutter inside the frame (a stray there fused GoLand's O to
+    # the frame), then drop spur pixels: a set pixel with exactly one set
+    # 4-neighbour. Strokes here are >= 3 px thick, so only artefacts qualify
+    # (PyCharm's P stem and IntelliJ's underline each carried one).
+    g0, g1 = y0 + frame, y1 - frame - 1
+    h0, h1 = x0 + frame, x1 - frame - 1
+    out[g0, h0:h1 + 1] = out[g1, h0:h1 + 1] = False
+    out[g0:g1 + 1, h0] = out[g0:g1 + 1, h1] = False
+    inner = out[g0:g1 + 1, h0:h1 + 1]
+    pad = np.pad(inner, 1)
+    neighbours = (pad[:-2, 1:-1].astype(int) + pad[2:, 1:-1]
+                  + pad[1:-1, :-2] + pad[1:-1, 2:])
+    inner[inner & (neighbours == 1)] = False
+    out[y0:y0 + frame, x0:x1] = out[y1 - frame:y1, x0:x1] = True
+    out[y0:y1, x0:x0 + frame] = out[y0:y1, x1 - frame:x1] = True
+    return out
+
+
+# --------------------------------------------------------------------------
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--check", action="store_true",
@@ -290,6 +366,19 @@ def main(argv=None) -> int:
         "photos.png": _png_bytes(photos_mask()),
         "finder.png": _png_bytes(thinned_mask(FINDER_SRC)),
     }
+    for ide in JETBRAINS_IDES:
+        src = os.path.join(PROGRAM_ICON_DIR, "src", "si-%s.svg" % ide)
+        products["%s.png" % ide] = _png_bytes(plate_outline_mask(src))
+    for exe, ide in JETBRAINS_EXE_SLUGS.items():
+        products["%s.png" % exe] = products["%s.png" % ide]
+    with open(os.path.join(PROGRAM_ICON_DIR, "src", CHROME_SRC), "rb") as fh:
+        chrome = fh.read()
+    for slug in CHROME_SLUGS:
+        products["%s.svg" % slug] = chrome
+    with open(os.path.join(PROGRAM_ICON_DIR, "src", MSPAINT_SRC), "rb") as fh:
+        products["mspaint.svg"] = fh.read()
+    with open(os.path.join(PROGRAM_ICON_DIR, "src", PHOTOS_WINDOWS_SRC), "rb") as fh:
+        products["photos.windows.svg"] = fh.read()
 
     drifted = []
     for name, payload in products.items():

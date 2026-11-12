@@ -11,8 +11,10 @@ second tray app that can run on the same desktop -- one glance has to separate
 them. The busy/warning states clear the inner keys entirely, so they carry no
 letter and exist only once, under "p"; IconStateManager reuses them for both.
 
-Everything under polyhost/res/icons/{p,f}{color,gray}.* plus p{think,warn}.* is
-written by this script -- edit the constants here, never the PNGs.
+Everything under polyhost/res/icons/{p,f}{color,gray}.* plus p{hid,think,warn}.*
+is written by this script -- edit the constants here, never the PNGs. "phid" is
+the connected mark in a violet sweep: the tray wears it while the keyboard is
+reachable over raw HID only (no bulk pipe).
 
     python3 tools/gen_brand_icons.py            # write SVG + PNG + ICO + ICNS
     python3 tools/gen_brand_icons.py --sheet X  # contact sheet to X, write nothing
@@ -184,6 +186,14 @@ def svg(variant="color", style="engraved", diagonal=True, stamp=True, body_r=Non
     if variant == "gray":
         g0, g1 = "#8A94A6", "#B9C2CE"
         body, rim = "#1A1D23", "#3A414D"
+    elif variant == "hid":
+        # Connected over raw HID only: the keyboard offers no bulk pipe, or the
+        # host could not open it (docs/architecture.md, "Transport probe"). Same
+        # mark, same stamp, a violet sweep instead of the blue one -- at tray
+        # size the hue is the whole signal, so the P and the stamp stay as they
+        # are. Chosen over a purple-magenta sweep, which reads as another product.
+        g0, g1 = "#6D28D9", "#A78BFA"
+        body, rim = "#0B1220", None
     else:
         g0, g1 = "#1D4ED8", "#22D3EE"
         body, rim = "#0B1220", None
@@ -310,7 +320,9 @@ def main():
     # (filename prefix, variant). The think/warn states draw the RING only, so
     # they carry no letter and are emitted once -- both tray apps share them.
     wanted = [(prefix, v) for prefix in MARKS for v in ("color", "gray")]
-    wanted += [("p", "think"), ("p", "warn")]
+    # "hid" (connected, raw HID only) exists for the tray app alone: the
+    # forwarder has no keyboard and therefore no transport to show.
+    wanted += [("p", "hid"), ("p", "think"), ("p", "warn")]
 
     if args.sheet:
         cell = 256

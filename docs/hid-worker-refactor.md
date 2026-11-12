@@ -235,7 +235,7 @@ A and B touch disjoint files and run in parallel.
 
 Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main thread does **no device I/O** after `PolyHost.__init__` (the one synchronous `connect()` at startup — which seeds `device_present` for firmware-action gating — is the only exception). There is deliberately **no synchronous language enumeration at startup**: `self.connected` can only be set by the reconnect decision tree (that's where the protocol/version gate lives), so the first worker probe always sees a False→True transition and runs the full fresh-connect flow (enumerate + menu build + unicode mode + cache reset). A startup enumerate just duplicated all of it within the first second (double menu build, field 2026-06-13) — don't re-add one.
 
-- `HidWorker` (`polyhost/device/hid_worker.py`) owns the device. Periodic tasks on the worker: reconnect probe (1 s), console/serial reads (250 ms), daylight brightness incl. its network lookups (10 min).
+- `HidWorker` (`polyhost/device/hid_worker.py`) owns the device. Periodic tasks on the worker: reconnect probe (1 s), console/serial reads (250 ms), daylight brightness incl. its network lookups (10 min), and the crash autocheck (1 s, `poly_core.py`).
 - UI code enqueues jobs (`worker.submit`); overlay sends use `coalesce_key="overlay"` so rapid app switches supersede/cancel stale transfers instead of replaying them. Dialogs use `worker.run_sync` (short bounded block; raises `RuntimeError` while suspended). Tray pause maps to `suspend()`/`resume()`, and `exclusive()` restores the prior suspend state on exit. ⚠️ **There are TWO flash paths and only one of them uses `exclusive()`** — see the console-starvation note below, which is what makes the distinction matter.
 - ⚠️ **Nothing the firmware prints during a flash is observable from the host** — and
   this is not a logging-level problem, so don't go hunting for a switch. QMK *drops*
@@ -347,4 +347,63 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   on the ordering (see `testing.md`). A green, mutation-checked suite still
   missed all three.
 - **The probe is debounced** (`decide_probe_publish`, 3 strikes): the keyboard goes deaf for hundreds of ms after a large overlay transfer while it syncs images to the slave half over UART, so a single failed probe must NOT flap the connection state — that resets the MRU cache, wipes the overlays, and forces a resend that keeps the keyboard busy for the next probe (self-sustaining wipe-and-resend oscillation, seen in the field 2026-06-10). For the same reason the probe drains stale late replies first, never queries version/languages when the lang probe already failed (a stale GET_ID reply can fake a fresh connect), and `query_id`/`GET_LANG` use generous read timeouts (250/150 ms — fine on the worker, forbidden back when this ran on the UI thread).
+
+## Threading model (HID worker) (the CLAUDE.md summary)
+
+_Moved verbatim from `CLAUDE.md` on 2026-10-10. CLAUDE.md keeps a short pointer._
+
+
+The Qt main thread does **no device I/O** after `PolyHost.__init__`. `HidWorker`
+(`polyhost/device/hid_worker.py`) owns the device and runs the reconnect probe (1 s),
+console reads (250 ms) and daylight brightness (10 min); UI code enqueues jobs.
+The full contract — job coalescing, `run_sync`, `suspend`/`exclusive`, the reconnect
+split and the probe debounce — is [`docs/hid-worker-refactor.md`](hid-worker-refactor.md).
+Eight rules bind code outside it:
+
+- **There is deliberately no synchronous language enumeration at startup.** The first
+  worker probe must see a False→True transition and run the full fresh-connect flow; a
+  startup enumerate duplicated all of it within the first second. Don't re-add one.
+- **The probe is debounced (3 strikes)** because the keyboard goes deaf for hundreds of
+  ms after a large overlay transfer. A single failed probe must not flap the connection
+  state — that resets the MRU cache, wipes the overlays and forces a resend that keeps
+  the keyboard busy for the next probe, a self-sustaining wipe-and-resend oscillation
+  seen in the field.
+- ⚠️ **Nothing the firmware prints during a flash is observable from the host** — QMK
+  drops console output nobody drains, and during a flash nobody does. The tell is a gap
+  in the firmware console timestamps spanning the flash. Use `tools/poly_console.py` in
+  a second terminal. Two rounds were spent concluding "it printed nothing" from a log
+  that structurally could not contain it.
+- **`FW_UP_COMMIT` has FOUR status bytes** — `.` accepted, `?` awaiting the physical
+  ACCEPT/REJECT on the keyboard, `S` not validly signed, `!` staged-CRC mismatch. `S`
+  was split out because both refusals used to arrive as `!` and every consumer reported
+  "CRC mismatch" for an image whose CRC was perfect. **Don't collapse them back.**
+  `?` means "re-poll me", not "failed"; the host may CANCEL the prompt but never accept
+  it, so do not add a host-side "allow unsigned" checkbox.
+- **`polyctl fw version` is a LIVE query (HID cmd 0x43), not a cache** — it is asked
+  exactly when a cache cannot answer, and it reported the pre-flash version after an
+  update had demonstrably installed. It fails loudly ("suspended") mid-flash rather
+  than handing back a stale string; the failure is the feature.
+- **The no-blocking-the-main-thread rule covers NETWORK I/O too.** Every GitHub call
+  the GUI makes runs on its own thread; a menu handler starts one and opens a progress
+  dialog, never calls `requests` itself.
+- ⚠️ **A MODAL opened from a bridge handler dispatches the OTHER queued bridge
+  events**, re-entering `_on_job_done` before it returns. One update check reports
+  host then firmware, so the firmware dialog opened on top of the host one — three
+  times, each fix uncovering the next call site (#257). Route every dialog a bridge
+  event can open through ONE serializer; the worked example and the rule are in
+  [`docs/hid-worker-refactor.md`](hid-worker-refactor.md) → *Threading model*.
+- ⚠️ **A COM object never crosses a thread, and every thread that calls COM
+  initializes it itself.** comtypes calls `CoInitializeEx` only on the thread that
+  FIRST imports it, and our background workers (the shortcut harvest, the relay)
+  exit when idle and are replaced. A cached COM object handed to the next thread
+  is used from a dead apartment with COM not initialized. It does not raise a
+  Python exception: it kills the headless daemon with a native access violation
+  and no log line, and the tray survives with a dead pipe while the keyboard keeps
+  working. This has happened TWICE with the same tell, a run of
+  `Windows fatal exception: code 0x80010108` (RPC_E_DISCONNECTED) dumps in
+  `crash_log.txt` ending in `access violation`: WMI in pywinctl's `getAppName`
+  (2026-09-14, see `handler/win_process.py`) and the UI Automation harvest
+  (2026-09-23, #264). `polyhost/services/shortcut_source/uia.py` is the pattern: a per-thread
+  cache, COM initialized under `_IMPORT_LOCK`, and `release_thread()` called in
+  the worker's `finally`, dropping the object BEFORE `CoUninitialize`.
 

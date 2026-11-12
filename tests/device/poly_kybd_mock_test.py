@@ -56,10 +56,11 @@ class TestPolyKybdMockOverlayFlags(unittest.TestCase):
         self.assertFalse(self.mock._overlays_enabled)
 
     def test_reset_overlay_mapping_clears_mapping(self):
-        self.mock._overlay_mapping = {1: 2}
+        self.mock.send_overlay_mapping({1: 2})
+        self.assertTrue(self.mock.firmware.sim.is_mapped(1))
         ok, _ = self.mock.reset_overlay_mapping()
         self.assertTrue(ok)
-        self.assertEqual(self.mock._overlay_mapping, {})
+        self.assertFalse(self.mock.firmware.sim.is_mapped(1))
 
     def test_reset_overlays_clears_sent_list(self):
         self.mock._sent_overlays = ["some_file.png"]
@@ -173,7 +174,7 @@ class TestPolyKybdMockLanguage(unittest.TestCase):
         self.assertEqual(self.mock.get_current_lang(), "enUS")
 
 
-# The full 160-language firmware list (the cog-generated `languages` table that
+# The full 161-language firmware list (the cog-generated `languages` table that
 # hid_com.c now emits via the packed GET_LANG_LIST_PACKED, cmd 27). Grouped below
 # in the original 15-per-row layout purely for readability.
 _ALL_FIRMWARE_LANGS = (
@@ -187,7 +188,7 @@ _ALL_FIRMWARE_LANGS = (
     "arSYarJOarLBarYEarKWarOMarPSarQAarBHarDZarSDarTNarLYfrCDfrCI"  # packet 8
     "frCMfrSNfrMGenGHenUGenZMswTZptAOptMZbnBDenINenPKenPHenSGenLK"  # packet 9
     "kyKGtgTJenGUenSBenVUenFMfrNCtoTOeuESglESrmCHcyGBgaIEmtMTlbLU"  # packet 10
-    "seNOgnPYquPEayBOnvUSnhMXpsAFiuCAcrCAckUS"                      # packet 11
+    "seNOgnPYquPEayBOnvUSnhMXpsAFiuCAcrCAckUSjaUS"                  # packet 11
 )
 
 _ALL_FIRMWARE_LANG_CODES = [
@@ -223,11 +224,12 @@ _ALL_FIRMWARE_LANG_CODES = [
     "euES", "glES", "rmCH", "cyGB", "gaIE", "mtMT", "lbLU",
     # packet 11
     "seNO", "gnPY", "quPE", "ayBO", "nvUS", "nhMX", "psAF", "iuCA", "crCA", "ckUS",
+    "jaUS",
 ]
 
 
 class TestPolyKybdMockAllFirmwareLanguages(unittest.TestCase):
-    """Mock initialised with the full 160-language set from the firmware."""
+    """Mock initialised with the full 161-language set from the firmware."""
 
     def setUp(self):
         self.mock = make_mock(lang="enUS", langs=_ALL_FIRMWARE_LANGS)
@@ -237,8 +239,8 @@ class TestPolyKybdMockAllFirmwareLanguages(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(langs, _ALL_FIRMWARE_LANGS)
 
-    def test_lang_list_has_160_entries(self):
-        self.assertEqual(len(self.mock.get_lang_list()), 160)
+    def test_lang_list_has_161_entries(self):
+        self.assertEqual(len(self.mock.get_lang_list()), 161)
 
     def test_all_language_codes_present(self):
         langs = self.mock.get_lang_list()
@@ -258,20 +260,22 @@ class TestPolyKybdMockOverlayMapping(unittest.TestCase):
         self.mock = make_mock()
 
     def test_send_overlay_mapping_accumulates(self):
+        # Read back from the emulated keyboard: the pairs went over the wire.
+        sim = self.mock.firmware.sim
         ok, _ = self.mock.send_overlay_mapping({1: 10, 2: 20})
         self.assertTrue(ok)
-        self.assertEqual(self.mock._overlay_mapping[1], 10)
+        self.assertEqual(sim.get_pool_slot_for(1), 10)
         ok, _ = self.mock.send_overlay_mapping({3: 30})
         self.assertTrue(ok)
-        self.assertEqual(self.mock._overlay_mapping[2], 20)
-        self.assertEqual(self.mock._overlay_mapping[3], 30)
+        self.assertEqual(sim.get_pool_slot_for(2), 20)
+        self.assertEqual(sim.get_pool_slot_for(3), 30)
 
 
 class TestPolyKybdMockSendOverlays(unittest.TestCase):
     def setUp(self):
         self.mock = make_mock()
 
-    @mock.patch("polyhost.device.poly_kybd_mock.ImageConverter")
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
     def test_send_overlays_success_updates_state(self, MockImageConverter):
         converter = MockImageConverter.return_value
         converter.open.return_value = True
@@ -284,7 +288,7 @@ class TestPolyKybdMockSendOverlays(unittest.TestCase):
         self.assertEqual(self.mock._sent_overlays, filenames)
         self.assertTrue(self.mock._overlays_enabled)
 
-    @mock.patch("polyhost.device.poly_kybd_mock.ImageConverter")
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
     def test_send_overlays_open_failure_returns_false(self, MockImageConverter):
         converter = MockImageConverter.return_value
         converter.open.return_value = False
@@ -295,7 +299,7 @@ class TestPolyKybdMockSendOverlays(unittest.TestCase):
         self.assertEqual(self.mock._sent_overlays, [])
         self.assertFalse(self.mock._overlays_enabled)
 
-    @mock.patch("polyhost.device.poly_kybd_mock.ImageConverter")
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
     def test_send_overlays_call_logged(self, MockImageConverter):
         converter = MockImageConverter.return_value
         converter.open.return_value = True
@@ -498,6 +502,54 @@ class TestPolyKybdMockIdleTimeout(unittest.TestCase):
         _, (preset, _) = self.mock.get_idle_timeout()
         self.assertEqual(preset, IdleTimeout.SEC_30.value)
 
+
+class TestPolyKybdMockSignatureParity(unittest.TestCase):
+    """Every parameter a real `PolyKybd` method takes, the mock's method of the
+    same name must accept too. A caller written against the real device passes
+    the new keyword, and a mock that lacks it raises TypeError at runtime only
+    while the mock is enabled -- `send_overlays_mru(synthetic=)` did exactly
+    that on every window report."""
+
+    def test_mock_accepts_every_parameter_of_the_real_method(self):
+        import inspect
+        from polyhost.device.poly_kybd import PolyKybd
+        skip = (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
+        drift = {}
+        for name, fn in inspect.getmembers(PolyKybdMock, inspect.isfunction):
+            real = getattr(PolyKybd, name, None)
+            if name.startswith("_") or real is None:
+                continue
+            mock_params = inspect.signature(fn).parameters
+            missing = [p.name for p in list(inspect.signature(real).parameters.values())[1:]
+                       if p.kind not in skip and p.name not in mock_params]
+            if missing:
+                drift[name] = missing
+        self.assertEqual(drift, {})
+
+
+
+class TestPolyKybdMockVersion(unittest.TestCase):
+    def test_a_positional_version_string_is_rejected(self):
+        # `version` is keyword-only; a string in the poly_settings slot used to
+        # leave the mock reporting the default "1.0.0" with no error.
+        with self.assertRaises(TypeError):
+            PolyKybdMock(DeviceSettings(), "1.2.3")
+
+    def test_poly_core_gives_the_mock_the_host_version(self):
+        from polyhost._version import __version__
+        from polyhost.core.poly_core import PolyCore
+        from polyhost.settings import PolySettings
+        real_get = PolySettings.get
+
+        def get(settings, name):
+            return True if name == "dev_mock_enabled" else real_get(settings, name)
+
+        with mock.patch.object(PolySettings, "get", get):
+            core = PolyCore(mock.MagicMock(), start_worker=False)
+        secondary = [e.device for e in core.device_mgr.all_entries if not e.is_primary]
+        self.assertEqual(len(secondary), 1)
+        self.assertEqual(secondary[0].get_sw_version(), __version__)
+        self.assertIs(secondary[0].poly_settings, core.poly_settings)
 
 if __name__ == "__main__":
     unittest.main()

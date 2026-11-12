@@ -28,6 +28,7 @@ class TestGlyphScriptEncoding(unittest.TestCase):
         self.assertEqual(GlyphScript.AMIGA.value, 8)
         self.assertEqual(GlyphScript.APL.value, 9)
         self.assertEqual(GlyphScript.BRAILLE.value, 10)
+        self.assertEqual(GlyphScript.C64KEYS.value, 11)
 
     def test_compose_set_tengwar(self):
         result = compose_cmd(Cmd.GLYPH_SCRIPT, GlyphScript.TENGWAR.value)

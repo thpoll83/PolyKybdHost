@@ -1,7 +1,7 @@
 # Notepad++ shortcut overlays for PolyKybd.
 #
 # Icons: Microsoft Fluent UI System Icons (MIT) for all shortcuts (one consistent
-# style, license-clean vs the GPL-3.0-or-later host); one custom-drawn glyph (delete line).
+# style, license-clean vs the GPL-3.0-or-later host). Delete line is JetBrains' copy, shared.
 # Program icon (ESC, all layers): the actual Notepad++ logo. See SOURCES.md.
 # Shortcuts: Notepad++ default keymap.
 #
@@ -17,7 +17,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 # Program icon drawn into the ESC cell on every layer (all channels) as a marker
@@ -45,7 +45,7 @@ bindings:
   - { key: Y, mods: [CTRL], icon: redo.png,       label: Redo,        source: "ms-fluent/Arrow Redo (MIT)" }
   - { key: A, mods: [CTRL], icon: selectall.png,  label: "Select all", source: "ms-fluent/Select All On (MIT)" }
   - { key: D, mods: [CTRL], icon: duplicate.png,  label: "Dup line",  source: "ms-fluent/Row Triple (MIT)" }
-  - { key: L, mods: [CTRL], icon: deleteline.png, label: "Del line",  mode: alpha, source: "custom (drawn: text rows + strike)" }
+  - { key: L, mods: [CTRL], icon: deleteline.png, label: "Del line",  mode: alpha, source: "ms-fluent/Delete Lines (MIT), borrowed from jetbrains" }
   - { key: Q, mods: [CTRL], icon: comment.png,    label: Comment,     source: "ms-fluent/Comment (MIT)" }
   - { key: I, mods: [CTRL], icon: split.png,      label: "Split lines", source: "ms-fluent/Split Horizontal (MIT)" }
   - { key: T, mods: [CTRL], icon: swapline.png,   label: "Swap line",  source: "ms-fluent/Arrow Sort Up (MIT)" }
@@ -68,4 +68,4 @@ bindings:
   - { key: F, mods: [CTRL, SHIFT], icon: findfiles.png, label: "Find files", source: "ms-fluent/Document Search (MIT)" }
 
   # --- run (plain F-key) ---
-  - { key: F5, mods: [], icon: run.png, label: Run, source: "ms-fluent/Play (MIT)" }
+  - { key: F5, mods: [], icon: run.png, region: [72, 40], anchor: center, mode: alpha, label: Run, source: "reclaimed (JetBrains/VS Code run, shared)" }

@@ -61,6 +61,7 @@ dimension it was never short of.
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import logging
 import os
@@ -238,7 +239,7 @@ def kebab(app_name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name).strip("-")
 
 
-def candidates(app_name: str, names=()) -> list:
+def candidates(app_name: str, names=(), os_keys=()) -> list:
     """Qualified `source:name` icons to try, in order, for one application.
 
     `names` are the application's OS-reported DISPLAY names, best first (see
@@ -254,6 +255,15 @@ def candidates(app_name: str, names=()) -> list:
     entries bought 73% coverage over 151 probed names and made every unheard-of
     application a 71st entry; `docs/generic-icons-plan.md` has the measurement
     and the reversal.
+
+    `os_keys` are the OS of the machine RUNNING the app, most specific first
+    (`handler.common.os_match_keys`). A shipped mark may have an OS-qualified
+    file, `<slug>.<os>`, and when one exists for that OS it is offered INSTEAD
+    of the plain `<slug>`: one name can mean two programs. `photos` is Apple
+    Photos on macOS and Microsoft Photos on Windows, and the macOS rosette drawn
+    on Windows read as the Mac's app (field, 2026-10-21). The qualified file is
+    its own slug, so the keyboard's image cache never holds two pictures under
+    one name. Still no table: the filename is the slug.
     """
     out = []
 
@@ -293,12 +303,20 @@ def candidates(app_name: str, names=()) -> list:
     # The shipped marks go LAST. With `program_overlay` ranking by legibility
     # the order is only a tie-break, but the tie should go to a real brand mark
     # over a generic one of ours.
+    def offer_shipped(slug):
+        for key in os_keys or ():
+            qualified = f"{slug}.{key}"
+            if local_icon_path(qualified):
+                offer(f"{LOCAL_SOURCE}:{qualified}")
+                return
+        offer(f"{LOCAL_SOURCE}:{slug}")
+
     for display in names:
         slug = normalise(display)
         if slug:
-            offer(f"{LOCAL_SOURCE}:{slug}")
+            offer_shipped(slug)
     if guess:
-        offer(f"{LOCAL_SOURCE}:{guess}")
+        offer_shipped(guess)
     return out
 
 
@@ -511,13 +529,18 @@ def _alpha(svg_path: str, size: int):
     except Exception as exc:
         log.debug("Could not read %s: %s", svg_path, exc)
         return None
+    primary = "declined this file (an SVG feature it does not handle)"
+    missing = None
     try:
         from polyhost.services import svg_raster
         coverage = svg_raster.rasterise(text, size, size)
         if coverage is not None:
             return (coverage * 255).astype("uint8")
+        missing = svg_raster.unavailable_reason()
+        if missing:
+            primary = "cannot run (%s)" % missing
     except Exception as exc:
-        log.debug("svg_raster could not draw %s: %s", svg_path, exc)
+        primary = "raised %s" % exc
     try:
         import io
         import cairosvg
@@ -526,8 +549,35 @@ def _alpha(svg_path: str, size: int):
                                output_width=size, output_height=size)
         return np.array(Image.open(io.BytesIO(png)).convert("RGBA"))[..., 3]
     except Exception as exc:
-        log.debug("No rasteriser could draw %s: %s", svg_path, exc)
+        # ⚠️ Name BOTH. Naming only the fallback's error read as "install
+        # cairosvg" when the real cause was the primary's missing dependency.
+        log.debug("No rasteriser could draw %s: svg_raster %s; cairosvg: %s",
+                  svg_path, primary, exc)
+        # Only HERE, once the fallback has failed too: with cairosvg working,
+        # a missing svg_raster costs nothing, and warning that "every SVG
+        # mark is skipped" would send the user to fix what already works.
+        if missing:
+            _warn_rasteriser_missing(missing)
         return None
+
+
+@functools.lru_cache(maxsize=None)
+def _warn_rasteriser_missing(reason: str) -> None:
+    """ONE warning per process: without svg_raster every SVG mark is lost.
+
+    Every catalog mark and most shipped marks are SVG, so this silently
+    leaves only bitmap OS icons in the contest -- Chrome drew its dithered
+    OS icon over the shipped logo, and VS Code drew no mark at all (Plasma,
+    2026-10-05). At DEBUG, per file, nobody connected it to a missing package.
+
+    The cache IS the "once": a module flag rebound through `global` read as
+    an unused variable to CodeQL. Keyed on the reason, which is one string
+    per process because it names a failed import.
+    """
+    log.warning("SVG program marks cannot be drawn: the built-in rasteriser "
+                "needs fontTools + freetype-py (%s). Every catalog and shipped "
+                "SVG mark is skipped until they are installed: "
+                "pip install -r requirements.txt", reason)
 
 
 def render_overlay(svg_path: str, box: int = PROGRAM_ICON_BOX):
@@ -620,6 +670,25 @@ def mark_rank(mask):
     see `reads_inverted`, where that idea is measured and refuted.
     """
     return (not _reads_inverted(mask), mark_score(mask))
+
+
+def contest_key(rank, slug):
+    """What candidates are compared on: `mark_rank` with a SHIPPED mark ahead.
+
+    `(read_the_right_way_up, is_a_shipped_poly_mark, score)`. A `poly:` mark
+    exists only because somebody put that file there after looking at the
+    catalog and OS candidates on a real keycap, so when it reads the right way
+    up it beats them whatever `score()` says. The score cannot make that call:
+    it rewards thin line art, so `mdi:google-chrome`'s 1-2 px segment strokes
+    (0.61) beat the solid Simple Icons logo (0.24) that reads better on the
+    panel (user judgement at a keycap preview, 2026-09-29).
+
+    Still no per-application configuration: the filename is the slug, and an
+    inverted `poly:` mark gets no precedence, so polarity keeps outranking
+    everything as `mark_rank` documents.
+    """
+    shipped = bool(rank[0]) and str(slug).startswith(LOCAL_SOURCE + ":")
+    return (rank[0], shipped, rank[1])
 
 
 def _reads_inverted(mask) -> bool:
@@ -838,7 +907,7 @@ def _svg_colour_candidate(data: bytes, box: int):
 
 
 def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
-                    allow_network: bool | None = None):
+                    allow_network: bool | None = None, os_keys=()):
     """(mask, source name) for the focused app, or (None, first candidate).
 
     TWO sources, and the ORDER REVERSED in E2 (see
@@ -868,6 +937,9 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
     the executable name reaches the catalog.
 
     A name comes back either way so a caller can say which app it failed for.
+
+    `os_keys` name the OS running the app, for an OS-qualified shipped mark
+    (see `candidates`).
     """
     # ⚠️ A dict is a PROGRAMMING error here, not an input to tolerate. The
     # forwarded identity arrives as one over the RPC, and the getattr reads
@@ -919,23 +991,31 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
                      "%.3f >= %.3f, rank %.3f)", app_name, source or "<no path>",
                      len(icon), conversion, score, icon_binarise.MIN_SCORE,
                      best[0][1])
-        # ⚠️ INFO, not debug, and it names every number. "The icon does not
-        # survive 1-bit" is true and useless: the questions a round of hardware
-        # testing actually asks are WHICH file was read, what it scored and
-        # against what -- and answering them cost a session of guessing before
-        # this line existed. It runs once per application, not per tick.
-        # ⚠️ THREE decimals. At two, a near miss printed "score 0.30 < 0.30"
-        # -- a line that reads as a contradiction and sends the reader looking
-        # for a comparison bug. Measured on GNOME Calculator, which lands just
-        # under the gate.
-        log.info("The OS icon for %s does not survive 1-bit: %s (%d B, %s, "
-                 "score %.3f < %.3f) -- falling through to the catalog",
-                 app_name, source or "<no path>", len(icon),
-                 conversion or "nothing rendered", score,
-                 icon_binarise.MIN_SCORE)
+        else:
+            # ⚠️ INFO, not debug, and it names every number. "The icon does
+            # not survive 1-bit" is true and useless: the questions a round of
+            # hardware testing actually asks are WHICH file was read, what it
+            # scored and against what -- and answering them cost a session of
+            # guessing before this line existed. It runs once per application,
+            # not per tick.
+            # ⚠️ THREE decimals. At two, a near miss printed "score 0.30 <
+            # 0.30" -- a line that reads as a contradiction and sends the
+            # reader looking for a comparison bug. Measured on GNOME
+            # Calculator, which lands just under the gate.
+            # ⚠️ In the ELSE. It sat after the `if` while a passing icon still
+            # returned from inside it; once 933aa6e2 made a pass a CANDIDATE
+            # that falls through, it printed for every icon, straight after
+            # the CANDIDATE line: "score 0.215 < 0.080" (hardware round,
+            # 2026-09-29).
+            log.info("The OS icon for %s does not survive 1-bit: %s (%d B, "
+                     "%s, score %.3f < %.3f) -- falling through to the catalog",
+                     app_name, source or "<no path>", len(icon),
+                     conversion or "nothing rendered", score,
+                     icon_binarise.MIN_SCORE)
 
-    # ⚠️ EVERY candidate is resolved and the BEST-SCORING one wins -- this is
-    # not first-match-wins any more. A fixed source preference cannot express
+    # ⚠️ EVERY candidate is resolved and the BEST-RANKED one wins
+    # (`contest_key`: polarity, then a shipped `poly:` mark, then score) -- this
+    # is not first-match-wins any more. A fixed source preference cannot express
     # the case it was changed for, and the per-app table that could is what
     # `docs/generic-icons-plan.md` exists to refuse:
     #
@@ -965,7 +1045,7 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
     # favourite mark. ⚠️ Do not "fix" this by reordering SOURCES: that is the
     # fixed preference this block replaced, and it would take GNOME Terminal
     # back with it.
-    tried = candidates(app_name, names)
+    tried = candidates(app_name, names, os_keys)
     reasons: dict = {}
     for name in tried:
         path = fetch_icon(name, cache_dir, allow_network, reasons=reasons)
@@ -975,7 +1055,7 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
         if mask is None:
             continue
         value = mark_rank(mask)
-        if best is None or value > best[0]:
+        if best is None or contest_key(value, name) > contest_key(best[0], best[2]):
             best = (value, mask, name)
     if best is not None:
         log.info("Program mark for %s: %s (rank %.3f%s, best of %s)",

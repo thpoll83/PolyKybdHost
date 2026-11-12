@@ -28,3 +28,8 @@ Full notes: `docs/testing.md` · `docs/dev-environment.md`.
   ever run. CodeQL caught it; the suite could not. The guard is
   `tests/discovery_test.py::test_no_test_class_defines_a_method_name_TWICE` (AST,
   repo-wide) — same family as the COUNT note above.
+- ⚠️ **CodeQL flags what pyflakes passes.** `import unittest` beside `from unittest
+  import mock` (write `import unittest.mock as mock`); a `# noqa: F401` side-effect
+  import (noqa does not reach CodeQL); a module global kept only to hold a
+  `QApplication` alive (put it on the class in `setUpClass`). The full list, with the
+  `super().__init__` pair, is in `docs/testing.md` under "No *test* CI".

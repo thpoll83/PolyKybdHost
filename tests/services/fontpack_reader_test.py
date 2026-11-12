@@ -18,7 +18,9 @@ RES = os.path.join(os.path.dirname(__file__), "..", "..", "polyhost", "res", "fo
 
 def _load_bundles():
     with open(os.path.join(RES, "bundles.json"), encoding="utf-8") as f:
-        return json.load(f)["bundles"]
+        # Font bundles only: the icon library (kind: icons) is a PlyI with its
+        # own reader and tests (services/icon_library.py).
+        return [b for b in json.load(f)["bundles"] if b.get("kind", "fonts") == "fonts"]
 
 
 def _build_pack(fonts, content_version=0):

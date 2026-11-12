@@ -4,6 +4,7 @@ Polls the GitHub releases API for a newer version, downloads the auto-generated
 source tarball, copies the files over the install directory, and triggers an
 in-process restart. Designed for source-from-checkout installs on Win/Mac/Linux.
 """
+import ast
 import json
 import logging
 import math
@@ -15,6 +16,7 @@ import sys
 import tarfile
 import tempfile
 import threading
+import time
 from collections import namedtuple
 from pathlib import Path
 from typing import Optional, Union
@@ -25,10 +27,36 @@ from packaging.version import InvalidVersion, Version
 
 import polyhost
 from polyhost._version import __version__
+from polyhost.services import build_info
 # The one place the 64-byte Ed25519 signature length is defined. hid_fw_up is
 # stdlib-only (no hid, no Qt), so importing it here costs nothing and keeps the
 # downloader's length check from drifting out of step with the sender's.
 from polyhost.device.hid_fw_up import FW_SIG_LEN
+from polyhost.i18n import M_
+
+# Progress and failure text the tray shows. English here (log, polyctl, the
+# daemon -> GUI events); the dialogs translate it with i18n.translate_message().
+# Module constants on purpose, see M_().
+MSG_PREFLIGHT_FAILED = M_("Preflight failed: {details}")
+MSG_PREFLIGHT_WARNING = M_("Warning — {name}: {detail}")
+MSG_INSTALL_DIR_NOT_WRITABLE = M_("Install dir not writable: {error}")
+MSG_NO_TEMP_DIR = M_("Could not create a temp directory for the update: {error}")
+MSG_STARTING_DOWNLOAD = M_("Starting download...")
+MSG_DOWNLOADING_VERSION = M_("Downloading v{version}...")
+MSG_APPLYING_UPDATE = M_("Applying update...")
+MSG_CONNECTING = M_("Connecting…")
+MSG_DOWNLOADING_FW_OF = M_("Downloading firmware… {done} / {total} KB")
+MSG_DOWNLOADING_FW = M_("Downloading firmware… {done} KB")
+MSG_DOWNLOAD_CANCELLED = M_("Download cancelled.")
+MSG_DOWNLOADING_SIG = M_("Downloading signature…")
+MSG_SIG_RETRYING = M_("The signature download failed; trying again in {seconds} s "
+                      "(attempt {attempt} of {total})…")
+MSG_SIG_ATTEMPT = M_("Downloading signature (attempt {attempt} of {total})…")
+MSG_SIG_DOWNLOAD_FAILED = M_(
+    "The image downloaded, but its signature did not ({error}).\n\n"
+    "Flashing without it would make the keyboard treat this release as an "
+    "unsigned build and ask you to confirm on the keys, so the update was "
+    "stopped instead.")
 
 log = logging.getLogger(__name__)
 
@@ -38,6 +66,12 @@ GITHUB_API    = f"https://api.github.com/repos/{HOST_REPO}/releases/latest"
 GITHUB_FW_API = f"https://api.github.com/repos/{FW_REPO}/releases/latest"
 USER_AGENT = f"PolyKybdHost/{__version__}"
 HTTP_TIMEOUT = 5
+# Waits between signature-fetch attempts. The image is already on disk when the
+# 64-byte .sig is fetched, so one slow GitHub read (field 2026-11-05: "Read timed
+# out. (read timeout=10)", a manual retry then worked) must not throw it away.
+# Field 2026-11-09: a read timeout and two 504s within 4 s, a manual retry 1.5 min
+# later worked. Six attempts over about 67 s of waiting (maintainer's choice).
+SIG_RETRY_DELAYS = (2.0, 5.0, 10.0, 20.0, 30.0)
 
 # Persists ETag values across restarts so conditional requests (If-None-Match)
 # return 304 Not Modified without counting against GitHub's rate limit.
@@ -138,21 +172,76 @@ EXCLUDES = (
     ".pytest_cache", ".idea", ".vscode", "*.log",
 )
 
+# Paths of the release tree the running app never reads, relative to the
+# tarball's top folder. The updater does not extract or copy them, and the
+# installers leave them out of the checkout with the same patterns
+# (`git sparse-checkout`, scripts/install.sh and install.ps1;
+# tests/services/updater_build_only_test.py keeps the three the same).
+# overlay_sources/ holds 10,075 of the repo's 12,184 files, the inputs of
+# scripts/generate_app_overlays.py. The app reads only the per-app spec YAMLs
+# from it (services/game_assets), so `<app>/<file>.yaml` stays.
+BUILD_ONLY_DIRS = ("tests/", "polyhost/res/overlay_sources/")
+KEPT_IN_BUILD_ONLY = re.compile(r"polyhost/res/overlay_sources/[^/]+/[^/]+\.yaml")
+# The same rule as `git sparse-checkout set --no-cone` patterns, in the order
+# the installers pass them.
+SPARSE_PATTERNS = (
+    "/*",
+    "!/tests/",
+    "!/polyhost/res/overlay_sources/**",
+    "/polyhost/res/overlay_sources/*/*.yaml",
+)
+
+
+def is_build_only(rel: str, is_dir: bool = False) -> bool:
+    """True for a file or folder of the release tree the app does not need.
+
+    `rel` is a posix path relative to the tree's top folder. The folders that
+    lead to a kept file (``overlay_sources`` and each ``overlay_sources/<app>``)
+    are not build-only, so the walk reaches the kept files."""
+    rel = rel.strip("/")
+    for prefix in BUILD_ONLY_DIRS:
+        top = prefix.rstrip("/")
+        if rel != top and not rel.startswith(prefix):
+            continue
+        if prefix == "polyhost/res/overlay_sources/":
+            depth = rel.count("/") - top.count("/")
+            if depth == 0 or (depth == 1 and is_dir):
+                return False
+            if KEPT_IN_BUILD_ONLY.fullmatch(rel):
+                return False
+        return True
+    return False
+
 
 # ``name`` (GitHub release title) and ``notes`` (the release-notes markdown, i.e.
 # the API ``body``) carry the human-readable "what's in this update" text through
 # to the confirmation dialogs. They default to "" so the web-fallback paths (which
 # can't cheaply fetch the body) and existing positional constructions still work.
-ReleaseInfo   = namedtuple("ReleaseInfo",   ["tag", "version", "tarball_url", "html_url", "published_at", "name", "notes"],
-                           defaults=("", ""))
+# ``notes_releases`` counts the releases ``notes`` covers: more than 1 when the
+# update skips releases and their notes were added (``_with_skipped_notes``).
+ReleaseInfo   = namedtuple("ReleaseInfo",   ["tag", "version", "tarball_url", "html_url", "published_at", "name", "notes", "notes_releases"],
+                           defaults=("", "", 1))
 # ``sig_url`` is the detached Ed25519 signature (``<bin>.sig``) the release
 # workflow uploads beside the image. It is LAST + defaulted so existing
 # positional constructions keep working, but it is not optional in practice:
 # without it FwUpDownloader hands hid_fw_up an image with no signature beside
 # it, the enforcing firmware treats a release build as an unsigned one, and the
 # menu flow stalls on the physical A/ACCEPT prompt.
-FwUpReleaseInfo = namedtuple("FwUpReleaseInfo", ["tag", "version", "bin_url", "uf2_url", "html_url", "published_at", "name", "notes", "sig_url"],
-                             defaults=("", "", ""))
+FwUpReleaseInfo = namedtuple("FwUpReleaseInfo", ["tag", "version", "bin_url", "uf2_url", "html_url", "published_at", "name", "notes", "sig_url", "notes_releases"],
+                             defaults=("", "", "", 1))
+
+
+def dialog_release_name(release) -> str:
+    """The release title for the confirm dialog's "What's new" heading.
+
+    Empty when the notes cover more than one release: each section then has
+    its own heading, and naming only the newest release over all of them would
+    be wrong. ``release.name`` itself always stays the newest release's title,
+    because the installer writes it into the release marker.
+    """
+    if getattr(release, "notes_releases", 1) > 1:
+        return ""
+    return getattr(release, "name", "") or ""
 
 # A firmware release that IS newer than the keyboard but carries no flashable
 # .bin asset — normally because its release build failed and never uploaded one
@@ -240,6 +329,128 @@ def _latest_tag_via_web(repo: str) -> Optional[str]:
     return unquote(match.group(1))
 
 
+_NOTES_URL = "https://raw.githubusercontent.com/{repo}/release-notes/{tag}.md"
+
+
+def _release_text_via_web(repo: str, tag: str, cached: Optional[dict] = None) -> dict:
+    """Title, notes and date of release ``tag`` WITHOUT the rate-limited API.
+
+    The web fallback learns only the tag from the redirect, so without this the
+    confirm dialog had no notes and no date, only its Yes/No question. Returns
+    ``{"name", "notes", "published_at"}`` with empty strings for what is unknown:
+
+    - from ``cached`` (the ETag cache entry) when it is for the same tag, which
+      also gives the date;
+    - otherwise from the release's notes file on the ``release-notes`` branch,
+      served by raw.githubusercontent.com, which the API limit does not cover.
+      ``scripts/publish_release.py`` publishes that file as the release: its
+      first line ``# <title>`` is the name and the rest is the body.
+    """
+    out = {"name": "", "notes": "", "published_at": ""}
+    if cached and cached.get("tag") == tag and cached.get("notes"):
+        out.update(name=cached.get("name", "") or "", notes=cached.get("notes", "") or "",
+                   published_at=cached.get("published_at", "") or "")
+        return out
+    try:
+        resp = requests.get(_NOTES_URL.format(repo=repo, tag=tag), timeout=HTTP_TIMEOUT,
+                            headers={"User-Agent": USER_AGENT})
+    except requests.RequestException as e:
+        log.debug("Release notes lookup failed for %s %s: %s", repo, tag, e)
+        return out
+    if resp.status_code != 200:
+        log.debug("Release notes lookup for %s %s: HTTP %s", repo, tag, resp.status_code)
+        return out
+    lines = (resp.text or "").splitlines()
+    if lines and lines[0].startswith("# "):
+        out["name"] = lines[0][2:].strip()
+        lines = lines[1:]
+    out["notes"] = "\n".join(lines).strip("\n")
+    return out
+
+
+_RELEASES_API = "https://api.github.com/repos/{repo}/releases"
+_RELEASES_PAGE = 100   # GitHub's maximum page size for the releases list
+
+
+def _skipped_releases(repo: str, current: Version, latest: Version) -> list:
+    """Published releases strictly between ``current`` and ``latest``, newest first.
+
+    Each release's notes cover only what merged since the previous release, so
+    a user who jumps from 1.10.2 to 1.11.3 also needs the notes of 1.11.0 and
+    1.11.2. Drafts and prereleases are skipped: ``releases/latest`` never
+    offers them either. Pages are read until a page holds no release above
+    ``current``, or the list ends. Returns ``[{"tag", "name", "notes"}]``;
+    raises ``requests.RequestException`` or ``ValueError`` on failure.
+    """
+    found = {}             # tag -> (version, release); a tag seen twice counts once
+    page = 1
+    while True:
+        resp = requests.get(_RELEASES_API.format(repo=repo),
+                            params={"per_page": _RELEASES_PAGE, "page": page},
+                            headers={"User-Agent": USER_AGENT,
+                                     "Accept": "application/vnd.github+json"},
+                            timeout=HTTP_TIMEOUT)
+        if resp.status_code != 200:
+            raise ValueError(f"HTTP {resp.status_code}")
+        items = resp.json()
+        if not isinstance(items, list):
+            raise ValueError("releases list is not a list")
+        page_has_newer = False
+        for rel in items:
+            if not isinstance(rel, dict):
+                raise ValueError("release entry is not an object")
+            if rel.get("draft") or rel.get("prerelease"):
+                continue
+            tag = rel.get("tag_name", "")
+            if not isinstance(tag, str):
+                continue
+            try:
+                ver = Version(_version_from_tag(tag))
+            except InvalidVersion:
+                continue
+            if ver > current:
+                page_has_newer = True
+                if ver < latest:
+                    found[tag] = (ver, {"tag": tag, "name": str(rel.get("name") or ""),
+                                        "notes": str(rel.get("body") or "")})
+        # The list is ordered by creation date, not by version, so an old
+        # version can sit among newer ones. Stop at the first page that holds
+        # nothing newer than the installed version.
+        if not page_has_newer or len(items) < _RELEASES_PAGE:
+            break
+        page += 1
+    ordered = sorted(found.values(), key=lambda pair: pair[0], reverse=True)
+    return [rel for _ver, rel in ordered]
+
+
+def _with_skipped_notes(repo: str, current: Version, latest: Version,
+                        tag: str, name: str, notes: str) -> tuple:
+    """``(notes, count)`` for the confirm dialog, covering every skipped release.
+
+    When releases lie between ``current`` and ``latest``, the notes become one
+    section per release, newest first, each headed by its release title, and
+    ``count`` is the number of sections (see :func:`dialog_release_name`).
+    With no release in between, or when the list cannot be read, the newest
+    release's own notes are returned unchanged with ``count`` 1.
+    """
+    try:
+        skipped = _skipped_releases(repo, current, latest)
+    except (requests.RequestException, ValueError) as e:
+        log.info("Could not read the releases between %s and %s of %s: %s",
+                 current, latest, repo, e)
+        return notes, 1
+    if not skipped:
+        return notes, 1
+    sections = []
+    for rel in [{"tag": tag, "name": name, "notes": notes}] + skipped:
+        title = rel["name"].strip() or rel["tag"]
+        body = rel["notes"].strip()
+        sections.append(f"# {title}\n\n{body}" if body else f"# {title}")
+    log.info("Update notes cover %d release(s) from %s to %s",
+             len(sections), current, latest)
+    return "\n\n".join(sections), len(sections)
+
+
 def parse_asset_urls(html: str) -> list:
     """Every release-asset download URL in an expanded_assets HTML fragment.
 
@@ -305,7 +516,7 @@ def _release_assets_via_web(repo: str, tag: str) -> dict:
     return assets
 
 
-def _check_latest_via_web() -> Optional[ReleaseInfo]:
+def _check_latest_via_web(cached: Optional[dict] = None) -> Optional[ReleaseInfo]:
     """Host-update check using only github.com (no rate-limited API).
 
     Returns ReleaseInfo when a newer release exists, None when up to date, and
@@ -323,14 +534,16 @@ def _check_latest_via_web() -> Optional[ReleaseInfo]:
         log.debug("Update check (web): current %s is up-to-date (latest %s)", __version__, latest)
         return None
     log.info("Update check (web fallback): new version available: %s -> %s", __version__, latest)
+    text = _release_text_via_web(HOST_REPO, tag, cached)
     return ReleaseInfo(
         tag=tag, version=str(latest),
         tarball_url=f"https://github.com/{HOST_REPO}/archive/refs/tags/{tag}.tar.gz",
         html_url=f"https://github.com/{HOST_REPO}/releases/tag/{tag}",
-        published_at="")
+        published_at=text["published_at"], name=text["name"], notes=text["notes"])
 
 
-def _check_fw_latest_via_web(current: Version) -> Optional[FwUpCheckResult]:
+def _check_fw_latest_via_web(current: Version,
+                             cached: Optional[dict] = None) -> Optional[FwUpCheckResult]:
     """Firmware-update check using only github.com (no rate-limited API).
 
     Gets the tag via the redirect, then the .bin/.uf2 URLs from the
@@ -355,9 +568,11 @@ def _check_fw_latest_via_web(current: Version) -> Optional[FwUpCheckResult]:
                            reason="no_bin_asset")
     log.info("Firmware update check (web fallback): new version available: %s -> %s",
              current, latest)
+    text = _release_text_via_web(FW_REPO, tag, cached)
     return FwUpReleaseInfo(
         tag=tag, version=str(latest), bin_url=bin_url, uf2_url=assets.get("uf2", ""),
-        html_url=f"https://github.com/{FW_REPO}/releases/tag/{tag}", published_at="",
+        html_url=f"https://github.com/{FW_REPO}/releases/tag/{tag}",
+        published_at=text["published_at"], name=text["name"], notes=text["notes"],
         sig_url=assets.get("sig", ""))
 
 
@@ -389,6 +604,9 @@ def check_latest() -> Optional[ReleaseInfo]:
             if cached_ver and Version(cached_ver) > _current_version():
                 log.info("Update check (cached): new version available: %s -> %s",
                          __version__, cached_ver)
+                notes, notes_releases = _with_skipped_notes(
+                    HOST_REPO, _current_version(), Version(cached_ver), host["tag"],
+                    host.get("name", ""), host.get("notes", ""))
                 return ReleaseInfo(
                     tag=host["tag"],
                     version=cached_ver,
@@ -396,7 +614,8 @@ def check_latest() -> Optional[ReleaseInfo]:
                     html_url=host.get("html_url", ""),
                     published_at=host.get("published_at", ""),
                     name=host.get("name", ""),
-                    notes=host.get("notes", ""),
+                    notes=notes,
+                    notes_releases=notes_releases,
                 )
         except (KeyError, InvalidVersion) as e:
             log.warning("Corrupt ETag cache for host update — discarding: %s", e)
@@ -410,7 +629,7 @@ def check_latest() -> Optional[ReleaseInfo]:
         # API rate-limited — fall back to the github.com web redirect, which is
         # not subject to the API limit, so a (manual) check still works.
         log.info("Host update API rate-limited; trying the web fallback.")
-        return _check_latest_via_web()
+        return _check_latest_via_web(host)
     if resp.status_code != 200:
         raise UpdateCheckError(f"GitHub API returned HTTP {resp.status_code}")
 
@@ -449,12 +668,15 @@ def check_latest() -> Optional[ReleaseInfo]:
         return None
 
     log.info("Update check: new version available: %s -> %s", __version__, latest)
+    notes, notes_releases = _with_skipped_notes(HOST_REPO, _current_version(), latest,
+                                                tag, rel_name, notes)
     return ReleaseInfo(tag=tag, version=str(latest), tarball_url=tarball_url,
                        html_url=html_url, published_at=published_at,
-                       name=rel_name, notes=notes)
+                       name=rel_name, notes=notes, notes_releases=notes_releases)
 
 
-def check_fw_latest(current_version: str) -> Optional[FwUpCheckResult]:
+def check_fw_latest(current_version: str,
+                    skipped_notes: bool = True) -> Optional[FwUpCheckResult]:
     """Return FwUpReleaseInfo if the latest firmware release is strictly newer; else None.
 
     Uses ETag caching — 304 Not Modified responses don't count against the rate limit.
@@ -463,6 +685,9 @@ def check_fw_latest(current_version: str) -> Optional[FwUpCheckResult]:
     exists but ships no flashable .bin (a failed release build). Callers must check
     ``isinstance(result, FwUpReleaseInfo)`` before treating it as flashable —
     FwUpBlocked is truthy but must never reach the flash prompt.
+    ``skipped_notes`` adds the notes of every release between ``current_version``
+    and the latest one (one more API request per page of 100 releases); pass
+    False when nobody reads the notes.
     """
     try:
         current = Version(current_version.lstrip("vV"))
@@ -506,6 +731,11 @@ def check_fw_latest(current_version: str) -> Optional[FwUpCheckResult]:
                                        reason="no_bin_asset")
                 log.info("Firmware update check (cached): new version available: %s -> %s",
                          current_version, cached_ver)
+                notes, notes_releases = fw.get("notes", ""), 1
+                if skipped_notes:
+                    notes, notes_releases = _with_skipped_notes(
+                        FW_REPO, current, Version(cached_ver), fw["tag"],
+                        fw.get("name", ""), notes)
                 return FwUpReleaseInfo(
                     tag=fw["tag"],
                     version=cached_ver,
@@ -514,7 +744,8 @@ def check_fw_latest(current_version: str) -> Optional[FwUpCheckResult]:
                     html_url=fw.get("html_url", ""),
                     published_at=fw.get("published_at", ""),
                     name=fw.get("name", ""),
-                    notes=fw.get("notes", ""),
+                    notes=notes,
+                    notes_releases=notes_releases,
                     # .get, not [] — a cache written before signatures were
                     # plumbed through has no sig_url, and the ETag means every
                     # repeat check lands in THIS branch, so a KeyError here
@@ -531,7 +762,7 @@ def check_fw_latest(current_version: str) -> Optional[FwUpCheckResult]:
 
     if resp.status_code == 403:
         log.info("Firmware update API rate-limited; trying the web fallback.")
-        return _check_fw_latest_via_web(current)
+        return _check_fw_latest_via_web(current, fw)
     if resp.status_code != 200:
         raise UpdateCheckError(f"GitHub API returned HTTP {resp.status_code}")
 
@@ -584,30 +815,46 @@ def check_fw_latest(current_version: str) -> Optional[FwUpCheckResult]:
                            reason="no_bin_asset")
 
     log.info("Firmware update check: new version available: %s -> %s", current_version, latest)
+    notes_releases = 1
+    if skipped_notes:
+        notes, notes_releases = _with_skipped_notes(FW_REPO, current, latest, tag,
+                                                    rel_name, notes)
     return FwUpReleaseInfo(tag=tag, version=str(latest), bin_url=bin_url,
                            uf2_url=uf2_url or "", html_url=html_url, published_at=published_at,
-                           name=rel_name, notes=notes, sig_url=sig_url or "")
+                           name=rel_name, notes=notes, sig_url=sig_url or "",
+                           notes_releases=notes_releases)
+
+
+def _tree_rel(member_name: str) -> str:
+    """A tar member's path below the tarball's single top folder ("" for it)."""
+    parts = member_name.strip("/").split("/", 1)
+    return parts[1] if len(parts) > 1 else ""
 
 
 def _safe_extract(tar: tarfile.TarFile, dest: Path) -> None:
     """Extract `tar` into `dest`, refusing any path-traversal or link members.
+
+    Members :func:`is_build_only` names are not extracted: about 10,000 small
+    files, which on Windows cost more time to create and scan than to download.
 
     On Python >=3.12, delegates to the stdlib `filter="data"` extractor which
     enforces these constraints itself. On older Pythons, symlink and hardlink
     members are rejected outright (otherwise a tarball could plant a link
     under `dest` and have a later entry write through it to escape `dest`).
     """
+    members = [m for m in tar.getmembers()
+               if not is_build_only(_tree_rel(m.name), m.isdir())]
     if sys.version_info >= (3, 12):
-        tar.extractall(path=dest, filter="data")
+        tar.extractall(path=dest, members=members, filter="data")
         return
     dest_resolved = dest.resolve()
-    for member in tar.getmembers():
+    for member in members:
         if member.issym() or member.islnk():
             raise RuntimeError(f"Refusing link tar member: {member.name}")
         target = (dest / member.name).resolve()
         if dest_resolved != target and dest_resolved not in target.parents:
             raise RuntimeError(f"Refusing unsafe tar member: {member.name}")
-    tar.extractall(path=dest)
+    tar.extractall(path=dest, members=members)
 
 
 def download_and_extract(tarball_url: str, tmpdir: Path,
@@ -645,18 +892,230 @@ def download_and_extract(tarball_url: str, tmpdir: Path,
     return children[0]
 
 
-def _run_pip(args: list, label: str, line_cb=None) -> None:
-    """Run `pip <args>` in the active interpreter; log on non-zero exit.
+_PIP_TAIL_LINES = 30
+_FIX_HEADER = "To fix it:"
+
+
+# Characters PowerShell reads literally in a bare argument. Anything else
+# (space, quote, $, `, &, parentheses, ...) gets the argument single-quoted.
+_PS_BARE = re.compile(r"[A-Za-z0-9_\-.:\\/=+]+")
+
+
+def _powershell_quote(arg: str) -> str:
+    if _PS_BARE.fullmatch(arg):
+        return arg
+    return "'" + arg.replace("'", "''") + "'"
+
+
+def _shell_join(argv: list) -> str:
+    """One command line the user can paste into this platform's shell.
+
+    This only FORMATS text for the update-failed dialog; nothing executes
+    it. On Windows the target is PowerShell, the default terminal there:
+    a quoted program path is just a string to PowerShell, so the line
+    starts with the call operator ``&``, and quoting follows PowerShell's
+    single-quote rule rather than ``subprocess.list2cmdline``'s, which
+    leaves an apostrophe (``C:\\Users\\O'Brien``) unquoted.
+    """
+    if sys.platform == "win32":
+        return "& " + " ".join(_powershell_quote(a) for a in argv)
+    import shlex
+    return shlex.join(argv)
+
+
+def _in_virtualenv() -> bool:
+    return sys.prefix != getattr(sys, "base_prefix", sys.prefix)
+
+
+def pip_fix_commands(install_root: Path) -> list:
+    """The pip commands that finish an update by hand, in the order
+    :func:`apply_update` runs them."""
+    cmds = [[sys.executable, "-m", "pip", "install", "-e", str(install_root)]]
+    requirements = install_root / "requirements.txt"
+    if requirements.is_file():
+        cmds.append([sys.executable, "-m", "pip", "install", "-r", str(requirements)])
+    return cmds
+
+
+# pip prints str(OSError), which gives the filename as repr(): single quotes,
+# or DOUBLE quotes when the path itself has an apostrophe (/home/o'brien).
+_DENIED_PATH = re.compile(
+    r"""Permission denied: ('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")""")
+
+
+def _denied_path(lines: list) -> Optional[str]:
+    """The path from pip's ``Permission denied: '<path>'``, or None.
+
+    None also for a path with a control character: decoding turns an
+    escaped newline into a real one, and the path is quoted into the fix
+    steps, whose indented lines Copy Fix Commands puts on the clipboard.
+    """
+    for ln in lines:
+        m = _DENIED_PATH.search(ln)
+        if m:
+            try:
+                path = ast.literal_eval(m.group(1))
+            except (ValueError, SyntaxError):
+                return None
+            if not isinstance(path, str) or any(ord(c) < 0x20 or c == "\x7f" for c in path):
+                return None
+            return path
+    return None
+
+
+def _is_inside(path: str, root: str) -> bool:
+    path, root = os.path.normpath(path), os.path.normpath(root)
+    return path == root or path.startswith(root.rstrip(os.sep) + os.sep)
+
+
+def _permission_step(lines: list) -> Optional[str]:
+    """The ownership step for a POSIX permission error, or None.
+
+    The chown is offered only for a path pip names INSIDE a virtualenv: a
+    venv belongs to one user, while a system Python's prefix is /usr or
+    /usr/local, and a path outside the environment (pip's cache, say) is
+    not fixed by changing the environment's owner.
+    """
+    if sys.platform == "win32" or not any(
+            "[Errno 13]" in ln or "Permission denied" in ln for ln in lines):
+        return None
+    denied = _denied_path(lines)
+    if denied is None:
+        return ("This user cannot write to a path pip needs. Check the "
+                "ownership of the path in pip's error below.")
+    if not _is_inside(denied, sys.prefix):
+        return (f"This user cannot write to {denied}, which is outside the "
+                "Python environment. Check who owns it (ls -ld) and give it "
+                "back to your user if an earlier 'sudo' created it.")
+    if not _in_virtualenv():
+        return ("This user cannot write to the Python installation "
+                f"({sys.prefix}), which is not a virtual environment. Do not "
+                "change its ownership. Run PolyKybd Host from a virtual "
+                "environment you own, or fix only the path named in pip's "
+                "error below.")
+    return ("This user cannot write to a file in the Python environment. An "
+            "earlier 'sudo pip' often leaves files owned by root. Give them "
+            "back to your user:\n"
+            f'  sudo chown -R "$USER": {_shell_join([sys.prefix])}')
+
+
+def _pip_failure_message(label: str, outcome: str, captured: list,
+                         fix_cmds: list = (), locked: list = (),
+                         download_dir: Optional[str] = None) -> str:
+    """What a failed pip step tells the user: what state the install is in,
+    how to finish it, then pip's own output.
+
+    The new files are copied BEFORE pip runs, so the next start already runs
+    the new version without the packages it added (field report 2026-10-05:
+    1.15.0 started without uharfbuzz/freetype-py/fonttools). Saying "could not
+    apply the update" reads as "still on the old version", which is wrong.
+
+    ``locked`` are the Windows ``(src, dst)`` pairs that were in use and so
+    not replaced. A successful install hands them to the relay; a failed one
+    never reaches it, so the steps copy them by hand from the kept download.
+    ``download_dir`` is that kept download; the last step says to delete it
+    once the new version runs, since the relay that would have is never
+    started.
+
+    pip's ``ERROR:`` line comes last, after pages of progress, so the output
+    keeps the tail. ``[notice]`` lines (a newer pip exists) are dropped: they
+    sit below the error and pushed it out of the old 500-character slice.
+    """
+    lines = [ln for ln in captured if not ln.startswith("[notice]")]
+    where = " in PowerShell" if sys.platform == "win32" else ""
+    steps = []
+    permission = _permission_step(lines)
+    if permission:
+        steps.append(permission)
+    quit_first = "Quit PolyKybd Host, then "
+    if locked:
+        steps.append(
+            f"{quit_first}copy the {len(locked)} file(s) that were in use"
+            f"{where}:\n" + "\n".join(
+                "  " + _shell_join(["Copy-Item", "-Force", "-LiteralPath", src,
+                                    "-Destination", dst])
+                for src, dst in locked))
+        quit_first = ""
+    if fix_cmds:
+        lead = f"{quit_first}run{where}:" if quit_first else f"Then run{where}:"
+        steps.append(lead + "\n" + "\n".join("  " + _shell_join(c) for c in fix_cmds))
+    steps.append("Start PolyKybd Host again.")
+    if locked and download_dir:
+        # Prose, not an indented command: Copy Fix Commands pastes the
+        # commands as one block, and a delete there would run even after a
+        # failed Copy-Item and take the files needed to retry it.
+        steps.append("Once PolyKybd Host runs the new version, delete the "
+                     f"downloaded update folder {download_dir}.")
+
+    if locked:
+        msg = (f"Most of the new version's files are installed, but {len(locked)} "
+               "file(s) were in use and could not be replaced, and pip could not "
+               "install the Python packages the new version needs. PolyKybd Host "
+               "may not start correctly until the steps below are done.")
+    else:
+        msg = ("The new version's files are installed, but pip could not install "
+               "the Python packages it needs. PolyKybd Host runs the new version "
+               "from its next start, and features that need the missing packages "
+               "stay off until they are installed.")
+    msg += f"\n\n{_FIX_HEADER}\n"
+    msg += "\n".join(f"{i}. {step}" for i, step in enumerate(steps, 1))
+    msg += f"\n\npip {label} {outcome}"
+    if lines:
+        msg += ":\n" + "\n".join(lines[-_PIP_TAIL_LINES:])
+    return msg
+
+
+class PipInstallError(RuntimeError):
+    """A pip step of :func:`apply_update` failed after the files were copied.
+
+    ``keeps_sources`` is True when the message tells the user to copy files
+    out of the download, so the installer must not delete it."""
+
+    def __init__(self, message: str, keeps_sources: bool = False):
+        super().__init__(message)
+        self.keeps_sources = keeps_sources
+
+
+def fix_commands_from_message(message: str) -> str:
+    """The shell commands from a :func:`_pip_failure_message`, one per line.
+
+    The steps tell the user to quit the app, and the dialog goes with it, so
+    the dialog offers these on their own to paste into a terminal. They are
+    the two-space-indented lines of the steps block. The message crosses the
+    control socket as a plain string, so this reads it back from the text;
+    anything else (a download failure, say) yields "".
+    """
+    head = f"{_FIX_HEADER}\n"
+    if head not in message:
+        return ""
+    steps = message.split(head, 1)[1].split("\n\n", 1)[0]
+    return "\n".join(ln.strip() for ln in steps.splitlines()
+                     if ln.startswith("  ") and ln.strip())
+
+
+def _run_pip(args: list, label: str, line_cb=None, fix_cmds: list = (),
+             locked: list = (), download_dir: Optional[str] = None) -> None:
+    """Run `pip <args>` in the active interpreter; raise on failure.
 
     Streams stdout+stderr line by line.  Each non-empty line is passed to
     ``line_cb(line)`` when provided, so callers can surface it as UI feedback.
+    ``fix_cmds`` and ``locked`` feed the steps the failure message lists.
     """
+    def fail(outcome, captured):
+        return PipInstallError(
+            _pip_failure_message(label, outcome, captured, fix_cmds, locked,
+                                 download_dir),
+            keeps_sources=bool(locked))
+
     try:
         proc = subprocess.Popen(
             [sys.executable, "-m", "pip", *args],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
         )
-        captured = []
+    except (subprocess.SubprocessError, OSError) as e:
+        raise fail(f"failed to run: {e}", []) from e
+    captured = []
+    try:
         for raw in proc.stdout:
             line = raw.rstrip()
             if line:
@@ -664,13 +1123,12 @@ def _run_pip(args: list, label: str, line_cb=None) -> None:
                 if line_cb:
                     line_cb(line)
         proc.wait()
-        if proc.returncode != 0:
-            msg = (f"pip {label} after update returned {proc.returncode}: "
-                   f'{" ".join(captured[-20:])[-500:]}')
-            log.warning(msg)
-            raise RuntimeError(msg)
     except (subprocess.SubprocessError, OSError) as e:
-        raise RuntimeError(f"pip {label} after update failed to run: {e}") from e
+        raise fail(f"failed to run: {e}", captured) from e
+    if proc.returncode != 0:
+        err = fail(f"returned {proc.returncode}", captured)
+        log.warning(str(err))
+        raise err
 
 
 # Win32 process-creation flags. Taken from `subprocess` where it defines them
@@ -714,6 +1172,17 @@ def detached_popen_kwargs() -> dict:
     stdio goes to DEVNULL: a DETACHED_PROCESS child has no console, so inheriting
     the parent's (soon-invalid) handles buys nothing. The app logs to its own
     files either way.
+
+    ⚠️ On POSIX the child gets its own session (``setsid``). Without it the
+    child stays in this process's process group. A macOS login launch runs
+    the app as a launchd job (the LaunchAgent starts ``start_polyhost.sh``,
+    which runs python as a child), and launchd kills every process left in
+    the job's process group when the job ends. So the relaunch was killed
+    within milliseconds of this process exiting, before it wrote one log
+    line: "it did not start again after the update" (macOS 13, 1.17.48 ->
+    1.19.11, 2026-11-06). The same group kill comes from a closing terminal
+    (SIGHUP) or an IDE that ends the run. ``daemon_launch`` does the same for
+    the spawned daemon.
     """
     kwargs = {
         "close_fds": False,
@@ -724,6 +1193,8 @@ def detached_popen_kwargs() -> dict:
     flags = detached_creationflags()
     if flags:
         kwargs["creationflags"] = flags
+    if sys.platform != "win32":
+        kwargs["start_new_session"] = True
     return kwargs
 
 
@@ -818,7 +1289,8 @@ def _write_relay_script(locked: list, tmp_dir: Path) -> Path:
     return script
 
 
-def apply_update(extracted_dir: Path, install_root: Path, line_cb=None) -> list:
+def apply_update(extracted_dir: Path, install_root: Path, line_cb=None,
+                 download_dir: Optional[Path] = None) -> list:
     """Copy files from `extracted_dir` over `install_root`, then refresh deps.
 
     On Windows, native DLLs locked by the running process are skipped and
@@ -828,8 +1300,11 @@ def apply_update(extracted_dir: Path, install_root: Path, line_cb=None) -> list:
     Runs ``pip install -e .`` to pick up ``setup.py`` changes and, if a
     ``requirements.txt`` is present, ``pip install -r requirements.txt``.
     ``line_cb``, when provided, is called with each non-empty pip output line.
+    ``download_dir`` is the temp directory holding ``extracted_dir``, named
+    in a failed install's cleanup step (default: ``extracted_dir``).
     """
     locked: list = []
+    cleanup = str(download_dir or extracted_dir)
 
     def _copy2(src, dst):
         try:
@@ -841,17 +1316,34 @@ def apply_update(extracted_dir: Path, install_root: Path, line_cb=None) -> list:
             else:
                 raise
 
+    excluded = shutil.ignore_patterns(*EXCLUDES)
+    src_root = Path(extracted_dir)
+
+    def _ignore(directory, names):
+        # The extraction already left the build-only paths out; this keeps a
+        # tree extracted some other way from copying them.
+        skip = set(excluded(directory, names))
+        rel_dir = Path(directory).relative_to(src_root).as_posix()
+        for name in names:
+            rel = name if rel_dir == "." else f"{rel_dir}/{name}"
+            if is_build_only(rel, os.path.isdir(os.path.join(directory, name))):
+                skip.add(name)
+        return skip
+
     shutil.copytree(
         extracted_dir,
         install_root,
         dirs_exist_ok=True,
-        ignore=shutil.ignore_patterns(*EXCLUDES),
+        ignore=_ignore,
         copy_function=_copy2,
     )
-    _run_pip(["install", "-e", str(install_root)], "install -e .", line_cb)
+    fix_cmds = pip_fix_commands(install_root)
+    _run_pip(["install", "-e", str(install_root)], "install -e .", line_cb,
+             fix_cmds, locked, cleanup)
     requirements = install_root / "requirements.txt"
     if requirements.is_file():
-        _run_pip(["install", "-r", str(requirements)], "install -r requirements.txt", line_cb)
+        _run_pip(["install", "-r", str(requirements)], "install -r requirements.txt",
+                 line_cb, fix_cmds, locked, cleanup)
     return locked
 
 
@@ -947,8 +1439,19 @@ def preflight_blockers(findings) -> list:
     return [f for f in findings if not f.ok and f.blocking]
 
 
-def restart_app() -> None:
+def restart_app(new_process: bool = False) -> None:
     """Re-exec the app. Uses subprocess+exit on Windows (execv argv issues).
+
+    ``new_process=True`` skips ``os.execv`` and spawns a detached child with a
+    NEW pid, then exits. Only if that spawn raises ``OSError`` does it fall back
+    to ``os.execv``, which keeps the pid. A tray process needs this: Qt's D-Bus tray icon
+    registers ``org.kde.StatusNotifierItem-<pid>-<n>``, so an in-place execv
+    re-registers the exact name the old image just released, and GNOME's
+    AppIndicator extension then shows no icon at all. The process runs on, so
+    the forwarder kept forwarding with no tray (2026-10-13, Ubuntu 24.04 X11;
+    a manual launch of the same build, new pid, got its icon). The headless
+    daemon keeps execv: it has no tray, and its single-try endpoint claim
+    prefers no overlap.
 
     On POSIX we prefer ``os.execv`` (replaces the process in place), but it can
     fail transiently — e.g. ``ETXTBSY`` right after ``pip install -e .`` rewrote
@@ -968,6 +1471,15 @@ def restart_app() -> None:
     if sys.platform == "win32":
         spawn_detached(args)
         sys.exit(0)
+    if new_process:
+        try:
+            spawn_detached(args)
+        except OSError as e:
+            # A fork can fail (EAGAIN). execv keeps the pid and so may leave the
+            # tray without an icon, but a running app beats none at all.
+            log.warning("Detached relaunch failed (%s); re-executing in place.", e)
+        else:
+            sys.exit(0)
     try:
         os.execv(args[0], args)
     except OSError as e:
@@ -975,7 +1487,10 @@ def restart_app() -> None:
         # `args` is built above from our own resolved interpreter, the literal
         # "-m polyhost" and this process's own argv, and is passed as a list with
         # no shell — there is no shell for anything to be injected into.
-        subprocess.Popen(args, close_fds=False)  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
+        # Detached like every other relaunch: this process exits next, and a
+        # child left in its process group dies with a launchd job or a closing
+        # terminal (see detached_popen_kwargs).
+        spawn_detached(args)
         sys.exit(0)
 
 
@@ -1108,18 +1623,17 @@ class UpdateInstaller(threading.Thread):
                 "Update preflight — %s: %s", f.name, f.detail)
         blockers = preflight_blockers(findings)
         if blockers:
-            _fire(self._on_failed,
-                  "Preflight failed: "
-                  + "; ".join(f"{f.name}: {f.detail}" for f in blockers))
+            _fire(self._on_failed, MSG_PREFLIGHT_FAILED.format(
+                details="; ".join(f"{f.name}: {f.detail}" for f in blockers)))
             return
         for f in findings:
             if not f.ok:
-                _fire(self._on_progress, -1, f"Warning — {f.name}: {f.detail}")
+                _fire(self._on_progress, -1, MSG_PREFLIGHT_WARNING.format(name=f.name, detail=f.detail))
 
         try:
             install_root = get_install_root()
         except NotWritableError as e:
-            _fire(self._on_failed, f"Install dir not writable: {e}")
+            _fire(self._on_failed, MSG_INSTALL_DIR_NOT_WRITABLE.format(error=e))
             return
 
         # Use mkdtemp (not TemporaryDirectory context manager) so that on Windows
@@ -1131,22 +1645,34 @@ class UpdateInstaller(threading.Thread):
             tmp_dir = Path(tempfile.mkdtemp(prefix="polyhost-update-"))
         except OSError as e:
             log.exception("Could not create the update temp dir")
-            _fire(self._on_failed, f"Could not create a temp directory for the update: {e}")
+            _fire(self._on_failed, MSG_NO_TEMP_DIR.format(error=e))
             return
         try:
-            _fire(self._on_progress, 0, "Starting download...")
+            _fire(self._on_progress, 0, MSG_STARTING_DOWNLOAD)
             extracted = download_and_extract(
                 self.release.tarball_url, tmp_dir,
-                progress_cb=lambda pct: _fire(self._on_progress, pct, f"Downloading v{self.release.version}..."),
+                progress_cb=lambda pct: _fire(self._on_progress, pct, MSG_DOWNLOADING_VERSION.format(
+                    version=self.release.version)),
             )
-            _fire(self._on_progress, -1, "Applying update...")
+            _fire(self._on_progress, -1, MSG_APPLYING_UPDATE)
             locked = apply_update(
                 extracted, install_root,
                 line_cb=lambda line: _fire(self._on_progress, -1, line),
+                download_dir=tmp_dir,
             )
+            # The tree now holds the release, but a cloned install's .git still
+            # names the commit it was cloned at; the marker is what says so.
+            build_info.write_release_marker(
+                install_root, self.release.tag, self.release.version,
+                self.release.published_at, self.release.name)
         except Exception as e:  # noqa: BLE001
             log.exception("Update install failed")
-            shutil.rmtree(tmp_dir, ignore_errors=True)
+            # A pip failure with files still in use leaves Copy-Item steps that
+            # read from this download, so it has to outlive the dialog.
+            if getattr(e, "keeps_sources", False):
+                log.info("Keeping %s for the manual copy steps", tmp_dir)
+            else:
+                shutil.rmtree(tmp_dir, ignore_errors=True)
             _fire(self._on_failed, str(e))
             return
 
@@ -1234,6 +1760,50 @@ class FwUpDownloader(threading.Thread):
         with open(sig_path, "wb") as f:
             f.write(data)
 
+    @staticmethod
+    def _is_transient(exc: Exception) -> bool:
+        """A timeout, a dropped connection or a 5xx may pass on a second try.
+
+        A 4xx or a wrong-length body will not, so those fail at once."""
+        if isinstance(exc, (requests.Timeout, requests.ConnectionError)):
+            return True
+        if isinstance(exc, requests.HTTPError):
+            resp = exc.response
+            return resp is not None and resp.status_code >= 500
+        return False
+
+    def _fetch_signature_with_retry(self, sig_url: str, sig_path: str):
+        """``_fetch_signature`` with up to ``len(SIG_RETRY_DELAYS)`` retries."""
+        for attempt in range(len(SIG_RETRY_DELAYS) + 1):
+            try:
+                self._fetch_signature(sig_url, sig_path)
+                return
+            except Exception as e:  # noqa: BLE001
+                if attempt >= len(SIG_RETRY_DELAYS) or not self._is_transient(e):
+                    raise
+                delay = SIG_RETRY_DELAYS[attempt]
+                log.warning("Firmware signature download attempt %d failed (%s); "
+                            "retrying in %.0f s", attempt + 1, e, delay)
+                # The wait can reach 30 s: say so, or the dialog looks stuck at 100 %.
+                _fire(self._on_progress, 100, MSG_SIG_RETRYING.format(
+                    seconds=int(delay), attempt=attempt + 2,
+                    total=len(SIG_RETRY_DELAYS) + 1))
+            # Sleep in slices so Cancel still answers within ~0.1 s.
+            deadline = time.monotonic() + delay
+            while time.monotonic() < deadline:
+                if self._cancelled():
+                    raise _DownloadCancelled()
+                time.sleep(min(0.1, max(0.0, deadline - time.monotonic())))
+            if self._cancelled():
+                raise _DownloadCancelled()
+            # The wait is over: replace the countdown before the request starts.
+            _fire(self._on_progress, 100, MSG_SIG_ATTEMPT.format(
+                attempt=attempt + 2, total=len(SIG_RETRY_DELAYS) + 1))
+            # Again after the callback: a Cancel pressed while it ran must not
+            # start one more request.
+            if self._cancelled():
+                raise _DownloadCancelled()
+
     def run(self):
         tmp_path = None
         try:
@@ -1241,7 +1811,7 @@ class FwUpDownloader(threading.Thread):
                 prefix="polykybd-fw-", suffix=".bin", delete=False
             ) as tmp:
                 tmp_path = tmp.name
-                _fire(self._on_progress, 0, "Connecting…")
+                _fire(self._on_progress, 0, MSG_CONNECTING)
                 with requests.get(
                     self.release.bin_url,
                     headers={"User-Agent": USER_AGENT},
@@ -1260,14 +1830,15 @@ class FwUpDownloader(threading.Thread):
                         written += len(chunk)
                         if total:
                             pct = int(written * 100 / total)
-                            _fire(self._on_progress, pct, f"Downloading firmware… {written // 1024} / {total // 1024} KB")
+                            _fire(self._on_progress, pct, MSG_DOWNLOADING_FW_OF.format(
+                                done=written // 1024, total=total // 1024))
                         else:
-                            _fire(self._on_progress, 0, f"Downloading firmware… {written // 1024} KB")
+                            _fire(self._on_progress, 0, MSG_DOWNLOADING_FW.format(done=written // 1024))
         except _DownloadCancelled:
             # Expected user abort — clean up the partial file quietly (no traceback).
             discard_fw_download(tmp_path)
             log.info("Firmware download cancelled by user.")
-            _fire(self._on_finished, False, "Download cancelled.", "")
+            _fire(self._on_finished, False, MSG_DOWNLOAD_CANCELLED, "")
             return
         except Exception as e:  # noqa: BLE001
             log.exception("Firmware download failed")
@@ -1281,22 +1852,23 @@ class FwUpDownloader(threading.Thread):
             # letting the (unabortable, single-GET) signature fetch run first.
             discard_fw_download(tmp_path)
             log.info("Firmware download cancelled by user.")
-            _fire(self._on_finished, False, "Download cancelled.", "")
+            _fire(self._on_finished, False, MSG_DOWNLOAD_CANCELLED, "")
             return
 
         sig_url = getattr(self.release, "sig_url", "")
         if sig_url:
-            _fire(self._on_progress, 100, "Downloading signature…")
+            _fire(self._on_progress, 100, MSG_DOWNLOADING_SIG)
             try:
-                self._fetch_signature(sig_url, tmp_path + ".sig")
+                self._fetch_signature_with_retry(sig_url, tmp_path + ".sig")
+            except _DownloadCancelled:
+                discard_fw_download(tmp_path)
+                log.info("Firmware download cancelled by user.")
+                _fire(self._on_finished, False, MSG_DOWNLOAD_CANCELLED, "")
+                return
             except Exception as e:  # noqa: BLE001
                 log.exception("Firmware signature download failed")
                 discard_fw_download(tmp_path)
-                _fire(self._on_finished, False,
-                      f"The image downloaded, but its signature did not ({e}).\n\n"
-                      "Flashing without it would make the keyboard treat this "
-                      "release as an unsigned build and ask you to confirm on the "
-                      "keys, so the update was stopped instead.", "")
+                _fire(self._on_finished, False, MSG_SIG_DOWNLOAD_FAILED.format(error=e), "")
                 return
         else:
             # No .sig on the release: an unsigned build (CI without the signing
@@ -1306,3 +1878,74 @@ class FwUpDownloader(threading.Thread):
             log.warning("Firmware release %s advertises no .bin.sig — the keyboard "
                         "will ask for on-key confirmation.", self.release.tag)
         _fire(self._on_finished, True, "", tmp_path)
+
+
+UF2_MAGIC_START0 = 0x0A324655   # "UF2\n", the first word of every UF2 block
+
+
+def default_download_dir() -> Path:
+    """Where a file meant for the user goes: ``~/Downloads`` when it exists.
+
+    The recovery ``.uf2`` must land somewhere the user can drag it from, so not
+    the temp dir the update flow uses."""
+    downloads = Path.home() / "Downloads"
+    return downloads if downloads.is_dir() else Path.home()
+
+
+class FwUf2Downloader(threading.Thread):
+    """Download the newest firmware release's ``.uf2`` for a manual BOOTSEL flash.
+
+    The recovery path for a half that cannot be updated over HID (see
+    ``device/split_link.py``): such a half may be on any firmware, or none, so
+    this takes the newest release whatever the keyboard reports.
+
+    Callbacks fire on this thread:
+
+    - ``on_finished(bool, str, str, str)`` — (ok, error_or_empty, uf2_path,
+      release_page_url). The page URL is set whenever the release was found, so a
+      failed download can still send the user there.
+    """
+
+    def __init__(self, dest_dir: Optional[Path] = None, *, on_finished=None):
+        super().__init__(daemon=True)
+        self._dest_dir = Path(dest_dir) if dest_dir else default_download_dir()
+        self._on_finished = on_finished
+
+    def run(self):
+        page = f"https://github.com/{FW_REPO}/releases/latest"
+        try:
+            # check_fw_latest() answers "is there something newer than X", so ask
+            # against 0: every published release is newer. Its log line will read
+            # "0 -> <version>"; this one says why.
+            log.info("Firmware recovery: looking up the newest release's .uf2.")
+            release = check_fw_latest("0", skipped_notes=False)
+            if release is None:
+                raise UpdateCheckError("no firmware release found")
+            page = getattr(release, "html_url", "") or page
+            url = getattr(release, "uf2_url", "")
+            if not url:
+                raise UpdateCheckError(
+                    f"release {release.version} has no firmware .uf2")
+            name = os.path.basename(url.split("?", 1)[0]) or f"polykybd-{release.version}.uf2"
+            dest = self._dest_dir / name
+            part = dest.with_name(dest.name + ".part")
+            with requests.get(url, headers={"User-Agent": USER_AGENT},
+                              timeout=HTTP_TIMEOUT * 6) as r:
+                r.raise_for_status()
+                data = r.content
+            # A proxy error page saved as .uf2 would be silently ignored by the
+            # boot ROM, which is exactly the "half stays dark" state this is
+            # meant to fix. Check the container before handing it over.
+            if len(data) < 512 or len(data) % 512 or \
+                    int.from_bytes(data[:4], "little") != UF2_MAGIC_START0:
+                raise ValueError(f"the download is not a UF2 file ({len(data)} bytes)")
+            self._dest_dir.mkdir(parents=True, exist_ok=True)
+            with open(part, "wb") as f:
+                f.write(data)
+            os.replace(part, dest)
+        except Exception as e:  # noqa: BLE001 — reported to the dialog, not raised
+            log.warning("Firmware .uf2 download failed: %s", e)
+            _fire(self._on_finished, False, str(e), "", page)
+            return
+        log.info("Firmware recovery: saved %s (%d bytes).", dest, len(data))
+        _fire(self._on_finished, True, "", str(dest), page)

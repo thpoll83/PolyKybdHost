@@ -94,3 +94,10 @@ The preview (`--preview`, `overlay_preview.png`) reads the **rendered** overlay
 back and shows every populated key in its real 72x40 cell. That is the only
 check that catches a cell which drew nothing -- see
 `tests/res/overlay_cells_test.py`, which now pins it for every app at once.
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+**Nothing added.** Ctrl+N/O/S/P/Z/Y/X/C/V/A and zoom (Ctrl+PgUp/PgDn) are
+already drawn. Ctrl+W is *Resize and skew* and Ctrl+R *Ruler*, not Close /
+Reload; Paint has no Find, Replace or Find next. Ctrl+=/Ctrl+- zoom is not in
+two references, so it is not added.

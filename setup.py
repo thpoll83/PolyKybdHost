@@ -38,6 +38,15 @@ setup(name='PolyHost',
       url='https://github.com/thpoll83/PolyKybdHost',
       author='thpoll',
       packages=find_packages(exclude=['tests', 'tests.*']),
+      # The PRC table (HID cmd 41) is part of the wire format, so a wheel without it
+      # would fail on the first v19 overlay send. Only the table is listed: the rest
+      # of polyhost/res/ is not packaged either and is read from the checkout.
+      # The UI translations are read from these .po files at startup; without
+      # them every language falls back to English.
+      # The shell title scripts are sourced by the user's shell startup files
+      # from this install's path (services/shell_title.py).
+      package_data={"polyhost": ["res/prc_table_v*.bin", "res/locale/*.po", "device/*.rules",
+                                 "res/shell/polykybd-title.*"]},
       install_requires=requirements(),
       # The font-pack *extend* path (build glyphs from TTF/OTF, fontconvert-parity)
       # needs freetype-py/uharfbuzz/fonttools — now core deps (requirements.txt) so

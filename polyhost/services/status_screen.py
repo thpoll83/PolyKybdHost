@@ -42,8 +42,10 @@ OFF_ROW_B, OFF_ROW_C = 37, 63
 RGB_OFF_ROW_B, RGB_OFF_ROW_C = 39, 63
 OFF_GLOBE_Y, OFF_CODE1_BASE, OFF_CODE2_BASE = 1, 31, 43
 
-ICON_LAYER = 0x80
-ICON_NUMLOCK_OFF, ICON_CAPSLOCK_OFF = 0x8C, 0x8E
+# IconsFont codepoints, plane-16 PUA since firmware 1.0.0 (0x80 / 0x8C / 0x8E before).
+# They must match the shipped preview export (res/preview/resident.plyf).
+ICON_LAYER = 0x100005
+ICON_NUMLOCK_OFF, ICON_CAPSLOCK_OFF = 0x100011, 0x100013
 
 #: The indicator column both panels reserve on their inner edge, and the RGB speed
 #: gauge drawn in it (Num Lock top .. Caps Lock bottom).

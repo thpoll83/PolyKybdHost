@@ -16,7 +16,7 @@ fit: contain
 anchor: bottom-right
 region: [36, 32]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: explorer.png      # 32x32 white-on-black line art — placed 1:1
@@ -62,3 +62,10 @@ bindings:
 
   # --- Ctrl+Shift -> R channel of combo ---
   - { key: N, mods: [CTRL, SHIFT], icon: newfolder.png, label: "New folder", source: "ms-fluent/Folder Add (MIT)" }
+
+  # --- standard editing (shared Fluent concepts) ---
+  # Ctrl+R = "Refresh the active window" (Windows general shortcuts table, the
+  # same page as F5). Everything else in the standard set is already above or is
+  # not an Explorer chord (no Save/Open/Print; Ctrl+Plus is "resize columns",
+  # numpad only, not zoom).
+  - { key: R, mods: [CTRL], label: "Reload", source: "concept (shared Fluent)" }

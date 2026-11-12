@@ -112,3 +112,52 @@ and relative links were adjusted to suit a standalone file.
 
 - **`hid_reconnect_retries` is clamped to ≥1 in `PolyKybd.connect()`** (`max(1, …)`, `device/poly_kybd.py`): `connect()` runs on every ~1 s reconnect probe, and with the setting at 0 the `range(retries)` GET_ID loop was skipped entirely, so it blindly re-enumerated the HID interface every probe — `Re-enumerating HID after 0 failed attempts…` log spam plus handle churn that can clip in-flight overlay transfers. **Nothing in the codebase writes this key** (grep-verified) — a 0/negative value is a hand-edit or stale config, not a code path; default is 5 (`settings.py`). Don't remove the clamp.
 
+## Protocol, versions and the connect gate (the CLAUDE.md summary)
+
+_Moved verbatim from `CLAUDE.md` on 2026-10-10. CLAUDE.md keeps a short pointer._
+
+
+**Version handling is RANGE-connect + per-feature gating, not exact-match.**
+`decide_reconnect_apply` connects to any firmware whose protocol is
+**≥ `MIN_SUPPORTED_PROTOCOL`** (= 2); each feature is then gated individually by
+**`FEATURE_MIN_PROTOCOL`** (`device/poly_kybd.py`) through
+`protocol_supports()` / `PolyKybd.supports()`. Newer firmware than the host **prompts**
+(safe mode by default). The gate, the wire-format encode branches, the safe-mode plumbing
+and the state-generation counter are in [`docs/protocol-gate.md`](protocol-gate.md).
+
+- ⚠️ **Every new device-facing command MUST be version-gated — no exceptions.** Add the
+  `FEATURE_MIN_PROTOCOL` entry, guard both `PolyKybd` accessors with `self.supports()`,
+  gate the GUI menu, surface it in `polyctl`, and bump `__protocol__` + the firmware
+  `PROTOCOL_VERSION` in the same change. An **ungated** command silently connects and
+  then NACKs at runtime on an older keyboard instead of cleanly disabling — the exact
+  failure the range-connect model exists to prevent, and a gate that "has been forgotten
+  twice". The `add-gated-hid-command` skill drives the whole job. **Two tests now
+  enforce it** against an emulated keyboard of every protocol
+  (`tests/device/protocol_gate_sweep_test.py`, `tests/core/core_protocol_sweep_test.py`):
+  a new `Cmd` needs its introducing protocol in `device/mock_firmware.py`
+  `CMD_MIN_PROTOCOL`, and a new `PolyKybd` method a `CALLS` entry. On their first
+  run they found cmd 31 (`replay_startup_anim`), a v11 command, sent ungated to v2–v10.
+- **Still bump `__protocol__` (`polyhost/_version.py`) in lockstep with the firmware
+  `PROTOCOL_VERSION`.** It now defines the host's *newest-known* protocol, not a hard
+  connect gate, so forgetting it only downgrades the status and disables that one
+  feature — quieter, and worse.
+- **Firmware update survives protocol mismatches.** Flash/apply/bootloader actions gate
+  on `_fw_actions_allowed()` (device present, not paused), **not** on `self.connected`.
+  Don't re-gate any firmware-update path on `connected`.
+- ⚠️ **`parse_id_version_block` finds the font-pack block POSITIONALLY** (`'V'` at
+  exactly `nul + 1`), so anything the firmware adds to the GET_ID reply must go
+  **after** it. Prepending makes every deployed host read "no bundles on the device"
+  and re-flash all eight on every connect.
+- **v21: prepare and enable ride on cmd 33** as flag bits in its width byte (0x40
+  reset before the pairs, 0x20 show after; `send_overlay_mapping(reset=, show=)`).
+  ⚠️ **The prepare step is sent LAZILY on v21**, right before the first image report
+  (`ensure_prepared()` in `send_overlays_mru`), because an upload into a slot the old
+  mapping still shows would appear on the old key. A warm switch sends no image, so
+  its reset rides on the first mapping report and the switch is its mapping reports
+  alone (warm 249 → 129 reports over all 60 sets). An empty mapping has no report
+  to carry the flags and keeps the separate cmd 11 reports.
+- ⚠️ **The raw channel is strictly request/response**, and `send_and_read_validate`'s
+  drain depends on it: since protocol v3 the firmware sends no unsolicited replies, so
+  a stale reply means one thing only. Making push work means framing plus routing in
+  exactly the code path stale-reply bugs live in.
+

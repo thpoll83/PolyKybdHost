@@ -47,8 +47,10 @@ def _cp_family(cps):
         return "NO LEGEND"
     if any(0x1F311 <= c <= 0x1F318 for c in cps):
         return "MOONS  <- data predates 2026-08-25"
+    if any(0x100000 <= c <= 0x1000FF for c in cps):
+        return "suns (IconsFont, plane 16)"
     if any(0x80 <= c <= 0x9F for c in cps):
-        return "suns (IconsFont C1)"
+        return "suns (IconsFont C1)  <- data predates firmware 1.0.0"
     return "other"
 
 

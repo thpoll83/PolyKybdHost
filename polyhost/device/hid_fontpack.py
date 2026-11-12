@@ -15,6 +15,8 @@ import binascii
 import struct
 import time
 
+from polyhost.device.split_link import split_link_timeout_message
+
 HID_POLYKYBD        = 0x50   # ord('P')
 CMD_FONTPACK_BEGIN  = 0x50   # data[2..5]=pack_size, data[6..9]=pack_crc32, data[10]=bundle_id
 CMD_FONTPACK_CHUNK  = 0x51   # data[2..5]=offset, data[6..]=FONTPACK_CHUNK_SIZE bytes
@@ -40,6 +42,11 @@ COMMIT_REJECTED  = "rejected"
 COMMIT_NO_SLAVE  = "slave-unconfirmed"
 COMMIT_UNSPEC    = "unspecified"
 COMMIT_NO_REPLY  = "no-reply"
+# Not a COMMIT outcome: BEGIN timed out while the USB half kept answering '~',
+# so the other half never confirmed its erase (device/split_link.py). Every
+# bundle after it would wait out the same 90 s, which is why the font-pack pass
+# stops on it.
+STATUS_SPLIT_LINK = "split-link"
 
 # A lost/failed COMMIT ACK is retried rather than re-streamed: re-running the
 # firmware's finalize is free (it leaves the staged CRC and the write cursor
@@ -77,6 +84,7 @@ DOOMPACK_MAX_SIZE  = 0x3E000        # the 248 KB engine-pack slot (flash 0x7C000
 
 # Pack format (base/fontpack.h). The host only needs to parse/validate the header.
 FONTPACK_MAGIC        = b"PlyF"
+ICONPACK_MAGIC        = b"PlyI"         # the overlay icon library (bundle 8): same layout
 FONTPACK_ABI_VERSION  = 2            # must match FONTPACK_ABI_VERSION in the firmware (v2 = column-native glyphs)
 _HEADER_FMT           = "<4sHHIIIIII"  # magic, abi, flags, content_version, font_count, font_table_off, total_size, crc32, reserved
 _HEADER_SIZE          = struct.calcsize(_HEADER_FMT)   # 32
@@ -102,8 +110,9 @@ def parse_fontpack_header(pack_bytes) -> tuple[bool, dict]:
         return False, {"error": f"too small ({len(data)} bytes) to be a font pack"}
     (magic, abi, flags, content_version, font_count,
      font_table_off, total_size, crc32, _reserved) = struct.unpack_from(_HEADER_FMT, data, 0)
-    if magic != FONTPACK_MAGIC:
-        return False, {"error": f"bad magic {magic!r} (expected {FONTPACK_MAGIC!r}); not a PlyF font pack"}
+    if magic not in (FONTPACK_MAGIC, ICONPACK_MAGIC):
+        return False, {"error": f"bad magic {magic!r} (expected {FONTPACK_MAGIC!r} or "
+                                f"{ICONPACK_MAGIC!r}); not a PolyKybd font or icon pack"}
     if abi != FONTPACK_ABI_VERSION:
         return False, {"error": f"pack ABI v{abi} != host/firmware ABI v{FONTPACK_ABI_VERSION}; rebuild the pack"}
     if total_size != len(data):
@@ -112,6 +121,7 @@ def parse_fontpack_header(pack_bytes) -> tuple[bool, dict]:
     if body_crc != crc32:
         return False, {"error": f"internal CRC32 mismatch (header 0x{crc32:08X}, computed 0x{body_crc:08X}); corrupt pack"}
     return True, {
+        "magic": magic.decode("ascii"),
         "abi_version": abi,
         "flags": flags,
         "content_version": content_version,
@@ -178,6 +188,8 @@ def _abort_cleanup(hid) -> None:
 #   ['G'][u16 little-endian generation]                       "something changed on the
 #                                                              board" -- see the firmware
 #                                                              CLAUDE.md note
+#   ['A'][u8 animation state] (v28)                           what owns the keycaps:
+#                                                              ANIM_NONE / INTRO / IDLE
 #
 # ⚠️ The blocks are APPEND-ONLY and a reader STOPS at the first tag it does not know:
 # an unknown block carries no length, so it cannot be stepped over. Firmware must append
@@ -201,6 +213,8 @@ def _find_id_block(reply, tag: int):
             size = 2 + raw[p + 1] * 2
         elif t == ord("G"):
             size = 3
+        elif t == ord("A"):
+            size = 2
         else:
             return None                   # unknown tag, or the report's zero fill
         if p + size > len(raw):
@@ -247,17 +261,59 @@ def parse_id_state_generation(reply):
     return int.from_bytes(raw[p:p + 2], "little")
 
 
+# The 'A' block's values (firmware config.h POLY_ANIM_*).
+ANIM_NONE = 0     # the normal keycaps
+ANIM_INTRO = 1    # the one-shot Eden show: the boot intro or KC_EDEN
+ANIM_IDLE = 2     # the Eden screensaver
+
+
+def parse_id_anim_state(reply):
+    """What owns the keycaps per a GET_ID reply (ANIM_*), or None with no 'A' block.
+
+    None is firmware before protocol 28, which cannot say; callers then behave as
+    they did before the block existed."""
+    p = _find_id_block(reply, ord("A"))
+    if p is None:
+        return None
+    return bytes(reply)[p]
+
+
+def device_has_slot(device_versions: dict, bundle: dict) -> bool:
+    """Does the keyboard have a flash slot for ``bundle``?
+
+    The version block lists EVERY slot the firmware has, absent bundles as 0, so
+    an index it does not list is a slot that firmware lacks: icons.plyi (slot 8)
+    on anything before protocol 20. Flashing there would be refused on every
+    connect. An empty block (pre-v6 firmware) keeps the old behaviour for the
+    font bundles; the icon bundle is never assumed."""
+    if bundle["index"] in device_versions:
+        return True
+    return not device_versions and bundle.get("kind", "fonts") not in ("icons", "emojidict")
+
+
+def bundle_is_stale(bundle: dict, device_version: int) -> bool:
+    """Should ``bundle`` be (re)flashed over ``device_version``? A font or icon
+    bundle when the keyboard is behind. The emoji search dictionary on any
+    MISMATCH: its version names WHICH dictionary is flashed ((number << 8) |
+    revision, services/emojidict.py), and switching to one with a lower number
+    must flash too."""
+    if bundle.get("kind") == "emojidict":
+        return bundle["content_version"] != device_version
+    return bundle["content_version"] > device_version
+
+
 def decide_stale_bundles(device_versions: dict, shipped: list) -> list:
     """Pick which shipped bundles to (re)flash: those the device is behind on.
 
     device_versions: {bundle_index: content_version} from parse_id_version_block
                      (a missing index == version 0, i.e. absent on the device).
     shipped:         list of {index, content_version, ...} (res/fontpack/bundles.json).
-    Returns the subset of `shipped` whose content_version > the device's, in order."""
+    Returns the subset of `shipped` that bundle_is_stale() picks, in order."""
     out = []
     for b in shipped:
-        dev = device_versions.get(b["index"], 0)
-        if b["content_version"] > dev:
+        if not device_has_slot(device_versions, b):
+            continue
+        if bundle_is_stale(b, device_versions.get(b["index"], 0)):
             out.append(b)
     return out
 
@@ -301,15 +357,23 @@ def commit_error_text(status: str, what: str) -> str:
             "Try again.")
 
 
-def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
+def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled, pipe_port=None):
     """Shared BEGIN -> N*CHUNK -> COMMIT stream to one resource slot (both halves).
 
     `what` flavours the progress text ("font pack" / "game data"). Returns
     (ok, error_msg, commit_reply, status) — on success error_msg is "" and commit_reply
     is the raw COMMIT reply (the fontpack caller parses content_version out of it).
     `status` is a COMMIT_* outcome, or the stage that failed earlier
-    ("cancelled"/"begin"/"chunk"), so a caller can tell a data failure from a
+    ("cancelled"/"begin"/"chunk", or STATUS_SPLIT_LINK), so a caller can tell a data failure from a
     link failure without re-parsing the message.
+
+    `pipe_port` is the keyboard's bulk-pipe serial port (``PolyCore.pipe_port_for_update()``)
+    or None. With one, the chunks go over the pipe as FW_CHUNK frames (236 bytes each,
+    the same frames the firmware update uses: the firmware writes them into whatever
+    target BEGIN selected) and the HID chunk loop continues from the keyboard's cursor
+    if the pipe stops. BEGIN and COMMIT always go over HID. None, which the core passes
+    when the keyboard has no pipe or the developer setting ``dev_force_hid_link`` is
+    on, sends every chunk over HID.
     """
     pack_size = len(pack_bytes)
     pack_crc  = binascii.crc32(pack_bytes) & 0xFFFFFFFF   # whole-image transport CRC (firmware fw_staging verifies this)
@@ -321,6 +385,7 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
     deadline    = time.monotonic() + 90
     timeout_ms  = 15000   # generous for first send (master erases the slot region)
     begin_ready = False
+    polling     = False   # latest reply was '~' — see device/split_link.py
     erase_start = time.monotonic()
     # The slot erase reports no fine-grained progress, so creep the bar 1->2 %
     # and show elapsed seconds instead of sitting frozen at a single 1 %.
@@ -334,6 +399,9 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
             return False, "Flash cancelled by user.", None, "cancelled"
         if time.monotonic() > deadline:
             _abort_cleanup(hid)
+            if polling:
+                return False, split_link_timeout_message(
+                    "BEGIN timed out", f"{what} region"), None, STATUS_SPLIT_LINK
             return False, (f"BEGIN timed out — keyboard did not finish erasing the {what} "
                            "region within 90 s.  Check the USB cable and try again."), None, "begin"
 
@@ -341,6 +409,7 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
         timeout_ms = 5000
 
         if not ok or len(reply) < 3:
+            polling = False
             _erasing(f"Erasing the {what} region — keyboard will reconnect when done")
             if not hid.wait_for_reconnect(timeout_s=30):
                 return False, ("BEGIN failed — keyboard did not reconnect "
@@ -349,6 +418,7 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
         elif reply[2] == ord('.'):
             begin_ready = True
         elif reply[2] == ord('~'):
+            polling = True
             _erasing(f"Erasing the {what} region (both halves)")
             time.sleep(0.3)
         else:
@@ -362,20 +432,38 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
 
     report(2, f"Region erased. Sending {total_chunks} chunks…")
 
-    # -- FONTPACK_CHUNK x N -- (identical relay/resume protocol to firmware update)
+    def _pct(offset):
+        return 2 + int(96 * min(offset, pack_size) / pack_size)
+
+    # -- the chunks over the bulk pipe, when the keyboard has one --
+    offset = 0
+    if pipe_port:
+        from polyhost.device.hid_fw_up import stream_over_pipe
+        ok, offset, reason = stream_over_pipe(pipe_port, pack_bytes, report, cancelled, pct=_pct)
+        if cancelled():
+            _abort_cleanup(hid)
+            hid.close_interface()
+            return False, "Flash cancelled by user.", None, "cancelled"
+        if not ok:
+            report(_pct(offset), f"Fast link stopped ({reason}); continuing over HID from {offset // 1024} KB.")
+            hid.drain_replies()
+
+    # -- FONTPACK_CHUNK x N over HID (all of them, or the rest after the pipe stopped) --
+    # Identical relay/resume protocol to the firmware update. The loop runs on
+    # offsets, not chunk indexes: the firmware only requires the keyboard's cursor,
+    # which is what lets HID continue from wherever the pipe stopped.
     _CHUNK_TIMEOUT  = 8000
     _CHUNK_ATTEMPTS = 8
     _MAX_REWINDS    = 100
-    i        = 0
     attempts = 0
     rewinds  = 0
-    while i < total_chunks:
+    while offset < pack_size:
         if cancelled():
             _abort_cleanup(hid)
             hid.close_interface()
             return False, "Flash cancelled by user.", None, "cancelled"
 
-        offset    = i * FONTPACK_CHUNK_SIZE
+        i         = offset // FONTPACK_CHUNK_SIZE
         raw_chunk = pack_bytes[offset:offset + FONTPACK_CHUNK_SIZE]
         padded    = raw_chunk + b'\xff' * (FONTPACK_CHUNK_SIZE - len(raw_chunk))
         pkt       = bytearray([HID_POLYKYBD, CMD_FONTPACK_CHUNK]) + struct.pack('<I', offset) + padded
@@ -383,21 +471,20 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
         ok, reply = hid.send_and_read(pkt, timeout=_CHUNK_TIMEOUT)
         if ok and len(reply) >= 3 and reply[2] == ord('.'):
             attempts = 0
-            if i % 100 == 0 or i == total_chunks - 1:
-                pct = 2 + int(96 * (i + 1) / total_chunks)
-                report(pct, f"Chunk {i + 1}/{total_chunks} ({(offset + FONTPACK_CHUNK_SIZE) // 1024} KB sent)…")
-            i += 1
+            offset  += len(raw_chunk)
+            if i % 100 == 0 or offset >= pack_size:
+                report(_pct(offset), f"Chunk {i + 1}/{total_chunks} ({offset // 1024} KB sent)…")
             continue
 
         # NACK carries the keyboard's resume offset (lower of the two halves' cursors).
         resume = struct.unpack_from('<I', reply, 3)[0] if ok and len(reply) >= 7 else 0
         if (ok and len(reply) >= 7 and reply[2] == ord('!')
-                and 0 < resume < offset and resume % FONTPACK_CHUNK_SIZE == 0
-                and rewinds < _MAX_REWINDS):
+                and 0 < resume < offset and rewinds < _MAX_REWINDS):
             rewinds += 1
             attempts = 0
-            i = resume // FONTPACK_CHUNK_SIZE
-            report(2 + int(96 * (i + 1) / total_chunks),
+            offset = resume
+            i = offset // FONTPACK_CHUNK_SIZE
+            report(_pct(offset),
                    f"Keyboard halves resynced — rewinding to chunk {i + 1}/{total_chunks} "
                    f"(offset {resume}, resync {rewinds})…")
             time.sleep(0.05)
@@ -415,7 +502,7 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
                 "then try again — the flash resumes from scratch and is safe to repeat."
             ), None, "chunk"
         pause = min(0.05 * (2 ** (attempts - 1)), 1.0)
-        report(2 + int(96 * (i + 1) / total_chunks),
+        report(_pct(offset),
                f"Chunk {i + 1}/{total_chunks} — retry {attempts}/{_CHUNK_ATTEMPTS - 1} "
                f"(waiting {int(pause * 1000)} ms)…")
         time.sleep(pause)
@@ -441,7 +528,7 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
 
 
 def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = None,
-                   bundle_id: int = 0) -> tuple[bool, str, str]:
+                   bundle_id: int = 0, pipe_port: str = None) -> tuple[bool, str, str]:
     """Full HID font-pack flash flow: BEGIN -> N*CHUNK -> COMMIT (no reboot).
 
     Args:
@@ -451,6 +538,7 @@ def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = No
         cancel_flag:  Optional single-element list; set cancel_flag[0] = True to abort.
         bundle_id:    Which bundle slot to flash (index in res/fontpack/bundles.json;
                       firmware resolves it to a fixed flash slot). 0 by default.
+        pipe_port:    The keyboard's bulk-pipe serial port or None (see _stream_slot).
 
     Returns:
         (ok, msg, status) — status is a COMMIT_* outcome (or the failing stage /
@@ -472,16 +560,18 @@ def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = No
         return False, reason, "validate"
     _, info = parse_fontpack_header(pack_bytes)
 
+    what = "icon record(s)" if info.get("magic") == "PlyI" else "fonts"
     report(0, f"Sending FONTPACK_BEGIN — {len(pack_bytes) // 1024} KB, "
-              f"content v{info['content_version']}, {info['font_count']} fonts…")
-    ok, err, reply, status = _stream_slot(hid, pack_bytes, bundle_id, "font pack", report, cancelled)
+              f"content v{info['content_version']}, {info['font_count']} {what}…")
+    ok, err, reply, status = _stream_slot(hid, pack_bytes, bundle_id, "font pack", report, cancelled,
+                                          pipe_port=pipe_port)
     if not ok:
         return False, err, status
 
     cver = struct.unpack_from('<H', bytes(reply), 3)[0] if len(reply) >= 5 else info['content_version']
     report(100, f"Done. Font pack v{cver} loaded on both halves.")
     return True, (
-        f"Font pack flashed and loaded successfully (content v{cver}, {info['font_count']} fonts).\n\n"
+        f"Font pack flashed and loaded successfully (content v{cver}, {info['font_count']} {what}).\n\n"
         "Both halves reloaded the new glyphs immediately — no reboot needed."
     ), status
 
@@ -498,7 +588,8 @@ def validate_doomwad(whx_bytes) -> tuple[bool, str]:
     return True, ""
 
 
-def flash_doomwad(hid, whx: str | bytes, progress_cb=None, cancel_flag: list = None) -> tuple[bool, str, str]:
+def flash_doomwad(hid, whx: str | bytes, progress_cb=None, cancel_flag: list = None,
+                  pipe_port: str = None) -> tuple[bool, str, str]:
     """Install the doom easter egg's WHX game data to BOTH halves over HID.
 
     Rides the font-pack BEGIN/CHUNK/COMMIT transport with the DOOMWAD pseudo
@@ -528,7 +619,8 @@ def flash_doomwad(hid, whx: str | bytes, progress_cb=None, cancel_flag: list = N
         return False, reason, "validate"
 
     report(0, f"Sending game data — {len(whx_bytes) // 1024} KB…")
-    ok, err, _reply, status = _stream_slot(hid, whx_bytes, DOOMWAD_BUNDLE_ID, "game data", report, cancelled)
+    ok, err, _reply, status = _stream_slot(hid, whx_bytes, DOOMWAD_BUNDLE_ID, "game data", report, cancelled,
+                                           pipe_port=pipe_port)
     if not ok:
         return False, err, status
 
@@ -553,7 +645,8 @@ def validate_doompack(pack_bytes) -> tuple[bool, str]:
     return True, ""
 
 
-def flash_doompack(hid, plyx: str | bytes, progress_cb=None, cancel_flag: list = None) -> tuple[bool, str, str]:
+def flash_doompack(hid, plyx: str | bytes, progress_cb=None, cancel_flag: list = None,
+                   pipe_port: str = None) -> tuple[bool, str, str]:
     """Install the doom easter egg's executable engine pack (.plyx) to BOTH
     halves over HID — the slave's lockstep drone runs the same engine.
 
@@ -583,7 +676,8 @@ def flash_doompack(hid, plyx: str | bytes, progress_cb=None, cancel_flag: list =
         return False, reason, "validate"
 
     report(0, f"Sending engine pack — {len(pack_bytes) // 1024} KB…")
-    ok, err, _reply, status = _stream_slot(hid, pack_bytes, DOOMPACK_BUNDLE_ID, "engine pack", report, cancelled)
+    ok, err, _reply, status = _stream_slot(hid, pack_bytes, DOOMPACK_BUNDLE_ID, "engine pack", report, cancelled,
+                                           pipe_port=pipe_port)
     if not ok:
         return False, err, status
 

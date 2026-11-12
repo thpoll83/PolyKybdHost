@@ -39,7 +39,21 @@ elif [ -d "$TARGET_DIR/.git" ]; then
     git -C "$TARGET_DIR" pull --ff-only
 else
     echo ">> Cloning into '$TARGET_DIR'."
-    git clone "$REPO_URL" "$TARGET_DIR"
+    # Only the latest commit: the full history is 47 MB.
+    # `git pull` still updates it. Run `git fetch --unshallow` for the history.
+    # The sparse checkout leaves out what the app never reads: tests/ and the
+    # overlay build inputs in polyhost/res/overlay_sources/ except the per-app
+    # YAML specs. That is about 10,000 of 12,000 files, and the blobs are not
+    # downloaded either (--filter=blob:none). `git sparse-checkout disable`
+    # brings them back. The patterns are SPARSE_PATTERNS in
+    # polyhost/services/updater.py, which the updater applies too.
+    git clone --depth 1 --filter=blob:none --sparse "$REPO_URL" "$TARGET_DIR"
+    printf '%s\n' \
+        '/*' \
+        '!/tests/' \
+        '!/polyhost/res/overlay_sources/**' \
+        '/polyhost/res/overlay_sources/*/*.yaml' \
+        | git -C "$TARGET_DIR" sparse-checkout set --no-cone --stdin
 fi
 cd "$TARGET_DIR"
 
@@ -166,26 +180,35 @@ case "$(uname -s)" in
         fi
         ;;
     Linux)
-        echo ">> Installing native hidapi (sudo may prompt for your password)"
-        if command -v apt-get >/dev/null 2>&1; then
+        # A re-run, or a system that already has the library, skips the
+        # package manager. `apt-get update` alone takes 10-30 s.
+        if command -v dpkg >/dev/null 2>&1 && dpkg -s libhidapi-hidraw0 >/dev/null 2>&1; then
+            echo ">> Native hidapi already installed (libhidapi-hidraw0)."
+        elif command -v rpm >/dev/null 2>&1 && rpm -q hidapi >/dev/null 2>&1; then
+            echo ">> Native hidapi already installed (hidapi)."
+        elif command -v pacman >/dev/null 2>&1 && pacman -Q hidapi >/dev/null 2>&1; then
+            echo ">> Native hidapi already installed (hidapi)."
+        elif command -v apt-get >/dev/null 2>&1; then
+            echo ">> Installing native hidapi (sudo may prompt for your password)"
             sudo apt-get update && sudo apt-get install -y libhidapi-hidraw0
         elif command -v dnf >/dev/null 2>&1; then
+            echo ">> Installing native hidapi (sudo may prompt for your password)"
             sudo dnf install -y hidapi
         elif command -v pacman >/dev/null 2>&1; then
+            echo ">> Installing native hidapi (sudo may prompt for your password)"
             # Plain -S (not -Sy): refreshing only the hidapi entry risks partial
             # upgrades on rolling distros. Assume the system is kept up to date.
             sudo pacman -S --noconfirm hidapi
         else
             echo "!! Could not detect a package manager - install hidapi (libhidapi-hidraw0) yourself."
         fi
-        echo ">> Installing udev rule for non-root HID access"
-        # Written inline so the installer is self-contained. Keep the PID lines
-        # in sync with polyhost/device/99-hid.rules and DeviceSettings.KNOWN_PIDS
-        # (0x2007 = Split72, 0x2008 = Split42) — one line per known variant.
-        sudo tee /etc/udev/rules.d/99-hid.rules >/dev/null <<'UDEV_RULE'
-SUBSYSTEM=="hidraw", ATTRS{idVendor}=="2021", ATTRS{idProduct}=="2007", MODE="0666"
-SUBSYSTEM=="hidraw", ATTRS{idVendor}=="2021", ATTRS{idProduct}=="2008", MODE="0666"
-UDEV_RULE
+        echo ">> Installing the udev rule (keyboard HID interface and serial port, non-root)"
+        # The checkout's file is the only copy: it grants hidraw AND the fast
+        # link's tty port, and an inline copy here drifted once (it lacked the
+        # tty lines, so the fast link fell back to HID on every fresh install).
+        # The tray app offers the same install through pkexec
+        # (polyhost/services/linux_udev.py).
+        sudo install -m 0644 polyhost/device/99-hid.rules /etc/udev/rules.d/99-hid.rules
         sudo udevadm control --reload-rules && sudo udevadm trigger
         echo ">> Replug the keyboard so the new udev rule takes effect."
         ;;

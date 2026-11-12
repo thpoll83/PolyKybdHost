@@ -72,6 +72,32 @@ class StartupLoggingTest(unittest.TestCase):
         self.assertEqual(len(slog2.handlers), n)
 
 
+class RelaunchAfterUpdateTest(unittest.TestCase):
+    """Every claim is released BEFORE the replacement process starts.
+
+    The relaunch spawns a child with a new pid while this process still runs.
+    `claim_instance()` tries once, so an in-process tray that kept its endpoint
+    claim would turn its own replacement away and leave no app at all."""
+
+    def _run(self, *claims):
+        order = []
+        for name, claim in claims:
+            if claim is not None:
+                claim.release.side_effect = lambda n=name: order.append(n)
+        with mock.patch("polyhost.services.updater.restart_app",
+                        side_effect=lambda **kw: order.append(("restart", kw))):
+            main_app._relaunch_after_update(*(c for _, c in claims))
+        return order
+
+    def test_both_claims_are_released_before_the_restart(self):
+        order = self._run(("gui", mock.Mock()), ("instance", mock.Mock()))
+        self.assertEqual(order, ["gui", "instance", ("restart", {"new_process": True})])
+
+    def test_a_missing_claim_is_skipped(self):
+        order = self._run(("gui", None), ("instance", mock.Mock()))
+        self.assertEqual(order, ["instance", ("restart", {"new_process": True})])
+
+
 class ResolveDevTest(unittest.TestCase):
     """--dev / the deprecated --debug / the developer_mode setting."""
 
@@ -97,6 +123,33 @@ class ResolveDevTest(unittest.TestCase):
 
     def test_dev_wins_over_legacy_debug(self):
         self.assertEqual(main_app.resolve_dev(0, 2, False), (0, False, "--dev"))
+
+    def test_no_flag_takes_the_log_detail_setting_on_its_own(self):
+        # Log detail and developer mode are independent: an autostarted install
+        # can collect a debug log without the developer tools, and back.
+        self.assertEqual(main_app.resolve_dev(None, None, False, "debug"), (1, False, "setting"))
+        self.assertEqual(main_app.resolve_dev(None, None, True, "detailed"), (2, True, "setting"))
+        self.assertEqual(main_app.resolve_dev(None, None, True, "normal"), (0, True, "setting"))
+
+    def test_an_unknown_log_detail_counts_as_normal(self):
+        self.assertEqual(main_app.resolve_dev(None, None, False, "loud"), (0, False, "setting"))
+
+    def test_the_flag_wins_over_the_log_detail_setting_both_ways(self):
+        self.assertEqual(main_app.resolve_dev(0, None, False, "detailed"), (0, False, "--dev"))
+        self.assertEqual(main_app.resolve_dev(2, None, False, "normal"), (2, True, "--dev"))
+
+    def test_log_level_for_each_verbosity(self):
+        """Detailed must reach the debug_detailed lines in every launch path,
+        the forwarder included."""
+        import logging
+        from polyhost.util.log_util import DEBUG_DETAILED
+        self.assertEqual([main_app.log_level_for(v) for v in (0, 1, 2)],
+                         [logging.INFO, logging.DEBUG, DEBUG_DETAILED])
+
+    def test_every_log_detail_choice_has_a_level(self):
+        from polyhost.gui.settings_dialog import CHOICES
+        self.assertEqual({v for v, _l in CHOICES["log_detail"]},
+                         set(main_app.LOG_DETAIL_LEVELS))
 
 
 class SpawnedDaemonFlagsTest(unittest.TestCase):

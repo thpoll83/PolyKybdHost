@@ -68,3 +68,10 @@ The preview (`--preview`, `overlay_preview.png`) reads the **rendered** overlay
 back and shows every populated key in its real 72x40 cell. That is the only
 check that catches a cell which drew nothing -- see
 `tests/res/overlay_cells_test.py`, which now pins it for every app at once.
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+**Nothing added.** None of the standard chords is a documented Task Manager
+shortcut (<https://winaero.com/task-manager-in-windows-11-now-supports-advanced-keyboard-shortcuts/>
+lists Alt+N/E/V, Delete and Ctrl+(Shift+)Tab only). F5 / Ctrl+F were searched
+for and found in no Task Manager reference, so neither Reload nor Find is drawn.

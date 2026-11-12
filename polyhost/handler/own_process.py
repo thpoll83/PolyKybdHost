@@ -235,10 +235,26 @@ def is_polyhost_process(pid) -> bool:
 def window_pid(win):
     """`win.getPID()`, or None for a backend that has none or fails.
 
-    pywinctl's windows implement it; the KDE and GNOME Wayland reporters do not.
+    pywinctl 0.4's windows implement it; the KDE and GNOME Wayland reporters do
+    not. ⚠️ PyWinCtl 0.3's Linux window has no `getPID()` either, and
+    requirements.txt does not pin a version, so an install from before 0.4 keeps
+    0.3. Its ewmhlib window (`win._win.getPid()`, `_NET_WM_PID`) has the pid,
+    and the forwarder's icon lookup already reads it there. Without this
+    fallback a field install on Ubuntu GNOME (X11) got no pid at all: its own
+    Log Viewer was "a Python process that is not PolyHost (pid None)", and
+    `gnome-terminal-` was never resolved to `gnome-terminal-server`
+    (2026-11-05).
     """
+    if win is None:
+        return None
     try:
-        return win.getPID() if win is not None else None
+        return win.getPID()
+    except AttributeError:
+        pass
+    except Exception:
+        return None
+    try:
+        return int(win._win.getPid()) or None
     except Exception:
         return None
 

@@ -5,8 +5,17 @@ on:
     types: [closed]
     branches: [main]
 
+# main requires a pull request for every change, and a personal repository's
+# ruleset cannot list the built-in token as a bypass actor. So the bump goes
+# through a PR of its own, which this job opens and merges at once. That needs
+# "Allow GitHub Actions to create and approve pull requests" (Settings ->
+# Actions -> General) and a rule that asks for a PR and nothing more: a PR
+# opened with GITHUB_TOKEN starts no workflows, so required checks or
+# approvals would never be met. For the same reason the bump PR's own merge
+# does not start this workflow again.
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   bump:
@@ -17,65 +26,156 @@ jobs:
       cancel-in-progress: false
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
+          # Enough history to walk back to the previous bump commit.
+          fetch-depth: 200
 
-      - name: Determine bump type from PR labels
-        id: bump_type
-        run: |
-          LABELS='${{ toJson(github.event.pull_request.labels.*.name) }}'
-          if echo "$LABELS" | grep -q '"bump:major"'; then
-            echo "type=major" >> "$GITHUB_OUTPUT"
-          elif echo "$LABELS" | grep -q '"bump:minor"'; then
-            echo "type=minor" >> "$GITHUB_OUTPUT"
-          elif echo "$LABELS" | grep -q '"bump:protocol"'; then
-            echo "type=protocol" >> "$GITHUB_OUTPUT"
-          else
-            echo "type=patch" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Bump version in _version.py
+      # GitHub keeps one running and ONE pending job per concurrency group: a
+      # third merge while a bump runs replaces the pending job, and that PR's
+      # increase was lost. So a run does not bump for its own PR alone. It
+      # applies the increase of EVERY PR merged into main since the last bump
+      # PR, in merge order. A dropped run is covered by the next one, and a PR
+      # already counted by an earlier run is never counted again.
+      - name: Bump version for every PR merged since the last bump
+        id: bump
+        # Values reach the script through the environment, never by being
+        # pasted into its text (qmk_firmware#251, HIL-10 in
+        # polykybd-ctnd/docs/SECURITY_AUDIT.md).
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
           python3 - <<'PYEOF'
+          import json
+          import os
           import re
+          import subprocess
+          import sys
+          import time
+
+          repo = os.environ["REPO"]
+
+          def api(path, attempts=3):
+              """GET through gh, retrying a transient failure with backoff."""
+              for i in range(attempts):
+                  res = subprocess.run(["gh", "api", path],
+                                       capture_output=True, text=True)
+                  if res.returncode == 0:
+                      return json.loads(res.stdout)
+                  print(f"gh api {path} failed (attempt {i + 1}/{attempts}): "
+                        f"{res.stderr.strip()}")
+                  if i + 1 < attempts:
+                      time.sleep(5 * 2 ** i)
+              sys.exit(f"gh api {path} kept failing; re-run this job.")
+
+          def merged_pr(sha):
+              """The PR merged into main that produced this main commit, or None."""
+              for pr in api(f"repos/{repo}/commits/{sha}/pulls"):
+                  if pr.get("merged_at") and pr["base"]["ref"] == "main":
+                      return pr
+              return None
+
+          shas = subprocess.run(["git", "rev-list", "--first-parent", "HEAD"],
+                                check=True, capture_output=True,
+                                text=True).stdout.split()
+          def is_bump(pr):
+              return pr["head"]["ref"].startswith("bump/host-")
+
+          def cut_from(pr):
+              """The main commit the bump PR's branch was cut from."""
+              commits = api(f"repos/{repo}/pulls/{pr['number']}/commits")
+              parents = commits[0]["parents"] if commits else []
+              return parents[0]["sha"] if parents else None
+
+          # The newest bump PR is the anchor, but its run counted only the PRs
+          # in the main it checked out. A PR merged after that checkout and
+          # before the bump PR sits below the anchor, so the walk goes on past
+          # the anchor down to the commit the bump branch was cut from.
+          pending, seen, anchored, boundary = [], set(), False, None
+          for sha in shas:
+              if anchored and (boundary is None or sha == boundary):
+                  break
+              pr = merged_pr(sha)
+              if pr is None:
+                  continue
+              if is_bump(pr):
+                  if not anchored:
+                      anchored = True
+                      boundary = cut_from(pr)
+                      if boundary not in shas:
+                          print(f"Bump PR #{pr['number']} was cut from "
+                                f"{boundary}, which is not in the walked "
+                                f"history; counting from the bump PR only.")
+                          boundary = None
+                  continue
+              if pr["number"] not in seen:
+                  seen.add(pr["number"])
+                  pending.append(pr)
+          if not anchored:
+              # Bumping for only some of these PRs would make the new bump PR
+              # the anchor, and the rest could never be counted. Stop instead.
+              sys.exit(f"No bump PR in the last {len(shas)} first-parent commits "
+                       f"of main, so the PRs to count are unknown. Set the "
+                       f"version by hand in a PR whose branch starts with "
+                       f"'bump/host-', then re-run this job.")
+          pending.reverse()  # merge order
 
           path = "polyhost/_version.py"
           with open(path) as f:
               content = f.read()
+          major = int(re.search(r'__major__\s*=\s*(\d+)',    content).group(1))
+          minor = int(re.search(r'__minor__\s*=\s*(\d+)',    content).group(1))
+          patch = int(re.search(r'__patch__\s*=\s*(\d+)',    content).group(1))
+          proto = int(re.search(r'__protocol__\s*=\s*(\d+)', content).group(1))
 
-          major   = int(re.search(r'__major__\s*=\s*(\d+)',    content).group(1))
-          minor   = int(re.search(r'__minor__\s*=\s*(\d+)',    content).group(1))
-          patch   = int(re.search(r'__patch__\s*=\s*(\d+)',    content).group(1))
-          proto   = int(re.search(r'__protocol__\s*=\s*(\d+)', content).group(1))
-
-          bump = "${{ steps.bump_type.outputs.type }}"
-          if bump == "major":
-              major += 1; minor = 0; patch = 0
-          elif bump == "minor":
-              minor += 1; patch = 0
-          elif bump == "protocol":
-              proto += 1
-          else:
-              patch += 1
+          applied = []
+          for pr in pending:
+              labels = {lab["name"] for lab in pr.get("labels", [])}
+              if "bump:major" in labels:
+                  major += 1; minor = 0; patch = 0; kind = "major"
+              elif "bump:minor" in labels:
+                  minor += 1; patch = 0; kind = "minor"
+              elif "bump:protocol" in labels:
+                  proto += 1; kind = "protocol"
+              else:
+                  patch += 1; kind = "patch"
+              applied.append(f"#{pr['number']} ({kind})")
+              print(f"#{pr['number']}: {kind} -> {major}.{minor}.{patch} (protocol {proto})")
 
           content = re.sub(r'__major__\s*=\s*\d+',    f'__major__ = {major}',    content)
           content = re.sub(r'__minor__\s*=\s*\d+',    f'__minor__ = {minor}',    content)
           content = re.sub(r'__patch__\s*=\s*\d+',    f'__patch__ = {patch}',    content)
           content = re.sub(r'__protocol__\s*=\s*\d+', f'__protocol__ = {proto}', content)
-
           with open(path, "w") as f:
               f.write(content)
 
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write(f"prs={', '.join(applied) or 'none'}\n")
           print(f"Host bumped to {major}.{minor}.{patch} (protocol {proto})")
           PYEOF
 
-      - name: Commit and push
+      - name: Open and merge the bump PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BUMPED_PRS: ${{ steps.bump.outputs.prs }}
         run: |
           VERSION=$(awk -F' = ' '/^__major__/{m=$2} /^__minor__/{n=$2} /^__patch__/{p=$2} END{print m"."n"."p}' polyhost/_version.py)
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add polyhost/_version.py
-          git diff --cached --quiet || git commit -m "chore: bump host version to ${VERSION} [skip ci]"
-          git push
+          if git diff --cached --quiet; then
+            echo "Nothing to bump."
+            exit 0
+          fi
+          BRANCH="bump/host-${VERSION}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          git switch -c "$BRANCH"
+          git commit -m "chore: bump host version to ${VERSION} [skip ci]"
+          git push origin "$BRANCH"
+          gh pr create --base main --head "$BRANCH" \
+            --title "chore: bump host version to ${VERSION}" \
+            --body "Automatic version bump for ${BUMPED_PRS}, opened and merged by bump-version.yml."
+          gh pr merge "$BRANCH" --squash --delete-branch \
+            || gh pr merge "$BRANCH" --merge --delete-branch

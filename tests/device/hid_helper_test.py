@@ -226,5 +226,78 @@ class TestConsole(unittest.TestCase):
         self.assertTrue(bytes(out).startswith(b'log line'))
 
 
+class TestIoMeter(unittest.TestCase):
+    """The per-switch timing: one sample per device call, exceptions included,
+    nothing recorded while no meter is attached."""
+
+    def test_no_meter_by_default_and_nothing_recorded(self):
+        helper, device = _helper(replies=[GOOD])
+        self.assertIsNone(helper.meter)
+        helper.send_and_read_validate(CMD, 30, EXPECT)
+        self.assertIsNone(helper.meter)
+
+    def test_one_sample_per_call_across_the_primitives(self):
+        helper, device = _helper(replies=[GOOD, GOOD, GOOD], auto_ack=True)
+        meter = helper.measure()
+        self.assertIs(meter, helper.meter)
+        helper.send_multiple(CMD)                       # write only
+        helper.send_and_read_validate(CMD, 30, EXPECT)  # write + reply
+        helper.send(CMD)                                # write + ignored reply
+        helper.send_and_read(CMD, 30)                   # write + reply
+        helper.read(30)                                 # read only
+        self.assertEqual(meter.count, 5)
+        self.assertEqual(meter.write.count, 1)          # send_multiple
+        self.assertEqual(meter.reply.count, 4)          # the four that read
+        self.assertAlmostEqual(meter.write.total_s + meter.reply.total_s, meter.total_s)
+        self.assertGreater(meter.total_s, 0.0)
+        self.assertGreaterEqual(meter.max_s, meter.median_s)
+        self.assertLessEqual(meter.max_s, meter.total_s)
+        self.assertIsNotNone(meter.first_at)
+        helper.stop_measuring()
+        self.assertIsNone(helper.meter)
+        helper.send_multiple(CMD)
+        self.assertEqual(meter.count, 5)                # detached: no more samples
+
+    def test_a_failing_call_is_still_a_sample(self):
+        helper, device = _helper()
+        device.write_exception = OSError("unplugged")
+        meter = helper.measure()
+        ok, _ = helper.send_multiple(CMD)
+        self.assertFalse(ok)
+        self.assertEqual(meter.count, 1)
+        self.assertEqual(meter.write.count, 1)
+        self.assertFalse(helper.lock.locked())
+
+    def test_no_interface_is_not_a_device_call(self):
+        helper, device = _helper()
+        helper.interface = None
+        meter = helper.measure()
+        helper.send_multiple(CMD)
+        helper.send_and_read_validate(CMD, 30, EXPECT)
+        self.assertEqual(meter.count, 0)
+
+    def test_median_max_and_the_sample_cap(self):
+        from polyhost.device.hid_helper import IoMeter
+        meter = IoMeter()
+        for dt, kind in ((0.003, "write"), (0.001, "write"), (0.010, "reply"), (0.002, "write")):
+            meter.record(100.0, 100.0 + dt, kind)
+        self.assertEqual(meter.count, 4)
+        self.assertAlmostEqual(meter.median_s, 0.0025)
+        self.assertAlmostEqual(meter.max_s, 0.010)
+        self.assertAlmostEqual(meter.total_s, 0.016)
+        self.assertEqual((meter.write.count, meter.reply.count), (3, 1))
+        self.assertAlmostEqual(meter.write.median_s, 0.002)
+        self.assertAlmostEqual(meter.write.max_s, 0.003)
+        self.assertAlmostEqual(meter.reply.total_s, 0.010)
+        meter.record(0.0, 0.004, "bogus")               # an unknown kind counts as a reply
+        self.assertEqual(meter.reply.count, 2)
+        meter._samples = [0.001] * IoMeter.MAX_SAMPLES
+        meter.record(0.0, 5.0)                          # past the cap
+        self.assertEqual(len(meter._samples), IoMeter.MAX_SAMPLES)
+        self.assertEqual(meter.count, 6)
+        self.assertAlmostEqual(meter.max_s, 5.0)
+        self.assertAlmostEqual(meter.median_s, 0.001)
+
+
 if __name__ == '__main__':
     unittest.main()

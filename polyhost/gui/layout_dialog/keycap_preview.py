@@ -42,9 +42,11 @@ import sys
 
 from PyQt5.QtGui import QImage
 
+from polyhost.i18n import _, _f, N_
 from polyhost.services import macro_label as ml
 from polyhost.services import macro_look as mkl
 from polyhost.services import preview_data as pdata
+from polyhost.services import status_screen as ss
 from polyhost.gui.layout_dialog import qmk_keycode_helper as qh
 
 # The editor's tile shows the resting legend, so no modifier is held.
@@ -156,7 +158,7 @@ def _tools_dir() -> str:
     machine with no firmware checkout.
     """
     here = os.path.abspath(__file__)
-    for _ in range(4):
+    for _level in range(4):
         here = os.path.dirname(here)
     return os.path.join(here, "tools")
 
@@ -194,7 +196,7 @@ def _status_faces_from(pool, mid, small, tiny):
 
     Two of them are found by COVERAGE rather than by name, which is how the firmware
     tool picks the icon face and how the renderer picks the globe: IconsFont is
-    `g_all_fonts[0]` and the C1 band is its alone, and the World face is the only
+    `g_all_fonts[0]` and its plane-16 PUA range is its alone, and the World face is the only
     resident font covering U+1F310, so the first pool font covering each is it -- and
     a renamed header cannot quietly cost the panel its layer icon. A face that will
     not load is left None; the renderer then draws what it can rather than nothing.
@@ -202,7 +204,7 @@ def _status_faces_from(pool, mid, small, tiny):
     def covering(cp):
         return next((f for f in (pool or []) if f.first <= cp <= f.last), None)
 
-    return {"icons": covering(0x80), "globe": covering(0x1F310),
+    return {"icons": covering(ss.ICON_LAYER), "globe": covering(0x1F310),
             "mid": mid, "small": small, "tiny": tiny}
 
 
@@ -237,6 +239,11 @@ class KeycapPreview:
     toggle is off or the firmware checkout is absent.
     """
 
+    # How many layers the source's tags store, and how many the connected keyboard
+    # stores (set_stored_layer_count). None leaves the tags as they are.
+    _stored_layers: int | None = None
+    _device_stored: int | None = None
+
     def __init__(self, lang: str = DEFAULT_LANG, source: str | None = None):
         """`source` forces "shipped" or "checkout" instead of the version compare.
 
@@ -266,10 +273,18 @@ class KeycapPreview:
         self._fw_dir = ""          # the firmware checkout, when that is the source
         self._ranges = None        # layer-switch ranges, read from the header
         self._custom: dict = {}           # keycode -> PolyKybd's own name
+        # KC_IME's per-language stand-in: {"families": {lang: family},
+        # "legends": {family: codepoints}} (lang_demo.parse_ime_key). Empty when the
+        # firmware predates the key; it then resolves like any other name.
+        self._ime: dict = {}
         # layer index -> enum tag, e.g. 5 -> "FL". Seeded from the shipped map so a
         # preview built before either source loads still decodes layer keys.
         self._layer_tags: dict = dict(qh.LAYER_TAGS)
         self._tag_drift = ""       # set when the checkout disagrees with LAYER_TAGS
+        # How many layers the source's tags store, and how many the connected
+        # keyboard stores (set_stored_layer_count). They differ on a keyboard
+        # older than the data: see qh.fold_layer_tags.
+        self._stored_layers: int | None = qh.STORED_LAYER_COUNT
 
     # -- loading ------------------------------------------------------------
 
@@ -339,14 +354,16 @@ class KeycapPreview:
             self._static_ok = True
             break
         else:
-            self._reason = self._reason or "no preview data (shipped or checkout)"
+            # Kept ENGLISH here because it is also logged; marked so the tooltip can
+            # translate it (`kb_layout_dialog` passes `reason` through `_()`).
+            self._reason = self._reason or N_("no preview data (shipped or checkout)")
             self.log.warning("key previews unavailable: %s", self._reason)
             return False
 
         # Every name the keycode header gives each value, from the SAME source the
         # browser names tiles from -- so the two cannot drift apart.
         self._alt_names = {}
-        for nm, val in qh.parse_qmk_keycodes(qh.HEADER_FILE).items():
+        for nm, val in qh.editor_keycodes(qh.HEADER_FILE).items():
             self._alt_names.setdefault(val, []).append(nm)
         # The derived aliases fold only ONTO a name we can draw, so this needs the
         # legend tokens AND the LUT's own key set.
@@ -371,12 +388,20 @@ class KeycapPreview:
         self._resolver.named = dict(pd.named)
         self._legends = self._drawable(pd.legends)
         self._custom = dict(pd.custom)
-        self._layer_tags = dict(pd.layer_tags) or dict(qh.LAYER_TAGS)
+        self._set_ime(pd.ime.get("families", {}), pd.ime.get("legends", {}))
+        if pd.layer_tags:
+            self._layer_tags = dict(pd.layer_tags)
+            self._stored_layers = pd.stored_layers
+        else:
+            self._layer_tags = dict(qh.LAYER_TAGS)
+            self._stored_layers = qh.STORED_LAYER_COUNT
+        # The MIDI keys: their legends were computed at export time (see
+        # tools/midi_legend_dump.py) and are already in pd.legends.
         self._ld.set_qmk_aliases(pd.aliases)
         self._L = pd.lang_reader() or self._resolver
         self._lang_ok = self._L is not self._resolver
         if not self._lang_ok:
-            self._reason = "the shipped language table is missing"
+            self._reason = N_("the shipped language table is missing")
 
     def _load_checkout(self, pk: str, authoritative: bool = False):
         """Draw from a firmware checkout -- the developer path.
@@ -432,6 +457,14 @@ class KeycapPreview:
                 cps = None
             if cps:
                 resolved[token] = list(cps)
+        # The MIDI keys (firmware 1.13.0+): `midi_legend()` builds them at runtime,
+        # so neither switch above has them. The tree's own C is compiled and run
+        # (tools/midi_legend_dump.py, the same call the export makes).
+        try:
+            import midi_legend_dump as mld
+            resolved.update(mld.midi_legends(pk, log=self.log.debug) or {})
+        except Exception as e:
+            self.log.debug("MIDI legends unavailable (%s: %s)", type(e).__name__, e)
         self._legends = self._drawable(resolved)
         self._custom = parse_custom_keycodes(_read(pk, "keycode_helper.h"))
         # QMK's short aliases, derived from its own headers (see
@@ -461,6 +494,11 @@ class KeycapPreview:
             self.log.debug("layers.h unreadable (%s: %s)", type(e).__name__, e)
         if derived:
             self._layer_tags = derived
+            try:
+                self._stored_layers = qh.parse_stored_layer_count(
+                    pathlib.Path(pk) / "config.h")
+            except OSError:
+                self._stored_layers = None
             drift = sorted(i for i in set(derived) | set(qh.LAYER_TAGS)
                            if derived.get(i) != qh.LAYER_TAGS.get(i))
             if drift and authoritative:
@@ -483,6 +521,19 @@ class KeycapPreview:
                             f"({type(e).__name__}: {e})")
             self.log.warning("key previews: %s -- modifiers and arrows still render",
                              self._reason)
+        # Its own try: a KC_IME parse failure costs that one key its legend (it
+        # falls back to keycode text), never the language table it does not need.
+        if self._lang_ok:
+            try:
+                ime = ld.parse_ime_key(os.path.join(pk, "poly_keymap.c"), self._L.langs)
+                if ime is not None:
+                    self._set_ime(ime["families"],
+                                  {fam: list(self._resolver.resolve(icon))
+                                   for fam, icon in ime["icons"].items()
+                                   if not self._resolver.unresolved_tokens(icon)})
+            except Exception as e:
+                self.log.warning("key previews: KC_IME draws as keycode text (%s: %s)",
+                                 type(e).__name__, e)
 
     def _drawable(self, legends: dict) -> dict:
         """Drop the legends this renderer cannot follow, ONCE, at load time.
@@ -541,12 +592,12 @@ class KeycapPreview:
         if not self._load():
             return ""
         if self._source == "shipped":
-            v = self._fw_version or "unknown"
-            out = f"shipped with this host\nfirmware {v}"
+            v = self._fw_version or _("unknown")
+            out = _f("shipped with this host\nfirmware {version}", version=v)
             # A checkout that did not win is NOT an error -- it just lost the
             # comparison, EQUAL included -- but saying so is what stops the next
             # round being "why is my clone being ignored?".
-            return f"{out}\n(a firmware checkout is present but is not newer)" \
+            return out + "\n" + _("(a firmware checkout is present but is not newer)") \
                 if self._checkout_unused else out
         pk = self._fw_dir or ""
         if not pk:
@@ -615,11 +666,23 @@ class KeycapPreview:
                                  "will show their keycode", qh.HEADER_FILE)
         return self._ranges
 
+    def set_stored_layer_count(self, count: int | None):
+        """How many layers the connected keyboard stores (its dynamic layer count).
+
+        Layer keys are named by index, and firmware 1.13.0 moved every layer after
+        the stored ones up by one (the MIDI layer). The editor passes the count the
+        keyboard reports, so a 1.11.x board's `TO(8)` previews as `_SL`, not `_ML`.
+        """
+        self._device_stored = count or None
+
+    def _tags(self) -> dict:
+        return qh.fold_layer_tags(self._layer_tags, self._stored_layers, self._device_stored)
+
     def _layer_token(self, keycode: int):
         """`MO(_FL)` for a layer keycode, or None. Needs the tag map."""
         for lo, hi, kind in self._layer_ranges:
             if lo <= keycode <= hi:
-                tag = self._layer_tags.get(keycode - lo)
+                tag = self._tags().get(keycode - lo)
                 return f"{kind}(_{tag})" if tag else None
         return None
 
@@ -633,7 +696,14 @@ class KeycapPreview:
         """
         if not self._load():
             return None
-        kc = self._resolve_name(keycode, name)
+        # KC_IME first: it draws per LANGUAGE (another key's legend, or an icon),
+        # so no name lookup can answer for it.
+        if self._is_ime(keycode, name):
+            kc = self._ime_stand_in()
+            if isinstance(kc, list):
+                return self._to_qimage(self._ld.render_static_cps(self._R, kc))
+        else:
+            kc = self._resolve_name(keycode, name)
         if kc is None:
             return None
         try:
@@ -651,6 +721,31 @@ class KeycapPreview:
             self.log.debug("no preview for %s (%s: %s)", kc, type(e).__name__, e)
             return None
         return self._to_qimage(img)
+
+    def _set_ime(self, families: dict, legends: dict):
+        """Store KC_IME's data, its icons through the SAME `_drawable` gate as every
+        other legend, so an icon this renderer cannot follow falls back to keycode
+        text rather than drawing half a picture."""
+        self._ime = ({"families": dict(families), "legends": self._drawable(legends)}
+                     if families else {})
+
+    def _is_ime(self, keycode: int, name: str | None) -> bool:
+        return bool(self._ime) and "KC_IME" in (name, self._custom.get(keycode))
+
+    def _ime_stand_in(self):
+        """What KC_IME draws on the current language, the firmware's rule:
+        Korean/Japanese draw their own icon (codepoints, returned as a list), the
+        RALT family draws as Right Alt, and every other language as Non-US Backslash
+        with that layout's legend. The editor shows the key at rest, so Japanese
+        draws its unshifted 英数/かな."""
+        # The rule itself is lang_demo.ime_pick(), shared with the board render.
+        kind, name = self._ld.ime_pick(self._ime.get("families", {}), self._lang)
+        if kind == "key":
+            return name
+        legend = self._ime.get("legends", {}).get(name)
+        # An icon family whose icon was refused draws nothing (keycode text), never
+        # another key's legend.
+        return list(legend) if legend else None
 
     def _resolve_name(self, keycode: int, name: str | None):
         """The name to draw `keycode` by -- the first CANDIDATE we can draw, or None.

@@ -35,7 +35,15 @@ class ReadSettingTest(unittest.TestCase):
 
     def test_missing_file_returns_the_default(self):
         self.assertEqual(settings.read_setting("developer_mode", False), False)
-        self.assertEqual(settings.read_setting("developer_mode", "fallback"), "fallback")
+        self.assertEqual(settings.read_setting("not_a_real_setting", "fallback"),
+                         "fallback")
+
+    def test_a_KNOWN_key_falls_back_to_the_SHIPPED_default_not_the_callers(self):
+        """The file holds only chosen values, so an absent key is normal; a
+        caller's own fallback must not override a changed default."""
+        self._write("daemon_mode: true\n")
+        with mock.patch.dict(settings.DEFAULT_SETTINGS, {"developer_mode": True}):
+            self.assertIs(settings.read_setting("developer_mode", False), True)
 
     def test_missing_key_returns_the_default(self):
         # An older config predating the key — must not blow up the launch.
@@ -250,6 +258,19 @@ class ConcurrentWriterTest(unittest.TestCase):
             self.assertEqual(f.read(), corrupt)   # byte-for-byte, recoverable
         # And the save still landed -- losing the write is not the alternative.
         self.assertEqual(settings.read_setting("browser_report_port"), 10001)
+
+    def test_a_RESET_over_an_unreadable_file_preserves_it_too(self):
+        """restore_defaults() skips the merge, not the move-aside (Revix, #393)."""
+        a = settings.PolySettings()
+        corrupt = "{{{ not yaml\nbrightness_gamma: 7\n"
+        with open(a.path, "w", encoding="utf-8") as f:
+            f.write(corrupt)
+        a.restore_defaults()
+        kept = [n for n in os.listdir(self._tmp.name) if ".unreadable-" in n]
+        self.assertEqual(len(kept), 1,
+                         f"the reset destroyed it: {os.listdir(self._tmp.name)}")
+        with open(os.path.join(self._tmp.name, kept[0]), encoding="utf-8") as f:
+            self.assertEqual(f.read(), corrupt)
 
     def test_a_SECOND_corruption_does_not_DESTROY_the_first_copy(self):
         """⚠️ The kept name was `…unreadable-{strftime("%Y%m%d-%H%M%S")}`, i.e.
@@ -551,6 +572,321 @@ class ConcurrentWriterTest(unittest.TestCase):
             a.save()
         self.assertEqual(settings.read_setting("hid_reconnect_retries"), 7)
 
+
+
+class ChosenValuesOnlyTest(unittest.TestCase):
+    """The file holds only the values someone CHOSE, so a changed default
+    reaches everyone who never set that key (2026-10-15: the old format wrote
+    every default into the file and pinned it there)."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        patcher = mock.patch.object(
+            settings, "user_config_dir", return_value=self._tmp.name)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.path = os.path.join(self._tmp.name, settings.CONFIG_FILENAME)
+
+    def file(self):
+        import yaml
+        with open(self.path, encoding="utf-8") as f:
+            return yaml.safe_load(f)
+
+    def test_a_fresh_file_holds_no_defaults(self):
+        settings.PolySettings()
+        self.assertEqual(self.file(), {settings.SETTINGS_FORMAT_KEY:
+                                       settings.SETTINGS_FORMAT})
+
+    def test_only_the_CHANGED_key_is_written(self):
+        a = settings.PolySettings()
+        a.collection["hid_reconnect_retries"] = 9
+        a.save()
+        self.assertEqual(self.file(), {settings.SETTINGS_FORMAT_KEY:
+                                       settings.SETTINGS_FORMAT,
+                                       "hid_reconnect_retries": 9})
+
+    def test_a_CHANGED_DEFAULT_reaches_a_key_nobody_set(self):
+        a = settings.PolySettings()
+        a.collection["hid_reconnect_retries"] = 9
+        a.save()
+        with mock.patch.dict(settings.DEFAULT_SETTINGS,
+                             {"browser_report_port": 12345,
+                              "hid_reconnect_retries": 1}):
+            b = settings.PolySettings()
+            self.assertEqual(b.get("browser_report_port"), 12345)
+            self.assertEqual(settings.read_setting("browser_report_port"), 12345)
+            self.assertEqual(b.get("hid_reconnect_retries"), 9, "a choice stays")
+
+    def test_set_all_with_UNCHANGED_values_pins_nothing(self):
+        """The settings dialog hands back every key; only the changed ones
+        are choices."""
+        a = settings.PolySettings()
+        everything = dict(a.get_all())
+        everything["hid_reconnect_retries"] = 9
+        a.set_all(everything)
+        self.assertEqual(set(self.file()) - {settings.SETTINGS_FORMAT_KEY},
+                         {"hid_reconnect_retries"})
+
+    def test_an_OLD_format_file_keeps_only_what_differs_from_the_default(self):
+        import yaml
+        old = dict(settings.DEFAULT_SETTINGS)
+        old["hid_reconnect_retries"] = 9                 # a real choice
+        with open(self.path, "w", encoding="utf-8") as f:
+            yaml.safe_dump(old, f)
+        a = settings.PolySettings()                      # loads and saves
+        self.assertEqual(a.get_all(), {**settings.DEFAULT_SETTINGS,
+                                       "hid_reconnect_retries": 9})
+        self.assertEqual(self.file(), {settings.SETTINGS_FORMAT_KEY:
+                                       settings.SETTINGS_FORMAT,
+                                       "hid_reconnect_retries": 9})
+
+    def test_an_old_format_file_written_by_ANOTHER_process_is_migrated_too(self):
+        import yaml
+        a = settings.PolySettings()
+        old = dict(settings.DEFAULT_SETTINGS, browser_report_port=10000)
+        with open(self.path, "w", encoding="utf-8") as f:
+            yaml.safe_dump(old, f)                       # an older host saved
+        a.collection["hid_reconnect_retries"] = 9
+        a.save()
+        self.assertEqual(set(self.file()) - {settings.SETTINGS_FORMAT_KEY},
+                         {"browser_report_port", "hid_reconnect_retries"})
+
+    def test_restore_defaults_EMPTIES_the_file(self):
+        a = settings.PolySettings()
+        a.collection["hid_reconnect_retries"] = 9
+        a.save()
+        a.restore_defaults()
+        self.assertEqual(self.file(), {settings.SETTINGS_FORMAT_KEY:
+                                       settings.SETTINGS_FORMAT})
+        a.collection["browser_report_port"] = 10000      # and saving still works
+        a.save()
+        self.assertEqual(set(self.file()) - {settings.SETTINGS_FORMAT_KEY},
+                         {"browser_report_port"})
+
+    def test_a_value_set_BACK_to_the_default_stays_a_choice(self):
+        """Choosing today's default pins it, if the default moves later."""
+        a = settings.PolySettings()
+        default = a.defaults["hid_reconnect_retries"]
+        a.collection["hid_reconnect_retries"] = default + 1
+        a.save()
+        a.collection["hid_reconnect_retries"] = default
+        a.save()
+        self.assertEqual(self.file().get("hid_reconnect_retries"), default)
+
+
+class ReplaceRetryTest(unittest.TestCase):
+    """Windows refuses to replace a file another process has open, and the
+    daemon, a virus scanner or the indexer can hold settings.yaml for a moment.
+    That surfaced as `PermissionError: [WinError 5]` from the constructor's save
+    and killed the tray at startup twice in a row (field, 2026-09-25)."""
+
+    def test_windows_retries_until_the_holder_lets_go(self):
+        calls = []
+
+        def flaky(src, dst):
+            calls.append((src, dst))
+            if len(calls) < 3:
+                raise PermissionError(13, "Access is denied")
+
+        slept = []
+        with mock.patch.object(settings.os, "replace", side_effect=flaky):
+            settings._replace("a", "b", platform="win32", sleep=slept.append)
+        self.assertEqual(len(calls), 3)
+        self.assertEqual(len(slept), 2)
+
+    def test_windows_gives_up_after_the_last_attempt(self):
+        with mock.patch.object(settings.os, "replace",
+                               side_effect=PermissionError(13, "denied")) as rep:
+            with self.assertRaises(PermissionError):
+                settings._replace("a", "b", platform="win32", sleep=lambda _s: None)
+        self.assertEqual(rep.call_count, settings.REPLACE_ATTEMPTS)
+
+    def test_other_platforms_do_not_retry(self):
+        """There a PermissionError means the permissions are wrong, which no
+        amount of waiting fixes."""
+        with mock.patch.object(settings.os, "replace",
+                               side_effect=PermissionError(13, "denied")) as rep:
+            with self.assertRaises(PermissionError):
+                settings._replace("a", "b", platform="linux",
+                                  sleep=lambda _s: self.fail("slept"))
+        self.assertEqual(rep.call_count, 1)
+
+
+class _TempConfigDirCase(unittest.TestCase):
+    """A config dir of its own, plus a way to make the final replace fail."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        patcher = mock.patch.object(
+            settings, "user_config_dir", return_value=self._tmp.name)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def _replace_refused(self):
+        return mock.patch.object(settings, "_replace",
+                                 side_effect=PermissionError(13, "Access is denied"))
+
+
+class SaveFailureTest(_TempConfigDirCase):
+    def test_the_CONSTRUCTOR_survives_a_save_that_cannot_land(self):
+        """The field crash: PolySettings() raised out of PolyHost.__init__."""
+        a = settings.PolySettings()
+        a.collection["hid_reconnect_retries"] = 9
+        a.save()
+        with self._replace_refused() as refused:
+            b = settings.PolySettings()          # must not raise
+        self.assertTrue(refused.called, "the failing replace was never reached")
+        self.assertEqual(b.get("hid_reconnect_retries"), 9)
+
+    def test_a_failed_save_keeps_the_change_for_the_next_one(self):
+        a = settings.PolySettings()
+        with self._replace_refused() as refused:
+            a.collection["browser_report_port"] = 10004
+            a.save()                             # must not raise
+        self.assertTrue(refused.called)
+        with open(a.path, encoding="utf-8") as f:
+            self.assertNotIn("10004", f.read(), "the refused save landed anyway")
+
+        a.save()                                 # the holder has let go
+        with open(a.path, encoding="utf-8") as f:
+            self.assertIn("browser_report_port: 10004", f.read())
+
+
+    def test_a_change_after_a_FAILED_reset_survives_the_retry(self):
+        """The reset stays pending after a failed save; the next save carries
+        out the reset AND keeps what was changed since (CodeRabbit, #393)."""
+        a = settings.PolySettings()
+        a.collection["hid_reconnect_retries"] = 9
+        a.save()
+        with self._replace_refused() as refused:
+            a.restore_defaults()
+        self.assertTrue(refused.called)
+        a.collection["browser_report_port"] = 10004
+        a.save()
+        import yaml
+        with open(a.path, encoding="utf-8") as f:
+            on_disk = yaml.safe_load(f)
+        self.assertEqual(on_disk, {settings.SETTINGS_FORMAT_KEY:
+                                   settings.SETTINGS_FORMAT,
+                                   "browser_report_port": 10004})
+
+
+class SaveReportsFailureTest(_TempConfigDirCase):
+    """save() never raises, so it must SAY when it did not write: a privacy
+    switch turned off in the dialog is read back from the FILE by other
+    components, and an unsaved change there is not in effect (CodeRabbit, #278)."""
+
+    def test_save_and_set_all_report_whether_they_wrote(self):
+        a = settings.PolySettings()
+        self.assertTrue(a.save())
+        with self._replace_refused():
+            self.assertFalse(a.set_all(dict(a.collection, browser_report_port=10005)))
+        self.assertTrue(a.save())
+
+    def test_a_config_dir_that_cannot_be_created_does_not_raise(self):
+        """filelock.exclusive created the directory OUTSIDE its try, so this one
+        failure still escaped save()."""
+        a = settings.PolySettings()
+        with mock.patch.object(settings.filelock.os, "makedirs",
+                               side_effect=PermissionError(13, "denied")) as mk, \
+                self._replace_refused():
+            self.assertFalse(a.save())               # must not raise
+        self.assertTrue(mk.called, "the directory was never created")
+
+
+class ChangeLogTest(_TempConfigDirCase):
+    """Every saved change is logged with its old value, new value and writer, so
+    a setting nobody remembers changing can be traced (2026-11-08)."""
+
+    def _lines(self, cm):
+        return [r.getMessage() for r in cm.records if r.getMessage().startswith("Settings: ")]
+
+    def test_a_changed_key_is_logged_with_old_new_and_source(self):
+        a = settings.PolySettings()
+        with self.assertLogs("PolyHost", level="INFO") as cm:
+            a.set_all(dict(a.collection, fontpack_auto_flash=False), source="Settings dialog")
+        self.assertEqual(self._lines(cm), [
+            "Settings: fontpack_auto_flash changed from True to False (by Settings dialog)."])
+
+    def test_an_unchanged_save_logs_no_change(self):
+        a = settings.PolySettings()
+        with self.assertLogs("PolyHost", level="INFO") as cm:
+            a.log.info("marker")
+            a.set_all(dict(a.collection), source="Settings dialog")
+        self.assertEqual(self._lines(cm), [])
+
+    def test_a_change_is_logged_once_not_on_every_later_save(self):
+        a = settings.PolySettings()
+        a.set_all(dict(a.collection, hid_reconnect_retries=9), source="polyctl")
+        with self.assertLogs("PolyHost", level="INFO") as cm:
+            a.log.info("marker")
+            a.save()
+        self.assertEqual(self._lines(cm), [])
+
+    def test_a_save_that_does_not_land_logs_nothing_and_the_retry_logs_once(self):
+        a = settings.PolySettings()
+        with self._replace_refused(), self.assertLogs("PolyHost", level="INFO") as cm:
+            a.log.info("marker")
+            self.assertFalse(a.set_all(dict(a.collection, hid_reconnect_retries=9),
+                                       source="polyctl"))
+        self.assertEqual(self._lines(cm), [])
+        with self.assertLogs("PolyHost", level="INFO") as cm:
+            self.assertTrue(a.save())
+        self.assertEqual(len(self._lines(cm)), 1)
+
+    def test_control_characters_in_the_source_cannot_add_log_lines(self):
+        a = settings.PolySettings()
+        with self.assertLogs("PolyHost", level="INFO") as cm:
+            a.set_all(dict(a.collection, hid_reconnect_retries=9),
+                      source="polyctl\n[2026-01-01] INFO forged")
+        [line] = self._lines(cm)
+        self.assertNotIn("\n", line)
+        self.assertIn("polyctl\\n[2026-01-01] INFO forged", line)
+
+    def test_tokens_and_the_install_id_are_not_logged(self):
+        a = settings.PolySettings()
+        with self.assertLogs("PolyHost", level="INFO") as cm:
+            a.set_all(dict(a.collection, browser_report_token="s3cret",
+                           telemetry_install_id="abc-123"), source="polyctl")
+        text = "\n".join(self._lines(cm))
+        self.assertNotIn("s3cret", text)
+        self.assertNotIn("abc-123", text)
+        self.assertIn("browser_report_token changed from '<redacted>' to '<redacted>'", text)
+
+
+class FilelockDirectoryTest(unittest.TestCase):
+    def test_an_uncreatable_directory_yields_false_instead_of_raising(self):
+        from polyhost.util import filelock
+        with mock.patch.object(filelock.os, "makedirs",
+                               side_effect=PermissionError(13, "denied")):
+            with filelock.exclusive("/nonexistent-dir/x.lock") as locked:
+                self.assertFalse(locked)
+
+
+class SettingsSetReportsFailureTest(unittest.TestCase):
+    """polyctl and the client-mode dialog get the save result through
+    PolyCore.settings_set's (ok, msg)."""
+
+    def _core(self, saved):
+        from polyhost.core.poly_core import PolyCore
+        stub = mock.Mock()
+        stub.poly_settings.get_all.return_value = {"shortcut_icons_enabled": True}
+        stub.poly_settings.set_all.return_value = saved
+        return PolyCore, stub
+
+    def test_a_failed_save_is_reported_but_still_applied(self):
+        core, stub = self._core(saved=False)
+        ok, msg = core.settings_set(stub, "shortcut_icons_enabled", False)
+        self.assertFalse(ok)
+        self.assertIn("could not be saved", msg)
+        stub.note_settings_changed.assert_called_once_with(["shortcut_icons_enabled"])
+
+    def test_a_saved_change_is_ok(self):
+        core, stub = self._core(saved=True)
+        self.assertEqual(core.settings_set(stub, "shortcut_icons_enabled", False),
+                         (True, "shortcut_icons_enabled"))
 
 
 if __name__ == "__main__":

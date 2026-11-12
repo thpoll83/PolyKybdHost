@@ -1,3 +1,4 @@
+import functools
 import logging
 import time
 
@@ -7,17 +8,28 @@ from PyQt5.QtWidgets import (
 )
 
 from polyhost.device.hid_fw_up import flash_firmware, apply_staged_firmware
+from polyhost.device.split_link import is_split_link_failure
 from polyhost.gui.dialog_util import position_near_tray
+from polyhost.gui.ui_kit import StatusLabel, set_button_icon, px
+from polyhost.i18n import _, _f, translate_message
+
+# The device layer reports its status in English (device/hid_fw_up.py, which
+# also feeds the log and polyctl, and in client mode crosses the daemon -> GUI
+# boundary as plain text). The dialog shows the translation, rebuilt from the
+# template the message came from; is_split_link_failure() always reads the
+# original.
+_shown = translate_message
 
 
 class _HidFwUpWorker(QThread):
     progress = pyqtSignal(int, str)   # (percent, status_message)
     finished = pyqtSignal(bool, str)  # (success, message)
 
-    def __init__(self, hid, bin_path: str):
+    def __init__(self, hid, bin_path: str, pipe_port: str = None):
         super().__init__()
         self.hid      = hid
         self.bin_path = bin_path
+        self.pipe_port = pipe_port   # the bulk pipe's serial port, or None for HID only
         self._cancel  = [False]   # mutable flag checked between chunks
 
     def cancel(self):
@@ -28,6 +40,7 @@ class _HidFwUpWorker(QThread):
             self.hid, self.bin_path,
             progress_cb=lambda pct, m: self.progress.emit(pct, m),
             cancel_flag=self._cancel,
+            pipe_port=self.pipe_port,
         )
         self.finished.emit(ok, msg)
 
@@ -79,13 +92,27 @@ class HidFwUpDialog(QDialog):
     # Bar animation: a timer interpolates the displayed value toward the latest
     # reported one.  Constant velocity (percent per second) means the glide time
     # is proportional to the size of the jump, so the speed feels consistent.
+    # Each step is sized from the wall-clock time since the previous tick, not
+    # from _ANIM_TICK_MS: on a busy PC (or Windows' ~15 ms timer resolution) the
+    # ticks arrive late, and a fixed per-tick step then slowed the bar below the
+    # real transfer rate, so it fell behind and never caught up.
     _ANIM_TICK_MS = 5
-    _GLIDE_SPEED  = 2.3    # %/s — a full-width jump glides in roughly one second
+    _GLIDE_SPEED  = 2.3    # %/s at normal speed: the floor, sized for a 50 s HID transfer
+    # The glide follows the transfer's own rate once it is measurable: the percent
+    # reported so far over the time since the first chunk report. Over the bulk
+    # pipe the chunks take ~10 s (about 9 %/s), four times the floor, and a bar
+    # gliding at the floor between reports stalled and jumped (2026-10-19).
+    _RATE_AFTER_S = 0.5
 
     # If a newer progress report arrives while the bar is still catching up to
     # the previous target, the bar has fallen behind the real transfer — glide
     # that stretch this much faster so it catches up, then drop back to normal.
     _CATCHUP_FACTOR = 3
+
+    # More than this many percent behind the latest report: close the whole gap
+    # within _LAG_CATCHUP_S instead of gliding, so the bar never trails the transfer.
+    _MAX_LAG_PCT   = 5
+    _LAG_CATCHUP_S = 0.5
 
     # The bar runs at 10x resolution (0..1000 instead of 0..100) so the glide
     # advances in 0.1% steps rather than visible whole-percent jumps, and the
@@ -102,10 +129,11 @@ class HidFwUpDialog(QDialog):
     _SUCCESS_AUTOCLOSE_MS = 1500
 
     def __init__(self, hid, bin_path: str, parent=None, apply_after=False, tray_icon=None,
-                 external=False, apply_only=False):
+                 external=False, apply_only=False, pipe_port=None):
         super().__init__(parent)
         self.log         = logging.getLogger('PolyHost')
         self._hid        = hid
+        self._pipe_port  = pipe_port   # bulk pipe port for the chunks (in-process flash only)
         self._apply_after = apply_after
         self._tray_icon  = tray_icon
         # external: the flash runs elsewhere (the daemon, over RPC) and progress
@@ -126,14 +154,18 @@ class HidFwUpDialog(QDialog):
         self._determinate    = False # True once chunks start; spinner never returns after
         self._done           = False # True once finalized; late signals are ignored
         self._behind         = False # bar fell behind a fresh report; catch up faster
+        self._last_tick      = None  # monotonic time of the previous animation tick
+        self._catchup_speed  = 0.0   # %/s latched when the lag passed _MAX_LAG_PCT
 
-        # ETA tracking for the chunk-transfer phase (pct 2–98).
+        # ETA tracking for the chunk-transfer phase (pct 2–100).
         self._transfer_start_time = None  # monotonic, set when chunks begin flowing
-        self._last_reported_pct   = 0     # latest pct in [2, 98) — drives ETA calculation
+        self._transfer_first_pct  = 0     # the pct of that first report
+        self._observed_rate       = 0.0   # %/s the reports have been arriving at
+        self._last_reported_pct   = 0     # latest pct in [2, 100) — drives ETA calculation
         self._positioned          = False  # move-to-corner only on the first showEvent
 
-        self.setWindowTitle("Firmware Update")
-        self.setMinimumWidth(500)
+        self.setWindowTitle(_("Firmware Update"))
+        self.setMinimumWidth(px(500))
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         # Prevent accidental close during flash
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowCloseButtonHint)
@@ -141,12 +173,12 @@ class HidFwUpDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.setSpacing(12)
 
-        self._file_label = QLabel(f"<b>File:</b> {bin_path}")
+        self._file_label = QLabel(_f("<b>File:</b> {path}", path=bin_path))
         self._file_label.setWordWrap(True)
         self._file_label.setVisible(bool(bin_path))
         layout.addWidget(self._file_label)
 
-        self._status_label = QLabel("Applying staged firmware…" if apply_only else "Starting…")
+        self._status_label = QLabel(_("Applying staged firmware…") if apply_only else _("Starting…"))
         self._status_label.setWordWrap(True)
         layout.addWidget(self._status_label)
 
@@ -156,9 +188,9 @@ class HidFwUpDialog(QDialog):
         self._show_pct(0.0)
         layout.addWidget(self._progress_bar)
 
-        self._eta_label = QLabel("")
+        # Hidden while empty, so a staging dialog has no blank band under the bar.
+        self._eta_label = StatusLabel("")
         self._eta_label.setAlignment(Qt.AlignRight)
-        self._eta_label.setStyleSheet("color: gray;")
         layout.addWidget(self._eta_label)
 
         # Drives the smooth catch-up of the bar toward the reported percent.
@@ -173,7 +205,7 @@ class HidFwUpDialog(QDialog):
         self._eta_timer.timeout.connect(self._update_eta)
 
         btn_row = QHBoxLayout()
-        self._cancel_btn = QPushButton("Cancel")
+        self._cancel_btn = set_button_icon(QPushButton(_("Cancel")), "cancel")
         self._cancel_btn.clicked.connect(self._on_cancel)
         btn_row.addStretch()
         btn_row.addWidget(self._cancel_btn)
@@ -189,7 +221,7 @@ class HidFwUpDialog(QDialog):
                 # No staging phase — open straight into the apply spinner.
                 self._set_busy(True)
         else:
-            self._worker = _HidFwUpWorker(hid, bin_path)
+            self._worker = _HidFwUpWorker(hid, bin_path, pipe_port)
             self._worker.progress.connect(self._on_progress)
             self._worker.finished.connect(self._on_finished)
             self._worker.start()
@@ -228,22 +260,24 @@ class HidFwUpDialog(QDialog):
             self._eta_label.setText("")
             return
         pct = self._last_reported_pct
-        if pct >= 98 or pct < 2:
+        if pct >= 100 or pct < 2:
             self._eta_label.setText("")
             return
         elapsed       = time.monotonic() - self._transfer_start_time
-        fraction_done = (pct - 2) / 96.0
+        fraction_done = (pct - 2) / 98.0
         # Wait for at least 5 % chunk progress and 2 s elapsed before showing
         # an estimate — early values are noisy and misleadingly large.
         if fraction_done < 0.05 or elapsed < 2.0:
             return
         remaining = max(0.0, elapsed / fraction_done - elapsed)
         if remaining < 60:
-            self._eta_label.setText(f"~{round(remaining)} s remaining")
+            self._eta_label.setText(_f("~{seconds} s remaining", seconds=round(remaining)))
         else:
             mins = int(remaining // 60)
             secs = int(remaining % 60)
-            self._eta_label.setText(f"~{mins}m {secs:02d}s remaining")
+            # Pre-formatted: _f() passes values as text, so no :02d in the msgid.
+            self._eta_label.setText(_f("~{minutes}m {seconds}s remaining",
+                                       minutes=mins, seconds=f"{secs:02d}"))
 
     # ------------------------------------------------------------------
     def _on_progress(self, pct: int, msg: str):
@@ -251,7 +285,7 @@ class HidFwUpDialog(QDialog):
             # The dialog is logically complete; ignore any late signals so they
             # can't restart the animation or flip the bar back into busy mode.
             return
-        self._status_label.setText(msg)
+        self._status_label.setText(_shown(msg))
         self.log.info("FW_UP %d%% — %s", pct, msg)
 
         if pct < self._DETERMINATE_FROM and not self._determinate:
@@ -272,22 +306,27 @@ class HidFwUpDialog(QDialog):
         if new_target > self._target_pct and self._display_pct < self._target_pct:
             self._behind = True
         self._target_pct = new_target
-        if not self._anim_timer.isActive():
-            self._anim_timer.start()
+        self._start_anim()
 
         # ETA: record when chunk transfer started and keep the latest pct.
         self._last_reported_pct = max(self._last_reported_pct, pct)
-        if self._transfer_start_time is None and pct < 98:
+        if self._transfer_start_time is None and pct < 100:
             self._transfer_start_time = time.monotonic()
+            self._transfer_first_pct = pct
             self._eta_timer.start()
-        elif pct >= 98:
+        elif pct >= 100:
             self._eta_timer.stop()
             self._eta_label.setText("")
+        if self._transfer_start_time is not None:
+            elapsed = time.monotonic() - self._transfer_start_time
+            if elapsed >= self._RATE_AFTER_S and pct > self._transfer_first_pct:
+                self._observed_rate = (pct - self._transfer_first_pct) / elapsed
 
     def _show_pct(self, pct: float):
-        """Render a percentage on the bar at 10x resolution with one decimal."""
+        """Move the bar at 10x resolution and label it in whole percent, as the
+        other progress dialogs do ("43%", not "43.00%")."""
         self._progress_bar.setValue(int(round(pct * self._SCALE)))
-        self._progress_bar.setFormat(f"{pct:.2f}%")
+        self._progress_bar.setFormat(f"{pct:.0f}%")
 
     def _set_busy(self, busy: bool):
         """Toggle the bar between an indeterminate spinner and the normal 0–100
@@ -304,19 +343,40 @@ class HidFwUpDialog(QDialog):
             self._progress_bar.setRange(0, 100 * self._SCALE)
             self._show_pct(self._display_pct)
 
+    def _start_anim(self):
+        if not self._anim_timer.isActive():
+            # The first tick after a (re)start covers one interval, not the idle
+            # time since the bar last settled, which would snap it to the target.
+            self._last_tick = None
+            self._anim_timer.start()
+
+    def _glide_speed(self, gap: float) -> float:
+        """%/s for a bar `gap` percent behind the latest report."""
+        speed = max(self._GLIDE_SPEED, self._observed_rate)
+        if self._behind:
+            speed *= self._CATCHUP_FACTOR
+        # Latched, not recomputed per tick: gap / _LAG_CATCHUP_S on every tick
+        # shrinks with the gap and never closes it within _LAG_CATCHUP_S.
+        if gap > self._MAX_LAG_PCT:
+            self._catchup_speed = max(self._catchup_speed, gap / self._LAG_CATCHUP_S)
+        return max(speed, self._catchup_speed)
+
     def _animate_step(self):
         """Advance the displayed value toward the target at a constant speed."""
+        now = time.monotonic()
+        dt = (self._ANIM_TICK_MS / 1000.0 if self._last_tick is None
+              else now - self._last_tick)
+        self._last_tick = now
         if self._display_pct < self._target_pct:
-            speed = self._GLIDE_SPEED
-            if self._behind:
-                speed *= self._CATCHUP_FACTOR
-            step = speed * (self._ANIM_TICK_MS / 1000.0)
+            gap = self._target_pct - self._display_pct
+            step = self._glide_speed(gap) * dt
             self._display_pct = min(self._display_pct + step, float(self._target_pct))
             self._show_pct(self._display_pct)
 
         if self._display_pct >= self._target_pct:
             # Caught up — back to normal speed; nothing left to animate for now.
             self._behind = False
+            self._catchup_speed = 0.0
             self._anim_timer.stop()
             if self._pending_apply:
                 self._pending_apply = False
@@ -339,8 +399,7 @@ class HidFwUpDialog(QDialog):
                 self._pending_apply = True
             else:
                 self._pending_finish = (ok, msg)
-            if not self._anim_timer.isActive():
-                self._anim_timer.start()
+            self._start_anim()
         else:
             # On failure, leave the bar where it stopped and report immediately.
             self.log.warning("FW_UP finished: ok=%s — %s", ok, msg)
@@ -355,7 +414,7 @@ class HidFwUpDialog(QDialog):
         so the bar shows a spinner and only the status messages update.
         """
         self.log.info("FW_UP: staging done, starting apply…")
-        self._status_label.setText("Applying — activating the staged firmware…")
+        self._status_label.setText(_("Applying — activating the staged firmware…"))
         self._set_busy(True)
         # Apply can't be interrupted; the button is meaningless until it returns.
         self._cancel_btn.setEnabled(False)
@@ -371,7 +430,7 @@ class HidFwUpDialog(QDialog):
 
     def _on_apply_progress(self, pct: int, msg: str):
         # No determinate percentage during apply — keep the spinner, show the text.
-        self._status_label.setText(msg)
+        self._status_label.setText(_shown(msg))
         self.log.info("FW_UP_APPLY %d%% — %s", pct, msg)
 
     def _on_apply_finished(self, ok: bool, msg: str):
@@ -395,7 +454,7 @@ class HidFwUpDialog(QDialog):
         if ok:
             self._display_pct = 100.0
         self._show_pct(self._display_pct)
-        self._status_label.setText(msg)
+        self._status_label.setText(_shown(msg))
 
         if ok:
             # Nothing for the user to do — show the completed state briefly, then
@@ -405,6 +464,19 @@ class HidFwUpDialog(QDialog):
             QTimer.singleShot(self._SUCCESS_AUTOCLOSE_MS, self.accept)
             return
 
+        if is_split_link_failure(msg):
+            # The other half never answered, so retrying here cannot work. Hand
+            # over to the recovery dialog instead of a Close button. It opens
+            # AFTER this one closes: in-process this dialog runs under exec_(),
+            # which is application-modal and would leave a window opened beside
+            # it unclickable.
+            self.log.warning("FW_UP: the other keyboard half did not confirm; "
+                             "opening the .uf2 recovery help.")
+            from polyhost.gui.split_link_dialog import show_split_link_help
+            QTimer.singleShot(0, functools.partial(show_split_link_help, msg))
+            self.reject()
+            return
+
         # Failure: keep a Close button so the error stays readable. Repurpose the
         # existing in-layout button instead of re-adding WindowCloseButtonHint +
         # re-showing (that re-decoration grew the frame and pushed the button
@@ -412,7 +484,8 @@ class HidFwUpDialog(QDialog):
         # message wrapped and grew the dialog.
         self._cancel_btn.setVisible(True)
         self._cancel_btn.setEnabled(True)
-        self._cancel_btn.setText("Close")
+        self._cancel_btn.setText(_("Close"))
+        set_button_icon(self._cancel_btn, "close")
         self._cancel_btn.clicked.disconnect()
         self._cancel_btn.clicked.connect(self.reject)
         self._positioned = False
@@ -422,7 +495,7 @@ class HidFwUpDialog(QDialog):
         if self._worker is not None and self._worker.isRunning():
             self._worker.cancel()
             self._cancel_btn.setEnabled(False)
-            self._status_label.setText("Cancelling — waiting for current chunk to finish…")
+            self._status_label.setText(_("Cancelling — waiting for current chunk to finish…"))
         else:
             self.reject()
 

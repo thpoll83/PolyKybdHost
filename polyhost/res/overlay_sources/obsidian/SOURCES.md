@@ -64,3 +64,62 @@ python polyhost/res/overlay_sources/obsidian/fetch_icons.py
 python scripts/generate_app_overlays.py \
     polyhost/res/overlay_sources/obsidian/bindings.yaml --preview /tmp/obsidian_preview
 ```
+
+## macOS
+
+The spec serves Windows and macOS from one file: `obsidian_template.*`
+(Windows/Linux) and `obsidian_template_mac.*` (macOS). Obsidian registers every
+default hotkey as `Mod` (Ctrl on Windows/Linux, Cmd on macOS), which is exactly
+`CMDCTRL`; 13 bindings use it.
+
+Sources:
+
+- Official help, <https://help.obsidian.md> — read from its source repo
+  <https://github.com/obsidianmd/obsidian-help> (`en/`): "Editing shortcuts"
+  (separate Windows/Linux and macOS tables: bold, italic, paste without
+  formatting), "Quick switcher", "Command palette", "Search"
+  (`Command+Shift+F`), "Views and editing mode" (`Cmd+E`), "Manage notes" (`Cmd+N`).
+- The app's own default-hotkey table, for everything the help does not list:
+  the `hotkeys:` arrays in Obsidian 1.13.7's `obsidian.asar`
+  (<https://github.com/obsidianmd/obsidian-releases/releases/tag/v1.13.7>).
+  That is what Settings → Hotkeys shows as the defaults. It has **no literal
+  `Ctrl` hotkeys** among these bindings; the one platform branch is Find & replace.
+
+| Action | Windows / Linux | macOS | Why |
+|---|---|---|---|
+| Find and replace | `Ctrl+H` | `Cmd+Option+F` | Obsidian's source: `isMac ? Mod+Alt+F : Mod+H` (⌘H is macOS "Hide"). Written twice with `only:`. |
+| Navigate back | `Ctrl+Alt+Left` | `Cmd+Option+Left` | App default is `Mod+Alt+ArrowLeft`. Written twice with `only:`. |
+| Navigate forward | `Ctrl+Alt+Right` | `Cmd+Option+Right` | App default is `Mod+Alt+ArrowRight`. |
+| Toggle left sidebar | — (dropped) | — (dropped) | No default hotkey in Obsidian at all. |
+| Toggle right sidebar | — (dropped) | — (dropped) | No default hotkey in Obsidian at all. |
+| Strikethrough | — (dropped) | — (dropped) | No default hotkey in Obsidian at all. |
+
+No macOS chord drawn here is system-reserved; the ⌘H clash is exactly why
+Obsidian moves Find & replace off `H`.
+
+Windows/Linux fixed against the app's default table (2026-09-30): Navigate
+back/forward moved from `Alt+Left/Right` to `Ctrl+Alt+Left/Right`, and the
+`Ctrl+Shift+L/R/X` cells (Toggle left/right sidebar, Strikethrough) are gone,
+because Obsidian binds none of them in a clean install.
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+Label = lexicon concept, no icon. Source: Obsidian help, "Editing shortcuts"
+(`obsidianmd/obsidian-help`, `en/Editing and formatting/Editing shortcuts.md`,
+https://help.obsidian.md/editing-shortcuts), separate Windows/Linux and macOS
+tables:
+
+| Concept | Windows / Linux | macOS |
+|---|---|---|
+| Cut / Copy / Paste | Ctrl+X/C/V | ⌘X/C/V |
+| Undo | Ctrl+Z | ⌘Z |
+| Redo | Ctrl+Shift+Z or Ctrl+Y (`only: [windows, linux]`) | ⌘⇧Z |
+| Select all | Ctrl+A | ⌘A |
+
+Not added / why:
+- Find (Ctrl/⌘F), Replace (Ctrl+H / ⌘⌥F), Close (Ctrl/⌘W), New (Ctrl/⌘N):
+  already bound above.
+- Open: Ctrl/⌘O is the Quick switcher.
+- Save / Print / Zoom / Reload: not documented as default hotkeys (Obsidian
+  autosaves; "Save current file" and "Reload app" are commands with no help-
+  documented default).

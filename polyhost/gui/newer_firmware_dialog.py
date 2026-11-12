@@ -19,19 +19,25 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QSizePolicy,
-    QStyle,
     QVBoxLayout,
 )
+
+from polyhost.gui.get_icon import get_icon
+from polyhost.gui.ui_kit import headline_icon_px, set_button_icon
+from polyhost.i18n import _, _f, N_
 
 # (button label, returned choice). Order = left-to-right; the first entry is the
 # default/focus button. Kept module-level so it can be asserted in tests without a
 # QApplication.
 NEWER_FW_CHOICES = (
-    ("Safe mode", "safe"),
-    ("Check for updates", "update"),
-    ("Connect anyway", "ignore"),
+    (N_("Safe mode"), "safe"),
+    (N_("Check for updates"), "update"),
+    (N_("Connect anyway"), "ignore"),
 )
 NEWER_FW_DEFAULT = "safe"
+# The safe default is the accept mark; connecting with everything on is the
+# risky one, so it carries the open/leave icon rather than a check.
+_CHOICE_ICONS = {"safe": "accept", "update": "update", "ignore": "open"}
 
 
 def confirm_newer_firmware(host_protocol, device_protocol, name="", fw_version=""):
@@ -39,22 +45,36 @@ def confirm_newer_firmware(host_protocol, device_protocol, name="", fw_version="
 
     Returns one of ``"safe"`` / ``"update"`` / ``"ignore"`` (``"safe"`` if the
     dialog is closed without a choice)."""
+    dlg, result = build_newer_firmware_dialog(host_protocol, device_protocol, name, fw_version)
+    dlg.exec_()
+    return result["choice"]
+
+
+def build_newer_firmware_dialog(host_protocol, device_protocol, name="", fw_version=""):
+    """Build the dialog without running it.
+
+    Returns ``(dialog, result)``. ``result["choice"]`` starts at the safe default
+    and is set by the button the user clicks. Split from
+    ``confirm_newer_firmware`` so a test can click the buttons."""
     kb = f"PolyKybd {name}".strip()
-    lead = (
-        f"{kb}'s firmware (protocol P{device_protocol}) is newer than this host "
-        f"app (protocol P{host_protocol}).\n\n"
+    lead = _f(
+        "{keyboard}'s firmware (protocol P{device_protocol}) is newer than this host "
+        "app (protocol P{host_protocol}).",
+        keyboard=kb, device_protocol=device_protocol, host_protocol=host_protocol)
+    lead += "\n\n" + _(
         "A newer firmware may use commands this version of the app doesn't fully "
         "understand, so some features could misbehave. How would you like to "
-        "proceed?\n\n"
-        "• Safe mode — connect, but enable only the stable set (firmware "
-        "update and debugging).\n"
-        "• Check for updates — look for a newer host app that matches; if none "
-        "is found, stay in safe mode.\n"
-        "• Connect anyway — use everything and accept the risk."
-    )
+        "proceed?")
+    lead += "\n\n" + "\n".join((
+        _("• Safe mode — connect, but enable only the stable set (firmware "
+          "update and debugging)."),
+        _("• Check for updates — look for a newer host app that matches; if none "
+          "is found, stay in safe mode."),
+        _("• Connect anyway — use everything and accept the risk."),
+    ))
 
     dlg = QDialog(None)
-    dlg.setWindowTitle("Newer keyboard firmware detected")
+    dlg.setWindowTitle(_("Newer keyboard firmware detected"))
     dlg.setWindowFlag(Qt.WindowStaysOnTopHint, True)
 
     outer = QVBoxLayout(dlg)
@@ -64,9 +84,7 @@ def confirm_newer_firmware(host_protocol, device_protocol, name="", fw_version="
     row = QHBoxLayout()
     row.setSpacing(12)
     icon_lbl = QLabel()
-    px = dlg.style().standardPixmap(QStyle.SP_MessageBoxWarning)
-    if not px.isNull():
-        icon_lbl.setPixmap(px)
+    icon_lbl.setPixmap(get_icon("warning.svg").pixmap(headline_icon_px(), headline_icon_px()))
     icon_lbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
     row.addWidget(icon_lbl, 0, Qt.AlignTop)
     msg = QLabel(lead)
@@ -75,20 +93,22 @@ def confirm_newer_firmware(host_protocol, device_protocol, name="", fw_version="
     row.addWidget(msg, 1)
     outer.addLayout(row)
 
-    # Three distinct choices via addButton + clickedButton (QDialogButtonBox's
-    # standard Ok/Yes/No set only gives two). ActionRole keeps them left-aligned
-    # and stops Qt from auto-mapping them to accept/reject.
+    # Three distinct choices via addButton (QDialogButtonBox's standard
+    # Ok/Yes/No set only gives two). ActionRole keeps them left-aligned and stops
+    # Qt from auto-mapping them to accept/reject.
+    # ⚠️ Each button records its own choice. QDialogButtonBox has NO
+    # clickedButton() (only QMessageBox does): calling it raised AttributeError
+    # after the modal closed, so no choice ever reached the core and "Check for
+    # updates" did nothing at all.
+    result = {"choice": NEWER_FW_DEFAULT}
     btn_box = QDialogButtonBox()
-    buttons = {}
     for label, choice in NEWER_FW_CHOICES:
-        b = btn_box.addButton(label, QDialogButtonBox.ActionRole)
+        b = btn_box.addButton(_(label), QDialogButtonBox.ActionRole)
+        set_button_icon(b, _CHOICE_ICONS[choice])
+        b.clicked.connect(lambda _checked=False, c=choice: result.update(choice=c))
         b.clicked.connect(dlg.accept)   # any click closes the modal
-        buttons[b] = choice
         if choice == NEWER_FW_DEFAULT:
             b.setDefault(True)
             b.setFocus()
     outer.addWidget(btn_box, 0, Qt.AlignRight)
-
-    dlg.exec_()
-    clicked = btn_box.clickedButton()
-    return buttons.get(clicked, NEWER_FW_DEFAULT)
+    return dlg, result

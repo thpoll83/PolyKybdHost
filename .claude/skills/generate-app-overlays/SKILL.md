@@ -42,6 +42,14 @@ Hard limits baked into the firmware/loader (do not fight them):
   source, **ALWAYS TRY THE APP'S OWN LOGO FIRST and check its licence** — see
   "Program marks" below. Reach for a generic drawn mark only when no published
   art exists to take; commit whichever it is as `icons/<name>.png`.
+- **`legend: false`** on a binding, or **`program_icon_legend: false`** for the
+  program mark, draws that key WITHOUT the firmware's legend: the keyboard clears
+  the whole cell before it draws the icon (protocol v25: the mapping's slot is
+  sent offset by 600). Use it only
+  where the icon replaces the keycap, as AoE2's full-cell ESC mark does. The
+  generator lists those keys in the PNG's `polykybd-no-legend` text chunk as
+  `<modifier>:<keycode>` pairs. Firmware before v25 keeps the legend and draws
+  the icon over it with the 3 px clearance.
 - Icons sit in the **bottom-right** of the cell by default so they never cover
   the firmware-drawn key letter (top-left). Keep that.
 - ⚠️ **A HOSTED app usually wants `icon:` in the mapping instead of a baked
@@ -160,6 +168,30 @@ are the icons the user actually sees. Order of preference:
      1-bit/40 px downscale, and the bare default (~400) is a touch heavy.
 3. **Draw it** with `scripts/make_sample_icons.py` primitives as a last resort.
 
+**Games** use game-icons.net (CC BY 3.0) through
+`polyhost/res/overlay_sources/game_icons.py`, because Fluent and Material have no
+game shapes (catapult, anvil, barracks). CC BY requires credit per AUTHOR, so the
+set's `SOURCES.md` has a file / icon / author table (`overlay_sources/aoe2/` is the
+example). Three differences from an app set:
+- Label only keys that do the same thing whatever is selected (go-to keys, idle
+  units, function keys, chat). A game's bare letters change with the selection,
+  so they stay blank.
+- An icon may use the full height (`anchor: right`, `region: [40, 40]`,
+  `margin: 0`). The firmware draws the overlay AFTER the legend and clears 3 px
+  around the icon's ink, so the icon takes priority: a letter legend (x 2–22)
+  stays whole, and the shifted symbol on `,` `.` and the digits is erased.
+  ⚠️ A preview that draws the legend on top models the wrong order.
+- Many game-icons.net drawings are too detailed for 1 bit. Render candidates on
+  the 72×40 cell and pick by eye before committing.
+- ⚠️ **A composed icon that needs exact pixels (a seam, a gap, a 1 px line) is
+  drawn 1-bit at keycap size, and its binding's `region` equals the image size**
+  (`region: [48, 40]` for a 48×40 PNG). `fit: contain` is then the identity and
+  the generator places it 1:1; any rescale blurs a 2–3 px seam away. AoE2's
+  control groups (`fetch_icons.groups()`: each unit twice with a 3 px black seam,
+  and a plus for Ctrl) are the example. Verify by cropping the 72×40 generated
+  cell to the box `region_box(anchor, region, margin)` returns and comparing that
+  crop with the drawn PNG pixel for pixel.
+
 Rules:
 - Only use art you may redistribute; **record source URL + license per icon in
   `SOURCES.md`**. If a license is unclear, don't commit it — draw a substitute.
@@ -268,6 +300,76 @@ legibility **before** you commit. The icons are 1-bit at 72×40; never skip the
 eyeball. (Don't hand-roll a centered/standalone icon sheet — it misrepresents
 placement; this preview reads back the actual overlay.)
 
+**Show the maintainer the keys white on black, as the OLED shows them.** The
+`--preview` sheet is black on white. When the maintainer asks to see a set ("show
+me the icons", "show me all"), send the sheet from `preview_black.py` (next to
+this file). It reads the generated PNGs, draws every binding of one platform plus
+the ESC mark with its `Mods+Key: label`, and prints the key count from the spec:
+
+```bash
+.venv/bin/python .claude/skills/generate-app-overlays/preview_black.py \
+    polyhost/res/overlay_sources/<app>/<spec>.yaml --out /tmp/<app>.png
+#   --platform macos | linux   the macOS or Linux set
+#   --check-1to1               game sets: every cell is its icon placed 1:1
+```
+
+Write a caption's key count from the script's output: two captions written by
+eye said 87 and 37 keys for sets with 74 and 36 (2026-11-03).
+
+When the maintainer asks to compare the ESC mark with the app's own icon, run
+`compare_mark.py` (next to this file). It shows the icon, the icon reduced to
+the mark's size at 1 bit (light pixels lit, and dark pixels lit) and the
+committed ESC cell in one row:
+
+```bash
+.venv/bin/python .claude/skills/generate-app-overlays/compare_mark.py \
+    polyhost/res/overlay_sources/<app>/<spec>.yaml --domain <site> --out /tmp/<app>_mark.png
+#   --icon <file>   a local copy of the icon instead of the favicon service
+#   --luma 200      the light/dark split (Canva's white C needed 200)
+```
+
+The maintainer chose from this sheet four times in the 2026-11-05 batch: WPS
+(redrawn), Canva (switched to the "dark lit" column), Photopea and Steam (kept).
+
+⚠️ **`--domain` returns the company's icon, not the product's, for a vendor
+with many products.** `autodesk.com` gave the Autodesk logo for Maya and
+`avid.com` the Avid logo for Pro Tools, so the sheet compared nothing
+(2026-11-09). For those, pass `--icon` with the product's own file (the Simple
+Icons SVG or PNG the mark was made from).
+
+**For an entry with `glyph_script:` in the mapping, show the keys with that
+face.** `preview_black.py` draws the icons alone; on the keyboard they share the
+keycap with the script's letters. `face_preview.py` (next to this file) draws
+both: each letter and digit key in the glyph script at the top-left placement
+(C64KEYS: the letter and its two PETSCII cells, as `render_c64_keycap()` lays
+them out), every other key with its normal legend, and the overlay on top with
+the legend cleared within 3 px of its ink. It is a model of the firmware, and it
+needs `../qmk_firmware`.
+
+```bash
+.venv/bin/python .claude/skills/generate-app-overlays/face_preview.py \
+    polyhost/res/overlay_sources/vice/vice.yaml c64keys --out /tmp/vice_face.png
+#   script: c64keys, amiga, ... or standard     --platform macos | linux
+```
+
+Use it before choosing an icon's size or corner on such a set. On 2026-11-07 a
+46 px "MON" label in the top-right corner of Alt+H cut the H on the C64 face,
+and the same label at the bottom right erased a PETSCII cell. Only a 36 x 32
+icon at the bottom right left both whole.
+
+⚠️ **A key on the bottom (thumb) row has its legend CENTRED, so the default
+bottom-right region covers it.** The firmware draws every bottom-row legend with
+`draw_legend_cx_cy` (qmk `poly_keymap.c`): on Space the ␣ is at x 23..48,
+y 23..26. It then clears the legend within 3 px of any overlay ink. With
+`region: [36, 32]` at the bottom right, a Space icon erased 10 to 44 legend
+pixels; on 2026-11-09 that was 546 key images in 117 specs. Neither preview
+shows it: `preview_black.py` draws no legend, and `face_preview.py` draws every
+legend at the top left. For a bottom-row binding, set
+`anchor: top-right, region: [28, 20]` (Maya's Ctrl+Space, every Pro Tools Space
+key), or draw on the whole keycap clear of the legend (`space_hint.py`, below).
+Measure it: centre the key's legend from `face_preview.standard()`, grow the
+icon by 3 px, and count the legend pixels inside. The count must be 0.
+
 ### 5. Wire the mapping + verify
 
 - Paste the printed stanza into `polyhost/res/overlay-mapping.poly.yaml` (confirm
@@ -342,6 +444,17 @@ marks, and each is more recognisable than the substitute it replaced. Two of
 them had been given generics (`mdi:console` and `mdi:console-network`) that were
 *both a `>_`*, i.e. the substitutes collided where the real logos do not.
 
+⚠️ **A logo from a GPL project ships here only if the project says "or any later
+version".** GPL-2.0-only is not compatible with this repository's
+GPL-3.0-or-later. A logo file in the project's repository with no licence of
+its own falls under the project's licence. Read the project's OWN source headers
+and README, not those of the libraries it bundles. VICE's README says "either
+version 2 of the License, or (at your option) any later version", so its logo
+shipped (#684). FS-UAE ships plain GPL-2.0, and its only "or later" headers are
+in the bundled libfsemu (LGPL-2.1+) and mt32emu, so #705 drew a 1-bit mark with
+the same motif (two ticks and "FS") instead of copying the file. Write the
+reasoning into the set's `SOURCES.md`.
+
 **Use `program_marks.own_icon(path, url, frame)`** (`overlay_sources/program_marks.py`):
 it pulls one frame out of the app's own `.ico` and is guarded so a re-run never
 clobbers a committed asset. Three things decide how it reads, and **all three are
@@ -363,6 +476,31 @@ out (negative space) + a rounded rect on the right whose interior varies per app
 PowerPoint = "P"). White-on-transparent → `program_icon_mode: alpha`. Owners
 typically hand-tune these afterwards (hence the guard above).
 
+**A mark with single-pixel detail (a dither band, a 1 px line) must be drawn at
+the size the keycap shows it.** With `program_icon_region: [37, 32]` and
+`fit: contain`, a square mark ends up 32x32, and `_fit_stamp` resizes a 32x32
+source to the same size, which copies it 1:1. A larger source is shrunk and then
+cut at a threshold, which moves or removes 1 px features. Since #710
+`_resample_for()` picks the filter from the source: one with anti-aliased alpha
+(a vector render) shrinks with BOX, which keeps straight strokes straight; one
+with hard alpha (pixel art, a dithered sprite) or none shrinks with LANCZOS, as
+does every enlargement. The WPS marks
+(rounded tile, glyph cut out, a checkerboard band on the right and a diagonal
+hatch at the bottom) are drawn at 32x32 for this reason (`wps/fetch_icons.py`).
+
+⚠️ **N keycap pixels is not 8N source pixels.** When you edit a 256 px source to
+move or repeat a feature by whole keycap pixels, the filter + threshold rounding
+depends on the neighbourhood. The Keep bulb's second thread band, copied 24 px
+(3 keycap px) below the first, rendered with a different shape; 23 px gave the
+same pixels as the first band. Sweep a few offsets and read the ESC cell back
+from the generated overlay instead of computing the offset.
+
+**Fetching the app's icon when its site refuses automated requests:** Google's
+favicon service, `https://www.google.com/s2/favicons?domain=<site>&sz=256`,
+returns the site's apple-touch icon (Canva 180 px, Photopea and Steam 256 px).
+canva.com answered with a bot check, and the Wikimedia Commons API rate-limited
+the container after two requests (2026-11-05).
+
 **Composite icons** (a value + a shared glyph), e.g. Word line-spacing 1 / 1½ / 2
 which all share the line-spacing glyph: compose `<number on top> + <glyph below>`
 in `fetch_icons.py`. Lessons learned the hard way:
@@ -381,6 +519,160 @@ container filesystem** — you cannot read their pixels. To use one, ask the use
 to **commit it to the working branch** (e.g. `icons/<name>.png`) or give a URL;
 then `git fetch` + `git merge --ff-only` and wire it. (This is how the Notepad++
 mascot ESC logo was added.)
+
+## Replacing one icon the maintainer does not like
+
+Done seven times on 2026-11-03/04 (AoE4 pings and follow unit, RimWorld draft,
+Factorio next weapon, Minecraft inventory and sneak, three StarCraft II keys).
+The loop:
+
+1. **Candidates on the real cell.** `icon_candidates.py` (next to this file)
+   renders `fa:` and `gi:` names into the key's area, white on black, with the
+   legend corner marked and the committed icon first:
+
+   ```bash
+   .venv/bin/python .claude/skills/generate-app-overlays/icon_candidates.py \
+       --area 34x40 --legend F2 --current polyhost/res/overlay_sources/<app>/icons/<icon>.png \
+       --out /tmp/f2.png fa:person-military-rifle gi:lorc/rally-the-troops gi:lorc/battle-gear
+   ```
+
+   ⚠️ Many guessed game-icons.net names do not exist (in one probe 11 of 39 did);
+   the script reports each 404 and goes on, so list several. It does not take
+   `ms:` names. When no icon set has the shape, a hand-drawn pixel map is an
+   option (Minecraft's `SNEAK` in `minecraft/fetch_icons.py`).
+2. **Ask with a recommendation.** Send the sheet, then one `AskUserQuestion`
+   per key with the recommended option first.
+3. **Change the source, not the PNG.** Edit the icon's spec in `fetch_icons.py`
+   and its row in `SOURCES.md` (author and licence), re-run `fetch_icons.py` and
+   the generator.
+4. **Check three things before the push.** `git status` lists only the icons
+   you meant to change. A second `fetch_icons.py` run changes no bytes. For a
+   game set, `preview_black.py --check-1to1` reports no cell.
+
+## Numbering repeated slot icons
+
+When several keys do the same thing for different slots (a potion belt on 1 to 8,
+spell slots on F5 to F8, control groups), one shared icon makes the keys look
+identical. Draw the slot number into each copy in `fetch_icons.py`, not by hand.
+`devilutionx/fetch_icons.py` → `numbered_icons()` is the pattern:
+
+- `zeroad._digit(text, height)` returns the digit as a 1-bit mask at most `height`
+  px tall, and `cnc._save_mask(mask, path)` writes it as an icon PNG.
+- **Cut the digit out of a filled area** (`icon &= ~digit`) so it reads dark on
+  lit, or **light it in an empty corner** (`icon |= digit`). Leave at least 2 px of
+  lit pixels above and below a cut-out digit.
+- ⚠️ **Centre a cut-out digit on the largest connected lit area, not on the icon's
+  bounding box.** The flask's box includes the neck and stopper, so a digit
+  centred on it sat too high and cut into the stopper. `_largest_area()` in
+  `devilutionx/fetch_icons.py` returns the liquid alone. `zeroad._fill_holes()`
+  fills the inside of an outline icon first when the icon has no filled area.
+- Give every numbered copy its own name (`belt1.png` … `belt8.png`) in
+  `bindings.yaml` and `SOURCES.md`, and delete the plain source icon when nothing
+  draws it.
+
+## Pixel fonts and the block style
+
+- **Fonts that stay exact at 1 bit**: Press Start 2P at 8 px; Monocraft
+  Regular at 9 px (5×7 digits drawn after Minecraft's; SIL OFL 1.1, pinned in
+  `minecraft/fetch_icons.py`). At those sizes no pixel is grey, so any whole
+  multiple stays exact. ⚠️ Monocraft's Bold and Black weights are not exact at
+  any size, and at 9 px their letters merge.
+- **Liberation Sans Bold** is read from the Debian/Ubuntu path; the slicer and
+  StarCraft II scripts take `POLYKYBD_LIBERATION_SANS_BOLD` to point elsewhere.
+- **Pixel-art blocks (the Minecraft sets, 2 px).** Render each icon at half its
+  area and repeat every pixel twice across and down; keep every key area and
+  `INK` box a multiple of the block. ⚠️ Draw a composed icon on the half grid
+  too: snapping a finished 40 px composite to blocks merged a cube into a blob.
+
+## Hold-Space hints
+
+The keyboard has no Space modifier layer, so "hold Space + key" shortcuts are
+never drawn. Where an app has them, the Space key shows that holding it does
+something: `polyhost/res/overlay_sources/space_hint.py` draws a glyph with an
+arrow on each side at the right edge of the whole 72x40 keycap, and raises if
+any ink comes within 3 px of the centred ␣.
+
+```python
+space_hint.draw(space_hint.glyph_from_png(out / "pan.png", 20), out / "space_pan.png")
+```
+
+The binding needs `region: [72, 40]` and `mode: alpha` so the PNG is copied 1:1
+(Paint.NET `space_pan`, Houdini `space_view`, PR #744). A docs search of every
+supported app (2026-11-09) found Space+key combinations in only two: Houdini
+(14: Space+H, G, A, F, Z, L, B, O, E, Space+1..5) and Paint.NET (8: Space +
+arrow keys, Space + Ctrl + arrow keys). Maya's hold-Space opens the hotbox, which
+has no second key; its Space shows the hotbox, drawn at the top right.
+
+## Several overlay PRs open at once
+
+Every new overlay appends its entry to the end of
+`polyhost/res/overlay-mapping.poly.yaml`. So two open overlay PRs always
+conflict there, and each merge makes the next one conflict again. Both sides
+are needed. To land them:
+
+1. Merge one PR.
+2. In the next one: `git fetch origin main && git merge origin/main`, then keep
+   both sides of every conflict in the mapping file (remove only the three
+   marker lines).
+3. Check the result loads and the entries are all there:
+   `.venv/bin/python -c "import yaml; yaml.safe_load(open('polyhost/res/overlay-mapping.poly.yaml', encoding='utf-8'))"`,
+   then `xvfb-run -a .venv/bin/python scripts/run_tests.py -s tests/res`.
+4. Push, wait for its CI to finish green, then merge it. Repeat for the next PR.
+
+On 2026-11-05 the fheroes2 PR (#500) had been merged with `main` once and
+conflicted again as soon as the DevilutionX PR (#499) merged.
+
+⚠️ **A generator change on `main` makes an open overlay PR's PNGs stale, and
+nothing reports it.** The PNGs are committed, so the merge is clean and CI is
+green, but they were drawn by the old generator. #682 (RetroArch, MAME) and
+#674 (GDB) both merged after #688 changed the generator; #699 and #710 had to
+regenerate them (2026-11-07). Before merging an overlay PR, check
+`git log origin/main -- scripts/generate_app_overlays.py` against the branch's
+base; if the generator moved, merge `main` in and regenerate that spec.
+
+After a change to `scripts/generate_app_overlays.py` itself, regenerate every
+spec with `regen_all.py` (next to this file, about 2 minutes for 294 specs) and
+commit the PNGs in the same PR. Run it on `main` first: anything it changes there
+was already stale and is not your change.
+
+```bash
+.venv/bin/python .claude/skills/generate-app-overlays/regen_all.py
+git status --short polyhost/res/overlays/
+```
+
+A change that redraws many templates also makes icon-library entries stale, so
+it calls for a library rebuild in the same batch (`docs/fontpack.md`, the
+icon-library bullet).
+
+⚠️ **When the PR changed the same PNGs, the generator change makes them conflict**, and git
+cannot merge a binary. When `main` changed `scripts/generate_app_overlays.py` (or an
+icon source) and regenerated the sets, don't pick either side of a PNG conflict.
+Regenerate the PR's spec with the MERGED generator, then check that EVERY PNG the
+spec writes (every `Wrote` line: the primary set and each combo tier, conflicted or
+not) differs from `main` only where the PR changed something:
+
+```bash
+.venv/bin/python scripts/generate_app_overlays.py polyhost/res/overlay_sources/<app>/<spec>.yaml \
+  | tee /tmp/regen.log
+for f in $(sed -n "s|^Wrote $PWD/||p" /tmp/regen.log); do
+  git show origin/main:"$f" > /tmp/main.png 2>/dev/null || { echo "$f: new"; continue; }
+  .venv/bin/python -c "import sys; from PIL import Image, ImageChops as C; \
+print(sys.argv[1], C.difference(Image.open('/tmp/main.png').convert('RGBA'), \
+Image.open(sys.argv[1]).convert('RGBA')).getbbox(alpha_only=False))" "$f"
+done
+```
+
+`alpha_only=False` is required: by default `getbbox()` reads only the alpha channel,
+and a change of colour alone prints `None`. Each box must cover only the keys the PR
+changed. A box that spans two changed keys far apart also covers the keys between
+them, so in that case crop each key's cell and check the others print `None`. A
+`None` for a PNG the PR meant to change means the regeneration lost the PR's change:
+look at the merged spec before you continue. Then `git add` each checked PNG,
+resolve and stage any other conflicts, and run `git merge --continue`.
+
+On 2026-11-07 the MAME wordmark PR (#708) conflicted with the box-filter change
+(#710). After regenerating, both MAME PNGs differed from `main` only in x 539–576,
+y 126–154, the ESC mark area.
 
 ## Environment & gotchas
 
@@ -401,11 +693,27 @@ mascot ESC logo was added.)
   When a generated layer looks empty, **count lit pixels per cell** before
   re-sourcing the icons — it is nearly always the mode, not the artwork.
 
+- ⚠️ **Run every `fetch_icons.py` with `PYTHONPATH=.` from the repo root**, also
+  the ones that put `overlay_sources/` on `sys.path` themselves: `icon_fetch`
+  imports `polyhost.res.overlay_sources.material_symbols`, and without it the
+  script stops with `ModuleNotFoundError: No module named 'polyhost'` (QGIS,
+  2026-11-09).
+
+- ⚠️ **Every new webapp set appends a section to the end of
+  `webapps/SOURCES.md`, so two open webapp PRs always conflict there.** It is an
+  addition beside an addition: keep both sections, then regenerate the specs of
+  both sets and check the overlay PNGs come out unchanged (Keep against Drive,
+  and Photopea against Canva, 2026-11-05).
+- ⚠️ **A full `webapps/fetch_icons.py` run rewrites `code.png`, `copy.png` and
+  `webide.png`**, because their upstream Fluent SVGs changed. The drift is older
+  than any one set. Restore them with `git checkout -- <files>` before you commit
+  an unrelated change, and say so in the PR body (four runs on 2026-11-05).
+
 ## Done when
 
 - `overlay_sources/<app>/` has `bindings.yaml`, `fetch_icons.py`, all `icons/`,
   and `SOURCES.md` (provenance + licenses).
 - `polyhost/res/overlays/<output>.mods.png` (+ combo if used) are generated and
   the mapping entry is added.
-- The user has been shown `overlay_preview.png` (real placement + program icon)
-  and approved legibility.
+- The user has been shown `overlay_preview.png` (real placement + program icon),
+  or the white-on-black sheet from `preview_black.py`, and approved legibility.

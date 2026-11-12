@@ -42,6 +42,14 @@ if _REPO not in sys.path:
     sys.path.insert(0, _REPO)
 
 
+def _prepare_language():
+    """English for the docs images whatever this machine's language is;
+    POLYHOST_LANG=de (or ar, pseudo, ...) renders another one. Each render
+    runs in its own child process, which inherits the variable."""
+    from polyhost.gui import i18n_qt
+    i18n_qt.prepare("en")
+
+
 class _FakeCore:
     """The subset of PolyCore the control server exposes, answering as a
     connected Split72. Mirrors the shape of a real status payload."""
@@ -61,20 +69,23 @@ class _FakeCore:
 
     # -- state ---------------------------------------------------------
     def get_status(self):
+        # The newest protocol this host knows, and every feature it enables: an
+        # older number greys out every newer submenu, which is not what a user
+        # with current firmware sees.
+        from polyhost._version import __protocol__
+        from polyhost.device.poly_kybd import FEATURE_MIN_PROTOCOL
         return {
             "connected": True, "device_present": True, "paused": False,
-            "name": self.NAME, "hw_version": "1.0", "protocol": 12,
-            "fw_version": "0.9.85", "current_lang": "enUS",
-            # Feature gating: without these the Idle/Keycap-Script submenus
-            # render disabled, which is not what a normal user sees.
-            "capabilities": {"idle_style": True, "glyph_script": True},
+            "name": self.NAME, "hw_version": "1.0", "protocol": __protocol__,
+            "fw_version": "1.13.0", "current_lang": "enUS",
+            "capabilities": {f: True for f in FEATURE_MIN_PROTOCOL},
         }
 
     def list_languages(self):
         return ["enUS", "deDE", "frFR", "esES", "jaJP"]
 
     def settings_list(self):
-        return {"brightness_set_daylight_dependent": True}
+        return {"brightness_set_daylight_dependent": True, "agents_enabled": True}
 
     def settings_get(self, key):
         return self.settings_list().get(key)
@@ -92,8 +103,28 @@ class _FakeCore:
     def get_glyph_script(self):
         return (True, 0)          # Standard
 
+    def get_glyph_placement(self):
+        return (True, 0)          # Centred
+
     def keymap_layer_count(self):
         return (True, 9)
+
+    def get_glyph_size(self):
+        return (True, 0)          # Small
+
+    def agents_list(self):
+        """Four sample agents from the real registry, so the AI Agents submenu
+        shows its list rather than "No agents reported"."""
+        from polyhost.services.agents.registry import AgentRegistry
+        reg = AgentRegistry(clock=lambda: 0.0)
+        for vendor, session, state, title in (
+                ("claude-code", "a", "working", "Fix the login test"),
+                ("codex", "b", "waiting", "Refactor the parser"),
+                ("gemini", "c", "done", "Release notes"),
+                ("opencode", "d", "idle", "docs")):
+            reg.report(vendor, session, state, headline=title)
+        return {"agents": reg.snapshot(), "page": 0, "pages": reg.page_count(),
+                "enabled": True, "active": True, "last_press": None}
 
 
 def _grab(menu, path, log):
@@ -104,6 +135,22 @@ def _grab(menu, path, log):
     menu is hidden again straight after so the next grab isn't overlapped.
     """
     from PyQt5.QtWidgets import QApplication
+    # show() does not emit aboutToShow (popup() does), and the tiled submenus
+    # (gui/menu_tiles.py) build their tiles on it.
+    menu.aboutToShow.emit()
+    QApplication.processEvents()
+    # Some submenus are updated off the GUI thread by MenuFetcher
+    # (gui/menu_fetch.py): AI Agents gets its agent rows a moment after
+    # aboutToShow. Wait, at most 3 s, until the entries stop changing for 0.2 s.
+    import time
+    deadline = time.monotonic() + 3.0
+    last, stable = None, 0
+    while time.monotonic() < deadline and stable < 10:
+        QApplication.processEvents()
+        now = [a.text() for a in menu.actions()]
+        stable = stable + 1 if now == last and now else 0
+        last = now
+        time.sleep(0.02)
     menu.ensurePolished()
     menu.show()
     QApplication.processEvents()
@@ -134,6 +181,7 @@ def _render_forwarder(out_dir, log, host="192.168.1.100"):
     helper.start()
     try:
         from polyhost.forwarder import PolyForwarder
+        _prepare_language()
         app = PolyForwarder(logging.CRITICAL, host=host)
         # The steady state a user sees, not the first 250 ms of startup.
         app.relay_ok = True
@@ -182,6 +230,7 @@ def _render(developer, out_dir, log):
         stub.return_value.set_language.return_value = (True, "")
 
         from polyhost.host import PolyHost
+        _prepare_language()
         app = PolyHost(logging.CRITICAL, 0, developer, client_mode=True, endpoint=addr)
         # Drive the status render so the language menu is built and everything
         # is enabled, exactly as on a real connect.
@@ -196,6 +245,7 @@ def _render(developer, out_dir, log):
         app.cmdMenu._refresh_auto_brightness_action()
         # Same reason: the Keycap Script previews are built on first show.
         app._build_glyph_script_previews()
+        app.refresh_glyph_placement_actions()
 
         suffix = "-developer" if developer else ""
         path = os.path.join(out_dir, f"tray-menu{suffix}.png")

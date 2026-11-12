@@ -34,11 +34,47 @@ class TestReportWindow(unittest.TestCase):
         # Identical report → no further change.
         self.assertFalse(rh.remote_changed({}))
 
+    def test_a_window_without_a_title_is_stored_as_an_empty_title(self):
+        # pywinctl gives None for a window without a title, and str(None) made
+        # it the text "None" (field log 2026-11-05: Title: "None").
+        rh = self._handler(_annotated())
+        rh.report_window(5, "Code.exe", None)
+        self.assertEqual(rh.connections["_report"]["title"], "")
+
     def test_report_window_unmapped_app_matches_nothing(self):
         rh = self._handler(_annotated())
         rh.report_window(1, "Unknown.exe", "x")
         self.assertTrue(rh.remote_changed({}))       # window changed...
         self.assertFalse(rh.has_overlay())           # ...but nothing matched
+
+    def test_a_year_suffixed_macOS_name_matches_its_plain_key(self):
+        # A Mac forwarding `Adobe Photoshop 2025` must reach the `adobe photoshop`
+        # entry; an exact lookup missed it, so the app loaded nothing.
+        mapping = {"adobe photoshop": {"overlay": "ps",
+                                       "flags": [True, False, False, False, False, False]}}
+        rh = self._handler(mapping)
+        rh.report_window(7, "Adobe Photoshop 2025", "Untitled-1")
+        self.assertTrue(rh.remote_changed({}))
+        self.assertEqual(rh.get_overlay_data(), "ps")
+
+    def test_a_dotted_linux_app_id_matches_its_whole_key(self):
+        # `org.gimp.GIMP` from a Linux forwarder used to be cut at the first dot
+        # to `org`, so the GIMP entry's own key could never match.
+        mapping = {"org.gimp.gimp": {"overlay": "gimp",
+                                     "flags": [True, False, False, False, False, False]}}
+        rh = self._handler(mapping)
+        rh.report_window(7, "org.gimp.GIMP", "Untitled - GIMP")
+        self.assertTrue(rh.remote_changed({}))
+        self.assertEqual(rh.get_overlay_data(), "gimp")
+
+    def test_a_windows_executable_still_matches_its_dot_cut_key(self):
+        # The whole-name attempt must not stop `gimp-2.10.exe` reaching `gimp-2`.
+        mapping = {"gimp-2": {"overlay": "gimp",
+                              "flags": [True, False, False, False, False, False]}}
+        rh = self._handler(mapping)
+        rh.report_window(7, "gimp-2.10.exe", "Untitled - GIMP")
+        self.assertTrue(rh.remote_changed({}))
+        self.assertEqual(rh.get_overlay_data(), "gimp")
 
     def test_report_window_handles_empty_and_does_not_raise(self):
         rh = self._handler(_annotated())
@@ -82,7 +118,8 @@ class TestReportWindow(unittest.TestCase):
         rh = self._handler(mapping)
         rh.report_window(9, "chrome", "A board", url="https://miro.com/app/board/x")
         self.assertTrue(rh.remote_changed({}))
-        self.assertEqual(rh.get_overlay_data(), "miro")
+        # the site layers over the browser: browser first, site wins its keys
+        self.assertEqual(rh.get_overlay_data(), ["browser", "miro"])
 
     def test_url_change_on_the_same_window_re_matches(self):
         # An SPA route change / in-app tab switch moves neither handle nor
@@ -100,7 +137,8 @@ class TestReportWindow(unittest.TestCase):
 
         rh.report_window(9, "chrome", "Same Title", url="https://miro.com/app/x")
         self.assertTrue(rh.remote_changed({}), "url change must count as a change")
-        self.assertEqual(rh.get_overlay_data(), "miro")
+        # the site layers over the browser: browser first, site wins its keys
+        self.assertEqual(rh.get_overlay_data(), ["browser", "miro"])
 
         # Same window, same url -> no further change.
         rh.report_window(9, "chrome", "Same Title", url="https://miro.com/app/x")

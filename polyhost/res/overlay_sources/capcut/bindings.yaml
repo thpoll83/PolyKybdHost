@@ -1,0 +1,117 @@
+# CapCut desktop shortcut overlays for PolyKybd (Windows and macOS). See SOURCES.md.
+#
+# The keys are CapCut's default keymap, the "Final Cut Pro X" preset that a new
+# install uses, read from the default keymap table in VECreator.dll of the
+# official Windows installer CapCut 9.5.0.4050 (action id + Qt key sequence per
+# entry; table in SOURCES.md). The second built-in preset, "Premiere Pro", is
+# not drawn. Users can change keys in the Shortcuts panel; the set shows the
+# defaults.
+#
+# Qt writes "Ctrl" for the Command key on macOS and "Alt" for Option, so every
+# Ctrl chord is CMDCTRL here and Alt stays ALT. The macOS set is derived from
+# that convention and was not read from a macOS build (SOURCES.md).
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/capcut/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/capcut/bindings.yaml --preview /tmp/capcut_preview
+app: capcut
+match: [capcut]
+output: capcut_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+program_icon: capcut.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- no modifier: tools and timeline switches ---
+  - { key: A, mods: [], icon: select.png, label: "Selection mode" }
+  - { key: B, mods: [], icon: splitmode.png, label: "Split mode" }
+  - { key: Q, mods: [], icon: deleteleft.png, label: "Delete left", mode: alpha }
+  - { key: W, mods: [], icon: deleteright.png, label: "Delete right", mode: alpha }
+  - { key: N, mods: [], icon: snap.png, label: "Auto snapping", mode: alpha }
+  - { key: P, mods: [], icon: maintrack.png, label: "Main track magnet", mode: alpha }
+  - { key: S, mods: [], icon: previewaxis.png, label: "Preview axis" }
+  - { key: "`", mods: [], icon: linkage.png, label: "Linkage" }
+  - { key: V, mods: [], icon: clipvisible.png, label: "Enable/disable clip" }
+  - { key: I, mods: [], icon: markin.png, label: "Mark in", mode: alpha }
+  - { key: O, mods: [], icon: markout.png, label: "Mark out", mode: alpha }
+  - { key: M, mods: [], icon: marker.png, label: "Add marker" }
+  - { key: BACKSPACE, mods: [], icon: delete.png, label: "Delete" }
+  - { key: DELETE, mods: [], icon: delete.png, label: "Delete" }
+
+  # --- no modifier: transport and navigation ---
+  - { key: SPACE, mods: [], icon: play.png, label: "Play / pause" }
+  - { key: J, mods: [], icon: rev.png, label: "Play backward" }
+  - { key: K, mods: [], icon: pause.png, label: "Pause" }
+  - { key: L, mods: [], icon: fwd.png, label: "Play forward" }
+  - { key: LEFT, mods: [], icon: prevframe.png, label: "Previous frame" }
+  - { key: RIGHT, mods: [], icon: nextframe.png, label: "Next frame" }
+  - { key: UP, mods: [], icon: prevcut.png, label: "Previous cut point" }
+  - { key: DOWN, mods: [], icon: nextcut.png, label: "Next cut point" }
+  - { key: HOME, mods: [], icon: firstframe.png, label: "First frame" }
+  - { key: END, mods: [], icon: lastframe.png, label: "Last frame" }
+  - { key: "[", mods: [], icon: selectleft.png, label: "Select leftward" }
+  - { key: "]", mods: [], icon: selectright.png, label: "Select rightward" }
+
+  # --- Shift ---
+  - { key: LEFT, mods: [SHIFT], icon: prevframes.png, label: "Step back many frames" }
+  - { key: RIGHT, mods: [SHIFT], icon: nextframes.png, label: "Step forward many frames" }
+  - { key: X, mods: [SHIFT], icon: rangeclip.png, label: "Select range by clip" }
+  - { key: M, mods: [SHIFT], icon: nextmarker.png, label: "Next marker", mode: alpha }
+  - { key: Z, mods: [SHIFT], icon: zoomfit.png, label: "Zoom to fit timeline" }
+
+  # --- Alt (Option on macOS) ---
+  - { key: X, mods: [ALT], icon: rangeclear.png, label: "Clear range" }
+  - { key: G, mods: [ALT], icon: compound.png, label: "Create compound clip" }
+  - { key: K, mods: [ALT], icon: keyframes.png, label: "Keyframe panel" }
+
+  # --- Alt+Shift ---
+  - { key: G, mods: [ALT, SHIFT], icon: uncompound.png, label: "Undo compound clip" }
+  - { key: M, mods: [ALT, SHIFT], icon: prevmarker.png, label: "Previous marker", mode: alpha }
+  - { key: Z, mods: [ALT, SHIFT], icon: playerfit.png, label: "Zoom to fit player" }
+
+  # --- Ctrl (Cmd on macOS) ---
+  - { key: B, mods: [CMDCTRL], icon: blade.png, label: "Split", mode: alpha }
+  - { key: C, mods: [CMDCTRL], icon: copy.png, label: Copy }
+  - { key: X, mods: [CMDCTRL], icon: cut.png, label: Cut }
+  - { key: V, mods: [CMDCTRL], icon: paste.png, label: Paste }
+  - { key: A, mods: [CMDCTRL], icon: selectall.png, label: "Select all" }
+  - { key: Z, mods: [CMDCTRL], icon: undo.png, label: Undo }
+  - { key: G, mods: [CMDCTRL], icon: group.png, label: Group }
+  - { key: R, mods: [CMDCTRL], icon: speed.png, label: "Speed" }
+  - { key: J, mods: [CMDCTRL], icon: beats.png, label: "Mark beats" }
+  - { key: "=", mods: [CMDCTRL], icon: zoomin.png, label: "Zoom in" }
+  - { key: "-", mods: [CMDCTRL], icon: zoomout.png, label: "Zoom out" }
+  - { key: ".", mods: [CMDCTRL], icon: volumeup.png, label: "Volume up" }
+  - { key: ",", mods: [CMDCTRL], icon: volumedown.png, label: "Volume down" }
+  - { key: N, mods: [CMDCTRL], icon: newproject.png, label: "New project" }
+  - { key: I, mods: [CMDCTRL], icon: import.png, label: "Import media" }
+  - { key: E, mods: [CMDCTRL], icon: export.png, label: "Export" }
+  - { key: W, mods: [CMDCTRL], icon: closewindow.png, label: "Close window" }
+  - { key: Q, mods: [CMDCTRL], icon: quit.png, label: "Quit" }
+  - { key: D, mods: [CMDCTRL], icon: voice.png, label: "Voice input" }
+  - { key: ";", mods: [CMDCTRL], icon: guides.png, label: "Show/hide guides" }
+
+  # --- Ctrl+Shift ---
+  - { key: B, mods: [CMDCTRL, SHIFT], icon: splitall.png, label: "Split all tracks", mode: alpha }
+  - { key: C, mods: [CMDCTRL, SHIFT], icon: copyattr.png, label: "Copy attributes" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: pasteattr.png, label: "Paste attributes" }
+  - { key: Z, mods: [CMDCTRL, SHIFT], icon: redo.png, label: Redo }
+  - { key: G, mods: [CMDCTRL, SHIFT], icon: ungroup.png, label: Ungroup }
+  - { key: S, mods: [CMDCTRL, SHIFT], icon: separateaudio.png, label: "Separate audio" }
+  - { key: F, mods: [CMDCTRL, SHIFT], icon: fullscreen.png, label: "Full screen" }
+
+  # --- Ctrl+Alt ---
+  - { key: Q, mods: [CMDCTRL, ALT], icon: home.png, label: "Back to projects" }
+  - { key: P, mods: [CMDCTRL, ALT], icon: record.png, label: "Record" }
+  - { key: R, mods: [CMDCTRL, ALT], icon: rulers.png, label: "Show/hide rulers" }

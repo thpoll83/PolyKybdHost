@@ -51,6 +51,8 @@ FW_APPLY_DONE = "fw_apply_done"          # {"ok": bool, "msg": str}
 # or a .plyx install reads as "updating fonts" (field 2026-08).
 FONTPACK_FLASH_PROGRESS = "fontpack_flash_progress"  # {"pct": int (-1 = indeterminate), "msg": str, "kind": str}
 FONTPACK_FLASH_DONE = "fontpack_flash_done"          # {"ok": bool, "msg": str, "kind": str}
+# Emitted on connect only while fontpack_auto_flash is off and bundles are stale.
+FONTPACK_STALE = "fontpack_stale"                    # {"bundles": [bundle id, ...]}
 
 FLASH_KIND_FONTPACK = "fontpack"    # a .plyf font-pack bundle
 FLASH_KIND_DOOMWAD = "doomwad"      # the easter egg's .whx game data
@@ -96,3 +98,17 @@ FW_DOWNLOAD_DONE = "fw_download_done"
 # parsed fields plus the raw line. Emitted once per distinct record; the GUI
 # raises the crash alert dialog, polyctl watch prints it.
 CRASH_DETECTED = "crash_detected"
+
+# The boot-loop diagnostic (PolyCore.start_boot_loop → `polyctl bootloop`, the
+# Developer > Firmware entry). JSON payloads.
+BOOT_LOOP_PROGRESS = "boot_loop_progress"  # {"round", "rounds", "msg", "boot_s"?}
+# {"ok", "result": clean|crash|timeout|cancelled|error, "msg", "rounds_done",
+#  "boot_times": [s, ...], "record": CrashRecord.to_dict() | None}
+BOOT_LOOP_DONE = "boot_loop_done"
+
+# The problem scan (services/problem_scan.py) saw something worth a report: a
+# known-bad keyboard console line, or a WARNING/ERROR in the host's own log.
+# Payload: problem_scan.Problem.to_dict(). Emitted once per distinct problem per
+# process; the GUI raises the problem dialog (once per session, later ones are
+# appended).
+PROBLEM_DETECTED = "problem_detected"

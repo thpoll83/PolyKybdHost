@@ -35,7 +35,7 @@ def _make_overlay(pattern: str = "rect") -> OverlayData:
 
 
 def _make_mock() -> PolyKybdMock:
-    return PolyKybdMock(DeviceSettings(), "0.7.1")
+    return PolyKybdMock(DeviceSettings(), version="0.7.1")
 
 
 def _slot(kc_value: int, mod: Modifier) -> int:
@@ -485,6 +485,40 @@ class TestPolyKybdMockMRUFlow(unittest.TestCase):
         self.assertIsNone(mock.get_display_bitmap(kc_b, mod))
 
 
+class TestPolyKybdMockPrcOverlays(unittest.TestCase):
+    """A mock standing in for a protocol v19+ keyboard packs small images into
+    cmd 41 reports and stores what the firmware would DECODE, so a codec fault
+    shows up as a wrong keycap image here."""
+
+    def _send(self, prc: bool):
+        from unittest import mock as um
+        from polyhost.device.overlay_cache import OverlayMRUCache
+        overlays = {KeyCode.KC_A.value: _make_overlay("rect"),
+                    KeyCode.KC_B.value: _make_overlay("dot"),
+                    KeyCode.KC_C.value: _make_overlay("stripe")}
+        kb = PolyKybdMock(DeviceSettings(), version="0.7.1", protocol=19 if prc else 18)
+        with um.patch("polyhost.device.poly_kybd.ImageConverter") as conv:
+            conv.return_value.open.return_value = True
+            conv.return_value.extract_overlays.side_effect = (
+                lambda m: dict(overlays) if m == Modifier.NO_MOD else None)
+            self.assertTrue(kb.send_overlays_mru(["t.png"], OverlayMRUCache(20)))
+        return kb
+
+    def test_keycaps_show_the_decoded_images(self):
+        kb = self._send(prc=True)
+        self.assertEqual(len(kb.prc_reports), 1)       # rect + dot share a report
+        for kc, pattern in ((KeyCode.KC_A, "rect"), (KeyCode.KC_B, "dot"), (KeyCode.KC_C, "stripe")):
+            np.testing.assert_array_equal(kb.get_display_image(kc.value, Modifier.NO_MOD),
+                                          _make_image(pattern), pattern)
+
+    def test_fewer_reports_than_the_older_encodings(self):
+        self.assertLess(self._send(prc=True).hid_image_sends,
+                        self._send(prc=False).hid_image_sends)
+
+    def test_a_pre_v19_keyboard_gets_no_prc(self):
+        self.assertEqual(self._send(prc=False).prc_reports, [])
+
+
 class TestSaveAsPng(unittest.TestCase):
 
     def test_save_png_returns_false_when_no_image(self):
@@ -512,6 +546,88 @@ class TestSaveAsPng(unittest.TestCase):
             # PNG magic bytes
             self.assertEqual(sig, b"\x89PNG\r\n\x1a\n")
 
+
+class TestPolyKybdMockSyntheticSources(unittest.TestCase):
+    """The generic-overlay job hands `send_overlays_mru` a `synthetic=` map
+    (device/synthetic_overlay.py). The mock must take it as the real device
+    does: without it the daemon logged "unexpected keyword argument
+    'synthetic'" on every window report while the mock was enabled."""
+
+    def test_synthetic_source_fills_gaps_and_defers_to_the_template(self):
+        from unittest import mock as um
+        from polyhost.device import synthetic_overlay as syn
+        from polyhost.device.overlay_cache import OverlayMRUCache
+        esc, a, b = KeyCode.KC_ESCAPE.value, KeyCode.KC_A.value, KeyCode.KC_B.value
+        template = {esc: _make_overlay("rect"), a: _make_overlay("stripe")}
+        mark = syn.program_name("mdi:test")
+        conv = syn.SyntheticConverter(
+            {Modifier.NO_MOD: {esc: _make_overlay("full"), b: _make_overlay("dot")}})
+        kb = _make_mock()
+        with um.patch("polyhost.device.poly_kybd.ImageConverter") as real:
+            real.return_value.open.return_value = True
+            real.return_value.extract_overlays.side_effect = (
+                lambda m: dict(template) if m == Modifier.NO_MOD else None)
+            self.assertTrue(kb.send_overlays_mru(
+                ["t.png", mark], OverlayMRUCache(20), synthetic={mark: conv}))
+        # ESC stays the template's image; B comes from the synthetic source.
+        for kc, pattern in ((esc, "rect"), (a, "stripe"), (b, "dot")):
+            np.testing.assert_array_equal(kb.get_display_image(kc, Modifier.NO_MOD),
+                                          _make_image(pattern), pattern)
+
+
+
+class TestPolyKybdMockCancellation(unittest.TestCase):
+    """A superseded send must stop before the next image and never commit its
+    mapping, as `PolyKybd.send_overlays_mru` does."""
+
+    def _send_cancelled_after_first_image(self, prc: bool):
+        import threading
+        from unittest import mock as um
+        from polyhost.device.overlay_cache import OverlayMRUCache
+        overlays = {KeyCode.KC_A.value: _make_overlay("rect"),
+                    KeyCode.KC_B.value: _make_overlay("dot"),
+                    KeyCode.KC_C.value: _make_overlay("stripe")}
+        kb = PolyKybdMock(DeviceSettings(), version="0.7.1", protocol=19 if prc else 18)
+        cache = OverlayMRUCache(20)
+        cancel = threading.Event()
+        real_get = cache.get_or_allocate
+
+        def get_then_cancel(*args, **kwargs):
+            result = real_get(*args, **kwargs)
+            cancel.set()          # superseded right after the first image
+            return result
+
+        with um.patch("polyhost.device.poly_kybd.ImageConverter") as conv, \
+                um.patch.object(cache, "get_or_allocate", side_effect=get_then_cancel):
+            conv.return_value.open.return_value = True
+            conv.return_value.extract_overlays.side_effect = (
+                lambda m: dict(overlays) if m == Modifier.NO_MOD else None)
+            ok = kb.send_overlays_mru(["t.png"], cache, cancel)
+        return kb, cache, ok
+
+    def test_cancel_stops_before_the_next_image_and_skips_the_mapping(self):
+        kb, cache, ok = self._send_cancelled_after_first_image(prc=False)
+        self.assertFalse(ok)
+        self.assertEqual(kb.hid_mapping_sends, 0)
+        self.assertEqual(len(cache._cache), 1)       # only the first image got a slot
+
+    def test_cancel_forgets_records_still_queued_in_the_packer(self):
+        kb, cache, ok = self._send_cancelled_after_first_image(prc=True)
+        self.assertFalse(ok)
+        self.assertEqual(kb.prc_reports, [])          # the queued record never went out
+        self.assertEqual(len(cache._cache), 0)        # so its slot is not a stale hit
+
+    def test_an_uncancelled_send_still_commits(self):
+        import threading
+        from unittest import mock as um
+        from polyhost.device.overlay_cache import OverlayMRUCache
+        kb = _make_mock()
+        with um.patch("polyhost.device.poly_kybd.ImageConverter") as conv:
+            conv.return_value.open.return_value = True
+            conv.return_value.extract_overlays.side_effect = (
+                lambda m: {KeyCode.KC_A.value: _make_overlay()} if m == Modifier.NO_MOD else None)
+            self.assertTrue(kb.send_overlays_mru(["t.png"], OverlayMRUCache(20), threading.Event()))
+        self.assertEqual(kb.hid_mapping_sends, 1)
 
 if __name__ == "__main__":
     unittest.main()

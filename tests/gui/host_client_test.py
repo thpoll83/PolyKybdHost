@@ -65,7 +65,9 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertEqual(
             top.split("|"),
             ["Waiting for PolyKybd...", "Pause", "Brightness", "Idle Display",
-             "Keycap Script", "Keycap Size", "Configure Keymap", "Updates", "Maintenance",
+             "Keycap Script", "Keycap Size", "Tap-Hold Timing…", "AI Agents",
+             "Configure Keymap",
+             "Updates", "Maintenance",
              "Settings...", "Help && About", "Quit"])
         # The flat command dump is gone, and so is the demo overlay sender.
         self.assertNotIn("All PolyKybd Commands", top)
@@ -186,8 +188,14 @@ class TestPolyHostModes(unittest.TestCase):
         rows = _grab(proc.stdout, "FWD_MENU").split("|")
         self.assertEqual(rows[1], "Pause")
         self.assertEqual(rows[-1], "Quit")
-        for expected in ("Check for host update\u2026", "Settings...", "Help && About"):
+        for expected in ("Updates", "Settings...", "Help && About"):
             self.assertIn(expected, rows)
+        # The same Updates submenu as the tray app, holding the same two rows
+        # the forwarder can act on. They were top-level rows before.
+        self.assertEqual(_grab(proc.stdout, "FWD_UPDATES").split("|"),
+                         ["Check for host update\u2026",
+                          "Set up the terminal and editors\u2026"])
+        self.assertNotIn("Check for host update\u2026", rows)
         # The status row leads, and it names the target rather than the app.
         self.assertTrue(rows[0].endswith("192.168.1.50"), rows[0])
         self.assertIn("FWD_ICON_PREFIX f", proc.stdout)
@@ -202,6 +210,9 @@ class TestPolyHostModes(unittest.TestCase):
             self.skipTest("pywinctl not installed — forwarder cannot be imported")
         self.assertIn("FWD_PAUSED Forwarding paused | Resume | sent=0", proc.stdout)
         self.assertIn("FWD_RESUMED_CLEARS_DEDUPE True", proc.stdout)
+        # One tick with no window sends nothing, nor does the same window
+        # coming back; a loss that outlasts the accept delay is sent.
+        self.assertIn("FWD_BLIP blip=0 back=0 lasting=(0, '', '')", proc.stdout)
         # The mark tracks whether reports are LANDING, not whether the process
         # is up — it used to be set connected once at startup and never again.
         self.assertIn("FWD_ICON reach=connected fail=disconnected paused=disconnected",
@@ -218,8 +229,14 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertIn("STATUS_TEXT PolyKybd Split72", proc.stdout)
         self.assertIn("FW 0.8.0", proc.stdout)
         self.assertIn("LANG_MENU_BUILT True", proc.stdout)
+        self.assertIn("EMOJI_IN_LANG_MENU True", proc.stdout)
         self.assertIn("LAYOUT_OK layers=9", proc.stdout)
         self.assertIn("DAEMON_QUIT_ACTION present", proc.stdout)
+        top = _grab(proc.stdout, "CLIENT_TOPLEVEL").split("|")
+        self.assertEqual(top[-1], "Quit && stop background daemon")
+        self.assertNotIn("Quit", top)
+        self.assertIn("CLIENT_MAINT_LAST Only quit GUI", proc.stdout)
+        self.assertIn("CLIENT_QUIT_GUI_REACHABLE_OFFLINE True", proc.stdout)
         self.assertIn("UPDATE_ROUTED_TO_DAEMON True", proc.stdout)
         self.assertIn("CLIENT_ABOUT_OK True", proc.stdout)
         self.assertIn("SERVER_RUNNING True", proc.stdout)
@@ -231,6 +248,8 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertIn("| enabled True", proc.stdout)
         # Genuinely current: the row answers the question and disables itself.
         self.assertIn("FONT_ROW_CURRENT Keyboard fonts: up to date", proc.stdout)
+        self.assertIn("TAP_DIALOG True (200, 150)", proc.stdout)
+        self.assertIn("TAP_SET (260, 150)", proc.stdout)
 
 
 # ---------------------------------------------------------------------------
@@ -258,7 +277,8 @@ def _smoke_forwarder():
         print("SMOKE SKIP no-pywinctl")
         return
     with mock.patch("polyhost.input.linux_gnome_helper.LinuxGnomeInputHelper"):
-        from polyhost.forwarder import PolyForwarder
+        import polyhost.forwarder as fwd_mod
+        PolyForwarder = fwd_mod.PolyForwarder
         app = PolyForwarder(logging.CRITICAL, host="192.168.1.50",
                             report_rpc=True, report_port=50163)
         app.relay_ok = True
@@ -267,6 +287,8 @@ def _smoke_forwarder():
                                    if not a.isSeparator()))
         print("FWD_HELP", "|".join(a.text() for a in app.help_menu.actions()
                                    if not a.isSeparator()))
+        print("FWD_UPDATES", "|".join(a.text() for a in app.updates_menu.actions()
+                                      if not a.isSeparator()))
         # The forwarder wears the F mark, the tray app the P one.
         print("FWD_ICON_PREFIX",
               "f" if app.icon_manager.connected is get_icon("fcolor.png") else "p")
@@ -302,6 +324,30 @@ def _smoke_forwarder():
                             f"sent={len(sent)}")
         app.toggle_pause()
         print("FWD_RESUMED_CLEARS_DEDUPE", app.win is None and app.title is None)
+
+        # A lost window waits for the accept delay (#531's rule, on this
+        # machine too): one tick with no window sends nothing, the same
+        # window coming back sends nothing, and a loss that lasts is sent.
+        held = mock.MagicMock()
+        held.getHandle.return_value = 1234
+        held.title = "Konsole"
+        sent.clear()
+        app.win, app.title, app.prev_win = held, "Konsole", held
+        app.last_update_msec = fwd_mod.NEW_WINDOW_ACCEPT_TIME_MSEC * 2
+        app.heartbeat_msec = 0
+        with mock.patch.object(fwd_mod.pwc, "getActiveWindow", return_value=None):
+            app.active_window_reporter()
+        blip = len(sent)
+        with mock.patch.object(fwd_mod.pwc, "getActiveWindow", return_value=held), \
+             mock.patch.object(fwd_mod, "app_name_for", return_value="konsole"):
+            for _ in range(3):
+                app.active_window_reporter()
+        back = len(sent)
+        with mock.patch.object(fwd_mod.pwc, "getActiveWindow", return_value=None):
+            for _ in range(3):
+                app.active_window_reporter()
+        print("FWD_BLIP", f"blip={blip} back={back} "
+                          f"lasting={sent[-1] if len(sent) > back else None}")
 
         diag = app._diagnostics_text()
         print("FWD_DIAG_MODE", "FORWARDER" in diag and "192.168.1.50" in diag)
@@ -574,6 +620,21 @@ def _smoke_client():
         # three states through the real RPC mirror.
         fontpack_state = "stale"
 
+        tap_terms = {"tapping_term": 200, "flow_tap_term": 150, "flow_tap_available": True}
+        tap_set = None
+
+        def get_tap_terms(self):
+            return (True, dict(self.tap_terms))
+
+        def set_tap_terms(self, tapping_term=None, flow_tap_term=None,
+                          auto_shift=None, auto_shift_ms=None):
+            # Auto Shift values the dialog did not change arrive as None; a
+            # 4-tuple here would show the dialog re-sending unchanged values.
+            self.tap_set = (tapping_term, flow_tap_term)
+            if auto_shift is not None or auto_shift_ms is not None:
+                self.tap_set += (auto_shift, auto_shift_ms)
+            return (True, dict(self.tap_terms, tapping_term=tapping_term))
+
         def fontpack_bundle_status(self):
             stale = self.fontpack_state == "stale"
             retry = self.fontpack_state == "retry"
@@ -617,6 +678,9 @@ def _smoke_client():
                 time.sleep(0.02)
             print("STATUS_TEXT", app.status.text())
             print("LANG_MENU_BUILT", app.keeb_lang_menu is not None)
+            # The emoji search language is the last entry of the language menu.
+            print("EMOJI_IN_LANG_MENU", app.keeb_lang_menu is not None and
+                  app.keeb_lang_menu.actions()[-1].menu() is app.emoji_dict_menu)
             # Layout editor over RPC (keymap_* via the daemon) — must construct.
             app.open_layout_editor()
             app.processEvents()
@@ -624,6 +688,22 @@ def _smoke_client():
             app.layout_dialog.close()
             # Client mode offers an explicit "stop the daemon too" entry.
             print("DAEMON_QUIT_ACTION", "present" if app.exit_with_daemon is not None else "absent")
+            # Two quit rows: only the daemon one stays at the top level; the
+            # GUI-only one is the last row under Maintenance.
+            print("CLIENT_TOPLEVEL", _toplevel(app))
+            maint = next(a for a in app.menu.actions() if a.text() == "Maintenance")
+            print("CLIENT_MAINT_LAST", [a for a in maint.menu().actions()
+                                        if not a.isSeparator()][-1].text())
+            # With no keyboard (unplugged: not connected, not present) the row
+            # must stay reachable: parent and row enabled.
+            app.connected = False
+            app.device_present = False
+            app.managed_connection_status()
+            print("CLIENT_QUIT_GUI_REACHABLE_OFFLINE",
+                  maint.isEnabled() and app.exit.isEnabled())
+            app.connected = True
+            app.device_present = True
+            app.managed_connection_status()
             # A self-update in client mode must be driven through the daemon over
             # RPC (so the daemon re-execs onto the new protocol), NOT via a local
             # in-GUI UpdateInstaller thread. Drive _run_update_installer directly
@@ -659,17 +739,31 @@ def _smoke_client():
             # The Updates menu labels the font row from the daemon's per-bundle
             # comparison (over the RPC mirror) instead of hiding it in a dialog.
             app._refresh_fontpack_action()
+            app._menu_fetch.wait_idle()
             print("FONT_ROW", app.fontpack_update_action.text())
             # A bundle whose last flash FAILED reads as up to date by version, so the
             # row must offer a retry instead of claiming everything is fine — the
             # state that left a failed bundle unreachable from the UI (2026-08-17).
             core.fontpack_state = "retry"
             app._refresh_fontpack_action()
+            app._menu_fetch.wait_idle()
             print("FONT_ROW_RETRY", app.fontpack_update_action.text(),
                   "| enabled", app.fontpack_update_action.isEnabled())
             core.fontpack_state = "current"
             app._refresh_fontpack_action()
+            app._menu_fetch.wait_idle()
             print("FONT_ROW_CURRENT", app.fontpack_update_action.text())
+            # Tap-Hold Timing: the read and the write both cross the RPC off the
+            # GUI thread (MenuFetcher); the dialog opens when the read returns.
+            app.open_tap_terms_dialog()
+            app._menu_fetch.wait_idle()
+            dlg = app.tap_terms_dialog
+            print("TAP_DIALOG", dlg is not None and dlg.isVisible(),
+                  dlg.values() if dlg is not None else None)
+            dlg.tapping.setValue(260)
+            dlg.accept()
+            app._menu_fetch.wait_idle()
+            print("TAP_SET", core.tap_set)
             app.quit_app()
         print("SERVER_RUNNING", srv._running)
     finally:

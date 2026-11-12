@@ -5,6 +5,22 @@ and relative links were adjusted to suit a standalone file.
 
 ## The tray, its menus, and the OS around them
 
+- **A submenu that shows device state asks the core OFF the GUI thread**
+  (`gui/menu_fetch.py`, `MenuFetcher`). Split the refresh into the core call, passed
+  to `self._menu_fetch.fetch(key, fn, apply)`, and an `apply(result)` that touches
+  the Qt objects. In client mode the call is an RPC with no timeout, so a stalled
+  daemon used to freeze the whole tray when Idle Display, Keycap Script, Keycap
+  Size, Emoji Search Language, Updates or Brightness opened. The menu keeps its last
+  state until the answer arrives; one call per key is in flight at a time. Tests
+  that read the result call `self._menu_fetch.wait_idle()` first
+  (`tests/gui/menu_fetch_test.py`).
+- **A menu CLICK sends its core call off the GUI thread too**, through
+  `self._menu_fetch.call(fn, apply)`: `PolyHost._core_click(fn, done)` in `host.py`,
+  `_report_async` / `_read_async` in `gui/cmd_menu.py`. Clicks run one at a time in
+  click order on one thread, so two quick Keycap Size clicks reach the keyboard in
+  that order; `done(ok, msg)` runs on the GUI thread. Still on the GUI thread: the
+  settings dialog's read and write, the status rendering, and the in-process
+  firmware flash dialog, which owns the device for its whole run.
 - **The tray menu is TWO-TIER: a normal menu of ~9 rows, plus a Developer submenu
   that only ever ADDS.** The old menu had 16 top-level entries, one of which ("All
   PolyKybd Commands") held 15 more — mostly diagnostics, one click from a normal
@@ -20,8 +36,16 @@ and relative links were adjusted to suit a standalone file.
   `managed_connection_status` still blanket-disables every top-level action first, so a
   **new group parent must be re-enabled explicitly there** or its whole submenu goes
   unreachable on a disconnect (that is why Updates / Help & About / Pause are listed).
-  Two rows are **contextual** (built once, `setVisible` toggled): the newer-firmware
-  entry (only while `safe_mode`) and Install WinCompose (only while it isn't running).
+  Three rows are **contextual** (built once, `setVisible` toggled): the newer-firmware
+  entry (only while `safe_mode`), Install WinCompose (only while it isn't running) and,
+  on Linux, the udev rule install (only while the installed rule is missing or stale).
+  ⚠️ **In client mode the top level has ONE quit row, "Quit && stop background
+  daemon".** The GUI-only quit (`self.exit`) is renamed "Only quit GUI" and is the
+  last row of Maintenance (`add_always_enabled_maintenance_action`), because the
+  maintainer misclicked it for the daemon quit several times. That call also keeps
+  the Maintenance parent enabled with no keyboard, so the row stays reachable. The
+  other Maintenance rows are gated by their own lists. In-process mode keeps plain
+  Quit at the top level.
   The language menu is built lazily and inserts itself at `self._lang_anchor`
   (Brightness), not at index 1.
 
@@ -91,10 +115,13 @@ and relative links were adjusted to suit a standalone file.
   the developer/diagnostic UI surface, and `allow_key_injection`. It is now split:
   **`--dev [0|1|2]`** (bare = 1) carries the level *and* turns developer mode on, while
   the **`developer_mode`** setting (default False) governs the surface alone. `main_app.resolve_dev`
-  is the one pure decision point (unit-tested): flag absent → the setting decides and
-  logging stays INFO; flag present → it wins **in both directions**, so `--dev 0` forces
-  developer mode off over an enabled setting (hence `default=None` — "flag absent" must
-  stay distinguishable from `--dev 0`). The setting exists because under daemon-by-default
+  is the one pure decision point (unit-tested): flag absent → the `developer_mode` setting
+  decides the surface and the **`log_detail`** setting (normal / debug / detailed = level
+  0 / 1 / 2) the log level, independently; flag present → it wins over both **in both
+  directions**, so `--dev 0` forces developer mode off and the log to INFO (hence
+  `default=None` — "flag absent" must stay distinguishable from `--dev 0`). Both settings
+  are read once at startup; the Settings dialog says so, and shows "Set by --dev for this
+  run" under both rows when the flag decided them (`SettingsDialog.setup(flag_source=)`). The setting exists because under daemon-by-default
   the tray GUI is launched by autostart **with no flags**, so a flag-only gate made every
   developer tool unreachable unless you started the app by hand. `--debug N` survives as a
   hidden deprecated alias (existing shortcuts / autostart entries) that logs a warning.
@@ -187,6 +214,75 @@ and relative links were adjusted to suit a standalone file.
   the `pythonw`/`.vbs` autostart chain) and **never raises** — it sits on the post-connect
   path, where an exception would abort the whole connect flow over a cosmetic detection.
 
+- **udev rule install from the tray (Linux)**: `polyhost/device/99-hid.rules` grants the
+  keyboard's raw HID interface and, since the fast link, its serial port (`tty`), and tells
+  ModemManager to leave that port alone. Without the tty lines the pipe probe reads "no
+  permission" as "no pipe" and every transfer goes over HID with no message. The tray shows
+  **"Allow access to the keyboard (udev rule)…"** under Updates while
+  `services/linux_udev.rule_status()` is not `ok` (the installed file is missing, or lacks a
+  rule line of the shipped one), re-checked on `menu.aboutToShow` (two file reads). The click
+  explains, then `install_rules()` runs `pkexec sh -c 'install … && udevadm control
+  --reload-rules && udevadm trigger'` on a thread, the paths as `$1`/`$2`, so the desktop's
+  PolicyKit prompt asks for the password. Exit 126 (prompt closed) is silent; any other
+  failure shows the `M_()` message plus the manual commands. Success asks for a replug: udev
+  applies the mode on the next add event. `scripts/install.sh` writes the same file with
+  `sudo`; its old inline copy lacked the tty lines (1.17.28 and 1.17.29).
+
+- **Shell title integration (every OS)**: the host sees a program inside a terminal
+  (GNU nano) only through the window title, and plain bash, zsh and PowerShell show the
+  prompt's title, not the command. **"Set up the terminal and editors…"**
+  is always visible under Updates, after the udev row, in the tray app and in the
+  forwarder (the forwarder reports its own machine's titles). It opens
+  `gui/shell_title_dialog.py`: one row per shell found (bash, zsh, PowerShell 7 `pwsh`,
+  Windows PowerShell 5.1) with its startup file and state, a checkbox, and Install /
+  Remove; fish, cmd.exe and Terminal.app/iTerm2 are listed as needing no setup. The
+  status runs on a `QThread`, because the PowerShell `$PROFILE` path and execution
+  policy come from running `pwsh -NoProfile -NonInteractive -Command …` (20 s timeout,
+  cached per process, except an answer with a blocking policy, so a
+  `Set-ExecutionPolicy` shows on the next refresh). zsh's startup directory comes from
+  `zsh -c 'print -r -- ${ZDOTDIR:-$HOME}'` (10 s timeout), which reads `.zshenv`, so a
+  `ZDOTDIR` set only there is found; without an answer `$ZDOTDIR` or the home is used. Modeless and retained like the log-bundle dialog.
+  `services/shell_title.py` (Qt-free, also `polyctl shell-integration install|remove|status
+  [--shell …]`, which never connects to the host) adds one line between
+  `# >>> PolyKybd title integration >>>` / `# <<< … <<<` that sources
+  `polyhost/res/shell/polykybd-title.{bash,zsh,ps1}` by this install's absolute path:
+  - **The file is the user's.** It is changed as bytes: everything outside the block
+    keeps its bytes, encoding and line ends (CRLF stays CRLF; a UTF-16 or UTF-8 BOM is
+    kept). The new line is encoded in the platform default, UTF-8 for a BOM-less `pwsh`
+    profile, and a NEW Windows PowerShell 5.1 profile is UTF-8 with a BOM. Each change
+    first copies the file to `<name>.polykybd-<YYYYmmdd-HHMMSS>.bak` beside it; a
+    symlinked dotfile is written through the link. A second install changes nothing.
+  - **The path is the install's.** An update copies over the same directory, so it
+    stays valid. A moved checkout or a new venv leaves a block that names a script
+    that is gone or another copy: the line tests the file first (`[ -r … ]`,
+    `Test-Path`), so the shell starts silently without the title, and the status
+    reports `stale` until Install replaces the block.
+  - **Defaults**: without `--shell`, install covers the shells whose startup file exists
+    or that are `$SHELL` (no new `~/.zshrc` for an unused zsh). A PowerShell whose
+    effective execution policy is Restricted, AllSigned or Undefined on Windows is
+    refused with the `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` hint: a
+    profile it cannot run prints an error at every start. On Windows a `bash` in
+    System32 is the WSL launcher and is not counted.
+  - **Editor plugins, in the same dialog** (`services/editor_plugins.py`, also
+    `polyctl editor-plugins install|remove|status [--editor …]`): a second list with
+    Vim, Neovim and Emacs, each found on `PATH` or by its folder. Install copies
+    `vim-plugin/` (`plugin/`, `lua/`, `doc/` and a generated `doc/tags`, byte-identical
+    to `:helptags`) to `~/.vim/pack/polykybd/start/polykybd` (`~/vimfiles` on Windows)
+    or the Neovim `site/pack` folder, and `emacs-package/polykybd.el` to
+    `<emacs dir>/polykybd/`, plus a block between `;; >>> PolyKybd editor integration >>>`
+    markers in the init file Emacs reads (`~/.emacs`, `~/.emacs.el`,
+    `~/.emacs.d/init.el`, `$XDG_CONFIG_HOME/emacs/init.el`, the first that exists),
+    changed like a shell startup file. Each copy has a `.polykybd-host.json` stamp with
+    the SHA-256 of every file. At every start the tray app, the forwarder and the daemon
+    copy the shipped files again where the copy matches its stamp and the shipped files
+    differ (an update); a copy changed by hand reads `modified` and is left alone. A
+    folder with the plugin and no stamp (a copy made by hand from the README) reads
+    `manual`; Install moves it to `pack/polykybd/polykybd-backup-<time>`, where Vim does
+    not load it. A plugin manager's copy (`plugged/`, another `pack/`, lazy.nvim) or an
+    init file that loads `polykybd` outside the block also reads `manual` and is not
+    ticked. A host port other than 50164 or a token shows a note: the plugins read
+    those from the editor's own settings.
+
 - **The unicode input method is WATCHED for the life of the core, and an
   ambiguous reading is applied WITHOUT being stored** (`PolyCore`
   `_start_wincompose_settle` / `_wincompose_settle_loop` / `_apply_unicode_mode`,
@@ -253,6 +349,57 @@ and relative links were adjusted to suit a standalone file.
   changed", which is all a whole-file write knows. Add the side effect to the hook,
   never to a caller.
 
+- ⚠️ **A wrapped `QLabel` in a dialog must be sized from `heightForWidth()`, and
+  that call never answers below the label's `minimumHeight()`** (#387, 2026-10-14).
+  A top-level layout does not ask a label for its height-for-width, so a label that
+  wraps keeps a one-line height and loses its last lines. The "release has no
+  firmware file" warning showed a third of its text in the fixed 400×160 box. In
+  `_WrapLabel.resizeEvent` (`gui/update_dialog.py`), reset the minimum to 0, measure,
+  then set it. Setting the minimum straight from `heightForWidth()` only ratchets up,
+  so a widened dialog keeps the narrow height (Greptile found it;
+  `test_the_height_follows_a_live_resize` pins it at widths 540, 1200, 540).
+  `gui/message_box.py` (which `host._msgbox` now calls) computes its height the
+  same way, caps it at 80% of `availableGeometry()`, and moves the text into a
+  `QScrollArea` above that cap.
+  Pin any width a test depends on: the dialog's starting width comes from the screen.
+
+- **Brightness, Idle Display, Keycap Script and Keycap Size are tile grids where Qt
+  draws the tray menu** (`gui/menu_tiles.py`, previews in `gui/keycap_tiles.py`):
+  Windows, and Linux without a StatusNotifier host. A KDE or AppIndicator tray
+  menu is exported over DBusMenu, which drops a widget, and macOS embeds it
+  unreliably (QTBUG-63578), so both keep the text rows. ⚠️ A tile is bound to the
+  menu's QAction and the action is REMOVED from the menu, not hidden: Qt disables
+  a hidden action, and a disabled action ignores `trigger()`.
+  `POLYHOST_MENU_TILES=1|0` forces the choice. Updates, Maintenance and Help & About
+  stay standard text submenus: their entries are actions with long labels, not
+  previews, and icon tiles there were tried and removed.
+
+- **Buttons, fields, combo and spin boxes have rounded corners from one style
+  sheet**, `theme.control_style(theme)`, set by `apply_theme()`. A sheet that
+  sets a border replaces Fusion's drawing, so it draws every state and the combo
+  and spin arrows (`expand_more.svg` / `expand_less.svg`). ⚠️ Its colours are per
+  theme, not palette roles: the shared palettes leave Light/Midlight/Mid/Dark at
+  Qt's light greys, so `palette(midlight)` turned a hovered dark-theme button light
+  grey under light text. A control inside a table cell stays flat.
+- **Buttons next to each other get one width** (`ui_kit.match_button_widths`, run
+  by an app event filter on every dialog or main window shown). A stretch splits a
+  row; a fixed gap and a neighbouring QDialogButtonBox do not. One-character
+  buttons (arrows) keep their width.
+
+- ⚠️ **A size set in pixels must go through `ui_kit.px()`.** The app does not turn
+  on Qt's high-DPI scaling, so Qt 5 draws in device pixels and the style scales
+  its own metrics from the logical DPI (Fusion's button icon: 16 px at 100 %,
+  24 px at 150 %). A fixed 18 px icon looked smaller than the one it replaced.
+  `ui_scale()` reads that factor from the style.
+
+- ⚠️ **Show a message with `gui/message_box.py`, not `QMessageBox`.** Its
+  `question` / `information` / `warning` / `critical` take QMessageBox's static
+  arguments and return the same button codes, with the ui_kit icons on the box
+  and on every button. A test that answers a box patches
+  `polyhost.gui.message_box.question` (or the others): patching
+  `QMessageBox.question` no longer reaches the call, and the box then waits under
+  xvfb for a click that never comes.
+
 - ⚠️ **The FORWARDER is a second tray app, and it is easy to forget.**
   `polyhost/forwarder.py` (`PolyForwarder`) has its own `QApplication`, its own
   menu and its own `forwarder_log.txt` — so a user-facing tray feature added to
@@ -269,15 +416,15 @@ and relative links were adjusted to suit a standalone file.
   **skips** without `pywinctl`, which `forwarder.py` imports at module load.
 
   - **Its menu follows the tray app's SHAPE, minus the device group** (2026-09-14):
-    status · Pause · — · Check for host update… · Settings… · Help & About · Quit,
-    against the tray app's status · Pause · *device rows* · — · Updates ·
-    Maintenance · Settings… · Help & About · Quit. It had been seven flat rows in
-    no particular order, so the four support entries the two apps share sat in
-    different places depending on which one you opened. The one deliberate
-    departure is **Updates**: the tray app's is a submenu because it holds the
-    firmware and font-pack rows too, and a forwarder owns no keyboard — so the row
-    keeps the label it has *inside* that submenu and sits in the submenu's slot,
-    rather than nesting one entry.
+    status · Pause · — · Updates · Settings… · Help & About · Quit, against the
+    tray app's status · Pause · *device rows* · — · Updates · Maintenance ·
+    Settings… · Help & About · Quit. It had been seven flat rows in no particular
+    order, so the four support entries the two apps share sat in different places
+    depending on which one you opened. The forwarder's **Updates** submenu holds
+    "Check for host update…" and "Show the running command in the terminal
+    title…"; it has no firmware, font-pack or udev rows because it owns no
+    keyboard. Until 2026-11-04 those two were top-level rows, so the shell title
+    entry sat at a different depth in each app.
     - **The status row and the tray mark now track whether reports are LANDING.**
       `send_to_host` is a wrapper that records the verdict in `relay_ok` and
       repaints; the transport is `_send_to_host`, so every exit path of it runs
@@ -308,4 +455,122 @@ and relative links were adjusted to suit a standalone file.
     - **`tools/render_tray_menu.py --mode forwarder`** renders it, and `--mode all`
       renders both apps' menus in one go. The two are supposed to have the same
       shape and nothing but an eye on both images says whether they still do.
+
+## The tray, its menus, and the OS around them (the CLAUDE.md summary)
+
+_Moved verbatim from `CLAUDE.md` on 2026-10-10. CLAUDE.md keeps a short pointer._
+
+
+The tray menu is **two-tier**: ~9 normal rows plus a **Developer** submenu that only ever
+ADDS — turning developer mode on **does not rearrange anything** (asserted by
+`tests/gui/host_client_test.py`). Both apps follow the OS light/dark setting. The menu
+construction, the theme reader, the brightness rows, the WinCompose install path, the
+unicode-mode watcher and the icon rules are in [`docs/tray-ui.md`](tray-ui.md).
+
+- ⚠️ **`managed_connection_status` blanket-disables every top-level action first**, so a
+  **new group parent must be re-enabled explicitly there** or its whole submenu goes
+  unreachable on a disconnect.
+- ⚠️ **A tray balloon (`show_balloon` → `QSystemTrayIcon.showMessage`) reaches
+  NOBODY on macOS** — Qt's Cocoa backend routes it through `NSUserNotificationCenter`,
+  which silently drops a notification from a process with no bundle id of its own, and
+  we always run as a bare `python -m polyhost`. `messageClicked` dies with it, so
+  "click the tray icon to update" was an instruction to click something never shown.
+  **Never make a balloon the only carrier of anything.** `PolyHost._balloons_reach_user()`
+  (`host.py`) is the gate, over `balloons_are_delivered()` in `gui/tray_notify.py`: it
+  asks whether the executable sits inside `<name>.app/Contents/MacOS/`, the rule
+  `NSBundle` itself applies, so a real bundle re-enables delivery with nothing here to
+  revert (the USER still has to grant notification permission — bundling buys the
+  prompt, not the banner). The fallbacks are a directly-opened dialog (once per version
+  per session, serialized through `_fallback_prompt` because ONE check reports host then
+  firmware and a modal dispatches the second event while the first is open) plus the
+  version on the **top-level** Updates row. ⚠️ **`IconStateManager` owns the tray
+  tooltip** — it restores its OWN stored text when a warning expires, so a direct
+  `tray.setToolTip` survives only until the next `set_warning`. Anything with a
+  lifetime goes through `set_base_tooltip`, and `_refresh_tray_tooltip` is the one
+  place that decides what that text is.
+- **Developer mode (`--dev`) is SEPARATE from log verbosity**, and it is a persisted
+  setting, not just a flag — under daemon-by-default the tray is launched by autostart
+  with no flags, so a flag-only gate makes every developer tool unreachable.
+- **A settings change applies its device side effects through ONE core hook**,
+  `PolyCore.note_settings_changed(keys=None)`. Add the side effect to the hook, never to
+  a caller; there are two settings writers and the second copy is how enabling a setting
+  mid-session came to do nothing at all.
+- ⚠️ **`PolySettings.save()` merges per KEY against the file, and must keep doing so** —
+  the daemon and the tray both hold a `PolySettings`, so a whole-file rewrite from a
+  stale in-memory copy silently reverts the other one. That is how the telemetry install
+  id was lost: the GUI generated and saved it, the daemon saved 8 minutes later from the
+  empty value it had loaded first, and the next run generated a new id, counting the
+  machine as two installs. `save()` re-reads the file and imposes only the keys this
+  process changed, through a temp file + `os.replace`, **under a cross-process lock** —
+  read-merge-replace is itself a read-modify-write, and six concurrent writers of six
+  different keys lose 3–4 of them per run without it. ⚠️ Two details are load-bearing:
+  `_read_file()` returns **None, not `{}`**, when the file cannot be read (merging
+  against `{}` fills every unchanged key with a DEFAULT and silently resets the user's
+  settings), and the lock is **best effort** — a save that cannot take it still writes,
+  because losing the write outright is worse than the rare interleaving.
+  ⚠️ **`save()` never raises**: the constructor saves on every start, and on
+  Windows `os.replace` fails with `WinError 5` while any process has the file open
+  (Python's `open()` never shares delete). That killed the tray at startup twice
+  in a row (2026-09-25). The replace is retried for ~1 s on Windows, and a save
+  that still fails is logged and kept pending in memory. ⚠️ It **returns whether
+  it wrote**, and a caller that tells the user a change was saved must check it:
+  `read_setting()` readers (the shortcut harvest's privacy switch among them) see
+  the file, not the in-memory value.
+- ⚠️ **The FORWARDER is a second tray app** (`polyhost/forwarder.py`) with its own
+  `QApplication`, menu and log file, **on a different machine from the keyboard**. A
+  user-facing tray feature added to `host.py` is simply absent there until wired
+  separately — which matters most for support features, since its logs can never appear
+  in a bundle collected host-side. Its menu **follows the tray app's shape minus the
+  device group** (status · Pause · — · update · Settings… · Help & About · Quit) and its
+  About is the **shared** `gui/about_dialog.build_about_dialog`; render both with
+  `tools/render_tray_menu.py --mode all`, since nothing but an eye on the two images says
+  whether they still match. ⚠️ Its Settings is an **allow-list**
+  (`FORWARDER_SETTING_KEYS`) — `SettingsDialog` renders whatever dict it is handed, so
+  the whole `settings.yaml` would put brightness and font-pack rows on a machine with no
+  keyboard, every one a control that writes a value and changes nothing.
+  ⚠️ **Process-wide Qt identity is "wired separately" too.** `PolyHost.__init__` set
+  the application name and the forwarder never did, so its windows carried the X11
+  WM_CLASS `__main__.py` (Qt falls back to the script name). Two things read that one
+  string: GNOME's `.desktop` matching, which drew a grey gear on every forwarder dialog,
+  and the GNOME Wayland reporter, which uses the class as the app name, so the keyboard
+  drew no ESC mark either (#265). `main_app` now sets it before either app is built.
+  Put anything process-wide there, not in one app's constructor.
+- ⚠️ **The forwarder's tray mark spells an F, not a P** (`IconStateManager(prefix=)`),
+  because both apps can sit in one notification area. It tracks whether reports are
+  **landing** (`relay_ok`, set by the `send_to_host` wrapper around `_send_to_host`) —
+  it used to call `set_connected()` once at startup and never revisit it. ⚠️ `think`/
+  `warn` are deliberately unprefixed: they clear every inner key, so no letter survives
+  in them and an `f` twin would be a byte-identical copy with no `cmp` guarding it.
+- ⚠️ **A wrong or missing icon NAME fails silently** — `QIcon()` on a nonexistent path
+  returns an empty icon and the row renders without a picture. `tests/gui/icon_assets_test.py`
+  is the guard.
+- **The brand mark and the menu/tray icon rules are [`docs/icons.md`](icons.md);
+  the ESC program mark — the per-application icon, its three sources and the
+  rule that governs them — is
+  [`docs/generic-icons-plan.md`](generic-icons-plan.md).** ⚠️ Read the
+  second before adding any per-application anything: its rule is **no
+  per-application configuration**, and it reverses an earlier 70-entry
+  name→slug map. Both files were unreachable from this file until 2026-09-23
+  even though the Key notes intro named "icons" as a pointer — the plan's rule
+  was found by grep, one step from being broken.
+- ⚠️ **A FLOOR MUST NOT DECIDE A CONTEST.** `MIN_SCORE` answers "may we draw
+  this when there is nothing else"; clearing it used to END icon resolution, so
+  every macOS `.icns` (measured 0.117 against a floor of 0.08) won outright and
+  four newly shipped marks were inert on hardware — shipped, tested, changed
+  nothing. Candidates are ranked now; the floor only gates usability.
+- ⚠️ **A rendered pixmap does not follow a palette change** — the glyph-script previews
+  are dropped and rebuilt on a theme switch, or near-white ink lands on a light menu.
+- ⚠️ **Defaulting a platform path OFF because it is obnoxious can hide that it
+  never worked.** macOS language switching was disabled in 0.18.1 to stop a
+  password dialog, and for three months a language key repainted the tray menu
+  and reported `True, "OS-language auto-switch disabled"`. The dialog came from
+  `languagesetup`, which sets the system UI language and had never once switched
+  an input source. **Check whether the path was doing its job before muting it.**
+- **The input helpers — the keystroke-cycling `set_language` every platform
+  inherits, the per-platform compat maps, and the four traps around them — are
+  [`docs/architecture.md`](architecture.md) → *Platform input abstraction*.**
+  Two rules bind code outside it: `LangComp(platform)` REQUIRES its argument
+  (reading another platform's map mostly WORKS, which is the trap), and a
+  helper's `get_current_language` and `set_language` must answer in ONE
+  namespace or the sync re-fires on every probe forever.
 

@@ -1,0 +1,516 @@
+# What each Blender operator means on a keycap: a short label + an icon stem
+# (icons/<stem>.png, fetched by fetch_icons.py). Read by gen_blender_bindings.py.
+#
+# Keys are the generator's ACTION KEYS: `idname(prop=value,...)` over the keymap
+# item's scalar properties, sorted (run the generator with --list-unmapped to
+# see them). Lookup order: the exact key; then the longest entry ending in `*`
+# that the key starts with; then the bare idname.
+#
+#   label  - what the preview prints. A label that IS a shared concept ("Save",
+#            "Undo", "Copy", "Select all", ...) is drawn by the host's shared
+#            renderer instead of `icon` (see the generate-app-overlays skill), so
+#            those entries carry no icon.
+#   icon   - stem in icons/; omit only for a shared-concept label.
+#   mode   - per-icon render override (borrowed drawn glyphs are alpha-shaped).
+#   skip   - Blender binds the chord but there is nothing worth drawing (an
+#            internal/modal operator). The cell stays EMPTY: a lower keymap's
+#            action would never run there, so it must not show through.
+#
+# Labels are Blender's own operator / menu names, shortened to fit.
+
+# ---------------------------------------------------------------- Window
+"wm.call_menu(name=TOPBAR_MT_file_new)": {label: New}
+"wm.call_menu(name=TOPBAR_MT_file_open_recent)": {label: "Open recent", icon: recent}
+"wm.open_mainfile": {label: Open}
+"wm.save_mainfile(show_save_modified_images_dialog=True)": {label: Save}
+"wm.save_as_mainfile(show_save_modified_images_dialog=True)": {label: "Save as"}
+"wm.save_mainfile(incremental=True,show_save_modified_images_dialog=True)": {label: "Save incremental", icon: save_incremental}
+"wm.quit_blender": {label: Quit}
+"wm.call_menu(name=SCREEN_MT_user_menu)": {label: "Quick favorites", icon: favorites}
+"screen.space_type_set_or_cycle(space_type=FILE_BROWSER)": {label: "File browser", icon: ed_files}
+"screen.space_type_set_or_cycle(space_type=CLIP_EDITOR)": {label: "Movie clip editor", icon: ed_clip}
+"screen.space_type_set_or_cycle(space_type=NODE_EDITOR)": {label: "Node editor", icon: ed_node}
+"screen.space_type_set_or_cycle(space_type=CONSOLE)": {label: "Python console", icon: ed_console}
+"screen.space_type_set_or_cycle(space_type=VIEW_3D)": {label: "3D viewport", icon: ed_view3d}
+"screen.space_type_set_or_cycle(space_type=GRAPH_EDITOR)": {label: "Graph editor", icon: ed_graph}
+"screen.space_type_set_or_cycle(space_type=PROPERTIES)": {label: "Properties", icon: ed_properties}
+"screen.space_type_set_or_cycle(space_type=SEQUENCE_EDITOR)": {label: "Video sequencer", icon: ed_sequencer}
+"screen.space_type_set_or_cycle(space_type=OUTLINER)": {label: "Outliner", icon: ed_outliner}
+"screen.space_type_set_or_cycle(space_type=IMAGE_EDITOR)": {label: "Image editor", icon: ed_image}
+"screen.space_type_set_or_cycle(space_type=TEXT_EDITOR)": {label: "Text editor", icon: ed_text}
+"screen.space_type_set_or_cycle(space_type=DOPESHEET_EDITOR)": {label: "Dope sheet", icon: ed_dopesheet}
+"wm.doc_view_manual_ui_context": {label: Help}
+"wm.call_panel(keep_open=False,name=TOPBAR_PT_name)": {label: "Rename active", icon: rename}
+"wm.batch_rename": {label: "Batch rename", icon: batch_rename}
+"wm.search_menu": {label: Search, icon: search}
+"wm.call_menu(name=TOPBAR_MT_file_context_menu)": {label: "File menu", icon: file_menu}
+"wm.toolbar_fallback_pie": {label: "Fallback tool pie", icon: tools}
+"wm.toolbar": {label: Toolbar, icon: tools}
+
+# ---------------------------------------------------------------- Screen
+"screen.space_context_cycle(direction=NEXT)": {label: "Next tab", icon: tab_next}
+"screen.space_context_cycle(direction=PREV)": {label: "Previous tab", icon: tab_prev}
+"screen.workspace_cycle(direction=NEXT)": {label: "Next workspace", icon: workspace_next}
+"screen.workspace_cycle(direction=PREV)": {label: "Previous workspace", icon: workspace_prev}
+"screen.region_quadview": {label: "Quad view", icon: quadview}
+"screen.repeat_last": {label: "Repeat last", icon: repeat}
+"file.execute": {skip: true}
+"ed.undo": {label: Undo}
+"ed.redo": {label: Redo}
+"render.render(use_viewport=True)": {label: "Render image", icon: render}
+"render.render(animation=True,use_viewport=True)": {label: "Render animation", icon: render_anim}
+"render.render(use_sequencer_scene=True,use_viewport=True)": {label: "Render sequencer", icon: render_seq}
+"render.render(animation=True,use_sequencer_scene=True,use_viewport=True)": {label: "Render seq. anim.", icon: render_seq_anim}
+"render.view_show": {label: "Show render", icon: render_view}
+"render.play_rendered_anim": {label: "Play rendered", icon: play_rendered}
+"screen.screen_full_area": {label: "Maximize area", icon: maximize}
+"screen.screen_full_area(use_hide_panels=True)": {label: Fullscreen}
+"screen.redo_last": {label: "Adjust last op", icon: adjust_last}
+"screen.userpref_show": {label: Preferences, icon: preferences}
+
+# ---------------------------------------------------------------- Frames / Animation
+"screen.frame_offset(delta=-1)": {label: "Previous frame", icon: frame_prev}
+"screen.frame_offset(delta=1)": {label: "Next frame", icon: frame_next}
+"screen.frame_jump(end=False)": {label: "Jump to start", icon: jump_start}
+"screen.frame_jump(end=True)": {label: "Jump to end", icon: jump_end}
+"screen.time_jump(backward=True)": {label: "Jump back", icon: time_back}
+"screen.time_jump(backward=False)": {label: "Jump forward", icon: time_fwd}
+"screen.keyframe_jump(next=False)": {label: "Previous keyframe", icon: key_prev}
+"screen.keyframe_jump(next=True)": {label: "Next keyframe", icon: key_next}
+"screen.animation_play": {label: "Play", icon: play}
+"screen.animation_play(reverse=True)": {label: "Play reverse", icon: play_reverse}
+"anim.start_frame_set": {label: "Set start frame", icon: jump_start}
+"anim.end_frame_set": {label: "Set end frame", icon: jump_end}
+"anim.previewrange_set": {label: "Preview range", icon: preview_range}
+"anim.previewrange_clear": {label: "Clear preview range", icon: preview_range_clear}
+"wm.context_toggle(data_path=space_data.show_seconds)": {label: "Show seconds", icon: seconds}
+
+# ---------------------------------------------------------------- View2D / generic toggles
+"view2d.zoom_border": {label: "Zoom region", icon: zoom_region}
+"wm.context_toggle(data_path=space_data.show_region_toolbar)": {label: "Toolbar panel", icon: panel_left}
+"wm.context_toggle(data_path=space_data.show_region_ui)": {label: "Sidebar", icon: panel_right}
+"wm.context_toggle(data_path=space_data.overlay.show_overlays)": {label: "Overlays", icon: overlays}
+"wm.context_toggle(data_path=space_data.show_gizmo)": {label: "Gizmos", icon: gizmo}
+"wm.tool_set_by_id(cycle=True,name=builtin.select_box)": {label: "Select tool", icon: select_box}
+
+# ---------------------------------------------------------------- 3D View
+"view3d.localview": {label: "Local view", icon: localview}
+"view3d.localview_remove_from": {label: "Remove from local", icon: localview_remove}
+"view3d.zoom(delta=1)": {label: "Zoom in"}
+"view3d.zoom(delta=-1)": {label: "Zoom out"}
+"view3d.dolly(delta=1)": {label: "Dolly in", icon: dolly_in}
+"view3d.dolly(delta=-1)": {label: "Dolly out", icon: dolly_out}
+"view3d.view_all(center=False)": {label: "Frame all", icon: frame_all}
+"view3d.view_all(center=False,use_all_regions=True)": {label: "Frame all (quad)", icon: frame_all}
+"view3d.view_all(center=True)": {label: "Center cursor + frame", icon: frame_cursor}
+"wm.call_menu_pie(name=VIEW3D_MT_view_pie)": {label: "View pie", icon: view_pie}
+"view3d.navigate": {label: "Fly / walk", icon: walk}
+"view3d.select_box": {label: "Box select", icon: select_box}
+"view3d.select_circle": {label: "Circle select", icon: select_circle}
+"view3d.clip_border": {label: "Clipping region", icon: clip_region}
+"view3d.zoom_border": {label: "Zoom region", icon: zoom_region}
+"view3d.render_border": {label: "Render region", icon: render_region}
+"view3d.clear_render_border": {label: "Clear render region", icon: render_region_clear}
+"view3d.copybuffer": {label: Copy}
+"view3d.pastebuffer": {label: Paste}
+"wm.context_toggle(data_path=tool_settings.use_snap)": {label: "Snap", icon: snap}
+"wm.call_panel(keep_open=True,name=VIEW3D_PT_snapping)": {label: "Snap options", icon: snap_options}
+"wm.call_menu_pie(name=VIEW3D_MT_snap_pie)": {label: "Snap pie", icon: snap_cursor}
+"wm.call_menu_pie(name=VIEW3D_MT_pivot_pie)": {label: "Pivot point", icon: pivot}
+"wm.call_menu_pie(name=VIEW3D_MT_orientations_pie)": {label: "Orientation", icon: orientation}
+"wm.call_menu_pie(name=VIEW3D_MT_shading_pie)": {label: "Shading pie", icon: shading}
+"view3d.toggle_shading(type=WIREFRAME)": {label: "Wireframe", icon: wireframe}
+"view3d.toggle_xray": {label: "X-ray", icon: xray}
+
+# ---------------------------------------------------------------- Object Non-modal
+"object.mode_set(mode=EDIT,toggle=True)": {label: "Edit mode", icon: edit_mode}
+"object.transfer_mode": {label: "Transfer mode", icon: transfer_mode}
+"view3d.object_mode_pie_or_toggle": {label: "Mode pie", icon: mode_pie}
+
+# ---------------------------------------------------------------- shared transform / selection
+"transform.translate*": {label: Move, icon: move}
+"transform.rotate": {label: Rotate, icon: rotate}
+"transform.resize": {label: Scale, icon: scale}
+"transform.mirror": {label: Mirror, icon: mirror}
+"transform.shear": {label: Shear, icon: shear}
+"transform.bend": {label: Bend, icon: bend}
+"transform.tosphere": {label: "To sphere", icon: tosphere}
+"transform.shrink_fatten": {label: "Shrink / fatten", icon: shrink_fatten}
+"transform.skin_resize": {label: "Skin resize", icon: scale}
+"transform.edge_crease": {label: "Edge crease", icon: crease}
+"transform.vert_slide": {label: "Vertex slide", icon: vert_slide}
+"transform.bbone_resize": {label: "B-bone size", icon: bbone}
+"transform.transform(mode=BONE_ROLL)": {label: "Bone roll", icon: rotate}
+"transform.transform(mode=BONE_ENVELOPE_DIST)": {label: "Envelope", icon: bbone}
+"transform.transform(mode=TIME_TRANSLATE)": {label: Move, icon: move}
+"transform.transform(mode=TIME_EXTEND)": {label: Extend, icon: time_extend}
+"transform.transform(mode=TIME_SCALE)": {label: Scale, icon: scale}
+"transform.transform(mode=TIME_SLIDE)": {label: Slide, icon: time_slide}
+"*.select_all(action=SELECT)": {label: "Select all"}
+"*.select_all(action=DESELECT)": {label: "Deselect all", icon: deselect}
+"*.select_all(action=INVERT)": {label: "Invert selection", icon: select_invert}
+"*.hide(unselected=False)": {label: Hide}
+"*.hide(unselected=True)": {label: "Hide unselected", icon: hide_others}
+"*.reveal": {label: "Reveal hidden", icon: reveal}
+"*.select_linked": {label: "Select linked", icon: select_linked}
+"*.select_linked_pick(deselect=False)": {label: "Select linked (cursor)", icon: select_linked}
+"*.select_linked_pick(deselect=True)": {label: "Deselect linked", icon: deselect}
+"*.select_hierarchy(direction=PARENT,extend=False)": {label: "Select parent", icon: hier_parent}
+"*.select_hierarchy(direction=PARENT,extend=True)": {label: "Extend to parent", icon: hier_parent}
+"*.select_hierarchy(direction=CHILD,extend=False)": {label: "Select child", icon: hier_child}
+"*.select_hierarchy(direction=CHILD,extend=True)": {label: "Extend to child", icon: hier_child}
+"*.select_grouped*": {label: "Select grouped", icon: select_grouped}
+"*.select_similar": {label: "Select similar", icon: select_similar}
+"*.select_mirror*": {label: "Select mirror", icon: mirror}
+"*.select_box*": {label: "Box select", icon: select_box}
+"*.select_circle": {label: "Circle select", icon: select_circle}
+"*.duplicate_move": {label: Duplicate, icon: duplicate}
+"*.duplicate_move_linked": {label: "Duplicate linked", icon: duplicate_linked}
+"*.parent_set": {label: "Set parent", icon: parent}
+"*.parent_clear": {label: "Clear parent", icon: parent_clear}
+"*.separate": {label: Separate, icon: separate}
+"*.split": {label: Split, icon: split}
+"*.copy": {label: Copy}
+"*.paste": {label: Paste}
+"*.paste(flipped=False)": {label: Paste}
+"*.paste(flipped=True)": {label: "Paste flipped", icon: paste_flipped}
+"wm.call_menu_pie(name=VIEW3D_MT_proportional_editing_falloff_pie)": {label: "Falloff pie", icon: falloff}
+"wm.context_toggle(data_path=tool_settings.use_proportional_edit)": {label: "Proportional edit", icon: proportional}
+"wm.context_toggle(data_path=tool_settings.use_proportional_edit_objects)": {label: "Proportional edit", icon: proportional}
+"wm.context_toggle(data_path=tool_settings.use_proportional_connected)": {label: "Connected only", icon: proportional_connected}
+"wm.context_toggle(data_path=tool_settings.use_proportional_action)": {label: "Proportional edit", icon: proportional}
+"wm.context_toggle(data_path=tool_settings.use_proportional_fcurve)": {label: "Proportional edit", icon: proportional}
+"anim.keyframe_insert": {label: "Insert keyframe", icon: key_insert}
+"anim.keyframe_insert_menu(always_prompt=True)": {label: "Keyframe menu", icon: key_menu}
+"anim.keyframe_delete_v3d": {label: "Delete keyframe", icon: key_delete}
+"anim.keying_set_active_set": {label: "Keying set", icon: keying_set}
+
+# ---------------------------------------------------------------- Object Mode
+"object.delete(use_global=False)": {label: Delete}
+"object.delete(use_global=True)": {label: "Delete globally", icon: delete_global}
+"object.delete(confirm=False,use_global=False)": {label: Delete}
+"object.delete(confirm=False,use_global=True)": {label: "Delete globally", icon: delete_global}
+"object.location_clear(clear_delta=False)": {label: "Clear location", icon: clear_loc}
+"object.rotation_clear(clear_delta=False)": {label: "Clear rotation", icon: clear_rot}
+"object.scale_clear(clear_delta=False)": {label: "Clear scale", icon: clear_scale}
+"object.transform_axis_target": {label: "Axis target", icon: axis_target}
+"wm.call_menu(name=VIEW3D_MT_add)": {label: Add, icon: add}
+"wm.call_menu(name=VIEW3D_MT_object_apply)": {label: Apply, icon: apply}
+"wm.call_menu(name=VIEW3D_MT_make_links)": {label: "Link / transfer", icon: link}
+"object.join": {label: Join, icon: join}
+"wm.context_toggle(data_path=tool_settings.use_transform_data_origin)": {label: "Affect origins", icon: origin}
+"collection.create": {label: "New collection", icon: collection_new}
+"collection.objects_add_active": {label: "Add to collection", icon: collection_add}
+"collection.objects_remove": {label: "Remove from coll.", icon: collection_remove}
+"collection.objects_remove_all": {label: "Remove from all", icon: collection_remove_all}
+"collection.objects_remove_active": {label: "Remove from active", icon: collection_remove}
+"object.subdivision_set(ensure_modifier=True,level=0,relative=False)": {label: "Subdiv 0", icon: subdiv}
+"object.subdivision_set(ensure_modifier=True,level=1,relative=False)": {label: "Subdiv 1", icon: subdiv}
+"object.subdivision_set(ensure_modifier=True,level=2,relative=False)": {label: "Subdiv 2", icon: subdiv}
+"object.subdivision_set(ensure_modifier=True,level=3,relative=False)": {label: "Subdiv 3", icon: subdiv}
+"object.subdivision_set(ensure_modifier=True,level=4,relative=False)": {label: "Subdiv 4", icon: subdiv}
+"object.subdivision_set(ensure_modifier=True,level=5,relative=False)": {label: "Subdiv 5", icon: subdiv}
+"object.subdivision_set(ensure_modifier=False,level=1,relative=True)": {label: "Subdiv up", icon: subdiv_up}
+"object.subdivision_set(ensure_modifier=False,level=-1,relative=True)": {label: "Subdiv down", icon: subdiv_down}
+"wm.call_menu(name=OBJECT_MT_move_to_collection)": {label: "Move to collection", icon: collection_move}
+"wm.call_menu(name=OBJECT_MT_link_to_collection)": {label: "Link to collection", icon: collection_link}
+"object.hide_view_clear": {label: "Reveal hidden", icon: reveal}
+"object.hide_view_set(unselected=False)": {label: Hide}
+"object.hide_view_set(unselected=True)": {label: "Hide unselected", icon: hide_others}
+"object.hide_collection": {label: "Hide collection", icon: collection_hide}
+
+# context menus (W / Menu key) -- one glyph everywhere
+"wm.call_menu(name=*_context_menu)": {label: "Context menu", icon: context_menu}
+"wm.call_menu(name=VIEW3D_MT_object_context_menu)": {label: "Context menu", icon: context_menu}
+"wm.call_menu(name=VIEW3D_MT_edit_mesh_context_menu)": {label: "Context menu", icon: context_menu}
+"wm.call_menu(name=VIEW3D_MT_pose_context_menu)": {label: "Context menu", icon: context_menu}
+"wm.call_menu(name=VIEW3D_MT_armature_context_menu)": {label: "Context menu", icon: context_menu}
+"wm.call_menu(name=NODE_MT_context_menu)": {label: "Context menu", icon: context_menu}
+"wm.call_menu(name=DOPESHEET_MT_context_menu)": {label: "Context menu", icon: context_menu}
+"wm.call_menu(name=GRAPH_MT_context_menu)": {label: "Context menu", icon: context_menu}
+"wm.call_menu(name=IMAGE_MT_uvs_context_menu)": {label: "Context menu", icon: context_menu}
+"wm.call_panel(name=*_context_menu)": {label: "Context menu", icon: context_menu}
+"wm.call_panel(name=VIEW3D_PT_sculpt_context_menu)": {label: "Context menu", icon: context_menu}
+"wm.call_panel(name=VIEW3D_PT_paint_texture_context_menu)": {label: "Context menu", icon: context_menu}
+"wm.call_panel(name=VIEW3D_PT_paint_vertex_context_menu)": {label: "Context menu", icon: context_menu}
+"wm.call_panel(name=VIEW3D_PT_paint_weight_context_menu)": {label: "Context menu", icon: context_menu}
+
+# ---------------------------------------------------------------- Edit Mesh
+"mesh.loopcut_slide": {label: "Loop cut", icon: loopcut}
+"mesh.offset_edge_loops_slide": {label: "Offset edge loop", icon: offset_loop}
+"mesh.inset": {label: "Inset faces", icon: inset}
+"mesh.bevel(affect=EDGES)": {label: Bevel, icon: bevel}
+"mesh.bevel(affect=VERTICES)": {label: "Bevel vertices", icon: bevel_vert}
+"mesh.select_mode(type=VERT)": {label: "Vertex select", icon: sel_vert}
+"mesh.select_mode(type=EDGE)": {label: "Edge select", icon: sel_edge}
+"mesh.select_mode(type=FACE)": {label: "Face select", icon: sel_face}
+"mesh.select_mode(type=VERT,use_extend=True)": {label: "+ vertex select", icon: sel_vert}
+"mesh.select_mode(type=EDGE,use_extend=True)": {label: "+ edge select", icon: sel_edge}
+"mesh.select_mode(type=FACE,use_extend=True)": {label: "+ face select", icon: sel_face}
+"mesh.select_mode(type=VERT,use_expand=True)": {label: "Expand to vertex", icon: sel_vert}
+"mesh.select_mode(type=EDGE,use_expand=True)": {label: "Expand to edge", icon: sel_edge}
+"mesh.select_mode(type=FACE,use_expand=True)": {label: "Expand to face", icon: sel_face}
+"mesh.select_mode(type=VERT,use_expand=True,use_extend=True)": {label: "+ expand vertex", icon: sel_vert}
+"mesh.select_mode(type=EDGE,use_expand=True,use_extend=True)": {label: "+ expand edge", icon: sel_edge}
+"mesh.select_mode(type=FACE,use_expand=True,use_extend=True)": {label: "+ expand face", icon: sel_face}
+"mesh.select_mirror": {label: "Select mirror", icon: mirror}
+"view3d.edit_mesh_extrude_move_normal": {label: Extrude, icon: extrude}
+"wm.call_menu(name=VIEW3D_MT_edit_mesh_extrude)": {label: "Extrude menu", icon: extrude}
+"mesh.edge_face_add": {label: "Make edge / face", icon: make_face}
+"mesh.fill": {label: Fill, icon: fill}
+"mesh.knife_tool(only_selected=False,use_occlude_geometry=True)": {label: Knife, icon: knife}
+"mesh.knife_tool(only_selected=True,use_occlude_geometry=False)": {label: "Knife selected", icon: knife}
+"mesh.vert_connect_path": {label: "Connect vertices", icon: connect}
+"mesh.rip_move": {label: Rip, icon: rip}
+"mesh.rip_edge_move": {label: "Rip fill", icon: rip}
+"mesh.dissolve_mode": {label: Dissolve, icon: dissolve}
+"mesh.normals_make_consistent(inside=False)": {label: "Recalc normals", icon: normals}
+"mesh.normals_make_consistent(inside=True)": {label: "Normals inside", icon: normals_in}
+"mesh.point_normals": {label: "Point normals", icon: normals}
+"mesh.quads_convert_to_tris(ngon_method=BEAUTY,quad_method=BEAUTY)": {label: "Triangulate", icon: triangulate}
+"mesh.quads_convert_to_tris(ngon_method=CLIP,quad_method=FIXED)": {label: "Triangulate fixed", icon: triangulate}
+"mesh.tris_convert_to_quads": {label: "Tris to quads", icon: quads}
+"object.vertex_parent_set": {label: "Vertex parent", icon: parent}
+"object.vertex_group_remove_from": {label: "Remove from group", icon: vgroup_remove}
+"wm.call_menu(name=VIEW3D_MT_edit_mesh_delete)": {label: Delete}
+"wm.call_menu(name=VIEW3D_MT_edit_mesh_edges)": {label: "Edge menu", icon: sel_edge}
+"wm.call_menu(name=VIEW3D_MT_edit_mesh_faces)": {label: "Face menu", icon: sel_face}
+"wm.call_menu(name=VIEW3D_MT_edit_mesh_vertices)": {label: "Vertex menu", icon: sel_vert}
+"wm.call_menu(name=VIEW3D_MT_edit_mesh_merge)": {label: Merge, icon: merge}
+"wm.call_menu(name=VIEW3D_MT_edit_mesh_normals)": {label: "Normals menu", icon: normals}
+"wm.call_menu(name=VIEW3D_MT_edit_mesh_select_similar)": {label: "Select similar", icon: select_similar}
+"wm.call_menu(name=VIEW3D_MT_edit_mesh_split)": {label: Split, icon: split}
+"wm.call_menu(name=VIEW3D_MT_hook)": {label: Hooks, icon: hook}
+"wm.call_menu(name=VIEW3D_MT_mesh_add)": {label: Add, icon: add}
+"wm.call_menu(name=VIEW3D_MT_uv_map)": {label: "UV unwrap", icon: uv_unwrap}
+"wm.call_menu(name=VIEW3D_MT_vertex_group)": {label: "Vertex groups", icon: vgroup}
+
+# ---------------------------------------------------------------- Armature / Pose
+"armature.align": {label: "Align bones", icon: align}
+"armature.assign_to_collection": {label: "Bone collection", icon: collection_add}
+"armature.move_to_collection": {label: "Move to bone coll.", icon: collection_move}
+"armature.bone_primitive_add": {label: "Add bone", icon: bone_add}
+"armature.calculate_roll": {label: "Recalc roll", icon: rotate}
+"armature.roll_clear": {label: "Clear roll", icon: clear_rot}
+"armature.dissolve": {label: Dissolve, icon: dissolve}
+"armature.extrude_move": {label: Extrude, icon: extrude}
+"armature.extrude_forked": {label: "Extrude forked", icon: extrude_forked}
+"armature.fill": {label: "Fill between", icon: fill}
+"armature.switch_direction": {label: "Switch direction", icon: switch_dir}
+"wm.call_menu(name=VIEW3D_MT_edit_armature_delete)": {label: Delete}
+"wm.call_menu(name=VIEW3D_MT_bone_options_toggle)": {label: "Bone options", icon: bone_options}
+"wm.call_menu(name=VIEW3D_MT_bone_options_enable)": {label: "Enable option", icon: bone_options}
+"wm.call_menu(name=VIEW3D_MT_bone_options_disable)": {label: "Disable option", icon: bone_options}
+"pose.blend_to_neighbor": {label: "Blend to neighbor", icon: blend_neighbor}
+"pose.breakdown": {label: Breakdowner, icon: breakdown}
+"pose.push": {label: Push, icon: push}
+"pose.relax": {label: Relax, icon: relax}
+"pose.constraint_add_with_targets": {label: "Add constraint", icon: constraint}
+"pose.constraints_clear": {label: "Clear constraints", icon: constraint_clear}
+"pose.ik_add": {label: "Add IK", icon: ik}
+"pose.ik_clear": {label: "Clear IK", icon: ik_clear}
+"pose.loc_clear": {label: "Clear location", icon: clear_loc}
+"pose.rot_clear": {label: "Clear rotation", icon: clear_rot}
+"pose.scale_clear": {label: "Clear scale", icon: clear_scale}
+"pose.quaternions_flip": {label: "Flip quaternions", icon: flip_quat}
+"pose.rotation_mode_set": {label: "Rotation mode", icon: rotation_mode}
+"pose.select_parent": {label: "Select parent", icon: hier_parent}
+"pose.select_linked_pick": {label: "Select linked (cursor)", icon: select_linked}
+"wm.call_menu(name=POSE_MT_selection_sets_select)": {label: "Selection sets", icon: selection_sets}
+"wm.call_menu(name=VIEW3D_MT_pose_apply)": {label: Apply, icon: apply}
+"wm.call_menu(name=VIEW3D_MT_pose_propagate)": {label: Propagate, icon: propagate}
+
+# ---------------------------------------------------------------- Sculpt / paint
+"brush.scale_size(scalar=0.9)": {label: "Brush smaller", icon: brushdec, mode: alpha}
+"brush.scale_size(scalar=1.1111111111111112)": {label: "Brush larger", icon: brushinc, mode: alpha}
+# Radial controls: spelled per paint mode. A `*` between `tool_settings.` and
+# `.brush` would also match the item's OTHER paths (rotation_path names the
+# texture angle), and the longest pattern -- texture angle -- would win F.
+"wm.radial_control(*,data_path_primary=tool_settings.sculpt.brush.size,*": {label: "Brush radius", icon: radius}
+"wm.radial_control(*,data_path_primary=tool_settings.sculpt.brush.strength,*": {label: "Brush strength", icon: strength}
+"wm.radial_control(*,data_path_primary=tool_settings.sculpt.brush.weight,*": {label: "Brush weight", icon: weight}
+"wm.radial_control(*,data_path_primary=tool_settings.sculpt.brush.texture_slot.angle,*": {label: "Texture angle", icon: tex_angle}
+"wm.radial_control(*,data_path_primary=tool_settings.sculpt.brush.mask_texture_slot.angle,*": {label: "Mask tex. angle", icon: tex_angle}
+"wm.radial_control(*,data_path_primary=tool_settings.image_paint.brush.size,*": {label: "Brush radius", icon: radius}
+"wm.radial_control(*,data_path_primary=tool_settings.image_paint.brush.strength,*": {label: "Brush strength", icon: strength}
+"wm.radial_control(*,data_path_primary=tool_settings.image_paint.brush.weight,*": {label: "Brush weight", icon: weight}
+"wm.radial_control(*,data_path_primary=tool_settings.image_paint.brush.texture_slot.angle,*": {label: "Texture angle", icon: tex_angle}
+"wm.radial_control(*,data_path_primary=tool_settings.image_paint.brush.mask_texture_slot.angle,*": {label: "Mask tex. angle", icon: tex_angle}
+"wm.radial_control(*,data_path_primary=tool_settings.vertex_paint.brush.size,*": {label: "Brush radius", icon: radius}
+"wm.radial_control(*,data_path_primary=tool_settings.vertex_paint.brush.strength,*": {label: "Brush strength", icon: strength}
+"wm.radial_control(*,data_path_primary=tool_settings.vertex_paint.brush.weight,*": {label: "Brush weight", icon: weight}
+"wm.radial_control(*,data_path_primary=tool_settings.vertex_paint.brush.texture_slot.angle,*": {label: "Texture angle", icon: tex_angle}
+"wm.radial_control(*,data_path_primary=tool_settings.vertex_paint.brush.mask_texture_slot.angle,*": {label: "Mask tex. angle", icon: tex_angle}
+"wm.radial_control(*,data_path_primary=tool_settings.weight_paint.brush.size,*": {label: "Brush radius", icon: radius}
+"wm.radial_control(*,data_path_primary=tool_settings.weight_paint.brush.strength,*": {label: "Brush strength", icon: strength}
+"wm.radial_control(*,data_path_primary=tool_settings.weight_paint.brush.weight,*": {label: "Brush weight", icon: weight}
+"wm.radial_control(*,data_path_primary=tool_settings.weight_paint.brush.texture_slot.angle,*": {label: "Texture angle", icon: tex_angle}
+"wm.radial_control(*,data_path_primary=tool_settings.weight_paint.brush.mask_texture_slot.angle,*": {label: "Mask tex. angle", icon: tex_angle}
+"paint.brush_colors_flip": {label: "Swap colors", icon: swapcolors, mode: alpha, region: [72, 40], anchor: center}
+"paint.sample_color(merged=False)": {label: "Sample color", icon: eyedropper}
+"paint.sample_color(merged=True)": {label: "Sample merged", icon: eyedropper}
+"wm.context_menu_enum(*stroke_method)": {label: "Stroke method", icon: stroke}
+"wm.context_toggle(*use_smooth_stroke)": {label: "Smooth stroke", icon: smooth_stroke}
+"wm.call_asset_shelf_popover*": {label: "Brushes", icon: brushes}
+"wm.context_toggle(data_path=*.data.use_paint_mask)": {label: "Face mask", icon: sel_face}
+"wm.context_toggle(data_path=*.data.use_paint_mask_vertex)": {label: "Vertex mask", icon: sel_vert}
+"wm.context_toggle(data_path=weight_paint_object.data.use_paint_bone_selection)": {label: "Bone selection", icon: bbone}
+"brush.asset_activate(*/Brush/Draw)": {label: "Draw brush", icon: br_draw}
+"brush.asset_activate(*/Brush/Clay Strips)": {label: "Clay strips", icon: br_clay}
+"brush.asset_activate(*/Brush/Crease Polish)": {label: Crease, icon: crease}
+"brush.asset_activate(*/Brush/Grab)": {label: Grab, icon: br_grab}
+"brush.asset_activate(*/Brush/Inflate/Deflate)": {label: Inflate, icon: br_inflate}
+"brush.asset_activate(*/Brush/Mask,*": {label: "Mask brush", icon: br_mask}
+"brush.asset_activate(*/Brush/Pinch/Magnify)": {label: Pinch, icon: br_pinch}
+"brush.asset_activate(*/Brush/Scrape/Fill)": {label: "Scrape / fill", icon: br_scrape}
+"brush.asset_activate(*/Brush/Smooth)": {label: Smooth, icon: br_smooth}
+"brush.asset_activate(*/Brush/Snake Hook)": {label: "Snake hook", icon: br_snake}
+"object.voxel_remesh": {label: "Voxel remesh", icon: remesh}
+"object.voxel_size_edit": {label: "Voxel size", icon: voxel_size}
+"paint.hide_show_all(action=SHOW)": {label: "Reveal hidden", icon: reveal}
+"paint.mask_box_gesture(mode=VALUE,value=0.0)": {label: "Box unmask", icon: mask_box}
+"paint.mask_flood_fill(mode=INVERT)": {label: "Invert mask", icon: mask_invert}
+"paint.mask_flood_fill(mode=VALUE,value=0.0)": {label: "Clear mask", icon: mask_clear}
+"paint.visibility_filter(action=GROW)": {label: "Grow visible", icon: grow}
+"paint.visibility_filter(action=SHRINK)": {label: "Shrink visible", icon: shrink}
+"sculpt.color_filter*": {label: "Fill color", icon: fill_color}
+"sculpt.expand(*target=MASK*": {label: "Expand mask", icon: mask_expand}
+"sculpt.expand(*target=FACE_SETS*": {label: "Expand face set", icon: faceset_expand}
+"sculpt.face_set_change_visibility(mode=HIDE_ACTIVE)": {label: "Hide face set", icon: faceset_hide}
+"sculpt.face_set_change_visibility(mode=TOGGLE)": {label: "Isolate face set", icon: faceset_isolate}
+"sculpt.face_set_edit(mode=GROW)": {label: "Grow face set", icon: grow}
+"sculpt.face_set_edit(mode=SHRINK)": {label: "Shrink face set", icon: shrink}
+"wm.call_menu_pie(name=VIEW3D_MT_sculpt_automasking_pie)": {label: "Auto-masking", icon: automask}
+"wm.call_menu_pie(name=VIEW3D_MT_sculpt_face_sets_edit_pie)": {label: "Face sets pie", icon: faceset}
+"wm.call_menu_pie(name=VIEW3D_MT_sculpt_mask_edit_pie)": {label: "Mask pie", icon: br_mask}
+"paint.face_vert_reveal": {label: "Reveal hidden", icon: reveal}
+"paint.vertex_color_set": {label: "Set vertex colors", icon: fill_color}
+"paint.weight_gradient(type=LINEAR)": {label: "Linear gradient", icon: gradient}
+"paint.weight_gradient(type=RADIAL)": {label: "Radial gradient", icon: gradient_radial}
+"paint.weight_sample": {label: "Sample weight", icon: eyedropper}
+"paint.weight_sample_group": {label: "Sample group", icon: vgroup}
+"paint.weight_set": {label: "Set weight", icon: weight}
+"wm.call_menu_pie(name=VIEW3D_MT_wpaint_vgroup_lock_pie)": {label: "Group lock pie", icon: lock_pie}
+
+# ---------------------------------------------------------------- Node Editor
+"node.backimage_fit": {label: "Fit backdrop", icon: frame_all}
+"node.backimage_zoom(factor=0.8333333333333334)": {label: "Backdrop zoom out", icon: backdrop_zoom_out}
+"node.backimage_zoom(factor=1.2)": {label: "Backdrop zoom in", icon: backdrop_zoom_in}
+"node.clipboard_copy": {label: Copy}
+"node.clipboard_paste": {label: Paste}
+"node.delete": {label: Delete}
+"node.delete_reconnect": {label: "Dissolve", icon: dissolve}
+"node.detach": {label: "Detach from frame", icon: node_detach}
+"node.duplicate_move_keep_inputs": {label: "Duplicate + inputs", icon: duplicate_linked}
+"node.find_node": {label: "Find node", icon: search}
+"node.group_edit(exit=False)": {label: "Enter group", icon: group_enter}
+"node.group_edit(exit=True)": {label: "Exit group", icon: group_exit}
+"node.group_make": {label: "Make group", icon: group}
+"node.group_separate": {label: "Separate group", icon: separate}
+"node.group_ungroup": {label: Ungroup, icon: ungroup}
+"node.hide_socket_toggle": {label: "Toggle sockets", icon: sockets}
+"node.hide_toggle": {label: "Collapse node", icon: collapse}
+"node.join_named": {label: "Join in new frame", icon: frame_node}
+"node.join_nodes": {label: "Join in frame", icon: frame_node}
+"node.link_make(replace=False)": {label: "Make links", icon: link}
+"node.link_make(replace=True)": {label: "Replace links", icon: link_replace}
+"node.mute_toggle": {label: Mute, icon: mute}
+"node.preview_toggle": {label: "Node preview", icon: node_preview}
+"node.read_viewlayers": {label: "Update render layers", icon: refresh}
+"node.render_changed": {label: "Render changed", icon: render}
+"node.select_linked_from": {label: "Select linked from", icon: linked_from}
+"node.select_linked_to": {label: "Select linked to", icon: linked_to}
+"node.select_same_type_step(prev=False)": {label: "Next same type", icon: same_next}
+"node.select_same_type_step(prev=True)": {label: "Prev same type", icon: same_prev}
+"node.view_all": {label: "Frame all", icon: frame_all}
+"node.viewer_shortcut_get(viewer_index=*": {label: "Recall viewer", icon: viewer}
+"node.viewer_shortcut_set(viewer_index=*": {label: "Store viewer", icon: viewer_store}
+"wm.call_menu(name=NODE_MT_add)": {label: Add, icon: add}
+"wm.call_menu(name=NODE_MT_swap)": {label: "Swap node", icon: swap}
+"wm.call_menu_pie(name=NODE_MT_view_pie)": {label: "View pie", icon: view_pie}
+"wm.context_toggle(data_path=tool_settings.use_snap_node)": {label: Snap, icon: snap}
+
+# ---------------------------------------------------------------- Image / UV Editor
+"image.view_all": {label: "Frame all", icon: frame_all}
+"image.view_all(fit_view=True)": {label: "Fit view", icon: fit_view}
+"image.view_cursor_center": {label: "Center on cursor", icon: frame_cursor}
+"image.view_zoom_border": {label: "Zoom region", icon: zoom_region}
+"wm.call_menu_pie(name=IMAGE_MT_pivot_pie)": {label: "Pivot point", icon: pivot}
+"wm.call_menu_pie(name=IMAGE_MT_view_pie)": {label: "View pie", icon: view_pie}
+"wm.context_set_int(data_path=space_data.image.render_slots.active_index,*": {label: "Render slot", icon: render_slot}
+"image.cycle_render_slot": {label: "Next render slot", icon: render_slot}
+"image.cycle_render_slot(reverse=True)": {label: "Prev render slot", icon: render_slot}
+"image.new": {label: "New image", icon: image_new}
+"image.open": {label: "Open image", icon: image_open}
+"image.read_viewlayers": {label: "Update render layers", icon: refresh}
+"image.reload": {label: Reload}
+"image.save": {label: "Save image", icon: image_save}
+"image.save_as": {label: "Save image as", icon: image_save_as}
+"uv.custom_region_set": {label: "Custom region", icon: render_region}
+"wm.context_toggle(data_path=tool_settings.use_uv_custom_region)": {label: "Use custom region", icon: render_region}
+"uv.mark_seam": {label: "Mark seam", icon: seam}
+"uv.pin(clear=False)": {label: Pin, icon: pin}
+"uv.pin(clear=True)": {label: Unpin, icon: unpin}
+"uv.rip_move": {label: Rip, icon: rip}
+"uv.select_linked_pick(deselect=False,extend=True)": {label: "Select linked (cursor)", icon: select_linked}
+"uv.select_linked_pick(deselect=True)": {label: "Deselect linked", icon: deselect}
+"uv.select_mode(type=VERTEX)": {label: "Vertex select", icon: sel_vert}
+"uv.select_mode(type=EDGE)": {label: "Edge select", icon: sel_edge}
+"uv.select_mode(type=FACE)": {label: "Face select", icon: sel_face}
+"uv.select_pinned": {label: "Select pinned", icon: pin}
+"uv.select_split": {label: "Select split", icon: split}
+"uv.stitch": {label: Stitch, icon: stitch}
+"wm.call_menu(name=IMAGE_MT_uvs_align)": {label: "Align / mirror", icon: align}
+"wm.call_menu(name=IMAGE_MT_uvs_merge)": {label: Merge, icon: merge}
+"wm.call_menu(name=IMAGE_MT_uvs_select_mode)": {label: "Select mode", icon: sel_face}
+"wm.call_menu(name=IMAGE_MT_uvs_split)": {label: Split, icon: split}
+"wm.call_menu(name=IMAGE_MT_uvs_unwrap)": {label: Unwrap, icon: uv_unwrap}
+"wm.call_menu_pie(name=IMAGE_MT_uvs_snap_pie)": {label: "Snap pie", icon: snap_cursor}
+"wm.context_menu_enum(data_path=tool_settings.snap_uv_element)": {label: "Snap target", icon: snap_options}
+"wm.context_toggle(data_path=tool_settings.use_snap_uv)": {label: Snap, icon: snap}
+"wm.context_toggle(data_path=tool_settings.use_uv_select_island)": {label: "Island select", icon: island}
+
+# ---------------------------------------------------------------- Dope Sheet / Graph Editor
+"*.bake_keys": {label: "Bake keys", icon: bake}
+"action.delete(confirm=False)": {label: Delete}
+"graph.delete(confirm=False)": {label: Delete}
+"wm.call_menu(name=DOPESHEET_MT_delete)": {label: Delete}
+"wm.call_menu(name=GRAPH_MT_delete)": {label: Delete}
+"*.easing_type": {label: Easing, icon: easing}
+"*.extrapolation_type": {label: Extrapolation, icon: extrapolation}
+"*.frame_jump": {label: "Jump to keyframes", icon: key_jump}
+"*.handle_type": {label: "Handle type", icon: handle}
+"*.interpolation_type": {label: Interpolation, icon: interpolation}
+"action.keyframe_insert": {label: "Insert keyframe", icon: key_insert}
+"graph.keyframe_insert": {label: "Insert keyframe", icon: key_insert}
+"action.keyframe_type": {label: "Keyframe type", icon: key_type}
+"*.mirror": {label: Mirror, icon: mirror}
+"action.previewrange_set": {label: "Preview range", icon: preview_range}
+"graph.previewrange_set": {label: "Preview range", icon: preview_range}
+"*.select_column(mode=CFRA)": {label: "Column at frame", icon: column}
+"*.select_column(mode=KEYS)": {label: "Columns on keys", icon: column}
+"*.select_column(mode=MARKERS_BETWEEN)": {label: "Between markers", icon: column_markers}
+"*.select_column(mode=MARKERS_COLUMN)": {label: "Columns on markers", icon: column_markers}
+"*.select_leftright(mode=LEFT)": {label: "Select before", icon: select_left}
+"*.select_leftright(mode=RIGHT)": {label: "Select after", icon: select_right}
+"action.view_all": {label: "Frame all", icon: frame_all}
+"graph.view_all": {label: "Frame all", icon: frame_all}
+"anim.channels_editable_toggle": {label: "Lock channels", icon: lock_channel}
+"anim.channels_select_filter": {label: "Filter channels", icon: filter}
+"marker.add": {label: "Add marker", icon: marker}
+"marker.camera_bind": {label: "Bind camera", icon: camera_bind}
+"wm.call_menu_pie(name=DOPESHEET_MT_snap_pie)": {label: "Snap pie", icon: snap_cursor}
+"wm.call_menu_pie(name=DOPESHEET_MT_view_pie)": {label: "View pie", icon: view_pie}
+"wm.call_menu_pie(name=GRAPH_MT_snap_pie)": {label: "Snap pie", icon: snap_cursor}
+"wm.call_menu_pie(name=GRAPH_MT_view_pie)": {label: "View pie", icon: view_pie}
+"wm.call_menu_pie(name=GRAPH_MT_pivot_pie)": {label: "Pivot point", icon: pivot}
+"wm.context_toggle(data_path=tool_settings.use_snap_anim)": {label: Snap, icon: snap}
+"wm.context_set_enum(data_path=area.type,value=GRAPH_EDITOR)": {label: "Graph editor", icon: ed_graph}
+"screen.space_type_set_or_cycle(space_type=DOPESHEET_EDITOR)": {label: "Dope sheet", icon: ed_dopesheet}
+"graph.keys_to_samples": {label: "Keys to samples", icon: samples}
+"graph.smooth": {label: "Smooth keys", icon: br_smooth}
+"graph.fmodifier_add(only_active=False)": {label: "Add F-modifier", icon: modifier}
+"graph.local_view": {label: "Frame selected", icon: localview}
+"wm.context_toggle(data_path=space_data.show_handles)": {label: "Show handles", icon: handle}
+"wm.call_menu(name=GRAPH_MT_key_blending)": {label: "Blend keys", icon: blend_neighbor}
+"wm.call_menu(name=GRAPH_MT_key_smoothing)": {label: "Smooth keys", icon: br_smooth}

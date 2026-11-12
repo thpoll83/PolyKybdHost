@@ -23,6 +23,16 @@ class _Lang:
     def __init__(self, aliases=None):
         self._aliases = aliases or {}
 
+    @staticmethod
+    def ime_pick(families, lang, shift=False):
+        # The REAL rule, not a copy: the editor and the board render share it.
+        import sys
+        tools = str(pathlib.Path(__file__).resolve().parents[2] / "tools")
+        if tools not in sys.path:
+            sys.path.insert(0, tools)
+        import lang_demo
+        return lang_demo.ime_pick(families, lang, shift)
+
     def normalize_kc(self, tok, known=None):
         if known is not None and tok not in known:
             alt = self._aliases.get(tok)
@@ -40,6 +50,72 @@ def _preview(known, custom=None, alt_names=None, layer_tags=None, aliases=None):
     p._ranges = None           # the layer ranges resolve lazily from the header
     p._ld = _Lang(aliases)
     return p
+
+
+class ImeStandInTest(unittest.TestCase):
+    """KC_IME draws per language, the firmware's `ime_key_stand_in()` rule."""
+
+    IME = {"families": {"ko-KR": "KOREAN", "ja-JP": "JAPANESE", "en-US": "RALT"},
+           "legends": {"KOREAN": [0x100026], "JAPANESE": [0x100027],
+                       "JAPANESE_SHIFT": [0x100028]}}
+
+    def _p(self, lang, ime=None):
+        p = _preview({"KC_RIGHT_ALT"}, custom={0x7FA8: "KC_IME"})
+        p._ime = self.IME if ime is None else ime
+        p._lang = lang
+        return p
+
+    def test_korean_and_japanese_draw_their_own_icon(self):
+        self.assertEqual(self._p("ko-KR")._ime_stand_in(), [0x100026])
+        # at rest, so the unshifted 英数/かな, never カナ
+        self.assertEqual(self._p("ja-JP")._ime_stand_in(), [0x100027])
+
+    def test_the_ralt_family_draws_as_right_alt(self):
+        self.assertEqual(self._p("en-US")._ime_stand_in(), "KC_RIGHT_ALT")
+
+    def test_ja_jp_on_a_jis_layout_draws_as_caps_lock(self):
+        ime = {"families": {"ja-JP": "JAPANESE_JIS"}, "legends": dict(self.IME["legends"])}
+        self.assertEqual(self._p("ja-JP", ime)._ime_stand_in(), "KC_CAPS_LOCK")
+
+    def test_every_other_language_draws_as_nubs(self):
+        self.assertEqual(self._p("de-DE")._ime_stand_in(), "KC_NONUS_BACKSLASH")
+
+    def test_the_key_is_recognised_by_either_name(self):
+        p = self._p("en-US")
+        self.assertTrue(p._is_ime(0x7FA8, "QK_USER_0"))   # the firmware's name
+        self.assertTrue(p._is_ime(0x1234, "KC_IME"))      # the tile's own pick
+        self.assertFalse(p._is_ime(0x04, "KC_A"))
+
+    def test_a_refused_icon_draws_keycode_text_not_another_legend(self):
+        """A Korean/Japanese icon that was refused (a name with no glyphs, an op the
+        renderer cannot follow) leaves the key to its keycode text: None, never the
+        NUBS or Right Alt legend of another family."""
+        ime = {"families": dict(self.IME["families"]), "legends": {"JAPANESE": [0x100027]}}
+        self.assertIsNone(self._p("ko-KR", ime=ime)._ime_stand_in())
+
+    def test_icons_go_through_the_drawable_gate(self):
+        class _R:
+            @staticmethod
+            def unsupported_ops(cps):
+                return {0x99} if 0x99 in cps else set()
+        p = self._p("ko-KR", ime={})
+        p._R = _R()
+        p.log = logging.getLogger("test")
+        p._set_ime({"ko-KR": "KOREAN", "ja-JP": "JAPANESE"},
+                   {"KOREAN": [0x99, 0x100026], "JAPANESE": [0x100027]})
+        self.assertEqual(p._ime["legends"], {"JAPANESE": [0x100027]})
+        self.assertIsNone(p._ime_stand_in())          # ko-KR: refused -> keycode text
+
+    def test_no_families_means_no_ime_data(self):
+        p = self._p("en-US", ime={})
+        p._R = None
+        p.log = logging.getLogger("test")
+        p._set_ime({}, {})
+        self.assertEqual(p._ime, {})
+
+    def test_without_ime_data_the_key_is_not_special(self):
+        """An export from before the key: it resolves like any other name."""
+        self.assertFalse(self._p("en-US", ime={})._is_ime(0x7FA8, "KC_IME"))
 
 
 class ResolveNameTest(unittest.TestCase):
@@ -97,8 +173,6 @@ class ResolveNameTest(unittest.TestCase):
         self.assertEqual(p._resolve_name(0x47, "KC_SCRL_BRMD"), "KC_SCROLL_LOCK")
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class SourceInfoTest(unittest.TestCase):
@@ -196,8 +270,12 @@ class LayerTagSourceTest(unittest.TestCase):
         p = KeycapPreview()
         if not p._load():
             self.skipTest(f"previews unavailable: {p.reason}")
-        for kc, tok in ((0x5225, "MO(_FL)"), (0x5226, "MO(_NL)"),
-                        (0x522A, "MO(_ADDLANG1)"), (0x520B, "TO(_EMJ)")):
+        # From the checkout's own enum, so the expected values follow it.
+        tags = {t: i for i, t in qh.parse_layers_h(
+            pathlib.Path(self._fw()) / "layers.h").items()}
+        for kc, tok in ((0x5220 + tags["FL"], "MO(_FL)"), (0x5220 + tags["NL"], "MO(_NL)"),
+                        (0x5220 + tags["ADDLANG1"], "MO(_ADDLANG1)"),
+                        (0x5200 + tags["EMJ"], "TO(_EMJ)")):
             self.assertEqual(p._layer_token(kc), tok)
             self.assertIn(tok, p._known)
 
@@ -250,6 +328,54 @@ class LayerTagSourceTest(unittest.TestCase):
         self.assertNotIn("\u26a0", p.source_info())
 
 
+
+
+class LayerTagFoldTest(unittest.TestCase):
+    """Layer keys on a keyboard that stores fewer layers than the shipped tags.
+
+    Firmware 1.13.0 inserted `_ML` as stored layer 8, so every layer after the
+    stored ones moved up by one. A 1.11.x keyboard stores 8 layers and its index 8
+    is `_SL`; previewing its `TO(8)` with the new tags would draw the MIDI key.
+    """
+
+    NEW = dict(qh.LAYER_TAGS)
+
+    def test_the_new_enum(self):
+        self.assertEqual((self.NEW[8], self.NEW[9], self.NEW[12]), ("ML", "SL", "EMJ"))
+        self.assertEqual(qh.STORED_LAYER_COUNT, 9)
+
+    def test_an_8_layer_keyboard_gets_the_old_numbering(self):
+        old = qh.fold_layer_tags(self.NEW, 9, 8)
+        self.assertEqual(old, {0: "L0", 1: "L1", 2: "L2", 3: "L3", 4: "L4", 5: "FL",
+                               6: "NL", 7: "UL", 8: "SL", 9: "LL", 10: "ADDLANG1",
+                               11: "EMJ"})
+
+    def test_same_or_unknown_or_newer_counts_change_nothing(self):
+        for stored, device in ((9, 9), (9, None), (None, 8), (9, 10)):
+            self.assertEqual(qh.fold_layer_tags(self.NEW, stored, device), self.NEW)
+
+    def test_the_preview_follows_the_connected_keyboard(self):
+        p = object.__new__(KeycapPreview)
+        p._ranges = None
+        p._layer_tags = dict(self.NEW)
+        p._stored_layers = 9
+        self.assertEqual(p._layer_token(0x5208), "TO(_ML)")
+        p.set_stored_layer_count(8)
+        self.assertEqual(p._layer_token(0x5208), "TO(_SL)")
+        self.assertEqual(p._layer_token(0x520B), "TO(_EMJ)")
+        p.set_stored_layer_count(9)
+        self.assertEqual(p._layer_token(0x5208), "TO(_ML)")
+
+    def test_layers_h_comments_do_not_drop_a_layer(self):
+        """`_ML,  // MIDI ...` put the comment in front of `_SL` after the split at
+        commas, so `_SL` was dropped and every later layer read one index low."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "layers.h"
+            path.write_text("enum kb_layers {\n    _BL = 0x00,\n    _L0 = _BL,\n"
+                            "    _L1, /* one */\n    _ML,      // MIDI: stored\n"
+                            "    _SL,\n    _EMJ };\n", encoding="utf-8")
+            self.assertEqual(qh.parse_layers_h(path),
+                             {0: "L0", 1: "L1", 2: "ML", 3: "SL", 4: "EMJ"})
 
 
 class PreviewSourceTest(unittest.TestCase):
@@ -446,3 +572,7 @@ class ReportedKeycapsRenderTest(unittest.TestCase):
         right = sum(1 for y in range(img.height()) for x in range(40, img.width())
                     if img.pixel(x, y) & 0xFFFFFF != 0x080A0E)
         self.assertGreater(right, 40, f"no badge beside the text ({right} px)")
+
+
+if __name__ == "__main__":
+    unittest.main()

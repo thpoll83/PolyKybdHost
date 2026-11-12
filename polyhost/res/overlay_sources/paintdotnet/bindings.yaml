@@ -28,7 +28,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 # ⚠️ NO `program_icon:` HERE, DELIBERATELY -- the ESC mark comes from the
@@ -49,19 +49,22 @@ bindings:
   # --- no modifier: the TOOL row (primary A channel) --------------------
   - { key: S, mods: [], icon: rectselect.png, label: "Rectangle select", source: "ms-fluent/Select Object (MIT)" }
   - { key: M, mods: [], icon: movesel.png,    label: "Move selected",    source: "ms-fluent/Drag (MIT)" }
-  - { key: Z, mods: [], icon: zoomtool.png,   label: "Zoom tool",        source: "ms-fluent/Search (MIT)" }
+  - { key: Z, mods: [], icon: zoomtool.png,   label: "Zoom tool", concept: find,        source: "ms-fluent/Search (MIT)" }
   - { key: H, mods: [], icon: pan.png,        label: "Pan tool",         source: "ms-fluent/Hand Right (MIT)" }
+  # hold Space + arrow keys or a drag pans (paint.net KeyboardMouseCommands). Drawn on
+  # the whole keycap beside the centred Space legend (../space_hint.py).
+  - { key: SPACE, mods: [], icon: space_pan.png, mode: alpha, region: [72, 40], label: "Pan (hold Space)", source: "drawn (pan.png + four arrows, space_hint.py)" }
   - { key: B, mods: [], icon: brush.png,      label: Paintbrush,         source: "ms-fluent/Paint Brush (MIT)" }
   - { key: P, mods: [], icon: pencil.png,     label: Pencil,             source: "ms-fluent/Pen (MIT)" }
   - { key: E, mods: [], icon: eraser.png,     label: Eraser,             source: "ms-fluent/Eraser (MIT)" }
   - { key: F, mods: [], icon: bucket.png,     label: "Paint bucket",     source: "ms-fluent/Paint Bucket (MIT)" }
   - { key: G, mods: [], icon: gradient.png,   label: Gradient,           source: "drawn (see fetch_icons.py)", mode: alpha }
   - { key: K, mods: [], icon: picker.png,     label: "Colour picker",    source: "ms-fluent/Eyedropper (MIT)" }
-  - { key: L, mods: [], icon: clonestamp.png, label: "Clone stamp",      source: "drawn (see fetch_icons.py)", mode: alpha }
+  - { key: L, mods: [], icon: clonestamp.png, label: "Clone stamp",      source: "custom (drawn: rubber stamp), shared with photoshop", mode: alpha, region: [36, 32] }
   - { key: R, mods: [], icon: recolor.png,    label: Recolor,            source: "ms-fluent/Color Line (MIT)" }
   - { key: T, mods: [], icon: text.png,       label: "Text tool",        source: "ms-fluent/Text T (MIT)" }
   - { key: O, mods: [], icon: linecurve.png,  label: "Line / curve",     source: "ms-fluent/Line (MIT)" }
-  - { key: X, mods: [], icon: swapcolors.png, label: "Swap colours",     source: "ms-fluent/Arrow Swap (MIT)" }
+  - { key: X, mods: [], icon: swapcolors.png, mode: alpha, region: [72, 40], anchor: center, label: "Swap colours", source: "gimp (borrowed: shared swap-colours glyph)" }
   - { key: LEFT_BRACKET,  mods: [], icon: brushdec1.png, label: "Brush width -1", source: "drawn (thin bar + -1)", mode: alpha }
   - { key: RIGHT_BRACKET, mods: [], icon: brushinc1.png, label: "Brush width +1", source: "drawn (thick bar + +1)", mode: alpha }
   # window toggles

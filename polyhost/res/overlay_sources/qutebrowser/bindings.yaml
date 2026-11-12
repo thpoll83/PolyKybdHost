@@ -1,0 +1,149 @@
+# qutebrowser shortcut overlays for PolyKybd (Windows, macOS and Linux). See SOURCES.md.
+#
+# The keys are qutebrowser's NORMAL-mode defaults, `bindings.default` in
+# qutebrowser/config/configdata.yml at tag v3.7.0
+# (qutebrowser/qutebrowser@b0a7967f11c1c616d3914f3227113e121efb0fe8).
+# qutebrowser is modal: the other modes (insert, hint, command, caret,
+# passthrough) bind few keys and are not drawn.
+#
+# ONE set for every OS. qutebrowser swaps Qt's macOS Ctrl/Cmd mapping back
+# (keyinput/keyutils.py), so `<Ctrl-T>` is the Control key on macOS too, and
+# `<Alt-1>` is Option+1. No binding uses CMDCTRL or GUI.
+#
+# A key sequence (gg, yy, ZZ, ;f, ...) is drawn on its FIRST key only when
+# every default sequence that starts with that key does the same kind of thing
+# and the key is not also a binding of its own (y = yank, Z = quit, ; = hint).
+# Prefixes with mixed meanings (g, w, t, s, S, c) stay blank. SOURCES.md lists
+# both.
+#
+# Every action qutebrowser shares with Chromium / Firefox reuses chrome/icons/
+# or firefox/icons/ byte for byte with the same placement (*r for the reclaimed
+# Chrome cells).
+#
+# Regenerate (from the repo root, with the project venv):
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/qutebrowser/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/qutebrowser/bindings.yaml --preview /tmp/qutebrowser_preview
+app: qutebrowser
+match: [qutebrowser, org.qutebrowser.qutebrowser]
+output: qutebrowser_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+program_icon: qutebrowser.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+# Chrome's reclaimed cells render 1:1: the old cell IS the icon.
+_r: &r { region: [72, 40], anchor: center, source: "reclaimed (chrome/icons)" }
+
+bindings:
+  # ------------------------------------------------ no modifier: opening and tabs
+  - { key: O,   mods: [],      icon: addressbar.png, <<: *r, label: "Open URL" }
+  - { key: O,   mods: [SHIFT], icon: opentab.png,    label: "Open URL in new tab" }
+  - { key: X,   mods: [],      icon: openbg.png,     label: "Open URL in background tab (xo, xO)" }
+  - { key: D,   mods: [],      icon: closetab.png,   <<: *r, label: "Close tab" }
+  - { key: D,   mods: [SHIFT], icon: closetab.png,   <<: *r, label: "Close tab, select other side" }
+  - { key: U,   mods: [],      icon: reopentab.png,  <<: *r, label: "Reopen closed tab" }
+  - { key: U,   mods: [SHIFT], icon: reopenwindow.png, label: "Reopen closed window" }
+  - { key: J,   mods: [SHIFT], icon: nexttab.png,    <<: *r, label: "Next tab" }
+  - { key: K,   mods: [SHIFT], icon: prevtab.png,    <<: *r, label: "Previous tab" }
+  - { key: T,   mods: [SHIFT], icon: tabselect.png,  label: "Go to tab" }
+  - { key: P,   mods: [],      icon: pasteopen.png,  label: "Open URL from clipboard (pp, pP)" }
+  - { key: P,   mods: [SHIFT], icon: pasteopentab.png, label: "Open clipboard URL in new tab (Pp, PP)" }
+  - { key: Z,   mods: [SHIFT], icon: quit.png,       label: "Quit (ZQ, ZZ saves session)" }
+
+  # ------------------------------------------------ no modifier: page navigation
+  - { key: H,   mods: [SHIFT], icon: ../../eclipse/icons/back.png,       <<: *r, label: Back }
+  - { key: L,   mods: [SHIFT], icon: ../../eclipse/icons/forward.png,    <<: *r, label: Forward }
+  - { key: R,   mods: [],      icon: reload.png,     <<: *r, label: Reload }
+  - { key: R,   mods: [SHIFT], icon: hardreload.png, label: "Reload (skip cache)", shared: false }
+  - { key: F5,  mods: [],      icon: reload_f5.png,  <<: *r, label: Reload }
+  - { key: F5,  mods: [CTRL],  icon: hardreload.png, label: "Reload (skip cache)", shared: false }
+  - { key: F11, mods: [],      icon: fullscreen.png, <<: *r, label: "Full screen" }
+  - { key: "[", mods: [],      icon: prevpage.png,   label: "Previous page of site ([[)" }
+  - { key: "]", mods: [],      icon: nextpage.png,   label: "Next page of site (]])" }
+  - { key: "[", mods: [SHIFT], icon: prevpagetab.png, label: "Previous page in new tab ({{)" }
+  - { key: "]", mods: [SHIFT], icon: nextpagetab.png, label: "Next page in new tab (}})" }
+
+  # ------------------------------------------------ no modifier: scrolling
+  - { key: H,   mods: [],      icon: scrollleft.png,  label: "Scroll left" }
+  - { key: J,   mods: [],      icon: scrolldown.png,  label: "Scroll down" }
+  - { key: K,   mods: [],      icon: scrollup.png,    label: "Scroll up" }
+  - { key: L,   mods: [],      icon: scrollright.png, label: "Scroll right" }
+  - { key: G,   mods: [SHIFT], icon: scrollbottom.png, label: "Scroll to bottom" }
+
+  # ------------------------------------------------ no modifier: hints and search
+  - { key: F,   mods: [],      icon: hint.png,       label: "Hint links" }
+  - { key: F,   mods: [SHIFT], icon: hinttab.png,    label: "Hint links, open in new tab" }
+  - { key: ";", mods: [],      icon: hintmenu.png,   label: "More hint modes (;y, ;d, ;i, ...)" }
+  - { key: "/", mods: [],      icon: find.png,       <<: *r, label: "Search page" }
+  - { key: "/", mods: [SHIFT], icon: searchback.png, label: "Search page backward" }
+  - { key: N,   mods: [],      icon: findnext.png,   <<: *r, label: "Next match" }
+  - { key: N,   mods: [SHIFT], icon: findprev.png,   <<: *r, label: "Previous match" }
+  - { key: ENTER, mods: [],    icon: follow.png,     label: "Follow selected link" }
+  - { key: ENTER, mods: [CTRL], icon: followtab.png, label: "Follow selected link in new tab" }
+
+  # ------------------------------------------------ no modifier: modes and commands
+  - { key: ";", mods: [SHIFT], icon: command.png,    label: "Command line" }
+  - { key: I,   mods: [],      icon: insert.png,     label: "Insert mode" }
+  - { key: V,   mods: [],      icon: caret.png,      label: "Caret mode" }
+  - { key: V,   mods: [SHIFT], icon: linesel.png,    label: "Caret mode, select line" }
+  - { key: "`", mods: [],      icon: setmark.png,    label: "Set mark" }
+  - { key: "'", mods: [],      icon: jumpmark.png,   label: "Jump to mark" }
+  - { key: ".", mods: [],      icon: repeat.png,     label: "Repeat last command" }
+  - { key: Q,   mods: [],      icon: macrorecord.png, label: "Record macro" }
+  - { key: "2", mods: [SHIFT], icon: macrorun.png,   label: "Run macro (@)" }
+
+  # ------------------------------------------------ no modifier: marks, yank, zoom
+  - { key: M,   mods: [],      icon: qmsave.png,     label: "Save quickmark" }
+  - { key: B,   mods: [],      icon: qmload.png,     label: "Open quickmark" }
+  - { key: B,   mods: [SHIFT], icon: qmloadtab.png,  label: "Open quickmark in new tab" }
+  - { key: M,   mods: [SHIFT], icon: bookmark.png,   <<: *r, label: "Bookmark page" }
+  - { key: Y,   mods: [],      icon: yank.png,       label: "Yank URL or title (yy, yt, yd, ...)" }
+  - { key: A,   mods: [],      icon: dlcancel.png,   label: "Cancel download (ad)" }
+  - { key: "-", mods: [],      icon: zoomout.png,    <<: *r, label: "Zoom out" }
+  - { key: "=", mods: [SHIFT], icon: zoomin.png,     <<: *r, label: "Zoom in (+)" }
+  - { key: "=", mods: [],      icon: zoomreset.png,  <<: *r, label: "Reset zoom" }
+
+  # ------------------------------------------------ Ctrl
+  - { key: T,    mods: [CTRL],        icon: newtab.png,     <<: *r, label: "New tab" }
+  - { key: N,    mods: [CTRL],        icon: newwindow.png,  <<: *r, label: "New window" }
+  - { key: N,    mods: [CTRL, SHIFT], icon: incognito.png,  <<: *r, label: "Private window" }
+  - { key: W,    mods: [CTRL],        icon: closetab.png,   <<: *r, label: "Close tab" }
+  - { key: W,    mods: [CTRL, SHIFT], icon: closewindow.png, label: "Close window" }
+  - { key: T,    mods: [CTRL, SHIFT], icon: reopentab.png,  <<: *r, label: "Reopen closed tab" }
+  - { key: PGDN, mods: [CTRL],        icon: nexttab.png,    <<: *r, label: "Next tab" }
+  - { key: PGUP, mods: [CTRL],        icon: prevtab.png,    <<: *r, label: "Previous tab" }
+  - { key: TAB,  mods: [CTRL],        icon: lasttabswap.png, label: "Last used tab", concept: replace }
+  - { key: P,    mods: [CTRL],        icon: pin.png,        label: "Pin tab" }
+  - { key: Q,    mods: [CTRL],        icon: quit.png,       label: "Quit" }
+  - { key: H,    mods: [CTRL],        icon: home.png,       label: "Home page" }
+  - { key: S,    mods: [CTRL],        icon: stop.png,       label: "Stop loading" }
+  - { key: V,    mods: [CTRL],        icon: passthrough.png, label: "Passthrough mode" }
+  - { key: F,    mods: [CTRL],        icon: pagedown.png,   label: "Page down" }
+  - { key: B,    mods: [CTRL],        icon: pageup.png,     label: "Page up" }
+  - { key: D,    mods: [CTRL],        icon: halfdown.png,   label: "Half page down" }
+  - { key: U,    mods: [CTRL],        icon: halfup.png,     label: "Half page up" }
+  - { key: A,    mods: [CTRL],        icon: increment.png,  label: "Increment number in URL" }
+  - { key: X,    mods: [CTRL],        icon: decrement.png,  label: "Decrement number in URL" }
+  - { key: P,    mods: [CTRL, ALT],   icon: print.png,      label: "Print" }
+
+  # ------------------------------------------------ Alt (Option on macOS)
+  - { key: M,   mods: [ALT], icon: mute.png,    label: "Mute tab" }
+  - { key: "1", mods: [ALT], icon: tab1.png,    <<: *r, label: "Tab 1" }
+  - { key: "2", mods: [ALT], icon: tab2.png,    <<: *r, label: "Tab 2" }
+  - { key: "3", mods: [ALT], icon: tab3.png,    <<: *r, label: "Tab 3" }
+  - { key: "4", mods: [ALT], icon: tab4.png,    <<: *r, label: "Tab 4" }
+  - { key: "5", mods: [ALT], icon: tab5.png,    <<: *r, label: "Tab 5" }
+  - { key: "6", mods: [ALT], icon: tab6.png,    <<: *r, label: "Tab 6" }
+  - { key: "7", mods: [ALT], icon: tab7.png,    <<: *r, label: "Tab 7" }
+  - { key: "8", mods: [ALT], icon: tab8.png,    <<: *r, label: "Tab 8" }
+  - { key: "9", mods: [ALT], icon: lasttab.png, <<: *r, label: "Last tab" }

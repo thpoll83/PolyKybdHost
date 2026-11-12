@@ -22,7 +22,17 @@ _app = QApplication.instance() or QApplication(["cmd_menu_test", "-platform", "o
 
 
 class _StubHost(QObject):
-    """QObject so it can parent the menu's QActions; no host behavior needed."""
+    """QObject so it can parent the menu's QActions. Carries the MenuFetcher the
+    menu's actions send their core calls through, as PolyHost does."""
+
+    def __init__(self):
+        super().__init__()
+        from polyhost.gui.menu_fetch import MenuFetcher
+        self._menu_fetch = MenuFetcher(self)
+        self.reported = []
+
+    def report_device_result(self, title, msg, result=False):
+        self.reported.append((title, msg, result))
 
 
 def _build(developer=True):
@@ -98,6 +108,62 @@ class TestUpdateEnabled(unittest.TestCase):
         self.assertEqual(texts, ["Brightness", "Maintenance"])
 
 
+class TestSplitVbusMark(unittest.TestCase):
+    """Maintenance > Fix Left/Right Side > the Rev.2 board mark (protocol 24)."""
+
+    def _hand_menu(self, cm):
+        maintenance = cm._maintenance_action.menu()
+        return next(a.menu() for a in maintenance.actions() if a.text() == "Fix Left/Right Side")
+
+    def test_both_entries_sit_under_fix_side_and_are_gated_by_the_host(self):
+        cm, _menu = _build(developer=False)
+        texts = [a.text() for a in self._hand_menu(cm).actions() if not a.isSeparator()]
+        self.assertEqual(texts[2:], [a.text() for a in cm.split_vbus_actions])
+        self.assertEqual(len(cm.split_vbus_actions), 2)
+        # In neither list: update_enabled must not switch them on below v24.
+        for action in cm.split_vbus_actions:
+            self.assertNotIn(action, cm._device_actions)
+            self.assertNotIn(action, cm._fw_actions)
+
+    def _click(self, mark, button):
+        """Run set_split_vbus with the dialog answered by `button` (0 L, 1 R, 2 cancel)."""
+        cm, _menu = _build(developer=False)
+        cm.parent.core = mock.Mock(**{"set_handedness.return_value": (True, {"queued": True})})
+        cm.parent.sender = lambda: cm.split_vbus_actions[0 if mark else 1]
+
+        from polyhost.gui.message_box import MessageBox
+        added = []
+        real_add = MessageBox.add_button
+
+        def add_button(box, *args):
+            added.append(real_add(box, *args))
+            return added[-1]
+
+        def exec_(box):
+            box._on_clicked(added[button])
+            return 0
+
+        with mock.patch.object(MessageBox, "add_button", add_button), \
+                mock.patch.object(MessageBox, "exec_", exec_), \
+                mock.patch.object(CommandsSubMenu, "_report") as report:
+            cm.set_split_vbus()
+            cm.parent._menu_fetch.wait_idle()
+        return cm.parent.core.set_handedness, report
+
+    def test_mark_on_the_left_half(self):
+        call, _ = self._click(mark=True, button=0)
+        call.assert_called_once_with(True, True)
+
+    def test_clear_on_the_right_half(self):
+        call, _ = self._click(mark=False, button=1)
+        call.assert_called_once_with(False, False)
+
+    def test_cancel_sends_nothing(self):
+        call, report = self._click(mark=True, button=2)
+        call.assert_not_called()
+        report.assert_not_called()
+
+
 class TestFontpackStatusTable(unittest.TestCase):
     """The Developer -> Font Pack -> per-bundle status table.
 
@@ -119,6 +185,7 @@ class TestFontpackStatusTable(unittest.TestCase):
         cm.parent.core = mock.Mock(**{"fontpack_bundle_status.return_value": payload})
         with mock.patch.object(CommandsSubMenu, "_info") as info:
             cm.show_fontpack_status()
+            cm.parent._menu_fetch.wait_idle()
         info.assert_called_once()
         return info.call_args[0][1]
 

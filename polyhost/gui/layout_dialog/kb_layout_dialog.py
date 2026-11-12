@@ -1,31 +1,36 @@
 import json
 import logging
+import math
 import pathlib
 import traceback
 
-from PyQt5.QtGui import QTransform, QGuiApplication, QCursor, QPixmap
+from PyQt5.QtCore import QRectF, Qt
+from PyQt5.QtGui import QBrush, QGuiApplication, QCursor, QPixmap, QTransform
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QLabel, QLineEdit, QTextEdit, QMessageBox,
-    QToolButton, QButtonGroup,
-    QGraphicsScene, QDialog, QFormLayout
+    QLabel,
+    QToolButton, QButtonGroup, QComboBox,
+    QGraphicsScene,
 )
 
+from polyhost.gui import message_box
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.gui.button_array import ButtonArray
-from polyhost.gui.get_icon import get_icon
 from polyhost.gui.layout_dialog.qmk_keycode_helper import describe_keycode, parse_layer_names
-from polyhost.gui.layout_dialog.keycap_preview import KeycapPreview
+from polyhost.gui.layout_dialog.keycap_preview import (
+    DEFAULT_LANG, KC_NO, KC_TRANSPARENT, KeycapPreview)
 from polyhost.gui import oled_look
 from polyhost.gui import theme as gui_theme
 from polyhost.gui.layout_dialog.macro_keycap_render import MacroKeycapRenderer
 from polyhost.gui.layout_dialog.macro_tab import QK_MACRO
 from polyhost.gui.layout_dialog.board_plate import add_board, set_screen_images
+from polyhost.gui.layout_dialog import real_board
 from polyhost.gui.layout_dialog import status_screen_render as ssr
 from polyhost.gui.layout_dialog.status_screen_render import StatusScreenRenderer
-from polyhost.gui.layout_dialog.renderable_key import RenderableKey
+from polyhost.gui.layout_dialog.renderable_key import RenderableKey, key_transform
 from polyhost.gui.layout_dialog.keycode_browser import KeycodeBrowser
 from polyhost.gui.zoomable_graphics_view import ZoomableGraphicsView
+from polyhost.i18n import _, _f
 from polyhost.kle.kle_praser import parse_kle
 from polyhost.services import macro_label as ml
 from polyhost.services import macro_look as mkl
@@ -46,42 +51,22 @@ KEYCAP_REAL = "real"
 KEYCAP_REAL_SCALE = 3
 
 KEY_SCALE = 80.0
+# the case around the KLE key tiles, in scene units
+FIT_PAD = 0.5 * KEY_SCALE
 KLE_DEFINITION = pathlib.Path(__file__).parent.parent.parent.resolve() / "res" / "polykybd-split72.json"
 
-class KeyEditDialog(QDialog):
-    """Key editing dialog"""
-    def __init__(self, key_dict):
-        super().__init__()
-        self.setWindowTitle("Edit Key")
-        self.key = key_dict
-        layout = QFormLayout()
-        
-        self.qmk_edit = QLineEdit(self.key.get('qmk', ''))
-        layout.addRow("QMK Keycode:", self.qmk_edit)
-        
-        self.label_edit = QTextEdit(self.key.get('label', ''))
-        layout.addRow("Visual Label:", self.label_edit)
-        
-        if self.key.get('r', 0) != 0:
-            info = f"Rotation: {self.key['r']}° around ({self.key['rx']}, {self.key['ry']})"
-            layout.addRow("Info:", QLabel(info))
-        
-        btn_ok = QPushButton("OK")
-        btn_cancel = QPushButton("Cancel")
-        btn_ok.clicked.connect(self.accept_changes)
-        btn_cancel.clicked.connect(self.reject)
-        h = QHBoxLayout()
-        h.addWidget(btn_ok)
-        h.addWidget(btn_cancel)
-        layout.addRow(h)
-        self.setLayout(layout)
-        
-        self.setWindowIcon(get_icon("pcolor.png"))
-    
-    def accept_changes(self):
-        self.key['qmk'] = self.qmk_edit.text().strip()
-        self.key['label'] = self.label_edit.toPlainText()
-        self.accept()
+def _lang_code(value):
+    """`value` as an `xx-YY` language code, or None when it is not one.
+
+    The keyboard answers `koKR`; the language table says `ko-KR`. A failed probe
+    publishes its error text in the same field, so anything else is refused."""
+    if not isinstance(value, str):
+        return None
+    if len(value) == 4 and value.isalpha():
+        return f"{value[:2]}-{value[2:]}"
+    if len(value) == 5 and value[2] == "-" and (value[:2] + value[3:]).isalpha():
+        return value
+    return None
 
 
 class KbLayoutDialog(QMainWindow):
@@ -89,7 +74,7 @@ class KbLayoutDialog(QMainWindow):
         super().__init__(parent)
         self.log = logging.getLogger('PolyHost')
         self.settings = settings
-        self.setWindowTitle("PolyKybd Split72 Layout")
+        self.setWindowTitle(_("PolyKybd Split72 Layout"))
         self.key_matrix = {}
         self.mapping = {}
         self.row_count = 0
@@ -101,10 +86,12 @@ class KbLayoutDialog(QMainWindow):
         # dialog works identically for an in-process or a --connect GUI.
         self.core = core
 
+        # zoom RELATIVE to the window: 1.0 shows the whole board, and the view
+        # re-applies it on every resize (ZoomableGraphicsView fit_scene)
         self.scale_factor = 1.0
         self._zoom_step = 1.2   # multiplicative step for each + / - press
-        self._zoom_min = 0.2
-        self._zoom_max = 3.0
+        self._zoom_min = 0.5
+        self._zoom_max = 8.0
         self.selected_key = None
         self.keys = {}
         self.current_layer = 0
@@ -124,16 +111,10 @@ class KbLayoutDialog(QMainWindow):
         # keycaps came from, so one board cannot show two firmwares.
         self._status_render = None
         self._board_items: list = []
-        # Drives the header toggle. A plain flag rather than reading the checkbox back,
-        # so `_keycap_for` does not depend on a widget that init_ui has not built yet.
-        # OFF by default: the editor's job is assigning keycodes, and a board of
-        # pictures makes the keycode you are about to change harder to read, not
-        # easier. The previews are the thing you turn ON to check your work.
         # SYMBOL / PREVIEW / REAL, driving the header's button group. A plain field
         # rather than reading a widget back, so `_keycap_for` does not depend on one
-        # init_ui has not built yet. SYMBOL by default: the editor's job is assigning
-        # keycodes, and a board of pictures makes the keycode you are about to change
-        # harder to read, not easier. The pictures are what you turn ON to check work.
+        # init_ui has not built yet. Set to the default once the fonts below have
+        # loaded (`_default_keycap_mode`); SYMBOL until then.
         self._keycap_mode = KEYCAP_SYMBOL
         try:
             faces = ml.load_caption_faces(ml.default_font_dir())
@@ -146,8 +127,19 @@ class KbLayoutDialog(QMainWindow):
             self._keycap_render = MacroKeycapRenderer(fonts, nano, mid, ladder, faces)
         except Exception:
             self.log.debug("macro keycap fonts unavailable; keys show their keycode")
+        self._keycap_mode = self._default_keycap_mode()
 
         self.init_ui()
+
+    def _default_keycap_mode(self):
+        """REAL when it can draw, else the best mode that can: the editor opens on
+        the board as it looks (the maintainer's call, 2026-10-07), and falls back
+        to Preview without the panel simulation and to Symbol without the fonts,
+        the same rules that enable the header's buttons."""
+        macro_ok = self._keycap_render is not None and self._keycap_render.usable
+        if not (macro_ok or self._preview.usable):
+            return KEYCAP_SYMBOL
+        return KEYCAP_REAL if oled_look.available() else KEYCAP_PREVIEW
 
     def get_selected_key(self):
         return self.selected_key
@@ -173,7 +165,7 @@ class KbLayoutDialog(QMainWindow):
         
         # Left: keyboard view
         self.scene = QGraphicsScene()
-        self.view = ZoomableGraphicsView(zoom_callback=self.zoom)
+        self.view = ZoomableGraphicsView(zoom_callback=self.zoom, fit_scene=True)
         self.view.setScene(self.scene)
 
         self.keycode_browser = KeycodeBrowser(core=self.core)
@@ -185,12 +177,13 @@ class KbLayoutDialog(QMainWindow):
         layer_names = self._layer_names()
 
         if not success:
-            QMessageBox.warning(
-                None, "Not Connected",
-                "PolyKybd is not reachable. Please connect the keyboard and try again.")
-            my_options = ["Could not read layers from device"]
+            message_box.warning(
+                None, _("Not Connected"),
+                _("PolyKybd is not reachable. Please connect the keyboard and try again."))
+            my_options = [_("Could not read layers from device")]
         else:
             self.keycode_browser.set_layer_count(self.num_layers)
+            self._preview.set_stored_layer_count(self.num_layers)
             my_options = []
             for idx in range(self.num_layers):
                 hint = layer_names.get(idx)
@@ -200,7 +193,7 @@ class KbLayoutDialog(QMainWindow):
         self.layers = ButtonArray(my_options)
         self.layers.setMaximumHeight(40)
         self.layers.connect(self.layerChanged)
-        label = QLabel("Layers:")
+        label = QLabel(_("Layers:"))
         # ⚠️ NO width cap here. It carried setMaximumWidth(50) and the string needs
         # 62 px, so the header read "Layer:" -- clipped in the app itself, and in
         # every docs screenshot of it. The cap was there to stop the label eating
@@ -213,6 +206,7 @@ class KbLayoutDialog(QMainWindow):
         # the cap hides all but the FIRST: eight layers render as one, with nothing
         # clipped-looking to give it away.
         header_layout.addWidget(self.layers, 1)
+        header_layout.addWidget(self._build_preview_language())
         header_layout.addWidget(self._build_keycap_modes())
         main_layout.addLayout(header_layout)
         main_layout.addWidget(self.view)
@@ -275,18 +269,20 @@ class KbLayoutDialog(QMainWindow):
         # missing openpyxl silently disabled everything but the macros. `source_info()`
         # below then names WHICH data drew them, which is the other half of the same
         # question: a legend can be perfectly rendered and still be the wrong vintage.
-        tip = ("Draw each key as the keycap the keyboard shows. A key whose legend is "
-               "not modelled here keeps its keycode text.") if usable else (
+        tip = _("Draw each key as the keycap the keyboard shows. A key whose legend is "
+                "not modelled here keeps its keycode text.") if usable else _(
               "Unavailable: the keycap fonts and layout tables could not be loaded, so "
               "keys show their keycode.")
         why = self._preview.reason
         if why:
-            tip += f"\n\nPartly unavailable — {why}"
+            # `reason` is English (it is logged too); the fixed ones are marked msgids,
+            # and an exception text simply has no translation and passes through.
+            tip += "\n\n" + _f("Partly unavailable — {reason}", reason=_(why))
         # Name the checkout the legends came from. Without it, a preview drawing
         # legends the keyboard has moved past looks the same as one that is wrong.
         src = self._preview.source_info()
         if src:
-            tip += f"\n\nLegends read from:\n{src}"
+            tip += "\n\n" + _f("Legends read from:\n{source}", source=src)
         # One exclusive group of push buttons rather than three checkboxes: the modes
         # are alternatives, and a segmented control says so where three ticks would
         # invite the reader to look for a combination that does not exist.
@@ -302,11 +298,14 @@ class KbLayoutDialog(QMainWindow):
         lay.setSpacing(0)
         real_ok = usable and oled_look.available()
         for mode, text, hint in (
-            (KEYCAP_SYMBOL, "Symbol", "Every key shows its keycode."),
-            (KEYCAP_PREVIEW, "Preview", tip),
-            (KEYCAP_REAL, "Real", tip + "\n\nThrough the panel simulation: emissive "
-                                        "pixels, bloom and the diffusion of the clear "
-                                        "keycap cover — how the key actually reads."),
+            # TRANSLATORS: keycap display mode -- show the raw keycode text.
+            (KEYCAP_SYMBOL, _("Symbol"), _("Every key shows its keycode.")),
+            # TRANSLATORS: keycap display mode -- the rendered keycap image.
+            (KEYCAP_PREVIEW, _("Preview"), tip),
+            # TRANSLATORS: keycap display mode -- the keycap through the panel simulation.
+            (KEYCAP_REAL, _("Real"), tip + "\n\n" + _("Through the panel simulation: emissive "
+                                                       "pixels, bloom and the diffusion of the clear "
+                                                       "keycap cover — how the key actually reads.")),
         ):
             b = QToolButton(row)
             b.setText(text)
@@ -322,10 +321,95 @@ class KbLayoutDialog(QMainWindow):
             lay.addWidget(b)
         if not oled_look.available():
             self.keycap_buttons[KEYCAP_REAL].setToolTip(
-                f"Unavailable: {oled_look.reason()}")
+                _f("Unavailable: {reason}", reason=oled_look.reason()))
         self.keycap_group.buttonClicked.connect(self._on_keycap_button)
         self.keycap_modes = row
         return row
+
+    # -- preview language ---------------------------------------------------
+
+    def _keyboard_lang(self):
+        """The keyboard's current language in the preview's `xx-YY` spelling, or None.
+
+        From cached state only, because this runs on the GUI thread:
+        `RemoteCore.status_snapshot()` in client mode (its `get_status()` is an
+        RPC to the daemon that waits for the reply -- Greptile, #320), else
+        `get_status()`, which PolyCore answers from its own cache with no device
+        I/O. A core with neither (a test double) or one that raises means
+        "unknown".
+
+        ⚠️ The KEYBOARD spells it without the dash: GET_LANG answers `P\x07.koKR`
+        and `current_lang` carries `koKR` through unchanged, while the language
+        table says `ko-KR`. Compared raw, no keyboard language ever matched and a
+        Korean board opened on en-US (Greptile, #320).
+
+        ⚠️ In client mode `current_lang` is only the `status.get` SEED: every
+        later probe's `status_changed` event updates `lang` instead, so after a
+        language switch `current_lang` names the old one. `lang` is read first.
+        It is not always a code, though -- a failed probe publishes its error
+        text there -- so each candidate must look like one (Greptile, #320)."""
+        get = (getattr(self.core, "status_snapshot", None)
+               or getattr(self.core, "get_status", None))
+        if get is None:
+            return None
+        try:
+            status = get() or {}
+        except Exception as e:
+            self.log.debug("keyboard language unknown (%s: %s)", type(e).__name__, e)
+            return None
+        for key in ("lang", "current_lang"):
+            code = _lang_code(status.get(key))
+            if code:
+                return code
+        return None
+
+    def _build_preview_language(self):
+        """The language the PREVIEW draws its legends in.
+
+        The previews used to draw every layout in the renderer's default, en-US,
+        whatever the keyboard was set to: Korean jamo, Greek letters and every
+        key whose legend depends on the language (KC_IME's 한/영 / 英数かな / Right
+        Alt / Non-US Backslash) could never be seen in the editor. This picks the
+        language for the preview ONLY -- it does not change the keyboard -- and
+        opens on the keyboard's own language when the host knows it.
+        """
+        row = QWidget()
+        lay = QHBoxLayout(row)
+        lay.setContentsMargins(8, 0, 8, 0)
+        lay.addWidget(QLabel(_("Preview language:"), row))
+        self.preview_lang = QComboBox(row)
+        langs = list(self._preview.languages)
+        self.preview_lang.addItems(langs)
+        current = self._keyboard_lang()
+        pick = (current if current in langs
+                else DEFAULT_LANG if DEFAULT_LANG in langs
+                else (langs[0] if langs else None))
+        if pick is not None:
+            self.preview_lang.setCurrentIndex(langs.index(pick))
+            self._preview.set_language(pick)
+        self.preview_lang.setToolTip(
+            _("The layout the previews draw their legends in. Only the preview "
+              "changes, not the keyboard.") if langs else
+            _("Unavailable: the language table could not be loaded."))
+        self._sync_preview_lang_enabled()
+        self.preview_lang.currentTextChanged.connect(self.set_preview_language)
+        lay.addWidget(self.preview_lang)
+        return row
+
+    def _sync_preview_lang_enabled(self):
+        # Symbol mode draws keycode text, which no language changes.
+        if hasattr(self, "preview_lang"):
+            self.preview_lang.setEnabled(self.preview_lang.count() > 0
+                                         and self._keycap_mode != KEYCAP_SYMBOL)
+
+    def set_preview_language(self, lang):
+        """Redraw the keys in `lang`. The keycode->pixmap cache is per language, so
+        it is dropped; the macro keycaps are language-independent and kept."""
+        if not self._preview.set_language(lang):
+            return
+        self._key_cache.clear()
+        if self.key_buffer is not None:
+            self.set_keycodes_for_layer(self.current_layer)
 
     def _on_keycap_button(self, button):
         for mode, b in self.keycap_buttons.items():
@@ -342,9 +426,15 @@ class KbLayoutDialog(QMainWindow):
         """
         if mode == self._keycap_mode:
             return
+        was_photo = self._real_board() is not None
         self._keycap_mode = mode
         self._keycap_cache.clear()
         self._key_cache.clear()
+        # Real mode lays the keys out on the rendered photo, the others on the KLE
+        # grid: a change between the two rebuilds the scene before it is repainted.
+        if (self._real_board() is not None) != was_photo:
+            self.render_keys()
+        self._sync_preview_lang_enabled()
         btn = self.keycap_buttons.get(mode) if hasattr(self, "keycap_buttons") else None
         if btn is not None and not btn.isChecked():
             btn.setChecked(True)
@@ -356,6 +446,10 @@ class KbLayoutDialog(QMainWindow):
             # the only reason they did not, and a board whose keys are locked down
             # still says which layer is selected.
             self._refresh_screens(self.current_layer)
+        # every mode lays the board out differently (and Real on another scene
+        # rect), so the view is put back on the middle of the board, at the
+        # same zoom relative to the window
+        self.view.refit()
 
     def _pixmap(self, img):
         """One QImage -> QPixmap step for BOTH halves of the preview.
@@ -501,21 +595,15 @@ class KbLayoutDialog(QMainWindow):
         num_keys = len(self.keys)
         max_idx = self.settings.MATRIX_COLUMNS*self.settings.MATRIX_ROWS
         offset = layer*max_idx
+        photo = self._real_board() is not None
         idx = 0
-        for _ in range(num_keys):
+        for _key in range(num_keys):
             # skip matrix positions without junctions (no physical key)
             while idx not in self.keys and idx < max_idx:
                 idx += 1
             keycode = self.key_buffer[idx + offset]
-            main, badge, color = describe_keycode(keycode, mapping)
-            main = self._tile_main(keycode, main)
-            self.keys[idx].set_display(main, badge, color, 9 if len(main) < 5 else 7)
-            # After set_display, which restores the text a keycap hides. The PREVIEW
-            # resolves transparency; the TEXT deliberately does not, so the tile still
-            # says the slot is transparent rather than claiming it holds that key.
-            self.keys[idx].set_keycap(
-                self._keycap_for(self._resolve(idx, layer)) if self._has_display(idx)
-                else None)
+            self._show_key(self.keys[idx], idx, keycode, self._resolve(idx, layer),
+                           mapping, photo)
             idx += 1
         # The status panels name the layer, so they follow it -- and this is the one
         # path both a layer change and a mode change go through.
@@ -558,10 +646,8 @@ class KbLayoutDialog(QMainWindow):
 
         new_scale = self.scale_factor * factor
         new_scale = max(self._zoom_min, min(self._zoom_max, new_scale))
-        # compute relative factor to apply to view (delta)
-        delta = new_scale / self.scale_factor
-        # apply transform
-        self.view.scale(delta, delta)
+        # the view keeps it relative to the window from here on
+        self.view.zoom_by(new_scale / self.scale_factor)
         self.scale_factor = new_scale
 
         
@@ -573,7 +659,8 @@ class KbLayoutDialog(QMainWindow):
             # self.row_count, self.col_count, self.mapping = build_matrix(self.matrix_pos)
             self.render_keys()
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to load:\n{e}\n{traceback.format_exc()}")
+            message_box.critical(self, _("Error"), _f("Failed to load:\n{error}\n{details}",
+                                                     error=e, details=traceback.format_exc()))
             
     # def load_kle(self):
     #     filename, _ = QFileDialog.getOpenFileName(self, "Open KLE JSON", "", "JSON (*.json)")
@@ -588,6 +675,30 @@ class KbLayoutDialog(QMainWindow):
             max_idx = self.settings.MATRIX_COLUMNS * self.settings.MATRIX_ROWS
             self.keycode_browser.show_keycode(self.key_buffer[idx + self.current_layer * max_idx])
 
+    def _show_key(self, item, idx, keycode, preview_keycode, mapping, photo):
+        """Draw one key: its tile text and its keycap picture.
+
+        The ONE place both the whole-layer redraw and a single-key edit go through,
+        so the two cannot disagree about how a key looks. `preview_keycode` is what
+        the picture shows: the layer redraw passes the slot's own keycode (see
+        `_resolve`), an edit the keycode just assigned.
+        """
+        main, badge, color = describe_keycode(keycode, mapping)
+        main = self._tile_main(keycode, main)
+        if photo and keycode in (KC_NO, KC_TRANSPARENT):
+            # nothing assigned: the keyboard shows nothing there, and neither does
+            # the photo -- no "NO", "TRNS" or "______" over the picture
+            main, badge = "", ""
+        item.set_display(main, badge, color, 9 if len(main) < 5 else 7)
+        # After set_display, which restores the text a keycap hides. The PREVIEW
+        # resolves transparency; the TEXT deliberately does not, so the tile still
+        # says the slot is transparent rather than claiming it holds that key.
+        # On the photo every key has a picture to show: the displays their panel,
+        # the two expansion-port keys their legend over the lid. None for a key
+        # with no picture clears one it showed before (a key that WAS a macro).
+        shown = photo or idx is None or self._has_display(idx)
+        item.set_keycap(self._keycap_for(preview_keycode) if shown else None)
+
     def keycodeSelected(self, nice_name, name, keycode, font_size_hint):
         if self.selected_key is None:
             return
@@ -595,13 +706,10 @@ class KbLayoutDialog(QMainWindow):
             self.log.warning("Cannot write keycode: key buffer not initialized")
             return
         mapping = self.keycode_browser.get_keycode_to_name_mapping()
-        main, badge, color = describe_keycode(keycode, mapping)
-        main = self._tile_main(keycode, main)
-        self.selected_key.set_display(main, badge, color, 9 if len(main) < 5 else 7)
-        # None for a non-macro keycode, which is what clears a key that WAS a macro.
-        sel = self.selected_key.matrix_index
-        self.selected_key.set_keycap(
-            self._keycap_for(keycode) if sel is None or self._has_display(sel) else None)
+        # the same drawing rules as a whole-layer redraw, so an edit looks right at
+        # once rather than after the next layer or mode switch
+        self._show_key(self.selected_key, self.selected_key.matrix_index, keycode, keycode,
+                       mapping, self._real_board() is not None)
         idx = self.selected_key.matrix_index
         if idx is None:
             return
@@ -613,15 +721,26 @@ class KbLayoutDialog(QMainWindow):
 
         # Single-key write via the core (a quick HID write in-process, or an RPC
         # round-trip in client mode); keeps the local buffer in sync above.
-        ok, _ = self.core.keymap_set(layer, row, col, keycode)
+        ok, _unused = self.core.keymap_set(layer, row, col, keycode)
         if not ok:
             self.log.warning("Failed to write keycode 0x%04x to device (layer=%d row=%d col=%d)",
                              keycode, layer, row, col)
 
             
+    def _real_board(self):
+        """The rendered photo for Real mode, or None (not shipped, or another mode)."""
+        if self._keycap_mode != KEYCAP_REAL:
+            return None
+        if not hasattr(self, "_photo"):
+            self._photo = real_board.load()
+        return self._photo
+
     def render_keys(self):
         """Render keys with rotation applied"""
+        selected = getattr(self.selected_key, "matrix_index", None)
+        self.selected_key = None        # the scene is rebuilt: the old item is gone
         self.scene.clear()
+        self.scene.setBackgroundBrush(QBrush(Qt.NoBrush))   # each mode sets its own
         
         if not self.key_matrix:
             return
@@ -629,50 +748,123 @@ class KbLayoutDialog(QMainWindow):
         minx = min(p['x'] for p in self.key_matrix.values())
         miny = min(p['y'] for p in self.key_matrix.values())
 
+        photo = self._real_board()
+        if photo is not None and self._render_on_photo(photo, minx, miny):
+            self._set_fit_rect(minx, miny)
+            if selected is not None and selected in self.keys:
+                self.keys[selected].setSelected(True)
+                self.selected_key = self.keys[selected]
+            return
+
         # The board the keys are mounted on, behind them. Decoration only, and
         # it fails soft -- see `board_plate`. Added FIRST so the plate is under
         # every key even before Z-values are considered.
         self._add_board(minx, miny)
 
         for name, info in self.key_matrix.items():
-            # Get key properties
-            x = info['x'] - minx
-            y = info['y'] - miny
-            r = info.get('r', 0)
-            rx = info.get('rx', 0) - minx
-            ry = info.get('ry', 0) - miny
-            
-            # Create key item
             index = info["row"] * self.settings.MATRIX_COLUMNS + info["col"]
             item = RenderableKey(name, info, KEY_SCALE, matrix_index=index)
             item.pressed.connect(self.mouseClickEvent)
             self.keys[index] = item
-            
-            # Apply transformations for rotation
-            # 1. Translate to position
-            # 2. Translate to rotation origin
-            # 3. Rotate
-            # 4. Translate back
-            
-            transform = QTransform()
-            
-            if r != 0:
-                # Position relative to rotation origin
-                rel_x = (x - rx) * KEY_SCALE
-                rel_y = (y - ry) * KEY_SCALE
-                
-                # Move to rotation origin, rotate, then offset
-                transform.translate(rx * KEY_SCALE, ry * KEY_SCALE)
-                transform.rotate(r)
-                transform.translate(rel_x, rel_y)
-            else:
-                # Without rotation
-                transform.translate(x * KEY_SCALE, y * KEY_SCALE)
-            
-            item.setTransform(transform)
+            item.setTransform(key_transform(info, minx, miny, KEY_SCALE))
             self.scene.addItem(item)
         
         self.view.setSceneRect(self.scene.itemsBoundingRect())
+        self._set_fit_rect(minx, miny)
+        if selected is not None and selected in self.keys:
+            self.keys[selected].setSelected(True)
+            self.selected_key = self.keys[selected]
+
+    def _set_fit_rect(self, minx, miny):
+        """What a relative zoom of 1 shows, and the scene rect: the board at
+        ONE size in every mode, so a mode switch keeps the keyboard's size.
+
+        The SIZE is the KLE layout's (every key's tile on the grid, plus a
+        margin for the case), whatever the mode draws; it is centred on the
+        keys as this mode places them. Fitting each mode's own scene rect
+        showed the keyboard at different sizes: the photo carries a white
+        margin the drawn board does not, and on the photo a key's extent is
+        its display, not its tile. The keys themselves come out the same size
+        in both layouts (KEY_SCALE per U, the photo by its mm_per_px).
+        """
+        kle, here = QRectF(), QRectF()
+        for name, info in self.key_matrix.items():
+            index = info["row"] * self.settings.MATRIX_COLUMNS + info["col"]
+            item = self.keys.get(index)
+            if item is None:
+                continue
+            kle = kle.united(key_transform(info, minx, miny, KEY_SCALE).mapRect(item.boundingRect()))
+            here = here.united(item.sceneBoundingRect())
+        if not kle.isValid():
+            self.view.fit_rect = None
+            return
+        fit = kle.adjusted(-FIT_PAD, -FIT_PAD, FIT_PAD, FIT_PAD)
+        fit.moveCenter(here.center())
+        self.view.fit_rect = fit
+        # the scene rect with it: the photo's white margin beyond the case put
+        # scroll bars on a fully visible board and let it pan into nothing
+        self.view.setSceneRect(fit)
+
+    def _render_on_photo(self, photo, minx, miny):
+        """Real mode on the rendered top view: every key on its photographed OLED.
+
+        See `real_board`. Returns False (and leaves the scene to the normal path)
+        when the photo cannot be shown, so Real mode never ends up with no board.
+        """
+        items = real_board.add_photo(self.scene, photo, KEY_SCALE)
+        if not items:
+            self.scene.clear()
+            return False
+        self._board_items = items
+        pairs = {"left": [], "right": []}
+        loose, placed = [], []
+        for name, info in self.key_matrix.items():
+            index = info["row"] * self.settings.MATRIX_COLUMNS + info["col"]
+            item = RenderableKey(name, info, KEY_SCALE, matrix_index=index)
+            item.pressed.connect(self.mouseClickEvent)
+            self.keys[index] = item
+            kle = key_transform(info, minx, miny, KEY_SCALE)
+            side = "left" if info["row"] < self.settings.MATRIX_ROWS // 2 else "right"
+            key = (info["row"], info["col"])
+            t = None
+            if key in photo.quads:
+                t = real_board.quad_transform(item.display_rect(), photo.scene_quad(key, KEY_SCALE))
+            if t is not None:
+                item.setTransform(t)
+                item.set_photo_mode(True)
+                placed.append((t, item))
+                c = QRectF(item.display_rect()).center()
+                pairs[side].append((kle.map(c), t.map(c)))
+            else:
+                loose.append((item, kle, side))
+            self.scene.addItem(item)
+        # how much a key's display rect shrinks onto its photographed OLED
+        panel = sum(math.hypot(t.m11(), t.m12()) for t, _ in placed) / max(1, len(placed))
+        # the keys without a display: a label alone, centred on the half's
+        # expansion-port lid and turned with it (or, without lid data, their KLE
+        # place moved by the half's fit)
+        for item, kle, side in loose:
+            item.set_label_only(True)
+            pose = photo.port_pose(side, KEY_SCALE)
+            if pose is None:
+                item.setTransform(kle * real_board.fit_affine(pairs[side]))
+                continue
+            centre, angle = pose
+            anchor = item.label_anchor()
+            t = QTransform()
+            t.translate(centre.x(), centre.y())
+            t.rotate(angle)
+            # the legend at the size of the photographed displays around it, not
+            # of the editor's tile (about twice that)
+            t.scale(panel, panel)
+            t.translate(-anchor.x(), -anchor.y())
+            item.setTransform(t)
+        # the photo is rendered on pure white, so a white scene leaves no edge
+        # around it at any zoom
+        self.scene.setBackgroundBrush(QBrush(Qt.white))
+        self.view.setSceneRect(real_board.scene_rect(photo, KEY_SCALE))
+        self._refresh_screens(self.current_layer)
+        return True
 
     def _add_board(self, minx, miny):
         """Draw the board outline + status screens under the keys.
@@ -751,5 +943,4 @@ class KbLayoutDialog(QMainWindow):
                 names = {}
             self._layer_name_cache = names
         return names.get(layer, "")
-
 

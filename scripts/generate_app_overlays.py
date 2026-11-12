@@ -48,30 +48,14 @@ from PIL import Image, ImageDraw, ImageFont
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from polyhost.device.keys import KeyCode, Modifier, keycode_to_mapping_idx  # noqa: E402
+from polyhost.device.keys import Modifier  # noqa: E402
 
-GRID_X, GRID_Y = 10, 9
-SLOT_W, SLOT_H = 72, 40
-IMG_W, IMG_H = GRID_X * SLOT_W, GRID_Y * SLOT_H
-
-# RGBA channel index in the numpy array we build / save.
-CH = {"R": 0, "G": 1, "B": 2, "A": 3}
-
-# modifier -> (file kind, channel).  Mirrors polyhost/device/im_converter.py.
-PRIMARY_CH = {Modifier.NO_MOD: "A", Modifier.CTRL: "R", Modifier.ALT: "G", Modifier.SHIFT: "B"}
-COMBO_CH = {Modifier.CTRL_SHIFT: "R", Modifier.CTRL_ALT: "G", Modifier.ALT_SHIFT: "B",
-            Modifier.GUI_KEY: "A"}
-# Third and fourth tiers (protocol v12+). Before v12 the firmware folded every
-# GUI+x chord onto the bare-GUI variant, so extra's G/B/A sat reserved and empty;
-# the variant is now just the L/R-folded modifier bitmask, giving all 16.
-# ⚠️ Channel assignment MUST mirror polyhost/device/im_converter.py exactly -- the
-# loader reads these positions by name, so a mismatch here silently addresses the
-# wrong variant rather than failing. In particular the least-important variant of
-# each tier goes in A, because a 3-channel PNG drops alpha entirely.
-EXTRA_CH = {Modifier.CTRL_ALT_SHIFT: "R", Modifier.GUI_SHIFT: "G",
-            Modifier.GUI_ALT: "B", Modifier.GUI_CTRL: "A"}
-GUI_CH = {Modifier.GUI_CTRL_SHIFT: "R", Modifier.GUI_ALT_SHIFT: "G",
-          Modifier.GUI_CTRL_ALT: "B", Modifier.GUI_CTRL_ALT_SHIFT: "A"}
+# The grid, the channel of each modifier variant and the placement box are in
+# the package, because polyhost/services/game_assets patches cells at runtime too.
+# The key names too: build.patch() resolves a binding's key at runtime.
+from polyhost.res.overlay_layout import (  # noqa: E402
+    CH, COMBO_CH, EXTRA_CH, GUI_CH, IMG_H, IMG_W, PRIMARY_CH, SLOT_H, SLOT_W,
+    cell_for, region_box, resolve_key)
 
 MOD_BIT = {"CTRL": 1, "CONTROL": 1, "CTL": 1,
            "SHIFT": 2, "SFT": 2,
@@ -98,7 +82,16 @@ CMDCTRL_ALIASES = {"CMDCTRL", "CMD_OR_CTRL", "CMDORCTRL"}
 # — unless a binding says otherwise — Linux renders from it too, which is why so
 # much of this file talks about "Windows/Linux" as one thing: they share a PNG.
 PLAT_WINDOWS, PLAT_MACOS, PLAT_LINUX = "windows", "macos", "linux"
-PLATFORMS = (PLAT_WINDOWS, PLAT_MACOS, PLAT_LINUX)
+# GNOME and KDE are MEMBERS of the Linux family, not peers of it. The names are
+# the overlay-mapping `os:` keys the matcher tries before `linux` on those
+# desktops, so a spec that never mentions them renders both exactly as Linux and
+# emits nothing extra. They exist because an app can ship a keymap per desktop:
+# JetBrains has "Default for GNOME", "Default for KDE" and, for every other
+# desktop, "Default for XWin" -- which is what a plain `linux` set then means.
+PLAT_LINUX_GNOME, PLAT_LINUX_KDE = "linux_gnome", "linux_kde"
+PLATFORMS = (PLAT_WINDOWS, PLAT_MACOS, PLAT_LINUX, PLAT_LINUX_GNOME, PLAT_LINUX_KDE)
+# member -> family. A scope list naming the family covers its members too.
+PLATFORM_FAMILY = {PLAT_LINUX_GNOME: PLAT_LINUX, PLAT_LINUX_KDE: PLAT_LINUX}
 
 # Resolved value of CMDCTRL per platform. Linux resolves it exactly as Windows
 # does; the two diverge only where a binding is explicitly scoped (see
@@ -106,12 +99,18 @@ PLATFORMS = (PLAT_WINDOWS, PLAT_MACOS, PLAT_LINUX)
 # and the `os: linux:` branch from appearing — for the vast majority of apps.
 CMDCTRL_BIT = {PLAT_WINDOWS: MOD_BIT["CTRL"],
                PLAT_LINUX: MOD_BIT["CTRL"],
+               PLAT_LINUX_GNOME: MOD_BIT["CTRL"],
+               PLAT_LINUX_KDE: MOD_BIT["CTRL"],
                PLAT_MACOS: MOD_BIT["GUI"]}
 
 # Suffix for the generated macOS artwork set (`<output>_mac.mods.png`, ...).
 MACOS_OUTPUT_SUFFIX = "_mac"
 # ...and for the Linux one, emitted only when a binding actually distinguishes it.
 LINUX_OUTPUT_SUFFIX = "_linux"
+# ...and per desktop, each emitted only when a binding distinguishes that desktop
+# from Linux. Member -> (stem suffix, spec key overriding the stem).
+LINUX_MEMBERS = {PLAT_LINUX_GNOME: ("_gnome", "output_gnome"),
+                 PLAT_LINUX_KDE: ("_kde", "output_kde")}
 
 # Per-binding platform scoping keys. `only:` restricts a binding to the listed
 # platforms, `except:` removes it from them.
@@ -123,77 +122,6 @@ LINUX_OUTPUT_SUFFIX = "_linux"
 # happens when the override itself collides with another binding's cell, which the
 # ordinary duplicate-cell path already handles for free.
 ONLY_KEY, EXCEPT_KEY = "only", "except"
-
-
-# --------------------------------------------------------------------------- #
-# key-name -> KeyCode (only the 90 keys that actually have an overlay cell)
-# --------------------------------------------------------------------------- #
-def _build_key_aliases() -> dict[str, KeyCode]:
-    a: dict[str, KeyCode] = {}
-    for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
-        a[c] = KeyCode[f"KC_{c}"]
-    for d in "0123456789":
-        a[d] = KeyCode[f"KC_{d}"]
-    for n in range(1, 13):
-        a[f"F{n}"] = KeyCode[f"KC_F{n}"]
-    named = {
-        "ENTER": "KC_ENTER", "RETURN": "KC_ENTER", "CR": "KC_ENTER",
-        "ESC": "KC_ESCAPE", "ESCAPE": "KC_ESCAPE",
-        "BACKSPACE": "KC_BACKSPACE", "BKSP": "KC_BACKSPACE", "BSPC": "KC_BACKSPACE",
-        "TAB": "KC_TAB", "SPACE": "KC_SPACE", "SPC": "KC_SPACE",
-        "MINUS": "KC_MINUS", "-": "KC_MINUS",
-        "EQUAL": "KC_EQUAL", "EQUALS": "KC_EQUAL", "=": "KC_EQUAL", "PLUS": "KC_EQUAL",
-        "LBRACKET": "KC_LEFT_BRACKET", "[": "KC_LEFT_BRACKET",
-        "RBRACKET": "KC_RIGHT_BRACKET", "]": "KC_RIGHT_BRACKET",
-        "BACKSLASH": "KC_BACKSLASH", "\\": "KC_BACKSLASH",
-        "SEMICOLON": "KC_SEMICOLON", ";": "KC_SEMICOLON",
-        "QUOTE": "KC_QUOTE", "'": "KC_QUOTE",
-        "GRAVE": "KC_GRAVE", "`": "KC_GRAVE", "TILDE": "KC_GRAVE",
-        "COMMA": "KC_COMMA", ",": "KC_COMMA",
-        "DOT": "KC_DOT", "PERIOD": "KC_DOT", ".": "KC_DOT",
-        "SLASH": "KC_SLASH", "/": "KC_SLASH",
-        "CAPS": "KC_CAPS_LOCK", "CAPSLOCK": "KC_CAPS_LOCK",
-        "PRINTSCREEN": "KC_PRINT_SCREEN", "PRTSC": "KC_PRINT_SCREEN", "PSCR": "KC_PRINT_SCREEN",
-        "SCROLLLOCK": "KC_SCROLL_LOCK", "PAUSE": "KC_PAUSE",
-        "INSERT": "KC_INSERT", "INS": "KC_INSERT",
-        "HOME": "KC_HOME", "PAGEUP": "KC_PAGE_UP", "PGUP": "KC_PAGE_UP",
-        "DELETE": "KC_DELETE", "DEL": "KC_DELETE",
-        "END": "KC_END", "PAGEDOWN": "KC_PAGE_DOWN", "PGDN": "KC_PAGE_DOWN",
-        "RIGHT": "KC_RIGHT", "LEFT": "KC_LEFT", "DOWN": "KC_DOWN", "UP": "KC_UP",
-        "NUMLOCK": "KC_NUM_LOCK", "APP": "KC_APPLICATION", "MENU": "KC_APPLICATION",
-    }
-    for k, v in named.items():
-        a[k] = KeyCode[v]
-    return a
-
-
-KEY_ALIASES = _build_key_aliases()
-
-
-def resolve_key(token: str) -> KeyCode:
-    t = str(token).strip()
-    up = t.upper()
-    if up in KEY_ALIASES:
-        return KEY_ALIASES[up]
-    # A bare token is tried as KC_<TOKEN> too, so `PRINT_SCREEN` works like the
-    # aliased `DELETE`/`ENTER` rather than reporting "no overlay cell" for a key
-    # that has one — the alias table only covers the common spellings.
-    name = up if up.startswith("KC_") else f"KC_{up}"
-    if name in KeyCode.__members__:
-        kc = KeyCode[name]
-        # only the mapped 90 keys carry a cell
-        if name in {k.name for k in KEY_ALIASES.values()} or _has_cell(kc):
-            return kc
-        raise ValueError(
-            f"key {token!r} has no overlay cell (not one of the 90 grid keys)")
-    raise ValueError(f"unknown key {token!r}")
-
-
-def _has_cell(kc: KeyCode) -> bool:
-    v = kc.value
-    return (KeyCode.KC_A.value <= v <= KeyCode.KC_NUM_LOCK.value
-            or v in (KeyCode.KC_NONUS_BACKSLASH.value, KeyCode.KC_APPLICATION.value)
-            or KeyCode.KC_LEFT_CTRL.value <= v <= KeyCode.KC_RIGHT_GUI.value)
 
 
 def uses_cmdctrl(mods: list[str]) -> bool:
@@ -217,21 +145,39 @@ def _platform_list(b: dict, key: str) -> list[str] | None:
     return out
 
 
+def _names_for(platform: str) -> set[str]:
+    """The scope names that cover `platform`: itself plus its family, if any."""
+    names = {platform}
+    if platform in PLATFORM_FAMILY:
+        names.add(PLATFORM_FAMILY[platform])
+    return names
+
+
 def binding_applies(b: dict, platform: str) -> bool:
     """True if this binding should be drawn in `platform`'s artwork set.
 
     A binding with neither `only:` nor `except:` applies everywhere, so every
-    existing spec keeps rendering exactly as it did."""
+    existing spec keeps rendering exactly as it did.
+
+    A family name covers its members: `only: [linux]` includes GNOME and KDE and
+    `except: [linux]` excludes them. To scope to Linux WITHOUT KDE, carve the
+    member out of the family: `only: [linux], except: [linux_kde]`. That is the one case
+    where both keys may be combined; anywhere else they would either contradict
+    each other or make `except` a no-op, so it is refused."""
     only = _platform_list(b, ONLY_KEY)
     excl = _platform_list(b, EXCEPT_KEY)
     if only is not None and excl is not None:
-        raise ValueError(
-            f"binding sets both {ONLY_KEY!r} and {EXCEPT_KEY!r}; use one — "
-            f"they express the same thing and can contradict each other")
-    if only is not None:
-        return platform in only
-    if excl is not None:
-        return platform not in excl
+        for e in excl:
+            if e in only or PLATFORM_FAMILY.get(e) not in only:
+                raise ValueError(
+                    f"binding sets both {ONLY_KEY!r} and {EXCEPT_KEY!r}; that is "
+                    f"only allowed to remove a family member from a listed family "
+                    f"(only: [linux], except: [linux_kde]) — {e!r} is not one")
+    names = _names_for(platform)
+    if only is not None and not names & set(only):
+        return False
+    if excl is not None and names & set(excl):
+        return False
     return True
 
 
@@ -243,6 +189,20 @@ def spec_needs_linux_set(spec: dict) -> bool:
     `os: linux:` branch is produced for them."""
     for b in spec.get("bindings", []):
         if binding_applies(b, PLAT_WINDOWS) != binding_applies(b, PLAT_LINUX):
+            return True
+    return False
+
+
+def spec_needs_member_set(spec: dict, member: str) -> bool:
+    """True if any binding makes a Linux desktop (`linux_gnome`, `linux_kde`)
+    differ from the Linux set.
+
+    Without its own set the matcher falls back from the desktop to `linux` (and
+    on to the default), so a desktop only needs artwork where a binding names it.
+    Comparing against Linux is enough: when no Linux set exists, Linux already
+    renders identically to the default."""
+    for b in spec.get("bindings", []):
+        if binding_applies(b, PLAT_LINUX) != binding_applies(b, member):
             return True
     return False
 
@@ -294,12 +254,6 @@ def resolve_modifier(mods: list[str], macos: bool | None = None,
             f"modifier combination {mods} (bits={bits}) is not representable") from e
 
 
-def cell_for(kc: KeyCode) -> tuple[int, int]:
-    slot = keycode_to_mapping_idx(kc)
-    row, col = divmod(slot, GRID_X)
-    return row, col
-
-
 # --------------------------------------------------------------------------- #
 # rendering a single 72x40 mask
 # --------------------------------------------------------------------------- #
@@ -311,10 +265,56 @@ DEFAULT_REGION_W, DEFAULT_REGION_H = 36, 30
 DEFAULT_ANCHOR = "bottom-right"
 DEFAULT_MARGIN = 2
 
+# How `mode: auto` renders a TRANSPARENT icon. It depends on the file alone, so
+# the same PNG draws the same pixels in every app, whatever the spec's mode or
+# threshold say:
+#  * dark art (the opaque pixels average below DARK_ART_LUMA): luma at
+#    HOUSE_LUMA_THRESHOLD. That is what the `mode: luma` specs always drew, so
+#    their cells -- and the icon library glyphs taken from them -- stay the same.
+#    The `mode: alpha` specs drew the same glyphs at alpha > 127, which broke
+#    antialiased strokes into gaps and stray pixels at 32-36 px.
+#  * light art (white drawings, badges): alpha above ALPHA_CUT. Nearly all of
+#    it has hard 0/255 alpha, so the cut changes nothing visible.
+# An opaque icon still uses luma at the spec's own threshold. Program marks keep
+# the old alpha cut (PROGRAM_ALPHA_CUT), so the reviewed ESC marks do not move.
+HOUSE_LUMA_THRESHOLD = 150
+DARK_ART_LUMA = 128
+ALPHA_CUT = 105
+PROGRAM_ALPHA_CUT = 127
+
 
 # A per-binding placement decision. Any of these opts the binding out of the
 # shared renderer, which owns the geometry and so cannot honour them.
 GEOMETRY_KEYS = ("region", "anchor", "margin", "fit", "threshold", "mode")
+
+
+# Per-process memo for the two lookups every binding makes. `match()` walks the
+# whole localized lexicon per label and `load_codepoints()` reads and parses the
+# catalog's JSON per call. The icon-library build asks for the same few hundred
+# labels and two faces tens of thousands of times. Both inputs are fixed for the
+# run.
+_LABEL_MATCH: dict = {}
+_CODEPOINTS: dict = {}
+
+
+def _match_label(label: str):
+    from polyhost.services import shortcut_icons
+    if label not in _LABEL_MATCH:
+        _LABEL_MATCH[label] = shortcut_icons.match(label, allow_fuzzy=False)
+    return _LABEL_MATCH[label]
+
+
+def _codepoints(cache_dir, face):
+    """`icon_catalog.load_codepoints`, memoized once it returns a table. An
+    empty answer (no cache, no network yet) is not kept."""
+    from polyhost.services import icon_catalog
+    key = (cache_dir, face)
+    if key not in _CODEPOINTS:
+        table = icon_catalog.load_codepoints(cache_dir, face=face)
+        if not table:
+            return table
+        _CODEPOINTS[key] = table
+    return _CODEPOINTS[key]
 
 
 def concept_to_share(binding: dict) -> str:
@@ -324,6 +324,9 @@ def concept_to_share(binding: dict) -> str:
     ask the same question of the same data. Two copies of this rule would drift
     the moment either moved, and nothing would go red -- the test would simply
     survey a different set than the generator writes.
+
+    `concept: <name>` on the binding shares that concept whatever the label
+    says; see the code below for the contradictions it refuses.
 
     Three ways a binding declines to share:
 
@@ -346,6 +349,25 @@ def concept_to_share(binding: dict) -> str:
     """
     from polyhost.services import shortcut_icons
 
+    # `concept: <name>` names the concept outright, for a label that does not
+    # BE the concept ("Close tab", "Toggle line comment") but whose own art is
+    # the same picture a few pixels off. Contradictions fail loudly rather than
+    # silently keeping one side.
+    explicit = binding.get("concept")
+    if explicit:
+        explicit = str(explicit)
+        if not binding.get("shared", True):
+            raise ValueError(f"binding {binding.get('label')!r}: `concept` and "
+                             f"`shared: false` contradict each other")
+        geometry = [k for k in GEOMETRY_KEYS if k in binding]
+        if geometry:
+            raise ValueError(f"binding {binding.get('label')!r}: `concept` draws with "
+                             f"the shared renderer, which cannot honour {geometry}")
+        if not shortcut_icons.icon_for(explicit):
+            raise ValueError(f"binding {binding.get('label')!r}: unknown concept "
+                             f"{explicit!r} (polyhost/services/shortcut_icons.LEXICON)")
+        return explicit
+
     label = str(binding.get("label") or "")
     if not label or not binding.get("shared", True):
         return ""
@@ -359,7 +381,7 @@ def concept_to_share(binding: dict) -> str:
     # change of default and the second a codepoint-only concept, which would
     # otherwise have the generator draw the committed icon while this function
     # claimed the cell was shared -- the one divergence the survey cannot see.
-    hit = shortcut_icons.match(label, allow_fuzzy=False)
+    hit = _match_label(label)
     if hit is None or not hit.icon:
         return ""
     text = shortcut_icons.normalize(label)
@@ -401,7 +423,7 @@ def shared_concept_mask(concept: str, cache_dir: str | None = None):
     if not qualified:
         return None, ""
     face, bare = icon_catalog.split_face(qualified)
-    table = icon_catalog.load_codepoints(cache_dir, face=face)
+    table = _codepoints(cache_dir, face)
     font = icon_catalog.fetch_subset([bare], cache_dir, face=face)
     if not font or not table:
         raise RuntimeError(
@@ -416,36 +438,38 @@ def shared_concept_mask(concept: str, cache_dir: str | None = None):
     return mask, qualified
 
 
-def region_box(anchor: str, size: tuple[int, int], margin: int) -> tuple[int, int, int, int]:
-    """Return (x0, y0, w, h): the sub-rectangle of the 72x40 cell to draw into."""
-    bw, bh = min(size[0], SLOT_W), min(size[1], SLOT_H)
-    a = anchor.lower()
-    if "right" in a:
-        x0 = SLOT_W - bw - margin
-    elif "left" in a:
-        x0 = margin
-    else:
-        x0 = (SLOT_W - bw) // 2
-    if "bottom" in a:
-        y0 = SLOT_H - bh - margin
-    elif "top" in a:
-        y0 = margin
-    else:
-        y0 = (SLOT_H - bh) // 2
-    return max(0, x0), max(0, y0), bw, bh
+def _resample_for(src: Image.Image, nw: int, nh: int):
+    """The filter that shrinks `src` to `nw` x `nh` with the fewest broken lines.
+
+    A source with anti-aliased edges (any pixel partly transparent) is a vector
+    render: Fluent, Material, game-icons.net, Simple Icons. BOX averages each
+    output pixel over exactly its own area, so a straight stroke lands on the
+    same rows along its length and survives the 1-bit cut as a straight line.
+    LANCZOS rings at the edges, and after the cut that ringing shows as
+    one-pixel steps and dents in lines that should be straight.
+
+    A source with hard alpha (or none) is pixel art: dithered game sprites and
+    the 1-bit drawings the specs place 1:1. It keeps LANCZOS, the filter its
+    thresholds were tuned with. Enlarging always uses LANCZOS: BOX is an area
+    filter and only shrinks.
+    """
+    if nw > src.width or nh > src.height or src.mode != "RGBA":
+        return Image.LANCZOS
+    alpha = np.asarray(src.getchannel("A"))
+    anti_aliased = bool(((alpha > 0) & (alpha < 255)).any())
+    return Image.BOX if anti_aliased else Image.LANCZOS
 
 
 def _fit_stamp(src: Image.Image, fit: str, region: tuple[int, int, int, int]) -> Image.Image:
     """Scale `src` into `region` and paste onto a full 72x40 canvas (same mode)."""
     x0, y0, bw, bh = region
     if fit == "stretch":
-        scaled = src.resize((bw, bh), Image.LANCZOS)
         nw, nh = bw, bh
     else:  # contain: preserve aspect inside the region
         sw, sh = src.size
         scale = min(bw / sw, bh / sh)
         nw, nh = max(1, round(sw * scale)), max(1, round(sh * scale))
-        scaled = src.resize((nw, nh), Image.LANCZOS)
+    scaled = src.resize((nw, nh), _resample_for(src, nw, nh))
     canvas = Image.new(src.mode, (SLOT_W, SLOT_H), 0 if src.mode == "L" else (0, 0, 0, 0))
     # centre within the region
     canvas.paste(scaled, (x0 + (bw - nw) // 2, y0 + (bh - nh) // 2))
@@ -453,27 +477,37 @@ def _fit_stamp(src: Image.Image, fit: str, region: tuple[int, int, int, int]) ->
 
 
 def render_icon(path: Path, fit: str, threshold: int, invert: bool | None,
-                region: tuple[int, int, int, int], mode: str = "auto") -> np.ndarray:
+                region: tuple[int, int, int, int], mode: str = "auto",
+                alpha_cut: int = ALPHA_CUT) -> np.ndarray:
     """Load an icon and reduce it to a bool (40,72) lit-pixel mask, placed inside
     `region` (defaults bottom-right, see DEFAULT_ANCHOR).
 
     `mode`:
-      * "alpha" - opaque pixels lit. Good for a glyph on transparent (alpha = shape).
+      * "alpha" - pixels with alpha above `alpha_cut` lit (ALPHA_CUT; `threshold`
+        is not used). Good for a glyph on transparent (alpha = shape).
       * "luma"  - light the *dark* pixels (composite over white, threshold). Good
         for duotone/filled icons on a light/transparent background.
       * "bright" - light the *bright* pixels (composite over black, threshold).
         Good for white-on-black / OLED-native art; padding stays unlit.
-      * "auto" (default) - alpha when the source has transparency, else luma.
+      * "auto" (default) - for a transparent icon, luma at HOUSE_LUMA_THRESHOLD
+        when the art is dark and alpha above ALPHA_CUT when it is light (see
+        HOUSE_LUMA_THRESHOLD); for an opaque icon, luma at `threshold`.
     `invert` flips the result.
     """
     img = Image.open(path).convert("RGBA")
-    has_transparency = np.asarray(img.split()[3]).min() < 250
+    alpha = np.asarray(img.split()[3])
+    has_transparency = alpha.min() < 250
     if mode == "auto":
-        mode = "alpha" if has_transparency else "luma"
+        if not has_transparency:
+            mode = "luma"
+        else:
+            ink = np.asarray(img.convert("RGB"), dtype=float)[alpha > 127]
+            dark = ink.size and float((ink @ [0.2989, 0.5870, 0.1140]).mean()) < DARK_ART_LUMA
+            mode, threshold = ("luma", HOUSE_LUMA_THRESHOLD) if dark else ("alpha", threshold)
 
     fitted = _fit_stamp(img, fit, region)
     if mode == "alpha":
-        mask = np.asarray(fitted.split()[3], dtype=np.uint8) > 127
+        mask = np.asarray(fitted.split()[3], dtype=np.uint8) > alpha_cut
     else:
         arr = np.asarray(fitted, dtype=float)
         a = arr[:, :, 3:4] / 255.0
@@ -547,6 +581,24 @@ def spec_uses_cmdctrl(spec: dict) -> bool:
     return any(uses_cmdctrl(b.get("mods", [])) for b in spec.get("bindings", []))
 
 
+def spec_needs_macos_set(spec: dict) -> bool:
+    """True if the spec describes a macOS set that differs from the default.
+
+    CMDCTRL is one way; the other is a binding whose `only:` or `except:` NAMES
+    macos. ⚠️ Zoom is the case that needed it: its Mac keymap is a pure remap
+    (Alt+A becomes Cmd+Shift+A), so no binding uses CMDCTRL, and every
+    `only: [macos]` line was silently dropped along with the `os: macos:` branch.
+
+    ⚠️ It must NAME macos, not merely differ on it: Sublime's Windows spec scopes
+    a line `only: [windows]` to split it from Linux, and its Mac artwork lives in
+    a separate spec, so treating that as a macOS set would ship a second, wrong
+    one."""
+    if spec_uses_cmdctrl(spec):
+        return True
+    return any(PLAT_MACOS in (_platform_list(b, ONLY_KEY) or []) + (_platform_list(b, EXCEPT_KEY) or [])
+               for b in spec.get("bindings", []))
+
+
 def macos_output(spec: dict) -> str:
     """Filename stem for the macOS artwork set.
 
@@ -584,6 +636,34 @@ def linux_output(spec: dict) -> str:
     return name
 
 
+def _member_stem(spec: dict, member: str) -> tuple[str, str]:
+    suffix, key = LINUX_MEMBERS[member]
+    return spec.get(key) or f"{spec['output']}{suffix}", key
+
+
+def member_output(spec: dict, member: str) -> str:
+    """Filename stem for a Linux desktop's artwork set (`linux_gnome`,
+    `linux_kde`). It must differ from every other stem, for the same
+    written-second-wins reason as `linux_output`."""
+    name, key = _member_stem(spec, member)
+    clash = {spec["output"]: "output"}
+    for other_key, stem in (("output_macos", macos_output), ("output_linux", linux_output)):
+        try:
+            clash.setdefault(stem(spec), other_key)
+        except ValueError:
+            # Already invalid; that error is reported on its own path.
+            pass
+    for other in LINUX_MEMBERS:
+        if other != member:
+            other_name, other_key = _member_stem(spec, other)
+            clash.setdefault(other_name, other_key)
+    if name in clash:
+        raise ValueError(
+            f"{key} must differ from {clash[name]} (both {name!r}) — the "
+            f"{member} artwork would overwrite that set")
+    return name
+
+
 def generate(spec: dict, base_dir: Path, macos: bool | None = None,
              platform: str | None = None) -> dict:
     """Render one complete artwork set for `platform`.
@@ -613,6 +693,9 @@ def generate(spec: dict, base_dir: Path, macos: bool | None = None,
     used_primary = used_combo = used_extra = used_gui = False
     warnings: list[str] = []
     placed: list[dict] = []
+    # tier -> {(modifier value, keycode)} drawn without the key legend (v25):
+    # `legend: false` on a binding, `program_icon_legend: false` for the mark.
+    no_legend: dict[str, set[tuple[int, int]]] = {t: set() for t in TIER_CHANNELS}
 
     for b in spec.get("bindings", []):
         try:
@@ -625,17 +708,17 @@ def generate(spec: dict, base_dir: Path, macos: bool | None = None,
             continue
 
         if mod in PRIMARY_CH:
-            arr, ch_name = primary, PRIMARY_CH[mod]
+            arr, ch_name, tier = primary, PRIMARY_CH[mod], "primary"
             used_primary = True
         elif mod in COMBO_CH:
             # GUI is no longer skipped: the host stopped discarding variant 8.
-            arr, ch_name = combo, COMBO_CH[mod]
+            arr, ch_name, tier = combo, COMBO_CH[mod], "combo"
             used_combo = True
         elif mod in EXTRA_CH:
-            arr, ch_name = extra, EXTRA_CH[mod]
+            arr, ch_name, tier = extra, EXTRA_CH[mod], "extra"
             used_extra = True
         elif mod in GUI_CH:
-            arr, ch_name = gui, GUI_CH[mod]
+            arr, ch_name, tier = gui, GUI_CH[mod], "gui"
             used_gui = True
         else:
             warnings.append(f"skipped {b}: modifier {mod.name} has no channel")
@@ -661,6 +744,9 @@ def generate(spec: dict, base_dir: Path, macos: bool | None = None,
         concept = concept_to_share(b)
         if concept:
             shared, qualified = shared_concept_mask(concept)
+            if shared is None and b.get("concept"):
+                raise ValueError(f"binding {b.get('label')!r}: concept {concept!r} "
+                                 f"has no shared glyph to draw")
         if shared is not None:
             mask, source = shared, f"concept:{qualified}"
         elif src and src.exists():
@@ -678,6 +764,8 @@ def generate(spec: dict, base_dir: Path, macos: bool | None = None,
         y0, x0 = row * SLOT_H, col * SLOT_W
         block = arr[y0:y0 + SLOT_H, x0:x0 + SLOT_W, CH[ch_name]]
         block[mask] = 255
+        if b.get("legend", True) is False:
+            no_legend[tier].add((mod.value, kc.value))
         placed.append({"key": kc.name, "mod": mod.name, "ch": ch_name,
                        "cell": (row, col), "src": source, "label": label})
 
@@ -698,13 +786,17 @@ def generate(spec: dict, base_dir: Path, macos: bool | None = None,
                 pmask = render_icon(src, spec.get("program_icon_fit", fit),
                                     int(spec.get("program_icon_threshold", threshold)),
                                     spec.get("program_icon_invert"),
-                                    preg, spec.get("program_icon_mode", mode))
+                                    preg, spec.get("program_icon_mode", mode),
+                                    alpha_cut=PROGRAM_ALPHA_CUT)
                 row, col = cell_for(pkc)
                 y0, x0 = row * SLOT_H, col * SLOT_W
                 for arr in (primary, combo, extra, gui):
                     for ax in range(4):              # all channels = all layers
                         block = arr[y0:y0 + SLOT_H, x0:x0 + SLOT_W, ax]
                         block[pmask] = 255
+                if spec.get("program_icon_legend", True) is False:
+                    for tier, channels in TIER_CHANNELS.items():
+                        no_legend[tier].update((m.value, pkc.value) for m in channels)
                 # The program mark alone must NOT bring a layer into existence:
                 # `extra` is the Ctrl+Alt+Shift tier and most apps have no binding
                 # there, so marking it used shipped a third PNG whose only content
@@ -721,13 +813,26 @@ def generate(spec: dict, base_dir: Path, macos: bool | None = None,
             "combo": combo if used_combo else None,
             "extra": extra if used_extra else None,
             "gui": gui if used_gui else None,
+            "no_legend": no_legend,
             "placed": placed, "warnings": warnings}
 
 
-def save_png(rgba: np.ndarray, path: Path) -> None:
+# The PNG text chunk the host reads (polyhost/device/im_converter.NO_LEGEND_CHUNK).
+NO_LEGEND_CHUNK = "polykybd-no-legend"
+
+
+def save_png(rgba: np.ndarray, path: Path, no_legend=()) -> None:
     """Save straight (non-premultiplied) RGBA. PNG keeps RGB bytes where A=0,
-    which the loader relies on (the channels carry data independent of alpha)."""
-    Image.fromarray(rgba, mode="RGBA").save(path)
+    which the loader relies on (the channels carry data independent of alpha).
+
+    `no_legend` is {(modifier value, keycode)}: the keys this file draws without
+    the key legend, written as "<mod>:<keycode>" pairs into NO_LEGEND_CHUNK."""
+    info = None
+    if no_legend:
+        from PIL.PngImagePlugin import PngInfo
+        info = PngInfo()
+        info.add_text(NO_LEGEND_CHUNK, " ".join(f"{m}:{k}" for m, k in sorted(no_legend)))
+    Image.fromarray(rgba, mode="RGBA").save(path, pnginfo=info)
 
 
 # --------------------------------------------------------------------------- #
@@ -811,6 +916,7 @@ def write_preview(result: dict, out: Path, scale: int = 6, cols: int = 6,
     return [p]
 
 
+TIER_CHANNELS = {"primary": PRIMARY_CH, "combo": COMBO_CH, "extra": EXTRA_CH, "gui": GUI_CH}
 TIER_SUFFIX = {"primary": ".mods.png", "combo": ".combo.mods.png",
                "extra": ".extra.mods.png", "gui": ".gui.mods.png"}
 
@@ -837,16 +943,28 @@ def mapping_stanza(spec: dict, out_dir_label: str) -> str:
     lines = [f"{','.join(names)}:", f"  overlay: {_overlay_value(files)}"]
     if title:
         lines.append(f"  title: {title}")
+    if spec.get("game_assets") and spec.get("_spec_path"):
+        # The entry point that lets the host redraw keys from the installed game
+        # (polyhost/services/game_assets): the spec, relative to overlay_sources.
+        sources = REPO_ROOT / "polyhost" / "res" / "overlay_sources"
+        spec_path = Path(spec["_spec_path"]).resolve()
+        if spec_path.is_relative_to(sources):
+            lines.append(f"  game_assets: {spec_path.relative_to(sources).as_posix()}")
     mac = spec.get("_result_macos")
     lnx = spec.get("_result_linux")
     mac_files = overlay_files(macos_output(spec), mac) if mac else []
     lnx_files = overlay_files(linux_output(spec), lnx) if lnx else []
-    if mac_files or lnx_files:
+    member_files = [(m, overlay_files(member_output(spec, m), spec["_result_" + m]))
+                    for m in LINUX_MEMBERS if spec.get("_result_" + m)]
+    if mac_files or lnx_files or member_files:
         # `os:` is the runtime half of CMDCTRL (added in the per-OS selection
         # work); the token itself is authoring-time sugar that fills this branch
         # in, so one binding file yields both artwork sets.
         lines.append("  os:")
-        for branch, branch_files in ((PLAT_MACOS, mac_files), (PLAT_LINUX, lnx_files)):
+        # The matcher tries `linux_gnome` / `linux_kde` before `linux` on those
+        # desktops, so the branch order here is cosmetic.
+        for branch, branch_files in ((PLAT_MACOS, mac_files), (PLAT_LINUX, lnx_files),
+                                     *member_files):
             if not branch_files:
                 continue
             lines.append(f"    {branch}:")
@@ -874,15 +992,16 @@ def main() -> int:
     args = ap.parse_args()
 
     spec = yaml.safe_load(args.bindings.read_text())
+    spec["_spec_path"] = str(args.bindings)
     base_dir = args.bindings.resolve().parent
     result = generate(spec, base_dir)
     spec["_result"] = result
 
-    # A CMDCTRL binding means "Ctrl here, Cmd on macOS", so the spec describes TWO
-    # artwork sets. Render the second one only when the token is actually used —
-    # an app with no CMDCTRL binding keeps emitting exactly the files it did
-    # before, with no `os:` branch to keep in sync.
-    mac_result = generate(spec, base_dir, platform=PLAT_MACOS) if spec_uses_cmdctrl(spec) else None
+    # A CMDCTRL binding means "Ctrl here, Cmd on macOS", and a binding scoped on
+    # or off macOS means the same, so the spec describes TWO artwork sets. Render
+    # the second one only then: an app that does neither keeps emitting exactly
+    # the files it did before, with no `os:` branch to keep in sync.
+    mac_result = generate(spec, base_dir, platform=PLAT_MACOS) if spec_needs_macos_set(spec) else None
     spec["_result_macos"] = mac_result
 
     # The Linux set is rendered only when a binding actually distinguishes Linux
@@ -892,7 +1011,17 @@ def main() -> int:
     lnx_result = generate(spec, base_dir, platform=PLAT_LINUX) if spec_needs_linux_set(spec) else None
     spec["_result_linux"] = lnx_result
 
+    # Same rule one level down: a desktop gets its own set only when a binding
+    # names it; otherwise the matcher's desktop -> Linux fallback already fits.
+    member_results = {}
+    for m in LINUX_MEMBERS:
+        res = generate(spec, base_dir, platform=m) if spec_needs_member_set(spec, m) else None
+        spec["_result_" + m] = res
+        if res:
+            member_results[m] = res
+
     mac_output = lnx_output = None
+    member_outputs = {}
     # Resolve BOTH stems before anything is written: a colliding `output_macos` /
     # `output_linux` must abort with the tree untouched, not half-overwritten.
     try:
@@ -900,6 +1029,8 @@ def main() -> int:
             mac_output = macos_output(spec)
         if lnx_result:
             lnx_output = linux_output(spec)
+        for m in member_results:
+            member_outputs[m] = member_output(spec, m)
     except ValueError as e:
         print(f"error: {e}", file=sys.stderr)
         return 2
@@ -916,16 +1047,19 @@ def main() -> int:
         report(mac_result, " (macOS, CMDCTRL -> Cmd)")
     if lnx_result:
         report(lnx_result, " (Linux)")
+    for m, res in member_results.items():
+        report(res, f" ({m})")
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     if not args.dry_run:
         for res, output in ((result, spec["output"]),
                             *([(mac_result, mac_output)] if mac_result else ()),
-                            *([(lnx_result, lnx_output)] if lnx_result else ())):
+                            *([(lnx_result, lnx_output)] if lnx_result else ()),
+                            *((res, member_outputs[m]) for m, res in member_results.items())):
             for tier, suffix in TIER_SUFFIX.items():
                 if res[tier] is not None:
                     path = args.out_dir / f"{output}{suffix}"
-                    save_png(res[tier], path)
+                    save_png(res[tier], path, res.get("no_legend", {}).get(tier, ()))
                     print(f"Wrote {path}")
 
     if args.preview:
@@ -936,6 +1070,9 @@ def main() -> int:
                 print(f"Preview {p}")
         if lnx_result:
             for p in write_preview(lnx_result, args.preview, name="overlay_preview_linux.png"):
+                print(f"Preview {p}")
+        for m, res in member_results.items():
+            for p in write_preview(res, args.preview, name=f"overlay_preview_{m}.png"):
                 print(f"Preview {p}")
 
     print("\n--- paste into polyhost/res/overlay-mapping.poly.yaml ---")

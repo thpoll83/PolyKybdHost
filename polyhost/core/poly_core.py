@@ -17,6 +17,7 @@ This module (and everything it imports) must stay importable without
 PyQt5 and without a display: window tracking (pywinctl) is imported
 lazily and degrades to "off" with a warning (plan §5.4).
 """
+import logging
 import os
 import pathlib
 import sys
@@ -31,20 +32,28 @@ from polyhost._version import __version__, __protocol__
 import polyhost.util.log_util  # noqa: F401
 from polyhost.core import events
 from polyhost.core.decisions import decide_probe_publish, decide_reconnect_apply
-from polyhost.device.poly_kybd import MIN_SUPPORTED_PROTOCOL, protocol_supports
+from polyhost.device import bulk_pipe
+from polyhost.device.poly_kybd import (MIN_SUPPORTED_PROTOCOL, SPLIT_VBUS_FLAG_MIN_PROTOCOL,
+                                       LEGACY_ICON_SLOT_SIZE,
+                                     protocol_supports)
 from polyhost.device.device_manager import DeviceManager
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device import hid_fw_up
 from polyhost.device import hid_fontpack
 from polyhost.device.hid_worker import HidWorker
 from polyhost.device.poly_kybd import PolyKybd
-from polyhost.handler.common import OverlayCommand
+from polyhost.handler.common import (
+    OverlayCommand, Underlay, as_underlay_path, os_match_keys)
 from polyhost.services import telemetry as telemetry_svc
 from polyhost.services.sleep_listener import install_sleep_listener
 from polyhost.services.sunlight_helper import Sunlight
 from polyhost.settings import PolySettings
-from polyhost.services.crash_report import CrashScanner
+from polyhost.services.crash_report import CrashRecord, CrashScanner
+from polyhost.services import problem_scan
+from polyhost.services.agents.controller import AgentKeysController
+from polyhost.services.agents.registry import AgentRegistry
 from polyhost.util.observable import Observable
+from polyhost.core.window_timing import NEW_WINDOW_ACCEPT_TIME_MSEC
 
 RECONNECT_CYCLE_MSEC = 1000
 # After an overlay/MRU send the keyboard goes deaf for a few hundred ms while it
@@ -54,9 +63,16 @@ RECONNECT_CYCLE_MSEC = 1000
 # after the last overlay activity; a genuine disconnect is still caught once the
 # window lapses (sends stop, so the timestamp goes stale within this window).
 OVERLAY_PROBE_COOLDOWN_S = 1.0
+# Steady-state reconnect probes (1 s apart) that re-look for the bulk pipe
+# after a connect that found none, for the tty node arriving late.
+PIPE_PROBE_RETRIES = 5
 UPDATE_CYCLE_MSEC = 250
 PERIODIC_10MIN_CYCLE_MSEC = 1000 * 60 * 10
-NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
+# A window-tracking tick slower than this, or a pause this long between two
+# ticks, is logged as a warning. Nothing else in the log can tell "the tick
+# thread was stuck" from "no window change happened" (field, 2026-09-30: 87 s
+# with no window detected while the user switched between several windows).
+SLOW_TICK_WARN_S = 2.0
 
 _RES_DIR = pathlib.Path(__file__).parent.parent.resolve() / "res"
 
@@ -72,8 +88,15 @@ GENERIC_STATE_UNKNOWN = object()
 
 
 def get_overlay_path(filepath):
-    """Absolute path of a shipped overlay template (polyhost/res/overlays)."""
-    return os.path.join(_RES_DIR, "overlays", filepath)
+    """Absolute path of a shipped overlay template (polyhost/res/overlays), or of
+    the copy redrawn from a game installed here when there is one
+    (`services/game_assets`).
+
+    An Underlay name (a browser's file under a website's) stays an Underlay, so the
+    send path can still ask the keyboard to draw it dimmed."""
+    from polyhost.services import game_assets
+    local = game_assets.override_for(filepath)
+    return as_underlay_path(filepath, local or os.path.join(_RES_DIR, "overlays", filepath))
 
 
 def strip_key_injection(lines):
@@ -110,13 +133,22 @@ def flash_progress_relay(emit, cancel, kind):
     return _progress, cancel_flag
 
 
+# Nothing submitted yet for the per-application keycap face (None is a valid
+# 'restore the user's face' request, so it cannot be the marker).
+_NOT_SENT = object()
+
+
 class PolyCore(Observable):
     """Operational facade: commands in, events out. No Qt, no widgets."""
 
     def __init__(self, log, ignore_version=False, start_worker=True,
                  apply_reconnect_in_core=False, allow_key_injection=False,
-                 telemetry_mode="in-process"):
+                 telemetry_mode="in-process", agent_store=False):
         self.log = log
+        # Keep the agent registry in agents.json across restarts (services/agents/
+        # store.py). Only the app entry points turn it on, so a test that builds a
+        # core neither reads nor writes the user's config folder.
+        self._agent_store_on = agent_store
         self.ignore_version = ignore_version
         # SECURITY: the `press`/`release` script commands inject real keystrokes
         # on the keyboard (firmware HID cmd 14 -> the keyboard types into the
@@ -151,6 +183,7 @@ class PolyCore(Observable):
         # writes it (a bool read/write is atomic under the GIL).
         self.last_applied_connected = False
         self._probe_fail_streak = 0
+        self._pipe_probes_left = 0
         # monotonic timestamp of the last overlay/MRU send or enable/disable, so
         # the reconnect probe can skip the keyboard's post-send deaf window.
         self._last_overlay_activity = 0.0
@@ -172,6 +205,14 @@ class PolyCore(Observable):
         self._app_icons = None
         self._shortcut_icons = None
         self._generic_on_device = None
+        # Per-application keycap face (overlay-mapping `glyph_script` keys). The
+        # user's own face is remembered in a file so a host that stops mid-override
+        # can still give it back on the next connect.
+        from polyhost.services.keycap_face import KeycapFace, restore_path
+        self._keycap_face = KeycapFace(restore_path(), log)
+        self._keycap_face_sent = _NOT_SENT
+        self._keycap_face_entry_seen = None
+        self._keycap_face_wanted = None
         # Apps already told they get no shortcut icons because they are
         # forwarded -- one line each, not one per window change.
         self._told_no_remote_shortcuts = set()
@@ -207,6 +248,15 @@ class PolyCore(Observable):
         # decide_stale_bundles keeps it self-terminating: once the device is
         # current, a reconnect finds nothing to do.
         self._fontpack_flash_in_progress = False
+        # The connect-time check waits while Eden owns the keycaps (GET_ID 'A'
+        # block, v28); the probe releases it (_release_held_fontpack_check).
+        self._fontpack_check_held = False
+        # The version block the last font-pack check (or notice) was queued for, and
+        # the last GET_ID 'G' counter the probe saw. A steady probe whose counter
+        # moved re-runs the check when the block differs from the checked one
+        # (_recheck_fontpack_on_generation).
+        self._fontpack_checked_versions = None
+        self._fontpack_seen_generation = None
         # Bundles whose last flash attempt genuinely failed: {slot index: message}.
         # Re-flashed on the next pass regardless of the version comparison, because a
         # bundle can report a failure and still read as current (see
@@ -216,16 +266,30 @@ class PolyCore(Observable):
 
         self.poly_settings = PolySettings()
         self.device_settings = DeviceSettings()
-        self.keeb = PolyKybd(self.device_settings, self.poly_settings)
+        mock_primary = bool(self.poly_settings.get("dev_mock_primary"))
+        if mock_primary:
+            # No hardware at all: the mock IS the keyboard. Imported here for the
+            # same reason as the secondary below (numpy on the startup path).
+            from polyhost.device.poly_kybd_mock import PolyKybdMock
+            self.keeb = PolyKybdMock(
+                self.device_settings, self.poly_settings, version=__version__,
+                protocol=int(self.poly_settings.get("dev_mock_protocol") or 0) or None,
+                keymap="board")
+            self.log.warning("dev_mock_primary: no keyboard is used; the mock emulates "
+                             "a protocol-%d keyboard.", self.keeb.protocol_version)
+        else:
+            self.keeb = PolyKybd(self.device_settings, self.poly_settings)
 
         self.device_mgr = DeviceManager(self.device_settings)
-        self.device_mgr.add(self.keeb, "PolyKybd", is_primary=True)
-        if self.poly_settings.get("dev_mock_enabled"):
+        self.device_mgr.add(self.keeb, "PolyKybdMock" if mock_primary else "PolyKybd",
+                            is_primary=True)
+        if self.poly_settings.get("dev_mock_enabled") and not mock_primary:
             # Imported here, not at module top: the mock pulls in overlay_sim ->
             # numpy, which is otherwise dead weight on the daemon's startup import
             # path (the mock is only used when dev_mock_enabled is set).
             from polyhost.device.poly_kybd_mock import PolyKybdMock
-            mock = PolyKybdMock(self.device_settings, f"{__version__}")
+            mock = PolyKybdMock(self.device_settings, self.poly_settings,
+                                version=__version__)
             self.device_mgr.add(mock, "PolyKybdMock", is_primary=False)
             self.log.info("Mock device added as secondary.")
 
@@ -279,10 +343,28 @@ class PolyCore(Observable):
         self.worker.add_periodic("reconnect", RECONNECT_CYCLE_MSEC / 1000.0,
                                  self._reconnect_periodic)
         self._crash_scanner = CrashScanner()   # firmware crash lines in the console stream
+        # Pending connect-time crash-record reads (cmd 39): (due monotonic s, half).
+        # Armed when the host sees a keyboard boot, drained by the periodic below.
+        self._crash_checks = []
+        self._crash_checks_lock = threading.Lock()
+        self.worker.add_periodic("crash_autocheck", 1.0, self._crash_autocheck_periodic)
+        self._init_boot_loop_state()
+        # Known-bad console lines, and this process's own WARNING/ERROR records
+        # (services/problem_scan.py). The handler sits on the ROOT logger, so in
+        # in-process mode it covers the GUI's logging too; a daemon client GUI
+        # installs its own (host.py).
+        self._problem_scanner = problem_scan.ConsoleProblemScanner()
+        self._problem_log_handler = problem_scan.HostLogProblemHandler(
+            self._report_problem,
+            level_cb=lambda: self._problem_setting("problem_scan_level",
+                                                   problem_scan.LEVEL_ERRORS),
+            enabled_cb=lambda: bool(self._problem_setting("problem_scan_host_logs", True)))
+        logging.getLogger().addHandler(self._problem_log_handler)
         self.worker.add_periodic("console", UPDATE_CYCLE_MSEC / 1000.0,
                                  self._console_periodic)
         self.worker.add_periodic("brightness", PERIODIC_10MIN_CYCLE_MSEC / 1000.0,
                                  self._brightness_periodic)
+        self._init_agents()
 
         # Persist the keyboard MRU just before the system sleeps (Linux/logind).
         # The callback fires on the listener's daemon thread; save_mru only
@@ -296,6 +378,9 @@ class PolyCore(Observable):
         self._tick_thread = None
         self._tick_stop = threading.Event()
         self._tick_lock = threading.Lock()
+        # When the previous window-tracking tick ended, for the slow-tick and
+        # tick-gap warnings (see `tick_window_tracking`). None until one ran.
+        self._tick_ended_at = None
 
         # Anonymous usage census. Created unconditionally (so `polyctl telemetry
         # status/preview` answers even when it is off) but only *started* by
@@ -408,6 +493,15 @@ class PolyCore(Observable):
         covers a clean quit/logout where USB suspend may not fire. Run it
         synchronously (short bounded wait) BEFORE stopping the worker, but
         never let it block shutdown."""
+        handler = getattr(self, "_problem_log_handler", None)
+        if handler is not None:
+            logging.getLogger().removeHandler(handler)
+        titles = getattr(self, "_agent_titles", None)
+        if titles is not None:
+            titles.stop()     # no title-scan report may reach the registry after this
+        store = getattr(self, "_agent_store", None)
+        if store is not None:
+            store.save_if_changed()     # the agents of this run, for the next start
         self._tick_stop.set()
         if self._tick_thread is not None:
             self._tick_thread.join(timeout=1)
@@ -430,10 +524,25 @@ class PolyCore(Observable):
             self._wincompose_thread = None
         if wincompose_thread is not None:
             wincompose_thread.join(timeout=1)
+        face = getattr(self, "_keycap_face", None)
+        if face is not None:
+            # run_sync jumps the queue, so a face job already queued would run
+            # after this restore: close() turns it into a no-op first. The
+            # restore runs even with nothing remembered yet, in case an apply
+            # was running while we looked; with nothing remembered it returns.
+            face.close()
+        if face is not None and self.connected:
+            try:
+                self.worker.run_sync("keycap_face_restore",
+                                     lambda c: face.restore(self.keeb), timeout=2)
+            except Exception as e:  # never let it break shutdown; the next connect retries
+                self.log.debug("Keycap face restore failed: %s: %s", type(e).__name__, e)
+        self._clear_agent_keys(sync=True)
         try:
             self.worker.run_sync("save_mru", lambda c: self.keeb.save_mru(), timeout=2)
         except Exception as e:  # never let a save attempt break shutdown
             self.log.debug("MRU save request failed: %s: %s", type(e).__name__, e)
+        self._flush_console_remainder()
         if self._sleep_listener is not None:
             self._sleep_listener.close()
         self.telemetry.stop()
@@ -441,6 +550,21 @@ class PolyCore(Observable):
         self.browser_url_source.close()
         if self.overlay_handler is not None:
             self.overlay_handler.close()
+
+    def _flush_console_remainder(self):
+        """Publish the console text PolyKybd still holds for an unfinished line
+        (``PolyKybd.get_console_output`` keeps it up to
+        ``CONSOLE_PARTIAL_LINE_HOLD_S`` for its newline). No poll follows a
+        shutdown, so without this the last fragment would never reach the
+        log. On the worker, which owns the device object. Never raises."""
+        try:
+            rest = self.worker.run_sync(
+                "console_flush", lambda c: self.keeb.flush_console(), timeout=1)
+        except Exception as e:  # never let it break shutdown
+            self.log.debug("Console flush failed: %s: %s", type(e).__name__, e)
+            return
+        if isinstance(rest, str) and rest:
+            self.emit("console", (None, rest))
 
     def save_mru(self):
         """Best-effort request to persist the keyboard's emoji/language MRU.
@@ -472,6 +596,9 @@ class PolyCore(Observable):
         except (OSError, yaml.YAMLError) as e:
             self.log.warning("Could not read overlay mapping %s: %s", path, e)
             self.mapping = {}
+        # Entries with `game_assets:` are redrawn from installed games on first send.
+        from polyhost.services import game_assets
+        game_assets.register_mapping(self.mapping)
 
     def save_overlay_mapping(self, path):
         import yaml
@@ -559,13 +686,67 @@ class PolyCore(Observable):
         worker refactor); headless mode calls it from the core's own tick
         thread (H3). When there is no window handler (no display) this is a
         no-op — explicit overlay sends via the API still work."""
+        started = time.monotonic()
+        self._tick_query_s = 0.0
+        ended_at = getattr(self, "_tick_ended_at", None)
+        if ended_at is not None and started - ended_at > SLOW_TICK_WARN_S:
+            # The caller sleeps one cycle between ticks, so anything much
+            # longer means the thread (or the Qt main loop) was not scheduled.
+            self.log.warning(
+                "Window-tracking tick started %.1f s after the previous one "
+                "ended (expected %.2f s): the tick thread was not scheduled.",
+                started - ended_at, update_cycle_msec / 1000)
+        try:
+            self._tick_window_tracking(update_cycle_msec, new_window_accept_msec)
+        finally:
+            ended = time.monotonic()
+            self._tick_ended_at = ended
+            took = ended - started
+            if took > SLOW_TICK_WARN_S:
+                # Split in two because they block on different things: the
+                # query talks to the window system (pywinctl), the rest is
+                # matching and the generic-overlay lookups.
+                query = getattr(self, "_tick_query_s", 0.0)
+                self.log.warning(
+                    "Window-tracking tick took %.1f s (active-window query and "
+                    "match %.1f s, overlay decision %.1f s).",
+                    took, query, took - query)
+
+    def _request_game_assets(self, data, handler):
+        """Start drawing any of these templates from an installed game. The
+        folder of the focused window's executable is the first place to look;
+        it is read on the build thread, and only when a build starts."""
+        from polyhost.handler.win_process import process_dir
+        from polyhost.services import game_assets
+        names = [str(n) for n in (data if isinstance(data, (list, tuple)) else [data])]
+        names = [n for n in names if game_assets.wants(n, self.poly_settings.get)]
+        if not names:
+            return          # no window-system query on a switch to any other app
+        pid = handler.focused_pid()
+        for name in names:
+            game_assets.request(name, self.poly_settings.get, hint=lambda: process_dir(pid))
+
+    def _tick_window_tracking(self, update_cycle_msec, new_window_accept_msec):
+        """The body of `tick_window_tracking`, which adds the timing warnings."""
         handler = self.overlay_handler
         if handler is None:
             return
         # safe_mode (newer firmware, user chose restricted): connected but no
         # operational overlay/OS traffic — only firmware-update + debugging.
         if self.connected and not self.safe_mode:
+            from polyhost.services import game_assets
+            if game_assets.take_changed():
+                # A copy redrawn from game files is ready, or gone: the window
+                # in front did not change, so nothing else would re-send it.
+                handler.force_resend()
+            query_started = time.monotonic()
             data, cmd = handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
+            self._tick_query_s = time.monotonic() - query_started
+            shortcut_icons = getattr(self, "_shortcut_icons", None)
+            if shortcut_icons is not None:
+                # Every tick, not only on the generic path: a shortcut read of
+                # an app focus has left is cancelled by it (shortcut_fetcher).
+                shortcut_icons.note_focus(handler.focused_app()[0])
             if (cmd == OverlayCommand.DISABLE
                     and self._generic_on_device is not None
                     and self.poly_settings.get("generic_overlays_enabled")
@@ -605,10 +786,20 @@ class PolyCore(Observable):
                     self._generic_on_device = None
                 self.submit_overlay_cmd(cmd)
             if data and cmd == OverlayCommand.OFF_ON:
-                self.send_overlay_data(data)
+                self._request_game_assets(data, handler)
                 # A template send re-programs the whole pool, so whatever
-                # generic overlays were on the device are gone with it.
+                # generic overlays were on the device are gone with it. Cleared
+                # BEFORE the send so the gap fill below cannot dedupe against
+                # the set this send replaces.
                 self._generic_on_device = None
+                # ⚠️ ONE send when the gap fill is already known. Sending the
+                # template alone here and letting the next tick add the fill
+                # re-mapped every keycap twice, 200-400 ms apart, on every
+                # switch to Chrome/Slack/Outlook -- even when the mark had
+                # been cached for minutes (field log, 2026-09-30). The fill's
+                # own send carries the templates first, so it is a superset.
+                if not self._send_template_with_fill(handler):
+                    self.send_overlay_data(data)
             elif not self.poly_settings.get("generic_overlays_enabled"):
                 pass                      # the whole generic path is switched off
             elif handler.covered_by_template():
@@ -637,8 +828,50 @@ class PolyCore(Observable):
                 # mask up. No completion callback has to race the focus.
                 self._maybe_send_generic_overlays(handler)
             self._track_active_os(handler)
+            self._track_keycap_face(handler)
         elif self.poly_settings.get("dev_run_window_detection_if_not_connected_to_poly_kybd"):
             handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
+
+    def _track_keycap_face(self, handler):
+        """Queue the focused entry's keycap face (or the user's own) when it changes.
+
+        Only on a change, so a still window costs a dict lookup per tick. The
+        worker applies it, and `KeycapFace.apply` is itself a no-op when the
+        keyboard already shows that face."""
+        if getattr(self, "_keycap_face", None) is None:
+            return          # a core built without __init__ (tests)
+        from polyhost.services.keycap_face import wanted_face
+        entry = getattr(handler, "current_entry", None)
+        # A forwarded window: the local entry is the `remote:` wrapper, and the
+        # forwarded application's own match is on the remote handler.
+        is_remote = getattr(handler, "is_remote_mapping_entry", None)
+        if entry is not None and is_remote is not None and is_remote():
+            entry = getattr(getattr(handler, "remote_handler", None), "current_entry", None)
+        wanted = wanted_face(entry, self.log) if entry is not self._keycap_face_entry_seen else \
+            self._keycap_face_wanted
+        self._keycap_face_entry_seen, self._keycap_face_wanted = entry, wanted
+        if wanted == self._keycap_face_sent:
+            return
+        self._keycap_face_sent = wanted
+        self.worker.submit("keycap_face",
+                           lambda c, w=wanted: self._keycap_face.apply(w, self.keeb),
+                           coalesce_key="keycap_face")
+
+    def _send_template_with_fill(self, handler):
+        """Send the focused window's templates WITH the generic gap fill.
+
+        True when that send was queued. False when the fill is switched off,
+        no template covers the window, or the fill has nothing resolved yet
+        (first sighting: the mark and the harvest are still being fetched) --
+        the caller then sends the templates alone and the tick that resolves
+        the fill sends the combined set, as before.
+        """
+        if not (self.poly_settings.get("generic_overlays_enabled")
+                and self.poly_settings.get("generic_overlays_fill_gaps")
+                and handler.covered_by_template()):
+            return False
+        return self._maybe_send_generic_overlays(
+            handler, template_files=self._template_files(handler))
 
     def _maybe_send_generic_overlays(self, handler, template_files=()):
         """Draw the focused app's OWN icon on ESC, and an icon per shortcut key.
@@ -654,6 +887,9 @@ class PolyCore(Observable):
         (modifier, keycode) a real one already drew -- so a template keeps every
         key it draws and the generic icons reach only the ones it leaves blank.
         Empty (no template covers this window) is the original behaviour.
+
+        Returns True when the set is on the device or a send for it was
+        queued, False when nothing was sent (nothing resolved, or a clear).
 
         ⚠️ **ONE send, not two, and that is forced rather than tidy.**
         `send_overlays_mru` calls `prepare_for_mru_send()`, which RESETS the
@@ -690,14 +926,19 @@ class PolyCore(Observable):
             self.log.debug_detailed(
                 "No generic overlays: the handler names no focused app "
                 "(remote=%s)", handler.is_remote_mapping_entry())
-            return
+            return False
         # `identity` is set only for a FORWARDED window, where the other machine
         # already resolved it — see AppAwareHandler.focused_app.
         # ⚠️ `pid` is what makes the OS-icon route reachable at all -- see
         # `OverlayHandler.focused_pid`. It is None for a forwarded window,
         # where `identity` is the answer instead.
+        # The OS of the machine RUNNING the app, which for a forwarded window
+        # is the forwarder's: an OS-qualified shipped mark (`photos.windows`)
+        # depends on it, and one app name can mean two programs.
+        focused_os = getattr(handler, "focused_os", None)
+        os_keys = tuple(os_match_keys(focused_os())) if callable(focused_os) else ()
         mask, slug = self._app_icons.overlay_for(
-            name, pid=handler.focused_pid(), identity=identity)
+            name, pid=handler.focused_pid(), identity=identity, os_keys=os_keys)
         if mask is None or not slug:
             slug = None
         # ⚠️ **A FORWARDED window's shortcuts CANNOT be harvested here, and
@@ -722,7 +963,16 @@ class PolyCore(Observable):
         # {source_name: {(modifier_value, keycode): mask}} -- one entry per
         # CONCEPT, shared across every key that concept lands on and across
         # applications, which is what makes Save cost one pool slot board-wide.
-        if handler.is_remote_mapping_entry():
+        if template_files and not self.poly_settings.get(
+                "generic_overlays_fill_shortcuts"):
+            # ⚠️ A TEMPLATE covers this app: fill the ESC mark only, and read
+            # no shortcuts (`generic_overlays_fill_shortcuts` off; on by default).
+            # The rule in `_generic_signature` lets a mark ride with a template
+            # and no shortcuts, so ESC keeps the app's logo; what is skipped is
+            # the read, which on Chrome took minutes for a handful of page
+            # shortcuts (field, 2026-10-15).
+            shortcuts = {}
+        elif handler.is_remote_mapping_entry():
             remote = getattr(handler, "remote_handler", None)
             relayed = (remote.forwarded_shortcuts(name)
                        if remote is not None else None)
@@ -742,9 +992,28 @@ class PolyCore(Observable):
             # which is frozen on the fetcher's worker thread -- measured in the
             # field as every app but one reporting a focus race that had not
             # happened (2026-09-21).
+            # `title` re-harvests when the window retitles: Kate's menus gain
+            # Save/Undo/Copy only once a document opens (shortcut_fetcher).
+            # getattr: test doubles and older handlers have no focused_title.
+            title_of = getattr(handler, "focused_title", None)
+            # `hwnd` makes the Windows harvest read THIS window rather than
+            # whatever has focus when the read runs (shortcut_fetcher).
+            handle_of = getattr(handler, "focused_handle", None)
             shortcuts = self._shortcut_icons.overlays_for(
-                name, pid=handler.focused_pid())
+                name, pid=handler.focused_pid(),
+                title=title_of() if callable(title_of) else None,
+                hwnd=handle_of() if callable(handle_of) else None)
+        # ⚠️ A PROGRAM INSIDE A TERMINAL (nano, Vim, an AI CLI) covers the keys
+        # with its template, and the fill is the TERMINAL's harvested shortcuts,
+        # which still work because the terminal reads them first. They are drawn
+        # dimmed then, as a browser's own set is under a website, so the keycaps
+        # show which program a shortcut belongs to. The same for a forwarded
+        # terminal, whose shortcuts were relayed above.
+        hosted = getattr(handler, "template_is_hosted", None)
+        dim = bool(template_files) and callable(hosted) and hosted() is True
         signature = self._generic_signature(slug, shortcuts, template_files)
+        if signature is not None and dim:
+            signature = (signature, "dim")
         if signature is None:
             if mask is not None and not shortcuts:
                 # ⚠️ The ONE case the detailed line below is not enough for: a
@@ -769,11 +1038,11 @@ class PolyCore(Observable):
             # icons up on Calculator and on Videos, both of which relayed none
             # (field, 2026-09-21).
             self._clear_generic_overlays(name, template_files)
-            return
+            return False
         if signature == self._generic_on_device:
-            return
-        self._send_generic_overlays(name, signature, slug, mask, shortcuts,
-                                    template_files)
+            return True
+        return self._send_generic_overlays(name, signature, slug, mask,
+                                           shortcuts, template_files, dim=dim)
 
     def _note_overlay_state(self, enabled):
         """Tell the window handler what the DEVICE is showing, if there is one.
@@ -809,7 +1078,7 @@ class PolyCore(Observable):
         ⚠️ Armed by `_generic_on_device`, so an application that resolves nothing
         costs no HID at all unless something is actually up there. Without that
         guard every tick on an unsupported app -- which is most of macOS and
-        every GTK4 application on Linux -- would queue a reset.
+        every GTK4 < 4.18 application on Linux -- would queue a reset.
         """
         if self._generic_on_device is None:
             return
@@ -880,9 +1149,10 @@ class PolyCore(Observable):
     def _say_mark_dropped(self, name, slug):
         """Say ONCE per app that a resolved mark was dropped, and why.
 
-        The rule it reports is deliberate: no shortcuts means no send, INCLUDING
-        the mark, because a mark alone reads as "this app has icons" and the
-        next glance disproves it. But the rule was invisible from the log --
+        The rule it reports is deliberate: no shortcuts AND no template means no
+        send, INCLUDING the mark, because a mark alone reads as "this app has
+        icons" and the next glance disproves it. A template's keycaps count as
+        those icons, so a templated app keeps its mark (see _generic_signature). But the rule was invisible from the log --
         the only INFO line was the fetcher announcing a mark it had built, so
         the user saw a success and a blank keyboard and nothing joining them.
 
@@ -894,7 +1164,8 @@ class PolyCore(Observable):
         self._told_mark_dropped.add(name)
         self.log.info(
             "Nothing drawn for '%s': its program mark resolved (%s) but the "
-            "app exposes no shortcut icons, and a mark is not sent on its own "
+            "app exposes no shortcut icons and no template covers it, and a "
+            "mark is not sent on its own "
             "-- it would promise keycaps that are not there. The mark appears "
             "as soon as any shortcut does.", name, slug or "no name")
 
@@ -922,10 +1193,15 @@ class PolyCore(Observable):
         # under the rule it could never be drawn there (measured 2026-09-23:
         # `mask=True slug=res:polykybd@1 shortcuts=0`, nothing sent).
         from polyhost.services.app_icons import POLYKYBD_SLUG
-        if not shortcuts and slug != POLYKYBD_SLUG:
-            # ⚠️ NO SHORTCUTS MEANS NO SEND -- **including the mark**, which is
-            # the one case where "what we could resolve" and "what is worth
-            # drawing" come apart.
+        # ⚠️ A TEMPLATE counts as the icons the rule asks for. Its keycaps are
+        # the promise the mark confirms, so dropping the mark there leaves ESC
+        # blank on exactly the apps a template covers -- a template that leaves
+        # ESC to the program mark (Chrome, JetBrains) showed no mark at all
+        # whenever the harvest found no accelerators (field, CLion, 2026-09-29).
+        if not shortcuts and slug != POLYKYBD_SLUG and not (slug and template_files):
+            # ⚠️ NO SHORTCUTS AND NO TEMPLATE MEANS NO SEND -- **including the
+            # mark**, which is the one case where "what we could resolve" and
+            # "what is worth drawing" come apart.
             #
             # The mark alone says only "this app was recognised", and the person
             # reading the board takes it for "this app has icons": it is the
@@ -951,7 +1227,7 @@ class PolyCore(Observable):
             tuple(template_files))
 
     def _send_generic_overlays(self, app, signature, slug, mask, shortcuts,
-                               template_files=()):
+                               template_files=(), dim=False):
         """Queue the mark and the shortcut icons for every attached device.
 
         ⚠️ The converters are built HERE, on the caller's thread, and one PER
@@ -989,11 +1265,14 @@ class PolyCore(Observable):
             for source, keys in sorted(shortcuts.items()):
                 converter = shortcut_converter(entry.device.device_settings, keys)
                 if converter is not None:
-                    sources.append((source, converter))
+                    # `dim`: the terminal's own shortcuts under a program's
+                    # template (see `_maybe_send_generic_overlays`). The mark
+                    # stays full strength, and ESC is never dimmed anyway.
+                    sources.append((Underlay(source) if dim else source, converter))
             if sources:
                 built.append((entry, sources))
         if not built:
-            return
+            return False
         drawn = sum(len(keys) for keys in shortcuts.values())
         # ⚠️ Say which mode this was. The two differ in what the keycaps end up
         # showing AND in what the send costs, and a log that reads the same for
@@ -1006,6 +1285,10 @@ class PolyCore(Observable):
             app, f"mark '{slug}' on ESC" if slug else "no mark",
             len(shortcuts), drawn,
             f"filling the gaps in {len(template_files)} template file(s)"
+            + (", the terminal's shortcuts dimmed under the program's, " if dim else ", ")
+            + ("shortcut filling on" if self.poly_settings.get(
+                "generic_overlays_fill_shortcuts") else
+               "shortcuts not read: generic_overlays_fill_shortcuts is off")
             if template_files else "no template overlay")
         # Recorded BEFORE the send so a tick landing mid-flight does not queue a
         # second copy of the same set; a failed send clears it again.
@@ -1026,6 +1309,7 @@ class PolyCore(Observable):
             lambda cancel: self._generic_overlay_job(built, cancel, template_files),
             coalesce_key="overlay",
             on_done=self.emit)
+        return True
 
     def _generic_overlay_job(self, built, cancel, template_files=()):
         """Worker-thread send of the generic set. Mirrors _overlay_send_job.
@@ -1060,6 +1344,9 @@ class PolyCore(Observable):
             self.log.warning(msg)
             self.emit("overlay_warning", msg)
         self.keeb.set_idle(False)
+        # Same as `_overlay_send_job`: this send now also carries the
+        # templates on a window switch, so it must mark the deaf window too.
+        self._last_overlay_activity = time.monotonic()
 
     def _track_active_os(self, handler):
         """Keep the keyboard's OS in sync with the machine currently driving the
@@ -1289,7 +1576,7 @@ class PolyCore(Observable):
             self._apply_unicode_mode(mode)
 
     def report_window(self, handle, name, title, os=None, url=None,
-                      names=(), icon_key=None, icon=None, shortcuts=None):
+                      names=(), icon_key=None, icon=None, shortcuts=None, machine=None):
         """Inject an external active-window report into remote window tracking
         (the ``window.report`` RPC / ``polyctl window report``).
 
@@ -1327,6 +1614,10 @@ class PolyCore(Observable):
         # lost field.
         if isinstance(ret, dict):
             payload.update(ret)
+        # Agents on the forwarder's machine: a queued raise and the 1 s heartbeat
+        # ride this reply, the only channel that reaches the forwarder.
+        if machine and getattr(self, "_agent_remote_raises", None) is not None:
+            payload.update(self.agent_relay_for(str(machine)[:64]))
         return True, payload
 
     def submit_overlay_cmd(self, cmd):
@@ -1481,6 +1772,35 @@ class PolyCore(Observable):
         # the firmware that had just been replaced, until the app was restarted.
         # The marker is popped once per keyboard boot, so this costs one extra
         # version+lang query per reboot and nothing in steady state.
+        # Bulk pipe (optional second channel): probed on a fresh connect (below,
+        # after the version block), and re-probed on the next few steady-state
+        # probes while HID only, because on Linux the tty node can appear after
+        # the hidraw node. A port that is absent, busy or mute is "hid"; see
+        # device/bulk_pipe.py. This runs BEFORE the steady-state return so the
+        # retries happen and every published snapshot names the transport: the
+        # tray reads it from each one, and a snapshot without the key would
+        # clear the mark one second after connect.
+        if not connected_now:
+            self.keeb.forget_bulk_pipe()
+        elif self._hid_link_forced():
+            self.keeb.use_hid_only()
+        elif snapshot["state_changed"] or snapshot["fresh_boot"]:
+            self.keeb.forget_bulk_pipe()
+            self._pipe_probes_left = PIPE_PROBE_RETRIES
+        elif (self.keeb.get_transport() != bulk_pipe.TRANSPORT_PIPE
+              and self._pipe_probes_left > 0):
+            self._pipe_probes_left -= 1
+            self.keeb.probe_bulk_pipe()
+        snapshot["transport"] = self.keeb.get_transport()
+        snapshot["link_rate_mbps"] = self.keeb.get_link_rate_mbps()
+        # Only a steady-state probe may release a held check. A reboot or a
+        # connectivity change drops it instead: the connect that follows reads
+        # the new firmware's version first, and queues its own check only when
+        # it is compatible (a newer firmware may be held in safe mode).
+        steady = (connected_now and not snapshot["state_changed"]
+                  and not snapshot["fresh_boot"])
+        self._release_held_fontpack_check(steady)
+        self._recheck_fontpack_on_generation(steady)
         if not snapshot["state_changed"] and not snapshot["fresh_boot"]:
             return snapshot
 
@@ -1499,6 +1819,9 @@ class PolyCore(Observable):
             return snapshot
 
         version_ok, version_msg = self.keeb.query_version_info()
+        snapshot["transport"] = (self.keeb.use_hid_only() if self._hid_link_forced()
+                                 else self.keeb.probe_bulk_pipe())
+        snapshot["link_rate_mbps"] = self.keeb.get_link_rate_mbps()
         snapshot.update({
             "version_ok": version_ok,
             "version_msg": version_msg,
@@ -1563,6 +1886,10 @@ class PolyCore(Observable):
                     and snapshot.get("kb_proto") != self._newer_fw_policy_proto):
                 self._newer_fw_policy = None
                 self._newer_fw_policy_proto = None
+            if not connected_now and getattr(self, "_keycap_face", None) is not None:
+                # What the keyboard shows is unknown from here on.
+                self._keycap_face.note_disconnected()
+                self._keycap_face_sent = _NOT_SENT
             decision = decide_reconnect_apply(
                 snapshot, __protocol__, __version__, self.ignore_version,
                 min_supported=MIN_SUPPORTED_PROTOCOL,
@@ -1617,6 +1944,10 @@ class PolyCore(Observable):
                     self._push_os(get_host_os())
                 self.device_mgr.reset_all_caches()
                 caches_reset = True
+                # The agent keys live in the keyboard's RAM only: send them again.
+                # (getattr: a test fixture may build the core without __init__.)
+                if getattr(self, "_agent_keys", None) is not None:
+                    self._agent_keys.forget_device()
                 # ⚠️ The MRU cache is now empty and the keyboard's pool is about
                 # to be cleared, so whatever generic overlays we believed were on
                 # the device are NOT. Without this the dedupe kept claiming they
@@ -1628,6 +1959,15 @@ class PolyCore(Observable):
                     self.overlay_handler.force_resend()
                 self.needs_overlay_reset = True
                 self.log.info("Connected: active window resend queued.")
+                # A face left from a host that stopped while an application's
+                # face was on goes back first; the next tick then applies the
+                # focused application's face again, if it has one.
+                # The restore is queued BEFORE the marker is reset, so a tick in
+                # between cannot queue the application's face ahead of it.
+                if getattr(self, "_keycap_face", None) is not None:
+                    self.worker.submit("keycap_face_restore",
+                                       lambda c: self._keycap_face.restore(self.keeb))
+                    self._keycap_face_sent = _NOT_SENT
                 # Re-assert the host's brightness mode on the freshly-connected
                 # keyboard (its auto mode is RAM-only and defaults off on boot):
                 # engage daylight-auto + push the current value, or send AUTO_OFF
@@ -1649,7 +1989,26 @@ class PolyCore(Observable):
                              snapshot["lang"] if snapshot["lang"] else "NO RESPONSE")
 
         if self.connected:
-            if snapshot["state_changed"] and self.needs_overlay_reset:
+            # ⚠️ A FRESH BOOT clears the keyboard too, not only a state change.
+            # The marker can reach the host AFTER a connect that already filled
+            # the pool: on 2026-10-08 a firmware apply rebooted the keyboard, the
+            # 13:53:58 reconnect cleared it and uploaded ~110 images, and the
+            # marker arrived at 13:54:02. Resetting only the host cache then made
+            # every one of those slots read as clean, so the next ROI upload
+            # (OverlayMRUCache.slot_is_clean) left the old image around the new
+            # one on the ESC keycap. One extra report per keyboard boot.
+            #
+            # Independent of state_changed: a fast reboot (no observed
+            # disconnect) still must invalidate the host-side MRU cache.
+            # Post-connect already does it on the paths where it runs, so this
+            # is the fallback for the ones where it does not (a reboot into
+            # firmware this host refuses, or into safe mode) -- not a second
+            # reset on top of it.
+            fresh_boot = bool(snapshot.get("fresh_boot"))
+            if fresh_boot and not caches_reset:
+                self.device_mgr.reset_all_caches()
+                self.needs_overlay_reset = True
+            if (snapshot["state_changed"] or fresh_boot) and self.needs_overlay_reset:
                 self.needs_overlay_reset = False
                 applied["do_overlay_reset"] = True
                 # We just reset our OWN MRU cache (reset_all_caches above) to
@@ -1673,16 +2032,18 @@ class PolyCore(Observable):
                         self.log.info("Connected: keyboard overlay state cleared.")
                     except Exception as e:
                         self.log.warning("Connect-time overlay reset failed: %s", e)
-            # Independent of state_changed: a fast reboot (no observed
-            # disconnect) still must invalidate the host-side MRU cache. Post-connect
-            # already does it on the paths where it runs, so this is the fallback for
-            # the ones where it does not (a reboot into firmware this host refuses,
-            # or into safe mode) -- not a second reset on top of it.
-            if snapshot.get("fresh_boot"):
-                if not caches_reset:
-                    self.device_mgr.reset_all_caches()
+            if fresh_boot:
                 self.log.info("Firmware restart detected — overlay MRU cache reset.")
                 applied["fresh_boot"] = True
+                # Ask the keyboard itself whether the boot before this one crashed.
+                # Keyed on the fresh-boot marker, not on a connect: see
+                # _arm_crash_autocheck for why that makes it "new crashes only".
+                if self.keeb.supports("crash_record"):
+                    self._arm_crash_autocheck()
+                # The boot-loop diagnostic waits on exactly this: the keyboard came
+                # back from a reboot (the GET_ID marker, not a reconnect, which a
+                # fast reboot may never show as a disconnect).
+                self._boot_seen.set()
 
         self.emit("status_changed", {
             "connected": self.connected,
@@ -1703,6 +2064,11 @@ class PolyCore(Observable):
             "safe_mode": self.safe_mode,
             "newer_fw_pending": bool(
                 (applied["decision"] or {}).get("newer_fw_pending")),
+            # Which channel the host has to the keyboard: "pipe" (bulk pipe
+            # found and answering), "hid" (raw HID only), None while
+            # disconnected. The tray colours its mark by it.
+            "transport": self.keeb.get_transport(),
+            "link_rate_mbps": self.keeb.get_link_rate_mbps(),
         })
         return applied
 
@@ -1722,7 +2088,12 @@ class PolyCore(Observable):
         if kb_serial or kb_log:
             self.emit("console", (kb_serial, kb_log))
         if kb_log:
+            # getattr: a test fixture may build the core without __init__.
+            agent_keys = getattr(self, "_agent_keys", None)
+            if agent_keys is not None:
+                agent_keys.note_console(kb_log)
             self._scan_console_for_crashes(kb_log)
+            self._scan_console_for_problems(kb_log)
 
     def _scan_console_for_crashes(self, chunk):
         """Watch the console stream for the firmware's crash line and alert once.
@@ -1741,6 +2112,115 @@ class PolyCore(Observable):
         for rec in records:
             self.log.warning("Keyboard firmware crash record: %s", rec.line)
             self.emit("crash_detected", rec.to_dict())
+
+    # When each half is asked, in seconds after the boot is seen. The master's read
+    # is retried because right after a boot the worker is busy with the overlay
+    # resend and the keyboard can be deaf for hundreds of ms after a large transfer;
+    # a failed read with no retry would lose the very crash this exists to report.
+    # The slave is asked again because the master pulls the slave's record over the
+    # split link once per link-up (three tries, 2 s apart), so a read in the first
+    # second usually finds nothing there yet.
+    CRASH_MASTER_RECHECK_S = (0.0, 4.0, 10.0)
+    CRASH_SLAVE_RECHECK_S = (0.0, 8.0, 20.0)
+
+    def _arm_crash_autocheck(self):
+        """Queue cmd 39 reads of both halves after the host sees a keyboard boot.
+
+        ⚠️ The crash dialog used to be raised ONLY by the console line, which is
+        lossy: the firmware prints it with the boot banner and a few re-emits in
+        the first ~30 s, and after a watchdog reset the keyboard re-enumerates
+        while the host's probe is still debouncing. A recovered boot stall at
+        "63%, 4 / 4" (fw 1.3.2, phase 1:0x16e1, 2026-10-02) was archived on the
+        keyboard and never reported. The record itself is durable, so read it.
+        Only a FRESH record (from the boot before this one) raises the alert;
+        older ones are history for `polyctl crash show`. The scanner's dedupe
+        covers both sources, so a crash the console also delivered alerts once.
+
+        ⚠️ New crashes only, which is why this is armed on the GET_ID fresh-boot
+        marker and not on every connect. A record stays fresh for the WHOLE keyboard
+        boot, so a connect-time read would re-alert the same crash after a host
+        restart, a pause/resume or a sleep/wake. The firmware clears the marker on
+        the first GET_ID after it boots, so exactly one host connect per keyboard
+        boot sees it. The scanner's per-process dedupe cannot do that job alone: it
+        does not survive a restart, and two stalls at the same breadcrumb produce
+        byte-identical records."""
+        now = time.monotonic()
+        checks = ([(now + d, 0) for d in self.CRASH_MASTER_RECHECK_S]
+                  + [(now + d, 1) for d in self.CRASH_SLAVE_RECHECK_S])
+        with self._crash_checks_lock:
+            self._crash_checks = checks
+
+    def _crash_autocheck_periodic(self, cancel):
+        """Worker periodic (1 s): run whichever queued crash-record reads are due.
+
+        Nothing is dropped while the keyboard is away: a due read waits for the
+        next tick that finds it connected, because no new boot marker will arrive
+        to re-arm a read that a brief pause or flap threw away."""
+        if not self.connected or self.paused:
+            return
+        now = time.monotonic()
+        with self._crash_checks_lock:
+            due = sorted({w for t, w in self._crash_checks if t <= now})
+        for which in due:
+            if cancel.is_set():
+                return
+            with self._crash_checks_lock:
+                # Consume only what is due for this half; a later re-check stays.
+                self._crash_checks = [(t, w) for t, w in self._crash_checks
+                                      if w != which or t > now]
+            if self._crash_autocheck_one(which):
+                with self._crash_checks_lock:
+                    self._crash_checks = [(t, w) for t, w in self._crash_checks
+                                          if w != which]
+
+    def _crash_autocheck_one(self, which):
+        """One cmd 39 read; True when this half needs no further re-check.
+
+        The master is done on any answer. The slave is done only once a record
+        arrives, since an empty answer may mean the master has not pulled it yet."""
+        try:
+            ok, payload = self.keeb.get_crash_record(which)
+        except Exception:  # noqa: BLE001 — a failed read must not kill the periodic
+            self.log.debug("Connect-time crash record read failed", exc_info=True)
+            return False
+        if not ok:
+            return False
+        if not payload:
+            return which == 0
+        rec = CrashRecord.from_dict(payload)
+        if rec.fresh and self._crash_scanner.note(rec):
+            self.log.warning("Keyboard firmware crash record (read over HID): %s", rec.key())
+            self.emit("crash_detected", rec.to_dict())
+        return True
+
+    def _problem_setting(self, key, default):
+        try:
+            return self.poly_settings.get(key)
+        except Exception:  # noqa: BLE001 — a settings file without the key yet
+            return default
+
+    def _scan_console_for_problems(self, chunk):
+        """Match whole console lines against the known-bad patterns.
+
+        The scanner always runs so its line buffer stays in step with the stream;
+        the switch decides only whether a match is reported."""
+        scanner = getattr(self, "_problem_scanner", None)
+        if scanner is None:
+            return
+        try:
+            found = scanner.feed(chunk, self._problem_setting(
+                "problem_scan_level", problem_scan.LEVEL_ERRORS))
+        except Exception:  # noqa: BLE001 — a scanner bug must not kill the console read
+            self.log.debug("Problem scan failed", exc_info=True)
+            return
+        if found and self._problem_setting("problem_scan_keyboard_console", True):
+            for prob in found:
+                self._report_problem(prob)
+
+    def _report_problem(self, prob):
+        """Publish one problem. Called from the console scan and from the log
+        handler (on whatever thread logged), so it only emits."""
+        self.emit("problem_detected", prob.to_dict())
 
     # HID SET_BRIGHTNESS flag bits — mirror firmware base/com.h (protocol >= 5).
     # On older firmware the flags byte is ignored (plain persisted set), so we
@@ -1843,6 +2323,184 @@ class PolyCore(Observable):
 
     DEVICE_CALL_TIMEOUT = 5  # seconds for a bounded run_sync device command
 
+    # ---- AI agents on the number row (services/agents, cmd 45/46, v31+) --------
+
+    def _agent_card_cache(self):
+        """The primary keyboard's MRU cache. The agent cards borrow pool slots from
+        it as "aside" entries (OverlayMRUCache.allocate_aside), so no slot is
+        reserved and the per-app image limit stays 600: a switch evicts a card
+        before any app image, and the next agents pass uploads it again."""
+        primary = self.device_mgr.primary
+        return primary.cache if primary is not None else None
+
+    def _init_agents(self):
+        """The registry always exists, so hooks and `polyctl agents list` work with
+        the feature off; only the keyboard side waits for `agents_enabled`."""
+        from polyhost.services.agents import dictation
+        from polyhost.services.agents.raiser import raise_agent
+        from polyhost.services.agents.titles import TitleScanner
+        from polyhost.services.agents.procs import is_alive
+        def limits():
+            def minutes(name, default):
+                try:
+                    return max(0, int(self.poly_settings.get(name))) * 60
+                except (TypeError, ValueError):
+                    return default
+            from polyhost.services.agents.registry import FORGET_AFTER_S, STALE_AFTER_S
+            return (minutes("agents_stale_minutes", STALE_AFTER_S),
+                    minutes("agents_forget_minutes", FORGET_AFTER_S))
+        self.agents = AgentRegistry(is_alive=is_alive, limits=limits)
+        self._agent_store = None
+        if self._agent_store_on:
+            from polyhost.server import protocol
+            from polyhost.services.agents.store import AgentStore
+            self._agent_store = AgentStore(self.agents, protocol.agents_store_path(), self.log)
+            self._agent_store.load()
+
+        def dictate():
+            return dictation.send_shortcut(dictation.shortcut_for(
+                self.poly_settings.get("agents_dictation_shortcut")))
+        self._agent_keys = AgentKeysController(
+            self.agents, self._agent_card_cache, raise_agent=raise_agent, log=self.log,
+            dictate=dictate)
+        from polyhost.services.agents.remote import RemoteRaiseQueue
+        self._agent_remote_raises = RemoteRaiseQueue()
+        self._agent_keys.raise_remote = self._agent_remote_raises.request
+
+        def raise_viewer(machine):
+            from polyhost.services.agents.raiser import raise_viewer as _raise_viewer
+            from polyhost.services.agents.viewer import mapping_viewer_apps
+            return _raise_viewer(machine, mapping_viewer_apps(self.mapping))
+        self._agent_keys.raise_viewer = raise_viewer
+        self.worker.add_periodic("agents", 1.0, self._agents_periodic)
+        if self._agent_store is not None:
+            self.worker.add_periodic("agents_store", 5.0,
+                                     lambda cancel: self._agent_store.save_if_changed())
+        self._agent_titles = TitleScanner(
+            self.agents, self.log,
+            enabled=lambda: bool(self.poly_settings.get("agents_enabled")
+                                 and self.poly_settings.get("agents_title_scan")))
+        self._agent_titles.start()
+
+    def _agents_active(self) -> bool:
+        """The keyboard side runs when the feature is on and the keyboard speaks v31."""
+        return (bool(self.poly_settings.get("agents_enabled"))
+                and self.connected and not self.paused
+                and self.keeb.supports("agent_keys"))
+
+    def _agents_periodic(self, cancel):
+        """Worker periodic (1 s): read key presses, push the shown page."""
+        if not self._agents_active():
+            return
+        self._agent_keys.note_state_generation(getattr(self.keeb, "state_generation", None))
+        self._agent_keys.sync(self.keeb, cancel)
+
+    def _clear_agent_keys(self, sync: bool = False) -> None:
+        """Turn the agent keys off on a connected keyboard that has them (host
+        shutdown, feature turned off). Never raises."""
+        ctl = getattr(self, "_agent_keys", None)
+        if ctl is None or not self.connected or not self.keeb.supports("agent_keys"):
+            return
+        try:
+            if sync:
+                self.worker.run_sync("agents_clear", lambda c: ctl.clear_keyboard(self.keeb),
+                                     timeout=2)
+            else:
+                self.worker.submit("agents_clear", lambda c: ctl.clear_keyboard(self.keeb))
+        except Exception as e:  # never let it break shutdown; the keyboard clears at suspend
+            self.log.debug("Agent keys clear failed: %s: %s", type(e).__name__, e)
+
+    def agents_list(self) -> dict:
+        """No device I/O: the registry and the page the keyboard shows."""
+        return {"agents": self.agents.snapshot(), "page": self._agent_keys.page,
+                "pages": self.agents.page_count(),
+                "enabled": bool(self.poly_settings.get("agents_enabled")),
+                "active": self._agents_active(),
+                "last_press": self._agent_keys.last_press}
+
+    def agents_report(self, params: dict):
+        """A report from polyctl (a hook adapter or a user). (ok, agent or reason)."""
+        from polyhost.services.agents.model import ENDED
+        try:
+            state = params.get("state")
+            if state not in (None, ENDED):
+                from polyhost.services.agents.model import AgentState
+                state = AgentState.parse(state)
+            agent = self.agents.report(
+                params.get("vendor", ""), params.get("session_id", ""), state,
+                event=params.get("event", ""), headline=params.get("headline"),
+                cwd=params.get("cwd"), surface=params.get("surface"),
+                machine=params.get("machine"), pid=params.get("pid"))
+        except (ValueError, TypeError) as e:
+            return False, str(e)
+        return True, agent
+
+    def agents_report_remote(self, params):
+        """An `agents.report` from the NETWORK endpoint (a forwarder's machine).
+        Every field is bounded first (services/agents/remote.sanitize_report); the
+        machine name it carries keeps the agent out of the local process check and
+        sends its raise back to that forwarder. (ok, agent or reason)."""
+        from polyhost.services.agents.remote import sanitize_report
+        if not self._agents_remote_on():
+            # The hook on the other computer must print nothing, so this log line
+            # is the only place the refusal shows. Once per computer per run.
+            machine = str((params or {}).get("machine") or "remote")[:64] \
+                if isinstance(params, dict) else "remote"
+            refused = self.__dict__.setdefault("_agents_remote_refused", set())
+            if machine not in refused and len(refused) < 32:
+                refused.add(machine)
+                self.log.info("Agent report from %s refused: turn on Settings > AI agents > "
+                              "\"Agents from other computers\" (agents_remote_enabled)",
+                              machine)
+            return False, ("agents from other computers are off "
+                           "(settings agents_enabled and agents_remote_enabled)")
+        clean = sanitize_report(params)
+        if clean is None:
+            return False, "invalid agents.report"
+        if clean["machine"] == "local":
+            clean["machine"] = "remote"     # "local" means THIS computer
+        return self.agents_report(clean)
+
+    def _agents_remote_on(self) -> bool:
+        """Agents from a forwarder's machine are an explicit second opt-in, off by
+        default: they add a sink and a raise channel to the NETWORK endpoint
+        (security audit HOST-6), so agents_enabled alone does not turn them on."""
+        return bool(self.poly_settings.get("agents_enabled")
+                    and self.poly_settings.get("agents_remote_enabled"))
+
+    def agent_relay_for(self, machine):
+        """What the reply to a forwarder's window.report adds for `machine`: the
+        newest raise queued for it, and whether it should report every second
+        because it has agents on the keys. Nothing while remote agents are off."""
+        if not machine or not self._agents_remote_on():
+            return {}
+        out = {}
+        pending = self._agent_remote_raises.for_machine(machine)
+        if pending is not None:
+            out["agent_raise"] = pending
+        if any(a.machine == machine for a in self.agents.agents()):
+            out["agents_fast"] = True
+        return out
+
+    def agents_raise(self, vendor, session_id):
+        """Bring an agent's window forward (the tray's agent list). The raise runs
+        on its own thread; (True, "raising") means it was started."""
+        agent = next((a for a in self.agents.agents()
+                      if a.vendor == vendor and a.session_id == session_id), None)
+        if agent is None:
+            return False, "No such agent"
+        self.agents.mark_seen(vendor, session_id)
+        self._agent_keys.raise_now(agent)
+        return True, "raising"
+
+    def agents_label(self, vendor, session_id, text):
+        ok = self.agents.label(vendor, session_id, text)
+        return ok, ("ok" if ok else "No such agent")
+
+    def agents_forget(self, vendor, session_id):
+        ok = self.agents.forget(vendor, session_id)
+        return ok, ("ok" if ok else "No such agent")
+
     def _device_call(self, name, fn):
         """run_sync wrapper returning a uniform (ok, payload) result.
 
@@ -1881,6 +2539,9 @@ class PolyCore(Observable):
             "current_lang": self.keeb.get_current_lang(),
             "host_version": __version__,
             "window_backend": self.window_backend,
+            "transport": self.keeb.get_transport(),
+            "link_rate_mbps": self.keeb.get_link_rate_mbps(),
+            "pipe": self.keeb.get_pipe_info(),
         }
 
     def list_languages(self):
@@ -1940,6 +2601,43 @@ class PolyCore(Observable):
         return self._device_call(
             "idle_timeout_get", lambda c: self.keeb.get_idle_timeout())
 
+    def set_tap_terms(self, tapping_term=None, flow_tap_term=None,
+                      auto_shift=None, auto_shift_ms=None):
+        """Set the tapping term, the Flow Tap term, Auto Shift on/off and the Auto
+        Shift timeout (None keeps one). (ok, settings after the change) or
+        (False, reason)."""
+        try:
+            tap = None if tapping_term is None else int(tapping_term)
+            flow = None if flow_tap_term is None else int(flow_tap_term)
+            as_ms = None if auto_shift_ms is None else int(auto_shift_ms)
+        except (TypeError, ValueError):
+            return False, (f"Invalid tap terms: {tapping_term!r}, {flow_tap_term!r}, "
+                           f"{auto_shift_ms!r}")
+        as_on = None if auto_shift is None else bool(auto_shift)
+        return self._device_call(
+            "tap_terms_set",
+            lambda c, t=tap, f=flow, a=as_on, m=as_ms: self.keeb.set_tap_terms(
+                tapping_term=t, flow_tap_term=f, auto_shift=a, auto_shift_ms=m))
+
+    def key_attention(self, row, col, count=3, period_ms=4000):
+        """The focus ripple on the key at matrix (row, col), `count` times (0 = until
+        cancelled). (ok, msg)."""
+        try:
+            row, col, count, period_ms = int(row), int(col), int(count), int(period_ms)
+        except (TypeError, ValueError):
+            return False, f"Invalid key attention request: {row!r}, {col!r}"
+        return self._device_call(
+            "key_attention", lambda c: self.keeb.key_attention(row, col, count, period_ms))
+
+    def key_attention_cancel(self):
+        return self._device_call("key_attention_cancel",
+                                 lambda c: self.keeb.key_attention_cancel())
+
+    def get_tap_terms(self):
+        """(ok, {"tapping_term", "flow_tap_term", "flow_tap_available",
+        "auto_shift_available", "auto_shift", "auto_shift_ms"})."""
+        return self._device_call("tap_terms_get", lambda c: self.keeb.get_tap_terms())
+
     def refresh_unicode_mode(self):
         """Re-detect the host's unicode input method and push it to the keyboard.
 
@@ -1953,7 +2651,14 @@ class PolyCore(Observable):
             return False, "Sending the unicode composition mode is disabled in the settings."
         from polyhost.input.unicode_input import get_input_method
         mode = get_input_method()
-        self.log.info("Re-applying unicode mode %s", mode)
+        if mode == self._last_pushed_unicode_mode and not self._last_push_was_volatile:
+            # The tray re-sends on its first menu open (see host.py
+            # _refresh_wincompose_action); say so, since "persist" reads as a
+            # flash write and eeprom_update_byte skips an unchanged byte.
+            self.log.info("Re-applying unicode mode %s (unchanged; the keyboard "
+                          "writes EEPROM only when the mode differs)", mode)
+        else:
+            self.log.info("Re-applying unicode mode %s", mode)
         ok, payload = self._device_call(
             "set_unicode_mode", lambda c, m=mode: self.keeb.set_unicode_mode(m))
         if not ok:
@@ -1975,12 +2680,34 @@ class PolyCore(Observable):
             v = int(value)
         except (TypeError, ValueError):
             return False, f"Invalid glyph script: {value!r}"
+        # Chosen by hand while an application's face is on: restore THIS one later.
+        if getattr(self, "_keycap_face", None) is not None:
+            self._keycap_face.note_user_choice(script=v)
         return self._device_call(
             "glyph_script_set", lambda c, v=v: self.keeb.set_glyph_script(v))
 
     def get_glyph_script(self):
         return self._device_call(
             "glyph_script_get", lambda c: self.keeb.get_glyph_script())
+
+    def set_glyph_placement(self, value):
+        try:
+            v = int(value)
+        except (TypeError, ValueError):
+            return False, f"Invalid glyph-script placement: {value!r}"
+        # A closed range: an unknown value would be NACKed by the keyboard, and
+        # remembered below as the face to restore, failing every later restore.
+        from polyhost.device.command_ids import GlyphPlacement
+        if v not in {p.value for p in GlyphPlacement}:
+            return False, f"Invalid glyph-script placement: {value!r}"
+        if getattr(self, "_keycap_face", None) is not None:
+            self._keycap_face.note_user_choice(place=v)
+        return self._device_call(
+            "glyph_placement_set", lambda c, v=v: self.keeb.set_glyph_placement(v))
+
+    def get_glyph_placement(self):
+        return self._device_call(
+            "glyph_placement_get", lambda c: self.keeb.get_glyph_placement())
 
     def set_glyph_size(self, value):
         try:
@@ -2013,6 +2740,205 @@ class PolyCore(Observable):
         if ok:
             self._crash_scanner.forget()
         return ok, payload
+
+    # --- boot-loop diagnostic ---------------------------------------------
+    #
+    # Reboot (cmd 43), wait for the keyboard to come back, read cmd 39 on both
+    # halves, repeat. It looks for the intermittent boot stall that the late-boot
+    # watchdog guard recovers from: such a boot resets once and archives a FRESH
+    # `kind=watchdog phase=boot` record, which a deliberate reboot never does
+    # (shutdown_user() disarms the watchdog first). Runs on its own thread, not as
+    # a worker job: the reconnect probe that notices the keyboard coming back runs
+    # on the worker too, so one long job would block the very thing it waits for.
+
+    BOOT_LOOP_DEFAULT_ROUNDS = 50
+    # Long soak runs are the point once a fix is in: a hang at 1 in 100 boots needs
+    # ~300 rounds to rule out.
+    BOOT_LOOP_MAX_ROUNDS = 9999
+    # A boot plus one watchdog recovery (8 s) fits easily; longer means the board
+    # wedged where the guard does not reach, or did not re-enumerate.
+    BOOT_LOOP_RECONNECT_TIMEOUT_S = 60.0
+    # The master pulls the slave's record over the split link a few seconds after
+    # link-up (three tries, 2 s apart), so its record is polled for this long.
+    BOOT_LOOP_SLAVE_WAIT_S = 8.0
+    BOOT_LOOP_POLL_S = 1.0
+
+    def _init_boot_loop_state(self):
+        self._boot_seen = threading.Event()
+        self._boot_loop_thread = None
+        self._boot_loop_cancel = threading.Event()
+        self._boot_loop_crashes = []      # fresh records reported while a round runs
+        self._boot_loop_listening = False
+
+    def reboot_keyboard(self):
+        """Reboot both halves (cmd 43, protocol v22+); nothing is persisted."""
+        return self._device_call("reboot", lambda c: self.keeb.reboot())
+
+    def boot_loop_running(self):
+        t = self._boot_loop_thread
+        return bool(t is not None and t.is_alive())
+
+    def start_boot_loop(self, rounds=BOOT_LOOP_DEFAULT_ROUNDS):
+        """Start the boot-loop diagnostic; progress and the verdict arrive as events.
+
+        Stops at the first fresh crash record, when the keyboard does not come back
+        within BOOT_LOOP_RECONNECT_TIMEOUT_S, on cancel_boot_loop(), on a failed
+        reboot request, or after ``rounds`` clean reboots (1..BOOT_LOOP_MAX_ROUNDS)."""
+        try:
+            rounds = int(rounds)
+        except (TypeError, ValueError):
+            return False, f"Invalid round count: {rounds!r}"
+        if not 1 <= rounds <= self.BOOT_LOOP_MAX_ROUNDS:
+            return False, f"Rounds must be 1..{self.BOOT_LOOP_MAX_ROUNDS}, got {rounds}"
+        if not self.connected or self.paused:
+            return False, "No PolyKybd connected (or paused)."
+        # Pure check: this runs off the worker, and keeb.supports() may do I/O.
+        if not protocol_supports(self.keeb.protocol_version, "reboot"):
+            return False, ("Firmware protocol too old to reboot on request "
+                           "(need v22+). Please update the PolyKybd firmware.")
+        if self.boot_loop_running():
+            return False, "A boot-loop test is already running."
+        if not self._boot_loop_listening:
+            # Observable has no unsubscribe, so one listener for the core's life;
+            # it only collects while a round is running.
+            self.subscribe(self._boot_loop_on_event)
+            self._boot_loop_listening = True
+        self._boot_loop_cancel = threading.Event()
+        self._boot_loop_thread = threading.Thread(
+            target=self._boot_loop_run, args=(rounds, self._boot_loop_cancel),
+            name="boot-loop", daemon=True)
+        self._boot_loop_thread.start()
+        return True, {"rounds": rounds}
+
+    def cancel_boot_loop(self):
+        if not self.boot_loop_running():
+            return False, "No boot-loop test is running."
+        self._boot_loop_cancel.set()
+        return True, "cancelling"
+
+    def _boot_loop_on_event(self, name, payload):
+        # The console path and any other reader of cmd 39 may report the crash
+        # first, and a read of the slave's record can retire its FRESH bit for
+        # later readers, so the loop listens as well as reads.
+        if name == events.CRASH_DETECTED and self.boot_loop_running() and payload:
+            if payload.get("fresh", True):
+                self._boot_loop_crashes.append(dict(payload))
+
+    def _boot_loop_progress(self, n, rounds, msg, **extra):
+        self.log.info("Boot loop %d/%d: %s", n, rounds, msg)
+        self.emit(events.BOOT_LOOP_PROGRESS, dict({"round": n, "rounds": rounds, "msg": msg}, **extra))
+
+    def _boot_loop_finish(self, result, msg, rounds_done, boot_times, record=None):
+        level = logging.WARNING if result in ("crash", "timeout", "error") else logging.INFO
+        self.log.log(level, "Boot loop finished (%s): %s", result, msg)
+        self.emit(events.BOOT_LOOP_DONE, {
+            "ok": result == "clean", "result": result, "msg": msg,
+            "rounds_done": rounds_done, "boot_times": [round(t, 2) for t in boot_times],
+            "record": record})
+
+    # Failed cmd 39 reads tolerated per half before the round is an error. Right
+    # after a boot the keyboard can miss a read; a read that never succeeds means
+    # the round proved nothing, which must not be reported as clean.
+    BOOT_LOOP_READ_ATTEMPTS = 3
+
+    def _boot_loop_fresh_record(self, cancel):
+        """(read_ok, record): the first fresh crash record on either half after a
+        reboot (or None), or (False, message) when a half could not be read."""
+        if self._boot_loop_crashes:
+            return True, self._boot_loop_crashes[0]
+        err = None
+        for _ in range(self.BOOT_LOOP_READ_ATTEMPTS):
+            ok, payload = self._device_call(
+                "crash_get", lambda c: self.keeb.get_crash_record(0))
+            if ok:
+                break
+            err = payload
+            if cancel.wait(self.BOOT_LOOP_POLL_S):
+                return True, None
+        else:
+            return False, f"master crash record unreadable: {err}"
+        if payload and payload.get("fresh"):
+            return True, payload
+        deadline = time.monotonic() + self.BOOT_LOOP_SLAVE_WAIT_S
+        failures, slave_read = 0, False
+        while True:
+            if self._boot_loop_crashes:
+                return True, self._boot_loop_crashes[0]
+            ok, payload = self._device_call(
+                "crash_get", lambda c: self.keeb.get_crash_record(1))
+            if ok:
+                slave_read = True
+                if payload:
+                    # Present means the master has pulled it this link-up; fresh or
+                    # not, waiting longer cannot change the answer.
+                    return True, (payload if payload.get("fresh") else None)
+            else:
+                failures, err = failures + 1, payload
+            if time.monotonic() >= deadline or cancel.wait(self.BOOT_LOOP_POLL_S):
+                if self._boot_loop_crashes:
+                    return True, self._boot_loop_crashes[0]
+                if not slave_read and failures:
+                    return False, f"slave crash record unreadable: {err}"
+                return True, None
+
+    def _boot_loop_run(self, rounds, cancel):
+        boot_times = []
+        try:
+            for n in range(1, rounds + 1):
+                if cancel.is_set():
+                    self._boot_loop_finish("cancelled", f"Cancelled after {n - 1} reboot(s).",
+                                           n - 1, boot_times)
+                    return
+                self._boot_loop_crashes.clear()
+                self._boot_seen.clear()
+                self._boot_loop_progress(n, rounds, "rebooting")
+                ok, msg = self.reboot_keyboard()
+                if not ok:
+                    self._boot_loop_finish("error", f"Round {n}: the reboot request failed: {msg}",
+                                           n - 1, boot_times)
+                    return
+                t0 = time.monotonic()
+                deadline = t0 + self.BOOT_LOOP_RECONNECT_TIMEOUT_S
+                while not self._boot_seen.is_set():
+                    if cancel.is_set():
+                        self._boot_loop_finish(
+                            "cancelled", f"Cancelled in round {n}, while the keyboard was rebooting.",
+                            n - 1, boot_times)
+                        return
+                    if time.monotonic() >= deadline:
+                        self._boot_loop_finish(
+                            "timeout",
+                            f"Round {n}: the keyboard did not come back within "
+                            f"{self.BOOT_LOOP_RECONNECT_TIMEOUT_S:.0f} s. A boot hang the "
+                            f"watchdog did not reset: note the status panel's percentage, then "
+                            f"unplug and replug, and read the crash record afterwards.",
+                            n - 1, boot_times)
+                        return
+                    self._boot_seen.wait(0.25)
+                boot_times.append(time.monotonic() - t0)
+                read_ok, record = self._boot_loop_fresh_record(cancel)
+                if not read_ok:
+                    self._boot_loop_finish(
+                        "error", f"Round {n}: {record}. The round proves nothing, so "
+                                 f"it is not counted as clean.", n - 1, boot_times)
+                    return
+                if record:
+                    self._boot_loop_finish(
+                        "crash", f"Round {n}: a boot problem was recorded (fresh "
+                                 f"{record.get('kind', '?')} record on the "
+                                 f"{record.get('side', '?')} half).",
+                        n, boot_times, record=record)
+                    return
+                self._boot_loop_progress(n, rounds, f"clean boot in {boot_times[-1]:.1f} s",
+                                         boot_s=round(boot_times[-1], 2))
+            self._boot_loop_finish(
+                "clean", f"{rounds} reboot(s), no boot problem. Boot took "
+                         f"{min(boot_times):.1f}–{max(boot_times):.1f} s.",
+                rounds, boot_times)
+        except Exception as e:  # noqa: BLE001 — a bug here must still end the run visibly
+            self.log.exception("Boot loop failed")
+            self._boot_loop_finish("error", f"Boot loop failed: {type(e).__name__}: {e}",
+                                   len(boot_times), boot_times)
 
     # --- dynamic macros ---------------------------------------------------
     #
@@ -2123,6 +3049,44 @@ class PolyCore(Observable):
         """Empty one macro's body and its whole keycap look."""
         return self.macro_set(macro_id, text="", label="", style=0, icon=0)
 
+    def mock_keycaps(self, modifier=0):
+        """What the mock keyboard shows on its keycaps under ``modifier``, for the
+        developer board view (gui/mock_board_dialog.py).
+
+        The mock is the primary device (``dev_mock_primary``) or the secondary one
+        (``dev_mock_enabled``). JSON-serializable, so a ``--connect`` client gets the
+        same answer over RPC; read on the worker, so a send in progress is never
+        seen half done. ``(False, msg)`` when no mock is running."""
+        mock = next((e.device for e in self.device_mgr.all_entries
+                     if hasattr(e.device, "firmware")), None)
+        if mock is None:
+            return False, ("No mock keyboard is running. Enable dev_mock_enabled "
+                           "(beside the keyboard) or dev_mock_primary (instead of it).")
+
+        def read(cancel):
+            import base64
+            from polyhost.device.keys import Modifier
+            mod = Modifier(int(modifier))
+            images = {}
+            for kc in list(range(0x04, 0x66)) + list(range(0xE0, 0xE8)):
+                bitmap = mock.get_display_bitmap(kc, mod)
+                if bitmap:
+                    images[str(kc)] = base64.b64encode(bitmap).decode("ascii")
+            fw = mock.firmware
+            return True, {
+                "primary": mock is self.keeb,
+                "protocol": mock.protocol_version,
+                "overlays_enabled": fw.overlays_enabled,
+                "modifier": mod.value,
+                "images": images,
+                "base_layer": mock.base_layer(),
+                "stats": {"image_reports": fw.image_reports, "fill_reports": fw.fill_reports,
+                          "mapping_reports": fw.mapping_reports,
+                          "control_reports": fw.control_reports},
+                "refused": [r.reason for r in fw.refused][-20:],
+            }
+        return self._device_call("mock_keycaps", read)
+
     def replay_startup_anim(self):
         return self._device_call(
             "replay_startup_anim", lambda c: self.keeb.replay_startup_anim())
@@ -2217,14 +3181,21 @@ class PolyCore(Observable):
         """All settings as a plain dict (for the client's settings dialog)."""
         return dict(self.poly_settings.get_all())
 
-    def settings_set(self, key, value):
-        """Set one known setting and persist. Returns (ok, msg)."""
+    def settings_set(self, key, value, source="core"):
+        """Set one known setting and persist. Returns (ok, msg). ``source`` names
+        the writer in the settings log line (``PolySettings.save``)."""
         alls = self.poly_settings.get_all()
         if key not in alls:
             return False, f"Unknown setting '{key}'"
         alls[key] = value
-        self.poly_settings.set_all(alls)
+        saved = self.poly_settings.set_all(alls, source=source)
         self.note_settings_changed([key])
+        if not saved:
+            # Applied in this process, but anything reading the FILE (the
+            # tray's own read_setting() calls, the next start) still sees the
+            # old value, so the caller must not report it as saved.
+            return False, (f"'{key}' is applied but could not be saved to the "
+                           "settings file; see the log")
         return True, key
 
     def note_settings_changed(self, keys=None):
@@ -2247,6 +3218,65 @@ class PolyCore(Observable):
             self._refresh_unicode_watch()
         if keys is None or self._GENERIC_ICON_SETTING_KEYS.intersection(keys):
             self._forget_generic_overlays()
+        if keys is None or "dev_force_hid_link" in keys:
+            self._refresh_link_choice()
+        if (keys is not None and "emoji_search_dict_file" in keys
+                and self.poly_settings.get("emoji_search_dict_file")):
+            # A newly set dictionary file goes on the retry list, whichever writer
+            # set it and whether or not a keyboard is connected now: the pass then
+            # writes it even when its version equals what slot 9 reports (two user
+            # builds share one). The list is cleared only by a successful write,
+            # so it survives a reconnect, and the pass skips it on a keyboard
+            # without slot 9.
+            from polyhost.services import emojidict
+            self._fontpack_failed[emojidict.BUNDLE_ID] = "dictionary file chosen, not written yet"
+        if (keys is not None and {"emoji_search_dict", "emoji_search_dict_file"}.intersection(keys)
+                and self._fw_actions_allowed() and self._has_emojidict_slot()):
+            # Flash the newly chosen dictionary now. The shared bundle pass picks it
+            # because slot 9 no longer matches (or from the retry list above); it is
+            # a deliberate choice, so it runs even with fontpack_auto_flash off. Not
+            # on keys None: every writer names the keys it changed (the in-process
+            # dialog too). Not on firmware without slot 9: the pass would flash only
+            # the OTHER stale bundles.
+            self.sync_fontpack()
+        if ((keys is None or "agents_enabled" in keys)
+                and getattr(self, "_agent_keys", None) is not None
+                and not self.poly_settings.get("agents_enabled")):
+            # Turned off: the periodic stops, so it cannot clear the keys itself.
+            self._clear_agent_keys()
+        from polyhost.services import game_assets
+        if keys is None or game_assets.SETTING_KEYS.intersection(keys):
+            # The next send of an opted-in overlay builds again; reset() makes
+            # the window tick re-send, so that happens now if the game is in front.
+            game_assets.reset(self.poly_settings.get)
+
+    def _hid_link_forced(self) -> bool:
+        """The ``dev_force_hid_link`` setting: raw HID only, no pipe probe."""
+        return bool(self.poly_settings.get("dev_force_hid_link"))
+
+    def pipe_port_for_update(self):
+        """The serial port a firmware update sends its chunks on, or None for
+        HID. The one place every flash path asks, and it reads the setting
+        itself: a probe already running on the worker when the setting was
+        turned on can still write the port into the cache after
+        _refresh_link_choice() cleared it, so the cache alone is not the
+        answer while the setting is on."""
+        if self._hid_link_forced():
+            return None
+        return (self.keeb.get_pipe_info() or {}).get("port")
+
+    def _refresh_link_choice(self):
+        """Apply ``dev_force_hid_link`` to the live connection: forced on, the
+        keyboard reads as HID only at once; forced off, the cached transport is
+        dropped and the next steady-state probes look for the pipe again, so
+        neither direction needs a reconnect. Runs on whichever thread the
+        settings writer is on; the keyboard layer's two setters touch no
+        device, and the probe itself happens on the worker's next cycle."""
+        if self._hid_link_forced():
+            self.keeb.use_hid_only()
+        else:
+            self.keeb.forget_bulk_pipe()
+            self._pipe_probes_left = PIPE_PROBE_RETRIES
 
     _GENERIC_ICON_SETTING_KEYS = frozenset({
         # ⚠️ The two outer switches belong here as much as the inner ones, and
@@ -2255,6 +3285,10 @@ class PolyCore(Observable):
         # tick would otherwise read the cached signature and report it as
         # already on the device. `_forget_generic_overlays` clears exactly that.
         "generic_overlays_enabled", "generic_overlays_fill_gaps",
+        # And `fill_shortcuts`, for the same reason: the client-mode dialog
+        # sends one key at a time (`settings_set`), so a switch missing here
+        # took effect only at the next app switch.
+        "generic_overlays_fill_shortcuts",
         "shortcut_icons_enabled", "shortcut_icon_auto_fetch",
         "shortcut_icon_height", "shortcut_icon_placement",
     })
@@ -2327,7 +3361,7 @@ class PolyCore(Observable):
         if not install_id:
             install_id = telemetry_svc.new_install_id()
             try:
-                self.settings_set("telemetry_install_id", install_id)
+                self.settings_set("telemetry_install_id", install_id, source="telemetry")
             except Exception:  # a read-only config must not break startup
                 self.log.debug("Could not persist telemetry install id",
                                exc_info=True)
@@ -2436,8 +3470,14 @@ class PolyCore(Observable):
                     cancel_flag[0] = True      # relay supersede/suspend to hid_fw_up
                 self.emit("fw_flash_progress", {"pct": pct, "msg": m})
 
+            # The chunks go over the bulk pipe when the probe found one (the port
+            # is a plain string, so the job needs no device object for it); BEGIN,
+            # SIGNATURE, COMMIT and APPLY stay on HID. hid_fw_up falls back to HID
+            # from the keyboard's cursor if the pipe stops mid-stream.
+            pipe_port = self.pipe_port_for_update()
             fok, fmsg = hid_fw_up.flash_firmware(
-                self.keeb.hid, path, progress_cb=_flash_progress, cancel_flag=cancel_flag)
+                self.keeb.hid, path, progress_cb=_flash_progress, cancel_flag=cancel_flag,
+                pipe_port=pipe_port)
             self.emit("fw_flash_done", {"ok": bool(fok), "msg": fmsg})
             if fok and apply:
                 aok, amsg = hid_fw_up.apply_staged_firmware(
@@ -2455,7 +3495,9 @@ class PolyCore(Observable):
         """Shared body of every resource flash that rides the font-pack transport.
 
         The font-pack bundle, the doom game data (``.whx``) and the doom engine
-        pack (``.plyx``) all take the same route to the keyboard and differ in
+        pack (``.plyx``) all take the same route to the keyboard (BEGIN and COMMIT
+        over HID, the chunks over the bulk pipe when :meth:`pipe_port_for_update`
+        names one, else over HID) and differ in
         only four things — the "cannot read" noun, the validator, how the flash
         engine is invoked, and the ``kind`` tag on the events. Everything else is
         identical and lives here: the firmware-action gate, fail-fast reading +
@@ -2513,7 +3555,7 @@ class PolyCore(Observable):
             # The bundle flasher re-opens the path itself (it streams the file).
             run=lambda data, progress, flag: hid_fontpack.flash_fontpack(
                 self.keeb.hid, path, progress_cb=progress, cancel_flag=flag,
-                bundle_id=bundle_id),
+                bundle_id=bundle_id, pipe_port=self.pipe_port_for_update()),
             kind=events.FLASH_KIND_FONTPACK,
             # Counts the ATTEMPT, not the outcome — see flash_firmware.
             telemetry_counter="fontpack_flashes")
@@ -2533,7 +3575,8 @@ class PolyCore(Observable):
             noun="game-data file",
             validate=hid_fontpack.validate_doomwad,
             run=lambda data, progress, flag: hid_fontpack.flash_doomwad(
-                self.keeb.hid, data, progress_cb=progress, cancel_flag=flag),
+                self.keeb.hid, data, progress_cb=progress, cancel_flag=flag,
+                pipe_port=self.pipe_port_for_update()),
             kind=events.FLASH_KIND_DOOMWAD)
 
     def install_doompack(self, path):
@@ -2550,22 +3593,141 @@ class PolyCore(Observable):
             noun="engine-pack file",
             validate=hid_fontpack.validate_doompack,
             run=lambda data, progress, flag: hid_fontpack.flash_doompack(
-                self.keeb.hid, data, progress_cb=progress, cancel_flag=flag),
+                self.keeb.hid, data, progress_cb=progress, cancel_flag=flag,
+                pipe_port=self.pipe_port_for_update()),
             kind=events.FLASH_KIND_DOOMPACK)
 
     def flash_fontpack_bundle(self, bundle):
         """Flash one shipped bundle (by id, e.g. ``"emoji"``, or its slot index) to
         its slot — forced, even if the keyboard is already up to date. Resolves the
         bundle to its res/fontpack/<id>.plyf and delegates to :meth:`flash_fontpack`."""
-        from polyhost.services import fontpack_bundle
-        manifest = fontpack_bundle.load_bundle_manifest()
+        manifest = self._bundle_manifest()
         if manifest is None:
             return False, "No font-pack bundles shipped with this host."
         b = self._find_bundle(manifest, bundle)
         if b is None:
             ids = ", ".join(str(x["id"]) for x in manifest["bundles"])
             return False, f"Unknown bundle {bundle!r}. Available: {ids}."
+        if not self._bundle_fits_device(b):
+            return False, (f"The {b['id']} bundle ({b['size']:,} B) needs firmware with "
+                           f"protocol 27 or later; this keyboard's slot holds 256 KB. "
+                           f"Update the firmware first.")
         return self.flash_fontpack(b["path"], bundle_id=b["index"])
+
+    def _bundle_manifest(self):
+        """The shipped font-pack bundles plus the selected emoji search dictionary
+        (slot 9, services/emojidict.py) as one more bundle, so every bundle pass
+        (connect-time flash, status, forced re-flash, wipe) covers it too. None
+        when nothing is shipped."""
+        from polyhost.services import emojidict, fontpack_bundle
+        manifest = fontpack_bundle.load_bundle_manifest()
+        user_file = self.poly_settings.get("emoji_search_dict_file")
+        if user_file:
+            # A user's own dictionary. When it cannot be used, nothing is flashed
+            # to slot 9: replacing it with a shipped one would discard the user's.
+            entry, err = emojidict.user_entry(user_file)
+            if entry is None:
+                self.log.warning("Emoji search dictionary file not used: %s", err)
+        else:
+            try:
+                entry = emojidict.bundle_entry(emojidict.load_manifest(),
+                                               self.poly_settings.get("emoji_search_dict")
+                                               or emojidict.DEFAULT_DICT)
+            except OSError as e:
+                self.log.warning("Emoji search dictionary not available: %s", e)
+                entry = None
+        if entry is None:
+            return manifest
+        manifest = dict(manifest or {"bundles": []})
+        manifest["bundles"] = [b for b in manifest["bundles"] if b["index"] != entry["index"]] + [entry]
+        return manifest
+
+    def emoji_search_status(self):
+        """The emoji search dictionaries: which one is selected, which one the
+        keyboard holds (read from the cached GET_ID version block, no device I/O),
+        whether the keyboard has the slot at all, and the shipped list."""
+        from polyhost.services import emojidict
+        manifest = emojidict.load_manifest()
+        user_file = self.poly_settings.get("emoji_search_dict_file") or ""
+        file_error = emojidict.user_entry(user_file)[1] if user_file else ""
+        if manifest is None:
+            return True, {"shipped": False, "dictionaries": [],
+                          "file": user_file, "file_error": file_error}
+        dev = dict(getattr(self.keeb, "fontpack_bundle_versions", {}) or {})
+        held, revision = emojidict.identify(manifest, dev.get(emojidict.BUNDLE_ID, 0))
+        selected = self.poly_settings.get("emoji_search_dict") or emojidict.DEFAULT_DICT
+        return True, {
+            "shipped": True,
+            "supported": emojidict.BUNDLE_ID in dev,
+            "selected": selected,
+            "file": user_file,
+            "file_error": file_error,
+            "device": ({"id": held["id"], "revision": revision,
+                        "user": revision == emojidict.USER_REVISION} if held
+                       else ({"id": None, "version": dev.get(emojidict.BUNDLE_ID, 0)}
+                             if dev.get(emojidict.BUNDLE_ID) else None)),
+            "dictionaries": [{"id": e["id"], "label": emojidict.label(e), "name": e["name"],
+                              "native": e["native"], "revision": e["revision"], "size": e["size"]}
+                             for e in manifest["dictionaries"]]}
+
+    def _has_emojidict_slot(self) -> bool:
+        """Whether the keyboard's GET_ID version block lists slot 9 (font-pack
+        layout v4). Cached; no device I/O."""
+        from polyhost.services import emojidict
+        return emojidict.BUNDLE_ID in (getattr(self.keeb, "fontpack_bundle_versions", {}) or {})
+
+    def emoji_search_choose(self, dict_id=None, path=None, source="core"):
+        """Choose the emoji search dictionary: a shipped one by id (which also
+        stops using a dictionary file), or a hand-built ``.plyd`` file by path
+        (``""`` stops using the file). The change is flashed through
+        note_settings_changed(). Choosing the file already in use flashes it
+        again, so an edited and rebuilt file reaches the keyboard: its version
+        does not change between builds.
+
+        A chosen file is put on the pass's retry list, so the pass writes it even
+        when its version equals what slot 9 reports, and a failed write stays on
+        that list for the next pass."""
+        from polyhost.services import emojidict
+        alls = self.poly_settings.get_all()
+        if dict_id is not None:
+            if emojidict.find(emojidict.load_manifest(), dict_id) is None:
+                return False, f"Unknown emoji search dictionary '{dict_id}'"
+            alls["emoji_search_dict"] = dict_id
+            alls["emoji_search_dict_file"] = ""
+        elif path is None:
+            return False, "Name a dictionary id or a dictionary file"
+        else:
+            if path:
+                entry, err = emojidict.user_entry(path)
+                if entry is None:
+                    return False, err
+                path = os.path.realpath(entry["path"])
+                if path == alls.get("emoji_search_dict_file"):
+                    # No settings change, so note_settings_changed() would not run:
+                    # queue the write here, the same way it does.
+                    if not self._has_emojidict_slot():
+                        return False, "This keyboard's firmware has no emoji search dictionary slot"
+                    self._fontpack_failed[emojidict.BUNDLE_ID] = "dictionary file chosen, not written yet"
+                    ok, msg = self.sync_fontpack()
+                    return (True, path) if ok else (False, msg)
+            alls["emoji_search_dict_file"] = path
+        saved = self.poly_settings.set_all(alls, source=source)
+        self.note_settings_changed(["emoji_search_dict", "emoji_search_dict_file"])
+        if not saved:
+            return False, ("The emoji search dictionary is applied but could not be "
+                           "saved to the settings file; see the log")
+        return True, dict_id if dict_id is not None else path
+
+    def _bundle_fits_device(self, b) -> bool:
+        """False for an icon library larger than the 256 KB icon slot of firmware
+        below protocol 27 (font-pack layout v2): that firmware refuses it at BEGIN,
+        on every connect. The keyboard keeps its old library until it is updated.
+        Reads the CACHED protocol only (no device I/O), because the status
+        snapshot calls it; an unread protocol counts as too old."""
+        if b.get("kind") != "icons" or b.get("size", 0) <= LEGACY_ICON_SLOT_SIZE:
+            return True
+        return protocol_supports(getattr(self.keeb, "protocol_version", None),
+                                 "icon_slot_512k")
 
     @staticmethod
     def _find_bundle(manifest, bundle):
@@ -2606,8 +3768,7 @@ class PolyCore(Observable):
         clearing the external-flash font pack. Mirrors `_fontpack_autocheck_job`'s
         progress/guard handling."""
         import os, tempfile
-        from polyhost.services import fontpack_bundle
-        manifest = fontpack_bundle.load_bundle_manifest()
+        manifest = self._bundle_manifest()
         # With no shipped manifest, fall back to wiping the current 6 fixed slots.
         slots = (manifest["bundles"] if manifest
                  else [{"id": str(i), "index": i} for i in range(6)])
@@ -2628,7 +3789,8 @@ class PolyCore(Observable):
                               b["id"], b["index"], i + 1, n)
                 fok, fmsg, _status = hid_fontpack.flash_fontpack(
                     self.keeb.hid, path, progress_cb=_progress,
-                    cancel_flag=cancel_flag, bundle_id=b["index"])
+                    cancel_flag=cancel_flag, bundle_id=b["index"],
+                    pipe_port=self.pipe_port_for_update())
                 # Carry on through a failure, like the flash pass: one slot refusing
                 # says nothing about the rest, and stopping leaves a half-wiped pack
                 # with no report of which slots were reached.
@@ -2653,8 +3815,7 @@ class PolyCore(Observable):
     def fontpack_bundle_status(self):
         """Per-bundle status: device version (from the GET_ID block) vs the shipped
         version, and whether each is stale. ``shipped`` is False with no bundles."""
-        from polyhost.services import fontpack_bundle
-        manifest = fontpack_bundle.load_bundle_manifest()
+        manifest = self._bundle_manifest()
         if manifest is None:
             return True, {"shipped": False, "bundles": []}
         dev = dict(getattr(self.keeb, "fontpack_bundle_versions", {}) or {})
@@ -2664,12 +3825,15 @@ class PolyCore(Observable):
         bundles = [{"id": b["id"], "index": b["index"],
                     "device_version": dev.get(b["index"], 0),
                     "shipped_version": b["content_version"],
-                    "stale": b["content_version"] > dev.get(b["index"], 0),
+                    "stale": (hid_fontpack.bundle_is_stale(b, dev.get(b["index"], 0))
+                              and hid_fontpack.device_has_slot(dev, b)
+                              and self._bundle_fits_device(b)),
                     "retry": b["index"] in self._fontpack_failed,
                     "last_error": self._fontpack_failed.get(b["index"], "")}
                    for b in manifest["bundles"]]
         return True, {"shipped": True, "bundles": bundles,
-                      "failed": [b["id"] for b in bundles if b["retry"]]}
+                      "failed": [b["id"] for b in bundles if b["retry"]],
+                      "auto_flash": bool(self.poly_settings.get("fontpack_auto_flash"))}
 
     def get_fontpack_status(self):
         """Query the keyboard's currently-loaded font pack (present / abi /
@@ -2695,9 +3859,99 @@ class PolyCore(Observable):
         makes the versions equal — so it never loops. The actual decision +
         flash run on the worker (`_fontpack_autocheck_job`) so they don't block
         the caller (apply_reconnect may be on the Qt thread)."""
+        # getattr: tests build cores without __init__ and drive the probe.
+        self._fontpack_checked_versions = dict(
+            getattr(self.keeb, "fontpack_bundle_versions", None) or {})
         if not self.poly_settings.get("fontpack_auto_flash"):
+            # Off: flash nothing, but say when the keyboard is behind. Without
+            # this a keyboard fell behind by four bundles on two computers and
+            # nothing told the user (2026-11-08).
+            self.worker.submit("fontpack_stale_notice", self._fontpack_stale_notice_job)
             return
+        if self._eden_owns_keycaps():
+            # A flash during the boot intro drew the master's legends over Eden and
+            # left the slave in it (field, 2026-11-09). The 1 s probe re-reads the
+            # block and releases the check once Eden is done.
+            if not getattr(self, "_fontpack_check_held", False):
+                self.log.info("Font pack auto-check held: Eden owns the keycaps "
+                              "(animation state %s).", self.keeb.anim_state)
+            self._fontpack_check_held = True
+            return
+        self._fontpack_check_held = False
         self.worker.submit("fontpack_autocheck", self._fontpack_autocheck_job)
+
+    def _eden_owns_keycaps(self) -> bool:
+        """The GET_ID 'A' block reads INTRO or IDLE. False on firmware before v28."""
+        return getattr(self.keeb, "anim_state", None) in (hid_fontpack.ANIM_INTRO,
+                                                         hid_fontpack.ANIM_IDLE)
+
+    def _release_held_fontpack_check(self, steady: bool):
+        """From the probe: run the held connect-time check once Eden has ended.
+
+        `steady` is a connected probe with no reboot and no connectivity change.
+        Anything else drops the hold, because the connect that follows queues its
+        own check after its compatibility decision."""
+        # getattr: tests build cores without __init__ and drive the probe.
+        if not getattr(self, "_fontpack_check_held", False):
+            return
+        if not steady:
+            self._fontpack_check_held = False
+        elif not self._eden_owns_keycaps():
+            self.log.info("Font pack auto-check released: Eden has ended.")
+            # Cleared first: with Auto Flash turned off meanwhile, the call below
+            # takes the notice branch, which does not touch the hold, and every
+            # later probe would queue the notice again.
+            self._fontpack_check_held = False
+            self._maybe_auto_flash_fontpack()
+
+    def _recheck_fontpack_on_generation(self, steady: bool):
+        """From the probe: run the font-pack check again when the version block moved.
+
+        The connect-time check reads the block once. The master reports its own
+        versions until it has read the slave's, and changes the block again after a
+        link drop or a COMMIT; each change increments GET_ID's 'G' counter. So a
+        steady probe whose counter moved compares the block with the one the last
+        check was queued for, and checks again only when it differs: a keymap edit
+        or a setting also moves the counter and must not start a check. Costs one
+        integer comparison per probe (the probe already reads both blocks)."""
+        # getattr: tests build cores without __init__ and drive the probe.
+        gen = getattr(self.keeb, "state_generation", None)
+        if not steady or gen is None or gen == getattr(self, "_fontpack_seen_generation", None):
+            self._fontpack_seen_generation = gen
+            return
+        if (getattr(self, "_fontpack_check_held", False)
+                or getattr(self, "_fontpack_flash_in_progress", False)):
+            # Not consumed: the counter stays unseen, so the first probe after the
+            # flash or the hold compares the block again. Recording it here lost a
+            # change that arrived during a flash once the block was stable.
+            return
+        self._fontpack_seen_generation = gen
+        if not self.keeb.supports("fontpack"):
+            return
+        versions = dict(getattr(self.keeb, "fontpack_bundle_versions", None) or {})
+        checked = getattr(self, "_fontpack_checked_versions", None)
+        if checked is None or versions == checked:
+            return
+        self.log.info("Font pack versions changed on the keyboard (%s -> %s); "
+                      "checking again.", checked, versions)
+        self._maybe_auto_flash_fontpack()
+
+    def _fontpack_stale_notice_job(self, cancel):
+        """With Auto Flash off: log and emit FONTPACK_STALE when bundles are stale.
+
+        Reads the cached GET_ID version block (``fontpack_bundle_status``), so it
+        does no device I/O. Flashes nothing."""
+        ok, info = self.fontpack_bundle_status()
+        if not ok or not info.get("shipped"):
+            return
+        stale = [b["id"] for b in info["bundles"] if b["stale"]]
+        if not stale:
+            return
+        self.log.warning("Font pack: %d bundle(s) out of date (%s), and Auto Flash "
+                         "(fontpack_auto_flash) is off, so nothing is flashed. "
+                         "Updates -> Update keyboard fonts, or `polyctl fontpack sync`.",
+                         len(stale), ", ".join(stale))
+        self.emit(events.FONTPACK_STALE, {"bundles": stale})
 
     def _fontpack_autocheck_job(self, cancel):
         """Flash any font-pack bundles the keyboard is missing, behind on, or that
@@ -2719,22 +3973,28 @@ class PolyCore(Observable):
 
         Targets are the stale bundles ∪ the ones a previous pass failed on, or every
         shipped bundle when ``force_all``."""
-        from polyhost.services import fontpack_bundle
-        manifest = fontpack_bundle.load_bundle_manifest()
+        manifest = self._bundle_manifest()
         if manifest is None:
             return   # no bundles shipped with this host — feature inert
         if self._fontpack_flash_in_progress:
             return   # a flash is already running (connection flapped) — don't double-flash
         device_versions = dict(getattr(self.keeb, "fontpack_bundle_versions", {}) or {})
         if force_all:
-            targets = list(manifest["bundles"])
+            targets = [b for b in manifest["bundles"]
+                       if hid_fontpack.device_has_slot(device_versions, b)
+                       and self._bundle_fits_device(b)]
         else:
-            stale = hid_fontpack.decide_stale_bundles(device_versions, manifest["bundles"])
+            stale = [b for b in hid_fontpack.decide_stale_bundles(device_versions,
+                                                                  manifest["bundles"])
+                     if self._bundle_fits_device(b)]
             stale_idx = {b["index"] for b in stale}
             # Re-add anything a previous pass failed on even though its version now
-            # reads current — see the docstring above.
+            # reads current — see the docstring above. The slot check applies
+            # here too: a keyboard flashed back below protocol 20 has no slot 8.
             retry = [b for b in manifest["bundles"]
-                     if b["index"] in self._fontpack_failed and b["index"] not in stale_idx]
+                     if b["index"] in self._fontpack_failed and b["index"] not in stale_idx
+                     and hid_fontpack.device_has_slot(device_versions, b)
+                     and self._bundle_fits_device(b)]
             targets = sorted(stale + retry, key=lambda b: b["index"])
         if not targets:
             self.log.info("Font pack auto-check: all %d bundle(s) up to date.",
@@ -2748,6 +4008,8 @@ class PolyCore(Observable):
         try:
             n = len(targets)
             done, failed, caveats = [], [], []
+            skipped = []        # not attempted: the split link was found dead
+            split_link = False
             for i, b in enumerate(targets):
                 dev = device_versions.get(b["index"], 0)
                 self.log.info("Font pack flash: bundle %s (slot %d) device v%d -> v%d "
@@ -2755,7 +4017,8 @@ class PolyCore(Observable):
                               i + 1, n)
                 fok, fmsg, fstatus = hid_fontpack.flash_fontpack(
                     self.keeb.hid, b["path"], progress_cb=_progress,
-                    cancel_flag=cancel_flag, bundle_id=b["index"])
+                    cancel_flag=cancel_flag, bundle_id=b["index"],
+                    pipe_port=self.pipe_port_for_update())
                 if fok:
                     done.append(b["id"])
                     self._fontpack_failed.pop(b["index"], None)
@@ -2765,7 +4028,9 @@ class PolyCore(Observable):
                         done.append(b["id"])
                         caveats.append(note)
                         if fstatus == hid_fontpack.COMMIT_NO_SLAVE:
-                            # Verified on the MASTER only — and the firmware cannot tell
+                            # Possibly verified on the MASTER only (the version block is
+                            # the lower of both halves only once the master has read the
+                            # slave's versions, protocol v20+) — and the firmware cannot tell
                             # us whether the slave lost its ACK or explicitly refused its
                             # own finalize (both surface as SYNC_CRC32_ERR over the
                             # bridge). So keep it queued: a re-flash on the next pass is
@@ -2785,7 +4050,21 @@ class PolyCore(Observable):
                 if cancel_flag[0]:
                     self.log.info("Font pack flash cancelled after bundle %s.", b["id"])
                     break
-            self._emit_fontpack_summary(done, failed, caveats, auto)
+                if fstatus == hid_fontpack.STATUS_SPLIT_LINK:
+                    split_link = True
+                    # Unlike a bundle's own failure, this says the NEXT bundle will
+                    # fail too: its BEGIN waits on the same silent half for another
+                    # 90 s, with the keyboard busy the whole time. The tester's
+                    # board (2026-10-01) spent nine minutes failing seven bundles
+                    # this way. The skipped ones stay behind on version, so the
+                    # next connect retries them.
+                    skipped = [t["id"] for t in targets[i + 1:]]
+                    self.log.warning("Font pack flash stopped: the other keyboard half "
+                                     "is not answering; %d bundle(s) not attempted.",
+                                     len(skipped))
+                    break
+            self._emit_fontpack_summary(done, failed, caveats, auto,
+                                        skipped=skipped, split_link=split_link)
         finally:
             self._fontpack_flash_in_progress = False
 
@@ -2800,15 +4079,22 @@ class PolyCore(Observable):
 
         * A ``rejected`` status is never verified. The keyboard told us it refused
           the data, so re-reading a version could only mislead.
-        * The version block reflects the MASTER's slots only, so it cannot prove the
-          slave got the bundle. On a ``slave-unconfirmed`` status the note says so
-          rather than claiming success outright.
+        * The version block is the lower of both halves only once the master has
+          read the slave's versions (protocol v20+), and the master's alone before
+          that, so it cannot always prove the slave got the bundle. On a
+          ``slave-unconfirmed`` status the note says so rather than claiming success
+          outright.
 
         Safe to run next to the reconnect probe: this is the worker thread (the flash
         job owns it), and ``query_id`` only ever *sets* the firmware's one-shot
         fresh-boot flag — only ``pop_fresh_boot`` clears it — so if this query is the
         one that happens to see the ``*`` marker, the next probe still pops it."""
         if status == hid_fontpack.COMMIT_REJECTED:
+            return False, ""
+        if bundle.get("user_file"):
+            # Every build of a user's dictionary file has the same version, so a
+            # matching version cannot tell the new build from the old one: keep
+            # the retry rather than count a failed write as done.
             return False, ""
         try:
             ok, _ = self.keeb.query_id()
@@ -2818,7 +4104,9 @@ class PolyCore(Observable):
         if not ok:
             return False, ""
         dev = dict(getattr(self.keeb, "fontpack_bundle_versions", {}) or {}).get(bundle["index"], 0)
-        if dev < bundle["content_version"]:
+        # The bundle's own staleness rule: a font may read newer than shipped, an
+        # emoji dictionary must match exactly (another one can have a higher number).
+        if hid_fontpack.bundle_is_stale(bundle, dev):
             return False, ""
         if status == hid_fontpack.COMMIT_NO_SLAVE:
             note = (f"{bundle['id']}: stored (v{dev}), but the other half never confirmed — "
@@ -2830,7 +4118,8 @@ class PolyCore(Observable):
                          dev, msg)
         return True, note
 
-    def _emit_fontpack_summary(self, done, failed, caveats, auto):
+    def _emit_fontpack_summary(self, done, failed, caveats, auto, skipped=(),
+                               split_link=False):
         """One terminal ``fontpack_flash_done`` for the whole pass, naming every
         bundle that failed — a per-bundle abort used to hide the rest."""
         parts = []
@@ -2841,14 +4130,21 @@ class PolyCore(Observable):
         if failed:
             parts.append(f"Failed: {', '.join(failed)} — retried automatically on the "
                          f"next connect, or from Updates → Retry keyboard fonts.")
+        if skipped:
+            parts.append(f"Not attempted, because the other keyboard half is not "
+                         f"answering: {', '.join(skipped)}.")
         msg = " ".join(parts) or "Nothing to flash."
         if failed:
             self.log.warning("Font pack flash finished with failures: %s", msg)
         else:
             self.log.info("Font pack flash complete: %s", msg)
+        # split_link_down lets the GUI offer the .uf2 recovery: the summary text
+        # no longer carries the per-bundle message that is_split_link_failure()
+        # would recognise.
         self.emit("fontpack_flash_done",
                   {"ok": not failed, "msg": msg, "auto": auto,
-                   "kind": events.FLASH_KIND_FONTPACK})
+                   "kind": events.FLASH_KIND_FONTPACK,
+                   "split_link_down": bool(split_link)})
 
     def check_update(self):
         """Check GitHub for a newer host release (synchronous HTTP — runs on
@@ -2933,12 +4229,21 @@ class PolyCore(Observable):
         self.worker.submit("activate_bootloader", lambda c: self.keeb.activate_bootloader())
         return True, {"queued": True}
 
-    def set_handedness(self, master_is_left):
-        """Send-only (both halves reboot onto the new handedness)."""
+    def set_handedness(self, master_is_left, split_vbus=None):
+        """Send-only (both halves reboot onto the new handedness).
+
+        ``split_vbus`` sets/clears the Rev.2 board flag of the connected half
+        (protocol 24); ``None`` keeps it. Refused here, not on the worker, so the
+        caller hears about an old firmware instead of a {"queued": True}."""
         if not self._fw_actions_allowed():
             return False, "No PolyKybd present (or paused)."
+        if split_vbus is not None and not protocol_supports(
+                self.keeb.protocol_version, "split_vbus_flag"):
+            return False, ("Firmware too old for the Rev.2 board flag "
+                           f"(needs protocol {SPLIT_VBUS_FLAG_MIN_PROTOCOL}).")
+        sv = None if split_vbus is None else bool(split_vbus)
         self.worker.submit("set_handedness",
-                           lambda c, m=bool(master_is_left): self.keeb.set_handedness(m))
+                           lambda c, m=bool(master_is_left), s=sv: self.keeb.set_handedness(m, s))
         return True, {"queued": True}
 
     def apply_staged_firmware(self):

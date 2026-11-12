@@ -58,6 +58,14 @@ keybindings across 61 of its 65 nodes, with no menu-role node anywhere.
 So on Linux this discovers shortcuts for legacy-menubar apps only. Treat that
 as the ceiling when deciding whether it is worth a HID command.
 
+⚠️ The GTK4 half of that measurement is GTK 4.14's, and GTK removed the stub in
+4.18 (commit b2a01696, Jan 2025): GetKeyBinding returns 'mnemonic;;shortcut',
+and a popover menu item reports the accel set with
+gtk_application_set_accels_for_action() for its action. So the "never leaves the
+process" note above holds for a shortcut with NO menu item only. GTK 4.22 sends
+the ARIA spelling ('Control+S'); parse_accel() reads both. Re-measure on a
+GTK >= 4.18 desktop before quoting the zero above for current GNOME apps.
+
 WINDOWS IS UNMEASURED AND THE UIA BACKEND IS UNRUN. It was written without a
 Windows machine to test on, so the pure parsers below are selftested (54 cases,
 including real localized strings) but uia_shortcuts()/main_uia() have never
@@ -145,6 +153,17 @@ def selftest() -> int:
     check("uppercase letter folds", parse_accel("<Control>S").hid, 0x16)
     check("unknown keysym has no hid", parse_accel("<Control>Ediacaran").hid, None)
     check("pretty", parse_accel("<Control><Alt>Delete").pretty(), "Ctrl+Alt+Delete")
+    # GTK 4.22 answers GetKeyBinding in the ARIA spelling.
+    check("gtk4.22 accelerator part", pick_binding("S;;Control+S", "menu item"),
+          ("Control+S", "accelerator"))
+    check("aria ctrl+s", (parse_accel("Control+S").mods, parse_accel("Control+S").hid),
+          (MOD_CTRL, 0x16))
+    check("aria keysym matches gtk form", parse_accel("Control+S").keysym,
+          parse_accel("<Control>s").keysym)
+    check("aria named key", parse_accel("Control+PageUp").hid, 0x4B)
+    check("aria arrow", parse_accel("Alt+ArrowLeft").hid, 0x50)
+    check("aria plus key", parse_accel("Control++").hid, 0x2E)
+    check("aria bare modifier refused", parse_accel("Control+Shift"), None)
 
     # --- Windows / UIA parser -------------------------------------------------
     w = parse_win_accel("Ctrl+Shift+S")

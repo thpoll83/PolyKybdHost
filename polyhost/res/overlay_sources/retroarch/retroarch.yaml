@@ -1,0 +1,67 @@
+# RetroArch shortcut overlay for PolyKybd. See SOURCES.md.
+#
+# Keys are RetroArch's default keyboard binds on desktop builds, from the
+# `#else` block of `retro_keybinds_1` in config.def.keybinds.h (libretro/RetroArch).
+# The hotkeys need no modifier: RetroArch's "hotkey enable" bind is empty by
+# default, so they act whenever the game is focused. The joypad block maps the
+# RetroPad to the keyboard (Z = B, X = A, A = Y, S = X, Q = L, W = R, Enter = Start,
+# right Shift = Select); those keys show the button. Esc quits RetroArch and
+# carries the logo. Every bind can be changed in Settings > Input.
+#
+# Not drawn: the netplay and VR binds, the cheat index keys (T, Y) and Scroll Lock
+# (game focus), which has no keycap cell.
+#
+# Regenerate:
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/retroarch/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/retroarch/retroarch.yaml --preview /tmp/retroarch_preview
+app: retroarch
+match: [retroarch]
+output: retroarch_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: alpha
+threshold: 128
+
+program_icon: retroarch.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # Hotkeys
+  - { key: F1, mods: [], icon: menu.png, label: Menu }
+  - { key: F2, mods: [], icon: savestate.png, label: "Save state" }
+  - { key: F3, mods: [], icon: fps.png, label: "Show FPS", region: [46, 14], margin: 2 }
+  - { key: F4, mods: [], icon: loadstate.png, label: "Load state" }
+  - { key: F5, mods: [], icon: desktopmenu.png, label: "Desktop menu" }
+  - { key: F6, mods: [], icon: slotminus.png, label: "Previous state slot" }
+  - { key: F7, mods: [], icon: slotplus.png, label: "Next state slot" }
+  - { key: F8, mods: [], icon: screenshot.png, label: Screenshot }
+  - { key: F9, mods: [], icon: mute.png, label: Mute }
+  - { key: F11, mods: [], icon: grabmouse.png, label: "Grab mouse" }
+  - { key: F, mods: [], icon: fullscreen.png, label: "Full screen" }
+  - { key: H, mods: [], icon: reset.png, label: "Reset game" }
+  - { key: P, mods: [], icon: pause.png, label: Pause }
+  - { key: K, mods: [], icon: frameadv.png, label: "Frame advance" }
+  - { key: R, mods: [], icon: rewind.png, label: Rewind }
+  - { key: SPACE, mods: [], icon: fastforward.png, label: "Fast-forward (toggle)" }
+  - { key: L, mods: [], icon: ffhold.png, label: "Fast-forward (hold)" }
+  - { key: E, mods: [], icon: slowmo.png, label: "Slow motion (hold)" }
+  - { key: COMMA, mods: [], icon: shader.png, label: "Shaders on/off" }
+  - { key: M, mods: [], icon: shadernext.png, label: "Next shader" }
+  - { key: N, mods: [], icon: shaderprev.png, label: "Previous shader" }
+  - { key: U, mods: [], icon: cheat.png, label: "Cheats on/off" }
+  # RetroPad on the keyboard (player 1); drawn 1:1 at their own size
+  - { key: Z, mods: [], icon: padb.png, label: "RetroPad B", region: [32, 32], margin: 2 }
+  - { key: X, mods: [], icon: pada.png, label: "RetroPad A", region: [32, 32], margin: 2 }
+  - { key: A, mods: [], icon: pady.png, label: "RetroPad Y", region: [32, 32], margin: 2 }
+  - { key: S, mods: [], icon: padx.png, label: "RetroPad X", region: [32, 32], margin: 2 }
+  - { key: Q, mods: [], icon: padl.png, label: "RetroPad L", region: [32, 32], margin: 2 }
+  - { key: W, mods: [], icon: padr.png, label: "RetroPad R", region: [32, 32], margin: 2 }
+  - { key: ENTER, mods: [], icon: padstart.png, label: "RetroPad Start", region: [49, 15], margin: 2 }
+  - { key: KC_RIGHT_SHIFT, mods: [], icon: padselect.png, label: "RetroPad Select", region: [57, 15], margin: 2 }

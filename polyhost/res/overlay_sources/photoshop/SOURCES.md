@@ -110,13 +110,16 @@ Photoshop's signature tools have no good Fluent equivalent, so they are drawn:
 | healing | rotated band-aid / plaster | J Healing-brush tool |
 | dodgeburn | dodge "lollipop" (circle on a stick) | O Dodge/Burn tool |
 | pathselect | solid arrow cursor | A Path-selection tool |
-| swapcolors | two overlapping squares + curved swap arrow | X Swap FG/BG |
 | defaultcolors | filled + hollow square pair (black/white) | D Default colours |
 | gradient | swatch split on the diagonal (lit / unlit halves) | G Gradient tool (distinct from the Fill bucket) |
 | quickmask | canvas rect with inner circle (+ masked region) | Q Quick mask |
 
 Each is generated at 4× supersample and downscaled (LANCZOS); the alpha channel is the shape.
 Guarded by an exists-check so a committed hand-edit survives a `fetch_icons.py` re-run.
+
+X Swap FG/BG uses GIMP's swap glyph, copied from `../gimp/icons` by
+`icon_fetch.borrow` (`region: [72, 40]`, centred, `mode: alpha` to match), so the
+three image editors share one icon.
 
 ## Program icon (ESC, all layers)
 
@@ -159,3 +162,42 @@ Authored **1:1** at the `[37, 32]` region so the generator never rescales it and
 the 2px frame stays exactly 2px; the letter size is *measured* per pair (the
 widest that clears the frame by >=2px), since `Ai` is much narrower than `Pr`
 and one hardcoded size would either clip or float.
+
+## macOS
+
+The spec serves Windows/Linux and macOS from one file (`CMDCTRL` → Ctrl / Cmd;
+see `overlay_specification.md` → *The `CMDCTRL` modifier*); the generator writes
+a second set `*_mac.*` for the `os: macos:` branch.
+
+Sources. Adobe's official pages list the Windows and macOS columns side by side:
+
+- https://helpx.adobe.com/photoshop/using/default-keyboard-shortcuts.html
+
+`helpx.adobe.com` is blocked by this environment's egress proxy (WebFetch and curl
+both 403), so the macOS column was confirmed from web-search result snippets of
+those pages and of reputable mirrors (community.adobe.com threads on Cmd+H; jkost.com (Fill); nobledesktop.com Photoshop Mac shortcuts; suffolk.edu Photoshop Mac/PC cheat sheet). Each chord below
+was cross-checked against at least one of them; the rest follow Adobe's documented
+convention for these apps (Ctrl -> Cmd, Alt -> Option, Shift unchanged).
+
+Every `CTRL` binding (36, including `CTRL+SHIFT` and `CTRL+ALT`) is now `CMDCTRL`:
+the macOS chord is the same key with Cmd for Ctrl and Option for Alt.
+Backspace is the Mac's Delete key (same HID key), so `Ctrl+Backspace` → `Cmd+Delete`
+(Fill BG) and `Alt+Backspace` → `Option+Delete` (Fill FG) need no remap. Tool
+letters, `[`/`]`, `Shift+F5`/`Shift+F6` are identical on macOS (F-keys may need
+`fn` depending on the user's keyboard setting).
+
+Remapped on macOS: **none**. Dropped on macOS: **none**.
+
+| Action | macOS chord | Note |
+|---|---|---|
+| Hide extras | ⌘H | **macOS reserved (Hide app).** Adobe documents ⌘H; on first use Photoshop asks whether ⌘H should hide Photoshop or Hide Extras. ⌃⌘H is the alternate if the user chose the Mac standard. Drawn as ⌘H. |
+| Curves | ⌘M | **macOS reserved (Minimize)**, but Photoshop claims ⌘M for Curves by default. Drawn as ⌘M. |
+
+## Standard editing chords (shared Fluent concepts, 2026-10)
+
+Nothing added. New/Open/Save/Close/Print/Undo/Redo (Ctrl+Shift+Z,
+"Redo / Step fwd")/Cut/Copy/Paste/Select all and Ctrl+= / Ctrl+- zoom were all
+already drawn.
+
+- **Ctrl+Y is NOT Redo** in Photoshop — it is Proof Colors — so no Ctrl+Y cell.
+- **Find / Find next / Replace**: Photoshop has no document find with a default chord.

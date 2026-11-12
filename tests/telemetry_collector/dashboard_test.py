@@ -119,10 +119,23 @@ class DayRange(unittest.TestCase):
         self.assertEqual(dash.day_range([], 30), [])
         self.assertEqual(dash.day_range([row("a", "not-a-date")], 30), [])
 
+    def test_a_malformed_day_does_not_hide_the_window(self):
+        rows = [row("a", "2026-08-01"), row("b", "not-a-date"), row("c", "2026-08-02")]
+        self.assertEqual(dash.day_range(rows, None), ["2026-08-01", "2026-08-02"])
+        self.assertEqual(dash.day_range(rows, 30)[-1], "2026-08-02")
+
     def test_non_positive_days_is_a_single_day(self):
         rows = [row("a", "2026-08-01"), row("b", "2026-08-04")]
         self.assertEqual(dash.day_range(rows, 0), ["2026-08-04"])
         self.assertEqual(dash.day_range(rows, -5), ["2026-08-04"])
+
+    def test_all_days_starts_at_the_first_valid_day(self):
+        rows = [row("a", "2026-08-03"), row("b", "2026-08-01"), row("c", ""),
+                row("d", "2026-08-04")]
+        self.assertEqual(
+            dash.day_range(rows, None),
+            ["2026-08-01", "2026-08-02", "2026-08-03", "2026-08-04"],
+        )
 
 
 class DaysArgument(unittest.TestCase):
@@ -135,6 +148,15 @@ class DaysArgument(unittest.TestCase):
 
     def test_accepts_a_positive_window(self):
         self.assertEqual(dash._positive_days("90"), 90)
+
+    def test_all_means_no_limit(self):
+        self.assertIsNone(dash._positive_days("all"))
+
+    def test_subtitle_names_the_whole_range(self):
+        rows = [row("a", "2026-08-01"), row("b", "2026-08-04")]
+        page = dash.render(rows, None, "now")
+        self.assertIn("window: all 4 days", page)
+        self.assertIn("window: last 30 days", dash.render(rows, 30, "now"))
 
 
 class Aggregations(unittest.TestCase):
@@ -254,12 +276,29 @@ class Render(unittest.TestCase):
         self.assertIn("<svg", out)
         self.assertIn("2026-08-01: 3", out)
 
+    def test_axis_labels_carry_the_year_only_across_years(self):
+        one = dash.svg_bars([("2026-08-01", 1), ("2026-08-02", 2)])
+        self.assertIn(">08-01<", one)
+        two = dash.svg_bars([("2026-12-31", 1), ("2027-01-01", 2)])
+        self.assertIn(">2026-12-31<", two)
+        self.assertIn(">2027-01-01<", two)
+
+    def test_no_tick_next_to_the_last_label(self):
+        import re
+        from datetime import date, timedelta
+        start = date(2026, 12, 15)
+        series = [((start + timedelta(days=i)).isoformat(), 1) for i in range(30)]
+        labels = re.findall(r'class="tick" x="([0-9.]+)" y="[0-9.]+" text-anchor="(?:middle|end)">([0-9-]+)<',
+                            dash.svg_bars(series))
+        days = [d for _, d in labels]
+        self.assertEqual(days[-1], "2027-01-13")
+        self.assertNotIn("2027-01-12", days)  # day 28, one bar before the last
+        self.assertIn("2027-01-08", days)     # day 24, the previous regular tick
+
     def test_bars_on_an_empty_window_say_so(self):
         self.assertIn("No data", dash.svg_bars([]))
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class LinuxBreakdown(unittest.TestCase):
@@ -291,3 +330,82 @@ class LinuxBreakdown(unittest.TestCase):
     def test_no_linux_rows_is_empty_not_an_error(self):
         rows = [row("a", "2026-09-14", os="Windows")]
         self.assertEqual(dash.linux_breakdown(rows, "desktop"), [])
+
+
+class DailyExport(unittest.TestCase):
+    """The archive in the private telemetry-data repo is built from these."""
+
+    def setUp(self):
+        import tempfile
+        self._tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    @staticmethod
+    def _days_selected(sql):
+        """Run the export query on an in-memory table with one row per day."""
+        import sqlite3
+        db = sqlite3.connect(":memory:")
+        db.execute("CREATE TABLE ping (id INTEGER, day TEXT, received_at TEXT)")
+        days = [f"2026-10-{d:02d}" for d in range(18, 24)]
+        db.executemany("INSERT INTO ping VALUES (?, ?, ?)",
+                       [(i, d, d + "T10:00:00Z") for i, d in enumerate(days)])
+        return [r[1] for r in db.execute(sql)]
+
+    def test_query_excludes_today_and_starts_after_the_newest_file(self):
+        from datetime import date
+        sql = dash.export_query(date(2026, 10, 19), date(2026, 10, 22))
+        self.assertEqual(self._days_selected(sql), ["2026-10-20", "2026-10-21"])
+
+    def test_first_export_has_no_lower_bound(self):
+        from datetime import date
+        sql = dash.export_query(None, date(2026, 10, 22))
+        self.assertEqual(self._days_selected(sql),
+                         ["2026-10-18", "2026-10-19", "2026-10-20", "2026-10-21"])
+
+    def test_split_drops_rows_outside_the_window_and_bad_days(self):
+        from datetime import date
+        rows = [row("a", "2026-10-20"), row("a", "2026-10-21"), row("b", "2026-10-21"),
+                row("a", "2026-10-22"), row("c", "junk")]
+        by_day = dash.split_by_day(rows, date(2026, 10, 20), date(2026, 10, 22))
+        self.assertEqual(list(by_day), ["2026-10-21"])
+        self.assertEqual(len(by_day["2026-10-21"]), 2)
+
+    def test_written_files_read_back_as_the_same_rows(self):
+        from datetime import date
+        rows = [row("a", "2026-10-20"), row("b", "2026-10-21", device_name="Pöly")]
+        dash.write_day_files(self.dir, dash.split_by_day(rows, None, date(2026, 10, 22)))
+        self.assertTrue((self.dir / "2026" / "2026-10-21.json").is_file())
+        self.assertEqual(list(self.dir.rglob("*.tmp")), [])
+        self.assertEqual(dash.load_rows(self.dir), rows)
+
+    def test_newest_day_ignores_files_that_are_not_dates(self):
+        from datetime import date
+        (self.dir / "2026").mkdir()
+        (self.dir / "2026" / "2026-10-19.json").write_text("[]", encoding="utf-8")
+        (self.dir / "2026" / "notes.json").write_text("[]", encoding="utf-8")
+        self.assertEqual(dash.newest_export_day(self.dir), date(2026, 10, 19))
+        self.assertIsNone(dash.newest_export_day(self.dir / "2026" / "missing"))
+
+    def test_up_to_date_archive_does_not_query(self):
+        from datetime import date
+        (self.dir / "2026").mkdir()
+        (self.dir / "2026" / "2026-10-21.json").write_text("[]", encoding="utf-8")
+        calls = []
+        original = dash.fetch_rows
+        dash.fetch_rows = lambda *a, **kw: calls.append(a) or []
+        try:
+            self.assertEqual(dash.export_days(self.dir, True, "wrangler", date(2026, 10, 22)), [])
+        finally:
+            dash.fetch_rows = original
+        self.assertEqual(calls, [])
+
+    def test_from_json_and_export_days_are_exclusive(self):
+        with self.assertRaises(SystemExit):
+            dash.main(["--from-json", "a.json", "--export-days", "data"])
+
+
+if __name__ == "__main__":
+    unittest.main()

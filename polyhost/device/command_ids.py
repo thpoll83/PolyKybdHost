@@ -1,5 +1,7 @@
 from enum import Enum
 
+from polyhost.i18n import N_
+
 
 class HidId(Enum):
     ID_GET_PROTOCOL_VERSION = 1
@@ -80,6 +82,36 @@ class Cmd(Enum):
     # seconds (see IdleTimeout.label_for), so a host older than a firmware that adds
     # a preset can still name what it reads back.
     IDLE_TIMEOUT = 40
+    # PRC overlay images (protocol v19+): whole images packed as records,
+    # each range-coded against a fixed table (polyhost/util/prc_codec.py). No reply.
+    SEND_PRC_OVERLAY = 41
+    # Icon library fills (protocol v20+): (pool slot, icon id) pairs in cmd 33's
+    # packing, drawn by each half from its own flash (services/icon_library.py).
+    # Replied: '.' all applied, '!' + index of the first pair to upload instead.
+    FILL_POOL_FROM_ICON = 42
+    # Reboot both halves, nothing persisted (protocol v22+). ACKed before the
+    # reset; used by the boot-loop diagnostic (PolyCore.start_boot_loop).
+    REBOOT = 43
+    # Tap-hold timing (protocol v29+): data[2] op (0 query, 1 set), data[3..4]
+    # tapping term ms, data[5..6] Flow Tap term ms, little-endian, 0xFFFF = keep.
+    # The reply carries both terms and a flags byte (bit 0: Flow Tap compiled in).
+    # Ranges: TapTerms below.
+    TAP_TERMS = 44
+    # Agent keys (protocol v31+): data[2] op. 0 QUERY (ai_mode, newest event seq,
+    # number keys found, ESC found); 1 SET_KEYS (10 states, one AGENT_FLAG_* byte,
+    # 12 pool slots u16 LE: the 10 number keys, then '-' and '+'; 0xFFFF = none);
+    # 2 READ_EVENTS (data[3] last seq seen; reply: newest seq, count, then (seq, key)
+    # pairs oldest first; key 10 = pager, 11 = '-', 12 = '+').
+    # States: services/agents/model.AgentState, a CLOSED range.
+    AI = 45
+    # Agent card upload (protocol v31+): data[2..3] u16 LE, bits 0..9 pool slot,
+    # bits 12..14 segment 0..5; data[4..63] 60 bytes of the 360-byte image. Written
+    # straight into the pool slot, not through the display->pool mapping.
+    AI_CARD = 46
+    # Key attention (protocol v32+): the focus ripple on one key. data[2] op: 0 START
+    # (data[3] row, data[4] col, data[5] count, 0 = until cancelled, data[6] period
+    # in 100 ms units, CLOSED 23..100), 1 CANCEL. firmware anim/key_attention.h.
+    KEY_ATTENTION = 47
 
 
 
@@ -119,20 +151,71 @@ class IdleTimeout(Enum):
         return self.label_for(self.value, self.seconds)
 
     @staticmethod
-    def label_for(value: int, seconds: int | None = None) -> str:
+    def label_for(value: int, seconds: int | None = None, tr=None) -> str:
         """Human label for a preset INDEX, using the seconds the keyboard reported
         when this host does not know the index. That is the whole reason cmd 40
         replies with a duration: a firmware newer than the host can add a preset,
-        and the menu should read "10 min" rather than "preset 6"."""
+        and the menu should read "10 min" rather than "preset 6".
+
+        ``tr`` translates the template (the tray passes ``polyhost.i18n._``).
+        Without it the label is English, which ``polyctl`` relies on: it derives
+        its preset names ("15sec") from these labels."""
+        tr = tr or (lambda text: text)
         if seconds is None:
             try:
                 seconds = IdleTimeout(value).seconds
             except ValueError:
-                return f"preset {value}"
+                return tr(N_("preset {value}")).format(value=value)
         if seconds % 60 == 0 and seconds >= 60:
-            minutes = seconds // 60
-            return f"{minutes} min"
-        return f"{seconds} sec"
+            return tr(N_("{minutes} min")).format(minutes=seconds // 60)
+        return tr(N_("{seconds} sec")).format(seconds=seconds)
+
+
+class TapTerms:
+    """The ranges of the tap-hold terms (HID cmd 44, protocol v29+) and of Auto
+    Shift (v30+). Mirrors the firmware's base/tap_terms.h.
+
+    All ranges are CLOSED, like IdleTimeout: the firmware NACKs a value outside
+    them, so the host refuses it before sending."""
+
+    STEP_MS = 10
+    TAPPING_MIN_MS = 100
+    TAPPING_MAX_MS = 500
+    FLOW_TAP_MIN_MS = 0     # 0 turns Flow Tap off
+    FLOW_TAP_MAX_MS = 300
+    DEFAULT_TAPPING_MS = 200
+    DEFAULT_FLOW_TAP_MS = 150
+    KEEP = 0xFFFF           # wire value: leave this term unchanged
+    FLAG_FLOW_TAP = 0x01    # reply flag: this firmware build has Flow Tap
+
+    # Auto Shift (protocol v30). QMK's own default is 175 ms, off the 10 ms grid,
+    # so the firmware's default is 180 ms. Off by default.
+    AUTO_SHIFT_MIN_MS = 100
+    AUTO_SHIFT_MAX_MS = 500
+    DEFAULT_AUTO_SHIFT_MS = 180
+    AUTO_SHIFT_OP_KEEP = 0  # wire values of data[7]; 0 keeps, so a v29 host's
+    AUTO_SHIFT_OP_OFF = 1   # zero-padded report leaves Auto Shift alone
+    AUTO_SHIFT_OP_ON = 2
+    AUTO_SHIFT_MS_KEEP = 0  # wire value of data[8..9]: keep the timeout
+    FLAG_AUTO_SHIFT = 0x02     # reply flag: this firmware build has Auto Shift
+    FLAG_AUTO_SHIFT_ON = 0x04  # reply flag: Auto Shift is on
+
+    @classmethod
+    def tapping_valid(cls, ms) -> bool:
+        return cls._valid(ms, cls.TAPPING_MIN_MS, cls.TAPPING_MAX_MS)
+
+    @classmethod
+    def flow_tap_valid(cls, ms) -> bool:
+        return cls._valid(ms, cls.FLOW_TAP_MIN_MS, cls.FLOW_TAP_MAX_MS)
+
+    @classmethod
+    def auto_shift_valid(cls, ms) -> bool:
+        return cls._valid(ms, cls.AUTO_SHIFT_MIN_MS, cls.AUTO_SHIFT_MAX_MS)
+
+    @classmethod
+    def _valid(cls, ms, lo, hi) -> bool:
+        return (isinstance(ms, int) and not isinstance(ms, bool)
+                and lo <= ms <= hi and ms % cls.STEP_MS == 0)
 
 
 class MacroStyle(Enum):
@@ -218,6 +301,21 @@ class GlyphScript(Enum):
     AMIGA = 8
     APL = 9
     BRAILLE = 10
+    C64KEYS = 11  # C64 printed keycap lettering (the C64 above is the screen ROM font)
+
+
+class GlyphPlacement(Enum):
+    """Where glyph-script letters and digits sit on the keycap — mirrors the
+    firmware's poly_glyph_place (cmd 30's placement byte, protocol v26+).
+
+    CENTRE is what every keyboard drew before v26 and stays the default. TOP_LEFT
+    puts the glyph's ink at x 1, y 1, so an overlay icon on the right of the keycap
+    leaves it whole. A CLOSED set like GlyphSize: the firmware NACKs an unknown
+    value. On the wire the host sends ``value + 1`` (0 means "keep"), see
+    PolyKybd.set_glyph_placement. Values are append-only — never reorder.
+    """
+    CENTRE = 0
+    TOP_LEFT = 1
 
 
 class GlyphSize(Enum):

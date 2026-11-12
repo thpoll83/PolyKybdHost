@@ -5,12 +5,16 @@ The cross-machine forwarder historically relayed the active window over a
 ``polyhost/handler/remote_window.py``). This is the H4d "safe first slice": a
 real control-protocol listener that is **authenticated** (HMAC authkey) and
 **version-gated** (the same ``hello`` handshake as the local control socket),
-but whose method registry contains *exactly one* method — ``window.report``.
+but whose method registry contains *exactly one* method — ``window.report`` —
+plus ``agents.report`` when the host injects ``on_agents_report`` (the agent keys,
+only with ``agents_enabled`` and ``agents_remote_enabled`` on; security audit
+HOST-6). Every other method is refused either way.
 
 The security boundary is the whole point. This server holds **no reference to
 PolyCore** — only an injected ``on_report(handle, name, title)`` callback — so
 by construction it cannot reach brightness / language / firmware-flash /
-bootloader or any other device control. Binding the full control registry to
+bootloader or any other device control. ``agents.report`` adds only a bounded write
+to the agent registry (``services/agents/remote.sanitize_report``). Binding the full control registry to
 the network would expose all of that; this exposes only the window report. The
 device-control surface stays on the local-only UDS / named-pipe endpoint served
 by :class:`polyhost.server.control_server.ControlServer`.
@@ -52,11 +56,17 @@ MAX_NAMES = 8
 
 
 class WindowReportServer(MpcListenerServer):
-    """Serve only ``window.report`` over an authenticated AF_INET socket."""
+    """Serve ``window.report`` (plus ``agents.report`` when ``on_agents_report``
+    is given) over an authenticated AF_INET socket."""
 
     def __init__(self, on_report, host_version, log, *,
-                 bind_host="0.0.0.0", port=None, authkey=None):
+                 bind_host="0.0.0.0", port=None, authkey=None, on_agents_report=None):
+        """``on_agents_report(params)``: optional second sink, for agents on the
+        forwarder's machine (services/agents/remote.py). Like ``on_report`` it is an
+        injected callback, never a PolyCore: the endpoint still reaches nothing
+        that controls the keyboard. Without it the method is not served."""
         self._on_report = on_report
+        self._on_agents_report = on_agents_report
         port = port if port is not None else p.WINDOW_REPORT_PORT
         super().__init__(
             address=(bind_host, port),
@@ -77,18 +87,30 @@ class WindowReportServer(MpcListenerServer):
             return ("127.0.0.1", self.port)
         return self.address
 
+    def _served_methods(self):
+        return [p.M_WINDOW_REPORT] + ([p.M_AGENTS_REPORT]
+                                      if self._on_agents_report is not None else [])
+
     def start(self):
         super().start()
         self.log.info(
-            "Window-report network listener on %s:%d (auth-gated, '%s' only)",
-            self.address[0], self.port, p.M_WINDOW_REPORT)
+            "Window-report network listener on %s:%d (auth-gated, only %s)",
+            self.address[0], self.port,
+            ", ".join(f"'{m}'" for m in self._served_methods()))
 
     def dispatch(self, conn, req_id, method, params):
+        if method == p.M_AGENTS_REPORT and self._on_agents_report is not None:
+            # Bounded by the sink (remote.sanitize_report) before anything is stored.
+            ok, payload = self._on_agents_report(params if isinstance(params, dict) else {})
+            if not ok:
+                return p.make_error(req_id, p.ERR_INVALID_PARAMS, str(payload))
+            return p.make_response(req_id, {"ok": True})
         if method != p.M_WINDOW_REPORT:
             # The entire security model rests on nothing else being reachable.
             return p.make_error(
                 req_id, p.ERR_METHOD_NOT_FOUND,
-                f"only '{p.M_WINDOW_REPORT}' is served on the network endpoint")
+                "only " + ", ".join(f"'{m}'" for m in self._served_methods())
+                + " served on the network endpoint")
         try:
             icon = self._decode_icon(params.get("icon"))
         except ValueError as err:
@@ -107,12 +129,16 @@ class WindowReportServer(MpcListenerServer):
         # parses a nested structure, which is the second reason it is bounded.
         shortcuts = shortcut_relay.decode(params.get("shortcuts")) \
             if "shortcuts" in params else None
+        # `machine` only when the forwarder names one (agent keys, services/agents/
+        # remote.py): an older forwarder sends none, and the sink's signature
+        # without it stays valid.
+        extra = {"machine": str(params["machine"])[:64]} if params.get("machine") else {}
         ret = self._on_report(params["handle"], params["name"],
                               params.get("title", ""), os=params.get("os"),
                               url=params.get("url"),
                               names=tuple(str(n) for n in names[:MAX_NAMES]),
                               icon_key=params.get("icon_key"), icon=icon,
-                              shortcuts=shortcuts)
+                              shortcuts=shortcuts, **extra)
         # report_window returns the (ok, payload) contract; surface failure.
         if isinstance(ret, tuple) and len(ret) == 2:
             if not ret[0]:

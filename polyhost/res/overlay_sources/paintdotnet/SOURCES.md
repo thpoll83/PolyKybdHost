@@ -72,11 +72,11 @@ a baked mark always draws while a fetched one needs `shortcut_icon_auto_fetch`
 | `bucket.png` | Fluent `Paint Bucket` | MIT |
 | `gradient.png` | drawn (fetch_icons.py) | ours (GPL-3.0-or-later, with the repo) |
 | `picker.png` | Fluent `Eyedropper` | MIT |
-| `clonestamp.png` | drawn (fetch_icons.py) | ours (GPL-3.0-or-later, with the repo) |
+| `clonestamp.png` | Photoshop's rubber stamp, shared (`region: [36, 32]` to match) | ours (GPL-3.0-or-later, with the repo) |
 | `recolor.png` | Fluent `Color Line` | MIT |
 | `text.png` | Fluent `Text T` | MIT |
 | `linecurve.png` | Fluent `Line` | MIT |
-| `swapcolors.png` | Fluent `Arrow Swap` | MIT |
+| `swapcolors.png` | GIMP's swap glyph, shared (copied from `../gimp/icons`; `region: [72, 40]`, centred, `mode: alpha` to match) | as `../gimp/SOURCES.md` |
 | `brushdec1.png` | drawn (fetch_icons.py) | ours (GPL-3.0-or-later, with the repo) |
 | `brushinc1.png` | drawn (fetch_icons.py) | ours (GPL-3.0-or-later, with the repo) |
 | `toolswin.png` | Fluent `Options` | MIT |
@@ -137,8 +137,19 @@ a baked mark always draws while a fetched one needs `shortcut_icon_auto_fetch`
 | `invertalpha.png` | Fluent `Scan Type` | MIT |
 | `toplayer.png` | Fluent `Arrow Upload` | MIT |
 | `bottomlayer.png` | Fluent `Arrow Download` | MIT |
+| `space_pan.png` | `pan.png` with four arrows, drawn by `../space_hint.py` on the whole 72x40 keycap | MIT (Fluent) + ours |
 
-69 of 75 are Fluent (MIT, some with a digit composited over); the rest are drawn.
+69 of 76 are Fluent (MIT, some with a digit composited over); the rest are drawn.
+
+### The Space key
+
+Holding Space pans: Space + arrow keys pans the canvas, Space + Ctrl + arrow
+keys pans 10 times as far, and Space + drag pans with the mouse
+(<https://paint.net/doc/latest/KeyboardMouseCommands.html>). The keyboard has
+no Space modifier layer, so the Space key shows a hint instead: the hand with an
+arrow on each side. Space is on the thumb row, where the firmware centres the
+legend, so the hint is drawn at the right edge of the whole keycap and keeps
+3 px clear of the legend (`../space_hint.py` checks this).
 
 ## Verifying
 
@@ -146,3 +157,8 @@ The preview (`--preview`, `overlay_preview.png`) reads the **rendered** overlay
 back and shows every populated key in its real 72x40 cell. That is the only
 check that catches a cell which drew nothing -- see
 `tests/res/overlay_cells_test.py`, which now pins it for every app at once.
+
+## Standard editing chords (shared Fluent concepts, 2026-10)
+
+Nothing added. New/Open/Save/Close/Print/Undo/Redo/Cut/Copy/Paste/Select all and
+Ctrl+= / Ctrl+- zoom were already drawn; paint.net has no Find / Find next / Replace.

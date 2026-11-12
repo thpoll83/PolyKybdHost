@@ -10,7 +10,9 @@ want. This document is what to read before building it, because the hard part is
 the page.
 
 > **Status: not started.** Nothing here is implemented. The offline generator is the
-> supported path today.
+> supported path today. A daily copy of the rendered dashboard is committed to the
+> private repo `thpoll83/polykybd-telemetry-data` (`SETUP.md` §7), which needs no read
+> route.
 
 ---
 

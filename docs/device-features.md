@@ -5,6 +5,17 @@ and relative links were adjusted to suit a standalone file.
 
 ## Device features over HID
 
+- **Glyph-script placement (protocol 26+)**: cmd 30's second byte centres the
+  script's letters and digits (the original) or puts them in the top-left corner, so
+  an overlay icon on the right of the keycap leaves them whole. On the wire it is an
+  OP, `0` keep, `1` centre, `2` top-left: the reports are zero-padded, so a plain
+  script set (data[3] = 0) keeps the placement, and `set_glyph_placement` sends
+  script `0xFF` (keep) with the op. The reply adds the placement in data[4]. A closed
+  range (`GlyphPlacement`, NACKed past 2). `PolyKybd.get/set_glyph_placement` behind
+  `GLYPH_PLACEMENT_MIN_PROTOCOL=26`, `PolyCore`, `M_GLYPH_PLACEMENT_GET/SET`,
+  `RemoteCore`, `polyctl glyph-script [script] --placement centre|top-left`, and the
+  two radio entries at the bottom of the tray's "Keycap Script" submenu, greyed out
+  when the keyboard does not answer the read (older firmware).
 - **Glyph-script override (protocol 9+; expanded set at v10)**: HID cmd 30
   (`GLYPH_SCRIPT`) selects a glyph-script *override* of the keycap language legends —
   `GlyphScript.STANDARD` (0, normal) or one of the fantasy/retro scripts from the
@@ -14,10 +25,9 @@ and relative links were adjusted to suit a standalone file.
   BRAILLE=10`. Wired like idle-style (cmd 28): `PolyKybd.get/set_glyph_script` +
   `GLYPH_SCRIPT_MIN_PROTOCOL=9`, `PolyCore.get/set_glyph_script`, `M_GLYPH_SCRIPT_GET/SET`,
   `RemoteCore`, and `polyctl glyph-script [standard|tengwar|runes|…|braille]` (choices
-  derived from the enum). GUI: the tray **"Glyph Script"** submenu (radio, built from
-  the enum via `GLYPH_SCRIPT_LABELS` in `host.py`) **plus** a **"Reset glyph script to
-  Standard"** button in the settings dialog (`SettingsDialog.setup(reset_glyph_script=…)`,
-  shown only when a device is present). Firmware persists the choice; the glyphs need
+  derived from the enum). GUI: the tray **"Keycap Script"** submenu (radio, built from
+  the enum via `GLYPH_SCRIPT_LABELS` in `host.py`); its first entry, Standard, is the
+  reset. (A settings-dialog reset button duplicated it and was removed 2026-10-16.) Firmware persists the choice; the glyphs need
   the `fantasy` bundle flashed (auto on connect; regrown to `content_version 2` for the
   expansion — reshipped `polyhost/res/fontpack/fantasy.plyf` + `bundles.json`).
   **Open-ended index (v10+):** the firmware accepts ANY glyph-script byte `0..0xFE` and
@@ -30,6 +40,13 @@ and relative links were adjusted to suit a standalone file.
   range-connect note in [`protocol-gate.md`](protocol-gate.md)), so the Glyph-Script menu is disabled on a pre-v9 keyboard but
   the rest of the app still connects; within a glyph-script-capable device the script set is
   free to grow.
+  - **Per-application face** (`services/keycap_face.py`): an overlay-mapping entry may set
+    `glyph_script:` and `glyph_script_position:`. `PolyCore._track_keycap_face` submits a
+    `keycap_face` job only when the wanted face changes. Before the first override the
+    user's own script and placement are written to `keycap_face_restore.json` beside
+    `settings.yaml`, and given back on switch-away, at shutdown and on the next connect.
+    A choice made in the tray or `polyctl` while an override is on replaces the face to
+    restore (`note_user_choice`).
   - **Each menu entry PREVIEWS its script** (2026-09-07): the icon is a two-glyph
     sample and the tooltip a longer one, drawn offline from the shipped
     `fantasy.plyf` by `services/glyph_script_preview.py` (Qt-free) and turned into
@@ -160,4 +177,90 @@ and relative links were adjusted to suit a standalone file.
   where 14 of the 117 cells drawing `§ £ ± µ` were caps. Widening the regex is a
   bigger change than it looks — the tuner never emits `caps`, so the grammar would
   gain an arm nothing exercises.
+
+## Device features over HID (the CLAUDE.md summary)
+
+_Moved verbatim from `CLAUDE.md` on 2026-10-10. CLAUDE.md keeps a short pointer._
+
+
+The per-feature device commands — **glyph script** (cmd 30, v9+, with the v10
+open-ended index and the rendered menu previews), **keycap legend size** (cmd 34, v13+),
+and **macros** (cmds 36/37/38, v15+, behind one `"macros"` gate) — are wired identically:
+`PolyKybd` accessors behind a `FEATURE_MIN_PROTOCOL` entry, `PolyCore`, an `M_*` control
+method, the `RemoteCore` mirror, a `polyctl` subcommand and a gated tray submenu. The
+full wiring, the preview rendering and the label-measurement rules are in
+[`docs/device-features.md`](device-features.md).
+
+- **The idle TIMEOUT (cmd 40, v18+) is the same wiring one more time**, gated on
+  `"idle_timeout"`: six fixed presets (15 s…5 min) replacing what was a compile-time
+  2 minutes in the firmware. ⚠️ **Its reply carries the duration in SECONDS as well
+  as the preset index, and the UI labels from the SECONDS** — that is the only way a
+  host older than a firmware which adds a preset renders "10 min" instead of "preset
+  6". `IdleTimeout.label_for()` is the one place that decides; don't relabel from the
+  local enum. The SET range stays closed (see the GlyphSize/GlyphScript note below —
+  this one follows GlyphSize).
+- **The tap-hold terms (cmd 44, v29+) are the same wiring again**, gated on
+  `"tap_terms"`, except the tray entry is a dialog (`gui/tap_terms_dialog.py`), not a
+  submenu: tapping term 100..500 ms and Flow Tap term 0..300 ms (0 = off) in 10 ms
+  steps, both CLOSED ranges (`TapTerms` in `command_ids.py`, mirror of firmware
+  `base/tap_terms.h`). One report carries both terms; `None` in
+  `set_tap_terms()` is sent as `0xFFFF` (keep). The reply has both terms and a flags
+  byte; bit 0 clear means the build has no Flow Tap (split42), and the dialog then
+  disables that field. The dialog snaps a typed value onto the 10 ms grid, because
+  the firmware NACKs anything off it.
+- **Auto Shift (cmd 44 again, v30+) is gated on `"auto_shift"`, separately from
+  `"tap_terms"`.** `set_tap_terms(auto_shift=, auto_shift_ms=)` appends `data[7]` (0
+  keep, 1 off, 2 on) and `data[8..9]` (timeout, 0 keep; 100..500 ms in 10 ms steps).
+  ⚠️ A v29 keyboard ACKs those bytes and ignores them, so the host refuses an Auto
+  Shift value below v30 instead of reporting a success that changed nothing. A
+  terms-only set sends the 5-byte v29 form, which a v30 keyboard reads as "keep Auto
+  Shift". The reply's flag bit 1 says the firmware has Auto Shift, bit 2 that it is
+  on, and `data[8..9]` is the timeout; a v29 reply has bit 1 clear, so
+  `auto_shift_available` is False. The dialog sends only what changed, and the
+  default timeout is 180 ms (QMK's 175 is off the grid). Caps Word needs no host
+  side: it is a keycode (`CW_TOGG`) or both Shift keys.
+- **Key attention (cmd 47, v32+)** runs the first-run tutorial's focus ripple on one
+  key: `PolyKybd.key_attention(row, col, count, period_ms)` and
+  `key_attention_cancel()`, control method `key.attention`, `polyctl attention ROW COL
+  [--count N] [--period-ms MS]` / `--cancel`. `row`/`col` are the matrix position;
+  the keyboard NACKs a key without a display. `count` 0 runs until cancelled; the
+  period is a CLOSED 2300..10000 ms range (one ripple runs 2.2 s), refused on the host
+  before it is sent. A cancel lets a running ripple finish. split72 draws it; split42
+  ACKs and draws nothing. No tray entry: it is for programs (tutorials, the layout
+  editor), not a setting.
+- **The agent keys (cmd 45 AI, cmd 46 AI_CARD, v31+, prototype)** put AI agent
+  sessions on the number row: `PolyKybd.ai_query/ai_set_keys/ai_read_events/
+  ai_upload_card` behind the `agent_keys` gate, driven by
+  `services/agents/controller.py` from PolyCore's 1 s `agents` periodic. The states
+  are a CLOSED range (`AgentState`). The 12 cards (10 number keys,
+  then `-` dictation and `+` next waiting agent) borrow pool slots from the MRU cache
+  as "aside" entries (`OverlayMRUCache.allocate_aside`) and are written straight into
+  them (cmd 46 bypasses the display->pool mapping). Nothing is reserved: a program
+  switch evicts a card before any app image, and the next `agents` pass uploads it
+  again. A card never evicts the newest switch's images; with no room it is not
+  shown. Design and open values:
+  [`agent-registry-plan.md`](agent-registry-plan.md).
+- ⚠️ **`expect(Cmd.X)` matches only the two `P<cmd>` bytes, which a NACK carries
+  too** — so `send_and_read_validate` returning True says the reply arrived, never
+  that the firmware accepted it. On a CLOSED range that is the difference between a
+  refusal and a silent success: read the verdict at `reply[2]` (`.` accept, `!`
+  refuse) before reporting one. `set_idle_timeout` does, and validates the preset
+  through the enum before any I/O; `set_glyph_size`, `set_idle_style` and
+  `set_glyph_script` still have the older prefix-only shape.
+- ⚠️ **`GlyphSize` is a CLOSED range and `GlyphScript` is OPEN — that asymmetry is
+  deliberate, and it is the one way they differ.** An unknown SCRIPT index is accepted
+  by the firmware and degrades to the normal legend, which is what lets the host offer
+  faces a keyboard lacks **without a protocol bump**. An unknown SIZE is NACKed, because
+  it would persist as a setting that silently renders small. Never "make them
+  consistent"; `tests/device/poly_kybd_capabilities_test.py` pins the contrast.
+- ⚠️ **`PolyCore.macro_*` is WHOLE-BUFFER on purpose** — the bodies are NUL-delimited in
+  one shared buffer, so read-modify-write is the only shape that cannot corrupt a
+  neighbour.
+- ⚠️ **The macro label meter is in PIXELS, not characters** (`services/macro_label.py`
+  mirrors the firmware's bbox): the real budget is ~12 characters, 8 in the worst case,
+  and a character count is wrong in both directions.
+- ⚠️ **`tools/apply_tuner.py`'s export grammar cannot express the `caps` column** — a
+  bulk edit touching caps cells must import the module and call `set_cell()`, which
+  returns the sheet and persists nothing. The whole loop is the firmware repo's
+  `tune-lang-lut-cells` skill.
 

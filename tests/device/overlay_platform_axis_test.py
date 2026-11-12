@@ -131,10 +131,13 @@ class BindingAppliesTest(unittest.TestCase):
     def test_only_and_except_together_are_refused(self):
         # They express the same thing and can contradict each other outright
         # (only: [linux] + except: [linux]); silently picking one would make the
-        # binding's platform set depend on evaluation order.
-        with self.assertRaisesRegex(ValueError, "use one"):
-            self.gen.binding_applies({"only": ["linux"], "except": ["macos"]},
-                                     self.gen.PLAT_LINUX)
+        # binding's platform set depend on evaluation order. The one allowed
+        # combination -- carving a family member out, `except: [linux_kde]` -- is
+        # pinned in overlay_linux_desktop_axis_test.
+        for excl in (["macos"], ["linux"]):
+            with self.assertRaisesRegex(ValueError, "family member"):
+                self.gen.binding_applies({"only": ["linux"], "except": excl},
+                                         self.gen.PLAT_LINUX)
 
     def test_unknown_platform_is_refused(self):
         with self.assertRaisesRegex(ValueError, "unknown platform"):
@@ -322,6 +325,41 @@ class LinuxOutputCollisionTest(unittest.TestCase):
             self.assertIn("output_linux must differ", proc.stderr)
             out = tmp / "out"
             self.assertEqual(list(out.glob("*.png")) if out.exists() else [], [])
+
+
+
+class MacosSetWithoutCmdCtrlTest(unittest.TestCase):
+    """A macOS remap needs no CMDCTRL: Zoom's Alt+A is Cmd+Shift+A on a Mac, so
+    its spec scopes both lines and never names CMDCTRL. The macOS set used to be
+    rendered only for CMDCTRL, which dropped every `only: [macos]` line."""
+
+    def setUp(self):
+        self.gen = _load_gen()
+
+    def test_scoping_on_or_off_macOS_needs_a_macos_set(self):
+        need = self.gen.spec_needs_macos_set
+        self.assertTrue(need({"bindings": [{"key": "A", "mods": ["GUI", "SHIFT"], "only": ["macos"]}]}))
+        self.assertTrue(need({"bindings": [{"key": "A", "mods": ["ALT"], "except": ["macos"]}]}))
+
+    def test_a_spec_that_never_distinguishes_macOS_needs_none(self):
+        need = self.gen.spec_needs_macos_set
+        self.assertFalse(need({"bindings": [{"key": "A", "mods": ["CTRL"]}]}))
+        self.assertFalse(need({"bindings": [{"key": "A", "mods": ["CTRL"], "only": ["linux"]}]}))
+        # Sublime's shape: split from Linux, with the Mac art in another spec.
+        self.assertFalse(need({"bindings": [{"key": "A", "mods": ["CTRL"], "only": ["windows"]}]}))
+
+    def test_a_remap_only_spec_writes_the_mac_files_and_branch(self):
+        with tempfile.TemporaryDirectory() as td:
+            tmp = pathlib.Path(td)
+            proc = _run_generator(tmp, [
+                "  - { key: A, mods: [ALT], icon: A.png, label: A, only: [windows, linux] }",
+                "  - { key: A, mods: [GUI, SHIFT], icon: A.png, label: A, only: [macos] }",
+            ], "remap")
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            mac = _stem_pngs(tmp / "out", "remap_mac")
+            self.assertTrue(mac)
+            self.assertIn(KeyCode.KC_A.value, _keycodes(mac, Modifier.GUI_SHIFT))
+            self.assertIn("macos:", proc.stdout)
 
 
 if __name__ == "__main__":

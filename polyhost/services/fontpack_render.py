@@ -34,7 +34,8 @@ def _px(v: float, scale: float) -> int:
     return max(1, int(round(v * scale)))
 
 
-# The language-layer flags occupy this PUA band (FLAG_CP_BASE 0xE000 + LANG index).
+# The language-layer flags occupy this PUA band (0xE000 + glyph index, one glyph per
+# country; the firmware maps each language to its glyph).
 # The firmware draws them through a *single-font array*, so their baseline adjustment
 # is 0 (fonts[0] is the flag's own font) — NOT the (yAdvance - IconsFont) shift the
 # in-pack g_all_fonts glyphs get.  (Matras/combining marks start at 0xE100 and ARE

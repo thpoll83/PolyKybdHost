@@ -11,6 +11,7 @@ import tempfile
 import threading
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from polyhost.util import crash_log
 
@@ -74,6 +75,26 @@ class InstallTest(CrashLogTestBase):
         would raise, leaving no native-fault capture at all."""
         crash_log.install(self.log, str(self.path))
         self.assertTrue(faulthandler.is_enabled())
+
+    def test_faulthandler_walks_all_threads_except_on_windows(self):
+        """On Windows faulthandler also dumps HANDLED first-chance exceptions,
+        and walking the other threads' running stacks during such a dump
+        crashed the daemon (2026-09-25). Elsewhere the full census stays."""
+        self.assertFalse(crash_log.dump_all_threads("win32"))
+        self.assertTrue(crash_log.dump_all_threads("linux"))
+        self.assertTrue(crash_log.dump_all_threads("darwin"))
+
+    def test_install_passes_the_platform_choice_to_faulthandler(self):
+        for platform, expected in (("win32", False), ("linux", True)):
+            with self.subTest(platform=platform), \
+                    mock.patch.object(crash_log.sys, "platform", platform), \
+                    mock.patch("faulthandler.enable") as enable:
+                crash_log._installed = False
+                crash_log.install(self.log, str(self.path))
+                self.assertEqual(enable.call_args.kwargs["all_threads"], expected)
+                crash_log.stop_dump_watch()
+                crash_log._crash_file.close()
+                crash_log._crash_file = None
 
     def test_unwritable_path_still_installs_the_hooks(self):
         before = sys.excepthook
@@ -327,8 +348,6 @@ class DumpWatchTest(CrashLogTestBase):
         self.assertNotIn("poly-crash-watch", names)
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class TrimTest(unittest.TestCase):
@@ -432,3 +451,67 @@ class TrimTest(unittest.TestCase):
             sys.excepthook, threading.excepthook = saved_hook, saved_thread
 
 
+
+
+class NoteClearedTest(unittest.TestCase):
+    """note_cleared() must only touch the file it was pointed at.
+
+    _stamp() writes to the module's own handle, not to `filename`, so the
+    replacement session marker has to be gated on those being the same file.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self._tmp.name)
+        self.addCleanup(self._tmp.cleanup)
+        self._saved = crash_log._crash_file
+
+    def tearDown(self):
+        if crash_log._crash_file is not None:
+            crash_log._crash_file.close()
+        crash_log._crash_file = self._saved
+
+    def _install_handle(self, path):
+        path.write_text("", encoding="utf-8")
+        crash_log._crash_file = open(path, "a", buffering=1, encoding="utf-8")
+
+    def test_the_named_file_gets_the_cleared_marker(self):
+        target = self.dir / "crash_log.txt"
+        target.write_text("", encoding="utf-8")
+        self.assertTrue(crash_log.note_cleared(str(target)))
+        self.assertIn("crash log cleared", target.read_text(encoding="utf-8"))
+
+    def test_an_unrelated_crash_log_is_left_alone(self):
+        # Clearing another directory's crash log must not plant a false session
+        # record in the one THIS process is writing to.
+        active = self.dir / "active.txt"
+        other = self.dir / "other.txt"
+        other.write_text("", encoding="utf-8")
+        self._install_handle(active)
+        crash_log.note_cleared(str(other))
+        crash_log._crash_file.flush()
+        self.assertEqual(active.read_text(encoding="utf-8"), "")
+        self.assertIn("crash log cleared", other.read_text(encoding="utf-8"))
+
+    def test_clearing_our_own_log_re_stamps_a_session(self):
+        # The live session's start was just deleted; without a replacement its
+        # eventual clean exit would pair with nothing.
+        active = self.dir / "crash_log.txt"
+        self._install_handle(active)
+        crash_log.note_cleared(str(active))
+        crash_log._crash_file.flush()
+        text = active.read_text(encoding="utf-8")
+        self.assertIn("crash log cleared", text)
+        self.assertIn("session start (after clear)", text)
+
+    def test_a_failed_session_stamp_is_reported(self):
+        # The marker landed but the replacement session start did not: the
+        # live session is left unpaired, so this is not a success.
+        active = self.dir / "crash_log.txt"
+        self._install_handle(active)
+        with mock.patch.object(crash_log, "_stamp", return_value=False):
+            self.assertFalse(crash_log.note_cleared(str(active)))
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -39,6 +39,10 @@ class FakeCore:
     def list_languages(self):
         return ["enUS", "deDE"]
 
+    def mock_keycaps(self, modifier=0):
+        self.calls.append(("mock_keycaps", modifier))
+        return True, {"modifier": modifier, "images": {"4": "AAA="}, "base_layer": {"0,0": 41}}
+
     def set_language(self, lang):
         self.calls.append(("set_language", lang))
         return (True, lang)
@@ -153,6 +157,19 @@ class TestRemoteCore(unittest.TestCase):
         self.assertTrue(self.rc.send_overlay_data(["a.png"]))
         self.assertIn(("send", ["a.png"]), self.core.calls)
 
+    def test_overlay_send_keeps_the_underlay_mark_across_the_socket(self):
+        # A browser's file under a website's (handler/common.Underlay) is drawn
+        # dimmed; JSON carries only plain strings, so the mark travels beside them.
+        from polyhost.handler.common import Underlay
+        self.assertTrue(self.rc.send_overlay_data([Underlay("browser.png"), "site.png"]))
+        sent = [c for c in self.core.calls if c[0] == "send"][-1][1]
+        self.assertEqual(sent, ["browser.png", "site.png"])
+        self.assertEqual([getattr(f, "underlay", False) for f in sent], [True, False])
+
+    def test_overlay_send_takes_one_name_as_one_file(self):
+        self.assertTrue(self.rc.send_overlay_data("sublime_mac.mods.png"))
+        self.assertIn(("send", ["sublime_mac.mods.png"]), self.core.calls)
+
     def test_flash_firmware_dispatch(self):
         ok, payload = self.rc.flash_firmware("fw.bin", apply=True)
         self.assertTrue(ok)
@@ -187,6 +204,15 @@ class TestRemoteCore(unittest.TestCase):
         ok, value = self.rc.get_idle_timeout()
         self.assertTrue(ok)
         self.assertEqual(list(value), [5, 300])
+
+    def test_the_mock_board_view_works_as_a_client(self):
+        """The board view replaced an in-process-only bitmap dump; under
+        daemon-by-default it must reach the daemon's mock over RPC."""
+        ok, payload = self.rc.mock_keycaps(2)
+        self.assertTrue(ok)
+        self.assertIn(("mock_keycaps", 2), self.core.calls)
+        self.assertEqual(payload["images"], {"4": "AAA="})
+        self.assertEqual(payload["base_layer"], {"0,0": 41})
 
     def test_back_to_automatic_brightness_reaches_the_daemon(self):
         """The tray's way out of a manual preset. It MUST run in the daemon: the

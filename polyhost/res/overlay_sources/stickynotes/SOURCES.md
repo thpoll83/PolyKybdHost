@@ -72,3 +72,10 @@ python scripts/generate_app_overlays.py \
 ```
 
 Verified byte-identical on a re-run.
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+**Nothing added.** Microsoft's table (source above) has Ctrl+N, Ctrl+W, Ctrl+A,
+Ctrl+C, Ctrl+X, Ctrl+V, Ctrl+Z, Ctrl+Y and Ctrl+F — all already drawn with their
+documented wording. Notes save automatically (no Ctrl+S) and there is no print,
+open, replace or zoom chord.

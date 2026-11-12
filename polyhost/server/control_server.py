@@ -27,6 +27,7 @@ Core events are fanned out to every connection that has sent
 import queue
 import threading
 
+from polyhost.handler.common import with_underlays
 from polyhost.server import protocol as p
 from polyhost.server.mpc_listener import MpcListenerServer, RpcError
 
@@ -41,6 +42,14 @@ def _unwrap(result):
     if not ok:
         raise RpcError(p.ERR_DEVICE, str(payload))
     return payload
+
+
+def _bool_param(params, key):
+    """A required JSON boolean. ``bool()`` would read the string "false" as True."""
+    value = params[key]
+    if not isinstance(value, bool):
+        raise RpcError(p.ERR_INVALID_PARAMS, f"'{key}' must be a boolean")
+    return value
 
 
 class ControlServer(MpcListenerServer):
@@ -202,16 +211,40 @@ class ControlServer(MpcListenerServer):
             p.M_IDLE_STYLE_GET: lambda conn, params: _unwrap(c.get_idle_style()),
             p.M_IDLE_TIMEOUT_SET: lambda conn, params: _unwrap(c.set_idle_timeout(params["value"])),
             p.M_IDLE_TIMEOUT_GET: lambda conn, params: _unwrap(c.get_idle_timeout()),
+            p.M_TAP_TERMS_SET: lambda conn, params: _unwrap(c.set_tap_terms(
+                params.get("tapping_term"), params.get("flow_tap_term"),
+                params.get("auto_shift"), params.get("auto_shift_ms"))),
+            p.M_TAP_TERMS_GET: lambda conn, params: _unwrap(c.get_tap_terms()),
+            p.M_KEY_ATTENTION: lambda conn, params: _unwrap(
+                c.key_attention_cancel() if params.get("cancel") else c.key_attention(
+                    params["row"], params["col"], params.get("count", 3),
+                    params.get("period_ms", 4000))),
+            p.M_AGENTS_LIST: lambda conn, params: c.agents_list(),
+            p.M_AGENTS_REPORT: lambda conn, params: _unwrap(c.agents_report(params)),
+            p.M_AGENTS_LABEL: lambda conn, params: _unwrap(c.agents_label(
+                params["vendor"], params["session_id"], params.get("text", ""))),
+            p.M_AGENTS_FORGET: lambda conn, params: _unwrap(c.agents_forget(
+                params["vendor"], params["session_id"])),
+            p.M_AGENTS_RAISE: lambda conn, params: _unwrap(c.agents_raise(
+                params["vendor"], params["session_id"])),
             p.M_GLYPH_SCRIPT_SET: lambda conn, params: _unwrap(c.set_glyph_script(params["value"])),
             p.M_GLYPH_SCRIPT_GET: lambda conn, params: _unwrap(c.get_glyph_script()),
+            p.M_GLYPH_PLACEMENT_SET: lambda conn, params: _unwrap(c.set_glyph_placement(params["value"])),
+            p.M_GLYPH_PLACEMENT_GET: lambda conn, params: _unwrap(c.get_glyph_placement()),
             p.M_GLYPH_SIZE_SET: lambda conn, params: _unwrap(c.set_glyph_size(params["value"])),
             p.M_GLYPH_SIZE_GET: lambda conn, params: _unwrap(c.get_glyph_size()),
             p.M_REPLAY_ANIM: lambda conn, params: _unwrap(c.replay_startup_anim()),
+            p.M_MOCK_KEYCAPS: lambda conn, params: _unwrap(c.mock_keycaps(params.get("modifier", 0))),
             p.M_CRASH_GET: lambda conn, params: _unwrap(c.get_crash_record(params.get("which", 0))),
             p.M_CRASH_CLEAR: lambda conn, params: _unwrap(c.clear_crash_record()),
+            p.M_REBOOT: lambda conn, params: _unwrap(c.reboot_keyboard()),
+            p.M_BOOT_LOOP_START: lambda conn, params: _unwrap(
+                c.start_boot_loop(params.get("rounds", c.BOOT_LOOP_DEFAULT_ROUNDS))),
+            p.M_BOOT_LOOP_CANCEL: lambda conn, params: _unwrap(c.cancel_boot_loop()),
             p.M_UNICODE_MODE_REFRESH: lambda conn, params: _unwrap(c.refresh_unicode_mode()),
             p.M_DAYLIGHT_REFRESH: lambda conn, params: _unwrap(c.refresh_daylight_brightness()),
-            p.M_OVERLAY_SEND: lambda conn, params: {"queued": c.send_overlay_data(params["files"])},
+            p.M_OVERLAY_SEND: lambda conn, params: {"queued": c.send_overlay_data(
+                with_underlays(params["files"], params.get("underlay", ())))},
             p.M_OVERLAY_ENABLE: lambda conn, params: _unwrap(c.enable_overlays()),
             p.M_OVERLAY_DISABLE: lambda conn, params: _unwrap(c.disable_overlays()),
             p.M_OVERLAY_RESET: lambda conn, params: _unwrap(c.reset_overlays()),
@@ -241,6 +274,8 @@ class ControlServer(MpcListenerServer):
             p.M_OVERLAY_MAPPING_SEND: lambda conn, params: _unwrap(c.send_overlay_mapping(params["mapping"])),
             p.M_ACTIVATE_BOOTLOADER: lambda conn, params: _unwrap(c.activate_bootloader()),
             p.M_SET_HANDEDNESS: lambda conn, params: _unwrap(c.set_handedness(params["master_is_left"])),
+            p.M_SET_HANDEDNESS_BOARD: lambda conn, params: _unwrap(c.set_handedness(
+                params["master_is_left"], _bool_param(params, "split_vbus"))),
             p.M_FW_APPLY_STAGED: lambda conn, params: _unwrap(c.apply_staged_firmware()),
             p.M_FONTPACK_FLASH: lambda conn, params: _unwrap(
                 c.flash_fontpack_bundle(params["bundle"]) if "bundle" in params
@@ -250,6 +285,10 @@ class ControlServer(MpcListenerServer):
                 c.sync_fontpack(force=bool(params.get("force", False)))),
             p.M_FONTPACK_WIPE: lambda conn, params: _unwrap(c.wipe_fontpack()),
             p.M_FONTPACK_BUNDLES: lambda conn, params: _unwrap(c.fontpack_bundle_status()),
+            p.M_EMOJIDICT_STATUS: lambda conn, params: _unwrap(c.emoji_search_status()),
+            p.M_EMOJIDICT_CHOOSE: lambda conn, params: _unwrap(c.emoji_search_choose(
+                dict_id=params.get("id"), path=params.get("path"),
+                source=str(params.get("source", "control")))),
             p.M_DOOM_INSTALL: lambda conn, params: _unwrap(c.install_doomwad(params["path"])),
             p.M_DOOM_INSTALL_PACK: lambda conn, params: _unwrap(c.install_doompack(params["path"])),
             p.M_PAUSE_SET: self._cmd_pause_set,
@@ -259,7 +298,8 @@ class ControlServer(MpcListenerServer):
             p.M_SETTINGS_GET: lambda conn, params: c.settings_get(params["key"]),
             p.M_SETTINGS_LIST: lambda conn, params: c.settings_list(),
             p.M_SETTINGS_SET: lambda conn, params: _unwrap(c.settings_set(
-                params["key"], params["value"])),
+                params["key"], params["value"],
+                source=str(params.get("source") or "control socket"))),
             p.M_TELEMETRY_STATUS: lambda conn, params: c.telemetry_status(),
             p.M_TELEMETRY_PREVIEW: lambda conn, params: c.telemetry_preview(),
             p.M_TELEMETRY_SET: lambda conn, params: _unwrap(

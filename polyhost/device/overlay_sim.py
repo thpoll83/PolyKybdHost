@@ -75,12 +75,26 @@ class OverlayFirmwareSim:
 
     # ── write path ─────────────────────────────────────────────────────────
 
-    def store_image(self, pool_slot: int, bitmap_bytes: bytes | bytearray) -> None:
-        """Store a 360-byte bitmap at pool_slot and temporarily mark it as used."""
+    def store_image(self, pool_slot: int, bitmap_bytes: bytes | bytearray,
+                    mark_used: bool = True) -> None:
+        """Store a 360-byte bitmap at pool_slot and temporarily mark it as used.
+
+        ``mark_used=False`` is the firmware with MIRROR_OVERLAYS on (every MRU
+        send): mark_display_has_overlay_post_upload() is then a no-op, so only the
+        mapping makes a position visible."""
         if len(bitmap_bytes) != OVERLAY_BYTES:
             raise ValueError(f"Expected {OVERLAY_BYTES} bytes, got {len(bitmap_bytes)}")
         self._store[pool_slot] = bytes(bitmap_bytes)
-        self._usage.add(pool_slot)
+        if mark_used:
+            self._usage.add(pool_slot)
+
+    def frame(self, pool_slot: int) -> bytearray:
+        """A writable copy of what pool_slot holds; an untouched slot is zeros,
+        as the firmware's pool is zeroed at boot."""
+        return bytearray(self._store.get(pool_slot, bytes(OVERLAY_BYTES)))
+
+    def stored_slots(self) -> dict[int, bytes]:
+        return dict(self._store)
 
     # ── reset commands ──────────────────────────────────────────────────────
 
@@ -123,8 +137,16 @@ class OverlayFirmwareSim:
         return display_idx in self._usage
 
     def get_pool_slot_for(self, display_idx: int) -> int:
-        """Return overlay_map[display_idx] (identity if not explicitly mapped)."""
-        return self._mapping.get(display_idx, display_idx)
+        """Return overlay_map[display_idx]: identity for an unmapped position inside
+        the pool, slot 0 beyond it -- what the firmware's reset_display_to_pool()
+        leaves (the table past NUM_OVERLAY_SLOTS only has to be in range)."""
+        if display_idx in self._mapping:
+            return self._mapping[display_idx]
+        capacity = self._device_settings.OVERLAY_MAPPING_CAPACITY
+        return display_idx if display_idx < capacity else 0
+
+    def is_mapped(self, display_idx: int) -> bool:
+        return display_idx in self._mapping
 
     def get_display_bitmap(self, keycode: int, modifier: Modifier) -> bytes | None:
         """

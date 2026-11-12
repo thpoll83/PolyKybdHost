@@ -6,9 +6,15 @@ The pure decisions live in services/fontpack_bundle + device/hid_fontpack
 flash guard, flashing only the stale bundles (per-bundle versions vs the shipped
 manifest), and the emitted events. PolyCore pulls in the full device stack, so the
 suite skips if those deps are absent."""
+import os
+import tempfile
 import types
 import unittest
+from pathlib import Path
 from unittest.mock import patch
+
+from polyhost.core import events
+from polyhost.device import hid_fontpack
 
 try:
     from polyhost.core.poly_core import PolyCore
@@ -17,28 +23,42 @@ except Exception:   # noqa: BLE001 — heavy optional deps (numpy/PIL/pvlib/…)
     _HAVE_CORE = False
 
 
-def _fake_core(auto=True, in_progress=False, device_versions=None, failed=None):
-    """Minimal stand-in exposing exactly what the two methods touch."""
+def _fake_core(auto=True, in_progress=False, device_versions=None, failed=None,
+               pipe_port=None, protocol=27):
+    """Minimal stand-in exposing exactly what the two methods touch. ``pipe_port``
+    is what pipe_port_for_update() answers: the bundle pass hands it to every
+    flash, None meaning HID (no pipe, or dev_force_hid_link on)."""
     settings = {"fontpack_auto_flash": auto, "fontpack_path": ""}
     submitted = []
     emitted = []
     core = types.SimpleNamespace(
         poly_settings=types.SimpleNamespace(get=lambda k: settings[k]),
         worker=types.SimpleNamespace(submit=lambda name, fn: submitted.append((name, fn))),
-        keeb=types.SimpleNamespace(hid=object(), fontpack_bundle_versions=device_versions or {}),
+        keeb=types.SimpleNamespace(hid=object(), fontpack_bundle_versions=device_versions or {},
+                                   protocol_version=protocol, anim_state=None),
+        _fontpack_check_held=False,
         log=types.SimpleNamespace(info=lambda *a, **k: None, warning=lambda *a, **k: None),
         emit=lambda name, payload: emitted.append((name, payload)),
         _fontpack_flash_in_progress=in_progress,
         _fontpack_failed=dict(failed or {}),
+        pipe_port_for_update=lambda: pipe_port,
     )
     # The real implementations, bound to the stand-in — these are what the tests
     # below exercise; only _maybe_auto_flash_fontpack's submit is stubbed.
     core._fontpack_flash_bundles_job = lambda cancel, **kw: PolyCore._fontpack_flash_bundles_job(
         core, cancel, **kw)
     core._verify_flashed_bundle = lambda b, st, m: PolyCore._verify_flashed_bundle(core, b, st, m)
-    core._emit_fontpack_summary = lambda *a: PolyCore._emit_fontpack_summary(core, *a)
+    core._emit_fontpack_summary = lambda *a, **kw: PolyCore._emit_fontpack_summary(core, *a, **kw)
     core._autocheck = lambda cancel: PolyCore._fontpack_autocheck_job(core, cancel)
+    core._bundle_fits_device = lambda b: PolyCore._bundle_fits_device(core, b)
+    # The bundle list without the emoji search dictionary: these tests patch
+    # load_bundle_manifest and count bundles. TestEmojiSearchDictionary below
+    # covers the real _bundle_manifest().
+    core._bundle_manifest = lambda: __import__(
+        "polyhost.services.fontpack_bundle", fromlist=["x"]).load_bundle_manifest()
+    core._eden_owns_keycaps = lambda: PolyCore._eden_owns_keycaps(core)
     core._fontpack_autocheck_job = lambda cancel: None
+    core._fontpack_stale_notice_job = lambda cancel: None
     core._submitted, core._emitted = submitted, emitted
     return core
 
@@ -50,19 +70,137 @@ _MANIFEST = {"layout_version": 1, "bundles": [
 ]}
 
 
+_BIG_ICONS = {"id": "icons", "index": 8, "kind": "icons", "content_version": 5,
+              "size": 416008, "file": "icons.plyi", "path": "/x/icons.plyi"}
+
+
+@unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
+class TestIconSlotGate(unittest.TestCase):
+    """A library over 256 KB goes only to firmware with the 512 KB slot (v27)."""
+
+    def _flashed(self, protocol):
+        core = _fake_core(device_versions={8: 4}, protocol=protocol)
+        manifest = {"layout_version": 3, "bundles": [dict(_BIG_ICONS)]}
+        with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=manifest), \
+             patch("polyhost.device.hid_fontpack.flash_fontpack",
+                   return_value=(True, "ok", "ok")) as ff:
+            PolyCore._fontpack_flash_bundles_job(core, types.SimpleNamespace(is_set=lambda: False))
+        return ff.call_count
+
+    def test_a_large_library_waits_for_protocol_27(self):
+        self.assertEqual(self._flashed(26), 0)
+        self.assertEqual(self._flashed(27), 1)
+
+    def test_a_library_that_fits_256_kb_is_not_gated(self):
+        core = _fake_core(protocol=20)
+        self.assertTrue(PolyCore._bundle_fits_device(core, dict(_BIG_ICONS, size=0x40000)))
+        self.assertTrue(PolyCore._bundle_fits_device(core, {"id": "emoji", "size": 10**6}))
+        self.assertFalse(PolyCore._bundle_fits_device(core, _BIG_ICONS))
+
+    def test_an_unread_protocol_holds_a_large_library_without_device_io(self):
+        """The status snapshot calls the gate, so it reads the cached protocol
+        and never asks the keyboard; unread means too old."""
+        core = _fake_core(protocol=None)
+        core.keeb.supports = lambda f: self.fail("the gate must not query the device")
+        self.assertFalse(PolyCore._bundle_fits_device(core, _BIG_ICONS))
+
+
 @unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
 class TestMaybeAutoFlash(unittest.TestCase):
 
-    def test_disabled_setting_submits_nothing(self):
+    def test_disabled_setting_queues_only_the_stale_notice(self):
         core = _fake_core(auto=False)
         PolyCore._maybe_auto_flash_fontpack(core)
+        self.assertEqual([n for n, _fn in core._submitted], ["fontpack_stale_notice"])
+
+    def test_eden_holds_the_check_and_the_probe_releases_it(self):
+        """Field 2026-11-09: the flash ran during the boot intro; the master drew
+        its legends over Eden and the slave stayed in it."""
+        core = _fake_core(auto=True)
+        core._fontpack_check_held = False
+        core._eden_owns_keycaps = lambda: PolyCore._eden_owns_keycaps(core)
+        core._maybe_auto_flash_fontpack = lambda: PolyCore._maybe_auto_flash_fontpack(core)
+        for state in (hid_fontpack.ANIM_INTRO, hid_fontpack.ANIM_IDLE):
+            with self.subTest(state=state):
+                core._submitted.clear()
+                core.keeb.anim_state = state
+                PolyCore._maybe_auto_flash_fontpack(core)
+                self.assertEqual(core._submitted, [], "nothing queued while Eden plays")
+                self.assertTrue(core._fontpack_check_held)
+                PolyCore._release_held_fontpack_check(core, True)
+                self.assertEqual(core._submitted, [], "still Eden: still held")
+                core.keeb.anim_state = hid_fontpack.ANIM_NONE
+                PolyCore._release_held_fontpack_check(core, True)
+                self.assertEqual([n for n, _fn in core._submitted], ["fontpack_autocheck"])
+                self.assertFalse(core._fontpack_check_held)
+
+    def test_a_disconnect_drops_the_held_check(self):
+        core = _fake_core(auto=True)
+        core._fontpack_check_held = False
+        core._eden_owns_keycaps = lambda: PolyCore._eden_owns_keycaps(core)
+        core.keeb.anim_state = hid_fontpack.ANIM_INTRO
+        PolyCore._maybe_auto_flash_fontpack(core)
+        PolyCore._release_held_fontpack_check(core, False)
+        self.assertFalse(core._fontpack_check_held)
         self.assertEqual(core._submitted, [])
+
+    def test_auto_flash_turned_off_during_the_hold_notices_once(self):
+        """The release clears the hold before it dispatches: the notice branch
+        does not touch it, and each later probe would queue the notice again."""
+        core = _fake_core(auto=True)
+        core._maybe_auto_flash_fontpack = lambda: PolyCore._maybe_auto_flash_fontpack(core)
+        core.keeb.anim_state = hid_fontpack.ANIM_INTRO
+        PolyCore._maybe_auto_flash_fontpack(core)
+        core.poly_settings = types.SimpleNamespace(get=lambda k: False)   # Auto Flash off
+        core.keeb.anim_state = hid_fontpack.ANIM_NONE
+        for _ in range(3):
+            PolyCore._release_held_fontpack_check(core, True)
+        self.assertEqual([n for n, _fn in core._submitted], ["fontpack_stale_notice"])
+
+    def test_firmware_without_the_block_flashes_at_once(self):
+        core = _fake_core(auto=True)
+        core._fontpack_check_held = False
+        core._eden_owns_keycaps = lambda: PolyCore._eden_owns_keycaps(core)
+        core.keeb.anim_state = None
+        PolyCore._maybe_auto_flash_fontpack(core)
+        self.assertEqual([n for n, _fn in core._submitted], ["fontpack_autocheck"])
 
     def test_enabled_submits_worker_job(self):
         core = _fake_core(auto=True)
         PolyCore._maybe_auto_flash_fontpack(core)
         self.assertEqual(len(core._submitted), 1)
         self.assertEqual(core._submitted[0][0], "fontpack_autocheck")
+
+
+@unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
+class TestStaleNoticeWithAutoFlashOff(unittest.TestCase):
+    """Auto Flash off: flash nothing, but say which bundles are behind."""
+
+    def _run(self, device_versions):
+        core = _fake_core(auto=False, device_versions=device_versions)
+        core.fontpack_bundle_status = lambda: PolyCore.fontpack_bundle_status(core)
+        with patch("polyhost.services.fontpack_bundle.load_bundle_manifest",
+                   return_value=_MANIFEST), \
+             patch("polyhost.device.hid_fontpack.flash_fontpack") as ff:
+            PolyCore._fontpack_stale_notice_job(core, None)
+        self.assertFalse(ff.called, "the notice must never flash")
+        return core
+
+    def test_stale_bundles_are_named_in_one_event(self):
+        core = self._run({0: 1, 5: 3})
+        self.assertEqual(core._emitted, [(events.FONTPACK_STALE, {"bundles": ["symbol"]})])
+
+    def test_up_to_date_emits_nothing(self):
+        core = self._run({0: 2, 5: 3})
+        self.assertEqual(core._emitted, [])
+
+    def test_status_reports_the_setting(self):
+        core = _fake_core(auto=False, device_versions={0: 2, 5: 3})
+        with patch("polyhost.services.fontpack_bundle.load_bundle_manifest",
+                   return_value=_MANIFEST):
+            ok, info = PolyCore.fontpack_bundle_status(core)
+        self.assertTrue(ok)
+        self.assertIs(info["auto_flash"], False)
 
 
 @unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
@@ -106,6 +244,17 @@ class TestAutocheckJob(unittest.TestCase):
         self.assertEqual(len(done), 1)
         self.assertTrue(done[0][1]["ok"] and done[0][1]["auto"])
 
+    def test_every_bundle_flash_takes_the_update_port(self):
+        # The pass asks pipe_port_for_update() per bundle: the probed port when
+        # there is one, None (HID) when the developer setting forces HID.
+        core = _fake_core(device_versions={}, pipe_port="/dev/ttyACM0")
+        ff = self._run(core, _MANIFEST)
+        self.assertEqual([c.kwargs["pipe_port"] for c in ff.call_args_list],
+                         ["/dev/ttyACM0", "/dev/ttyACM0"])
+        core = _fake_core(device_versions={}, pipe_port=None)
+        ff = self._run(core, _MANIFEST)
+        self.assertEqual([c.kwargs["pipe_port"] for c in ff.call_args_list], [None, None])
+
     def test_missing_versions_flash_all(self):
         # Empty version map (pre-pack device or absent bundles) → flash both.
         core = _fake_core(device_versions={})
@@ -144,6 +293,17 @@ class TestAutocheckJob(unittest.TestCase):
         ff.assert_called_once()
         self.assertEqual(ff.call_args.kwargs["bundle_id"], 0)
         self.assertEqual(core._fontpack_failed, {})   # cleared once it succeeds
+
+    def test_a_remembered_failure_is_NOT_retried_on_a_keyboard_without_its_slot(self):
+        """CodeRabbit on #291: a keyboard flashed back to protocol 19 no longer
+        lists slot 8, and the retry list skipped the slot check the stale list
+        applies, so icons.plyi was re-sent (and refused) on every connect."""
+        manifest = {"layout_version": 2, "bundles": _MANIFEST["bundles"] + [
+            {"id": "icons", "index": 8, "content_version": 1, "kind": "icons",
+             "file": "icons.plyi", "path": "/x/icons.plyi"}]}
+        core = _fake_core(device_versions={0: 2, 5: 3}, failed={8: "rejected"})
+        ff = self._run(core, manifest)
+        ff.assert_not_called()
 
     def test_lost_ack_is_verified_against_the_device_and_not_a_failure(self):
         # 'slave-unconfirmed' + the device now reporting the shipped version = the
@@ -251,6 +411,232 @@ class TestManualBundleOps(unittest.TestCase):
         ok, payload = PolyCore.sync_fontpack(core)
         self.assertTrue(ok and payload["queued"])
         self.assertEqual(core._submitted[0][0], "fontpack_sync")
+
+
+
+@unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
+class TestEmojiSearchDictionary(unittest.TestCase):
+    """The selected emoji search dictionary rides the bundle passes as slot 9."""
+
+    def _core(self, selected="de", device_versions=None, user_file=""):
+        core = _fake_core(device_versions=device_versions)
+        settings = {"fontpack_auto_flash": True, "fontpack_path": "", "emoji_search_dict": selected,
+                    "emoji_search_dict_file": user_file}
+        core.poly_settings = types.SimpleNamespace(get=lambda k: settings.get(k))
+        core._bundle_manifest = lambda: PolyCore._bundle_manifest(core)
+        return core
+
+    def test_selected_dictionary_is_slot_9(self):
+        with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=_MANIFEST):
+            m = PolyCore._bundle_manifest(self._core("de"))
+        d = [b for b in m["bundles"] if b["index"] == 9]
+        self.assertEqual(len(d), 1)
+        self.assertEqual((d[0]["kind"], d[0]["dict_id"]), ("emojidict", "de"))
+        self.assertEqual(d[0]["content_version"], (1 << 8) | 1)      # de is dictionary 1
+        self.assertEqual(len(m["bundles"]), len(_MANIFEST["bundles"]) + 1)
+
+    def test_switching_to_a_lower_number_is_stale(self):
+        # The keyboard holds de (number 1); English is number 0, so ">" would miss it.
+        core = self._core("en", device_versions={0: 2, 5: 3, 9: (1 << 8) | 1})
+        with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=_MANIFEST), \
+             patch("polyhost.device.hid_fontpack.flash_fontpack",
+                   return_value=(True, "ok", "ok")) as ff:
+            PolyCore._fontpack_flash_bundles_job(core, None, auto=True)
+        self.assertEqual([c.kwargs["bundle_id"] for c in ff.call_args_list], [9])
+
+    def test_no_slot_9_flashes_no_dictionary(self):
+        core = self._core("de", device_versions={0: 2, 5: 3})      # firmware before layout v4
+        with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=_MANIFEST), \
+             patch("polyhost.device.hid_fontpack.flash_fontpack") as ff:
+            PolyCore._fontpack_flash_bundles_job(core, None, auto=True)
+        self.assertFalse(ff.called)
+
+    def test_status_names_the_dictionary_on_the_keyboard(self):
+        core = self._core("ru", device_versions={9: (1 << 8) | 1})
+        ok, st = PolyCore.emoji_search_status(core)
+        self.assertTrue(ok and st["shipped"] and st["supported"])
+        self.assertEqual(st["selected"], "ru")
+        self.assertEqual(st["device"], {"id": "de", "revision": 1, "user": False})
+        self.assertEqual((st["file"], st["file_error"]), ("", ""))
+        self.assertEqual(st["dictionaries"][0]["id"], "en")
+
+    def _user_file(self, tmp):
+        """The shipped German dictionary, unpacked, as a user's own file."""
+        from polyhost.services import emojidict
+        m = emojidict.load_manifest()
+        path = os.path.join(tmp, "mine.plyd")
+        with open(emojidict.unpacked_path(m, emojidict.find(m, "de"), Path(tmp)), "rb") as f, \
+                open(path, "wb") as out:
+            out.write(f.read())
+        return path
+
+    def test_user_file_is_slot_9(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._user_file(tmp)
+            with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=_MANIFEST):
+                m = PolyCore._bundle_manifest(self._core("en", user_file=path))
+        d = [b for b in m["bundles"] if b["index"] == 9]
+        self.assertEqual([(b["dict_id"], b["path"]) for b in d], [("file", path)])
+
+    def test_unusable_user_file_flashes_nothing_to_slot_9(self):
+        # Replacing the slot with a shipped dictionary would discard the user's own.
+        with tempfile.TemporaryDirectory() as tmp:
+            core = self._core("en", device_versions={0: 2, 5: 3, 9: (1 << 8) | 0xFF},
+                              user_file=os.path.join(tmp, "missing.plyd"))
+            with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=_MANIFEST), \
+                 patch("polyhost.device.hid_fontpack.flash_fontpack") as ff:
+                PolyCore._fontpack_flash_bundles_job(core, None, auto=True)
+                ok, st = PolyCore.emoji_search_status(core)
+        self.assertFalse(ff.called)
+        self.assertIn("cannot read", st["file_error"])
+        self.assertTrue(st["device"]["user"])
+
+    def _choose_core(self, user_file=""):
+        store = {"emoji_search_dict": "en", "emoji_search_dict_file": user_file}
+        calls = []
+        core = types.SimpleNamespace(
+            poly_settings=types.SimpleNamespace(get_all=lambda: dict(store),
+                                                set_all=lambda a, source="": store.update(a) or True),
+            note_settings_changed=lambda keys: calls.append(("changed", tuple(keys))),
+            _has_emojidict_slot=lambda: True,
+            _fontpack_failed={},
+            sync_fontpack=lambda force=False: calls.append(("sync", force)) or (True, {"queued": True}))
+        return core, store, calls
+
+    def test_choose_a_file_then_the_same_file_again(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.realpath(self._user_file(tmp))
+            core, store, calls = self._choose_core()
+            self.assertEqual(PolyCore.emoji_search_choose(core, path=path), (True, path))
+            self.assertEqual(store["emoji_search_dict_file"], path)
+            self.assertEqual(calls[-1][0], "changed")
+            # Same file again: no settings change, so the pass is started here.
+            self.assertEqual(PolyCore.emoji_search_choose(core, path=path), (True, path))
+            self.assertEqual(calls[-1], ("sync", False))
+            self.assertIn(9, core._fontpack_failed)
+
+    def test_a_chosen_file_is_written_at_an_equal_version(self):
+        # The keyboard reports the same version as the file (an earlier user
+        # build): the retry entry makes the pass write it anyway.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._user_file(tmp)
+            ver = __import__("struct").unpack_from("<I", open(path, "rb").read(), 8)[0]
+            core = self._core("en", device_versions={0: 2, 5: 3, 9: ver}, user_file=path)
+            core._fontpack_failed[9] = "dictionary file chosen"
+            with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=_MANIFEST), \
+                 patch("polyhost.device.hid_fontpack.flash_fontpack",
+                       return_value=(True, "ok", "ok")) as ff:
+                PolyCore._fontpack_flash_bundles_job(core, None, auto=True)
+        self.assertEqual([c.kwargs["bundle_id"] for c in ff.call_args_list], [9])
+        self.assertNotIn(9, core._fontpack_failed)
+
+    def test_any_writer_of_the_file_setting_queues_the_write(self):
+        # The settings dialog and `polyctl settings set` reach the device only
+        # through note_settings_changed(); a file set there must also be written
+        # at an equal version.
+        values = {"emoji_search_dict_file": "/x/mine.plyd"}
+        calls = []
+        core = types.SimpleNamespace(
+            _BRIGHTNESS_SETTING_KEYS=PolyCore._BRIGHTNESS_SETTING_KEYS,
+            _GENERIC_ICON_SETTING_KEYS=PolyCore._GENERIC_ICON_SETTING_KEYS,
+            _fw_actions_allowed=lambda: True,
+            sync_fontpack=lambda force=False: calls.append(force),
+            keeb=types.SimpleNamespace(fontpack_bundle_versions={9: 0}),
+            _fontpack_failed={},
+            poly_settings=types.SimpleNamespace(get=lambda k: values.get(k)))
+        core._has_emojidict_slot = lambda: PolyCore._has_emojidict_slot(core)
+        PolyCore.note_settings_changed(core, ["emoji_search_dict_file"])
+        self.assertIn(9, core._fontpack_failed)
+        self.assertEqual(calls, [False])
+
+    def test_a_file_chosen_while_disconnected_is_written_at_reconnect(self):
+        # Chosen with no keyboard: nothing is flashed now, but the retry entry is
+        # kept, so the connect-time pass writes the file at an equal version.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._user_file(tmp)
+            ver = __import__("struct").unpack_from("<I", open(path, "rb").read(), 8)[0]
+            core = self._core("en", device_versions={0: 2, 5: 3, 9: ver}, user_file=path)
+            core._BRIGHTNESS_SETTING_KEYS = PolyCore._BRIGHTNESS_SETTING_KEYS
+            core._GENERIC_ICON_SETTING_KEYS = PolyCore._GENERIC_ICON_SETTING_KEYS
+            core._fw_actions_allowed = lambda: False          # disconnected or paused
+            core._has_emojidict_slot = lambda: PolyCore._has_emojidict_slot(core)
+            synced = []
+            core.sync_fontpack = lambda force=False: synced.append(force)
+            PolyCore.note_settings_changed(core, ["emoji_search_dict_file"])
+            self.assertEqual(synced, [])
+            self.assertIn(9, core._fontpack_failed)
+            # Reconnect: the auto pass runs with the keyboard at an equal version.
+            with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=_MANIFEST), \
+                 patch("polyhost.device.hid_fontpack.flash_fontpack",
+                       return_value=(True, "ok", "ok")) as ff:
+                PolyCore._fontpack_flash_bundles_job(core, None, auto=True)
+        self.assertEqual([c.kwargs["bundle_id"] for c in ff.call_args_list], [9])
+        self.assertNotIn(9, core._fontpack_failed)
+
+    def test_a_failed_write_of_a_user_file_keeps_the_retry(self):
+        # The keyboard still reports the old build's version, which equals the new
+        # build's: a failed COMMIT must not read as the new file having landed.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._user_file(tmp)
+            ver = __import__("struct").unpack_from("<I", open(path, "rb").read(), 8)[0]
+            core = self._core("en", device_versions={0: 2, 5: 3, 9: ver}, user_file=path)
+            core.keeb.query_id = lambda: (True, None)
+            core._fontpack_failed[9] = "dictionary file chosen, not written yet"
+            with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=_MANIFEST), \
+                 patch("polyhost.device.hid_fontpack.flash_fontpack",
+                       return_value=(False, "commit lost", hid_fontpack.COMMIT_UNSPEC)):
+                PolyCore._fontpack_flash_bundles_job(core, None, auto=True)
+        self.assertIn(9, core._fontpack_failed)
+
+    def test_post_flash_check_needs_the_exact_dictionary(self):
+        # A failed COMMIT while slot 9 still holds German (v257) must not read as
+        # English (v1) having landed; a font bundle may read newer.
+        core = self._core("en", device_versions={9: (1 << 8) | 1, 0: 3})
+        core.keeb.query_id = lambda: (True, None)
+        en = {"id": "emojidict", "index": 9, "kind": "emojidict", "content_version": 1}
+        font = {"id": "symbols", "index": 0, "content_version": 2}
+        self.assertFalse(PolyCore._verify_flashed_bundle(core, en, hid_fontpack.COMMIT_NO_SLAVE, "")[0])
+        self.assertTrue(PolyCore._verify_flashed_bundle(core, font, hid_fontpack.COMMIT_NO_SLAVE, "")[0])
+
+    def test_choose_refuses_a_file_that_is_not_a_dictionary(self):
+        from polyhost.device import hid_fontpack
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "empty.plyd")
+            with open(path, "wb") as f:
+                f.write(hid_fontpack.build_empty_pack())
+            core, store, calls = self._choose_core()
+            ok, msg = PolyCore.emoji_search_choose(core, path=path)
+        self.assertFalse(ok)
+        self.assertIn("not an emoji search dictionary", msg)
+        self.assertEqual((store["emoji_search_dict_file"], calls), ("", []))
+
+    def test_choosing_a_shipped_id_stops_using_the_file(self):
+        core, store, calls = self._choose_core(user_file="/x/mine.plyd")
+        self.assertEqual(PolyCore.emoji_search_choose(core, dict_id="ru"), (True, "ru"))
+        self.assertEqual((store["emoji_search_dict"], store["emoji_search_dict_file"]), ("ru", ""))
+        self.assertFalse(PolyCore.emoji_search_choose(core, dict_id="xx")[0])
+
+    def test_choosing_a_dictionary_flashes_it(self):
+        calls = []
+        core = types.SimpleNamespace(
+            _BRIGHTNESS_SETTING_KEYS=PolyCore._BRIGHTNESS_SETTING_KEYS,
+            _GENERIC_ICON_SETTING_KEYS=PolyCore._GENERIC_ICON_SETTING_KEYS,
+            _fw_actions_allowed=lambda: True,
+            sync_fontpack=lambda force=False: calls.append(force),
+            keeb=types.SimpleNamespace(fontpack_bundle_versions={0: 2}),
+            _fontpack_failed={},
+            poly_settings=types.SimpleNamespace(get=lambda k: None))
+        core._has_emojidict_slot = lambda: PolyCore._has_emojidict_slot(core)
+        PolyCore.note_settings_changed(core, ["emoji_search_dict"])
+        self.assertEqual(calls, [], "no slot 9: the pass would flash only other bundles")
+        core.keeb.fontpack_bundle_versions = {0: 2, 9: 0}
+        PolyCore.note_settings_changed(core, ["emoji_search_dict"])
+        self.assertEqual(calls, [False])
+        PolyCore.note_settings_changed(core, ["emoji_search_dict_file"])
+        self.assertEqual(calls, [False, False])
+        self.assertNotIn(9, core._fontpack_failed, "clearing the file queues no forced write")
+        PolyCore.note_settings_changed(core, ["fontpack_auto_flash"])
+        self.assertEqual(calls, [False, False], "other settings must not flash it")
 
 
 if __name__ == "__main__":

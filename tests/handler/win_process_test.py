@@ -10,6 +10,7 @@ returns ``self.title`` when the PID isn't in its WMI list, and the callers
 normalise the result (``raw.split(".")[0].lower()``), so returning anything
 else here would quietly change which overlay mapping matches.
 """
+import os
 import unittest
 from unittest import mock
 
@@ -17,8 +18,10 @@ from polyhost.handler import win_process
 
 
 class FakeWindow:
-    def __init__(self, handle=1234, title="Doc - Notepad", app_name="notepad.exe"):
+    def __init__(self, handle=1234, title="Doc - Notepad", app_name="notepad.exe",
+                 pid=4321):
         self._handle = handle
+        self._pid = pid
         self.title = title
         self._app_name = app_name
         self.get_app_name_calls = 0
@@ -29,6 +32,9 @@ class FakeWindow:
     def getAppName(self):
         self.get_app_name_calls += 1
         return self._app_name
+
+    def getPID(self):
+        return self._pid
 
 
 class TestAppNameFor(unittest.TestCase):
@@ -74,6 +80,182 @@ class TestAppNameFor(unittest.TestCase):
              mock.patch.object(win_process, "win32_process_name",
                                side_effect=OSError("gone")):
             self.assertEqual(win_process.app_name_for(win), "Doc - Notepad")
+
+
+class TestUninformativeProcessNames(unittest.TestCase):
+    """MuseScore 4 and Audacity 4 rename their main thread to "main", and an
+    AppImage whose AppRun is a symlink runs as "AppRun", so ``ps -o comm=``
+    names the app by neither. The executable name is read instead, and only
+    for those names."""
+
+    def test_main_becomes_the_executable_name_on_linux(self):
+        win = FakeWindow(app_name="main")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink",
+                           return_value="/tmp/.mount_x/bin/mscore4portable") as rl:
+            self.assertEqual(win_process.app_name_for(win), "mscore4portable")
+        rl.assert_called_once_with("/proc/4321/exe")
+
+    def test_a_replaced_executable_drops_the_deleted_suffix(self):
+        win = FakeWindow(app_name="main")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink", return_value="/usr/bin/mscore (deleted)"):
+            self.assertEqual(win_process.app_name_for(win), "mscore")
+
+    def test_apprun_becomes_the_executable_name_on_linux(self):
+        win = FakeWindow(app_name="AppRun")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink",
+                           return_value="/tmp/.mount_x/usr/bin/openscad"):
+            self.assertEqual(win_process.app_name_for(win), "openscad")
+
+    def test_an_unreadable_executable_keeps_main(self):
+        win = FakeWindow(app_name="main")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink", side_effect=PermissionError):
+            self.assertEqual(win_process.app_name_for(win), "main")
+
+    def test_no_pid_keeps_main(self):
+        win = FakeWindow(app_name="main", pid=0)
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink") as rl:
+            self.assertEqual(win_process.app_name_for(win), "main")
+        rl.assert_not_called()
+
+    def test_other_names_never_read_the_executable(self):
+        win = FakeWindow(app_name="audacity")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink") as rl:
+            self.assertEqual(win_process.app_name_for(win), "audacity")
+        rl.assert_not_called()
+
+    def test_macos_keeps_main(self):
+        win = FakeWindow(app_name="main")
+        with mock.patch("sys.platform", "darwin"), \
+                mock.patch("os.readlink") as rl:
+            self.assertEqual(win_process.app_name_for(win), "main")
+        rl.assert_not_called()
+
+    @unittest.skipUnless(os.path.exists("/proc/self/exe"), "needs /proc")
+    def test_reads_the_real_proc_entry(self):
+        win = FakeWindow(app_name="main", pid=os.getpid())
+        expected = os.path.basename(os.readlink("/proc/self/exe"))
+        with mock.patch("sys.platform", "linux"):
+            self.assertEqual(win_process.app_name_for(win), expected)
+
+
+class TestTruncatedProcessNames(unittest.TestCase):
+    """The kernel keeps 15 characters of a process name, so GNOME Terminal's
+    ``gnome-terminal-server`` reaches ``ps -o comm=`` as ``gnome-terminal-``.
+    The executable name replaces it only when it starts with it."""
+
+    def test_a_cut_name_becomes_the_executable_name_on_linux(self):
+        win = FakeWindow(app_name="gnome-terminal-")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink",
+                           return_value="/usr/libexec/gnome-terminal-server") as rl:
+            self.assertEqual(win_process.app_name_for(win), "gnome-terminal-server")
+        rl.assert_called_once_with("/proc/4321/exe")
+
+    def test_an_executable_that_does_not_extend_the_name_is_ignored(self):
+        # A program that sets its own comm keeps the name it chose.
+        win = FakeWindow(app_name="some-daemon-nam")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink", return_value="/usr/bin/python3.12"):
+            self.assertEqual(win_process.app_name_for(win), "some-daemon-nam")
+
+    def test_an_executable_of_the_same_name_keeps_it(self):
+        win = FakeWindow(app_name="exactly15chars_")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink", return_value="/usr/bin/exactly15chars_"):
+            self.assertEqual(win_process.app_name_for(win), "exactly15chars_")
+
+    def test_the_limit_counts_bytes_not_characters(self):
+        # "é" is two bytes in UTF-8, so the kernel cuts this name at 14
+        # characters.
+        win = FakeWindow(app_name="éditeur-de-tex")
+        self.assertEqual(len(os.fsencode(win._app_name)), 15)
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink", return_value="/usr/bin/éditeur-de-texte"):
+            self.assertEqual(win_process.app_name_for(win), "éditeur-de-texte")
+
+    def test_a_reporter_window_without_a_pid_keeps_its_name(self):
+        # The GNOME Wayland and KDE reporters' windows have no getPID(); their
+        # name is a window class, not comm, and must stay as reported.
+        class ReporterWin:
+            title = "nano"
+
+            def getHandle(self):
+                return 7
+
+            def getAppName(self):
+                return "org.gnome.Ptyx"
+
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink") as rl:
+            self.assertEqual(win_process.app_name_for(ReporterWin()), "org.gnome.Ptyx")
+        rl.assert_not_called()
+
+    def test_a_shorter_name_never_reads_the_executable(self):
+        win = FakeWindow(app_name="gnome-terminal")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink") as rl:
+            self.assertEqual(win_process.app_name_for(win), "gnome-terminal")
+        rl.assert_not_called()
+
+    def test_an_unreadable_executable_keeps_the_cut_name(self):
+        win = FakeWindow(app_name="gnome-terminal-")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink", side_effect=PermissionError):
+            self.assertEqual(win_process.app_name_for(win), "gnome-terminal-")
+
+    def test_macos_keeps_a_15_character_name(self):
+        win = FakeWindow(app_name="gnome-terminal-")
+        with mock.patch("sys.platform", "darwin"), \
+                mock.patch("os.readlink") as rl:
+            self.assertEqual(win_process.app_name_for(win), "gnome-terminal-")
+        rl.assert_not_called()
+
+
+class _Ewmh:
+    def __init__(self, pid):
+        self._pid = pid
+
+    def getPid(self):
+        return self._pid
+
+
+class Pywinctl03Window:
+    """PyWinCtl 0.3's Linux window: getAppName() and the ewmhlib window, but no
+    getPID(). A field forwarder on Ubuntu GNOME ran this version (2026-11-05)."""
+
+    def __init__(self, app_name, pid=4321, title="nano"):
+        self._app_name = app_name
+        self._win = _Ewmh(pid)
+        self.title = title
+
+    def getHandle(self):
+        return 52428810
+
+    def getAppName(self):
+        return self._app_name
+
+
+class TestPywinctl03Window(unittest.TestCase):
+
+    def test_a_cut_name_is_resolved_without_getpid(self):
+        win = Pywinctl03Window("gnome-terminal-")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink",
+                           return_value="/usr/libexec/gnome-terminal-server") as rl:
+            self.assertEqual(win_process.app_name_for(win), "gnome-terminal-server")
+        rl.assert_called_once_with("/proc/4321/exe")
+
+    def test_main_is_resolved_without_getpid(self):
+        win = Pywinctl03Window("main")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink", return_value="/usr/bin/mscore4portable"):
+            self.assertEqual(win_process.app_name_for(win), "mscore4portable")
 
 
 class TestNativeBindings(unittest.TestCase):

@@ -1,0 +1,341 @@
+# Hand-chosen table read by derive_bindings.py. Edit THIS, never bindings.yaml.
+# actions: Zed action (with args when they matter) -> [group, label, icon].
+# icon null = a lexicon concept drawn by the shared renderer.
+
+contexts:   # context -> depth; deeper wins, negative = fill free cells only
+  null: 0
+  "!Terminal": 0
+  "!SettingsWindow": 0
+  "Workspace": 1
+  "Workspace && !Terminal": 1
+  "Pane": 2
+  "Editor": 3
+  "Editor && mode == full": 3
+  "Workspace && debugger_stopped": -1
+  "Workspace && debugger_session": -1
+  "Workspace && debugger_running": -1
+
+skip_prefix: ["menu::", "picker::", "dev::"]
+
+skip:   # cursor/text primitives and macOS Emacs bindings
+  - "editor::Backspace"
+  - "editor::Backtab"
+  - "editor::Delete"
+  - "editor::DeleteToBeginningOfLine"
+  - "editor::DeleteToEndOfLine"
+  - "editor::DeleteToNextSubwordEnd"
+  - "editor::DeleteToNextWordEnd"
+  - "editor::DeleteToPreviousSubwordStart"
+  - "editor::DeleteToPreviousWordStart"
+  - "editor::KillRingCut"
+  - "editor::KillRingYank"
+  - "editor::LineDown"
+  - "editor::LineUp"
+  - "editor::MoveDown"
+  - "editor::MoveLeft"
+  - "editor::MovePageDown"
+  - "editor::MovePageUp"
+  - "editor::MoveRight"
+  - "editor::MoveToBeginning"
+  - "editor::MoveToBeginningOfLine"
+  - "editor::MoveToEnd"
+  - "editor::MoveToEndOfLine"
+  - "editor::MoveToEndOfParagraph"
+  - "editor::MoveToNextSubwordEnd"
+  - "editor::MoveToNextWordEnd"
+  - "editor::MoveToPreviousSubwordStart"
+  - "editor::MoveToPreviousWordStart"
+  - "editor::MoveToStartOfParagraph"
+  - "editor::MoveUp"
+  - "editor::Newline"
+  - "editor::PageDown"
+  - "editor::PageUp"
+  - "editor::ScrollCursorCenter"
+  - "editor::SelectDown"
+  - "editor::SelectLeft"
+  - "editor::SelectPageDown"
+  - "editor::SelectPageUp"
+  - "editor::SelectRight"
+  - "editor::SelectToBeginning"
+  - "editor::SelectToBeginningOfLine"
+  - "editor::SelectToEnd"
+  - "editor::SelectToEndOfLine"
+  - "editor::SelectToEndOfParagraph"
+  - "editor::SelectToNextSubwordEnd"
+  - "editor::SelectToNextWordEnd"
+  - "editor::SelectToPreviousSubwordStart"
+  - "editor::SelectToPreviousWordStart"
+  - "editor::SelectToStartOfParagraph"
+  - "editor::SelectUp"
+  - "editor::Tab"
+  - "editor::Transpose"
+
+reclaimed:   # borrowed JetBrains whole-cell drawings -> <<: *reclaimed
+  - back.png
+  - breakpoint.png
+  - debug.png
+  - findusages.png
+  - forward.png
+  - gotodeclaration.png
+  - gotoimpl.png
+  - gototypedecl.png
+  - reformat.png
+  - stepinto.png
+  - stepout.png
+  - stepover.png
+  - stop.png
+
+actions:
+  "workspace::Save": ["File and window", "Save", null]
+  "workspace::SaveAs": ["File and window", "Save as", null]
+  "workspace::SaveAll": ["File and window", "Save all", "saveall.png"]
+  "workspace::NewFile": ["File and window", "New", null]
+  "workspace::NewWindow": ["File and window", "New window", "newwindow.png"]
+  "workspace::OpenFiles": ["File and window", "Open", null]
+  "workspace::Open": ["File and window", "Open", null]
+  "projects::OpenRecent": ["File and window", "Open recent project", "history.png"]
+  "projects::OpenRemote {\"from_existing_connection\": false}": ["File and window", "Open remote project", "openremote.png"]
+  "projects::OpenRemote {\"from_existing_connection\": true}": ["File and window", "Open remote (this server)", "openremotehere.png"]
+  "workspace::CloseWindow": ["File and window", "Close window", "closewindow.png"]
+  "zed::Quit": ["File and window", "Quit", null]
+  "zed::Hide": ["File and window", "Hide", null]
+  "zed::HideOthers": ["File and window", "Hide others", "hideothers.png"]
+  "zed::Minimize": ["File and window", "Minimize", null]
+  "zed::ToggleFullScreen": ["File and window", "Fullscreen", null]
+  "app_menu::OpenApplicationMenu \"Zed\"": ["File and window", "Application menu", "appmenu.png"]
+  "workspace::ToggleWorktreeSecurity": ["File and window", "Worktree trust", "trust.png"]
+  "zed::OpenSettings": ["Settings and zoom", "Settings", null]
+  "zed::OpenSettingsFile": ["Settings and zoom", "Settings file", "settingsfile.png"]
+  "settings_profile_selector::Toggle": ["Settings and zoom", "Settings profile", "settingsprofile.png"]
+  "zed::Extensions": ["Settings and zoom", "Extensions", "extensions.png"]
+  "zed::IncreaseBufferFontSize {\"persist\": false}": ["Settings and zoom", "Zoom in", null]
+  "zed::DecreaseBufferFontSize {\"persist\": false}": ["Settings and zoom", "Zoom out", null]
+  "zed::ResetBufferFontSize {\"persist\": false}": ["Settings and zoom", "Zoom reset", null]
+  "file_finder::Toggle": ["Navigation and pickers", "Go to file", "quickopen.png"]
+  "command_palette::Toggle": ["Navigation and pickers", "Command palette", "commandpalette.png"]
+  "project_symbols::Toggle": ["Navigation and pickers", "Project symbols", "gotosymbolproject.png"]
+  "outline::Toggle": ["Navigation and pickers", "Outline (symbols in file)", "gotosymbol.png"]
+  "go_to_line::Toggle": ["Navigation and pickers", "Go to line", "gotoline.png"]
+  "tab_switcher::Toggle": ["Navigation and pickers", "Tab switcher", "tabswitcher.png"]
+  "tab_switcher::Toggle {\"select_last\": true}": ["Navigation and pickers", "Tab switcher (last)", "tabswitcherlast.png"]
+  "pane::GoBack": ["Navigation and pickers", "Go back", "back.png"]
+  "pane::GoForward": ["Navigation and pickers", "Go forward", "forward.png"]
+  "workspace::FocusNextPart": ["Navigation and pickers", "Focus next part", "focusnext.png"]
+  "workspace::FocusPreviousPart": ["Navigation and pickers", "Focus previous part", "focusprev.png"]
+  "which_key::ShowPendingBindings": ["Navigation and pickers", "Show pending keys", "whichkey.png"]
+  "toast::RunAction": ["Navigation and pickers", "Run notification action", "toastaction.png"]
+  "branches::OpenRecent": ["Navigation and pickers", "Recent branches", "branches.png"]
+  "git::Worktree": ["Navigation and pickers", "Worktrees", "worktree.png"]
+  "pane::CloseActiveItem {\"close_pinned\": false}": ["Tabs and panes", "Close", null]
+  "pane::CloseOtherItems {\"close_pinned\": false}": ["Tabs and panes", "Close other tabs", "closeothers.png"]
+  "workspace::CloseInactiveTabsAndPanes": ["Tabs and panes", "Close inactive tabs and panes", "closeinactive.png"]
+  "pane::ReopenClosedItem": ["Tabs and panes", "Reopen closed tab", "reopentab.png"]
+  "pane::ActivateNextItem": ["Tabs and panes", "Next tab", "nexttab.png"]
+  "pane::ActivatePreviousItem": ["Tabs and panes", "Previous tab", "prevtab.png"]
+  "pane::SwapItemLeft": ["Tabs and panes", "Move tab left", "tabmoveleft.png"]
+  "pane::SwapItemRight": ["Tabs and panes", "Move tab right", "tabmoveright.png"]
+  "pane::ActivateLastItem": ["Tabs and panes", "Last tab", "tablast.png"]
+  "pane::SplitRight": ["Tabs and panes", "Split right", "split.png"]
+  "pane::ActivateItem 0": ["Tabs and panes", "Tab 1", "tab1.png"]
+  "workspace::ActivatePane 0": ["Tabs and panes", "Pane 1", "pane1.png"]
+  "pane::ActivateItem 1": ["Tabs and panes", "Tab 2", "tab2.png"]
+  "workspace::ActivatePane 1": ["Tabs and panes", "Pane 2", "pane2.png"]
+  "pane::ActivateItem 2": ["Tabs and panes", "Tab 3", "tab3.png"]
+  "workspace::ActivatePane 2": ["Tabs and panes", "Pane 3", "pane3.png"]
+  "pane::ActivateItem 3": ["Tabs and panes", "Tab 4", "tab4.png"]
+  "workspace::ActivatePane 3": ["Tabs and panes", "Pane 4", "pane4.png"]
+  "pane::ActivateItem 4": ["Tabs and panes", "Tab 5", "tab5.png"]
+  "workspace::ActivatePane 4": ["Tabs and panes", "Pane 5", "pane5.png"]
+  "pane::ActivateItem 5": ["Tabs and panes", "Tab 6", "tab6.png"]
+  "workspace::ActivatePane 5": ["Tabs and panes", "Pane 6", "pane6.png"]
+  "pane::ActivateItem 6": ["Tabs and panes", "Tab 7", "tab7.png"]
+  "workspace::ActivatePane 6": ["Tabs and panes", "Pane 7", "pane7.png"]
+  "pane::ActivateItem 7": ["Tabs and panes", "Tab 8", "tab8.png"]
+  "workspace::ActivatePane 7": ["Tabs and panes", "Pane 8", "pane8.png"]
+  "pane::ActivateItem 8": ["Tabs and panes", "Tab 9", "tab9.png"]
+  "workspace::ActivatePane 8": ["Tabs and panes", "Pane 9", "pane9.png"]
+  "workspace::ToggleLeftDock": ["Docks and panels", "Toggle left dock", "sidebar.png"]
+  "workspace::ToggleRightDock": ["Docks and panels", "Toggle right dock", "rightdock.png"]
+  "workspace::ToggleBottomDock": ["Docks and panels", "Toggle bottom dock", "bottomdock.png"]
+  "workspace::ToggleAllDocks": ["Docks and panels", "Toggle all docks", "alldocks.png"]
+  "workspace::CloseActiveDock": ["Docks and panels", "Close dock", "closedock.png"]
+  "workspace::IncreaseActiveDockSize {\"px\": 0}": ["Docks and panels", "Grow dock", "dockgrow.png"]
+  "workspace::DecreaseActiveDockSize {\"px\": 0}": ["Docks and panels", "Shrink dock", "dockshrink.png"]
+  "workspace::ResetActiveDockSize": ["Docks and panels", "Reset dock size", "dockreset.png"]
+  "workspace::IncreaseOpenDocksSize {\"px\": 0}": ["Docks and panels", "Grow all docks", "docksgrow.png"]
+  "workspace::DecreaseOpenDocksSize {\"px\": 0}": ["Docks and panels", "Shrink all docks", "docksshrink.png"]
+  "workspace::ResetOpenDocksSize": ["Docks and panels", "Reset all dock sizes", "docksreset.png"]
+  "project_panel::ToggleFocus": ["Docks and panels", "Project panel", "explorer.png"]
+  "outline_panel::ToggleFocus": ["Docks and panels", "Outline panel", "outlinepanel.png"]
+  "git_panel::ToggleFocus": ["Docks and panels", "Git panel", "win_git.png"]
+  "debug_panel::ToggleFocus": ["Docks and panels", "Debug panel", "debugview.png"]
+  "collab_panel::ToggleFocus": ["Docks and panels", "Collaboration panel", "collab.png"]
+  "agent::ToggleFocus": ["Docks and panels", "Agent panel", "agent.png"]
+  "agent::AddSelectionToThread": ["Docks and panels", "Add selection to agent", "agentadd.png"]
+  "diagnostics::Deploy": ["Docks and panels", "Diagnostics", "problems.png"]
+  "terminal_panel::Toggle": ["Docks and panels", "Toggle terminal", "terminal.png"]
+  "workspace::NewTerminal": ["Docks and panels", "New terminal", "newterminal.png"]
+  "multi_workspace::ToggleWorkspaceSidebar": ["Docks and panels", "Workspace sidebar", "wssidebar.png"]
+  "multi_workspace::FocusWorkspaceSidebar": ["Docks and panels", "Focus workspace sidebar", "wssidebarfocus.png"]
+  "workspace::FollowNextCollaborator": ["Docks and panels", "Follow next collaborator", "follow.png"]
+  "editor::DisplayCursorNames": ["Docks and panels", "Show cursor names", "cursornames.png"]
+  "buffer_search::Deploy": ["Search", "Find", null]
+  "buffer_search::DeployReplace": ["Search", "Replace", null]
+  "buffer_search::Deploy {\"selection_search_enabled\": true}": ["Search", "Find in selection", "findinselection.png"]
+  "buffer_search::UseSelectionForFind": ["Search", "Use selection for find", "usesel.png"]
+  "search::SelectNextMatch": ["Search", "Find next", null]
+  "search::SelectPreviousMatch": ["Search", "Find previous", "findprev.png"]
+  "search::ToggleCaseSensitive": ["Search", "Match case", "matchcase.png"]
+  "search::ToggleWholeWord": ["Search", "Match whole word", "wholeword.png"]
+  "search::ToggleRegex": ["Search", "Use regex", "regex.png"]
+  "search::ToggleReplace": ["Search", "Toggle replace", "togglereplace.png"]
+  "search::ToggleSelection": ["Search", "Find in selection", "findinselection.png"]
+  "pane::DeploySearch": ["Search", "Find in project", "findinfiles.png"]
+  "project_search::ToggleFocus": ["Search", "Find in project", "findinfiles.png"]
+  "pane::DeploySearch {\"replace_enabled\": true}": ["Search", "Replace in project", "replaceinfiles.png"]
+  "project_search::ToggleFilters": ["Search", "Search filters", "filters.png"]
+  "text_finder::Toggle": ["Search", "Text finder", "textfinder.png"]
+  "editor::Copy": ["Editing", "Copy", null]
+  "editor::Cut": ["Editing", "Cut", null]
+  "editor::Paste": ["Editing", "Paste", null]
+  "editor::Undo": ["Editing", "Undo", null]
+  "editor::Redo": ["Editing", "Redo", null]
+  "editor::UndoSelection": ["Editing", "Undo selection", "undosel.png"]
+  "editor::RedoSelection": ["Editing", "Redo selection", "redosel.png"]
+  "editor::SelectAll": ["Editing", "Select all", null]
+  "editor::Indent": ["Editing", "Indent", null]
+  "editor::Outdent": ["Editing", "Outdent", null]
+  "editor::ToggleComments {\"advance_downwards\": false, \"comment_empty_lines\": true}": ["Editing", "Comment", null]
+  "editor::ToggleBlockComments": ["Editing", "Block comment", "blockcomment.png"]
+  "editor::DeleteLine": ["Editing", "Delete line", "deleteline.png"]
+  "editor::MoveLineUp": ["Editing", "Move line up", "swapup.png"]
+  "editor::MoveLineDown": ["Editing", "Move line down", "swapdown.png"]
+  "editor::DuplicateLineUp": ["Editing", "Duplicate line up", "dupup.png"]
+  "editor::DuplicateLineDown": ["Editing", "Duplicate line down", "dupdown.png"]
+  "editor::JoinLines": ["Editing", "Join lines", "joinlines.png"]
+  "editor::NewlineBelow": ["Editing", "Insert line below", "insertafter.png"]
+  "editor::NewlineAbove": ["Editing", "Insert line above", "insertbefore.png"]
+  "editor::Fold": ["Editing", "Fold", "fold.png"]
+  "editor::UnfoldLines": ["Editing", "Unfold", "unfold.png"]
+  "editor::Format": ["Editing", "Format document", "reformat.png"]
+  "editor::OrganizeImports": ["Editing", "Organize imports", "optimizeimports.png"]
+  "editor::ShowCharacterPalette": ["Editing", "Character palette", "emoji.png"]
+  "editor::OpenContextMenu": ["Editing", "Context menu", "contextmenu.png"]
+  "editor::SelectLine": ["Selection and multi-cursor", "Select line", "selectline.png"]
+  "editor::SelectNext {\"replace_newest\": false}": ["Selection and multi-cursor", "Select next occurrence", "multicursor.png"]
+  "editor::SelectPrevious {\"replace_newest\": false}": ["Selection and multi-cursor", "Select previous occurrence", "multicursorprev.png"]
+  "editor::SelectAllMatches": ["Selection and multi-cursor", "Select all occurrences", "selectalloccur.png"]
+  "editor::AddSelectionAbove {\"skip_soft_wrap\": true}": ["Selection and multi-cursor", "Add cursor above", "cursorabove.png"]
+  "editor::AddSelectionBelow {\"skip_soft_wrap\": true}": ["Selection and multi-cursor", "Add cursor below", "cursorbelow.png"]
+  "editor::AddSelectionAbove {\"skip_soft_wrap\": false}": ["Selection and multi-cursor", "Add cursor above", "cursorabove.png"]
+  "editor::AddSelectionBelow {\"skip_soft_wrap\": false}": ["Selection and multi-cursor", "Add cursor below", "cursorbelow.png"]
+  "editor::SelectLargerSyntaxNode": ["Selection and multi-cursor", "Expand selection", "extendselection.png"]
+  "editor::SelectSmallerSyntaxNode": ["Selection and multi-cursor", "Shrink selection", "shrinkselection.png"]
+  "editor::SelectNextSyntaxNode": ["Selection and multi-cursor", "Next syntax node", "nodenext.png"]
+  "editor::SelectPreviousSyntaxNode": ["Selection and multi-cursor", "Previous syntax node", "nodeprev.png"]
+  "editor::SelectEnclosingSymbol": ["Selection and multi-cursor", "Select enclosing symbol", "enclosingsymbol.png"]
+  "editor::MoveToEnclosingBracket": ["Selection and multi-cursor", "Jump to matching bracket", "matchbracket.png"]
+  "editor::OpenSelectionsInMultibuffer": ["Selection and multi-cursor", "Open selections in multibuffer", "multibuffer.png"]
+  "editor::Rename": ["Code intelligence", "Rename symbol", "rename.png"]
+  "editor::GoToDefinition": ["Code intelligence", "Go to definition", "definition.png"]
+  "editor::GoToDefinitionSplit": ["Code intelligence", "Go to definition (split)", "definitionsplit.png"]
+  "editor::GoToDeclaration": ["Code intelligence", "Go to declaration", "gotodeclaration.png"]
+  "editor::GoToDeclarationSplit": ["Code intelligence", "Go to declaration (split)", "declarationsplit.png"]
+  "editor::GoToTypeDefinition": ["Code intelligence", "Go to type definition", "gototypedecl.png"]
+  "editor::GoToTypeDefinitionSplit": ["Code intelligence", "Go to type definition (split)", "typedefsplit.png"]
+  "editor::GoToImplementation": ["Code intelligence", "Go to implementation", "gotoimpl.png"]
+  "editor::FindAllReferences": ["Code intelligence", "Find all references", "findusages.png"]
+  "editor::ShowCompletions": ["Code intelligence", "Show completions", "autocomplete.png"]
+  "editor::ShowWordCompletions": ["Code intelligence", "Word completions", "gotoword.png"]
+  "editor::ShowSignatureHelp": ["Code intelligence", "Signature help", "paraminfo.png"]
+  "editor::ToggleCodeActions": ["Code intelligence", "Code actions", "intentions.png"]
+  "editor::GoToDiagnostic {\"severity\": {\"max\": \"error\", \"min\": \"hint\"}}": ["Code intelligence", "Next diagnostic", "diagnext.png"]
+  "editor::GoToPreviousDiagnostic {\"severity\": {\"max\": \"error\", \"min\": \"hint\"}}": ["Code intelligence", "Previous diagnostic", "diagprev.png"]
+  "lsp_tool::ToggleMenu": ["Code intelligence", "Language servers", "lsp.png"]
+  "edit_prediction::ToggleMenu": ["Code intelligence", "Edit prediction menu", "predictmenu.png"]
+  "editor::ToggleEditPrediction": ["Code intelligence", "Toggle edit prediction", "predicttoggle.png"]
+  "edit_prediction::RatePredictions": ["Code intelligence", "Rate predictions", "predictrate.png"]
+  "editor::ToggleSelectedDiffHunks": ["Git and diff", "Toggle diff hunk", "hunk.png"]
+  "editor::ExpandAllDiffHunks": ["Git and diff", "Expand all diff hunks", "hunkexpand.png"]
+  "editor::GoToHunk": ["Git and diff", "Next hunk", "hunknext.png"]
+  "editor::GoToPreviousHunk": ["Git and diff", "Previous hunk", "hunkprev.png"]
+  "editor::GoToNextChange": ["Git and diff", "Next change", "changenext.png"]
+  "editor::GoToPreviousChange": ["Git and diff", "Previous change", "changeprev.png"]
+  "editor::ToggleLineNumbers": ["Git and diff", "Toggle line numbers", "linenumbers.png"]
+  "task::Spawn": ["Tasks and debugger", "Spawn task", "taskspawn.png"]
+  "task::Spawn {\"reveal_target\": \"center\"}": ["Tasks and debugger", "Spawn task (in center)", "taskspawncenter.png"]
+  "task::Rerun": ["Tasks and debugger", "Rerun task", "rerun.png"]
+  "task::Rerun {\"reevaluate_context\": false}": ["Tasks and debugger", "Rerun task (same context)", "rerunsame.png"]
+  "debugger::Start": ["Tasks and debugger", "Start debugging", "debug.png"]
+  "debugger::Rerun": ["Tasks and debugger", "Rerun debug session", "debugrerun.png"]
+  "debugger::RerunSession": ["Tasks and debugger", "Rerun debug session", "debugrerun.png"]
+  "debugger::Stop": ["Tasks and debugger", "Stop debugging", "stop.png"]
+  "debugger::StepOver": ["Tasks and debugger", "Step over", "stepover.png"]
+  "debugger::StepInto": ["Tasks and debugger", "Step into", "stepinto.png"]
+  "debugger::StepOut": ["Tasks and debugger", "Step out", "stepout.png"]
+  "editor::ToggleBreakpoint": ["Tasks and debugger", "Toggle breakpoint", "breakpoint.png"]
+  "editor::EditLogBreakpoint": ["Tasks and debugger", "Edit log breakpoint", "logbreakpoint.png"]
+
+header: |
+  # Zed (zed.dev) shortcut overlays for PolyKybd.
+  #
+  # ONE spec, THREE artwork sets, because Zed ships three default keymaps
+  # (assets/keymaps/default-{windows,linux,macos}.json) and they genuinely differ:
+  #
+  #   zed_template.*        Windows   (the default set)
+  #   zed_linux_template.*  Linux     (`os: linux` branch)
+  #   zed_mac_template.*    macOS     (`os: macos` branch)
+  #
+  # ⚠️ CMDCTRL alone would NOT be faithful here. Measured over the drawable cells
+  # of the contexts below, macOS vs Linux (Cmd normalised to Ctrl): 113 cells
+  # agree, 32 cells bind the SAME chord to a DIFFERENT action, and 75 of 183
+  # shared actions sit on a disjoint chord set (Alt+1..9 is tab N on Linux, Ctrl+1..9
+  # on macOS; Ctrl+Shift+Up is "select previous occurrence" on Linux and "select to
+  # start of paragraph" on macOS; Fold is Ctrl+Shift+[ vs Cmd+Alt+[). Windows vs
+  # Linux also differs: 6 same-chord collisions and 19 moved actions (Linux avoids
+  # Alt+letter, so Windows' Alt+Shift+F format is Ctrl+Shift+I there).
+  # So every binding below is derived mechanically from the three keymaps and
+  # scoped with `only:`. A chord is written CMDCTRL only when it is literally Ctrl
+  # on Windows/Linux AND Cmd on macOS for the same action; otherwise it is literal
+  # (CTRL / GUI / ALT ...) and scoped to the platforms that bind it.
+  # See SOURCES.md for the derivation rules and the contexts drawn.
+  #
+  # `source:` on each binding = Zed action @ keymap line (w=default-windows.json,
+  # l=default-linux.json, m=default-macos.json) at the commit pinned in SOURCES.md.
+  #
+  # GENERATED by derive_bindings.py from derive_table.yaml -- edit the table, not
+  # this file. Regenerate (from the repo root, with the project venv):
+  #   git clone --filter=blob:none --sparse https://github.com/zed-industries/zed <zed>
+  #   git -C <zed> checkout 36682547bea1c3d4fa60c08d341cf60081853941
+  #   git -C <zed> sparse-checkout set assets/keymaps
+  #   .venv/bin/python polyhost/res/overlay_sources/zed/derive_bindings.py <zed>
+  #   .venv/bin/python polyhost/res/overlay_sources/zed/fetch_icons.py
+  #   PYTHONPATH=. .venv/bin/python scripts/generate_app_overlays.py \
+  #       polyhost/res/overlay_sources/zed/bindings.yaml --preview /tmp/zed_preview
+  app: zed
+  match: [zed, zed preview, zed nightly, zed dev, zed-editor, dev.zed.zed, dev.zed.zed-preview, dev.zed.zed-nightly, dev.zed.zed-dev]
+  output: zed_template
+  output_macos: zed_mac_template
+  output_linux: zed_linux_template
+  icon_dir: icons
+  fit: contain
+  anchor: bottom-right
+  region: [40, 36]
+  margin: 0
+  mode: alpha
+  threshold: 150
+
+  # Zed's OWN app icon (GPL-3.0-or-later, crates/zed), cropped to its mark by
+  # fetch_icons.py. Dark tile with light linework -> `bright` (alpha = one blob).
+  # Swept t70..t160 x three regions; t110 keeps the nested frames open and the Z
+  # diagonal unbroken. See SOURCES.md.
+  program_icon: zed.png
+  program_icon_mode: bright
+  program_icon_threshold: 110
+  program_icon_region: [46, 40]
+  program_icon_anchor: right
+  program_icon_margin: 0
+
+  # JetBrains' reclaimed whole-cell drawings, borrowed byte-identical, render 1:1
+  # exactly as they do in ../jetbrains (same geometry -> same cell bytes).
+  _reclaimed: &reclaimed { region: [72, 40], anchor: center }

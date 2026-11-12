@@ -20,7 +20,8 @@ import json
 import sys
 import time
 
-from polyhost.device.command_ids import GlyphScript, GlyphSize, IdleStyle, IdleTimeout  # stdlib-only (Enum), no Qt
+from polyhost.device.command_ids import GlyphPlacement, GlyphScript, GlyphSize, IdleStyle, IdleTimeout, TapTerms  # stdlib-only (Enum), no Qt
+from polyhost._version import __protocol__, __version__
 from polyhost.server import protocol
 
 # Default timeframe for `polyctl logs` — long enough for "it broke this
@@ -179,6 +180,106 @@ def _format_size(num_bytes: int) -> str:
     return f"{num_bytes // 1024} KB"
 
 
+_SHELL_STATE_TEXT = {
+    "installed": "installed",
+    "not-installed": "not installed",
+    "stale": "stale: the line loads another copy",
+    "not-present": "not found",
+    "unknown": "profile path unknown",
+    "blocked": "blocked by the execution policy",
+    "no-setup": "shows the command without setup",
+}
+
+
+def _cmd_shell_integration(_client, args):
+    """Add, remove or show the line that makes a shell put the running
+    command into the terminal title (services/shell_title.py).
+
+    Purely local: it edits the user's own shell startup files, so it never
+    connects to the host (see _is_local_command)."""
+    from polyhost.services import shell_title
+
+    shells = args.shell or None
+    if args.si_action == "status":
+        for st in shell_title.status(shells):
+            line = f"{st.shell:<15}{_SHELL_STATE_TEXT.get(st.state, st.state)}"
+            if st.rc_path is not None:
+                line += f"  ({st.rc_path})"
+            if st.detail:
+                line += f"\n{'':<15}{st.detail}"
+            if st.codex:
+                line += f"\n{'':<15}codex wrapper: on"
+            print(line)
+        return 0
+    if args.si_action == "install":
+        results = shell_title.install(shells, codex=args.codex)
+    else:
+        results = shell_title.remove(shells)
+    if not results:
+        print("nothing to do" if args.si_action == "remove"
+              else "no shell to set up was found (name one with --shell)")
+        return 0
+    for r in results:
+        print(f"{r.shell}: {r.message}")
+        if r.backup is not None:
+            print(f"{'':<{len(r.shell) + 2}}backup: {r.backup}")
+    if args.si_action == "install" and any(r.changed for r in results):
+        print("Open a new terminal window for the change to take effect.")
+    return 0 if all(r.ok for r in results) else 1
+
+
+_EDITOR_STATE_TEXT = {
+    "installed": "set up",
+    "not-installed": "not set up",
+    "outdated": "set up with older plugin files (install copies the current ones)",
+    "modified": "set up, then changed by hand (left alone)",
+    "stale": "the init file loads another copy",
+    "manual": "the plugin is loaded from somewhere else",
+    "not-present": "not found",
+    "no-source": "this installation has no plugin files",
+}
+
+
+def _cmd_editor_plugins(_client, args):
+    """Copy, remove or show the editor mode plugins (services/editor_plugins.py).
+
+    Purely local, like shell-integration (see _is_local_command)."""
+    from polyhost.services import editor_plugins
+    from polyhost.settings import read_setting
+
+    editors = args.editor or None
+    if args.ep_action == "status":
+        for st in editor_plugins.status(editors):
+            line = f"{st.editor:<8}{_EDITOR_STATE_TEXT.get(st.state, st.state)}"
+            if st.target is not None:
+                line += f"  ({st.target})"
+            if st.detail:
+                line += f"\n{'':<8}{st.detail}"
+            print(line)
+        port = read_setting("browser_report_port", 50164)
+        token = read_setting("browser_report_token", "")
+        if editor_plugins.needs_settings(port, token):
+            print(f"note: the host listens on port {port}{' with a token' if token else ''}; "
+                  "set g:polykybd_port/g:polykybd_token (Vim) or polykybd-port/"
+                  "polykybd-token (Emacs) to match.")
+        return 0
+    if args.ep_action == "install":
+        results = editor_plugins.install(editors)
+    else:
+        results = editor_plugins.remove(editors)
+    if not results:
+        print("nothing to do" if args.ep_action == "remove"
+              else "no editor to set up was found (name one with --editor)")
+        return 0
+    for r in results:
+        print(f"{r.editor}: {r.message}")
+        if r.backup is not None:
+            print(f"{'':<{len(r.editor) + 2}}backup: {r.backup}")
+    if args.ep_action == "install" and any(r.changed for r in results):
+        print("Restart the editor for the change to take effect.")
+    return 0 if all(r.ok for r in results) else 1
+
+
 def _cmd_logs(client, args):
     """Collect log files — the one command that must work with no daemon.
 
@@ -212,6 +313,22 @@ def _cmd_logs(client, args):
                     size = "size unavailable"
                 print(f"  {path}  ({size})")
         return 0
+
+    if args.logs_action == "clear":
+        if not args.yes:
+            try:
+                reply = input("Empty every log file, including the crash log? "
+                              "[y/N] ")
+            except EOFError:      # piped/non-interactive: never destroy by default
+                reply = ""
+            if reply.strip().lower() not in ("y", "yes"):
+                print("cancelled")
+                return 1
+        result = log_bundle.clear_logs(log_dir)
+        print(result.summary())
+        for err in result.errors:
+            print(f"warning: could not clear {err}", file=sys.stderr)
+        return 1 if result.errors else 0
 
     if args.logs_action == "show":
         print(log_bundle.recent_text(log_dir, since=since, max_lines=args.lines,
@@ -321,6 +438,260 @@ def _cmd_idle_timeout(client, args):
     return 0
 
 
+def _print_tap_terms(prefix, terms):
+    flow = terms["flow_tap_term"]
+    flow_text = "off" if flow == 0 else f"{flow} ms"
+    if not terms.get("flow_tap_available", True):
+        flow_text += " (this firmware has no Flow Tap)"
+    line = f"{prefix}tapping term {terms['tapping_term']} ms, flow tap term {flow_text}"
+    if terms.get("auto_shift_available"):
+        state = "on" if terms.get("auto_shift") else "off"
+        line += f", auto shift {state} ({terms.get('auto_shift_ms')} ms)"
+    print(line)
+
+
+def _cmd_tap_terms(client, args):
+    if args.tapping is None and args.flow_tap is None and args.auto_shift is None \
+            and args.auto_shift_ms is None:
+        _print_tap_terms("", client.call(protocol.M_TAP_TERMS_GET, {}))
+        return 0
+    for name, value, valid in (("--tapping", args.tapping, TapTerms.tapping_valid),
+                               ("--flow-tap", args.flow_tap, TapTerms.flow_tap_valid),
+                               ("--auto-shift-ms", args.auto_shift_ms, TapTerms.auto_shift_valid)):
+        if value is not None and not valid(value):
+            print(f"polyctl: {name} {value} is outside the allowed range "
+                  f"(tapping {TapTerms.TAPPING_MIN_MS}..{TapTerms.TAPPING_MAX_MS} ms, "
+                  f"flow tap {TapTerms.FLOW_TAP_MIN_MS}..{TapTerms.FLOW_TAP_MAX_MS} ms, "
+                  f"auto shift {TapTerms.AUTO_SHIFT_MIN_MS}..{TapTerms.AUTO_SHIFT_MAX_MS} ms, "
+                  f"{TapTerms.STEP_MS} ms steps)", file=sys.stderr)
+            return 2
+    auto_shift = None if args.auto_shift is None else args.auto_shift == "on"
+    terms = client.call(protocol.M_TAP_TERMS_SET,
+                        {"tapping_term": args.tapping, "flow_tap_term": args.flow_tap,
+                         "auto_shift": auto_shift, "auto_shift_ms": args.auto_shift_ms})
+    _print_tap_terms("set: ", terms)
+    return 0
+
+
+def _cmd_forwarder(_client, args):
+    """Pair a forwarder with the keyboard computer (services/forwarder_pairing.py).
+    Local file access: needs no running host."""
+    from polyhost.services import forwarder_pairing as fp
+    if args.forwarder_cmd == "pairing-code":
+        from polyhost.cli.pairing_output import print_pairing_code
+        print_pairing_code(fp.pairing_code())
+        return 0
+    if args.forwarder_cmd == "pair":
+        key = fp.parse_code(args.code)
+        if key is None:
+            print("polyctl: not a pairing code (64 letters a-f and digits, in groups of 8)",
+                  file=sys.stderr)
+            return 2
+        print(f"paired: key saved to {fp.save_paired_key(key)}; restart the forwarder")
+        return 0
+    if args.forwarder_cmd == "unpair":
+        print("pairing removed" if fp.forget_pairing() else "no pairing to remove")
+        return 0
+    return 2
+
+
+def _cmd_attention(client, args):
+    """Run the focus ripple on a key (firmware v32+), or cancel it."""
+    if args.cancel:
+        client.call(protocol.M_KEY_ATTENTION, {"cancel": True})
+        print("key attention cancelled")
+        return 0
+    if args.row is None or args.col is None:
+        print("polyctl: give ROW and COL, or --cancel", file=sys.stderr)
+        return 2
+    client.call(protocol.M_KEY_ATTENTION, {"row": args.row, "col": args.col,
+                                           "count": args.count, "period_ms": args.period_ms})
+    times = "until cancelled" if args.count == 0 else f"{args.count} time(s)"
+    print(f"key attention on row {args.row}, col {args.col}: {times}, "
+          f"every {args.period_ms} ms")
+    return 0
+
+
+def _cmd_agents(client, args):
+    """List, report, label or forget AI agent sessions (services/agents)."""
+    if args.agents_cmd == "list":
+        info = client.call(protocol.M_AGENTS_LIST, {})
+        if args.json:
+            print(json.dumps(info, indent=2))
+            return 0
+        state = "on" if info.get("enabled") else "off (polyctl settings set agents_enabled true)"
+        print(f"agent keys: {state}; keyboard {'active' if info.get('active') else 'not active'}; "
+              f"page {info.get('page', 0) + 1} of {info.get('pages', 1)}")
+        for a in info.get("agents", []):
+            wait = "?" if a.get("waiting_inferred") else ""
+            print(f"  p{a['page'] + 1} key {(a['key'] + 1) % 10}  {a['state'] + wait:<9} "
+                  f"{a['vendor']:<12} {a['headline'][:40]:<40} {a['session_id'][:24]}")
+        if not info.get("agents"):
+            print("  (no agents reported)")
+        press = info.get("last_press")
+        if press:
+            names = {10: "ESC (next page)", 11: "- (dictation)", 12: "+ (next waiting)"}
+            key = press.get("key")
+            label = names.get(key, f"key {(key + 1) % 10}" if isinstance(key, int) else "?")
+            when = time.strftime("%H:%M:%S", time.localtime(press.get("at", 0)))
+            print(f"last AI-key press: {label} at {when}: {press.get('result')}"
+                  + (f" ({press['agent']})" if press.get("agent") else ""))
+        else:
+            print("last AI-key press: none read since the host started")
+        return 0
+    if args.agents_cmd == "report":
+        agent = client.call(protocol.M_AGENTS_REPORT, {
+            "vendor": args.vendor, "session_id": args.session, "state": args.state,
+            "headline": args.headline, "cwd": args.cwd, "pid": args.pid})
+        print(json.dumps(agent) if agent else "removed")
+        return 0
+    if args.agents_cmd == "label":
+        client.call(protocol.M_AGENTS_LABEL, {"vendor": args.vendor,
+                                              "session_id": args.session, "text": args.text})
+        return 0
+    if args.agents_cmd == "forget":
+        client.call(protocol.M_AGENTS_FORGET, {"vendor": args.vendor, "session_id": args.session})
+        return 0
+    return 2
+
+
+def _cmd_agents_hooks(_client, args):
+    """`polyctl agents hooks install|uninstall <vendor>`: edit the agent's own config.
+    Local: needs no running host. Shows the diff and asks before writing."""
+    import difflib
+    import os
+    from polyhost.services.agents import hook_install
+    extra = []
+    if args.host:
+        extra += ["--host", args.host]
+    if args.authkey_file:
+        extra += ["--authkey-file", os.path.abspath(args.authkey_file)]
+    changes = hook_install.plan(args.vendor, install=args.hooks_cmd == "install",
+                                extra_args=extra)
+    if args.vendor == "codex" and args.hooks_cmd == "install" and not changes:
+        conflict = hook_install.codex_conflict(os.path.expanduser("~"))
+        if conflict:
+            print(conflict, file=sys.stderr)
+            return 1
+    if not changes:
+        print("Nothing to change: the hooks are already as they should be.")
+        return 0
+    for change in changes:
+        diff = difflib.unified_diff(change.before.splitlines(), change.after.splitlines(),
+                                    change.path + " (now)", change.path + " (new)",
+                                    lineterm="")
+        print("\n".join(diff) or f"(remove {change.path})")
+    if args.dry_run:
+        return 0
+    if not args.yes:
+        answer = input("Write these changes? A copy of each file is kept as "
+                       "<file>.polykybd.bak. [y/N] ")
+        if answer.strip().lower() not in ("y", "yes"):
+            print("Nothing written.")
+            return 1
+    for path in hook_install.apply(changes):
+        print(f"wrote {path}")
+    if args.vendor == "claude-code":
+        print("Start a new Claude Code session (or run /hooks) to load the hooks.")
+    return 0
+
+
+def _read_hook_payload(args):
+    """The hook's JSON: an argument (Codex `notify` passes it last) or stdin."""
+    text = args.payload
+    if not text and not sys.stdin.isatty():
+        text = sys.stdin.read()
+    try:
+        payload = json.loads(text or "{}")
+    except ValueError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _agent_hook_target(args):
+    """Where a hook reports on a forwarder's machine: `--host` when given, else the
+    target the running forwarder wrote (services/agents/remote.py), read on every
+    call so a forwarder that moves to another computer takes the hooks along.
+    None: report to this machine's own host."""
+    if args.host:
+        return {"host": args.host, "authkey_file": args.authkey_file}
+    from polyhost.services.agents.remote import read_forwarder_target
+    return read_forwarder_target()
+
+
+# The whole report (stdin, connect, HELLO, the call) gets this long; then the hook
+# exits 0 anyway. Below the 5 s the Gemini and Copilot hook configs allow.
+AGENT_HOOK_DEADLINE_S = 4.0
+
+
+def _agents_hook_main(args) -> int:
+    """`polyctl agents hook <vendor>`: the command an agent's hook runs.
+
+    ⚠️ Always exits 0 and prints nothing: a hook that fails or writes to stdout
+    can block or steer the agent, and a keyboard light is not worth that.
+    ⚠️ Bounded: a host that accepts the connection and never answers would hold
+    the agent. The report runs on a daemon thread, which cannot keep the process
+    alive, and is abandoned after AGENT_HOOK_DEADLINE_S."""
+    import threading
+    worker = threading.Thread(target=_agents_hook_report, args=(args,),
+                              name="agents-hook", daemon=True)
+    worker.start()
+    worker.join(AGENT_HOOK_DEADLINE_S)
+    return 0
+
+
+def _agents_hook_report(args) -> None:
+    """The report itself (see _agents_hook_main). Never raises."""
+    try:
+        import os
+        from polyhost.services.agents.hooks import interpret, transcript_title
+        payload = _read_hook_payload(args)
+        report = interpret(payload, event=args.event or "")
+        if report is None:
+            return
+        from polyhost.services.agents.procs import agent_pid
+        # The agent's own process, past the shell that runs this hook: the host
+        # removes the key when it exits (a closed terminal sends no SessionEnd).
+        report.update(vendor=args.vendor, pid=agent_pid(), surface="cli")
+        # By name on the wire: the network endpoint accepts only state names
+        # (remote.sanitize_report), and the local core parses names too.
+        state = report.get("state")
+        if hasattr(state, "name"):
+            report["state"] = state.name.lower()
+        # The session's own title (Claude Code), so two sessions in one folder are
+        # told apart. Only the title is sent, never the transcript.
+        title = transcript_title(payload.get("transcript_path"))
+        if title:
+            report["headline"] = title
+        target = _agent_hook_target(args)
+        if target:
+            # This machine runs a forwarder, the keyboard is on another: send the
+            # report over the authenticated window-report endpoint, named with
+            # this machine (the forwarder uses the same name, socket.gethostname).
+            import socket
+            from polyhost.server.window_report_client import connect as connect_report
+            authkey = None
+            if target.get("authkey_file"):
+                with open(target["authkey_file"], "rb") as fh:
+                    authkey = fh.read().strip()
+            report["machine"] = target.get("machine") or socket.gethostname()
+            remote = connect_report(target["host"], port=target.get("port"),
+                                    authkey=authkey, timeout=2.0)
+            try:
+                remote.call(protocol.M_AGENTS_REPORT, report)
+            finally:
+                remote.close()
+            return
+        client = connect()
+        try:
+            client.call(protocol.M_AGENTS_REPORT, report)
+        finally:
+            client.close()
+    except Exception:  # noqa: BLE001 - see the docstring
+        pass
+    return
+
+
 def _cmd_handedness(client, args):
     """Assign which half is left. The side named is the CONNECTED (master) one.
 
@@ -339,12 +710,25 @@ def _cmd_handedness(client, args):
     only queues — a returned {"queued": True} means sent, never applied. Confirm
     from the firmware's own boot banner (`hand: LEFT (flash stamp)`) rather than
     from this command's exit code.
+
+    `--split-vbus on|off` (protocol 24) also marks the CONNECTED half as a Rev.2
+    board, or clears the mark. Rev.2 boards pass VBUS over the split cable, so both
+    halves would become master; with the mark the master is the half that
+    enumerates. It is stored per half, so plug in each half on its own and run this
+    once per half. The banner's `board:` line shows it.
     """
     master_is_left = args.side == "left"
     other = "RIGHT" if master_is_left else "LEFT"
-    print(f"setting the connected half to {args.side.upper()} "
-          f"(the other half becomes {other})…")
-    client.call(protocol.M_SET_HANDEDNESS, {"master_is_left": master_is_left})
+    if args.split_vbus is not None:
+        # Its own method, so an older daemon refuses it instead of dropping the flag.
+        print(f"setting the connected half to {args.side.upper()} and its Rev.2 "
+              f"split-VBUS flag {args.split_vbus}…")
+        client.call(protocol.M_SET_HANDEDNESS_BOARD,
+                    {"master_is_left": master_is_left, "split_vbus": args.split_vbus == "on"})
+    else:
+        print(f"setting the connected half to {args.side.upper()} "
+              f"(the other half becomes {other})…")
+        client.call(protocol.M_SET_HANDEDNESS, {"master_is_left": master_is_left})
     print("sent; both halves save the new side and reboot onto it (about 10 s, "
           "no replug needed)")
     return 0
@@ -361,14 +745,29 @@ _GLYPH_SCRIPT_VALUES = {s.name.lower(): s.value for s in GlyphScript}
 _GLYPH_SCRIPT_NAMES = {v: k for k, v in _GLYPH_SCRIPT_VALUES.items()}
 
 
+# A CLOSED set the firmware validates (cmd 30's placement byte, firmware v26+).
+_GLYPH_PLACEMENT_VALUES = {s.name.lower().replace("_", "-"): s.value for s in GlyphPlacement}
+_GLYPH_PLACEMENT_NAMES = {v: k for k, v in _GLYPH_PLACEMENT_VALUES.items()}
+
+
 def _cmd_glyph_script(client, args):
-    if args.script is None:
+    if args.script is None and args.placement is None:
         value = client.call(protocol.M_GLYPH_SCRIPT_GET, {})
         print(f"glyph script: {_GLYPH_SCRIPT_NAMES.get(value, value)} ({value})")
-    else:
+        try:
+            place = client.call(protocol.M_GLYPH_PLACEMENT_GET, {})
+            print(f"placement: {_GLYPH_PLACEMENT_NAMES.get(place, place)} ({place})")
+        except RpcError as e:
+            print(f"placement: not available ({e})")
+        return 0
+    if args.script is not None:
         value = _GLYPH_SCRIPT_VALUES[args.script]
         client.call(protocol.M_GLYPH_SCRIPT_SET, {"value": value})
         print(f"glyph script set to {args.script} ({value})")
+    if args.placement is not None:
+        place = _GLYPH_PLACEMENT_VALUES[args.placement]
+        client.call(protocol.M_GLYPH_PLACEMENT_SET, {"value": place})
+        print(f"placement set to {args.placement} ({place})")
     return 0
 
 
@@ -534,13 +933,47 @@ def _cmd_crash(client, args):
     if args.json:
         print(json.dumps(rec, indent=2))
         return 0
-    from polyhost.services.crash_report import CrashRecord, summarize  # stdlib-only module
+    from polyhost.services.crash_report import CrashRecord, freshness_text, summarize  # stdlib-only module
     r = CrashRecord.from_dict(rec)
     print(summarize(r))
     print(f"  {r.as_console_line()}")
     print(f"  reset reason: {r.reset_reason_text}; exception vector: {r.vector}; "
-          f"{'fresh (from the boot before this one)' if r.fresh else 'archived (older)'}")
+          f"{freshness_text(r)}")
     return 0
+
+
+def _cmd_reboot(client, args):
+    client.call(protocol.M_REBOOT, {})
+    print("rebooting the keyboard (both halves)")
+    return 0
+
+
+def _cmd_bootloop(client, args):
+    """Reboot repeatedly until a boot problem shows up (cmd 43 + cmd 39, v22+)."""
+    if args.cancel:
+        client.call(protocol.M_BOOT_LOOP_CANCEL, {})
+        print("cancelling the boot-loop test")
+        return 0
+    # Subscribe BEFORE starting so no progress event is missed.
+    client.subscribe_events()
+    client.call(protocol.M_BOOT_LOOP_START, {"rounds": args.rounds})
+    print(f"boot-loop test: up to {args.rounds} reboot(s); Ctrl+C leaves it running, "
+          f"`polyctl bootloop --cancel` stops it")
+    for name, payload in client.events():
+        payload = payload or {}
+        if name == "boot_loop_progress":
+            print(f"  [{payload.get('round')}/{payload.get('rounds')}] {payload.get('msg')}")
+        elif name == "boot_loop_done":
+            print(payload.get("msg"))
+            rec = payload.get("record")
+            if rec:
+                from polyhost.services.crash_report import CrashRecord, summarize  # stdlib-only module
+                r = CrashRecord.from_dict(rec)
+                print(summarize(r))
+                print(f"  {r.as_console_line()}")
+            return 0 if payload.get("result") in ("clean", "cancelled") else 1
+    print("error: connection closed before the boot-loop test finished", file=sys.stderr)
+    return 1
 
 
 def _cmd_replay_anim(client, args):
@@ -711,6 +1144,57 @@ def _cmd_doom(client, args):
     return 2
 
 
+def _cmd_emoji_dict(client, args):
+    """The emoji search dictionary in font-pack slot 9: show, list, choose a
+    shipped one or a hand-built file."""
+    import os
+    info = client.call(protocol.M_EMOJIDICT_STATUS)
+    if not info.get("shipped"):
+        print("emoji search: no dictionaries shipped with this host.")
+        return 1
+    dicts = {d["id"]: d for d in info["dictionaries"]}
+    action = getattr(args, "emoji_dict_action", None) or "status"
+    then = ("the keyboard gets it unless it already holds it." if info.get("supported") else
+            "this keyboard's firmware has no dictionary slot, so nothing is flashed now.")
+    if action == "list":
+        for d in info["dictionaries"]:
+            mark = "*" if d["id"] == info["selected"] else " "
+            print(f"{mark} {d['id']:16} {d['label']}")
+        return 0
+    if action == "set":
+        if args.dict_id not in dicts:
+            print(f"error: unknown dictionary {args.dict_id!r}; `polyctl emoji-dict list` shows them",
+                  file=sys.stderr)
+            return 2
+        # Also stops using a dictionary file; the core flashes it (RpcError on failure).
+        client.call(protocol.M_EMOJIDICT_CHOOSE, {"id": args.dict_id, "source": "polyctl"})
+        print(f"emoji search dictionary: {args.dict_id} ({dicts[args.dict_id]['label']}); {then}")
+        return 0
+    if action == "file":
+        path = "" if args.clear else os.path.abspath(args.path or "")
+        if not args.clear and not args.path:
+            print("error: name a .plyd file, or pass --clear", file=sys.stderr)
+            return 2
+        client.call(protocol.M_EMOJIDICT_CHOOSE, {"path": path, "source": "polyctl"})
+        print(f"emoji search dictionary file: {path}; "
+              + ("writing it to the keyboard." if info.get("supported") else then) if path
+              else f"emoji search dictionary file: none, using {info['selected']}; {then}")
+        return 0
+    dev = info.get("device")
+    held = (dev["id"] + (" (a user build)" if dev.get("user") else f" (revision {dev['revision']})")
+            if dev and dev.get("id")
+            else ("an unknown dictionary" if dev else "none"))
+    if info.get("file"):
+        print(f"file:        {info['file']}"
+              + (f" (NOT USED: {info['file_error']})" if info.get("file_error") else ""))
+    else:
+        print(f"selected:    {info['selected']} ({dicts.get(info['selected'], {}).get('label', '?')})")
+    print(f"on keyboard: {held}" if info.get("supported")
+          else "on keyboard: this firmware has no dictionary slot (font-pack layout v4 needed)")
+    print(f"shipped:     {len(dicts)} dictionaries (polyctl emoji-dict list)")
+    return 0
+
+
 def _cmd_fontpack(client, args):
     action = getattr(args, "fontpack_action", None)
 
@@ -788,6 +1272,9 @@ def _cmd_fontpack(client, args):
     todo = stale + retry
     if todo:
         print(f"\n{len(todo)} to flash: {', '.join(todo)} — run `fontpack sync`")
+        if info.get("auto_flash") is False:
+            print("Auto Flash is off (fontpack_auto_flash), so a connect does not flash "
+                  "them. Turn it on: `settings set fontpack_auto_flash true`")
     else:
         print("\n0 stale — all up to date")
     if retry:
@@ -863,7 +1350,8 @@ def _cmd_settings(client, args):
             value = json.loads(args.value)
         except (ValueError, TypeError):
             value = args.value
-        client.call(protocol.M_SETTINGS_SET, {"key": args.key, "value": value})
+        client.call(protocol.M_SETTINGS_SET, {"key": args.key, "value": value,
+                                              "source": "polyctl"})
         print(f"{args.key} = {value!r}")
     return 0
 
@@ -927,6 +1415,11 @@ def build_parser():
     parser = argparse.ArgumentParser(
         prog="polyctl",
         description="Control a running PolyKybdHost over its local socket.")
+    # Local: argparse prints and exits during parsing, so no host has to run.
+    # This is the CLI's own install; the running host's version is the
+    # host_version line of `polyctl status`, which can differ.
+    parser.add_argument("--version", action="version",
+                        version=f"polyctl {__version__} (protocol {__protocol__})")
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("status", help="print device/host status").set_defaults(func=_cmd_status)
@@ -967,12 +1460,111 @@ def build_parser():
              "display-off deadline, which is fixed.")
     p_idle_timeout.set_defaults(func=_cmd_idle_timeout)
 
+    p_fwd = sub.add_parser(
+        "forwarder", help="pair a forwarder with the keyboard computer (local, no host needed)")
+    fwd_sub = p_fwd.add_subparsers(dest="forwarder_cmd", required=True)
+    fwd_sub.add_parser("pairing-code", help="on the keyboard computer: print the code")
+    p_fwd_pair = fwd_sub.add_parser("pair", help="on the forwarder's computer: save the code")
+    p_fwd_pair.add_argument("code")
+    fwd_sub.add_parser("unpair", help="on the forwarder's computer: remove the pairing")
+    p_fwd.set_defaults(func=_cmd_forwarder)
+
+    p_attention = sub.add_parser(
+        "attention", help="run the first-run tutorial's focus ripple on a key, by its "
+                          "matrix position (firmware v32+, split72)")
+    p_attention.add_argument("row", type=int, nargs="?", default=None)
+    p_attention.add_argument("col", type=int, nargs="?", default=None)
+    p_attention.add_argument("--count", type=int, default=3,
+                             help="ripples to run, 0 = until --cancel (default 3)")
+    p_attention.add_argument("--period-ms", type=int, default=4000,
+                             help="time from one ripple to the next, 2300..10000 ms in "
+                                  "100 ms steps (default 4000)")
+    p_attention.add_argument("--cancel", action="store_true",
+                             help="end the running request; a ripple already running finishes")
+    p_attention.set_defaults(func=_cmd_attention)
+
+    p_tap_terms = sub.add_parser(
+        "tap-terms",
+        help="get or set the tap-hold timing: tapping term and Flow Tap term (firmware v29+), "
+             "Auto Shift (firmware v30+)")
+    p_tap_terms.add_argument(
+        "--tapping", type=int, default=None, metavar="MS",
+        help=f"tapping term, {TapTerms.TAPPING_MIN_MS}..{TapTerms.TAPPING_MAX_MS} ms "
+             f"in {TapTerms.STEP_MS} ms steps (default {TapTerms.DEFAULT_TAPPING_MS})")
+    p_tap_terms.add_argument(
+        "--flow-tap", type=int, default=None, metavar="MS",
+        help=f"Flow Tap term, {TapTerms.FLOW_TAP_MIN_MS}..{TapTerms.FLOW_TAP_MAX_MS} ms "
+             f"in {TapTerms.STEP_MS} ms steps, 0 = off (default {TapTerms.DEFAULT_FLOW_TAP_MS})")
+    p_tap_terms.add_argument(
+        "--auto-shift", choices=("on", "off"), default=None,
+        help="turn Auto Shift on or off (firmware v30+, off by default)")
+    p_tap_terms.add_argument(
+        "--auto-shift-ms", type=int, default=None, metavar="MS",
+        help=f"Auto Shift timeout, {TapTerms.AUTO_SHIFT_MIN_MS}..{TapTerms.AUTO_SHIFT_MAX_MS} ms "
+             f"in {TapTerms.STEP_MS} ms steps (default {TapTerms.DEFAULT_AUTO_SHIFT_MS})")
+    p_tap_terms.set_defaults(func=_cmd_tap_terms)
+
+    p_agents = sub.add_parser(
+        "agents", help="AI agent sessions shown on the number row (firmware v31+)")
+    agents_sub = p_agents.add_subparsers(dest="agents_cmd", required=True)
+    p_al = agents_sub.add_parser("list", help="the agents the host knows, by page and key")
+    p_al.add_argument("--json", action="store_true")
+    p_ar = agents_sub.add_parser("report", help="report an agent's state by hand")
+    p_ar.add_argument("vendor", help="claude-code, codex, gemini, antigravity, copilot, ...")
+    p_ar.add_argument("session", help="a session id; the same id updates the same key")
+    p_ar.add_argument("state", help="working, waiting, done, idle, stale or ended")
+    p_ar.add_argument("--headline", default=None)
+    p_ar.add_argument("--cwd", default=None)
+    p_ar.add_argument("--pid", type=int, default=None)
+    p_alb = agents_sub.add_parser("label", help="set the text an agent's key shows")
+    p_alb.add_argument("vendor")
+    p_alb.add_argument("session")
+    p_alb.add_argument("text")
+    p_af = agents_sub.add_parser("forget", help="remove an agent and free its key")
+    p_af.add_argument("vendor")
+    p_af.add_argument("session")
+    p_ah = agents_sub.add_parser(
+        "hook", help="run from an agent's hook: reads the hook JSON from stdin "
+                     "(or as the last argument) and reports it; always exits 0")
+    p_ah.add_argument("vendor")
+    p_ah.add_argument("payload", nargs="?", default=None)
+    p_ah.add_argument("--host", default=None,
+                      help="report to this keyboard computer instead of the one the "
+                           "running forwarder reports to (not needed with a forwarder "
+                           "running)")
+    p_ah.add_argument("--authkey-file", default=None,
+                      help="that computer's polykybd-winreport.authkey (as for the "
+                           "forwarder's --report-authkey-file)")
+    p_ah.add_argument("--event", default=None,
+                      help="the event name, for agents whose hook JSON does not name it "
+                           "(Copilot CLI: --event agentStop)")
+    p_agents.set_defaults(func=_cmd_agents)
+    p_ahs = agents_sub.add_parser(
+        "hooks", help="write or remove the PolyKybd hooks in an agent's own config "
+                      "(claude-code, codex, copilot, gemini, qwen, opencode); shows the diff first")
+    p_ahs.add_argument("hooks_cmd", choices=("install", "uninstall"))
+    p_ahs.add_argument("vendor", choices=("claude-code", "codex", "copilot", "gemini", "qwen",
+                                          "opencode"))
+    p_ahs.add_argument("--dry-run", action="store_true", help="only show the diff")
+    p_ahs.add_argument("--yes", action="store_true", help="write without asking")
+    p_ahs.add_argument("--host", default=None,
+                       help="fix the hooks to the keyboard computer HOST; without it, "
+                            "they follow the forwarder running on this computer")
+    p_ahs.add_argument("--authkey-file", default=None,
+                       help="that computer's polykybd-winreport.authkey")
+    p_ahs.set_defaults(func=_cmd_agents_hooks)
+
     p_glyph_script = sub.add_parser(
         "glyph-script", help="get or set the glyph-script override (firmware v9+)")
     p_glyph_script.add_argument(
         "script", nargs="?", choices=sorted(_GLYPH_SCRIPT_VALUES), default=None,
         help="omit to print the current script; 'standard' = normal legends, "
              "any other = fantasy/retro override (needs the fantasy font-pack bundle)")
+    p_glyph_script.add_argument(
+        "--placement", choices=sorted(_GLYPH_PLACEMENT_VALUES), default=None,
+        help="where the script's letters and digits sit on the keycap: 'centre' "
+             "(the default) or 'top-left', which leaves room for an overlay icon "
+             "on the right (firmware v26+)")
     p_glyph_script.set_defaults(func=_cmd_glyph_script)
 
     p_glyph_size = sub.add_parser(
@@ -1027,6 +1619,10 @@ def build_parser():
              "the other becomes the opposite (both reboot onto it, ~10 s)")
     p_hand.add_argument("side", choices=["left", "right"],
                         help="the side of the half the USB cable is plugged into")
+    p_hand.add_argument("--split-vbus", choices=["on", "off"], default=None,
+                        help="also mark (on) or unmark (off) the CONNECTED half as a "
+                             "Rev.2 board, which passes VBUS over the split cable; "
+                             "run once per half, plugged in alone (protocol 24)")
     p_hand.set_defaults(func=_cmd_handedness)
 
     p_newer = sub.add_parser(
@@ -1039,6 +1635,17 @@ def build_parser():
     sub.add_parser(
         "replay-anim", help="replay the one-time startup (Eden) animation on the keycaps"
     ).set_defaults(func=_cmd_replay_anim)
+    sub.add_parser(
+        "reboot", help="reboot both keyboard halves; nothing is saved (firmware v22+)"
+    ).set_defaults(func=_cmd_reboot)
+    p_bootloop = sub.add_parser(
+        "bootloop", help="reboot repeatedly and stop at the first boot that left a crash "
+                         "record, or a boot that never came back (firmware v22+)")
+    p_bootloop.add_argument("--rounds", type=int, default=50,
+                            help="reboots to try, 1..9999 (default 50)")
+    p_bootloop.add_argument("--cancel", action="store_true",
+                            help="stop a running boot-loop test")
+    p_bootloop.set_defaults(func=_cmd_bootloop)
 
     p_crash = sub.add_parser(
         "crash", help="show or clear the keyboard's last firmware crash record (firmware v16+)")
@@ -1112,6 +1719,20 @@ def build_parser():
                            help="bundle id/index to wipe; omit to wipe every slot")
     p_fp.set_defaults(func=_cmd_fontpack)
 
+    p_ed = sub.add_parser("emoji-dict", help="emoji search dictionary (font-pack slot 9): status, list, set, file")
+    ed_sub = p_ed.add_subparsers(dest="emoji_dict_action")
+    ed_sub.add_parser("status", help="selected dictionary and the one on the keyboard (default)")
+    ed_sub.add_parser("list", help="the shipped dictionaries")
+    p_ed_set = ed_sub.add_parser("set", help="choose a dictionary and flash it")
+    p_ed_set.add_argument("dict_id", help="dictionary id, e.g. de, ru, zh-HK@cangjie")
+    p_ed_file = ed_sub.add_parser(
+        "file", help="use a hand-built dictionary (emoji_dict.py build <id> --user) and flash it; "
+                     "naming the same file again flashes it again")
+    p_ed_file.add_argument("path", nargs="?", help="the .plyd file")
+    p_ed_file.add_argument("--clear", action="store_true",
+                           help="stop using the file and flash the selected shipped dictionary")
+    p_ed.set_defaults(func=_cmd_emoji_dict)
+
     p_doom = sub.add_parser("doom", help="doom easter egg operations")
     doom_sub = p_doom.add_subparsers(dest="doom_action", required=True)
     p_doom_inst = doom_sub.add_parser(
@@ -1180,6 +1801,11 @@ def build_parser():
         "bundle", help="write a support .zip (logs + diagnostics + settings)")
     p_logs_bundle.add_argument(
         "-o", "--output", help="destination .zip (default: ./polyhost-logs-<stamp>.zip)")
+    p_logs_clear = logs_sub.add_parser(
+        "clear", help="empty every log file, including the crash log")
+    p_logs_clear.add_argument(
+        "-y", "--yes", action="store_true", help="skip the confirmation prompt")
+    p_logs_clear.set_defaults(since=None, redact=False, lines=500, output=None)
     p_logs_show = logs_sub.add_parser(
         "show", help="print recent log lines to stdout (pipe it anywhere)")
     p_logs_show.add_argument("--lines", type=_positive_int, default=500,
@@ -1193,9 +1819,67 @@ def build_parser():
                             f"(default {LOGS_DEFAULT_SINCE})")
         p.add_argument("--redact", action="store_true",
                        help="mask window titles (they can name open documents)")
-    for p in (p_logs_bundle, p_logs_show, p_logs_paths):
+    for p in (p_logs_bundle, p_logs_show, p_logs_paths, p_logs_clear):
         p.add_argument("--log-dir", help="where the logs are (default: auto-detect)")
     p_logs.set_defaults(func=_cmd_logs)
+
+    # --- shell-integration -----------------------------------------------
+    # Local only (see _is_local_command): it edits the user's shell startup
+    # files and needs neither the host nor the keyboard.
+    p_si = sub.add_parser(
+        "shell-integration",
+        help="make bash, zsh and PowerShell show the running command in the "
+             "terminal title (works with the host stopped)",
+        description="The host recognises a program running in a terminal (nano, "
+                    "for example) by the terminal's window title. This adds one "
+                    "line, between marker comments, to ~/.bashrc, ~/.zshrc or "
+                    "the PowerShell $PROFILE that loads a script shipped with "
+                    "this installation; a copy of the file is saved next to it "
+                    "first. fish, Nushell, xonsh, cmd.exe, Terminal.app and iTerm2 need no "
+                    "setup; for fish the line (in conf.d/polykybd.fish) only adds "
+                    "the --codex wrapper.")
+    si_sub = p_si.add_subparsers(dest="si_action", required=True)
+    si_install = si_sub.add_parser(
+        "install", help="add the line (default: the shells with a startup file, and the login shell)")
+    si_remove = si_sub.add_parser("remove", help="delete the marked lines")
+    si_status = si_sub.add_parser("status", help="show what is set up, per shell")
+    for p in (si_install, si_remove, si_status):
+        p.add_argument("--shell", action="append",
+                       choices=("bash", "zsh", "fish", "pwsh", "powershell"),
+                       help="only this shell (repeat for more); pwsh is PowerShell 7, "
+                            "powershell is Windows PowerShell 5.1; fish takes only "
+                            "the --codex wrapper")
+    codex = si_install.add_mutually_exclusive_group()
+    codex.add_argument("--codex", dest="codex", action="store_true", default=None,
+                       help="also wrap the codex command so that Codex's own title "
+                            "starts with 'codex' (its default title does not name it)")
+    codex.add_argument("--no-codex", dest="codex", action="store_false",
+                       help="install without the codex wrapper (default: keep what "
+                            "each shell has)")
+    p_si.set_defaults(func=_cmd_shell_integration)
+
+    # --- editor-plugins --------------------------------------------------
+    # Local only, like shell-integration.
+    p_ep = sub.add_parser(
+        "editor-plugins",
+        help="copy the Vim/Neovim plugin, the Emacs package and the GDB script that "
+             "report the program's mode (works with the host stopped)",
+        description="Copies the plugin shipped with this installation to "
+                    "~/.vim/pack/polykybd/start/polykybd (Vim), the Neovim "
+                    "site/pack folder, <emacs dir>/polykybd (Emacs) or "
+                    "~/.config/gdb/polykybd (GDB); for Emacs and GDB also a "
+                    "marked block in the init file, saved first. Copies made "
+                    "this way are refreshed when the app starts after an update.")
+    ep_sub = p_ep.add_subparsers(dest="ep_action", required=True)
+    ep_install = ep_sub.add_parser(
+        "install", help="copy the plugin (default: every editor found that is not set up, "
+                        "except GDB, which needs --editor gdb)")
+    ep_remove = ep_sub.add_parser("remove", help="delete this app's copies")
+    ep_status = ep_sub.add_parser("status", help="show what is set up, per editor")
+    for p in (ep_install, ep_remove, ep_status):
+        p.add_argument("--editor", action="append", choices=("vim", "neovim", "emacs", "gdb"),
+                       help="only this editor (repeat for more)")
+    p_ep.set_defaults(func=_cmd_editor_plugins)
 
     sub.add_parser("watch", help="stream events until Ctrl-C").set_defaults(func=_cmd_watch)
     sub.add_parser("shutdown", help="ask the host to shut down").set_defaults(func=_cmd_shutdown)
@@ -1237,9 +1921,28 @@ def _is_offline_command(args) -> bool:
     return getattr(args, "command", None) == "logs"
 
 
+def _is_local_command(args) -> bool:
+    """True for commands that never talk to the host: ``shell-integration``,
+    ``editor-plugins``, ``agents hooks`` and ``forwarder`` (pairing) edit the user's
+    own files and have nothing to ask it."""
+    if getattr(args, "command", None) == "agents":
+        return getattr(args, "agents_cmd", None) == "hooks"
+    return getattr(args, "command", None) in ("shell-integration", "editor-plugins", "forwarder")
+
+
 def main(argv=None):
     # Parse first so --help / bad args exit before we open a socket.
     args = build_parser().parse_args(argv)
+
+    if getattr(args, "command", None) == "agents" and args.agents_cmd == "hook":
+        return _agents_hook_main(args)
+
+    if _is_local_command(args):
+        try:
+            return args.func(None, args)
+        except OSError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
 
     if _is_offline_command(args):
         # Still try to attach, so a bundle picks up live daemon status — but a

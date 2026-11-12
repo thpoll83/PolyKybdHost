@@ -7,20 +7,23 @@ import time
 from typing import Any
 
 from polyhost.device.device_settings import DeviceSettings
-from polyhost.device.serial_helper import SerialHelper
+from polyhost.device import bulk_pipe
 from polyhost.input.unicode_input import InputMethod
 from polyhost.settings import PolySettings
 from polyhost.device.bit_packing import (pack_report, pairs_per_report,
                                          plan_mapping_reports)
 from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, compose_cmd_str, compose_roi_header, expectReq
-from polyhost.device.command_ids import Cmd, HidId, IdleStyle, IdleTimeout, OsType, GlyphScript, GlyphSize
-from polyhost.device.hid_helper import HidHelper
-from polyhost.device.hid_fontpack import parse_id_version_block, parse_id_state_generation
+from polyhost.device.command_ids import (Cmd, HidId, IdleStyle, IdleTimeout, OsType, GlyphPlacement, TapTerms,
+                                         GlyphScript, GlyphSize)
+from polyhost.device.hid_helper import DisconnectedHid, HidHelper, IoMeter
+from polyhost.device.hid_fontpack import (parse_id_version_block, parse_id_state_generation,
+                                          parse_id_anim_state)
 from polyhost.device.im_converter import ImageConverter
-from polyhost.device.keys import (Modifier, LEGACY_MAX_MODIFIER_VALUE,
+from polyhost.device.keys import (KeyCode, Modifier, LEGACY_MAX_MODIFIER_VALUE,
                                   MODIFIER_ANY, describe_key)
 from polyhost.device.synthetic_overlay import PROGRAM_PREFIX, SHORTCUT_PREFIX
 from polyhost.device.overlay_cache import OverlayMRUCache
+from polyhost.device.prc_packing import PrcReportPacker, prc_record
 from polyhost.services import iso_lang_country
 
 # Minimum firmware PROTOCOL_VERSION required for GET_LANG_LIST_PACKED (the compact
@@ -63,6 +66,12 @@ OVERLAY_PACKED_HEADER_MIN_PROTOCOL = 11
 # SEND_OVERLAY_MAPPING_W (the width-carrying mapping command) does not exist.
 GUI_COMBO_MODIFIERS_MIN_PROTOCOL = 12
 
+# Minimum firmware PROTOCOL_VERSION for the startup-animation replay (cmd 31). It
+# shipped without a protocol bump while the firmware was at 11, so a v2..v10
+# keyboard answers it with the unknown-command NACK -- found by the protocol
+# sweep (tests/device/protocol_gate_sweep_test.py), years after it was added.
+REPLAY_ANIM_MIN_PROTOCOL = 11
+
 # Minimum firmware PROTOCOL_VERSION for the keycap legend-size command (cmd 34).
 GLYPH_SIZE_MIN_PROTOCOL = 13
 MACRO_MIN_PROTOCOL = 15
@@ -81,6 +90,96 @@ UNICODE_MODE_VOLATILE_MIN_PROTOCOL = 17
 # this the delay is the firmware's old compile-time constant (2 minutes) and there
 # is nothing to read or set, so the menu greys out rather than NACKing at runtime.
 IDLE_TIMEOUT_MIN_PROTOCOL = 18
+# Minimum firmware PROTOCOL_VERSION for PRC overlay images (cmd 41).
+# Below it the four older encodings are all the firmware understands; the send
+# path simply never offers the fifth, so nothing greys out.
+PRC_OVERLAY_MIN_PROTOCOL = 19
+# Minimum firmware PROTOCOL_VERSION for icon library fills (cmd 42): a pool slot is
+# filled from the keyboard's own flash (bundle id 8, icons.plyi) instead of an
+# upload. Below it, and whenever the keyboard's icon bundle is not the shipped
+# one, every image is uploaded as before, so nothing greys out.
+OVERLAY_ICONS_MIN_PROTOCOL = 20
+# Minimum firmware PROTOCOL_VERSION for the cmd 33 flag bits: the width byte's
+# 0x40 runs the prepare step before the pairs and 0x20 the enable step after, so
+# a warm app switch is its mapping reports alone. Older firmware reads a flagged
+# byte as a width above 16 and drops the report, so below it the host sends the
+# separate cmd 11 reports as before.
+MAPPING_FLAGS_MIN_PROTOCOL = 21
+MAPPING_FLAG_SHOW = 0x20
+MAPPING_FLAG_RESET = 0x40
+
+# Minimum firmware PROTOCOL_VERSION for cmd 43, a plain reboot of both halves that
+# persists nothing. The boot-loop diagnostic issues it up to 50 times; cmd 25
+# (set handedness) also reboots but rewrites EEPROM and the handedness flash stamp.
+REBOOT_MIN_PROTOCOL = 22
+
+# Minimum firmware PROTOCOL_VERSION for cmd 33's DIM flag: the width byte's 0x80
+# draws every pair in that report dimmed (the icon through a 25% pattern, the
+# legend untouched). The host sets it for a browser's icons under a website's
+# overlay (handler/common.Underlay). v21/v22 firmware masks the width with 0x1F, so
+# it would ignore the bit and draw those icons at full strength; below the gate the
+# host sends every pair plain instead.
+MAPPING_DIM_MIN_PROTOCOL = 23
+MAPPING_FLAG_DIM = 0x80
+
+# Minimum firmware PROTOCOL_VERSION for no-legend mapping pairs: a pair's `to`
+# offset by the pool capacity (600..1199) is drawn WITHOUT the key legend, so the
+# keyboard clears the whole cell before it draws the icon. The host sets it for
+# keys an overlay file lists in its "polykybd-no-legend" PNG text chunk (a game's
+# ESC mark). v24 and older reject such a pair as out of pool and leave the key
+# blank, so below the gate the host sends the plain slot and the legend stays.
+MAPPING_NO_LEGEND_MIN_PROTOCOL = 25
+
+# Minimum firmware PROTOCOL_VERSION for cmd 25's board-flag byte (data[3]). It sets
+# or clears the SPLIT_VBUS flag in the connected half's handedness stamp, which marks
+# a Rev.2 board (2023): those pass VBUS over the split cable, so the firmware picks
+# the master by USB enumeration instead of GP24. v23 and older ignore the byte and
+# set only the side, so below the gate the host refuses to send the flag.
+SPLIT_VBUS_FLAG_MIN_PROTOCOL = 24
+
+# Minimum firmware PROTOCOL_VERSION for cmd 30's placement byte (data[3]): centre or
+# top-left glyph-script letters and digits. 0 keeps the stored placement, so the
+# plain script set below stays unchanged and ungated by this. v25 and older ignore
+# the byte and always centre, so below the gate the host refuses to send it.
+GLYPH_PLACEMENT_MIN_PROTOCOL = 26
+# v27: font-pack layout v3 gives the icon library (slot 8) 512 KB instead of 256 KB.
+# No command changes; older firmware refuses a library over 256 KB at BEGIN, so the
+# host flashes such a library only at v27 (PolyCore._bundle_fits_device).
+ICON_SLOT_512K_MIN_PROTOCOL = 27
+# Minimum firmware PROTOCOL_VERSION for the tap-hold terms (cmd 44): the tapping
+# term and the Flow Tap term become settings. Below this they are the firmware's
+# compile-time 200 / 150 ms and there is nothing to read or set, so the tray entry
+# greys out rather than NACKing at runtime.
+TAP_TERMS_MIN_PROTOCOL = 29
+# Minimum firmware PROTOCOL_VERSION for Auto Shift (cmd 44 data[7..9]). A v29
+# keyboard ignores those bytes and ACKs, so without this gate a set would report
+# success and change nothing.
+AUTO_SHIFT_MIN_PROTOCOL = 30
+# Minimum firmware PROTOCOL_VERSION for the agent keys (cmd 45 AI, cmd 46
+# AI_CARD): the number row shows AI agent states and, in AI mode, agent cards.
+# docs/agent-registry-plan.md.
+AGENT_KEYS_MIN_PROTOCOL = 31
+# Minimum firmware PROTOCOL_VERSION for key attention (cmd 47): the focus ripple of
+# the first-run tutorial on any key, for a program tutorial or the layout editor.
+KEY_ATTENTION_MIN_PROTOCOL = 32
+KEY_ATTENTION_PERIOD_MIN_MS = 2300    # one ripple runs 2.2 s
+KEY_ATTENTION_PERIOD_MAX_MS = 10000
+AGENT_KEY_COUNT = 10
+# Card slots: the 10 number keys, then '-' (dictation) and '+' (next waiting agent).
+AGENT_CARD_COUNT = 12
+AGENT_CARD_SEGMENT = 60
+# Cmd 45 op 1 flags byte (firmware base/ai_events.h AI_FLAG_*). A CLOSED set.
+AGENT_FLAG_ESC_ATTENTION = 0x01
+AGENT_FLAG_MORE_PAGES = 0x02
+AGENT_FLAG_ANY_WAITING = 0x04
+AGENT_FLAG_EXTRA_CARDS = 0x08
+AGENT_FLAGS_VALID = 0x0F
+LEGACY_ICON_SLOT_SIZE = 0x40000
+# Widest cmd 42 pair the firmware decodes (config.h OVERLAY_MAP_WIDTH_MAX).
+ICON_FILL_MAX_WIDTH = 16
+BOARD_OP_KEEP = 0
+BOARD_OP_CLEAR_SPLIT_VBUS = 1
+BOARD_OP_SET_SPLIT_VBUS = 2
 
 # Feature name -> minimum firmware PROTOCOL_VERSION that supports it. This is the
 # single source of truth for per-feature gating: the host connects across a range
@@ -96,12 +195,26 @@ FEATURE_MIN_PROTOCOL = {
     "glyph_script": GLYPH_SCRIPT_MIN_PROTOCOL,
     "overlay_packed_header": OVERLAY_PACKED_HEADER_MIN_PROTOCOL,
     "gui_combo_modifiers": GUI_COMBO_MODIFIERS_MIN_PROTOCOL,
+    "replay_anim": REPLAY_ANIM_MIN_PROTOCOL,
     "glyph_size": GLYPH_SIZE_MIN_PROTOCOL,
     "layer_names": LAYER_NAMES_MIN_PROTOCOL,
     "macros": MACRO_MIN_PROTOCOL,
     "crash_record": CRASH_RECORD_MIN_PROTOCOL,
     "unicode_mode_volatile": UNICODE_MODE_VOLATILE_MIN_PROTOCOL,
     "idle_timeout": IDLE_TIMEOUT_MIN_PROTOCOL,
+    "prc_overlay": PRC_OVERLAY_MIN_PROTOCOL,
+    "overlay_icons": OVERLAY_ICONS_MIN_PROTOCOL,
+    "mapping_flags": MAPPING_FLAGS_MIN_PROTOCOL,
+    "reboot": REBOOT_MIN_PROTOCOL,
+    "mapping_dim": MAPPING_DIM_MIN_PROTOCOL,
+    "mapping_no_legend": MAPPING_NO_LEGEND_MIN_PROTOCOL,
+    "split_vbus_flag": SPLIT_VBUS_FLAG_MIN_PROTOCOL,
+    "glyph_placement": GLYPH_PLACEMENT_MIN_PROTOCOL,
+    "icon_slot_512k": ICON_SLOT_512K_MIN_PROTOCOL,
+    "tap_terms": TAP_TERMS_MIN_PROTOCOL,
+    "auto_shift": AUTO_SHIFT_MIN_PROTOCOL,
+    "agent_keys": AGENT_KEYS_MIN_PROTOCOL,
+    "key_attention": KEY_ATTENTION_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -166,6 +279,13 @@ def decode_layer_names(payload: bytes) -> list[str] | None:
 # most one reopen attempt per interval.
 CONSOLE_FAIL_REOPEN_THRESHOLD = 20
 CONSOLE_REOPEN_MIN_INTERVAL_S = 5.0
+# The firmware sends a console line in report-sized pieces, and the 250 ms poll
+# can fall between two of them. get_console_output() keeps an unfinished line
+# back until its newline arrives, so the log file shows one line with one
+# timestamp. A piece with no newline is released after this many seconds, so a
+# line the firmware never finishes still reaches the log. Every split seen in a
+# field console log (2026-11-05) closed on the next poll, 250-260 ms later.
+CONSOLE_PARTIAL_LINE_HOLD_S = 1.0
 
 
 
@@ -179,10 +299,19 @@ class PolyKybd:
         self.console_buffer = ""
         self._console_fail_count = 0
         self._console_reopen_at = 0.0
+        # When the unfinished line at the end of console_buffer started
+        # waiting for its newline (time.monotonic()), or None.
+        self._console_partial_since = None
         self.all_languages = list()
         self.current_lang = None
         self.hid = None
         self.serial = None
+        # The bulk pipe (device/bulk_pipe.py): None until probed, then the
+        # PING reply dict when the firmware offers the pipe and the host could
+        # open it. `transport` is what the tray shows: "pipe", "hid", or None
+        # while disconnected / not yet probed.
+        self.pipe_info = None
+        self.transport = None
         self.name = None
         self.sw_version = None
         self.sw_version_num = None
@@ -198,36 +327,49 @@ class PolyKybd:
         self.fontpack_bundle_versions = {}
         # None until a GET_ID lands, and None forever on firmware with no 'G' block.
         self.state_generation = None
+        # hid_fontpack.ANIM_* from the GET_ID 'A' block (v28); None on older firmware.
+        self.anim_state = None
 
-        # Statistics
+        # Statistics, cumulative since this object was created. The stat_*
+        # counters sum what EACH encoding would have cost in reports for every
+        # image uploaded; stat_best is what was actually sent. The per-switch
+        # summary is logged by send_overlays_mru ("Overlay switch stats").
         self.stat_plain = 0
         self.stat_comp = 0
         self.stat_roi = 0  # region of interest
         self.stat_croi = 0  # compressed region of interest
         self.stat_best = 0
+        # Images uploaded per chosen encoding (cumulative).
+        self.stat_chosen = {"plain": 0, "rle": 0, "roi": 0, "rle-roi": 0, "prc": 0, "fill": 0}
+        self.stat_switches = 0
+        self.stat_reports_total = 0
+        # Reports the last send_overlay_mapping call wrote (read by the summary).
+        self._last_mapping_msgs = 0
 
     def _open_interfaces(self) -> bool:
         """(Re-)open the HID and serial interfaces.
 
-        Returns True on success. On failure both handles are reset to None so
-        the device is left in a clean, fully-disconnected state and the next
-        reconnect attempt starts from scratch. HidHelper re-raises
+        Returns True on success. On failure the HID handle becomes a
+        DisconnectedHid (every call answers "No Interface") and the serial one
+        None, so the device is left in a clean, fully-disconnected state, a job
+        that still runs gets a failure instead of an AttributeError, and the
+        next reconnect attempt starts from scratch. HidHelper re-raises
         hid.HIDException when the device shows up in enumeration but can't be
         opened yet — a race that happens while the firmware comes back up after
         a flash — so this must never propagate out of connect()."""
+        self._end_console_partial_line()
         try:
             self.hid = HidHelper(self.device_settings)
-            self.serial = SerialHelper(self.device_settings)
             return True
         except Exception as e:
             self.log.warning("Failed to open HID device: %s", e)
-            self.hid = None
-            self.serial = None
+            self.hid = DisconnectedHid(self.device_settings)
+            self.forget_bulk_pipe()
             return False
 
     def connect(self):
         """Connect to PolyKybd"""
-        if not self.hid:
+        if not self.hid or isinstance(self.hid, DisconnectedHid):
             self.log.debug("Connecting to PolyKybd for the first time...")
             return self._open_interfaces()
         else:
@@ -254,9 +396,55 @@ class PolyKybd:
             return self.hid.interface_acquired()
 
     def read_serial(self):
-        if self.serial:
-            return self.serial.read_all()
+        # Kept for the console periodic's call shape; the serial side of the
+        # keyboard is the bulk pipe now (probe_bulk_pipe), which carries framed
+        # data and never free text.
         return None
+
+    def probe_bulk_pipe(self) -> str:
+        """Look for the firmware's bulk pipe and PING it (serial I/O, worker
+        thread). Returns the transport in use, ``bulk_pipe.TRANSPORT_PIPE`` or
+        ``bulk_pipe.TRANSPORT_HID``, and caches it with the PING reply. Absent,
+        busy and mute ports all read as HID only; the pipe is optional."""
+        info = bulk_pipe.detect(self.device_settings.VID, self.device_settings.KNOWN_PIDS)
+        transport = bulk_pipe.TRANSPORT_PIPE if info else bulk_pipe.TRANSPORT_HID
+        if transport != self.transport:
+            if info:
+                self.log.info("Bulk pipe on %s: %.2f MB/s measured, firmware %s, %d-byte packets, queue %d",
+                              info.get("port"), info.get("rate_mbps", 0.0), info.get("fw"),
+                              info.get("epsize", 0), info.get("out_capacity", 0))
+            else:
+                self.log.info("No bulk pipe: raw HID only")
+        self.pipe_info = info
+        self.transport = transport
+        return transport
+
+    def use_hid_only(self) -> str:
+        """Record the transport as HID only without probing (the
+        ``dev_force_hid_link`` setting): the pipe is left alone and the
+        firmware update takes the HID path. Returns the transport."""
+        if self.transport != bulk_pipe.TRANSPORT_HID or self.pipe_info is not None:
+            self.log.info("Fast link disabled by the dev_force_hid_link setting: raw HID only")
+        self.pipe_info = None
+        self.transport = bulk_pipe.TRANSPORT_HID
+        return self.transport
+
+    def get_transport(self):
+        """Cached transport from the last probe: "pipe", "hid", or None."""
+        return self.transport
+
+    def get_pipe_info(self):
+        """Cached PING reply of the bulk pipe (with the measured rate), or None."""
+        return self.pipe_info
+
+    def get_link_rate_mbps(self):
+        """Measured rate of the bulk pipe in MB/s, or None without one."""
+        return (self.pipe_info or {}).get("rate_mbps")
+
+    def forget_bulk_pipe(self):
+        """Drop the cached transport (disconnect / re-enumeration)."""
+        self.pipe_info = None
+        self.transport = None
 
     def get_console_output(self, flush_and_return=True) -> str | None:
         try:
@@ -268,7 +456,7 @@ class PolyKybd:
                 self._maybe_reopen_console()
             last_line = self.hid.get_console_output()
             while len(last_line) > 0:
-                self.console_buffer += last_line.decode().strip('\x00')
+                self._append_console_text(last_line.decode().strip('\x00'))
                 last_line = self.hid.get_console_output()
             self._console_fail_count = 0
         except Exception as e:
@@ -284,10 +472,53 @@ class PolyKybd:
                 self._maybe_reopen_console()
 
         if flush_and_return:
-            console_out = self.console_buffer
-            self.console_buffer = ""
-            return console_out
+            return self._take_complete_console_lines()
         return None
+
+    def _append_console_text(self, text):
+        """Add console text to the buffer and note when the unfinished line at
+        its end started: on the read that brought it, flushing or not."""
+        if not text:
+            return
+        self.console_buffer += text
+        if self.console_buffer.endswith("\n"):
+            self._console_partial_since = None
+        elif "\n" in text or self._console_partial_since is None:
+            # What follows the last newline is a new unfinished line.
+            self._console_partial_since = time.monotonic()
+
+    def _end_console_partial_line(self):
+        """End a held unfinished line with a newline, so it reaches the log on
+        its own. Called when the console interface is replaced: the next
+        session's text must not be joined to the last session's fragment."""
+        if self.console_buffer and not self.console_buffer.endswith("\n"):
+            self.console_buffer += "\n"
+        self._console_partial_since = None
+
+    def flush_console(self) -> str:
+        """Return every buffered console character, an unfinished line too,
+        ignoring the hold. For shutdown, when no later poll will send it."""
+        rest = self.console_buffer
+        self.console_buffer = ""
+        self._console_partial_since = None
+        return rest
+
+    def _take_complete_console_lines(self) -> str:
+        """Return the buffered console text up to and including the last newline.
+
+        The rest, an unfinished line, stays in the buffer for the next poll.
+        It is returned anyway once it has waited CONSOLE_PARTIAL_LINE_HOLD_S.
+        """
+        buf = self.console_buffer
+        cut = buf.rfind("\n") + 1
+        since = self._console_partial_since
+        if cut == len(buf) or since is None \
+                or time.monotonic() - since >= CONSOLE_PARTIAL_LINE_HOLD_S:
+            self._console_partial_since = None
+            self.console_buffer = ""
+            return buf
+        self.console_buffer = buf[cut:]
+        return buf[:cut]
 
     def _maybe_reopen_console(self):
         """Throttled console-interface reopen (see get_console_output)."""
@@ -296,6 +527,7 @@ class PolyKybd:
             return
         self._console_reopen_at = now
         if self.hid and self.hid.reopen_console():
+            self._end_console_partial_line()
             self.log.info("HID console (re)attached")
 
     def query_id(self) -> tuple[bool, str]:
@@ -315,6 +547,7 @@ class PolyKybd:
                 # with no extra command and nothing pushed from the firmware.
                 # None = this firmware has no block; do NOT read that as "unchanged".
                 self.state_generation = parse_id_state_generation(msg)
+                self.anim_state = parse_id_anim_state(msg)
             msg = msg.decode().strip('\x00')
             if not result:
                 return False, msg
@@ -517,6 +750,32 @@ class PolyKybd:
         # wait for (doing so would just time out against the disconnected device).
         return self.hid.send(compose_cmd(Cmd.ENTER_BOOTLOADER))
 
+    def reboot(self) -> tuple[bool, Any]:
+        """Reboot both halves (cmd 43, protocol v22+). Nothing is persisted.
+
+        The firmware ACKs before it resets, so a True here means the command was
+        taken; the keyboard then drops off USB and comes back with the GET_ID
+        fresh-boot marker set."""
+        if not self.supports("reboot"):
+            return False, (
+                f"Firmware protocol too old to reboot on request "
+                f"(need v{REBOOT_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+        self.log.info("Rebooting the keyboard...")
+        try:
+            result, reply = self.hid.send_and_read_validate(
+                compose_cmd(Cmd.REBOOT), 100, expect(Cmd.REBOOT))
+        except Exception as e:  # noqa: BLE001 — surfaced as a plain failure
+            return False, f"Reboot request failed: {e}"
+        if result and len(reply) >= 3 and reply[2:3] == b'.':
+            return True, "rebooting"
+        # The prefix check alone accepts a NACK (`P\x2b!`); that is a refusal.
+        if result:
+            return False, "The keyboard refused the reboot request."
+        # No reply at all: the ACK is lost, or the reset beat it out. That is not a
+        # failure by itself; the caller's wait for the fresh-boot marker decides.
+        # Reporting it as one stopped the boot loop on a keyboard that WAS rebooting.
+        return True, "sent; no ACK (the reset may have come first)"
+
     def set_idle(self, idle: bool) -> tuple[bool, Any]:
         self.log.debug("Setting idle state to %s...",
                        "True" if idle else "False")
@@ -583,6 +842,234 @@ class PolyKybd:
             return False, "The keyboard refused that idle-timeout preset"
         return result, reply
 
+    @staticmethod
+    def _tap_terms_payload(op: int, tapping_ms: int, flow_tap_ms: int,
+                           auto_shift_op: int | None = None,
+                           auto_shift_ms: int = 0) -> tuple[int, ...]:
+        """auto_shift_op None sends the v29 form (5 bytes), which a v30 keyboard
+        reads as "keep Auto Shift" because the report is zero-padded."""
+        body = (op, tapping_ms & 0xFF, tapping_ms >> 8, flow_tap_ms & 0xFF, flow_tap_ms >> 8)
+        if auto_shift_op is None:
+            return body
+        return body + (auto_shift_op, auto_shift_ms & 0xFF, auto_shift_ms >> 8)
+
+    @staticmethod
+    def _parse_tap_terms(reply) -> dict:
+        flags = reply[7]
+        auto_shift_ms = (reply[8] | (reply[9] << 8)) if len(reply) > 9 else 0
+        # A v29 reply has flag bit 1 clear, so Auto Shift reads as unavailable.
+        available = bool(flags & TapTerms.FLAG_AUTO_SHIFT)
+        return {
+            "tapping_term": reply[3] | (reply[4] << 8),
+            "flow_tap_term": reply[5] | (reply[6] << 8),
+            "flow_tap_available": bool(flags & TapTerms.FLAG_FLOW_TAP),
+            "auto_shift_available": available,
+            "auto_shift": available and bool(flags & TapTerms.FLAG_AUTO_SHIFT_ON),
+            "auto_shift_ms": auto_shift_ms if available else TapTerms.DEFAULT_AUTO_SHIFT_MS,
+        }
+
+    def get_tap_terms(self) -> tuple[bool, dict | str]:
+        """Read the tap-hold terms (cmd 44, v29+) as
+        {"tapping_term": ms, "flow_tap_term": ms, "flow_tap_available": bool,
+         "auto_shift_available": bool, "auto_shift": bool, "auto_shift_ms": ms}.
+        flow_tap_available is False on a build without Flow Tap (split42);
+        auto_shift_available is False below protocol v30."""
+        if not self.supports("tap_terms"):
+            return False, (
+                f"Firmware protocol too old for tap-hold timing "
+                f"(need v{TAP_TERMS_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+        try:
+            result, reply = self.hid.send_and_read_validate(
+                compose_cmd(Cmd.TAP_TERMS, *self._tap_terms_payload(0, 0, 0)),
+                100, expect(Cmd.TAP_TERMS))
+            if result and len(reply) > 7 and reply[2:3] == b'.':
+                return True, self._parse_tap_terms(reply)
+        except Exception as e:
+            # Every caller is a UI refresh or polyctl, which report (False, ...) as
+            # "could not read"; the device can be mid-flash or unplugged here.
+            self.log.debug("Could not read the tap terms (%s: %s)", type(e).__name__, e)
+        return False, "Could not read the tap-hold timing from the keyboard"
+
+    def set_tap_terms(self, tapping_term: int | None = None,
+                      flow_tap_term: int | None = None,
+                      auto_shift: bool | None = None,
+                      auto_shift_ms: int | None = None) -> tuple[bool, dict | str]:
+        """Set the tapping term and/or the Flow Tap term in ms (cmd 44, v29+), and
+        Auto Shift on/off and its timeout in ms (v30+). None leaves a value
+        unchanged. All ranges are CLOSED (TapTerms), so a value outside them is
+        refused here rather than sent. On success the payload is the keyboard's
+        settings after the change, as get_tap_terms() returns them.
+
+        ⚠️ The ACK marker is checked: expect() also matches a NACK."""
+        if tapping_term is None and flow_tap_term is None and auto_shift is None \
+                and auto_shift_ms is None:
+            return False, "Nothing to set"
+        if tapping_term is not None and not TapTerms.tapping_valid(tapping_term):
+            return False, (f"{tapping_term!r} ms is not a valid tapping term "
+                           f"({TapTerms.TAPPING_MIN_MS}..{TapTerms.TAPPING_MAX_MS} ms "
+                           f"in {TapTerms.STEP_MS} ms steps)")
+        if flow_tap_term is not None and not TapTerms.flow_tap_valid(flow_tap_term):
+            return False, (f"{flow_tap_term!r} ms is not a valid Flow Tap term "
+                           f"({TapTerms.FLOW_TAP_MIN_MS}..{TapTerms.FLOW_TAP_MAX_MS} ms "
+                           f"in {TapTerms.STEP_MS} ms steps)")
+        if auto_shift_ms is not None and not TapTerms.auto_shift_valid(auto_shift_ms):
+            return False, (f"{auto_shift_ms!r} ms is not a valid Auto Shift timeout "
+                           f"({TapTerms.AUTO_SHIFT_MIN_MS}..{TapTerms.AUTO_SHIFT_MAX_MS} ms "
+                           f"in {TapTerms.STEP_MS} ms steps)")
+        if not self.supports("tap_terms"):
+            return False, (
+                f"Firmware protocol too old for tap-hold timing "
+                f"(need v{TAP_TERMS_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+        wants_auto_shift = auto_shift is not None or auto_shift_ms is not None
+        if wants_auto_shift and not self.supports("auto_shift"):
+            return False, (
+                f"Firmware protocol too old for Auto Shift "
+                f"(need v{AUTO_SHIFT_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+        tap = TapTerms.KEEP if tapping_term is None else tapping_term
+        flow = TapTerms.KEEP if flow_tap_term is None else flow_tap_term
+        as_op = None
+        as_ms = TapTerms.AUTO_SHIFT_MS_KEEP if auto_shift_ms is None else auto_shift_ms
+        if wants_auto_shift:
+            as_op = (TapTerms.AUTO_SHIFT_OP_KEEP if auto_shift is None
+                     else TapTerms.AUTO_SHIFT_OP_ON if auto_shift else TapTerms.AUTO_SHIFT_OP_OFF)
+        self.log.info("Setting tap terms: tapping %s ms, flow tap %s ms, auto shift %s / %s ms...",
+                      tapping_term, flow_tap_term, auto_shift, auto_shift_ms)
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.TAP_TERMS, *self._tap_terms_payload(1, tap, flow, as_op, as_ms)),
+            100, expect(Cmd.TAP_TERMS))
+        if not result:
+            return False, "The keyboard did not answer the tap-hold timing command"
+        if not (len(reply) > 7 and reply[2:3] == b'.'):
+            return False, "The keyboard refused that tap-hold timing"
+        return True, self._parse_tap_terms(reply)
+
+    # ---- key attention (cmd 47, v32+) ----------------------------------------
+
+    def key_attention(self, row: int, col: int, count: int = 3,
+                      period_ms: int = 4000) -> tuple[bool, str]:
+        """Run the focus ripple on the key at matrix (row, col) `count` times (0 =
+        until key_attention_cancel()), one every `period_ms` (2300..10000 ms, in
+        100 ms steps). The keyboard NACKs a key without a display."""
+        if not self.supports("key_attention"):
+            return False, (f"Firmware protocol too old for key attention "
+                           f"(need v{KEY_ATTENTION_MIN_PROTOCOL}+). Please update the "
+                           f"PolyKybd firmware.")
+        if not (0 <= row < 256 and 0 <= col < 256 and 0 <= count < 256):
+            return False, f"Invalid key attention request: row {row}, col {col}, count {count}"
+        if not KEY_ATTENTION_PERIOD_MIN_MS <= period_ms <= KEY_ATTENTION_PERIOD_MAX_MS:
+            return False, (f"The period must be {KEY_ATTENTION_PERIOD_MIN_MS}.."
+                           f"{KEY_ATTENTION_PERIOD_MAX_MS} ms, not {period_ms}")
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.KEY_ATTENTION, 0, row, col, count, round(period_ms / 100)),
+            100, expect(Cmd.KEY_ATTENTION))
+        if not result:
+            return False, "The keyboard did not answer the key attention request"
+        if reply[2:3] != b'.':
+            return False, f"The keyboard refused key attention on row {row}, col {col}"
+        return True, "ok"
+
+    def key_attention_cancel(self) -> tuple[bool, str]:
+        """End a key attention request; a ripple already running finishes."""
+        if not self.supports("key_attention"):
+            return False, (f"Firmware protocol too old for key attention "
+                           f"(need v{KEY_ATTENTION_MIN_PROTOCOL}+).")
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.KEY_ATTENTION, 1), 100, expect(Cmd.KEY_ATTENTION))
+        if not (result and reply[2:3] == b'.'):
+            return False, "The keyboard did not cancel the key attention request"
+        return True, "ok"
+
+    # ---- agent keys (cmd 45 / 46, v31+) ---------------------------------------
+
+    def _agent_keys_refusal(self) -> str | None:
+        if self.supports("agent_keys"):
+            return None
+        return (f"Firmware protocol too old for the agent keys "
+                f"(need v{AGENT_KEYS_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+
+    def ai_query(self) -> tuple[bool, dict | str]:
+        """cmd 45 op 0: {"ai_mode", "newest_seq", "number_keys", "esc_found"}."""
+        if (refusal := self._agent_keys_refusal()):
+            return False, refusal
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.AI, 0), 100, expect(Cmd.AI))
+        if not (result and len(reply) > 6 and reply[2:3] == b'.'):
+            return False, "The keyboard did not answer the agent-key query"
+        return True, {"ai_mode": bool(reply[3]), "newest_seq": reply[4],
+                      "number_keys": reply[5], "esc_found": bool(reply[6])}
+
+    @staticmethod
+    def _ai_keys_payload(states, flags: int, slots) -> tuple[int, ...]:
+        from polyhost.services.agents.model import AgentState
+        states = [int(s) for s in states]
+        slots = [int(s) for s in slots]
+        if len(states) != AGENT_KEY_COUNT or len(slots) != AGENT_CARD_COUNT:
+            raise ValueError(f"need {AGENT_KEY_COUNT} states and {AGENT_CARD_COUNT} slots")
+        if any(not AgentState.EMPTY <= s <= AgentState.STALE for s in states):
+            raise ValueError(f"agent state out of range: {states}")
+        flags = int(flags)
+        if flags & ~AGENT_FLAGS_VALID:
+            raise ValueError(f"agent key flags out of range: {flags:#x}")
+        payload = [1, *states, flags]
+        for slot in slots:
+            payload += [slot & 0xFF, (slot >> 8) & 0xFF]
+        return tuple(payload)
+
+    def ai_set_keys(self, states, flags: int, slots) -> tuple[bool, str]:
+        """cmd 45 op 1: the state of each number key, the AGENT_FLAG_* byte and the
+        12 card slots (number keys, then '-' and '+'). CLOSED ranges: an unknown state
+        or flag is refused here, and the firmware NACKs it too. ⚠️ The ACK marker is
+        checked: expect() also matches a NACK."""
+        if (refusal := self._agent_keys_refusal()):
+            return False, refusal
+        try:
+            payload = self._ai_keys_payload(states, flags, slots)
+        except ValueError as e:
+            return False, str(e)
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.AI, *payload), 100, expect(Cmd.AI))
+        if not result:
+            return False, "The keyboard did not answer the agent-key update"
+        if reply[2:3] != b'.':
+            return False, "The keyboard refused the agent-key update"
+        return True, "ok"
+
+    def ai_read_events(self, last_seq: int) -> tuple[bool, tuple | str]:
+        """cmd 45 op 2: (newest seq, [(seq, key), ...] newer than last_seq, oldest
+        first). Key 0..9 is a number key, 10 the pager (ESC), 11 '-' (dictation),
+        12 '+' (next waiting agent)."""
+        if (refusal := self._agent_keys_refusal()):
+            return False, refusal
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.AI, 2, int(last_seq) & 0xFF), 100, expect(Cmd.AI))
+        if not (result and len(reply) > 4 and reply[2:3] == b'.'):
+            return False, "The keyboard did not answer the agent-key event read"
+        newest, count = reply[3], min(reply[4], 8)
+        events = [(reply[5 + 2 * i], reply[6 + 2 * i]) for i in range(count)
+                  if 6 + 2 * i < len(reply)]
+        return True, (newest, events)
+
+    def ai_upload_card(self, slot: int, data: bytes) -> tuple[bool, str]:
+        """cmd 46: write a 360-byte card image straight into pool slot `slot`,
+        six 60-byte segments."""
+        if (refusal := self._agent_keys_refusal()):
+            return False, refusal
+        if not 0 <= slot < self.device_settings.OVERLAY_MAPPING_CAPACITY:
+            return False, f"Pool slot {slot} is out of range"
+        if len(data) != 6 * AGENT_CARD_SEGMENT:
+            return False, f"A card is {6 * AGENT_CARD_SEGMENT} bytes, not {len(data)}"
+        for segment in range(6):
+            word = (slot & 0x3FF) | (segment << 12)
+            chunk = data[segment * AGENT_CARD_SEGMENT:(segment + 1) * AGENT_CARD_SEGMENT]
+            result, reply = self.hid.send_and_read_validate(
+                compose_cmd(Cmd.AI_CARD, word & 0xFF, word >> 8, *chunk),
+                100, expect(Cmd.AI_CARD))
+            if not result:
+                return False, "The keyboard did not answer the agent card upload"
+            if reply[2:3] != b'.':
+                return False, f"The keyboard refused agent card segment {segment}"
+        return True, "ok"
+
     def get_idle_timeout(self) -> tuple[bool, tuple[int, int]]:
         """Read the current idle timeout as (preset index, seconds).
 
@@ -635,6 +1122,40 @@ class PolyKybd:
                 compose_cmd(Cmd.GLYPH_SCRIPT, 0xFF), 100, expect(Cmd.GLYPH_SCRIPT))
             if result and len(reply) > 3 and reply[2:3] == b'.':
                 return True, reply[3]
+        except Exception:
+            pass
+        return False, 0
+
+    def set_glyph_placement(self, placement: GlyphPlacement | int) -> tuple[bool, Any]:
+        """Centre or top-left glyph-script letters and digits (cmd 30's placement
+        byte, protocol v26+). Sends script 0xFF, which keeps the script, and the
+        placement as an op of ``value + 1`` (0 would mean "keep"). Persisted by the
+        firmware at the next suspend/store, like the script.
+
+        ⚠️ A closed range: the firmware NACKs an op past TOP_LEFT, so pass a
+        GlyphPlacement, not an arbitrary int."""
+        value = placement.value if isinstance(placement, GlyphPlacement) else int(placement)
+        if not self.supports("glyph_placement"):
+            return False, (
+                f"Firmware protocol too old for glyph-script placement "
+                f"(need v{GLYPH_PLACEMENT_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+        self.log.info("Setting glyph-script placement to %d...", value)
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.GLYPH_SCRIPT, 0xFF, value + 1), 100, expect(Cmd.GLYPH_SCRIPT))
+        # expect() also matches a NACK, so read the verdict byte.
+        if result and isinstance(reply, (bytes, bytearray)) and reply[2:3] != b'.':
+            return False, f"The keyboard refused glyph-script placement {value}."
+        return result, reply
+
+    def get_glyph_placement(self) -> tuple[bool, int]:
+        """Read the glyph-script placement (raw enum value, 0=centre, 1=top-left)."""
+        if not self.supports("glyph_placement"):
+            return False, 0
+        try:
+            result, reply = self.hid.send_and_read_validate(
+                compose_cmd(Cmd.GLYPH_SCRIPT, 0xFF), 100, expect(Cmd.GLYPH_SCRIPT))
+            if result and len(reply) > 4 and reply[2:3] == b'.':
+                return True, reply[4]
         except Exception:
             pass
         return False, 0
@@ -912,6 +1433,10 @@ class PolyKybd:
         The firmware plays it once on first boot; this re-triggers it without a
         power cycle. The master starts it locally and syncs a nonce so the slave
         half replays too."""
+        if not self.supports("replay_anim"):
+            return False, (
+                f"Firmware protocol too old to replay the startup animation "
+                f"(need v{REPLAY_ANIM_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
         self.log.info("Replaying startup animation...")
         return self.hid.send_and_read_validate(
             compose_cmd(Cmd.REPLAY_ANIM), 100, expect(Cmd.REPLAY_ANIM))
@@ -960,7 +1485,8 @@ class PolyKybd:
         self.log.debug("Requesting MRU save...")
         return self.hid.send_and_read_validate(compose_cmd(Cmd.SAVE_MRU))
 
-    def set_handedness(self, master_is_left: bool) -> tuple[bool, Any]:
+    def set_handedness(self, master_is_left: bool,
+                       split_vbus: bool | None = None) -> tuple[bool, Any]:
         """Fix which half is the left side and which is the right side.
 
         Master/slave is decided by which half holds the USB cable (VBUS), and is
@@ -976,10 +1502,24 @@ class PolyKybd:
         (about 10 s, no replug needed). The keyboard resets right after receiving
         this command and does not send a reliable reply, so we only send (like
         activate_bootloader) — there is no ACK to wait for.
+
+        ``split_vbus`` (protocol 24) also sets (True) or clears (False) the Rev.2
+        board flag in the CONNECTED half's stamp only; ``None`` keeps it and sends
+        the legacy one-byte payload. Mark each Rev.2 half on its own, plugged in
+        alone.
         """
-        self.log.info("Setting handedness: connected half = %s.",
-                      "LEFT" if master_is_left else "RIGHT")
-        return self.hid.send(compose_cmd(Cmd.SET_HANDEDNESS, 0 if master_is_left else 1))
+        side = 0 if master_is_left else 1
+        if split_vbus is None:
+            self.log.info("Setting handedness: connected half = %s.",
+                          "LEFT" if master_is_left else "RIGHT")
+            return self.hid.send(compose_cmd(Cmd.SET_HANDEDNESS, side))
+        if not self.supports("split_vbus_flag"):
+            return False, (f"Firmware too old for the Rev.2 board flag "
+                           f"(needs protocol {SPLIT_VBUS_FLAG_MIN_PROTOCOL}).")
+        op = BOARD_OP_SET_SPLIT_VBUS if split_vbus else BOARD_OP_CLEAR_SPLIT_VBUS
+        self.log.info("Setting handedness: connected half = %s, Rev.2 split-VBUS flag %s.",
+                      "LEFT" if master_is_left else "RIGHT", "on" if split_vbus else "off")
+        return self.hid.send(compose_cmd(Cmd.SET_HANDEDNESS, side, op))
 
     def query_current_lang(self) -> tuple[bool, str]:
         """Query current keyboard language"""
@@ -1096,7 +1636,9 @@ class PolyKybd:
         self.log.info("Language changed to %s (%s).", lang, msg)
         return True, lang
 
-    def send_overlay_mapping(self, from_to: dict) -> tuple[bool, str]:
+    def send_overlay_mapping(self, from_to: dict, reset: bool = False,
+                             show: bool = False, dim=frozenset(),
+                             no_legend=frozenset()) -> tuple[bool, str]:
         """Program the display-position -> pool-slot table on the keyboard.
 
         Protocol v12+ uses SEND_OVERLAY_MAPPING_W (cmd 33), which carries the
@@ -1109,27 +1651,61 @@ class PolyKybd:
         Older firmware gets the fixed-10-bit SEND_OVERLAY_MAPPING (cmd 21) it has
         always understood, with the GUI-combo positions dropped (it cannot
         address them at all — see GUI_COMBO_MODIFIERS_MIN_PROTOCOL).
+
+        ``reset`` / ``show`` (protocol v21+, the "mapping_flags" gate) set the
+        width byte's flag bits: reset on the first report runs the prepare step
+        before its pairs, show on the last runs the enable step after.
+
+        ``dim`` (protocol v23+, the "mapping_dim" gate) is the set of display
+        positions whose icon the keyboard draws dimmed. The flag covers a whole
+        report, so dimmed and plain pairs travel in separate reports. Below v23
+        the set is ignored and every pair goes out plain.
+
+        ``no_legend`` (protocol v25+, the "mapping_no_legend" gate) is the set of
+        display positions the keyboard draws without the key legend. Their `to`
+        goes out offset by the pool capacity, in the same reports as the plain
+        pairs. Below v25 the set is ignored and they go out plain.
         """
+        if (reset or show) and not (self.supports("mapping_flags") and from_to):
+            return False, "mapping flags need protocol v21 and at least one pair"
         if self.supports("gui_combo_modifiers"):
-            return self._send_overlay_mapping_sized(from_to)
+            if dim and not self.supports("mapping_dim"):
+                dim = frozenset()
+            if no_legend and not self.supports("mapping_no_legend"):
+                no_legend = frozenset()
+            return self._send_overlay_mapping_sized(from_to, reset, show, dim, no_legend)
         return self._send_overlay_mapping_legacy(from_to)
 
-    def _send_overlay_mapping_sized(self, from_to: dict) -> tuple[bool, str]:
+    def _send_overlay_mapping_sized(self, from_to: dict, reset: bool = False,
+                                    show: bool = False, dim=frozenset(),
+                                    no_legend=frozenset()) -> tuple[bool, str]:
         data_bytes = self.device_settings.OVERLAY_MAPPING_W_DATA_BYTES
-        reports = plan_mapping_reports(from_to, data_bytes)
+        # A no-legend pair rides in the plain reports: its `to` is offset by the
+        # pool capacity (MAPPING_NO_LEGEND_MIN_PROTOCOL), and the width planner
+        # gives it 11 bits only when the offset value needs them.
+        offset = self.device_settings.OVERLAY_MAPPING_CAPACITY
+        wire = {f: t + offset if f in no_legend else t for f, t in from_to.items()}
+        plain = {f: t for f, t in wire.items() if f not in dim}
+        dimmed = {f: t for f, t in wire.items() if f in dim}
+        reports = ([(w, p, 0) for w, p in plan_mapping_reports(plain, data_bytes)]
+                   + [(w, p, MAPPING_FLAG_DIM) for w, p in plan_mapping_reports(dimmed, data_bytes)])
         num_msgs = 0
-        for width, pairs in reports:
-            cmd = compose_cmd(Cmd.SEND_OVERLAY_MAPPING_W, width)
+        for r, (width, pairs, dim_flag) in enumerate(reports):
+            flags = (dim_flag
+                     | (MAPPING_FLAG_RESET if reset and r == 0 else 0)
+                     | (MAPPING_FLAG_SHOW if show and r == len(reports) - 1 else 0))
+            cmd = compose_cmd(Cmd.SEND_OVERLAY_MAPPING_W, width | flags)
             msg = cmd + pack_report(pairs, data_bytes, width)
             result, err = self.hid.send_multiple(msg)
             num_msgs += 1
             if not result:
                 return False, f"Error sending overlay mapping: {err}"
-            self.log.debug("send_overlay_mapping: sent %d pairs at %d bits",
-                           len(pairs), width)
+            self.log.debug("send_overlay_mapping: sent %d pairs at %d bits%s",
+                           len(pairs), width, " (dimmed)" if dim_flag else "")
 
         self.log.info("send_overlay_mapping: Sent %d mapping messages (%d pairs)",
                       num_msgs, len(from_to))
+        self._last_mapping_msgs = num_msgs
         return True, "Mapping sent"
 
     def _send_overlay_mapping_legacy(self, from_to: dict) -> tuple[bool, str]:
@@ -1158,6 +1734,7 @@ class PolyKybd:
 
         self.log.info("send_overlay_mapping: Sent %d mapping messages (%d pairs, legacy 10-bit)",
                       num_msgs, len(pairs))
+        self._last_mapping_msgs = num_msgs
         # SEND_OVERLAY_MAPPING (cmd 21) is silent since protocol v3 — like the
         # other bulk overlay commands there is no per-chunk ACK, so nothing to
         # read or drain here. (The old per-chunk ACK arrived only after the
@@ -1195,11 +1772,30 @@ class PolyKybd:
         return self.send_overlays_mru(
             filenames, OverlayMRUCache(self.device_settings.OVERLAY_MAPPING_CAPACITY), cancel)
 
-    def send_smallest_overlay(self, keycode: int, modifier: Modifier, mapping: dict) -> int:
-        """Returns the number of HID messages sent, or -1 on a send failure."""
+    def send_smallest_overlay(self, keycode: int, modifier: Modifier, mapping: dict,
+                              clean_slot: bool = True) -> int:
+        """Returns the number of HID messages sent, or -1 on a send failure.
+
+        ``clean_slot`` False means the destination still holds an older image
+        (a reused MRU pool slot, see OverlayMRUCache.slot_is_clean). Only the
+        encodings that write the whole frame are used then: RLE, or plain with
+        every segment sent. ROI writes only its rectangle and plain skips
+        all-zero segments, so either would leave the old image showing around
+        the new one."""
         ov = mapping[keycode]
+        if not clean_slot:
+            plain_msgs = self.device_settings.OVERLAY_PLAIN_DATA_REPORT_COUNT
+            self._count_alternatives(ov)
+            if ov.compressed_msgs <= plain_msgs:
+                self.stat_best += ov.compressed_msgs
+                self.stat_chosen["rle"] += 1
+                return self.send_overlay_for_keycode_compressed(keycode, modifier, mapping)
+            self.stat_best += plain_msgs
+            self.stat_chosen["plain"] += 1
+            return self.send_overlay_for_keycode(keycode, modifier, mapping, skip_empty=False)
         smallest = min(ov.all_msgs, ov.compressed_msgs,
                        ov.roi_msgs, ov.compressed_roi_msgs)
+        self._count_encoding(ov, smallest)
 
         if smallest == ov.roi_msgs:
             self.log.debug_detailed(
@@ -1217,6 +1813,113 @@ class PolyKybd:
             self.log.debug_detailed(
                 "send_smallest_overlay: Sending keycode 0x%x (mod 0x%x) as plain overlay", keycode, modifier.value)
             return self.send_overlay_for_keycode(keycode, modifier, mapping)
+
+    def _count_alternatives(self, ov) -> None:
+        """What one image WOULD have cost in each older encoding. Counted for
+        every image sent, however it went out (PRC and icon fills included), so
+        the "if plain / rle / roi / rle-roi" figures compare like with like."""
+        self.stat_plain += ov.all_msgs
+        self.stat_comp += ov.compressed_msgs
+        self.stat_roi += ov.roi_msgs
+        self.stat_croi += ov.compressed_roi_msgs
+
+    def _count_encoding(self, ov, smallest: int) -> None:
+        """Add one image to the encoding statistics.
+
+        Mirrors send_smallest_overlay's tie order (ROI, RLE, RLE-ROI, plain) so
+        the chosen-encoding counts match what actually went out. An ROI image
+        with no ROI falls back to RLE in send_overlay_roi_for_keycode; that
+        case is counted as RLE here too."""
+        self._count_alternatives(ov)
+        self.stat_best += smallest
+        # getattr: statistics must never break a send, whatever object the
+        # caller hands in.
+        has_roi = bool(getattr(ov, "roi", True))
+        if smallest == ov.roi_msgs:
+            kind = "roi" if has_roi else "rle"
+        elif smallest == ov.compressed_msgs:
+            kind = "rle"
+        elif smallest == ov.compressed_roi_msgs:
+            kind = "rle-roi" if has_roi else "rle"
+        else:
+            kind = "plain"
+        self.stat_chosen[kind] += 1
+
+    # (content_version, {packed frame: icon id}) of the shipped icons.plyi, loaded
+    # once per process. (None, {}) when no library ships or it fails to parse.
+    _icon_library_cache = None
+
+    @classmethod
+    def _shipped_icon_library(cls):
+        if cls._icon_library_cache is None:
+            from polyhost.services import icon_library
+            from polyhost.services.fontpack_bundle import res_dir
+            try:
+                cls._icon_library_cache = icon_library.frame_index(
+                    (res_dir() / "icons.plyi").read_bytes())
+            except (OSError, ValueError):
+                cls._icon_library_cache = (None, {})
+        return cls._icon_library_cache
+
+    def _icon_fill_index(self) -> dict | None:
+        """{packed frame: icon id} when this keyboard can fill from the library,
+        else None.
+
+        ⚠️ Only when the keyboard reports EXACTLY the shipped icon bundle version.
+        An id names a glyph only within one bundle, and the version the keyboard
+        reports is min(master, slave), so equal means both halves hold these
+        glyphs. Any other version (none, older, a different build) uploads
+        everything, and the font-pack autocheck flashes the shipped bundle."""
+        if not self.supports("overlay_icons"):
+            return None
+        from polyhost.services import icon_library
+        version, index = self._shipped_icon_library()
+        if not index:
+            return None
+        device = (getattr(self, "fontpack_bundle_versions", None) or {}).get(icon_library.BUNDLE_ID, 0)
+        return index if device == version else None
+
+    def _send_icon_fills(self, pairs: dict) -> tuple[int, list]:
+        """Send {pool slot: icon id} as cmd 42 reports.
+
+        Returns (reports sent, pool slots to upload as bitmaps instead), or
+        (-1, []) on a HID failure. A report the keyboard refuses (or never
+        answers) names the first pair it did not apply; that pair, the rest of
+        its report and every later report go back to the caller as uploads."""
+        data_bytes = self.device_settings.OVERLAY_MAPPING_W_DATA_BYTES
+        # ⚠️ Icon ids are not bounded by the pool: the shipped library has ids
+        # up to 3526, which need 12 bits. The key mapping's 11-bit limit made
+        # every switch that filled one such icon raise and abort (field log
+        # 2026-11-09, `pair (31, 2324) needs 12 bits`). The firmware accepts
+        # 8..16 (OVERLAY_MAP_WIDTH_MAX, both halves, since cmd 42 exists).
+        reports = plan_mapping_reports(pairs, data_bytes, max_width=ICON_FILL_MAX_WIDTH)
+        sent = 0
+        for r, (width, report_pairs) in enumerate(reports):
+            msg = compose_cmd(Cmd.FILL_POOL_FROM_ICON, width) + pack_report(report_pairs, data_bytes, width)
+            result, reply = self.hid.send_and_read_validate(msg, 500, expect(Cmd.FILL_POOL_FROM_ICON))
+            sent += 1
+            if result and len(reply) > 2 and reply[2:3] == b".":
+                continue
+            if not result and reply == bytearray("No Interface", "utf-8"):
+                return -1, []
+            # '!' names the first unapplied pair in reply[3]; a missing or
+            # malformed reply is pair 0. Clamped: the keyboard counts padding too.
+            first = reply[3] if result and len(reply) > 3 and reply[2:3] == b"!" else 0
+            first = min(first, len(report_pairs))
+            refused = [slot for slot, _ in report_pairs[first:]]
+            for _, later in reports[r + 1:]:
+                refused += [slot for slot, _ in later]
+            self.log.warning("Icon library fill refused at pair %d of report %d; "
+                             "uploading %d image(s) as bitmaps", first, r, len(refused))
+            return sent, refused
+        return sent, []
+
+    def _send_prc_report(self, records: bytes) -> bool:
+        """One cmd 41 report carrying ``records`` (see device/prc_packing.py)."""
+        result, msg = self.hid.send_multiple(compose_cmd(Cmd.SEND_PRC_OVERLAY) + records)
+        if not result:
+            self.log.error("Error sending PRC-coded overlay report (%s)", msg)
+        return result
 
     def send_overlay_roi_for_keycode(self, keycode: int, modifier: Modifier, mapping: dict, compressed: bool) -> int:
         overlay = mapping[keycode]
@@ -1316,14 +2019,49 @@ class PolyKybd:
         file behind it, used for the generic icon fall-back. It is resolved by
         the CALLER, on the caller's thread, because building one may fetch over
         the network and this method runs on the HID worker.
+
+        Every device call of the switch is timed (HidHelper.measure) and the
+        summary line splits the wall time into pauses, device calls and host
+        work; see _log_switch_stats.
         """
+        t_start = time.perf_counter()
+        measure = getattr(self.hid, "measure", None)
+        meter = measure() if measure is not None else IoMeter()
+        try:
+            return self._send_overlays_mru(filenames, cache, cancel, synthetic, meter, t_start)
+        finally:
+            stop = getattr(self.hid, "stop_measuring", None)
+            if stop is not None:
+                stop()
+
+    def _send_overlays_mru(self, filenames: list, cache: OverlayMRUCache,
+                           cancel: threading.Event | None, synthetic: dict | None,
+                           meter: IoMeter, t_start: float) -> bool:
         import os
+        stats_before = (self.stat_plain, self.stat_comp, self.stat_roi,
+                        self.stat_croi, self.stat_best, dict(self.stat_chosen))
+        pauses = 0
+        pause_s = 0.0
         hid_msg_counter = 0
         hid_msg_counter_old = 0
+        # The rate-limit pause (every MAX_MSG_BEFORE_DELAY image reports, sleep
+        # DELAY_TIME_AFTER_MAX_MSG) keeps the keyboard responsive to typing
+        # while a burst of images arrives. It is most of a cold switch's wall
+        # time; see docs/FUTURE_WORK.md before shortening or skipping it.
         MAX_MSG_BEFORE_DELAY = self.poly_settings.get("max_hid_message_before_delay")
         DELAY_TIME_AFTER_MAX_MSG = self.poly_settings.get("delay_time_after_max_hid_messages")
 
         display_to_pool: dict[int, int] = {}
+        # Positions whose LAST source is an underlay (a browser's file under a
+        # website's, handler/common.Underlay): the keyboard draws them dimmed.
+        # Last-one-wins like the mapping itself, so a site cell on the same key
+        # and modifier takes the position back to full strength. ESC is never
+        # dimmed: it carries the program mark, which names the app the board is
+        # showing and must stay readable whichever source drew it.
+        dim_positions: set[int] = set()
+        # Positions whose LAST source lists the key in its "polykybd-no-legend" PNG
+        # chunk (ImageConverter.no_legend): drawn without the key legend (v25).
+        no_legend_positions: set[int] = set()
 
         # Decode EVERY file before touching the device. prepare_for_mru_send()
         # resets the firmware's mapping + usage bits, so issuing it first meant an
@@ -1349,21 +2087,127 @@ class PolyKybd:
             self.log.debug_detailed("send_overlays_mru cancelled before prepare")
             return False
 
-        ok, msg = self.prepare_for_mru_send()
-        if not ok:
-            # Without the mirror+reset the firmware may still hold the previous
-            # program's mapping/usage bits — sending against that state would
-            # redirect display positions to the wrong pool slots.
-            self.log.warning("send_overlays_mru: prepare failed: %s", msg)
+        # The prepare step (mirror + mapping/usage reset) must reach the keyboard
+        # before the first IMAGE: an upload into a slot the old mapping still
+        # shows would appear on the old key. On v21+ it is sent lazily, right
+        # before the first image report, and a switch that uploads nothing (a
+        # warm one) never sends it at all: the reset rides on its first mapping
+        # report instead (MAPPING_FLAG_RESET).
+        mapping_flags = self.supports("mapping_flags")
+        prepared = False
+        control = 0
+
+        def ensure_prepared() -> bool:
+            nonlocal prepared, control
+            if prepared:
+                return True
+            ok, msg = self.prepare_for_mru_send()
+            control += 1
+            if not ok:
+                # Without the mirror+reset the firmware may still hold the previous
+                # program's mapping/usage bits — sending against that state would
+                # redirect display positions to the wrong pool slots.
+                self.log.warning("send_overlays_mru: prepare failed: %s", msg)
+                return False
+            prepared = True
+            return True
+
+        if not mapping_flags and not ensure_prepared():
             return False
 
         # On cancel we bail before send_overlay_mapping / record_transferred_mapping
-        # / enable_overlays. The firmware was reset to identity by
-        # prepare_for_mru_send(), so an aborted send leaves overlays disabled —
-        # safe, because the superseding send immediately follows. Slots already
+        # / enable_overlays. Once the prepare step has run, the firmware is reset
+        # to identity, so an aborted send leaves overlays disabled — safe, because
+        # the superseding send immediately follows. On v21+ a cancel before the
+        # first image leaves the previous app's overlays as they were. Slots already
         # allocated via get_or_allocate for images that WERE sent stay in the
         # cache; only the mapping commit is skipped.
         gui_combos = self.supports("gui_combo_modifiers")
+        # PRC-coded images (protocol v19+): an image whose record fits one
+        # report goes into a shared cmd 41 report instead of its own upload. That
+        # is never more reports than the best older encoding (at least one), and
+        # two small images share one. Larger images keep the old encodings.
+        packer = None
+        if self.supports("prc_overlay"):
+            packer = PrcReportPacker(lambda records: ensure_prepared() and self._send_prc_report(records),
+                                     self.device_settings.MAX_PAYLOAD_BYTES_PER_REPORT, cache)
+        # Icon library fills (protocol v20+): an image whose exact pixels are an
+        # icon in the keyboard's library goes out as a (pool slot, icon id) pair,
+        # 27 per report, instead of an upload. Queued here and sent before the
+        # mapping; a pair the keyboard refuses falls back to `upload()` below.
+        icon_index = self._icon_fill_index()
+        fills: dict[int, tuple] = {}        # pool slot -> (icon id, kc, mod, overlay)
+
+        def discard_all():
+            """Every path that gives up before the mapping commit: forget the
+            slots whose images never reached the keyboard (see prc_packing)."""
+            if packer is not None:
+                packer.discard()
+            for slot in reversed(list(fills)):
+                cache.forget_slot(slot)
+            fills.clear()
+
+        clean_slots: dict[int, bool] = {}   # pool slot -> never written before this upload
+
+        def upload(pool_slot, pool_kc, pool_mod, overlay_data) -> int:
+            """One image the old way: a PRC record, or the smallest older
+            encoding. Returns the reports sent, or -1."""
+            sent = 0
+            if pool_slot in fills:
+                sent = flush_fills()      # a queued fill for this slot must land first
+                if sent < 0:
+                    return -1
+            record = None
+            if packer is not None:
+                record = prc_record(overlay_data, pool_kc, pool_mod.value,
+                                    self.device_settings.MAX_PAYLOAD_BYTES_PER_REPORT)
+            if record is not None:
+                added = packer.add(record, pool_slot)
+                if added >= 0:
+                    self.stat_chosen["prc"] += 1
+                    self._count_alternatives(overlay_data)
+                return -1 if added < 0 else sent + added
+            if packer is not None and packer.holds(pool_slot):
+                flushed = packer.flush()
+                if flushed < 0:
+                    return -1
+                sent += flushed
+            if not ensure_prepared():
+                return -1
+            old = self.send_smallest_overlay(pool_kc, pool_mod, {pool_kc: overlay_data},
+                                             clean_slot=clean_slots.get(pool_slot, False))
+            return -1 if old < 0 else sent + old
+
+        def flush_fills() -> int:
+            """Send the queued fills; upload whatever the keyboard refused.
+            Returns the reports sent, or -1."""
+            if not fills:
+                return 0
+            pending = dict(fills)
+            fills.clear()
+            sent, refused = (self._send_icon_fills({slot: v[0] for slot, v in pending.items()})
+                             if ensure_prepared() else (-1, []))
+            if sent < 0:
+                for slot in reversed(list(pending)):
+                    cache.forget_slot(slot)
+                return -1
+            self.stat_chosen["fill"] += len(pending) - len(refused)
+            for slot, (_, _, _, ov) in pending.items():
+                if slot not in refused:
+                    self._count_alternatives(ov)
+            for i, slot in enumerate(refused):
+                _, kc, mod, ov = pending[slot]
+                more = upload(slot, kc, mod, ov)
+                if more < 0:
+                    # `pending` is out of `fills` already, so discard_all()
+                    # cannot see these: forget this slot and the ones after it,
+                    # whose images never reached the keyboard.
+                    for s in reversed(refused[i:]):
+                        cache.forget_slot(s)
+                    return -1
+                sent += more
+            return sent
+
         with cache.batch():
             # zip, not `for converter in converters`: the cache key below names
             # the file an image came from, and a bare loop leaves `filename` at
@@ -1382,13 +2226,15 @@ class PolyKybd:
             # never fetched.
             per_source: dict[str, list] = {}
             deferred: dict[str, list] = {}
+            pool_full: list = []    # keys left blank: the switch filled the pool
             uploaded = 0
+
+            # Every image of the switch, extracted ONCE: the claim pass below
+            # needs them all before the first allocation, and the send loop
+            # reuses them rather than rendering twice.
+            extracted: list[tuple[str, object, bool, bool, list]] = []
             for filename, converter in zip(filenames, converters):
-                source_is_synthetic = filename in synthetic
-                # An image that is the SAME under every modifier is keyed ONCE,
-                # so the variants after the first are cache hits that upload
-                # nothing -- see synthetic_overlay.program_converter.
-                invariant = getattr(converter, "modifier_invariant", False)
+                maps = []
                 for modifier in Modifier:
                     # A pre-v12 keyboard folds any GUI+x onto the bare-GUI
                     # variant and has no flat index space above 90*9, so an
@@ -1397,12 +2243,48 @@ class PolyKybd:
                     if not gui_combos and modifier.value > LEGACY_MAX_MODIFIER_VALUE:
                         continue
                     overlay_map = converter.extract_overlays(modifier)
-                    if not overlay_map:
-                        continue
+                    # Checked per extraction, as the send loop did before this
+                    # pass existed: a newer switch must not wait for this one to
+                    # convert every remaining image. Nothing is allocated yet.
+                    if cancel is not None and cancel.is_set():
+                        self.log.debug_detailed("send_overlays_mru cancelled during extraction")
+                        return False
+                    if overlay_map:
+                        maps.append((modifier, overlay_map))
+                # An image that is the SAME under every modifier is keyed ONCE,
+                # so the variants after the first are cache hits that upload
+                # nothing -- see synthetic_overlay.program_converter.
+                extracted.append((filename, converter, filename in synthetic,
+                                  getattr(converter, "modifier_invariant", False), maps))
+
+            # ⚠️ Claim every image the pool already holds BEFORE allocating any
+            # new one (overlay_cache.claim), so a new image can only evict a slot
+            # this switch does not want. Same rules as the loop below: a
+            # synthetic source does not draw a key a template already covers,
+            # and a later source wins a key. ⚠️ Only the image a key ENDS UP
+            # showing is claimed: claiming one a later source replaces would hold
+            # a slot nothing shows, and on a full pool leave a new image's key
+            # blank (review, CodeRabbit).
+            final: dict[tuple[int, int], tuple] = {}
+            for filename, _, source_is_synthetic, invariant, maps in extracted:
+                for modifier, overlay_map in maps:
+                    for keycode, overlay_data in overlay_map.items():
+                        position = (modifier.value, keycode)
+                        if source_is_synthetic and position in final:
+                            continue
+                        key_modifier = MODIFIER_ANY if invariant else modifier.value
+                        final[position] = ((os.path.basename(filename), key_modifier, keycode),
+                                           overlay_data.all_bytes)
+            for content_key, image in final.values():
+                cache.claim(content_key, image)
+
+            for filename, converter, source_is_synthetic, invariant, maps in extracted:
+                for modifier, overlay_map in maps:
 
                     for keycode, overlay_data in overlay_map.items():
                         if cancel is not None and cancel.is_set():
                             self.log.debug_detailed("send_overlays_mru cancelled")
+                            discard_all()
                             return False
                         if source_is_synthetic and (modifier.value, keycode) in covered:
                             self.log.debug_detailed(
@@ -1414,14 +2296,43 @@ class PolyKybd:
                         key_modifier = MODIFIER_ANY if invariant else modifier.value
                         content_key = (os.path.basename(filename), key_modifier, keycode)
                         pool_slot, is_hit = cache.get_or_allocate(content_key, filename, overlay_data.all_bytes)
+                        if pool_slot is None:
+                            # The pool is full of this switch's own images. The
+                            # key stays blank rather than borrowing a slot an
+                            # earlier key still shows (overlay_cache.get_or_allocate).
+                            # ⚠️ Blank, not the picture an EARLIER source of this
+                            # switch put on the same key: a later source overrides
+                            # it (last one wins), so keeping it would show e.g. the
+                            # browser's icon under a website's shortcut.
+                            refused_idx = cache.display_flat_idx(keycode, modifier)
+                            display_to_pool.pop(refused_idx, None)
+                            dim_positions.discard(refused_idx)
+                            no_legend_positions.discard(refused_idx)
+                            covered.discard((modifier.value, keycode))
+                            pool_full.append((filename, keycode, modifier))
+                            continue
 
                         if not is_hit:
+                            # Read before the upload marks it: a slot reused
+                            # within this switch is dirty by then too.
+                            clean_slots[pool_slot] = cache.slot_is_clean(pool_slot)
+                            cache.mark_written(pool_slot)
                             pool_kc, pool_mod = cache.pool_slot_to_firmware_address(pool_slot)
                             self.log.debug_detailed(
                                 "MRU miss: sending 0x%x/%s to pool slot %d (addr 0x%x/%s)",
                                 keycode, modifier, pool_slot, pool_kc, pool_mod)
-                            sent = self.send_smallest_overlay(
-                                pool_kc, pool_mod, {pool_kc: overlay_data})
+                            icon_id = (icon_index.get(bytes(overlay_data.all_bytes))
+                                       if icon_index else None)
+                            if icon_id is not None:
+                                # A queued PRC record for a REUSED slot must land
+                                # before this fill, or the older image wins.
+                                sent = 0
+                                if packer is not None and packer.holds(pool_slot):
+                                    sent = packer.flush()
+                                if sent >= 0:
+                                    fills[pool_slot] = (icon_id, pool_kc, pool_mod, overlay_data)
+                            else:
+                                sent = upload(pool_slot, pool_kc, pool_mod, overlay_data)
                             if sent < 0:
                                 # Roll back the slot get_or_allocate just
                                 # recorded: its image never reached the keyboard,
@@ -1430,6 +2341,7 @@ class PolyKybd:
                                 # occupies that slot, and the image is never
                                 # re-sent). Then abort before the mapping commit.
                                 cache.forget(content_key)
+                                discard_all()
                                 return False
                             hid_msg_counter += sent
                         else:
@@ -1438,18 +2350,59 @@ class PolyKybd:
 
                         display_idx = cache.display_flat_idx(keycode, modifier)
                         display_to_pool[display_idx] = pool_slot
+                        if getattr(filename, "underlay", False) and keycode != KeyCode.KC_ESCAPE.value:
+                            dim_positions.add(display_idx)
+                        else:
+                            dim_positions.discard(display_idx)
+                        if (modifier.value, keycode) in getattr(converter, "no_legend", ()):
+                            no_legend_positions.add(display_idx)
+                        else:
+                            no_legend_positions.discard(display_idx)
                         per_source.setdefault(filename, []).append((keycode, modifier))
                         if not is_hit:
                             uploaded += 1
 
                         if hid_msg_counter_old < hid_msg_counter - MAX_MSG_BEFORE_DELAY:
                             hid_msg_counter_old = hid_msg_counter
+                            pauses += 1
+                            t_pause = time.perf_counter()
                             if cancel is not None:
                                 if cancel.wait(DELAY_TIME_AFTER_MAX_MSG):
                                     self.log.debug_detailed("send_overlays_mru cancelled during rate-limit pause")
+                                    discard_all()
                                     return False
                             else:
                                 time.sleep(DELAY_TIME_AFTER_MAX_MSG)
+                            pause_s += time.perf_counter() - t_pause
+
+        # The queued icon fills, then the last, partly filled PRC report. Before
+        # the cancel re-check below, so a cancel there leaves every allocated
+        # slot really uploaded.
+        if fills:
+            if cancel is not None and cancel.is_set():
+                discard_all()
+                self.log.debug_detailed("send_overlays_mru cancelled before the icon fills")
+                return False
+            n_fills = len(fills)
+            flushed = flush_fills()
+            if flushed < 0:
+                discard_all()
+                return False
+            hid_msg_counter += flushed
+            self.log.debug("MRU: %d image(s) filled from the icon library in %d report(s)",
+                           n_fills, flushed)
+        if packer is not None:
+            if cancel is not None and cancel.is_set():
+                packer.discard()
+                self.log.debug_detailed("send_overlays_mru cancelled before the last PRC report")
+                return False
+            flushed = packer.flush()
+            if flushed < 0:
+                return False
+            hid_msg_counter += flushed
+            if packer.images:
+                self.log.debug("MRU: %d image(s) PRC-coded in %d report(s)",
+                               packer.images, packer.reports)
 
         # hid_msg_counter counts HID MESSAGES, and only those carrying image
         # data (cache misses) — one image is several. A full cache hit is 0 here
@@ -1462,6 +2415,12 @@ class PolyKybd:
         self.log.info("MRU: %d HID message(s) of image data (rest served from "
                       "cache), %d display positions to map",
                       hid_msg_counter, len(display_to_pool))
+        if pool_full:
+            self.log.warning(
+                "MRU: %d key(s) left blank: this switch needs more than %d distinct "
+                "images, the keyboard's overlay pool (first: %s 0x%x/%s)",
+                len(pool_full), cache.capacity,
+                os.path.basename(pool_full[0][0]), pool_full[0][1], pool_full[0][2])
 
         # Re-check right before the commit: the token can flip after the last
         # pool upload, and committing the mapping then would flash a superseded
@@ -1470,14 +2429,98 @@ class PolyKybd:
             self.log.debug_detailed("send_overlays_mru cancelled before mapping commit")
             return False
 
-        ok, msg = self.send_overlay_mapping(display_to_pool)
+        # v21+: the enable rides on the last mapping report, and the reset on the
+        # first one when no image needed it earlier. An empty mapping has no
+        # report to carry them, so it takes the separate cmd 11 reports.
+        flagged = mapping_flags and bool(display_to_pool)
+        if flagged:
+            ok, msg = self.send_overlay_mapping(display_to_pool, reset=not prepared, show=True,
+                                                dim=dim_positions, no_legend=no_legend_positions)
+        elif ensure_prepared():
+            ok, msg = self.send_overlay_mapping(display_to_pool, dim=dim_positions,
+                                                no_legend=no_legend_positions)
+        else:
+            return False
         if not ok:
             self.log.warning("send_overlays_mru: mapping failed: %s", msg)
             return False
         cache.record_transferred_mapping(display_to_pool)
-        self.enable_overlays()
+        if not flagged:
+            self.enable_overlays()
+            control += 1
         self._log_overlay_summary(per_source, uploaded, len(display_to_pool), deferred)
+        # stat_best counts IMAGE REPORTS sent. send_smallest_overlay adds the
+        # older encodings' per image, but the PRC and fill reports only exist in
+        # hid_msg_counter, which is every image report of this switch.
+        self.stat_best = stats_before[4] + hid_msg_counter
+        self._log_switch_stats(stats_before, uploaded, hid_msg_counter,
+                               len(display_to_pool), pauses, pause_s,
+                               time.perf_counter() - t_start, control,
+                               meter=meter, t_start=t_start)
         return True
+
+    def _log_switch_stats(self, before: tuple, uploaded: int, image_msgs: int,
+                          positions: int, pauses: int, pause_s: float,
+                          wall_s: float, control: int = 2,
+                          meter: IoMeter | None = None, t_start: float | None = None) -> None:
+        """One INFO line per overlay send, with every report it cost and
+        where the time went.
+
+        control = the separate cmd 11 reports this send made: prepare
+        (OVERLAY_FLAGS_ON mirror+reset) and enable, two before protocol v21 and
+        none on a warm v21 switch, where both ride on the mapping. "if plain" is what the
+        same images would have cost as uncompressed cmd 10 overlays.
+
+        The time split: wall = pauses + device + host. "pauses" is the
+        rate-limit sleep (docs/FUTURE_WORK.md). "device" is the time inside
+        the HID write and read calls, one call per report, split by kind
+        (see IoMeter): "write-only" are the image reports and the mapping
+        reports, the part a faster link could speed up; "with reply" are the
+        reports that wait for the keyboard's answer (icon fills, cmd 42, and
+        prepare/enable), whose time is mostly the keyboard's own work. Only
+        the write-only median says something about the link, and only on a
+        switch long enough to fill the keyboard's receive queue. "host" is
+        the rest: decoding the images, the MRU claim pass, encoding and
+        packing; "before the first report" is the part of it spent before any
+        report went out."""
+        plain0, comp0, roi0, croi0, best0, chosen0 = before
+        chosen = {k: self.stat_chosen[k] - chosen0.get(k, 0) for k in self.stat_chosen}
+        mapping = self._last_mapping_msgs
+        total = image_msgs + mapping + control
+        self.stat_switches += 1
+        self.stat_reports_total += total
+        meter = meter or IoMeter()
+        device_s = meter.total_s
+        host_s = max(0.0, wall_s - pause_s - device_s)
+        if meter.first_at is not None and t_start is not None:
+            prep_s = max(0.0, meter.first_at - t_start)
+        else:
+            prep_s = host_s
+        self.log.info(
+            "Overlay switch stats: %d image(s) uploaded [fill %d, prc %d, roi %d, rle-roi %d, rle %d, plain %d], "
+            "%d position(s) mapped | reports: image %d + mapping %d + control %d = %d "
+            "(if plain: %d, rle: %d, roi: %d, rle-roi: %d) | "
+            "wall %.0f ms = %d rate-limit pause(s) %.0f ms + device %.0f ms "
+            "(%d call(s), median %.1f ms, max %.1f ms; "
+            "write-only %d call(s) %.0f ms, median %.1f ms, max %.1f ms; "
+            "with reply %d call(s) %.0f ms, median %.1f ms, max %.1f ms) "
+            "+ host %.0f ms (%.0f ms before the first report)",
+            uploaded, chosen["fill"], chosen["prc"], chosen["roi"], chosen["rle-roi"], chosen["rle"], chosen["plain"],
+            positions, image_msgs, mapping, control, total,
+            self.stat_plain - plain0, self.stat_comp - comp0,
+            self.stat_roi - roi0, self.stat_croi - croi0,
+            wall_s * 1000.0, pauses, pause_s * 1000.0, device_s * 1000.0,
+            meter.count, meter.median_s * 1000.0, meter.max_s * 1000.0,
+            meter.write.count, meter.write.total_s * 1000.0,
+            meter.write.median_s * 1000.0, meter.write.max_s * 1000.0,
+            meter.reply.count, meter.reply.total_s * 1000.0,
+            meter.reply.median_s * 1000.0, meter.reply.max_s * 1000.0,
+            host_s * 1000.0, prep_s * 1000.0)
+        self.log.info(
+            "Overlay stats since start: %d switch(es), %d report(s); image reports sent %d "
+            "(if plain: %d, rle: %d, roi: %d, rle-roi: %d)",
+            self.stat_switches, self.stat_reports_total, self.stat_best,
+            self.stat_plain, self.stat_comp, self.stat_roi, self.stat_croi)
 
     # How many keys a source may contribute before the summary stops naming
     # them. A template covers most of the board and listing it would bury the
@@ -1519,16 +2562,64 @@ class PolyKybd:
         # variant of ESC, so on a template-covered app it draws 15 and loses 1 --
         # and "it lost the bare ESC to the template" is exactly the question a
         # reader has when that keycap shows the hand-made design.
+        deferred = deferred or {}
         self.log.info("  drawn: %s | deferred to the template: %s",
-                      self._describe_sources(per_source),
-                      self._describe_sources(deferred or {}))
+                      self._describe_sources(per_source, deferred),
+                      self._describe_sources(deferred, per_source, is_deferred=True))
 
-    def _describe_sources(self, sources: dict) -> str:
-        """`fluent:save=Ctrl+S, mark si:gimp=ESC on 15 modifier variant(s)`."""
+    def _describe_sources(self, sources: dict, other: dict | None = None,
+                          is_deferred: bool = False) -> str:
+        """`fluent:save=Ctrl+S, mark si:gimp=ESC on 15 modifier variant(s)`.
+
+        `other` is the opposite half of the summary line: a source whose ONE key
+        is split between the halves goes through `_describe_split` instead.
+        """
         if not sources:
             return "none"
-        return ", ".join("%s=%s" % (self._short_source(f), self._describe_keys(k))
-                         for f, k in sources.items())
+        other = other or {}
+        parts = []
+        for f, keys in sources.items():
+            key = self._one_key(keys)
+            rest = other.get(f)
+            if key is not None and rest and self._one_key(rest) == key:
+                text = self._describe_split(keys, rest, is_deferred)
+            else:
+                text = self._describe_keys(keys)
+            parts.append("%s=%s" % (self._short_source(f), text))
+        return ", ".join(parts)
+
+    @staticmethod
+    def _one_key(keys: list):
+        """The keycode when every entry is the same key, else None."""
+        distinct = {kc for kc, _ in keys}
+        return next(iter(distinct)) if len(distinct) == 1 else None
+
+    def _describe_split(self, keys: list, rest: list, is_deferred: bool) -> str:
+        """One key whose modifier variants are shared between drawn and deferred.
+
+        ⚠️ Both halves used to read `ESC on 8 modifier variant(s)`, which looks
+        like the same 8 twice (hardware round, 2026-09-29, Chrome and Edge). It
+        is 8 + 8 = 16: the template draws ESC on eight variants and the mark
+        takes the other eight. So exactly ONE side names its variants -- the
+        smaller one, and on a tie the one holding the bare key, which is what
+        the keycap shows with no modifier held (then the deferred side) -- and
+        the other gives its share of the total.
+        """
+        def bare(ks):
+            return any(not getattr(m, "value", m) for _, m in ks)
+
+        if len(keys) != len(rest):
+            name_this = len(keys) < len(rest)
+        elif bare(keys) != bare(rest):
+            name_this = bare(keys)
+        else:
+            name_this = is_deferred
+        if name_this and len(keys) <= self.NAME_KEYS_UP_TO:
+            return ", ".join(describe_key(kc, mod) for kc, mod in
+                             sorted(keys, key=lambda k: getattr(k[1], "value", k[1])))
+        return "%s on %d of %d modifier variant(s)" % (
+            describe_key(keys[0][0], Modifier.NO_MOD), len(keys),
+            len(keys) + len(rest))
 
     @staticmethod
     def _short_source(filename: str) -> str:

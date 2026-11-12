@@ -70,7 +70,13 @@ class PreviewData:
         self.legends: dict[str, list[int]] = {}
         self.custom: dict[int, str] = {}    # keycode -> PolyKybd's own name
         self.aliases: dict[str, str] = {}   # QMK's derived one-step alias table
+        # KC_IME's per-language stand-in (export_preview_data.py): {"families":
+        # {lang: family}, "legends": {family: codepoints}}. Empty on an older export.
+        self.ime: dict = {}
         self.layer_tags: dict[int, str] = {}
+        # How many of those layers the firmware stores in EEPROM; None on an
+        # export from before the field (qmk_keycode_helper.fold_layer_tags).
+        self.stored_layers: int | None = None
         self.langs: list[str] = []
         self._grid: dict = {}      # (row, col) -> raw cell, as Lang holds it
         self.shift_suppressed: list = []   # (base, shift) cell pairs the board hides
@@ -93,7 +99,10 @@ class PreviewData:
         self.legends = {k: list(v) for k, v in legends.get("legends", {}).items()}
         self.custom = {int(k): str(v) for k, v in (legends.get("custom") or {}).items()}
         self.aliases = {str(k): str(v) for k, v in (legends.get("aliases") or {}).items()}
+        self.ime = dict(legends.get("ime") or {})
         self.layer_tags = {int(k): str(v) for k, v in layers.get("tags", {}).items()}
+        stored = layers.get("stored")
+        self.stored_layers = int(stored) if stored else None
         self.langs = list(lut.get("langs", []))
         self._grid = {(int(r), int(c)): v
                       for key, v in (lut.get("grid") or {}).items()

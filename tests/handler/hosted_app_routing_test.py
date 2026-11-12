@@ -82,13 +82,18 @@ class HostedAppRoutingTest(unittest.TestCase):
             overlay, _ = self._match("applicationframehost", title)
             self.assertIsNone(overlay, f"{title!r} matched {overlay}")
 
-    def test_sticky_notes_matches_but_REAL_onenote_does_not(self):
-        """`ONENOTE.EXE` hosts Sticky Notes, so the entry is about Sticky Notes.
-        A real OneNote window must fall through rather than get note keycaps."""
+    def test_sticky_notes_and_REAL_onenote_get_their_OWN_sets(self):
+        """`ONENOTE.EXE` hosts Sticky Notes and OneNote. Each must get its own
+        keycaps: note keycaps on a notebook, or the reverse, is the failure."""
         sticky, _ = self._match("onenote", "Sticky Notes (new)")
         self.assertIn("stickynotes_template", sticky or "")
-        real, _ = self._match("onenote", "My Notebook - OneNote")
-        self.assertIsNone(real)
+        real, icon = self._match("onenote", "My Notebook - OneNote")
+        self.assertIn("onenote_template", real or "")
+        # The OneNote set bakes its own ESC mark; a named icon would not draw.
+        self.assertIsNone(icon)
+        # A notebook page merely NAMED "Sticky Notes" is still OneNote.
+        page, _ = self._match("onenote", "My Sticky Notes - OneNote")
+        self.assertIn("onenote_template", page or "")
 
     def test_every_HOSTED_entry_names_its_own_mark(self):
         """A hosted app without `icon:` resolves the mark from the HOST process
@@ -103,9 +108,9 @@ class HostedAppRoutingTest(unittest.TestCase):
                                   f"from the host process name {app!r}")
 
     def test_photos_is_NOT_hosted_and_needs_no_icon_of_its_own(self):
-        """It really is its own `Photos.exe`, so `app_icons.yaml`'s curated
-        generic resolves -- and a baked/named mark would WIN over it and stop the
-        generic ever uploading."""
+        """It really is its own `Photos.exe`, so the shipped
+        `poly:photos.windows` resolves from the process name -- and a
+        baked/named mark would WIN over it and stop the generic ever uploading."""
         overlay, icon = self._match("photos", "Photos")
         self.assertIn("photos_template", overlay or "")
         self.assertIsNone(icon)
@@ -193,6 +198,325 @@ class MacOSNamesAndTitlesTest(unittest.TestCase):
         self.assertIsNone(self._code("windows", "Welcome — PolyKybdHost"))
         self.assertIsNone(self._code("linux", "Welcome — PolyKybdHost"))
 
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class JetBrainsPerOsTest(unittest.TestCase):
+    """JetBrains ships three DIFFERENT default keymaps, one per platform.
+
+    The single set shipped before was the GNOME keymap drawn everywhere: Find
+    Usages on Alt+Shift+7 and Back on Alt+Shift+Left, chords that do nothing on
+    Windows (Alt+F7, Ctrl+Alt+Left) or macOS. And the entry was keyed on none of
+    the Windows executables but `clion64`, so IntelliJ (`idea64.exe`) got no
+    overlay on Windows at all.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.handler = OverlayHandler(yaml.safe_load(MAPPING.read_text(encoding="utf-8")))
+
+    def _overlay(self, app, os_name, title="Main.java"):
+        from polyhost.handler.common import find_matching_entry
+        entry = self.handler.mapping.get(app)
+        self.assertIsNotNone(entry, f"{app!r} is not a mapping key")
+        hit = find_matching_entry(title, entry, None, os_name)
+        return (hit or {}).get("overlay") or []
+
+    def test_each_platform_gets_ITS_keymap(self):
+        self.assertIn("jetbrains_template.mods.png", self._overlay("idea64", "windows"))
+        self.assertIn("jetbrains_mac_template.mods.png", self._overlay("intellij idea", "macos"))
+        self.assertIn("jetbrains_linux_template.mods.png", self._overlay("jetbrains-idea", "linux"))
+
+    def test_each_Linux_desktop_gets_ITS_keymap(self):
+        """JetBrains picks "Default for GNOME", "Default for KDE" or, on any other
+        desktop, "Default for XWin". They disagree on Back/Forward, Find Usages,
+        Stop, Reformat and the breakpoint keys, so no desktop may borrow
+        another's set, and plain `linux` must NOT be the GNOME set."""
+        self.assertIn("jetbrains_kde_template.mods.png", self._overlay("idea", "linux_kde"))
+        self.assertIn("jetbrains_gnome_template.mods.png", self._overlay("idea", "linux_gnome"))
+        self.assertIn("jetbrains_linux_template.mods.png", self._overlay("idea", "linux"))
+        title = "project – Main.java"
+        self.assertIn("jetbrains_kde_template.mods.png", self._overlay("java", "linux_kde", title))
+        self.assertIn("jetbrains_gnome_template.mods.png", self._overlay("java", "linux_gnome", title))
+
+    def test_the_WINDOWS_executables_are_keys(self):
+        for name in ("idea64", "pycharm64", "clion64", "webstorm64", "rider64", "studio64"):
+            self.assertIn(name, self.handler.mapping, name)
+
+    def test_the_bare_java_launcher_keeps_its_title_gate_per_OS(self):
+        """A matched `os:` branch replaces the outer entry, so the title regex is
+        repeated inside it; without it any Java app would get IDE keycaps."""
+        title = "project – Main.java"
+        self.assertIn("jetbrains_linux_template.mods.png", self._overlay("java", "linux", title))
+        self.assertEqual([], self._overlay("java", "linux", "Minecraft"))
+
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class AppNamesPerPlatformTest(unittest.TestCase):
+    """Names each OS reports that the mapping used to miss, so the app loaded no
+    overlay at all. Windows cuts the executable at its first dot; macOS reports
+    the display name."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.handler = OverlayHandler(yaml.safe_load(MAPPING.read_text(encoding="utf-8")))
+
+    def _overlay(self, name, os_name, title=""):
+        from polyhost.handler.common import find_matching_entry, mapping_key
+        key = mapping_key(name, self.handler.mapping)
+        self.assertIsNotNone(key, f"{name!r} resolves to no mapping key")
+        hit = find_matching_entry(title, self.handler.mapping[key], None, os_name)
+        overlay = (hit or {}).get("overlay") or []
+        return overlay if isinstance(overlay, list) else [overlay]
+
+    def test_sublime_on_macOS_reaches_its_Cmd_set(self):
+        self.assertIn("sublime_mac_template.mods.png", self._overlay("sublime text", "macos"))
+
+    def test_office_and_teams_macOS_names_resolve(self):
+        for name in ("microsoft word", "microsoft excel", "microsoft outlook",
+                     "microsoft powerpoint", "microsoft teams"):
+            self.assertTrue(self._overlay(name, "macos"), name)
+
+    def test_adobe_macOS_names_resolve_whatever_the_year(self):
+        for name in ("adobe photoshop 2025", "adobe illustrator 2026",
+                     "adobe premiere pro 2025", "adobe after effects 2024"):
+            self.assertTrue(self._overlay(name, "macos"), name)
+
+    def test_zoom_macOS_name_resolves(self):
+        self.assertTrue(self._overlay("zoom.us", "macos", "Zoom Meeting"))
+
+    def test_macOS_names_reach_the_Cmd_sets(self):
+        """A Mac must get the macOS artwork, not the Windows Ctrl set."""
+        for name, stem in (("microsoft word", "word_template_mac"),
+                           ("microsoft excel", "excel_template_mac"),
+                           ("microsoft outlook", "outlook_template_mac"),
+                           ("microsoft powerpoint", "powerpoint_template_mac"),
+                           ("microsoft teams", "teams_template_mac"),
+                           ("adobe photoshop 2025", "photoshop_template_mac"),
+                           ("adobe illustrator 2025", "illustrator_template_mac"),
+                           ("adobe premiere pro 2025", "premiere_template_mac"),
+                           ("adobe after effects 2025", "aftereffects_template_mac"),
+                           ("notion", "notion_template_mac"),
+                           ("figma", "figma_template_mac"),
+                           ("obsidian", "obsidian_template_mac"),
+                           ("davinci resolve", "resolve_template_mac"),
+                           ("krita", "krita_template_mac")):
+            self.assertIn(f"{stem}.mods.png", self._overlay(name, "macos"), name)
+        self.assertIn("word_template.mods.png", self._overlay("winword", "windows"))
+
+    def _chrome(self, os_name, url=None, title="New Tab"):
+        from polyhost.handler.common import find_matching_entry
+        hit = find_matching_entry(title, self.handler.mapping["google chrome"], url, os_name)
+        overlay = (hit or {}).get("overlay") or []
+        return overlay if isinstance(overlay, list) else [overlay]
+
+    def test_chrome_on_macOS_keeps_its_web_app_routing(self):
+        """The `os:` branch replaces the entry, so the URL routing is repeated
+        inside it. Without that, every web app on a Mac showed Chrome's set."""
+        self.assertIn("chrome_template_mac.mods.png", self._chrome("macos"))
+        self.assertIn("github_template_mac.mods.png",
+                      self._chrome("macos", "https://github.com/x/y/pull/1"))
+        self.assertIn("confluence_template_mac.mods.png",
+                      self._chrome("macos", "https://a.atlassian.net/wiki/spaces/X"))
+        self.assertIn("jira_template_mac.mods.png",
+                      self._chrome("macos", "https://a.atlassian.net/browse/X-1"))
+        self.assertIn("miro_template_mac.mods.png", self._chrome("macos", None, "Board - Miro"))
+        self.assertIn("github_template.mods.png",
+                      self._chrome("windows", "https://github.com/x/y/pull/1"))
+        self.assertIn("chrome_template.mods.png", self._chrome("linux"))
+
+    def test_a_confluence_whiteboard_gets_ITS_tool_set(self):
+        """A whiteboard binds bare S/T/E/L/H/V to drawing tools, so the page
+        set (E = edit) would be wrong there. The url gate keeps the bare
+        "/whiteboard/" needle off every other site."""
+        wb = "https://a.atlassian.net/wiki/spaces/X/whiteboard/123"
+        for os_name, sfx in (("windows", ""), ("linux", ""), ("macos", "_mac")):
+            self.assertIn(f"confluence_whiteboard_template{sfx}.mods.png",
+                          self._chrome(os_name, wb), os_name)
+            self.assertIn(f"confluence_template{sfx}.mods.png",
+                          self._chrome(os_name, "https://a.atlassian.net/wiki/spaces/X/pages/1"),
+                          os_name)
+            self.assertNotIn(f"confluence_whiteboard_template{sfx}.mods.png",
+                             self._chrome(os_name, "https://example.com/whiteboard/1"), os_name)
+            # An Atlassian-looking PATH on another host must not pass the gate.
+            self.assertNotIn(f"confluence_whiteboard_template{sfx}.mods.png",
+                             self._chrome(os_name, "https://example.com/a.atlassian.net/wiki/"
+                                                   "spaces/X/whiteboard/1"), os_name)
+
+    def test_chrome_web_apps_fall_back_to_the_title_without_a_url(self):
+        """No extension means no URL. The window title's brand word then picks
+        the web-app set, on both the default and the macOS branch."""
+        for title, stem in (("Pull requests · x/y · GitHub - Google Chrome", "github_template"),
+                            ("Merge requests · x / y · GitLab - Google Chrome", "gitlab_template"),
+                            ("Pull request #1 — Bitbucket - Google Chrome", "bitbucket_pr_template"),
+                            ("Home - Space - Confluence - Google Chrome", "confluence_template"),
+                            ("Roadmap | Notion - Google Chrome", "notion_template"),
+                            ("Q3 plan - Google Docs - Google Chrome", "googledocs_template"),
+                            ("New chat - Claude - Google Chrome", "claude_web_template"),
+                            ("Fix the build - Claude Code - Google Chrome",
+                             "claude_code_web_template"),
+                            # "Code" without "Claude" beside it is a chat topic.
+                            ("Review my Code - Claude - Google Chrome", "claude_web_template"),
+                            ("ChatGPT - Google Chrome", "chatgpt_template")):
+            self.assertIn(f"{stem}.mods.png", self._chrome("windows", None, title), title)
+            self.assertIn(f"{stem}_mac.mods.png", self._chrome("macos", None, title), title)
+        # "Docs" alone is not Google Docs.
+        self.assertIn("chrome_template.mods.png",
+                      self._chrome("windows", None, "Read the Docs - Google Chrome"))
+        # A known URL that matches no site still overrules the title word.
+        self.assertIn("chrome_template.mods.png",
+                      self._chrome("windows", "https://www.google.com/search?q=github",
+                                   "github - Google Search - Google Chrome"))
+
+    def test_a_logged_in_github_title_routes_without_the_brand_word(self):
+        """Logged in, GitHub drops the trailing "· GitHub" from its page titles,
+        so "Workflow runs · owner/repo" carried no brand word and loaded Chrome's
+        set (forwarder log, 2026-10-13). Every such title ends in "· owner/repo";
+        GitLab writes "group / project", with spaces, and ends in "· GitLab"."""
+        for title in ("Workflow runs · thpoll83/qmk_firmware - Google Chrome",
+                      "Fix it by thpoll83 · Pull Request #369 · thpoll83/PolyKybdHost - Google Chrome",
+                      "Issues · thpoll83/PolyKybdHost - Google Chrome",
+                      "PolyKybdHost/README.md at main · thpoll83/PolyKybdHost - Google Chrome",
+                      "fix: relaunch · thpoll83/PolyKybdHost@305c9fa - Google Chrome",
+                      "Releases · my-org/my.repo_2 — Mozilla Firefox"):
+            self.assertIn("github_template.mods.png", self._chrome("windows", None, title), title)
+        self.assertIn("github_template_mac.mods.png",
+                      self._chrome("macos", None, "Issues · thpoll83/PolyKybdHost"))
+        # GitLab keeps its own set: spaced path, and its brand word later on.
+        for title in ("Issues · group / project · GitLab - Google Chrome",
+                      "Merge requests · Thomas / repo · GitLab"):
+            self.assertIn("gitlab_template.mods.png", self._chrome("windows", None, title), title)
+        # A middle dot without an owner/repo at the end is not GitHub.
+        for title in ("Settings · Profile - Google Chrome",
+                      "News · a/b testing explained · Blog - Google Chrome"):
+            self.assertIn("chrome_template.mods.png", self._chrome("windows", None, title), title)
+
+    def test_libreoffice_keeps_its_title_routing_on_macOS(self):
+        self.assertIn("libreoffice_calc_template_mac.mods.png",
+                      self._overlay("libreoffice", "macos", "Untitled 1 - LibreOffice Calc"))
+        self.assertIn("libreoffice_calc_template.mods.png",
+                      self._overlay("soffice", "windows", "Untitled 1 - LibreOffice Calc"))
+
+    def test_gimp_2_10_and_new_outlook_resolve(self):
+        self.assertTrue(self._overlay("gimp-2", "windows"))
+        self.assertTrue(self._overlay("gimp-2.10", "linux"))
+        self.assertTrue(self._overlay("olk", "windows"))
+
+    def test_ai_assistant_desktop_apps_reach_their_sets(self):
+        for name, stem in (("claude", "claude_desktop_template"),
+                           ("chatgpt", "chatgpt_template"),
+                           ("codex", "codex_template")):
+            self.assertIn(f"{stem}.mods.png", self._overlay(name, "windows"), name)
+            self.assertIn(f"{stem}_mac.mods.png", self._overlay(name, "macos"), name)
+
+    def test_ai_assistant_web_apps_route_by_url(self):
+        for os_name, sfx in (("windows", ""), ("macos", "_mac")):
+            self.assertIn(f"claude_web_template{sfx}.mods.png",
+                          self._chrome(os_name, "https://claude.ai/chat/abc"))
+            self.assertIn(f"chatgpt_template{sfx}.mods.png",
+                          self._chrome(os_name, "https://chatgpt.com/c/abc"))
+
+    def test_copilot_app_and_page_reach_the_copilot_sets(self):
+        """The Copilot app is a web page in a Chromium window: UI Automation
+        finds no shortcut in it, so without these entries it draws nothing, not
+        even its mark. Its Alt chords are Option chords on macOS, so one set
+        serves every OS."""
+        for os_name in ("windows", "macos"):
+            self.assertIn("copilot_template.mods.png", self._overlay("mscopilot", os_name))
+            self.assertIn("copilot_template.mods.png", self._overlay("copilot", os_name))
+            # The Copilot app installed under Program Files (x86)\Microsoft\Copilot
+            # runs as copilotapp.exe (field, 2026-11-10: "No match", nothing drawn).
+            self.assertIn("copilot_template.mods.png", self._overlay("copilotapp", os_name))
+            self.assertIn("copilot_web_template.mods.png",
+                          self._chrome(os_name, "https://copilot.microsoft.com/chats/abc"))
+            # The host gate: a Copilot URL inside another site's query is not Copilot.
+            other = self._chrome(os_name, "https://example.com/search?q=copilot.microsoft.com")
+            self.assertNotIn("copilot_web_template", " ".join(other))
+
+    def test_office_on_the_web_routes_by_share_link_and_file_type(self):
+        sp = "https://contoso.sharepoint.com"
+        for url, stem in (
+                (f"{sp}/:w:/r/sites/x/_layouts/15/Doc.aspx?sourcedoc=%7B1%7D&action=edit", "word_web_template"),
+                (f"{sp}/:x:/r/personal/a/_layouts/15/Doc.aspx?sourcedoc=%7B1%7D", "excel_web_template"),
+                (f"{sp}/:p:/g/personal/a/EaBc", "powerpoint_web_template"),
+                (f"{sp}/:o:/r/sites/x/_layouts/15/Doc.aspx?sourcedoc=%7B1%7D", "onenote_web_template"),
+                (f"{sp}/sites/x/_layouts/15/Doc.aspx?sourcedoc=%7B1%7D&file=Report.docx", "word_web_template"),
+                ("https://onedrive.live.com/edit?id=1&resid=1&ithint=file%2cxlsx", "excel_web_template"),
+                ("https://onedrive.live.com/edit?id=1&resid=1&ithint=file%2cpptx", "powerpoint_web_template"),
+                ("https://onedrive.live.com/edit?id=1&resid=1&ithint=onenote%2c", "onenote_web_template"),
+                ("https://www.onenote.com/notebooks", "onenote_web_template"),
+                ("https://onedrive.live.com/edit?id=1&ithint=file%2Cdocx&wdOrigin=x", "word_web_template"),
+                # A site PATH naming another type does not decide the app;
+                # the file's own extension does.
+                (f"{sp}/sites/docx-guides/_layouts/15/Doc.aspx?file=Budget.xlsx", "excel_web_template"),
+                # A direct file link: the extension ends at the query.
+                (f"{sp}/sites/x/Shared%20Documents/Budget.xlsx?web=1", "excel_web_template")):
+            self.assertIn(f"{stem}.mods.png", self._chrome("windows", url), url)
+
+    def test_office_needles_on_OTHER_sites_keep_the_browser_set(self):
+        """`docx` and `onenote` are plain words: the host gate is what stops a
+        download link or a search for "onenote" pulling Office keycaps."""
+        for url in ("https://example.com/files/Report.docx",
+                    "https://www.google.com/search?q=onenote+shortcuts",
+                    "https://example.com/:w:/share",
+                    # The host part must stop at "?", "#" and "@": a Microsoft
+                    # name in a query string or as user info is not the host.
+                    "https://evil.example?x=.sharepoint.com/Report.docx",
+                    "https://evil.example?x=.sharepoint.com/:w:/r",
+                    "https://evil.example#.onedrive.live.com/x.xlsx",
+                    "https://a.sharepoint.com@evil.example/:w:/r",
+                    # "onenote" in a site path is not a notebook.
+                    "https://contoso.sharepoint.com/sites/onenote-team/Shared%20Documents/Plan.pdf"):
+            overlay = self._chrome("windows", url)
+            self.assertIn("chrome_template.mods.png", overlay, url)
+            # Substring test over the FILE NAMES: `overlay` is a list, and
+            # `in` on a list only compares whole entries.
+            self.assertNotIn("_web_template", " ".join(overlay), url)
+
+    def test_on_macOS_only_powerpoint_on_the_web_has_a_set(self):
+        sp = "https://contoso.sharepoint.com"
+        self.assertIn("powerpoint_web_template_mac.mods.png",
+                      self._chrome("macos", f"{sp}/:p:/g/personal/a/EaBc"))
+        overlay = self._chrome("macos", f"{sp}/:w:/r/sites/x/Doc.aspx")
+        self.assertIn("chrome_template_mac.mods.png", overlay)
+        self.assertNotIn("word_web_template", " ".join(overlay))
+
+    def test_visio_reaches_its_set(self):
+        self.assertIn("visio_template.mods.png", self._overlay("visio", "windows"))
+
+    def test_claude_code_on_the_web_does_NOT_get_the_chat_set(self):
+        """claude.ai/code contains claude.ai, and the first hit wins."""
+        for os_name, sfx in (("windows", ""), ("macos", "_mac")):
+            overlay = self._chrome(os_name, "https://claude.ai/code/session_1")
+            self.assertIn(f"claude_code_web_template{sfx}.mods.png", overlay)
+            self.assertNotIn(f"claude_web_template{sfx}.mods.png", overlay)
+
+    def test_codex_in_a_tab_does_NOT_get_the_chatgpt_set(self):
+        """chatgpt.com/codex contains chatgpt.com, and the first hit wins."""
+        for os_name, sfx in (("windows", ""), ("macos", "_mac")):
+            overlay = self._chrome(os_name, "https://chatgpt.com/codex/tasks/1")
+            self.assertIn(f"chrome_template{sfx}.mods.png", overlay)
+            self.assertNotIn(f"chatgpt_template{sfx}.mods.png", overlay)
+
+
+
+class CopilotKeyWithoutADisplayTest(unittest.TestCase):
+    """The Copilot names, read from the mapping file itself.
+
+    The routing classes above need a display (`active_window` imports
+    pywinctl), so a headless run skips them and still reports OK. This reads the
+    raw YAML, so the copilotapp name is checked on every run.
+    """
+
+    def test_every_copilot_app_name_shares_the_copilot_set(self):
+        raw = yaml.safe_load(MAPPING.read_text(encoding="utf-8"))
+        entry = next((v for k, v in raw.items()
+                      if "mscopilot" in [n.strip().lower() for n in str(k).split(",")]), None)
+        self.assertIsNotNone(entry, "no mapping key lists mscopilot")
+        names = next(k for k, v in raw.items() if v is entry)
+        self.assertEqual({n.strip().lower() for n in names.split(",")},
+                         {"mscopilot", "copilotapp", "copilot"})
+        self.assertIn("copilot_template.mods.png", entry["overlay"])
 
 if __name__ == "__main__":
     unittest.main()

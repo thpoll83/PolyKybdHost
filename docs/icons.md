@@ -26,6 +26,14 @@ entry counts. A rule separated from those numbers cannot be re-derived.
   use), `<v>@1024.png` for docs/store, the `<v>_<n>.png` size ladder, `.ico` and
   `.icns`. Redesigned 2026-09-05 from a six-hue rainbow to one blue -> cyan sweep,
   with "HOST" stamped out of the bottom row's four rightmost keys.
+  - **`phid` is the connected mark in a violet sweep (`#6D28D9` → `#A78BFA`),
+    worn while the keyboard is reachable over raw HID only** (2026-10-18). The
+    firmware's bulk pipe (a CDC serial interface next to raw HID) is optional, and
+    `IconStateManager.set_transport("hid")` swaps the colour. Only the hue changes:
+    the stamp is unreadable below 128 px and the P names the app, so neither can
+    carry a runtime state in the tray. A purple-magenta sweep was rendered and
+    rejected as reading like another product. Tray app only; the forwarder has no
+    keyboard and so no transport.
   - **Two letters ship: `GRID` spells a P and `GRID_F` an F** (2026-09-14). The
     forwarder is a second tray app, and forwarding to your own keyboard machine
     puts the two marks side by side in one notification area, so they must not look

@@ -10,7 +10,7 @@ import unittest
 from datetime import datetime, timezone, timedelta
 from unittest import mock
 
-from polyhost.services.sunlight_helper import Sunlight
+from polyhost.services.sunlight_helper import Sunlight, scrub_coords
 
 
 def _sun(online=False, location=False):
@@ -151,6 +151,90 @@ class ImportWeightTest(unittest.TestCase):
                               capture_output=True, text=True)
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertIn("OK", proc.stdout)
+
+
+class CoordinatesMustNotReachRoutineLogsTest(unittest.TestCase):
+    """`init_location` keeps exact coordinates at DEBUG on purpose. A requests
+    exception carries the whole request URL in its str(), so logging one at
+    WARNING put them back -- and into every log bundle. Verified against a real
+    unreachable host before the fix: full 4-decimal precision."""
+
+    # Deliberately not a real place: an audit of a location leak should not
+    # itself carry coordinates anyone could read as someone's address.
+    LAT, LON = 12.3456, 65.4321
+
+    def _warnings_from(self, fn):
+        s = _sun(online=True, location=True)
+        # `location_known` stays False: init_location() returns at once when it
+        # is set, so setting it here made two of these tests assert on no logs.
+        s.latitude, s.longitude = self.LAT, self.LON
+        with self.assertLogs("PolyHost", level="WARNING") as caught:
+            fn(s)
+        return "\n".join(caught.output)
+
+    def _raise_like_requests(self, *a, **kw):
+        """Raise what `requests` really raises: the message embeds the URL.
+
+        The message is built from the URL the code under test passed in, not a
+        copy of it, so a change to how the URL is assembled is still covered.
+        """
+        import requests
+        url = kw.get("url") or a[0]
+        raise requests.exceptions.ConnectionError(
+            f"HTTPSConnectionPool(host='api.open-meteo.com', port=443): Max "
+            f"retries exceeded with url: {url} (Caused by NewConnectionError("
+            f"'Failed to establish a new connection: [Errno -3] Temporary "
+            f"failure in name resolution'))")
+
+    def test_a_failed_irradiance_lookup_logs_no_coordinates(self):
+        with mock.patch("requests.get", side_effect=self._raise_like_requests):
+            text = self._warnings_from(lambda s: s._online_irradiance())
+        self.assertNotIn(str(self.LAT), text)
+        self.assertNotIn(str(self.LON), text)
+        self.assertIn("<redacted>", text)
+        # The diagnosis a support round needs must survive the scrub.
+        self.assertIn("ConnectionError", text)
+        self.assertIn("api.open-meteo.com", text)
+
+    def test_a_geolocation_body_carrying_a_fix_is_scrubbed(self):
+        # ip-api's failure bodies carry no coordinates, but the fallback logs
+        # the WHOLE response dict, so a partial success would.
+        body = {"status": "fail", "lat": self.LAT, "lon": self.LON}
+        with mock.patch("requests.get",
+                        return_value=mock.Mock(json=lambda: body)):
+            text = self._warnings_from(lambda s: s.init_location())
+        self.assertNotIn(str(self.LAT), text)
+        self.assertNotIn(str(self.LON), text)
+
+    def test_a_body_whose_values_are_STRINGS_is_scrubbed(self):
+        # The quote sits between the separator and the digits, which an earlier
+        # pattern did not consume, so the whole dict went through untouched.
+        body = {"status": "fail", "lat": str(self.LAT), "lon": str(self.LON)}
+        with mock.patch("requests.get",
+                        return_value=mock.Mock(json=lambda: body)):
+            text = self._warnings_from(lambda s: s.init_location())
+        self.assertNotIn(str(self.LAT), text)
+        self.assertNotIn(str(self.LON), text)
+
+    def test_a_coordinate_in_scientific_notation_is_fully_scrubbed(self):
+        # `str(0.0000123)` is '1.23e-05', so any coordinate under about 1e-4
+        # formats this way and an earlier pattern matched the mantissa only,
+        # leaving "<redacted>e-05" -- which still gives away the magnitude.
+        tiny_lat, tiny_lon = 0.0000123, -0.0000456
+        self.assertIn("e-05", f"{tiny_lat}")      # the premise, not an assumption
+        got = scrub_coords(f"url: /v1/forecast?latitude={tiny_lat}"
+                           f"&longitude={tiny_lon}&hourly=x")
+        self.assertEqual(
+            got, "url: /v1/forecast?latitude=<redacted>"
+                 "&longitude=<redacted>&hourly=x")
+
+    def test_the_scrubber_keeps_everything_that_is_not_a_coordinate(self):
+        got = scrub_coords("GET /v1/forecast?latitude=-1.5&longitude=65.4321"
+                           "&hourly=shortwave_radiation failed")
+        self.assertEqual(
+            got,
+            "GET /v1/forecast?latitude=<redacted>&longitude=<redacted>"
+            "&hourly=shortwave_radiation failed")
 
 
 if __name__ == "__main__":

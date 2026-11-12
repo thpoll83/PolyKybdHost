@@ -43,7 +43,7 @@ def faces():
     def covering(cp):
         return next((f for f in d.fonts if f.first <= cp <= f.last), None)
 
-    return {"icons": covering(0x80), "globe": covering(0x1F310),
+    return {"icons": covering(ss.ICON_LAYER), "globe": covering(0x1F310),
             "mid": ui.get("NotoSans_Regular_Mid_19px7b"),
             "small": ui.get("NotoSans_Regular_Small_15px7b"),
             "tiny": ui.get("NotoSans_Regular_Nano_10px7b")}

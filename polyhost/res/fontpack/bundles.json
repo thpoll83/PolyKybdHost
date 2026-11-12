@@ -1,16 +1,16 @@
 {
-  "layout_version": 1,
-  "bundle_count": 8,
+  "layout_version": 3,
+  "bundle_count": 9,
   "bundles": [
     {
       "id": "symbol",
       "index": 0,
       "file": "symbol.plyf",
-      "content_version": 9,
-      "size": 38976,
+      "content_version": 12,
+      "size": 89632,
       "slot_offset": 4096,
       "slot_size": 98304,
-      "sha256": "e79bb01ae7f47c0e"
+      "sha256": "804b17e837221d0c"
     },
     {
       "id": "mideast",
@@ -46,11 +46,11 @@
       "id": "flags",
       "index": 4,
       "file": "flags.plyf",
-      "content_version": 5,
-      "size": 65172,
+      "content_version": 6,
+      "size": 52964,
       "slot_offset": 430080,
       "slot_size": 131072,
-      "sha256": "9e55e2ccc7ec431e"
+      "sha256": "1e5c6593bb7e03f9"
     },
     {
       "id": "emoji",
@@ -59,18 +59,18 @@
       "content_version": 3,
       "size": 220628,
       "slot_offset": 561152,
-      "slot_size": 786432,
+      "slot_size": 524288,
       "sha256": "a1e5b08121798484"
     },
     {
       "id": "fantasy",
       "index": 6,
       "file": "fantasy.plyf",
-      "content_version": 5,
-      "size": 26624,
-      "slot_offset": 1347584,
+      "content_version": 7,
+      "size": 32564,
+      "slot_offset": 1085440,
       "slot_size": 131072,
-      "sha256": "39ed6aafdc8a1868"
+      "sha256": "961377788254124e"
     },
     {
       "id": "latinbig",
@@ -78,9 +78,20 @@
       "file": "latinbig.plyf",
       "content_version": 1,
       "size": 162528,
-      "slot_offset": 1478656,
-      "slot_size": 618496,
+      "slot_offset": 1216512,
+      "slot_size": 356352,
       "sha256": "59f9e85ad666b842"
+    },
+    {
+      "id": "icons",
+      "index": 8,
+      "file": "icons.plyi",
+      "kind": "icons",
+      "content_version": 8,
+      "size": 359084,
+      "slot_offset": 1572864,
+      "slot_size": 524288,
+      "sha256": "032978d3f295a990"
     }
   ]
 }

@@ -1,0 +1,220 @@
+"""gui/menu_tiles.py: tiles bound to a menu's actions, and where they are used."""
+import os
+import unittest
+import unittest.mock as mock
+
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
+from PyQt5.QtWidgets import QAction, QActionGroup, QApplication, QMenu  # noqa: E402
+
+from polyhost.gui import keycap_tiles, menu_tiles  # noqa: E402
+
+_APP = QApplication.instance() or QApplication([])
+
+
+class SupportTest(unittest.TestCase):
+
+    def test_windows_yes_macos_no(self):
+        self.assertTrue(menu_tiles.tiles_supported("win32", env={}))
+        self.assertFalse(menu_tiles.tiles_supported("darwin", env={}))
+
+    def test_linux_follows_the_status_notifier_host(self):
+        with mock.patch.object(menu_tiles, "_status_notifier_host", return_value=True):
+            self.assertFalse(menu_tiles.tiles_supported("linux", env={}))
+        with mock.patch.object(menu_tiles, "_status_notifier_host", return_value=False):
+            self.assertTrue(menu_tiles.tiles_supported("linux", env={}))
+
+    def test_the_environment_overrides(self):
+        self.assertTrue(menu_tiles.tiles_supported("darwin", env={"POLYHOST_MENU_TILES": "1"}))
+        self.assertFalse(menu_tiles.tiles_supported("win32", env={"POLYHOST_MENU_TILES": "0"}))
+
+
+class TileGridTest(unittest.TestCase):
+
+    def setUp(self):
+        self.menu = QMenu()
+        self.addCleanup(self.menu.deleteLater)
+        group = QActionGroup(self.menu)
+        self.actions = []
+        for i, text in enumerate(("Small", "Medium", "Large")):
+            act = QAction(text, self.menu, checkable=True)
+            act.setData(i)
+            group.addAction(act)
+            self.menu.addAction(act)
+            self.actions.append(act)
+        self.menu.addSeparator()
+        self.other = self.menu.addAction("Back to automatic")
+        icons = [keycap_tiles.to_icon(p) for p in keycap_tiles.size_panels([0, 1, 2])]
+        with mock.patch.dict(os.environ, {"POLYHOST_MENU_TILES": "1"}):
+            self.holder = menu_tiles.add_tiles(self.menu, self.actions, icons, 3,
+                                               keycap_tiles.tile_size(), labels=["S", "M", "L"])
+        self.tiles = self.holder.defaultWidget().tiles
+
+    def test_the_rows_are_replaced_by_the_grid(self):
+        self.assertEqual(self.menu.actions()[0], self.holder)
+        for act in self.actions:
+            self.assertNotIn(act, self.menu.actions())
+        self.assertIn(self.other, self.menu.actions())
+
+    def test_a_click_triggers_the_action(self):
+        seen = []
+        self.actions[2].triggered.connect(lambda: seen.append(2))
+        self.tiles[2].click()
+        self.assertEqual(seen, [2])
+        self.assertTrue(self.actions[2].isChecked())
+
+    def test_tiles_follow_the_actions(self):
+        self.actions[1].setChecked(True)
+        self.assertTrue(self.tiles[1].isChecked())
+        self.assertFalse(self.tiles[0].isChecked())
+        self.actions[0].setEnabled(False)
+        self.assertFalse(self.tiles[0].isEnabled())
+        self.assertEqual([t.text() for t in self.tiles], ["S", "M", "L"])
+
+    def test_a_disabled_action_is_not_triggered(self):
+        seen = []
+        self.actions[0].triggered.connect(lambda: seen.append(0))
+        self.actions[0].setEnabled(False)
+        menu_tiles.TileGrid._trigger(self.actions[0])
+        self.assertEqual(seen, [])
+
+    def test_nothing_is_added_where_tiles_are_not_supported(self):
+        menu = QMenu()
+        self.addCleanup(menu.deleteLater)
+        act = menu.addAction("x")
+        with mock.patch.dict(os.environ, {"POLYHOST_MENU_TILES": "0"}):
+            self.assertIsNone(menu_tiles.add_tiles(menu, [act], [None], 1, keycap_tiles.tile_size()))
+        self.assertEqual(menu.actions(), [act])
+
+
+class PanelTest(unittest.TestCase):
+
+    def test_every_panel_has_ink_except_off(self):
+        panels = (keycap_tiles.size_panels([0, 1, 2])
+                  + [keycap_tiles.brightness_panel(v) for v in (2, 25, 50)]
+                  + [keycap_tiles.idle_panel(s) for s in range(4)]
+                  + [keycap_tiles.script_panel(0)])
+        for panel in panels:
+            self.assertEqual(panel.size, (keycap_tiles.PANEL_W, keycap_tiles.PANEL_H))
+            self.assertGreater(panel.getextrema()[1], 0)
+
+    def test_sizes_grow(self):
+        heights = [p.getbbox()[3] - p.getbbox()[1] for p in keycap_tiles.size_panels([0, 1, 2])]
+        self.assertLess(heights[0], heights[1])
+        self.assertLess(heights[1], heights[2])
+
+    def test_brightness_rises_with_the_level(self):
+        tops = [keycap_tiles.brightness_panel(v).getextrema()[1] for v in (2, 25, 50)]
+        self.assertEqual(tops, sorted(tops))
+        self.assertLess(tops[0], tops[2])
+
+
+class FirstShowTest(unittest.TestCase):
+    """add_tiles_on_first_show: built once, on the first show."""
+
+    def test_built_once_and_a_checked_tile_stays_checked(self):
+        menu = QMenu()
+        self.addCleanup(menu.deleteLater)
+        actions = [menu.addAction("a"), menu.addAction("b")]
+        for act in actions:
+            act.setCheckable(True)
+        with mock.patch.dict(os.environ, {"POLYHOST_MENU_TILES": "1"}):
+            menu_tiles.add_tiles_on_first_show(menu, actions, lambda: [None, None], 2,
+                                               keycap_tiles.tile_size())
+            menu.aboutToShow.emit()
+            menu.aboutToShow.emit()     # a second show builds nothing more
+        _APP.processEvents()
+        holders = [a for a in menu.actions() if isinstance(a, menu_tiles.QWidgetAction)]
+        self.assertEqual(menu.actions(), holders)
+        self.assertEqual(len(holders), 1)
+        tile = holders[0].defaultWidget().tiles[0]
+        tile.click()
+        self.assertTrue(actions[0].isChecked())
+        self.assertTrue(tile.isChecked())
+
+    def test_a_failing_grid_leaves_the_rows(self):
+        menu = QMenu()
+        self.addCleanup(menu.deleteLater)
+        rows = [menu.addAction("a"), menu.addAction("b")]
+        with mock.patch.dict(os.environ, {"POLYHOST_MENU_TILES": "1"}), \
+                mock.patch.object(menu_tiles.TileGrid, "_relayout", side_effect=RuntimeError("x")), \
+                self.assertLogs("polyhost.menu_tiles", "ERROR"):
+            menu_tiles.add_tiles_on_first_show(menu, rows, lambda: [None, None], 2,
+                                               keycap_tiles.tile_size())
+            menu.aboutToShow.emit()
+        self.assertEqual(menu.actions(), rows)
+
+
+def fm_w(text):
+    from PyQt5.QtWidgets import QMenu as _Menu
+    m = _Menu()
+    return m.fontMetrics().horizontalAdvance(text)
+
+
+class ReviewFixes786Test(unittest.TestCase):
+    """Four findings CodeRabbit made on #786."""
+
+    def _fm(self):
+        from PyQt5.QtGui import QFontMetrics, QFont
+        return QFontMetrics(QFont())
+
+    def test_a_caption_without_spaces_wraps(self):
+        fm = self._fm()
+        text = "\u30ad\u30fc\u30dc\u30fc\u30c9\u306e\u30af\u30e9\u30c3\u30b7\u30e5\u8a18\u9332"
+        width = fm.horizontalAdvance(text) * 6 // 10
+        out = menu_tiles.wrap_caption(text, fm, width)
+        self.assertEqual(out.replace("\n", ""), text)       # whole, on two lines
+        self.assertEqual(len(out.split("\n")), 2)
+
+    def test_the_space_before_a_cjk_word_is_kept(self):
+        # Revix on #786: "Firmware 固件" was drawn as "Firmware固件".
+        fm = self._fm()
+        text = "Firmware \u56fa\u4ef6\u66f4\u65b0\u68c0\u67e5\u5de5\u5177"
+        # Room for the Latin word and three CJK characters on the first line.
+        out = menu_tiles.wrap_caption(text, fm, fm.horizontalAdvance("Firmware \u56fa\u4ef6\u66f4"))
+        self.assertTrue(out.startswith("Firmware \u56fa\u4ef6"), out)
+
+    def test_latin_words_still_break_only_at_spaces(self):
+        fm = self._fm()
+        out = menu_tiles.wrap_caption("Report a Problem", fm, fm.horizontalAdvance("Report a"))
+        self.assertEqual(out, "Report a\nProblem")
+
+    def _grid(self, texts, lo=60, hi=400):
+        menu = QMenu()
+        self.addCleanup(menu.deleteLater)
+        actions = [menu.addAction(t) for t in texts]
+        with mock.patch.dict(os.environ, {"POLYHOST_MENU_TILES": "1"}):
+            holder = menu_tiles.add_tiles(menu, actions, [None] * len(actions), 3,
+                                          keycap_tiles.tile_size(), tile_width=lo,
+                                          max_tile_width=hi)
+        return holder.defaultWidget(), actions
+
+    def test_the_width_follows_a_text_that_grows(self):
+        grid, actions = self._grid(["About", "Log file"])
+        before = grid.tiles[0].width()
+        actions[0].setText("Update firmware to version 1.11.6 with a longer text")
+        self.assertGreater(grid.tiles[0].width(), before)
+        self.assertEqual(grid.tiles[0].width(), grid.tiles[1].width())
+        self.assertNotIn("\u2026", grid.tiles[0].text())
+
+    def test_a_cleanly_wrapped_cjk_caption_gets_no_tooltip(self):
+        text = "\u30ad\u30fc\u30dc\u30fc\u30c9\u306e\u30af\u30e9\u30c3\u30b7\u30e5"
+        grid, _actions = self._grid([text], lo=40, hi=fm_w(text) * 7 // 10 + 24)
+        self.assertNotIn("\u2026", grid.tiles[0].text())
+        self.assertEqual(grid.tiles[0].toolTip(), "")
+
+    def test_a_shortened_caption_keeps_its_full_label_beside_a_rich_tooltip(self):
+        menu = QMenu()
+        self.addCleanup(menu.deleteLater)
+        act = menu.addAction("Tengwar (fantasy)")
+        act.setToolTip('<img src="data:image/png;base64,AAAA">')
+        with mock.patch.dict(os.environ, {"POLYHOST_MENU_TILES": "1"}):
+            holder = menu_tiles.add_tiles(menu, [act], [None], 1, keycap_tiles.tile_size(),
+                                          labels=["Tengwar"])
+        tip = holder.defaultWidget().tiles[0].toolTip()
+        self.assertIn("Tengwar (fantasy)", tip)
+        self.assertIn("<img", tip)
+
+
+if __name__ == "__main__":
+    unittest.main()

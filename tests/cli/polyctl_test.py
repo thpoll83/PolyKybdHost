@@ -9,9 +9,11 @@ runs against the fake server with the connection injected.
 """
 import contextlib
 import io
+import os
 import sys
 import threading
 import unittest
+from unittest import mock
 from multiprocessing import Pipe
 
 from polyhost.cli import polyctl
@@ -131,6 +133,19 @@ class PolyctlTest(unittest.TestCase):
                          {"master_is_left": False})
         self.assertIn("connected half to RIGHT", out)
         self.assertIn("other half becomes LEFT", out)
+
+    def test_handedness_split_vbus_flag(self):
+        for flag, value in (("on", True), ("off", False)):
+            rc, out, err, server = run_main(
+                ["handedness", "left", "--split-vbus", flag],
+                {protocol.M_SET_HANDEDNESS_BOARD: {"queued": True}})
+            self.assertEqual(rc, 0)
+            received = dict(server.received)
+            self.assertNotIn(protocol.M_SET_HANDEDNESS, received,
+                             "an older daemon would drop the flag from the plain method")
+            self.assertEqual(received[protocol.M_SET_HANDEDNESS_BOARD],
+                             {"master_is_left": True, "split_vbus": value})
+            self.assertIn(f"split-VBUS flag {flag}", out)
 
     def test_handedness_rejects_a_missing_or_bogus_side(self):
         """argparse must refuse rather than defaulting to a side.
@@ -254,14 +269,14 @@ class PolyctlTest(unittest.TestCase):
                                     {protocol.M_SETTINGS_SET: [True, None]})
         self.assertEqual(rc, 0)
         self.assertEqual(dict(server.received)[protocol.M_SETTINGS_SET],
-                         {"key": "brightness", "value": 30})
+                         {"key": "brightness", "value": 30, "source": "polyctl"})
 
     def test_settings_set_falls_back_to_string(self):
         rc, _, _, server = run_main(["settings", "set", "mode", "hex"],
                                     {protocol.M_SETTINGS_SET: [True, None]})
         self.assertEqual(rc, 0)
         self.assertEqual(dict(server.received)[protocol.M_SETTINGS_SET],
-                         {"key": "mode", "value": "hex"})
+                         {"key": "mode", "value": "hex", "source": "polyctl"})
 
     def test_fw_version_prints(self):
         rc, out, _, _ = run_main(["fw", "version"], {protocol.M_FW_VERSION: "0.7.3"})
@@ -335,6 +350,40 @@ def run_streaming(argv, method, result, events):
     rpc.close()
     server.join()
     return rc, out.getvalue(), err.getvalue()
+
+
+class EmojiDictTest(unittest.TestCase):
+    STATUS = {"shipped": True, "supported": True, "selected": "en", "file": "", "file_error": "",
+              "device": None, "dictionaries": [{"id": "en", "label": "English"},
+                                               {"id": "de", "label": "Deutsch — German"}]}
+
+    def test_set_sends_the_id_to_choose(self):
+        rc, out, _, server = run_main(["emoji-dict", "set", "de"],
+                                      {protocol.M_EMOJIDICT_STATUS: self.STATUS,
+                                       protocol.M_EMOJIDICT_CHOOSE: "de"})
+        self.assertEqual(rc, 0)
+        self.assertEqual(dict(server.received)[protocol.M_EMOJIDICT_CHOOSE],
+                         {"id": "de", "source": "polyctl"})
+        self.assertIn("the keyboard gets it", out)
+
+    def test_file_sends_an_absolute_path_and_clear_sends_empty(self):
+        rc, out, _, server = run_main(["emoji-dict", "file", "mine.plyd"],
+                                      {protocol.M_EMOJIDICT_STATUS: self.STATUS,
+                                       protocol.M_EMOJIDICT_CHOOSE: "x"})
+        self.assertEqual(rc, 0)
+        self.assertEqual(dict(server.received)[protocol.M_EMOJIDICT_CHOOSE]["path"],
+                         os.path.abspath("mine.plyd"))
+        rc, out, _, server = run_main(["emoji-dict", "file", "--clear"],
+                                      {protocol.M_EMOJIDICT_STATUS: self.STATUS,
+                                       protocol.M_EMOJIDICT_CHOOSE: ""})
+        self.assertEqual(dict(server.received)[protocol.M_EMOJIDICT_CHOOSE]["path"], "")
+        self.assertIn("using en", out)
+
+    def test_no_slot_says_nothing_is_flashed(self):
+        st = dict(self.STATUS, supported=False)
+        rc, out, _, _ = run_main(["emoji-dict", "set", "de"],
+                                 {protocol.M_EMOJIDICT_STATUS: st, protocol.M_EMOJIDICT_CHOOSE: "de"})
+        self.assertIn("nothing is flashed now", out)
 
 
 class FwFlashUpdateTest(unittest.TestCase):
@@ -431,6 +480,20 @@ class FwFlashUpdateTest(unittest.TestCase):
                                  {protocol.M_UPDATE_CHECK: {"available": True, "version": "0.9.0", "url": "http://x"}})
         self.assertEqual(rc, 0)
         self.assertIn("0.9.0", out)
+
+
+class VersionFlagTest(unittest.TestCase):
+    def test_version_prints_host_version_without_connecting(self):
+        from polyhost._version import __protocol__, __version__
+        out = io.StringIO()
+        with mock.patch.object(polyctl, "connect",
+                               side_effect=AssertionError("must not connect")), \
+                contextlib.redirect_stdout(out), \
+                self.assertRaises(SystemExit) as cm:
+            polyctl.main(["--version"])
+        self.assertEqual(cm.exception.code, 0)
+        self.assertEqual(out.getvalue().strip(),
+                         f"polyctl {__version__} (protocol {__protocol__})")
 
 
 class ImportGuardTest(unittest.TestCase):

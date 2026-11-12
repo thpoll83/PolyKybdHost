@@ -78,7 +78,7 @@ class EncodeDropsWhatCannotBeUsedTest(unittest.TestCase):
                          [[0, 0x3E, "Refresh"]])
 
     def test_it_is_BOUNDED(self):
-        self.assertEqual(len(shortcut_relay.encode([sc()] * 500)),
+        self.assertEqual(len(shortcut_relay.encode([sc()] * (shortcut_relay.MAX_SHORTCUTS + 50))),
                          shortcut_relay.MAX_SHORTCUTS)
 
     def test_a_long_LABEL_is_clamped_not_dropped(self):

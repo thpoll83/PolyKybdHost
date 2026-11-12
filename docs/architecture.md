@@ -14,8 +14,8 @@ and relative links were adjusted to suit a standalone file.
 - `polyhost/host.py` — `PolyHost(QApplication)`: Normal-mode **Qt client**. Owns `PolyCore`, the tray icon, menus and dialogs; subscribes to core events and marshals them onto the Qt main thread via `WorkerBridge.job_done` (the event names match `_on_job_done`'s dispatch). Connection state (`connected`/`device_present`/`paused`/`last_applied_connected`/`kb_sw_version`/`mapping`) are **properties over the core** — the core is the single source of truth. The active-window QTimer stays on the main thread (pywinctl/macOS constraint) and just calls `core.tick_window_tracking()`.
 - `polyhost/server/` — **control socket** (headless-core H2). `protocol.py`: stdlib `multiprocessing.connection` transport (UDS / Windows named pipe + authkey), UTF-8 JSON framing, JSON-RPC message shapes, the `hello` version gate, platformdirs endpoint+authkey (0600), and the canonical `M_*` method-name constants. `control_server.py`: `ControlServer` — accept loop + per-connection reader threads, a method registry dispatching to `PolyCore` (core `(ok,payload)` failures → JSON-RPC `ERR_DEVICE`), and core-event fan-out to subscribed clients. `instance.py`: the socket doubles as the single-instance lock. `PolyHost` embeds a `ControlServer` (M1); the CLI/headless server reuse it. `window_report_server.py`/`window_report_client.py` (H4d): a **separate, opt-in** `AF_INET` listener (`WindowReportServer`, port `WINDOW_REPORT_PORT=50163`) that serves **only** `window.report` — same `hello`+authkey gating, but a **separate authkey** (`window_report_authkey_path()`) and **no `PolyCore` reference** (only an injected `report_window` callback), so the network surface can never reach device control/flash/bootloader. `HeadlessHost` starts it only when `window_report_network_enabled` is set (default False); the forwarder pushes to it with `--report-rpc`. The legacy plaintext TCP relay (port 50162, `remote_window.receive_from_forwarder`) is **unauthenticated and binds all interfaces**, so it is now **off by default** — `RemoteHandler.listen_to_forwarder()` only binds it when the `dev_legacy_plaintext_relay` setting opts in (threaded `PolyCore.settings_get` → `OverlayHandler` → `RemoteHandler`); with remote entries mapped but the relay disabled it warns **once** pointing to the authenticated path (suppressed when `window_report_network_enabled` is already on, since reports then arrive over RPC — both transports funnel through the same `RemoteHandler.report_window` → `remote_changed`/`_match_remote`, so remote-entry matching is transport-agnostic). The `dev_` prefix hides the setting in the settings dialog unless developer mode is on (`settings_dialog.py` skips `dev_*` keys when `developer_mode` is False). The `window.report` control-socket path (authkey-gated) supersedes it.
 - `polyhost/cli/polyctl.py` — **`polyctl`** console-script (stdlib-only, never imports Qt): `status`, `lang list|set`, `brightness`, `idle`, **`idle-style [pulse|jitter]`** (get/set the idle anti-burn-in style over HID cmd 28 — `M_IDLE_STYLE_GET/SET` → `PolyCore.get/set_idle_style` → `PolyKybd`, firmware v4+), `overlay …`, `keymap …`, `commands`, `fw version`, **`fw flash <bin> [--apply]`**, `pause|resume`, `mru save`, `settings get|set`, **`update check|install`**, **`window report`**, `watch`, `shutdown`. Long ops (`fw flash`, `update install`) subscribe to events and stream progress to a terminal event — `RpcClient` exposes `subscribe_events()`/`events()` (the latter ends on `EOFError`/`OSError`); `watch()` builds on them. Talks the `protocol.py` wire format to the control socket.
-- `polyhost/headless.py` — **`--headless`** (M2, H3): `HeadlessHost` runs `PolyCore` + `ControlServer` + the core-owned window tick with **zero Qt import** in the process (`main_app` imports Qt/`PolyHost` lazily, only in the GUI branch — guarded by `tests/headless/headless_entry_test.py` and the import guard). The core auto-applies its own reconnect snapshots headless (`PolyCore(apply_reconnect_in_core=True)`). On a `polyctl update install`, the core only applies+emits; `HeadlessHost` re-execs (or hands off to the Windows relay) on `update_finished_ok`/`update_relay_needed`. Drive it with `polyctl`. Two headless gotchas fixed the hard way: the core-owned window-tick thread must **`pythoncom.CoInitialize()` on Windows** (pywinctl uses COM; a fresh thread without it fails every poll with "Invalid syntax"); and `poly_core` imports `polyhost.util.log_util` so `Logger.debug_detailed` (used by the device code) exists in the headless process too (the GUI got it via `host.py`). The daemon writes `daemon_log.txt`; `main_app` maps `--dev 2` → `DEBUG_DETAILED` for headless too (mirroring the GUI), so the daemon's `debug_detailed` lines — e.g. window-report receipts (`report_window` / `receive_from_forwarder`, level 8) — are only visible at `--dev 2`, not `--dev 1` (DEBUG=10). The tray GUI's log viewer adds a **"Daemon Log"** tab when `daemon_log.txt` exists (so daemon-mode reconnect/overlay/window activity is visible from the GUI side).
-- `polyhost/client/remote_core.py` — **`RemoteCore`** (H4a): the GUI-as-socket-client adapter. `python -m polyhost --connect[=ENDPOINT]` runs the tray GUI as a pure client of a core in another process — `RemoteCore` mirrors the subset of the `PolyCore` API `host.py` consumes, over the control socket (two connections: one for request/response, one for the event subscription), and re-emits server events to the same `subscribe`/`emit` seam. State is cached from `status.get` + `status_changed`. `PolyHost(client_mode=, endpoint=)` builds it instead of a `PolyCore`, renders from `status_changed` (not `apply_reconnect`), does the **client-side** OS-language switch. ⚠️ **This note used to say it "guards every device-coupled menu (cmd menu / layout editor / keyboard-firmware release / MRU debug)" — that is STALE and was believed while designing a feature around it (2026-08-27).** Those were progressively moved onto RPC and now work in client mode: the cmd menu is built unconditionally and its flash/apply paths route through `_client_flash_firmware` / `_client_apply_staged`, the keyboard-firmware release check is an ordinary Updates row, the settings dialog + "Flash firmware .bin…" go over `fw.flash`, and the **layout editor runs on `core.keymap_*`** — its own comment says *"works in either mode (H4a-2)"*. The only things still `if not self.client_mode:` are the two Developer tools that read the in-process `device_mgr` directly (**Inspect MRU Cache**, **Dump Mock Bitmaps**), plus the device-owning startup itself. **The rule to carry forward: a new device-coupled GUI surface is expected to work in client mode over RPC** — client mode is the default under daemon-by-default, so anything gated off it is unreachable out of the box. Quitting the client closes its sockets only — the daemon keeps running.
+- `polyhost/headless.py` — **`--headless`** (M2, H3): `HeadlessHost` runs `PolyCore` + `ControlServer` + the core-owned window tick with **zero Qt import** in the process (`main_app` imports Qt/`PolyHost` lazily, only in the GUI branch — guarded by `tests/headless/headless_entry_test.py` and the import guard). The core auto-applies its own reconnect snapshots headless (`PolyCore(apply_reconnect_in_core=True)`). On a `polyctl update install`, the core only applies+emits; `HeadlessHost` re-execs (or hands off to the Windows relay) on `update_finished_ok`/`update_relay_needed`. Drive it with `polyctl`. Two headless gotchas fixed the hard way: the core-owned window-tick thread must **`pythoncom.CoInitialize()` on Windows** (pywinctl uses COM; a fresh thread without it fails every poll with "Invalid syntax"); and `poly_core` imports `polyhost.util.log_util` so `Logger.debug_detailed` (used by the device code) exists in the headless process too (the GUI got it via `host.py`). The daemon writes `daemon_log.txt`; `main_app` maps `--dev 2` → `DEBUG_DETAILED` for headless too (mirroring the GUI), so the daemon's `debug_detailed` lines — e.g. window-report receipts (`report_window` / `receive_from_forwarder`, level 8) — are only visible at `--dev 2`, not `--dev 1` (DEBUG=10). The tray GUI's log viewer adds a **"Daemon Log"** tab when `daemon_log.txt` exists (so daemon-mode reconnect/overlay/window activity is visible from the GUI side). ⚠️ **On macOS `run_headless` sets the accessory activation policy (`macos_ui.hide_dock_icon`) before it builds the host**, and it was the one entry point that did not — `host.py` and `forwarder.py` always have. A non-bundled Python process that calls the window-server APIs gets a Dock tile, and the daemon calls plenty of them: pywinctl's AppKit reads, the Quartz window list in `own_process`, and the Accessibility reads in `handler/active_window.py` and the shortcut harvest. The tile shows the interpreter's generic rocket icon, since the daemon has no bundle (the same root cause as the tray balloons that reach nobody). Reported from the field on 2026-10-16, right after the real-time accept timer made app switches reach the keyboard again: the switches had barely been accepted before, so the paths that register the process had barely run. Which call does the registering is not established and the fix does not depend on it. It is set **after** the endpoint claim, so a daemon that loses the race exits having created no `NSApplication` at all, and **before** `HeadlessHost`, so the policy is in place before any worker thread reaches AppKit (`tests/headless/headless_entry_test.py` pins both ends).
+- `polyhost/client/remote_core.py` — **`RemoteCore`** (H4a): the GUI-as-socket-client adapter. `python -m polyhost --connect[=ENDPOINT]` runs the tray GUI as a pure client of a core in another process — `RemoteCore` mirrors the subset of the `PolyCore` API `host.py` consumes, over the control socket (two connections: one for request/response, one for the event subscription), and re-emits server events to the same `subscribe`/`emit` seam. State is cached from `status.get` + `status_changed`. `PolyHost(client_mode=, endpoint=)` builds it instead of a `PolyCore`, renders from `status_changed` (not `apply_reconnect`), does the **client-side** OS-language switch. ⚠️ **This note used to say it "guards every device-coupled menu (cmd menu / layout editor / keyboard-firmware release / MRU debug)" — that is STALE and was believed while designing a feature around it (2026-08-27).** Those were progressively moved onto RPC and now work in client mode: the cmd menu is built unconditionally and its flash/apply paths route through `_client_flash_firmware` / `_client_apply_staged`, the keyboard-firmware release check is an ordinary Updates row, the settings dialog + "Flash firmware .bin…" go over `fw.flash`, and the **layout editor runs on `core.keymap_*`** — its own comment says *"works in either mode (H4a-2)"*. The only things still `if not self.client_mode:` are the Developer tool that reads the in-process `device_mgr` directly (**Inspect MRU Cache**), plus the device-owning startup itself. (**Dump Mock Bitmaps** was the second one; the **Mock Keyboard** board view replaced it and reads `core.mock_keycaps` over RPC — see [`mock-device.md`](mock-device.md).) **The rule to carry forward: a new device-coupled GUI surface is expected to work in client mode over RPC** — client mode is the default under daemon-by-default, so anything gated off it is unreachable out of the box. Quitting the client closes its sockets only — the daemon keeps running.
 - `polyhost/forwarder.py` — `PolyForwarder`: Forwarder mode; no device access, only TCP window reporting
 
 ### Device communication (`polyhost/device/`)
@@ -24,7 +24,8 @@ and relative links were adjusted to suit a standalone file.
 - `hid_helper.py` — device enumeration/access via `hid` (hidapi)
 - `cmd_composer.py` / `command_ids.py` — command building and HID ID enums
 - `bit_packing.py` — binary packing helpers for HID payloads
-- `poly_kybd_mock.py` — drop-in mock device for running without hardware
+- `poly_kybd_mock.py` — drop-in mock device for running without hardware: the secondary beside a keyboard (`dev_mock_enabled`) or the only device (`dev_mock_primary`, at any `dev_mock_protocol`). Its overlay path and device commands are the real `PolyKybd` over…
+- `mock_firmware.py` — …`MockFirmware`, the keyboard's side of the raw-HID channel in Python (per-protocol command set, the firmware's overlay decoders, the font-pack and firmware-update transports, a `FaultPlan`), under a real `HidHelper` (`MockHidHelper`). What it is for, what it copies from the firmware and the two protocol sweeps built on it: [`mock-device.md`](mock-device.md).
 
 ### Platform input abstraction (`polyhost/input/`)
 Abstract base `unicode_input.py` with per-platform implementations.
@@ -162,7 +163,14 @@ Per-platform implementations:
 - `remote_window.py` — TCP-based window title relay for multi-machine setups
 - `own_process.py` — tells PolyHost's own windows from other Python windows. Both run as the interpreter, so the tracker names them `python3`/`pythonw`/`Python`; `own_app_name()` reads the process command line (`/proc` on Linux, `NtQueryInformationProcess` on Windows, `KERN_PROCARGS2` on macOS) and renames a `-m polyhost` process to `polyhost`. The handler and the forwarder both call it, and `app_icons.program_overlay` draws the built-in PolyKybd mark for that name, ahead of the OS icon (which is Python's). ⚠️ The Windows and macOS readers are ctypes calls the suite cannot execute.
   - The command line is only ONE of three answers, because a tracker can name our window without a usable pid. The GNOME Wayland and KDE reporters have no pid and name a window by its WM class, so `own_app_name()` accepts the class `PolyHost` (set in `main_app`). The forwarder also passes Qt's own answer, `activeWindow() is not None`, which is exact and needs no pid; it counts only for a Python or empty name, so a focus change between the two reads cannot relabel another app. ⚠️ **Why the Qt check exists:** a GNOME forwarder reported its own Log Viewer as `python` with a pid that was neither its own nor a `-m polyhost` command line (field, 2026-09-23). The cause is still unknown. The forwarder now logs `Window '…' belongs to a Python process that is not PolyHost (pid …, this process …, interpreter …, runs …)` once per pid, so ask for that line when it recurs. It names the interpreter and the entry point only; another process's arguments can carry secrets and the log travels in support bundles.
-- `kde_win_reporter.py` — KDE D-Bus integration for window events
+- `kde_win_reporter.py` — KDE D-Bus integration for window events. It loads
+  `active_win.js` into KWin, runs it and reads its line back from the
+  journal. The script always prints `polykybd-window:<class>;<caption>;<pid>`
+  or `polykybd-window:none`. ⚠️ A read without that line is a failed read (the
+  print is not always in the journal yet) and keeps the last window; only
+  `none` reports no window. Treating a failed read as no window cleared the
+  keycaps for about a second at a time during OpenRA games.
+- `browser_url.py` / `browser_url_source.py` — the URL the matcher's `url` / `urls-contains` keys see: the focused browser's active tab, reported by `browser-extension/` to the loopback `server/browser_report_server.py` (macOS AppleScript as a fallback), **or** a context pseudo-URL from an app on the `CONTEXT_REPORTERS` allow-list — the Blender add-on (`blender-addon/`) reports `blender://<mode>/<editor>` over the same endpoint (`{app, url, focused, pid, input_age}`, same token, loopback, JSON-only and size-cap). Reports are stored **per source** (one per browser brand, one per running reporter instance, keyed by pid; with several Blenders open the one with the most recent input wins, and a browser's own fresh report, even a cleared tab, keeps an anonymous older-extension report from answering for it), because the add-on cannot see OS focus and its 3 s keep-alive would otherwise overwrite the browser's report. A report counts only while it is fresh (`DEFAULT_MAX_AGE_S` 8 s) and its own app is the focused one, so a background Blender never steers the foreground app's overlay. Blender's mapping entry sets `layer: false` so a context replaces its fallback (`polyhost/res/overlay-mapping.md`). **Terminal-hosted editors**: vim and emacs (`HOSTED_REPORTERS`) report their mode (`vim://insert`, `emacs://org-mode`) from inside a terminal. While an app on `TERMINAL_APPS` is focused, the fresh, focused report with the newest input among them answers for it, as a tab's URL answers for a browser. The editor learns focus from the terminal's focus events and sends `focused: false` on focus-out and on exit, so another terminal window running a shell gets no URL. An editor that dies without that report (`kill -9`, a crash) leaves a report that expires after 8 s with no window or title change, so `OverlayHandler._recheck_context_url()` asks the provider again on every tick while a mode reporter's app (Blender, GUI Vim and Emacs, a terminal) is focused with a URL, and re-matches when the answer differs. Browsers are left out: their lookup can be an AppleScript call. GUI Vim (`gvim`, `macvim`, `neovide`) and Emacs are ordinary context reporters. The Vim and Neovim plugin is `vim-plugin/`; the mapping routes its `vim://<mode>` through the `&editor_urls` map on every terminal entry (Windows Terminal, WezTerm and kitty have an overlay set of their own, and WezTerm's and kitty's `os: macos` branches repeat the routes), and the terminals without an overlay set have an entry with no overlay of its own, which matches only through its sub-maps (`polyhost/res/overlay-mapping.md`). Only local terminals are listed: an editor in an SSH session cannot reach the loopback receiver. None of the terminal app names was checked on an install. GNU nano has no plugin and sets no title, so it is routed by the terminal's window title instead (`titles-contains: &editor_titles` with a `title` regex that requires nano at the command position); the shared terminal entry, which has no overlay of its own, routes it the same way and still matches nothing for any other title. The title formats are in `polyhost/res/overlay_sources/nano/SOURCES.md`. lazygit sets no title either and is routed the same way (`polyhost/res/overlay_sources/lazygit/SOURCES.md`). tmux is routed the same way: its `set-titles` option is off by default, so the terminal keeps the title the shell wrote when tmux started (`tmux new -s work`) for the whole session, and the tmux set (its prefix table) loads (`polyhost/res/overlay_sources/tmux/SOURCES.md`). Zellij writes the title itself (`Zellij (<session>) - ...` up to 0.42, `<session> | ...` since 0.43.1), so it has a `Zellij` route in `&editor_titles` and a `titles-match: &multiplexer_titles` route that matches a session name Zellij generated; both are chosen over a program in its pane (`polyhost/res/overlay_sources/zellij/SOURCES.md`). The terminal file managers yazi, ranger and lf are routed the same way; yazi writes `Yazi: <directory>` itself, ranger writes `ranger:<path>` only with `set update_title true` (one word, so a regex in the terminals' shared `titles-match` map, `&multiplexer_titles`, routes it, macOS and Linux only), and lf writes no title (`polyhost/res/overlay_sources/tui_file_managers/SOURCES.md`). Eight more terminal programs (htop, btop, Midnight Commander, micro, Helix, less and man, k9s, GDB) and Vim/Neovim with `set title` are routed the same way (`polyhost/res/overlay_sources/tui/SOURCES.md`). The GDB script `gdb-plugin/polykybd.py` writes `gdb ⏸ <program>` (prompt) or `gdb ▶ <program>` (running) into the title from `gdb.events.before_prompt` and `gdb.events.cont`; the editor-plugins installer copies it and adds a marked `python … end` block that sources it to the GDB init file, the way it does for Emacs (`INIT_EDITORS`). Terminal AI coding CLIs (Claude Code, Codex, OpenCode, Gemini CLI, Qwen Code, Copilot CLI, Kimi Code CLI, Grok Build, Mistral Vibe, Aider) are routed the same way, but most of them replace the shell's title with their own, so each route matches the CLI's own title format too (`polyhost/res/overlay_sources/aicli/SOURCES.md`). Codex's default title does not name it, so the shell integration has a Codex option (the dialog's checkbox, `polyctl shell-integration install --codex`): the installed line sets a flag and the script wraps `codex` with `-c tui.terminal_title=[...]`. fish takes only that wrapper (`conf.d/polykybd.fish`). After a command, the bash and zsh scripts write a neutral `user@host: ~/dir` title at the next prompt, so a program's title (and overlay) does not stay at an empty prompt. Nushell (`~/dir> nano`) and xonsh (`nano | user@host: ~ | xonsh`) show the command without setup; the routes accept `> ` and Nushell's `^` for that. The bash, zsh and PowerShell scripts that put the running command into the title are `polyhost/res/shell/polykybd-title.*`, installed into the user's startup files by `services/shell_title.py` (tray: Updates → "Set up the terminal and editors…", also in the forwarder's menu; `polyctl shell-integration install|remove|status`, which never connects to the host). The same dialog copies `vim-plugin/`, `emacs-package/` and `gdb-plugin/` to where the programs load them (`services/editor_plugins.py`, `polyctl editor-plugins install|remove|status`): each copy has a stamp of SHA-256 sums, and `editor_plugins.start_refresh_thread()` (tray, forwarder, daemon) copies the shipped files again at every start when they changed and the copy matches its stamp.
 - **Active-window backend selection** (in both `active_window.py` and `forwarder.py`): `XDG_CURRENT_DESKTOP == "KDE"` → `kde_win_reporter` (KWin script → journal); else `XDG_SESSION_TYPE == "wayland"` → `gnome_wayland_reporter`; else → `pywinctl` (X11). `gnome_wayland_reporter.py` is **⚠️ UNTESTED on hardware** — pywinctl can't see native Wayland windows, so it queries our own purpose-built, **read-only** *PolyKybd Window Reporter* GNOME Shell extension (`org.polykybd.WindowReporter`, repo `thpoll83/gnome-wayland-winreader`) over `gdbus` via a single `GetFocusedWindow()` call (the extension exposes no window-modifying methods, unlike the general *Window Calls* extension it replaces); **without the extension it falls back to pywinctl (X11/XWayland)** — so X11-backed apps (Chrome, VS Code, JetBrains, …) under XWayland are still tracked, native Wayland windows are not — and warns **once** (instead of pywinctl's silent Wayland failure). The fallback imports pywinctl **lazily + guarded** (it can `sys.exit()` with no X server), so the module still loads with zero pywinctl/Qt at import (headless-safe). The fallback is only consulted when the extension is *unavailable* — an extension that's up but reports "no focused window" returns None directly (so a stale XWayland window can't mask it). The **X11 path is unaffected** (it never enters the Wayland branch); only the output parsing + fallback routing are unit-tested. Full GNOME-Wayland coverage still needs the extension or an Xorg login session.
 - ⚠️ **macOS: THREE things the window backend does not tell you** — all found in the
   field (2026-09-21/22), each producing a confidently *wrong* keycap rather than a
@@ -184,6 +192,37 @@ Per-platform implementations:
     measurement was never written down, which is the whole reason it happened
     twice — the property reads correctly often enough that one good log line
     looks like evidence.
+  - ⚠️ **"The title is EMPTY" and "there is NO title" need opposite answers.**
+    `find_matching_entry` skips a declared `title:` regex when the title is
+    falsy, on purpose: macOS without screen-recording permission and some
+    Wayland setups report no titles at all, and gating on one would lose every
+    entry there (`handler/win_shell.py`). With no WINDOW the same leniency is a
+    false positive — the `kicad` entry declares a `title` gate (six window names
+    in every KiCad language, written by `overlay_sources/kicad/gen_titles.py`)
+    to tell those windows from the rest of KiCad — so the windowless path passes
+    `title_known=False`, which makes a declared constraint FAIL rather than be
+    skipped. The flag propagates through all five recursive calls, so an `os:`
+    branch is judged by its own constraints. The word sub-maps
+    (`titles-startswith` and friends) need no flag: they already match nothing
+    without a title and fall through to the parent's own overlay, which is
+    correct for a refinement rather than a constraint. ⚠️ **The windowless
+    branch used to skip the template path wholesale**, on the premise that no
+    window means no match — true only of title-matching entries. VS Code's own
+    `os: macos:` branch carries three templates and deliberately no `title:`,
+    because a macOS window title does not name the app, and it was never once
+    evaluated: the keycaps stayed blank while the log read *"no template covers
+    it"* (field, 2026-10-16). Verified against the shipped mapping rather than a
+    fixture, in `tests/handler/matcher_test.py` →
+    `TheShippedMappingResolvesWindowlessAppsTest`: `code`, `google chrome`,
+    `claude`, `zed` and `cursor` all resolve their macOS templates with no
+    window, and `kicad` correctly does not.
+  - **An entry with no `overlay` is a router.** It matches only through its
+    title, URL or `os:` sub-maps, and returns nothing when none of them match.
+    The DOSBox entry uses this: it has no overlay of its own, and its
+    `titles-contains: DUNE2` sub-map selects the Dune II overlay, so other DOS
+    games in DOSBox get no overlay
+    (`tests/handler/matcher_test.py` →
+    `test_an_entry_without_an_overlay_routes_by_its_title_sub_map`).
   - ⚠️ **NO WINDOW IS NOT NO APPLICATION.** `pywinctl.getActiveWindow()` returns
     `None` intermittently on macOS, and **the failing SET changes between runs** —
     Photos/Notes/Freeform failed while Chess/Maps/Terminal/Finder answered in the
@@ -193,8 +232,72 @@ Per-platform implementations:
     decides the fix SHAPE: fall back to the app NAME and draw, never special-case
     apps. The path needs only the name and the pid, which the OS knows even when
     the window backend does not. It still returns `DISABLE` and clears
-    `current_entry`, because with no window there is no TITLE and a template entry
-    cannot be evaluated.
+    `current_entry` first, because the overlays on the board belong to the app the
+    user has left; what replaces them is then decided by the template match
+    described above, which a TITLE-CONSTRAINED entry fails without a window and a
+    title-independent one passes. ⚠️ This sentence used to end at *"a template
+    entry cannot be evaluated"*, which was the premise the bullet above
+    overturned, left standing two bullets later in the same file (CodeRabbit,
+    #397). Nothing in CI reads Markdown.
+  - ⚠️ **The macOS query costs two `osascript` processes per tick, and the accept
+    timer used to count the NOMINAL cycle.** PyWinCtl 0.4.1 spends one `osascript`
+    in `getActiveWindow()` and another in `MacOSWindow.__init__`
+    (`getProcName`), and a changed tick added five more
+    (`getHandle()`, `title`, `getPID()` and two that `log_win` spent re-reading
+    the window it was logging). Measured in the field bundle of 2026-10-16:
+    **tick 2.30 s median, of which 1.60 s is the query**, against a 250 ms cycle.
+    Accepting a switch takes six ticks (reset to 0, then five 250 ms steps past
+    `NEW_WINDOW_ACCEPT_TIME_MSEC`, 1000 then, 500 since 2026-10-22), so the 1 s debounce became **15.3 s of
+    uninterrupted focus** — and every app the user left sooner never reached the
+    keyboard, with nothing logged. That bundle has 132 slow-tick warnings across
+    42 minutes with no app-identity line between them, and the board kept the
+    icons of an app left 1 h 51 min earlier. Three fixes:
+    `OverlayHandler._tick_elapsed_msec` counts real time floored at the nominal
+    cycle (the floor is what keeps the tests, which tick with no delay, able to
+    accept anything); `log_win` takes the title and handle it is given instead of
+    re-reading them; and `_macos_can_skip_tick` skips the query altogether while
+    the same application is still in front, from `focused_app_pid()` — one
+    in-process `AXFocusedApplication` read, under the Accessibility grant the
+    shortcut harvest already needs, and `None` without it (the tick then behaves
+    as it did before the detector existed). ⚠️ **The Quartz window list was
+    tried first and rejected**: `CGWindowListCopyWindowInfo`'s topmost layer-0
+    window is cheaper still, but it answers about a WINDOW, so activating an app
+    whose windows are all minimized would never move it and the switch would be
+    skipped *indefinitely* — the symptom being fixed. ⚠️ **Not
+    `NSWorkspace.frontmostApplication` either**, for the reason in the bullet
+    above it. A pid does not move when a window retitles, so the skip is refused
+    for an app whose mapping entry matches on a title or a URL
+    (`Flags.HAS_TITLE`/`HAS_TITLES_*`/`HAS_URL`/`HAS_URLS_CONTAINS`, and
+    `HAS_OS` conservatively — 14 of the 69 shipped entries), and refused until
+    the full path has RESOLVED that pid — a changed pid clears the marker and
+    the window branch sets it only once its accept timer matures, so the
+    debounce ticks keep querying and a switch waiting to be accepted cannot be
+    skipped into limbo. ⚠️ It must NOT cross-check against `focused_pid()`:
+    `window_pid` is `MacOSWindow.getPID()`, one more `osascript` through a
+    shell, which would have spent most of the saving. What it gives up: a
+    retitle on a title-INDEPENDENT app is seen on the next tick that is not
+    skipped, which can delay the shortcut harvest's re-harvest-on-retitle
+    (Kate's menus). A change of APPLICATION is never delayed.
+    ⚠️ `polyhost/forwarder.py`
+    holds the **second copy** of that timer, on the other machine, and had the
+    same inflation — there it also stretched `HEARTBEAT_MSEC` (15 s) to 150 s.
+  - ⚠️ **A LOST window waits for the same accept timer as a new one** (#531,
+    1.17.86). Before, the windowless branch of `_decide_active_window` acted on
+    the first tick with no window. On KDE Wayland the backend reports no window
+    for ONE tick (~270 ms) and then the same window again, about every 10 s in
+    bursts, with nobody at the desk. Each blip sent a DISABLE, and the window
+    coming back re-sent the whole overlay set. Every overlay send in
+    `poly_core.py` ends in `set_idle(False)`, so each blip also took the
+    keyboard out of Eden: 21 stops in 30 minutes (field bundle 2026-11-04).
+    ⚠️ **A blip the timer absorbs logs nothing.** After a TRACKED window is
+    lost, `No active window` appears only once the loss has lasted past
+    `NEW_WINDOW_ACCEPT_TIME_MSEC`. (With no window tracked before, a change of
+    windowless app is logged at once.) A bundle can therefore show that the
+    fix holds (Eden runs to `Turning off`), but it cannot count the blips it
+    swallowed. **The forwarder's copy of the timer does the same**
+    (`active_window_reporter`, since #534): before that, it sent an empty
+    report on the first tick with no window, so the keyboard machine saw a
+    forwarded blip as two remote changes and re-sent the overlays.
   - ⚠️ **An untitled window identifies NOTHING.** `MacOSWindow.getHandle()` derives
     the handle **from the title** and returns `("", "")` when it is empty, so two
     untitled apps are byte-identical to a handle-plus-title change test — the switch
@@ -236,7 +339,8 @@ or was one edit away from it, so reaching for the shared piece is the point:
   connection), `after_dispatch`, `secure_listener` and `wake_address`.
   ⚠️ **The surfaces stay separate — that separation is the security boundary.**
   The base carries no registry and no `PolyCore` reference; the network endpoint
-  still serves exactly one method. This is the direct fix for the class of bug
+  still serves only `window.report` (and `agents.report` behind the agent keys'
+  opt-ins, HOST-6). This is the direct fix for the class of bug
   CLAUDE.md already documents ("grep the other two servers before designing
   anything"): the bounded-raw-connect `accept()` wake lived in one server and not
   the other, and its absence hung the suite intermittently for ~3 sessions.
@@ -304,4 +408,153 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
 - `unicode_cache.py` — pre-computed unicode character mappings
 - `sunlight_helper.py` — adaptive brightness via solar irradiance
 - `add_to_startup.py` — OS autostart registration (see Key notes below)
+- `keycap_face.py` — the per-application keycap face: an overlay-mapping entry's
+  `glyph_script` / `glyph_script_position`. `PolyCore._track_keycap_face` queues it on
+  the worker when the matched entry changes; the user's own face is restored when no
+  entry asks for one, at shutdown, and on connect from `keycap_face_restore.json`
+  (`polyhost/res/overlay-mapping.md` → *Keycap face per application*).
+- `game_assets/` — overlay art read from games installed on this machine.
+  An overlay-mapping entry opts in with `game_assets: <spec>` (a path under
+  `res/overlay_sources`); the spec's `game_assets:` block names a reader and the
+  recipe for each icon, keyed by variant (the faction) where they differ.
+  The spec must be `<app>/<name>.yaml`, one level down: user installs have only
+  those files of `res/overlay_sources` (`updater.is_build_only()`).
+  - Shared, at the top of the package: `__init__.py` (below), `build.py`,
+    `dither.py` and `picture.py`; `readers.py` (light, imported at start) holds
+    the `Reader` and `Setting` declarations and the registry of readers.
+    `picture.py` is the icon picker's renderer in Python (`tools/ICON_PICKER.md`):
+    a reader whose recipes come from the picker draws with it, so the keyboard
+    shows what the page showed. ⚠️ It mirrors the page's JavaScript step for step;
+    change both together and regenerate the pins of
+    `tests/services/game_assets_picture_test.py` from the page.
+  - One subfolder per game reader (`westwood_td/` for Command & Conquer,
+    `westwood_ra/` for Red Alert, which reuses the Tiberian Dawn drawing and adds
+    the encrypted MIX format in `mix.py`; `westwood_d2/` for Dune II, which reads
+    PAK archives, shape files, map tiles and fonts of Dune II 1.0 and 1.07 and
+    draws the picker's recipes; `westwood_d2k/` for Dune 2000, which reads the
+    R16 sprite file; `starcraft/` for the StarCraft 1.16.1 MPQ archives, drawing
+    the StarCraft II control groups, with the MPQ format in `mpq.py`, PKWARE
+    explode in `explode.py` and GRP sprites in `grp.py`; it was not run against
+    real game files). `openra.py` lists the folders where OpenRA installs the
+    original game files; the Red Alert, Tiberian Dawn and Dune 2000 readers
+    search them. Its
+    `__init__.py` declares `READER` (module, settings, folder and variant
+    settings) and stays light; `reader.py` has `find(folder, hint)`,
+    `fingerprint(files)`, `open_source(files)` and `draw(source, recipe, size)`;
+    the game's file formats sit beside it (`westwood.py`, which refuses a frame
+    larger than 640x400 px before decoding and decodes a shape file only up to
+    the highest frame a recipe asks for). A new reader is a new
+    subfolder plus one line in `readers._registry()`.
+  - ⚠️ Before merging a reader, run it on real game files and compare each key
+    it changes with the shipped icon, white on black: the
+    `evaluate-game-asset-reader` skill. Synthetic test files prove the decoder,
+    not the picture; readers for Factorio and Minecraft were dropped this way
+    (`docs/FUTURE_WORK.md`).
+  - `settings.py` merges the readers' defaults into `DEFAULT_SETTINGS`, and the
+    settings dialog adds their labels, descriptions and dropdowns, so a reader
+    brings its own settings.
+  - `__init__.py`: `register_mapping()` at mapping load; `wants()` gates the
+    window-system query for the hint; `request()` on the
+    first OFF_ON send of an opted-in template builds the copy on a thread, with
+    the focused window's executable folder (`win_process.process_dir()`) as the
+    first place to look, and retries on the next send when it found nothing;
+    `override_for()` serves the copy to `get_overlay_path()`; `take_changed()`
+    makes the window tick `force_resend()`; `reset()` from
+    `note_settings_changed()` rebuilds on the next send.
+  - `build.py` (numpy, PIL): recipes per variant, fitting, the Ctrl plus and
+    the modifier marks (`{plus: group4}`, `{mark: ring, of: group4}`), patching
+    the shipped primary or `.combo` PNG (the GUI tiers keep the shipped art),
+    cache name, temp files. The cache name keeps `.combo` right before
+    `.mods.png`, because the converter picks the channel layout by it. A recipe
+    that fails skips only its own key. `register_mapping()` also reads title, URL
+    and OS sub-entries, so a sub-entry can opt in on its own.
+  Game art is never committed; it stays in the user's cache.
+
+### Transport probe (bulk pipe vs HID only)
+
+A `POLYKYBD_BULK_PIPE` firmware enumerates a CDC serial interface next to raw HID
+(qmk `keyboards/polykybd/BULK_PIPE.md`). The host treats it as optional: nothing
+in the HID protocol announces it, so `PolyKybd.probe_bulk_pipe()`
+(`device/bulk_pipe.py`) finds the port by VID/PID, opens it raw, PINGs it and
+measures the rate (`measure_rate`: RESET, 128 KB of SINK frames, STAT; the
+device-side first/last timestamps give the rate, about 0.2 s on the rig), on
+the HID worker thread like all device I/O. An absent, busy or mute port is
+"hid", and so is a port whose stream arrives with a bad CRC or a dropped frame. The core probes on every fresh connect (`state_changed` or `fresh_boot`)
+and re-probes on the next `PIPE_PROBE_RETRIES` steady-state probes while HID
+only, because on Linux the tty node can appear after the hidraw node. The
+result is `transport` ("pipe" / "hid" / None) and `link_rate_mbps` on
+`status_changed` and in `get_status()` (with the PING reply as `pipe`), so the
+daemon-plus-client split, `RemoteCore` and `polyctl status` all see it. The tray
+colours its mark by it (`IconStateManager.set_transport`) and shows the measured
+rate in the resting tooltip and the About dialog ("0.6 MB/s link", or "HID
+link, up to 64 KB/s"). The words "bulk pipe" never reach the user
+(maintainer's rule, 2026-10-19): user-facing text states the rate. The
+developer setting `dev_force_hid_link` (settings dialog, Developer section)
+skips the probe and records HID only (`PolyKybd.use_hid_only()`), so the HID
+path can be tested by hand on a keyboard that has the pipe; `note_settings_changed`
+applies it to the live connection, in both directions, without a reconnect.
+
+The firmware update's CHUNK phase runs on the pipe when the probe found one
+(`PolyCore.flash_firmware` passes `pipe_port_for_update()` to
+`hid_fw_up.flash_firmware(pipe_port=...)`; the in-process dialog gets it from
+`cmd_menu`). Every resource flash does the same: `flash_fontpack`,
+`install_doomwad`, `install_doompack`, the multi-bundle pass and the wipe hand
+`pipe_port_for_update()` to the `hid_fontpack` flashers, whose `_stream_slot`
+runs the chunks through `hid_fw_up.stream_over_pipe` after `FONTPACK_BEGIN`
+and continues over HID from the keyboard's cursor when the pipe stops. The
+firmware writes a `FW_CHUNK` frame into whatever target BEGIN selected, so no
+resource needs a pipe command of its own. `pipe_port_for_update()` answers None
+while `dev_force_hid_link` is on, which is how the HID path of every transfer
+is forced by hand. `bulk_pipe.stream_firmware` sends `FW_CHUNK` frames of 236 bytes,
+4 frames ahead of their replies (the firmware handles a frame inside its USB
+drain, so an unpaced stream would keep its main loop there; `poly_pipe.h`), and
+every reply carries the keyboard's cursor: an ACK advances, a NACK rewinds to
+the cursor, a quiet window is resolved with an empty-frame cursor probe. BEGIN,
+SIGNATURE, COMMIT and APPLY stay on HID. A port that is busy, a firmware whose
+PING reports pipe protocol 1, or a pipe that stops mid-image hand the rest to the
+HID chunk loop, which runs on offsets (not chunk indexes) and continues from the
+cursor. Overlays still go over raw HID.
+
+## Architecture (the CLAUDE.md summary)
+
+_Moved verbatim from `CLAUDE.md` on 2026-10-10. CLAUDE.md keeps a short pointer._
+
+
+**PolyKybdHost** is a PyQt5 system-tray application bridging the PolyKybd HID keyboard
+to the host OS: it tracks the active window and sends overlay/keymap/language commands
+over HID. The full file-by-file map — entry points, `PolyCore`, the control socket and
+its three servers, `polyctl`, headless mode, `RemoteCore`, the device layer, the
+platform input abstraction, the window handlers and the settings/services — is
+[`docs/architecture.md`](architecture.md). Read it before adding a module or a
+control-socket method. Five rules bind code outside it:
+
+- ⚠️ **`PolyCore.__init__` OPENS THE KEYBOARD** (`keeb.connect()`), so anything that
+  decides whether this process should be the host must happen **before** the core is
+  constructed, not in a `start()` afterwards. `instance.claim_instance()` is that
+  gate: an OS file lock held for the life of the process, taken in `main_app` before
+  any device code runs. Probing the socket alone is a check-then-act — two hosts
+  starting in the same millisecond both read STALE and both open the device.
+- **`PolyCore` is the Qt-free operational core** and must stay importable without
+  PyQt5 and without a display. It communicates **only** through observer callbacks
+  with JSON-serializable payloads; worker-side code must never touch a Qt object.
+  Guarded by `tests/core/import_guard_test.py`.
+- **A new device-coupled GUI surface is expected to work in client mode over RPC.**
+  Client mode is the default under daemon-by-default, so anything gated off it is
+  unreachable out of the box.
+- ⚠️ **Six pieces of plumbing are shared implementations because a hand-written copy
+  had already drifted** — `MpcListenerServer`, `UpdateProgressController`,
+  `gui/theme.apply_theme`, `util/observable.Observable`, `util/filelock` (the
+  endpoint claim and the settings save both need an OS file lock) and
+  `PolyCore._flash_resource`. Reach for the shared piece; that is the point of it.
+  ⚠️ **Extracting one drops the INLINE comments that made the original pass
+  review** — `util/filelock` lost the comment on an `except … pass` that had been
+  written for CodeQL's empty-except rule, because the extraction moved the
+  rationale into the new module's docstring, where neither the linter nor the next
+  reader looks. Re-run the checks on the extracted copy, not just on the callers.
+  ⚠️ **When a bug is found in one of the three servers, grep the other two**
+  (`control_server` / `window_report_server` / `browser_report_server`) for the same
+  shape before designing anything — a deadlock was diagnosed across three sessions
+  while a sibling module carried the remedy and its rationale in prose.
+- ⚠️ **The network `WindowReportServer` serves `window.report` (and `agents.report`
+  behind the agent keys' opt-ins, HOST-6) and holds no `PolyCore` reference.** That separation is the security boundary, not tidiness.
 

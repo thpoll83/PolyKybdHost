@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Fetch + render the Microsoft Teams shortcut icons (reproducible).
 
-All glyphs are Microsoft Fluent UI System Icons (MIT) — the native style for a
-Microsoft app and license-clean (host is GPL-3.0-or-later). Rendered to 96x96 RGBA PNG;
+Most glyphs are Microsoft Fluent UI System Icons (MIT), the native style for a
+Microsoft app; the rest are Material Symbols (Apache-2.0) through `MORE`, and the
+app-bar and chat-tab keys are numbered glyphs from `../number_badge.py`. Both
+licences fit the host's GPL-3.0-or-later. Rendered to 96x96 RGBA PNG;
 the generator's `luma` mode keeps the linework at 1-bit. The program icon (ESC)
 is a generic drawn chat-bubble mark with a "T" (no Microsoft Teams logo) — drop a
 real Teams logo as icons/teams_logo.png to override (committed assets untouched).
@@ -12,6 +14,7 @@ real Teams logo as icons/teams_logo.png to override (committed assets untouched)
 """
 from __future__ import annotations
 
+import sys
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -19,6 +22,10 @@ from pathlib import Path
 import cairosvg
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import icon_fetch, number_badge  # noqa: E402
 
 RENDER_PX = 96
 MS = "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/main/assets/{}"
@@ -29,19 +36,13 @@ MS_ICONS = {
     "search": "Search/SVG/ic_fluent_search_24_regular.svg",
     "newchat": "Chat Add/SVG/ic_fluent_chat_add_24_regular.svg",
     "settings": "Settings/SVG/ic_fluent_settings_24_regular.svg",
-    "commands": "Slash Forward/SVG/ic_fluent_slash_forward_24_regular.svg",
     "shortcuts": "Keyboard/SVG/ic_fluent_keyboard_24_regular.svg",
     "zoomin": "Zoom In/SVG/ic_fluent_zoom_in_24_regular.svg",
     "zoomout": "Zoom Out/SVG/ic_fluent_zoom_out_24_regular.svg",
-    "resetzoom": "Full Screen Maximize/SVG/ic_fluent_full_screen_maximize_24_regular.svg",
+
     "attach": "Attach/SVG/ic_fluent_attach_24_regular.svg",
     # --- app-bar navigation (Ctrl 1..6, default order) ---
-    "activity": "Alert/SVG/ic_fluent_alert_24_regular.svg",
     "chat": "Chat/SVG/ic_fluent_chat_24_regular.svg",
-    "teams": "People Team/SVG/ic_fluent_people_team_24_regular.svg",
-    "calendar": "Calendar LTR/SVG/ic_fluent_calendar_ltr_24_regular.svg",
-    "calls": "Call/SVG/ic_fluent_call_24_regular.svg",
-    "files": "Document/SVG/ic_fluent_document_24_regular.svg",
     # --- call/meeting controls (Ctrl+Shift -> combo) ---
     "mute": "Mic Off/SVG/ic_fluent_mic_off_24_regular.svg",
     "camera": "Video/SVG/ic_fluent_video_24_regular.svg",
@@ -52,7 +53,6 @@ MS_ICONS = {
     "startaudio": "Call Add/SVG/ic_fluent_call_add_24_regular.svg",
     "startvideo": "Video Add/SVG/ic_fluent_video_add_24_regular.svg",
     "raisehand": "Hand Right/SVG/ic_fluent_hand_right_24_regular.svg",
-    "background": "Blur/SVG/ic_fluent_blur_24_regular.svg",
     "expand": "Arrow Expand/SVG/ic_fluent_arrow_expand_24_regular.svg",
     # --- added (coverage audit 2026-06) ---
     "filter": "Filter/SVG/ic_fluent_filter_24_regular.svg",
@@ -118,6 +118,81 @@ def _draw_teams_logo(path: Path) -> None:
     Image.fromarray(rgba, "RGBA").resize((RENDER_PX, RENDER_PX), Image.LANCZOS).save(path)
 
 
+# Glyphs the 2026-10 refresh added, through the shared helper (Fluent folder
+# names, `ms:` for Material Symbols, Apache-2.0).
+MORE = {
+    "help": "ms:help",
+    "newwindowchat": "ms:open_in_new",
+    "report": "ms:bug_report",
+    "gotochat": "ms:jump_to_element",
+    "pinontop": "ms:keep",
+    "openwindow": "ms:open_in_browser",
+    "focuslist": "ms:list",
+    "focusmsg": "ms:forum",
+    "compose": "ms:edit",
+    "history": "ms:history",
+    "nextsection": "ms:keyboard_tab",
+    "prevsection": "ms:keyboard_tab_rtl",
+    "back": "ms:arrow_back",
+    "forward": "ms:arrow_forward",
+    "movechatup": "ms:arrow_upward",
+    "movechatdown": "ms:arrow_downward",
+    "collapse": "ms:unfold_less",
+    "jumpnew": "ms:vertical_align_bottom",
+    "find": "ms:find_in_page",
+    "details": "ms:info",
+    "react": "ms:add_reaction",
+    "unread": "ms:mark_chat_unread",
+    "mentions": "ms:alternate_email",
+    "channels": "ms:tag",
+    "meetingchats": "ms:video_chat",
+    "clearfilters": "ms:filter_alt_off",
+    "send": "ms:send",
+    "paragraph": "ms:format_paragraph",
+    "quote": "ms:format_quote",
+    "h1": "ms:format_h1",
+    "h2": "ms:format_h2",
+    "h3": "ms:format_h3",
+    "strike": "ms:strikethrough_s",
+    "copilot": "ms:auto_awesome",
+    "videorec": "ms:videocam",
+    "loop": "ms:all_inclusive",
+    "link": "ms:link",
+    "inlinecode": "ms:code",
+    "codeblock": "ms:code_blocks",
+    "insertcode": "ms:data_object",
+    "endcall": "ms:call_end",
+    "speaker": "ms:volume_up",
+    "tempunmute": "ms:mic",
+    "sharetoolbar": "ms:toolbar",
+    "admit": "ms:how_to_reg",
+    "schedule": "ms:edit_calendar",
+    "joinmeeting": "ms:login",
+    "joinfromtoast": "ms:notifications_active",
+    "meetingchat": "ms:chat",
+    "fullscreen": "ms:fullscreen",
+    "sharezoomin": "ms:zoom_in",
+    "sharezoomout": "ms:zoom_out",
+    "sharezoomreset": "ms:fit_screen",
+    "resetzoom": "ms:restart_alt",
+    "panup": "ms:keyboard_double_arrow_up",
+    "pandown": "ms:keyboard_double_arrow_down",
+    "panleft": "ms:keyboard_double_arrow_left",
+    "panright": "ms:keyboard_double_arrow_right",
+    "dayview": "ms:calendar_view_day",
+    "workweek": "ms:view_week",
+    "weekview": "ms:calendar_view_week",
+    "monthview": "ms:calendar_view_month",
+    "agenda": "ms:view_agenda",
+    "prevperiod": "ms:chevron_left",
+    "nextperiod": "ms:chevron_right",
+    "today": "ms:today",
+    # bases for the numbered glyphs: app-bar position and chat-header tab
+    "_appbase": "Square",
+    "_tabbase": "ms:chat_bubble",
+}
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -127,6 +202,13 @@ def main() -> int:
                                output_width=RENDER_PX, output_height=RENDER_PX)
         (out / f"{fname}.png").write_bytes(png)
         print(f"  {fname}.png  <- ms-fluent/{asset.split('/')[0]}")
+    icon_fetch.fluent(MORE, out)
+    # The app-bar keys open the Nth app of the user's own rail, so the number
+    # is the information; the chat-header keys open the Nth tab of a chat.
+    number_badge.numbered(out / "_appbase.png", "123456789", out, "app")
+    # The bubble body sits in the top two thirds, so the digit goes there.
+    number_badge.numbered(out / "_tabbase.png", "123456789", out, "tab",
+                          size=0.40, centre=(0.52, 0.42))
     if (out / "teams_logo.png").exists():
         print("  teams_logo.png  <- committed asset (left as-is)")
     else:

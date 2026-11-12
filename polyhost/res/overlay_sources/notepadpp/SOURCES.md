@@ -34,16 +34,16 @@ GPL-3.0 toolbar icons — switched to all-MIT deliberately.)
 | close | Document Dismiss | goto (Go to line) | Arrow Down |
 | copy | Copy | findnext | Chevron Right |
 | cut | Cut | findfiles | Document Search |
-| paste | Clipboard Paste | run (F5) | Play |
+| paste | Clipboard Paste | run (F5) | IDE run triangle (committed, shared with JetBrains/VS Code) |
 | undo | Arrow Undo | redo | Arrow Redo |
 
 Line/row-specific glyphs are chosen where a generic one would mislead
 (duplicate → Row Triple, not "Document Copy").
 
-### 1 custom-drawn (CC0 / project-owned)
-- deleteline (Del line) — text rows with a strike-through, drawn by
-  `_draw_deleteline()` in `fetch_icons.py` (white-on-transparent, `mode: alpha`).
-  A generic trash glyph reads as delete-*file*.
+### 1 shared
+- deleteline (Del line) — JetBrains' Fluent `Delete Lines` (MIT), copied from
+  `../jetbrains/icons` by `icon_fetch.borrow` (`mode: alpha` to match), so the
+  editors share one icon.
 
 ## Program icon (ESC, all layers)
 
@@ -66,3 +66,13 @@ not fetched: `fetch_icons.py` leaves it untouched so a re-run never clobbers it.
 
 To pin exact bytes against upstream updates, replace the branch names in
 `fetch_icons.py` with commit SHAs. The committed `icons/` freeze the render.
+
+## Standard editing chords (shared Fluent concepts, 2026-10)
+
+Nothing added. The twelve core chords, Close, F3 Find next and Ctrl+H Replace
+were already drawn.
+
+- **Zoom**: Notepad++'s defaults are Ctrl+**keypad** + / - (and Ctrl+wheel), per the user
+  manual's View-menu table — the main-row `=`/`-` do nothing, and the keypad has no
+  overlay cell.
+- **Reload from disk**: no default chord.

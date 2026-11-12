@@ -1,4 +1,6 @@
+import contextlib
 import io
+import json
 import shutil
 import sys
 import tarfile
@@ -10,7 +12,7 @@ from unittest import mock
 import requests
 from packaging.version import Version
 
-from polyhost.services import updater
+from polyhost.services import build_info, updater
 
 
 def _release_json(tag="v0.8.0", tarball_url="https://example.com/tarball/0.8.0"):
@@ -220,6 +222,57 @@ class TestWebFallback(unittest.TestCase):
         self.assertEqual(rel.tarball_url,
                          "https://github.com/thpoll83/PolyKybdHost/archive/refs/tags/v0.9.0.tar.gz")
 
+    def test_host_403_web_fallback_reads_notes_from_release_notes_branch(self):
+        """The rate-limited path used to show a bare Yes/No box: no notes, no
+        date. The notes now come from the release-notes branch on
+        raw.githubusercontent.com, which the API limit does not cover."""
+        notes_resp = _make_response(200)
+        notes_resp.text = "# v0.9.0 Big things\n\n## 0.9.0: New\n- One\n- Two\n"
+
+        def get(url, **kw):
+            if url.startswith("https://raw.githubusercontent.com/"):
+                self.assertEqual(
+                    url, "https://raw.githubusercontent.com/thpoll83/PolyKybdHost/release-notes/v0.9.0.md")
+                return notes_resp
+            return _make_response(403)
+
+        with mock.patch.object(updater, "_current_version", return_value=Version("0.0.1")), \
+             mock.patch.object(updater.requests, "get", side_effect=get), \
+             mock.patch.object(updater.requests, "head",
+                               return_value=_redirect_response(
+                                   "https://github.com/thpoll83/PolyKybdHost/releases/tag/v0.9.0")):
+            rel = updater.check_latest()
+        self.assertEqual(rel.name, "v0.9.0 Big things")
+        self.assertEqual(rel.notes, "## 0.9.0: New\n- One\n- Two")
+
+    def test_host_403_web_fallback_prefers_cached_notes_for_the_same_tag(self):
+        self.mock_load.return_value = {"host": {
+            "etag": "x", "tag": "v0.9.0", "version": "0.9.0", "tarball_url": "t",
+            "name": "Cached title", "notes": "cached notes", "published_at": "2026-11-04T07:23:20Z"}}
+        with mock.patch.object(updater, "_current_version", return_value=Version("0.0.1")), \
+             mock.patch.object(updater.requests, "get", return_value=_make_response(403)) as get, \
+             mock.patch.object(updater.requests, "head",
+                               return_value=_redirect_response(
+                                   "https://github.com/thpoll83/PolyKybdHost/releases/tag/v0.9.0")):
+            rel = updater.check_latest()
+        self.assertEqual((rel.name, rel.notes, rel.published_at),
+                         ("Cached title", "cached notes", "2026-11-04T07:23:20Z"))
+        self.assertEqual(get.call_count, 1)  # only the API call; no notes fetch
+
+    def test_host_403_web_fallback_without_notes_still_offers_the_update(self):
+        def get(url, **kw):
+            if url.startswith("https://raw.githubusercontent.com/"):
+                raise requests.RequestException("offline")
+            return _make_response(403)
+        with mock.patch.object(updater, "_current_version", return_value=Version("0.0.1")), \
+             mock.patch.object(updater.requests, "get", side_effect=get), \
+             mock.patch.object(updater.requests, "head",
+                               return_value=_redirect_response(
+                                   "https://github.com/thpoll83/PolyKybdHost/releases/tag/v0.9.0")):
+            rel = updater.check_latest()
+        self.assertEqual(rel.version, "0.9.0")
+        self.assertEqual(rel.notes, "")
+
     def test_host_403_web_says_up_to_date_returns_none(self):
         with mock.patch.object(updater, "_current_version", return_value=Version("9.9.9")), \
              mock.patch.object(updater.requests, "get", return_value=_make_response(403)), \
@@ -241,13 +294,18 @@ class TestWebFallback(unittest.TestCase):
                 '<a href="/thpoll83/qmk_firmware/releases/download/PolyKybd-fw-v0.9.0/poly.uf2">')
         asset_resp = _make_response(200)
         asset_resp.text = html
+        notes_resp = _make_response(200)
+        notes_resp.text = "# PolyKybd v0.9.0 Title\n\n## 0.9.0: Thing\n- Line\n"
         with mock.patch.object(updater.requests, "get",
-                               side_effect=[_make_response(403), asset_resp]), \
+                               side_effect=[_make_response(403), asset_resp, notes_resp]), \
              mock.patch.object(updater.requests, "head",
                                return_value=_redirect_response(
                                    "https://github.com/thpoll83/qmk_firmware/releases/tag/PolyKybd-fw-v0.9.0")):
             fw = updater.check_fw_latest("0.8.0")
         self.assertIsNotNone(fw)
+        # The fallback still brings the release notes for the confirm dialog.
+        self.assertEqual(fw.name, "PolyKybd v0.9.0 Title")
+        self.assertEqual(fw.notes, "## 0.9.0: Thing\n- Line")
         self.assertEqual(fw.version, "0.9.0")
         self.assertTrue(fw.bin_url.endswith("/poly.bin"))
         self.assertTrue(fw.uf2_url.endswith("/poly.uf2"))
@@ -267,7 +325,7 @@ class TestWebFallback(unittest.TestCase):
         asset_resp = _make_response(200)
         asset_resp.text = html
         with mock.patch.object(updater.requests, "get",
-                               side_effect=[_make_response(403), asset_resp]), \
+                               side_effect=[_make_response(403), asset_resp, _make_response(404)]), \
              mock.patch.object(updater.requests, "head",
                                return_value=_redirect_response(
                                    "https://github.com/thpoll83/qmk_firmware/releases/tag/PolyKybd-fw-v0.9.0")):
@@ -622,7 +680,8 @@ class TestCheckFwLatest(unittest.TestCase):
                                return_value=self._resp(200, _fw_release_json(
                                    "PolyKybd-fw-v0.9.0"))) as mock_get:
             release = updater.check_fw_latest("0.8.1")
-        sent = mock_get.call_args.kwargs["headers"]
+        # The first request is releases/latest; later ones read the release list.
+        sent = mock_get.call_args_list[0].kwargs["headers"]
         self.assertNotIn("If-None-Match", sent,
                          "a pre-sig_url cache entry must be refetched, not revalidated")
         self.assertEqual(release.sig_url, "https://example.com/fw.bin.sig")
@@ -638,7 +697,8 @@ class TestCheckFwLatest(unittest.TestCase):
         with mock.patch.object(updater.requests, "get",
                                return_value=self._resp(304)) as mock_get:
             updater.check_fw_latest("0.8.1")
-        self.assertEqual(mock_get.call_args.kwargs["headers"]["If-None-Match"], '"abc"')
+        self.assertEqual(
+            mock_get.call_args_list[0].kwargs["headers"]["If-None-Match"], '"abc"')
 
     def test_pre_signature_cache_entry_survives_304(self):
         # An ETag cache written before sig_url existed has no such key, and the
@@ -676,19 +736,61 @@ def _build_tarball(path: Path, top_dir: str, files: dict):
 class TestSafeExtract(unittest.TestCase):
 
     def test_rejects_path_traversal(self):
-        with tempfile.TemporaryDirectory() as td:
-            tar_path = Path(td) / "evil.tar.gz"
-            with tarfile.open(tar_path, "w:gz") as tar:
-                data = b"pwn"
-                info = tarfile.TarInfo(name="../../evil.txt")
-                info.size = len(data)
-                tar.addfile(info, io.BytesIO(data))
+        """Both branches of `_safe_extract` refuse it, and neither writes
+        outside `dest`.
 
-            dest = Path(td) / "out"
-            dest.mkdir()
-            with tarfile.open(tar_path, "r:gz") as tar:
-                with self.assertRaises(RuntimeError):
-                    updater._safe_extract(tar, dest)
+        ⚠️ The exception TYPE differs by branch, and asserting one of them hid
+        the other. Below Python 3.12 the refusal is our own `RuntimeError`;
+        from 3.12 the work is delegated to `extractall(filter="data")`, which
+        raises `tarfile.FilterError` (`OutsideDestinationError` here). This
+        test asserted `RuntimeError` without pinning the version the way its
+        symlink sibling does, so on 3.13 it ERRORED -- while the traversal was
+        in fact being refused, and the caller (`UpdateInstaller`, `except
+        Exception`) handled either type identically. A test that fails when the
+        code is right costs the next reader the time to prove it is a false
+        alarm, which is what happened here.
+
+        So the assertion is the PROPERTY rather than a type: something is
+        raised, and the escaping path does not exist afterwards. `dest` is two
+        levels down so that `../../evil.txt` lands inside the temp directory,
+        where its absence can be asserted without depending on what else is
+        in the system temp directory.
+
+        ⚠️ The UNPATCHED case's expected type is derived from the same
+        condition `_safe_extract` tests, never written as a constant. Pinning
+        it to `FilterError` made the test fail on the 3.10 and 3.11 this
+        project still supports (README: "Requires Python 3.10 or newer"),
+        where that branch is not taken -- the very mistake this test was being
+        fixed for, repeated one line down (Greptile P1, #403). And
+        `tarfile.FilterError` is only named when it exists: the filters landed
+        in 3.12 and were backported to 3.10.12/3.11.4, so on an older patch
+        release the constant itself is an AttributeError.
+        """
+        live = (tarfile.FilterError if sys.version_info >= (3, 12)
+                else RuntimeError)
+        for pinned, expected in ((None, live), ((3, 11, 0), RuntimeError)):
+            with self.subTest(version_info=pinned or "real"):
+                with tempfile.TemporaryDirectory() as td:
+                    tar_path = Path(td) / "evil.tar.gz"
+                    with tarfile.open(tar_path, "w:gz") as tar:
+                        data = b"pwn"
+                        info = tarfile.TarInfo(name="../../evil.txt")
+                        info.size = len(data)
+                        tar.addfile(info, io.BytesIO(data))
+
+                    dest = Path(td) / "a" / "b" / "out"
+                    dest.mkdir(parents=True)
+                    escaped = Path(td) / "a" / "evil.txt"
+                    ctx = (mock.patch("polyhost.services.updater.sys") if pinned
+                           else contextlib.nullcontext())
+                    with ctx as fake_sys:
+                        if pinned:
+                            fake_sys.version_info = pinned
+                        with tarfile.open(tar_path, "r:gz") as tar:
+                            with self.assertRaises(expected):
+                                updater._safe_extract(tar, dest)
+                    self.assertFalse(escaped.exists(),
+                                     "the member was written outside dest")
 
     def test_rejects_symlink_member(self):
         with tempfile.TemporaryDirectory() as td:
@@ -853,6 +955,226 @@ class TestApplyUpdate(unittest.TestCase):
             # Files are copied before the (failing) pip step runs.
             self.assertTrue((install / "marker").exists())
 
+    def test_pip_failure_keeps_the_error_line_and_drops_notices(self):
+        # The field case (2026-10-05): the ERROR line sat behind progress
+        # output and was followed by two [notice] lines.
+        captured = ["Building wheel"] * 50 + [
+            "Installing collected packages: uharfbuzz, PolyHost",
+            "ERROR: Could not install packages due to an OSError: [Errno 13] "
+            + "Permission denied: '/v/site-packages/uharfbuzz'",
+            "[notice] A new release of pip is available: 26.1.2 -> 26.2.1",
+            "[notice] To update, run: pip install --upgrade pip"]
+        with mock.patch.object(updater.sys, "platform", "linux"):
+            msg = updater._pip_failure_message("install -e .", "returned 1", captured)
+        self.assertIn("pip install -e . returned 1:\n", msg)
+        self.assertIn("\nERROR: Could not install packages", msg)
+        self.assertNotIn("[notice]", msg)
+        self.assertEqual(msg.count("Building wheel"), updater._PIP_TAIL_LINES - 2)
+
+    def test_pip_failure_says_the_files_are_in_and_how_to_finish(self):
+        # The files are copied before pip runs, so the next start runs the new
+        # version; the message must say so and list the steps in order.
+        lines = ["ERROR: Could not install packages due to an OSError: "
+                 "[Errno 13] Permission denied: '/v/site-packages/uharfbuzz'"]
+        fix = [["/v/bin/python", "-m", "pip", "install", "-e", "/home/u/My Host"],
+               ["/v/bin/python", "-m", "pip", "install", "-r", "/home/u/My Host/requirements.txt"]]
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+                mock.patch.object(updater.sys, "prefix", "/v"), \
+                mock.patch.object(updater.sys, "base_prefix", "/usr"):
+            msg = updater._pip_failure_message("install -e .", "returned 1", lines, fix)
+        self.assertTrue(msg.startswith("The new version's files are installed"))
+        steps = msg.split("To fix it:\n", 1)[1].split("\n\npip ", 1)[0]
+        self.assertIn('1. This user cannot write', steps)
+        self.assertIn('sudo chown -R "$USER": /v', steps)
+        self.assertIn("2. Quit PolyKybd Host, then run:\n"
+                      "  /v/bin/python -m pip install -e '/home/u/My Host'\n"
+                      "  /v/bin/python -m pip install -r '/home/u/My Host/requirements.txt'",
+                      steps)
+        self.assertIn("3. Start PolyKybd Host again.", steps)
+
+    def test_fix_commands_read_back_from_the_message(self):
+        lines = ["ERROR: [Errno 13] Permission denied: '/v/x'"]
+        fix = [["/v/bin/python", "-m", "pip", "install", "-e", "/r"],
+               ["/v/bin/python", "-m", "pip", "install", "-r", "/r/requirements.txt"]]
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+                mock.patch.object(updater.sys, "prefix", "/v"), \
+                mock.patch.object(updater.sys, "base_prefix", "/usr"):
+            msg = updater._pip_failure_message("install -e .", "returned 1",
+                                               lines + ["  indented pip output"], fix)
+        self.assertEqual(updater.fix_commands_from_message(msg),
+                         'sudo chown -R "$USER": /v\n'
+                         "/v/bin/python -m pip install -e /r\n"
+                         "/v/bin/python -m pip install -r /r/requirements.txt")
+
+    def test_other_failures_have_no_fix_commands(self):
+        self.assertEqual(updater.fix_commands_from_message("Install dir not writable: x"), "")
+
+    def test_no_chown_for_a_python_that_is_not_a_virtualenv(self):
+        # sys.prefix of a system Python is /usr: a recursive chown there
+        # would hand OS-managed files to one user.
+        lines = ["ERROR: [Errno 13] Permission denied: '/usr/lib/python3/x'"]
+        fix = [["/usr/bin/python3", "-m", "pip", "install", "-e", "/r"]]
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+                mock.patch.object(updater.sys, "prefix", "/usr"), \
+                mock.patch.object(updater.sys, "base_prefix", "/usr"):
+            msg = updater._pip_failure_message("install -e .", "returned 1", lines, fix)
+        self.assertNotIn("chown", msg)
+        self.assertIn("not a virtual environment", msg)
+        self.assertEqual(updater.fix_commands_from_message(msg),
+                         "/usr/bin/python3 -m pip install -e /r")
+
+    def test_windows_commands_are_for_powershell(self):
+        argv = [r"C:\Users\O'Brien\My App\.venv\Scripts\python.exe",
+                "-m", "pip", "install", "-e", r"C:\Users\O'Brien\My App"]
+        with mock.patch.object(updater.sys, "platform", "win32"):
+            line = updater._shell_join(argv)
+            msg = updater._pip_failure_message("install -e .", "returned 1",
+                                               ["ERROR: boom"], [argv])
+        self.assertEqual(
+            line,
+            r"& 'C:\Users\O''Brien\My App\.venv\Scripts\python.exe' -m pip install -e "
+            r"'C:\Users\O''Brien\My App'")
+        self.assertIn("Quit PolyKybd Host, then run in PowerShell:", msg)
+
+    def test_in_use_files_get_copy_steps_before_pip(self):
+        # Windows: files in use are skipped and left for the relay, which a
+        # pip failure never reaches (Greptile on #316).
+        locked = [(r"C:\Temp\upd\x.pyd", r"C:\App\x.pyd")]
+        fix = [[r"C:\App\.venv\Scripts\python.exe", "-m", "pip", "install", "-e", r"C:\App"]]
+        with mock.patch.object(updater.sys, "platform", "win32"):
+            msg = updater._pip_failure_message("install -e .", "returned 1",
+                                               ["ERROR: boom"], fix, locked)
+        self.assertTrue(msg.startswith("Most of the new version's files are installed, "
+                                       "but 1 file(s) were in use"))
+        self.assertIn("1. Quit PolyKybd Host, then copy the 1 file(s) that were in use "
+                      "in PowerShell:", msg)
+        self.assertIn("2. Then run in PowerShell:", msg)
+        self.assertEqual(
+            updater.fix_commands_from_message(msg).splitlines(),
+            [r"& Copy-Item -Force -LiteralPath C:\Temp\upd\x.pyd -Destination C:\App\x.pyd",
+             r"& C:\App\.venv\Scripts\python.exe -m pip install -e C:\App"])
+
+    def test_in_use_files_end_with_deleting_the_kept_download(self):
+        # The relay that deletes the download never runs after a pip failure
+        # (Greptile on #316), so the last step says to delete it. It is prose,
+        # not a command: pasted as one block, a delete would also run after a
+        # failed Copy-Item and take the files needed to retry it.
+        locked = [(r"C:\Temp\upd\x.pyd", r"C:\App\x.pyd")]
+        with mock.patch.object(updater.sys, "platform", "win32"):
+            msg = updater._pip_failure_message("x", "returned 1", ["ERROR: boom"],
+                                               [], locked, r"C:\Temp\polyhost-update-1")
+        self.assertIn("3. Once PolyKybd Host runs the new version, delete the downloaded "
+                      r"update folder C:\Temp\polyhost-update-1.", msg)
+        cmds = updater.fix_commands_from_message(msg)
+        self.assertNotIn("Remove-Item", cmds)
+        self.assertNotIn("polyhost-update-1", cmds)
+        # Without files in use the download is already gone: no such step.
+        with mock.patch.object(updater.sys, "platform", "win32"):
+            msg = updater._pip_failure_message("x", "returned 1", ["ERROR: boom"],
+                                               [], [], r"C:\Temp\polyhost-update-1")
+        self.assertNotIn("polyhost-update-1", msg)
+
+    def test_apply_update_reports_in_use_files_and_keeps_sources(self):
+        with tempfile.TemporaryDirectory() as td:
+            src = Path(td) / "src"
+            src.mkdir()
+            (src / "x.pyd").write_bytes(b"new")
+            install = Path(td) / "install"
+            install.mkdir()
+
+            locked_err = OSError(13, "in use")
+            locked_err.winerror = 32
+            with mock.patch.object(updater.sys, "platform", "win32"), \
+                    mock.patch.object(updater.shutil, "copy2", side_effect=locked_err), \
+                    mock.patch.object(updater.subprocess, "Popen",
+                                      side_effect=_popen_side_effect((1, ["ERROR: boom"]))):
+                with self.assertRaises(updater.PipInstallError) as ctx:
+                    updater.apply_update(src, install)
+            self.assertTrue(ctx.exception.keeps_sources)
+            self.assertIn("1 file(s) were in use", str(ctx.exception))
+            self.assertIn(str(src / "x.pyd"), str(ctx.exception))
+
+    def test_chown_only_when_the_denied_path_is_inside_the_venv(self):
+        def msg_for(denied):
+            lines = [f"ERROR: [Errno 13] Permission denied: '{denied}'"]
+            with mock.patch.object(updater.sys, "platform", "linux"), \
+                    mock.patch.object(updater.sys, "prefix", "/home/u/app/.venv"), \
+                    mock.patch.object(updater.sys, "base_prefix", "/usr"):
+                return updater._pip_failure_message("x", "returned 1", lines)
+        inside = msg_for("/home/u/app/.venv/lib/python3.12/site-packages/uharfbuzz")
+        self.assertIn('sudo chown -R "$USER": /home/u/app/.venv', inside)
+        # pip's cache is outside the environment: chowning the venv would not
+        # fix it (Greptile on #316).
+        outside = msg_for("/home/u/.cache/pip/wheels")
+        self.assertNotIn("chown", outside)
+        self.assertIn("cannot write to /home/u/.cache/pip/wheels, which is outside", outside)
+        # A sibling directory that merely shares the prefix string is outside.
+        self.assertNotIn("chown", msg_for("/home/u/app/.venv-old/x"))
+
+    def test_a_denied_path_cannot_add_a_command(self):
+        # An escaped newline + two spaces in pip's path would decode into an
+        # indented line that Copy Fix Commands copies (Greptile on #316).
+        err = PermissionError(13, "Permission denied", "/tmp/a\n  rm -rf ~")
+        lines = [f"ERROR: Could not install packages due to an OSError: {err}"]
+        fix = [["/v/bin/python", "-m", "pip", "install", "-e", "/r"]]
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+                mock.patch.object(updater.sys, "prefix", "/v"), \
+                mock.patch.object(updater.sys, "base_prefix", "/usr"):
+            msg = updater._pip_failure_message("x", "returned 1", lines, fix)
+        self.assertEqual(updater.fix_commands_from_message(msg),
+                         "/v/bin/python -m pip install -e /r")
+        self.assertIn("Check the ownership of the path in pip's error below.", msg)
+
+    def test_a_denied_path_with_an_apostrophe_is_read_whole(self):
+        # str(OSError) gives repr(filename): DOUBLE quotes when the path has an
+        # apostrophe, which a '...'-only pattern cut to "/home/o" (Greptile).
+        err = PermissionError(13, "Permission denied",
+                              "/home/o'brien/app/.venv/lib/site-packages/uharfbuzz")
+        lines = [f"ERROR: Could not install packages due to an OSError: {err}"]
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+                mock.patch.object(updater.sys, "prefix", "/home/o'brien/app/.venv"), \
+                mock.patch.object(updater.sys, "base_prefix", "/usr"):
+            msg = updater._pip_failure_message("x", "returned 1", lines)
+        self.assertIn("sudo chown -R \"$USER\": '/home/o'\"'\"'brien/app/.venv'", msg)
+
+    def test_pip_failure_hint_only_for_permission_errors_on_posix(self):
+        fix = [["py", "-m", "pip", "install", "-e", "x"]]
+        lines = ["ERROR: No matching distribution found for foo"]
+        with mock.patch.object(updater.sys, "platform", "linux"):
+            msg = updater._pip_failure_message("x", "returned 1", lines, fix)
+        self.assertNotIn("chown", msg)
+        self.assertIn("1. Quit PolyKybd Host", msg)
+        lines = ["ERROR: [Errno 13] Permission denied: 'C:\\\\v\\\\x.pyd'"]
+        with mock.patch.object(updater.sys, "platform", "win32"):
+            self.assertNotIn("chown",
+                             updater._pip_failure_message("x", "returned 1", lines, fix))
+
+    def test_apply_update_hands_the_fix_commands_to_the_message(self):
+        with tempfile.TemporaryDirectory() as td:
+            src = Path(td) / "src"
+            src.mkdir()
+            (src / "requirements.txt").write_text("requests\n", encoding="utf-8")
+            install = Path(td) / "install"
+            install.mkdir()
+            with mock.patch.object(updater.subprocess, "Popen",
+                                   side_effect=_popen_side_effect((1, ["ERROR: boom"]))):
+                with self.assertRaises(RuntimeError) as ctx:
+                    updater.apply_update(src, install)
+            msg = str(ctx.exception)
+            self.assertIn(updater._shell_join(
+                [sys.executable, "-m", "pip", "install", "-e", str(install)]), msg)
+            self.assertIn(updater._shell_join(
+                [sys.executable, "-m", "pip", "install", "-r",
+                 str(install / "requirements.txt")]), msg)
+
+    def test_pip_that_cannot_start_still_says_how_to_finish(self):
+        fix = [["py", "-m", "pip", "install", "-e", "x"]]
+        with mock.patch.object(updater.subprocess, "Popen", side_effect=OSError("no pip")):
+            with self.assertRaises(RuntimeError) as ctx:
+                updater._run_pip(["install"], "install -e .", None, fix)
+        self.assertIn("pip install -e . failed to run: no pip", str(ctx.exception))
+        self.assertIn("Quit PolyKybd Host, then run:", str(ctx.exception))
+
     def test_requirements_failure_raises(self):
         with tempfile.TemporaryDirectory() as td:
             src = Path(td) / "src"
@@ -918,6 +1240,8 @@ class TestRestartApp(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 updater.restart_app()
         popen.assert_called_once()
+        # Detached: the fallback child must not die with this process's group.
+        self.assertTrue(popen.call_args.kwargs.get("start_new_session"))
         sys_exit.assert_called_once_with(0)
 
     def test_windows_uses_subprocess(self):
@@ -931,6 +1255,34 @@ class TestRestartApp(unittest.TestCase):
         execv.assert_not_called()
         popen.assert_called_once()
         sys_exit.assert_called_once_with(0)
+
+    def test_new_process_skips_execv_on_posix(self):
+        """A tray relaunch must get a new pid (main_app passes new_process).
+
+        execv keeps the pid, so Qt re-registers the same
+        org.kde.StatusNotifierItem-<pid>-1 name and GNOME shows no tray icon.
+        """
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+             mock.patch.object(updater.os, "execv") as execv, \
+             mock.patch.object(updater.subprocess, "Popen") as popen, \
+             mock.patch.object(updater.sys, "exit",
+                               side_effect=SystemExit) as sys_exit:
+            with self.assertRaises(SystemExit):
+                updater.restart_app(new_process=True)
+        execv.assert_not_called()
+        popen.assert_called_once()
+        sys_exit.assert_called_once_with(0)
+
+    def test_new_process_spawn_failure_falls_back_to_execv(self):
+        """A failed fork must not leave the app dead: re-exec in place instead."""
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+             mock.patch.object(updater.os, "execv") as execv, \
+             mock.patch.object(updater.subprocess, "Popen",
+                               side_effect=OSError(11, "Resource temporarily unavailable")), \
+             mock.patch.object(updater.sys, "exit") as sys_exit:
+            updater.restart_app(new_process=True)
+        execv.assert_called_once()
+        sys_exit.assert_not_called()
 
     def test_windows_relaunch_is_detached(self):
         """The restarted app must not stay in the exiting parent's console.
@@ -959,6 +1311,84 @@ class TestRestartApp(unittest.TestCase):
         with mock.patch.object(updater.sys, "platform", "linux"):
             self.assertEqual(updater.detached_creationflags(), 0)
             self.assertNotIn("creationflags", updater.detached_popen_kwargs())
+
+    def test_posix_relaunch_leaves_the_process_group(self):
+        """The relaunch must not stay in this process's process group.
+
+        launchd kills the whole process group of a LaunchAgent job when the
+        job ends, so a relaunch left in it died with the old process (macOS
+        login launch, 2026-11-06). setsid moves it out.
+        """
+        for plat in ("darwin", "linux"):
+            with self.subTest(plat=plat), mock.patch.object(updater.sys, "platform", plat):
+                self.assertTrue(updater.detached_popen_kwargs().get("start_new_session"))
+
+    def test_windows_relaunch_does_not_pass_start_new_session(self):
+        """Windows detaches with creationflags; start_new_session is POSIX only."""
+        with mock.patch.object(updater.sys, "platform", "win32"):
+            self.assertNotIn("start_new_session", updater.detached_popen_kwargs())
+
+    def test_posix_relaunch_survives_its_process_group_being_killed(self):
+        """Real processes: spawn through spawn_detached, kill the spawner's
+        process group the way launchd does, and the relaunched child lives."""
+        if sys.platform == "win32":
+            self.skipTest("process groups are POSIX")
+        import os
+        import signal
+        import subprocess
+        import time
+        with tempfile.TemporaryDirectory() as tmp:
+            pidfile = os.path.join(tmp, "child.pid")
+            go = os.path.join(tmp, "go")
+            alive = os.path.join(tmp, "alive")
+            # The child writes `alive` only after the test has killed the
+            # group and created `go`. kill(pid, 0) cannot tell: it succeeds
+            # on a killed child that nobody has reaped yet.
+            child = (
+                "import os,time\n"
+                "open(%r,'w').write(str(os.getpid()))\n"
+                "t=time.monotonic()+20\n"
+                "while not os.path.exists(%r) and time.monotonic()<t: time.sleep(0.05)\n"
+                "open(%r,'w').write('1')\n"
+            ) % (pidfile, go, alive)
+            spawner = (
+                "import sys; sys.path.insert(0, %r)\n"
+                "from polyhost.services import updater\n"
+                "updater.spawn_detached([sys.executable, '-c', %r])\n"
+                "import time; time.sleep(30)\n"
+            ) % (os.getcwd(), child)
+            # The spawner leads its own group, like a launchd job does.
+            parent = subprocess.Popen([sys.executable, "-c", spawner], start_new_session=True)
+            child_pid = None
+            try:
+                deadline = time.monotonic() + 20
+                while not os.path.exists(pidfile) and time.monotonic() < deadline:
+                    time.sleep(0.05)
+                time.sleep(0.2)
+                with open(pidfile, encoding="utf-8") as fh:
+                    child_pid = int(fh.read())
+                os.killpg(parent.pid, signal.SIGKILL)
+                parent.wait(timeout=5)
+                open(go, "w", encoding="utf-8").close()
+                deadline = time.monotonic() + 5
+                while not os.path.exists(alive) and time.monotonic() < deadline:
+                    time.sleep(0.05)
+                self.assertTrue(os.path.exists(alive),
+                                "the relaunched child died with its parent's process group")
+            finally:
+                # Also runs when the child never wrote its pid file: the spawner
+                # would otherwise sleep on for 30 s after the failure.
+                if parent.poll() is None:
+                    try:
+                        os.killpg(parent.pid, signal.SIGKILL)
+                    except OSError:
+                        pass  # the group is already gone
+                    parent.wait(timeout=5)
+                if child_pid is not None:
+                    try:
+                        os.kill(child_pid, signal.SIGKILL)
+                    except OSError:
+                        pass  # already gone: the child exits by itself after writing `alive`
 
 
 class TestPreflight(unittest.TestCase):
@@ -1070,6 +1500,20 @@ class TestInstallerPreflight(unittest.TestCase):
         tmp = next(f for f in findings if f.name == "temp dir")
         self.assertFalse(tmp.ok)
         self.assertTrue(tmp.blocking)
+
+    def test_a_successful_apply_writes_the_release_marker(self):
+        # A cloned install keeps its old .git; the marker names the release.
+        rec = _Recorder()
+        with tempfile.TemporaryDirectory() as root:
+            with mock.patch.object(updater, "preflight", return_value=[]), \
+                 mock.patch.object(updater, "get_install_root", return_value=Path(root)), \
+                 mock.patch.object(updater, "download_and_extract", return_value=Path("/x")), \
+                 mock.patch.object(updater, "apply_update", return_value=[]):
+                self._make(rec).run()
+            marker = json.loads((Path(root) / build_info.MARKER_NAME)
+                                .read_text(encoding="utf-8"))
+        self.assertEqual(rec.names[-1], "finished_ok")
+        self.assertEqual((marker["tag"], marker["version"]), ("v1.0.0", "1.0.0"))
 
     def test_warning_is_surfaced_but_does_not_stop_the_update(self):
         rec = _Recorder()
@@ -1324,6 +1768,40 @@ class TestUpdateInstaller(unittest.TestCase):
         self.assertIn("failed", rec.names)
         self.assertEqual(rec.args_for("failed"), [("net down",)])
 
+    def _fail_with(self, error):
+        rec = _Recorder()
+        rel = updater.ReleaseInfo("v1.0.0", "1.0.0", "url", "html", "")
+        with mock.patch.object(updater, "get_install_root", return_value=Path("/install")), \
+             mock.patch.object(updater, "download_and_extract", return_value=Path("/extracted")), \
+             mock.patch.object(updater, "apply_update", side_effect=error), \
+             mock.patch.object(updater.shutil, "rmtree") as rmtree, \
+             mock.patch.object(updater.tempfile, "mkdtemp", return_value="/tmp/x"):
+            self._make(rel, rec).run()
+        self.assertEqual(rec.names[-1], "failed")
+        self.assertNotIn("relay_needed", rec.names)
+        return rmtree
+
+    def test_a_pip_failure_with_copy_steps_keeps_the_download(self):
+        # The Copy-Item steps read the in-use files out of this directory.
+        rmtree = self._fail_with(updater.PipInstallError("m", keeps_sources=True))
+        self.assertNotIn(mock.call(Path("/tmp/x"), ignore_errors=True), rmtree.call_args_list)
+
+    def test_run_names_its_temp_dir_for_the_cleanup_step(self):
+        rec = _Recorder()
+        rel = updater.ReleaseInfo("v1.0.0", "1.0.0", "url", "html", "")
+        with mock.patch.object(updater, "get_install_root", return_value=Path("/install")), \
+             mock.patch.object(updater, "download_and_extract", return_value=Path("/extracted")), \
+             mock.patch.object(updater, "apply_update", return_value=[]) as apply, \
+             mock.patch.object(updater.shutil, "rmtree"), \
+             mock.patch.object(updater.tempfile, "mkdtemp", return_value="/tmp/x"):
+            self._make(rel, rec).run()
+        self.assertEqual(apply.call_args.kwargs["download_dir"], Path("/tmp/x"))
+
+    def test_a_pip_failure_without_copy_steps_cleans_up(self):
+        rmtree = self._fail_with(updater.PipInstallError("m"))
+        # (The preflight probe also gets an rmtree; this is the install's.)
+        self.assertIn(mock.call(Path("/tmp/x"), ignore_errors=True), rmtree.call_args_list)
+
 
 class _NamedFile:
     """A real file handle with a writable ``name`` (the downloader reads tmp.name).
@@ -1467,12 +1945,16 @@ class TestFwUpDownloader(unittest.TestCase):
         def fake_get(url, **kw):
             calls.append(url)
             if url.endswith(".sig"):
-                if isinstance(sig_response, Exception):
-                    raise sig_response
-                return sig_response
+                resp = (sig_response.pop(0) if isinstance(sig_response, list)
+                        else sig_response)
+                if isinstance(resp, Exception):
+                    raise resp
+                return resp
             return bin_ctx
 
         with mock.patch.object(updater.requests, "get", side_effect=fake_get), \
+             mock.patch.object(updater, "SIG_RETRY_DELAYS",
+                               (0.0,) * len(updater.SIG_RETRY_DELAYS)), \
              mock.patch.object(updater.tempfile, "NamedTemporaryFile") as mock_ntf:
             mock_ntf.return_value.__enter__.return_value = fh
             try:
@@ -1511,6 +1993,98 @@ class TestFwUpDownloader(unittest.TestCase):
             self.assertEqual(path, "")
             self.assertIn("nope", err)
             self.assertFalse(bin_path.exists(), "the .bin must go with the failed .sig")
+
+    def test_signature_timeout_is_retried(self):
+        # Field 2026-11-05: one read timeout on the .sig threw away a good
+        # image; the user's manual retry then worked. Retry it here instead.
+        with tempfile.TemporaryDirectory() as td:
+            rec, bin_path, calls = self._run_with_sig(
+                td, [requests.ReadTimeout("Read timed out."),
+                     self._sig_response(b"\x5a" * 64)])
+            self.assertEqual(rec.args_for("finished"), [(True, "", str(bin_path))])
+            self.assertEqual(Path(str(bin_path) + ".sig").read_bytes(), b"\x5a" * 64)
+        self.assertEqual(sum(u.endswith(".sig") for u in calls), 2)
+
+    def test_the_field_outage_of_2026_11_09_is_ridden_out(self):
+        """A read timeout, then two 504s within 4 s: the old (1 s, 3 s) delays
+        gave up, and a manual retry 1.5 min later worked."""
+        def gateway_timeout():
+            return requests.HTTPError("504 Server Error: Gateway Time-out",
+                                      response=mock.MagicMock(status_code=504))
+        with tempfile.TemporaryDirectory() as td:
+            rec, bin_path, calls = self._run_with_sig(
+                td, [requests.ReadTimeout("Read timed out."), gateway_timeout(),
+                     gateway_timeout(), self._sig_response(b"\x5a" * 64)])
+            self.assertEqual(rec.args_for("finished"), [(True, "", str(bin_path))])
+        self.assertEqual(sum(u.endswith(".sig") for u in calls), 4)
+        msgs = [str(msg) for _pct, msg in rec.args_for("progress")]
+        total = len(updater.SIG_RETRY_DELAYS) + 1
+        retries = [m for m in msgs if "trying again" in m]
+        self.assertEqual(len(retries), 3, "the dialog says each retry")
+        self.assertIn(f"(attempt 2 of {total})", retries[0])
+        # After each wait the countdown is replaced before the next request.
+        attempts = [m for m in msgs if m.startswith("Downloading signature (attempt")]
+        self.assertEqual(attempts, [f"Downloading signature (attempt {n} of {total})…"
+                                    for n in (2, 3, 4)])
+        self.assertNotIn("GitHub", " ".join(retries), "a timeout may be the local network")
+
+    def test_the_retries_wait_about_a_minute(self):
+        self.assertGreaterEqual(sum(updater.SIG_RETRY_DELAYS), 60)
+
+    def test_signature_gives_up_after_the_last_retry(self):
+        with tempfile.TemporaryDirectory() as td:
+            rec, bin_path, calls = self._run_with_sig(
+                td, requests.ReadTimeout("Read timed out."))
+            ok, err, _path = rec.args_for("finished")[0]
+            self.assertFalse(ok)
+            self.assertIn("Read timed out", err)
+            self.assertFalse(bin_path.exists())
+        self.assertEqual(sum(u.endswith(".sig") for u in calls),
+                         len(updater.SIG_RETRY_DELAYS) + 1)
+
+    def test_signature_404_is_not_retried(self):
+        resp = mock.MagicMock(status_code=404)
+        with tempfile.TemporaryDirectory() as td:
+            rec, _bin, calls = self._run_with_sig(
+                td, requests.HTTPError("404 Not Found", response=resp))
+            self.assertFalse(rec.args_for("finished")[0][0])
+        self.assertEqual(sum(u.endswith(".sig") for u in calls), 1)
+
+    def test_cancel_during_signature_retry_wait(self):
+        rec = _Recorder()
+        rel = updater.FwUpReleaseInfo("PolyKybd-fw-v0.9.0", "0.9.0",
+                                      "https://example.com/fw.bin", "", "html", "",
+                                      "", "", "https://example.com/fw.bin.sig")
+        cancel = [False]
+        dl = updater.FwUpDownloader(rel, on_finished=rec.make("finished"),
+                                    cancel_flag=cancel)
+
+        def failing_fetch(_url, _path):
+            cancel[0] = True          # the user presses Cancel during the wait
+            raise requests.ReadTimeout("slow")
+
+        with mock.patch.object(dl, "_fetch_signature", side_effect=failing_fetch) as fetch, \
+             mock.patch.object(updater, "SIG_RETRY_DELAYS", (5.0, 5.0)):
+            with self.assertRaises(updater._DownloadCancelled):
+                dl._fetch_signature_with_retry("u", "p")
+        self.assertEqual(fetch.call_count, 1)
+
+    def test_cancel_during_the_attempt_message_starts_no_request(self):
+        cancel = [False]
+        rel = updater.FwUpReleaseInfo("PolyKybd-fw-v0.9.0", "0.9.0",
+                                      "https://example.com/fw.bin", "", "html", "",
+                                      "", "", "https://example.com/fw.bin.sig")
+
+        def on_progress(_pct, msg):
+            if str(msg).startswith("Downloading signature (attempt"):
+                cancel[0] = True          # Cancel pressed as the next attempt is announced
+        dl = updater.FwUpDownloader(rel, on_progress=on_progress, cancel_flag=cancel)
+        with mock.patch.object(dl, "_fetch_signature",
+                               side_effect=requests.ReadTimeout("slow")) as fetch, \
+             mock.patch.object(updater, "SIG_RETRY_DELAYS", (0.0, 0.0)):
+            with self.assertRaises(updater._DownloadCancelled):
+                dl._fetch_signature_with_retry("u", "p")
+        self.assertEqual(fetch.call_count, 1)
 
     def test_wrong_length_signature_rejected(self):
         # A 404 page or truncated read must not be written out as a "signature".
@@ -1551,6 +2125,177 @@ class TestDiscardFwDownload(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             updater.discard_fw_download(str(Path(td) / "gone.bin"))  # no .sig either
             updater.discard_fw_download("")
+
+
+class TestSkippedReleaseNotes(unittest.TestCase):
+    """A jump over several releases shows the notes of every one of them."""
+
+    def setUp(self):
+        load_p = mock.patch.object(updater, "_load_etag_cache", return_value={})
+        save_p = mock.patch.object(updater, "_save_etag_cache")
+        self.mock_load = load_p.start()
+        save_p.start()
+        self.addCleanup(load_p.stop)
+        self.addCleanup(save_p.stop)
+
+    @staticmethod
+    def _rel(version, body, draft=False, prerelease=False):
+        return {"tag_name": f"PolyKybd-fw-v{version}", "name": f"PolyKybd v{version}",
+                "body": body, "draft": draft, "prerelease": prerelease}
+
+    def _serve(self, latest, pages):
+        """requests.get stand-in: releases/latest -> ``latest``, the list -> ``pages``."""
+        calls = []
+
+        def get(url, params=None, **_kw):
+            calls.append((url, dict(params or {})))
+            if url.endswith("/releases/latest"):
+                return _make_response(200, latest, {"ETag": '"e"'})
+            page = (params or {}).get("page", 1)
+            return _make_response(200, pages[page - 1] if page <= len(pages) else [])
+        return get, calls
+
+    def _latest_fw(self):
+        payload = _fw_release_json("PolyKybd-fw-v1.11.3")
+        payload["name"] = "PolyKybd v1.11.3"
+        payload["body"] = "tap-hold timing"
+        return payload
+
+    def test_notes_of_every_skipped_release_newest_first(self):
+        page = [self._rel("1.11.3", "tap-hold timing"),
+                self._rel("1.11.2", "search on Shift"),
+                self._rel("1.11.1", "rc", prerelease=True),
+                self._rel("1.11.0", "emoji search"),
+                self._rel("1.10.2", "icon library")]
+        get, _calls = self._serve(self._latest_fw(), [page])
+        with mock.patch.object(updater.requests, "get", side_effect=get):
+            release = updater.check_fw_latest("1.10.2")
+        # The name stays the newest release's: the installer writes it into the
+        # release marker. Only the dialog heading drops it.
+        self.assertEqual(release.name, "PolyKybd v1.11.3")
+        self.assertEqual(release.notes_releases, 3)
+        self.assertEqual(updater.dialog_release_name(release), "")
+        self.assertEqual(release.notes,
+                         "# PolyKybd v1.11.3\n\ntap-hold timing\n\n"
+                         "# PolyKybd v1.11.2\n\nsearch on Shift\n\n"
+                         "# PolyKybd v1.11.0\n\nemoji search")
+
+    def test_one_release_ahead_keeps_its_own_name_and_notes(self):
+        page = [self._rel("1.11.3", "tap-hold timing"), self._rel("1.11.2", "x")]
+        get, _calls = self._serve(self._latest_fw(), [page])
+        with mock.patch.object(updater.requests, "get", side_effect=get):
+            release = updater.check_fw_latest("1.11.2")
+        self.assertEqual(release.name, "PolyKybd v1.11.3")
+        self.assertEqual(release.notes, "tap-hold timing")
+        self.assertEqual(release.notes_releases, 1)
+        self.assertEqual(updater.dialog_release_name(release), "PolyKybd v1.11.3")
+
+    def test_reads_further_pages_until_it_reaches_the_current_version(self):
+        full = [self._rel(f"1.{i}.0", f"n{i}") for i in range(200, 100, -1)]
+        self.assertEqual(len(full), updater._RELEASES_PAGE)
+        page2 = [self._rel("1.100.0", "n100"), self._rel("1.99.0", "n99")]
+        latest = _fw_release_json("PolyKybd-fw-v1.201.0")
+        get, calls = self._serve(latest, [full, page2])
+        with mock.patch.object(updater.requests, "get", side_effect=get):
+            release = updater.check_fw_latest("1.99.0")
+        self.assertIn("# PolyKybd v1.100.0", release.notes)
+        self.assertNotIn("v1.99.0", release.notes)
+        self.assertEqual([c[1].get("page") for c in calls if "page" in c[1]], [1, 2])
+
+    def test_a_failed_list_falls_back_to_the_latest_notes(self):
+        def get(url, params=None, **_kw):
+            if url.endswith("/releases/latest"):
+                return _make_response(200, self._latest_fw(), {"ETag": '"e"'})
+            return _make_response(403)
+        with mock.patch.object(updater.requests, "get", side_effect=get):
+            release = updater.check_fw_latest("1.10.2")
+        self.assertEqual(release.notes, "tap-hold timing")
+        self.assertEqual(release.bin_url, "https://example.com/fw.bin")
+
+    def test_recovery_lookup_does_not_read_the_list(self):
+        get, calls = self._serve(self._latest_fw(), [[]])
+        with mock.patch.object(updater.requests, "get", side_effect=get):
+            updater.check_fw_latest("0", skipped_notes=False)
+        self.assertEqual([c[0] for c in calls], [updater.GITHUB_FW_API])
+
+    def test_cached_firmware_release_also_gets_the_skipped_notes(self):
+        self.mock_load.return_value = {"fw": {
+            "etag": '"e"', "tag": "PolyKybd-fw-v1.11.3", "version": "1.11.3",
+            "bin_url": "https://example.com/fw.bin", "uf2_url": "", "sig_url": "",
+            "name": "PolyKybd v1.11.3", "notes": "tap-hold timing"}}
+        page = [self._rel("1.11.3", "tap-hold timing"), self._rel("1.11.2", "search"),
+                self._rel("1.11.0", "emoji")]
+
+        def get(url, params=None, **_kw):
+            if url.endswith("/releases/latest"):
+                return _make_response(304)
+            return _make_response(200, page)
+        with mock.patch.object(updater.requests, "get", side_effect=get):
+            release = updater.check_fw_latest("1.11.0")
+        self.assertEqual(release.notes,
+                         "# PolyKybd v1.11.3\n\ntap-hold timing\n\n"
+                         "# PolyKybd v1.11.2\n\nsearch")
+
+    def test_an_old_release_created_late_does_not_stop_the_paging(self):
+        # The list is ordered by creation date. A 1.0.5 published after 1.50.0
+        # sits on page 1 among newer releases; page 2 must still be read.
+        full = [self._rel(f"1.{i}.0", f"n{i}") for i in range(149, 50, -1)]
+        full.insert(3, self._rel("1.0.5", "old line"))
+        self.assertEqual(len(full), updater._RELEASES_PAGE)
+        page2 = [self._rel("1.50.0", "n50"), self._rel("1.49.0", "n49")]
+        get, _calls = self._serve(_fw_release_json("PolyKybd-fw-v1.150.0"), [full, page2])
+        with mock.patch.object(updater.requests, "get", side_effect=get):
+            release = updater.check_fw_latest("1.49.0")
+        self.assertIn("# PolyKybd v1.50.0", release.notes)
+        self.assertNotIn("old line", release.notes)
+
+    def test_a_malformed_entry_falls_back_instead_of_failing_the_check(self):
+        get, _calls = self._serve(self._latest_fw(),
+                                  [[self._rel("1.11.2", "x"), "not an object"]])
+        with mock.patch.object(updater.requests, "get", side_effect=get):
+            release = updater.check_fw_latest("1.10.2")
+        self.assertEqual(release.notes, "tap-hold timing")
+        self.assertEqual(release.notes_releases, 1)
+
+    def test_a_release_listed_twice_appears_once(self):
+        # A release published between two page requests shifts the list, so
+        # one release can come back on both pages.
+        page1 = [self._rel(f"1.{i}.0", f"n{i}") for i in range(200, 100, -1)]
+        page2 = [self._rel("1.101.0", "n101"), self._rel("1.100.0", "n100")]
+        get, _calls = self._serve(_fw_release_json("PolyKybd-fw-v1.201.0"), [page1, page2])
+        with mock.patch.object(updater.requests, "get", side_effect=get):
+            release = updater.check_fw_latest("1.99.0")
+        self.assertEqual(release.notes.count("# PolyKybd v1.101.0\n"), 1)
+        self.assertEqual(release.notes_releases, 102)
+
+    def test_dialog_name_for_a_release_without_the_count_field(self):
+        # A positional construction from older code, or a RemoteCore payload,
+        # has no notes_releases and keeps its name.
+        release = updater.ReleaseInfo("v1", "1", "t", "h", "", "Title", "notes")
+        self.assertEqual(updater.dialog_release_name(release), "Title")
+        self.assertEqual(updater.dialog_release_name(object()), "")
+
+    def test_host_update_gets_the_skipped_notes(self):
+        latest = {"tag_name": "v1.21.4", "tarball_url": "t", "name": "v1.21.4",
+                  "body": "four"}
+        page = [{"tag_name": "v1.21.4", "name": "v1.21.4", "body": "four"},
+                {"tag_name": "v1.21.3", "name": "", "body": "three"},
+                {"tag_name": "v1.21.2", "name": "v1.21.2", "body": "two"}]
+        get, calls = self._serve(latest, [page])
+        get_latest = get
+
+        def get(url, params=None, **kw):
+            if url == updater.GITHUB_API:
+                return _make_response(200, latest, {"ETag": '"e"'})
+            return get_latest(url, params=params, **kw)
+        with mock.patch.object(updater, "__version__", "1.21.2"), \
+             mock.patch.object(updater.requests, "get", side_effect=get):
+            release = updater.check_latest()
+        self.assertEqual(release.notes, "# v1.21.4\n\nfour\n\n# v1.21.3\n\nthree")
+        self.assertEqual(release.name, "v1.21.4")
+        self.assertEqual(release.notes_releases, 2)
+        self.assertIn(updater._RELEASES_API.format(repo=updater.HOST_REPO),
+                      [c[0] for c in calls])
 
 
 if __name__ == "__main__":

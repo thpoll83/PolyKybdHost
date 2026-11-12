@@ -21,6 +21,46 @@ wc -l /tmp/b/logs/*
 crash-log tally. Read both before opening a log — they answer half the questions
 and they date the evidence.
 
+## 0. Name the firmware BUILD, not just its version
+
+⚠️ **`Firmware 1.7.14` in `diagnostics.txt` does not identify an image.** The
+maintainer runs many test builds, and every build of one version reports the same
+number (2026-10-09: two stalls in one morning were first blamed on "something
+introduced yesterday" before anyone could say which builds had run). The boot
+banner names the build:
+
+```
+== PolyKybd Split72 1.7.14 P22 HW0x0320 | left master | build <branch>@<hash>[*] <date> ==
+```
+
+```bash
+grep -n '| build ' /tmp/b/logs/keyboard-console.txt
+```
+
+The firmware prints it for ~30 s after boot and again whenever a host starts
+probing after a pause (a PolyHost restart, a woken PC, the reconnect after an
+update). So a bundle that spans a host start carries it. `*` after the hash means
+the image came from a dirty tree. If the line is missing, the firmware predates it,
+or no host session started in the timeframe. Say so, and attribute nothing to a
+specific change until the user confirms which image was flashed.
+
+The host names its own build the same way, once per process in `startup.txt`, and
+as `PolyHost build` in `diagnostics.txt`:
+
+```
+== PolyKybdHost 1.16.0 P22 | build git <branch>@<hash>[*] <commit date> ==
+== PolyKybdHost 1.16.0 P22 | build release v1.16.0, published <date>, installed by update <date> ==
+```
+
+⚠️ **A cloned install's `.git` goes stale after the first in-app update** — the
+updater copies the release over the files and never touches `.git`. So the
+`release …` form wins while `.polyhost-release.json` (written by the updater)
+matches the running version AND git HEAD is still the commit the updater found,
+and the line adds `(git …@… predates the files)`. Any pull or checkout after the
+update hands the line back to git. Each process computes the line once, at start.
+`*` means tracked files differ from HEAD. A `launching` line with no
+`== PolyKybdHost` line after it is a host older than this banner.
+
 ## 1. Count the processes before reading anything else
 
 `crash.txt` is the census. Every process writes a `session start` line with its
@@ -77,13 +117,79 @@ These are the ones that have produced wrong diagnoses:
   faulting thread is a native one with no Python state. The fatal one is a dump
   that reads `access violation` and **breaks off mid-line**, followed by no
   `clean exit` for that pid. A long run of `0x80010108` before it is the signature
-  of a COM object used across threads (see `CLAUDE.md` → *Threading model*):
+  of a COM object used across threads (see `CLAUDE.md` → *Threading* and `docs/hid-worker-refactor.md`):
   35 of them in 92 minutes preceded the 2026-09-23 daemon death.
+  ⚠️ **Check WHERE the `access violation` sits.** When it appears INSIDE a
+  first-chance dump, cutting off a thread's `File "…"` line, the dump itself
+  crashed: on hosts before the fix it walked the other threads' running stacks
+  (2026-09-25, one handled COM error after three hours, broke off in
+  `active_window.py`). Blame that thread's code only when the violation is its
+  own dump. Current hosts dump only the faulting thread on Windows
+  (`crash_log.dump_all_threads()`), so a Windows dump no longer lists the other
+  threads.
 - ⚠️ **A dead daemon logs nothing about its own death.** The evidence is on the
   TRAY side, in `host.txt`: `RPC call … lost connection: [WinError 232] The pipe
   is being closed`, then `RPC reconnect failed: [WinError 2]` (the endpoint is
   gone). `daemon.txt` may be empty for the whole timeframe, and `diagnostics.txt`
   then says `Keyboard: not connected` while the keyboard itself works fine.
+- ⚠️ **"It did not start again after the update": a relaunch that died before
+  its first log line.** `host.txt` ends the old process with
+  `Update applied, restarting...` and `Restarting: [...]`, `crash.txt` has its
+  `clean exit`, and then nothing: no `launching` line in `startup.txt` and no
+  `session start` in `crash.txt` until the user starts the app by hand. The
+  replacement was killed with the old process's process group. On macOS the
+  usual cause is a login launch: the LaunchAgent runs `start_polyhost.sh`, which
+  runs python as its child, and launchd kills every process left in the job's
+  group when the job ends. A low pid and a slow `pre-logging imports` on the old
+  process (6.4 s against 0.25 s on the manual start) point at a launch right
+  after boot. Fixed in `spawn_detached()` by PolyKybdHost#623
+  (`start_new_session`; `docs/autostart.md`), so on a host that has it, this
+  signature means something else killed the group. The relaunch always runs the
+  OLD version's code, so an update that starts in a host without the fix can
+  still fail this way (2026-11-06, macOS 13, 1.17.48 -> 1.19.11).
+- **"Eden / idle keeps turning off"**: for each `Stop idle.` in
+  `keyboard-console.txt`, look in `daemon.txt` at the same second for
+  `Setting idle state to False...` (DEBUG, so the daemon must log at `--dev 1`
+  or higher). That line is the host waking the keyboard. Every overlay send
+  ends in it, even a resend of the same app from cache and a send that failed
+  (`Failed to send …` warning). So does `idle_set` from `polyctl` or the
+  developer menu. Then find what started the send. The 2026-11-04 case was
+  `No active window` and the same app again ~270 ms later, about every 10 s,
+  on KDE Wayland (fixed in 1.17.86, #531: a lost window now waits for the
+  accept timer). A forwarder got the same delay later (#534), so before that
+  release a forwarded app can still cause it: look for `Remote window
+  changed` at those seconds. ⚠️ `Overlay flags 0x1 cleared` before a `Stop idle.` is a hint, not
+  proof: a DISABLE on its own does not call `set_idle`. A `Stop idle.` with no
+  host line at that second is a keypress, or `Wake by keypress` after the
+  display turned off. Two lines that are not faults: `Turning off` is the
+  firmware's display-off at `TURN_OFF_TIME` (20 min after the last activity,
+  so ~19 min of `Eden idle` lines), and `Eden start … welcome said` followed
+  by `Tutorial …` is a manual Eden run, not the idle path.
+- ⚠️ **`Firmware restart detected` is usually the KEYBOARD rebooting, and an empty
+  crash record does not make it harmless.** The host logs that line when GET_ID
+  carries the fresh-boot marker `*`. A boot sets it, and so does leaving DOOM (the
+  firmware re-raises it so the host re-pushes its overlays), so first check the
+  console for a DOOM exit just before. Then ask for `polyctl crash show` on the master: an
+  empty record rules out a HardFault and a firmware watchdog timeout, which leaves
+  power loss, the RUN pin or a deliberate `mcu_reset()`, unless someone cleared the
+  record since (`polyctl crash clear`, the crash dialog's Clear). The banner's
+  `record=` field below survives a clear, so prefer it when there is a console. From fw 1.9.11 the
+  console's boot banner names the cause in one line,
+  `reset: cause=… reason=0x… ram=… record=…` (qmk `CRASH_DIAGNOSTICS.md` → *A reset
+  with no record*), so look for that line just after the restart before asking for
+  anything. ⚠️ `polyctl crash show --slave` can print an OLD record: check its
+  `fw=` (2026-10-22: a `fw=0.26.0` HardFault, "archived (older)", beside a master
+  reset on 1.9.9). The `boot: spans … 2=65535` on firmware built before 2026-10-22
+  is a timing bug, not a slow boot.
+- ⚠️ **A second boot banner in the console is not a reboot.** The firmware
+  prints the banner again on the first GET_ID after 5 s without a GET_ID
+  (`boot_banner_on_host_probe()`, qmk `boot_diag.c`, `BANNER_HOST_GAP_MS`): a
+  restarted host, a woken PC, a reconnect. So a banner in the middle of a log
+  marks a new host session. To tell the two apart, compare a counter that a boot
+  resets across the two banners: the split-link `tx` count or the `oled_i2c #N`
+  number. A count that kept rising means no reboot, and so does a host log with no
+  `Firmware restart detected` at that second. On 2026-11-05 a console log with
+  several banners was first read as reboots; the `tx` count rose across all of them.
 - **Dating a dump.** A faulthandler dump carries no timestamp. From 1.2.5 each
   process appends `=== fault dump(s) above were written before this time | … ===`
   after a dump once the file has been steady for ~60 s, so a dump is dated to
@@ -103,6 +209,32 @@ These are the ones that have produced wrong diagnoses:
   Two or three lines from different files settle it. This proved a forwarder ran
   current `main` rather than the last release (2026-09-23), which moved the search
   from "old code" to the pid path in one step.
+
+- **An app switch is slow** (the keycaps change seconds after the window):
+  read the `Overlay switch stats:` line for that switch. It ends with
+  `wall … ms = N rate-limit pause(s) … ms + device … ms (calls, median, max;
+  write-only …; with reply …) + host … ms (… ms before the first report)`.
+  Pauses are the host's rate limit (`docs/FUTURE_WORK.md` → *Shorten the
+  overlay rate-limit pause*). "write-only" are the image and mapping reports:
+  about 1 ms each until the keyboard's receive queue fills, the firmware's pace
+  per report after that, and the only part a faster link could shorten. "with
+  reply" are the icon fill reports (cmd 42) and prepare/enable, which wait for
+  the keyboard to do the work and to process every report queued before them.
+  "host" is decoding, the MRU claim pass and
+  encoding on the PC, and "before the first report" is the part of it spent
+  before any report went out. A warm switch is a few mapping reports; a cold
+  one (the first after a host start or update, or after a reconnect) is where
+  the pauses show. Check `max_hid_message_before_delay` in the bundle's
+  `settings.yaml` before comparing pause counts: the default is 15.
+- **Shortcut icons wrong, missing or slow** (keycaps keep one app's icons, the
+  tray is slow to open): read the `Shortcut harvest for '<app>'` and `Generic
+  overlays for '<app>'` lines against the table in `docs/generic-icons-plan.md`
+  → *What the log shows* (under *A browser walked again on every tab switch*).
+  Only the Windows helper writes `Shortcut harvest for` lines, so their absence
+  on Linux or macOS is not a failure. Each read logs its window, element count and
+  seconds; a refused read names both process ids. On every platform, check the
+  daemon's `Window-tracking tick took` warnings in the same minutes. Two bundles on 2026-10-16 were judged this way:
+  reads of 0.001–0.44 s and no tick stall meant the helper process was working.
 
 ## 4. Check the settings for drift between runs
 

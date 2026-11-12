@@ -12,6 +12,7 @@ apply-only spinner.
 """
 import os
 import unittest
+import unittest.mock as mock
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -78,6 +79,77 @@ class TestHidFwUpDialogExternal(unittest.TestCase):
         self.assertFalse(dlg._done)                # still waiting for apply
         dlg.feed_apply_finished(True, "applied")
         self.assertTrue(dlg._done)
+
+
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"Qt unavailable: {_IMPORT_ERR}")
+class TestHidFwUpDialogGlide(unittest.TestCase):
+    """The bar glide is sized from wall-clock time, so late timer ticks (a busy
+    PC) cannot leave it trailing the transfer. The clock is faked; the ticks are
+    called by hand, so no timer runs."""
+
+    def setUp(self):
+        self.now = 1000.0
+        patcher = mock.patch("polyhost.gui.hid_fw_up_dialog.time.monotonic",
+                             side_effect=lambda: self.now)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.dlg = HidFwUpDialog(None, "fw.bin", external=True)
+        self.addCleanup(self.dlg.deleteLater)
+        self.dlg._anim_timer.stop = mock.Mock()   # keep ticking by hand
+
+    def _tick(self, seconds):
+        self.now += seconds
+        self.dlg._animate_step()
+
+    def test_late_tick_advances_by_elapsed_time(self):
+        self.dlg.feed_progress(2, "chunks")
+        self.dlg._display_pct = 2.0
+        self.dlg.feed_progress(4, "chunks")
+        self.dlg._behind = False
+        self._tick(0)                    # first tick after start: one interval
+        start = self.dlg._display_pct
+        self._tick(0.2)                  # 200 ms late, 40x the nominal interval
+        moved = self.dlg._display_pct - start
+        self.assertAlmostEqual(moved, HidFwUpDialog._GLIDE_SPEED * 0.2, places=6)
+
+    def test_more_than_five_percent_behind_catches_up_quickly(self):
+        self.dlg.feed_progress(2, "chunks")
+        self.dlg._display_pct = 10.0
+        self.dlg._target_pct = 10
+        self.dlg.feed_progress(30, "chunks")   # 20 % behind
+        self._tick(0)
+        for _ in range(20):                    # 0.5 s of 25 ms ticks
+            self._tick(0.025)
+        self.assertAlmostEqual(self.dlg._display_pct, 30.0, places=6)
+
+    def test_catchup_ends_once_caught_up(self):
+        self.dlg.feed_progress(2, "chunks")
+        self.dlg._display_pct = 10.0
+        self.dlg._target_pct = 10
+        self.dlg.feed_progress(30, "chunks")
+        self._tick(0)
+        self._tick(1.0)                        # caught up
+        self.assertEqual(self.dlg._catchup_speed, 0.0)
+        self.assertFalse(self.dlg._behind)
+
+    def test_glide_follows_the_measured_transfer_rate(self):
+        # Reports at 9 %/s (the bulk pipe): the glide runs at that rate, not the
+        # 2.3 %/s floor sized for HID, so the bar moves between reports instead
+        # of stalling and jumping.
+        self.dlg.feed_progress(2, "chunks")
+        self.assertEqual(self.dlg._glide_speed(3.0), HidFwUpDialog._GLIDE_SPEED)
+        self.now += 2.0
+        self.dlg.feed_progress(20, "chunks")
+        self.dlg._behind = False
+        self.assertAlmostEqual(self.dlg._observed_rate, 9.0, places=6)
+        self.assertAlmostEqual(self.dlg._glide_speed(3.0), 9.0, places=6)
+
+    def test_small_gap_keeps_normal_glide(self):
+        self.assertEqual(self.dlg._glide_speed(3.0), HidFwUpDialog._GLIDE_SPEED)
+        self.assertGreater(self.dlg._glide_speed(20.0),
+                           HidFwUpDialog._GLIDE_SPEED * HidFwUpDialog._CATCHUP_FACTOR)
 
 
 if __name__ == "__main__":
