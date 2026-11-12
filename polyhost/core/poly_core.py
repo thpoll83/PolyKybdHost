@@ -236,7 +236,9 @@ class PolyCore(Observable):
         from polyhost.services.midi_guide import SeenPrograms, seen_path
         self._midi_seen = SeenPrograms(seen_path(), log)
         self._midi_guide_key = None
-        self._midi_guide_running = False
+        # (program key, monotonic deadline) of the guide this host started and that
+        # may still ring; None once it ended, was cancelled or never started.
+        self._midi_guide_owner = None
         # Apps already told they get no shortcut icons because they are
         # forwarded -- one line each, not one per window change.
         self._told_no_remote_shortcuts = set()
@@ -891,34 +893,47 @@ class PolyCore(Observable):
         if key == self._midi_guide_key:
             return
         self._midi_guide_key = key
-        if self._midi_guide_running:
-            self._midi_guide_running = False
+        owner, self._midi_guide_owner = self._midi_guide_owner, None
+        # Only a guide that can still be ringing is cancelled: after its ripples
+        # ran out the keyboard is idle, and a cancel then would end someone
+        # else's request (polyctl attention). Its own coalesce key, so a guide
+        # queued for the next program cannot replace the cancel.
+        if owner is not None and time.monotonic() < owner[1]:
             self.worker.submit("midi_guide_cancel",
                                lambda c: self.keeb.key_attention_cancel(),
-                               coalesce_key="midi_guide")
+                               coalesce_key="midi_guide_cancel")
         if key is None or self._midi_seen.has(key):
             return
         if not protocol_supports(self.keeb.protocol_version, "key_guide"):
             return
-        self._midi_guide_running = True
         self.worker.submit("midi_guide", lambda c, k=key: self._run_midi_guide(k),
                            coalesce_key="midi_guide")
 
     def _run_midi_guide(self, key):
-        """Worker: start the guide and remember the program once the keyboard took it."""
-        from polyhost.services.midi_guide import run_guide
+        """Worker: start the guide for `key` if it is still the program in front, and
+        remember the program once the keyboard took it."""
+        from polyhost.services.midi_guide import GUIDE_SECONDS, run_guide
+        if key != self._midi_guide_key:
+            return False, "focus moved on"
         ok, msg = run_guide(self.keeb, self.log)
-        if ok:
-            self._midi_seen.add(key)
+        if not ok:
+            # Leaves `_midi_guide_owner` alone: it may belong to a newer guide.
+            self.log.info("MIDI guide for %s not started: %s", key, msg)
+            return ok, msg
+        self._midi_seen.add(key)
+        if key == self._midi_guide_key:
+            self._midi_guide_owner = (key, time.monotonic() + GUIDE_SECONDS)
             self.log.info("MIDI guide started for %s", key)
         else:
-            self._midi_guide_running = False
-            self.log.info("MIDI guide for %s not started: %s", key, msg)
+            # The program left while the request was on the wire.
+            self.keeb.key_attention_cancel()
         return ok, msg
 
     def midi_guide(self, reset=False):
         """Run the MIDI guide now (polyctl attention --midi); `reset` also forgets
         which programs had it, so each one gets it again. (ok, msg)."""
+        if self.safe_mode:
+            return False, SAFE_MODE_REFUSAL
         if reset:
             self._midi_seen.clear()
         from polyhost.services.midi_guide import run_guide

@@ -223,7 +223,7 @@ class ControlServer(MpcListenerServer):
                     params["row"], params["col"], params.get("count", 3),
                     params.get("period_ms", 4000))),
             p.M_MIDI_GUIDE: lambda conn, params: _unwrap(
-                c.midi_guide(bool(params.get("reset", False)))),
+                c.midi_guide(_bool_param(params, "reset") if "reset" in params else False)),
             p.M_AGENTS_LIST: lambda conn, params: c.agents_list(),
             p.M_AGENTS_REPORT: lambda conn, params: _unwrap(c.agents_report(params)),
             p.M_AGENTS_LABEL: lambda conn, params: _unwrap(c.agents_label(

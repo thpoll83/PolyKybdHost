@@ -30,6 +30,9 @@ MIDI_LAYER_NAME = "MIDI"     # layer_names.c in the firmware
 MAX_STEPS = 4                # KEY_GUIDE_MAX_STEPS, the firmware's ATTN_GUIDE_MAX_STEPS
 GUIDE_COUNT = 12             # ripples in total, about 30 s at the period below
 GUIDE_PERIOD_MS = 2500
+# How long a started guide can still be ringing: its ripples, plus the last one's
+# 2.2 s run.
+GUIDE_SECONDS = GUIDE_COUNT * GUIDE_PERIOD_MS / 1000 + 3
 
 
 def seen_path() -> str:

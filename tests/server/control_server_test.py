@@ -156,6 +156,10 @@ class FakeCore:
     def activate_bootloader(self):
         return (True, {"queued": True})
 
+    def midi_guide(self, reset=False):
+        self.calls.append(("midi_guide", reset))
+        return (True, "ok")
+
     def set_handedness(self, master_is_left, split_vbus=None):
         self.calls.append(("set_handedness", master_is_left) if split_vbus is None
                           else ("set_handedness", master_is_left, split_vbus))
@@ -413,6 +417,13 @@ class ControlServerTest(unittest.TestCase):
         self.assertNotIn(("set_handedness", False, "false"), self.core.calls)
         self.assertEqual(self.core.calls.count(("set_handedness", False, True)), 1,
                          "a non-boolean flag must not reach the core")
+        self._call(conn, 442, p.M_MIDI_GUIDE)
+        self._call(conn, 443, p.M_MIDI_GUIDE, {"reset": True})
+        self.assertEqual([c for c in self.core.calls if c[0] == "midi_guide"],
+                         [("midi_guide", False), ("midi_guide", True)])
+        bad = self._call(conn, 444, p.M_MIDI_GUIDE, {"reset": "false"})
+        self.assertEqual(bad["error"]["code"], p.ERR_INVALID_PARAMS,
+                         "the string 'false' must not clear the seen list")
         self._call(conn, 45, p.M_OVERLAY_MAPPING_SEND, {"mapping": {"4": 5}})
         self.assertIn(("send_overlay_mapping", {"4": 5}), self.core.calls)
 

@@ -195,10 +195,11 @@ class TrackMidiGuideTest(unittest.TestCase):
         core = types.SimpleNamespace(
             log=types.SimpleNamespace(info=lambda *a: None), jobs=[], keeb=kb,
             _midi_seen=SeenPrograms(seen_path), _midi_guide_key=None,
-            _midi_guide_running=False)
+            _midi_guide_owner=None, safe_mode=False, coalesce={})
 
         def submit(name, fn, coalesce_key=None):
             core.jobs.append((name, fn))
+            core.coalesce[name] = coalesce_key
         core.worker = types.SimpleNamespace(submit=submit)
         core._run_midi_guide = lambda key: poly_core.PolyCore._run_midi_guide(core, key)
         core.track = lambda handler: poly_core.PolyCore._track_midi_guide(core, handler)
@@ -247,12 +248,68 @@ class TrackMidiGuideTest(unittest.TestCase):
         bitwig = self._window("bitwig studio", {"midi": True})
         core.track(bitwig)
         core.run_jobs()
-        self.assertFalse(core._midi_guide_running)
+        self.assertIsNone(core._midi_guide_owner)
         core.track(self._window("explorer", {}))
         self.assertEqual(core.run_jobs(), [])    # nothing to cancel
         core.keeb.guide = (True, "ok")
         core.track(bitwig)
         self.assertEqual(core.run_jobs(), ["midi_guide"])
+
+    def test_cancel_and_guide_do_not_coalesce(self):
+        core = self._core()
+        core.track(self._window("bitwig studio", {"midi": True}))
+        core.run_jobs()
+        core.track(self._window("lmms", {"midi": True}))   # A -> B: cancel A, guide B
+        self.assertEqual([n for n, _ in core.jobs], ["midi_guide_cancel", "midi_guide"])
+        self.assertNotEqual(core.coalesce["midi_guide_cancel"], core.coalesce["midi_guide"])
+
+    def test_an_ended_guide_is_not_cancelled(self):
+        core = self._core()
+        core.track(self._window("bitwig studio", {"midi": True}))
+        core.run_jobs()
+        key, _ = core._midi_guide_owner
+        core._midi_guide_owner = (key, 0.0)                 # its ripples ran out
+        core.track(self._window("explorer", {}))
+        self.assertEqual(core.run_jobs(), [])               # a later polyctl attention stays
+
+    def test_a_stale_job_does_nothing(self):
+        core = self._core()
+        core.track(self._window("bitwig studio", {"midi": True}))
+        core._midi_guide_key = "explorer"                   # focus moved before it ran
+        core.run_jobs()
+        self.assertEqual(core.keeb.calls, [])
+        self.assertFalse(core._midi_seen.has("bitwig studio"))
+
+    def test_focus_leaving_during_the_request_cancels_it(self):
+        core = self._core()
+        core.track(self._window("bitwig studio", {"midi": True}))
+        real = core.keeb.key_guide
+
+        def leave_while_sending(*args):
+            core._midi_guide_key = None                     # the tick moved on meanwhile
+            return real(*args)
+        core.keeb.key_guide = leave_while_sending
+        core.run_jobs()
+        self.assertEqual(core.keeb.calls[-1], "cancel")
+        self.assertIsNone(core._midi_guide_owner)
+
+    def test_a_failed_guide_keeps_another_guides_owner(self):
+        core = self._core()
+        core.track(self._window("bitwig studio", {"midi": True}))
+        core.run_jobs()
+        owner = core._midi_guide_owner
+        core.keeb.guide = (False, "refused")
+        core._midi_guide_key = "lmms"
+        core._run_midi_guide("lmms")
+        self.assertEqual(core._midi_guide_owner, owner)
+
+    def test_manual_guide_is_refused_in_restricted_mode(self):
+        from polyhost.core import poly_core
+        core = types.SimpleNamespace(safe_mode=True, _midi_seen=SeenPrograms(None),
+                                     _device_call=lambda *a: self.fail("device call"))
+        ok, msg = poly_core.PolyCore.midi_guide(core, reset=True)
+        self.assertFalse(ok)
+        self.assertEqual(msg, poly_core.SAFE_MODE_REFUSAL)
 
     def test_a_web_page_counts_by_host(self):
         core = self._core()
