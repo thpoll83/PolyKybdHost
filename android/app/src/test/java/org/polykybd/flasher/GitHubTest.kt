@@ -64,6 +64,15 @@ class GitHubTest {
         assertTrue(msg("device_flow_disabled").contains("Device flow"))
     }
 
+    @Test fun pollWithoutNetworkKeepsWaiting() {
+        val noDns = GitHub.Http { _, _, _, _ ->
+            throw java.net.UnknownHostException("Unable to resolve host \"github.com\": No address associated with hostname")
+        }
+        val code = GitHub.DeviceCode("dc", "ABCD-EFGH", "https://github.com/login/device", 5, 900)
+        val p = GitHub(noDns, "Iv1.abc").pollToken(code, 0, intervalSec = 10)
+        assertTrue(p.toString(), p is GitHub.Poll.Offline && p.intervalSec == 10)
+    }
+
     @Test fun refreshUsesTheRefreshTokenAndNoSecret() {
         val http = FakeHttp(mapOf("POST https://github.com/login/oauth/access_token" to ok(
             """{"access_token":"ghu_new","expires_in":28800,"refresh_token":"ghr_new"}""")))

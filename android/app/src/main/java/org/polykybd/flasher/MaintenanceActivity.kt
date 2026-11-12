@@ -53,6 +53,7 @@ class MaintenanceActivity : Activity() {
     override fun onStart() {
         super.onStart()
         state.addListener(listener)
+        state.pollNow()   // back from the browser: the code may have just been entered
         render()
     }
 
