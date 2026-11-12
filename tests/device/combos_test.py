@@ -28,6 +28,7 @@ class CombosValidationTest(unittest.TestCase):
         self.assertFalse(Combos.combo_valid([KC_J, 0, KC_K], KC_ESC))  # a gap
         self.assertFalse(Combos.combo_valid([KC_J, KC_K], 0))         # no result
         self.assertFalse(Combos.combo_valid([KC_J] * 5, KC_ESC))      # five keys
+        self.assertFalse(Combos.combo_valid([KC_J, KC_J], KC_ESC))    # the same key twice
         self.assertFalse(Combos.combo_valid([KC_J, True], KC_ESC))
 
     def test_tap_dance_records(self):

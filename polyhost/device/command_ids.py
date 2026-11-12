@@ -262,7 +262,9 @@ class Combos:
         n = 0
         while n < cls.MAX_KEYS and keys[n] != 0:
             n += 1
-        return n >= 2 and not any(keys[n:]) and result != 0
+        # The same key twice is refused, as by the firmware: QMK maps both presses to
+        # one trigger index, so the combo could never fire.
+        return n >= 2 and not any(keys[n:]) and result != 0 and len(set(keys[:n])) == n
 
     @staticmethod
     def td_keycode_supported(kc) -> bool:
