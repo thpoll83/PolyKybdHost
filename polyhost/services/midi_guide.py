@@ -133,7 +133,8 @@ class SeenPrograms:
             if isinstance(data, list):
                 self._seen = {str(x) for x in data}
         except FileNotFoundError:
-            pass
+            # No file yet: no program has had the guide, so the empty set stands.
+            return
         except (OSError, ValueError) as e:
             self.log.warning("Cannot read %s (%s); the MIDI guide runs again.", self._path, e)
 
