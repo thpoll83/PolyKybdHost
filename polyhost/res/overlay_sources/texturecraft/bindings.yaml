@@ -1,0 +1,119 @@
+# TextureCraft (ArtCraft "Crafting Apps", Substance-3D-Painter-style texture
+# painting) shortcut overlays.
+#
+# Shortcuts: TextureCraft's OWN keymap at storytold/texturecraft@42c8ea5b (the
+# menu catalog in crates/ui-egui/src/menus.rs, the engine command registry and
+# the fixed brush keys) -- NOT Adobe's list. file:line for every group is in
+# SOURCES.md.
+#
+# The keymap writes "Ctrl" and hands it to craft-keymap as "Cmd"
+# (crates/ui-egui/src/keymap.rs::crate_text): Cmd on macOS, Ctrl elsewhere. So
+# every Ctrl chord is CMDCTRL and the generator emits texturecraft_template.*
+# and _mac.*. Nothing is remapped on macOS (SOURCES.md "macOS").
+#
+# Icons: the Substance 3D Painter overlay's committed icons for the same
+# actions, Fluent (MIT) + Material Symbols (Apache-2.0) for the rest, via
+# fetch_icons.py. Program mark: TextureCraft's own icon (MIT OR Apache-2.0).
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/texturecraft/fetch_icons.py
+#   PYTHONPATH=. python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/texturecraft/bindings.yaml --preview /tmp/texturecraft_preview
+app: texturecraft
+# Windows exe texturecraft.exe, Linux binary `texturecraft` (also the X11
+# WM_CLASS: StartupWMClass=texturecraft), macOS bundle "TextureCraft", bundle
+# id ai.storyteller.texturecraft (packaging/macos/Info.plist.in).
+match: [texturecraft, ai.storyteller.texturecraft]
+output: texturecraft_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+# The app's own .ico, 128 px frame. Sweep (frames 48/64/128/256 x luma
+# 80..160 / bright 140..225): `luma` 110 lights the ink, so the zebra's stripes
+# and muzzle read as white stripes on black; 125 and up also lights the field
+# (a lit tile with the stripes cut out, noisy), and `bright` keeps only a
+# scatter of the paper-coloured stripes. 64/128/256 render alike within a few
+# pixels; 128 keeps the ear outline closed.
+program_icon: texturecraft.png
+program_icon_mode: luma
+program_icon_threshold: 110
+program_icon_anchor: right
+program_icon_region: [40, 40]
+program_icon_margin: 0
+
+bindings:
+  # ============================================================= #
+  # TOOLS  (no-mod; engine tool_cmds.rs, path_tool.rs)            #
+  # ============================================================= #
+  - { key: "1", mods: [], icon: tool_paint.png,      label: "Paint tool" }
+  - { key: "2", mods: [], icon: tool_eraser.png,     label: "Eraser tool" }
+  - { key: "3", mods: [], icon: tool_projection.png, label: "Projection tool" }
+  - { key: "4", mods: [], icon: fill.png,            label: "Polygon fill" }
+  - { key: "5", mods: [], icon: tool_smudge.png,     label: "Smudge tool" }
+  - { key: "6", mods: [], icon: tool_clone.png,      label: "Clone tool" }
+  - { key: "7", mods: [], icon: tool_path.png,       label: "Path tool" }
+  - { key: "8", mods: [], icon: tool_geomask.png,    label: "Geometry mask" }
+  - { key: P, mods: [], icon: eyedropper.png,        label: "Color picker" }
+  - { key: X, mods: [], icon: invertgray.png,        label: "Invert mask value" }
+  - { key: "]", mods: [], icon: brushinc.png, mode: alpha, label: "Brush size +" }
+  - { key: "[", mods: [], icon: brushdec.png, mode: alpha, label: "Brush size -" }
+
+  # ============================================================= #
+  # VIEWPORT / MODES  (no-mod, Shift)                             #
+  # ============================================================= #
+  - { key: M, mods: [], icon: material.png,          label: "Display material" }
+  - { key: C, mods: [], icon: channel_next.png,      label: "Next channel" }
+  - { key: C, mods: [SHIFT], icon: channel_prev.png, label: "Previous channel" }
+  - { key: B, mods: [], icon: meshmap_next.png,      label: "Next mesh map" }
+  - { key: B, mods: [SHIFT], icon: meshmap_prev.png, label: "Previous mesh map" }
+  - { key: F, mods: [], icon: frame_all.png,         label: "Show entire mesh" }
+  - { key: Y, mods: [], icon: quickmask.png, mode: alpha, label: "Enable quick mask" }
+  - { key: U, mods: [], icon: br_mask.png,           label: "Edit quick mask" }
+  - { key: F1, mods: [], icon: layout_3d2d.png,      label: "3D/2D views" }
+  - { key: F2, mods: [], icon: layout_3d.png,        label: "3D view only" }
+  - { key: F3, mods: [], icon: layout_2d.png,        label: "2D view only" }
+  - { key: F8, mods: [], icon: mode_bake.png,        label: "Bake mesh maps mode" }
+  - { key: F9, mods: [], icon: mode_paint.png,       label: "Painting mode" }
+  - { key: F10, mods: [], icon: render.png,          label: "Rendering mode" }
+  - { key: TAB, mods: [], icon: hideui.png,          label: "Hide UI" }
+  - { key: DELETE, mods: [], icon: delete.png,       label: "Remove layer" }
+
+  # ============================================================= #
+  # CMD/CTRL                                                      #
+  # ============================================================= #
+  - { key: N, mods: [CMDCTRL], icon: new.png,        label: "New project" }
+  - { key: O, mods: [CMDCTRL], icon: open.png,       label: Open }
+  - { key: S, mods: [CMDCTRL], icon: save.png,       label: Save }
+  - { key: F4, mods: [CMDCTRL], icon: close.png,     label: Close }
+  - { key: Q, mods: [CMDCTRL], icon: quit.png,       label: Quit }
+  - { key: Z, mods: [CMDCTRL], icon: undo.png,       label: Undo }
+  - { key: Y, mods: [CMDCTRL], icon: redo.png,       label: Redo }
+  - { key: C, mods: [CMDCTRL], icon: copy.png,       label: "Copy layer" }
+  - { key: X, mods: [CMDCTRL], icon: cut.png,        label: "Cut layer" }
+  - { key: V, mods: [CMDCTRL], icon: paste.png,      label: "Paste layer" }
+  - { key: D, mods: [CMDCTRL], icon: duplicate.png,  label: "Duplicate layer" }
+  - { key: G, mods: [CMDCTRL], icon: group.png,      label: "Group layers" }
+  - { key: M, mods: [CMDCTRL], icon: mergedown.png,  label: "Flatten layer" }
+  - { key: "1", mods: [CMDCTRL], icon: camera1.png,  label: "Go to camera 1" }
+  - { key: "2", mods: [CMDCTRL], icon: camera2.png,  label: "Go to camera 2" }
+  - { key: "3", mods: [CMDCTRL], icon: camera3.png,  label: "Go to camera 3" }
+  - { key: "4", mods: [CMDCTRL], icon: camera4.png,  label: "Go to camera 4" }
+  - { key: "5", mods: [CMDCTRL], icon: camera5.png,  label: "Go to camera 5" }
+  - { key: "6", mods: [CMDCTRL], icon: camera6.png,  label: "Go to camera 6" }
+  - { key: "7", mods: [CMDCTRL], icon: camera7.png,  label: "Go to camera 7" }
+  - { key: "8", mods: [CMDCTRL], icon: camera8.png,  label: "Go to camera 8" }
+  - { key: "9", mods: [CMDCTRL], icon: camera9.png,  label: "Go to camera 9" }
+
+  # ============================================================= #
+  # CMD/CTRL+SHIFT                                                #
+  # ============================================================= #
+  - { key: S, mods: [CMDCTRL, SHIFT], icon: saveas.png,      label: "Save as" }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: export.png,      label: "Export textures" }
+  - { key: R, mods: [CMDCTRL, SHIFT], icon: reimport.png,    label: "Reimport mesh" }
+  - { key: I, mods: [CMDCTRL, SHIFT], icon: mask_invert.png, label: "Invert quick mask" }
+  - { key: D, mods: [CMDCTRL, SHIFT], icon: instantiate.png, label: "Instantiate across texture sets" }

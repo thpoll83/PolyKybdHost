@@ -1,0 +1,87 @@
+# MaterialCraft (ArtCraft "Crafting Apps", Substance-3D-Designer-style node
+# material editor) shortcut overlays.
+#
+# Shortcuts: MaterialCraft's OWN keymap at storytold/materialcraft@b73facdc (the
+# menu catalog in crates/ui-egui/src/menus.rs, the engine command registry and
+# the graph canvas keys) -- NOT Adobe's list. file:line for every group is in
+# SOURCES.md.
+#
+# Shortcut texts say "Ctrl" and are parsed as craft-keymap's "Cmd"
+# (menus.rs::parse_shortcut): Cmd on macOS, Ctrl elsewhere. So every Ctrl chord
+# is CMDCTRL and the generator emits materialcraft_template.* and _mac.*.
+# Nothing is remapped on macOS (SOURCES.md "macOS").
+#
+# Icons: Fluent (MIT) + Material Symbols (Apache-2.0) via fetch_icons.py, plus
+# two glyphs copied from sibling sets. Program mark: MaterialCraft's own icon
+# (MIT OR Apache-2.0). See SOURCES.md.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/materialcraft/fetch_icons.py
+#   PYTHONPATH=. python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/materialcraft/bindings.yaml --preview /tmp/materialcraft_preview
+app: materialcraft
+# Windows exe materialcraft.exe, Linux binary `materialcraft` (also the X11
+# WM_CLASS: StartupWMClass=materialcraft), macOS bundle "MaterialCraft", bundle
+# id ai.storyteller.materialcraft (packaging/macos/Info.plist.in).
+match: [materialcraft, ai.storyteller.materialcraft]
+output: materialcraft_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+# The app's own .ico, 128 px frame. Sweep (frames 48/64/128/256 x luma
+# 80..160 / bright 125..225): `luma` up to 100 lights only scattered ink;
+# 110..160 lights the field and the ink, a lit tile in which the dark head
+# loses its horn. `bright` 140 lights the paper-coloured figure: the rhino
+# head on black, facing right, with the horn and the ear readable; 125 merges
+# the horn into the head, 155 breaks it up. 64 and above render alike; 128 has
+# the cleaner horn tip.
+program_icon: materialcraft.png
+program_icon_mode: bright
+program_icon_threshold: 140
+program_icon_anchor: right
+program_icon_region: [40, 40]
+program_icon_margin: 0
+
+bindings:
+  # ============================================================= #
+  # GRAPH CANVAS  (no-mod, Shift; graph/input.rs, catalog)        #
+  # ============================================================= #
+  - { key: SPACE, mods: [], icon: nodesearch.png,  label: "Add node (search)" }
+  - { key: TAB, mods: [],   icon: nodesearch.png,  label: "Add node (search)" }
+  - { key: F, mods: [],     icon: frame_all.png,   label: "Frame selection / all" }
+  - { key: D, mods: [SHIFT], icon: disable.png,    label: "Disable selection" }
+  - { key: DELETE, mods: [], icon: delete.png,     label: "Delete selection" }
+  - { key: BACKSPACE, mods: [], icon: deleterelink.png, label: "Delete and relink" }
+  - { key: F2, mods: [],    icon: nextpin.png,     label: "Next pin" }
+  - { key: F2, mods: [SHIFT], icon: prevpin.png,   label: "Previous pin" }
+  - { key: F5, mods: [],    icon: clearthumbs.png, label: "Clear node thumbnails" }
+  - { key: LEFT, mods: [ALT], icon: parentgraph.png, label: "Parent graph" }
+
+  # ============================================================= #
+  # CMD/CTRL                                                      #
+  # ============================================================= #
+  - { key: N, mods: [CMDCTRL], icon: newgraph.png,  label: "New graph" }
+  - { key: O, mods: [CMDCTRL], icon: open.png,      label: Open }
+  - { key: S, mods: [CMDCTRL], icon: save.png,      label: Save }
+  - { key: Q, mods: [CMDCTRL], icon: quit.png,      label: Exit }
+  - { key: Z, mods: [CMDCTRL], icon: undo.png,      label: Undo }
+  - { key: Y, mods: [CMDCTRL], icon: redo.png,      label: Redo }
+  - { key: C, mods: [CMDCTRL], icon: copy.png,      label: Copy }
+  - { key: X, mods: [CMDCTRL], icon: cut.png,       label: Cut }
+  - { key: V, mods: [CMDCTRL], icon: paste.png,     label: Paste }
+  - { key: D, mods: [CMDCTRL], icon: duplicate.png, label: Duplicate }
+  - { key: A, mods: [CMDCTRL], icon: selectall.png, label: "Select all" }
+  - { key: E, mods: [CMDCTRL], icon: editgraph.png, label: "Edit node graph" }
+
+  # ============================================================= #
+  # CMD/CTRL+SHIFT                                                #
+  # ============================================================= #
+  - { key: S, mods: [CMDCTRL, SHIFT], icon: saveas.png,       label: "Save as" }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: export.png,       label: "Export outputs" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: pastenolinks.png, label: "Paste without links" }
+  - { key: D, mods: [CMDCTRL, SHIFT], icon: dupnolinks.png,   label: "Duplicate without links" }
