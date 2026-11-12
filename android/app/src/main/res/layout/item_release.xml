@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/Card">
+
+    <TextView
+        android:id="@+id/title"
+        style="@style/CardTitle" />
+
+    <TextView
+        android:id="@+id/info"
+        style="@style/Body" />
+
+    <TextView
+        android:id="@+id/run"
+        style="@style/Body.Dim"
+        android:layout_marginTop="8dp"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/dry_run"
+            style="@style/Button.Outline"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:text="Dry run" />
+
+        <Button
+            android:id="@+id/publish"
+            style="@style/Button.Primary"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Publish…" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/open_run"
+        style="@style/Button.Outline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:text="Open run on GitHub"
+        android:visibility="gone" />
+</LinearLayout>
