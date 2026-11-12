@@ -148,10 +148,21 @@ class _SlotTab(QWidget):
         """Off the GUI thread. The status snapshot is no device I/O; it answers the
         cases that have a translated explanation before any round trip."""
         status = self.core.get_status() or {}
-        if not status.get("connected", True) or status.get("safe_mode") \
-                or not (status.get("capabilities") or {}).get("combos", True):
+        if self._status_says_no(status):
             return _Unavailable(status)
-        return self.core.combos_get()
+        result = self.core.combos_get()
+        if not ok_value(result)[0]:
+            # The snapshot can be older than the refusal (a keyboard that just
+            # reconnected): ask again, so a known cause still gets its own text.
+            status = self.core.get_status() or {}
+            if self._status_says_no(status):
+                return _Unavailable(status)
+        return result
+
+    @staticmethod
+    def _status_says_no(status: dict) -> bool:
+        return (not status.get("connected", True) or bool(status.get("safe_mode"))
+                or not (status.get("capabilities") or {}).get("combos", True))
 
     def _unavailable_text(self, status: dict) -> str:
         if not status.get("connected", True):

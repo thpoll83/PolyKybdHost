@@ -98,6 +98,17 @@ class ComboTabTest(unittest.TestCase):
         self.assertIn("protocol 33", tab.note.text())
         self.assertFalse(tab.save_btn.isEnabled())
 
+    def test_a_refusal_after_a_stale_status_still_gets_the_translated_text(self):
+        core = _core(ok=False, data="Firmware protocol too old for combos")
+        core.get_status.side_effect = [
+            {"connected": True, "safe_mode": False, "capabilities": {"combos": True}},
+            {"connected": True, "safe_mode": False, "capabilities": {"combos": False}},
+        ]
+        tab = ComboTab(core)
+        tab.reload()
+        tab._fetcher.wait_idle()
+        self.assertIn("protocol 33", tab.note.text())
+
     def test_restricted_mode_is_explained(self):
         core = _core()
         core.get_status.return_value = {"connected": True, "safe_mode": True,
