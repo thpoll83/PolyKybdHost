@@ -380,6 +380,15 @@ class RemoteCore(Observable):
     def agents_forget(self, vendor, session_id):
         return self._device(p.M_AGENTS_FORGET, {"vendor": vendor, "session_id": session_id})
 
+    def agents_cloud_status(self):
+        return self._rpc_call(p.M_AGENTS_CLOUD_STATUS) or {}
+
+    def agents_cloud_connect(self):
+        return self._device(p.M_AGENTS_CLOUD_CONNECT)
+
+    def agents_cloud_disconnect(self):
+        return self._device(p.M_AGENTS_CLOUD_DISCONNECT)
+
     def refresh_unicode_mode(self):
         """Ask the daemon to re-detect + re-push the unicode input mode.
 

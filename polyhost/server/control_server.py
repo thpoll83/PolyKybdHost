@@ -232,6 +232,10 @@ class ControlServer(MpcListenerServer):
                 params["vendor"], params["session_id"])),
             p.M_AGENTS_RAISE: lambda conn, params: _unwrap(c.agents_raise(
                 params["vendor"], params["session_id"])),
+            p.M_AGENTS_CLOUD_STATUS: lambda conn, params: c.agents_cloud_status(),
+            p.M_AGENTS_CLOUD_CONNECT: lambda conn, params: _unwrap(c.agents_cloud_connect()),
+            p.M_AGENTS_CLOUD_DISCONNECT: lambda conn, params: _unwrap(
+                c.agents_cloud_disconnect()),
             p.M_GLYPH_SCRIPT_SET: lambda conn, params: _unwrap(c.set_glyph_script(params["value"])),
             p.M_GLYPH_SCRIPT_GET: lambda conn, params: _unwrap(c.get_glyph_script()),
             p.M_GLYPH_PLACEMENT_SET: lambda conn, params: _unwrap(c.set_glyph_placement(params["value"])),

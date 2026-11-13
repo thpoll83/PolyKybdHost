@@ -137,6 +137,45 @@ hooks to one computer instead.
 - The forwarder and the hooks must run on the same computer: both name it with its
   host name.
 
+## Claude Code cloud sessions (claude.ai/code)
+
+A cloud session runs in a VM that cannot reach the keyboard computer, so its hooks
+report to the PolyKybd relay (`agent-relay/`, a Cloudflare Worker), and the host
+keeps a WebSocket open to it. The desktop app shows these sessions too; they are
+still cloud sessions.
+
+1. On the keyboard computer: tray > AI Agents > "Connect Cloud Sessions…" >
+   Connect (or `polyctl agents cloud connect`). The host creates a channel on the
+   relay and keeps its secrets in `cloud_relay.json` in the config folder (owner
+   read and write only). The relay stores only the SHA-256 hashes of the channel's
+   two tokens.
+2. In claude.ai, in the cloud environment's settings (a personal environment: its
+   variables are visible to everyone who uses it), enter the three values the
+   dialog shows, each with a Copy button (`polyctl agents cloud` prints them):
+   - the environment variable `POLYKYBD_CLOUD_RELAY`;
+   - the allowed host `polyhost-agent-relay.polykybd.workers.dev`, when the
+     network access is Limited;
+   - the setup script, which downloads `cloud_hook.py` from the relay and adds
+     the hooks to the VM's `~/.claude/settings.json`. It ends in `|| true`: a
+     failing setup script stops the session from starting.
+3. Start a new cloud session in that environment. It shows on a number key as
+   Claude Code; `polyctl agents list` shows it with the `machine` "cloud".
+
+- The relay sees the channel ID, an opaque key per session and ciphertext. The
+  state, title, folder name and session page are encrypted end to end with a key
+  that only the host and the cloud environment have (`cloud_hook.seal`). The
+  prompt and the conversation never leave the VM.
+- A key press opens the session's page (`https://claude.ai/code/session_…`) in the
+  default browser. The host opens no other address.
+- The connection runs while "Show on the Number Row" (`agents_enabled`) is on and
+  a channel exists. It sends a ping every 4 minutes and reconnects after 5 s, then
+  up to 5 min apart.
+- Disconnect (the dialog, or `polyctl agents cloud disconnect`) deletes the
+  channel on the relay and the local file, and removes the cloud sessions from the
+  keys. Remove the environment variable in claude.ai too: the hooks there then
+  fail without a message.
+- The relay runs on the Workers Free plan: 2,000 reports per channel a day.
+
 ## Claude Code (tested format)
 
 Merge this into `~/.claude/settings.json` (all projects) or `.claude/settings.json`

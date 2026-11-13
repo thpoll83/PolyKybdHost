@@ -90,6 +90,28 @@ class PolyctlTest(unittest.TestCase):
         self.assertIn("lang: deDE", out)
         self.assertIn("name: PolyKybd", out)
 
+    def test_agents_cloud_prints_the_setup(self):
+        status = {"configured": True, "agents_enabled": True,
+                  "connection": {"state": "connected", "error": ""},
+                  "setup": {"variable": "POLYKYBD_CLOUD_RELAY", "config": "pkr1|x",
+                            "host": "relay.example", "script": "curl a \\\n  && b || true"}}
+        rc, out, _err, server = run_main(["agents", "cloud"],
+                                         {protocol.M_AGENTS_CLOUD_STATUS: status})
+        self.assertEqual(rc, 0)
+        self.assertIn(protocol.M_AGENTS_CLOUD_STATUS, [m for m, _ in server.received])
+        self.assertIn("relay connection connected", out)
+        self.assertIn("POLYKYBD_CLOUD_RELAY=pkr1|x", out)
+        self.assertIn("relay.example", out)
+        self.assertIn("    && b || true", out)
+        rc, out, _err, server = run_main(["agents", "cloud", "connect"],
+                                         {protocol.M_AGENTS_CLOUD_CONNECT: status})
+        self.assertEqual(rc, 0)
+        self.assertIn(protocol.M_AGENTS_CLOUD_CONNECT, [m for m, _ in server.received])
+        rc, out, _err, _server = run_main(["agents", "cloud", "disconnect"],
+                                          {protocol.M_AGENTS_CLOUD_DISCONNECT: "deleted"})
+        self.assertEqual(rc, 0)
+        self.assertIn("relay: deleted", out)
+
     def test_lang_set_sends_correct_method_and_params(self):
         rc, out, err, server = run_main(["lang", "set", "deDE"],
                                         {protocol.M_LANG_SET: [True, "ok"]})

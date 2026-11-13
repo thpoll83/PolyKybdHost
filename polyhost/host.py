@@ -2431,6 +2431,10 @@ class PolyHost(QApplication):
         # noinspection PyUnresolvedReferences
         pair.triggered.connect(self._show_pairing_code)
         menu.addAction(pair)
+        cloud = QAction(get_icon("cloud.svg"), _("Connect Cloud Sessions…"), parent=menu)
+        # noinspection PyUnresolvedReferences
+        cloud.triggered.connect(self._show_cloud_sessions)
+        menu.addAction(cloud)
         self._set_agent_rows([])
 
     def _set_agent_rows(self, agents):
@@ -2476,6 +2480,17 @@ class PolyHost(QApplication):
         (services/forwarder_pairing.py). A local file read: no core needed."""
         from polyhost.gui.forwarder_pairing import show_pairing_code
         show_pairing_code()
+
+    def _show_cloud_sessions(self):
+        """Claude Code cloud sessions on the keys (services/agents/cloud_relay.py).
+        One dialog at a time; it is not modal, so the tray keeps working."""
+        from polyhost.gui.cloud_sessions_dialog import CloudSessionsDialog
+        dialog = getattr(self, "_cloud_dialog", None)
+        if dialog is None or not dialog.isVisible():
+            dialog = self._cloud_dialog = CloudSessionsDialog(self.core, self._core_click)
+        dialog.show()
+        dialog.raise_()
+        dialog.activateWindow()
 
     def _toggle_agents_enabled(self, checked):
         def done(ok, msg):

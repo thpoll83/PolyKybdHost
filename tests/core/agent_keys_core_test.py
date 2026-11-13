@@ -66,6 +66,51 @@ class AgentKeysCoreTest(unittest.TestCase):
         self.assertEqual(listing["agents"][0]["state"], "waiting")   # waiting is not "seen"
         self.assertTrue(listing["active"])
 
+    def test_cloud_sessions_connect_status_disconnect(self):
+        import os
+        import tempfile
+        from polyhost.server import protocol
+        from polyhost.services.agents import cloud_relay
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        path = os.path.join(tmp.name, "cloud_relay.json")
+        calls = []
+
+        def http(url, method, rel, token=None, body=None):
+            calls.append((method, rel))
+            return (201 if method == "POST" else 200), {"ok": True}
+        started = []
+        for p in (mock.patch.object(protocol, "cloud_relay_path", lambda: path),
+                  mock.patch.object(cloud_relay, "http_call", http),
+                  mock.patch.object(cloud_relay.RelayClient, "start",
+                                    lambda client: started.append(client))):
+            p.start()
+            self.addCleanup(p.stop)
+        core = self._core(31)
+        self.assertFalse(core.agents_cloud_status()["configured"])
+        self.assertEqual(started, [])                    # no channel: no connection
+
+        ok, status = core.agents_cloud_connect()
+        self.assertTrue(ok, status)
+        self.assertTrue(status["configured"])
+        self.assertEqual(calls, [("POST", "/v1/channels")])
+        self.assertEqual(len(started), 1)
+        channel = cloud_relay.load_channel(path)
+        self.assertEqual(status["setup"]["config"], cloud_relay.setup_config(channel))
+        ok, _status = core.agents_cloud_connect()        # again: the same channel
+        self.assertEqual(calls, [("POST", "/v1/channels")])
+        self.assertEqual(len(started), 1)
+
+        core.agents.report("claude-code", "c" * 32, "working", machine="cloud")
+        core.agents.report("claude-code", "local", "working")
+        ok, result = core.agents_cloud_disconnect()
+        self.assertTrue(ok)
+        self.assertEqual(result, "deleted")
+        self.assertEqual(calls[-1], ("DELETE", f"/v1/c/{channel['channel']}"))
+        self.assertFalse(os.path.exists(path))
+        self.assertEqual([a.session_id for a in core.agents.agents()], ["local"])
+        self.assertIsNone(core._cloud_relay)
+
     def test_old_firmware_gets_nothing(self):
         core = self._core(30)
         core.agents_report({"vendor": "codex", "session_id": "a", "state": "working"})

@@ -82,6 +82,11 @@ M_AGENTS_REPORT = "agents.report"  # {"vendor","session_id","state"|null,"event"
 M_AGENTS_LABEL = "agents.label"    # {"vendor","session_id","text"} -> "ok"
 M_AGENTS_FORGET = "agents.forget"  # {"vendor","session_id"} -> "ok"
 M_AGENTS_RAISE = "agents.raise"    # {"vendor","session_id"} -> "raising"
+# Claude Code cloud sessions through the relay (services/agents/cloud_relay.py).
+# CONNECT and DISCONNECT talk to the relay over the network.
+M_AGENTS_CLOUD_STATUS = "agents.cloud.status"          # {} -> {"configured", "connection", "setup"?}
+M_AGENTS_CLOUD_CONNECT = "agents.cloud.connect"        # {} -> status (creates a channel if none)
+M_AGENTS_CLOUD_DISCONNECT = "agents.cloud.disconnect"  # {} -> what happened on the relay
 M_GLYPH_SCRIPT_SET = "glyph.script.set"  # {"value": 0|1|...} -> (ok, payload)  (0=standard, 1=tengwar)
 M_GLYPH_SCRIPT_GET = "glyph.script.get"  # {} -> (ok, value)
 # Keycap legend SIZE (firmware protocol v13+). A closed range, unlike the script
@@ -260,6 +265,11 @@ def authkey_path() -> str:
 def agents_store_path() -> str:
     """The agent registry of the last run (services/agents/store.py)."""
     return os.path.join(_config_dir(), "agents.json")
+
+
+def cloud_relay_path() -> str:
+    """The cloud-session channel's secrets (services/agents/cloud_relay.py)."""
+    return os.path.join(_config_dir(), "cloud_relay.json")
 
 
 def window_report_authkey_path() -> str:

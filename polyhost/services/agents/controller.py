@@ -48,6 +48,7 @@ class AgentKeysController:
         self.raise_agent = raise_agent
         self.raise_remote = None   # set by PolyCore: queue a raise for a forwarder
         self.raise_viewer = None   # set by PolyCore: raise the viewer showing a machine
+        self.open_url = None       # set by PolyCore: open a cloud session's page
         self.dictate = dictate
         self._last_waiting_slot = None   # the agent '+' raised last
         # The last AI-key press and what came of it, for `polyctl agents list`: a
@@ -249,6 +250,11 @@ class AgentKeysController:
         """Raise `agent`: here on its own thread, or, for an agent on a forwarder's
         machine, by handing it to `raise_remote(agent)`, which the forwarder picks
         up with its next window report (PolyCore.report_window)."""
+        if agent.machine == "cloud":
+            # A claude.ai cloud session (services/agents/cloud_relay.py): its page.
+            threading.Thread(target=self._open_cloud, args=(agent,),
+                             name="agent-open-cloud", daemon=True).start()
+            return
         if agent.machine and agent.machine != "local":
             # The forwarder raises the agent's own window only when its
             # `agents_raise_here` is on; here the viewer that shows that
@@ -273,6 +279,19 @@ class AgentKeysController:
                               "(setting agents_dictation_shortcut)")
         except Exception as e:  # noqa: BLE001 - must not kill anything
             self.log.info("Agent keys: dictation failed: %s", e)
+
+    def _open_cloud(self, agent):
+        from polyhost.services.agents.cloud_relay import URL_PREFIX
+        key = self.last_press["key"] if self.last_press else None
+        if not agent.url.startswith(URL_PREFIX) or self.open_url is None:
+            self._note(key, "no page known for this cloud session", agent)
+            return
+        try:
+            result = "page opened" if self.open_url(agent.url) else "the browser did not open"
+        except Exception as e:  # noqa: BLE001 - a failed open must not kill anything
+            result = f"failed: {e}"
+        self.log.info("Agent keys: %s %s: %s", agent.vendor, agent.display_headline, result)
+        self._note(key, result, agent)
 
     def _raise_viewer(self, agent):
         key = self.last_press["key"] if self.last_press else None
