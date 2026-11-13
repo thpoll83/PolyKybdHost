@@ -100,6 +100,7 @@ DEFAULT_MAX_AGE_S = 8.0
 CONTEXT_REPORTERS = {
     "blender": "blender",
     "org.blender.blender": "blender",
+    "freecad": "freecad", "org.freecad.freecad": "freecad",     # freecad-addon/
     # Editors with a mode plugin, in their own GUI window. Windows reports
     # gvim.exe / emacs.exe, Linux the WM_CLASS, macOS the display name.
     "gvim": "vim",

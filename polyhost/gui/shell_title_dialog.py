@@ -67,7 +67,8 @@ def _read_report_settings():
 def editor_label(editor):
     """The editor's name as the dialog shows it (product names, not translated)."""
     return {editor_plugins.VIM: "Vim", editor_plugins.NEOVIM: "Neovim",
-            editor_plugins.EMACS: "Emacs", editor_plugins.GDB: "GDB"}.get(editor, editor)
+            editor_plugins.EMACS: "Emacs", editor_plugins.GDB: "GDB",
+            editor_plugins.FREECAD: "FreeCAD"}.get(editor, editor)
 
 
 def editor_state_text(st):
@@ -180,6 +181,11 @@ class ShellTitleDialog(QDialog):
         editor_card, editor_lay = card(self)
         editor_lay.addWidget(self._heading(_("Editors")))
         editor_lay.addWidget(muted(editor_intro))
+        freecad_intro = WrapLabel(_(
+            "FreeCAD shows the keys of the active workbench only with the PolyKybd "
+            "add-on. Install copies it to FreeCAD's Mod folder."))
+        freecad_intro.setWordWrap(True)
+        editor_lay.addWidget(muted(freecad_intro))
         self._editor_grid = self._row_grid()
         editor_lay.addLayout(self._editor_grid)
         self._settings_note = WrapLabel()

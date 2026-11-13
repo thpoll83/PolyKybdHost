@@ -2887,14 +2887,45 @@ openscad,openscad-nightly,org.openscad.openscad:
       overlay: [openscad_template_linux.mods.png, openscad_template_linux.combo.mods.png]
 # FreeCAD: `freecad` (measured, 1.1.4 AppImage, class FreeCAD); org.freecad.FreeCAD
 # is the Flatpak app id. Linux has its own set: Redo and Close differ from
-# Windows.
+# Windows. The FreeCAD add-on (freecad-addon/) reports the active workbench as
+# `freecad://<workbench>`; a workbench with its own default keys gets its own set
+# (overlay_sources/freecad/gen_workbench_bindings.py), every other one the global
+# set. `layer: false` makes that set replace the fallback. Without the add-on (or
+# with a stale report) the fallback set, which has the keys of every workbench, applies.
 freecad,org.freecad.freecad:
   overlay: [freecad_template.mods.png, freecad_template.combo.mods.png]
+  layer: false
+  urls-contains:
+    "freecad://sketcher": { overlay: [freecad_sketcher_template.mods.png, freecad_sketcher_template.combo.mods.png] }
+    "freecad://draft": { overlay: [freecad_draft_template.mods.png, freecad_draft_template.combo.mods.png] }
+    "freecad://bim": { overlay: [freecad_bim_template.mods.png, freecad_bim_template.combo.mods.png] }
+    "freecad://techdraw": { overlay: [freecad_techdraw_template.mods.png, freecad_techdraw_template.combo.mods.png] }
+    "freecad://assembly": { overlay: [freecad_assembly_template.mods.png, freecad_assembly_template.combo.mods.png] }
+    "freecad://spreadsheet": { overlay: [freecad_spreadsheet_template.mods.png, freecad_spreadsheet_template.combo.mods.png] }
+    "freecad://": { overlay: [freecad_global_template.mods.png, freecad_global_template.combo.mods.png] }
   os:
     macos:
       overlay: [freecad_template_mac.mods.png, freecad_template_mac.combo.mods.png, freecad_template_mac.extra.mods.png]
+      layer: false
+      urls-contains:
+        "freecad://sketcher": { overlay: [freecad_sketcher_template_mac.mods.png, freecad_sketcher_template_mac.combo.mods.png, freecad_sketcher_template_mac.extra.mods.png] }
+        "freecad://draft": { overlay: [freecad_draft_template_mac.mods.png, freecad_draft_template_mac.combo.mods.png, freecad_draft_template_mac.extra.mods.png] }
+        "freecad://bim": { overlay: [freecad_bim_template_mac.mods.png, freecad_bim_template_mac.combo.mods.png, freecad_bim_template_mac.extra.mods.png] }
+        "freecad://techdraw": { overlay: [freecad_techdraw_template_mac.mods.png, freecad_techdraw_template_mac.combo.mods.png, freecad_techdraw_template_mac.extra.mods.png] }
+        "freecad://assembly": { overlay: [freecad_assembly_template_mac.mods.png, freecad_assembly_template_mac.combo.mods.png, freecad_assembly_template_mac.extra.mods.png] }
+        "freecad://spreadsheet": { overlay: [freecad_spreadsheet_template_mac.mods.png, freecad_spreadsheet_template_mac.combo.mods.png, freecad_spreadsheet_template_mac.extra.mods.png] }
+        "freecad://": { overlay: [freecad_global_template_mac.mods.png, freecad_global_template_mac.combo.mods.png, freecad_global_template_mac.extra.mods.png] }
     linux:
       overlay: [freecad_template_linux.mods.png, freecad_template_linux.combo.mods.png]
+      layer: false
+      urls-contains:
+        "freecad://sketcher": { overlay: [freecad_sketcher_template_linux.mods.png, freecad_sketcher_template_linux.combo.mods.png] }
+        "freecad://draft": { overlay: [freecad_draft_template_linux.mods.png, freecad_draft_template_linux.combo.mods.png] }
+        "freecad://bim": { overlay: [freecad_bim_template_linux.mods.png, freecad_bim_template_linux.combo.mods.png] }
+        "freecad://techdraw": { overlay: [freecad_techdraw_template_linux.mods.png, freecad_techdraw_template_linux.combo.mods.png] }
+        "freecad://assembly": { overlay: [freecad_assembly_template_linux.mods.png, freecad_assembly_template_linux.combo.mods.png] }
+        "freecad://spreadsheet": { overlay: [freecad_spreadsheet_template_linux.mods.png, freecad_spreadsheet_template_linux.combo.mods.png] }
+        "freecad://": { overlay: [freecad_global_template_linux.mods.png, freecad_global_template_linux.combo.mods.png] }
 # 3D-print slicers (sources: overlay_sources/slicers/, one key table for the
 # three apps). Names from each project's build files: the Windows executable
 # and Linux binary (`prusa-slicer`, `bambu-studio`, `orca-slicer`, also the
