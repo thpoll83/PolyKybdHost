@@ -570,27 +570,27 @@ msgstr "<b>ناموفق:</b> {reason}"
 
 #: polyhost/gui/cloud_sessions_dialog.py:24
 msgid "Connect Cloud Sessions"
-msgstr ""
+msgstr "اتصال نشست‌های ابری"
 
 #: polyhost/gui/cloud_sessions_dialog.py:28
 msgid "Shows Claude Code sessions that run in the cloud (claude.ai/code, also when the desktop app shows them) on the agent keys. A key press opens the session's page. The session's state goes through the PolyKybd relay, encrypted with a key that only this computer and your cloud environment have."
-msgstr ""
+msgstr "نشست‌های Claude Code را که در ابر اجرا می‌شوند (claude.ai/code، همچنین وقتی برنامهٔ دسکتاپ آن‌ها را نشان می‌دهد) روی کلیدهای عامل نشان می‌دهد. فشردن کلید صفحهٔ نشست را باز می‌کند. وضعیت نشست از راه رلهٔ PolyKybd منتقل می‌شود و با کلیدی رمزگذاری می‌شود که فقط این رایانه و محیط ابری شما آن را دارند."
 
 #: polyhost/gui/cloud_sessions_dialog.py:38
 msgid "In claude.ai, open the cloud environment's settings and enter these. Use a personal environment: everyone who uses an environment can read its variables."
-msgstr ""
+msgstr "در claude.ai، تنظیمات محیط ابری را باز کنید و این مقادیر را وارد کنید. از یک محیط شخصی استفاده کنید: هر کسی که از یک محیط استفاده می‌کند می‌تواند متغیرهای آن را بخواند."
 
 #: polyhost/gui/cloud_sessions_dialog.py:43
 msgid "Environment variable"
-msgstr ""
+msgstr "متغیر محیطی"
 
 #: polyhost/gui/cloud_sessions_dialog.py:45
 msgid "Allowed host (when network access is Limited)"
-msgstr ""
+msgstr "میزبان مجاز (وقتی دسترسی شبکه Limited است)"
 
 #: polyhost/gui/cloud_sessions_dialog.py:47
 msgid "Setup script"
-msgstr ""
+msgstr "اسکریپت راه‌اندازی"
 
 #: polyhost/gui/cloud_sessions_dialog.py:56
 #: polyhost/gui/forwarder_pairing.py:26
@@ -599,58 +599,58 @@ msgstr "کپی"
 
 #: polyhost/gui/cloud_sessions_dialog.py:63
 msgid "Each new cloud session of that environment then shows on a number key."
-msgstr ""
+msgstr "پس از آن هر نشست ابری جدید آن محیط روی یک کلید عددی نمایش داده می‌شود."
 
 #: polyhost/gui/cloud_sessions_dialog.py:67
 msgid "Connect"
-msgstr ""
+msgstr "اتصال"
 
 #: polyhost/gui/cloud_sessions_dialog.py:70
 msgid "Disconnect…"
-msgstr ""
+msgstr "قطع اتصال…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:91
 msgid "Reading the state…"
-msgstr ""
+msgstr "در حال خواندن وضعیت…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:103
 #, python-brace-format
 msgid "The state could not be read: {msg}"
-msgstr ""
+msgstr "وضعیت خوانده نشد: {msg}"
 
 #: polyhost/gui/cloud_sessions_dialog.py:123
 msgid "Not connected. \"Connect\" creates a channel on the relay for this computer."
-msgstr ""
+msgstr "وصل نیست. «اتصال» یک کانال روی رله برای این رایانه می‌سازد."
 
 #: polyhost/gui/cloud_sessions_dialog.py:129
 msgid "The agent keys are off: turn on \"Show on the Number Row\" in the AI Agents menu."
-msgstr ""
+msgstr "کلیدهای عامل خاموش هستند: «نمایش روی ردیف اعداد» را در منوی عامل‌های هوش مصنوعی روشن کنید."
 
 #: polyhost/gui/cloud_sessions_dialog.py:132
 msgid "Connected to the relay."
-msgstr ""
+msgstr "به رله وصل است."
 
 #: polyhost/gui/cloud_sessions_dialog.py:134
 #, python-brace-format
 msgid "The relay cannot be reached; trying again: {error}"
-msgstr ""
+msgstr "دسترسی به رله ممکن نیست؛ تلاش دوباره: {error}"
 
 #: polyhost/gui/cloud_sessions_dialog.py:136
 msgid "Connecting to the relay…"
-msgstr ""
+msgstr "در حال اتصال به رله…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:147
 msgid "Creating a channel on the relay…"
-msgstr ""
+msgstr "در حال ساخت کانال روی رله…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:152
 #: polyhost/gui/cloud_sessions_dialog.py:162
 msgid "Disconnect Cloud Sessions"
-msgstr ""
+msgstr "قطع اتصال نشست‌های ابری"
 
 #: polyhost/gui/cloud_sessions_dialog.py:153
 msgid "Delete the channel on the relay? The cloud sessions leave the agent keys, and the hooks in your cloud environment stop reaching this computer. Remove the environment variable there too."
-msgstr ""
+msgstr "کانال روی رله حذف شود؟ نشست‌های ابری از کلیدهای عامل برداشته می‌شوند و هوک‌های محیط ابری شما دیگر به این رایانه نمی‌رسند. متغیر محیطی را در آنجا هم حذف کنید."
 
 #: polyhost/gui/cmd_menu.py:143 polyhost/gui/settings_dialog.py:78
 msgid "Brightness"
@@ -4502,7 +4502,7 @@ msgstr "جفت‌سازی یک ارسال‌کننده…"
 
 #: polyhost/host.py:2434
 msgid "Connect Cloud Sessions…"
-msgstr ""
+msgstr "اتصال نشست‌های ابری…"
 
 #: polyhost/host.py:2449
 msgid "No agents reported"

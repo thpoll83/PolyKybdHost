@@ -570,27 +570,27 @@ msgstr "<b>실패:</b> {reason}"
 
 #: polyhost/gui/cloud_sessions_dialog.py:24
 msgid "Connect Cloud Sessions"
-msgstr ""
+msgstr "클라우드 세션 연결"
 
 #: polyhost/gui/cloud_sessions_dialog.py:28
 msgid "Shows Claude Code sessions that run in the cloud (claude.ai/code, also when the desktop app shows them) on the agent keys. A key press opens the session's page. The session's state goes through the PolyKybd relay, encrypted with a key that only this computer and your cloud environment have."
-msgstr ""
+msgstr "클라우드에서 실행되는 Claude Code 세션(claude.ai/code, 데스크톱 앱에 표시되는 세션 포함)을 에이전트 키에 표시합니다. 키를 누르면 해당 세션의 페이지가 열립니다. 세션 상태는 PolyKybd 릴레이를 거치며, 이 컴퓨터와 클라우드 환경만 가진 키로 암호화됩니다."
 
 #: polyhost/gui/cloud_sessions_dialog.py:38
 msgid "In claude.ai, open the cloud environment's settings and enter these. Use a personal environment: everyone who uses an environment can read its variables."
-msgstr ""
+msgstr "claude.ai에서 클라우드 환경의 설정을 열고 다음 항목을 입력하십시오. 개인 환경을 사용하십시오. 환경을 사용하는 모든 사람이 해당 환경의 변수를 읽을 수 있습니다."
 
 #: polyhost/gui/cloud_sessions_dialog.py:43
 msgid "Environment variable"
-msgstr ""
+msgstr "환경 변수"
 
 #: polyhost/gui/cloud_sessions_dialog.py:45
 msgid "Allowed host (when network access is Limited)"
-msgstr ""
+msgstr "허용된 호스트(네트워크 액세스가 Limited인 경우)"
 
 #: polyhost/gui/cloud_sessions_dialog.py:47
 msgid "Setup script"
-msgstr ""
+msgstr "설정 스크립트"
 
 #: polyhost/gui/cloud_sessions_dialog.py:56
 #: polyhost/gui/forwarder_pairing.py:26
@@ -599,58 +599,58 @@ msgstr "복사"
 
 #: polyhost/gui/cloud_sessions_dialog.py:63
 msgid "Each new cloud session of that environment then shows on a number key."
-msgstr ""
+msgstr "이후 해당 환경의 새 클라우드 세션은 각각 숫자 키에 표시됩니다."
 
 #: polyhost/gui/cloud_sessions_dialog.py:67
 msgid "Connect"
-msgstr ""
+msgstr "연결"
 
 #: polyhost/gui/cloud_sessions_dialog.py:70
 msgid "Disconnect…"
-msgstr ""
+msgstr "연결 해제…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:91
 msgid "Reading the state…"
-msgstr ""
+msgstr "상태를 읽는 중…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:103
 #, python-brace-format
 msgid "The state could not be read: {msg}"
-msgstr ""
+msgstr "상태를 읽을 수 없습니다: {msg}"
 
 #: polyhost/gui/cloud_sessions_dialog.py:123
 msgid "Not connected. \"Connect\" creates a channel on the relay for this computer."
-msgstr ""
+msgstr "연결되지 않았습니다. “연결”을 누르면 릴레이에 이 컴퓨터용 채널이 만들어집니다."
 
 #: polyhost/gui/cloud_sessions_dialog.py:129
 msgid "The agent keys are off: turn on \"Show on the Number Row\" in the AI Agents menu."
-msgstr ""
+msgstr "에이전트 키가 꺼져 있습니다. AI 에이전트 메뉴에서 “숫자 행에 표시”를 켜십시오."
 
 #: polyhost/gui/cloud_sessions_dialog.py:132
 msgid "Connected to the relay."
-msgstr ""
+msgstr "릴레이에 연결되었습니다."
 
 #: polyhost/gui/cloud_sessions_dialog.py:134
 #, python-brace-format
 msgid "The relay cannot be reached; trying again: {error}"
-msgstr ""
+msgstr "릴레이에 연결할 수 없습니다. 다시 시도하는 중: {error}"
 
 #: polyhost/gui/cloud_sessions_dialog.py:136
 msgid "Connecting to the relay…"
-msgstr ""
+msgstr "릴레이에 연결하는 중…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:147
 msgid "Creating a channel on the relay…"
-msgstr ""
+msgstr "릴레이에 채널을 만드는 중…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:152
 #: polyhost/gui/cloud_sessions_dialog.py:162
 msgid "Disconnect Cloud Sessions"
-msgstr ""
+msgstr "클라우드 세션 연결 해제"
 
 #: polyhost/gui/cloud_sessions_dialog.py:153
 msgid "Delete the channel on the relay? The cloud sessions leave the agent keys, and the hooks in your cloud environment stop reaching this computer. Remove the environment variable there too."
-msgstr ""
+msgstr "릴레이의 채널을 삭제하시겠습니까? 클라우드 세션이 에이전트 키에서 제거되고, 클라우드 환경의 훅이 더 이상 이 컴퓨터에 도달하지 않습니다. 클라우드 환경에서 환경 변수도 제거하십시오."
 
 #: polyhost/gui/cmd_menu.py:143 polyhost/gui/settings_dialog.py:78
 msgid "Brightness"
@@ -4502,7 +4502,7 @@ msgstr "포워더 페어링…"
 
 #: polyhost/host.py:2434
 msgid "Connect Cloud Sessions…"
-msgstr ""
+msgstr "클라우드 세션 연결…"
 
 #: polyhost/host.py:2449
 msgid "No agents reported"

@@ -49,6 +49,9 @@ class CloudSessionsDialog(QDialog):
         self.script.setLineWrapMode(QPlainTextEdit.NoWrap)
         # Two lines of script, the frame and room for a horizontal scroll bar.
         self.script.setFixedHeight(self.script.fontMetrics().lineSpacing() * 2 + 40)
+        for field in (self.variable, self.host, self.script):
+            # A value and a shell script read left to right in every language.
+            field.setLayoutDirection(Qt.LeftToRight)
         self._copies = []
         for row, (label, field) in enumerate(((self.variable_label, self.variable),
                                               (self.host_label, self.host),

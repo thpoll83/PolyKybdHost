@@ -570,27 +570,27 @@ msgstr "<b>失败：</b>{reason}"
 
 #: polyhost/gui/cloud_sessions_dialog.py:24
 msgid "Connect Cloud Sessions"
-msgstr ""
+msgstr "连接云端会话"
 
 #: polyhost/gui/cloud_sessions_dialog.py:28
 msgid "Shows Claude Code sessions that run in the cloud (claude.ai/code, also when the desktop app shows them) on the agent keys. A key press opens the session's page. The session's state goes through the PolyKybd relay, encrypted with a key that only this computer and your cloud environment have."
-msgstr ""
+msgstr "在智能体键上显示在云端运行的 Claude Code 会话（claude.ai/code，桌面应用显示的会话也包括在内）。按下按键会打开该会话的页面。会话状态经由 PolyKybd 中继传输，并使用只有本电脑和您的云环境才有的密钥加密。"
 
 #: polyhost/gui/cloud_sessions_dialog.py:38
 msgid "In claude.ai, open the cloud environment's settings and enter these. Use a personal environment: everyone who uses an environment can read its variables."
-msgstr ""
+msgstr "在 claude.ai 中打开云环境的设置，并输入以下内容。请使用个人环境：使用某个环境的每个人都可以读取其变量。"
 
 #: polyhost/gui/cloud_sessions_dialog.py:43
 msgid "Environment variable"
-msgstr ""
+msgstr "环境变量"
 
 #: polyhost/gui/cloud_sessions_dialog.py:45
 msgid "Allowed host (when network access is Limited)"
-msgstr ""
+msgstr "允许的主机（网络访问为 Limited 时）"
 
 #: polyhost/gui/cloud_sessions_dialog.py:47
 msgid "Setup script"
-msgstr ""
+msgstr "设置脚本"
 
 #: polyhost/gui/cloud_sessions_dialog.py:56
 #: polyhost/gui/forwarder_pairing.py:26
@@ -599,58 +599,58 @@ msgstr "复制"
 
 #: polyhost/gui/cloud_sessions_dialog.py:63
 msgid "Each new cloud session of that environment then shows on a number key."
-msgstr ""
+msgstr "之后，该环境的每个新云端会话都会显示在一个数字键上。"
 
 #: polyhost/gui/cloud_sessions_dialog.py:67
 msgid "Connect"
-msgstr ""
+msgstr "连接"
 
 #: polyhost/gui/cloud_sessions_dialog.py:70
 msgid "Disconnect…"
-msgstr ""
+msgstr "断开…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:91
 msgid "Reading the state…"
-msgstr ""
+msgstr "正在读取状态…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:103
 #, python-brace-format
 msgid "The state could not be read: {msg}"
-msgstr ""
+msgstr "无法读取状态：{msg}"
 
 #: polyhost/gui/cloud_sessions_dialog.py:123
 msgid "Not connected. \"Connect\" creates a channel on the relay for this computer."
-msgstr ""
+msgstr "未连接。“连接”会在中继上为本电脑创建一个通道。"
 
 #: polyhost/gui/cloud_sessions_dialog.py:129
 msgid "The agent keys are off: turn on \"Show on the Number Row\" in the AI Agents menu."
-msgstr ""
+msgstr "智能体键已关闭：请在 AI 智能体菜单中打开“在数字行上显示”。"
 
 #: polyhost/gui/cloud_sessions_dialog.py:132
 msgid "Connected to the relay."
-msgstr ""
+msgstr "已连接到中继。"
 
 #: polyhost/gui/cloud_sessions_dialog.py:134
 #, python-brace-format
 msgid "The relay cannot be reached; trying again: {error}"
-msgstr ""
+msgstr "无法访问中继，正在重试：{error}"
 
 #: polyhost/gui/cloud_sessions_dialog.py:136
 msgid "Connecting to the relay…"
-msgstr ""
+msgstr "正在连接到中继…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:147
 msgid "Creating a channel on the relay…"
-msgstr ""
+msgstr "正在中继上创建通道…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:152
 #: polyhost/gui/cloud_sessions_dialog.py:162
 msgid "Disconnect Cloud Sessions"
-msgstr ""
+msgstr "断开云端会话"
 
 #: polyhost/gui/cloud_sessions_dialog.py:153
 msgid "Delete the channel on the relay? The cloud sessions leave the agent keys, and the hooks in your cloud environment stop reaching this computer. Remove the environment variable there too."
-msgstr ""
+msgstr "删除中继上的通道？云端会话将从智能体键上移除，云环境中的钩子将无法再到达本电脑。请同时在云环境中删除该环境变量。"
 
 #: polyhost/gui/cmd_menu.py:143 polyhost/gui/settings_dialog.py:78
 msgid "Brightness"
@@ -4502,7 +4502,7 @@ msgstr "与转发器配对…"
 
 #: polyhost/host.py:2434
 msgid "Connect Cloud Sessions…"
-msgstr ""
+msgstr "连接云端会话…"
 
 #: polyhost/host.py:2449
 msgid "No agents reported"

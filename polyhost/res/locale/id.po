@@ -571,27 +571,27 @@ msgstr "<b>Gagal:</b> {reason}"
 
 #: polyhost/gui/cloud_sessions_dialog.py:24
 msgid "Connect Cloud Sessions"
-msgstr ""
+msgstr "Hubungkan Sesi Cloud"
 
 #: polyhost/gui/cloud_sessions_dialog.py:28
 msgid "Shows Claude Code sessions that run in the cloud (claude.ai/code, also when the desktop app shows them) on the agent keys. A key press opens the session's page. The session's state goes through the PolyKybd relay, encrypted with a key that only this computer and your cloud environment have."
-msgstr ""
+msgstr "Menampilkan sesi Claude Code yang berjalan di cloud (claude.ai/code, juga saat aplikasi desktop menampilkannya) di tombol agen. Menekan tombol membuka halaman sesi tersebut. Status sesi melewati relai PolyKybd, dienkripsi dengan kunci yang hanya dimiliki komputer ini dan lingkungan cloud Anda."
 
 #: polyhost/gui/cloud_sessions_dialog.py:38
 msgid "In claude.ai, open the cloud environment's settings and enter these. Use a personal environment: everyone who uses an environment can read its variables."
-msgstr ""
+msgstr "Di claude.ai, buka pengaturan lingkungan cloud dan masukkan nilai-nilai ini. Gunakan lingkungan pribadi: semua orang yang menggunakan suatu lingkungan dapat membaca variabelnya."
 
 #: polyhost/gui/cloud_sessions_dialog.py:43
 msgid "Environment variable"
-msgstr ""
+msgstr "Variabel lingkungan"
 
 #: polyhost/gui/cloud_sessions_dialog.py:45
 msgid "Allowed host (when network access is Limited)"
-msgstr ""
+msgstr "Host yang diizinkan (saat akses jaringan Limited)"
 
 #: polyhost/gui/cloud_sessions_dialog.py:47
 msgid "Setup script"
-msgstr ""
+msgstr "Skrip penyiapan"
 
 #: polyhost/gui/cloud_sessions_dialog.py:56
 #: polyhost/gui/forwarder_pairing.py:26
@@ -600,58 +600,58 @@ msgstr "Salin"
 
 #: polyhost/gui/cloud_sessions_dialog.py:63
 msgid "Each new cloud session of that environment then shows on a number key."
-msgstr ""
+msgstr "Setelah itu, setiap sesi cloud baru dari lingkungan tersebut tampil di tombol angka."
 
 #: polyhost/gui/cloud_sessions_dialog.py:67
 msgid "Connect"
-msgstr ""
+msgstr "Hubungkan"
 
 #: polyhost/gui/cloud_sessions_dialog.py:70
 msgid "Disconnect…"
-msgstr ""
+msgstr "Putuskan…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:91
 msgid "Reading the state…"
-msgstr ""
+msgstr "Membaca status…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:103
 #, python-brace-format
 msgid "The state could not be read: {msg}"
-msgstr ""
+msgstr "Status tidak dapat dibaca: {msg}"
 
 #: polyhost/gui/cloud_sessions_dialog.py:123
 msgid "Not connected. \"Connect\" creates a channel on the relay for this computer."
-msgstr ""
+msgstr "Tidak terhubung. \"Hubungkan\" membuat saluran di relai untuk komputer ini."
 
 #: polyhost/gui/cloud_sessions_dialog.py:129
 msgid "The agent keys are off: turn on \"Show on the Number Row\" in the AI Agents menu."
-msgstr ""
+msgstr "Tombol agen nonaktif: nyalakan \"Tampilkan di Baris Angka\" di menu Agen AI."
 
 #: polyhost/gui/cloud_sessions_dialog.py:132
 msgid "Connected to the relay."
-msgstr ""
+msgstr "Terhubung ke relai."
 
 #: polyhost/gui/cloud_sessions_dialog.py:134
 #, python-brace-format
 msgid "The relay cannot be reached; trying again: {error}"
-msgstr ""
+msgstr "Relai tidak dapat dijangkau; mencoba lagi: {error}"
 
 #: polyhost/gui/cloud_sessions_dialog.py:136
 msgid "Connecting to the relay…"
-msgstr ""
+msgstr "Menghubungkan ke relai…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:147
 msgid "Creating a channel on the relay…"
-msgstr ""
+msgstr "Membuat saluran di relai…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:152
 #: polyhost/gui/cloud_sessions_dialog.py:162
 msgid "Disconnect Cloud Sessions"
-msgstr ""
+msgstr "Putuskan Sesi Cloud"
 
 #: polyhost/gui/cloud_sessions_dialog.py:153
 msgid "Delete the channel on the relay? The cloud sessions leave the agent keys, and the hooks in your cloud environment stop reaching this computer. Remove the environment variable there too."
-msgstr ""
+msgstr "Hapus saluran di relai? Sesi cloud dihapus dari tombol agen, dan hook di lingkungan cloud Anda tidak lagi menjangkau komputer ini. Hapus juga variabel lingkungan di sana."
 
 #: polyhost/gui/cmd_menu.py:143 polyhost/gui/settings_dialog.py:78
 msgid "Brightness"
@@ -4523,7 +4523,7 @@ msgstr "Pasangkan Forwarder…"
 
 #: polyhost/host.py:2434
 msgid "Connect Cloud Sessions…"
-msgstr ""
+msgstr "Hubungkan Sesi Cloud…"
 
 #: polyhost/host.py:2449
 msgid "No agents reported"

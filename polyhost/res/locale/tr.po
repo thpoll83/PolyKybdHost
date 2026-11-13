@@ -570,27 +570,27 @@ msgstr "<b>Başarısız:</b> {reason}"
 
 #: polyhost/gui/cloud_sessions_dialog.py:24
 msgid "Connect Cloud Sessions"
-msgstr ""
+msgstr "Bulut Oturumlarını Bağla"
 
 #: polyhost/gui/cloud_sessions_dialog.py:28
 msgid "Shows Claude Code sessions that run in the cloud (claude.ai/code, also when the desktop app shows them) on the agent keys. A key press opens the session's page. The session's state goes through the PolyKybd relay, encrypted with a key that only this computer and your cloud environment have."
-msgstr ""
+msgstr "Bulutta çalışan Claude Code oturumlarını (claude.ai/code, masaüstü uygulaması gösterdiğinde de) ajan tuşlarında gösterir. Bir tuşa basmak oturumun sayfasını açar. Oturumun durumu, yalnızca bu bilgisayarın ve bulut ortamınızın sahip olduğu bir anahtarla şifrelenerek PolyKybd aktarımı üzerinden geçer."
 
 #: polyhost/gui/cloud_sessions_dialog.py:38
 msgid "In claude.ai, open the cloud environment's settings and enter these. Use a personal environment: everyone who uses an environment can read its variables."
-msgstr ""
+msgstr "claude.ai'da bulut ortamının ayarlarını açın ve bunları girin. Kişisel bir ortam kullanın: bir ortamı kullanan herkes onun değişkenlerini okuyabilir."
 
 #: polyhost/gui/cloud_sessions_dialog.py:43
 msgid "Environment variable"
-msgstr ""
+msgstr "Ortam değişkeni"
 
 #: polyhost/gui/cloud_sessions_dialog.py:45
 msgid "Allowed host (when network access is Limited)"
-msgstr ""
+msgstr "İzin verilen ana bilgisayar (ağ erişimi Limited olduğunda)"
 
 #: polyhost/gui/cloud_sessions_dialog.py:47
 msgid "Setup script"
-msgstr ""
+msgstr "Kurulum betiği"
 
 #: polyhost/gui/cloud_sessions_dialog.py:56
 #: polyhost/gui/forwarder_pairing.py:26
@@ -599,58 +599,58 @@ msgstr "Kopyala"
 
 #: polyhost/gui/cloud_sessions_dialog.py:63
 msgid "Each new cloud session of that environment then shows on a number key."
-msgstr ""
+msgstr "Bundan sonra o ortamın her yeni bulut oturumu bir sayı tuşunda gösterilir."
 
 #: polyhost/gui/cloud_sessions_dialog.py:67
 msgid "Connect"
-msgstr ""
+msgstr "Bağlan"
 
 #: polyhost/gui/cloud_sessions_dialog.py:70
 msgid "Disconnect…"
-msgstr ""
+msgstr "Bağlantıyı Kes…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:91
 msgid "Reading the state…"
-msgstr ""
+msgstr "Durum okunuyor…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:103
 #, python-brace-format
 msgid "The state could not be read: {msg}"
-msgstr ""
+msgstr "Durum okunamadı: {msg}"
 
 #: polyhost/gui/cloud_sessions_dialog.py:123
 msgid "Not connected. \"Connect\" creates a channel on the relay for this computer."
-msgstr ""
+msgstr "Bağlı değil. \"Bağlan\", aktarım üzerinde bu bilgisayar için bir kanal oluşturur."
 
 #: polyhost/gui/cloud_sessions_dialog.py:129
 msgid "The agent keys are off: turn on \"Show on the Number Row\" in the AI Agents menu."
-msgstr ""
+msgstr "Ajan tuşları kapalı: Yapay Zekâ Ajanları menüsünde \"Sayı Satırında Göster\" seçeneğini açın."
 
 #: polyhost/gui/cloud_sessions_dialog.py:132
 msgid "Connected to the relay."
-msgstr ""
+msgstr "Aktarıma bağlandı."
 
 #: polyhost/gui/cloud_sessions_dialog.py:134
 #, python-brace-format
 msgid "The relay cannot be reached; trying again: {error}"
-msgstr ""
+msgstr "Aktarıma ulaşılamıyor; yeniden deneniyor: {error}"
 
 #: polyhost/gui/cloud_sessions_dialog.py:136
 msgid "Connecting to the relay…"
-msgstr ""
+msgstr "Aktarıma bağlanılıyor…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:147
 msgid "Creating a channel on the relay…"
-msgstr ""
+msgstr "Aktarım üzerinde kanal oluşturuluyor…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:152
 #: polyhost/gui/cloud_sessions_dialog.py:162
 msgid "Disconnect Cloud Sessions"
-msgstr ""
+msgstr "Bulut Oturumlarının Bağlantısını Kes"
 
 #: polyhost/gui/cloud_sessions_dialog.py:153
 msgid "Delete the channel on the relay? The cloud sessions leave the agent keys, and the hooks in your cloud environment stop reaching this computer. Remove the environment variable there too."
-msgstr ""
+msgstr "Aktarım üzerindeki kanal silinsin mi? Bulut oturumları ajan tuşlarından kaldırılır ve bulut ortamınızdaki kancalar artık bu bilgisayara ulaşmaz. Ortam değişkenini orada da kaldırın."
 
 #: polyhost/gui/cmd_menu.py:143 polyhost/gui/settings_dialog.py:78
 msgid "Brightness"
@@ -4502,7 +4502,7 @@ msgstr "Yönlendirici Eşleştir…"
 
 #: polyhost/host.py:2434
 msgid "Connect Cloud Sessions…"
-msgstr ""
+msgstr "Bulut Oturumlarını Bağla…"
 
 #: polyhost/host.py:2449
 msgid "No agents reported"

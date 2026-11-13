@@ -570,27 +570,27 @@ msgstr "<b>Thất bại:</b> {reason}"
 
 #: polyhost/gui/cloud_sessions_dialog.py:24
 msgid "Connect Cloud Sessions"
-msgstr ""
+msgstr "Kết nối phiên đám mây"
 
 #: polyhost/gui/cloud_sessions_dialog.py:28
 msgid "Shows Claude Code sessions that run in the cloud (claude.ai/code, also when the desktop app shows them) on the agent keys. A key press opens the session's page. The session's state goes through the PolyKybd relay, encrypted with a key that only this computer and your cloud environment have."
-msgstr ""
+msgstr "Hiển thị các phiên Claude Code chạy trên đám mây (claude.ai/code, kể cả khi ứng dụng máy tính hiển thị chúng) trên các phím tác tử. Nhấn phím sẽ mở trang của phiên. Trạng thái của phiên đi qua máy chủ chuyển tiếp PolyKybd, được mã hóa bằng một khóa mà chỉ máy tính này và môi trường đám mây của bạn có."
 
 #: polyhost/gui/cloud_sessions_dialog.py:38
 msgid "In claude.ai, open the cloud environment's settings and enter these. Use a personal environment: everyone who uses an environment can read its variables."
-msgstr ""
+msgstr "Trong claude.ai, mở phần cài đặt của môi trường đám mây và nhập các mục sau. Hãy dùng môi trường cá nhân: mọi người dùng một môi trường đều có thể đọc các biến của nó."
 
 #: polyhost/gui/cloud_sessions_dialog.py:43
 msgid "Environment variable"
-msgstr ""
+msgstr "Biến môi trường"
 
 #: polyhost/gui/cloud_sessions_dialog.py:45
 msgid "Allowed host (when network access is Limited)"
-msgstr ""
+msgstr "Máy chủ được phép (khi quyền truy cập mạng là Limited)"
 
 #: polyhost/gui/cloud_sessions_dialog.py:47
 msgid "Setup script"
-msgstr ""
+msgstr "Tập lệnh thiết lập"
 
 #: polyhost/gui/cloud_sessions_dialog.py:56
 #: polyhost/gui/forwarder_pairing.py:26
@@ -599,58 +599,58 @@ msgstr "Sao chép"
 
 #: polyhost/gui/cloud_sessions_dialog.py:63
 msgid "Each new cloud session of that environment then shows on a number key."
-msgstr ""
+msgstr "Sau đó, mỗi phiên đám mây mới của môi trường đó sẽ hiển thị trên một phím số."
 
 #: polyhost/gui/cloud_sessions_dialog.py:67
 msgid "Connect"
-msgstr ""
+msgstr "Kết nối"
 
 #: polyhost/gui/cloud_sessions_dialog.py:70
 msgid "Disconnect…"
-msgstr ""
+msgstr "Ngắt kết nối…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:91
 msgid "Reading the state…"
-msgstr ""
+msgstr "Đang đọc trạng thái…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:103
 #, python-brace-format
 msgid "The state could not be read: {msg}"
-msgstr ""
+msgstr "Không thể đọc trạng thái: {msg}"
 
 #: polyhost/gui/cloud_sessions_dialog.py:123
 msgid "Not connected. \"Connect\" creates a channel on the relay for this computer."
-msgstr ""
+msgstr "Chưa kết nối. “Kết nối” sẽ tạo một kênh trên máy chủ chuyển tiếp cho máy tính này."
 
 #: polyhost/gui/cloud_sessions_dialog.py:129
 msgid "The agent keys are off: turn on \"Show on the Number Row\" in the AI Agents menu."
-msgstr ""
+msgstr "Các phím tác tử đang tắt: hãy bật “Hiển thị trên hàng số” trong menu Tác tử AI."
 
 #: polyhost/gui/cloud_sessions_dialog.py:132
 msgid "Connected to the relay."
-msgstr ""
+msgstr "Đã kết nối với máy chủ chuyển tiếp."
 
 #: polyhost/gui/cloud_sessions_dialog.py:134
 #, python-brace-format
 msgid "The relay cannot be reached; trying again: {error}"
-msgstr ""
+msgstr "Không thể truy cập máy chủ chuyển tiếp; đang thử lại: {error}"
 
 #: polyhost/gui/cloud_sessions_dialog.py:136
 msgid "Connecting to the relay…"
-msgstr ""
+msgstr "Đang kết nối với máy chủ chuyển tiếp…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:147
 msgid "Creating a channel on the relay…"
-msgstr ""
+msgstr "Đang tạo kênh trên máy chủ chuyển tiếp…"
 
 #: polyhost/gui/cloud_sessions_dialog.py:152
 #: polyhost/gui/cloud_sessions_dialog.py:162
 msgid "Disconnect Cloud Sessions"
-msgstr ""
+msgstr "Ngắt kết nối phiên đám mây"
 
 #: polyhost/gui/cloud_sessions_dialog.py:153
 msgid "Delete the channel on the relay? The cloud sessions leave the agent keys, and the hooks in your cloud environment stop reaching this computer. Remove the environment variable there too."
-msgstr ""
+msgstr "Xóa kênh trên máy chủ chuyển tiếp? Các phiên đám mây sẽ rời khỏi các phím tác tử, và các hook trong môi trường đám mây của bạn sẽ không còn tới được máy tính này. Hãy xóa cả biến môi trường ở đó."
 
 #: polyhost/gui/cmd_menu.py:143 polyhost/gui/settings_dialog.py:78
 msgid "Brightness"
@@ -4502,7 +4502,7 @@ msgstr "Ghép đôi bộ chuyển tiếp…"
 
 #: polyhost/host.py:2434
 msgid "Connect Cloud Sessions…"
-msgstr ""
+msgstr "Kết nối phiên đám mây…"
 
 #: polyhost/host.py:2449
 msgid "No agents reported"
