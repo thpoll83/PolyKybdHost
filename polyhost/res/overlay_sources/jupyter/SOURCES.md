@@ -6,11 +6,37 @@
 
 | Set | Loads for |
 |---|---|
-| `jupyter_template` (2 files), `_mac` (3 files) | JupyterLab and Jupyter Notebook 7 in a browser (by URL, or by a title ending "- JupyterLab" / "- Jupyter Notebook"), and the JupyterLab Desktop app |
+| `jupyter_template` (2 files), `_mac` (3 files) | JupyterLab and Jupyter Notebook 7 in a browser (by URL, or by a title ending "- JupyterLab" / "- Jupyter Notebook"), and the JupyterLab Desktop app, while no mode is reported |
+| `jupyter_command_template` | `jupyter://notebook/command` |
+| `jupyter_edit_template` | `jupyter://notebook/edit` |
+| `jupyter_editor_template` | `jupyter://editor` |
+| `jupyter_console_template` | `jupyter://console` |
+| `jupyter_global_template` | `jupyter://terminal`, `jupyter://other` |
 
 Jupyter Notebook 7 is built from the JupyterLab packages and uses the same
 default keys, so one set serves both. Google Colab is a different app with
 other keys and is not covered.
+
+## Mode sets
+
+The `jupyterlab-extension/` reporter sends `jupyter://<activity>[/<mode>]`
+(its README). `gen_specs.py` writes one `bindings_<mode>.yaml` per URL that
+changes the keys. Each has only the rows whose `selector` in the schema
+matches in that mode (the `SCOPE` table in `gen_specs.py`):
+
+| set | rows |
+|---|---|
+| `command` | global, save/print, search, undo/redo/select all, run cell, and the command-mode keys (`.jp-Notebook.jp-mod-commandMode`): the single keys, merge, move, collapse/expand |
+| `edit` | global, save/print, search, undo/redo/select all, run cell, the edit-mode keys (`.jp-mod-editMode`: Ctrl+M, split cell, Alt+Up/Down history) and the code editor keys (`.cm-content`) |
+| `editor` | global, save/print, search, undo/redo/select all, the code editor keys |
+| `console` | global, undo/redo/select all, the code editor keys, and Shift+Enter "Run code" (`console:run-forced`) |
+| `global` | the `body` keys only: panels, tabs, side panels, debugger |
+
+The JupyterLab Desktop entry routes the URL with `layer: false`, so a mode
+set replaces the all-modes set. The browser entries route it on top of the
+browser's set, with a `url: '^jupyter://'` gate. In a browser the host uses
+the report only while the page has focus (`PAGE_REPORTERS` in
+`handler/browser_url.py`).
 
 ## Routing
 
