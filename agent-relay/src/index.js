@@ -63,13 +63,39 @@ function sameHex(a, b) {
   return crypto.subtle.timingSafeEqual(enc.encode(a), enc.encode(b));
 }
 
+async function readBounded(request, maxBytes) {
+  // Refuse by the declared length first: a body without one (chunked) or with a
+  // malformed one is refused, not read. Then read the stream and stop as soon as
+  // more than maxBytes arrived, so no body is buffered past the limit.
+  const declared = request.headers.get("content-length");
+  if (declared === null || !/^[0-9]+$/.test(declared) || Number(declared) > maxBytes) {
+    throw new Error("too large or no length");
+  }
+  if (!request.body) return new Uint8Array(0);
+  const reader = request.body.getReader();
+  const chunks = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel();
+      throw new Error("too large");
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
+}
+
 async function readJson(request, maxBytes) {
-  // Refuse by the declared length before the body is read into memory: a body
-  // without a Content-Length (chunked) is refused too. Then check the bytes read.
-  const declared = Number(request.headers.get("content-length"));
-  if (!Number.isFinite(declared) || declared > maxBytes) throw new Error("too large");
-  const bytes = new Uint8Array(await request.arrayBuffer());
-  if (bytes.byteLength > maxBytes) throw new Error("too large");
+  const bytes = await readBounded(request, maxBytes);
   const body = JSON.parse(new TextDecoder().decode(bytes));
   if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("not an object");
   return body;

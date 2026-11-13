@@ -10,6 +10,7 @@ Standard library only. Not part of the host's unittest suite (it needs the Worke
 running); the deploy workflow runs it on every pull request.
 """
 import base64
+import http.client
 import json
 import os
 import socket
@@ -200,6 +201,16 @@ class RelayEndToEnd(unittest.TestCase):
         status, _ = call("POST", self.base + "/event", {"k": "a" * 32, "blob": "a" * 9000},
                          token=self.chan["write_token"])
         self.assertEqual(status, 400)
+
+    def test_a_body_without_a_declared_length_is_refused(self):
+        host, port = RELAY.split("://", 1)[1].split(":")
+        conn = http.client.HTTPConnection(host, int(port), timeout=10)
+        body = iter([json.dumps({"k": "a" * 32, "blob": "abc"}).encode()])
+        conn.request("POST", self.base + "/event", body=body, encode_chunked=True,
+                     headers={"Authorization": f"Bearer {self.chan['write_token']}",
+                              "Content-Type": "application/json"})
+        self.assertEqual(conn.getresponse().status, 400)
+        conn.close()
 
     def test_per_minute_limit(self):
         token = self.chan["write_token"]
