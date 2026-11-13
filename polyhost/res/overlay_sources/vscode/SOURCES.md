@@ -33,10 +33,12 @@ published card would have led us to the wrong overlay; the source settled it.
 |---|---|---|---|
 | `CMDCTRL` (22) | Ctrl | Cmd | registered `KeyMod.CtrlCmd` |
 | `CTRL`, verified ⌃ on macOS (3) | Ctrl | **Ctrl** | VS Code keeps these on Control on the Mac |
-| literal, preserved verbatim (4) | as shipped | as shipped | see *Preserved as-is* below |
-| bare / `SHIFT` + F-keys (8) | same | same | no platform difference |
+| literal, preserved verbatim (3) | as shipped | as shipped | see *Preserved as-is* below |
+| bare / `SHIFT` + F-keys (3) | same | same | no platform difference |
 
-37 bindings in total.
+The six debug-session keys (`F5`, `Shift+F5`, `Ctrl+F6`, `F10`, `F11`, `Shift+F11`)
+moved to `debug_fallback.yaml` (see *Debug modes* below); the fallback draws them
+unchanged.
 
 The three verified against the macOS card: **⌃G** Go to Line, **⌃`** Show integrated
 terminal, **⌃F5** Run without debugging. Writing these as `CMDCTRL` would draw them on a
@@ -177,6 +179,42 @@ that has the concept (the planned flash icon library, `icons.plyi`).
 - `settings` is drawn by the shared lexicon renderer, like every other app's Settings.
 - `history.png` is Calculator's Fluent History, rendered with the same settings.
 - `breakpoint.png` is the shared breakpoint; JetBrains uses the same drawing.
+
+### Debug modes (`debug_*.yaml`, 2026-11-13)
+
+Four small sets, shared by VS Code, Cursor and Windsurf, that the mapping puts after
+the app's own set. The mode comes from the extension in `vscode-extension/`
+(`<app>://edit`, `<app>://debug/running`, `<app>://debug/stopped`); without a report
+the mapping uses `debug_fallback.yaml`, which holds the six debug keys moved
+unchanged out of `bindings.yaml` (and Cursor's and Windsurf's copy), so the fallback
+board is the same as before.
+
+Keys and conditions, from VS Code's source (`main`, read 2026-11-13):
+`src/vs/workbench/contrib/debug/browser/debugCommands.ts` and
+`src/vs/workbench/browser/actions/windowActions.ts`.
+
+| Command | Key | `when` | Set |
+|---|---|---|---|
+| `workbench.action.debug.start` | `F5` | `debugState == 'inactive'` | edit |
+| `workbench.action.toggleFullScreen` | `F11` (macOS `⌃⌘F`, not drawn) | always | edit, not macOS |
+| `workbench.action.debug.pause` | `F6` | `debugState == 'running'` | running |
+| `workbench.action.debug.stop` | `Shift+F5` | `inDebugMode` | running, stopped |
+| `workbench.action.debug.restart` | `Shift+CtrlCmd+F5` | `inDebugMode` | running, stopped |
+| `workbench.action.debug.continue` | `F5` | `debugState == 'stopped'` | stopped |
+| `workbench.action.debug.stepOver` | `F10` | `debugState == 'stopped'` | stopped |
+| `workbench.action.debug.stepInto` | `F11` | `debugState != 'inactive'` | stopped |
+| `workbench.action.debug.stepOut` | `Shift+F11` | `stopped` and more than one frame | stopped |
+
+Step Into is also active while the program runs, but does nothing then, so the
+running set does not draw it. `F9` (Toggle Breakpoint) and `Ctrl+F5` (Run Without
+Debugging) are active in every state and stay in `bindings.yaml`. Cursor and
+Windsurf keep VS Code's debug contribution unchanged (their `bindings.yaml` drew the
+same F-keys with the same icons), so one set serves all three.
+
+New icons: `restart.png` (Fluent *Arrow Clockwise*, as Arduino IDE, Visual Studio
+and RStudio use it), `fullscreen.png` (Fluent *Full Screen Maximize*), and
+`continue.png` (Material Symbols `resume`, Apache-2.0, as Jupyter and RStudio use
+it; it is VS Code's own "bar and triangle" Continue shape).
 
 ### Everything else
 

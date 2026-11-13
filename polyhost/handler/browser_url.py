@@ -106,6 +106,9 @@ CONTEXT_REPORTERS = {
     "macvim": "vim",
     "neovide": "vim",
     "emacs": "emacs",
+    # VS Code and its forks: vscode-extension/ sends <token>://<debug mode>.
+    "code": "vscode", "cursor": "cursor",
+    "windsurf": "windsurf", "devin": "windsurf", "devin-desktop": "windsurf",
 }
 
 # Reporters that also run INSIDE a terminal (vim, emacs -nw). While a terminal

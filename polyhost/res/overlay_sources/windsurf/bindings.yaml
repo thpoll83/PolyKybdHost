@@ -64,16 +64,14 @@ bindings:
   # ⌃⇧-). Kept exactly as shipped rather than re-chorded.
   - { key: "-", mods: [CTRL, SHIFT], icon: goforward.png, <<: *reclaimed, label: "Go forward", source: reclaimed }
   - { key: "-", mods: [CTRL, ALT],   icon: goback.png,    <<: *reclaimed, label: "Go back",    source: reclaimed }
-  - { key: F6, mods: [CTRL], icon: pause.png,   <<: *reclaimed, label: "Pause (debug)", source: reclaimed }
+  # The debug-session keys (F5, Shift+F5, Ctrl+F6, F10, F11, Shift+F11) are in
+  # ../vscode/debug_*.yaml, shared by VS Code, Cursor and Windsurf: the mode
+  # reporter (vscode-extension/) swaps them per debug state. The mapping lists
+  # debug_fallback.yaml's set after this one when no report arrives.
   - { key: H,  mods: [ALT],  icon: history.png, label: "History / recent", source: "ms-fluent/History (MIT), shared with calc" }
 
   # -- identical on both platforms --
-  - { key: F5,  mods: [],      icon: rundebug.png,   <<: *reclaimed, label: "Start debugging",   source: reclaimed }
-  - { key: F5,  mods: [SHIFT], icon: stopdebug.png,  <<: *reclaimed, label: "Stop debugging",    source: "reclaimed (JetBrains stop, shared)" }
   - { key: F9,  mods: [],      icon: breakpoint.png, <<: *reclaimed, label: "Toggle breakpoint", source: reclaimed }
-  - { key: F10, mods: [],      icon: stepover.png,   <<: *reclaimed, label: "Step over",         source: "reclaimed (JetBrains, shared)" }
-  - { key: F11, mods: [],      icon: stepinto.png,   <<: *reclaimed, label: "Step into",         source: "reclaimed (JetBrains, shared)" }
-  - { key: F11, mods: [SHIFT], icon: stepout.png,    <<: *reclaimed, label: "Step out",          source: "reclaimed (JetBrains, shared)" }
 
   # ==================================================== NEW coverage ==========
   # Fluent glyphs (MIT). None of these had artwork before.

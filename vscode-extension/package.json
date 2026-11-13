@@ -1,0 +1,59 @@
+{
+  "name": "polykybd-mode-reporter",
+  "displayName": "PolyKybd Mode Reporter",
+  "description": "Tells the PolyKybdHost app on this computer whether a debug session is running or stopped, so the PolyKybd keycaps show the debug keys that work now.",
+  "version": "1.0.0",
+  "publisher": "polykybd",
+  "license": "GPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thpoll83/PolyKybdHost.git",
+    "directory": "vscode-extension"
+  },
+  "homepage": "https://www.polykybd.org",
+  "categories": ["Other"],
+  "keywords": ["keyboard", "PolyKybd", "debug", "shortcuts"],
+  "engines": { "vscode": "^1.75.0" },
+  "extensionKind": ["ui"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": { "supported": true },
+    "virtualWorkspaces": true
+  },
+  "contributes": {
+    "configuration": {
+      "title": "PolyKybd Mode Reporter",
+      "properties": {
+        "polykybd.reportMode": {
+          "type": "boolean",
+          "default": true,
+          "description": "Send the debug state (no session, running, stopped) to PolyKybdHost on 127.0.0.1."
+        },
+        "polykybd.port": {
+          "type": "integer",
+          "default": 50164,
+          "minimum": 1,
+          "maximum": 65535,
+          "description": "PolyKybdHost's browser_report_port."
+        },
+        "polykybd.token": {
+          "type": "string",
+          "default": "",
+          "description": "Only if PolyKybdHost has browser_report_token set: the same value."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "test": "node --experimental-strip-types --test test/core.test.ts",
+    "package": "./build.sh"
+  },
+  "devDependencies": {
+    "@types/node": "18.19.130",
+    "@types/vscode": "1.75.0",
+    "@vscode/vsce": "3.2.2",
+    "typescript": "5.6.3"
+  }
+}
