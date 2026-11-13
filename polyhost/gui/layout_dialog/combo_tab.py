@@ -234,17 +234,21 @@ class _SlotTab(QWidget):
 
     def _on_written(self, rec: dict, result):
         self._writing = False
-        self._apply_written(rec, result)
+        saved = self._apply_written(rec, result)
         if self._reload_after_write:
             self._reload_after_write = False
-            self.reload()
+            # After a failed save the fields keep the user's edits for a retry; a
+            # reload would replace them with the old record.
+            if saved:
+                self.reload()
 
-    def _apply_written(self, rec: dict, result):
+    def _apply_written(self, rec: dict, result) -> bool:
+        """Show the result of a save. True if it was saved."""
         self._set_editable(True)
         ok, msg = ok_value(result)
         if not ok:
             message_box.warning(self, _("Not saved"), str(msg))
-            return
+            return False
         self._records[rec["slot"]] = rec
         self.list.item(rec["slot"]).setText(self._row_text(rec))
         if self.list.currentRow() == rec["slot"]:
@@ -254,6 +258,7 @@ class _SlotTab(QWidget):
                                 "Save again once both halves are connected."))
         else:
             self.note.setText(self._default_note())
+        return True
 
     def _on_save(self):
         row = self.list.currentRow()

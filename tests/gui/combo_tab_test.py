@@ -307,6 +307,29 @@ class TapDanceTabTest(unittest.TestCase):
         self.assertEqual(f["on_double_tap"].placeholderText(), "Tap twice")
         self.assertEqual(f["on_tap_hold"].placeholderText(), "Tap, then hold Tap")
 
+    @mock.patch("polyhost.gui.layout_dialog.combo_tab.message_box")
+    def test_a_failed_save_keeps_the_edits_after_a_deferred_reload(self, box):
+        import threading
+        release = threading.Event()
+        core = _core()
+
+        def failing_set(**_kw):
+            release.wait(5)
+            return False, "link dropped"
+        core.combos_set.side_effect = failing_set
+        tab = TapDanceTab(core)
+        tab.reload()
+        tab._fetcher.wait_idle()
+        tab.action_fields["on_tap"].setText("KC_ESC")
+        tab._on_save()
+        tab.reload()                      # the tab is shown again during the save
+        release.set()
+        tab._fetcher.wait_idle()
+        tab._fetcher.wait_idle()
+        box.warning.assert_called_once()
+        self.assertEqual(core.combos_get.call_count, 1)   # no reload after the failure
+        self.assertEqual(tab.action_fields["on_tap"].text(), "KC_ESC")
+
     def test_a_reload_during_a_save_waits_for_it(self):
         import threading
         release = threading.Event()

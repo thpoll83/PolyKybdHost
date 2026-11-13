@@ -312,15 +312,18 @@ class CombosCoreTest(unittest.TestCase):
     def test_a_second_save_waits_for_the_first(self):
         core, _fw = self._core()
         core._combos_lock.acquire()
-        t = threading.Thread(target=core.combos_set, kwargs={
+        t = threading.Thread(target=core.combos_set, daemon=True, kwargs={
             "combos": [{"slot": 0, "keys": [KC_J, KC_K], "result": KC_ESC}]})
-        t.start()
-        t.join(0.2)
-        self.assertTrue(t.is_alive())
-        _ok, words = core.keeb.get_combo_record(Combos.KIND_COMBO, 0)
-        self.assertEqual(words, [0, 0, 0, 0, 0])
-        core._combos_lock.release()
-        t.join(5)
+        try:
+            t.start()
+            t.join(0.2)
+            self.assertTrue(t.is_alive())
+            _ok, words = core.keeb.get_combo_record(Combos.KIND_COMBO, 0)
+            self.assertEqual(words, [0, 0, 0, 0, 0])
+        finally:
+            # A failed assertion must not leave the save thread blocked on the lock.
+            core._combos_lock.release()
+            t.join(5)
         self.assertFalse(t.is_alive())
 
 

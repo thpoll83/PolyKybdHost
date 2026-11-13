@@ -2738,8 +2738,10 @@ class PolyCore(Observable):
         if res == COMBO_COMMIT_NO_ANSWER:
             # The flash write may have happened. RAM keeps the new records, so a
             # later commit stores them either way.
-            return False, (f"{res}. The records may or may not be stored: read them back "
-                           f"to check.")
+            # A read-back shows RAM, not flash, so it cannot settle this; a second
+            # COMMIT can.
+            return False, (f"{res}. The records may or may not be stored. Save again to "
+                           f"store them.")
         return False, res
 
     def _combos_restore(self, before, msg):
