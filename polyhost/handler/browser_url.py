@@ -106,6 +106,9 @@ CONTEXT_REPORTERS = {
     "macvim": "vim",
     "neovide": "vim",
     "emacs": "emacs",
+    # Godot editor 4.x (godot-plugin/): exactly the `godot` mapping entry's names.
+    "godot": "godot", "godot_v4": "godot", "godot_mono": "godot", "godot4": "godot",
+    "godot-bin": "godot", "org.godotengine.godot": "godot", "org.godotengine.editor": "godot",
 }
 
 # Reporters that also run INSIDE a terminal (vim, emacs -nw). While a terminal
@@ -160,7 +163,10 @@ def _app_key(app_name):
 
 def context_reporter_for(app_name):
     """The reporter token for a focused app with a context add-on, or None."""
-    return CONTEXT_REPORTERS.get(_app_key(app_name))
+    key = _app_key(app_name)
+    # The same version stripping as the mapping lookup, so a versioned name
+    # (Godot's Linux download) reaches the reporter its entry matches.
+    return CONTEXT_REPORTERS.get(mapping_key(key, CONTEXT_REPORTERS))
 
 
 def is_terminal_app(app_name) -> bool:

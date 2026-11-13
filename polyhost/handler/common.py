@@ -120,6 +120,11 @@ _TRAILING_VERSION = re.compile(r"[\s_-]+v?\d+(?:\.\d+)+$")
 # dot and a letter before the digits, so `age2_x1`, `fl64` and `foobar2000` keep
 # their digits.
 _GLUED_VERSION = re.compile(r"(?<=[a-z])\d+(?:\.\d+)+(?:v\d+)?$")
+# A dotted version followed by a release tag and a build name, as Godot names
+# its Linux download: `godot_v4.7.2-stable_linux.x86_64` (also `-rc1`,
+# `-stable_mono_linux.arm64`). The tag starts with `-` and a letter, so a plain
+# trailing version is left to _TRAILING_VERSION.
+_VERSION_AND_BUILD = re.compile(r"[\s_-]+v?\d+(?:\.\d+)+-[a-z][a-z0-9_.-]*$")
 
 
 def mapping_key(app_name, mapping):
@@ -128,7 +133,9 @@ def mapping_key(app_name, mapping):
     An exact match wins. Failing that, a trailing release year is dropped, so one
     `adobe photoshop` key covers `adobe photoshop 2025` and every later release,
     and then a trailing dotted version, so `openra-ca` covers `openra-ca-1.08.2`,
-    and then a dotted version glued to the name, so `nuke` covers `nuke17.1v3`.
+    and then a dotted version glued to the name, so `nuke` covers `nuke17.1v3`,
+    and then a version with a release tag and build, so `godot` covers
+    `godot_v4.7.2-stable_linux.x86_64`.
     ⚠️ Without it the key would have to be re-added every release, and a missed
     one fails silently: the app simply loads no overlay.
     """
@@ -136,7 +143,7 @@ def mapping_key(app_name, mapping):
         return None
     if app_name in mapping:
         return app_name
-    for pattern in (_TRAILING_YEAR, _TRAILING_VERSION, _GLUED_VERSION):
+    for pattern in (_TRAILING_YEAR, _TRAILING_VERSION, _GLUED_VERSION, _VERSION_AND_BUILD):
         stripped = pattern.sub("", app_name)
         if stripped != app_name and stripped in mapping:
             return stripped
