@@ -79,5 +79,52 @@ class UpdateDialogMessageTest(unittest.TestCase):
         self.assertEqual(narrow[2], shown[2])
 
 
+@unittest.skipIf(_IMPORT_ERR is not None, f"Qt unavailable: {_IMPORT_ERR}")
+class UpdateDialogWhitespaceTest(unittest.TestCase):
+    """Short notes sat in a 192 px pane (QTextBrowser's own size hint), and
+    the callers' trailing newline put an empty line under the message."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.app = QApplication.instance() or QApplication([])
+
+    def _open(self, message, notes):
+        shown = {}
+
+        def fake_exec(dlg):
+            dlg.show()
+            self.app.processEvents()
+            browser = dlg.findChild(update_dialog.QTextBrowser)
+            shown["pane"] = browser.height()
+            shown["text"] = int(browser.document().size().height())
+            shown["min"] = dlg.minimumSizeHint().height()
+            shown["dialog"] = dlg.height()
+            shown["labels"] = [lbl.text() for lbl in dlg.findChildren(update_dialog.QLabel)]
+            dlg.close()
+            return QDialog.Rejected
+
+        with mock.patch.object(QDialog, "exec_", fake_exec):
+            update_dialog.confirm_update("Update", message, notes=notes,
+                                         question="Download and flash now?")
+        return shown
+
+    def test_short_notes_open_at_their_own_height(self):
+        shown = self._open("Version 1.2.3 is available.", "## 1.2.3\nOne fix.")
+        self.assertLess(shown["pane"], 120)
+        self.assertGreaterEqual(shown["pane"], shown["text"])
+
+    def test_long_notes_can_still_shrink_to_the_floor(self):
+        notes = "\n".join(f"- line {i}" for i in range(80))
+        shown = self._open("Version 1.2.3 is available.", notes)
+        self.assertGreater(shown["pane"], update_dialog._MIN_NOTES_H)
+        self.assertLess(shown["min"], shown["dialog"])
+
+    def test_trailing_newline_is_not_an_empty_line(self):
+        shown = self._open("Version 1.2.3 is available.\nReleased: 2026-11-12\n",
+                           "- n")
+        self.assertIn("Version 1.2.3 is available.\nReleased: 2026-11-12",
+                      shown["labels"])
+
+
 if __name__ == "__main__":
     unittest.main()

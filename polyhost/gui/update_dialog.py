@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import (
     QSizePolicy,
     QTextBrowser,
     QVBoxLayout,
+    QWIDGETSIZE_MAX,
 )
 
 from polyhost.gui import message_box
@@ -26,12 +27,13 @@ from polyhost.i18n import _, _f
 # Release notes can run to a few screens of markdown (every skipped release
 # since #757), so the dialog may grow to 60 % x 70 % of the available area,
 # capped at 1100 x 900. It opens at the height the notes need, inside that cap:
-# a fixed screen share left six bullet lines in a 1100 x 756 window.
+# a fixed screen share left six bullet lines in a 1100 x 756 window, and a
+# fixed minimum pane left two lines of notes in a 192 px box.
 _SCREEN_FRACTION_W = 0.60
 _SCREEN_FRACTION_H = 0.70
 _MAX_W, _MAX_H = 1100, 900
 _READING_W = 760          # notes read best at this width; wider only if asked
-_MIN_NOTES_H = 140        # never a pane shorter than about seven lines
+_MIN_NOTES_H = 140        # the user cannot shrink a longer pane below about seven lines
 
 
 def _available():
@@ -54,12 +56,16 @@ def _size_to_notes(dlg, browser) -> None:
               - browser.verticalScrollBar().sizeHint().width())
     browser.document().setTextWidth(max(200, text_w))
     notes_h = int(browser.document().size().height()) + browser.frameWidth() * 2 + 4
-    browser.setMinimumHeight(max(_MIN_NOTES_H, notes_h))
+    # Fixed at that height while measuring: QTextBrowser's own size hint is
+    # 192 px tall, and the layout would use it for notes shorter than that.
+    browser.setFixedHeight(notes_h)
     dlg.resize(w, 10)
     h = min(max_h, dlg.sizeHint().height())
     # Released again so the user can shrink the window; the scroll bar takes
-    # over when the notes no longer fit.
-    browser.setMinimumHeight(px(_MIN_NOTES_H))
+    # over when the notes no longer fit. Short notes keep their own height as
+    # the minimum, so the layout does not grow the pane past the text on show.
+    browser.setMinimumHeight(min(notes_h, px(_MIN_NOTES_H)))
+    browser.setMaximumHeight(QWIDGETSIZE_MAX)
     dlg.resize(w, h)
 
 
@@ -99,6 +105,9 @@ def confirm_update(title: str, message: str, notes: str = "", html_url: str = ""
     """
     notes = (notes or "").strip()
     question = (question or "").strip()
+    # The callers end the message with "\n"; in the label that is an empty
+    # line between the message and the "What's new" heading.
+    message = (message or "").strip()
     if not notes:
         # Nothing extra to show — keep the classic compact confirmation. The
         # question rejoins the message so the one-line box still asks it.
@@ -111,7 +120,8 @@ def confirm_update(title: str, message: str, notes: str = "", html_url: str = ""
     dlg = QDialog(None)
     dlg.setWindowTitle(title)
     dlg.setWindowFlag(Qt.WindowStaysOnTopHint, True)
-    dlg.setMinimumSize(px(540), px(360))
+    # Width only: the height comes from the content (see _size_to_notes).
+    dlg.setMinimumWidth(px(540))
 
     outer = QVBoxLayout(dlg)
     outer.setContentsMargins(16, 16, 16, 12)
