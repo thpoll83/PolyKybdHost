@@ -270,6 +270,9 @@ class PolyCore(Observable):
         self._wincompose_thread = None
         self._wincompose_fast_until = 0.0
         self._wincompose_lock = threading.Lock()
+        # combos_set reads, writes and commits the keyboard's RAM records in several
+        # calls; a second save in between would see and restore the first one's records.
+        self._combos_lock = threading.Lock()
         # When THIS PROCESS started, which is what the logon race is measured
         # against — not when the keyboard connected. See _unicode_mode_is_ambiguous.
         self._started_at = time.monotonic()
@@ -2787,6 +2790,10 @@ class PolyCore(Observable):
         return True, out
 
     def combos_set(self, combos=None, tap_dances=None):
+        with self._combos_lock:
+            return self._combos_set_locked(combos, tap_dances)
+
+    def _combos_set_locked(self, combos=None, tap_dances=None):
         """Write the given slots, then store them on the keyboard (both halves).
 
         combos: [{"slot", "keys", "result"}], tap_dances: [{"slot", "on_tap", "on_hold",
@@ -2832,19 +2839,38 @@ class PolyCore(Observable):
             ok, msg = self._device_call(
                 "combo_set", lambda c, k=kind, s=slot, w=words: self.keeb.set_combo_record(k, s, w))
             if not ok:
-                unrestored = 0
-                for k, s, w in before[:i]:
-                    restored, _ = self._device_call(
-                        "combo_set", lambda c, k=k, s=s, w=w: self.keeb.set_combo_record(k, s, w))
-                    unrestored += not restored
-                if unrestored:
-                    # The keyboard's RAM now mixes old and new records, and the next
-                    # COMMIT from any save would store that mix.
-                    return False, (f"{msg}. {unrestored} earlier record(s) could not be put "
-                                   f"back, so the unsaved tables mix old and new records. "
-                                   f"Save again before saving anything else.")
-                return False, msg
-        return self._device_call("combo_commit", lambda c: self.keeb.commit_combos())
+                # A SET whose reply was lost may have changed RAM all the same, so its
+                # own record is put back too.
+                return False, self._combos_restore(before[:i + 1], msg)
+        ok, res = self._device_call("combo_commit", lambda c: self.keeb.commit_combos())
+        if ok:
+            return ok, res
+        from polyhost.device.poly_kybd import COMBO_COMMIT_NO_ANSWER, COMBO_COMMIT_REFUSED
+        if res == COMBO_COMMIT_REFUSED:
+            # The flash still holds the old records, so RAM goes back to them.
+            return False, self._combos_restore(before, res)
+        if res == COMBO_COMMIT_NO_ANSWER:
+            # The flash write may have happened. RAM keeps the new records, so a
+            # later commit stores them either way.
+            # A read-back shows RAM, not flash, so it cannot settle this; a second
+            # COMMIT can.
+            return False, (f"{res}. The records may or may not be stored. Save again to "
+                           f"store them.")
+        return False, res
+
+    def _combos_restore(self, before, msg):
+        """Write the old records back to the keyboard's RAM after a failed save, so the
+        next COMMIT from any save does not store the failed one. Returns the message
+        for the caller, with the count of records that could not be put back."""
+        unrestored = 0
+        for k, s, w in before:
+            restored, _unused = self._device_call(
+                "combo_set", lambda c, k=k, s=s, w=w: self.keeb.set_combo_record(k, s, w))
+            unrestored += not restored
+        if unrestored:
+            return (f"{msg}. {unrestored} record(s) could not be put back, so the unsaved "
+                    f"tables mix old and new records. Save again before saving anything else.")
+        return msg
 
     def get_tap_terms(self):
         """(ok, {"tapping_term", "flow_tap_term", "flow_tap_available",

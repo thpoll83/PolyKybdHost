@@ -12,6 +12,11 @@ class KeycodeTextTest(unittest.TestCase):
         self.assertEqual(parse_keycode("0x5221"), 0x5221)
         self.assertRaises(ValueError, parse_keycode, "KC_NOPE")
 
+    def test_a_mixed_case_name_is_found(self):
+        # QMK spells the MIDI sharps in mixed case; an upper-case lookup missed them.
+        self.assertEqual(parse_keycode("MI_Cs"), 0x7104)
+        self.assertEqual(parse_keycode("mi_cs"), 0x7104)
+
     def test_modifier_wrappers(self):
         self.assertEqual(parse_keycode("S(KC_9)"), 0x0226)
         self.assertEqual(parse_keycode("lctl(kc_c)"), 0x0106)

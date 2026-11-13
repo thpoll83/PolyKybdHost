@@ -3,13 +3,15 @@ the closed validation and the round trip against the emulated keyboard. The
 firmware side is qmk_firmware keyboards/polykybd/poly_combos.c and
 base/combo_store.h."""
 
+import threading
 import unittest
 import unittest.mock as mock
 
 from polyhost.device.command_ids import Combos
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.mock_firmware import MockFirmware, MockHidHelper
-from polyhost.device.poly_kybd import (COMBOS_MIN_PROTOCOL, FEATURE_MIN_PROTOCOL, PolyKybd,
+from polyhost.device.poly_kybd import (COMBO_COMMIT_NO_ANSWER, COMBO_COMMIT_REFUSED,
+                                       COMBOS_MIN_PROTOCOL, FEATURE_MIN_PROTOCOL, PolyKybd,
                                        protocol_supports)
 from polyhost.settings import PolySettings
 from polyhost._version import __protocol__
@@ -170,6 +172,7 @@ class CombosSafeModeTest(unittest.TestCase):
         from polyhost.core.poly_core import PolyCore, SAFE_MODE_REFUSAL
         core = PolyCore.__new__(PolyCore)
         core.safe_mode = True
+        core._combos_lock = threading.Lock()
         core.keeb = mock.MagicMock()
         core._device_call = mock.MagicMock()
         self.assertEqual(core.combos_get(), (False, SAFE_MODE_REFUSAL))
@@ -189,6 +192,7 @@ class CombosCoreTest(unittest.TestCase):
         kb.protocol_version = __protocol__
         core = PolyCore.__new__(PolyCore)
         core.safe_mode = False
+        core._combos_lock = threading.Lock()
         core.keeb = kb
 
         def device_call(_name, fn):
@@ -267,8 +271,60 @@ class CombosCoreTest(unittest.TestCase):
         ok, msg = core.combos_set(combos=[{"slot": 0, "keys": [KC_J, KC_K], "result": KC_ESC},
                                           {"slot": 1, "keys": [KC_J, TG2], "result": KC_CAPS}])
         self.assertFalse(ok)
-        self.assertTrue(msg.startswith("link dropped. 1 earlier record(s) could not be put back"))
-        self.assertEqual(len(calls), 3)  # write, failed write, failed restore
+        self.assertTrue(msg.startswith("link dropped. 2 record(s) could not be put back"))
+        self.assertEqual(len(calls), 4)  # write, failed write, two failed restores
+
+    def test_a_set_whose_reply_was_lost_is_put_back_too(self):
+        core, _fw = self._core()
+        real_set = core.keeb.set_combo_record
+        calls = []
+
+        def lost_reply(kind, slot, words):
+            calls.append(slot)
+            result = real_set(kind, slot, words)
+            return (False, "no answer") if len(calls) == 2 else result
+        core.keeb.set_combo_record = lost_reply
+        ok, _msg = core.combos_set(combos=[{"slot": 0, "keys": [KC_J, KC_K], "result": KC_ESC},
+                                           {"slot": 1, "keys": [KC_J, TG2], "result": KC_CAPS}])
+        self.assertFalse(ok)
+        for slot in (0, 1):
+            _ok, words = real_set.__self__.get_combo_record(Combos.KIND_COMBO, slot)
+            self.assertEqual(words, [0, 0, 0, 0, 0], f"slot {slot} was not put back")
+
+    def test_a_refused_commit_puts_the_old_records_back(self):
+        core, _fw = self._core()
+        core.keeb.commit_combos = lambda: (False, COMBO_COMMIT_REFUSED)
+        ok, msg = core.combos_set(combos=[{"slot": 0, "keys": [KC_J, KC_K], "result": KC_ESC}])
+        self.assertFalse(ok)
+        self.assertEqual(msg, COMBO_COMMIT_REFUSED)
+        _ok, words = core.keeb.get_combo_record(Combos.KIND_COMBO, 0)
+        self.assertEqual(words, [0, 0, 0, 0, 0])
+
+    def test_a_commit_with_no_answer_keeps_the_new_records(self):
+        core, _fw = self._core()
+        core.keeb.commit_combos = lambda: (False, COMBO_COMMIT_NO_ANSWER)
+        ok, msg = core.combos_set(combos=[{"slot": 0, "keys": [KC_J, KC_K], "result": KC_ESC}])
+        self.assertFalse(ok)
+        self.assertIn("may or may not be stored", msg)
+        _ok, words = core.keeb.get_combo_record(Combos.KIND_COMBO, 0)
+        self.assertEqual(words, [KC_J, KC_K, 0, 0, KC_ESC])
+
+    def test_a_second_save_waits_for_the_first(self):
+        core, _fw = self._core()
+        core._combos_lock.acquire()
+        t = threading.Thread(target=core.combos_set, daemon=True, kwargs={
+            "combos": [{"slot": 0, "keys": [KC_J, KC_K], "result": KC_ESC}]})
+        try:
+            t.start()
+            t.join(0.2)
+            self.assertTrue(t.is_alive())
+            _ok, words = core.keeb.get_combo_record(Combos.KIND_COMBO, 0)
+            self.assertEqual(words, [0, 0, 0, 0, 0])
+        finally:
+            # A failed assertion must not leave the save thread blocked on the lock.
+            core._combos_lock.release()
+            t.join(5)
+        self.assertFalse(t.is_alive())
 
 
 if __name__ == "__main__":

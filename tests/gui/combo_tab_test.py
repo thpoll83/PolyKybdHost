@@ -276,7 +276,18 @@ class TapDanceTabTest(unittest.TestCase):
         box.warning.assert_called_once()
 
     @mock.patch("polyhost.gui.layout_dialog.combo_tab.message_box")
-    def test_no_tap_action_is_refused(self, box):
+    def test_no_action_is_refused(self, box):
+        core = _core()
+        tab = TapDanceTab(core)
+        tab.reload()
+        tab._fetcher.wait_idle()
+        tab._on_save()
+        tab._fetcher.wait_idle()
+        core.combos_set.assert_not_called()
+        box.warning.assert_called_once()
+
+    def test_a_hold_only_dance_is_saved(self):
+        # The firmware accepts it (a tap sends nothing), and polyctl can write one.
         core = _core()
         tab = TapDanceTab(core)
         tab.reload()
@@ -284,7 +295,61 @@ class TapDanceTabTest(unittest.TestCase):
         tab.action_fields["on_hold"].setText("KC_A")
         tab._on_save()
         tab._fetcher.wait_idle()
-        core.combos_set.assert_not_called()
+        core.combos_set.assert_called_once_with(tap_dances=[{
+            "slot": 0, "on_tap": 0, "on_hold": KC_A, "on_double_tap": 0,
+            "on_tap_hold": 0, "term_ms": 0}])
+        self.assertEqual(tab.list.item(0).text(), "1: hold A")
+
+    def test_the_placeholders_name_the_firmware_defaults(self):
+        tab = TapDanceTab(_core())
+        f = tab.action_fields
+        self.assertEqual(f["on_hold"].placeholderText(), "same as Tap")
+        self.assertEqual(f["on_double_tap"].placeholderText(), "Tap twice")
+        self.assertEqual(f["on_tap_hold"].placeholderText(), "Tap, then hold Tap")
+
+    @mock.patch("polyhost.gui.layout_dialog.combo_tab.message_box")
+    def test_a_failed_save_keeps_the_edits_after_a_deferred_reload(self, box):
+        import threading
+        release = threading.Event()
+        core = _core()
+
+        def failing_set(**_kw):
+            release.wait(5)
+            return False, "link dropped"
+        core.combos_set.side_effect = failing_set
+        tab = TapDanceTab(core)
+        tab.reload()
+        tab._fetcher.wait_idle()
+        tab.action_fields["on_tap"].setText("KC_ESC")
+        tab._on_save()
+        tab.reload()                      # the tab is shown again during the save
+        release.set()
+        tab._fetcher.wait_idle()
+        tab._fetcher.wait_idle()
+        box.warning.assert_called_once()
+        self.assertEqual(core.combos_get.call_count, 1)   # no reload after the failure
+        self.assertEqual(tab.action_fields["on_tap"].text(), "KC_ESC")
+
+    def test_a_reload_during_a_save_waits_for_it(self):
+        import threading
+        release = threading.Event()
+        core = _core()
+
+        def slow_set(**_kw):
+            release.wait(5)
+            return True, {"other_half": True}
+        core.combos_set.side_effect = slow_set
+        tab = TapDanceTab(core)
+        tab.reload()
+        tab._fetcher.wait_idle()
+        tab.action_fields["on_tap"].setText("KC_ESC")
+        tab._on_save()
+        tab.reload()                      # the tab is shown again during the save
+        self.assertEqual(core.combos_get.call_count, 1)
+        release.set()
+        tab._fetcher.wait_idle()
+        tab._fetcher.wait_idle()
+        self.assertEqual(core.combos_get.call_count, 2)
 
     def test_use_on_key_emits_td_of_the_slot(self):
         tab = TapDanceTab(_core())

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-12 09:44+0000\n"
+"POT-Creation-Date: 2026-11-12 14:42+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -969,7 +969,7 @@ msgid "Report on GitHub…"
 msgstr "GitHub에 보고…"
 
 #: polyhost/gui/crash_alert_dialog.py:86
-#: polyhost/gui/layout_dialog/combo_tab.py:103
+#: polyhost/gui/layout_dialog/combo_tab.py:105
 #: polyhost/gui/layout_dialog/macro_tab.py:217
 #: polyhost/gui/layout_dialog/macro_tab.py:241
 msgid "Clear"
@@ -1808,169 +1808,177 @@ msgstr "언어"
 msgid "The new language is used after a restart. Restart now?"
 msgstr "새 언어는 다시 시작한 후에 사용됩니다. 지금 다시 시작하시겠습니까?"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:99
+#: polyhost/gui/layout_dialog/combo_tab.py:101
 msgid "Save"
 msgstr "저장"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:145
+#: polyhost/gui/layout_dialog/combo_tab.py:152
 msgid "Reading the keyboard…"
 msgstr "키보드를 읽는 중…"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:169
+#: polyhost/gui/layout_dialog/combo_tab.py:176
 msgid "The keyboard is not connected."
 msgstr "키보드가 연결되어 있지 않습니다."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:171
+#: polyhost/gui/layout_dialog/combo_tab.py:178
 msgid "The keyboard runs in restricted mode (its firmware is newer than this app), so combos and tap dance are off."
 msgstr "키보드가 안전 모드로 실행 중이므로(펌웨어가 이 앱보다 최신) 콤보와 탭 댄스가 꺼져 있습니다."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:173
+#: polyhost/gui/layout_dialog/combo_tab.py:180
 #, python-brace-format
 msgid "Combos and tap dance need keyboard firmware with protocol {n} or newer. Update the firmware to use them."
 msgstr "콤보와 탭 댄스를 사용하려면 프로토콜 {n} 이상의 키보드 펌웨어가 필요합니다. 사용하려면 펌웨어를 업데이트하세요."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:182
+#: polyhost/gui/layout_dialog/combo_tab.py:189
 #, python-brace-format
 msgid "Could not read the keyboard: {reason}"
 msgstr "키보드를 읽을 수 없음: {reason}"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:184
+#: polyhost/gui/layout_dialog/combo_tab.py:191
 msgid "This firmware build has no runtime combos or tap dance (the DOOM developer build)."
 msgstr "이 펌웨어 빌드에는 런타임 콤보와 탭 댄스가 없습니다(DOOM 개발자 빌드)."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:231
-#: polyhost/gui/layout_dialog/combo_tab.py:250
+#: polyhost/gui/layout_dialog/combo_tab.py:246
+#: polyhost/gui/layout_dialog/combo_tab.py:265
 msgid "Not saved"
 msgstr "저장 안 됨"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:238
+#: polyhost/gui/layout_dialog/combo_tab.py:253
 msgid "Saved on this half only: the other half did not answer. Save again once both halves are connected."
 msgstr "이 반쪽에만 저장됨: 다른 반쪽이 응답하지 않았습니다. 두 반쪽이 모두 연결되면 다시 저장하십시오."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:269
+#: polyhost/gui/layout_dialog/combo_tab.py:284
 msgid "optional"
 msgstr "선택 사항"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:271
+#: polyhost/gui/layout_dialog/combo_tab.py:286
 #, python-brace-format
 msgid "Key {n}"
 msgstr "키 {n}"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:273
+#: polyhost/gui/layout_dialog/combo_tab.py:288
 msgid "Sends"
 msgstr "보내기"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:277
+#: polyhost/gui/layout_dialog/combo_tab.py:292
 #, python-brace-format
 msgid "Press the keys within {ms} ms of each other. A key is written as on the keymap: KC_J, KC_ESC, S(KC_9), MO(1)."
 msgstr "키를 서로 {ms} ms 이내에 누르십시오. 키는 키맵과 같은 형식으로 씁니다: KC_J, KC_ESC, S(KC_9), MO(1)."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:279
+#: polyhost/gui/layout_dialog/combo_tab.py:294
 msgid "Press the keys at the same time. A key is written as on the keymap: KC_J, KC_ESC, S(KC_9), MO(1)."
 msgstr "키를 동시에 누르십시오. 키는 키맵과 같은 형식으로 씁니다: KC_J, KC_ESC, S(KC_9), MO(1)."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:289
-#: polyhost/gui/layout_dialog/combo_tab.py:366
+#: polyhost/gui/layout_dialog/combo_tab.py:304
+#: polyhost/gui/layout_dialog/combo_tab.py:385
 #, python-brace-format
 msgid "{n}: (empty)"
 msgstr "{n}: (비어 있음)"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:305
+#: polyhost/gui/layout_dialog/combo_tab.py:320
 #, python-brace-format
 msgid "Key {n}: {text} is not a keycode."
 msgstr "키 {n}: {text}은(는) 키코드가 아닙니다."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:312
+#: polyhost/gui/layout_dialog/combo_tab.py:327
 #, python-brace-format
 msgid "Sends: {text} is not a keycode."
 msgstr "보내기: {text}은(는) 키코드가 아닙니다."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:315
+#: polyhost/gui/layout_dialog/combo_tab.py:330
 msgid "A combo needs at least two keys and a keycode to send."
 msgstr "콤보에는 키 두 개 이상과 보낼 키코드가 필요합니다."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:317
+#: polyhost/gui/layout_dialog/combo_tab.py:332
 msgid "A combo cannot list the same key twice."
 msgstr "콤보에 같은 키를 두 번 넣을 수 없습니다."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:338
-#: polyhost/gui/layout_dialog/combo_tab.py:383
+#: polyhost/gui/layout_dialog/combo_tab.py:353
+#: polyhost/gui/layout_dialog/combo_tab.py:402
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
 msgid "Tap"
 msgstr "탭"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:338
-#: polyhost/gui/layout_dialog/combo_tab.py:383
+#: polyhost/gui/layout_dialog/combo_tab.py:353
+#: polyhost/gui/layout_dialog/combo_tab.py:402
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
 msgid "Hold"
 msgstr "누르고 있기"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:338
-#: polyhost/gui/layout_dialog/combo_tab.py:384
+#: polyhost/gui/layout_dialog/combo_tab.py:353
+#: polyhost/gui/layout_dialog/combo_tab.py:403
 msgid "Double tap"
 msgstr "더블 탭"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:338
-#: polyhost/gui/layout_dialog/combo_tab.py:384
+#: polyhost/gui/layout_dialog/combo_tab.py:353
+#: polyhost/gui/layout_dialog/combo_tab.py:403
 msgid "Tap, then hold"
 msgstr "탭한 후 누르고 있기"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:341
+#: polyhost/gui/layout_dialog/combo_tab.py:356
 msgid "same as Tap"
 msgstr "탭과 같음"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:348
+#: polyhost/gui/layout_dialog/combo_tab.py:357
+msgid "Tap twice"
+msgstr "탭 두 번"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:358
+msgid "Tap, then hold Tap"
+msgstr "탭한 후 탭을 누르고 있기"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:367
 msgid "Tapping term"
 msgstr "탭 시간"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:349
+#: polyhost/gui/layout_dialog/combo_tab.py:368
 msgid "Decide after"
 msgstr "판정 시간"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:351
+#: polyhost/gui/layout_dialog/combo_tab.py:370
 #: polyhost/gui/layout_dialog/macro_tab.py:245
 msgid "Use on selected key"
 msgstr "선택한 키에 사용"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:357
+#: polyhost/gui/layout_dialog/combo_tab.py:376
 msgid "Place the tap dance on a key with \"Use on selected key\". An action can be a key, a key with modifiers such as S(KC_9), or MO, TO or TG."
 msgstr "\"선택한 키에 사용\"으로 탭 댄스를 키에 배치하십시오. 동작은 키, S(KC_9)처럼 모디파이어가 있는 키, 또는 MO, TO, TG일 수 있습니다."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:369
+#: polyhost/gui/layout_dialog/combo_tab.py:388
 #, python-brace-format
 msgid "hold {key}"
 msgstr "누르고 있기 {key}"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:371
+#: polyhost/gui/layout_dialog/combo_tab.py:390
 #, python-brace-format
 msgid "2× {key}"
 msgstr "2× {key}"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:373
+#: polyhost/gui/layout_dialog/combo_tab.py:392
 #, python-brace-format
 msgid "tap, then hold {key}"
 msgstr "탭한 후 누르고 있기 {key}"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:389
+#: polyhost/gui/layout_dialog/combo_tab.py:408
 #, python-brace-format
 msgid "{action}: {text} is not a keycode."
 msgstr "{action}: {text}은(는) 키코드가 아닙니다."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:392
+#: polyhost/gui/layout_dialog/combo_tab.py:411
 #, python-brace-format
 msgid "{action}: a tap dance can send a key, a key with modifiers, MO, TO or TG, not {text}."
 msgstr "{action}: 탭 댄스는 키, 모디파이어가 있는 키, MO, TO 또는 TG만 보낼 수 있으며 {text}은(는) 보낼 수 없습니다."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:397
-msgid "A tap dance needs at least the Tap action."
-msgstr "탭 댄스에는 최소한 탭 동작이 필요합니다."
+#: polyhost/gui/layout_dialog/combo_tab.py:416
+msgid "A tap dance needs at least one action."
+msgstr "탭 댄스에는 최소한 하나의 동작이 필요합니다."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:401
+#: polyhost/gui/layout_dialog/combo_tab.py:420
 #, python-brace-format
 msgid "The time must be {lo} to {hi} ms in steps of {step} ms."
 msgstr "시간은 {lo}~{hi} ms 범위에서 {step} ms 단위여야 합니다."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:418
+#: polyhost/gui/layout_dialog/combo_tab.py:437
 #, python-brace-format
 msgid "Tap dance {n}"
 msgstr "탭 댄스 {n}"
@@ -2170,8 +2178,8 @@ msgid "Layer:"
 msgstr "레이어:"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:82
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:184
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:253
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:193
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:262
 msgid "Modifiers"
 msgstr "모디파이어"
 
@@ -2468,74 +2476,74 @@ msgstr "매크로를 저장할 수 없습니다"
 msgid "Could not clear the macro"
 msgstr "매크로를 지울 수 없습니다"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:176
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:200
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:255
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:185
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:209
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:264
 msgid "User / Macro"
 msgstr "사용자/매크로"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:182
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:255
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:191
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:264
 msgid "Steno"
 msgstr "속기(Steno)"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:186
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:253
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:195
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:262
 msgid "Media / System"
 msgstr "미디어/시스템"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:188
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:255
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:197
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:264
 msgid "Midi"
 msgstr "MIDI"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:190
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:255
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:199
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:264
 msgid "Haptic"
 msgstr "햅틱"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:192
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:254
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:201
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:263
 msgid "Unicode / International"
 msgstr "유니코드/국제"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:194
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:253
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:203
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:262
 msgid "RGB"
 msgstr "RGB"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:196
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:254
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:205
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:263
 msgid "Mouse / Joystick"
 msgstr "마우스/조이스틱"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:198
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:255
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:207
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:264
 msgid "Magic"
 msgstr "매직"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:202
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:256
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:211
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:265
 msgid "Programmable"
 msgstr "프로그래밍 가능"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:204
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:256
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:213
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:265
 msgid "Space Cadet"
 msgstr "스페이스 캐뎃"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:206
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:256
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:215
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:265
 msgid "Quantum"
 msgstr "퀀텀"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:208
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:253
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:217
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:262
 msgid "Additional"
 msgstr "추가"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:243
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:253 polyhost/host.py:72
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:252
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:262 polyhost/host.py:72
 msgid "Standard"
 msgstr "표준"
 
@@ -3745,7 +3753,7 @@ msgstr "탭-홀드 타이밍"
 
 #. TRANSLATORS: unit after a number of milliseconds in a spin box.
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
-#: polyhost/gui/layout_dialog/combo_tab.py:347
+#: polyhost/gui/layout_dialog/combo_tab.py:366
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
 #: polyhost/gui/tap_terms_dialog.py:42 polyhost/gui/tap_terms_dialog.py:48
 #: polyhost/gui/tap_terms_dialog.py:63

@@ -299,6 +299,13 @@ CONSOLE_PARTIAL_LINE_HOLD_S = 1.0
 
 
 
+# commit_combos() failure texts. PolyCore compares them: after a refusal the flash
+# holds the old records, after no answer the outcome is unknown.
+COMBO_COMMIT_NO_ANSWER = "The keyboard did not answer the combo commit"
+COMBO_COMMIT_REFUSED = ("The keyboard refused the commit: a firmware update is running, its "
+                        "flash write failed, or this build has no combo support")
+
+
 class PolyKybd:
     """
     Communication to PolyKybd
@@ -957,10 +964,9 @@ class PolyKybd:
         result, reply = self.hid.send_and_read_validate(
             compose_cmd(Cmd.COMBOS, Combos.OP_COMMIT), 2000, expect(Cmd.COMBOS))
         if not result or len(reply) < 4:
-            return False, "The keyboard did not answer the combo commit"
+            return False, COMBO_COMMIT_NO_ANSWER
         if reply[2:3] != b'.':
-            return False, ("The keyboard refused the commit: a firmware update is running, its "
-                           "flash write failed, or this build has no combo support")
+            return False, COMBO_COMMIT_REFUSED
         return True, {"other_half": bool(reply[3] & Combos.FLAG_COMMIT_OTHER_HALF)}
 
     def get_tap_terms(self) -> tuple[bool, dict | str]:

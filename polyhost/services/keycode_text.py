@@ -22,6 +22,7 @@ MOD_FNS = {"LCTL": 0x0100, "C": 0x0100, "LSFT": 0x0200, "S": 0x0200, "LALT": 0x0
            "RALT": 0x1400, "RGUI": 0x1800}
 
 _TABLES = None
+_UPPER = None
 
 
 def keycode_tables():
@@ -40,6 +41,23 @@ def keycode_tables():
                 by_value[value] = name
         _TABLES = (by_name, by_value)
     return _TABLES
+
+
+def _value_by_name(text: str):
+    """The value of a keycodes.h name, matched without regard to case (QMK spells the
+    MIDI sharps MI_Cs), with or without the KC_ prefix. None if there is no such name."""
+    global _UPPER
+    by_name, _unused = keycode_tables()
+    if _UPPER is None:
+        _UPPER = {}
+        for name, value in by_name.items():
+            _UPPER.setdefault(name.upper(), value)
+    if text in by_name:
+        return by_name[text]
+    upper = text.upper()
+    if upper in _UPPER:
+        return _UPPER[upper]
+    return _UPPER.get("KC_" + upper)
 
 
 def parse_keycode(text: str) -> int:
@@ -62,11 +80,9 @@ def parse_keycode(text: str) -> int:
     try:
         value = int(t, 0)
     except ValueError:
-        by_name, _unused = keycode_tables()
-        key = t.upper() if t.upper() in by_name else ("KC_" + t.upper())
-        if key not in by_name:
+        value = _value_by_name(t)
+        if value is None:
             raise ValueError(f"unknown keycode {t!r}") from None
-        value = by_name[key]
     if not 0 <= value <= 0xFFFF:
         raise ValueError(f"keycode {t!r} out of range")
     return value
