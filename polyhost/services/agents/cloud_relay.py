@@ -131,11 +131,26 @@ def setup_config(channel: dict) -> str:
                                     channel["write_token"], channel["key"])
 
 
+# Where the setup script writes what the download and the install said: the
+# `|| true` below hides a failure from the session, so this file is the one
+# place a blocked host (a 403 from the proxy) or a failed install shows.
+SETUP_LOG = "/var/log/polykybd-hook-install.log"
+
+
 def setup_script(url: str) -> str:
-    """The cloud environment's setup script. `|| true`: a failing setup script
-    stops the session from starting, and the agent keys are not worth that."""
-    return (f"curl -fsSL {url}/v1/hook.py -o {cloud_hook.INSTALL_PATH} \\\n"
-            f"  && python3 {cloud_hook.INSTALL_PATH} --install || true")
+    """The cloud environment's setup script.
+
+    - `|| true`: a failing setup script stops the session from starting, and the
+      agent keys are not worth that.
+    - Download and install are one group with one log, so a blocked download
+      leaves a trace too (SETUP_LOG).
+    - `--install` adds to ~/.claude/settings.json: a script line that writes
+      that file afterwards would remove the hooks, hence the first comment."""
+    return ("# PolyKybd agent keys. Put this after anything that writes "
+            "~/.claude/settings.json.\n"
+            f"{{ curl -fsSL {url}/v1/hook.py -o {cloud_hook.INSTALL_PATH} \\\n"
+            f"  && python3 {cloud_hook.INSTALL_PATH} --install; }} "
+            f"> {SETUP_LOG} 2>&1 || true")
 
 
 def setup_text(channel: dict) -> dict:

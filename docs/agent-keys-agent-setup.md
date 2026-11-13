@@ -156,15 +156,30 @@ still cloud sessions.
    - the allowed host `polyhost-agent-relay.polykybd.workers.dev`, when the
      network access is Limited;
    - the setup script, which downloads `cloud_hook.py` from the relay and adds
-     the hooks to the VM's `~/.claude/settings.json`. It ends in `|| true`: a
-     failing setup script stops the session from starting.
-3. Start a new cloud session in that environment. It shows on a number key as
+     the hooks to the VM's `~/.claude/settings.json`. Add it at the end of an
+     existing script, after any line that writes `~/.claude/settings.json`: such
+     a line would remove the hooks. It ends in `|| true`, because a failing setup
+     script stops the session from starting; the download and the install write
+     to `/var/log/polykybd-hook-install.log` instead.
+3. Start a new cloud session in that environment. Variables and the setup script
+   apply only to sessions started after the environment was saved. It shows on a number key as
    Claude Code; `polyctl agents list` shows it with the `machine` "cloud".
+4. No key? In that session, `cat /var/log/polykybd-hook-install.log` shows
+   "PolyKybd hooks added to …" when the install worked, and the error otherwise.
+   A 403 from the proxy means the relay host is not on the allowed hosts. An
+   empty `echo $POLYKYBD_CLOUD_RELAY` means the session runs in another
+   environment, or started before the variable was saved.
 
 - The relay sees the channel ID, an opaque key per session and ciphertext. The
   state, title, folder name and session page are encrypted end to end with a key
-  that only the host and the cloud environment have (`cloud_hook.seal`). The
-  prompt and the conversation never leave the VM.
+  that only the host and the cloud environment have (`cloud_hook.seal`).
+- The key's text: a cloud transcript has no session title (claude.ai keeps it),
+  so the hook sends the first words of the session's first prompt, at most 40
+  characters, as the title. It stays the same for the whole session. To send no
+  prompt words, set `POLYKYBD_CLOUD_PROMPT_TITLE=0` in the cloud environment; the
+  key then shows the folder name (`user` for a cloud session). Nothing else of
+  the prompts or the conversation leaves the VM. `polyctl agents label` names a
+  key by hand.
 - With the PolyKybd browser extension 1.1.0 or newer (`browser-extension/`), a
   key press first switches the browser to the tab with the session's exact page,
   also a background tab or one in another window, and then brings that window to

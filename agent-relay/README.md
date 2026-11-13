@@ -23,14 +23,18 @@ configuration string. In the claude.ai cloud environment's settings:
 3. **Setup script:**
 
    ```bash
-   curl -fsSL https://polyhost-agent-relay.polykybd.workers.dev/v1/hook.py \
-       -o /usr/local/bin/polykybd-cloud-hook \
-     && python3 /usr/local/bin/polykybd-cloud-hook --install || true
+   # PolyKybd agent keys. Put this after anything that writes ~/.claude/settings.json.
+   { curl -fsSL https://polyhost-agent-relay.polykybd.workers.dev/v1/hook.py -o /usr/local/bin/polykybd-cloud-hook \
+     && python3 /usr/local/bin/polykybd-cloud-hook --install; } > /var/log/polykybd-hook-install.log 2>&1 || true
    ```
 
    `--install` adds the hooks to the VM's `~/.claude/settings.json` and keeps what
-   is there. The `|| true` matters: a failing setup script stops the session from
-   starting, and the agent keys are not worth that.
+   is there, so a later line that writes that file removes them. The `|| true`
+   matters: a failing setup script stops the session from starting, and the agent
+   keys are not worth that. It also hides a failure, so the download and the
+   install write to `/var/log/polykybd-hook-install.log`: "PolyKybd hooks added
+   to …" when it worked, else the error (a 403 from the proxy means the relay
+   host is not allowed).
 
 Each new cloud session of that environment then shows on a number key. The hook
 sends a report only when the session's state changes.
