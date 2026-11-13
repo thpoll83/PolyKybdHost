@@ -83,6 +83,17 @@ class CloudSessionsDialogTest(unittest.TestCase):
         self.run_pending()
         self.assertIn("429", self.title())
 
+    def test_an_empty_connect_error_stays_too(self):
+        self.run_pending()
+        self.core.agents_cloud_connect = lambda: (False, "")
+        self.dialog._connect()
+        self.run_pending()
+        shown = self.title()
+        self.assertTrue(shown.startswith("Could not connect"))
+        self.dialog._refresh()
+        self.run_pending()
+        self.assertEqual(self.title(), shown)
+
     def test_the_timer_runs_only_while_shown(self):
         self.assertFalse(self.dialog._refresh_timer.isActive())
         self.dialog.show()
