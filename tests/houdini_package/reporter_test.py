@@ -11,7 +11,7 @@ import threading
 import types
 import unittest
 from pathlib import Path
-from unittest import mock
+import unittest.mock as mock
 
 from polyhost.handler.browser_url import DEFAULT_MAX_AGE_S
 from polyhost.server.browser_report_server import DEFAULT_BROWSER_REPORT_PORT
@@ -189,15 +189,16 @@ class GlueTest(unittest.TestCase):
         self.addCleanup(patcher.stop)
         self.sent = []
         self.direct = []
+        sent = self.sent
 
         class FakeSender:
-            def __init__(s, post=None):
+            def __init__(self, post=None):
                 pass
 
-            def submit(s, port, url, token="", pid=None, input_age=None, focused=True):
-                self.sent.append((port, url, token, focused))
+            def submit(self, port, url, token="", pid=None, input_age=None, focused=True):
+                sent.append((port, url, token, focused))
 
-            def stop(s):
+            def stop(self):
                 pass
 
         for target, value in ((core, "Sender"), ):
