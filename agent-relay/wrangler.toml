@@ -1,0 +1,32 @@
+name = "polyhost-agent-relay"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+
+# The hook script the cloud environment's setup script installs is served from
+# the host package's own copy (polyhost/services/agents/cloud_hook.py), so the
+# relay and the host can never disagree about the encryption.
+[[rules]]
+type = "Text"
+globs = ["**/*.py"]
+fallthrough = false
+
+# One Durable Object per channel (one per PolyKybd user who connected cloud
+# sessions). SQLite-backed, the only kind the Workers Free plan allows.
+[[durable_objects.bindings]]
+name = "CHANNEL"
+class_name = "Channel"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Channel"]
+
+# Per-IP limit on creating channels, enforced in the Worker (the endpoint is on
+# workers.dev, which has no zone for a WAF rule; see telemetry-collector).
+# `period` may only be 10 or 60.
+[[ratelimits]]
+name = "CREATE_LIMITER"
+namespace_id = "2001"
+
+  [ratelimits.simple]
+  limit = 5
+  period = 60
