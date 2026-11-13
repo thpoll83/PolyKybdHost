@@ -167,6 +167,29 @@ class SinkTest(unittest.TestCase):
         ids = sorted(a.session_id for a in self.registry.agents())
         self.assertEqual(ids, ["b" * 32, "local-1"])
 
+    def test_a_session_removed_on_the_relay_leaves_the_keys(self):
+        self.sink.event(self.k, _blob(self.key), False)
+        self.assertEqual(self.sink.event(self.k, "", True), 1)   # the relay's "deleted"
+        self.assertIsNone(self.agent())
+        self.registry.report("claude-code", "local-1", "working")
+        self.assertEqual(self.sink.event("local-1", "", True), 0)   # not a cloud key
+        self.assertEqual(self.sink.event("b" * 32, "", True), 0)    # not known here
+        self.assertEqual(len(self.registry.agents()), 1)
+
+    def test_delete_session_calls_the_relay(self):
+        channel = _channel()
+        seen = []
+        ok = cr.delete_session(channel, "a" * 32,
+                               http=lambda *a, **k: seen.append((a, k)) or (200, {"ok": True}))
+        self.assertTrue(ok)
+        self.assertEqual(seen[0][0][1:], ("DELETE", f"/v1/c/{channel['channel']}/e/{'a' * 32}"))
+        self.assertEqual(seen[0][1]["token"], channel["read_token"])
+        self.assertFalse(cr.delete_session(channel, "zz", http=lambda *a, **k: self.fail("no call")))
+
+        def away(*a, **k):
+            raise cr.RelayError("offline")
+        self.assertFalse(cr.delete_session(channel, "a" * 32, http=away))
+
     def test_forget_all(self):
         self.sink.event(self.k, _blob(self.key), False)
         self.registry.report("codex", "local-1", "working")

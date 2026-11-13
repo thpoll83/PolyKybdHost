@@ -36,7 +36,8 @@ class AgentsMenuTest(unittest.TestCase):
         host.report_device_result = mock.MagicMock()
         for name in ("_build_agents_menu", "_set_agent_rows", "_apply_agents_menu",
                      "_toggle_agents_enabled", "_raise_agent_clicked", "_show_pairing_code",
-                     "_show_cloud_sessions"):
+                     "_show_cloud_sessions", "_show_browser_extension", "_set_remove_rows",
+                     "_forget_agent_clicked", "_forget_inactive_clicked"):
             setattr(host, name, types.MethodType(getattr(PolyHost, name), host))
         host._build_agents_menu()
         return host
@@ -78,8 +79,38 @@ class AgentsMenuTest(unittest.TestCase):
         host = self._host()            # built, no core.agents_list() answer yet
         texts = self._texts(host.agents_menu)
         self.assertEqual(texts, ["Show on the Number Row", "No agents reported",
-                                 "Set Up Hooks", "Pair a Forwarder…",
-                                 "Connect Cloud Sessions…"])
+                                 "Remove Agent", "Set Up Hooks", "Pair a Forwarder…",
+                                 "Connect Cloud Sessions…", "Install Browser Extension…"])
+        self.assertFalse(host._agents_remove_menu.isEnabled())   # nothing to remove
+
+    def test_remove_agent_and_remove_all_inactive(self):
+        host = self._host()
+        host.core.agents_forget.return_value = (True, "ok")
+        host.core.agents_forget_inactive.return_value = (True, 1)
+        host._apply_agents_menu({"enabled": True, "agents": [
+            {"vendor": "claude-code", "session_id": "a", "state": "working", "key": 0,
+             "headline": "busy"},
+            {"vendor": "claude-code", "session_id": "b", "state": "done", "key": 1,
+             "headline": "deleted cloud session"}]})
+        remove = host._agents_remove_menu
+        self.assertTrue(remove.isEnabled())
+        texts = self._texts(remove)
+        self.assertEqual(len(texts), 3)
+        self.assertIn("deleted cloud session", texts[1])
+        self.assertEqual(texts[2], "Remove All Inactive")
+        act = remove.actions()[1]
+        host.sender = lambda: act      # the stub is not a QObject: no sender()
+        host._forget_agent_clicked()
+        host.core.agents_forget.assert_called_once_with("claude-code", "b")
+        [a for a in remove.actions() if a.text() == "Remove All Inactive"][0].trigger()
+        host.core.agents_forget_inactive.assert_called_once_with()
+
+    def test_remove_all_inactive_is_off_with_only_busy_agents(self):
+        host = self._host()
+        host._apply_agents_menu({"enabled": True, "agents": [
+            {"vendor": "codex", "session_id": "a", "state": "waiting", "key": 0, "headline": "x"}]})
+        inactive = [a for a in host._agents_remove_menu.actions() if a.text() == "Remove All Inactive"]
+        self.assertFalse(inactive[0].isEnabled())
 
     def test_set_up_hooks_and_pair_have_icons(self):
         host = self._host()
@@ -87,6 +118,8 @@ class AgentsMenuTest(unittest.TestCase):
         self.assertFalse(acts["Set Up Hooks"].icon().isNull())
         self.assertFalse(acts["Pair a Forwarder…"].icon().isNull())
         self.assertFalse(acts["Connect Cloud Sessions…"].icon().isNull())
+        self.assertFalse(acts["Install Browser Extension…"].icon().isNull())
+        self.assertFalse(acts["Remove Agent"].icon().isNull())
 
     def test_a_failed_fetch_keeps_the_menu(self):
         host = self._host()

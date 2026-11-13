@@ -222,14 +222,27 @@ class BuiltDialogTest(unittest.TestCase):
         from polyhost.gui.ui_kit import px
         self.assertEqual((dlg.minimumWidth(), dlg.minimumHeight()), (px(640), px(480)))
 
-    def test_no_push_button_besides_ok_and_cancel(self):
+    def test_no_push_button_besides_ok_cancel_and_generate(self):
         """The glyph-script reset button is gone: the tray's Keycap Script menu
-        has Standard as its first entry."""
+        has Standard as its first entry. The one extra is the token's Generate."""
         from PyQt5.QtWidgets import QDialogButtonBox, QPushButton
         dlg = self._dialog()
         box = dlg.findChild(QDialogButtonBox)
-        extra = [b for b in dlg.findChildren(QPushButton) if b.parent() is not box]
-        self.assertEqual(extra, [])
+        extra = [b.text() for b in dlg.findChildren(QPushButton) if b.parent() is not box]
+        self.assertEqual(extra, ["Generate"])
+
+    def test_generate_fills_in_and_copies_a_new_token(self):
+        from PyQt5.QtWidgets import QApplication, QPushButton
+        dlg = self._dialog()
+        edit = dlg.edit_widgets["browser_report_token"]
+        button = next(b for b in dlg.findChildren(QPushButton) if b.text() == "Generate")
+        button.click()
+        first = edit.text()
+        self.assertGreaterEqual(len(first), 32)
+        self.assertEqual(QApplication.clipboard().text(), first)
+        button.click()
+        self.assertNotEqual(edit.text(), first)
+        self.assertEqual(dlg.get_updated_settings()["browser_report_token"], edit.text())
 
     def test_each_game_folder_row_has_a_browse_button(self):
         from unittest import mock

@@ -216,6 +216,22 @@ def create_channel(path: str, url: str = DEFAULT_RELAY_URL, http=None) -> dict:
     return channel
 
 
+def delete_session(channel: dict, k: str, http=None) -> bool:
+    """Remove one cloud session from the relay, so a reconnect's snapshot does
+    not bring it back (it stays there 24 h after its last report). True when the
+    relay answered; a relay that cannot be reached removes it after 24 h."""
+    http = http or http_call
+    if not cloud_hook._is_hex(k, 32):
+        return False
+    try:
+        status, _ = http(channel["url"], "DELETE", f"/v1/c/{channel['channel']}/e/{k}",
+                         token=channel["read_token"])
+    except RelayError as e:
+        log.info("Cloud relay: session %s not removed on the relay: %s", k[:8], e)
+        return False
+    return status == 200
+
+
 def delete_channel(path: str, channel: dict | None, http=None) -> str:
     """Delete the channel on the relay and the local file. The file goes even when
     the relay cannot be reached: its sessions expire there after 24 h. Returns
@@ -289,6 +305,15 @@ class RelaySink:
     def event(self, k, blob, ended) -> int:
         """One entry. 1 when it changed the registry's input, else 0."""
         if not isinstance(k, str) or not cloud_hook._is_hex(k, 32) or not isinstance(blob, str):
+            return 0
+        if ended and not blob:
+            # The relay removed the session (a host's "Remove Agent"): it has no
+            # key, so it sends no report. The worst a relay can do with this is
+            # remove a key early, which it can do anyway by dropping reports.
+            self._applied.pop(k, None)
+            if any(a.session_id == k and a.machine == MACHINE for a in self.registry.agents()):
+                self.registry.report(VENDOR, k, "ended", event="relay")
+                return 1
             return 0
         if self._applied.get(k) == blob:
             return 0     # the same report again (a reconnect's snapshot)

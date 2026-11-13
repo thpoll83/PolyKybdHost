@@ -116,6 +116,15 @@ class PolyctlTest(unittest.TestCase):
                                           {protocol.M_AGENTS_CLOUD_DISCONNECT: "deleted"})
         self.assertEqual(json.loads(out), {"disconnected": True, "relay": "deleted"})
 
+    def test_agents_forget_inactive(self):
+        rc, out, _err, server = run_main(["agents", "forget", "--inactive"],
+                                         {protocol.M_AGENTS_FORGET_INACTIVE: 3})
+        self.assertEqual(rc, 0)
+        self.assertIn("removed 3 inactive agent(s)", out)
+        rc, _out, err, _server = run_main(["agents", "forget"], {})
+        self.assertEqual(rc, 2)
+        self.assertIn("--inactive", err)
+
     def test_lang_set_sends_correct_method_and_params(self):
         rc, out, err, server = run_main(["lang", "set", "deDE"],
                                         {protocol.M_LANG_SET: [True, "ok"]})

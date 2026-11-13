@@ -17,7 +17,7 @@ from PyQt5.QtWidgets import (QApplication, QDialog, QDialogButtonBox, QGridLayou
 
 from polyhost.gui import message_box
 from polyhost.gui.ui_kit import (CARD_STYLE, Headline, StatusLabel, WrapLabel, card,
-                                 headline_icon, headline_icon_px, muted, px,
+                                 fit_height, headline_icon, headline_icon_px, muted, px,
                                  set_button_icon, style_button_box)
 from polyhost.i18n import _, _f
 
@@ -121,6 +121,7 @@ class CloudSessionsDialog(QDialog):
     def showEvent(self, event):  # noqa: N802 - Qt name
         super().showEvent(event)
         self._refresh_timer.start()
+        QTimer.singleShot(0, lambda: fit_height(self))
 
     def hideEvent(self, event):  # noqa: N802 - Qt name
         self._refresh_timer.stop()
@@ -176,8 +177,10 @@ class CloudSessionsDialog(QDialog):
         self.connect_button.setEnabled(True)
         self.disconnect_button.setVisible(configured)
         self.disconnect_button.setEnabled(True)
-        # The setup card appears after the state arrives: grow to fit it.
+        # The setup card appears after the state arrives: grow to fit it, and
+        # again once its text has wrapped (ui_kit.fit_height).
         self.adjustSize()
+        QTimer.singleShot(0, lambda: fit_height(self))
         if not configured:
             self._set_state(_("Not connected. \"Connect\" creates a channel on the relay "
                               "for this computer."))

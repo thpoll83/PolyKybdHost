@@ -178,6 +178,20 @@ class RelayEndToEnd(unittest.TestCase):
         self.assertEqual((op, int.from_bytes(payload[:2], "big")), (8, 4001))
         ws.close()
 
+    def test_one_session_is_deleted_for_every_host(self):
+        ws = MiniWebSocket(self.base + "/ws", self.chan["read_token"])
+        ws.recv_json()                                         # the empty snapshot
+        self.assertTrue(self.hook("UserPromptSubmit"))
+        k = ws.recv_json()["k"]
+        self.assertEqual(call("DELETE", f"{self.base}/e/{k}", token=self.chan["write_token"])[0], 403)
+        status, body = call("DELETE", f"{self.base}/e/{k}", token=self.chan["read_token"])
+        self.assertEqual((status, json.loads(body)["existed"]), (200, True))
+        msg = ws.recv_json()
+        self.assertEqual((msg["k"], msg["blob"], msg["ended"]), (k, "", True))
+        status, body = call("GET", self.base + "/state", token=self.chan["read_token"])
+        self.assertEqual(json.loads(body)["entries"], [])
+        ws.close()
+
     def test_tokens_are_not_interchangeable(self):
         good = {"k": "a" * 32, "blob": "abc", "ended": False}
         self.assertEqual(call("POST", self.base + "/event", good, token=self.chan["read_token"])[0], 403)

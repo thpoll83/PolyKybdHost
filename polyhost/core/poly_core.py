@@ -2745,8 +2745,38 @@ class PolyCore(Observable):
         return ok, ("ok" if ok else "No such agent")
 
     def agents_forget(self, vendor, session_id):
+        """Remove one agent and free its key. A cloud agent is removed on the
+        relay too (network I/O, on the caller's thread): a deleted cloud session
+        sends no last report, and the relay would send it again on reconnect."""
+        agent = next((a for a in self.agents.agents()
+                      if a.vendor == vendor and a.session_id == session_id), None)
         ok = self.agents.forget(vendor, session_id)
+        if ok and agent is not None and agent.machine == "cloud":
+            self._forget_on_relay([session_id])
         return ok, ("ok" if ok else "No such agent")
+
+    def agents_forget_inactive(self):
+        """Remove every agent that is not working or waiting (idle, done, stale):
+        the tray's "Remove All Inactive". (True, how many were removed)."""
+        from polyhost.services.agents.model import AgentState
+        gone = [a for a in self.agents.agents()
+                if a.state in (AgentState.IDLE, AgentState.DONE, AgentState.STALE)]
+        for agent in gone:
+            self.agents.forget(agent.vendor, agent.session_id)
+        cloud = [a.session_id for a in gone if a.machine == "cloud"]
+        if cloud:
+            self._forget_on_relay(cloud)
+        if gone:
+            self.log.info("Agents: removed %d inactive agent(s) by the user", len(gone))
+        return True, len(gone)
+
+    def _forget_on_relay(self, keys):
+        from polyhost.services.agents import cloud_relay
+        channel = cloud_relay.load_channel(self._cloud_relay_path())
+        if channel is None:
+            return
+        for k in keys:
+            cloud_relay.delete_session(channel, k)
 
     def _device_call(self, name, fn):
         """run_sync wrapper returning a uniform (ok, payload) result.
@@ -3622,6 +3652,12 @@ class PolyCore(Observable):
         if ((keys is None or "agents_enabled" in keys)
                 and getattr(self, "_cloud_relay_lock", None) is not None):
             self._apply_cloud_relay()
+        if ((keys is None or {"browser_url_detection", "browser_report_local_enabled",
+                              "browser_report_port", "browser_report_token"} & set(keys))
+                and getattr(self, "browser_url_source", None) is not None):
+            # A new port or token applies at once: the extension's Options and
+            # the host can be changed together without restarting the app.
+            self.browser_url_source.restart_if_changed()
         from polyhost.services import game_assets
         if keys is None or game_assets.SETTING_KEYS.intersection(keys):
             # The next send of an opted-in overlay builds again; reset() makes

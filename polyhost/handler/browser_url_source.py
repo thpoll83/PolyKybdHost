@@ -62,6 +62,7 @@ class BrowserUrlSource:
         """Start the receiver if both settings allow. Returns True when it is
         listening. Best-effort: a bind failure (port in use) logs and leaves the
         feature on the macOS fallback only — it must never block startup."""
+        self._started_with = self._receiver_config()
         if not (self.enabled and self._get("browser_report_local_enabled")):
             return False
         try:
@@ -98,6 +99,21 @@ class BrowserUrlSource:
         if not self.enabled:
             return None
         return self.provider.current_url(app_name)
+
+    def _receiver_config(self):
+        return (self.enabled, bool(self._get("browser_report_local_enabled")),
+                self._get("browser_report_port"), str(self._get("browser_report_token") or ""))
+
+    def restart_if_changed(self):
+        """A settings change: restart the receiver when its switch, port or token
+        changed, so a new token or port applies without restarting the app.
+        Returns True when it restarted."""
+        if self._receiver_config() == getattr(self, "_started_with", None):
+            return False
+        self.close()
+        self.start()
+        self.log.info("Browser-report listener restarted for changed settings")
+        return True
 
     def focus_tab(self, url, timeout_s=2.0):
         """Ask the browser extension to focus the tab showing exactly `url`
