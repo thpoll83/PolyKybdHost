@@ -225,6 +225,7 @@ class Sender:
             try:
                 job["sent"] += sock.send(job["data"][job["sent"]:])
             except (BlockingIOError, InterruptedError):
+                # The socket buffer is full: send the rest on the next tick.
                 pass
             return
         r, _w, _x = self._select([sock], [], [], 0)
@@ -259,4 +260,5 @@ class Sender:
             try:
                 job["sock"].close()
             except OSError:
+                # The socket is already closed or broken; nothing to release.
                 pass
