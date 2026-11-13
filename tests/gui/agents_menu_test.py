@@ -35,7 +35,8 @@ class AgentsMenuTest(unittest.TestCase):
         host.log = mock.MagicMock()
         host.report_device_result = mock.MagicMock()
         for name in ("_build_agents_menu", "_set_agent_rows", "_apply_agents_menu",
-                     "_toggle_agents_enabled", "_raise_agent_clicked", "_show_pairing_code"):
+                     "_toggle_agents_enabled", "_raise_agent_clicked", "_show_pairing_code",
+                     "_show_cloud_sessions"):
             setattr(host, name, types.MethodType(getattr(PolyHost, name), host))
         host._build_agents_menu()
         return host
@@ -77,13 +78,15 @@ class AgentsMenuTest(unittest.TestCase):
         host = self._host()            # built, no core.agents_list() answer yet
         texts = self._texts(host.agents_menu)
         self.assertEqual(texts, ["Show on the Number Row", "No agents reported",
-                                 "Set Up Hooks", "Pair a Forwarder…"])
+                                 "Set Up Hooks", "Pair a Forwarder…",
+                                 "Connect Cloud Sessions…"])
 
     def test_set_up_hooks_and_pair_have_icons(self):
         host = self._host()
         acts = {a.text(): a for a in host.agents_menu.actions()}
         self.assertFalse(acts["Set Up Hooks"].icon().isNull())
         self.assertFalse(acts["Pair a Forwarder…"].icon().isNull())
+        self.assertFalse(acts["Connect Cloud Sessions…"].icon().isNull())
 
     def test_a_failed_fetch_keeps_the_menu(self):
         host = self._host()

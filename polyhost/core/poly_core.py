@@ -3578,7 +3578,8 @@ class PolyCore(Observable):
                 and not self.poly_settings.get("agents_enabled")):
             # Turned off: the periodic stops, so it cannot clear the keys itself.
             self._clear_agent_keys()
-        if keys is None or "agents_enabled" in keys:
+        if ((keys is None or "agents_enabled" in keys)
+                and getattr(self, "_cloud_relay_lock", None) is not None):
             self._apply_cloud_relay()
         from polyhost.services import game_assets
         if keys is None or game_assets.SETTING_KEYS.intersection(keys):
