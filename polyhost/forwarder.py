@@ -1035,7 +1035,7 @@ class PolyForwarder(QApplication):
         dlg.setMinimumDuration(0)
         # Same size as the tray's update dialog. The label no longer resizes
         # the dialog, so it needs room for the longest message up front.
-        dlg.setFixedSize(px(400), px(160))
+        dlg.setFixedSize(px(400), px(120))
         dlg.show()
         self._update_ui.attach(dlg)
         ub = self._update_bridge
