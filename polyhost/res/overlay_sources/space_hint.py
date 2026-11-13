@@ -1,11 +1,12 @@
 """The "hold Space" hint drawn on the Space key: a glyph with an arrow on each
 side, at the right edge of the full 72x40 keycap.
 
-Space is on the thumb row, where the firmware centres the legend horizontally
-(`draw_legend_cx_cy` in qmk_firmware poly_keymap.c). The ␣ legend is drawn at
-x 23..48, y 23..26, and the firmware clears the legend within 3 px of any
-overlay ink. The cluster sits at the right edge, rows 0..34, and keeps clear of
-that ␣ plus its 3 px margin.
+Space is on the thumb row. Firmware up to 1.13.4 centres its legend there
+(`draw_legend_cx_cy` in qmk_firmware poly_keymap.c): the ␣ is at x 23..48,
+y 23..26. From 1.13.5 the firmware draws it at the top left (x 1..26, y 23..26)
+when an overlay is shown on the key. Either way it clears the legend within 3 px
+of any overlay ink. The cluster sits at the right edge, rows 0..34, and keeps
+clear of both ␣ positions plus their 3 px margin.
 
 A binding using it sets `region: [72, 40]` so the generator copies the PNG 1:1.
 
@@ -22,7 +23,9 @@ from PIL import Image, ImageDraw
 
 W, H = 72, 40
 ARROW = 4                         # arrow half-width and depth, px
-LEGEND_BOX = (23, 23, 48, 26)     # x0, y0, x1, y1 of the centred ␣ legend
+# x0, y0, x1, y1 of the ␣ legend: centred (firmware <= 1.13.4) and top-left
+# (firmware >= 1.13.5, drawn there while an overlay is on the key)
+LEGEND_BOXES = ((23, 23, 48, 26), (1, 23, 26, 26))
 COURTYARD = 3                     # firmware clears the legend this close to ink
 
 
@@ -60,10 +63,10 @@ def draw(glyph: np.ndarray, dest: Path, *, gap_v: int = 2, gap_h: int = 2) -> No
     _tri(m, [(xl, cy), (xl + a, cy - a), (xl + a, cy + a)])
     _tri(m, [(right, cy), (right - a, cy - a), (right - a, cy + a)])
 
-    x0, y0, x1, y1 = LEGEND_BOX
     c = COURTYARD
-    if m[max(y0 - c, 0):y1 + c + 1, max(x0 - c, 0):x1 + c + 1].any():
-        raise ValueError(f"{dest.name}: ink within {c} px of the Space legend")
+    for x0, y0, x1, y1 in LEGEND_BOXES:
+        if m[max(y0 - c, 0):y1 + c + 1, max(x0 - c, 0):x1 + c + 1].any():
+            raise ValueError(f"{dest.name}: ink within {c} px of the Space legend")
     alpha = Image.fromarray((m * 255).astype("uint8"))
     img = Image.new("RGBA", (W, H), (255, 255, 255, 0))
     img.putalpha(alpha)

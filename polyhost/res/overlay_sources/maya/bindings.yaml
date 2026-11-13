@@ -156,9 +156,10 @@ bindings:
   - { key: F, mods: [], icon: zoomextsel.png, label: "Frame selected" }
   - { key: F, mods: [SHIFT], icon: frame_sel_views.png, label: "Frame selected in all views" }
   # Space shows the hotbox it opens when held (a tap toggles single / multi
-  # pane). Drawn on the whole keycap clear of the centred thumb-row legend.
+  # pane). Drawn on the whole keycap, at the right edge, clear of the Space
+  # legend in both its positions (space_hint.py).
   - { key: SPACE, mods: [], icon: space_hotbox.png, mode: alpha, region: [72, 40], label: "Hotbox (hold); single / multi-pane (tap)" }
-  - { key: SPACE, mods: [CTRL], icon: fullpanels.png, anchor: top-right, region: [28, 20], label: "Full-screen panels" }  # top right, clear of the centred thumb-row legend
+  - { key: SPACE, mods: [CTRL], icon: fullpanels.png, label: "Full-screen panels" }
   - { key: "[", mods: [], icon: viewundo.png, label: "Undo view change" }
   - { key: "]", mods: [], icon: viewredo.png, label: "Redo view change" }
   - { key: "[", mods: [SHIFT], icon: workspace_prev.png, label: "Previous layout" }

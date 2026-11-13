@@ -93,9 +93,7 @@ bindings:
   - { key: "/", mods: [], icon: gridright.png, label: "Nudge play later, bigger grid" }
 
   # --- no modifier: Edit window (works with or without Commands Keyboard Focus) ---
-  # Space is on the thumb row, where the firmware centres the legend: every Space
-  # icon sits at the top right so it does not cover it.
-  - { key: SPACE, mods: [], icon: playstop.png, anchor: top-right, region: [28, 20], label: "Play/stop" }
+  - { key: SPACE, mods: [], icon: playstop.png, label: "Play/stop" }
   - { key: ENTER, mods: [], icon: tostart.png, label: "Go to session start" }
   - { key: TAB, mods: [], icon: nexttransient.png, label: "Next clip boundary or transient" }
   - { key: GRAVE, mods: [], icon: cyclemodes.png, label: "Cycle edit modes" }
@@ -118,7 +116,7 @@ bindings:
   - { key: BSPC, mods: [], label: "Delete" }
 
   # --- Shift ---
-  - { key: SPACE, mods: [SHIFT], icon: ratedown.png, anchor: top-right, region: [28, 20], label: "Half-speed playback" }
+  - { key: SPACE, mods: [SHIFT], icon: ratedown.png, label: "Half-speed playback" }
   - { key: F12, mods: [SHIFT], icon: recsession.png, label: "Half-speed record" }
   - { key: F4, mods: [SHIFT], icon: snapgrid.png, label: "Snap to grid" }
   - { key: TAB, mods: [SHIFT], icon: extnext.png, label: "Extend to next clip boundary" }
@@ -191,7 +189,7 @@ bindings:
   - { key: "]", mods: [CMDCTRL], icon: zoomin.png, label: "Zoom in" }
   - { key: "\\", mods: [CMDCTRL], icon: transportmaster.png, label: "Transport master" }
   - { key: "/", mods: [CMDCTRL], icon: writeauto.png, label: "Write automation, current" }
-  - { key: SPACE, mods: [CMDCTRL], icon: record.png, anchor: top-right, region: [28, 20], label: "Record" }
+  - { key: SPACE, mods: [CMDCTRL], icon: record.png, label: "Record" }
   - { key: "1", mods: [CMDCTRL], icon: zoomer.png, label: "Zoomer tool" }
   - { key: "2", mods: [CMDCTRL], icon: trimmer.png, label: "Trimmer tool" }
   - { key: "3", mods: [CMDCTRL], icon: select.png, label: "Selector tool" }
@@ -237,7 +235,7 @@ bindings:
   - { key: "=", mods: [ALT], icon: eventlist.png, label: "MIDI event list" }
   - { key: MINUS, mods: [ALT], icon: trackview.png, label: "Toggle track view, all" }
   - { key: "/", mods: [ALT], icon: glide.png, label: "Glide automation, current" }
-  - { key: SPACE, mods: [ALT], icon: online.png, anchor: top-right, region: [28, 20], label: "Online playback" }
+  - { key: SPACE, mods: [ALT], icon: online.png, label: "Online playback" }
   - { key: LEFT, mods: [ALT], icon: play_to_start.png, label: "Pre-roll to selection start" }
   - { key: RIGHT, mods: [ALT], icon: play_to_end.png, label: "Pre-roll to selection end" }
 
@@ -288,7 +286,7 @@ bindings:
   - { key: Y, mods: [CMDCTRL, SHIFT], icon: exportdef.png, label: "Export clip definition" }
   - { key: K, mods: [CMDCTRL, SHIFT], icon: exportclips.png, label: "Export clips as files" }
   - { key: G, mods: [CMDCTRL, SHIFT], icon: suspendgroups.png, label: "Suspend all groups" }
-  - { key: SPACE, mods: [CMDCTRL, SHIFT], icon: recsession.png, anchor: top-right, region: [28, 20], label: "Half-speed record" }
+  - { key: SPACE, mods: [CMDCTRL, SHIFT], icon: recsession.png, label: "Half-speed record" }
   - { key: "=", mods: [CMDCTRL, SHIFT], icon: chat.png, label: "Artist Chat" }
   - { key: ".", mods: [CMDCTRL, SHIFT], icon: panic.png, label: "All MIDI notes off" }
   - { key: "[", mods: [CMDCTRL, SHIFT], icon: vzoomout.png, label: "MIDI zoom out" }
@@ -316,7 +314,7 @@ bindings:
   - { key: H, mods: [CMDCTRL, ALT], icon: autotosend.png, label: "Copy automation to send" }
   - { key: T, mods: [CMDCTRL, ALT], icon: thinauto.png, label: "Thin automation" }
   - { key: TAB, mods: [CMDCTRL, ALT], icon: tabtransients.png, label: "Tab to transients" }
-  - { key: SPACE, mods: [CMDCTRL, ALT], icon: onlinerec.png, anchor: top-right, region: [28, 20], label: "Online record" }
+  - { key: SPACE, mods: [CMDCTRL, ALT], icon: onlinerec.png, label: "Online record" }
   - { key: "[", mods: [CMDCTRL, ALT], icon: vzoomout.png, label: "Audio zoom out" }
   - { key: "]", mods: [CMDCTRL, ALT], icon: vzoomin.png, label: "Audio zoom in" }
   - { key: "/", mods: [CMDCTRL, ALT], icon: writeall.png, label: "Write automation, all" }
@@ -371,8 +369,8 @@ bindings:
   - { key: "=", mods: [CTRL], icon: midieditor.png, label: "MIDI editor", only: [macos] }
   - { key: "\\", mods: [GUI], icon: newplaylist.png, label: "New playlist", except: [macos] }
   - { key: "\\", mods: [CTRL], icon: newplaylist.png, label: "New playlist", only: [macos] }
-  - { key: SPACE, mods: [GUI], icon: pause.png, anchor: top-right, region: [28, 20], label: "Pause (pre-prime)", except: [macos] }
-  - { key: SPACE, mods: [CTRL], icon: pause.png, anchor: top-right, region: [28, 20], label: "Pause (pre-prime)", only: [macos] }
+  - { key: SPACE, mods: [GUI], icon: pause.png, label: "Pause (pre-prime)", except: [macos] }
+  - { key: SPACE, mods: [CTRL], icon: pause.png, label: "Pause (pre-prime)", only: [macos] }
   - { key: TAB, mods: [GUI], icon: nextclip.png, label: "Go to next clip", except: [macos] }
   - { key: TAB, mods: [CTRL], icon: nextclip.png, label: "Go to next clip", only: [macos] }
   - { key: ENTER, mods: [GUI], icon: songstart.png, label: "Go to song start", except: [macos] }
