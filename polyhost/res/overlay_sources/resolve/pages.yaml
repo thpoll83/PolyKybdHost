@@ -1,0 +1,252 @@
+# DaVinci Resolve: one overlay set per page, for the page reporter
+# (resolve-plugin/). gen_pages.py writes bindings_<page>.yaml from this file;
+# edit this file, never the generated ones, then run:
+#
+#   .venv/bin/python polyhost/res/overlay_sources/resolve/gen_pages.py
+#   for p in media cut edit fusion color fairlight deliver; do
+#     .venv/bin/python scripts/generate_app_overlays.py \
+#         polyhost/res/overlay_sources/resolve/bindings_$p.yaml; done
+#
+# Shortcuts: Blackmagic's DaVinci Resolve 20 Reference Manual (the default
+# "DaVinci Resolve" keyboard preset). The manual writes them in macOS form;
+# Command is CMDCTRL here (Ctrl on Windows and Linux) and Option is ALT. The
+# `ref:` of each binding is the manual chapter it was read from (SOURCES.md ->
+# "Per-page sets"). The bindings.yaml set stays the fallback when no page is
+# reported.
+
+common:   # on every page
+  - { key: S, mods: [CMDCTRL], icon: save.png, label: "Save project", ref: "Ch. 3" }
+  - { key: Z, mods: [CMDCTRL], icon: undo.png, label: Undo, ref: "Ch. 2" }
+  - { key: Z, mods: [CMDCTRL, SHIFT], icon: redo.png, label: Redo, ref: "Ch. 36" }
+  - { key: "2", mods: [SHIFT], icon: pagemedia.png, label: "Media page", ref: "Workspace > Switch to Page" }
+  - { key: "3", mods: [SHIFT], icon: pagecut.png, label: "Cut page", ref: "Workspace > Switch to Page" }
+  - { key: "4", mods: [SHIFT], icon: pageedit.png, label: "Edit page", ref: "Workspace > Switch to Page" }
+  - { key: "5", mods: [SHIFT], icon: pagefusion.png, label: "Fusion page", ref: "Workspace > Switch to Page" }
+  - { key: "6", mods: [SHIFT], icon: pagecolor.png, label: "Color page", ref: "Workspace > Switch to Page" }
+  - { key: "7", mods: [SHIFT], icon: pagefairlight.png, label: "Fairlight page", ref: "Workspace > Switch to Page" }
+  - { key: "8", mods: [SHIFT], icon: pagedeliver.png, label: "Deliver page", ref: "Workspace > Switch to Page" }
+
+transport: &transport   # pasted into the pages that have a timeline viewer
+  - { key: SPACE, mods: [], icon: play.png, label: "Play / Stop", ref: "Ch. 35" }
+  - { key: J, mods: [], icon: rev.png, label: "Play reverse", ref: "Ch. 35" }
+  - { key: K, mods: [], icon: stop.png, label: Stop, ref: "Ch. 35" }
+  - { key: L, mods: [], icon: fwd.png, label: "Play forward", ref: "Ch. 35" }
+  - { key: I, mods: [], icon: markin.png, label: "Mark In", mode: alpha, ref: "Ch. 35" }
+  - { key: O, mods: [], icon: markout.png, label: "Mark Out", mode: alpha, ref: "Ch. 35" }
+
+pages:
+  media:
+    - *transport
+    - { key: I, mods: [CMDCTRL], icon: import.png, label: "Import media", ref: "Ch. 27" }
+    - { key: N, mods: [CMDCTRL], icon: newtimeline.png, label: "New timeline", ref: "Ch. 28" }
+    - { key: N, mods: [CMDCTRL, SHIFT], icon: newbin.png, label: "New bin", ref: "Ch. 27" }
+    - { key: I, mods: [CMDCTRL, SHIFT], icon: importtl.png, label: "Import timeline", ref: "Ch. 18" }
+    - { key: O, mods: [CMDCTRL, SHIFT], icon: exporttl.png, label: "Export timeline", ref: "Ch. 18" }
+    - { key: A, mods: [CMDCTRL], icon: selectall.png, label: "Select all", ref: "Ch. 21" }
+    - { key: P, mods: [CMDCTRL], icon: poster.png, label: "Set poster frame", ref: "Ch. 22" }
+    - { key: P, mods: [ALT], icon: posterclear.png, label: "Clear poster frame", ref: "Ch. 22" }
+    - { key: F, mods: [CMDCTRL], icon: cinema.png, label: "Cinema viewer", ref: "Ch. 17" }
+    - { key: W, mods: [CMDCTRL, SHIFT], icon: scopes.png, label: "Video scopes", ref: "Ch. 127" }
+
+  cut:
+    - *transport
+    - { key: X, mods: [ALT], icon: clearinout.png, label: "Clear In and Out", ref: "Ch. 28" }
+    - { key: UP, mods: [], icon: prevedit.png, label: "Previous edit", ref: "Ch. 26" }
+    - { key: DOWN, mods: [], icon: nextedit.png, label: "Next edit", ref: "Ch. 26" }
+    - { key: "/", mods: [CMDCTRL], icon: loop.png, label: "Loop playback", ref: "Ch. 26" }
+    - { key: V, mods: [], icon: selectedit.png, label: "Select nearest edit", ref: "Ch. 31" }
+    - { key: V, mods: [ALT, SHIFT], icon: selectunder.png, label: "Select clips under playhead", ref: "Ch. 29" }
+    - { key: M, mods: [], icon: marker.png, label: "Add marker", ref: "Ch. 29" }
+    - { key: M, mods: [ALT], icon: markerdel.png, label: "Delete marker", ref: "Ch. 29" }
+    - { key: "\\", mods: [CMDCTRL], icon: addedit.png, label: "Split clip", ref: "Ch. 29" }
+    - { key: T, mods: [CMDCTRL], icon: transition.png, label: "Add transition", ref: "Ch. 31" }
+    - { key: D, mods: [CMDCTRL], icon: duration.png, label: "Change clip duration", ref: "Ch. 28" }
+    - { key: D, mods: [SHIFT], icon: bypass.png, label: "Bypass grades and Fusion", ref: "Ch. 26" }
+    - { key: F, mods: [ALT], icon: enhanced.png, label: "Enhanced viewer", ref: "Ch. 28" }
+    - { key: W, mods: [CMDCTRL, SHIFT], icon: scopes.png, label: "Video scopes", ref: "Ch. 28" }
+    - { key: ",", mods: [], icon: nudgeleft.png, label: "Nudge 1 frame left", ref: "Ch. 28" }
+    - { key: ".", mods: [], icon: nudgeright.png, label: "Nudge 1 frame right", ref: "Ch. 28" }
+    - { key: ",", mods: [SHIFT], icon: nudgeleft5.png, label: "Nudge 5 frames left", ref: "Ch. 28" }
+    - { key: ".", mods: [SHIFT], icon: nudgeright5.png, label: "Nudge 5 frames right", ref: "Ch. 28" }
+    - { key: A, mods: [CMDCTRL], icon: selectall.png, label: "Select all", ref: "Ch. 29" }
+    - { key: A, mods: [CMDCTRL, SHIFT], icon: deselect.png, label: "Deselect all", ref: "Ch. 29" }
+    - { key: X, mods: [CMDCTRL], icon: cut.png, label: Cut, ref: "Ch. 29" }
+    - { key: C, mods: [CMDCTRL], icon: copy.png, label: Copy, ref: "Ch. 29" }
+    - { key: V, mods: [CMDCTRL], icon: paste.png, label: Paste, ref: "Ch. 29" }
+    - { key: I, mods: [CMDCTRL], icon: import.png, label: "Import media", ref: "Ch. 27" }
+    - { key: N, mods: [CMDCTRL], icon: newtimeline.png, label: "New timeline", ref: "Ch. 28" }
+    - { key: N, mods: [CMDCTRL, SHIFT], icon: newbin.png, label: "New bin", ref: "Ch. 27" }
+
+  edit:
+    - *transport
+    # the fallback set's edit keys (bindings.yaml), without its unconfirmed Ctrl+Shift+R
+    - { key: A, mods: [], icon: select.png, label: "Selection mode", ref: "Ch. 38" }
+    - { key: T, mods: [], icon: trim.png, label: "Trim edit mode", mode: alpha, ref: "Ch. 44" }
+    - { key: W, mods: [], icon: dyntrim.png, label: "Dynamic trim", ref: "Ch. 29" }
+    - { key: B, mods: [], icon: blade.png, label: "Blade edit mode", mode: alpha, ref: "Ch. 38" }
+    - { key: N, mods: [], icon: snap.png, label: "Snapping", mode: alpha, ref: "Ch. 38" }
+    - { key: M, mods: [], icon: marker.png, label: "Add marker", ref: "Ch. 35" }
+    - { key: M, mods: [CMDCTRL], icon: markernote.png, label: "Add marker with note", ref: "Ch. 35" }
+    - { key: M, mods: [ALT], icon: markerdel.png, label: "Delete marker", ref: "Ch. 35" }
+    - { key: F9, mods: [], icon: insert.png, label: "Insert edit", ref: "Ch. 39" }
+    - { key: F10, mods: [], icon: overwrite.png, label: "Overwrite edit", mode: alpha, ref: "Ch. 39" }
+    - { key: F11, mods: [], icon: replace.png, label: "Replace edit", ref: "Ch. 39" }
+    - { key: F12, mods: [], icon: placeontop.png, label: "Place on top", ref: "Ch. 39" }
+    - { key: F10, mods: [SHIFT], icon: rippleoverwrite.png, label: "Ripple overwrite", ref: "Ch. 36" }
+    - { key: F11, mods: [SHIFT], icon: fittofill.png, label: "Fit to fill", ref: "Ch. 36" }
+    - { key: F12, mods: [SHIFT], icon: append.png, label: "Append to timeline", mode: alpha, ref: "Ch. 36" }
+    - { key: V, mods: [], icon: selectedit.png, label: "Select nearest edit", ref: "Ch. 36" }
+    - { key: V, mods: [SHIFT], icon: selectclip.png, label: "Select clip at playhead", ref: "Ch. 36" }
+    - { key: U, mods: [], icon: editside.png, label: "Cycle edit side", ref: "Ch. 36" }
+    - { key: E, mods: [], icon: extend.png, label: "Extend edit", ref: "Ch. 38" }
+    - { key: D, mods: [], icon: disable.png, label: "Enable / disable clip", ref: "Ch. 38" }
+    - { key: X, mods: [], icon: markclip.png, label: "Mark clip", ref: "Ch. 39" }
+    - { key: Q, mods: [], icon: viewerfocus.png, label: "Source / timeline viewer", ref: "Ch. 39" }
+    - { key: Y, mods: [], icon: selfwd.png, label: "Select clips forward", ref: "Ch. 36" }
+    - { key: Y, mods: [CMDCTRL], icon: selback.png, label: "Select clips backward", ref: "Ch. 36" }
+    - { key: X, mods: [ALT], icon: clearinout.png, label: "Clear In and Out", ref: "Ch. 35" }
+    - { key: I, mods: [SHIFT], icon: gotoin.png, label: "Go to In", ref: "Ch. 35" }
+    - { key: O, mods: [SHIFT], icon: gotoout.png, label: "Go to Out", ref: "Ch. 35" }
+    - { key: L, mods: [ALT], icon: playagain.png, label: "Play again", ref: "Ch. 35" }
+    - { key: K, mods: [ALT], icon: stopreturn.png, label: "Stop and return", ref: "Ch. 35" }
+    - { key: "/", mods: [], icon: playaround.png, label: "Play around", ref: "Ch. 35" }
+    - { key: UP, mods: [], icon: prevedit.png, label: "Previous edit", ref: "Ch. 35" }
+    - { key: DOWN, mods: [], icon: nextedit.png, label: "Next edit", ref: "Ch. 35" }
+    - { key: ",", mods: [], icon: nudgeleft.png, label: "Nudge 1 frame left", ref: "Ch. 38" }
+    - { key: ".", mods: [], icon: nudgeright.png, label: "Nudge 1 frame right", ref: "Ch. 38" }
+    - { key: "[", mods: [SHIFT], icon: trimstart.png, label: "Trim start to playhead", ref: "Ch. 38" }
+    - { key: "]", mods: [SHIFT], icon: trimend.png, label: "Trim end to playhead", ref: "Ch. 38" }
+    - { key: BACKSPACE, mods: [], icon: lift.png, label: "Delete, leave gap", ref: "Ch. 36" }
+    - { key: BACKSPACE, mods: [SHIFT], only: [windows, linux], icon: rippledelete.png, label: "Ripple delete", mode: alpha, ref: "fallback set (SOURCES.md)" }
+    - { key: DELETE, mods: [], icon: rippledelete.png, label: "Ripple delete", mode: alpha, ref: "Ch. 36" }
+    - { key: N, mods: [CMDCTRL], icon: newtimeline.png, label: "New timeline", ref: "Ch. 33" }
+    - { key: I, mods: [CMDCTRL], icon: import.png, label: "Import media", ref: "Ch. 27" }
+    - { key: X, mods: [CMDCTRL], icon: cut.png, label: Cut, ref: "Ch. 38" }
+    - { key: C, mods: [CMDCTRL], icon: copy.png, label: Copy, ref: "Ch. 33" }
+    - { key: V, mods: [CMDCTRL], icon: paste.png, label: Paste, ref: "Ch. 33" }
+    - { key: A, mods: [CMDCTRL], icon: selectall.png, label: "Select all", ref: "Ch. 35" }
+    - { key: B, mods: [CMDCTRL], icon: blade.png, label: "Razor at playhead", mode: alpha, ref: "Ch. 175 (Timeline > Razor)" }
+    - { key: G, mods: [CMDCTRL], icon: group.png, label: Group, ref: "fallback set" }
+    - { key: G, mods: [CMDCTRL, SHIFT], icon: ungroup.png, label: Ungroup, ref: "fallback set" }
+    - { key: "\\", mods: [CMDCTRL], icon: addedit.png, label: "Add edit", ref: "Ch. 36" }
+    - { key: "=", mods: [CMDCTRL], icon: zoomin.png, label: "Zoom in", ref: "Ch. 34" }
+    - { key: "-", mods: [CMDCTRL], icon: zoomout.png, label: "Zoom out", ref: "Ch. 34" }
+    - { key: D, mods: [CMDCTRL], icon: duration.png, label: "Change clip duration", ref: "Ch. 38" }
+    - { key: T, mods: [CMDCTRL], icon: transition.png, label: "Add transition", ref: "Ch. 36" }
+    - { key: X, mods: [CMDCTRL, SHIFT], icon: ripplecut.png, label: "Ripple cut", ref: "Ch. 38" }
+    - { key: V, mods: [CMDCTRL, SHIFT], icon: pasteinsert.png, label: "Paste insert", ref: "Ch. 38" }
+    - { key: L, mods: [CMDCTRL, SHIFT], icon: linkedsel.png, label: "Linked selection", ref: "Ch. 36" }
+    - { key: L, mods: [CMDCTRL, ALT], icon: link.png, label: "Link / unlink clips", ref: "fallback set" }
+    - { key: B, mods: [ALT], icon: subclip.png, label: "Create subclip", ref: "Ch. 35" }
+
+  fusion:
+    - { key: SPACE, mods: [], icon: play.png, label: "Play / Stop", ref: "Ch. 35 (Spacebar)" }
+    - { key: "1", mods: [], icon: viewer1.png, label: "View in left viewer", ref: "Ch. 64" }
+    - { key: "2", mods: [], icon: viewer2.png, label: "View in right viewer", ref: "Ch. 64" }
+    - { key: SPACE, mods: [SHIFT], icon: addtool.png, label: "Add tool", ref: "Ch. 64" }
+    - { key: F, mods: [CMDCTRL], icon: find.png, label: "Find node", ref: "Ch. 67" }
+    - { key: K, mods: [CMDCTRL], icon: showctl.png, label: "Show controls", ref: "Ch. 69" }
+    - { key: "1", mods: [CMDCTRL], icon: zoom100.png, label: "Viewer 100%", ref: "Ch. 64" }
+    - { key: "2", mods: [CMDCTRL], icon: zoom200.png, label: "Viewer 200%", ref: "Ch. 64" }
+    - { key: P, mods: [CMDCTRL], icon: bypassnode.png, label: "Bypass node", ref: "Ch. 67" }
+    - { key: L, mods: [CMDCTRL], icon: locknode.png, label: "Lock node", ref: "Ch. 67" }
+    - { key: G, mods: [CMDCTRL], icon: group.png, label: "Group nodes", ref: "Ch. 68" }
+    - { key: E, mods: [CMDCTRL], icon: opengroup.png, label: "Open group", ref: "Ch. 68" }
+    - { key: T, mods: [CMDCTRL], icon: swapinputs.png, label: "Swap inputs", ref: "Ch. 67" }
+    - { key: A, mods: [CMDCTRL], icon: selectall.png, label: "Select all", ref: "Ch. 67" }
+    - { key: A, mods: [CMDCTRL, SHIFT], icon: deselect.png, label: "Deselect all", ref: "Ch. 67" }
+    - { key: X, mods: [CMDCTRL], icon: cut.png, label: Cut, ref: "Ch. 67" }
+    - { key: C, mods: [CMDCTRL], icon: copy.png, label: Copy, ref: "Ch. 65" }
+    - { key: V, mods: [CMDCTRL], icon: paste.png, label: Paste, ref: "Ch. 65" }
+    - { key: V, mods: [CMDCTRL, SHIFT], icon: pasteinstance.png, label: "Paste instance", ref: "Ch. 67" }
+    - { key: Q, mods: [SHIFT], icon: quadview.png, label: "Quad view", ref: "Ch. 69" }
+    - { key: "[", mods: [ALT], icon: prevkey.png, label: "Previous keyframe", ref: "Ch. 64" }
+    - { key: "]", mods: [ALT], icon: nextkey.png, label: "Next keyframe", ref: "Ch. 64" }
+    - { key: LEFT, mods: [CMDCTRL], icon: firstframe.png, label: "First frame", ref: "Ch. 69" }
+    - { key: RIGHT, mods: [CMDCTRL], icon: lastframe.png, label: "Last frame", ref: "Ch. 69" }
+    - { key: S, mods: [SHIFT], icon: smoothkey.png, label: "Smooth keyframes", ref: "Ch. 72" }
+    - { key: L, mods: [SHIFT], icon: linearkey.png, label: "Linear keyframes", ref: "Ch. 72" }
+
+  color:
+    - { key: SPACE, mods: [], icon: play.png, label: "Play / Stop", ref: "Ch. 35 (Spacebar)" }
+    - { key: S, mods: [ALT], icon: nodeserial.png, label: "Add serial node", ref: "Ch. 143" }
+    - { key: S, mods: [SHIFT], icon: nodebefore.png, label: "Add node before", ref: "Ch. 143" }
+    - { key: K, mods: [ALT], icon: nodeappend.png, label: "Append node", ref: "Ch. 143" }
+    - { key: P, mods: [ALT], icon: nodeparallel.png, label: "Add parallel node", ref: "Ch. 143" }
+    - { key: L, mods: [ALT], icon: nodelayer.png, label: "Add layer node", ref: "Ch. 143" }
+    - { key: O, mods: [ALT], icon: nodeoutside.png, label: "Add outside node", ref: "Ch. 143" }
+    - { key: Y, mods: [ALT], icon: nodesplit.png, label: "Splitter / combiner nodes", ref: "Ch. 147" }
+    - { key: C, mods: [ALT], icon: wincircle.png, label: "Node + circle window", ref: "Ch. 138" }
+    - { key: Q, mods: [ALT], icon: winlinear.png, label: "Node + linear window", ref: "Ch. 138" }
+    - { key: G, mods: [ALT], icon: winpolygon.png, label: "Node + polygon window", ref: "Ch. 138" }
+    - { key: B, mods: [ALT], icon: wincurve.png, label: "Node + curve window", ref: "Ch. 138" }
+    - { key: D, mods: [CMDCTRL], icon: disable.png, label: "Enable / disable node", ref: "Ch. 127" }
+    - { key: D, mods: [ALT], icon: disableall.png, label: "Enable / disable all nodes", ref: "Ch. 143" }
+    - { key: ";", mods: [ALT, SHIFT], icon: prevnode.png, label: "Previous node", ref: "Ch. 143" }
+    - { key: "'", mods: [ALT, SHIFT], icon: nextnode.png, label: "Next node", ref: "Ch. 143" }
+    - { key: G, mods: [CMDCTRL, ALT], icon: grabstill.png, label: "Grab still", ref: "Ch. 127" }
+    - { key: W, mods: [CMDCTRL], icon: wipe.png, label: "Play still (wipe)", ref: "Ch. 127" }
+    - { key: W, mods: [ALT], icon: wipeinvert.png, label: "Invert wipe", ref: "Ch. 127" }
+    - { key: W, mods: [CMDCTRL, ALT], icon: splitscreen.png, label: "Split screen", ref: "Ch. 127" }
+    - { key: N, mods: [CMDCTRL, ALT], icon: nextstill.png, label: "Next still", ref: "Ch. 141" }
+    - { key: B, mods: [CMDCTRL, ALT], icon: prevstill.png, label: "Previous still", ref: "Ch. 141" }
+    - { key: Y, mods: [CMDCTRL], icon: gradeversion.png, label: "Add grade version", ref: "Ch. 142" }
+    - { key: U, mods: [CMDCTRL], icon: gradedefault.png, label: "Default grade version", ref: "Ch. 142" }
+    - { key: C, mods: [ALT, SHIFT], icon: autocolor.png, label: "Auto color", ref: "Ch. 129" }
+    - { key: Z, mods: [ALT], icon: wheels.png, label: "Wheels: primaries / log", ref: "Ch. 131" }
+    - { key: T, mods: [CMDCTRL], icon: trackfwd.png, label: "Track forward", ref: "Ch. 140" }
+    - { key: T, mods: [ALT], icon: trackrev.png, label: "Track reverse", ref: "Ch. 140" }
+    - { key: T, mods: [CMDCTRL, ALT], icon: trackstop.png, label: "Stop tracking", ref: "Ch. 140" }
+    - { key: H, mods: [SHIFT], icon: highlight.png, label: "Highlight", ref: "Ch. 137" }
+    - { key: H, mods: [ALT, SHIFT], icon: highlightbw.png, label: "Highlight black/white", ref: "Ch. 137" }
+    - { key: H, mods: [ALT], icon: winoutline.png, label: "Window outline mode", ref: "Ch. 138" }
+    - { key: "`", mods: [SHIFT], icon: showctl.png, label: "Onscreen controls", ref: "Ch. 127" }
+    - { key: "[", mods: [CMDCTRL], icon: addkey.png, label: "Add keyframe", ref: "Ch. 148" }
+    - { key: "]", mods: [CMDCTRL], icon: statickey.png, label: "Add static keyframe", ref: "Ch. 148" }
+    - { key: "]", mods: [ALT], icon: delkey.png, label: "Delete keyframe", ref: "Ch. 148" }
+    - { key: F, mods: [ALT], icon: enhanced.png, label: "Enhanced viewer", ref: "Ch. 126" }
+    - { key: F, mods: [SHIFT], icon: cinema.png, label: "Full screen viewer", ref: "Ch. 126" }
+    - { key: W, mods: [CMDCTRL, SHIFT], icon: scopes.png, label: "Video scopes", ref: "Ch. 127" }
+    - { key: Z, mods: [SHIFT], icon: zoomfit.png, label: "Zoom to fit", ref: "Ch. 127" }
+    - { key: Z, mods: [ALT, SHIFT], icon: zoom100.png, label: "Zoom 100%", ref: "Ch. 127" }
+    - { key: C, mods: [CMDCTRL], icon: copy.png, label: "Copy grade", ref: "Ch. 142" }
+    - { key: V, mods: [CMDCTRL], icon: paste.png, label: "Paste grade", ref: "Ch. 142" }
+    - { key: V, mods: [ALT], icon: pasteinsert.png, label: "Paste attributes", ref: "Ch. 142" }
+    - { key: HOME, mods: [CMDCTRL], icon: resetgrade.png, label: "Reset grades and nodes", ref: "Ch. 143" }
+
+  fairlight:
+    - *transport
+    - { key: J, mods: [SHIFT], icon: fastrev.png, label: "Fast reverse", ref: "Ch. 172" }
+    - { key: L, mods: [SHIFT], icon: fastfwd.png, label: "Fast forward", ref: "Ch. 172" }
+    - { key: I, mods: [ALT], icon: clearin.png, label: "Clear In", ref: "Ch. 175" }
+    - { key: O, mods: [ALT], icon: clearout.png, label: "Clear Out", ref: "Ch. 175" }
+    - { key: X, mods: [ALT], icon: clearinout.png, label: "Clear In and Out", ref: "Ch. 175" }
+    - { key: "=", mods: [CMDCTRL], icon: zoomin.png, label: "Zoom in", ref: "Ch. 172" }
+    - { key: "-", mods: [CMDCTRL], icon: zoomout.png, label: "Zoom out", ref: "Ch. 172" }
+    - { key: E, mods: [CMDCTRL, ALT], icon: trackheight.png, label: "Smart track height", ref: "Ch. 170" }
+    - { key: F, mods: [CMDCTRL], icon: cinema.png, label: "Cinema viewer", ref: "Ch. 170" }
+    - { key: M, mods: [CMDCTRL], icon: markernote.png, label: "Add marker with note", ref: "Ch. 172" }
+    - { key: "\\", mods: [CMDCTRL], icon: addedit.png, label: "Split clip", ref: "Ch. 175" }
+    - { key: B, mods: [CMDCTRL], icon: blade.png, label: "Razor", mode: alpha, ref: "Ch. 175" }
+    - { key: "[", mods: [SHIFT], icon: trimstart.png, label: "Trim start", ref: "Ch. 175" }
+    - { key: "]", mods: [SHIFT], icon: trimend.png, label: "Trim end", ref: "Ch. 175" }
+    - { key: T, mods: [CMDCTRL, SHIFT], icon: trimsel.png, label: "Trim to selection", ref: "Ch. 175" }
+    - { key: T, mods: [SHIFT], icon: transition.png, label: "Add audio transition", ref: "Ch. 175" }
+    - { key: ",", mods: [], icon: nudgeleft.png, label: "Nudge 1 frame left", ref: "Ch. 175" }
+    - { key: ".", mods: [], icon: nudgeright.png, label: "Nudge 1 frame right", ref: "Ch. 175" }
+    - { key: ",", mods: [SHIFT], icon: nudgeleft5.png, label: "Nudge 5 frames left", ref: "Ch. 175" }
+    - { key: ".", mods: [SHIFT], icon: nudgeright5.png, label: "Nudge 5 frames right", ref: "Ch. 175" }
+    - { key: LEFT, mods: [CMDCTRL, ALT], icon: prevclip.png, label: "Select previous clip", ref: "Ch. 172" }
+    - { key: RIGHT, mods: [CMDCTRL, ALT], icon: nextclip.png, label: "Select next clip", ref: "Ch. 172" }
+    - { key: UP, mods: [CMDCTRL, ALT], icon: trackup.png, label: "Select track above", ref: "Ch. 172" }
+    - { key: DOWN, mods: [CMDCTRL, ALT], icon: trackdown.png, label: "Select track below", ref: "Ch. 172" }
+    - { key: X, mods: [CMDCTRL], icon: cut.png, label: Cut, ref: "Ch. 175" }
+    - { key: C, mods: [CMDCTRL], icon: copy.png, label: Copy, ref: "Ch. 175" }
+    - { key: V, mods: [CMDCTRL], icon: paste.png, label: Paste, ref: "Ch. 175" }
+    - { key: A, mods: [CMDCTRL], icon: selectall.png, label: "Select all", ref: "Ch. 178" }
+
+  deliver:
+    - *transport
+    - { key: Z, mods: [SHIFT], icon: zoomfit.png, label: "Fit timeline", ref: "Ch. 186" }
+    - { key: O, mods: [CMDCTRL, SHIFT], icon: exporttl.png, label: "Export timeline", ref: "Ch. 190" }
+    - { key: W, mods: [CMDCTRL, SHIFT], icon: scopes.png, label: "Video scopes", ref: "Ch. 127" }

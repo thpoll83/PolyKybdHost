@@ -2366,11 +2366,35 @@ ms-teams,teams,microsoft teams,msteams,microsoft teams (work or school),microsof
       overlay: [teams_template_mac.mods.png, teams_template_mac.combo.mods.png, teams_template_mac.extra.mods.png, teams_template_mac.gui.mods.png]
 teams-for-linux:
   overlay: [teams_web_template.mods.png, teams_web_template.combo.mods.png, teams_web_template.extra.mods.png]
+# DaVinci Resolve (sources: overlay_sources/resolve/). One set per page, routed on
+# the `resolve://<page>` pseudo-URL the page reporter (resolve-plugin/) sends;
+# the per-page specs are generated from pages.yaml (gen_pages.py). `layer: false`
+# makes a page's set replace the fallback instead of drawing it dimmed underneath.
+# Without the reporter (or with a stale report) the fallback set applies. The
+# names are exactly the "resolve" entries of browser_url.CONTEXT_REPORTERS.
 resolve,davinci resolve:
   overlay: [resolve_template.mods.png, resolve_template.combo.mods.png]
+  layer: false
+  urls-contains:
+    "resolve://media": { overlay: [resolve_media_template.mods.png, resolve_media_template.combo.mods.png] }
+    "resolve://cut": { overlay: [resolve_cut_template.mods.png, resolve_cut_template.combo.mods.png] }
+    "resolve://edit": { overlay: [resolve_edit_template.mods.png, resolve_edit_template.combo.mods.png] }
+    "resolve://fusion": { overlay: [resolve_fusion_template.mods.png, resolve_fusion_template.combo.mods.png] }
+    "resolve://color": { overlay: [resolve_color_template.mods.png, resolve_color_template.combo.mods.png] }
+    "resolve://fairlight": { overlay: [resolve_fairlight_template.mods.png, resolve_fairlight_template.combo.mods.png] }
+    "resolve://deliver": { overlay: [resolve_deliver_template.mods.png, resolve_deliver_template.combo.mods.png] }
   os:
     macos:
       overlay: [resolve_template_mac.mods.png, resolve_template_mac.combo.mods.png, resolve_template_mac.extra.mods.png]
+      layer: false
+      urls-contains:
+        "resolve://media": { overlay: [resolve_media_template_mac.mods.png, resolve_media_template_mac.combo.mods.png, resolve_media_template_mac.extra.mods.png] }
+        "resolve://cut": { overlay: [resolve_cut_template_mac.mods.png, resolve_cut_template_mac.combo.mods.png, resolve_cut_template_mac.extra.mods.png] }
+        "resolve://edit": { overlay: [resolve_edit_template_mac.mods.png, resolve_edit_template_mac.combo.mods.png, resolve_edit_template_mac.extra.mods.png] }
+        "resolve://fusion": { overlay: [resolve_fusion_template_mac.mods.png, resolve_fusion_template_mac.combo.mods.png, resolve_fusion_template_mac.extra.mods.png] }
+        "resolve://color": { overlay: [resolve_color_template_mac.mods.png, resolve_color_template_mac.combo.mods.png, resolve_color_template_mac.extra.mods.png] }
+        "resolve://fairlight": { overlay: [resolve_fairlight_template_mac.mods.png, resolve_fairlight_template_mac.combo.mods.png, resolve_fairlight_template_mac.extra.mods.png] }
+        "resolve://deliver": { overlay: [resolve_deliver_template_mac.mods.png, resolve_deliver_template_mac.combo.mods.png, resolve_deliver_template_mac.extra.mods.png] }
 # CapCut desktop (sources: overlay_sources/capcut/). The process is CapCut.exe on
 # Windows and CapCut.app on macOS; there is no Linux build. macOS gets the Cmd set.
 capcut:

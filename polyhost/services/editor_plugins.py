@@ -14,6 +14,9 @@ terminal's keys. This module does the copy that their READMEs describe:
 - GDB: ``polykybd.py`` (``gdb-plugin/``) into ``<config>/gdb/polykybd/``, and
   a marked block in the GDB init file that sources it. The script writes GDB's
   state (prompt or running) into the terminal title.
+- DaVinci Resolve: ``polykybd_context_reporter.py`` (``resolve-plugin/``)
+  into ``<Fusion>/Scripts/Utility/PolyKybd/``, where Resolve lists it under
+  Workspace > Scripts. It reports the current page (Media, Cut, Edit ...).
 
 Each copy gets a stamp file with the SHA-256 of every file written.
 :func:`refresh_installed` runs at every start: it copies the shipped files
@@ -50,12 +53,14 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 VIM_SOURCE = REPO_ROOT / "vim-plugin"
 EMACS_SOURCE = REPO_ROOT / "emacs-package"
 GDB_SOURCE = REPO_ROOT / "gdb-plugin"
+RESOLVE_SOURCE = REPO_ROOT / "resolve-plugin"
 
 VIM = "vim"
 NEOVIM = "neovim"
 EMACS = "emacs"
 GDB = "gdb"
-EDITORS = (VIM, NEOVIM, EMACS, GDB)
+RESOLVE = "resolve"
+EDITORS = (VIM, NEOVIM, EMACS, GDB, RESOLVE)
 # The ones loaded through a marked block in an init file, beside a copy.
 INIT_EDITORS = (EMACS, GDB)
 
@@ -63,6 +68,7 @@ INIT_EDITORS = (EMACS, GDB)
 _VIM_DIRS = ("plugin", "lua", "doc")
 _EMACS_FILES = ("polykybd.el",)
 _GDB_FILES = ("polykybd.py",)
+_RESOLVE_FILES = ("polykybd_context_reporter.py",)
 
 STAMP_NAME = ".polykybd-host.json"
 BEGIN_MARKER = ";; >>> PolyKybd editor integration >>>"
@@ -133,6 +139,46 @@ def vim_dir(editor, home=None, env=None, system=None):
         data = env.get("XDG_DATA_HOME")
         base = (Path(data) if data else h / ".local" / "share") / "nvim" / "site"
     return base / "pack" / "polykybd" / "start" / "polykybd"
+
+
+def resolve_scripts_dir(home=None, env=None, system=None):
+    """The per-user ``Fusion/Scripts`` folder DaVinci Resolve scans at start
+    (README.txt of Resolve's scripting API)."""
+    env = os.environ if env is None else env
+    system = system or platform.system()
+    h = Path(home) if home is not None else Path.home()
+    if system == "Windows":
+        appdata = env.get("APPDATA")
+        base = Path(appdata) if appdata else h / "AppData" / "Roaming"
+        return base / "Blackmagic Design" / "DaVinci Resolve" / "Support" / "Fusion" / "Scripts"
+    if system == "Darwin":
+        return (h / "Library" / "Application Support" / "Blackmagic Design"
+                / "DaVinci Resolve" / "Fusion" / "Scripts")
+    return h / ".local" / "share" / "DaVinciResolve" / "Fusion" / "Scripts"
+
+
+def resolve_plugin_dir(home=None, env=None, system=None):
+    """The folder the Resolve script is copied to: a ``Utility`` subfolder of
+    its own, so removing it never touches the user's other scripts."""
+    return resolve_scripts_dir(home, env, system) / "Utility" / "PolyKybd"
+
+
+# Where Resolve itself is installed, to tell "not installed" from "never run".
+_RESOLVE_APPS = {
+    "Windows": (r"C:\Program Files\Blackmagic Design\DaVinci Resolve\Resolve.exe",),
+    "Darwin": ("/Applications/DaVinci Resolve/DaVinci Resolve.app",),
+}
+_RESOLVE_APPS_LINUX = ("/opt/resolve/bin/resolve", "/home/resolve/bin/resolve")
+
+
+def _resolve_present(home, env, system):
+    """Resolve is installed, or has run for this user (it creates the
+    ``Fusion`` folder above the scripts folder)."""
+    if resolve_scripts_dir(home, env, system).parent.is_dir():
+        return True
+    if home is not None:        # a test's home: the real install does not count
+        return False
+    return any(Path(p).exists() for p in _RESOLVE_APPS.get(system, _RESOLVE_APPS_LINUX))
 
 
 def emacs_init_file(home=None, env=None, system=None):
@@ -281,6 +327,11 @@ def help_tags(doc_name, text):
 def shipped_files(editor, source=None):
     """``{relative path: bytes}`` to write for ``editor``, or None when this
     installation has no plugin files."""
+    if editor == RESOLVE:
+        source = Path(source or RESOLVE_SOURCE)
+        if not all((source / name).is_file() for name in _RESOLVE_FILES):
+            return None
+        return {name: (source / name).read_bytes() for name in _RESOLVE_FILES}
     if editor in INIT_EDITORS:
         names = _EMACS_FILES if editor == EMACS else _GDB_FILES
         source = Path(source or (EMACS_SOURCE if editor == EMACS else GDB_SOURCE))
@@ -535,7 +586,8 @@ def _other_vim_copies(editor, folder):
 
 
 def _sources(vim_source, emacs_source, gdb_source):
-    return {VIM: vim_source, NEOVIM: vim_source, EMACS: emacs_source, GDB: gdb_source}
+    return {VIM: vim_source, NEOVIM: vim_source, EMACS: emacs_source, GDB: gdb_source,
+            RESOLVE: None}
 
 
 def status(editors=None, home=None, env=None, which=None, system=None,
@@ -554,6 +606,14 @@ def status(editors=None, home=None, env=None, which=None, system=None,
 
 def _status_one(editor, home, env, which, system, source):
     shipped = shipped_files(editor, source)
+    if editor == RESOLVE:
+        folder = resolve_plugin_dir(home, env, system)
+        if shipped is None:
+            return EditorStatus(editor, STATE_NO_SOURCE, folder, str(source or RESOLVE_SOURCE))
+        if not folder.exists() and not _resolve_present(home, env, system):
+            return EditorStatus(editor, STATE_NOT_PRESENT, folder, "")
+        state = _copy_state(folder, shipped)
+        return EditorStatus(editor, state, folder, str(folder) if state == STATE_MANUAL else "")
     if editor in INIT_EDITORS:
         # One probe per status call, so the init file and the Python check
         # never rest on two different answers.

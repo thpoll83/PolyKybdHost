@@ -106,6 +106,10 @@ CONTEXT_REPORTERS = {
     "macvim": "vim",
     "neovide": "vim",
     "emacs": "emacs",
+    # DaVinci Resolve page reporter (resolve-plugin/): Resolve.exe on Windows,
+    # resolve on Linux, "DaVinci Resolve" on macOS -- the mapping entry's names.
+    "resolve": "resolve",
+    "davinci resolve": "resolve",
 }
 
 # Reporters that also run INSIDE a terminal (vim, emacs -nw). While a terminal
