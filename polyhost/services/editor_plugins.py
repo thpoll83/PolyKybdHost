@@ -14,6 +14,9 @@ terminal's keys. This module does the copy that their READMEs describe:
 - GDB: ``polykybd.py`` (``gdb-plugin/``) into ``<config>/gdb/polykybd/``, and
   a marked block in the GDB init file that sources it. The script writes GDB's
   state (prompt or running) into the terminal title.
+- Houdini: the package (``houdini-package/``) into ``<prefs>/packages/``: the
+  package file ``polykybd.json`` and the ``polykybd/`` folder it names, in the
+  newest Houdini preferences folder (:func:`houdini_pref_dir`).
 
 Each copy gets a stamp file with the SHA-256 of every file written.
 :func:`refresh_installed` runs at every start: it copies the shipped files
@@ -50,12 +53,14 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 VIM_SOURCE = REPO_ROOT / "vim-plugin"
 EMACS_SOURCE = REPO_ROOT / "emacs-package"
 GDB_SOURCE = REPO_ROOT / "gdb-plugin"
+HOUDINI_SOURCE = REPO_ROOT / "houdini-package"
 
 VIM = "vim"
 NEOVIM = "neovim"
 EMACS = "emacs"
 GDB = "gdb"
-EDITORS = (VIM, NEOVIM, EMACS, GDB)
+HOUDINI = "houdini"
+EDITORS = (VIM, NEOVIM, EMACS, GDB, HOUDINI)
 # The ones loaded through a marked block in an init file, beside a copy.
 INIT_EDITORS = (EMACS, GDB)
 
@@ -254,6 +259,57 @@ def gdb_plugin_dir(home=None, env=None, system=None):
     return config / "gdb" / "polykybd"
 
 
+_HOUDINI_VERSION_RE = re.compile(r"^(\d+)\.(\d+)$")
+# The package file Houdini reads from <prefs>/packages, beside the folder it
+# names. Its key in the stamp is relative to that folder.
+HOUDINI_PACKAGE_FILE = "../polykybd.json"
+
+
+def houdini_pref_dir(home=None, env=None, system=None):
+    """The newest Houdini user preferences folder that exists, or None.
+
+    ``$HOUDINI_USER_PREF_DIR`` when set (``__HVER__`` in its last part stands
+    for the version), else ``~/houdiniX.Y`` (Linux), ``houdiniX.Y`` in
+    ``%HOME%`` when set or else in ``Documents`` (Windows), and
+    ``~/Library/Preferences/houdini/X.Y`` (macOS). Houdini creates the folder
+    at its first start."""
+    env = os.environ if env is None else env
+    system = system or platform.system()
+    custom = env.get("HOUDINI_USER_PREF_DIR")
+    if custom and "__HVER__" not in custom:
+        return Path(custom) if Path(custom).is_dir() else None
+    if custom:
+        base = Path(custom).parent
+        prefix, _sep, suffix = Path(custom).name.partition("__HVER__")
+    else:
+        h = _home(home, env, system)
+        if system == "Darwin":
+            base, prefix = h / "Library" / "Preferences" / "houdini", ""
+        elif system == "Windows" and not env.get("HOME"):
+            base, prefix = h / "Documents", "houdini"
+        else:
+            base, prefix = h, "houdini"
+        suffix = ""
+    found = []
+    try:
+        entries = list(base.iterdir()) if base.is_dir() else []
+    except OSError:
+        entries = []
+    for p in entries:
+        name = p.name
+        if not (name.startswith(prefix) and name.endswith(suffix)) or not p.is_dir():
+            continue
+        m = _HOUDINI_VERSION_RE.match(name[len(prefix):len(name) - len(suffix)])
+        if m:
+            found.append(((int(m.group(1)), int(m.group(2))), p))
+    return max(found)[1] if found else None
+
+
+def houdini_package_dir(pref_dir):
+    """The folder the package is copied to: ``<prefs>/packages/polykybd``."""
+    return Path(pref_dir) / "packages" / "polykybd"
+
+
 def _present(editor, which, system):
     which = which or shutil.which
     names = {VIM: ("vim", "gvim"), NEOVIM: ("nvim",), EMACS: ("emacs", "runemacs"),
@@ -281,6 +337,8 @@ def help_tags(doc_name, text):
 def shipped_files(editor, source=None):
     """``{relative path: bytes}`` to write for ``editor``, or None when this
     installation has no plugin files."""
+    if editor == HOUDINI:
+        return _houdini_files(source)
     if editor in INIT_EDITORS:
         names = _EMACS_FILES if editor == EMACS else _GDB_FILES
         source = Path(source or (EMACS_SOURCE if editor == EMACS else GDB_SOURCE))
@@ -299,6 +357,21 @@ def shipped_files(editor, source=None):
         if rel.startswith("doc/") and rel.endswith(".txt"):
             tags = help_tags(rel[len("doc/"):], data.decode("utf-8", "replace"))
             files["doc/tags"] = files.get("doc/tags", b"") + tags
+    return files
+
+
+def _houdini_files(source=None):
+    """The Houdini package: every file of ``polykybd/`` (no bytecode), and
+    the package file, keyed ``../polykybd.json`` because it sits beside the
+    folder in ``packages/``."""
+    source = Path(source or HOUDINI_SOURCE)
+    folder = source / "polykybd"
+    if not (source / "polykybd.json").is_file() or not folder.is_dir():
+        return None
+    files = {HOUDINI_PACKAGE_FILE: (source / "polykybd.json").read_bytes()}
+    for path in sorted(folder.rglob("*")):
+        if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc":
+            files[path.relative_to(folder).as_posix()] = path.read_bytes()
     return files
 
 
@@ -534,16 +607,17 @@ def _other_vim_copies(editor, folder):
     return None
 
 
-def _sources(vim_source, emacs_source, gdb_source):
-    return {VIM: vim_source, NEOVIM: vim_source, EMACS: emacs_source, GDB: gdb_source}
+def _sources(vim_source, emacs_source, gdb_source, houdini_source=None):
+    return {VIM: vim_source, NEOVIM: vim_source, EMACS: emacs_source, GDB: gdb_source,
+            HOUDINI: houdini_source}
 
 
 def status(editors=None, home=None, env=None, which=None, system=None,
-           vim_source=None, emacs_source=None, gdb_source=None):
+           vim_source=None, emacs_source=None, gdb_source=None, houdini_source=None):
     """An EditorStatus for each editor (``editors`` filters by id)."""
     env = os.environ if env is None else env
     system = system or platform.system()
-    sources = _sources(vim_source, emacs_source, gdb_source)
+    sources = _sources(vim_source, emacs_source, gdb_source, houdini_source)
     out = []
     for editor in EDITORS:
         if editors is not None and editor not in editors:
@@ -554,6 +628,20 @@ def status(editors=None, home=None, env=None, which=None, system=None,
 
 def _status_one(editor, home, env, which, system, source):
     shipped = shipped_files(editor, source)
+    if editor == HOUDINI:
+        pref = houdini_pref_dir(home, env, system)
+        folder = houdini_package_dir(pref) if pref is not None else None
+        if shipped is None:
+            return EditorStatus(editor, STATE_NO_SOURCE, folder, str(source or HOUDINI_SOURCE))
+        if folder is None:
+            return EditorStatus(editor, STATE_NOT_PRESENT, None, "")
+        state, detail = _copy_state(folder, shipped), ""
+        if state == STATE_MANUAL:
+            detail = str(folder)
+        elif state == STATE_NOT_INSTALLED and (folder.parent / "polykybd.json").exists():
+            # A package file of the same name that this app did not write.
+            state, detail = STATE_MANUAL, str(folder.parent / "polykybd.json")
+        return EditorStatus(editor, state, folder, detail)
     if editor in INIT_EDITORS:
         # One probe per status call, so the init file and the Python check
         # never rest on two different answers.
@@ -622,8 +710,10 @@ def _install_vim(st, shipped, now):
     backup = None
     if st.state == STATE_INSTALLED:
         return Result(st.editor, True, False, MSG_ALREADY.format(path=folder), None)
-    if st.state == STATE_MODIFIED:
-        return Result(st.editor, False, False, MSG_MODIFIED.format(path=folder), None)
+    if st.state == STATE_MODIFIED or (st.editor == HOUDINI and st.state == STATE_MANUAL):
+        # A Houdini package this app did not write is the user's: never replaced.
+        return Result(st.editor, False, False,
+                      MSG_MODIFIED.format(path=st.detail or folder), None)
     try:
         if st.state == STATE_MANUAL and Path(st.detail) == folder:
             backup = _set_aside(folder, now)
@@ -746,11 +836,12 @@ def _change(st, install, sources, now=None, home=None, env=None, system=None):
 
 
 def _apply(install, editors, statuses, home, env, which, system, vim_source, emacs_source,
-           gdb_source=None):
+           gdb_source=None, houdini_source=None):
     if statuses is None:
         statuses = status(editors, home=home, env=env, which=which, system=system,
-                          vim_source=vim_source, emacs_source=emacs_source, gdb_source=gdb_source)
-    sources = _sources(vim_source, emacs_source, gdb_source)
+                          vim_source=vim_source, emacs_source=emacs_source, gdb_source=gdb_source,
+                          houdini_source=houdini_source)
+    sources = _sources(vim_source, emacs_source, gdb_source, houdini_source)
     results = []
     for st in statuses:
         if editors is not None and st.editor not in editors:
@@ -765,22 +856,25 @@ def _apply(install, editors, statuses, home, env, which, system, vim_source, ema
 
 
 def install(editors=None, statuses=None, home=None, env=None, which=None,
-            system=None, vim_source=None, emacs_source=None, gdb_source=None):
+            system=None, vim_source=None, emacs_source=None, gdb_source=None,
+            houdini_source=None):
     """Copy the plugin for each editor (the ones default_selection() picks
     when ``editors`` is None). Returns a list of Result."""
     return _apply(True, editors, statuses, home, env, which, system, vim_source, emacs_source,
-                  gdb_source)
+                  gdb_source, houdini_source)
 
 
 def remove(editors=None, statuses=None, home=None, env=None, which=None,
-           system=None, vim_source=None, emacs_source=None, gdb_source=None):
+           system=None, vim_source=None, emacs_source=None, gdb_source=None,
+           houdini_source=None):
     """Delete this app's copy and, for Emacs and GDB, the marked block."""
     return _apply(False, editors, statuses, home, env, which, system, vim_source, emacs_source,
-                  gdb_source)
+                  gdb_source, houdini_source)
 
 
 def refresh_installed(home=None, env=None, which=None, system=None,
-                      vim_source=None, emacs_source=None, gdb_source=None):
+                      vim_source=None, emacs_source=None, gdb_source=None,
+                      houdini_source=None):
     """Copy the shipped files again for each editor whose copy is this app's
     and older than them. Runs at every start, so an update reaches the
     editors without a visit to the dialog. Returns the editors refreshed.
@@ -788,11 +882,12 @@ def refresh_installed(home=None, env=None, which=None, system=None,
     refreshed = []
     try:
         statuses = status(None, home=home, env=env, which=which, system=system,
-                          vim_source=vim_source, emacs_source=emacs_source, gdb_source=gdb_source)
+                          vim_source=vim_source, emacs_source=emacs_source, gdb_source=gdb_source,
+                          houdini_source=houdini_source)
     except Exception:  # noqa: BLE001 - a start must not fail for this
         log.warning("Editor plugin refresh: status failed", exc_info=True)
         return refreshed
-    sources = _sources(vim_source, emacs_source, gdb_source)
+    sources = _sources(vim_source, emacs_source, gdb_source, houdini_source)
     for st in statuses:
         if st.state != STATE_OUTDATED:
             continue

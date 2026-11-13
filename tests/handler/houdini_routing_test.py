@@ -7,7 +7,13 @@ Houdini binds Ctrl on Windows/Linux and Cmd on macOS, so the entry has an
   and the Linux `houdini-bin` binary load the Windows/Linux set;
 * the macOS app names with a trailing dotted version (`Houdini FX 22.0.368`)
   reach the entry and load the macOS set;
-* every file the route names exists.
+* every file the route names exists;
+* with the Houdini package's report (`houdini://<pane>[/<network type>]`), a
+  Network Editor loads the Network Editor set, any other pane and no report
+  keep the Scene View set, and the report REPLACES the fallback
+  (`layer: false`);
+* the entry's names are exactly the host's context-reporter allow-list, and a
+  macOS name with a version reaches the reporter too.
 
 The names are the expected process / app names; none was checked on an
 install (see overlay_sources/houdini/SOURCES.md).
@@ -18,6 +24,8 @@ from pathlib import Path
 
 import yaml
 
+from polyhost.handler.browser_url import (
+    CONTEXT_REPORTERS, BrowserUrlProvider, context_reporter_for)
 from polyhost.handler.common import find_matching_entry, mapping_key
 
 RES = Path(__file__).resolve().parents[2] / "polyhost" / "res"
@@ -25,6 +33,12 @@ MAPPING = RES / "overlay-mapping.poly.yaml"
 
 HOUDINI = ["houdini_template.mods.png", "houdini_template.combo.mods.png"]
 HOUDINI_MAC = ["houdini_template_mac.mods.png", "houdini_template_mac.combo.mods.png"]
+NETWORK = ["houdini_network_template.mods.png", "houdini_network_template.combo.mods.png"]
+NETWORK_MAC = ["houdini_network_template_mac.mods.png",
+               "houdini_network_template_mac.combo.mods.png",
+               "houdini_network_template_mac.extra.mods.png"]
+KEY = ("houdini,houdinifx,houdinicore,happrentice,hindie,hescape,houdini-bin,"
+       "houdini fx,houdini core,houdini apprentice,houdini indie")
 
 LAUNCHERS = ["houdini", "houdinifx", "houdinicore", "happrentice", "hindie", "hescape"]
 
@@ -61,6 +75,43 @@ def _overlay_handler_class():
     return OverlayHandler
 
 
+class HoudiniReporterFileTest(unittest.TestCase):
+    """The raw YAML and the allow-list; no window backend needed."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.raw = yaml.safe_load(MAPPING.read_text(encoding="utf-8"))
+
+    def test_names_are_the_context_reporter_allow_list(self):
+        self.assertIn(KEY, self.raw)
+        self.assertEqual(set(KEY.split(",")),
+                         {n for n, t in CONTEXT_REPORTERS.items() if t == "houdini"})
+
+    def test_both_levels_opt_out_of_layering(self):
+        self.assertIs(self.raw[KEY]["layer"], False)
+        self.assertIs(self.raw[KEY]["os"]["macos"]["layer"], False)
+
+    def test_every_os_name_reaches_the_reporter(self):
+        for app, _os, _files in ROUTES:
+            with self.subTest(app=app):
+                self.assertEqual(context_reporter_for(app), "houdini")
+        self.assertEqual(context_reporter_for("houdinifx.exe"), "houdini")
+        self.assertIsNone(context_reporter_for("houdini engine"))
+
+    def test_a_report_answers_only_while_houdini_is_focused(self):
+        now = [100.0]
+        p = BrowserUrlProvider(clock=lambda: now[0], macos_lookup=lambda _a: None)
+        self.assertTrue(p.update(app="houdini", url="houdini://network/sop", pid=7))
+        self.assertEqual(p.current_url("houdinifx"), "houdini://network/sop")
+        self.assertEqual(p.current_url("houdini fx 22.0.368"), "houdini://network/sop")
+        self.assertIsNone(p.current_url("blender"))
+        now[0] += 9.0                                  # stale: the fallback returns
+        self.assertIsNone(p.current_url("houdini"))
+        p.update(app="houdini", url="houdini://scene/sop", pid=7)
+        p.update(app="houdini", url=None, focused=False, pid=7)   # Houdini exited
+        self.assertIsNone(p.current_url("houdini"))
+
+
 class HoudiniRoutingTest(unittest.TestCase):
 
     @classmethod
@@ -79,6 +130,38 @@ class HoudiniRoutingTest(unittest.TestCase):
         for app, os_name, expected in ROUTES:
             with self.subTest(app=app, os=os_name):
                 self.assertEqual(self._route(app, os_name), expected)
+
+    def _route_url(self, url, os_name):
+        m = find_matching_entry("Untitled", self.mapping["houdini"], url, os_name)
+        return None if m is None else [str(f) for f in m["overlay"]]
+
+    def test_each_pane_gets_its_set(self):
+        cases = {
+            "houdini://network/sop": NETWORK,
+            "houdini://network/obj": NETWORK,
+            "houdini://network/lop": NETWORK,
+            "houdini://network": NETWORK,
+            "houdini://scene/sop": HOUDINI,
+            "houdini://textport": HOUDINI,
+            "houdini://parms/obj": HOUDINI,
+            None: HOUDINI,
+        }
+        for url, want in cases.items():
+            with self.subTest(url=url):
+                self.assertEqual(self._route_url(url, "windows"), want)
+                self.assertEqual(self._route_url(url, "linux"), want)
+        self.assertEqual(self._route_url("houdini://network/dop", "macos"), NETWORK_MAC)
+        self.assertEqual(self._route_url("houdini://scene/obj", "macos"), HOUDINI_MAC)
+        self.assertEqual(self._route_url(None, "macos"), HOUDINI_MAC)
+
+    def test_the_network_set_replaces_the_scene_view_set(self):
+        got = find_matching_entry("Untitled", self.mapping["houdini"],
+                                  "houdini://network/sop", "linux")
+        self.assertFalse([f for f in got["overlay"] if getattr(f, "underlay", False)])
+
+    def test_network_files_exist(self):
+        missing = [f for f in NETWORK + NETWORK_MAC if not (RES / "overlays" / f).is_file()]
+        self.assertEqual(missing, [])
 
     def test_unrelated_names_do_not_match(self):
         # A name that only starts with "houdini" is not the app.

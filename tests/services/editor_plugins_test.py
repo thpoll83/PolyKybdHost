@@ -615,5 +615,112 @@ class TestStamp(Fixture):
                          ["doc/polykybd.txt", "doc/tags", "lua/polykybd.lua", "plugin/polykybd.vim"])
 
 
+class TestHoudini(Fixture):
+    """The Houdini package: <prefs>/packages/polykybd.json and polykybd/."""
+
+    def setUp(self):
+        super().setUp()
+        self.h_src = self.tmp / "houdini-package"
+        for rel, text in {"polykybd.json": '{"hpath": "x"}\n',
+                          "README.md": "not copied\n",
+                          "polykybd/python3.11libs/uiready.py": "# v1\n",
+                          "polykybd/python/polykybd_houdini/core.py": "# core v1\n",
+                          "polykybd/python/polykybd_houdini/__pycache__/core.cpython-311.pyc": "x"}.items():
+            (self.h_src / rel).parent.mkdir(parents=True, exist_ok=True)
+            (self.h_src / rel).write_text(text)
+        self.prefs = self.home / "houdini22.0"
+        self.prefs.mkdir()
+        (self.home / "houdini21.0").mkdir()      # an older version: left alone
+
+    def kw(self, which=None, system="Linux"):
+        return dict(super().kw(which), houdini_source=self.h_src, system=system)
+
+    @property
+    def pkg(self):
+        return self.prefs / "packages"
+
+    def test_newest_preferences_folder_on_each_os(self):
+        (self.home / "houdini9.5").mkdir()
+        (self.home / "houdini-tools").mkdir()
+        self.assertEqual(ep.houdini_pref_dir(home=self.home, env={}, system="Linux"), self.prefs)
+        docs = self.home / "Documents"
+        (docs / "houdini20.5").mkdir(parents=True)
+        self.assertEqual(ep.houdini_pref_dir(home=self.home, env={}, system="Windows"),
+                         docs / "houdini20.5")
+        self.assertEqual(ep.houdini_pref_dir(home=self.home, env={"HOME": str(self.home)},
+                                             system="Windows"), self.prefs)
+        mac = self.home / "Library/Preferences/houdini"
+        (mac / "21.0").mkdir(parents=True)
+        (mac / "20.5").mkdir()
+        self.assertEqual(ep.houdini_pref_dir(home=self.home, env={}, system="Darwin"), mac / "21.0")
+
+    def test_preferences_folder_from_the_environment(self):
+        custom = self.tmp / "prefs"
+        (custom / "hou_22.0").mkdir(parents=True)
+        (custom / "hou_21.5").mkdir()
+        env = {"HOUDINI_USER_PREF_DIR": str(custom / "hou___HVER__")}
+        self.assertEqual(ep.houdini_pref_dir(home=self.home, env=env, system="Linux"),
+                         custom / "hou_22.0")
+        env = {"HOUDINI_USER_PREF_DIR": str(custom / "hou_21.5")}
+        self.assertEqual(ep.houdini_pref_dir(home=self.home, env=env, system="Linux"),
+                         custom / "hou_21.5")
+
+    def test_no_preferences_folder_reads_not_present(self):
+        shutil.rmtree(self.prefs)
+        shutil.rmtree(self.home / "houdini21.0")
+        st = self.status(ep.HOUDINI)
+        self.assertEqual(st.state, ep.STATE_NOT_PRESENT)
+        self.assertNotIn(ep.HOUDINI, [r.editor for r in ep.install(None, **self.kw())])
+
+    def test_install_writes_the_package_file_and_folder_and_remove_undoes_both(self):
+        st = self.status(ep.HOUDINI)
+        self.assertEqual((st.state, st.target), (ep.STATE_NOT_INSTALLED, self.pkg / "polykybd"))
+        self.assertTrue(ep.default_selection(st))
+        [r] = ep.install([ep.HOUDINI], **self.kw())
+        self.assertTrue(r.ok and r.changed, r)
+        self.assertEqual((self.pkg / "polykybd.json").read_text(), '{"hpath": "x"}\n')
+        self.assertEqual((self.pkg / "polykybd/python3.11libs/uiready.py").read_text(), "# v1\n")
+        self.assertTrue((self.pkg / "polykybd/python/polykybd_houdini/core.py").is_file())
+        self.assertFalse((self.pkg / "polykybd/python/polykybd_houdini/__pycache__").exists())
+        self.assertFalse((self.pkg / "README.md").exists())
+        self.assertFalse((self.home / "houdini21.0/packages").exists())
+        self.assertEqual(self.status(ep.HOUDINI).state, ep.STATE_INSTALLED)
+        [r] = ep.remove([ep.HOUDINI], **self.kw())
+        self.assertTrue(r.ok and r.changed, r)
+        self.assertFalse((self.pkg / "polykybd.json").exists())
+        self.assertFalse((self.pkg / "polykybd").exists())
+        self.assertTrue(self.pkg.is_dir())
+
+    def test_a_changed_source_is_refreshed_and_a_hand_edit_is_kept(self):
+        ep.install([ep.HOUDINI], **self.kw())
+        (self.h_src / "polykybd.json").write_text('{"hpath": "y"}\n')
+        self.assertEqual(self.status(ep.HOUDINI).state, ep.STATE_OUTDATED)
+        self.assertEqual(ep.refresh_installed(**self.kw()), [ep.HOUDINI])
+        self.assertEqual((self.pkg / "polykybd.json").read_text(), '{"hpath": "y"}\n')
+        (self.pkg / "polykybd.json").write_text('{"my": "token"}\n')
+        (self.h_src / "polykybd.json").write_text('{"hpath": "z"}\n')
+        self.assertEqual(self.status(ep.HOUDINI).state, ep.STATE_MODIFIED)
+        self.assertEqual(ep.refresh_installed(**self.kw()), [])
+        self.assertEqual((self.pkg / "polykybd.json").read_text(), '{"my": "token"}\n')
+
+    def test_a_package_file_of_our_name_that_we_did_not_write_is_never_replaced(self):
+        self.pkg.mkdir()
+        (self.pkg / "polykybd.json").write_text("mine\n")
+        st = self.status(ep.HOUDINI)
+        self.assertEqual(st.state, ep.STATE_MANUAL)
+        self.assertFalse(ep.default_selection(st))
+        [r] = ep.install([ep.HOUDINI], **self.kw())
+        self.assertFalse(r.ok)
+        self.assertEqual((self.pkg / "polykybd.json").read_text(), "mine\n")
+
+    def test_the_shipped_package_is_complete(self):
+        files = ep.shipped_files(ep.HOUDINI)
+        self.assertIn(ep.HOUDINI_PACKAGE_FILE, files)
+        self.assertIn("python/polykybd_houdini/__init__.py", files)
+        self.assertIn("python/polykybd_houdini/core.py", files)
+        self.assertIn("python3.11libs/uiready.py", files)
+        self.assertFalse([f for f in files if f.endswith(".pyc") or "__pycache__" in f])
+
+
 if __name__ == "__main__":
     unittest.main()

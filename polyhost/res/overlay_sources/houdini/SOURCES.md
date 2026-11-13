@@ -1,7 +1,10 @@
 # SideFX Houdini overlay: sources
 
-One spec, `bindings.yaml`, with two artwork sets: `houdini_template.*`
-(Windows and Linux) and `houdini_template_mac.*` (macOS). Rebuild with
+Two specs. `bindings.yaml` is the Scene View set, with two artwork sets:
+`houdini_template.*` (Windows and Linux) and `houdini_template_mac.*` (macOS).
+`network.yaml` is the Network Editor set (`houdini_network_template*`), loaded
+while the Houdini package (`houdini-package/`) reports a Network Editor under
+the pointer; see *Network Editor set* below. Rebuild with
 `fetch_icons.py`, then `scripts/generate_app_overlays.py` on the spec.
 
 ## Shortcuts
@@ -39,7 +42,8 @@ tabs, Alt+1..9 pane types). Most of the time the pointer is over the viewport
 while the tool letters are used, and the quick reference lists the viewport
 keys first. No key mixes the two contexts.
 
-Network Editor meanings of the same keys (not drawn), from
+With the Houdini package installed, the Network Editor meanings are drawn by
+`network.yaml` (next section). Network Editor meanings of the same keys, from
 <https://www.sidefx.com/docs/houdini/network/shortcuts.html>:
 
 | Key | Network Editor |
@@ -99,6 +103,27 @@ Network Editor meanings of the same keys (not drawn), from
 ⚠️ **Not on a SideFX page, drawn from the File and Edit menus:** Ctrl+N (New
 scene), Ctrl+O (Open scene), Ctrl+S (Save), Ctrl+Z (Undo). Not checked on an
 install.
+
+## Network Editor set
+
+`network.yaml`, from <https://www.sidefx.com/docs/houdini/network/shortcuts.html>
+(Houdini 22.0, read 2026-11-13), plus the keys of `bindings.yaml` that work in
+every pane: the timeline arrows, pane tabs, Alt+1..9 pane types, Auto-key and
+the File and Edit menu keys. 70 keys on each platform, plus the ESC mark.
+Routed in `overlay-mapping.poly.yaml` on `houdini://network`, for every network
+type (the page lists one set of keys for all of them).
+
+Left out: W, E, R and T (node flags whose meaning depends on the network type;
+the page does not name them), the S, A and Y mouse chords other than the ones
+drawn as "hold", `8` while dropping a node, and every mouse action.
+
+New icons: `file_node, cut_wires, net_overview, color_palette, shape_palette,
+prev_view, layout_nodes, align_nodes, distribute_nodes, network_box, notes_min,
+notes_restore, box_fit, sibling_prev, sibling_next, mark_set, match_next,
+match_prev` are Material Symbols (`ms:` names in `fetch_icons.py`,
+Apache-2.0). `fit_view, group_enter, group_exit, mute, search` are byte copies
+of `../blender/icons/`, and `upstream, downstream, stickynote, jumpbookmark` of
+`../nuke/icons/` (Material Symbols there, Apache-2.0).
 
 ## Icons
 

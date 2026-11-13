@@ -106,6 +106,13 @@ CONTEXT_REPORTERS = {
     "macvim": "vim",
     "neovide": "vim",
     "emacs": "emacs",
+    # SideFX Houdini (houdini-package/): the names of the mapping's houdini
+    # entry. macOS reports "Houdini FX 22.0.368"; context_reporter_for() drops
+    # the version the way the matcher does.
+    "houdini": "houdini", "houdinifx": "houdini", "houdinicore": "houdini",
+    "happrentice": "houdini", "hindie": "houdini", "hescape": "houdini",
+    "houdini-bin": "houdini", "houdini fx": "houdini", "houdini core": "houdini",
+    "houdini apprentice": "houdini", "houdini indie": "houdini",
 }
 
 # Reporters that also run INSIDE a terminal (vim, emacs -nw). While a terminal
@@ -159,8 +166,10 @@ def _app_key(app_name):
 
 
 def context_reporter_for(app_name):
-    """The reporter token for a focused app with a context add-on, or None."""
-    return CONTEXT_REPORTERS.get(_app_key(app_name))
+    """The reporter token for a focused app with a context add-on, or None.
+    A trailing version is dropped as `mapping_key` drops it for the mapping
+    (``houdini fx 22.0.368`` -> ``houdini fx``)."""
+    return CONTEXT_REPORTERS.get(mapping_key(_app_key(app_name), CONTEXT_REPORTERS))
 
 
 def is_terminal_app(app_name) -> bool:

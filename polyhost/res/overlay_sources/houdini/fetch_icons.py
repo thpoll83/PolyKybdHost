@@ -47,6 +47,25 @@ ICONS = {
     # --- composite inputs (no binding draws them directly)
     "selectall": "Select All On",
     "camera": "ms:videocam",
+    # --- Network Editor (network.yaml)
+    "file_node": "ms:draft",
+    "cut_wires": "ms:content_cut",
+    "net_overview": "ms:picture_in_picture",
+    "color_palette": "ms:palette",
+    "shape_palette": "ms:shapes",
+    "prev_view": "ms:history",
+    "layout_nodes": "ms:schema",
+    "align_nodes": "ms:align_horizontal_left",
+    "distribute_nodes": "ms:horizontal_distribute",
+    "network_box": "ms:select",
+    "notes_min": "ms:unfold_less",
+    "notes_restore": "ms:unfold_more",
+    "box_fit": "ms:close_fullscreen",
+    "sibling_prev": "ms:west",
+    "sibling_next": "ms:east",
+    "mark_set": "ms:bookmark_add",
+    "match_next": "ms:keyboard_double_arrow_down",
+    "match_prev": "ms:keyboard_double_arrow_up",
 }
 
 # Same action as in a sibling set: a byte-identical copy.
@@ -88,6 +107,16 @@ BORROW = {
     "open.png": "cinema4d",
     "save.png": "cinema4d",
     "undo.png": "cinema4d",
+    # --- Network Editor (network.yaml)
+    "fit_view.png": "blender",        # G: show the selected nodes
+    "group_enter.png": "blender",     # Enter: go inside the node
+    "group_exit.png": "blender",      # U: go up a level
+    "mute.png": "blender",            # Q, B: bypass flag
+    "search.png": "blender",          # /, Ctrl+F: find
+    "upstream.png": "nuke",           # PgUp: select the upstream node
+    "downstream.png": "nuke",         # PgDn: select the downstream node
+    "stickynote.png": "nuke",         # Shift+P: sticky note
+    "jumpbookmark.png": "nuke",       # Shift+1..5: go to a quick mark
 }
 
 HOUDINI_ICON_URL = "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/houdini.svg"
