@@ -371,6 +371,22 @@ whole. Neither preview shows any of this: `preview_black.py` draws no legend, an
 To draw on the whole Space keycap, use `space_hint.py` (below); it checks both ␣
 positions.
 
+Count it with `legend_courtyard.py`: per key, the cells where the courtyard
+erases legend pixels and the pixel total, for the centred and the top-left
+legend, over every committed overlay (or `--spec` ones). `--sheet out.png` draws
+each icon that still erases pixels top-left, erased pixels in red. About 20 s.
+
+```bash
+.venv/bin/python .claude/skills/generate-app-overlays/legend_courtyard.py \
+    --key KC_SPACE --key KC_ENTER --key KC_DELETE --sheet /tmp/hits.png
+```
+
+⚠️ **Don't make an icon smaller to keep it off a legend.** The courtyard already
+keeps the legend's remaining pixels readable, so a smaller icon only costs
+legibility (maintainer, 2026-11-13: 28 x 20 "mini icons" for the bottom row were
+refused). When a legend collides with icons on many keys, move the legend in
+the firmware, as qmk#437 did for the thumb row.
+
 ### 5. Wire the mapping + verify
 
 - Paste the printed stanza into `polyhost/res/overlay-mapping.poly.yaml` (confirm
