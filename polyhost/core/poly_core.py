@@ -534,6 +534,7 @@ class PolyCore(Observable):
         titles = getattr(self, "_agent_titles", None)
         if titles is not None:
             titles.stop()     # no title-scan report may reach the registry after this
+        self._stop_cloud_relay()
         store = getattr(self, "_agent_store", None)
         if store is not None:
             store.save_if_changed()     # the agents of this run, for the next start
@@ -2483,6 +2484,20 @@ class PolyCore(Observable):
             from polyhost.services.agents.viewer import mapping_viewer_apps
             return _raise_viewer(machine, mapping_viewer_apps(self.mapping))
         self._agent_keys.raise_viewer = raise_viewer
+        self._agent_keys.raise_cloud = self._raise_cloud_session
+        # No window for a cloud session: the tray asks whether to open its page
+        # (host.py _on_agent_open_request). Without a tray nobody answers, and
+        # nothing opens.
+        self._agent_keys.ask_open = lambda agent: self.emit(
+            "agent_open_request", {"url": agent.url, "title": agent.display_headline})
+        self._agent_limits = limits
+        self._cloud_relay = None
+        # Start and stop of the client, with the reads they decide on.
+        self._cloud_relay_lock = threading.Lock()
+        # Connect and disconnect (network I/O, up to 15 s): never under the lock
+        # above, which a settings change takes on the caller's thread.
+        self._cloud_channel_lock = threading.Lock()
+        self._apply_cloud_relay()
         self.worker.add_periodic("agents", 1.0, self._agents_periodic)
         if self._agent_store is not None:
             self.worker.add_periodic("agents_store", 5.0,
@@ -2592,6 +2607,127 @@ class PolyCore(Observable):
         if any(a.machine == machine for a in self.agents.agents()):
             out["agents_fast"] = True
         return out
+
+    # ---- Claude Code cloud sessions (services/agents/cloud_relay.py) ----------
+
+    def _cloud_relay_path(self) -> str:
+        from polyhost.server import protocol
+        return protocol.cloud_relay_path()
+
+    def _apply_cloud_relay(self) -> None:
+        """Run the relay connection while the agent keys are on and a channel
+        exists; stop it otherwise. Never raises."""
+        from polyhost.services.agents import cloud_relay
+        lock = getattr(self, "_cloud_relay_lock", None)
+        if lock is None:
+            return
+        with lock:
+            # Read under the lock: a decision made before it could start a client
+            # after a later call had turned the keys off or deleted the channel.
+            try:
+                channel = cloud_relay.load_channel(self._cloud_relay_path())
+            except Exception as e:  # noqa: BLE001 - an optional feature must not stop the start
+                self.log.warning("Cloud relay: could not read the channel: %s", e)
+                channel = None
+            wanted = channel is not None and bool(self.poly_settings.get("agents_enabled"))
+            client = self._cloud_relay
+            if client is not None and (not wanted or client.channel != channel):
+                client.stop()
+                client = self._cloud_relay = None
+            if wanted and client is None:
+                self._cloud_relay = cloud_relay.RelayClient(
+                    channel, self.agents, limits=self._agent_limits, log_=self.log)
+                self._cloud_relay.start()
+
+    def _stop_cloud_relay(self) -> None:
+        lock = getattr(self, "_cloud_relay_lock", None)
+        if lock is None:
+            return
+        with lock:
+            client, self._cloud_relay = self._cloud_relay, None
+        if client is not None:
+            client.stop()
+
+    def agents_cloud_status(self) -> dict:
+        """No network I/O: whether a channel exists, the connection's state and,
+        with a channel, what the user enters in the cloud environment."""
+        from polyhost.services.agents import cloud_relay
+        channel = cloud_relay.load_channel(self._cloud_relay_path())
+        out = {"configured": channel is not None,
+               "agents_enabled": bool(self.poly_settings.get("agents_enabled")),
+               "connection": {"state": "stopped", "error": "", "connected_since": 0}}
+        client = getattr(self, "_cloud_relay", None)
+        if client is not None:
+            out["connection"] = client.status()
+        if channel is not None:
+            out["setup"] = cloud_relay.setup_text(channel)
+        return out
+
+    def agents_cloud_connect(self):
+        """Create a channel on the relay when there is none, and start listening.
+        Network I/O: runs on the caller's thread (a control-server thread, or the
+        tray's click thread), never the HID worker. (ok, status or reason)."""
+        from polyhost.services.agents import cloud_relay
+        path = self._cloud_relay_path()
+        with self._cloud_channel_lock:      # two clients: one channel, not two
+            if cloud_relay.load_channel(path) is None:
+                try:
+                    cloud_relay.create_channel(path)
+                except (cloud_relay.RelayError, OSError) as e:
+                    return False, str(e)
+                self.log.info("Cloud relay: channel created")
+            self._apply_cloud_relay()
+        return True, self.agents_cloud_status()
+
+    def agents_cloud_disconnect(self):
+        """Delete the channel on the relay and here, and remove the cloud agents.
+        The cloud environment's hooks then fail quietly. (ok, what happened)."""
+        from polyhost.services.agents import cloud_relay
+        path = self._cloud_relay_path()
+        with self._cloud_channel_lock:
+            channel = cloud_relay.load_channel(path)
+            self._stop_cloud_relay()
+            try:
+                result = cloud_relay.delete_channel(path, channel)
+            except OSError as e:
+                return False, f"could not remove {path}: {e}"
+            # A settings change between the stop and the delete could have
+            # started the client again; with the file gone this stops it.
+            self._apply_cloud_relay()
+            # Under the lock: a connect waiting for it must not have its new
+            # channel's sessions removed by this cleanup.
+            cloud_relay.RelaySink(self.agents, b"").forget_all()
+        self.log.info("Cloud relay: disconnected by the user (%s)", result)
+        return True, result
+
+    def _raise_cloud_session(self, agent):
+        """A cloud session's key press (on its own thread, never the worker):
+        the browser extension switches to the tab with the session's exact URL,
+        then the window that now shows it comes to the front (the extension's
+        own focus can be refused by Windows). Without the extension: a window
+        whose title names the session, else the Claude desktop app."""
+        from polyhost.services.agents.cloud_relay import is_session_url
+        from polyhost.services.agents.raiser import raise_cloud
+        found, tab_title = None, ""
+        source = getattr(self, "browser_url_source", None)
+        if source is not None and is_session_url(agent.url):
+            found, tab_title = source.focus_tab(agent.url)
+        # One line per press: a press that ends in the question looks the same
+        # whether the extension is missing or found no tab.
+        extension = {None: "browser extension not listening (version 1.1.0, port "
+                           "browser_report_port?)",
+                     False: "browser extension: no tab has this session",
+                     True: "browser extension: tab switched"}[found]
+        self.log.info("Cloud key %s: %s", agent.session_id[:8], extension)
+        if found:
+            time.sleep(0.3)     # the window title follows the new active tab
+            result = raise_cloud(agent, app_fallback=False, tab_title=tab_title)
+            if result is False:
+                # The tab is active, but no window with its title came forward:
+                # not "raised", and no question either (the page is open).
+                return "tab switched; its browser window was not brought forward"
+            return result
+        return raise_cloud(agent)
 
     def agents_raise(self, vendor, session_id):
         """Bring an agent's window forward (the tray's agent list). The raise runs
@@ -3483,6 +3619,9 @@ class PolyCore(Observable):
                 and not self.poly_settings.get("agents_enabled")):
             # Turned off: the periodic stops, so it cannot clear the keys itself.
             self._clear_agent_keys()
+        if ((keys is None or "agents_enabled" in keys)
+                and getattr(self, "_cloud_relay_lock", None) is not None):
+            self._apply_cloud_relay()
         from polyhost.services import game_assets
         if keys is None or game_assets.SETTING_KEYS.intersection(keys):
             # The next send of an opted-in overlay builds again; reset() makes

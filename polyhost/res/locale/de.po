@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-12 14:42+0000\n"
+"POT-Creation-Date: 2026-11-13 11:12+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -568,6 +568,106 @@ msgstr "Stoppen nicht möglich: {error}"
 msgid "<b>Failed:</b> {reason}"
 msgstr "<b>Fehlgeschlagen:</b> {reason}"
 
+#: polyhost/gui/cloud_sessions_dialog.py:38
+msgid "Connect Cloud Sessions"
+msgstr "Cloud-Sitzungen verbinden"
+
+#: polyhost/gui/cloud_sessions_dialog.py:48
+#: polyhost/gui/cloud_sessions_dialog.py:118
+msgid "Reading the state…"
+msgstr "Zustand wird gelesen…"
+
+#: polyhost/gui/cloud_sessions_dialog.py:49
+msgid "Shows Claude Code sessions that run in the cloud (claude.ai/code, also when the desktop app shows them) on the agent keys. A key press brings the session's browser window or the Claude app to the front. The session's state goes through the PolyKybd relay, encrypted with a key that only this computer and your cloud environment have."
+msgstr "Zeigt Sitzungen von Claude Code, die in der Cloud laufen (claude.ai/code, auch wenn die Desktop-App sie anzeigt), auf den Agent-Tasten an. Ein Tastendruck holt das Browserfenster der Sitzung oder die Claude-App in den Vordergrund. Der Zustand der Sitzung läuft über das PolyKybd-Relay, verschlüsselt mit einem Schlüssel, den nur dieser Rechner und die eigene Cloud-Umgebung haben."
+
+#: polyhost/gui/cloud_sessions_dialog.py:58
+msgid "Cloud environment settings"
+msgstr "Einstellungen der Cloud-Umgebung"
+
+#: polyhost/gui/cloud_sessions_dialog.py:60
+msgid "In claude.ai, open the cloud environment's settings and enter these. Use a personal environment: everyone who uses an environment can read its variables."
+msgstr "In claude.ai die Einstellungen der Cloud-Umgebung öffnen und diese Werte eintragen. Eine persönliche Umgebung verwenden: Alle, die eine Umgebung nutzen, können ihre Variablen lesen."
+
+#: polyhost/gui/cloud_sessions_dialog.py:74
+msgid "Environment variable"
+msgstr "Umgebungsvariable"
+
+#: polyhost/gui/cloud_sessions_dialog.py:75
+msgid "Allowed host (when network access is Limited)"
+msgstr "Erlaubter Host (wenn der Netzwerkzugriff Limited ist)"
+
+#: polyhost/gui/cloud_sessions_dialog.py:76
+msgid "Setup script"
+msgstr "Setup-Skript"
+
+#: polyhost/gui/cloud_sessions_dialog.py:80
+#: polyhost/gui/forwarder_pairing.py:26
+msgid "Copy"
+msgstr "Kopieren"
+
+#: polyhost/gui/cloud_sessions_dialog.py:89
+msgid "Each new cloud session of that environment then shows on a number key."
+msgstr "Jede neue Cloud-Sitzung dieser Umgebung erscheint dann auf einer Zahlentaste."
+
+#: polyhost/gui/cloud_sessions_dialog.py:97
+msgid "Connect"
+msgstr "Verbinden"
+
+#: polyhost/gui/cloud_sessions_dialog.py:98
+msgid "Disconnect…"
+msgstr "Trennen…"
+
+#: polyhost/gui/cloud_sessions_dialog.py:164
+#, python-brace-format
+msgid "The state could not be read: {msg}"
+msgstr "Der Zustand konnte nicht gelesen werden: {msg}"
+
+#: polyhost/gui/cloud_sessions_dialog.py:182
+msgid "Not connected. \"Connect\" creates a channel on the relay for this computer."
+msgstr "Nicht verbunden. „Verbinden“ legt auf dem Relay einen Kanal für diesen Rechner an."
+
+#: polyhost/gui/cloud_sessions_dialog.py:188
+msgid "The agent keys are off: turn on \"Show on the Number Row\" in the AI Agents menu."
+msgstr "Die Agent-Tasten sind aus: Im Menü KI-Agenten „Auf der Zahlenreihe anzeigen“ einschalten."
+
+#: polyhost/gui/cloud_sessions_dialog.py:191
+msgid "Connected to the relay."
+msgstr "Mit dem Relay verbunden."
+
+#: polyhost/gui/cloud_sessions_dialog.py:193
+#, python-brace-format
+msgid "The relay cannot be reached; trying again: {error}"
+msgstr "Das Relay ist nicht erreichbar; neuer Versuch: {error}"
+
+#: polyhost/gui/cloud_sessions_dialog.py:196
+msgid "Connecting to the relay…"
+msgstr "Verbindung zum Relay wird hergestellt…"
+
+#: polyhost/gui/cloud_sessions_dialog.py:203
+#: polyhost/gui/crash_alert_dialog.py:208 polyhost/gui/error_dialog.py:74
+#: polyhost/gui/problem_alert_dialog.py:108
+msgid "Copied to the clipboard."
+msgstr "In die Zwischenablage kopiert."
+
+#: polyhost/gui/cloud_sessions_dialog.py:208
+msgid "Creating a channel on the relay…"
+msgstr "Kanal auf dem Relay wird angelegt…"
+
+#: polyhost/gui/cloud_sessions_dialog.py:218
+#, python-brace-format
+msgid "Could not connect: {msg}"
+msgstr "Verbindung fehlgeschlagen: {msg}"
+
+#: polyhost/gui/cloud_sessions_dialog.py:224
+#: polyhost/gui/cloud_sessions_dialog.py:236
+msgid "Disconnect Cloud Sessions"
+msgstr "Cloud-Sitzungen trennen"
+
+#: polyhost/gui/cloud_sessions_dialog.py:225
+msgid "Delete the channel on the relay? The cloud sessions leave the agent keys, and the hooks in your cloud environment stop reaching this computer. Remove the environment variable there too."
+msgstr "Den Kanal auf dem Relay löschen? Die Cloud-Sitzungen verschwinden von den Agent-Tasten, und die Hooks in der Cloud-Umgebung erreichen diesen Rechner nicht mehr. Die Umgebungsvariable dort ebenfalls entfernen."
+
 #: polyhost/gui/cmd_menu.py:143 polyhost/gui/settings_dialog.py:78
 msgid "Brightness"
 msgstr "Helligkeit"
@@ -841,7 +941,7 @@ msgid "ok"
 msgstr "OK"
 
 #. TRANSLATORS: font-pack bundle state in a status table
-#: polyhost/gui/cmd_menu.py:555 polyhost/host.py:2449
+#: polyhost/gui/cmd_menu.py:555 polyhost/host.py:2453
 msgid "stale"
 msgstr "veraltet"
 
@@ -861,7 +961,7 @@ msgstr "mitgeliefert"
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "PolyKybd-Befehle (*.poly.cmd)"
 
-#: polyhost/gui/cmd_menu.py:566 polyhost/host.py:2696
+#: polyhost/gui/cmd_menu.py:566 polyhost/host.py:2749
 msgid "Open file"
 msgstr "Datei öffnen"
 
@@ -1046,11 +1146,6 @@ msgstr "Hier gelöscht, auf der Tastatur jedoch nicht: {reason}"
 #: polyhost/gui/crash_alert_dialog.py:200
 msgid "No crash records held."
 msgstr "Keine Absturzprotokolle vorhanden."
-
-#: polyhost/gui/crash_alert_dialog.py:208 polyhost/gui/error_dialog.py:74
-#: polyhost/gui/problem_alert_dialog.py:108
-msgid "Copied to the clipboard."
-msgstr "In die Zwischenablage kopiert."
 
 #: polyhost/gui/crash_alert_dialog.py:217
 msgid "Opened the problem report with the crash filled in."
@@ -1754,10 +1849,6 @@ msgstr "Forwarder koppeln"
 msgid "On the other computer, open the forwarder's menu, choose \"Pair with the Keyboard Computer…\" and enter this code. Anyone with this code can send window and agent reports to this computer, so pass it on only over a channel you trust. \"Accept forwarders\" must be on in Settings."
 msgstr "Auf dem anderen Rechner das Menü des Forwarders öffnen, „Mit dem Tastaturrechner koppeln…“ wählen und diesen Code eingeben. Wer diesen Code hat, kann Fenster- und Agent-Meldungen an diesen Rechner senden. Den Code daher nur über einen vertrauenswürdigen Kanal weitergeben. „Forwarder annehmen“ muss in den Einstellungen eingeschaltet sein."
 
-#: polyhost/gui/forwarder_pairing.py:26
-msgid "Copy"
-msgstr "Kopieren"
-
 #: polyhost/forwarder.py:908 polyhost/gui/forwarder_pairing.py:37
 #: polyhost/gui/forwarder_pairing.py:44 polyhost/gui/forwarder_pairing.py:51
 msgid "Pair with the Keyboard Computer"
@@ -1771,8 +1862,8 @@ msgstr "Den Code eingeben, den „Forwarder koppeln…“ auf dem Tastaturrechne
 msgid "That is not a pairing code: it has 64 letters and digits (a to f, 0 to 9), in groups of 8."
 msgstr "Das ist kein Kopplungscode: Ein Kopplungscode hat 64 Buchstaben und Ziffern (a bis f, 0 bis 9) in Gruppen zu je 8."
 
-#: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:3307
-#: polyhost/host.py:3348 polyhost/host.py:3380
+#: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:3360
+#: polyhost/host.py:3401 polyhost/host.py:3433
 msgid "Firmware Update"
 msgstr "Firmware-Update"
 
@@ -1845,147 +1936,147 @@ msgstr "Tastatur konnte nicht gelesen werden: {reason}"
 msgid "This firmware build has no runtime combos or tap dance (the DOOM developer build)."
 msgstr "Dieser Firmware-Build hat keine Laufzeit-Combos und kein Tap Dance (der DOOM-Entwickler-Build)."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:246
-#: polyhost/gui/layout_dialog/combo_tab.py:265
+#: polyhost/gui/layout_dialog/combo_tab.py:250
+#: polyhost/gui/layout_dialog/combo_tab.py:270
 msgid "Not saved"
 msgstr "Nicht gespeichert"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:253
+#: polyhost/gui/layout_dialog/combo_tab.py:257
 msgid "Saved on this half only: the other half did not answer. Save again once both halves are connected."
 msgstr "Nur auf dieser Hälfte gespeichert: Die andere Hälfte hat nicht geantwortet. Erneut speichern, sobald beide Hälften verbunden sind."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:284
+#: polyhost/gui/layout_dialog/combo_tab.py:289
 msgid "optional"
 msgstr "optional"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:286
+#: polyhost/gui/layout_dialog/combo_tab.py:291
 #, python-brace-format
 msgid "Key {n}"
 msgstr "Taste {n}"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:288
+#: polyhost/gui/layout_dialog/combo_tab.py:293
 msgid "Sends"
 msgstr "Sendet"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:292
+#: polyhost/gui/layout_dialog/combo_tab.py:297
 #, python-brace-format
 msgid "Press the keys within {ms} ms of each other. A key is written as on the keymap: KC_J, KC_ESC, S(KC_9), MO(1)."
 msgstr "Die Tasten innerhalb von {ms} ms nacheinander drücken. Eine Taste wird wie in der Tastenbelegung geschrieben: KC_J, KC_ESC, S(KC_9), MO(1)."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:294
+#: polyhost/gui/layout_dialog/combo_tab.py:299
 msgid "Press the keys at the same time. A key is written as on the keymap: KC_J, KC_ESC, S(KC_9), MO(1)."
 msgstr "Die Tasten gleichzeitig drücken. Eine Taste wird wie in der Tastenbelegung geschrieben: KC_J, KC_ESC, S(KC_9), MO(1)."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:304
-#: polyhost/gui/layout_dialog/combo_tab.py:385
+#: polyhost/gui/layout_dialog/combo_tab.py:309
+#: polyhost/gui/layout_dialog/combo_tab.py:390
 #, python-brace-format
 msgid "{n}: (empty)"
 msgstr "{n}: (leer)"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:320
+#: polyhost/gui/layout_dialog/combo_tab.py:325
 #, python-brace-format
 msgid "Key {n}: {text} is not a keycode."
 msgstr "Taste {n}: {text} ist kein Keycode."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:327
+#: polyhost/gui/layout_dialog/combo_tab.py:332
 #, python-brace-format
 msgid "Sends: {text} is not a keycode."
 msgstr "Sendet: {text} ist kein Keycode."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:330
+#: polyhost/gui/layout_dialog/combo_tab.py:335
 msgid "A combo needs at least two keys and a keycode to send."
 msgstr "Eine Combo benötigt mindestens zwei Tasten und einen Keycode zum Senden."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:332
+#: polyhost/gui/layout_dialog/combo_tab.py:337
 msgid "A combo cannot list the same key twice."
 msgstr "Eine Combo kann dieselbe Taste nicht zweimal enthalten."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:353
-#: polyhost/gui/layout_dialog/combo_tab.py:402
+#: polyhost/gui/layout_dialog/combo_tab.py:358
+#: polyhost/gui/layout_dialog/combo_tab.py:407
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
 msgid "Tap"
 msgstr "Tippen"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:353
-#: polyhost/gui/layout_dialog/combo_tab.py:402
+#: polyhost/gui/layout_dialog/combo_tab.py:358
+#: polyhost/gui/layout_dialog/combo_tab.py:407
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:46
 msgid "Hold"
 msgstr "Halten"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:353
-#: polyhost/gui/layout_dialog/combo_tab.py:403
+#: polyhost/gui/layout_dialog/combo_tab.py:358
+#: polyhost/gui/layout_dialog/combo_tab.py:408
 msgid "Double tap"
 msgstr "Doppelt tippen"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:353
-#: polyhost/gui/layout_dialog/combo_tab.py:403
+#: polyhost/gui/layout_dialog/combo_tab.py:358
+#: polyhost/gui/layout_dialog/combo_tab.py:408
 msgid "Tap, then hold"
 msgstr "Tippen, dann halten"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:356
+#: polyhost/gui/layout_dialog/combo_tab.py:361
 msgid "same as Tap"
 msgstr "wie Tippen"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:357
+#: polyhost/gui/layout_dialog/combo_tab.py:362
 msgid "Tap twice"
 msgstr "zweimal Tippen"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:358
+#: polyhost/gui/layout_dialog/combo_tab.py:363
 msgid "Tap, then hold Tap"
 msgstr "Tippen, dann Tippen halten"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:367
+#: polyhost/gui/layout_dialog/combo_tab.py:372
 msgid "Tapping term"
 msgstr "Tapping-Zeit"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:368
+#: polyhost/gui/layout_dialog/combo_tab.py:373
 msgid "Decide after"
 msgstr "Entscheiden nach"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:370
+#: polyhost/gui/layout_dialog/combo_tab.py:375
 #: polyhost/gui/layout_dialog/macro_tab.py:245
 msgid "Use on selected key"
 msgstr "Auf ausgewählter Taste verwenden"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:376
+#: polyhost/gui/layout_dialog/combo_tab.py:381
 msgid "Place the tap dance on a key with \"Use on selected key\". An action can be a key, a key with modifiers such as S(KC_9), or MO, TO or TG."
 msgstr "Den Tap Dance mit „Auf ausgewählter Taste verwenden“ auf eine Taste legen. Eine Aktion kann eine Taste, eine Taste mit Modifikatoren wie S(KC_9) oder MO, TO oder TG sein."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:388
+#: polyhost/gui/layout_dialog/combo_tab.py:393
 #, python-brace-format
 msgid "hold {key}"
 msgstr "halten {key}"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:390
+#: polyhost/gui/layout_dialog/combo_tab.py:395
 #, python-brace-format
 msgid "2× {key}"
 msgstr "2× {key}"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:392
+#: polyhost/gui/layout_dialog/combo_tab.py:397
 #, python-brace-format
 msgid "tap, then hold {key}"
 msgstr "tippen, dann halten {key}"
 
-#: polyhost/gui/layout_dialog/combo_tab.py:408
+#: polyhost/gui/layout_dialog/combo_tab.py:413
 #, python-brace-format
 msgid "{action}: {text} is not a keycode."
 msgstr "{action}: {text} ist kein Keycode."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:411
+#: polyhost/gui/layout_dialog/combo_tab.py:416
 #, python-brace-format
 msgid "{action}: a tap dance can send a key, a key with modifiers, MO, TO or TG, not {text}."
 msgstr "{action}: Ein Tap Dance kann eine Taste, eine Taste mit Modifikatoren, MO, TO oder TG senden, nicht {text}."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:416
+#: polyhost/gui/layout_dialog/combo_tab.py:421
 msgid "A tap dance needs at least one action."
 msgstr "Ein Tap Dance benötigt mindestens eine Aktion."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:420
+#: polyhost/gui/layout_dialog/combo_tab.py:425
 #, python-brace-format
 msgid "The time must be {lo} to {hi} ms in steps of {step} ms."
 msgstr "Die Zeit muss {lo} bis {hi} ms in Schritten von {step} ms betragen."
 
-#: polyhost/gui/layout_dialog/combo_tab.py:437
+#: polyhost/gui/layout_dialog/combo_tab.py:442
 #, python-brace-format
 msgid "Tap dance {n}"
 msgstr "Tap Dance {n}"
@@ -2091,7 +2182,7 @@ msgstr "keine Vorschaudaten (mitgeliefert oder im Checkout)"
 msgid "the shipped language table is missing"
 msgstr "die mitgelieferte Sprachtabelle fehlt"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:595 polyhost/host.py:3323
+#: polyhost/gui/layout_dialog/keycap_preview.py:595 polyhost/host.py:3376
 msgid "unknown"
 msgstr "unbekannt"
 
@@ -3770,7 +3861,7 @@ msgstr "Tipp-Halte-Zeiten"
 
 #. TRANSLATORS: unit after a number of milliseconds in a spin box.
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
-#: polyhost/gui/layout_dialog/combo_tab.py:366
+#: polyhost/gui/layout_dialog/combo_tab.py:371
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
 #: polyhost/gui/tap_terms_dialog.py:42 polyhost/gui/tap_terms_dialog.py:48
 #: polyhost/gui/tap_terms_dialog.py:63
@@ -4115,8 +4206,8 @@ msgstr "Tastenbelegung konfigurieren"
 msgid "Check for host update..."
 msgstr "Nach Host-Update suchen..."
 
-#: polyhost/host.py:784 polyhost/host.py:2785 polyhost/host.py:3320
-#: polyhost/host.py:3498
+#: polyhost/host.py:784 polyhost/host.py:2838 polyhost/host.py:3373
+#: polyhost/host.py:3551
 msgid "Check for firmware update…"
 msgstr "Nach Firmware-Update suchen…"
 
@@ -4440,121 +4531,138 @@ msgstr "Auf der Zahlenreihe anzeigen"
 msgid "Pair a Forwarder…"
 msgstr "Forwarder koppeln…"
 
-#: polyhost/host.py:2445
+#: polyhost/host.py:2434
+msgid "Connect Cloud Sessions…"
+msgstr "Cloud-Sitzungen verbinden…"
+
+#: polyhost/host.py:2449
 msgid "No agents reported"
 msgstr "Keine Agenten gemeldet"
 
-#: polyhost/host.py:2448
+#: polyhost/host.py:2452
 msgid "working"
 msgstr "arbeitet"
 
-#: polyhost/host.py:2448
+#: polyhost/host.py:2452
 msgid "waiting"
 msgstr "wartet"
 
-#: polyhost/host.py:2448
+#: polyhost/host.py:2452
 msgid "done"
 msgstr "fertig"
 
-#: polyhost/host.py:2449
+#: polyhost/host.py:2453
 msgid "idle"
 msgstr "inaktiv"
 
-#: polyhost/host.py:2452
+#: polyhost/host.py:2456
 #, python-brace-format
 msgid "Key {key}: {name}, {state}, {title}"
 msgstr "Taste {key}: {name}, {state}, {title}"
 
-#: polyhost/host.py:2457
+#: polyhost/host.py:2461
 #, python-brace-format
 msgid "Page {page}, {text}"
 msgstr "Seite {page}, {text}"
 
-#: polyhost/host.py:2593
+#: polyhost/host.py:2513
+msgid "Open Cloud Session"
+msgstr "Cloud-Sitzung öffnen"
+
+#: polyhost/host.py:2514
+#, python-brace-format
+msgid "No browser tab or Claude app window shows the cloud session \"{title}\". Open it in the browser?"
+msgstr "Kein Browser-Tab und kein Fenster der Claude-App zeigt die Cloud-Sitzung „{title}“. Im Browser öffnen?"
+
+#: polyhost/host.py:2521
+msgid "Open in Browser"
+msgstr "Im Browser öffnen"
+
+#: polyhost/host.py:2646
 msgid "No emoji search dictionaries shipped"
 msgstr "Keine Wörterbücher für die Emoji-Suche mitgeliefert"
 
-#: polyhost/host.py:2599
+#: polyhost/host.py:2652
 msgid "Needs newer keyboard firmware"
 msgstr "Benötigt neuere Tastatur-Firmware"
 
-#: polyhost/host.py:2627
+#: polyhost/host.py:2680
 msgid "Own dictionary file..."
 msgstr "Eigene Wörterbuchdatei..."
 
-#: polyhost/host.py:2629
+#: polyhost/host.py:2682
 #, python-brace-format
 msgid "Own dictionary (cannot be used): {name}"
 msgstr "Eigenes Wörterbuch (nicht verwendbar): {name}"
 
-#: polyhost/host.py:2631
+#: polyhost/host.py:2684
 #, python-brace-format
 msgid "Own dictionary: {name}"
 msgstr "Eigenes Wörterbuch: {name}"
 
-#: polyhost/host.py:2648
+#: polyhost/host.py:2701
 msgid "Choose an emoji search dictionary"
 msgstr "Emoji-Suchwörterbuch wählen"
 
-#: polyhost/host.py:2649
+#: polyhost/host.py:2702
 msgid "Emoji search dictionary (*.plyd)"
 msgstr "Emoji-Suchwörterbuch (*.plyd)"
 
-#: polyhost/host.py:2662
+#: polyhost/host.py:2715
 msgid "Emoji search dictionary"
 msgstr "Emoji-Suchwörterbuch"
 
-#: polyhost/host.py:2663
+#: polyhost/host.py:2716
 #, python-brace-format
 msgid "This file cannot be used: {reason}"
 msgstr "Diese Datei kann nicht verwendet werden: {reason}"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-#: polyhost/host.py:2695
+#: polyhost/host.py:2748
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "PolyKybd-Overlay-Zuordnung (*.poly.yaml)"
 
-#: polyhost/host.py:2783 polyhost/host.py:3279 polyhost/host.py:3427
+#: polyhost/host.py:2836 polyhost/host.py:3332 polyhost/host.py:3480
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "Firmware auf v{version} aktualisieren…"
 
 #: polyhost/forwarder.py:1003 polyhost/forwarder.py:1014
-#: polyhost/forwarder.py:1020 polyhost/host.py:2803 polyhost/host.py:2924
-#: polyhost/host.py:2928
+#: polyhost/forwarder.py:1020 polyhost/host.py:2856 polyhost/host.py:2977
+#: polyhost/host.py:2981
 msgid "Check for updates..."
 msgstr "Nach Updates suchen..."
 
-#: polyhost/host.py:2871
+#: polyhost/host.py:2924
 #, python-brace-format
 msgid "Update to v{version} available"
 msgstr "Update auf v{version} verfügbar"
 
 #: polyhost/forwarder.py:1016 polyhost/forwarder.py:1022
-#: polyhost/forwarder.py:1033 polyhost/host.py:2882 polyhost/host.py:2922
-#: polyhost/host.py:2929 polyhost/host.py:2952
+#: polyhost/forwarder.py:1033 polyhost/host.py:2935 polyhost/host.py:2975
+#: polyhost/host.py:2982 polyhost/host.py:3005
 msgid "PolyKybdHost Update"
 msgstr "PolyKybdHost-Update"
 
-#: polyhost/host.py:2883
+#: polyhost/host.py:2936
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "Version {version} ist verfügbar. Zum Aktualisieren auf das Symbol im Infobereich klicken."
 
-#: polyhost/forwarder.py:990 polyhost/host.py:2908
+#: polyhost/forwarder.py:990 polyhost/host.py:2961
 msgid "Checking for updates..."
 msgstr "Suche nach Updates..."
 
-#: polyhost/host.py:2921
+#: polyhost/host.py:2974
 msgid "No updates available"
 msgstr "Keine Updates verfügbar"
 
-#: polyhost/forwarder.py:1017 polyhost/host.py:2923
+#: polyhost/forwarder.py:1017 polyhost/host.py:2976
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "Die neueste Version (v{version}) ist bereits installiert."
 
-#: polyhost/forwarder.py:1023 polyhost/host.py:2930
+#: polyhost/forwarder.py:1023 polyhost/host.py:2983
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -4569,70 +4677,70 @@ msgstr ""
 "\n"
 "Für Details mit --dev 1 ausführen."
 
-#: polyhost/host.py:2935 polyhost/host.py:3352
+#: polyhost/host.py:2988 polyhost/host.py:3405
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "Veröffentlicht: {date}"
 
-#: polyhost/forwarder.py:1004 polyhost/host.py:2936
+#: polyhost/forwarder.py:1004 polyhost/host.py:2989
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "Version {version} ist verfügbar."
 
-#: polyhost/forwarder.py:1005 polyhost/host.py:2937
+#: polyhost/forwarder.py:1005 polyhost/host.py:2990
 msgid "Update PolyKybdHost"
 msgstr "PolyKybdHost aktualisieren"
 
-#: polyhost/host.py:2941
+#: polyhost/host.py:2994
 msgid "Download, install, and restart now?"
 msgstr "Jetzt herunterladen, installieren und neu starten?"
 
-#: polyhost/forwarder.py:1032 polyhost/host.py:2952
+#: polyhost/forwarder.py:1032 polyhost/host.py:3005
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "v{version} wird heruntergeladen…"
 
-#: polyhost/forwarder.py:1073 polyhost/host.py:3077
+#: polyhost/forwarder.py:1073 polyhost/host.py:3130
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "Das Update-Relay konnte nicht gestartet werden; das Update ist unvollständig. Details im Protokoll."
 
-#: polyhost/forwarder.py:1085 polyhost/host.py:3092
+#: polyhost/forwarder.py:1085 polyhost/host.py:3145
 msgid "Update failed"
 msgstr "Update fehlgeschlagen"
 
-#: polyhost/forwarder.py:1085 polyhost/host.py:3092
+#: polyhost/forwarder.py:1085 polyhost/host.py:3145
 msgid "The update did not finish."
 msgstr "Das Update wurde nicht abgeschlossen."
 
-#: polyhost/host.py:3239
+#: polyhost/host.py:3292
 #, python-brace-format
 msgid "{n} keyboard font bundle is out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
 msgid_plural "{n} keyboard font bundles are out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
 msgstr[0] "{n} Schriftpaket der Tastatur ist veraltet, und „Automatisch flashen“ ist aus. Nutze Updates → Tastaturschriften aktualisieren."
 msgstr[1] "{n} Schriftpakete der Tastatur sind veraltet, und „Automatisch flashen“ ist aus. Nutze Updates → Tastaturschriften aktualisieren."
 
-#: polyhost/host.py:3290
+#: polyhost/host.py:3343
 msgid "PolyKybd Firmware Update"
 msgstr "PolyKybd-Firmware-Update"
 
-#: polyhost/host.py:3291
+#: polyhost/host.py:3344
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "Neue Firmware v{version} ist verfügbar. Zum Aktualisieren auf das Symbol im Infobereich klicken."
 
-#: polyhost/host.py:3308 polyhost/host.py:3349
+#: polyhost/host.py:3361 polyhost/host.py:3402
 msgid "The keyboard must be connected to update the firmware."
 msgstr "Zum Aktualisieren der Firmware muss die Tastatur verbunden sein."
 
-#: polyhost/host.py:3314
+#: polyhost/host.py:3367
 msgid "Checking for firmware update…"
 msgstr "Suche nach Firmware-Update…"
 
-#: polyhost/host.py:3328 polyhost/host.py:3338 polyhost/host.py:3341
+#: polyhost/host.py:3381 polyhost/host.py:3391 polyhost/host.py:3394
 msgid "PolyKybd Firmware"
 msgstr "PolyKybd-Firmware"
 
-#: polyhost/host.py:3329
+#: polyhost/host.py:3382
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -4643,63 +4751,63 @@ msgstr ""
 "\n"
 "Die Tastatur hat v{current}. Meist bedeutet das, dass der Release-Build fehlgeschlagen ist – die Release-Seite erhält ihre Firmware, sobald das behoben ist."
 
-#: polyhost/host.py:3339
+#: polyhost/host.py:3392
 msgid "No firmware release could be found."
 msgstr "Es wurde kein Firmware-Release gefunden."
 
-#: polyhost/host.py:3342
+#: polyhost/host.py:3395
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "Die neueste Firmware (v{version}) ist bereits installiert."
 
-#: polyhost/host.py:3354
+#: polyhost/host.py:3407
 #, python-brace-format
 msgid "Installed: v{version}"
 msgstr "Installiert: v{version}"
 
-#: polyhost/host.py:3355
+#: polyhost/host.py:3408
 msgid "Installed: unknown (the keyboard did not report its version)"
 msgstr "Installiert: unbekannt (die Tastatur hat ihre Version nicht gemeldet)"
 
-#: polyhost/host.py:3356
+#: polyhost/host.py:3409
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "Firmware {version} ist verfügbar."
 
-#: polyhost/host.py:3358
+#: polyhost/host.py:3411
 msgid "Both halves update over HID and reboot automatically."
 msgstr "Beide Hälften werden über HID aktualisiert und automatisch neu gestartet."
 
-#: polyhost/host.py:3361
+#: polyhost/host.py:3414
 msgid "This update changes your stored keymap once:"
 msgstr "Dieses Update ändert die gespeicherte Tastenbelegung einmalig:"
 
-#: polyhost/host.py:3363
+#: polyhost/host.py:3416
 msgid "Keys you remapped and your macros stay as they are."
 msgstr "Neu belegte Tasten und Makros bleiben unverändert."
 
-#: polyhost/host.py:3364
+#: polyhost/host.py:3417
 msgid "Update PolyKybd Firmware"
 msgstr "PolyKybd-Firmware aktualisieren"
 
-#: polyhost/host.py:3368
+#: polyhost/host.py:3421
 msgid "Download and flash now?"
 msgstr "Jetzt herunterladen und flashen?"
 
-#: polyhost/host.py:3379
+#: polyhost/host.py:3432
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "Firmware v{version} wird heruntergeladen…"
 
-#: polyhost/host.py:3401 polyhost/host.py:3702
+#: polyhost/host.py:3454 polyhost/host.py:3755
 msgid "Cancelling…"
 msgstr "Wird abgebrochen…"
 
-#: polyhost/host.py:3438
+#: polyhost/host.py:3491
 msgid "Firmware Update Failed"
 msgstr "Firmware-Update fehlgeschlagen"
 
-#: polyhost/host.py:3439
+#: polyhost/host.py:3492
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -4710,11 +4818,11 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3545 polyhost/host.py:3587 polyhost/host.py:3595
+#: polyhost/host.py:3598 polyhost/host.py:3640 polyhost/host.py:3648
 msgid "Allow access to the keyboard"
 msgstr "Zugriff auf die Tastatur erlauben"
 
-#: polyhost/host.py:3546
+#: polyhost/host.py:3599
 msgid ""
 "On Linux a udev rule lets this app open the keyboard without root: its HID interface, and its serial port for faster firmware and font-pack updates. The rule file is /etc/udev/rules.d/99-hid.rules.\n"
 "\n"
@@ -4724,7 +4832,7 @@ msgstr ""
 "\n"
 "Das System fragt nach Ihrem Passwort (PolicyKit). Danach die Tastatur abziehen und wieder anstecken."
 
-#: polyhost/host.py:3588
+#: polyhost/host.py:3641
 msgid ""
 "The udev rule is installed.\n"
 "\n"
@@ -4734,11 +4842,11 @@ msgstr ""
 "\n"
 "Die Tastatur abziehen und wieder anstecken, damit die neuen Berechtigungen gelten."
 
-#: polyhost/host.py:3596
+#: polyhost/host.py:3649
 msgid "The udev rule was not installed."
 msgstr "Die udev-Regel wurde nicht installiert."
 
-#: polyhost/host.py:3597
+#: polyhost/host.py:3650
 #, python-brace-format
 msgid ""
 "{error}\n"
@@ -4751,12 +4859,12 @@ msgstr ""
 "Die folgenden Befehle können auch in einem Terminal ausgeführt werden:\n"
 "{commands}"
 
-#: polyhost/host.py:3666 polyhost/host.py:3680 polyhost/host.py:3726
-#: polyhost/host.py:3735 polyhost/host.py:3741
+#: polyhost/host.py:3719 polyhost/host.py:3733 polyhost/host.py:3779
+#: polyhost/host.py:3788 polyhost/host.py:3794
 msgid "Install WinCompose"
 msgstr "WinCompose installieren"
 
-#: polyhost/host.py:3667
+#: polyhost/host.py:3720
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -4766,11 +4874,11 @@ msgstr ""
 "\n"
 "Der PolyKybd-Build von WinCompose wird von GitHub heruntergeladen und sein Installationsprogramm gestartet (Windows fragt nach einer Bestätigung)."
 
-#: polyhost/host.py:3680
+#: polyhost/host.py:3733
 msgid "Looking for the latest WinCompose release…"
 msgstr "Neueste WinCompose-Version wird gesucht…"
 
-#: polyhost/host.py:3727
+#: polyhost/host.py:3780
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -4780,7 +4888,7 @@ msgstr ""
 "\n"
 "Die Release-Seite wird im Browser geöffnet – das Setup dort herunterladen und ausführen."
 
-#: polyhost/host.py:3736
+#: polyhost/host.py:3789
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -4791,7 +4899,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3742
+#: polyhost/host.py:3795
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -4808,7 +4916,7 @@ msgstr ""
 "Es wurde gespeichert unter:\n"
 "{path}"
 
-#: polyhost/host.py:3750
+#: polyhost/host.py:3803
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Das WinCompose-Installationsprogramm wurde gestartet. Sobald es abgeschlossen ist und WinCompose läuft, wechselt PolyKybd automatisch dazu."
 

@@ -652,7 +652,43 @@ def _cmd_agents(client, args):
     if args.agents_cmd == "forget":
         client.call(protocol.M_AGENTS_FORGET, {"vendor": args.vendor, "session_id": args.session})
         return 0
+    if args.agents_cmd == "cloud":
+        return _cmd_agents_cloud(client, args)
     return 2
+
+
+def _cmd_agents_cloud(client, args):
+    """`polyctl agents cloud [status|connect|disconnect]`."""
+    if args.cloud_cmd == "disconnect":
+        result = client.call(protocol.M_AGENTS_CLOUD_DISCONNECT, {})
+        if args.json:
+            print(json.dumps({"disconnected": True, "relay": result}))
+        else:
+            print(f"cloud sessions disconnected (relay: {result})")
+        return 0
+    method = (protocol.M_AGENTS_CLOUD_CONNECT if args.cloud_cmd == "connect"
+              else protocol.M_AGENTS_CLOUD_STATUS)
+    info = client.call(method, {})
+    if args.json:
+        print(json.dumps(info, indent=2))
+        return 0
+    if not info.get("configured"):
+        print("cloud sessions: not set up (polyctl agents cloud connect)")
+        return 0
+    conn = info.get("connection") or {}
+    state = conn.get("state", "stopped")
+    if state == "stopped" and not info.get("agents_enabled"):
+        state = "stopped (agent keys off: polyctl settings set agents_enabled true)"
+    print(f"cloud sessions: relay connection {state}"
+          + (f" ({conn['error']})" if conn.get("error") else ""))
+    setup = info.get("setup") or {}
+    print("\nIn the claude.ai cloud environment's settings (use a personal environment):")
+    print(f"  environment variable  {setup.get('variable')}={setup.get('config')}")
+    print(f"  allowed host          {setup.get('host')}  (when network access is Limited)")
+    print("  setup script:")
+    for line in str(setup.get("script", "")).splitlines():
+        print(f"    {line}")
+    return 0
 
 
 def _cmd_agents_hooks(_client, args):
@@ -1678,6 +1714,14 @@ def build_parser():
     p_ah.add_argument("--event", default=None,
                       help="the event name, for agents whose hook JSON does not name it "
                            "(Copilot CLI: --event agentStop)")
+    p_ac = agents_sub.add_parser(
+        "cloud", help="Claude Code cloud sessions (claude.ai/code) on the keys, through "
+                      "the PolyKybd relay")
+    p_ac.add_argument("cloud_cmd", nargs="?", default="status",
+                      choices=("status", "connect", "disconnect"),
+                      help="status (default): what to enter in the cloud environment; "
+                           "connect: create the relay channel; disconnect: delete it")
+    p_ac.add_argument("--json", action="store_true")
     p_agents.set_defaults(func=_cmd_agents)
     p_ahs = agents_sub.add_parser(
         "hooks", help="write or remove the PolyKybd hooks in an agent's own config "

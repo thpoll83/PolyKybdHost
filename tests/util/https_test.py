@@ -28,6 +28,7 @@ class SslContextTest(unittest.TestCase):
         self.assertIsInstance(ctx, ssl.SSLContext)
         self.assertEqual(ctx.verify_mode, ssl.CERT_REQUIRED)
         self.assertTrue(ctx.check_hostname)
+        self.assertGreaterEqual(ctx.minimum_version, ssl.TLSVersion.TLSv1_2)
 
     def test_it_trusts_BOTH_stores_not_just_certifi(self):
         """⚠️ The union is the design. Replacing the platform store with

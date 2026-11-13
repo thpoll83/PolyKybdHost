@@ -32,14 +32,109 @@ Security posture — deliberately minimal surface:
 Endpoints: ``POST /report`` (the report), ``GET /ping`` (health probe the
 extension uses to detect a running host). Bodies are size-capped; malformed
 input is rejected, never raised.
+
+The command channel (host → extension), for the agent keys' cloud sessions:
+``GET /command`` is held open up to ``COMMAND_WAIT_S`` and answers with the
+next command (``{"id", "focus_url"}``) or none; the extension answers each one
+with ``POST /command_result`` ``{"id", "found"}``. Both need the header
+``X-PolyKybd-Extension: 1``: a custom header forces a CORS preflight, which
+these paths never grant, so a web page can neither take a command nor answer
+one. The only command is "focus the tab with this exact URL", and the host
+sends only a ``https://claude.ai/code/session_…`` address
+(``cloud_relay.is_session_url``): the extension never opens anything.
 """
 import hmac
+import itertools
 import json
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 DEFAULT_BROWSER_REPORT_PORT = 50164
 _MAX_BODY_BYTES = 16 * 1024
+# How long one GET /command is held open. Below the 30 s after which Chrome stops
+# an idle extension service worker, so each wait ends before that.
+COMMAND_WAIT_S = 20.0
+# An extension that polled within this time counts as listening.
+LISTENING_S = COMMAND_WAIT_S + 10.0
+EXTENSION_HEADER = "X-PolyKybd-Extension"
+
+
+class TabCommands:
+    """The host's queue of commands for the browser extension, and their answers.
+
+    Thread-safe: the extension's request threads wait in ``next()``, the agent
+    key press calls ``focus()`` from its own thread."""
+
+    def __init__(self, clock=time.monotonic):
+        self._clock = clock
+        self._cond = threading.Condition()
+        self._ids = itertools.count(1)
+        self._pending = None          # (id, url) not yet taken
+        self._results = {}            # id -> found, for a command still waited on
+        self._waiting = set()         # ids whose focus() call still waits
+        self._last_poll = None
+
+    def listening(self) -> bool:
+        with self._cond:
+            return (self._last_poll is not None
+                    and self._clock() - self._last_poll < LISTENING_S)
+
+    def next(self, wait_s: float):
+        """The next command for an extension, or None after `wait_s`."""
+        deadline = self._clock() + wait_s
+        with self._cond:
+            self._last_poll = self._clock()
+            while self._pending is None:
+                left = deadline - self._clock()
+                if left <= 0:
+                    return None
+                self._cond.wait(left)
+            cid, url = self._pending
+            self._pending = None
+            self._last_poll = self._clock()
+            return {"id": cid, "focus_url": url}
+
+    def answer(self, cid, found, title="") -> bool:
+        """The extension's answer to command `cid`: whether it found the tab, and
+        that tab's title (the host finds the browser window by it)."""
+        with self._cond:
+            # Only a command still waited on, and only once: a late or repeated
+            # answer is refused, so nothing piles up.
+            if (not isinstance(cid, int) or isinstance(cid, bool)
+                    or cid not in self._waiting or cid in self._results):
+                return False
+            title = title if isinstance(title, str) else ""
+            self._results[cid] = (bool(found), title[:300])
+            self._cond.notify_all()
+            return True
+
+    def focus(self, url: str, timeout_s: float = 2.0):
+        """Ask the extension to focus the tab showing `url`. True: done; False:
+        no tab has it; None: no extension listening, or no answer in time."""
+        return self.focus_detail(url, timeout_s)[0]
+
+    def focus_detail(self, url: str, timeout_s: float = 2.0):
+        """(focus()'s answer, the tab's title or '')."""
+        if not self.listening():
+            return None, ""
+        with self._cond:
+            cid = next(self._ids)
+            self._pending = (cid, url)      # a newer press replaces an untaken one
+            self._waiting.add(cid)
+            self._cond.notify_all()
+            deadline = self._clock() + timeout_s
+            try:
+                while cid not in self._results:
+                    left = deadline - self._clock()
+                    if left <= 0:
+                        if self._pending and self._pending[0] == cid:
+                            self._pending = None
+                        return None, ""
+                    self._cond.wait(left)
+                return self._results.pop(cid)
+            finally:
+                self._waiting.discard(cid)
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -80,14 +175,65 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", "0")
         self.end_headers()
 
+    def _from_extension(self) -> bool:
+        """The command paths answer only the extension: the custom header makes a
+        page's request preflighted, and the token (when set) must match."""
+        if self.headers.get(EXTENSION_HEADER) != "1":
+            self._json(403, {"ok": False, "error": "extension header missing"})
+            return False
+        token = getattr(self.server, "token", "")
+        if token and not hmac.compare_digest(
+                str(self.headers.get("X-PolyKybd-Token", "")), str(token)):
+            self._json(403, {"ok": False, "error": "bad token"})
+            return False
+        return True
+
     def do_GET(self):  # noqa: N802
-        if self.path.split("?", 1)[0] == "/ping":
+        path = self.path.split("?", 1)[0]
+        if path == "/ping":
             self._json(200, {"ok": True, "app": "PolyKybdHost"}, cors=True)
+        elif path == "/command":
+            if self._from_extension():
+                command = self.server.commands.next(self.server.command_wait_s)
+                self._json(200, {"ok": True, "command": command})
         else:
             self._json(404, {"ok": False, "error": "not found"})
 
+    def _read_json(self):
+        """The request's JSON object, or None after answering the error."""
+        ctype = (self.headers.get("Content-Type") or "").split(";", 1)[0].strip().lower()
+        if ctype != "application/json":
+            self._json(415, {"ok": False, "error": "unsupported media type"})
+            return None
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            length = 0
+        if length <= 0 or length > _MAX_BODY_BYTES:
+            self._json(400, {"ok": False, "error": "bad length"})
+            return None
+        try:
+            data = json.loads(self.rfile.read(length).decode("utf-8"))
+            if not isinstance(data, dict):
+                raise ValueError("not an object")
+        except (ValueError, UnicodeDecodeError):
+            self._json(400, {"ok": False, "error": "bad json"})
+            return None
+        return data
+
     def do_POST(self):  # noqa: N802
-        if self.path.split("?", 1)[0] != "/report":
+        path = self.path.split("?", 1)[0]
+        if path == "/command_result":
+            if not self._from_extension():
+                return
+            data = self._read_json()
+            if data is None:
+                return
+            ok = self.server.commands.answer(data.get("id"), data.get("found") is True,
+                                             data.get("title"))
+            self._json(200 if ok else 400, {"ok": ok})
+            return
+        if path != "/report":
             self._json(404, {"ok": False, "error": "not found"})
             return
         # Require application/json. A cross-origin page can avoid a CORS preflight
@@ -164,6 +310,8 @@ class BrowserReportServer:
         self.host = host
         self.port = port
         self.token = token or ""
+        self.commands = TabCommands()
+        self.command_wait_s = COMMAND_WAIT_S
         self._httpd = None
         self._thread = None
 
@@ -174,6 +322,8 @@ class BrowserReportServer:
         self._httpd.on_report = self._on_report
         self._httpd.token = self.token
         self._httpd.log = self.log
+        self._httpd.commands = self.commands
+        self._httpd.command_wait_s = self.command_wait_s
         self._thread = threading.Thread(
             target=self._httpd.serve_forever, name="browser-report-http", daemon=True)
         self._thread.start()

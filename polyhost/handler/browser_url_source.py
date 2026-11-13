@@ -99,6 +99,17 @@ class BrowserUrlSource:
             return None
         return self.provider.current_url(app_name)
 
+    def focus_tab(self, url, timeout_s=2.0):
+        """Ask the browser extension to focus the tab showing exactly `url`
+        (browser_report_server.TabCommands). (found, the tab's title): found is
+        True: focused; False: no tab has it; None: no receiver, no extension
+        listening, or no answer in time."""
+        server = self.server
+        commands = getattr(server, "commands", None)
+        if commands is None:
+            return None, ""
+        return commands.focus_detail(url, timeout_s)
+
     def close(self):
         """Stop the receiver. Idempotent; never raises."""
         server, self.server = self.server, None

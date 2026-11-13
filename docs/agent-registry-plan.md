@@ -184,9 +184,9 @@ A long shell command looks the same, so this is a heuristic, and the state is
 
 ### Out of scope for the first version
 
-- Claude Code on the web and other cloud agents. Their hooks run in the cloud
-  container, which cannot reach this host. They appear only when the same session is
-  also open in a local CLI.
+- Cloud agents other than Claude Code. Claude Code cloud sessions (claude.ai/code)
+  report through the relay since 2026-11-13: see `docs/agent-keys-agent-setup.md` →
+  *Claude Code cloud sessions*.
 - Chat apps without hooks: claude.ai, Claude Desktop chat, ChatGPT.
 - The MCP shim. It is added only if Antigravity or another agent has no other way in.
 

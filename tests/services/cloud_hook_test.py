@@ -129,6 +129,50 @@ class HookTest(unittest.TestCase):
         titles = [json.loads(ch.open_sealed(self.chan["key"], b))["title"] for _, b, _ in self.sent]
         self.assertEqual(titles, ["Fix the build", "Fix the build"])
 
+    def _cloud_transcript(self, *prompts):
+        # A cloud transcript: no title record, meta records, tool results.
+        with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False,
+                                         encoding="utf-8") as fh:
+            fh.write(json.dumps({"type": "user", "isMeta": True,
+                                 "message": {"content": [{"type": "text", "text": "restarted"}]}}) + "\n")
+            for prompt in prompts:
+                fh.write(json.dumps({"type": "user", "message": {"content": prompt}}) + "\n")
+                fh.write(json.dumps({"type": "user", "message": {
+                    "content": [{"type": "tool_result", "content": "x"}]}}) + "\n")
+        self.addCleanup(os.remove, fh.name)
+        return fh.name
+
+    def titles(self):
+        return [json.loads(ch.open_sealed(self.chan["key"], b))["title"] for _, b, _ in self.sent]
+
+    def test_a_cloud_session_is_named_by_its_first_prompt(self):
+        path = self._cloud_transcript()
+        # The very first prompt: the transcript does not have it yet.
+        self.hook("UserPromptSubmit", transcript_path=path, cwd="/home/user",
+                  prompt="Fix the HID reconnect after resume on Windows please")
+        path2 = self._cloud_transcript("Fix the HID reconnect after resume on Windows please",
+                                       "now also add a test")
+        self.hook("Stop", transcript_path=path2, cwd="/home/user")
+        self.hook("UserPromptSubmit", transcript_path=path2, cwd="/home/user",
+                  prompt="now also add a test")
+        self.assertEqual(self.titles(), ["Fix the HID reconnect after resume on…"] * 3)
+
+    def test_prompt_titles_can_be_turned_off(self):
+        self.env[ch.PROMPT_TITLE_ENV] = "0"
+        self.hook("UserPromptSubmit", transcript_path=self._cloud_transcript("secret plan"),
+                  cwd="/home/user", prompt="secret plan")
+        report = json.loads(ch.open_sealed(self.chan["key"], self.sent[0][1]))
+        self.assertEqual((report["title"], report["cwd"]), ("", "user"))
+        self.assertNotIn("secret", json.dumps(report))
+
+    def test_prompt_words(self):
+        self.assertEqual(ch.prompt_words("  short   prompt "), "short prompt")
+        self.assertEqual(ch.prompt_words("x" * 50), "x" * 40 + "…")
+        self.assertEqual(ch.prompt_words("<command-name>/clear</command-name>"), "")
+        for empty in ("", "   ", None, 3):
+            self.assertEqual(ch.prompt_words(empty), "")
+        self.assertLessEqual(len(ch.prompt_words("word " * 30)), ch.PROMPT_TITLE_CHARS + 1)
+
     def test_main_never_raises_or_prints(self):
         out = io.StringIO()
         with mock.patch.dict(os.environ, {ch.CONFIG_ENV: "garbage"}), \
@@ -148,8 +192,9 @@ class PostTest(unittest.TestCase):
             def __enter__(self): return self
             def __exit__(self, *exc): return False
 
-        def fake_urlopen(req, timeout):
+        def fake_urlopen(req, timeout, context=None):
             sent.append(req)
+            self.assertIsNotNone(context)    # never urllib's implicit default
             return Resp()
         cfg = {"url": "https://r.example", "channel": "a" * 32, "write_token": "b" * 64}
         with mock.patch.object(ch.urllib.request, "urlopen", fake_urlopen):

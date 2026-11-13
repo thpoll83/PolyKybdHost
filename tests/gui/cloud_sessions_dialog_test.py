@@ -1,0 +1,106 @@
+"""gui/cloud_sessions_dialog.py: the state refresh and the connect flow, with a
+fake core and a call_async that runs when the test says so."""
+import os
+import unittest
+
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
+try:
+    from PyQt5.QtWidgets import QApplication
+    _QT = True
+except ImportError:  # no PyQt5: skip
+    _QT = False
+if _QT:
+    # Outside the guard: an error in the dialog's own module fails the tests
+    # instead of skipping them.
+    from polyhost.gui.cloud_sessions_dialog import CloudSessionsDialog
+
+SETUP = {"variable": "POLYKYBD_CLOUD_RELAY", "config": "pkr1|x", "host": "relay.example",
+         "script": "curl a || true"}
+
+
+class FakeCore:
+    def __init__(self):
+        self.configured = False
+        self.state = "connecting"
+
+    def agents_cloud_status(self):
+        return {"configured": self.configured, "agents_enabled": True,
+                "connection": {"state": self.state, "error": ""},
+                "setup": SETUP if self.configured else {}}
+
+    def agents_cloud_connect(self):
+        self.configured = True
+        return True, self.agents_cloud_status()
+
+
+@unittest.skipUnless(_QT, "needs PyQt5 and a display (xvfb-run)")
+class CloudSessionsDialogTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.app = QApplication.instance() or QApplication([])
+
+    def setUp(self):
+        self.core = FakeCore()
+        self.pending = []
+        self.dialog = CloudSessionsDialog(self.core, lambda fn, done: self.pending.append((fn, done)))
+        self.addCleanup(self.dialog.close)
+
+    def run_pending(self):
+        while self.pending:
+            fn, done = self.pending.pop(0)
+            done(*fn())
+
+    def title(self):
+        return self.dialog.head.title.text()
+
+    def test_one_status_request_at_a_time(self):
+        self.assertEqual(len(self.pending), 1)        # the first read
+        self.dialog._refresh()
+        self.assertEqual(len(self.pending), 1)        # not queued again
+        self.run_pending()
+        self.assertIn("Connect", self.title())        # not connected yet
+
+    def test_the_state_follows_the_connection(self):
+        self.run_pending()
+        self.dialog._connect()
+        self.dialog._refresh()                        # a timer tick during the connect
+        self.run_pending()
+        self.assertTrue(self.dialog.setup_card.isVisibleTo(self.dialog))
+        self.assertEqual(self.title(), "Connecting to the relay…")
+        self.core.state = "connected"
+        self.dialog._refresh()                        # the next tick
+        self.run_pending()
+        self.assertEqual(self.title(), "Connected to the relay.")
+
+    def test_a_connect_error_stays_until_a_retry(self):
+        self.run_pending()
+        self.core.agents_cloud_connect = lambda: (False, "the relay refused the new channel (429)")
+        self.dialog._connect()
+        self.run_pending()
+        self.assertIn("429", self.title())
+        self.dialog._refresh()                        # a timer tick: still not configured
+        self.run_pending()
+        self.assertIn("429", self.title())
+
+    def test_an_empty_connect_error_stays_too(self):
+        self.run_pending()
+        self.core.agents_cloud_connect = lambda: (False, "")
+        self.dialog._connect()
+        self.run_pending()
+        shown = self.title()
+        self.assertTrue(shown.startswith("Could not connect"))
+        self.dialog._refresh()
+        self.run_pending()
+        self.assertEqual(self.title(), shown)
+
+    def test_the_timer_runs_only_while_shown(self):
+        self.assertFalse(self.dialog._refresh_timer.isActive())
+        self.dialog.show()
+        self.assertTrue(self.dialog._refresh_timer.isActive())
+        self.dialog.hide()
+        self.assertFalse(self.dialog._refresh_timer.isActive())
+
+
+if __name__ == "__main__":
+    unittest.main()

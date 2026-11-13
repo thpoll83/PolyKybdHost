@@ -61,6 +61,9 @@ def ssl_context() -> ssl.SSLContext | None:
         return _CACHE[_KEY]
     try:
         ctx = ssl.create_default_context()
+        # Python 3.10+ refuses TLS 1.0/1.1 by default; stated here so no build or
+        # OpenSSL configuration can lower it (CodeQL py/insecure-protocol).
+        ctx.minimum_version = ssl.TLSVersion.TLSv1_2
     except Exception as exc:
         # Verification stays ON: returning None falls back to urllib's own
         # default context, which also verifies. There is no path here that

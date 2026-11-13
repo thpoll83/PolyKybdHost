@@ -44,6 +44,7 @@ class Agent:
     machine: str = "local"
     pid: int = 0
     window: str = ""            # an opaque window id the raiser understands
+    url: str = ""               # a cloud session's page (cloud_relay.is_session_url)
     source: str = "hook"        # "hook" or "title"
     pending_tool_since: float = 0.0
     waiting_inferred: bool = False
@@ -92,6 +93,7 @@ class Agent:
             "headline": self.display_headline, "label": self.label, "cwd": self.cwd,
             "surface": self.surface, "machine": self.machine, "pid": self.pid,
             "source": self.source, "waiting_inferred": self.waiting_inferred,
+            "url": self.url,
         }
 
 
@@ -118,7 +120,7 @@ class AgentRegistry:
                headline: str | None = None, cwd: str | None = None,
                surface: str | None = None, machine: str | None = None,
                pid: int | None = None, window: str | None = None,
-               source: str = "hook") -> dict | None:
+               url: str | None = None, source: str = "hook") -> dict | None:
         """Create or update one agent. `state` is an AgentState, a state word,
         ENDED (removes the entry) or None (fields only). `event` is the
         normalised hook event, used for the pending-tool inference. Returns the
@@ -175,7 +177,7 @@ class AgentRegistry:
             elif event in ("posttool", "stop", "prompt"):
                 agent.pending_tool_since = 0.0
             for name, value in (("headline", headline), ("cwd", cwd), ("surface", surface),
-                                ("machine", machine), ("window", window)):
+                                ("machine", machine), ("window", window), ("url", url)):
                 if value:
                     setattr(agent, name, str(value))
             agent.detached = event.startswith("detach")
@@ -300,7 +302,7 @@ class AgentRegistry:
                 "event_age": max(0.0, now - a.last_event),
                 "headline": a.headline, "label": a.label, "cwd": a.cwd,
                 "surface": a.surface, "machine": a.machine, "pid": a.pid,
-                "detached": a.detached,
+                "detached": a.detached, "url": a.url,
             } for a in self._agents.values() if a.source == "hook"]
             return {"agents": agents, "hook_vendors": sorted(self._hook_vendors)}
 
@@ -349,6 +351,7 @@ class AgentRegistry:
                     headline=str(entry.get("headline") or ""),
                     label=str(entry.get("label") or ""), cwd=str(entry.get("cwd") or ""),
                     surface=str(entry.get("surface") or ""), machine=machine, pid=pid,
+                    url=str(entry.get("url") or ""),
                     source="hook", pid_seen_alive=alive,
                     detached=entry.get("detached") is True)
                 restored += 1

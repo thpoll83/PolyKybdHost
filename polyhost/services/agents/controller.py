@@ -48,6 +48,8 @@ class AgentKeysController:
         self.raise_agent = raise_agent
         self.raise_remote = None   # set by PolyCore: queue a raise for a forwarder
         self.raise_viewer = None   # set by PolyCore: raise the viewer showing a machine
+        self.raise_cloud = None    # set by PolyCore: bring a cloud session forward
+        self.ask_open = None       # set by PolyCore: ask the tray to offer the page
         self.dictate = dictate
         self._last_waiting_slot = None   # the agent '+' raised last
         # The last AI-key press and what came of it, for `polyctl agents list`: a
@@ -249,6 +251,12 @@ class AgentKeysController:
         """Raise `agent`: here on its own thread, or, for an agent on a forwarder's
         machine, by handing it to `raise_remote(agent)`, which the forwarder picks
         up with its next window report (PolyCore.report_window)."""
+        if agent.machine == "cloud":
+            # A claude.ai cloud session (services/agents/cloud_relay.py): focus
+            # its browser window or the desktop app; nothing is opened.
+            threading.Thread(target=self._raise_cloud, args=(agent,),
+                             name="agent-raise-cloud", daemon=True).start()
+            return
         if agent.machine and agent.machine != "local":
             # The forwarder raises the agent's own window only when its
             # `agents_raise_here` is on; here the viewer that shows that
@@ -273,6 +281,27 @@ class AgentKeysController:
                               "(setting agents_dictation_shortcut)")
         except Exception as e:  # noqa: BLE001 - must not kill anything
             self.log.info("Agent keys: dictation failed: %s", e)
+
+    def _raise_cloud(self, agent):
+        key = self.last_press["key"] if self.last_press else None
+        if self.raise_cloud is None:
+            self._note(key, "cloud sessions cannot be raised here", agent)
+            return
+        try:
+            result = self.raise_cloud(agent)
+            if result is True:
+                result = "raised"
+            elif not result:
+                result = "no window found (no browser tab with its title, no Claude app)"
+                from polyhost.services.agents.cloud_relay import is_session_url
+                if self.ask_open is not None and is_session_url(agent.url):
+                    # Nothing opens by itself: the tray asks first.
+                    self.ask_open(agent)
+                    result += "; asked whether to open its page"
+        except Exception as e:  # noqa: BLE001 - a failed raise must not kill anything
+            result = f"failed: {e}"
+        self.log.info("Agent keys: %s %s: %s", agent.vendor, agent.display_headline, result)
+        self._note(key, str(result), agent)
 
     def _raise_viewer(self, agent):
         key = self.last_press["key"] if self.last_press else None

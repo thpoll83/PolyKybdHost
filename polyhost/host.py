@@ -2431,6 +2431,10 @@ class PolyHost(QApplication):
         # noinspection PyUnresolvedReferences
         pair.triggered.connect(self._show_pairing_code)
         menu.addAction(pair)
+        cloud = QAction(get_icon("cloud.svg"), _("Connect Cloud Sessions…"), parent=menu)
+        # noinspection PyUnresolvedReferences
+        cloud.triggered.connect(self._show_cloud_sessions)
+        menu.addAction(cloud)
         self._set_agent_rows([])
 
     def _set_agent_rows(self, agents):
@@ -2476,6 +2480,55 @@ class PolyHost(QApplication):
         (services/forwarder_pairing.py). A local file read: no core needed."""
         from polyhost.gui.forwarder_pairing import show_pairing_code
         show_pairing_code()
+
+    def _show_cloud_sessions(self):
+        """Claude Code cloud sessions on the keys (services/agents/cloud_relay.py).
+        One dialog at a time; it is not modal, so the tray keeps working."""
+        from polyhost.gui.cloud_sessions_dialog import CloudSessionsDialog
+        dialog = getattr(self, "_cloud_dialog", None)
+        if dialog is None or not dialog.isVisible():
+            dialog = self._cloud_dialog = CloudSessionsDialog(self.core, self._core_click)
+        dialog.show()
+        dialog.raise_()
+        dialog.activateWindow()
+
+    def _on_agent_open_request(self, payload):
+        """A cloud session's key found no window (services/agents/controller.py):
+        offer to open its page. The shared message box (gui/message_box.py), shown
+        without exec_(): a modal opened from a bridge event would dispatch the
+        other queued events. A newer press replaces an open question."""
+        from PyQt5.QtCore import QUrl
+        from PyQt5.QtGui import QDesktopServices
+        from polyhost.gui.message_box import MessageBox
+        from polyhost.services.agents.cloud_relay import is_session_url
+        url = (payload or {}).get("url") if isinstance(payload, dict) else None
+        if not is_session_url(url):
+            self.log.info("Agent keys: ignored a request to open %r", url)
+            return
+        title = str(payload.get("title") or "")[:80]
+        old = getattr(self, "_agent_open_box", None)
+        if old is not None:
+            old.close()
+        box = self._agent_open_box = MessageBox(
+            QMessageBox.Question, _("Open Cloud Session"),
+            _f("No browser tab or Claude app window shows the cloud session "
+               "\"{title}\". Open it in the browser?", title=title),
+            QMessageBox.Cancel, informative=url)
+        # The title comes from the session report: shown as text, never as rich
+        # text, so it cannot add a link of its own (the box's labels open links).
+        box.text.setTextFormat(Qt.PlainText)
+        box.informative.setTextFormat(Qt.PlainText)
+        self._agent_open_button = box.add_button(_("Open in Browser"),
+                                                 QMessageBox.AcceptRole, "open")
+        box.set_default(self._agent_open_button)
+
+        def finished(_code):
+            if box.clicked_button() is self._agent_open_button:
+                QDesktopServices.openUrl(QUrl(url))
+        # noinspection PyUnresolvedReferences
+        box.finished.connect(finished)
+        box.show()
+        bring_to_front(box)
 
     def _toggle_agents_enabled(self, checked):
         def done(ok, msg):
@@ -3858,6 +3911,8 @@ class PolyHost(QApplication):
                     self.boot_loop_dialog.feed_done(result)
         elif name == "problem_detected":
             self._on_problem_detected(result)
+        elif name == "agent_open_request":
+            self._on_agent_open_request(result)
         elif name == "console":
             kb_serial, kb_log = result
             if kb_serial:

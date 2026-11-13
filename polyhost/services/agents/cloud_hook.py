@@ -27,6 +27,7 @@ import hmac
 import json
 import os
 import secrets
+import ssl
 import sys
 import tempfile
 import time
@@ -38,6 +39,11 @@ SEAL_VERSION = 1
 NONCE_BYTES = 16
 TAG_BYTES = 16
 TITLE_MAX_CHARS = 60
+# A cloud transcript has no title record (claude.ai keeps the title), so the key
+# shows the first words of the session's first prompt instead: this many
+# characters at most, cut at a word. POLYKYBD_CLOUD_PROMPT_TITLE=0 turns it off.
+PROMPT_TITLE_CHARS = 40
+PROMPT_TITLE_ENV = "POLYKYBD_CLOUD_PROMPT_TITLE"
 POST_TIMEOUT_S = 3.0
 # Cloudflare refuses Python's default User-Agent ("Python-urllib/3.x") on
 # workers.dev with 403 "error code: 1010", so every request names itself.
@@ -60,6 +66,7 @@ EVENT_STATES = {
 _TITLE_TYPES = ("custom-title", "ai-title", "summary")
 _TITLE_FIELDS = ("customTitle", "aiTitle", "title", "summary")
 _TRANSCRIPT_TAIL_BYTES = 256 * 1024
+_TRANSCRIPT_HEAD_BYTES = 256 * 1024
 
 
 # ---- configuration -------------------------------------------------------------
@@ -172,8 +179,9 @@ def state_for(payload: dict):
 
 
 def transcript_title(path) -> str:
-    """The newest session title in a Claude Code transcript, or ''. Only this one
-    line leaves the VM, encrypted: never the prompt or the conversation."""
+    """The newest session title in a Claude Code transcript, or ''. A cloud
+    transcript has none (claude.ai keeps it); build_report then takes the first
+    words of the first prompt. Nothing else of the conversation leaves the VM."""
     if not path or not isinstance(path, str) or not os.path.isfile(path):
         return ""
     try:
@@ -198,6 +206,50 @@ def transcript_title(path) -> str:
     return ""
 
 
+def prompt_words(text) -> str:
+    """The first words of a prompt, at most PROMPT_TITLE_CHARS, cut at a word,
+    or '' for no usable text (empty, or a command / system message in <tags>)."""
+    if not isinstance(text, str):
+        return ""
+    words = " ".join(text.split())
+    if not words or words.startswith("<"):
+        return ""
+    if len(words) <= PROMPT_TITLE_CHARS:
+        return words
+    cut = words[:PROMPT_TITLE_CHARS + 1].rsplit(" ", 1)[0] or words[:PROMPT_TITLE_CHARS]
+    return cut[:PROMPT_TITLE_CHARS].rstrip(" ,.;:") + "…"
+
+
+def transcript_first_prompt(path) -> str:
+    """The first words of the session's first prompt, from the head of the
+    transcript: the first user record that is not a meta or sidechain record."""
+    if not path or not isinstance(path, str) or not os.path.isfile(path):
+        return ""
+    try:
+        with open(path, "rb") as fh:
+            lines = fh.read(_TRANSCRIPT_HEAD_BYTES).decode("utf-8", errors="replace").splitlines()
+    except OSError:
+        return ""
+    for line in lines:
+        if '"user"' not in line:
+            continue
+        try:
+            record = json.loads(line)
+        except ValueError:
+            continue    # the last line of the head can be cut
+        if (not isinstance(record, dict) or record.get("type") != "user"
+                or record.get("isMeta") or record.get("isSidechain")):
+            continue
+        content = (record.get("message") or {}).get("content")
+        if isinstance(content, list):
+            content = next((item.get("text") for item in content
+                            if isinstance(item, dict) and item.get("type") == "text"), None)
+            if content is None:
+                continue    # a tool result, not a prompt
+        return prompt_words(content)
+    return ""
+
+
 def session_url(session_id: str) -> str:
     """claude.ai's page for a cloud session. The VM knows the session as cse_…,
     the page as session_… with the same suffix."""
@@ -215,8 +267,16 @@ def build_report(payload: dict, environ=os.environ):
     session_id = environ.get("CLAUDE_CODE_REMOTE_SESSION_ID") or str(payload.get("session_id") or "")
     if not session_id:
         return None
-    report = {"state": state, "title": transcript_title(payload.get("transcript_path")),
-              "url": session_url(session_id), "cwd": os.path.basename(str(payload.get("cwd") or ""))}
+    title = transcript_title(payload.get("transcript_path"))
+    if not title and environ.get(PROMPT_TITLE_ENV, "1") != "0":
+        # The FIRST prompt, so the label stays put: the transcript's head first.
+        # On the very first prompt the transcript does not have it yet, and the
+        # UserPromptSubmit event's own prompt is that first prompt.
+        title = transcript_first_prompt(payload.get("transcript_path"))
+        if not title and payload.get("hook_event_name") == "UserPromptSubmit":
+            title = prompt_words(payload.get("prompt"))
+    report = {"state": state, "title": title, "url": session_url(session_id),
+              "cwd": os.path.basename(str(payload.get("cwd") or ""))}
     return session_id, report
 
 
@@ -268,7 +328,10 @@ def post(config: dict, slot: str, blob: str, ended: bool) -> int:
         f"{config['url']}/v1/c/{config['channel']}/event", data=body, method="POST",
         headers={"Authorization": f"Bearer {config['write_token']}",
                  "Content-Type": "application/json", "User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=POST_TIMEOUT_S) as resp:
+    # The VM's own trust store (polyhost.util.https is not there: this file runs alone).
+    ctx = ssl.create_default_context()
+    ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+    with urllib.request.urlopen(req, timeout=POST_TIMEOUT_S, context=ctx) as resp:
         return resp.status
 
 

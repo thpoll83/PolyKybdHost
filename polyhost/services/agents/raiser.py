@@ -11,6 +11,9 @@ shell. Claude Code, Gemini CLI and Codex write their own title, so the window is
 found by that title instead. With several such windows the one whose title names
 the headline is taken first.
 
+A cloud session (machine "cloud") has no process here: raise_cloud() looks for
+its browser tab's window, then the Claude desktop app.
+
 Limits (docs/agent-registry-plan.md): a terminal tab or an IDE panel is not a
 window, so the raise brings the window forward and stops there. Native Wayland
 offers no window activation to clients.
@@ -140,6 +143,48 @@ def bring_to_front(target, from_system: bool = True):
             pass
     target.activate()
     return True
+
+
+# The Claude desktop app's window title. It is the same for every session, so
+# it tells nothing about which session the app shows.
+CLAUDE_APP_TITLE = "Claude"
+
+
+def raise_cloud(agent, windows=None, app_fallback=True, tab_title=""):
+    """Bring a cloud session forward without opening anything (machine "cloud",
+    services/agents/cloud_relay.py): a window whose title contains the session
+    title (a browser showing that session's tab), else, with `app_fallback`, the
+    Claude desktop app. True, False when neither is open, or a text."""
+    if os.environ.get("WAYLAND_DISPLAY") and not os.environ.get("DISPLAY"):
+        return "windows cannot be listed on Wayland"
+    from_system = windows is None
+    if windows is None:
+        import pywinctl
+        windows = pywinctl.getAllWindows()
+    windows = list(windows)
+    # The session's own title only: the folder name (display_headline's fallback)
+    # appears in too many window titles.
+    # The tab title the browser extension reported is what the window title
+    # shows; the session's own text (first prompt words) usually is not, because
+    # the claude.ai page names the session by claude.ai's title.
+    text = (tab_title or agent.label or agent.headline or "").strip().lower()
+    # A shortened prompt ends in "…", which no window title has.
+    text = text.rstrip("…").rstrip()
+    target = None
+    if text:
+        # Browser windows only: an editor or a document can have the same words in
+        # its title, and taking it would also skip the app and the question.
+        from polyhost.handler.browser_url import is_browser_app
+        from polyhost.services.agents.viewer import _app_of
+        target = next((w for w in windows
+                       if text in (w.title or "").lower() and is_browser_app(_app_of(w))),
+                      None)
+    if target is None and app_fallback:
+        target = next((w for w in windows
+                       if (w.title or "").strip() == CLAUDE_APP_TITLE), None)
+    if target is None:
+        return False
+    return bring_to_front(target, from_system)
 
 
 def raise_viewer(machine: str, extra_apps=(), windows=None):

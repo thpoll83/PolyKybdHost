@@ -156,3 +156,96 @@ api.windows.onFocusChanged.addListener((windowId) => {
 try { api.runtime.onStartup.addListener(() => reportActiveTab()); } catch (e) {}
 try { api.runtime.onInstalled.addListener(() => reportActiveTab()); } catch (e) {}
 reportActiveTab();
+
+// --- Commands from the host (agent keys: Claude Code cloud sessions) ---
+//
+// The host cannot call the extension, so the extension asks: GET /command is
+// held open by the host for up to 20 s and answers with the next command, or
+// none. The only command is {id, focus_url}: activate the tab whose URL is
+// exactly focus_url and focus its window. Nothing is ever opened; a URL that
+// no tab has is answered with found: false. The host sends only claude.ai
+// session pages. The custom header keeps web pages out (it forces a CORS
+// preflight, which these paths never grant).
+
+const COMMAND_HEADERS = () => {
+  const h = { "X-PolyKybd-Extension": "1" };
+  if (config.token) h["X-PolyKybd-Token"] = config.token;
+  return h;
+};
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+let commandLoopRunning = false;
+
+function promised(fn, ...args) {
+  // The callback form exists on both browsers; wrap it once.
+  return new Promise((resolve) => {
+    try {
+      fn(...args, (value) => resolve(api.runtime.lastError ? undefined : value));
+    } catch (e) {
+      resolve(undefined);
+    }
+  });
+}
+
+function sameUrl(a, b) {
+  // Exact match, ignoring only a #fragment the page may have added.
+  return typeof a === "string" && typeof b === "string"
+    && a.split("#", 1)[0] === b.split("#", 1)[0];
+}
+
+async function focusUrl(url) {
+  // The tab's title, or null when no tab has the URL. The host finds the browser
+  // window by that title: a window title names its active tab.
+  const tabs = (await promised(api.tabs.query.bind(api.tabs), {})) || [];
+  const tab = tabs.find((t) => sameUrl(t.url, url));
+  if (!tab) return null;
+  // The tab can close between the query and the update: then it was not found.
+  const updated = await promised(api.tabs.update.bind(api.tabs), tab.id, { active: true });
+  if (!updated) return null;
+  // A refused window focus still counts as found: the host brings the window
+  // forward itself, and the tab is the active one now.
+  await promised(api.windows.update.bind(api.windows), tab.windowId, { focused: true });
+  return updated.title || tab.title || "";
+}
+
+async function runCommand(command) {
+  if (!command || typeof command.id !== "number") return;
+  const title = (typeof command.focus_url === "string"
+    && command.focus_url.startsWith("https://claude.ai/code/session_"))
+    ? await focusUrl(command.focus_url) : null;
+  try {
+    await fetch(`http://127.0.0.1:${config.port}/command_result`, {
+      method: "POST",
+      headers: { ...COMMAND_HEADERS(), "Content-Type": "application/json" },
+      body: JSON.stringify({ id: command.id, found: title !== null, title: title || "" }),
+    });
+  } catch (e) { /* the host stopped; it gives up after its own timeout */ }
+}
+
+async function commandLoop() {
+  if (commandLoopRunning) return;
+  commandLoopRunning = true;
+  try {
+    for (;;) {
+      // An extension API call keeps a Chromium service worker alive between
+      // the waits (it stops one after 30 s without events or API calls).
+      await promised(api.runtime.getPlatformInfo.bind(api.runtime));
+      if (!configLoaded) { await sleep(500); continue; }
+      let reply = null;
+      try {
+        const r = await fetch(`http://127.0.0.1:${config.port}/command`,
+                              { headers: COMMAND_HEADERS() });
+        reply = r.ok ? await r.json() : null;
+      } catch (e) { reply = null; }
+      if (!reply) { await sleep(10000); continue; }   // no host: try again later
+      if (reply.command) await runCommand(reply.command);
+    }
+  } finally {
+    commandLoopRunning = false;
+  }
+}
+
+// Started here, and again by any browser event after the worker was stopped.
+commandLoop();
+for (const ev of [api.tabs.onActivated, api.windows.onFocusChanged, api.tabs.onUpdated]) {
+  try { ev.addListener(() => commandLoop()); } catch (e) { /* ignore */ }
+}
