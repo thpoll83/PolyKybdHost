@@ -210,6 +210,20 @@ class AgentRegistry:
             self.version += 1
             return True
 
+    def forget_inactive(self) -> list:
+        """Remove every agent that is idle, done or stale, checked and removed
+        under one lock, so a report that makes one busy in between keeps it.
+        Returns the removed agents."""
+        with self._lock:
+            gone = [a for a in self._agents.values()
+                    if a.state in (AgentState.IDLE, AgentState.DONE, AgentState.STALE)]
+            for agent in gone:
+                del self._agents[(agent.vendor, agent.session_id)]
+                _log_removed(agent, "removed by the user (inactive)")
+            if gone:
+                self.version += 1
+            return gone
+
     def forget(self, vendor_id: str, session_id: str) -> bool:
         with self._lock:
             gone = self._agents.pop((vendor_id, session_id), None)

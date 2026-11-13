@@ -71,19 +71,23 @@ def deploy(folder: str, source_dir: str = SOURCE_DIR) -> str:
         raise ExtensionError(f"{folder} contains other files; choose an empty folder")
     try:
         os.makedirs(folder, exist_ok=True)
+        # The marker first: a copy that fails halfway leaves a folder this
+        # module may write again.
+        with open(os.path.join(folder, MARKER), "w", encoding="utf-8") as fh:
+            fh.write("Written by PolyKybdHost (Install Browser Extension…). "
+                     "Files here are replaced at host updates.\n")
         # Each file is written whole and then renamed, so a browser that reads
         # the folder during a copy never sees half a file.
         for name in FILES:
             _copy(os.path.join(source_dir, name), os.path.join(folder, name))
-        _copy(os.path.join(source_dir, MANIFEST), os.path.join(folder, "manifest.json"))
         icons = os.path.join(source_dir, ICONS_DIR)
         os.makedirs(os.path.join(folder, ICONS_DIR), exist_ok=True)
         for name in os.listdir(icons):
             if name.endswith(".png"):
                 _copy(os.path.join(icons, name), os.path.join(folder, ICONS_DIR, name))
-        with open(os.path.join(folder, MARKER), "w", encoding="utf-8") as fh:
-            fh.write("Written by PolyKybdHost (Install Browser Extension…). "
-                     "Files here are replaced at host updates.\n")
+        # The manifest last: it holds the version, so a copy that stopped
+        # before it (an exit during the start-up update) is done again.
+        _copy(os.path.join(source_dir, MANIFEST), os.path.join(folder, "manifest.json"))
     except OSError as e:
         raise ExtensionError(f"could not write {folder}: {e}") from e
     return installed_version(folder)
@@ -123,7 +127,8 @@ def remember_folder(folder: str, path: str | None = None) -> None:
     path = path or _state_path()
     tmp = f"{path}.{os.getpid()}.tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
-        json.dump({"folder": folder}, fh)
+        # Absolute, as deploy() resolves it: a later start runs in another folder.
+        json.dump({"folder": os.path.abspath(folder)}, fh)
     os.replace(tmp, path)
 
 

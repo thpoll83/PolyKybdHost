@@ -4,6 +4,7 @@ import os
 import shutil
 import tempfile
 import unittest
+import unittest.mock
 
 from polyhost.services import browser_extension as be
 
@@ -39,6 +40,32 @@ class DeployTest(unittest.TestCase):
     def test_copying_again_into_our_folder_works(self):
         be.deploy(self.folder)
         self.assertEqual(be.deploy(self.folder), be.source_version())
+
+    def test_a_copy_that_stopped_halfway_is_done_again(self):
+        # The manifest is written last, after the marker: a copy that failed on
+        # an icon leaves a folder of ours with no version, so it is retried.
+        real = be._copy
+
+        def fail_on_icons(src, dst):
+            if dst.endswith(".png"):
+                raise OSError("disk full")
+            real(src, dst)
+        with unittest.mock.patch.object(be, "_copy", fail_on_icons):
+            with self.assertRaises(be.ExtensionError):
+                be.deploy(self.folder)
+        self.assertTrue(os.path.exists(os.path.join(self.folder, be.MARKER)))
+        self.assertEqual(be.installed_version(self.folder), "")
+        self.assertEqual(be.deploy(self.folder), be.source_version())
+
+    def test_the_folder_is_remembered_absolute(self):
+        state = os.path.join(self.tmp, "state.json")
+        cwd = os.getcwd()
+        self.addCleanup(os.chdir, cwd)
+        os.chdir(self.tmp)
+        where = os.path.join(os.getcwd(), "ext")
+        be.remember_folder("ext", state)
+        os.chdir(cwd)                   # a later start runs in another folder
+        self.assertEqual(be.remembered_folder(state), where)
 
     def test_a_newer_version_is_copied_at_start(self):
         state = os.path.join(self.tmp, "state.json")

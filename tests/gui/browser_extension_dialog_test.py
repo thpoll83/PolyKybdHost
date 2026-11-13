@@ -10,11 +10,13 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 try:
     from PyQt5.QtWidgets import QApplication
+    _QT = True
+except ImportError:  # no Qt: skip
+    _QT = False
+if _QT:
+    # Outside the guard: a broken module must fail the run, not skip its tests.
     from polyhost.gui import browser_extension_dialog as bed
     from polyhost.services import browser_extension as be
-    _QT = True
-except Exception:  # noqa: BLE001 - no Qt or no display: skip
-    _QT = False
 
 
 @unittest.skipUnless(_QT, "needs PyQt5 and a display (xvfb-run)")

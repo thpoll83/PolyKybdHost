@@ -647,8 +647,9 @@ class PolyCore(Observable):
             # url_provider lets the matcher key overlays off the focused
             # browser's website; None-safe (returns None for non-browsers / when
             # no reporter is present, so matching is unchanged without it).
-            url_lookup = (self.browser_url_source.current_url
-                          if self.browser_url_source.enabled else None)
+            # Always the lookup: it answers None while detection is off, and
+            # turning detection on later then works without a restart.
+            url_lookup = self.browser_url_source.current_url
             self.overlay_handler = OverlayHandler(
                 self.mapping, url_provider=url_lookup,
                 enable_legacy_relay=bool(self.settings_get("dev_legacy_plaintext_relay")),
@@ -2758,11 +2759,7 @@ class PolyCore(Observable):
     def agents_forget_inactive(self):
         """Remove every agent that is not working or waiting (idle, done, stale):
         the tray's "Remove All Inactive". (True, how many were removed)."""
-        from polyhost.services.agents.model import AgentState
-        gone = [a for a in self.agents.agents()
-                if a.state in (AgentState.IDLE, AgentState.DONE, AgentState.STALE)]
-        for agent in gone:
-            self.agents.forget(agent.vendor, agent.session_id)
+        gone = self.agents.forget_inactive()
         cloud = [a.session_id for a in gone if a.machine == "cloud"]
         if cloud:
             self._forget_on_relay(cloud)
