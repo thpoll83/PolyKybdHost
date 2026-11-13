@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
@@ -92,17 +93,16 @@ class ContextReportTest
    void senderSurvivesAFailedPostAndLogsOnce() throws Exception
    {
       final List<String> logged = Collections.synchronizedList(new ArrayList<>());
-      final CountDownLatch three = new CountDownLatch(3);
+      final Semaphore attempts = new Semaphore(0);
       final ReportSender s = new ReportSender((port, body) -> {
-         three.countDown();
+         attempts.release();
          throw new IOException("refused");
       }, logged::add);
       for (int i = 0; i < 3; i++)
       {
          s.submit(1, "{}");
-         Thread.sleep(50);
+         assertTrue(attempts.tryAcquire(2, TimeUnit.SECONDS));
       }
-      assertTrue(three.await(2, TimeUnit.SECONDS));
       s.stop(1000);
       assertEquals(1, logged.size());
    }
