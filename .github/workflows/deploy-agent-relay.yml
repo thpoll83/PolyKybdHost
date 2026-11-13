@@ -26,10 +26,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: deploy-agent-relay
-  cancel-in-progress: false
-
 jobs:
   # On a PR: build without credentials, then run the end-to-end test against
   # `wrangler dev` (local Durable Objects, no Cloudflare account).
@@ -50,7 +46,7 @@ jobs:
         run: |
           set -uo pipefail
           npx --yes wrangler@4.119.0 dev --port 8799 --ip 127.0.0.1 > /tmp/wrangler-dev.log 2>&1 &
-          for i in $(seq 1 60); do
+          for ((i = 1; i <= 60; i++)); do
             curl -fsS http://127.0.0.1:8799/ 2>/dev/null | grep -q "agent relay" && break
             sleep 2
           done
@@ -63,6 +59,11 @@ jobs:
     name: Deploy
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    # On the deploy job only: a pull request's check must not wait for, or
+    # replace, a queued deploy. Never cancel a deploy in flight.
+    concurrency:
+      group: deploy-agent-relay
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0 (Node 24)
         with:

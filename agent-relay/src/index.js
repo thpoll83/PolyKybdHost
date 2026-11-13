@@ -52,6 +52,11 @@ async function sha256hex(text) {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+function isHex(pattern, value) {
+  // RegExp.test() converts its argument: ["<hex>"] would pass without this.
+  return typeof value === "string" && pattern.test(value);
+}
+
 function sameHex(a, b) {
   if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
   const enc = new TextEncoder();
@@ -59,9 +64,13 @@ function sameHex(a, b) {
 }
 
 async function readJson(request, maxBytes) {
-  const text = await request.text();
-  if (text.length > maxBytes) throw new Error("too large");
-  const body = JSON.parse(text);
+  // Refuse by the declared length before the body is read into memory: a body
+  // without a Content-Length (chunked) is refused too. Then check the bytes read.
+  const declared = Number(request.headers.get("content-length"));
+  if (!Number.isFinite(declared) || declared > maxBytes) throw new Error("too large");
+  const bytes = new Uint8Array(await request.arrayBuffer());
+  if (bytes.byteLength > maxBytes) throw new Error("too large");
+  const body = JSON.parse(new TextDecoder().decode(bytes));
   if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("not an object");
   return body;
 }
@@ -91,8 +100,8 @@ export default {
       } catch {
         return json(400, { ok: false, error: "bad json" });
       }
-      if (!HEX32.test(body.channel || "") || !HEX64.test(body.read_hash || "")
-          || !HEX64.test(body.write_hash || "")) {
+      if (!isHex(HEX32, body.channel) || !isHex(HEX64, body.read_hash)
+          || !isHex(HEX64, body.write_hash)) {
         return json(400, { ok: false, error: "bad channel" });
       }
       const stub = env.CHANNEL.get(env.CHANNEL.idFromName(body.channel));
@@ -174,7 +183,7 @@ export class Channel extends DurableObject {
     const k = body.k;
     const blob = body.blob;
     const ended = body.ended === true;
-    if (!HEX32.test(k || "") || typeof blob !== "string" || !blob
+    if (!isHex(HEX32, k) || typeof blob !== "string" || !blob
         || blob.length > LIMITS.blobChars || !/^[A-Za-z0-9_-]+$/.test(blob)) {
       return json(400, { ok: false, error: "bad event" });
     }

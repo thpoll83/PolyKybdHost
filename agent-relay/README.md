@@ -78,5 +78,9 @@ Worker. On a pull request it builds without credentials and runs
 ```bash
 cd agent-relay
 npx --yes wrangler@4.119.0 dev --port 8799 --ip 127.0.0.1 &
+for ((i = 1; i <= 60; i++)); do       # wait until it serves the banner
+  curl -fsS http://127.0.0.1:8799/ 2>/dev/null | grep -q "agent relay" && break
+  sleep 2
+done
 python3 test/e2e_test.py -v
 ```

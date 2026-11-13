@@ -21,6 +21,7 @@ The hook never writes to stdout and always exits 0: a hook that fails or prints
 can block or steer the agent, and a keyboard light is not worth that.
 """
 import base64
+import contextlib
 import hashlib
 import hmac
 import json
@@ -220,17 +221,15 @@ def _last_sent_path(slot: str) -> str:
     return os.path.join(tempfile.gettempdir(), f"polykybd-cloud-{slot}.json")
 
 
-def should_send(slot: str, report: dict) -> bool:
-    """Only a change goes out: every tool call reports 'working' again, and each
-    POST costs relay requests for every PolyKybd user."""
-    path = _last_sent_path(slot)
+def last_sent(slot: str):
+    """The report last sent for this session, or None."""
     try:
-        with open(path, encoding="utf-8") as fh:
-            if json.load(fh) == report:
-                return False
+        with open(_last_sent_path(slot), encoding="utf-8") as fh:
+            data = json.load(fh)
+        return data if isinstance(data, dict) else None
     except (OSError, ValueError):
-        pass
-    return True
+        # No file yet, or a broken one: treat as nothing sent, so the report goes out.
+        return None
 
 
 def remember_sent(slot: str, report: dict) -> None:
@@ -238,7 +237,26 @@ def remember_sent(slot: str, report: dict) -> None:
         with open(_last_sent_path(slot), "w", encoding="utf-8") as fh:
             json.dump(report, fh)
     except OSError:
-        pass
+        # Unwritable temp folder: the next event sends again, which costs one
+        # request and changes nothing on the keys.
+        return
+
+
+@contextlib.contextmanager
+def _session_lock(slot: str):
+    """One hook process per session at a time: parallel tool calls run their
+    PostToolUse hooks together, and both would send the same change."""
+    try:
+        import fcntl
+    except ImportError:          # not POSIX: the cloud VM always is
+        yield
+        return
+    fd = os.open(_last_sent_path(slot) + ".lock", os.O_CREAT | os.O_RDWR, 0o600)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        os.close(fd)
 
 
 def post(config: dict, slot: str, blob: str, ended: bool) -> int:
@@ -262,12 +280,20 @@ def run_hook(stdin_text: str, environ=os.environ, poster=post) -> bool:
         return False
     session_id, report = built
     slot = session_slot(config["key"], session_id)
-    if not should_send(slot, report):
-        return False
-    report_with_time = dict(report, ts=int(time.time()))
-    blob = seal(config["key"], json.dumps(report_with_time).encode())
-    poster(config, slot, blob, report["state"] == "ended")
-    remember_sent(slot, report)
+    with _session_lock(slot):
+        previous = last_sent(slot)
+        if not report["title"] and previous:
+            # The title record can fall out of the transcript tail this hook reads;
+            # that is not a rename, so keep the title already shown.
+            report["title"] = previous.get("title") or ""
+        if previous == report:
+            # Only a change goes out: every tool call reports "working" again, and
+            # each POST costs relay requests for every PolyKybd user.
+            return False
+        report_with_time = dict(report, ts=int(time.time()))
+        blob = seal(config["key"], json.dumps(report_with_time).encode())
+        poster(config, slot, blob, report["state"] == "ended")
+        remember_sent(slot, report)
     return True
 
 

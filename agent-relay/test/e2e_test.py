@@ -15,7 +15,6 @@ import os
 import socket
 import sys
 import tempfile
-import time
 import unittest
 import urllib.error
 import urllib.request
@@ -59,7 +58,10 @@ class MiniWebSocket:
                            f"Authorization: Bearer {token}\r\n\r\n").encode())
         head = b""
         while b"\r\n\r\n" not in head:
-            head += self.sock.recv(1)
+            chunk = self.sock.recv(1)
+            if not chunk:
+                raise ConnectionError("closed during the handshake")
+            head += chunk
         self.status = int(head.split(b" ", 2)[1])
         self.buf = b""
 
@@ -110,8 +112,9 @@ class RelayEndToEnd(unittest.TestCase):
         call("DELETE", self.base, token=self.chan["read_token"])
         slot = ch.session_slot(self.chan["key"], self.session)
         path = os.path.join(tempfile.gettempdir(), f"polykybd-cloud-{slot}.json")
-        if os.path.exists(path):
-            os.remove(path)
+        for name in (path, path + ".lock"):
+            if os.path.exists(name):
+                os.remove(name)
 
     def hook(self, event, **extra):
         return ch.run_hook(json.dumps(dict(hook_event_name=event, cwd="/home/user/repo",
@@ -132,6 +135,9 @@ class RelayEndToEnd(unittest.TestCase):
         other = dict(same, write_hash="0" * 64)
         self.assertEqual(call("POST", "/v1/channels", other)[0], 409)
         self.assertEqual(call("POST", "/v1/channels", {"channel": "xyz"})[0], 400)
+        # A one-element array would pass a bare regex test (it is converted to a string).
+        arrays = dict(same, channel=os.urandom(16).hex(), read_hash=[same["read_hash"]])
+        self.assertEqual(call("POST", "/v1/channels", arrays)[0], 400)
 
     def test_hook_to_websocket_round_trip(self):
         ws = MiniWebSocket(self.base + "/ws", self.chan["read_token"])
@@ -189,6 +195,11 @@ class RelayEndToEnd(unittest.TestCase):
         status, _ = call("POST", "/v1/c/" + "0" * 32 + "/event",
                          {"k": "a" * 32, "blob": "abc"}, token=token)
         self.assertEqual(status, 404)
+
+    def test_a_large_body_is_refused_by_its_declared_length(self):
+        status, _ = call("POST", self.base + "/event", {"k": "a" * 32, "blob": "a" * 9000},
+                         token=self.chan["write_token"])
+        self.assertEqual(status, 400)
 
     def test_per_minute_limit(self):
         token = self.chan["write_token"]

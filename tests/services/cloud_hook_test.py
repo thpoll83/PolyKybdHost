@@ -78,9 +78,9 @@ class HookTest(unittest.TestCase):
 
     def _cleanup(self):
         slot = ch.session_slot(self.chan["key"], self.env["CLAUDE_CODE_REMOTE_SESSION_ID"])
-        path = ch._last_sent_path(slot)
-        if os.path.exists(path):
-            os.remove(path)
+        for path in (ch._last_sent_path(slot), ch._last_sent_path(slot) + ".lock"):
+            if os.path.exists(path):
+                os.remove(path)
 
     def hook(self, event, **extra):
         return ch.run_hook(json.dumps(dict(hook_event_name=event, **extra)), environ=self.env,
@@ -103,7 +103,8 @@ class HookTest(unittest.TestCase):
         self.assertEqual([e for _, _, e in self.sent], [False] * 5 + [True])
 
     def test_report_has_url_title_and_folder_only(self):
-        with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False) as fh:
+        with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False,
+                                         encoding="utf-8") as fh:
             fh.write(json.dumps({"type": "user", "message": "secret prompt"}) + "\n")
             fh.write(json.dumps({"type": "ai-title", "aiTitle": "Fix the build"}) + "\n")
         self.addCleanup(os.remove, fh.name)
@@ -115,6 +116,18 @@ class HookTest(unittest.TestCase):
                          {"state": "working", "title": "Fix the build", "cwd": "PolyKybdHost",
                           "url": "https://claude.ai/code/session_" + sid[4:]})
         self.assertNotIn("secret", json.dumps(report))
+
+    def test_a_title_that_left_the_transcript_tail_is_kept(self):
+        with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False,
+                                         encoding="utf-8") as fh:
+            fh.write(json.dumps({"type": "ai-title", "aiTitle": "Fix the build"}) + "\n")
+        self.addCleanup(os.remove, fh.name)
+        self.hook("UserPromptSubmit", transcript_path=fh.name)
+        with open(fh.name, "w", encoding="utf-8") as out:      # the title record is gone
+            out.write(json.dumps({"type": "user"}) + "\n")
+        self.hook("Stop", transcript_path=fh.name)
+        titles = [json.loads(ch.open_sealed(self.chan["key"], b))["title"] for _, b, _ in self.sent]
+        self.assertEqual(titles, ["Fix the build", "Fix the build"])
 
     def test_main_never_raises_or_prints(self):
         out = io.StringIO()
