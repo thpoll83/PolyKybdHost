@@ -65,6 +65,33 @@ FLUENT = {
     "transform": "ms:open_with",
     "snaplock": "ms:lock",
     "wireframe": "ms:grid_on",
+    # --- BIM (the per-workbench set) ---
+    "trash": "ms:delete",
+    "viewsmanager": "ms:view_list",
+    "wpview": "ms:crop_free",
+    "nudgeswitch": "ms:swap_horiz",
+    "nudgeextend": "ms:open_in_full",
+    "nudgeshrink": "ms:close_fullscreen",
+    # --- Assembly ---
+    "insertcomp": "ms:add_box",
+    "fixedjoint": "ms:anchor",
+    "revolute": "ms:autorenew",
+    "slider": "ms:swap_vert",
+    "balljoint": "ms:radio_button_checked",
+    "gears": "ms:settings",
+    "screwjoint": "ms:hardware",
+    "beltjoint": "ms:sync_alt",
+    "bom": "ms:list_alt",
+    "newassembly": "ms:deployed_code",
+    "solve": "ms:task_alt",
+    "newpart": "ms:note_add",
+    "exploded": "ms:unfold_more",
+    "simulation": "ms:animation",
+    # --- Spreadsheet ---
+    "bold": "ms:format_bold",
+    "italic": "ms:format_italic",
+    "underline": "ms:format_underlined",
+    "alias": "ms:label",
 }
 
 TEXT = {
@@ -85,6 +112,11 @@ TEXT = {
     "raddia": "⌀",
     "equal": "=",
     "symmetric": "⋈",
+    # Assembly joints Material Symbols has no glyph for
+    "cylindrical": "CYL",
+    "angle": "∠",
+    "rackpinion": "R+P",
+    "gearbelt": "G/B",
 }
 
 

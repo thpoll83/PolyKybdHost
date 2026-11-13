@@ -14,6 +14,9 @@ terminal's keys. This module does the copy that their READMEs describe:
 - GDB: ``polykybd.py`` (``gdb-plugin/``) into ``<config>/gdb/polykybd/``, and
   a marked block in the GDB init file that sources it. The script writes GDB's
   state (prompt or running) into the terminal title.
+- FreeCAD: the ``PolyKybd`` add-on (``freecad-addon/``) into FreeCAD's user
+  ``Mod`` folder (:func:`freecad_mod_dir`). FreeCAD loads every folder there
+  at start; the add-on reports the active workbench.
 
 Each copy gets a stamp file with the SHA-256 of every file written.
 :func:`refresh_installed` runs at every start: it copies the shipped files
@@ -50,12 +53,14 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 VIM_SOURCE = REPO_ROOT / "vim-plugin"
 EMACS_SOURCE = REPO_ROOT / "emacs-package"
 GDB_SOURCE = REPO_ROOT / "gdb-plugin"
+FREECAD_SOURCE = REPO_ROOT / "freecad-addon" / "PolyKybd"
 
 VIM = "vim"
 NEOVIM = "neovim"
 EMACS = "emacs"
 GDB = "gdb"
-EDITORS = (VIM, NEOVIM, EMACS, GDB)
+FREECAD = "freecad"
+EDITORS = (VIM, NEOVIM, EMACS, GDB, FREECAD)
 # The ones loaded through a marked block in an init file, beside a copy.
 INIT_EDITORS = (EMACS, GDB)
 
@@ -63,6 +68,7 @@ INIT_EDITORS = (EMACS, GDB)
 _VIM_DIRS = ("plugin", "lua", "doc")
 _EMACS_FILES = ("polykybd.el",)
 _GDB_FILES = ("polykybd.py",)
+_FREECAD_FILES = ("InitGui.py", "polykybd_freecad_core.py", "polykybd_freecad_gui.py")
 
 STAMP_NAME = ".polykybd-host.json"
 BEGIN_MARKER = ";; >>> PolyKybd editor integration >>>"
@@ -254,6 +260,53 @@ def gdb_plugin_dir(home=None, env=None, system=None):
     return config / "gdb" / "polykybd"
 
 
+_FREECAD_VERSION_RE = re.compile(r"^v(\d+)-(\d+)$")
+
+
+def freecad_data_dir(home=None, env=None, system=None):
+    """FreeCAD's user data folder (``App.getUserAppDataDir()``), or None when
+    FreeCAD has not run for this user.
+
+    From ``ApplicationDirectories::configurePaths`` (FreeCAD 1.1.4): the base
+    is ``$FREECAD_USER_DATA`` as given, else ``FreeCAD`` under ``%APPDATA%``
+    (Windows), ``~/Library/Application Support`` (macOS) or
+    ``$XDG_DATA_HOME`` / ``~/.local/share`` (elsewhere; the Flatpak's
+    ``~/.var/app/org.freecad.FreeCAD/data`` when only that one exists). Since
+    1.1 a ``v<major>-<minor>`` folder in the base, the newest one, is used
+    when there is one."""
+    env = os.environ if env is None else env
+    system = system or platform.system()
+    if env.get("FREECAD_USER_DATA"):
+        custom = Path(env["FREECAD_USER_DATA"])
+        return custom if custom.is_dir() else None
+    h = _home(home, env, system)
+    if system == "Windows":
+        appdata = env.get("APPDATA")
+        bases = [(Path(appdata) if appdata else h / "AppData" / "Roaming") / "FreeCAD"]
+    elif system == "Darwin":
+        bases = [h / "Library" / "Application Support" / "FreeCAD"]
+    else:
+        data = Path(env["XDG_DATA_HOME"]) if env.get("XDG_DATA_HOME") else h / ".local" / "share"
+        bases = [data / "FreeCAD",
+                 h / ".var" / "app" / "org.freecad.FreeCAD" / "data" / "FreeCAD"]
+    base = next((b for b in bases if b.is_dir()), None)
+    if base is None:
+        return None
+    versions = []
+    for d in base.iterdir():
+        m = _FREECAD_VERSION_RE.match(d.name)
+        if m and d.is_dir():
+            versions.append(((int(m.group(1)), int(m.group(2))), d))
+    return max(versions)[1] if versions else base
+
+
+def freecad_mod_dir(home=None, env=None, system=None):
+    """The folder the add-on is copied to: ``<user data>/Mod/PolyKybd``, or
+    None when FreeCAD has not run for this user."""
+    data = freecad_data_dir(home, env, system)
+    return None if data is None else data / "Mod" / "PolyKybd"
+
+
 def _present(editor, which, system):
     which = which or shutil.which
     names = {VIM: ("vim", "gvim"), NEOVIM: ("nvim",), EMACS: ("emacs", "runemacs"),
@@ -281,6 +334,11 @@ def help_tags(doc_name, text):
 def shipped_files(editor, source=None):
     """``{relative path: bytes}`` to write for ``editor``, or None when this
     installation has no plugin files."""
+    if editor == FREECAD:
+        source = Path(source or FREECAD_SOURCE)
+        if not all((source / name).is_file() for name in _FREECAD_FILES):
+            return None
+        return {name: (source / name).read_bytes() for name in _FREECAD_FILES}
     if editor in INIT_EDITORS:
         names = _EMACS_FILES if editor == EMACS else _GDB_FILES
         source = Path(source or (EMACS_SOURCE if editor == EMACS else GDB_SOURCE))
@@ -534,22 +592,39 @@ def _other_vim_copies(editor, folder):
     return None
 
 
-def _sources(vim_source, emacs_source, gdb_source):
-    return {VIM: vim_source, NEOVIM: vim_source, EMACS: emacs_source, GDB: gdb_source}
+def _sources(vim_source, emacs_source, gdb_source, freecad_source=None):
+    return {VIM: vim_source, NEOVIM: vim_source, EMACS: emacs_source, GDB: gdb_source,
+            FREECAD: freecad_source}
 
 
 def status(editors=None, home=None, env=None, which=None, system=None,
-           vim_source=None, emacs_source=None, gdb_source=None):
+           vim_source=None, emacs_source=None, gdb_source=None, freecad_source=None):
     """An EditorStatus for each editor (``editors`` filters by id)."""
     env = os.environ if env is None else env
     system = system or platform.system()
-    sources = _sources(vim_source, emacs_source, gdb_source)
+    sources = _sources(vim_source, emacs_source, gdb_source, freecad_source)
     out = []
     for editor in EDITORS:
         if editors is not None and editor not in editors:
             continue
+        if editor == FREECAD:
+            out.append(_status_freecad(home, env, system, sources[editor]))
+            continue
         out.append(_status_one(editor, home, env, which, system, sources[editor]))
     return out
+
+
+def _status_freecad(home, env, system, source):
+    """FreeCAD: a plain folder copy in the user Mod folder, like Vim's.
+    Not present until FreeCAD has run once and made its user data folder."""
+    folder = freecad_mod_dir(home, env, system)
+    shipped = shipped_files(FREECAD, source)
+    if shipped is None:
+        return EditorStatus(FREECAD, STATE_NO_SOURCE, folder, str(source or FREECAD_SOURCE))
+    if folder is None:
+        return EditorStatus(FREECAD, STATE_NOT_PRESENT, None, "")
+    state = _copy_state(folder, shipped)
+    return EditorStatus(FREECAD, state, folder, str(folder) if state == STATE_MANUAL else "")
 
 
 def _status_one(editor, home, env, which, system, source):
@@ -746,11 +821,12 @@ def _change(st, install, sources, now=None, home=None, env=None, system=None):
 
 
 def _apply(install, editors, statuses, home, env, which, system, vim_source, emacs_source,
-           gdb_source=None):
+           gdb_source=None, freecad_source=None):
     if statuses is None:
         statuses = status(editors, home=home, env=env, which=which, system=system,
-                          vim_source=vim_source, emacs_source=emacs_source, gdb_source=gdb_source)
-    sources = _sources(vim_source, emacs_source, gdb_source)
+                          vim_source=vim_source, emacs_source=emacs_source, gdb_source=gdb_source,
+                          freecad_source=freecad_source)
+    sources = _sources(vim_source, emacs_source, gdb_source, freecad_source)
     results = []
     for st in statuses:
         if editors is not None and st.editor not in editors:
@@ -765,22 +841,25 @@ def _apply(install, editors, statuses, home, env, which, system, vim_source, ema
 
 
 def install(editors=None, statuses=None, home=None, env=None, which=None,
-            system=None, vim_source=None, emacs_source=None, gdb_source=None):
+            system=None, vim_source=None, emacs_source=None, gdb_source=None,
+            freecad_source=None):
     """Copy the plugin for each editor (the ones default_selection() picks
     when ``editors`` is None). Returns a list of Result."""
     return _apply(True, editors, statuses, home, env, which, system, vim_source, emacs_source,
-                  gdb_source)
+                  gdb_source, freecad_source)
 
 
 def remove(editors=None, statuses=None, home=None, env=None, which=None,
-           system=None, vim_source=None, emacs_source=None, gdb_source=None):
+           system=None, vim_source=None, emacs_source=None, gdb_source=None,
+           freecad_source=None):
     """Delete this app's copy and, for Emacs and GDB, the marked block."""
     return _apply(False, editors, statuses, home, env, which, system, vim_source, emacs_source,
-                  gdb_source)
+                  gdb_source, freecad_source)
 
 
 def refresh_installed(home=None, env=None, which=None, system=None,
-                      vim_source=None, emacs_source=None, gdb_source=None):
+                      vim_source=None, emacs_source=None, gdb_source=None,
+                      freecad_source=None):
     """Copy the shipped files again for each editor whose copy is this app's
     and older than them. Runs at every start, so an update reaches the
     editors without a visit to the dialog. Returns the editors refreshed.
@@ -788,11 +867,12 @@ def refresh_installed(home=None, env=None, which=None, system=None,
     refreshed = []
     try:
         statuses = status(None, home=home, env=env, which=which, system=system,
-                          vim_source=vim_source, emacs_source=emacs_source, gdb_source=gdb_source)
+                          vim_source=vim_source, emacs_source=emacs_source, gdb_source=gdb_source,
+                          freecad_source=freecad_source)
     except Exception:  # noqa: BLE001 - a start must not fail for this
         log.warning("Editor plugin refresh: status failed", exc_info=True)
         return refreshed
-    sources = _sources(vim_source, emacs_source, gdb_source)
+    sources = _sources(vim_source, emacs_source, gdb_source, freecad_source)
     for st in statuses:
         if st.state != STATE_OUTDATED:
             continue

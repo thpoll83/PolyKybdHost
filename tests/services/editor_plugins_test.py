@@ -580,6 +580,92 @@ class TestGdbScript(unittest.TestCase):
             self.assertEqual(out.count(b"\x1b[23;2t"), 1, out)
 
 
+class TestFreecad(Fixture):
+
+    def setUp(self):
+        super().setUp()
+        self.fc_src = self.tmp / "freecad-addon" / "PolyKybd"
+        self.fc_src.mkdir(parents=True)
+        for name in ("InitGui.py", "polykybd_freecad_core.py", "polykybd_freecad_gui.py"):
+            (self.fc_src / name).write_text(f"# {name} v1\n")
+
+    def fkw(self, env=None, system="Linux"):
+        kw = self.kw()
+        kw.update(env=env or {}, system=system, freecad_source=self.fc_src)
+        return kw
+
+    def fstatus(self, **kw):
+        return ep.status([ep.FREECAD], **self.fkw(**kw))[0]
+
+    def test_where_freecad_loads_user_mods(self):
+        h = self.home
+        self.assertIsNone(ep.freecad_mod_dir(h, {}, "Linux"))       # never started
+        (h / ".local/share/FreeCAD").mkdir(parents=True)
+        self.assertEqual(ep.freecad_mod_dir(h, {}, "Linux"), h / ".local/share/FreeCAD/Mod/PolyKybd")
+        # 1.1 uses the newest versioned folder when there is one
+        (h / ".local/share/FreeCAD/v1-1").mkdir()
+        (h / ".local/share/FreeCAD/v1-10").mkdir()
+        (h / ".local/share/FreeCAD/v1-2").mkdir()
+        self.assertEqual(ep.freecad_mod_dir(h, {}, "Linux"),
+                         h / ".local/share/FreeCAD/v1-10/Mod/PolyKybd")
+        (h / "x/FreeCAD").mkdir(parents=True)
+        self.assertEqual(ep.freecad_mod_dir(h, {"XDG_DATA_HOME": str(h / "x")}, "Linux"),
+                         h / "x/FreeCAD/Mod/PolyKybd")
+        (h / "custom").mkdir()
+        self.assertEqual(ep.freecad_mod_dir(h, {"FREECAD_USER_DATA": str(h / "custom")}, "Linux"),
+                         h / "custom/Mod/PolyKybd")
+        (h / "AppData/Roaming/FreeCAD").mkdir(parents=True)
+        self.assertEqual(ep.freecad_mod_dir(h, {"APPDATA": str(h / "AppData/Roaming")}, "Windows"),
+                         h / "AppData/Roaming/FreeCAD/Mod/PolyKybd")
+        (h / "Library/Application Support/FreeCAD").mkdir(parents=True)
+        self.assertEqual(ep.freecad_mod_dir(h, {}, "Darwin"),
+                         h / "Library/Application Support/FreeCAD/Mod/PolyKybd")
+
+    def test_the_flatpak_folder_when_only_it_exists(self):
+        flat = self.home / ".var/app/org.freecad.FreeCAD/data/FreeCAD"
+        flat.mkdir(parents=True)
+        self.assertEqual(ep.freecad_mod_dir(self.home, {}, "Linux"), flat / "Mod/PolyKybd")
+
+    def test_not_present_until_freecad_ran_once(self):
+        st = self.fstatus()
+        self.assertEqual(st.state, ep.STATE_NOT_PRESENT)
+        self.assertFalse(ep.default_selection(st))
+
+    def test_install_refresh_and_remove(self):
+        (self.home / ".local/share/FreeCAD/Mod").mkdir(parents=True)
+        mod = self.home / ".local/share/FreeCAD/Mod/PolyKybd"
+        st = self.fstatus()
+        self.assertEqual(st.state, ep.STATE_NOT_INSTALLED)
+        self.assertTrue(ep.default_selection(st))
+        [r] = ep.install([ep.FREECAD], **self.fkw())
+        self.assertTrue(r.ok and r.changed, r)
+        self.assertEqual((mod / "InitGui.py").read_text(), "# InitGui.py v1\n")
+        self.assertEqual(self.fstatus().state, ep.STATE_INSTALLED)
+        (self.fc_src / "polykybd_freecad_gui.py").write_text("# v2\n")
+        self.assertEqual(self.fstatus().state, ep.STATE_OUTDATED)
+        self.assertEqual(ep.refresh_installed(**self.fkw()), [ep.FREECAD])
+        self.assertEqual((mod / "polykybd_freecad_gui.py").read_text(), "# v2\n")
+        [r] = ep.remove([ep.FREECAD], **self.fkw())
+        self.assertTrue(r.ok and r.changed)
+        self.assertFalse(mod.exists())
+        self.assertTrue((self.home / ".local/share/FreeCAD/Mod").is_dir())
+
+    def test_a_copy_changed_by_hand_is_left_alone(self):
+        (self.home / ".local/share/FreeCAD").mkdir(parents=True)
+        ep.install([ep.FREECAD], **self.fkw())
+        mod = self.home / ".local/share/FreeCAD/Mod/PolyKybd"
+        (mod / "InitGui.py").write_text("# mine\n")
+        self.assertEqual(self.fstatus().state, ep.STATE_MODIFIED)
+        [r] = ep.install([ep.FREECAD], **self.fkw())
+        self.assertFalse(r.ok)
+        self.assertEqual((mod / "InitGui.py").read_text(), "# mine\n")
+
+    def test_the_shipped_addon_is_complete(self):
+        files = ep.shipped_files(ep.FREECAD)
+        self.assertEqual(set(files), {"InitGui.py", "polykybd_freecad_core.py",
+                                      "polykybd_freecad_gui.py"})
+
+
 class TestHelpTags(unittest.TestCase):
 
     def test_tags_are_sorted_and_slashes_escaped(self):

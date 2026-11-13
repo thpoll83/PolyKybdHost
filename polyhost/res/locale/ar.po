@@ -3893,6 +3893,10 @@ msgstr ""
 msgid "Editors"
 msgstr "المحررات"
 
+#: polyhost/gui/shell_title_dialog.py:185
+msgid "FreeCAD shows the keys of the active workbench only with the PolyKybd add-on. Install copies it to FreeCAD's Mod folder."
+msgstr ""
+
 #: polyhost/gui/shell_title_dialog.py:192
 msgid "Checking the shells…"
 msgstr "جارٍ فحص الصدفات…"

@@ -9,10 +9,13 @@
 #                    Backspace on macOS; F2 rename and F5 refresh do not exist on
 #                    macOS, and Help is Cmd+? there.
 #
-# ⚠️ The workbench is not in the window title, so the host cannot tell them
-# apart. This set has the global keys plus the single keys of Sketcher, Draft
+# ⚠️ The workbench is not in the window title, so without the FreeCAD add-on
+# (freecad-addon/) the host cannot tell them apart. This fallback set has the global keys plus the single keys of Sketcher, Draft
 # and TechDraw, which share no key with the global set. Most workbench keys are
 # two-key sequences (G, L), which one keycap cannot show; they are left out.
+#
+# The per-workbench sets (bindings_<set>.yaml) are written from this file by
+# gen_workbench_bindings.py; regenerate them after a change here.
 #
 # Regenerate:
 #   python polyhost/res/overlay_sources/freecad/fetch_icons.py
