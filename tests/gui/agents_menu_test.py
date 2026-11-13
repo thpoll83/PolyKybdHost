@@ -129,5 +129,43 @@ class AgentHooksMenuTest(unittest.TestCase):
         self.assertEqual(install.call_args[0][0], "codex")
 
 
+@unittest.skipUnless(_QT, "needs PyQt5 and a display (xvfb-run)")
+class AgentOpenRequestTest(unittest.TestCase):
+    """A cloud session's key found no window: the tray asks before opening."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.app = QApplication.instance() or QApplication([])
+
+    def _host(self):
+        host = _Stub()
+        host.log = mock.MagicMock()
+        host._on_agent_open_request = types.MethodType(PolyHost._on_agent_open_request, host)
+        self.addCleanup(lambda: getattr(host, "_agent_open_box", None)
+                        and host._agent_open_box.close())
+        return host
+
+    def test_asks_and_opens_only_on_open(self):
+        url = "https://claude.ai/code/session_abc"
+        host = self._host()
+        with mock.patch("PyQt5.QtGui.QDesktopServices.openUrl") as open_url:
+            host._on_agent_open_request({"url": url, "title": "Fix the build"})
+            box = host._agent_open_box
+            self.assertTrue(box.isVisible())
+            self.assertIn("Fix the build", box.text())
+            self.assertEqual(box.informativeText(), url)
+            open_url.assert_not_called()
+            host._on_agent_open_request({"url": url + "2", "title": "Other"})
+            self.assertIs(host._agent_open_box, box)          # one box, newest wins
+            box.buttonClicked.emit(host._agent_open_button)
+            self.assertEqual(open_url.call_args[0][0].toString(), url + "2")
+
+    def test_a_foreign_address_is_not_offered(self):
+        host = self._host()
+        host._on_agent_open_request({"url": "https://evil.example/", "title": "x"})
+        host._on_agent_open_request("garbage")
+        self.assertIsNone(getattr(host, "_agent_open_box", None))
+
+
 if __name__ == "__main__":
     unittest.main()

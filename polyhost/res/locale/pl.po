@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-13 08:15+0000\n"
+"POT-Creation-Date: 2026-11-13 09:13+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -534,7 +534,7 @@ msgstr "Zatrzymaj"
 msgid "Copy to Clipboard"
 msgstr "Kopiuj do schowka"
 
-#: polyhost/gui/boot_loop_dialog.py:94 polyhost/gui/cloud_sessions_dialog.py:73
+#: polyhost/gui/boot_loop_dialog.py:94 polyhost/gui/cloud_sessions_dialog.py:77
 #: polyhost/gui/error_dialog.py:62
 #: polyhost/gui/fontpack_inspector_dialog.py:1000
 #: polyhost/gui/hid_fw_up_dialog.py:487 polyhost/gui/log_viewer.py:263
@@ -575,82 +575,82 @@ msgid "Connect Cloud Sessions"
 msgstr "Połącz sesje w chmurze"
 
 #: polyhost/gui/cloud_sessions_dialog.py:28
-msgid "Shows Claude Code sessions that run in the cloud (claude.ai/code, also when the desktop app shows them) on the agent keys. A key press opens the session's page. The session's state goes through the PolyKybd relay, encrypted with a key that only this computer and your cloud environment have."
-msgstr "Pokazuje na klawiszach agentów sesje Claude Code działające w chmurze (claude.ai/code, także gdy pokazuje je aplikacja desktopowa). Naciśnięcie klawisza otwiera stronę sesji. Stan sesji przechodzi przez serwer pośredniczący PolyKybd, zaszyfrowany kluczem, który mają tylko ten komputer i twoje środowisko w chmurze."
+msgid "Shows Claude Code sessions that run in the cloud (claude.ai/code, also when the desktop app shows them) on the agent keys. A key press brings the session's browser window or the Claude app to the front. The session's state goes through the PolyKybd relay, encrypted with a key that only this computer and your cloud environment have."
+msgstr "Pokazuje na klawiszach agentów sesje Claude Code działające w chmurze (claude.ai/code, także gdy pokazuje je aplikacja desktopowa). Naciśnięcie klawisza przenosi na pierwszy plan okno przeglądarki z sesją lub aplikację Claude. Stan sesji przechodzi przez serwer pośredniczący PolyKybd, zaszyfrowany kluczem, który mają tylko ten komputer i twoje środowisko w chmurze."
 
-#: polyhost/gui/cloud_sessions_dialog.py:38
+#: polyhost/gui/cloud_sessions_dialog.py:39
 msgid "In claude.ai, open the cloud environment's settings and enter these. Use a personal environment: everyone who uses an environment can read its variables."
 msgstr "W claude.ai otwórz ustawienia środowiska w chmurze i wpisz te wartości. Użyj środowiska osobistego: każdy, kto używa środowiska, może odczytać jego zmienne."
 
-#: polyhost/gui/cloud_sessions_dialog.py:43
+#: polyhost/gui/cloud_sessions_dialog.py:44
 msgid "Environment variable"
 msgstr "Zmienna środowiskowa"
 
-#: polyhost/gui/cloud_sessions_dialog.py:45
+#: polyhost/gui/cloud_sessions_dialog.py:46
 msgid "Allowed host (when network access is Limited)"
 msgstr "Dozwolony host (gdy dostęp do sieci to Limited)"
 
-#: polyhost/gui/cloud_sessions_dialog.py:47
+#: polyhost/gui/cloud_sessions_dialog.py:48
 msgid "Setup script"
 msgstr "Skrypt konfiguracyjny"
 
-#: polyhost/gui/cloud_sessions_dialog.py:56
+#: polyhost/gui/cloud_sessions_dialog.py:60
 #: polyhost/gui/forwarder_pairing.py:26
 msgid "Copy"
 msgstr "Kopiuj"
 
-#: polyhost/gui/cloud_sessions_dialog.py:63
+#: polyhost/gui/cloud_sessions_dialog.py:67
 msgid "Each new cloud session of that environment then shows on a number key."
 msgstr "Każda nowa sesja w chmurze tego środowiska pojawi się wtedy na klawiszu cyfry."
 
-#: polyhost/gui/cloud_sessions_dialog.py:67
+#: polyhost/gui/cloud_sessions_dialog.py:71
 msgid "Connect"
 msgstr "Połącz"
 
-#: polyhost/gui/cloud_sessions_dialog.py:70
+#: polyhost/gui/cloud_sessions_dialog.py:74
 msgid "Disconnect…"
 msgstr "Rozłącz…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:91
+#: polyhost/gui/cloud_sessions_dialog.py:95
 msgid "Reading the state…"
 msgstr "Odczytywanie stanu…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:103
+#: polyhost/gui/cloud_sessions_dialog.py:107
 #, python-brace-format
 msgid "The state could not be read: {msg}"
 msgstr "Nie można odczytać stanu: {msg}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:123
+#: polyhost/gui/cloud_sessions_dialog.py:127
 msgid "Not connected. \"Connect\" creates a channel on the relay for this computer."
 msgstr "Brak połączenia. „Połącz” tworzy kanał na serwerze pośredniczącym dla tego komputera."
 
-#: polyhost/gui/cloud_sessions_dialog.py:129
+#: polyhost/gui/cloud_sessions_dialog.py:133
 msgid "The agent keys are off: turn on \"Show on the Number Row\" in the AI Agents menu."
 msgstr "Klawisze agentów są wyłączone: włącz „Pokazuj w rzędzie cyfr” w menu „Agenci AI”."
 
-#: polyhost/gui/cloud_sessions_dialog.py:132
+#: polyhost/gui/cloud_sessions_dialog.py:136
 msgid "Connected to the relay."
 msgstr "Połączono z serwerem pośredniczącym."
 
-#: polyhost/gui/cloud_sessions_dialog.py:134
+#: polyhost/gui/cloud_sessions_dialog.py:138
 #, python-brace-format
 msgid "The relay cannot be reached; trying again: {error}"
 msgstr "Serwer pośredniczący jest nieosiągalny; ponowna próba: {error}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:136
+#: polyhost/gui/cloud_sessions_dialog.py:140
 msgid "Connecting to the relay…"
 msgstr "Łączenie z serwerem pośredniczącym…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:147
+#: polyhost/gui/cloud_sessions_dialog.py:151
 msgid "Creating a channel on the relay…"
 msgstr "Tworzenie kanału na serwerze pośredniczącym…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:152
-#: polyhost/gui/cloud_sessions_dialog.py:162
+#: polyhost/gui/cloud_sessions_dialog.py:156
+#: polyhost/gui/cloud_sessions_dialog.py:166
 msgid "Disconnect Cloud Sessions"
 msgstr "Rozłącz sesje w chmurze"
 
-#: polyhost/gui/cloud_sessions_dialog.py:153
+#: polyhost/gui/cloud_sessions_dialog.py:157
 msgid "Delete the channel on the relay? The cloud sessions leave the agent keys, and the hooks in your cloud environment stop reaching this computer. Remove the environment variable there too."
 msgstr "Usunąć kanał na serwerze pośredniczącym? Sesje w chmurze znikną z klawiszy agentów, a hooki w twoim środowisku w chmurze przestaną docierać do tego komputera. Usuń tam też zmienną środowiskową."
 
@@ -947,7 +947,7 @@ msgstr "dostarczona"
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "Polecenia PolyKybd (*.poly.cmd)"
 
-#: polyhost/gui/cmd_menu.py:566 polyhost/host.py:2711
+#: polyhost/gui/cmd_menu.py:566 polyhost/host.py:2747
 msgid "Open file"
 msgstr "Otwórz plik"
 
@@ -1859,8 +1859,8 @@ msgstr "Wpisz kod, który pokazuje „Sparuj przekaźnik…” na komputerze kla
 msgid "That is not a pairing code: it has 64 letters and digits (a to f, 0 to 9), in groups of 8."
 msgstr "To nie jest kod parowania: ma 64 litery i cyfry (od a do f, od 0 do 9), w grupach po 8."
 
-#: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:3322
-#: polyhost/host.py:3363 polyhost/host.py:3395
+#: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:3358
+#: polyhost/host.py:3399 polyhost/host.py:3431
 msgid "Firmware Update"
 msgstr "Aktualizacja oprogramowania układowego"
 
@@ -2179,7 +2179,7 @@ msgstr "brak danych podglądu (dostarczonych ani z kopii roboczej)"
 msgid "the shipped language table is missing"
 msgstr "brak dostarczonej tabeli języków"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:595 polyhost/host.py:3338
+#: polyhost/gui/layout_dialog/keycap_preview.py:595 polyhost/host.py:3374
 msgid "unknown"
 msgstr "nieznane"
 
@@ -4213,8 +4213,8 @@ msgstr "Konfiguruj mapę klawiszy"
 msgid "Check for host update..."
 msgstr "Sprawdź aktualizację hosta..."
 
-#: polyhost/host.py:784 polyhost/host.py:2800 polyhost/host.py:3335
-#: polyhost/host.py:3513
+#: polyhost/host.py:784 polyhost/host.py:2836 polyhost/host.py:3371
+#: polyhost/host.py:3549
 msgid "Check for firmware update…"
 msgstr "Sprawdź aktualizację oprogramowania układowego…"
 
@@ -4576,91 +4576,104 @@ msgstr "Klawisz {key}: {name}, {state}, {title}"
 msgid "Page {page}, {text}"
 msgstr "Strona {page}, {text}"
 
-#: polyhost/host.py:2608
+#: polyhost/host.py:2510
+msgid "Open Cloud Session"
+msgstr "Otwórz sesję w chmurze"
+
+#: polyhost/host.py:2513
+msgid "Open in Browser"
+msgstr "Otwórz w przeglądarce"
+
+#: polyhost/host.py:2525
+#, python-brace-format
+msgid "No browser tab or Claude app window shows the cloud session \"{title}\". Open it in the browser?"
+msgstr "Żadna karta przeglądarki ani okno aplikacji Claude nie pokazuje sesji w chmurze „{title}”. Otworzyć ją w przeglądarce?"
+
+#: polyhost/host.py:2644
 msgid "No emoji search dictionaries shipped"
 msgstr "Brak dołączonych słowników wyszukiwania emoji"
 
-#: polyhost/host.py:2614
+#: polyhost/host.py:2650
 msgid "Needs newer keyboard firmware"
 msgstr "Wymaga nowszego oprogramowania klawiatury"
 
-#: polyhost/host.py:2642
+#: polyhost/host.py:2678
 msgid "Own dictionary file..."
 msgstr "Własny plik słownika..."
 
-#: polyhost/host.py:2644
+#: polyhost/host.py:2680
 #, python-brace-format
 msgid "Own dictionary (cannot be used): {name}"
 msgstr "Własny słownik (nie można użyć): {name}"
 
-#: polyhost/host.py:2646
+#: polyhost/host.py:2682
 #, python-brace-format
 msgid "Own dictionary: {name}"
 msgstr "Własny słownik: {name}"
 
-#: polyhost/host.py:2663
+#: polyhost/host.py:2699
 msgid "Choose an emoji search dictionary"
 msgstr "Wybierz słownik wyszukiwania emoji"
 
-#: polyhost/host.py:2664
+#: polyhost/host.py:2700
 msgid "Emoji search dictionary (*.plyd)"
 msgstr "Słownik wyszukiwania emoji (*.plyd)"
 
-#: polyhost/host.py:2677
+#: polyhost/host.py:2713
 msgid "Emoji search dictionary"
 msgstr "Słownik wyszukiwania emoji"
 
-#: polyhost/host.py:2678
+#: polyhost/host.py:2714
 #, python-brace-format
 msgid "This file cannot be used: {reason}"
 msgstr "Tego pliku nie można użyć: {reason}"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-#: polyhost/host.py:2710
+#: polyhost/host.py:2746
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "Mapowanie nakładek PolyKybd (*.poly.yaml)"
 
-#: polyhost/host.py:2798 polyhost/host.py:3294 polyhost/host.py:3442
+#: polyhost/host.py:2834 polyhost/host.py:3330 polyhost/host.py:3478
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "Zaktualizuj oprogramowanie układowe do v{version}…"
 
 #: polyhost/forwarder.py:1003 polyhost/forwarder.py:1014
-#: polyhost/forwarder.py:1020 polyhost/host.py:2818 polyhost/host.py:2939
-#: polyhost/host.py:2943
+#: polyhost/forwarder.py:1020 polyhost/host.py:2854 polyhost/host.py:2975
+#: polyhost/host.py:2979
 msgid "Check for updates..."
 msgstr "Sprawdź aktualizacje..."
 
-#: polyhost/host.py:2886
+#: polyhost/host.py:2922
 #, python-brace-format
 msgid "Update to v{version} available"
 msgstr "Dostępna aktualizacja do v{version}"
 
 #: polyhost/forwarder.py:1016 polyhost/forwarder.py:1022
-#: polyhost/forwarder.py:1033 polyhost/host.py:2897 polyhost/host.py:2937
-#: polyhost/host.py:2944 polyhost/host.py:2967
+#: polyhost/forwarder.py:1033 polyhost/host.py:2933 polyhost/host.py:2973
+#: polyhost/host.py:2980 polyhost/host.py:3003
 msgid "PolyKybdHost Update"
 msgstr "Aktualizacja PolyKybdHost"
 
-#: polyhost/host.py:2898
+#: polyhost/host.py:2934
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "Dostępna jest wersja {version}. Kliknij ikonę w zasobniku, aby zaktualizować."
 
-#: polyhost/forwarder.py:990 polyhost/host.py:2923
+#: polyhost/forwarder.py:990 polyhost/host.py:2959
 msgid "Checking for updates..."
 msgstr "Sprawdzanie aktualizacji..."
 
-#: polyhost/host.py:2936
+#: polyhost/host.py:2972
 msgid "No updates available"
 msgstr "Brak dostępnych aktualizacji"
 
-#: polyhost/forwarder.py:1017 polyhost/host.py:2938
+#: polyhost/forwarder.py:1017 polyhost/host.py:2974
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "Używasz najnowszej wersji (v{version})."
 
-#: polyhost/forwarder.py:1023 polyhost/host.py:2945
+#: polyhost/forwarder.py:1023 polyhost/host.py:2981
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -4675,42 +4688,42 @@ msgstr ""
 "\n"
 "Uruchom z opcją --dev 1, aby zobaczyć szczegóły."
 
-#: polyhost/host.py:2950 polyhost/host.py:3367
+#: polyhost/host.py:2986 polyhost/host.py:3403
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "Wydano: {date}"
 
-#: polyhost/forwarder.py:1004 polyhost/host.py:2951
+#: polyhost/forwarder.py:1004 polyhost/host.py:2987
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "Dostępna jest wersja {version}."
 
-#: polyhost/forwarder.py:1005 polyhost/host.py:2952
+#: polyhost/forwarder.py:1005 polyhost/host.py:2988
 msgid "Update PolyKybdHost"
 msgstr "Zaktualizuj PolyKybdHost"
 
-#: polyhost/host.py:2956
+#: polyhost/host.py:2992
 msgid "Download, install, and restart now?"
 msgstr "Pobrać, zainstalować i uruchomić ponownie teraz?"
 
-#: polyhost/forwarder.py:1032 polyhost/host.py:2967
+#: polyhost/forwarder.py:1032 polyhost/host.py:3003
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "Pobieranie v{version}…"
 
-#: polyhost/forwarder.py:1073 polyhost/host.py:3092
+#: polyhost/forwarder.py:1073 polyhost/host.py:3128
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "Nie można uruchomić przekaźnika aktualizacji; aktualizacja jest niekompletna. Szczegóły znajdziesz w dzienniku."
 
-#: polyhost/forwarder.py:1085 polyhost/host.py:3107
+#: polyhost/forwarder.py:1085 polyhost/host.py:3143
 msgid "Update failed"
 msgstr "Aktualizacja nie powiodła się"
 
-#: polyhost/forwarder.py:1085 polyhost/host.py:3107
+#: polyhost/forwarder.py:1085 polyhost/host.py:3143
 msgid "The update did not finish."
 msgstr "Aktualizacja nie została ukończona."
 
-#: polyhost/host.py:3254
+#: polyhost/host.py:3290
 #, python-brace-format
 msgid "{n} keyboard font bundle is out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
 msgid_plural "{n} keyboard font bundles are out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
@@ -4718,28 +4731,28 @@ msgstr[0] "{n} pakiet czcionek klawiatury jest nieaktualny, a Automatyczne wgryw
 msgstr[1] "{n} pakiety czcionek klawiatury są nieaktualne, a Automatyczne wgrywanie jest wyłączone. Użyj Aktualizacje → Zaktualizuj czcionki klawiatury."
 msgstr[2] "{n} pakietów czcionek klawiatury jest nieaktualnych, a Automatyczne wgrywanie jest wyłączone. Użyj Aktualizacje → Zaktualizuj czcionki klawiatury."
 
-#: polyhost/host.py:3305
+#: polyhost/host.py:3341
 msgid "PolyKybd Firmware Update"
 msgstr "Aktualizacja oprogramowania układowego PolyKybd"
 
-#: polyhost/host.py:3306
+#: polyhost/host.py:3342
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "Dostępne jest nowe oprogramowanie układowe v{version}. Kliknij ikonę w zasobniku, aby zaktualizować."
 
-#: polyhost/host.py:3323 polyhost/host.py:3364
+#: polyhost/host.py:3359 polyhost/host.py:3400
 msgid "The keyboard must be connected to update the firmware."
 msgstr "Aby zaktualizować oprogramowanie układowe, klawiatura musi być podłączona."
 
-#: polyhost/host.py:3329
+#: polyhost/host.py:3365
 msgid "Checking for firmware update…"
 msgstr "Sprawdzanie aktualizacji oprogramowania układowego…"
 
-#: polyhost/host.py:3343 polyhost/host.py:3353 polyhost/host.py:3356
+#: polyhost/host.py:3379 polyhost/host.py:3389 polyhost/host.py:3392
 msgid "PolyKybd Firmware"
 msgstr "Oprogramowanie układowe PolyKybd"
 
-#: polyhost/host.py:3344
+#: polyhost/host.py:3380
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -4750,63 +4763,63 @@ msgstr ""
 "\n"
 "Twoja klawiatura ma wersję v{current}. Zwykle oznacza to, że budowanie wydania się nie powiodło — plik oprogramowania pojawi się na stronie wydania po naprawieniu problemu."
 
-#: polyhost/host.py:3354
+#: polyhost/host.py:3390
 msgid "No firmware release could be found."
 msgstr "Nie znaleziono wydania oprogramowania układowego."
 
-#: polyhost/host.py:3357
+#: polyhost/host.py:3393
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "Używasz najnowszego oprogramowania układowego (v{version})."
 
-#: polyhost/host.py:3369
+#: polyhost/host.py:3405
 #, python-brace-format
 msgid "Installed: v{version}"
 msgstr "Zainstalowano: v{version}"
 
-#: polyhost/host.py:3370
+#: polyhost/host.py:3406
 msgid "Installed: unknown (the keyboard did not report its version)"
 msgstr "Zainstalowano: nieznana (klawiatura nie podała swojej wersji)"
 
-#: polyhost/host.py:3371
+#: polyhost/host.py:3407
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "Dostępne jest oprogramowanie układowe {version}."
 
-#: polyhost/host.py:3373
+#: polyhost/host.py:3409
 msgid "Both halves update over HID and reboot automatically."
 msgstr "Obie połówki aktualizują się przez HID i automatycznie uruchamiają się ponownie."
 
-#: polyhost/host.py:3376
+#: polyhost/host.py:3412
 msgid "This update changes your stored keymap once:"
 msgstr "Ta aktualizacja jednorazowo zmienia zapisaną mapę klawiszy:"
 
-#: polyhost/host.py:3378
+#: polyhost/host.py:3414
 msgid "Keys you remapped and your macros stay as they are."
 msgstr "Klawisze przypisane przez Ciebie na nowo i Twoje makra pozostają bez zmian."
 
-#: polyhost/host.py:3379
+#: polyhost/host.py:3415
 msgid "Update PolyKybd Firmware"
 msgstr "Zaktualizuj oprogramowanie układowe PolyKybd"
 
-#: polyhost/host.py:3383
+#: polyhost/host.py:3419
 msgid "Download and flash now?"
 msgstr "Pobrać i wgrać teraz?"
 
-#: polyhost/host.py:3394
+#: polyhost/host.py:3430
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "Pobieranie oprogramowania układowego v{version}…"
 
-#: polyhost/host.py:3416 polyhost/host.py:3717
+#: polyhost/host.py:3452 polyhost/host.py:3753
 msgid "Cancelling…"
 msgstr "Anulowanie…"
 
-#: polyhost/host.py:3453
+#: polyhost/host.py:3489
 msgid "Firmware Update Failed"
 msgstr "Aktualizacja oprogramowania układowego nie powiodła się"
 
-#: polyhost/host.py:3454
+#: polyhost/host.py:3490
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -4817,11 +4830,11 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3560 polyhost/host.py:3602 polyhost/host.py:3610
+#: polyhost/host.py:3596 polyhost/host.py:3638 polyhost/host.py:3646
 msgid "Allow access to the keyboard"
 msgstr "Zezwól na dostęp do klawiatury"
 
-#: polyhost/host.py:3561
+#: polyhost/host.py:3597
 msgid ""
 "On Linux a udev rule lets this app open the keyboard without root: its HID interface, and its serial port for faster firmware and font-pack updates. The rule file is /etc/udev/rules.d/99-hid.rules.\n"
 "\n"
@@ -4831,7 +4844,7 @@ msgstr ""
 "\n"
 "System poprosi o Twoje hasło (PolicyKit). Następnie odłącz klawiaturę i podłącz ją ponownie."
 
-#: polyhost/host.py:3603
+#: polyhost/host.py:3639
 msgid ""
 "The udev rule is installed.\n"
 "\n"
@@ -4841,11 +4854,11 @@ msgstr ""
 "\n"
 "Odłącz klawiaturę i podłącz ją ponownie, aby nowe uprawnienia zaczęły obowiązywać."
 
-#: polyhost/host.py:3611
+#: polyhost/host.py:3647
 msgid "The udev rule was not installed."
 msgstr "Reguła udev nie została zainstalowana."
 
-#: polyhost/host.py:3612
+#: polyhost/host.py:3648
 #, python-brace-format
 msgid ""
 "{error}\n"
@@ -4858,12 +4871,12 @@ msgstr ""
 "Możesz też uruchomić te polecenia w terminalu:\n"
 "{commands}"
 
-#: polyhost/host.py:3681 polyhost/host.py:3695 polyhost/host.py:3741
-#: polyhost/host.py:3750 polyhost/host.py:3756
+#: polyhost/host.py:3717 polyhost/host.py:3731 polyhost/host.py:3777
+#: polyhost/host.py:3786 polyhost/host.py:3792
 msgid "Install WinCompose"
 msgstr "Zainstaluj WinCompose"
 
-#: polyhost/host.py:3682
+#: polyhost/host.py:3718
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -4873,11 +4886,11 @@ msgstr ""
 "\n"
 "Wersja WinCompose przygotowana dla PolyKybd zostanie pobrana z serwisu GitHub, a jej instalator uruchomiony (Windows poprosi o potwierdzenie)."
 
-#: polyhost/host.py:3695
+#: polyhost/host.py:3731
 msgid "Looking for the latest WinCompose release…"
 msgstr "Wyszukiwanie najnowszego wydania WinCompose…"
 
-#: polyhost/host.py:3742
+#: polyhost/host.py:3778
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -4887,7 +4900,7 @@ msgstr ""
 "\n"
 "Strona wydań otworzy się w przeglądarce — pobierz i uruchom stamtąd instalator."
 
-#: polyhost/host.py:3751
+#: polyhost/host.py:3787
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -4898,7 +4911,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3757
+#: polyhost/host.py:3793
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -4915,7 +4928,7 @@ msgstr ""
 "Został zapisany w:\n"
 "{path}"
 
-#: polyhost/host.py:3765
+#: polyhost/host.py:3801
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Instalator WinCompose został uruchomiony. Gdy instalacja się zakończy i WinCompose będzie działać, PolyKybd automatycznie się na niego przełączy."
 

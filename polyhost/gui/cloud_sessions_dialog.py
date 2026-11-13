@@ -26,8 +26,9 @@ class CloudSessionsDialog(QDialog):
 
         intro = QLabel(_(
             "Shows Claude Code sessions that run in the cloud (claude.ai/code, also "
-            "when the desktop app shows them) on the agent keys. A key press opens the "
-            "session's page. The session's state goes through the PolyKybd relay, "
+            "when the desktop app shows them) on the agent keys. A key press brings the "
+            "session's browser window or the Claude app to the front. The session's "
+            "state goes through the PolyKybd relay, "
             "encrypted with a key that only this computer and your cloud environment "
             "have."))
         intro.setWordWrap(True)

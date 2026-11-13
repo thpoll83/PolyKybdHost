@@ -2492,6 +2492,42 @@ class PolyHost(QApplication):
         dialog.raise_()
         dialog.activateWindow()
 
+    def _on_agent_open_request(self, payload):
+        """A cloud session's key found no window (services/agents/controller.py):
+        offer to open its page. Not modal, and one box at a time: a newer press
+        replaces the question, so no nested event loop dispatches other events."""
+        from PyQt5.QtCore import QUrl
+        from PyQt5.QtGui import QDesktopServices
+        from polyhost.services.agents.cloud_relay import is_session_url
+        url = (payload or {}).get("url") if isinstance(payload, dict) else None
+        if not is_session_url(url):
+            self.log.info("Agent keys: ignored a request to open %r", url)
+            return
+        title = str(payload.get("title") or "")[:80]
+        box = getattr(self, "_agent_open_box", None)
+        if box is None:
+            box = self._agent_open_box = QMessageBox(QMessageBox.Question,
+                                                     _("Open Cloud Session"), "")
+            box.setWindowModality(Qt.NonModal)
+            box.setAttribute(Qt.WA_DeleteOnClose, False)
+            self._agent_open_button = box.addButton(_("Open in Browser"),
+                                                    QMessageBox.AcceptRole)
+            box.addButton(QMessageBox.Cancel)
+
+            def clicked(button):
+                if button is self._agent_open_button:
+                    target = box.property("session_url")
+                    if is_session_url(target):
+                        QDesktopServices.openUrl(QUrl(target))
+            # noinspection PyUnresolvedReferences
+            box.buttonClicked.connect(clicked)
+        box.setProperty("session_url", url)
+        box.setText(_f("No browser tab or Claude app window shows the cloud session "
+                       "\"{title}\". Open it in the browser?", title=title))
+        box.setInformativeText(url)
+        box.show()
+        bring_to_front(box)
+
     def _toggle_agents_enabled(self, checked):
         def done(ok, msg):
             if not ok:
@@ -3873,6 +3909,8 @@ class PolyHost(QApplication):
                     self.boot_loop_dialog.feed_done(result)
         elif name == "problem_detected":
             self._on_problem_detected(result)
+        elif name == "agent_open_request":
+            self._on_agent_open_request(result)
         elif name == "console":
             kb_serial, kb_log = result
             if kb_serial:

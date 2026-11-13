@@ -143,12 +143,6 @@ def flash_progress_relay(emit, cancel, kind):
 _NOT_SENT = object()
 
 
-def _open_in_browser(url: str) -> bool:
-    """A cloud agent's key press: its claude.ai page in the default browser."""
-    import webbrowser
-    return bool(webbrowser.open(url))
-
-
 def focused_entry(handler):
     """The focused window's mapping entry, its program name and its URL.
 
@@ -2490,7 +2484,13 @@ class PolyCore(Observable):
             from polyhost.services.agents.viewer import mapping_viewer_apps
             return _raise_viewer(machine, mapping_viewer_apps(self.mapping))
         self._agent_keys.raise_viewer = raise_viewer
-        self._agent_keys.open_url = _open_in_browser
+        from polyhost.services.agents.raiser import raise_cloud
+        self._agent_keys.raise_cloud = raise_cloud
+        # No window for a cloud session: the tray asks whether to open its page
+        # (host.py _on_agent_open_request). Without a tray nobody answers, and
+        # nothing opens.
+        self._agent_keys.ask_open = lambda agent: self.emit(
+            "agent_open_request", {"url": agent.url, "title": agent.display_headline})
         self._agent_limits = limits
         self._cloud_relay = None
         self._cloud_relay_lock = threading.Lock()

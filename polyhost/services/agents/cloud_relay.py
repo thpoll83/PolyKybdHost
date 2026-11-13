@@ -11,7 +11,9 @@ Worker (`agent-relay/`). This module is the other end:
 - `RelayClient` keeps a WebSocket open to the channel. The relay sends a snapshot
   of the channel's sessions, then each report. Every report is decrypted with the
   channel's key (cloud_hook.open_sealed) and goes into the agent registry as a
-  Claude Code agent on the computer "cloud". A key press opens the session's page.
+  Claude Code agent on the computer "cloud". A key press only focuses: the
+  browser window showing the session, else the Claude desktop app
+  (raiser.raise_cloud). The page address is kept for a later tab switch.
 
 Standard library only (ssl, socket), with no Qt: it runs in PolyCore, also in
 the headless daemon. Every request sends a User-Agent: Cloudflare answers

@@ -282,26 +282,85 @@ class ClientTest(unittest.TestCase):
 
 
 class KeyPressTest(unittest.TestCase):
-    def test_a_cloud_key_opens_its_page_and_nothing_else(self):
-        registry = AgentRegistry()
-        registry.report("claude-code", "a" * 32, "done", machine="cloud", url=URL)
-        registry.report("claude-code", "b" * 32, "done", machine="cloud",
-                        url="https://evil.example/")
-        opened = []
-        done = threading.Event()
-        ctl = AgentKeysController(registry, lambda: None, raise_agent=lambda a: True)
-        ctl.open_url = lambda url: opened.append(url) or done.set() or True
-        ctl.raise_remote = lambda a: self.fail("a cloud agent is not a forwarder's")
-        ctl._handle_key(0)
-        self.assertTrue(done.wait(5))
-        self.assertEqual(opened, [URL])
-        self.assertEqual(registry.agents()[0].state.name, "IDLE")     # seen
-        ctl._handle_key(1)
+    def _press(self, ctl, key):
+        ctl._handle_key(key)
         deadline = time.monotonic() + 5
         while ctl.last_press.get("result") == "read" and time.monotonic() < deadline:
             time.sleep(0.01)
-        self.assertEqual(opened, [URL])
-        self.assertIn("no page", ctl.last_press["result"])
+        return ctl.last_press["result"]
+
+    def test_a_cloud_key_only_raises(self):
+        registry = AgentRegistry()
+        registry.report("claude-code", "a" * 32, "done", machine="cloud", url=URL,
+                        headline="Fix the build")
+        raised = []
+        ctl = AgentKeysController(registry, lambda: None,
+                                  raise_agent=lambda a: self.fail("not a local agent"))
+        ctl.raise_remote = lambda a: self.fail("a cloud agent is not a forwarder's")
+        ctl.raise_cloud = lambda a: raised.append(a.session_id) or True
+        self.assertEqual(self._press(ctl, 0), "raised")
+        self.assertEqual(raised, ["a" * 32])
+        self.assertEqual(registry.agents()[0].state.name, "IDLE")     # seen
+        ctl.raise_cloud = lambda a: False
+        self.assertIn("no window found", self._press(ctl, 0))     # nobody to ask
+
+    def test_no_window_asks_and_opens_nothing_itself(self):
+        registry = AgentRegistry()
+        registry.report("claude-code", "a" * 32, "idle", machine="cloud", url=URL)
+        registry.report("claude-code", "b" * 32, "idle", machine="cloud",
+                        url="https://evil.example/x")
+        asked = []
+        ctl = AgentKeysController(registry, lambda: None)
+        ctl.raise_cloud = lambda a: False
+        ctl.ask_open = lambda a: asked.append(a.url)
+        self.assertIn("asked whether to open", self._press(ctl, 0))
+        self.assertEqual(asked, [URL])
+        ctl.raise_cloud = lambda a: True
+        self.assertEqual(self._press(ctl, 0), "raised")             # found: no question
+        ctl.raise_cloud = lambda a: False
+        self.assertNotIn("asked", self._press(ctl, 1))             # no valid page
+        self.assertEqual(asked, [URL])
+
+
+class RaiseCloudTest(unittest.TestCase):
+    class Win:
+        def __init__(self, title):
+            self.title = title
+            self.activated = False
+
+        def activate(self):
+            self.activated = True
+
+    def agent(self, headline="Fix the build", label=""):
+        from polyhost.services.agents.registry import Agent
+        return Agent("claude-code", "a" * 32, machine="cloud", headline=headline,
+                     label=label, cwd="PolyKybdHost", url=URL)
+
+    def raise_(self, agent, titles):
+        from polyhost.services.agents.raiser import raise_cloud
+        wins = [self.Win(t) for t in titles]
+        with mock.patch.dict(os.environ, {"DISPLAY": ":0"}):
+            result = raise_cloud(agent, wins)
+        return result, [w.title for w in wins if w.activated]
+
+    def test_the_browser_tab_first_then_the_app(self):
+        both = ["Claude", "Fix the build - Claude - Google Chrome", "Terminal"]
+        self.assertEqual(self.raise_(self.agent(), both),
+                         (True, ["Fix the build - Claude - Google Chrome"]))
+        self.assertEqual(self.raise_(self.agent(), ["Terminal", "Claude"]),
+                         (True, ["Claude"]))
+        self.assertEqual(self.raise_(self.agent(), ["Terminal"]), (False, []))
+
+    def test_the_folder_name_alone_does_not_match(self):
+        # display_headline falls back to the folder: an editor showing that folder
+        # is not the session.
+        result = self.raise_(self.agent(headline=""), ["PolyKybdHost - Visual Studio Code"])
+        self.assertEqual(result, (False, []))
+
+    def test_a_label_is_matched_too(self):
+        self.assertEqual(self.raise_(self.agent(headline="x", label="Docs"),
+                                     ["Docs - Mozilla Firefox"]),
+                         (True, ["Docs - Mozilla Firefox"]))
 
     def test_the_url_survives_a_restart(self):
         registry = AgentRegistry()

@@ -48,7 +48,8 @@ class AgentKeysController:
         self.raise_agent = raise_agent
         self.raise_remote = None   # set by PolyCore: queue a raise for a forwarder
         self.raise_viewer = None   # set by PolyCore: raise the viewer showing a machine
-        self.open_url = None       # set by PolyCore: open a cloud session's page
+        self.raise_cloud = None    # set by PolyCore: bring a cloud session forward
+        self.ask_open = None       # set by PolyCore: ask the tray to offer the page
         self.dictate = dictate
         self._last_waiting_slot = None   # the agent '+' raised last
         # The last AI-key press and what came of it, for `polyctl agents list`: a
@@ -251,9 +252,10 @@ class AgentKeysController:
         machine, by handing it to `raise_remote(agent)`, which the forwarder picks
         up with its next window report (PolyCore.report_window)."""
         if agent.machine == "cloud":
-            # A claude.ai cloud session (services/agents/cloud_relay.py): its page.
-            threading.Thread(target=self._open_cloud, args=(agent,),
-                             name="agent-open-cloud", daemon=True).start()
+            # A claude.ai cloud session (services/agents/cloud_relay.py): focus
+            # its browser window or the desktop app; nothing is opened.
+            threading.Thread(target=self._raise_cloud, args=(agent,),
+                             name="agent-raise-cloud", daemon=True).start()
             return
         if agent.machine and agent.machine != "local":
             # The forwarder raises the agent's own window only when its
@@ -280,20 +282,26 @@ class AgentKeysController:
         except Exception as e:  # noqa: BLE001 - must not kill anything
             self.log.info("Agent keys: dictation failed: %s", e)
 
-    def _open_cloud(self, agent):
-        from polyhost.services.agents.cloud_relay import is_session_url
+    def _raise_cloud(self, agent):
         key = self.last_press["key"] if self.last_press else None
-        # Checked again here: the registry also holds agents restored from
-        # agents.json, which a report did not just validate.
-        if not is_session_url(agent.url) or self.open_url is None:
-            self._note(key, "no page known for this cloud session", agent)
+        if self.raise_cloud is None:
+            self._note(key, "cloud sessions cannot be raised here", agent)
             return
         try:
-            result = "page opened" if self.open_url(agent.url) else "the browser did not open"
-        except Exception as e:  # noqa: BLE001 - a failed open must not kill anything
+            result = self.raise_cloud(agent)
+            if result is True:
+                result = "raised"
+            elif not result:
+                result = "no window found (no browser tab with its title, no Claude app)"
+                from polyhost.services.agents.cloud_relay import is_session_url
+                if self.ask_open is not None and is_session_url(agent.url):
+                    # Nothing opens by itself: the tray asks first.
+                    self.ask_open(agent)
+                    result += "; asked whether to open its page"
+        except Exception as e:  # noqa: BLE001 - a failed raise must not kill anything
             result = f"failed: {e}"
         self.log.info("Agent keys: %s %s: %s", agent.vendor, agent.display_headline, result)
-        self._note(key, result, agent)
+        self._note(key, str(result), agent)
 
     def _raise_viewer(self, agent):
         key = self.last_press["key"] if self.last_press else None
