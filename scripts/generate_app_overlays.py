@@ -291,15 +291,23 @@ GEOMETRY_KEYS = ("region", "anchor", "margin", "fit", "threshold", "mode")
 # bottom-right box covers part of it (measured: Space in 117 sets, 546 cells, 10 to
 # 44 legend pixels each). A binding on one of them that sets no placement of its
 # own goes into the top-right box Maya and Pro Tools were fixed with by hand.
-CENTRED_LEGEND_KEYS = frozenset({"SPACE", "SPC"})
-CLEAR_ANCHOR = "top-right"
+# key -> the corner its centred legend leaves free. Enter's arrow rises on the
+# right, so its icon goes top-left; the others draw low in the middle.
+CENTRED_LEGEND_KEYS = {"KC_SPACE": "top-right", "KC_LEFT": "top-right",
+                       "KC_DOWN": "top-right", "KC_RIGHT": "top-right",
+                       "KC_ENTER": "top-left"}
 CLEAR_REGION = (28, 20)
 
 
-def clears_centred_legend(b: dict) -> bool:
-    """True when the binding's icon must keep clear of a centred key legend."""
-    return (str(b.get("key", "")).upper() in CENTRED_LEGEND_KEYS
-            and not any(k in b for k in ("region", "anchor", "margin")))
+def clears_centred_legend(b: dict) -> str | None:
+    """The corner for a binding whose icon must keep clear of a centred key
+    legend, or None (another key, or a placement set by hand)."""
+    if any(k in b for k in ("region", "anchor", "margin")):
+        return None
+    try:
+        return CENTRED_LEGEND_KEYS.get(resolve_key(str(b.get("key", ""))).name)
+    except (KeyError, ValueError):
+        return None
 
 
 def refit_mask(mask: np.ndarray, region: tuple[int, int, int, int]) -> np.ndarray:
@@ -316,7 +324,7 @@ def refit_mask(mask: np.ndarray, region: tuple[int, int, int, int]) -> np.ndarra
     nw, nh = max(1, round(ink.shape[1] * k)), max(1, round(ink.shape[0] * k))
     small = np.asarray(Image.fromarray(ink.astype(np.uint8) * 255).resize(
         (nw, nh), Image.LANCZOS)) > 127
-    ox = x0 + w - nw
+    ox = x0 + w - nw if x0 + w >= SLOT_W - x0 else x0    # right- or left-aligned
     out[y0:y0 + nh, ox:ox + nw] = small
     return out
 
@@ -760,7 +768,7 @@ def generate(spec: dict, base_dir: Path, macos: bool | None = None,
         # render the stamp into the per-binding (or default) region
         clear = clears_centred_legend(b)
         if clear:
-            region = region_box(CLEAR_ANCHOR, CLEAR_REGION, margin)
+            region = region_box(clear, CLEAR_REGION, margin)
         else:
             region = region_box(b.get("anchor", anchor),
                                 tuple(b.get("region", size)), int(b.get("margin", margin)))
