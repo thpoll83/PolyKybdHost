@@ -7,6 +7,14 @@
 |---|---|---|
 | `ida_template` (2 files) | Windows and Linux | 157 + ESC mark |
 | `ida_template_mac` (3 files) | macOS | 153 + ESC mark |
+| `ida_disasm_template` (+ `_mac`) | the IDA plugin reports the disassembly or hex view | `bindings.yaml` without `/` `\` `=` Shift+5 |
+| `ida_pseudocode_template` (+ `_mac`) | the IDA plugin reports the pseudocode window | 90 + ESC mark (Windows/Linux) |
+| `ida_global_template` (+ `_mac`) | the IDA plugin reports any other window | 67 + ESC mark (Windows/Linux) |
+
+The three view sets are written by `gen_views.py` from `bindings.yaml`; never
+edit `bindings_<view>.yaml` by hand (a test runs `gen_views.py --check`). The
+`ida` mapping entry routes the plugin's `ida://<view>` reports
+(`ida-plugin/README.md`) to them; `ida_template` stays the fallback.
 
 ## Process names
 
@@ -76,6 +84,32 @@ not show:
 | Tab | Jump to pseudocode | Jump to disassembly |
 | F5 | Decompile | Refresh |
 
+### Per-view sets
+
+`ida_global_template` has the keys that act from any window: function keys,
+and the Ctrl/Cmd and Alt chords that open views, jump, search, save and run
+the debugger (`gen_views.is_global`). Single letters are left out, because a
+list window takes them as a quick search. Chords that act on the listing
+(`gen_views.LISTING`) are left out too.
+
+`ida_pseudocode_template` is the global set plus the pseudocode window's own
+keys, from the Hex-Rays decompiler manual, "Interactive operation"
+(<https://docs.hex-rays.com/ida-9.2/user-guide/decompiler/interactive.md> and
+its `cmd_*.md` pages, IDA 9.2, read 2026-11-13): N rename, Y set type, H R M T
+`_` number representation, `/` comment, Ins block comment, `\` hide casts, `=`
+map variable, Shift+S split variable, Alt+Y select union field, Shift+Del
+delete function argument, Ctrl+Shift+R add/delete return type, `%` paired
+paren, Tab jump to disassembly, F5 refresh, Ctrl+Enter decompile in a new
+window, and X jump to cross reference. G, F2 and F4 act as in the disassembly
+view. Keypad +/- (hide statements, variadic arguments) have no overlay cell.
+The pages give no Mac binding for Ins; the mac set draws it on Ins as well (not
+tested on a Mac).
+
+The hex view uses the disassembly set: its Edit menu has the same actions
+(Code, Data, Undefine, Rename, the operand types; "Hex View" actions page,
+<https://docs.hex-rays.com/core/user-interface/reference/menu-bar-actions/edit/hex-view-actions.md>).
+Its key bindings were not checked on an install.
+
 ## Left out
 
 - Esc: it shows the program mark (Jump to previous position).
@@ -116,6 +150,7 @@ alike.
 |---|---|---|
 | `disassemble.png`, `clear.png`, `label.png`, `comment.png`, `function.png`, `goto.png`, `references.png`, `array.png`, `structure.png`, `markselect.png`, `autoanalyze.png`, `decompiler.png`, `casts.png`, `bookmarks.png`, `addbookmark.png`, `searchtext.png`, `registers.png`, `functiongraph.png`, `symboltable.png`, `nextcomponent.png`, `prevcomponent.png`, `lastactive.png`, `scripts.png`, `import.png`, `export.png`, `editfield.png`, `forward.png`, `cycle_int.png`, `type_retype.png`, `next_ins.png`, `next_data.png`, `next_undef.png`, `next_bytes.png`, `next_func.png`, `prev_func.png`, `next_highlight.png`, `prev_highlight.png`, `next_window.png`, `prev_window.png`, `g_list.png`, `g_search.png`, `g_pointer.png`, `g_edit.png`, `g_cycle.png` | byte copies of `../ghidra/icons/` (see `../ghidra/SOURCES.md`) | MIT / Apache-2.0 as listed there |
 | `jump_newwin.png` | Fluent `Window New` | MIT |
+| `refresh.png` | Fluent `Arrow Clockwise` | MIT |
 | `calculator.png` | Fluent `Calculator` | MIT |
 | `cli.png` | Material `terminal` | Apache-2.0 |
 | `flags.png` | Fluent `Flag` | MIT |

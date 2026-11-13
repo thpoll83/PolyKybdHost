@@ -80,6 +80,7 @@ FLUENT = {
     "debugger": "Bug",
     "plugins": "Puzzle Piece",
     "snapshot": "Camera",
+    "refresh": "Arrow Clockwise",          # pseudocode F5
     # glyphs used only inside the composites below
     "g_quote": "Text Quote",
     "g_align": "Align Left",
@@ -125,6 +126,13 @@ COMPOSITES = {
     "map_var": ("text:=", "MAP"),
     "paren_pair": ("text:( )", "PAIR"),
     "c_file": ("export", "C"),
+    # pseudocode window only (bindings_pseudocode.yaml)
+    "asm_toggle": ("lastactive", "ASM"),
+    "comment_block": ("comment", "BLCK"),
+    "op_hexdec": ("text:0x", "H/D"),
+    "split_var": ("editfield", "SPLT"),
+    "del_arg": ("function", "-ARG"),
+    "ret_type": ("type_retype", "RET"),
     # jumps
     "jump_name": ("goto", "NAME"),
     "jump_func": ("goto", "FUNC"),

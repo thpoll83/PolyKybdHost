@@ -106,6 +106,9 @@ CONTEXT_REPORTERS = {
     "macvim": "vim",
     "neovide": "vim",
     "emacs": "emacs",
+    # IDA Pro (ida-plugin/): the names of the mapping's `ida` entry.
+    "ida": "ida", "ida64": "ida", "idaq": "ida", "idaq64": "ida", "ida pro": "ida",
+    "ida professional": "ida", "ida home": "ida", "ida free": "ida", "ida classroom": "ida",
 }
 
 # Reporters that also run INSIDE a terminal (vim, emacs -nw). While a terminal
@@ -159,8 +162,10 @@ def _app_key(app_name):
 
 
 def context_reporter_for(app_name):
-    """The reporter token for a focused app with a context add-on, or None."""
-    return CONTEXT_REPORTERS.get(_app_key(app_name))
+    """The reporter token for a focused app with a context add-on, or None.
+    A trailing version is dropped as the mapping does (macOS: "IDA Professional 9.1")."""
+    key = mapping_key(_app_key(app_name), CONTEXT_REPORTERS)
+    return CONTEXT_REPORTERS.get(key) if key else None
 
 
 def is_terminal_app(app_name) -> bool:
