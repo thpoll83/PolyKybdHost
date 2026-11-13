@@ -124,6 +124,8 @@ class PolyKybdContextReporter:
             try:
                 sig.disconnect(slot)
             except (TypeError, RuntimeError):
+                # Never connected, or the Qt object is already deleted:
+                # nothing to undo.
                 pass
         self._watch_layer(None)
 
@@ -134,6 +136,8 @@ class PolyKybdContextReporter:
                 try:
                     sig.disconnect(self._tick)
                 except (TypeError, RuntimeError):
+                    # Not connected to this layer, or it is being deleted:
+                    # nothing to undo.
                     pass
         if isinstance(layer, QgsVectorLayer):
             layer.editingStarted.connect(self._tick)
