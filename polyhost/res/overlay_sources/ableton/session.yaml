@@ -1,0 +1,129 @@
+# Ableton Live 12, Session View set (Windows and macOS). The PolyKybd remote
+# script (ableton-remote-script/) reports `ableton://session[/clip|/device]`
+# while Session View is the visible main view; the host then shows this set
+# instead of `bindings.yaml` (the Arrangement View set, which is also the
+# fallback when no report arrives).
+#
+# Shortcuts: Ableton Reference Manual v12, "Live Keyboard Shortcuts",
+# section 42.15 "Session View" (Ctrl+E, Ctrl+I, Ctrl+Shift+I, Ctrl+Shift+M,
+# Enter, Shift+Enter, Ctrl+Enter, Ctrl+Shift+Enter, 0). The other keys are the
+# global keys of `bindings.yaml`, copied without its Arrangement View section
+# and without U / Alt+U (Fold, Unfold All: Arrangement View only).
+#   CMDCTRL          Ctrl on Windows, Cmd on macOS.
+#   ALT              Alt on Windows, Option on macOS (the same key).
+#
+# Regenerate:
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/ableton/session.yaml --preview /tmp/ableton_session
+app: ableton
+match: [ableton live 12 suite, ableton live 12 standard, ableton live 12 intro, ableton live 12 lite, ableton live 12 trial]
+output: ableton_session_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+bindings:
+  # --- sets ---
+  - { key: N, mods: [CMDCTRL], label: New }
+  - { key: O, mods: [CMDCTRL], label: Open }
+  - { key: S, mods: [CMDCTRL], label: Save }
+  - { key: S, mods: [CMDCTRL, SHIFT], label: "Save as" }
+  - { key: R, mods: [CMDCTRL, SHIFT], icon: exportaudio.png, label: "Export audio/video" }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: exportmidi.png, label: "Export MIDI file" }
+  - { key: COMMA, mods: [CMDCTRL], icon: settings.png, label: Settings }
+
+  # --- edit ---
+  - { key: Z, mods: [CMDCTRL], label: Undo }
+  - { key: Y, mods: [CTRL], label: Redo, except: [macos] }
+  - { key: Z, mods: [CMDCTRL, SHIFT], label: Redo, only: [macos] }
+  - { key: X, mods: [CMDCTRL], label: Cut }
+  - { key: C, mods: [CMDCTRL], label: Copy }
+  - { key: V, mods: [CMDCTRL], label: Paste }
+  - { key: D, mods: [CMDCTRL], icon: duplicate.png, label: Duplicate }
+  - { key: A, mods: [CMDCTRL], label: "Select all" }
+  - { key: DEL, mods: [], label: Delete }
+  - { key: R, mods: [CMDCTRL], icon: rename.png, label: Rename }
+  - { key: F, mods: [CMDCTRL], icon: search.png, label: "Browser search" }
+
+  # --- views ---
+  - { key: TAB, mods: [], icon: sessionarr.png, label: "Session/Arrangement" }
+  - { key: TAB, mods: [SHIFT], icon: deviceclip.png, label: "Device/Clip view" }
+  - { key: F11, mods: [], icon: fullscreen.png, label: "Full screen", except: [macos] }
+  - { key: F, mods: [GUI, CTRL], icon: fullscreen.png, label: "Full screen", only: [macos] }
+  - { key: W, mods: [CMDCTRL, SHIFT], icon: secondwin.png, label: "Second window" }
+  - { key: Q, mods: [], icon: hotswap.png, label: "Hot-swap mode" }
+  - { key: B, mods: [CMDCTRL, ALT], icon: browser.png, label: Browser }
+  - { key: O, mods: [CMDCTRL, ALT], icon: overview.png, label: Overview }
+  - { key: I, mods: [CMDCTRL, ALT], icon: inout.png, label: "In/Out" }
+  - { key: S, mods: [CMDCTRL, ALT], icon: sends.png, label: Sends }
+  - { key: M, mods: [CMDCTRL, ALT], icon: mixer.png, label: Mixer }
+  - { key: "3", mods: [CMDCTRL, ALT], icon: clipview.png, label: "Clip view" }
+  - { key: "4", mods: [CMDCTRL, ALT], icon: deviceview.png, label: "Device view" }
+  - { key: "6", mods: [CMDCTRL, ALT], icon: groove.png, label: "Groove pool" }
+  - { key: "7", mods: [CMDCTRL, ALT], icon: learn.png, label: "Learn view" }
+
+  # --- grid and quantization ---
+  - { key: "1", mods: [CMDCTRL], icon: narrowgrid.png, label: "Narrow grid" }
+  - { key: "2", mods: [CMDCTRL], icon: widegrid.png, label: "Widen grid" }
+  - { key: "3", mods: [CMDCTRL], icon: triplet.png, label: "Triplet grid" }
+  - { key: "4", mods: [CMDCTRL], icon: snapgrid.png, label: "Snap to grid" }
+  - { key: "5", mods: [CMDCTRL], icon: fixedgrid.png, label: "Fixed/adaptive grid" }
+  - { key: "6", mods: [CMDCTRL], icon: q16.png, label: "Quantize 1/16" }
+  - { key: "7", mods: [CMDCTRL], icon: q8.png, label: "Quantize 1/8" }
+  - { key: "8", mods: [CMDCTRL], icon: q4.png, label: "Quantize 1/4" }
+  - { key: "9", mods: [CMDCTRL], icon: qbar.png, label: "Quantize 1 bar" }
+  - { key: "0", mods: [CMDCTRL], icon: qoff.png, label: "Quantize off" }
+  - { key: U, mods: [CMDCTRL], icon: quantize.png, label: Quantize }
+  - { key: U, mods: [CMDCTRL, SHIFT], icon: quantizeset.png, label: "Quantize settings" }
+
+  # --- tracks ---
+  - { key: T, mods: [CMDCTRL], icon: audiotrack.png, label: "Insert audio track" }
+  - { key: T, mods: [CMDCTRL, SHIFT], icon: miditrack.png, label: "Insert MIDI track" }
+  - { key: T, mods: [CMDCTRL, ALT], icon: returntrack.png, label: "Insert return track" }
+  - { key: G, mods: [CMDCTRL], icon: group.png, label: Group }
+  - { key: G, mods: [CMDCTRL, SHIFT], icon: ungroup.png, label: Ungroup }
+  - { key: R, mods: [CMDCTRL, ALT], icon: returns.png, label: "Show returns" }
+  - { key: C, mods: [], icon: arm.png, label: "Arm track" }
+  - { key: S, mods: [], icon: solo.png, label: Solo }
+  - { key: "0", mods: [], icon: deactivate.png, label: "Deactivate clip" }
+
+  # --- transport ---
+  - { key: SPACE, mods: [], icon: playstop.png, label: "Play/stop" }
+  - { key: SPACE, mods: [SHIFT], icon: continue.png, label: "Continue play" }
+  - { key: SPACE, mods: [CTRL], icon: stopsel.png, label: "Stop at end of selection", except: [macos] }
+  - { key: SPACE, mods: [ALT], icon: stopsel.png, label: "Stop at end of selection", only: [macos] }
+  - { key: F9, mods: [], icon: record.png, label: Record }
+  - { key: F9, mods: [SHIFT], icon: armarr.png, label: "Arm arrangement recording" }
+  - { key: F9, mods: [CMDCTRL, SHIFT], icon: recsession.png, label: "Record to session" }
+  - { key: F10, mods: [], icon: backtoarr.png, label: "Back to arrangement" }
+  - { key: O, mods: [], icon: metronome.png, label: Metronome }
+  - { key: F1, mods: [], icon: track1.png, label: "Track 1 on/off" }
+  - { key: F2, mods: [], icon: track2.png, label: "Track 2 on/off" }
+  - { key: F3, mods: [], icon: track3.png, label: "Track 3 on/off" }
+  - { key: F4, mods: [], icon: track4.png, label: "Track 4 on/off" }
+  - { key: F5, mods: [], icon: track5.png, label: "Track 5 on/off" }
+  - { key: F6, mods: [], icon: track6.png, label: "Track 6 on/off" }
+  - { key: F7, mods: [], icon: track7.png, label: "Track 7 on/off" }
+  - { key: F8, mods: [], icon: track8.png, label: "Track 8 on/off" }
+
+  # --- modes ---
+  - { key: A, mods: [], icon: automation.png, label: "Automation mode" }
+  - { key: B, mods: [], icon: drawmode.png, label: "Draw mode" }
+  - { key: M, mods: [], icon: midikeyboard.png, label: "Computer MIDI keyboard" }
+  - { key: M, mods: [CMDCTRL], icon: midimap.png, label: "MIDI map mode" }
+  - { key: K, mods: [CMDCTRL], icon: keymap.png, label: "Key map mode" }
+  - { key: E, mods: [CMDCTRL, ALT, SHIFT], icon: engine.png, label: "Audio engine on/off" }
+
+  # --- Session View ---
+  - { key: ENTER, mods: [], icon: launch.png, label: "Launch clip/slot" }
+  - { key: ENTER, mods: [SHIFT], icon: followact.png, label: "Follow actions on/off" }
+  - { key: ENTER, mods: [CMDCTRL], icon: stopclips.png, label: "Stop clips in track" }
+  - { key: ENTER, mods: [CMDCTRL, SHIFT], icon: followchain.png, label: "Create follow action chain" }
+  - { key: E, mods: [CMDCTRL], icon: stopbutton.png, label: "Add/remove stop button" }
+  - { key: I, mods: [CMDCTRL], icon: insertscene.png, label: "Insert scene" }
+  - { key: I, mods: [CMDCTRL, SHIFT], icon: capturescene.png, label: "Insert captured scene" }
+  - { key: M, mods: [CMDCTRL, SHIFT], icon: midiclip.png, label: "Insert MIDI clip" }

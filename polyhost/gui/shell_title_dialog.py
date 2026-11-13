@@ -67,7 +67,8 @@ def _read_report_settings():
 def editor_label(editor):
     """The editor's name as the dialog shows it (product names, not translated)."""
     return {editor_plugins.VIM: "Vim", editor_plugins.NEOVIM: "Neovim",
-            editor_plugins.EMACS: "Emacs", editor_plugins.GDB: "GDB"}.get(editor, editor)
+            editor_plugins.EMACS: "Emacs", editor_plugins.GDB: "GDB",
+            editor_plugins.ABLETON: "Ableton Live"}.get(editor, editor)
 
 
 def editor_state_text(st):
@@ -370,6 +371,14 @@ class ShellTitleDialog(QDialog):
             self._editor_grid.addWidget(path, row, 1)
             self._editor_grid.addWidget(state, row + 1, 1)
             row += 2
+            if st.editor == editor_plugins.ABLETON:
+                hint = muted(WrapLabel(_(
+                    "Live shows Session View or Arrangement View keys with this script. "
+                    "After Install, restart Live and choose PolyKybd as a Control Surface "
+                    "in Settings > Link, Tempo & MIDI.")))
+                hint.setWordWrap(True)
+                self._editor_grid.addWidget(hint, row, 1)
+                row += 1
         if not self._editor_boxes and self._editor_error is None:
             self._editor_grid.addWidget(
                 QLabel(_("No Vim, Neovim or Emacs was found on this computer.")), 0, 0, 1, 2)
