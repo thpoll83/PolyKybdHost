@@ -72,7 +72,7 @@ class ContextUrlTest(unittest.TestCase):
 
     def test_every_routed_panel_has_a_token(self):
         kinds = set(rep.PANEL_TYPES.values()) | set(rep.SCRIPTED_TYPES.values())
-        self.assertTrue({"graph", "timeeditor", "uv", "node", "hypershade"} <= kinds)
+        self.assertLessEqual({"graph", "timeeditor", "uv", "node", "hypershade"}, kinds)
 
 
 class PayloadTest(unittest.TestCase):
