@@ -110,7 +110,7 @@ def remove_channel_file(path: str) -> None:
     try:
         os.remove(path)
     except FileNotFoundError:
-        pass
+        pass    # already gone: the goal of this call
 
 
 def setup_config(channel: dict) -> str:
@@ -139,7 +139,11 @@ def ssl_context() -> ssl.SSLContext:
     """The app's trust store: the platform's roots plus certifi's
     (polyhost.util.https). A python.org build on macOS has no system store."""
     from polyhost.util.https import ssl_context as shared
-    return shared() or ssl.create_default_context()
+    ctx = shared()
+    if ctx is None:
+        ctx = ssl.create_default_context()
+        ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+    return ctx
 
 
 def http_call(base_url: str, method: str, path: str, token: str | None = None,

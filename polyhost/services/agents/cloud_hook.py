@@ -270,8 +270,9 @@ def post(config: dict, slot: str, blob: str, ended: bool) -> int:
         headers={"Authorization": f"Bearer {config['write_token']}",
                  "Content-Type": "application/json", "User-Agent": USER_AGENT})
     # The VM's own trust store (polyhost.util.https is not there: this file runs alone).
-    with urllib.request.urlopen(req, timeout=POST_TIMEOUT_S,
-                                context=ssl.create_default_context()) as resp:
+    ctx = ssl.create_default_context()
+    ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+    with urllib.request.urlopen(req, timeout=POST_TIMEOUT_S, context=ctx) as resp:
         return resp.status
 
 
