@@ -123,3 +123,60 @@ Not added / why:
 - Save / Print / Zoom / Reload: not documented as default hotkeys (Obsidian
   autosaves; "Save current file" and "Reload app" are commands with no help-
   documented default).
+
+## Per-view sets (2026-11-13)
+
+The Obsidian plugin (`obsidian-plugin/`) reports the active view as
+`obsidian://<view>[/vim-<mode>]`, and the mapping entry routes it. The sets
+are generated: `gen_obsidian_modes.py` writes `bindings_<set>.yaml` (do not
+edit those) from `bindings.yaml` and renders them. `bindings.yaml` stays the
+editor set and the only place Obsidian's own hotkeys are written.
+
+| Set | Report | Keys |
+|---|---|---|
+| `obsidian_template` | `source`, `live`, Vim Insert/Replace, no report | unchanged |
+| `obsidian_reading_template` | `reading` | the app commands, Find in file, Toggle edit/reading view, Copy, Select all |
+| `obsidian_canvas_template` | `canvas` | the app commands and the Canvas keys below |
+| `obsidian_graph_template` | `graph` (also local graph) | the app commands and the Graph view keys below |
+| `obsidian_global_template` | `other` | the app commands: New note, Quick switcher, Command palette, Graph view, Close tab, Settings, Search all files, Navigate back/forward |
+| `obsidian_vim_normal_template` | `.../vim-normal` | a layer drawn over the editor set |
+| `obsidian_vim_visual_template` | `.../vim-visual` | a layer drawn over the editor set |
+
+Live Preview and Source mode have the same hotkeys, so they share the editor
+set.
+
+Sources:
+
+- Canvas: Obsidian help "Canvas" (`obsidianmd/obsidian-help`,
+  `en/Plugins/Canvas.md`, read 2026-11-13): `Backspace` removes the selection
+  (macOS "Delete", the same key), `Ctrl/Cmd+A` select all, `Shift+1` zoom to
+  fit, `Shift+2` zoom to selection, `Ctrl/Cmd+Z` undo, `Ctrl/Cmd+Y` and
+  `Ctrl/Cmd+Shift+Z` redo. Icons: Fluent Delete, Zoom Fit, Select Object (MIT).
+- Graph view: Obsidian help "Graph view" (`en/Plugins/Graph view.md`): `+` and
+  `-` zoom, the arrow keys move the graph, Shift moves it faster. `+` is drawn
+  on Shift+=, where a US keyboard types it; which key code Obsidian reads for
+  `+` was not checked. Icons: Fluent Zoom In, Zoom Out, Arrow Up/Down (MIT),
+  and the existing arrow icons.
+- Reading view: the app commands, plus the keys that do not edit text. Copy and
+  Select all are the framework's ("Editing shortcuts" help page); Bold, Paste
+  and the other editing keys do nothing in Reading view and are left out.
+- Vim layers: Obsidian's *Vim key bindings* option runs CodeMirror's Vim
+  emulation (`@replit/codemirror-vim`). Its default key map is frozen in
+  `codemirror_vim_keys.yaml` (`@replit/codemirror-vim-core` 0.1.0, MIT). A layer
+  is Vim's own Normal / Visual set (`../vim/keys.yaml`, the same art from
+  `../vim/icons/`) without the keys the emulation does not implement
+  (for example `K`, `!`, `&`, `U` in Normal mode) and without any Ctrl chord:
+  the Ctrl keys stay Obsidian's hotkeys from the set underneath. Which one acts
+  when both bind a Ctrl key (Ctrl+O, Ctrl+R) was not checked in Obsidian. The
+  layers have no ESC mark, so the Obsidian mark stays on ESC. One file serves
+  every OS: Vim's keys do not change with the platform.
+
+Largest set: 85 images (`.../vim-normal` adds 85 Vim keys to the editor set,
+under 120 together), far below the 600-image limit.
+
+Regenerate:
+
+```bash
+python polyhost/res/overlay_sources/obsidian/fetch_icons.py
+python polyhost/res/overlay_sources/obsidian/gen_obsidian_modes.py --render --preview /tmp/obsidian_modes
+```

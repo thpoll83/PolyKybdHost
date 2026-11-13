@@ -2417,11 +2417,34 @@ obs,obs64,obs studio,com.obsproject.studio:
       overlay: [obs_template_mac.mods.png, obs_template_mac.combo.mods.png, obs_template_mac.extra.mods.png]
     linux:
       overlay: [obs_template_linux.mods.png, obs_template_linux.combo.mods.png]
+# Obsidian (sources: overlay_sources/obsidian/). The plugin (obsidian-plugin/)
+# reports obsidian://<view>[/vim-<mode>]: source, live (the editor), reading,
+# canvas, graph, other. The editor keeps the main set; the Vim Normal and
+# Visual layers are drawn over it (later file wins per key). Insert and
+# Replace mode, and the editor with no report, show the main set. `layer:
+# false`: a view replaces the main set instead of drawing it dimmed underneath.
+# The name is exactly CONTEXT_REPORTERS' "obsidian" (obsidian_routing_test.py).
 obsidian:
   overlay: [obsidian_template.mods.png, obsidian_template.combo.mods.png]
+  layer: false
+  urls-contains:
+    "/vim-normal": { overlay: [obsidian_template.mods.png, obsidian_template.combo.mods.png, obsidian_vim_normal_template.mods.png] }
+    "/vim-visual": { overlay: [obsidian_template.mods.png, obsidian_template.combo.mods.png, obsidian_vim_visual_template.mods.png] }
+    "obsidian://reading": { overlay: [obsidian_reading_template.mods.png, obsidian_reading_template.combo.mods.png] }
+    "obsidian://canvas": { overlay: [obsidian_canvas_template.mods.png, obsidian_canvas_template.combo.mods.png] }
+    "obsidian://graph": { overlay: [obsidian_graph_template.mods.png, obsidian_graph_template.combo.mods.png] }
+    "obsidian://other": { overlay: [obsidian_global_template.mods.png, obsidian_global_template.combo.mods.png] }
   os:
     macos:
       overlay: [obsidian_template_mac.mods.png, obsidian_template_mac.combo.mods.png, obsidian_template_mac.extra.mods.png]
+      layer: false
+      urls-contains:
+        "/vim-normal": { overlay: [obsidian_template_mac.mods.png, obsidian_template_mac.combo.mods.png, obsidian_template_mac.extra.mods.png, obsidian_vim_normal_template.mods.png] }
+        "/vim-visual": { overlay: [obsidian_template_mac.mods.png, obsidian_template_mac.combo.mods.png, obsidian_template_mac.extra.mods.png, obsidian_vim_visual_template.mods.png] }
+        "obsidian://reading": { overlay: [obsidian_reading_template_mac.mods.png, obsidian_reading_template_mac.combo.mods.png, obsidian_reading_template_mac.extra.mods.png] }
+        "obsidian://canvas": { overlay: [obsidian_canvas_template_mac.mods.png, obsidian_canvas_template_mac.combo.mods.png, obsidian_canvas_template_mac.extra.mods.png] }
+        "obsidian://graph": { overlay: [obsidian_graph_template_mac.mods.png, obsidian_graph_template_mac.combo.mods.png, obsidian_graph_template_mac.extra.mods.png] }
+        "obsidian://other": { overlay: [obsidian_global_template_mac.mods.png, obsidian_global_template_mac.combo.mods.png, obsidian_global_template_mac.extra.mods.png] }
 # Joplin desktop (sources: overlay_sources/joplin/). Joplin.exe on Windows,
 # Joplin on macOS (electron-builder productName), joplin (AppImage and .deb
 # executableName) or the Flatpak app id net.cozic.joplin_desktop on Linux.

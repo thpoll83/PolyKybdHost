@@ -39,6 +39,14 @@ FLUENT = {
     "rightsidebar": "Panel Right",
     "back": "Arrow Left",
     "forward": "Arrow Right",
+    # Per-view sets (gen_obsidian_modes.py): canvas and graph view keys.
+    "zoomfit": "Zoom Fit",
+    "zoomselection": "Select Object",
+    "zoomin": "Zoom In",
+    "zoomout": "Zoom Out",
+    "removecard": "Delete",
+    "panup": "Arrow Up",
+    "pandown": "Arrow Down",
 }
 
 

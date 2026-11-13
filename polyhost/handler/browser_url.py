@@ -106,6 +106,7 @@ CONTEXT_REPORTERS = {
     "macvim": "vim",
     "neovide": "vim",
     "emacs": "emacs",
+    "obsidian": "obsidian",       # obsidian-plugin/: obsidian://<view>[/<vim mode>]
 }
 
 # Reporters that also run INSIDE a terminal (vim, emacs -nw). While a terminal
