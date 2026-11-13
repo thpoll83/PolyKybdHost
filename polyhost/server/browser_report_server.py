@@ -95,22 +95,29 @@ class TabCommands:
             self._last_poll = self._clock()
             return {"id": cid, "focus_url": url}
 
-    def answer(self, cid, found) -> bool:
+    def answer(self, cid, found, title="") -> bool:
+        """The extension's answer to command `cid`: whether it found the tab, and
+        that tab's title (the host finds the browser window by it)."""
         with self._cond:
             # Only a command still waited on, and only once: a late or repeated
             # answer is refused, so nothing piles up.
             if (not isinstance(cid, int) or isinstance(cid, bool)
                     or cid not in self._waiting or cid in self._results):
                 return False
-            self._results[cid] = bool(found)
+            title = title if isinstance(title, str) else ""
+            self._results[cid] = (bool(found), title[:300])
             self._cond.notify_all()
             return True
 
     def focus(self, url: str, timeout_s: float = 2.0):
         """Ask the extension to focus the tab showing `url`. True: done; False:
         no tab has it; None: no extension listening, or no answer in time."""
+        return self.focus_detail(url, timeout_s)[0]
+
+    def focus_detail(self, url: str, timeout_s: float = 2.0):
+        """(focus()'s answer, the tab's title or '')."""
         if not self.listening():
-            return None
+            return None, ""
         with self._cond:
             cid = next(self._ids)
             self._pending = (cid, url)      # a newer press replaces an untaken one
@@ -123,7 +130,7 @@ class TabCommands:
                     if left <= 0:
                         if self._pending and self._pending[0] == cid:
                             self._pending = None
-                        return None
+                        return None, ""
                     self._cond.wait(left)
                 return self._results.pop(cid)
             finally:
@@ -222,7 +229,8 @@ class _Handler(BaseHTTPRequestHandler):
             data = self._read_json()
             if data is None:
                 return
-            ok = self.server.commands.answer(data.get("id"), data.get("found") is True)
+            ok = self.server.commands.answer(data.get("id"), data.get("found") is True,
+                                             data.get("title"))
             self._json(200 if ok else 400, {"ok": ok})
             return
         if path != "/report":

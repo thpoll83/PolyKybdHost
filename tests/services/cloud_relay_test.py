@@ -392,6 +392,21 @@ class RaiseCloudTest(unittest.TestCase):
         result = self.raise_(self.agent(headline=""), ["PolyKybdHost - Visual Studio Code"])
         self.assertEqual(result, (False, []))
 
+    def test_the_tab_title_from_the_extension_wins(self):
+        from polyhost.services.agents.raiser import raise_cloud
+        wins = [self.Win("Claude", "claude"),
+                self.Win("Refactor relay - Claude - Google Chrome", "chrome")]
+        with mock.patch.dict(os.environ, {"DISPLAY": ":0"}):
+            self.assertTrue(raise_cloud(self.agent(headline="first prompt words"), wins,
+                                        app_fallback=False, tab_title="Refactor relay - Claude"))
+        self.assertEqual([w.title for w in wins if w.activated],
+                         ["Refactor relay - Claude - Google Chrome"])
+
+    def test_a_shortened_prompt_matches_the_full_title(self):
+        result = self.raise_(self.agent(headline="Fix the HID reconnect after resume on…"),
+                             ["Fix the HID reconnect after resume on Windows please - Google Chrome"])
+        self.assertEqual(result, (True, ["Fix the HID reconnect after resume on Windows please - Google Chrome"]))
+
     def test_a_label_is_matched_too(self):
         self.assertEqual(self.raise_(self.agent(headline="x", label="Docs"),
                                      ["Docs - Mozilla Firefox"]),
@@ -414,19 +429,24 @@ class CoreRaiseChainTest(unittest.TestCase):
         from polyhost.services.agents import raiser
         from polyhost.services.agents.registry import Agent
         asked, calls = [], []
-        core = types.SimpleNamespace(browser_url_source=types.SimpleNamespace(
-            focus_tab=lambda url: asked.append(url) or found))
+        core = types.SimpleNamespace(log=mock.MagicMock(), browser_url_source=types.SimpleNamespace(
+            focus_tab=lambda url: asked.append(url) or (found, "Fix the build - Claude")))
         agent = Agent("claude-code", "a" * 32, machine="cloud", headline="x", url=URL)
-        with mock.patch.object(raiser, "raise_cloud",
-                               lambda a, app_fallback=True: calls.append(app_fallback)
-                               or window_result), \
+        def fake_raise(a, app_fallback=True, tab_title=""):
+            calls.append(app_fallback)
+            self.tab_titles.append(tab_title)
+            return window_result
+        self.tab_titles = []
+        with mock.patch.object(raiser, "raise_cloud", fake_raise), \
                 mock.patch("polyhost.core.poly_core.time.sleep"):
             result = PolyCore._raise_cloud_session(core, agent)
         return result, asked, calls
 
     def test_found_by_the_extension(self):
-        # The tab is active now; its window is raised, never the Claude app.
+        # The tab is active now; its window is raised by the tab's own title,
+        # never the Claude app.
         self.assertEqual(self.run_chain(True, True), (True, [URL], [False]))
+        self.assertEqual(self.tab_titles, ["Fix the build - Claude"])
         result, _asked, calls = self.run_chain(True, False)
         self.assertIn("not brought forward", result)      # not "raised"
         self.assertEqual(calls, [False])

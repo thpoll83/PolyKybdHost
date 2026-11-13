@@ -18,13 +18,15 @@ site, or the repo's raw file) and paste that URL into both store listings.
 - Only when PolyKybdHost asks it to switch to a Claude Code cloud session (you
   pressed that session's agent key on the keyboard): the **URLs of your open
   tabs**, compared in the browser with the one session address
-  (`https://claude.ai/code/session_…`) PolyKybdHost sent. They are not sent
-  anywhere. The extension then activates that tab and focuses its window, and
-  tells PolyKybdHost only whether it found the tab (yes or no).
+  (`https://claude.ai/code/session_…`) PolyKybdHost sent. The other tabs' URLs
+  are not sent anywhere. The extension then activates that tab and focuses its
+  window. Its answer to PolyKybdHost says whether it found the tab and gives
+  that tab's title. Because the tab is now the active one, the usual active-tab
+  report (its URL and title) follows, as after any tab switch.
 
 It does **not** read page content, form data, cookies or history. It sends a
-report only on tab switches, navigation and window-focus changes, and it never
-opens a page.
+report when the browser starts, when the extension is installed, and on tab
+switches, navigation and window-focus changes. It never opens a page.
 
 ## Where the data goes
 

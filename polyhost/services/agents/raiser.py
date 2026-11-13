@@ -150,7 +150,7 @@ def bring_to_front(target, from_system: bool = True):
 CLAUDE_APP_TITLE = "Claude"
 
 
-def raise_cloud(agent, windows=None, app_fallback=True):
+def raise_cloud(agent, windows=None, app_fallback=True, tab_title=""):
     """Bring a cloud session forward without opening anything (machine "cloud",
     services/agents/cloud_relay.py): a window whose title contains the session
     title (a browser showing that session's tab), else, with `app_fallback`, the
@@ -164,7 +164,12 @@ def raise_cloud(agent, windows=None, app_fallback=True):
     windows = list(windows)
     # The session's own title only: the folder name (display_headline's fallback)
     # appears in too many window titles.
-    text = (agent.label or agent.headline or "").strip().lower()
+    # The tab title the browser extension reported is what the window title
+    # shows; the session's own text (first prompt words) usually is not, because
+    # the claude.ai page names the session by claude.ai's title.
+    text = (tab_title or agent.label or agent.headline or "").strip().lower()
+    # A shortened prompt ends in "…", which no window title has.
+    text = text.rstrip("…").rstrip()
     target = None
     if text:
         # Browser windows only: an editor or a document can have the same words in

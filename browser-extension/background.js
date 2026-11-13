@@ -193,28 +193,30 @@ function sameUrl(a, b) {
 }
 
 async function focusUrl(url) {
+  // The tab's title, or null when no tab has the URL. The host finds the browser
+  // window by that title: a window title names its active tab.
   const tabs = (await promised(api.tabs.query.bind(api.tabs), {})) || [];
   const tab = tabs.find((t) => sameUrl(t.url, url));
-  if (!tab) return false;
+  if (!tab) return null;
   // The tab can close between the query and the update: then it was not found.
   const updated = await promised(api.tabs.update.bind(api.tabs), tab.id, { active: true });
-  if (!updated) return false;
+  if (!updated) return null;
   // A refused window focus still counts as found: the host brings the window
   // forward itself, and the tab is the active one now.
   await promised(api.windows.update.bind(api.windows), tab.windowId, { focused: true });
-  return true;
+  return updated.title || tab.title || "";
 }
 
 async function runCommand(command) {
   if (!command || typeof command.id !== "number") return;
-  const found = typeof command.focus_url === "string"
-    && command.focus_url.startsWith("https://claude.ai/code/session_")
-    && await focusUrl(command.focus_url);
+  const title = (typeof command.focus_url === "string"
+    && command.focus_url.startsWith("https://claude.ai/code/session_"))
+    ? await focusUrl(command.focus_url) : null;
   try {
     await fetch(`http://127.0.0.1:${config.port}/command_result`, {
       method: "POST",
       headers: { ...COMMAND_HEADERS(), "Content-Type": "application/json" },
-      body: JSON.stringify({ id: command.id, found: !!found }),
+      body: JSON.stringify({ id: command.id, found: title !== null, title: title || "" }),
     });
   } catch (e) { /* the host stopped; it gives up after its own timeout */ }
 }

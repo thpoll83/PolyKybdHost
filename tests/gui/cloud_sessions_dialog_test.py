@@ -7,10 +7,13 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 try:
     from PyQt5.QtWidgets import QApplication
-    from polyhost.gui.cloud_sessions_dialog import CloudSessionsDialog
     _QT = True
-except Exception:  # noqa: BLE001 - no Qt or no display: skip
+except ImportError:  # no PyQt5: skip
     _QT = False
+if _QT:
+    # Outside the guard: an error in the dialog's own module fails the tests
+    # instead of skipping them.
+    from polyhost.gui.cloud_sessions_dialog import CloudSessionsDialog
 
 SETUP = {"variable": "POLYKYBD_CLOUD_RELAY", "config": "pkr1|x", "host": "relay.example",
          "script": "curl a || true"}
@@ -69,6 +72,16 @@ class CloudSessionsDialogTest(unittest.TestCase):
         self.dialog._refresh()                        # the next tick
         self.run_pending()
         self.assertEqual(self.title(), "Connected to the relay.")
+
+    def test_a_connect_error_stays_until_a_retry(self):
+        self.run_pending()
+        self.core.agents_cloud_connect = lambda: (False, "the relay refused the new channel (429)")
+        self.dialog._connect()
+        self.run_pending()
+        self.assertIn("429", self.title())
+        self.dialog._refresh()                        # a timer tick: still not configured
+        self.run_pending()
+        self.assertIn("429", self.title())
 
     def test_the_timer_runs_only_while_shown(self):
         self.assertFalse(self.dialog._refresh_timer.isActive())

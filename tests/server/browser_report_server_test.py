@@ -231,16 +231,16 @@ class CommandEndpointTest(unittest.TestCase):
         hdrs = {**self.EXT, "X-PolyKybd-Token": "s3cret"}
         _call(self.port, "GET", "/command", headers=hdrs)   # the extension is there
         result = []
-        t = threading.Thread(target=lambda: result.append(self.srv.commands.focus(URL, 3)))
+        t = threading.Thread(target=lambda: result.append(self.srv.commands.focus_detail(URL, 3)))
         t.start()
         status, body, _ = _call(self.port, "GET", "/command", headers=hdrs)
         command = body["command"]
         self.assertEqual(command["focus_url"], URL)
         status, body, _ = _call(self.port, "POST", "/command_result",
-                                {"id": command["id"], "found": True}, hdrs)
+                                {"id": command["id"], "found": True, "title": "S - Claude"}, hdrs)
         self.assertEqual(status, 200)
         t.join(3)
-        self.assertEqual(result, [True])
+        self.assertEqual(result, [(True, "S - Claude")])
 
 
 if __name__ == "__main__":

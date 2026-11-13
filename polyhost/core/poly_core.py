@@ -2694,7 +2694,9 @@ class PolyCore(Observable):
             # A settings change between the stop and the delete could have
             # started the client again; with the file gone this stops it.
             self._apply_cloud_relay()
-        cloud_relay.RelaySink(self.agents, b"").forget_all()
+            # Under the lock: a connect waiting for it must not have its new
+            # channel's sessions removed by this cleanup.
+            cloud_relay.RelaySink(self.agents, b"").forget_all()
         self.log.info("Cloud relay: disconnected by the user (%s)", result)
         return True, result
 
@@ -2706,13 +2708,20 @@ class PolyCore(Observable):
         whose title names the session, else the Claude desktop app."""
         from polyhost.services.agents.cloud_relay import is_session_url
         from polyhost.services.agents.raiser import raise_cloud
-        found = None
+        found, tab_title = None, ""
         source = getattr(self, "browser_url_source", None)
         if source is not None and is_session_url(agent.url):
-            found = source.focus_tab(agent.url)
+            found, tab_title = source.focus_tab(agent.url)
+        # One line per press: a press that ends in the question looks the same
+        # whether the extension is missing or found no tab.
+        extension = {None: "browser extension not listening (version 1.1.0, port "
+                           "browser_report_port?)",
+                     False: "browser extension: no tab has this session",
+                     True: "browser extension: tab switched"}[found]
+        self.log.info("Cloud key %s: %s", agent.session_id[:8], extension)
         if found:
             time.sleep(0.3)     # the window title follows the new active tab
-            result = raise_cloud(agent, app_fallback=False)
+            result = raise_cloud(agent, app_fallback=False, tab_title=tab_title)
             if result is False:
                 # The tab is active, but no window with its title came forward:
                 # not "raised", and no question either (the page is open).

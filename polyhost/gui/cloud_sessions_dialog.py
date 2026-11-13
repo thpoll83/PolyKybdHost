@@ -109,6 +109,7 @@ class CloudSessionsDialog(QDialog):
 
         self._in_flight = False     # a status request is out
         self._busy = False          # a connect or disconnect is running
+        self._error = None          # a failed connect, kept until a retry or a channel
         self._refresh_timer = QTimer(self)
         self._refresh_timer.setInterval(REFRESH_MS)
         # noinspection PyUnresolvedReferences
@@ -151,6 +152,10 @@ class CloudSessionsDialog(QDialog):
         self._in_flight = False
         if self._busy:
             return          # a connect or disconnect is running; its answer comes next
+        configured = ok and isinstance(info, dict) and info.get("configured")
+        if self._error and not configured:
+            return          # "Not connected" would hide why the connect failed
+        self._error = None
         self._show_result(ok, info)
 
     def _show_result(self, ok, info):
@@ -204,7 +209,14 @@ class CloudSessionsDialog(QDialog):
 
         def done(ok, info):
             self._busy = False
-            self._show_result(ok, info)
+            if ok:
+                self._error = None
+                self._show_result(ok, info)
+                return
+            self._error = str(info)
+            self._show({})
+            self._set_state(_f("Could not connect: {msg}", msg=self._error), "error")
+        self._error = None
         self.call_async(self.core.agents_cloud_connect, done)
 
     def _disconnect(self):
