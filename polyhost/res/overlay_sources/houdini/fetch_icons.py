@@ -192,7 +192,7 @@ def _material_palette(path: Path) -> None:
 
 def _space_view(path: Path) -> None:
     """Space, hold for the view tool: the object cube from F8 with an arrow on
-    each side, beside the centred Space legend (``../space_hint.py``)."""
+    each side, clear of the Space legend (``../space_hint.py``)."""
     import numpy as np
     from PIL import ImageDraw
     s = 8

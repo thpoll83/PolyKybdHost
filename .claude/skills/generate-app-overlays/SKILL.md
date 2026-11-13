@@ -357,18 +357,19 @@ Use it before choosing an icon's size or corner on such a set. On 2026-11-07 a
 and the same label at the bottom right erased a PETSCII cell. Only a 36 x 32
 icon at the bottom right left both whole.
 
-⚠️ **A key on the bottom (thumb) row has its legend CENTRED, so the default
-bottom-right region covers it.** The firmware draws every bottom-row legend with
-`draw_legend_cx_cy` (qmk `poly_keymap.c`): on Space the ␣ is at x 23..48,
-y 23..26. It then clears the legend within 3 px of any overlay ink. With
-`region: [36, 32]` at the bottom right, a Space icon erased 10 to 44 legend
-pixels; on 2026-11-09 that was 546 key images in 117 specs. Neither preview
-shows it: `preview_black.py` draws no legend, and `face_preview.py` draws every
-legend at the top left. For a bottom-row binding, set
-`anchor: top-right, region: [28, 20]` (Maya's Ctrl+Space, every Pro Tools Space
-key), or draw on the whole keycap clear of the legend (`space_hint.py`, below).
-Measure it: centre the key's legend from `face_preview.standard()`, grow the
-icon by 3 px, and count the legend pixels inside. The count must be 0.
+⚠️ **A thumb-row legend moves when an overlay is shown.** Firmware 1.13.5 and
+later draws a bottom-row legend at the top left while an overlay icon is on the
+key, and centred otherwise (qmk `poly_keymap.c`, `overlay_present()`). On Space
+the ␣ is then at x 1..26, y 23..26, and the default bottom-right region clears it:
+use the defaults for Space, Enter and the arrows. Firmware up to 1.13.4 always
+centres it (x 23..48), and a default-region Space icon there erases 18 to 26
+legend pixels. The firmware clears the legend within 3 px of overlay ink, so
+nothing overlaps; the ␣ just loses those pixels. Delete's ⌦ (x 1..30) reaches
+the icon area in either position: its point loses up to ~100 px, and the ✕ stays
+whole. Neither preview shows any of this: `preview_black.py` draws no legend, and
+`face_preview.py` draws every legend at the top left without the courtyard.
+To draw on the whole Space keycap, use `space_hint.py` (below); it checks both ␣
+positions.
 
 ### 5. Wire the mapping + verify
 
@@ -590,7 +591,7 @@ The keyboard has no Space modifier layer, so "hold Space + key" shortcuts are
 never drawn. Where an app has them, the Space key shows that holding it does
 something: `polyhost/res/overlay_sources/space_hint.py` draws a glyph with an
 arrow on each side at the right edge of the whole 72x40 keycap, and raises if
-any ink comes within 3 px of the centred ␣.
+any ink comes within 3 px of the ␣ in either position (centred, or top-left from firmware 1.13.5).
 
 ```python
 space_hint.draw(space_hint.glyph_from_png(out / "pan.png", 20), out / "space_pan.png")
