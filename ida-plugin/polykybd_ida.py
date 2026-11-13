@@ -377,7 +377,8 @@ if ida_idaapi is not None:
         def run(self, arg):
             return True
 
-        def __del__(self):
+        def shutdown(self):
+            """Remove the timer and hooks, send the last report and stop the sender."""
             if getattr(self, "timer", None) is not None:
                 ida_kernwin.unregister_timer(self.timer)
                 self.timer = None
@@ -386,6 +387,10 @@ if ida_idaapi is not None:
                     hooks.unhook()
             self.reporter.withdraw()
             self.sender.stop(wait_s=HTTP_TIMEOUT_S)
+
+        def __del__(self):
+            # IDA unloads a plugmod_t by dropping its last reference.
+            self.shutdown()
 
     class PolyKybdReporterPlugin(ida_idaapi.plugin_t):
         flags = ida_idaapi.PLUGIN_MULTI | ida_idaapi.PLUGIN_HIDE
