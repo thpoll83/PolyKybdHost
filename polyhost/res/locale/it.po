@@ -3858,6 +3858,13 @@ msgid "The editors could not be checked: {error}"
 msgstr "Impossibile verificare gli editor: {error}"
 
 #: polyhost/gui/shell_title_dialog.py:375
+msgid ""
+"Live shows Session View or Arrangement View keys with this script. After "
+"Install, restart Live and choose PolyKybd as a Control Surface in Settings > "
+"Link, Tempo & MIDI."
+msgstr ""
+
+#: polyhost/gui/shell_title_dialog.py:375
 msgid "No Vim, Neovim or Emacs was found on this computer."
 msgstr "Su questo computer non è stato trovato né Vim, né Neovim, né Emacs."
 

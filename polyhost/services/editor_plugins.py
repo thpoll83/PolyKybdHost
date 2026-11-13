@@ -14,6 +14,10 @@ terminal's keys. This module does the copy that their READMEs describe:
 - GDB: ``polykybd.py`` (``gdb-plugin/``) into ``<config>/gdb/polykybd/``, and
   a marked block in the GDB init file that sources it. The script writes GDB's
   state (prompt or running) into the terminal title.
+- Ableton Live 12: the remote script (``ableton-remote-script/PolyKybd/``) into
+  ``<User Library>/Remote Scripts/PolyKybd/`` at Live's default User Library
+  (``~/Documents/Ableton`` on Windows, ``~/Music/Ableton`` on macOS). Live
+  lists it under Control Surface after a restart; the user selects it there.
 
 Each copy gets a stamp file with the SHA-256 of every file written.
 :func:`refresh_installed` runs at every start: it copies the shipped files
@@ -50,12 +54,14 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 VIM_SOURCE = REPO_ROOT / "vim-plugin"
 EMACS_SOURCE = REPO_ROOT / "emacs-package"
 GDB_SOURCE = REPO_ROOT / "gdb-plugin"
+ABLETON_SOURCE = REPO_ROOT / "ableton-remote-script" / "PolyKybd"
 
 VIM = "vim"
 NEOVIM = "neovim"
 EMACS = "emacs"
 GDB = "gdb"
-EDITORS = (VIM, NEOVIM, EMACS, GDB)
+ABLETON = "ableton"
+EDITORS = (VIM, NEOVIM, EMACS, GDB, ABLETON)
 # The ones loaded through a marked block in an init file, beside a copy.
 INIT_EDITORS = (EMACS, GDB)
 
@@ -63,6 +69,7 @@ INIT_EDITORS = (EMACS, GDB)
 _VIM_DIRS = ("plugin", "lua", "doc")
 _EMACS_FILES = ("polykybd.el",)
 _GDB_FILES = ("polykybd.py",)
+_ABLETON_FILES = ("__init__.py", "core.py", "reporter.py")
 
 STAMP_NAME = ".polykybd-host.json"
 BEGIN_MARKER = ";; >>> PolyKybd editor integration >>>"
@@ -254,6 +261,21 @@ def gdb_plugin_dir(home=None, env=None, system=None):
     return config / "gdb" / "polykybd"
 
 
+def ableton_script_dir(home=None, system=None):
+    """The folder Live loads the remote script from, in Live's default User
+    Library, or None where Live does not run (Linux). A User Library moved in
+    Live's settings is not found; the README says to copy the folder there."""
+    system = system or platform.system()
+    h = Path(home) if home is not None else Path.home()
+    if system == "Windows":
+        lib = h / "Documents" / "Ableton" / "User Library"
+    elif system == "Darwin":
+        lib = h / "Music" / "Ableton" / "User Library"
+    else:
+        return None
+    return lib / "Remote Scripts" / "PolyKybd"
+
+
 def _present(editor, which, system):
     which = which or shutil.which
     names = {VIM: ("vim", "gvim"), NEOVIM: ("nvim",), EMACS: ("emacs", "runemacs"),
@@ -281,6 +303,11 @@ def help_tags(doc_name, text):
 def shipped_files(editor, source=None):
     """``{relative path: bytes}`` to write for ``editor``, or None when this
     installation has no plugin files."""
+    if editor == ABLETON:
+        source = Path(source or ABLETON_SOURCE)
+        if not all((source / name).is_file() for name in _ABLETON_FILES):
+            return None
+        return {name: (source / name).read_bytes() for name in _ABLETON_FILES}
     if editor in INIT_EDITORS:
         names = _EMACS_FILES if editor == EMACS else _GDB_FILES
         source = Path(source or (EMACS_SOURCE if editor == EMACS else GDB_SOURCE))
@@ -375,6 +402,9 @@ def _delete_copy(folder):
         except FileNotFoundError:
             pass
     (folder / STAMP_NAME).unlink()
+    # Python writes compiled copies beside a loaded script (Live does for
+    # the remote script); they belong to the copy.
+    shutil.rmtree(folder / "__pycache__", ignore_errors=True)
     dirs = sorted((p for p in folder.rglob("*") if p.is_dir()), key=lambda p: len(p.parts), reverse=True)
     for d in dirs + [folder]:
         try:
@@ -534,16 +564,17 @@ def _other_vim_copies(editor, folder):
     return None
 
 
-def _sources(vim_source, emacs_source, gdb_source):
-    return {VIM: vim_source, NEOVIM: vim_source, EMACS: emacs_source, GDB: gdb_source}
+def _sources(vim_source, emacs_source, gdb_source, ableton_source=None):
+    return {VIM: vim_source, NEOVIM: vim_source, EMACS: emacs_source, GDB: gdb_source,
+            ABLETON: ableton_source}
 
 
 def status(editors=None, home=None, env=None, which=None, system=None,
-           vim_source=None, emacs_source=None, gdb_source=None):
+           vim_source=None, emacs_source=None, gdb_source=None, ableton_source=None):
     """An EditorStatus for each editor (``editors`` filters by id)."""
     env = os.environ if env is None else env
     system = system or platform.system()
-    sources = _sources(vim_source, emacs_source, gdb_source)
+    sources = _sources(vim_source, emacs_source, gdb_source, ableton_source)
     out = []
     for editor in EDITORS:
         if editors is not None and editor not in editors:
@@ -583,6 +614,17 @@ def _status_one(editor, home, env, which, system, source):
             # The block is there and the copy is gone or not ours.
             state = STATE_OUTDATED if state == STATE_NOT_INSTALLED else STATE_MANUAL
         return EditorStatus(editor, state, init, str(want) if state == STATE_MANUAL else "")
+    if editor == ABLETON:
+        folder = ableton_script_dir(home, system)
+        if folder is None:
+            return EditorStatus(editor, STATE_NOT_PRESENT, None, "")
+        if shipped is None:
+            return EditorStatus(editor, STATE_NO_SOURCE, folder, str(source or ABLETON_SOURCE))
+        # Live creates its User Library at the first start.
+        if not folder.parent.parent.is_dir():
+            return EditorStatus(editor, STATE_NOT_PRESENT, folder, "")
+        state = _copy_state(folder, shipped)
+        return EditorStatus(editor, state, folder, str(folder) if state == STATE_MANUAL else "")
     folder = vim_dir(editor, home, env, system)
     if shipped is None:
         return EditorStatus(editor, STATE_NO_SOURCE, folder, str(source or VIM_SOURCE))
@@ -746,11 +788,12 @@ def _change(st, install, sources, now=None, home=None, env=None, system=None):
 
 
 def _apply(install, editors, statuses, home, env, which, system, vim_source, emacs_source,
-           gdb_source=None):
+           gdb_source=None, ableton_source=None):
     if statuses is None:
         statuses = status(editors, home=home, env=env, which=which, system=system,
-                          vim_source=vim_source, emacs_source=emacs_source, gdb_source=gdb_source)
-    sources = _sources(vim_source, emacs_source, gdb_source)
+                          vim_source=vim_source, emacs_source=emacs_source, gdb_source=gdb_source,
+                          ableton_source=ableton_source)
+    sources = _sources(vim_source, emacs_source, gdb_source, ableton_source)
     results = []
     for st in statuses:
         if editors is not None and st.editor not in editors:
@@ -765,22 +808,25 @@ def _apply(install, editors, statuses, home, env, which, system, vim_source, ema
 
 
 def install(editors=None, statuses=None, home=None, env=None, which=None,
-            system=None, vim_source=None, emacs_source=None, gdb_source=None):
+            system=None, vim_source=None, emacs_source=None, gdb_source=None,
+            ableton_source=None):
     """Copy the plugin for each editor (the ones default_selection() picks
     when ``editors`` is None). Returns a list of Result."""
     return _apply(True, editors, statuses, home, env, which, system, vim_source, emacs_source,
-                  gdb_source)
+                  gdb_source, ableton_source)
 
 
 def remove(editors=None, statuses=None, home=None, env=None, which=None,
-           system=None, vim_source=None, emacs_source=None, gdb_source=None):
+           system=None, vim_source=None, emacs_source=None, gdb_source=None,
+           ableton_source=None):
     """Delete this app's copy and, for Emacs and GDB, the marked block."""
     return _apply(False, editors, statuses, home, env, which, system, vim_source, emacs_source,
-                  gdb_source)
+                  gdb_source, ableton_source)
 
 
 def refresh_installed(home=None, env=None, which=None, system=None,
-                      vim_source=None, emacs_source=None, gdb_source=None):
+                      vim_source=None, emacs_source=None, gdb_source=None,
+                      ableton_source=None):
     """Copy the shipped files again for each editor whose copy is this app's
     and older than them. Runs at every start, so an update reaches the
     editors without a visit to the dialog. Returns the editors refreshed.
@@ -788,11 +834,12 @@ def refresh_installed(home=None, env=None, which=None, system=None,
     refreshed = []
     try:
         statuses = status(None, home=home, env=env, which=which, system=system,
-                          vim_source=vim_source, emacs_source=emacs_source, gdb_source=gdb_source)
+                          vim_source=vim_source, emacs_source=emacs_source, gdb_source=gdb_source,
+                          ableton_source=ableton_source)
     except Exception:  # noqa: BLE001 - a start must not fail for this
         log.warning("Editor plugin refresh: status failed", exc_info=True)
         return refreshed
-    sources = _sources(vim_source, emacs_source, gdb_source)
+    sources = _sources(vim_source, emacs_source, gdb_source, ableton_source)
     for st in statuses:
         if st.state != STATE_OUTDATED:
             continue

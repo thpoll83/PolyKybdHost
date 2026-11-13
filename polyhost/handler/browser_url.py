@@ -106,6 +106,11 @@ CONTEXT_REPORTERS = {
     "macvim": "vim",
     "neovide": "vim",
     "emacs": "emacs",
+    # Ableton Live 12 (remote script in ableton-remote-script/): the names the
+    # mapping's Ableton entry is keyed on, one per edition.
+    **dict.fromkeys(("ableton live 12 suite", "ableton live 12 standard",
+                     "ableton live 12 intro", "ableton live 12 lite",
+                     "ableton live 12 trial"), "ableton"),
 }
 
 # Reporters that also run INSIDE a terminal (vim, emacs -nw). While a terminal

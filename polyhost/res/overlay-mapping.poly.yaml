@@ -2743,13 +2743,26 @@ fl64,fl studio 2024,fl studio 2025,fl studio 2026,osxfl:
       overlay: [flstudio_template_mac.mods.png, flstudio_template_mac.combo.mods.png, flstudio_template_mac.extra.mods.png]
       midi: true
 # Ableton Live 12: the Windows exe and the macOS app both carry the edition name.
+# With the PolyKybd remote script (ableton-remote-script/) Live reports
+# `ableton://session` or `ableton://arrangement` (plus `/clip` or `/device` for
+# the detail view, not routed: the keys go to the main view). Session View gets
+# its own set; Arrangement View and no report (or a stale one) keep the
+# Arrangement set. `layer: false`: a view replaces the fallback.
 ableton live 12 suite,ableton live 12 standard,ableton live 12 intro,ableton live 12 lite,ableton live 12 trial:
   overlay: [ableton_template.mods.png, ableton_template.combo.mods.png, ableton_template.extra.mods.png]
   midi: true
+  layer: false
+  urls-contains:
+    "ableton://session": { overlay: [ableton_session_template.mods.png, ableton_session_template.combo.mods.png, ableton_session_template.extra.mods.png], midi: true }
+    "ableton://arrangement": { overlay: [ableton_template.mods.png, ableton_template.combo.mods.png, ableton_template.extra.mods.png], midi: true }
   os:
     macos:
       overlay: [ableton_template_mac.mods.png, ableton_template_mac.combo.mods.png, ableton_template_mac.extra.mods.png, ableton_template_mac.gui.mods.png]
       midi: true
+      layer: false
+      urls-contains:
+        "ableton://session": { overlay: [ableton_session_template_mac.mods.png, ableton_session_template_mac.combo.mods.png, ableton_session_template_mac.extra.mods.png, ableton_session_template_mac.gui.mods.png], midi: true }
+        "ableton://arrangement": { overlay: [ableton_template_mac.mods.png, ableton_template_mac.combo.mods.png, ableton_template_mac.extra.mods.png, ableton_template_mac.gui.mods.png], midi: true }
 # REAPER: reaper.exe, REAPER.app and `reaper` on Linux. Windows and Linux use the
 # same default keys.
 reaper:
