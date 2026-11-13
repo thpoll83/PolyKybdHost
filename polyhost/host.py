@@ -139,9 +139,11 @@ from polyhost.gui.error_dialog import show_copyable_error
 from polyhost.util.log_util import DEBUG_DETAILED, MultiLineFormatter, make_stream_handler, make_collapse_handler
 
 
-# Shared dimensions for all update / firmware dialogs — 2:1 aspect ratio.
+# Shared size of the update, firmware and WinCompose progress dialogs. The
+# height fits three wrapped label lines, the bar and the Cancel button; at
+# 160 px a one-line message sat under a 90 px empty band.
 _UPD_DLG_W = 400
-_UPD_DLG_H = 160
+_UPD_DLG_H = 120
 
 
 def _fw_version_str(version):
