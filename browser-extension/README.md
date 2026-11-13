@@ -27,6 +27,30 @@ report to **loopback only** (`http://127.0.0.1:<port>/report`):
 The host side is the `browser_url_detection` feature in PolyKybdHost (default
 on); it runs the receiver on `browser_report_port` (default **50164**).
 
+## Switching to a Claude Code cloud session's tab (1.1.0)
+
+The keyboard's agent keys show Claude Code cloud sessions (claude.ai/code). A
+key press asks this extension to switch to the session's tab, also when that
+tab is in the background or in another window:
+
+- The extension keeps one request open to `GET /command` on the same loopback
+  port. The host answers it within 20 s, with a command or with none, and the
+  extension asks again.
+- The only command is `{id, focus_url}`. The extension activates the tab whose
+  URL is exactly `focus_url` (a `#fragment` is ignored) and focuses its window,
+  then answers `POST /command_result` with `{id, found}`. It opens nothing: a URL
+  that no tab shows is answered with `found: false`. It accepts only
+  `https://claude.ai/code/session_…` addresses.
+- Both paths need the header `X-PolyKybd-Extension: 1` (and the token, when one
+  is set). A web page cannot send that header to another origin without a CORS
+  preflight, which these paths never grant.
+- To keep the Chromium service worker from being stopped between requests, the
+  extension makes one extension API call (`runtime.getPlatformInfo`) per request,
+  at most every 20 s. Without a running host it asks again every 10 s.
+
+No new permission: `tabs` (already used for the URL) covers finding, activating
+and focusing a tab.
+
 ## Build
 
 ```bash

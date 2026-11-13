@@ -150,11 +150,11 @@ def bring_to_front(target, from_system: bool = True):
 CLAUDE_APP_TITLE = "Claude"
 
 
-def raise_cloud(agent, windows=None):
+def raise_cloud(agent, windows=None, app_fallback=True):
     """Bring a cloud session forward without opening anything (machine "cloud",
     services/agents/cloud_relay.py): a window whose title contains the session
-    title (a browser showing that session's tab), else the Claude desktop app.
-    True, False when neither is open, or a text."""
+    title (a browser showing that session's tab), else, with `app_fallback`, the
+    Claude desktop app. True, False when neither is open, or a text."""
     if os.environ.get("WAYLAND_DISPLAY") and not os.environ.get("DISPLAY"):
         return "windows cannot be listed on Wayland"
     from_system = windows is None
@@ -170,7 +170,7 @@ def raise_cloud(agent, windows=None):
         target = next((w for w in windows
                        if (w.title or "").strip() != CLAUDE_APP_TITLE
                        and text in (w.title or "").lower()), None)
-    if target is None:
+    if target is None and app_fallback:
         target = next((w for w in windows
                        if (w.title or "").strip() == CLAUDE_APP_TITLE), None)
     if target is None:

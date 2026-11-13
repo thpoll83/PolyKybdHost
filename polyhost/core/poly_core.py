@@ -2484,8 +2484,7 @@ class PolyCore(Observable):
             from polyhost.services.agents.viewer import mapping_viewer_apps
             return _raise_viewer(machine, mapping_viewer_apps(self.mapping))
         self._agent_keys.raise_viewer = raise_viewer
-        from polyhost.services.agents.raiser import raise_cloud
-        self._agent_keys.raise_cloud = raise_cloud
+        self._agent_keys.raise_cloud = self._raise_cloud_session
         # No window for a cloud session: the tray asks whether to open its page
         # (host.py _on_agent_open_request). Without a tray nobody answers, and
         # nothing opens.
@@ -2687,6 +2686,24 @@ class PolyCore(Observable):
         cloud_relay.RelaySink(self.agents, b"").forget_all()
         self.log.info("Cloud relay: disconnected by the user (%s)", result)
         return True, result
+
+    def _raise_cloud_session(self, agent):
+        """A cloud session's key press (on its own thread, never the worker):
+        the browser extension switches to the tab with the session's exact URL,
+        then the window that now shows it comes to the front (the extension's
+        own focus can be refused by Windows). Without the extension: a window
+        whose title names the session, else the Claude desktop app."""
+        from polyhost.services.agents.cloud_relay import is_session_url
+        from polyhost.services.agents.raiser import raise_cloud
+        found = None
+        source = getattr(self, "browser_url_source", None)
+        if source is not None and is_session_url(agent.url):
+            found = source.focus_tab(agent.url)
+        if found:
+            time.sleep(0.3)     # the window title follows the new active tab
+            result = raise_cloud(agent, app_fallback=False)
+            return True if result is False else result
+        return raise_cloud(agent)
 
     def agents_raise(self, vendor, session_id):
         """Bring an agent's window forward (the tray's agent list). The raise runs

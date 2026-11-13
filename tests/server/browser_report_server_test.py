@@ -155,5 +155,93 @@ class TestBrowserReportToken(unittest.TestCase):
         self.assertEqual(len(self.reports), 1)
 
 
+URL = "https://claude.ai/code/session_abc"
+
+
+class TabCommandsTest(unittest.TestCase):
+    """The host -> extension command queue, without sockets."""
+
+    def test_no_extension_listening_answers_none(self):
+        from polyhost.server.browser_report_server import TabCommands
+        self.assertIsNone(TabCommands().focus(URL, 0.1))
+
+    def test_command_and_answer(self):
+        import threading
+        from polyhost.server.browser_report_server import TabCommands
+        cmds = TabCommands()
+        self.assertIsNone(cmds.next(0.01))           # a poll: now listening
+        got = []
+
+        def extension():
+            command = cmds.next(2)
+            got.append(command)
+            cmds.answer(command["id"], True)
+        t = threading.Thread(target=extension)
+        t.start()
+        self.assertTrue(cmds.focus(URL, 2))
+        t.join(2)
+        self.assertEqual(got[0]["focus_url"], URL)
+        self.assertFalse(cmds.answer(got[0]["id"], True))   # one answer per command
+        self.assertFalse(cmds.answer("1", True))
+
+    def test_unanswered_command_is_withdrawn(self):
+        from polyhost.server.browser_report_server import TabCommands
+        cmds = TabCommands()
+        cmds.next(0.01)
+        self.assertIsNone(cmds.focus(URL, 0.05))
+        self.assertIsNone(cmds.next(0.01))           # not handed out later
+
+
+def _call(port, method, path, body=None, headers=None):
+    data = json.dumps(body).encode() if body is not None else None
+    hdrs = dict(headers or {})
+    if body is not None:
+        hdrs["Content-Type"] = "application/json"
+    req = urllib.request.Request(f"http://127.0.0.1:{port}{path}", method=method,
+                                 data=data, headers=hdrs)
+    try:
+        with urllib.request.urlopen(req, timeout=5) as r:
+            return r.status, json.loads(r.read() or b"{}"), dict(r.headers)
+    except urllib.error.HTTPError as e:
+        return e.code, json.loads(e.read() or b"{}"), dict(e.headers)
+
+
+class CommandEndpointTest(unittest.TestCase):
+    EXT = {"X-PolyKybd-Extension": "1"}
+
+    def setUp(self):
+        self.srv = BrowserReportServer(lambda **kw: None, _log, port=0, token="s3cret")
+        self.srv.command_wait_s = 1.0
+        self.srv.start()
+        self.port = self.srv._httpd.server_address[1]
+        self.addCleanup(self.srv.stop)
+
+    def test_header_and_token_required_and_no_cors(self):
+        status, _, _ = _call(self.port, "GET", "/command")
+        self.assertEqual(status, 403)                 # a page cannot send the header
+        status, _, _ = _call(self.port, "GET", "/command", headers=self.EXT)
+        self.assertEqual(status, 403)                 # the token is set here
+        status, body, headers = _call(self.port, "GET", "/command",
+                                      headers={**self.EXT, "X-PolyKybd-Token": "s3cret"})
+        self.assertEqual((status, body["command"]), (200, None))
+        self.assertNotIn("Access-Control-Allow-Origin", headers)
+
+    def test_round_trip_over_http(self):
+        import threading
+        hdrs = {**self.EXT, "X-PolyKybd-Token": "s3cret"}
+        _call(self.port, "GET", "/command", headers=hdrs)   # the extension is there
+        result = []
+        t = threading.Thread(target=lambda: result.append(self.srv.commands.focus(URL, 3)))
+        t.start()
+        status, body, _ = _call(self.port, "GET", "/command", headers=hdrs)
+        command = body["command"]
+        self.assertEqual(command["focus_url"], URL)
+        status, body, _ = _call(self.port, "POST", "/command_result",
+                                {"id": command["id"], "found": True}, hdrs)
+        self.assertEqual(status, 200)
+        t.join(3)
+        self.assertEqual(result, [True])
+
+
 if __name__ == "__main__":
     unittest.main()

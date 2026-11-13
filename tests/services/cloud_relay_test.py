@@ -370,5 +370,34 @@ class RaiseCloudTest(unittest.TestCase):
         self.assertEqual(again.agents()[0].url, URL)
 
 
+class CoreRaiseChainTest(unittest.TestCase):
+    """PolyCore._raise_cloud_session: the extension's tab switch first."""
+
+    def run_chain(self, found, window_result):
+        import types
+        from polyhost.core.poly_core import PolyCore
+        from polyhost.services.agents import raiser
+        from polyhost.services.agents.registry import Agent
+        asked, calls = [], []
+        core = types.SimpleNamespace(browser_url_source=types.SimpleNamespace(
+            focus_tab=lambda url: asked.append(url) or found))
+        agent = Agent("claude-code", "a" * 32, machine="cloud", headline="x", url=URL)
+        with mock.patch.object(raiser, "raise_cloud",
+                               lambda a, app_fallback=True: calls.append(app_fallback)
+                               or window_result), \
+                mock.patch("polyhost.core.poly_core.time.sleep"):
+            result = PolyCore._raise_cloud_session(core, agent)
+        return result, asked, calls
+
+    def test_found_by_the_extension(self):
+        # The tab is active now; its window is raised, never the Claude app.
+        self.assertEqual(self.run_chain(True, True), (True, [URL], [False]))
+        self.assertEqual(self.run_chain(True, False), (True, [URL], [False]))
+
+    def test_not_found_or_no_extension_falls_back(self):
+        self.assertEqual(self.run_chain(False, False), (False, [URL], [True]))
+        self.assertEqual(self.run_chain(None, True), (True, [URL], [True]))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -165,6 +165,10 @@ still cloud sessions.
   state, title, folder name and session page are encrypted end to end with a key
   that only the host and the cloud environment have (`cloud_hook.seal`). The
   prompt and the conversation never leave the VM.
+- With the PolyKybd browser extension 1.1.0 or newer (`browser-extension/`), a
+  key press first switches the browser to the tab with the session's exact page,
+  also a background tab or one in another window, and then brings that window to
+  the front.
 - A key press only focuses, and opens nothing: first a window whose title contains
   the session's title (a browser window whose active tab shows the session), else
   the Claude desktop app (its window title is always "Claude", so the host cannot
