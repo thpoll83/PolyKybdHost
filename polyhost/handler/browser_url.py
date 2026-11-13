@@ -106,6 +106,10 @@ CONTEXT_REPORTERS = {
     "macvim": "vim",
     "neovide": "vim",
     "emacs": "emacs",
+    # Bitwig Studio's controller extension (bitwig-extension/): the names of the
+    # mapping's `bitwig studio` entry.
+    "bitwig studio": "bitwig", "bitwigstudio": "bitwig", "bitwig-studio": "bitwig",
+    "com.bitwig.bitwigstudio": "bitwig",
 }
 
 # Reporters that also run INSIDE a terminal (vim, emacs -nw). While a terminal

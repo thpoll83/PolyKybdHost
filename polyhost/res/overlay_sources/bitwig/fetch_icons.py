@@ -29,11 +29,14 @@ BORROW = {
         "fixedgrid.png", "automation.png", "deviceview.png", "browser.png")},
     **{n: "reaper" for n in (
         "snap.png", "itemprops.png", "prevtrack.png", "nexttrack.png",
-        "nudgeleft.png", "nudgeright.png", "tostart.png", "mixer.png")},
+        "nudgeleft.png", "nudgeright.png", "tostart.png", "mixer.png",
+        "pitchup.png", "pitchdown.png")},
+    **{n: "musescore" for n in ("octup.png", "octdown.png")},
     **{n: "flstudio" for n in (
         "select.png", "draw.png", "deltool.png", "slice.png", "pianoroll.png")},
     **{n: "protools" for n in (
-        "prevclip.png", "nextclip.png", "fadein.png", "fadeout.png")},
+        "prevclip.png", "nextclip.png", "fadein.png", "fadeout.png",
+        "gainup.png", "gaindown.png")},
     **{n: "soundcraft" for n in (
         "trimstart.png", "trimend.png", "extendup.png", "extenddown.png")},
     **{n: "cubase" for n in ("rangetool.png",)},
@@ -44,6 +47,13 @@ FLUENT = {
     "seltoggle": "ms:swap_horiz",
     "subdivless": "ms:grid_3x3",
     "subdivmore": "ms:grid_4x4",
+    # Edit View (bindings_edit.yaml): event keys in the Detail Editor.
+    "fineleft": "ms:arrow_left",
+    "fineright": "ms:arrow_right",
+    "extendleft": "ms:keyboard_double_arrow_left",
+    "extendright": "ms:keyboard_double_arrow_right",
+    "shorter": "ms:keyboard_tab_rtl",
+    "longer": "ms:keyboard_tab",
 }
 
 
