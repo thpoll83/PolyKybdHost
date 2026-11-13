@@ -39,6 +39,9 @@ NONCE_BYTES = 16
 TAG_BYTES = 16
 TITLE_MAX_CHARS = 60
 POST_TIMEOUT_S = 3.0
+# Cloudflare refuses Python's default User-Agent ("Python-urllib/3.x") on
+# workers.dev with 403 "error code: 1010", so every request names itself.
+USER_AGENT = "polykybd-cloud-hook/1"
 INSTALL_PATH = "/usr/local/bin/polykybd-cloud-hook"
 
 # The events the hook is registered for, and the state each one reports.
@@ -264,7 +267,7 @@ def post(config: dict, slot: str, blob: str, ended: bool) -> int:
     req = urllib.request.Request(
         f"{config['url']}/v1/c/{config['channel']}/event", data=body, method="POST",
         headers={"Authorization": f"Bearer {config['write_token']}",
-                 "Content-Type": "application/json"})
+                 "Content-Type": "application/json", "User-Agent": USER_AGENT})
     with urllib.request.urlopen(req, timeout=POST_TIMEOUT_S) as resp:
         return resp.status
 
