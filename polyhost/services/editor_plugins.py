@@ -14,6 +14,11 @@ terminal's keys. This module does the copy that their READMEs describe:
 - GDB: ``polykybd.py`` (``gdb-plugin/``) into ``<config>/gdb/polykybd/``, and
   a marked block in the GDB init file that sources it. The script writes GDB's
   state (prompt or running) into the terminal title.
+- Binary Ninja: ``polykybd_mode_reporter/`` (``binaryninja-plugin/``) into
+  the user plugins folder, ``<user folder>/plugins/`` (``BN_USER_DIRECTORY``,
+  else ``~/.binaryninja``, ``%APPDATA%/Binary Ninja`` or
+  ``~/Library/Application Support/Binary Ninja``). It reports the view type and
+  IL level of the focused pane.
 
 Each copy gets a stamp file with the SHA-256 of every file written.
 :func:`refresh_installed` runs at every start: it copies the shipped files
@@ -50,12 +55,14 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 VIM_SOURCE = REPO_ROOT / "vim-plugin"
 EMACS_SOURCE = REPO_ROOT / "emacs-package"
 GDB_SOURCE = REPO_ROOT / "gdb-plugin"
+BINJA_SOURCE = REPO_ROOT / "binaryninja-plugin" / "polykybd_mode_reporter"
 
 VIM = "vim"
 NEOVIM = "neovim"
 EMACS = "emacs"
 GDB = "gdb"
-EDITORS = (VIM, NEOVIM, EMACS, GDB)
+BINARYNINJA = "binaryninja"
+EDITORS = (VIM, NEOVIM, EMACS, GDB, BINARYNINJA)
 # The ones loaded through a marked block in an init file, beside a copy.
 INIT_EDITORS = (EMACS, GDB)
 
@@ -63,6 +70,7 @@ INIT_EDITORS = (EMACS, GDB)
 _VIM_DIRS = ("plugin", "lua", "doc")
 _EMACS_FILES = ("polykybd.el",)
 _GDB_FILES = ("polykybd.py",)
+_BINJA_FILES = ("__init__.py", "core.py")
 
 STAMP_NAME = ".polykybd-host.json"
 BEGIN_MARKER = ";; >>> PolyKybd editor integration >>>"
@@ -254,10 +262,37 @@ def gdb_plugin_dir(home=None, env=None, system=None):
     return config / "gdb" / "polykybd"
 
 
+def binaryninja_user_dir(home=None, env=None, system=None):
+    """Binary Ninja's user folder (user guide, "User Folder")."""
+    env = os.environ if env is None else env
+    system = system or platform.system()
+    if env.get("BN_USER_DIRECTORY"):
+        return Path(env["BN_USER_DIRECTORY"])
+    h = _home(home, env, system)
+    if system == "Windows":
+        appdata = env.get("APPDATA")
+        return (Path(appdata) if appdata else h / "AppData" / "Roaming") / "Binary Ninja"
+    if system == "Darwin":
+        return h / "Library" / "Application Support" / "Binary Ninja"
+    return h / ".binaryninja"
+
+
+def binaryninja_dir(home=None, env=None, system=None):
+    """The folder the Binary Ninja plugin is copied to, in the user plugins folder."""
+    return binaryninja_user_dir(home, env, system) / "plugins" / "polykybd_mode_reporter"
+
+
+def _copy_dir(editor, home, env, system):
+    """The plugin folder of a copy-only editor (Vim, Neovim, Binary Ninja)."""
+    if editor == BINARYNINJA:
+        return binaryninja_dir(home, env, system)
+    return vim_dir(editor, home, env, system)
+
+
 def _present(editor, which, system):
     which = which or shutil.which
     names = {VIM: ("vim", "gvim"), NEOVIM: ("nvim",), EMACS: ("emacs", "runemacs"),
-             GDB: ("gdb", "gdb-multiarch")}[editor]
+             GDB: ("gdb", "gdb-multiarch"), BINARYNINJA: ("binaryninja",)}[editor]
     return any(which(n) for n in names)
 
 
@@ -287,6 +322,11 @@ def shipped_files(editor, source=None):
         if not all((source / name).is_file() for name in names):
             return None
         return {name: (source / name).read_bytes() for name in names}
+    if editor == BINARYNINJA:
+        source = Path(source or BINJA_SOURCE)
+        if not all((source / name).is_file() for name in _BINJA_FILES):
+            return None
+        return {name: (source / name).read_bytes() for name in _BINJA_FILES}
     source = Path(source or VIM_SOURCE)
     if not (source / "plugin" / "polykybd.vim").is_file():
         return None
@@ -535,7 +575,8 @@ def _other_vim_copies(editor, folder):
 
 
 def _sources(vim_source, emacs_source, gdb_source):
-    return {VIM: vim_source, NEOVIM: vim_source, EMACS: emacs_source, GDB: gdb_source}
+    return {VIM: vim_source, NEOVIM: vim_source, EMACS: emacs_source, GDB: gdb_source,
+            BINARYNINJA: None}     # BINJA_SOURCE
 
 
 def status(editors=None, home=None, env=None, which=None, system=None,
@@ -583,14 +624,18 @@ def _status_one(editor, home, env, which, system, source):
             # The block is there and the copy is gone or not ours.
             state = STATE_OUTDATED if state == STATE_NOT_INSTALLED else STATE_MANUAL
         return EditorStatus(editor, state, init, str(want) if state == STATE_MANUAL else "")
-    folder = vim_dir(editor, home, env, system)
+    folder = _copy_dir(editor, home, env, system)
     if shipped is None:
-        return EditorStatus(editor, STATE_NO_SOURCE, folder, str(source or VIM_SOURCE))
-    if not _present(editor, which, system) and not folder.exists():
+        default = BINJA_SOURCE if editor == BINARYNINJA else VIM_SOURCE
+        return EditorStatus(editor, STATE_NO_SOURCE, folder, str(source or default))
+    # Binary Ninja is rarely on PATH: its user folder shows it was run here.
+    present = _present(editor, which, system) or (
+        editor == BINARYNINJA and binaryninja_user_dir(home, env, system).is_dir())
+    if not present and not folder.exists():
         return EditorStatus(editor, STATE_NOT_PRESENT, folder, "")
     state = _copy_state(folder, shipped)
     detail = str(folder) if state == STATE_MANUAL else ""
-    if state == STATE_NOT_INSTALLED:
+    if state == STATE_NOT_INSTALLED and editor != BINARYNINJA:
         other = _other_vim_copies(editor, folder)
         if other is not None:
             state, detail = STATE_MANUAL, str(other)

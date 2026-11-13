@@ -106,6 +106,7 @@ CONTEXT_REPORTERS = {
     "macvim": "vim",
     "neovide": "vim",
     "emacs": "emacs",
+    "binaryninja": "binaryninja", "binary ninja": "binaryninja",  # binaryninja-plugin/
 }
 
 # Reporters that also run INSIDE a terminal (vim, emacs -nw). While a terminal
