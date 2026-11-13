@@ -2353,6 +2353,30 @@ blender,org.blender.blender:
         "blender://PAINT_TEXTURE/VIEW_3D": { overlay: [blender_paint_texture_template_mac.mods.png, blender_paint_texture_template_mac.combo.mods.png, blender_paint_texture_template_mac.extra.mods.png] }
         "/VIEW_3D": { overlay: [blender_common_template_mac.mods.png, blender_common_template_mac.combo.mods.png, blender_common_template_mac.extra.mods.png] }
         "blender://": { overlay: [blender_global_template_mac.mods.png, blender_global_template_mac.combo.mods.png, blender_global_template_mac.extra.mods.png] }
+# Unity Editor (sources: overlay_sources/unity/, gen_unity_specs.py). Unity.exe on
+# Windows, WM_CLASS Unity on Linux, Unity.app on macOS: all report `unity`; not
+# checked on an install. The Editor package (unity-package/) reports
+# `unity://<edit|play>/<window>`; routes are tried in order: the Game view in Play
+# mode gets only the Play-mode keys, the Scene view and the Animation window their
+# own sets, any other window the global set. `layer: false` makes a route replace
+# the fallback. Without the package (or with a stale report) the Scene view set applies.
+unity:
+  overlay: [unity_scene_template.mods.png, unity_scene_template.combo.mods.png]
+  layer: false
+  urls-contains:
+    "unity://play/game": { overlay: [unity_play_template.mods.png, unity_play_template.combo.mods.png] }
+    "/scene": { overlay: [unity_scene_template.mods.png, unity_scene_template.combo.mods.png] }
+    "/animation": { overlay: [unity_animation_template.mods.png, unity_animation_template.combo.mods.png] }
+    "unity://": { overlay: [unity_template.mods.png, unity_template.combo.mods.png] }
+  os:
+    macos:
+      overlay: [unity_scene_template_mac.mods.png, unity_scene_template_mac.combo.mods.png, unity_scene_template_mac.extra.mods.png]
+      layer: false
+      urls-contains:
+        "unity://play/game": { overlay: [unity_play_template_mac.mods.png, unity_play_template_mac.combo.mods.png, unity_play_template_mac.extra.mods.png] }
+        "/scene": { overlay: [unity_scene_template_mac.mods.png, unity_scene_template_mac.combo.mods.png, unity_scene_template_mac.extra.mods.png] }
+        "/animation": { overlay: [unity_animation_template_mac.mods.png, unity_animation_template_mac.combo.mods.png, unity_animation_template_mac.extra.mods.png] }
+        "unity://": { overlay: [unity_template_mac.mods.png, unity_template_mac.combo.mods.png, unity_template_mac.extra.mods.png] }
 # Microsoft Teams (sources: overlay_sources/teams/). The desktop app is
 # `ms-teams.exe` (new Teams) or `Teams.exe` (classic) on Windows, and on macOS
 # "Microsoft Teams" (new), earlier "Microsoft Teams (work or school)" and

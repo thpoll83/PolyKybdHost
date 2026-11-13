@@ -106,6 +106,7 @@ CONTEXT_REPORTERS = {
     "macvim": "vim",
     "neovide": "vim",
     "emacs": "emacs",
+    "unity": "unity",               # Unity Editor package (unity-package/)
 }
 
 # Reporters that also run INSIDE a terminal (vim, emacs -nw). While a terminal
