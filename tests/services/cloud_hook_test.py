@@ -148,8 +148,9 @@ class PostTest(unittest.TestCase):
             def __enter__(self): return self
             def __exit__(self, *exc): return False
 
-        def fake_urlopen(req, timeout):
+        def fake_urlopen(req, timeout, context=None):
             sent.append(req)
+            self.assertIsNotNone(context)    # never urllib's implicit default
             return Resp()
         cfg = {"url": "https://r.example", "channel": "a" * 32, "write_token": "b" * 64}
         with mock.patch.object(ch.urllib.request, "urlopen", fake_urlopen):

@@ -27,6 +27,7 @@ import hmac
 import json
 import os
 import secrets
+import ssl
 import sys
 import tempfile
 import time
@@ -268,7 +269,9 @@ def post(config: dict, slot: str, blob: str, ended: bool) -> int:
         f"{config['url']}/v1/c/{config['channel']}/event", data=body, method="POST",
         headers={"Authorization": f"Bearer {config['write_token']}",
                  "Content-Type": "application/json", "User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=POST_TIMEOUT_S) as resp:
+    # The VM's own trust store (polyhost.util.https is not there: this file runs alone).
+    with urllib.request.urlopen(req, timeout=POST_TIMEOUT_S,
+                                context=ssl.create_default_context()) as resp:
         return resp.status
 
 

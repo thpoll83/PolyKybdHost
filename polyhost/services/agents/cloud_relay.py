@@ -129,15 +129,10 @@ def setup_text(channel: dict) -> dict:
 # ---- HTTP ------------------------------------------------------------------------
 
 def ssl_context() -> ssl.SSLContext:
-    """The system's trust store, plus certifi's when it is installed (a python.org
-    build on macOS has no system certificates until its installer step ran)."""
-    ctx = ssl.create_default_context()
-    try:
-        import certifi
-        ctx.load_verify_locations(certifi.where())
-    except (ImportError, OSError):
-        pass    # the system store alone
-    return ctx
+    """The app's trust store: the platform's roots plus certifi's
+    (polyhost.util.https). A python.org build on macOS has no system store."""
+    from polyhost.util.https import ssl_context as shared
+    return shared() or ssl.create_default_context()
 
 
 def http_call(base_url: str, method: str, path: str, token: str | None = None,
