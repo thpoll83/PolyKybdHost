@@ -106,6 +106,9 @@ CONTEXT_REPORTERS = {
     "macvim": "vim",
     "neovide": "vim",
     "emacs": "emacs",
+    # QGIS plugin (qgis-plugin/): exactly the names of the `qgis` mapping entry.
+    **dict.fromkeys(("qgis", "qgis3", "qgis4", "org.qgis.qgis", "qgis-bin", "qgis-ltr-bin",
+                     "qgis-dev-bin", "qgis-qt6-bin", "qgis-ltr"), "qgis"),
 }
 
 # Reporters that also run INSIDE a terminal (vim, emacs -nw). While a terminal

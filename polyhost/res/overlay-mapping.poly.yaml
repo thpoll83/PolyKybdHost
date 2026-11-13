@@ -3711,14 +3711,39 @@ houdini,houdinifx,houdinicore,happrentice,hindie,hescape,houdini-bin,houdini fx,
 # Linux: the process `qgis` (X11), the WM_CLASS class QGIS4 / QGIS3 (the GNOME and
 # KDE reporters) and the Wayland app id org.qgis.qgis, which is also the Flatpak
 # id. macOS: the app "QGIS" (CFBundleName), installed as QGIS.app or
-# QGIS-LTR.app. Not checked on an install.
+# QGIS-LTR.app. Not checked on an install. The QGIS plugin (qgis-plugin/) reports
+# qgis://map/<tool>[/cad][/edit] and qgis://layout; the digitizing, vertex and
+# print layout sets are routed on it (overlay_sources/qgis/gen_mode_specs.py,
+# layout.yaml). `layer: false`: a mode set replaces the main set, and the main
+# set stays the fallback without the plugin and for every other tool or window.
 qgis,qgis3,qgis4,org.qgis.qgis,qgis-bin,qgis-ltr-bin,qgis-dev-bin,qgis-qt6-bin,qgis-ltr:
   overlay: [qgis_template.mods.png, qgis_template.combo.mods.png, qgis_template.extra.mods.png]
+  layer: false
+  urls-contains:
+    "qgis://map/digitize/cad": { overlay: [qgis_digitize_cad_template.mods.png, qgis_digitize_cad_template.combo.mods.png, qgis_digitize_cad_template.extra.mods.png] }
+    "qgis://map/vertex/cad": { overlay: [qgis_vertex_cad_template.mods.png, qgis_vertex_cad_template.combo.mods.png, qgis_vertex_cad_template.extra.mods.png] }
+    "qgis://map/digitize": { overlay: [qgis_digitize_template.mods.png, qgis_digitize_template.combo.mods.png, qgis_digitize_template.extra.mods.png] }
+    "qgis://map/vertex": { overlay: [qgis_vertex_template.mods.png, qgis_vertex_template.combo.mods.png, qgis_vertex_template.extra.mods.png] }
+    "qgis://layout": { overlay: [qgis_layout_template.mods.png, qgis_layout_template.combo.mods.png] }
   os:
     macos:
       overlay: [qgis_template_mac.mods.png, qgis_template_mac.combo.mods.png, qgis_template_mac.extra.mods.png, qgis_template_mac.gui.mods.png]
+      layer: false
+      urls-contains:
+        "qgis://map/digitize/cad": { overlay: [qgis_digitize_cad_template_mac.mods.png, qgis_digitize_cad_template_mac.combo.mods.png, qgis_digitize_cad_template_mac.extra.mods.png, qgis_digitize_cad_template_mac.gui.mods.png] }
+        "qgis://map/vertex/cad": { overlay: [qgis_vertex_cad_template_mac.mods.png, qgis_vertex_cad_template_mac.combo.mods.png, qgis_vertex_cad_template_mac.extra.mods.png, qgis_vertex_cad_template_mac.gui.mods.png] }
+        "qgis://map/digitize": { overlay: [qgis_digitize_template_mac.mods.png, qgis_digitize_template_mac.combo.mods.png, qgis_digitize_template_mac.extra.mods.png, qgis_digitize_template_mac.gui.mods.png] }
+        "qgis://map/vertex": { overlay: [qgis_vertex_template_mac.mods.png, qgis_vertex_template_mac.combo.mods.png, qgis_vertex_template_mac.extra.mods.png, qgis_vertex_template_mac.gui.mods.png] }
+        "qgis://layout": { overlay: [qgis_layout_template_mac.mods.png, qgis_layout_template_mac.combo.mods.png, qgis_layout_template_mac.extra.mods.png] }
     linux:
       overlay: [qgis_template_linux.mods.png, qgis_template_linux.combo.mods.png, qgis_template_linux.extra.mods.png]
+      layer: false
+      urls-contains:
+        "qgis://map/digitize/cad": { overlay: [qgis_digitize_cad_template_linux.mods.png, qgis_digitize_cad_template_linux.combo.mods.png, qgis_digitize_cad_template_linux.extra.mods.png] }
+        "qgis://map/vertex/cad": { overlay: [qgis_vertex_cad_template_linux.mods.png, qgis_vertex_cad_template_linux.combo.mods.png, qgis_vertex_cad_template_linux.extra.mods.png] }
+        "qgis://map/digitize": { overlay: [qgis_digitize_template_linux.mods.png, qgis_digitize_template_linux.combo.mods.png, qgis_digitize_template_linux.extra.mods.png] }
+        "qgis://map/vertex": { overlay: [qgis_vertex_template_linux.mods.png, qgis_vertex_template_linux.combo.mods.png, qgis_vertex_template_linux.extra.mods.png] }
+        "qgis://layout": { overlay: [qgis_layout_template.mods.png, qgis_layout_template.combo.mods.png] }
 # Autodesk Maya, scene and viewport keys (overlay_sources/maya/). Windows maya.exe
 # and the macOS app "Maya" (a trailing release year such as "Maya 2026" is
 # dropped by the matcher); on Linux the process is maya.bin. macOS takes the set

@@ -1,0 +1,92 @@
+# QGIS print layout designer keys (qgis://layout, reported by qgis-plugin/).
+#
+# Shortcuts: QGIS's source at tag final-4_2_3: the `shortcut` properties of
+# src/ui/layout/qgslayoutdesignerbase.ui, and src/app/layout/qgslayoutdesignerdialog.cpp
+# (QShortcuts Ctrl+= and Backspace; Cut/Copy/Paste/Undo/Redo from QKeySequence).
+# src/gui/layout/qgslayoutview.cpp keyPressEvent: Space pans while held, the
+# arrow keys move the selected items (not drawn: the legend shows the arrow).
+# Checked against final-3_44_15: the same keys. See SOURCES.md.
+#   CMDCTRL   Ctrl on Windows/Linux, Cmd on macOS (Qt's "Ctrl").
+#   Ctrl+Tab (toggle panels) is Cmd+Tab on macOS, which the system takes.
+#   "Ctrl+<" / "Ctrl+>" (first / last atlas feature) are drawn on the US keys
+#   that type them, with Shift added.
+#
+#   python scripts/generate_app_overlays.py polyhost/res/overlay_sources/qgis/layout.yaml
+app: qgis
+match: [qgis, qgis3, qgis4, org.qgis.qgis, qgis-bin, qgis-ltr-bin, qgis-dev-bin, qgis-qt6-bin, qgis-ltr]
+output: qgis_layout_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto
+threshold: 150
+
+program_icon: qgis.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- layout ---
+  - { key: N, mods: [CMDCTRL], icon: newlayout.png, label: "New layout" }
+  - { key: S, mods: [CMDCTRL], label: Save }
+  - { key: P, mods: [CMDCTRL], icon: newlayout.png, label: "Print layout" }
+  - { key: P, mods: [CMDCTRL, SHIFT], icon: pagesetup.png, label: "Page setup" }
+  - { key: Q, mods: [CMDCTRL], icon: close.png, label: "Close designer" }
+
+  # --- edit ---
+  - { key: Z, mods: [CMDCTRL], label: Undo }
+  - { key: Z, mods: [CMDCTRL, SHIFT], label: Redo }
+  - { key: X, mods: [CMDCTRL], label: Cut }
+  - { key: C, mods: [CMDCTRL], label: Copy }
+  - { key: V, mods: [CMDCTRL], label: Paste }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: pasteinplace.png, label: "Paste in place" }
+  - { key: DEL, mods: [], label: Delete }
+  - { key: BSPC, mods: [], label: Delete }
+  - { key: A, mods: [CMDCTRL], label: "Select all" }
+  - { key: A, mods: [CMDCTRL, SHIFT], icon: unselectall.png, label: "Deselect all" }
+  - { key: "[", mods: [CMDCTRL, ALT], icon: selbelow.png, label: "Select next item below" }
+  - { key: "]", mods: [CMDCTRL, ALT], icon: selabove.png, label: "Select next item above" }
+
+  # --- tools ---
+  - { key: V, mods: [], icon: selectmove.png, label: "Select/move item" }
+  - { key: C, mods: [], icon: movecontent.png, label: "Move item content" }
+  - { key: P, mods: [], icon: pan.png, label: "Pan layout" }
+  - { key: Z, mods: [], icon: zoomintool.png, label: "Zoom tool" }
+  - { key: SPACE, mods: [], icon: pan.png, label: "Pan layout (hold)" }
+
+  # --- items ---
+  - { key: G, mods: [CMDCTRL], icon: group.png, label: "Group items" }
+  - { key: G, mods: [CMDCTRL, SHIFT], icon: ungroup.png, label: "Ungroup items" }
+  - { key: L, mods: [CMDCTRL], icon: lockitems.png, label: "Lock selected items" }
+  - { key: L, mods: [CMDCTRL, SHIFT], icon: unlockall.png, label: "Unlock all items" }
+  - { key: "]", mods: [CMDCTRL], icon: raise.png, label: "Raise items" }
+  - { key: "[", mods: [CMDCTRL], icon: lower.png, label: "Lower items" }
+  - { key: "]", mods: [CMDCTRL, SHIFT], icon: tofront.png, label: "Bring to front" }
+  - { key: "[", mods: [CMDCTRL, SHIFT], icon: toback.png, label: "Send to back" }
+
+  # --- view ---
+  - { key: EQUAL, mods: [CMDCTRL], label: "Zoom in" }
+  - { key: MINUS, mods: [CMDCTRL], label: "Zoom out" }
+  - { key: "0", mods: [CMDCTRL], icon: zoomfit.png, label: "Zoom full" }
+  - { key: "1", mods: [CMDCTRL], icon: zoom100.png, label: "Zoom to 100%" }
+  - { key: R, mods: [CMDCTRL], icon: rulers.png, label: "Show rulers" }
+  - { key: QUOTE, mods: [CMDCTRL], icon: grid.png, label: "Show grid" }
+  - { key: QUOTE, mods: [CMDCTRL, SHIFT], icon: snapgrid.png, label: "Snap to grid" }
+  - { key: SEMICOLON, mods: [CMDCTRL], icon: guides.png, label: "Show guides" }
+  - { key: SEMICOLON, mods: [CMDCTRL, SHIFT], icon: snap.png, label: "Snap to guides" }
+  - { key: SEMICOLON, mods: [CMDCTRL, ALT], icon: smartguides.png, label: "Smart guides" }
+  - { key: B, mods: [CMDCTRL, SHIFT], icon: boxes.png, label: "Show bounding boxes" }
+  - { key: TAB, mods: [CTRL], icon: panelsvis.png, label: "Toggle panels", except: [macos] }
+  - { key: F5, mods: [], icon: refresh.png, label: Refresh }
+  - { key: F11, mods: [], icon: fullscreen.png, label: "Full screen" }
+
+  # --- atlas ---
+  - { key: COMMA, mods: [CMDCTRL, SHIFT], icon: firstfeat.png, label: "First atlas feature" }
+  - { key: COMMA, mods: [CMDCTRL], icon: prevfeat.png, label: "Previous atlas feature" }
+  - { key: DOT, mods: [CMDCTRL], icon: nextfeat.png, label: "Next atlas feature" }
+  - { key: DOT, mods: [CMDCTRL, SHIFT], icon: lastfeat.png, label: "Last atlas feature" }
+  - { key: SLASH, mods: [CMDCTRL, ALT], icon: atlaspreview.png, label: "Preview atlas" }

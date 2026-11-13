@@ -98,6 +98,35 @@ FLUENT = {
     "modeler": "ms:account_tree",
     "history": "ms:history",
     "results": "ms:fact_check",
+    # --- digitizing and vertex tool (mode sets) ---
+    "removevertex": "ms:backspace",
+    "deletevertex": "ms:cancel",
+    "rangesel": "ms:linear_scale",
+    "construction": "ms:construction",
+    "cadlock": "ms:lock",
+    # --- print layout designer (mode set) ---
+    "pagesetup": "ms:aspect_ratio",
+    "rulers": "ms:straighten",
+    "grid": "ms:grid_on",
+    "snapgrid": "ms:grid_4x4",
+    "guides": "ms:border_vertical",
+    "smartguides": "ms:auto_fix_high",
+    "boxes": "ms:crop_free",
+    "selbelow": "ms:move_down",
+    "selabove": "ms:move_up",
+    "lockitems": "ms:lock",
+    "unlockall": "ms:lock_open",
+    "raise": "ms:flip_to_front",
+    "lower": "ms:flip_to_back",
+    "tofront": "ms:vertical_align_top",
+    "toback": "ms:vertical_align_bottom",
+    "group": "ms:group_work",
+    "ungroup": "ms:workspaces",
+    "movecontent": "ms:open_with",
+    "pasteinplace": "ms:content_paste",
+    "atlaspreview": "ms:auto_stories",
+    "selectmove": "ms:arrow_selector_tool",
+    "close": "ms:close",
 }
 
 # Same action as in a sibling set: copied byte-identical.
@@ -124,7 +153,27 @@ TEXT = {
     "csvlayer": "CSV",
     "gpkglayer": "GPKG",
     "expression": "ε",
+    # Advanced Digitizing: type a value into a field, or make it relative.
+    "cadx": "X=",
+    "cady": "Y=",
+    "cadz": "Z=",
+    "cadm": "M=",
+    "cada": "∠=",
+    "cadd": "d=",
+    "cadrelx": "ΔX",
+    "cadrely": "ΔY",
+    "cadrelz": "ΔZ",
+    "cadrelm": "ΔM",
+    "cadrela": "Δ∠",
+    "cadperp": "⊥∥",
+    "cadnext": "∠+",
+    "cadprev": "∠-",
+    "zoom100": "1:1",
 }
+
+# Advanced Digitizing locks: the lock glyph with the constrained value beside it.
+LOCKS = {"cadlockx": "X", "cadlocky": "Y", "cadlockz": "Z", "cadlockm": "M",
+         "cadlocka": "∠", "cadlockd": "d"}
 
 
 def _draw_text(path: Path, text: str) -> None:
@@ -154,6 +203,21 @@ def _add_sign(path: Path, plus: bool) -> None:
     if plus:
         d.rectangle([c - w // 2, c - half, c + w // 2 - 1, c + half - 1], fill=(0, 0, 0, 255))
     img.save(path)
+
+
+def _lock_with(src: Path, dest: Path, text: str) -> None:
+    """The fetched lock glyph on the left half and `text` on the right half,
+    so each lock key names the value it locks."""
+    lock = Image.open(src).convert("RGBA").resize((RENDER_PX // 2, RENDER_PX // 2), Image.LANCZOS)
+    img = Image.new("RGBA", (RENDER_PX, RENDER_PX // 2), (0, 0, 0, 0))
+    img.alpha_composite(lock, (0, 0))
+    d = ImageDraw.Draw(img)
+    font = ImageFont.truetype(FONT, int(RENDER_PX * 0.42))
+    box = d.textbbox((0, 0), text, font=font)
+    x = RENDER_PX * 3 // 4 - (box[2] - box[0]) / 2 - box[0]
+    y = (RENDER_PX // 2 - (box[3] - box[1])) / 2 - box[1]
+    d.text((x, y), text, font=font, fill=(0, 0, 0, 255))
+    img.save(dest)
 
 
 def _logo_svg() -> bytes:
@@ -190,6 +254,9 @@ def main() -> int:
     _add_sign(out / "zoomouttool.png", plus=False)
     for name, text in TEXT.items():
         _draw_text(out / f"{name}.png", text)
+        n += 1
+    for name, text in LOCKS.items():
+        _lock_with(out / "cadlock.png", out / f"{name}.png", text)
         n += 1
     mark = out / "qgis.png"
     if mark.exists():
