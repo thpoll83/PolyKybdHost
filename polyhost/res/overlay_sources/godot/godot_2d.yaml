@@ -1,0 +1,65 @@
+# Godot editor, 2D screen (CanvasItem editor) keys for PolyKybd. See SOURCES.md.
+#
+# Only the keys of the 2D screen. The mapping loads this set AFTER
+# godot_template (godot.yaml) when the plugin reports godot://2d, and a later
+# file takes priority per key, so every other key keeps its global icon.
+# Shortcuts: editor/scene/canvas_item_editor_plugin.cpp and the node menu of
+# editor/editor_node.cpp (lock, group, visibility) in Godot 4.7.2; the zoom
+# keys from the docs page. Hold Space (pan) has no cell: there is no Space layer.
+#
+# Regenerate:
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/godot/godot_2d.yaml --preview /tmp/godot_2d_preview
+app: godot
+match: [godot]
+output: godot_2d_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+program_icon: esc_2d.png         # the logo with the screen name (fetch_icons.py)
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+bindings:
+  # tools
+  - { key: Q, icon: select.png, label: "Select mode" }
+  - { key: W, icon: move.png, label: "Move mode" }
+  - { key: E, icon: rotate.png, label: "Rotate mode" }
+  - { key: R, icon: scale.png, label: "Scale mode" }
+  - { key: B, icon: scenepaint.png, label: "Scene paint mode" }
+  - { key: G, icon: pan.png, label: "Pan mode" }
+  - { key: M, icon: ruler.png, label: "Ruler mode" }
+  - { key: T, icon: localspace.png, label: "Use local space" }
+  # snapping and view
+  - { key: S, mods: [SHIFT], icon: smartsnap.png, label: "Smart snap" }
+  - { key: G, mods: [SHIFT], icon: gridsnap.png, label: "Grid snap" }
+  - { key: QUOTE, mods: [CMDCTRL], icon: grid.png, label: "Toggle grid" }
+  - { key: H, mods: [SHIFT], icon: helpers.png, label: "Show helpers" }
+  - { key: Y, icon: guides.png, label: "Show guides" }
+  - { key: F, icon: center.png, label: "Center selection" }
+  - { key: F, mods: [SHIFT], icon: fit_view.png, label: "Frame selection" }
+  - { key: EQUAL, mods: [CMDCTRL], label: "Zoom in" }
+  - { key: MINUS, mods: [CMDCTRL], label: "Zoom out" }
+  - { key: "0", mods: [CMDCTRL], icon: zoom100.png, label: "Zoom to 100%" }
+  # transform
+  - { key: W, mods: [ALT], icon: resetpos.png, label: "Reset position" }
+  - { key: E, mods: [ALT], icon: resetrot.png, label: "Reset rotation" }
+  - { key: R, mods: [ALT], icon: resetscale.png, label: "Reset scale" }
+  # nodes (editor_node.cpp)
+  - { key: L, mods: [CMDCTRL], icon: lock.png, label: "Lock selected" }
+  - { key: L, mods: [CMDCTRL, SHIFT], icon: unlock.png, label: "Unlock selected" }
+  - { key: G, mods: [CMDCTRL], icon: group.png, label: "Group selected" }
+  - { key: G, mods: [CMDCTRL, SHIFT], icon: ungroup.png, label: "Ungroup selected" }
+  - { key: H, icon: visibility.png, label: "Toggle visibility" }
+  # animation and skeleton
+  - { key: INS, icon: key_insert.png, label: "Insert key" }
+  - { key: INS, mods: [CMDCTRL], icon: keyexisting.png, label: "Insert key (existing tracks)" }
+  - { key: K, mods: [SHIFT], icon: clearpose.png, label: "Clear pose" }
+  - { key: B, mods: [CMDCTRL, SHIFT], icon: bones.png, label: "Make bones from nodes" }

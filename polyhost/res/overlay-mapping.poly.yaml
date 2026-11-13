@@ -3739,3 +3739,33 @@ protools,pro tools:
     macos:
       overlay: [protools_template_mac.mods.png, protools_template_mac.combo.mods.png, protools_template_mac.extra.mods.png, protools_template_mac.gui.mods.png]
       midi: true
+# Godot editor 4.x (sources: overlay_sources/godot/). One set per main screen,
+# routed on the godot://<screen> pseudo-URL the PolyKybd Reporter plugin
+# (godot-plugin/) reports: 2d, 3d, script, game; assetlib and other get the
+# fallback. Each screen's set is drawn on top of the fallback set (a later file
+# takes priority per key). `layer: false` makes a screen's sets replace the
+# fallback instead of drawing it dimmed underneath. Without the plugin the
+# fallback set applies. Names: Windows cuts the official
+# Godot_v4.x.y-stable_win64.exe at its first dot (godot_v4), a source build or
+# the Steam build is godot; the Linux download Godot_v4.x.y-stable_linux.x86_64
+# is matched as godot (common.mapping_key drops the version and build), the
+# Flatpak runs godot-bin, Wayland reports the app id; macOS shows "Godot".
+# Exactly CONTEXT_REPORTERS' "godot" names (tests/handler/godot_routing_test.py).
+# None of the names was checked on an install.
+godot,godot_v4,godot_mono,godot4,godot-bin,org.godotengine.godot,org.godotengine.editor:
+  overlay: [godot_template.mods.png, godot_template.combo.mods.png, godot_template.extra.mods.png]
+  layer: false
+  urls-contains:
+    "godot://2d": { overlay: [godot_template.mods.png, godot_template.combo.mods.png, godot_template.extra.mods.png, godot_2d_template.mods.png, godot_2d_template.combo.mods.png] }
+    "godot://3d": { overlay: [godot_template.mods.png, godot_template.combo.mods.png, godot_template.extra.mods.png, godot_3d_template.mods.png, godot_3d_template.combo.mods.png] }
+    "godot://script": { overlay: [godot_template.mods.png, godot_template.combo.mods.png, godot_template.extra.mods.png, godot_script_template.mods.png, godot_script_template.combo.mods.png] }
+    "godot://game": { overlay: [godot_template.mods.png, godot_template.combo.mods.png, godot_template.extra.mods.png, godot_game_template.mods.png] }
+  os:
+    macos:
+      overlay: [godot_template_mac.mods.png, godot_template_mac.combo.mods.png, godot_template_mac.extra.mods.png, godot_template_mac.gui.mods.png]
+      layer: false
+      urls-contains:
+        "godot://2d": { overlay: [godot_template_mac.mods.png, godot_template_mac.combo.mods.png, godot_template_mac.extra.mods.png, godot_template_mac.gui.mods.png, godot_2d_template_mac.mods.png, godot_2d_template_mac.combo.mods.png, godot_2d_template_mac.extra.mods.png] }
+        "godot://3d": { overlay: [godot_template_mac.mods.png, godot_template_mac.combo.mods.png, godot_template_mac.extra.mods.png, godot_template_mac.gui.mods.png, godot_3d_template_mac.mods.png, godot_3d_template_mac.combo.mods.png, godot_3d_template_mac.extra.mods.png] }
+        "godot://script": { overlay: [godot_template_mac.mods.png, godot_template_mac.combo.mods.png, godot_template_mac.extra.mods.png, godot_template_mac.gui.mods.png, godot_script_template_mac.mods.png, godot_script_template_mac.combo.mods.png, godot_script_template_mac.extra.mods.png, godot_script_template_mac.gui.mods.png] }
+        "godot://game": { overlay: [godot_template_mac.mods.png, godot_template_mac.combo.mods.png, godot_template_mac.extra.mods.png, godot_template_mac.gui.mods.png, godot_game_template_mac.mods.png, godot_game_template_mac.extra.mods.png] }
