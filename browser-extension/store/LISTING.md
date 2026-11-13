@@ -38,6 +38,10 @@ sync with `manifest.*.json` (name/version) and `../README.md`.
       port/token settings.
     • Open source: https://github.com/thpoll83/PolyKybdHost (browser-extension/)
 
+    Agent keys: when you press the keyboard key of a Claude Code cloud session
+    (claude.ai/code), the extension switches to that session's tab, also a
+    background tab or one in another window. It never opens a page.
+
     Requires the PolyKybdHost app running locally with "browser website
     detection" enabled (on by default). Configure the port (and optional token)
     on the extension's Options page and click "Test connection".
@@ -45,7 +49,10 @@ sync with `manifest.*.json` (name/version) and `../README.md`.
 ## Permission justifications (Chrome privacy tab / AMO notes)
 
 - **tabs** — to read the URL and title of the active tab so the keyboard can
-  select the matching overlay. No page content is accessed.
+  select the matching overlay, and, when the user presses a Claude Code
+  session's key on the keyboard, to find the tab with that session's address
+  among the open tabs and activate it. No page content is accessed, and the
+  other tabs' URLs never leave the browser.
 - **storage** — to save the user's host port and optional token from the Options
   page.
 - **host permission `http://127.0.0.1/*`, `http://localhost/*`** — to POST the
@@ -55,7 +62,8 @@ sync with `manifest.*.json` (name/version) and `../README.md`.
 ## Data usage disclosure (Chrome "Data practices")
 
 - Collects: **Web browsing activity → limited to the active tab's URL and title**
-  (no page content is accessed). Chrome and Mozilla both classify domains/URLs as
+  (no page content is accessed). The open tabs' URLs are compared in the browser
+  with one claude.ai session address on a key press and are not transmitted. Chrome and Mozilla both classify domains/URLs as
   web browsing activity, so declare this category, not "website content".
 - Does the extension **transmit** the data? Only to **localhost (127.0.0.1)** —
   it does **not** send data to the developer or any third party or off the
