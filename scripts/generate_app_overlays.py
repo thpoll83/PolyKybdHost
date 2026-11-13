@@ -287,6 +287,39 @@ PROGRAM_ALPHA_CUT = 127
 # shared renderer, which owns the geometry and so cannot honour them.
 GEOMETRY_KEYS = ("region", "anchor", "margin", "fit", "threshold", "mode")
 
+# Keys whose legend the firmware draws CENTRED, not top-left: the default
+# bottom-right box covers part of it (measured: Space in 117 sets, 546 cells, 10 to
+# 44 legend pixels each). A binding on one of them that sets no placement of its
+# own goes into the top-right box Maya and Pro Tools were fixed with by hand.
+CENTRED_LEGEND_KEYS = frozenset({"SPACE", "SPC"})
+CLEAR_ANCHOR = "top-right"
+CLEAR_REGION = (28, 20)
+
+
+def clears_centred_legend(b: dict) -> bool:
+    """True when the binding's icon must keep clear of a centred key legend."""
+    return (str(b.get("key", "")).upper() in CENTRED_LEGEND_KEYS
+            and not any(k in b for k in ("region", "anchor", "margin")))
+
+
+def refit_mask(mask: np.ndarray, region: tuple[int, int, int, int]) -> np.ndarray:
+    """`mask`'s ink, scaled to fit `region` (aspect kept, never enlarged) and
+    placed in it the way region_box anchors it: right- and top-aligned for the
+    top-right box. For a shared glyph, which arrives at the default placement."""
+    ys, xs = np.nonzero(mask)
+    out = np.zeros_like(mask)
+    if not len(ys):
+        return out
+    ink = mask[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+    x0, y0, w, h = region
+    k = min(1.0, w / ink.shape[1], h / ink.shape[0])
+    nw, nh = max(1, round(ink.shape[1] * k)), max(1, round(ink.shape[0] * k))
+    small = np.asarray(Image.fromarray(ink.astype(np.uint8) * 255).resize(
+        (nw, nh), Image.LANCZOS)) > 127
+    ox = x0 + w - nw
+    out[y0:y0 + nh, ox:ox + nw] = small
+    return out
+
 
 # Per-process memo for the two lookups every binding makes. `match()` walks the
 # whole localized lexicon per label and `load_codepoints()` reads and parses the
@@ -725,8 +758,12 @@ def generate(spec: dict, base_dir: Path, macos: bool | None = None,
             continue
 
         # render the stamp into the per-binding (or default) region
-        region = region_box(b.get("anchor", anchor),
-                            tuple(b.get("region", size)), int(b.get("margin", margin)))
+        clear = clears_centred_legend(b)
+        if clear:
+            region = region_box(CLEAR_ANCHOR, CLEAR_REGION, margin)
+        else:
+            region = region_box(b.get("anchor", anchor),
+                                tuple(b.get("region", size)), int(b.get("margin", margin)))
         icon = b.get("icon")
         label = b.get("label") or b["key"]
         src = (icon_dir / icon) if icon else None
@@ -749,6 +786,8 @@ def generate(spec: dict, base_dir: Path, macos: bool | None = None,
                                  f"has no shared glyph to draw")
         if shared is not None:
             mask, source = shared, f"concept:{qualified}"
+            if clear:
+                mask = refit_mask(mask, region)
         elif src and src.exists():
             mask = render_icon(src, b.get("fit", fit),
                                int(b.get("threshold", threshold)), b.get("invert"),
