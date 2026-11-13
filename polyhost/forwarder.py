@@ -881,6 +881,8 @@ class PolyForwarder(QApplication):
                 if saved:
                     self.log.info("Forwarder settings changed: %s",
                                   ", ".join(sorted(changed)))
+                    # A new receiver port or token applies now (it reads the file).
+                    self._url_source.restart_if_changed()
                 else:
                     # This PolySettings is thrown away when the dialog closes,
                     # and the forwarder reads everything back from the file, so

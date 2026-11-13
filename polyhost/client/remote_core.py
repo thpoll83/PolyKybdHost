@@ -380,6 +380,9 @@ class RemoteCore(Observable):
     def agents_forget(self, vendor, session_id):
         return self._device(p.M_AGENTS_FORGET, {"vendor": vendor, "session_id": session_id})
 
+    def agents_forget_inactive(self):
+        return self._device(p.M_AGENTS_FORGET_INACTIVE)
+
     def agents_cloud_status(self):
         return self._rpc_call(p.M_AGENTS_CLOUD_STATUS) or {}
 

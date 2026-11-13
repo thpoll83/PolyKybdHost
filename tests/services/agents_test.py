@@ -76,6 +76,18 @@ class RegistryTest(unittest.TestCase):
         self.r.tick()
         self.assertEqual(self.r.agents()[0].state, AgentState.WORKING)
 
+    def test_forget_inactive_keeps_busy_agents(self):
+        for sid, state in (("a", "working"), ("b", "waiting"), ("c", "done"), ("d", "idle")):
+            self.r.report("codex", sid, state)
+        version = self.r.version
+        gone = self.r.forget_inactive()
+        self.assertEqual(sorted(a.session_id for a in gone), ["c", "d"])
+        self.assertEqual(sorted(a.session_id for a in self.r.agents()), ["a", "b"])
+        self.assertGreater(self.r.version, version)
+        version = self.r.version
+        self.assertEqual(self.r.forget_inactive(), [])
+        self.assertEqual(self.r.version, version)              # nothing changed
+
     def test_stale_and_forget(self):
         self.r.report("codex", "a", "working")
         self.clock.t += reg_mod.STALE_AFTER_S + 1

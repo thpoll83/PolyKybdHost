@@ -22,6 +22,9 @@ class _NullLog:
     def debug(self, *a, **k):
         pass
 
+    def info(self, *a, **k):
+        pass
+
 
 class _FakeServer:
     def __init__(self, on_report, log, port=None, token=""):
@@ -64,6 +67,21 @@ class BrowserUrlSourceTest(unittest.TestCase):
         self.assertTrue(src.start())
         self.assertEqual((self.built[0].port, self.built[0].token), (50999, "s3cret"))
         self.assertTrue(self.built[0].started)
+
+    def test_a_new_token_or_port_restarts_the_receiver(self):
+        values = dict(SETTING_DEFAULTS)
+        src = self._source(lambda key: values[key])
+        src.start()
+        self.assertFalse(src.restart_if_changed())              # nothing changed
+        self.assertEqual(len(self.built), 1)
+        values["browser_report_token"] = "new"
+        self.assertTrue(src.restart_if_changed())
+        self.assertTrue(self.built[0].stopped)
+        self.assertEqual((len(self.built), self.built[1].token), (2, "new"))
+        values["browser_report_local_enabled"] = False
+        self.assertTrue(src.restart_if_changed())              # switched off: stopped
+        self.assertTrue(self.built[1].stopped)
+        self.assertEqual(len(self.built), 2)
 
     def test_detection_off_starts_nothing(self):
         src = self._source(_settings(browser_url_detection=False))

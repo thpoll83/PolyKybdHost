@@ -111,6 +111,26 @@ class AgentKeysCoreTest(unittest.TestCase):
         self.assertEqual([a.session_id for a in core.agents.agents()], ["local"])
         self.assertIsNone(core._cloud_relay)
 
+    def test_removing_a_cloud_agent_removes_it_on_the_relay(self):
+        from polyhost.services.agents import cloud_relay
+        deleted = []
+        core = self._core(31)          # built first: start-up also reads the channel
+        for p in (mock.patch.object(cloud_relay, "load_channel", lambda path: {"x": 1}),
+                  mock.patch.object(cloud_relay, "delete_session",
+                                    lambda ch, k: deleted.append(k) or True)):
+            p.start()
+            self.addCleanup(p.stop)
+        core.agents.report("claude-code", "c" * 32, "done", machine="cloud")
+        core.agents.report("claude-code", "d" * 32, "working", machine="cloud")
+        core.agents.report("codex", "local", "idle")
+        core.agents.report("codex", "busy", "working")
+        self.assertEqual(core.agents_forget("claude-code", "d" * 32), (True, "ok"))
+        self.assertEqual(deleted, ["d" * 32])
+        ok, n = core.agents_forget_inactive()
+        self.assertEqual((ok, n), (True, 2))                    # the done cloud one, the idle local one
+        self.assertEqual(deleted, ["d" * 32, "c" * 32])          # only cloud agents go to the relay
+        self.assertEqual([a.session_id for a in core.agents.agents()], ["busy"])
+
     def test_old_firmware_gets_nothing(self):
         core = self._core(30)
         core.agents_report({"vendor": "codex", "session_id": "a", "state": "working"})

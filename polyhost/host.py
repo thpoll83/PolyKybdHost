@@ -550,6 +550,13 @@ class PolyHost(QApplication):
         # cannot freeze the tray while a menu waits for its answer.
         self._menu_fetch = MenuFetcher(self, self.log)
         self.cmdMenu = CommandsSubMenu(self)
+        # A browser extension copied by "Install Browser Extension…" gets the
+        # version of this install (services/browser_extension.py). File copies
+        # only, on a thread; it never raises.
+        import threading
+        from polyhost.services import browser_extension
+        threading.Thread(target=browser_extension.update_if_outdated,
+                         name="browser-extension-update", daemon=True).start()
 
         # Brightness: promoted out of the old "All PolyKybd Commands" list — it is
         # the most-used device control and sat three levels deep.
@@ -2427,6 +2434,11 @@ class PolyHost(QApplication):
         menu.addSeparator()
         self._agents_rows = []
         self._agents_end = menu.addSeparator()
+        # Removing an agent frees its key. Needed most for a deleted cloud session:
+        # it sends no last report (services/agents/cloud_relay.py).
+        self._agents_remove_menu = QMenu(_("Remove Agent"), menu)
+        self._agents_remove_menu.setIcon(get_icon("delete.svg"))
+        menu.addMenu(self._agents_remove_menu)
         add_setup_menu(menu, self.log).setIcon(get_icon("terminal.svg"))
         # The same icons as the forwarder's own Set Up Agent Hooks and Pair entries.
         pair = QAction(get_icon("sync_alt.svg"), _("Pair a Forwarder…"), parent=menu)
@@ -2437,6 +2449,11 @@ class PolyHost(QApplication):
         # noinspection PyUnresolvedReferences
         cloud.triggered.connect(self._show_cloud_sessions)
         menu.addAction(cloud)
+        extension = QAction(get_icon("extension.svg"), _("Install Browser Extension…"),
+                            parent=menu)
+        # noinspection PyUnresolvedReferences
+        extension.triggered.connect(self._show_browser_extension)
+        menu.addAction(extension)
         self._set_agent_rows([])
 
     def _set_agent_rows(self, agents):
@@ -2468,6 +2485,50 @@ class PolyHost(QApplication):
             self._agents_rows.append(act)
         for act in self._agents_rows:
             menu.insertAction(self._agents_end, act)
+        self._set_remove_rows(agents)
+
+    def _set_remove_rows(self, agents):
+        """Remove Agent ▸: one entry per agent (the row's own text), then Remove
+        All Inactive (idle, done and stale agents)."""
+        remove = self._agents_remove_menu
+        remove.clear()
+        remove.setEnabled(bool(agents))
+        for row, agent in zip(self._agents_rows, agents):
+            act = remove.addAction(row.text())
+            act.setData((agent.get("vendor"), agent.get("session_id")))
+            # noinspection PyUnresolvedReferences
+            act.triggered.connect(self._forget_agent_clicked)
+        if agents:
+            remove.addSeparator()
+            inactive = remove.addAction(_("Remove All Inactive"))
+            inactive.setEnabled(any(a.get("state") in ("idle", "done", "stale") for a in agents))
+            # noinspection PyUnresolvedReferences
+            inactive.triggered.connect(self._forget_inactive_clicked)
+
+    def _forget_agent_clicked(self):
+        vendor_id, session_id = self.sender().data()
+
+        def done(ok, msg):
+            if not ok:
+                self.log.info("Could not remove the agent: %s", msg)
+        self._core_click(lambda: self.core.agents_forget(vendor_id, session_id), done)
+
+    def _forget_inactive_clicked(self):
+        def done(ok, msg):
+            if not ok:
+                self.log.info("Could not remove the inactive agents: %s", msg)
+        self._core_click(self.core.agents_forget_inactive, done)
+
+    def _show_browser_extension(self):
+        """Copy the browser extension to a folder for "Load unpacked"
+        (services/browser_extension.py). One dialog at a time."""
+        from polyhost.gui.browser_extension_dialog import BrowserExtensionDialog
+        dialog = getattr(self, "_extension_dialog", None)
+        if dialog is None or not dialog.isVisible():
+            dialog = self._extension_dialog = BrowserExtensionDialog(self.log)
+        dialog.show()
+        dialog.raise_()
+        dialog.activateWindow()
 
     def _apply_agents_menu(self, info):
         """The answer of core.agents_list(): the switch and the agent rows. A

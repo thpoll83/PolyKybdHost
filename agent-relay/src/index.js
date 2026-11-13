@@ -15,6 +15,10 @@
 //   GET    /v1/c/<channel>/state   read token: the current entries
 //   GET    /v1/c/<channel>/ws      read token: WebSocket, snapshot then updates
 //   DELETE /v1/c/<channel>         read token: delete the channel
+//   DELETE /v1/c/<channel>/e/<k>   read token: delete one session (the host's
+//                                  "Remove Agent": a deleted cloud session sends
+//                                  no last report, and a reconnect's snapshot
+//                                  would bring it back for 24 h)
 //
 // Budget (Workers Free: 100,000 Worker and 100,000 Durable Object requests a day,
 // account-wide): every event costs one of each, so each channel is capped below.
@@ -134,7 +138,7 @@ export default {
       return stub.create(body.read_hash, body.write_hash);
     }
 
-    const m = /^\/v1\/c\/([0-9a-f]{32})(\/event|\/state|\/ws)?$/.exec(path);
+    const m = /^\/v1\/c\/([0-9a-f]{32})(\/event|\/state|\/ws|\/e\/[0-9a-f]{32})?$/.exec(path);
     if (!m) return json(404, { ok: false, error: "not found" });
     const token = bearer(request);
     if (!token) return json(401, { ok: false, error: "missing token" });
@@ -162,6 +166,9 @@ export default {
       return stub.fetch(forwarded);
     }
     if (action === "" && request.method === "DELETE") return stub.remove(tokenHash);
+    if (action.startsWith("/e/") && request.method === "DELETE") {
+      return stub.removeEntry(tokenHash, action.slice(3));
+    }
     return json(405, { ok: false, error: "method not allowed" });
   },
 };
@@ -250,6 +257,20 @@ export class Channel extends DurableObject {
     if (!auth) return json(404, { ok: false, error: "no such channel" });
     if (!sameHex(auth.read, tokenHash)) return json(403, { ok: false, error: "bad token" });
     return json(200, { ok: true, entries: await this.entries() });
+  }
+
+  async removeEntry(tokenHash, k) {
+    const auth = await this.auth();
+    if (!auth) return json(404, { ok: false, error: "no such channel" });
+    if (!sameHex(auth.read, tokenHash)) return json(403, { ok: false, error: "bad token" });
+    const existed = (await this.ctx.storage.get("e:" + k)) !== undefined;
+    await this.ctx.storage.delete("e:" + k);
+    // Every connected host removes it too (an empty blob: the relay has no key).
+    const message = JSON.stringify({ type: "event", k, blob: "", ts: Date.now(), ended: true });
+    for (const ws of this.ctx.getWebSockets()) {
+      try { ws.send(message); } catch { /* a closing socket: the host reconnects */ }
+    }
+    return json(200, { ok: true, existed });
   }
 
   async remove(tokenHash) {

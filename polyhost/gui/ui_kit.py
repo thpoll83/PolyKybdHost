@@ -17,8 +17,8 @@ import logging
 from PyQt5.QtCore import QEvent, QObject, QSize, Qt
 from PyQt5.QtGui import QPalette
 from PyQt5.QtWidgets import (QBoxLayout, QDialog, QDialogButtonBox, QFrame, QHBoxLayout,
-                             QLabel, QMainWindow, QPlainTextEdit, QPushButton, QVBoxLayout,
-                             QWidget)
+                             QLabel, QLayout, QMainWindow, QPlainTextEdit, QPushButton,
+                             QVBoxLayout, QWidget)
 
 from polyhost.gui.get_icon import get_icon
 
@@ -167,6 +167,31 @@ class WrapLabel(QLabel):
         self.setMinimumHeight(0)
         h = self.heightForWidth(self.width())
         self.setMinimumHeight(h if h > 0 else old)
+
+
+def fit_height(dialog):
+    """Grow `dialog` to the height its wrapped text needs, and keep it from
+    being made smaller.
+
+    A dialog opens, or adjustSize() sizes it, at a height computed before its
+    WrapLabels measured their text, and minimumSizeHint() keeps that old
+    value. A long translated text (German) then ran under the widget below it.
+    The layout's height for the real width is right once the layouts are
+    invalidated. Call it after the dialog is shown, through
+    QTimer.singleShot(0, ...), when the labels have their width.
+    """
+    lay = dialog.layout()
+    if lay is None:
+        return
+    for child in dialog.findChildren(QLayout):
+        child.invalidate()
+    lay.invalidate()
+    need = lay.totalHeightForWidth(dialog.width()) if lay.hasHeightForWidth() else -1
+    if need <= 0:
+        return
+    dialog.setMinimumHeight(need)
+    if need > dialog.height():
+        dialog.resize(dialog.width(), need)
 
 
 class StatusLabel(QLabel):

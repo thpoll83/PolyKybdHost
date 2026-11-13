@@ -650,6 +650,13 @@ def _cmd_agents(client, args):
                                               "session_id": args.session, "text": args.text})
         return 0
     if args.agents_cmd == "forget":
+        if args.inactive:
+            n = client.call(protocol.M_AGENTS_FORGET_INACTIVE, {})
+            print(f"removed {n} inactive agent(s)")
+            return 0
+        if not args.vendor or not args.session:
+            print("polyctl: give VENDOR and SESSION, or --inactive", file=sys.stderr)
+            return 2
         client.call(protocol.M_AGENTS_FORGET, {"vendor": args.vendor, "session_id": args.session})
         return 0
     if args.agents_cmd == "cloud":
@@ -1696,9 +1703,12 @@ def build_parser():
     p_alb.add_argument("vendor")
     p_alb.add_argument("session")
     p_alb.add_argument("text")
-    p_af = agents_sub.add_parser("forget", help="remove an agent and free its key")
-    p_af.add_argument("vendor")
-    p_af.add_argument("session")
+    p_af = agents_sub.add_parser(
+        "forget", help="remove an agent and free its key (a cloud session: also on the relay)")
+    p_af.add_argument("vendor", nargs="?")
+    p_af.add_argument("session", nargs="?")
+    p_af.add_argument("--inactive", action="store_true",
+                      help="remove every idle, done or stale agent instead of one")
     p_ah = agents_sub.add_parser(
         "hook", help="run from an agent's hook: reads the hook JSON from stdin "
                      "(or as the last argument) and reports it; always exits 0")

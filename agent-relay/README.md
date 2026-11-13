@@ -49,6 +49,7 @@ sends a report only when the session's state changes.
 | `POST /v1/c/<channel>/event` | write token | `{k, blob, ended}`: one report |
 | `GET /v1/c/<channel>/state` | read token | the current reports |
 | `GET /v1/c/<channel>/ws` | read token | WebSocket: a snapshot, then each report |
+| `DELETE /v1/c/<channel>/e/<k>` | read token | delete one session's report; connected hosts get `{k, blob: "", ended: true}` |
 | `DELETE /v1/c/<channel>` | read token | delete the channel |
 
 Tokens go as `Authorization: Bearer <64 hex>`. The relay stores only their

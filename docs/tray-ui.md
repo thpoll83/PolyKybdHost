@@ -363,6 +363,17 @@ and relative links were adjusted to suit a standalone file.
   `QScrollArea` above that cap.
   Pin any width a test depends on: the dialog's starting width comes from the screen.
 
+- ⚠️ **A dialog of cards with `WrapLabel`s opens too short; call
+  `ui_kit.fit_height(dialog)` after it is shown** (`QTimer.singleShot(0, …)` in
+  `showEvent`, and after an `adjustSize()`). The dialog's height and its
+  `minimumSizeHint()` are computed before the labels measured their wrapped text,
+  and stay at that value. In German the step text of "Install Browser Extension…"
+  ran under its button, and the setup-script box of "Connect Cloud Sessions…"
+  covered the note below it. `fit_height` invalidates the layouts, takes
+  `totalHeightForWidth(width)`, and sets it as the minimum height.
+  `test_the_long_step_text_does_not_overlap_its_button` pins it. An offscreen
+  test screen is 800×600, and `show()` caps a window at two thirds of it.
+
 - **Brightness, Idle Display, Keycap Script and Keycap Size are tile grids where Qt
   draws the tray menu** (`gui/menu_tiles.py`, previews in `gui/keycap_tiles.py`):
   Windows, and Linux without a StatusNotifier host. A KDE or AppIndicator tray

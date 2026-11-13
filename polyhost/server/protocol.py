@@ -80,7 +80,8 @@ M_TAP_TERMS_GET = "tap_terms.get"  # {} -> (ok, {"tapping_term", "flow_tap_term"
 M_AGENTS_LIST = "agents.list"      # {} -> {"agents": [...], "page", "pages", "enabled", "active"}
 M_AGENTS_REPORT = "agents.report"  # {"vendor","session_id","state"|null,"event","headline","cwd","pid",...} -> agent|null
 M_AGENTS_LABEL = "agents.label"    # {"vendor","session_id","text"} -> "ok"
-M_AGENTS_FORGET = "agents.forget"  # {"vendor","session_id"} -> "ok"
+M_AGENTS_FORGET = "agents.forget"  # {"vendor","session_id"} -> "ok" (a cloud agent: also on the relay)
+M_AGENTS_FORGET_INACTIVE = "agents.forget_inactive"  # {} -> how many idle/done/stale agents were removed
 M_AGENTS_RAISE = "agents.raise"    # {"vendor","session_id"} -> "raising"
 # Claude Code cloud sessions through the relay (services/agents/cloud_relay.py).
 # CONNECT and DISCONNECT talk to the relay over the network.

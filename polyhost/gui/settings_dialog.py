@@ -7,12 +7,12 @@ from PyQt5.QtCore import QRectF, QSize, Qt
 from PyQt5.QtGui import QColor, QCursor, QGuiApplication, QPainter, QPalette, QPen
 from PyQt5.QtWidgets import (
     QAbstractScrollArea, QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog, QFrame,
-    QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem, QScrollArea, QSpinBox,
+    QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem, QPushButton, QScrollArea, QSpinBox,
     QToolButton, QVBoxLayout, QWidget,
 )
 
 from polyhost import i18n
-from polyhost.gui.ui_kit import style_button_box, px
+from polyhost.gui.ui_kit import set_button_icon, style_button_box, px
 from polyhost.i18n import _, _f, N_
 from polyhost.services.game_assets import readers as game_asset_readers
 from polyhost.services.os_theme import THEME_AUTO, THEME_DARK, THEME_LIGHT
@@ -925,6 +925,8 @@ class SettingsDialog(QDialog):
         extra = None
         if full_key in FOLDER_KEYS and isinstance(editor, QLineEdit):
             extra = self._browse_button(full_key, editor)
+        elif full_key == "browser_report_token" and isinstance(editor, QLineEdit):
+            extra = self._token_button(editor)
         self.edit_widgets[full_key] = editor
         note = ""
         if self._flag_source and full_key in ("developer_mode", "log_detail"):
@@ -1012,6 +1014,22 @@ class SettingsDialog(QDialog):
         button.setToolTip(_("Browse…"))
         button.setAccessibleName(_("Browse…"))
         button.clicked.connect(lambda: self._browse_folder(full_key, line_edit))
+        return button
+
+    def _token_button(self, line_edit):
+        """Fill in a new random token and copy it: the extension's Options take
+        the same one."""
+        button = set_button_icon(QPushButton(_("Generate")), "reload")
+        button.setToolTip(_("Fills in a new random token and copies it. Paste it into "
+                            "the browser extension's Options and save both."))
+
+        def generate():
+            import secrets
+            token = secrets.token_urlsafe(24)
+            line_edit.setText(token)
+            QApplication.clipboard().setText(token)
+        # noinspection PyUnresolvedReferences
+        button.clicked.connect(generate)
         return button
 
     def _browse_folder(self, full_key, line_edit):

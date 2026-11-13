@@ -200,6 +200,11 @@ still cloud sessions.
   channel on the relay and the local file, and removes the cloud sessions from the
   keys. Remove the environment variable in claude.ai too: the hooks there then
   fail without a message.
+- A cloud session deleted in claude.ai sends no last report, so its key stays.
+  Remove it with tray > AI Agents > Remove Agent (see *Removing agents*). For a
+  cloud session the host also deletes its report on the relay, so it does not
+  return at the next connect, and every other computer on the same channel
+  removes it too.
 - The relay runs on the Workers Free plan: 2,000 reports per channel a day.
 
 ## Claude Code (tested format)
@@ -276,6 +281,24 @@ tested with the keyboard yet.
 Antigravity (`.agents/hooks.json` or `~/.gemini/config/hooks.json`) and Cursor
 (`.cursor/hooks.json` or `~/.cursor/hooks.json`) have no installer: for each event
 in the table above run `polyctl agents hook <vendor>` with the hook JSON on stdin.
+
+## Removing agents
+
+An agent key stays until its session reports that it ended. A session that ends
+without that report (a closed terminal, a crashed agent, a cloud session deleted
+in claude.ai) stays on its key, as `stale` after a while or as its last state.
+
+- Tray > AI Agents > Remove Agent lists every agent. Click one to remove it from
+  the keys.
+- Remove Agent > Remove All Inactive removes every agent that is `idle`, `done`
+  or `stale`. Agents that are `working` or `waiting` stay.
+- `polyctl agents forget <vendor> <session_id>` removes one agent,
+  `polyctl agents forget --inactive` the inactive ones.
+
+A removed agent comes back when its session reports again. For a cloud agent the
+host also deletes the session's report on the relay (`DELETE
+/v1/c/<channel>/e/<k>`); without that, the relay would send it again at the next
+connect.
 
 ## Check that it works
 

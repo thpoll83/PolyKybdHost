@@ -230,6 +230,7 @@ class ControlServer(MpcListenerServer):
                 params["vendor"], params["session_id"], params.get("text", ""))),
             p.M_AGENTS_FORGET: lambda conn, params: _unwrap(c.agents_forget(
                 params["vendor"], params["session_id"])),
+            p.M_AGENTS_FORGET_INACTIVE: lambda conn, params: _unwrap(c.agents_forget_inactive()),
             p.M_AGENTS_RAISE: lambda conn, params: _unwrap(c.agents_raise(
                 params["vendor"], params["session_id"])),
             p.M_AGENTS_CLOUD_STATUS: lambda conn, params: c.agents_cloud_status(),
