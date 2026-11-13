@@ -114,15 +114,15 @@ bindings:
   - { key: RIGHT, mods: [ALT, SHIFT], icon: extendright.png, label: "Extend selection to next event" }
   - { key: LEFT, mods: [CTRL], icon: shorter.png, label: "Shorter by grid" }
   - { key: RIGHT, mods: [CTRL], icon: longer.png, label: "Longer by grid" }
-  - { key: LEFT, mods: [CTRL, ALT, SHIFT], icon: shorter.png, label: "Shorter, fine" }
-  - { key: RIGHT, mods: [CTRL, ALT, SHIFT], icon: longer.png, label: "Longer, fine" }
+  - { key: LEFT, mods: [CTRL, ALT, SHIFT], icon: shorterfine.png, label: "Shorter, fine" }
+  - { key: RIGHT, mods: [CTRL, ALT, SHIFT], icon: longerfine.png, label: "Longer, fine" }
   - { key: UP, mods: [], icon: pitchup.png, label: "Transpose up a semitone" }
   - { key: DOWN, mods: [], icon: pitchdown.png, label: "Transpose down a semitone" }
   - { key: UP, mods: [SHIFT], icon: octup.png, label: "Transpose up an octave" }
   - { key: DOWN, mods: [SHIFT], icon: octdown.png, label: "Transpose down an octave" }
-  - { key: UP, mods: [ALT], icon: gainup.png, label: "Gain +6 dB" }
-  - { key: DOWN, mods: [ALT], icon: gaindown.png, label: "Gain -6 dB" }
-  - { key: UP, mods: [ALT, SHIFT], icon: gainup.png, label: "Gain +1 dB" }
-  - { key: DOWN, mods: [ALT, SHIFT], icon: gaindown.png, label: "Gain -1 dB" }
+  - { key: UP, mods: [ALT], icon: gainup6.png, label: "Gain +6 dB" }
+  - { key: DOWN, mods: [ALT], icon: gaindown6.png, label: "Gain -6 dB" }
+  - { key: UP, mods: [ALT, SHIFT], icon: gainup1.png, label: "Gain +1 dB" }
+  - { key: DOWN, mods: [ALT, SHIFT], icon: gaindown1.png, label: "Gain -1 dB" }
   - { key: MINUS, mods: [], label: "Zoom out" }
   - { key: MINUS, mods: [CMDCTRL], label: "Zoom out" }

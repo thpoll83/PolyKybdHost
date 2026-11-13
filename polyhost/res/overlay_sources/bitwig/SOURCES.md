@@ -118,6 +118,11 @@ default set.
   Material Symbols `fineleft` (arrow_left), `fineright` (arrow_right),
   `extendleft`/`extendright` (keyboard_double_arrow_left/right), `shorter`
   (keyboard_tab_rtl), `longer` (keyboard_tab).
+- Edit View fine steps, drawn by `fine_variants()` in `fetch_icons.py`:
+  `shorterfine`/`longerfine` are the `shorter` bar with the `fineleft` triangle
+  (mirrored for longer), so a filled triangle means "fine" on every arrow key.
+  `gainup6`/`gaindown6` and `gainup1`/`gaindown1` are the borrowed gain glyphs
+  with the step in dB (Liberation Sans Bold) in the top-right corner.
 - New, Open, Save, Save as, Undo, Cut, Copy, Paste, Select all, Delete and Zoom
   out are drawn by the shared concept renderer.
 

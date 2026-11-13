@@ -57,11 +57,45 @@ FLUENT = {
 }
 
 
+BOLD = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
+
+
+def fine_variants(out: Path) -> int:
+    """Edit View: give the fine and coarse steps of one action different art.
+
+    Shorter/Longer by grid keep the arrow-to-bar glyph. The fine step
+    (1/16 of the grid) draws the same bar with the small filled triangle the
+    fine move keys use (`fineleft`/`fineright`), so the whole set reads
+    "triangle = fine". Gain draws the step in dB, 6 or 1, in the empty
+    top-right corner of the borrowed gain glyph.
+    """
+    from PIL import Image, ImageDraw, ImageFont
+    bar = Image.open(out / "shorter.png").convert("RGBA").crop((10, 25, 16, 72))
+    tri = Image.open(out / "fineleft.png").convert("RGBA").crop((37, 30, 56, 67))
+    img = Image.new("RGBA", (96, 96), (0, 0, 0, 0))
+    img.alpha_composite(bar, (28, 25))
+    img.alpha_composite(tri, (38, 30))
+    img.save(out / "shorterfine.png")
+    img.transpose(Image.Transpose.FLIP_LEFT_RIGHT).save(out / "longerfine.png")
+    font = ImageFont.truetype(BOLD, 40)
+    n = 2
+    for src in ("gainup", "gaindown"):
+        base = Image.open(out / f"{src}.png").convert("RGBA")
+        for step in ("6", "1"):
+            img = base.copy()
+            ImageDraw.Draw(img).text((83, 24), step, fill=(0, 0, 0, 255),
+                                     font=font, anchor="mm")
+            img.save(out / f"{src}{step}.png")
+            n += 1
+    return n
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
     n = icon_fetch.fluent(FLUENT, out)
     n += icon_fetch.borrow(BORROW, out)
+    n += fine_variants(out)
     # The ESC mark: Simple Icons bitwig (CC0-1.0), 1 bit at keycap size.
     program_marks.pictogram_mark(
         out / "bitwig_mark.png",
