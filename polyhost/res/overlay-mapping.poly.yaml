@@ -1601,23 +1601,57 @@ minecraft:
 "minecraft*":
   title: '^Minecraft\*? \d'
   overlay: [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
-# Windows reports the executable (idea64.exe -> idea64), Linux the launcher or
-# WM_CLASS (idea / jetbrains-idea), macOS the display name ("IntelliJ IDEA").
+# JetBrains IDEs. Windows reports the executable (idea64.exe -> idea64), Linux
+# the launcher or WM_CLASS (idea / jetbrains-idea), macOS the display name
+# ("IntelliJ IDEA"). The names are also the host's CONTEXT_REPORTERS list
+# (handler/browser_url.py): the PolyKybd plugin (jetbrains-plugin/) reports
+# `jetbrains://<window>[/running|/paused]`. Routes, first match wins: the
+# Terminal tool window, then a paused debug session (the debugger set), then
+# the Project tool window, then any other report (the editor set: the fallback
+# set without the keys that only work while paused). With no plugin, or a stale
+# report, the full set below applies. `layer: false` makes a route replace the
+# fallback. Sources: overlay_sources/jetbrains/ (bindings_*.yaml, SOURCES.md).
 idea64,pycharm64,clion64,webstorm64,goland64,rider64,phpstorm64,rubymine64,datagrip64,rustrover64,studio64,jetbrains_client,idea,pycharm,clion,webstorm,goland,rider,phpstorm,rubymine,datagrip,rustrover,jetbrains-idea,jetbrains-idea-ce,jetbrains-pycharm,jetbrains-pycharm-ce,jetbrains-clion,jetbrains-webstorm,jetbrains-goland,jetbrains-rider,jetbrains-phpstorm,jetbrains-rubymine,jetbrains-datagrip,jetbrains-rustrover,jetbrains-studio,intellij idea,intellij idea ce,intellij idea ultimate,pycharm ce,pycharm professional,android studio:
   overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png, jetbrains_template.extra.mods.png]
+  layer: false
+  urls-contains:
+    "jetbrains://terminal": { overlay: [jetbrains_terminal_template.mods.png, jetbrains_terminal_template.combo.mods.png] }
+    "/paused": { overlay: [jetbrains_debug_template.mods.png, jetbrains_debug_template.combo.mods.png, jetbrains_debug_template.extra.mods.png] }
+    "jetbrains://project": { overlay: [jetbrains_project_template.mods.png, jetbrains_project_template.combo.mods.png, jetbrains_project_template.extra.mods.png] }
+    "jetbrains://": { overlay: [jetbrains_editor_template.mods.png, jetbrains_editor_template.combo.mods.png, jetbrains_editor_template.extra.mods.png] }
   os:
     macos:
-      overlay: [jetbrains_mac_template.mods.png, jetbrains_mac_template.combo.mods.png,
-                jetbrains_mac_template.extra.mods.png, jetbrains_mac_template.gui.mods.png]
+      overlay: [jetbrains_mac_template.mods.png, jetbrains_mac_template.combo.mods.png, jetbrains_mac_template.extra.mods.png, jetbrains_mac_template.gui.mods.png]
+      layer: false
+      urls-contains:
+        "jetbrains://terminal": { overlay: [jetbrains_terminal_mac_template.mods.png, jetbrains_terminal_mac_template.combo.mods.png, jetbrains_terminal_mac_template.extra.mods.png] }
+        "/paused": { overlay: [jetbrains_debug_mac_template.mods.png, jetbrains_debug_mac_template.combo.mods.png, jetbrains_debug_mac_template.extra.mods.png, jetbrains_debug_mac_template.gui.mods.png] }
+        "jetbrains://project": { overlay: [jetbrains_project_mac_template.mods.png, jetbrains_project_mac_template.combo.mods.png, jetbrains_project_mac_template.extra.mods.png, jetbrains_project_mac_template.gui.mods.png] }
+        "jetbrains://": { overlay: [jetbrains_editor_mac_template.mods.png, jetbrains_editor_mac_template.combo.mods.png, jetbrains_editor_mac_template.extra.mods.png, jetbrains_editor_mac_template.gui.mods.png] }
     linux:
-      overlay: [jetbrains_linux_template.mods.png, jetbrains_linux_template.combo.mods.png,
-                jetbrains_linux_template.extra.mods.png]
+      overlay: [jetbrains_linux_template.mods.png, jetbrains_linux_template.combo.mods.png, jetbrains_linux_template.extra.mods.png]
+      layer: false
+      urls-contains:
+        "jetbrains://terminal": { overlay: [jetbrains_terminal_linux_template.mods.png, jetbrains_terminal_linux_template.combo.mods.png] }
+        "/paused": { overlay: [jetbrains_debug_linux_template.mods.png, jetbrains_debug_linux_template.combo.mods.png, jetbrains_debug_linux_template.extra.mods.png] }
+        "jetbrains://project": { overlay: [jetbrains_project_linux_template.mods.png, jetbrains_project_linux_template.combo.mods.png, jetbrains_project_linux_template.extra.mods.png] }
+        "jetbrains://": { overlay: [jetbrains_editor_linux_template.mods.png, jetbrains_editor_linux_template.combo.mods.png, jetbrains_editor_linux_template.extra.mods.png] }
     linux_gnome:
-      overlay: [jetbrains_gnome_template.mods.png, jetbrains_gnome_template.combo.mods.png,
-                jetbrains_gnome_template.extra.mods.png]
+      overlay: [jetbrains_gnome_template.mods.png, jetbrains_gnome_template.combo.mods.png, jetbrains_gnome_template.extra.mods.png]
+      layer: false
+      urls-contains:
+        "jetbrains://terminal": { overlay: [jetbrains_terminal_linux_template.mods.png, jetbrains_terminal_linux_template.combo.mods.png] }
+        "/paused": { overlay: [jetbrains_debug_gnome_template.mods.png, jetbrains_debug_gnome_template.combo.mods.png, jetbrains_debug_gnome_template.extra.mods.png] }
+        "jetbrains://project": { overlay: [jetbrains_project_linux_template.mods.png, jetbrains_project_linux_template.combo.mods.png, jetbrains_project_linux_template.extra.mods.png] }
+        "jetbrains://": { overlay: [jetbrains_editor_gnome_template.mods.png, jetbrains_editor_gnome_template.combo.mods.png, jetbrains_editor_gnome_template.extra.mods.png] }
     linux_kde:
-      overlay: [jetbrains_kde_template.mods.png, jetbrains_kde_template.combo.mods.png,
-                jetbrains_kde_template.extra.mods.png]
+      overlay: [jetbrains_kde_template.mods.png, jetbrains_kde_template.combo.mods.png, jetbrains_kde_template.extra.mods.png]
+      layer: false
+      urls-contains:
+        "jetbrains://terminal": { overlay: [jetbrains_terminal_kde_template.mods.png, jetbrains_terminal_kde_template.combo.mods.png] }
+        "/paused": { overlay: [jetbrains_debug_kde_template.mods.png, jetbrains_debug_kde_template.combo.mods.png, jetbrains_debug_kde_template.extra.mods.png] }
+        "jetbrains://project": { overlay: [jetbrains_project_linux_template.mods.png, jetbrains_project_linux_template.combo.mods.png, jetbrains_project_linux_template.extra.mods.png] }
+        "jetbrains://": { overlay: [jetbrains_editor_kde_template.mods.png, jetbrains_editor_kde_template.combo.mods.png, jetbrains_editor_kde_template.extra.mods.png] }
 # Eclipse IDE (sources: overlay_sources/eclipse/), the Default key scheme. Linux
 # has its own set because GTK moves Redo to Ctrl+Shift+Z and Occurrences in
 # File to Ctrl+Alt+U. Windows reports eclipse.exe -> `eclipse`, Linux the

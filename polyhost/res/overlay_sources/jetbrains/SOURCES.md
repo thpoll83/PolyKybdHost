@@ -132,3 +132,61 @@ Deliberately NOT added:
 - **Print**: no default chord. **Zoom**: font size is Alt+Shift+. / Alt+Shift+, (already
   drawn); no Ctrl+= zoom.
 - Save/Undo/Redo/Cut/Copy/Paste/Select all/Find/Replace/Close tab were already drawn.
+
+## Mode sets (JetBrains plugin)
+
+The plugin `jetbrains-plugin/` reports `jetbrains://<window>[/running|/paused]`.
+The mapping entry routes four mode sets; without a report the five sets above
+stay the fallback.
+
+| Mode | Spec | Sets | Route |
+|---|---|---|---|
+| Editor (no paused session) | `bindings_editor.yaml` (generated) | 5 keymaps | `jetbrains://` |
+| Debugger paused | `bindings_debug.yaml` (generated) | 5 keymaps | `/paused` |
+| Project tool window | `bindings_project.yaml` | Windows, macOS, Linux | `jetbrains://project` |
+| Terminal tool window | `bindings_terminal.yaml` | Windows, macOS, Linux, KDE | `jetbrains://terminal` |
+
+```bash
+.venv/bin/python polyhost/res/overlay_sources/jetbrains/gen_mode_specs.py
+for m in editor debug project terminal; do
+  .venv/bin/python scripts/generate_app_overlays.py \
+      polyhost/res/overlay_sources/jetbrains/bindings_$m.yaml --preview /tmp/jb_$m
+done
+```
+
+- **Editor and debugger** are derived from `bindings.yaml` by `gen_mode_specs.py`
+  (`--check` compares; `tests/handler/jetbrains_routing_test.py` runs it). The
+  editor set drops the ten actions that only work while the debugger is
+  suspended (Step over/into/out, Smart/Force step into, Force step over, Resume,
+  Evaluate, Run to cursor, Show execution point). The debugger set keeps the
+  debug, run and navigation keys and adds Quick evaluate
+  (`QuickEvaluateExpression`), Force run to cursor (`ForceRunToCursor`),
+  Temporary breakpoint (`ToggleTemporaryLineBreakpoint`), Resume on ⌘⌥R and Rerun
+  on ⌘R (macOS, where ⌘R is Replace only in the editor). Their chords per keymap:
+
+  | Action | $default | macOS | XWin | GNOME, KDE |
+  |---|---|---|---|---|
+  | Quick evaluate | Ctrl+Alt+F8 | ⌘⌥F8 | Ctrl+Alt+8 | Ctrl+Alt+8 |
+  | Force run to cursor | Ctrl+Alt+F9 | ⌘⌥F9 | Ctrl+Alt+9 | Ctrl+Alt+9 |
+  | Evaluate | Alt+F8 | ⌥F8 | Alt+F8 | Alt+Shift+8 |
+  | Run to cursor | Alt+F9 | ⌥F9 | Alt+Shift+9 | Alt+Shift+9 |
+  | Show execution point | Alt+F10 | ⌥F10 | Alt+F10 | Alt+Shift+0 |
+  | Toggle breakpoint | Ctrl+F8 | ⌘F8 | Ctrl+F8 | Ctrl+F8 (KDE Ctrl+8) |
+
+- **Project view** chords are the platform actions the Project view handles:
+  `NewElement`, `RenameElement`, `CopyElement` (F5), `Move` (F6), `$Delete`,
+  `SafeDelete`, `EditSource` (F4), `OpenInRightSplit`, `CompareTwoFiles`,
+  `CollapseAll`, `ExpandAll`, `CopyPaths`, `CopyReference`, `ShowFilePath`
+  (Ctrl+Alt+F12 in $default, Ctrl+Alt+Shift+2 in XWin/GNOME/KDE).
+- **Terminal** actions are from `plugins/terminal/resources/META-INF/plugin.xml`
+  and `plugins/terminal/frontend/resources/intellij.terminal.frontend.xml`:
+  `Terminal.NewTab` (Ctrl+Shift+T, ⌘T), `Terminal.CopySelectedText` and
+  `Terminal.Paste` (Ctrl+C/V in $default, Ctrl+Shift+C/V in XWin, ⌘C/V),
+  `Terminal.ClearBuffer` (⌘K, macOS only), `Terminal.PageUp/PageDown`
+  (Shift+PgUp/PgDn), Find, Close tab (`CloseContent`), Next/Previous tab. With
+  the default "Override IDE shortcuts" most other keys go to the shell, so the
+  set also draws the bash/zsh keys Ctrl+C, Ctrl+D, Ctrl+R and Ctrl+W on macOS
+  and Linux (not Windows, whose shells bind them differently).
+- New icons (in `fetch_icons.py`, "mode sets"): Fluent UI System Icons (MIT)
+  and Material Symbols (Apache-2.0: `delete_forever`, `compare`,
+  `manage_search`). Fetched on 2026-11-13.
