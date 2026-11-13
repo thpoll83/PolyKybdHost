@@ -3723,11 +3723,29 @@ qgis,qgis3,qgis4,org.qgis.qgis,qgis-bin,qgis-ltr-bin,qgis-dev-bin,qgis-qt6-bin,q
 # and the macOS app "Maya" (a trailing release year such as "Maya 2026" is
 # dropped by the matcher); on Linux the process is maya.bin. macOS takes the set
 # with Cmd copies of the File and Edit keys. Not checked on an install.
+# The Maya plug-in (maya-plugin/) reports `maya://<panel>/<selection mode>`; the
+# Graph Editor, Time Editor, UV Editor, Node Editor and Hypershade get their own
+# set (bindings_<panel>.yaml). `layer: false`: a panel set replaces the viewport
+# set, which stays the fallback for other panels and without the plug-in.
 maya,maya.bin:
   overlay: [maya_template.mods.png, maya_template.combo.mods.png]
+  layer: false
+  urls-contains:
+    "maya://graph/": { overlay: [maya_graph_template.mods.png, maya_graph_template.combo.mods.png] }
+    "maya://timeeditor/": { overlay: [maya_timeeditor_template.mods.png, maya_timeeditor_template.combo.mods.png] }
+    "maya://uv/": { overlay: [maya_uv_template.mods.png, maya_uv_template.combo.mods.png] }
+    "maya://node/": { overlay: [maya_node_template.mods.png, maya_node_template.combo.mods.png] }
+    "maya://hypershade/": { overlay: [maya_hypershade_template.mods.png, maya_hypershade_template.combo.mods.png] }
   os:
     macos:
       overlay: [maya_template_mac.mods.png, maya_template_mac.combo.mods.png, maya_template_mac.extra.mods.png]
+      layer: false
+      urls-contains:
+        "maya://graph/": { overlay: [maya_graph_template_mac.mods.png, maya_graph_template_mac.combo.mods.png, maya_graph_template_mac.extra.mods.png] }
+        "maya://timeeditor/": { overlay: [maya_timeeditor_template_mac.mods.png, maya_timeeditor_template_mac.combo.mods.png, maya_timeeditor_template_mac.extra.mods.png] }
+        "maya://uv/": { overlay: [maya_uv_template_mac.mods.png, maya_uv_template_mac.combo.mods.png, maya_uv_template_mac.extra.mods.png] }
+        "maya://node/": { overlay: [maya_node_template_mac.mods.png, maya_node_template_mac.combo.mods.png, maya_node_template_mac.extra.mods.png] }
+        "maya://hypershade/": { overlay: [maya_hypershade_template_mac.mods.png, maya_hypershade_template_mac.combo.mods.png, maya_hypershade_template_mac.extra.mods.png] }
 # Avid Pro Tools, Edit window keys (overlay_sources/protools/). Windows
 # "ProTools.exe" and the macOS app "Pro Tools". The keys without a modifier are
 # the Commands Keyboard Focus keys, which act only while that focus is on (the

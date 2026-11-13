@@ -78,6 +78,42 @@ ICONS = {
     "b_bookmark": "ms:bookmark",
     "b_width": "ms:width",
     "b_close": "ms:close",
+    # --- per-editor sets (bindings_<editor>.yaml, mode reporter)
+    "center_time": "ms:filter_center_focus",
+    "ge_absolute": "ms:show_chart",
+    "ge_stacked": "ms:stacked_line_chart",
+    "ge_normalized": "ms:height",
+    "unlock_channel": "ms:lock_open",
+    "track_solo": "ms:headphones",
+    "clip_export": "ms:output",
+    "clip_import": "ms:input",
+    "audio_import": "ms:audio_file",
+    "clip_split": "ms:call_split",
+    "trim_start": "ms:align_horizontal_left",
+    "trim_end": "ms:align_horizontal_right",
+    "clip_trim": "ms:crop",
+    "clip_scale": "ms:open_in_full",
+    "clip_loop": "ms:all_inclusive",
+    "clip_hold": "ms:pause",
+    "uv_distort": "ms:blur_on",
+    "select_all": "ms:select_all",
+    "uv_layout": "ms:view_quilt",
+    "uv_shell": "ms:shape_line",
+    "node_simple": "ms:crop_square",
+    "node_connected": "ms:view_list",
+    "node_full": "ms:view_agenda",
+    "node_custom": "ms:checklist",
+    "node_label": "ms:label",
+    "zoom_in": "ms:zoom_in",
+    "zoom_out": "ms:zoom_out",
+    "node_delete": "ms:delete",
+    "node_create": "ms:add_box",
+    "swatch_size": "ms:photo_size_select_large",
+    "node_solo": "ms:target",
+    "b_layers": "ms:layers",
+    "b_minus": "ms:remove",
+    "b_track": "ms:view_stream",
+    "b_node": "ms:schema",
     "b_lock": "ms:lock",
     "b_straighten": "ms:straighten",
     "b_sync": "ms:sync",
@@ -149,6 +185,19 @@ BORROW = {
     "cut.png": "cinema4d",
     "copy.png": "cinema4d",
     "paste.png": "cinema4d",
+    # per-editor sets
+    "lock_channel.png": "blender",    # Graph Editor: lock curve channel
+    "easing.png": "blender",          # Graph Editor: auto tangents
+    "mute.png": "blender",            # Time Editor mute
+    "ungroup.png": "blender",
+    "select_invert.png": "blender",
+    "seam.png": "blender",            # UV: cut edges
+    "stitch.png": "blender",          # UV: sew edges
+    "linked_from.png": "blender",     # Node Editor: select upstream
+    "linked_to.png": "blender",       # select downstream
+    "select_linked.png": "blender",   # select upstream and downstream
+    "search.png": "blender",          # attribute search field
+    "pin.png": "blender",             # pin / unpin
 }
 
 # (output, base, badge): ``base`` in the upper left, ``badge`` in the lower right.
@@ -188,6 +237,26 @@ BADGES = [
     ("frame_sel_views.png", "zoomextsel.png", "quadview.png"),
     ("bm_frame.png", "b_bookmark.png", "b_width.png"),
     ("bm_unframe.png", "b_bookmark.png", "b_close.png"),
+    # per-editor sets
+    ("time_to_key.png", "key_insert.png", "snap.png"),
+    ("track_mute.png", "b_track.png", "mute.png"),
+    ("layer_additive.png", "b_layers.png", "b_plus.png"),
+    ("layer_override.png", "b_layers.png", "b_convert.png"),
+    ("anim_add.png", "set_animation.png", "b_plus.png"),
+    ("pose_add.png", "rigdisplay.png", "b_plus.png"),
+    ("scale_start.png", "trim_start.png", "scale.png"),
+    ("scale_end.png", "trim_end.png", "scale.png"),
+    ("checker_up.png", "b_grid.png", "b_plus.png"),
+    ("checker_down.png", "b_grid.png", "b_minus.png"),
+    ("graph_remove.png", "b_node.png", "b_close.png"),
+    ("graph_remove_unsel.png", "select_invert.png", "b_close.png"),
+    ("graph_remove_up.png", "linked_from.png", "b_close.png"),
+    ("graph_remove_down.png", "linked_to.png", "b_close.png"),
+    ("regraph_up.png", "linked_from.png", "b_sync.png"),
+    ("regraph_down.png", "linked_to.png", "b_sync.png"),
+    ("regraph_both.png", "select_linked.png", "b_sync.png"),
+    ("node_unsolo.png", "node_solo.png", "b_close.png"),
+    ("node_resolo.png", "node_solo.png", "b_history.png"),
 ]
 
 # (output, base, forward): ``base`` over a heavy arrow.
@@ -196,6 +265,8 @@ ARROWS = [
     ("bm_prev.png", "b_bookmark.png", False),
     ("bm_range_next.png", "bm_frame.png", True),
     ("bm_range_prev.png", "bm_frame.png", False),
+    ("keys_right.png", "key_insert.png", True),     # Graph Editor: move keys right
+    ("keys_left.png", "key_insert.png", False),
 ]
 
 MAYA_ICON_URL = ("https://raw.githubusercontent.com/simple-icons/simple-icons/"

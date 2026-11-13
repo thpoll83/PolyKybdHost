@@ -1,0 +1,86 @@
+# Autodesk Maya shortcut overlay for PolyKybd: UV Editor. See SOURCES.md.
+#
+# Loaded only while the Maya mode reporter (maya-plugin/) reports
+# `maya://uv/...`, so these keys replace the viewport set (bindings.yaml).
+# Source: Maya 2026 help, UV Editor hotkeys, https://help.autodesk.com/cloudhelp/2026/ENU/Maya-KeyboardShortcuts/files/GUID-0AFB7E06-7F51-4D4D-A3DD-E0221CDF73AB.htm
+# Only keys the page lists for this editor, plus the File, Undo and menu keys
+# that act everywhere in Maya. macOS adds the Cmd copies of the File keys and
+# of Undo / Redo, as in bindings.yaml.
+#
+# Regenerate:
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/maya/bindings_uv.yaml --preview /tmp/maya_preview
+app: maya
+match: [maya, maya.bin]
+output: maya_uv_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+program_icon: maya.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- UV Editor hotkeys ---
+  - { key: "4", mods: [], icon: wireframe.png, label: "Wireframe" }
+  - { key: "5", mods: [], icon: shaded.png, label: "Shaded" }
+  - { key: "6", mods: [], icon: textured.png, label: "Show texture image" }
+  - { key: "7", mods: [], icon: uv_distort.png, label: "UV distortion display" }
+  - { key: A, mods: [CTRL, SHIFT], icon: select_all.png, label: "Select all active components" }
+  - { key: I, mods: [CTRL, SHIFT], icon: select_invert.png, label: "Invert selection" }
+  # "Ctrl + < or >": < and > are Shift+, and Shift+. on a US layout.
+  - { key: ",", mods: [CTRL, SHIFT], icon: shrink.png, label: "Shrink selection" }
+  - { key: ".", mods: [CTRL, SHIFT], icon: grow.png, label: "Grow selection" }
+  - { key: C, mods: [CTRL], icon: copy.png, label: "Copy face UVs" }
+  - { key: V, mods: [CTRL], icon: paste.png, label: "Paste face UVs" }
+  - { key: L, mods: [CTRL], icon: uv_layout.png, label: "Layout" }
+  - { key: U, mods: [CTRL], icon: uv_unwrap.png, label: "Unfold" }
+  - { key: X, mods: [CTRL, SHIFT], icon: uv_shell.png, label: "Create UV shell" }
+  - { key: X, mods: [SHIFT], icon: seam.png, label: "Cut edges" }
+  - { key: S, mods: [SHIFT], icon: stitch.png, label: "Sew edges" }
+  - { key: Q, mods: [], icon: smartselect.png, label: "Select Tool" }
+  - { key: W, mods: [], icon: move.png, label: "Move Tool" }
+  - { key: E, mods: [], icon: rotate.png, label: "Rotate Tool" }
+  - { key: R, mods: [], icon: scale.png, label: "Scale Tool" }
+  - { key: A, mods: [], icon: frame_all.png, label: "Frame all UV shells" }
+  - { key: F, mods: [], icon: zoomextsel.png, label: "Frame selected" }
+  - { key: UP, mods: [CTRL], icon: checker_up.png, label: "Checker map resolution up" }
+  - { key: DOWN, mods: [CTRL], icon: checker_down.png, label: "Checker map resolution down" }
+
+  # --- selection (All Maya Hotkeys; they act in the UV Editor too) ---
+  - { key: F8, mods: [], icon: edit_mode.png, label: "Object / component mode" }
+  - { key: F9, mods: [], icon: sel_vert.png, label: "Select vertex" }
+  - { key: F10, mods: [], icon: sel_edge.png, label: "Select edge" }
+  - { key: F11, mods: [], icon: sel_face.png, label: "Select face" }
+  - { key: F12, mods: [], icon: uv_unwrap.png, label: "Select UV" }
+
+  # --- everywhere in Maya (All Maya Hotkeys: File, Edit, menus) ---
+  - { key: N, mods: [CTRL], icon: new.png, label: "New scene" }
+  - { key: O, mods: [CTRL], icon: open.png, label: "Open scene" }
+  - { key: S, mods: [CTRL], icon: save.png, label: "Save scene" }
+  - { key: S, mods: [CTRL, SHIFT], icon: saveas.png, label: "Save scene as" }
+  - { key: Q, mods: [CTRL], icon: quit.png, label: "Exit" }
+  - { key: Z, mods: [CTRL], icon: undo.png, label: Undo }
+  - { key: Y, mods: [CTRL], icon: redo.png, label: Redo }
+  - { key: SPACE, mods: [], icon: space_hotbox.png, mode: alpha, region: [72, 40], label: "Hotbox (hold); single / multi-pane (tap)" }
+  - { key: SPACE, mods: [CTRL], icon: fullpanels.png, label: "Full-screen panels" }
+  - { key: A, mods: [CTRL], icon: attributes.png, label: "Attribute Editor / Channel Box" }
+  - { key: F1, mods: [], icon: help.png, label: "Maya Help" }
+  - { key: F2, mods: [], icon: set_modeling.png, label: "Modeling menu set" }
+  - { key: F3, mods: [], icon: set_rigging.png, label: "Rigging menu set" }
+  - { key: F4, mods: [], icon: set_animation.png, label: "Animation menu set" }
+  - { key: F6, mods: [], icon: set_rendering.png, label: "Rendering menu set" }
+  - { key: N, mods: [GUI], icon: new.png, label: "New scene", only: [macos] }
+  - { key: O, mods: [GUI], icon: open.png, label: "Open scene", only: [macos] }
+  - { key: S, mods: [GUI], icon: save.png, label: "Save scene", only: [macos] }
+  - { key: S, mods: [GUI, SHIFT], icon: saveas.png, label: "Save scene as", only: [macos] }
+  - { key: Q, mods: [GUI], icon: quit.png, label: "Exit", only: [macos] }
+  - { key: Z, mods: [GUI], icon: undo.png, label: Undo, only: [macos] }
+  - { key: Y, mods: [GUI], icon: redo.png, label: Redo, only: [macos] }

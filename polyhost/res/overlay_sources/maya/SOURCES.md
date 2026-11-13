@@ -122,12 +122,66 @@ GPL-3.0-compatible.
 `tests/handler/maya_routing_test.py` pins the routes and that only the macOS
 set has Cmd keys.
 
+## Per-editor sets (Maya plug-in)
+
+Five more specs, loaded only while the Maya plug-in (`maya-plugin/`) reports
+that panel: `bindings_graph.yaml`, `bindings_timeeditor.yaml`,
+`bindings_uv.yaml`, `bindings_node.yaml`, `bindings_hypershade.yaml`
+(outputs `maya_<panel>_template.*` and `maya_<panel>_template_mac.*`). Each
+set has the keys the source lists for that editor, plus the keys that act
+everywhere (File, Undo / Redo, Space, Ctrl+Space, Ctrl+A, F1 to F6) and, for
+the Graph Editor and the Time Editor, the playback keys. macOS adds Cmd copies
+of the File keys and of Undo / Redo, as in `bindings.yaml`.
+
+- **Graph Editor and Time Editor:** Maya 2026 help, *Animation hotkeys*
+  (read 2026-11-13), the sections marked [GE] and [TE],
+  <https://help.autodesk.com/cloudhelp/2026/ENU/Maya-KeyboardShortcuts/files/GUID-0639ADA0-EBE5-4703-A874-92C80E4A0516.htm>.
+  The Graph Editor set also has the key-setting keys of the same page (S,
+  Shift+W / E / R, Ctrl+Shift+W / E / R, Alt+I, `.` and `,`).
+- **UV Editor:** Maya 2026 help, *UV Editor hotkeys* (read 2026-11-13),
+  <https://help.autodesk.com/cloudhelp/2026/ENU/Maya-KeyboardShortcuts/files/GUID-0AFB7E06-7F51-4D4D-A3DD-E0221CDF73AB.htm>.
+  "Ctrl + < or >" is drawn on Ctrl+Shift+, and Ctrl+Shift+. (US layout). The
+  selection keys F8 to F12 of *All Maya Hotkeys* are added.
+- **Node Editor and Hypershade:** Maya 2017 help, *Node Editor and Hypershade
+  Hotkeys*,
+  <https://help.autodesk.com/cloudhelp/2017/ENU/Maya/files/GUID-8E175070-AB7C-41A2-B0D7-85E842F83C4E.htm>.
+  The Maya 2026 help has no such table; its *Node Editor basics* page
+  (<https://help.autodesk.com/cloudhelp/2026/ENU/Maya-Basics/files/GUID-68E825E4-140B-4B4E-97AC-E1C5E0AA84A0.htm>)
+  still lists 1 to 4, Tab, P and Delete / Backspace with the same meaning. The
+  Hypershade keys @, # and ! are drawn on Shift+2, Shift+3 and Shift+1 (US
+  layout). ⚠️ Not checked in a current Maya.
+
+The Dope Sheet and the Outliner have no table of their own in the help and keep
+the viewport set. Largest set: 50 keys plus the ESC mark (macOS), far below the
+600-image limit.
+
+New icons (`fetch_icons.py`, "per-editor sets" lines): Material Symbols
+(Apache-2.0) `center_time, ge_absolute, ge_stacked, ge_normalized,
+unlock_channel, track_solo, clip_export, clip_import, audio_import, clip_split,
+trim_start, trim_end, clip_trim, clip_scale, clip_loop, clip_hold, uv_distort,
+select_all, uv_layout, uv_shell, node_simple, node_connected, node_full,
+node_custom, node_label, zoom_in, zoom_out, node_delete, node_create,
+swatch_size, node_solo` and the bases `b_layers, b_minus, b_track, b_node`;
+byte copies of `../blender/icons/` (`lock_channel, easing, mute, ungroup,
+select_invert, seam, stitch, linked_from, linked_to, select_linked, search,
+pin`; licence as there); and composites of those (`time_to_key, track_mute,
+layer_*, anim_add, pose_add, scale_start, scale_end, checker_*, graph_remove*,
+regraph_*, node_unsolo, node_resolo, keys_left, keys_right`).
+
+Routing: `maya://<panel>/` in the `urls-contains` of the `maya,maya.bin`
+entry and of its `os: macos` branch, with `layer: false`.
+`tests/handler/maya_mode_routing_test.py` pins it.
+
 ## Regenerate
 
 ```bash
 PYTHONPATH=. python polyhost/res/overlay_sources/maya/fetch_icons.py
 python scripts/generate_app_overlays.py \
     polyhost/res/overlay_sources/maya/bindings.yaml --preview /tmp/maya_preview
+for p in graph timeeditor uv node hypershade; do
+  python scripts/generate_app_overlays.py \
+      polyhost/res/overlay_sources/maya/bindings_$p.yaml --preview /tmp/maya_preview
+done
 ```
 
 `fetch_icons.py` does not redraw a drawn glyph, a composite or the mark whose
