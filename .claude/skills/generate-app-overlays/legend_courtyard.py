@@ -54,7 +54,7 @@ def main():
     a = ap.parse_args()
 
     from PyQt5.QtWidgets import QApplication
-    app = QApplication([])  # noqa: F841  KeycapPreview needs one
+    qt_app = QApplication.instance() or QApplication([])  # KeycapPreview needs one
     import generate_app_overlays as g
     import preview_black as pb
     import lang_demo as ld
@@ -82,7 +82,8 @@ def main():
     hits, imgs = {}, {}
     for sp in specs:
         try:
-            d = yaml.safe_load(open(sp))
+            with open(sp, encoding="utf-8") as fh:
+                d = yaml.safe_load(fh)
         except Exception:
             continue
         if not isinstance(d, dict) or "bindings" not in d:
@@ -151,6 +152,7 @@ def main():
                     fill=(150, 220, 150))
         im.save(a.sheet)
         print(f"{len(rows)} distinct icon(s) still erase pixels top-left -> {a.sheet}")
+    qt_app.quit()
 
 
 if __name__ == "__main__":
