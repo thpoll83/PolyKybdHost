@@ -2494,37 +2494,35 @@ class PolyHost(QApplication):
 
     def _on_agent_open_request(self, payload):
         """A cloud session's key found no window (services/agents/controller.py):
-        offer to open its page. Not modal, and one box at a time: a newer press
-        replaces the question, so no nested event loop dispatches other events."""
+        offer to open its page. The shared message box (gui/message_box.py), shown
+        without exec_(): a modal opened from a bridge event would dispatch the
+        other queued events. A newer press replaces an open question."""
         from PyQt5.QtCore import QUrl
         from PyQt5.QtGui import QDesktopServices
+        from polyhost.gui.message_box import MessageBox
         from polyhost.services.agents.cloud_relay import is_session_url
         url = (payload or {}).get("url") if isinstance(payload, dict) else None
         if not is_session_url(url):
             self.log.info("Agent keys: ignored a request to open %r", url)
             return
         title = str(payload.get("title") or "")[:80]
-        box = getattr(self, "_agent_open_box", None)
-        if box is None:
-            box = self._agent_open_box = QMessageBox(QMessageBox.Question,
-                                                     _("Open Cloud Session"), "")
-            box.setWindowModality(Qt.NonModal)
-            box.setAttribute(Qt.WA_DeleteOnClose, False)
-            self._agent_open_button = box.addButton(_("Open in Browser"),
-                                                    QMessageBox.AcceptRole)
-            box.addButton(QMessageBox.Cancel)
+        old = getattr(self, "_agent_open_box", None)
+        if old is not None:
+            old.close()
+        box = self._agent_open_box = MessageBox(
+            QMessageBox.Question, _("Open Cloud Session"),
+            _f("No browser tab or Claude app window shows the cloud session "
+               "\"{title}\". Open it in the browser?", title=title),
+            QMessageBox.Cancel, informative=url)
+        self._agent_open_button = box.add_button(_("Open in Browser"),
+                                                 QMessageBox.AcceptRole, "open")
+        box.set_default(self._agent_open_button)
 
-            def clicked(button):
-                if button is self._agent_open_button:
-                    target = box.property("session_url")
-                    if is_session_url(target):
-                        QDesktopServices.openUrl(QUrl(target))
-            # noinspection PyUnresolvedReferences
-            box.buttonClicked.connect(clicked)
-        box.setProperty("session_url", url)
-        box.setText(_f("No browser tab or Claude app window shows the cloud session "
-                       "\"{title}\". Open it in the browser?", title=title))
-        box.setInformativeText(url)
+        def finished(_code):
+            if box.clicked_button() is self._agent_open_button:
+                QDesktopServices.openUrl(QUrl(url))
+        # noinspection PyUnresolvedReferences
+        box.finished.connect(finished)
         box.show()
         bring_to_front(box)
 

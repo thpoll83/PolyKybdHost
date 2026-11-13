@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-13 09:13+0000\n"
+"POT-Creation-Date: 2026-11-13 09:16+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -534,8 +534,7 @@ msgstr "停止"
 msgid "Copy to Clipboard"
 msgstr "クリップボードにコピー"
 
-#: polyhost/gui/boot_loop_dialog.py:94 polyhost/gui/cloud_sessions_dialog.py:77
-#: polyhost/gui/error_dialog.py:62
+#: polyhost/gui/boot_loop_dialog.py:94 polyhost/gui/error_dialog.py:62
 #: polyhost/gui/fontpack_inspector_dialog.py:1000
 #: polyhost/gui/hid_fw_up_dialog.py:487 polyhost/gui/log_viewer.py:263
 #: polyhost/gui/mru_inspector_dialog.py:102
@@ -568,87 +567,98 @@ msgstr "停止できませんでした: {error}"
 msgid "<b>Failed:</b> {reason}"
 msgstr "<b>失敗:</b> {reason}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:24
+#: polyhost/gui/cloud_sessions_dialog.py:34
 msgid "Connect Cloud Sessions"
 msgstr "クラウドセッションに接続"
 
-#: polyhost/gui/cloud_sessions_dialog.py:28
+#: polyhost/gui/cloud_sessions_dialog.py:44
+#: polyhost/gui/cloud_sessions_dialog.py:107
+msgid "Reading the state…"
+msgstr "状態を読み取っています…"
+
+#: polyhost/gui/cloud_sessions_dialog.py:45
 msgid "Shows Claude Code sessions that run in the cloud (claude.ai/code, also when the desktop app shows them) on the agent keys. A key press brings the session's browser window or the Claude app to the front. The session's state goes through the PolyKybd relay, encrypted with a key that only this computer and your cloud environment have."
 msgstr "クラウドで実行される Claude Code セッション (claude.ai/code。デスクトップアプリに表示される場合も含む) をエージェントキーに表示します。キーを押すとセッションのブラウザーウィンドウまたは Claude アプリが前面に表示されます。セッションの状態は PolyKybd リレーを経由し、このコンピューターとクラウド環境だけが持つ鍵で暗号化されます。"
 
-#: polyhost/gui/cloud_sessions_dialog.py:39
+#: polyhost/gui/cloud_sessions_dialog.py:54
+msgid "Cloud environment settings"
+msgstr "クラウド環境の設定"
+
+#: polyhost/gui/cloud_sessions_dialog.py:56
 msgid "In claude.ai, open the cloud environment's settings and enter these. Use a personal environment: everyone who uses an environment can read its variables."
 msgstr "claude.ai でクラウド環境の設定を開き、以下を入力してください。個人用の環境を使用してください: 環境を使用するすべての人がその変数を読み取れます。"
 
-#: polyhost/gui/cloud_sessions_dialog.py:44
+#: polyhost/gui/cloud_sessions_dialog.py:70
 msgid "Environment variable"
 msgstr "環境変数"
 
-#: polyhost/gui/cloud_sessions_dialog.py:46
+#: polyhost/gui/cloud_sessions_dialog.py:71
 msgid "Allowed host (when network access is Limited)"
 msgstr "許可するホスト (ネットワークアクセスが Limited の場合)"
 
-#: polyhost/gui/cloud_sessions_dialog.py:48
+#: polyhost/gui/cloud_sessions_dialog.py:72
 msgid "Setup script"
 msgstr "セットアップスクリプト"
 
-#: polyhost/gui/cloud_sessions_dialog.py:60
+#: polyhost/gui/cloud_sessions_dialog.py:76
 #: polyhost/gui/forwarder_pairing.py:26
 msgid "Copy"
 msgstr "コピー"
 
-#: polyhost/gui/cloud_sessions_dialog.py:67
+#: polyhost/gui/cloud_sessions_dialog.py:85
 msgid "Each new cloud session of that environment then shows on a number key."
 msgstr "その後、その環境の新しいクラウドセッションはそれぞれ数字キーに表示されます。"
 
-#: polyhost/gui/cloud_sessions_dialog.py:71
+#: polyhost/gui/cloud_sessions_dialog.py:93
 msgid "Connect"
 msgstr "接続"
 
-#: polyhost/gui/cloud_sessions_dialog.py:74
+#: polyhost/gui/cloud_sessions_dialog.py:94
 msgid "Disconnect…"
 msgstr "切断…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:95
-msgid "Reading the state…"
-msgstr "状態を読み取っています…"
-
-#: polyhost/gui/cloud_sessions_dialog.py:107
+#: polyhost/gui/cloud_sessions_dialog.py:132
 #, python-brace-format
 msgid "The state could not be read: {msg}"
 msgstr "状態を読み取れませんでした: {msg}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:127
+#: polyhost/gui/cloud_sessions_dialog.py:150
 msgid "Not connected. \"Connect\" creates a channel on the relay for this computer."
 msgstr "未接続です。「接続」を押すと、このコンピューター用のチャネルがリレー上に作成されます。"
 
-#: polyhost/gui/cloud_sessions_dialog.py:133
+#: polyhost/gui/cloud_sessions_dialog.py:156
 msgid "The agent keys are off: turn on \"Show on the Number Row\" in the AI Agents menu."
 msgstr "エージェントキーはオフです: AI エージェントメニューで「数字列に表示」をオンにしてください。"
 
-#: polyhost/gui/cloud_sessions_dialog.py:136
+#: polyhost/gui/cloud_sessions_dialog.py:159
 msgid "Connected to the relay."
 msgstr "リレーに接続しました。"
 
-#: polyhost/gui/cloud_sessions_dialog.py:138
+#: polyhost/gui/cloud_sessions_dialog.py:161
 #, python-brace-format
 msgid "The relay cannot be reached; trying again: {error}"
 msgstr "リレーに到達できません。再試行しています: {error}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:140
+#: polyhost/gui/cloud_sessions_dialog.py:164
 msgid "Connecting to the relay…"
 msgstr "リレーに接続しています…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:151
+#: polyhost/gui/cloud_sessions_dialog.py:171
+#: polyhost/gui/crash_alert_dialog.py:208 polyhost/gui/error_dialog.py:74
+#: polyhost/gui/problem_alert_dialog.py:108
+msgid "Copied to the clipboard."
+msgstr "クリップボードにコピーしました。"
+
+#: polyhost/gui/cloud_sessions_dialog.py:175
 msgid "Creating a channel on the relay…"
 msgstr "リレー上にチャネルを作成しています…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:156
-#: polyhost/gui/cloud_sessions_dialog.py:166
+#: polyhost/gui/cloud_sessions_dialog.py:180
+#: polyhost/gui/cloud_sessions_dialog.py:190
 msgid "Disconnect Cloud Sessions"
 msgstr "クラウドセッションを切断"
 
-#: polyhost/gui/cloud_sessions_dialog.py:157
+#: polyhost/gui/cloud_sessions_dialog.py:181
 msgid "Delete the channel on the relay? The cloud sessions leave the agent keys, and the hooks in your cloud environment stop reaching this computer. Remove the environment variable there too."
 msgstr "リレー上のチャネルを削除しますか？クラウドセッションはエージェントキーから消え、クラウド環境のフックはこのコンピューターに届かなくなります。クラウド環境の環境変数も削除してください。"
 
@@ -945,7 +955,7 @@ msgstr "同梱"
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "PolyKybd コマンド (*.poly.cmd)"
 
-#: polyhost/gui/cmd_menu.py:566 polyhost/host.py:2747
+#: polyhost/gui/cmd_menu.py:566 polyhost/host.py:2745
 msgid "Open file"
 msgstr "ファイルを開く"
 
@@ -1128,11 +1138,6 @@ msgstr "ここではクリアしましたが、キーボード側はクリアさ
 #: polyhost/gui/crash_alert_dialog.py:200
 msgid "No crash records held."
 msgstr "クラッシュ記録はありません。"
-
-#: polyhost/gui/crash_alert_dialog.py:208 polyhost/gui/error_dialog.py:74
-#: polyhost/gui/problem_alert_dialog.py:108
-msgid "Copied to the clipboard."
-msgstr "クリップボードにコピーしました。"
 
 #: polyhost/gui/crash_alert_dialog.py:217
 msgid "Opened the problem report with the crash filled in."
@@ -1845,8 +1850,8 @@ msgstr "キーボードのコンピューターで「フォワーダーとペア
 msgid "That is not a pairing code: it has 64 letters and digits (a to f, 0 to 9), in groups of 8."
 msgstr "ペアリングコードではありません。コードは 64 文字の英数字 (a~f、0~9) で、8 文字ずつのグループに分かれています。"
 
-#: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:3358
-#: polyhost/host.py:3399 polyhost/host.py:3431
+#: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:3356
+#: polyhost/host.py:3397 polyhost/host.py:3429
 msgid "Firmware Update"
 msgstr "ファームウェアの更新"
 
@@ -2165,7 +2170,7 @@ msgstr "プレビューデータがありません (同梱版・チェックア�
 msgid "the shipped language table is missing"
 msgstr "同梱の言語テーブルが見つかりません"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:595 polyhost/host.py:3374
+#: polyhost/gui/layout_dialog/keycap_preview.py:595 polyhost/host.py:3372
 msgid "unknown"
 msgstr "不明"
 
@@ -4179,8 +4184,8 @@ msgstr "キーマップの設定"
 msgid "Check for host update..."
 msgstr "ホストの更新を確認..."
 
-#: polyhost/host.py:784 polyhost/host.py:2836 polyhost/host.py:3371
-#: polyhost/host.py:3549
+#: polyhost/host.py:784 polyhost/host.py:2834 polyhost/host.py:3369
+#: polyhost/host.py:3547
 msgid "Check for firmware update…"
 msgstr "ファームウェアの更新を確認…"
 
@@ -4534,104 +4539,104 @@ msgstr "キー {key}: {name}、{state}、{title}"
 msgid "Page {page}, {text}"
 msgstr "ページ {page}、{text}"
 
-#: polyhost/host.py:2510
+#: polyhost/host.py:2513
 msgid "Open Cloud Session"
 msgstr "クラウドセッションを開く"
 
-#: polyhost/host.py:2513
-msgid "Open in Browser"
-msgstr "ブラウザーで開く"
-
-#: polyhost/host.py:2525
+#: polyhost/host.py:2514
 #, python-brace-format
 msgid "No browser tab or Claude app window shows the cloud session \"{title}\". Open it in the browser?"
 msgstr "クラウドセッション「{title}」を表示しているブラウザータブまたは Claude アプリのウィンドウがありません。ブラウザーで開きますか?"
 
-#: polyhost/host.py:2644
+#: polyhost/host.py:2517
+msgid "Open in Browser"
+msgstr "ブラウザーで開く"
+
+#: polyhost/host.py:2642
 msgid "No emoji search dictionaries shipped"
 msgstr "絵文字検索の辞書が同梱されていません"
 
-#: polyhost/host.py:2650
+#: polyhost/host.py:2648
 msgid "Needs newer keyboard firmware"
 msgstr "新しいキーボードファームウェアが必要です"
 
-#: polyhost/host.py:2678
+#: polyhost/host.py:2676
 msgid "Own dictionary file..."
 msgstr "独自の辞書ファイル..."
 
-#: polyhost/host.py:2680
+#: polyhost/host.py:2678
 #, python-brace-format
 msgid "Own dictionary (cannot be used): {name}"
 msgstr "独自の辞書（使用できません）: {name}"
 
-#: polyhost/host.py:2682
+#: polyhost/host.py:2680
 #, python-brace-format
 msgid "Own dictionary: {name}"
 msgstr "独自の辞書: {name}"
 
-#: polyhost/host.py:2699
+#: polyhost/host.py:2697
 msgid "Choose an emoji search dictionary"
 msgstr "絵文字検索辞書を選択"
 
-#: polyhost/host.py:2700
+#: polyhost/host.py:2698
 msgid "Emoji search dictionary (*.plyd)"
 msgstr "絵文字検索辞書 (*.plyd)"
 
-#: polyhost/host.py:2713
+#: polyhost/host.py:2711
 msgid "Emoji search dictionary"
 msgstr "絵文字検索辞書"
 
-#: polyhost/host.py:2714
+#: polyhost/host.py:2712
 #, python-brace-format
 msgid "This file cannot be used: {reason}"
 msgstr "このファイルは使用できません: {reason}"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-#: polyhost/host.py:2746
+#: polyhost/host.py:2744
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "PolyKybd オーバーレイ割り当て (*.poly.yaml)"
 
-#: polyhost/host.py:2834 polyhost/host.py:3330 polyhost/host.py:3478
+#: polyhost/host.py:2832 polyhost/host.py:3328 polyhost/host.py:3476
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "ファームウェアを v{version} に更新…"
 
 #: polyhost/forwarder.py:1003 polyhost/forwarder.py:1014
-#: polyhost/forwarder.py:1020 polyhost/host.py:2854 polyhost/host.py:2975
-#: polyhost/host.py:2979
+#: polyhost/forwarder.py:1020 polyhost/host.py:2852 polyhost/host.py:2973
+#: polyhost/host.py:2977
 msgid "Check for updates..."
 msgstr "更新を確認..."
 
-#: polyhost/host.py:2922
+#: polyhost/host.py:2920
 #, python-brace-format
 msgid "Update to v{version} available"
 msgstr "v{version} への更新が利用可能です"
 
 #: polyhost/forwarder.py:1016 polyhost/forwarder.py:1022
-#: polyhost/forwarder.py:1033 polyhost/host.py:2933 polyhost/host.py:2973
-#: polyhost/host.py:2980 polyhost/host.py:3003
+#: polyhost/forwarder.py:1033 polyhost/host.py:2931 polyhost/host.py:2971
+#: polyhost/host.py:2978 polyhost/host.py:3001
 msgid "PolyKybdHost Update"
 msgstr "PolyKybdHost の更新"
 
-#: polyhost/host.py:2934
+#: polyhost/host.py:2932
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "バージョン {version} が利用可能です。トレイアイコンをクリックして更新してください。"
 
-#: polyhost/forwarder.py:990 polyhost/host.py:2959
+#: polyhost/forwarder.py:990 polyhost/host.py:2957
 msgid "Checking for updates..."
 msgstr "更新を確認しています..."
 
-#: polyhost/host.py:2972
+#: polyhost/host.py:2970
 msgid "No updates available"
 msgstr "利用可能な更新はありません"
 
-#: polyhost/forwarder.py:1017 polyhost/host.py:2974
+#: polyhost/forwarder.py:1017 polyhost/host.py:2972
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "最新バージョン (v{version}) を使用しています。"
 
-#: polyhost/forwarder.py:1023 polyhost/host.py:2981
+#: polyhost/forwarder.py:1023 polyhost/host.py:2979
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -4646,69 +4651,69 @@ msgstr ""
 "\n"
 "詳細は --dev 1 を付けて実行してください。"
 
-#: polyhost/host.py:2986 polyhost/host.py:3403
+#: polyhost/host.py:2984 polyhost/host.py:3401
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "リリース日: {date}"
 
-#: polyhost/forwarder.py:1004 polyhost/host.py:2987
+#: polyhost/forwarder.py:1004 polyhost/host.py:2985
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "バージョン {version} が利用可能です。"
 
-#: polyhost/forwarder.py:1005 polyhost/host.py:2988
+#: polyhost/forwarder.py:1005 polyhost/host.py:2986
 msgid "Update PolyKybdHost"
 msgstr "PolyKybdHost の更新"
 
-#: polyhost/host.py:2992
+#: polyhost/host.py:2990
 msgid "Download, install, and restart now?"
 msgstr "今すぐダウンロード、インストールして再起動しますか?"
 
-#: polyhost/forwarder.py:1032 polyhost/host.py:3003
+#: polyhost/forwarder.py:1032 polyhost/host.py:3001
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "v{version} をダウンロードしています…"
 
-#: polyhost/forwarder.py:1073 polyhost/host.py:3128
+#: polyhost/forwarder.py:1073 polyhost/host.py:3126
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "更新リレーを開始できなかったため、更新は完了していません。詳細はログを参照してください。"
 
-#: polyhost/forwarder.py:1085 polyhost/host.py:3143
+#: polyhost/forwarder.py:1085 polyhost/host.py:3141
 msgid "Update failed"
 msgstr "更新に失敗しました"
 
-#: polyhost/forwarder.py:1085 polyhost/host.py:3143
+#: polyhost/forwarder.py:1085 polyhost/host.py:3141
 msgid "The update did not finish."
 msgstr "更新が完了しませんでした。"
 
-#: polyhost/host.py:3290
+#: polyhost/host.py:3288
 #, python-brace-format
 msgid "{n} keyboard font bundle is out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
 msgid_plural "{n} keyboard font bundles are out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
 msgstr[0] "キーボードのフォントパック {n} 個が古く、自動書き込みはオフです。更新 → キーボードのフォントを更新 を使ってください。"
 
-#: polyhost/host.py:3341
+#: polyhost/host.py:3339
 msgid "PolyKybd Firmware Update"
 msgstr "PolyKybd ファームウェアの更新"
 
-#: polyhost/host.py:3342
+#: polyhost/host.py:3340
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "新しいファームウェア v{version} が利用可能です。トレイアイコンをクリックして更新してください。"
 
-#: polyhost/host.py:3359 polyhost/host.py:3400
+#: polyhost/host.py:3357 polyhost/host.py:3398
 msgid "The keyboard must be connected to update the firmware."
 msgstr "ファームウェアを更新するには、キーボードを接続する必要があります。"
 
-#: polyhost/host.py:3365
+#: polyhost/host.py:3363
 msgid "Checking for firmware update…"
 msgstr "ファームウェアの更新を確認しています…"
 
-#: polyhost/host.py:3379 polyhost/host.py:3389 polyhost/host.py:3392
+#: polyhost/host.py:3377 polyhost/host.py:3387 polyhost/host.py:3390
 msgid "PolyKybd Firmware"
 msgstr "PolyKybd ファームウェア"
 
-#: polyhost/host.py:3380
+#: polyhost/host.py:3378
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -4719,63 +4724,63 @@ msgstr ""
 "\n"
 "お使いのキーボードは v{current} です。通常、これはリリースのビルドが失敗したことを意味します — 修正されるとリリースページにファームウェアが追加されます。"
 
-#: polyhost/host.py:3390
+#: polyhost/host.py:3388
 msgid "No firmware release could be found."
 msgstr "ファームウェアのリリースが見つかりませんでした。"
 
-#: polyhost/host.py:3393
+#: polyhost/host.py:3391
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "最新のファームウェア (v{version}) を使用しています。"
 
-#: polyhost/host.py:3405
+#: polyhost/host.py:3403
 #, python-brace-format
 msgid "Installed: v{version}"
 msgstr "インストール済み: v{version}"
 
-#: polyhost/host.py:3406
+#: polyhost/host.py:3404
 msgid "Installed: unknown (the keyboard did not report its version)"
 msgstr "インストール済み: 不明 (キーボードがバージョンを報告しませんでした)"
 
-#: polyhost/host.py:3407
+#: polyhost/host.py:3405
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "ファームウェア {version} が利用可能です。"
 
-#: polyhost/host.py:3409
+#: polyhost/host.py:3407
 msgid "Both halves update over HID and reboot automatically."
 msgstr "両方の本体が HID 経由で更新され、自動的に再起動します。"
 
-#: polyhost/host.py:3412
+#: polyhost/host.py:3410
 msgid "This update changes your stored keymap once:"
 msgstr "このアップデートは保存されたキーマップを一度だけ変更します:"
 
-#: polyhost/host.py:3414
+#: polyhost/host.py:3412
 msgid "Keys you remapped and your macros stay as they are."
 msgstr "割り当てを変更したキーとマクロはそのまま残ります。"
 
-#: polyhost/host.py:3415
+#: polyhost/host.py:3413
 msgid "Update PolyKybd Firmware"
 msgstr "PolyKybd ファームウェアの更新"
 
-#: polyhost/host.py:3419
+#: polyhost/host.py:3417
 msgid "Download and flash now?"
 msgstr "今すぐダウンロードして書き込みますか?"
 
-#: polyhost/host.py:3430
+#: polyhost/host.py:3428
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "ファームウェア v{version} をダウンロードしています…"
 
-#: polyhost/host.py:3452 polyhost/host.py:3753
+#: polyhost/host.py:3450 polyhost/host.py:3751
 msgid "Cancelling…"
 msgstr "キャンセルしています…"
 
-#: polyhost/host.py:3489
+#: polyhost/host.py:3487
 msgid "Firmware Update Failed"
 msgstr "ファームウェアの更新に失敗しました"
 
-#: polyhost/host.py:3490
+#: polyhost/host.py:3488
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -4786,11 +4791,11 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3596 polyhost/host.py:3638 polyhost/host.py:3646
+#: polyhost/host.py:3594 polyhost/host.py:3636 polyhost/host.py:3644
 msgid "Allow access to the keyboard"
 msgstr "キーボードへのアクセスを許可"
 
-#: polyhost/host.py:3597
+#: polyhost/host.py:3595
 msgid ""
 "On Linux a udev rule lets this app open the keyboard without root: its HID interface, and its serial port for faster firmware and font-pack updates. The rule file is /etc/udev/rules.d/99-hid.rules.\n"
 "\n"
@@ -4800,7 +4805,7 @@ msgstr ""
 "\n"
 "システムからパスワードの入力を求められます (PolicyKit)。その後、キーボードを抜いてもう一度差し込んでください。"
 
-#: polyhost/host.py:3639
+#: polyhost/host.py:3637
 msgid ""
 "The udev rule is installed.\n"
 "\n"
@@ -4810,11 +4815,11 @@ msgstr ""
 "\n"
 "新しい権限を適用するため、キーボードを抜いてもう一度差し込んでください。"
 
-#: polyhost/host.py:3647
+#: polyhost/host.py:3645
 msgid "The udev rule was not installed."
 msgstr "udev ルールをインストールできませんでした。"
 
-#: polyhost/host.py:3648
+#: polyhost/host.py:3646
 #, python-brace-format
 msgid ""
 "{error}\n"
@@ -4827,12 +4832,12 @@ msgstr ""
 "代わりに、次のコマンドをターミナルで実行することもできます:\n"
 "{commands}"
 
-#: polyhost/host.py:3717 polyhost/host.py:3731 polyhost/host.py:3777
-#: polyhost/host.py:3786 polyhost/host.py:3792
+#: polyhost/host.py:3715 polyhost/host.py:3729 polyhost/host.py:3775
+#: polyhost/host.py:3784 polyhost/host.py:3790
 msgid "Install WinCompose"
 msgstr "WinCompose のインストール"
 
-#: polyhost/host.py:3718
+#: polyhost/host.py:3716
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -4842,11 +4847,11 @@ msgstr ""
 "\n"
 "PolyKybd 用にビルドされた WinCompose を GitHub からダウンロードし、インストーラーを起動します (Windows から確認を求められます)。"
 
-#: polyhost/host.py:3731
+#: polyhost/host.py:3729
 msgid "Looking for the latest WinCompose release…"
 msgstr "最新の WinCompose リリースを探しています…"
 
-#: polyhost/host.py:3778
+#: polyhost/host.py:3776
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -4856,7 +4861,7 @@ msgstr ""
 "\n"
 "ブラウザーでリリースページを開きます — そこからセットアップをダウンロードして実行してください。"
 
-#: polyhost/host.py:3787
+#: polyhost/host.py:3785
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -4867,7 +4872,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3793
+#: polyhost/host.py:3791
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -4884,7 +4889,7 @@ msgstr ""
 "保存先:\n"
 "{path}"
 
-#: polyhost/host.py:3801
+#: polyhost/host.py:3799
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "WinCompose のインストーラーを起動しました。インストールが完了して WinCompose が実行されると、PolyKybd は自動的に WinCompose に切り替わります。"
 

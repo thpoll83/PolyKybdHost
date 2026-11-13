@@ -152,13 +152,17 @@ class AgentOpenRequestTest(unittest.TestCase):
             host._on_agent_open_request({"url": url, "title": "Fix the build"})
             box = host._agent_open_box
             self.assertTrue(box.isVisible())
-            self.assertIn("Fix the build", box.text())
-            self.assertEqual(box.informativeText(), url)
+            self.assertIn("Fix the build", box.text.text())
+            self.assertEqual(box.informative.text(), url)
+            box.reject()                                       # Cancel opens nothing
             open_url.assert_not_called()
+            host._on_agent_open_request({"url": url, "title": "One"})
+            first = host._agent_open_box
             host._on_agent_open_request({"url": url + "2", "title": "Other"})
-            self.assertIs(host._agent_open_box, box)          # one box, newest wins
-            box.buttonClicked.emit(host._agent_open_button)
+            self.assertFalse(first.isVisible())                # newest wins
+            host._agent_open_button.click()
             self.assertEqual(open_url.call_args[0][0].toString(), url + "2")
+            self.assertEqual(open_url.call_count, 1)
 
     def test_a_foreign_address_is_not_offered(self):
         host = self._host()
