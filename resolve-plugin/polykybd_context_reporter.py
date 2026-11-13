@@ -279,6 +279,7 @@ def main(namespace):
     try:
         _run_external()
     except KeyboardInterrupt:
+        # Ctrl+C is how the external process is stopped: end without a traceback.
         pass
 
 
