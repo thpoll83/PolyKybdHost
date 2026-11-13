@@ -44,7 +44,7 @@ class Agent:
     machine: str = "local"
     pid: int = 0
     window: str = ""            # an opaque window id the raiser understands
-    url: str = ""               # a cloud session's page (cloud_relay.URL_PREFIX)
+    url: str = ""               # a cloud session's page (cloud_relay.is_session_url)
     source: str = "hook"        # "hook" or "title"
     pending_tool_since: float = 0.0
     waiting_inferred: bool = False

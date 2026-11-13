@@ -281,9 +281,11 @@ class AgentKeysController:
             self.log.info("Agent keys: dictation failed: %s", e)
 
     def _open_cloud(self, agent):
-        from polyhost.services.agents.cloud_relay import URL_PREFIX
+        from polyhost.services.agents.cloud_relay import is_session_url
         key = self.last_press["key"] if self.last_press else None
-        if not agent.url.startswith(URL_PREFIX) or self.open_url is None:
+        # Checked again here: the registry also holds agents restored from
+        # agents.json, which a report did not just validate.
+        if not is_session_url(agent.url) or self.open_url is None:
             self._note(key, "no page known for this cloud session", agent)
             return
         try:

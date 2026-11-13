@@ -139,9 +139,14 @@ class SinkTest(unittest.TestCase):
             self.assertEqual(self.sink.event(k, blob, False), 0)
         self.assertEqual(self.registry.agents(), [])
 
-    def test_only_claude_pages_are_kept(self):
-        self.sink.event(self.k, _blob(self.key, url="https://evil.example/x"), False)
-        self.assertEqual(self.agent().url, "")
+    def test_only_claude_session_pages_are_kept(self):
+        for bad in ("https://evil.example/x", "https://claude.ai/code/../settings",
+                    "https://claude.ai/code/session_a?x=1", "https://claude.ai/code/session_a\n",
+                    "https://claude.ai.evil.example/code/session_a", "http://claude.ai/code/session_a",
+                    "https://claude.ai/code/session_" + "a" * 101, 7):
+            self.sink.event(self.k, _blob(self.key, url=bad, title=repr(bad)), False)
+            self.assertEqual(self.agent().url, "", bad)
+        self.assertTrue(cr.is_session_url(URL))
 
     def test_ended_removes(self):
         self.sink.event(self.k, _blob(self.key), False)

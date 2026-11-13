@@ -23,6 +23,7 @@ import base64
 import json
 import logging
 import os
+import re
 import secrets
 import socket
 import ssl
@@ -41,9 +42,15 @@ FILE_FORMAT = 1
 VENDOR = "claude-code"
 MACHINE = "cloud"
 SURFACE = "web"
-# The only pages a key press opens. The report is authenticated with the channel
-# key, but a wrong URL must still not open an arbitrary site.
+# The only pages a key press opens: a claude.ai session page, as cloud_hook's
+# session_url() builds it. The report is authenticated with the channel key, but
+# a wrong URL must still not open another site, path or query.
 URL_PREFIX = "https://claude.ai/code/"
+_SESSION_URL = re.compile(r"https://claude\.ai/code/session_[A-Za-z0-9_-]{1,100}")
+
+
+def is_session_url(url) -> bool:
+    return isinstance(url, str) and _SESSION_URL.fullmatch(url) is not None
 
 # The relay closes nothing on its side, but a router or proxy drops a TCP
 # connection that is quiet for long. Each ping costs one relay request, so this
@@ -210,7 +217,7 @@ def decode_report(key: bytes, blob: str) -> dict | None:
     if state not in ("working", "waiting", "done", "idle", "ended"):
         return None
     url = report.get("url")
-    url = url if isinstance(url, str) and url.startswith(URL_PREFIX) and len(url) < 200 else ""
+    url = url if is_session_url(url) else ""
     ts = report.get("ts")
     return {"state": state, "url": url,
             "title": str(report.get("title") or "")[:cloud_hook.TITLE_MAX_CHARS],
