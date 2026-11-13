@@ -138,6 +138,26 @@ class HookTest(unittest.TestCase):
         self.assertEqual(out.getvalue(), "")
 
 
+class PostTest(unittest.TestCase):
+    def test_post_names_itself(self):
+        # Cloudflare answers Python's default User-Agent with 403 (error 1010).
+        sent = []
+
+        class Resp:
+            status = 200
+            def __enter__(self): return self
+            def __exit__(self, *exc): return False
+
+        def fake_urlopen(req, timeout):
+            sent.append(req)
+            return Resp()
+        cfg = {"url": "https://r.example", "channel": "a" * 32, "write_token": "b" * 64}
+        with mock.patch.object(ch.urllib.request, "urlopen", fake_urlopen):
+            self.assertEqual(ch.post(cfg, "c" * 32, "blob", False), 200)
+        self.assertEqual(sent[0].get_header("User-agent"), ch.USER_AGENT)
+        self.assertEqual(sent[0].full_url, "https://r.example/v1/c/" + "a" * 32 + "/event")
+
+
 class InstallTest(unittest.TestCase):
     def test_merges_and_is_idempotent(self):
         with tempfile.TemporaryDirectory() as d:
