@@ -102,3 +102,58 @@ Ctrl+= / Ctrl+- zoom were already drawn.
 - **Ctrl+O (Open)**, **Ctrl+W (Close)**, **Ctrl+P (Print)**: no default documented in the
   DR18 reference manual or the cheat sheets above.
 - **Ctrl+F**: still unresolved (Full Screen vs Find) — left off, as before.
+
+## Per-page sets (page reporter, 2026-11)
+
+`pages.yaml` holds one binding list per Resolve page; `gen_pages.py` writes
+`bindings_<page>.yaml` (and `--check` compares). The page reporter
+(`resolve-plugin/`) sends `resolve://<page>`, and the mapping entry routes it to
+`resolve_<page>_template.*`. Without a report, `bindings.yaml` (above) stays.
+
+Source: **Blackmagic's DaVinci Resolve 20 Reference Manual** (official,
+<https://documents.blackmagicdesign.com/UserManuals/DaVinci_Resolve_20_Reference_Manual.pdf>,
+downloaded 2026-11-13). It writes every shortcut in macOS form and says
+Command is Ctrl and Option is Alt on Windows and Linux (Chapter 2, "Keyboard
+Shortcuts"), so one spec serves both. Each binding's `ref:` names the chapter
+it was read from: the "Keyboard Shortcuts in This Chapter" tables (Chapters 35,
+36, 38 and 39) and the menu commands named in the text, for example "Choose
+Color > Nodes > Add Serial Node + CPW (Option-C)". Every modified binding was
+found in the text of its page's part of the manual by a script; the
+unmodified keys (J, K, L, I, O, V, U, E, B, D, X, Q, Y, F9 to F12, the arrow
+keys, Comma and Period) are in those tables.
+
+| page | keys (Windows) | not taken from the manual |
+|---|---|---|
+| all | Save, Undo, Redo, Shift+2 to 8 (pages) | Shift+2 to 8: the manual's page table is an image without text; the values are the ones in "macOS" above (DR18 manual) |
+| media | 26 | Ctrl+I, Ctrl+N, Ctrl+Shift+N are File menu commands documented in the Cut page chapters |
+| cut | 42 | none |
+| edit | 74 (73 on macOS) | Ctrl+B Razor (documented in the Fairlight chapter's Timeline menu), Ctrl+G / Ctrl+Shift+G, Shift+Backspace ripple delete (Windows): as in the fallback set |
+| fusion | 36 | Space: Chapter 35's Spacebar entry |
+| color | 55 | Space: Chapter 35's Spacebar entry |
+| fairlight | 44 | none |
+| deliver | 19 | none |
+
+Choices recorded here:
+
+- **Ctrl+F is Cinema Viewer** on the Media and Fairlight pages (Chapter 17:
+  "Workspace > Viewer Mode > Cinema Viewer (Command-F)"). The fallback set
+  still leaves it off.
+- **Fusion Ctrl+K** is drawn as "Show controls" (Chapter 69, the viewer). In
+  the Spline Editor the same chord sets a keyframe (Chapter 72); the key shows
+  the viewer meaning only.
+- **Color Shift+F** is "Full screen viewer" (Chapter 126); on the Media and
+  Fairlight pages Ctrl+F is the Cinema viewer. Both use `cinema.png`.
+- **Edit Backspace** is "Delete, leave gap" (the macOS Delete key, Chapter 36),
+  **Delete** (Forward Delete) is ripple delete on every platform.
+- The unconfirmed Windows `Ctrl+Shift+R` render queue of the fallback set is not
+  in any page set.
+
+The largest set (edit) has 74 keys, so at most 74 images, far under the 600-image limit.
+
+### Icons of the per-page sets
+
+The page sets reuse the fallback set's icons and add 113 from **Google Material
+Symbols** (Apache-2.0, weight 300), listed by name in `fetch_icons.py`
+(`PAGE_ICONS`), for example `nodeserial.png` <- `arrow_forward`,
+`wincircle.png` <- `circle`, `scopes.png` <- `monitoring`. Apache-2.0 is
+GPL-3.0-compatible. `pagemedia.png` (Shift+2) is `perm_media`.

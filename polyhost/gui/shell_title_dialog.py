@@ -67,7 +67,8 @@ def _read_report_settings():
 def editor_label(editor):
     """The editor's name as the dialog shows it (product names, not translated)."""
     return {editor_plugins.VIM: "Vim", editor_plugins.NEOVIM: "Neovim",
-            editor_plugins.EMACS: "Emacs", editor_plugins.GDB: "GDB"}.get(editor, editor)
+            editor_plugins.EMACS: "Emacs", editor_plugins.GDB: "GDB",
+            editor_plugins.RESOLVE: "DaVinci Resolve"}.get(editor, editor)
 
 
 def editor_state_text(st):
