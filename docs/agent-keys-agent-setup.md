@@ -175,8 +175,9 @@ still cloud sessions.
   tell which session it shows). With neither open, the tray asks whether to open
   the session's page in the browser ("Open Cloud Session"); only "Open in
   Browser" opens it, and only an exact `https://claude.ai/code/session_…`
-  address. Without a tray (the daemon alone) nothing opens. A session in a
-  background browser tab is not found: a window title names only the active tab.
+  address. Without a tray (the daemon alone) nothing opens. Without the browser
+  extension, a session in a background browser tab is not found: a window title
+  names only the active tab.
 - The connection runs while "Show on the Number Row" (`agents_enabled`) is on and
   a channel exists. It sends a ping every 4 minutes and reconnects after 5 s, then
   up to 5 min apart.

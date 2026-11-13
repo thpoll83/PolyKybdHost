@@ -10,7 +10,7 @@ the network, and in client mode every call is an RPC to the daemon.
 """
 from __future__ import annotations
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import (QApplication, QDialog, QDialogButtonBox, QGridLayout, QLabel,
                              QLineEdit, QMessageBox, QPlainTextEdit, QPushButton,
                              QVBoxLayout)
@@ -24,6 +24,10 @@ from polyhost.i18n import _, _f
 # The dialog's width at 100 % (px() scales it): the setup values are long, and
 # the variable field shows their start.
 WIDTH = 600
+# While the dialog is open, the state is read again this often, so "Connecting"
+# turns into "Connected" or the relay's error without a click. No network I/O:
+# the core answers from memory (an RPC in client mode).
+REFRESH_MS = 2000
 
 
 class CloudSessionsDialog(QDialog):
@@ -103,9 +107,23 @@ class CloudSessionsDialog(QDialog):
         self.disconnect_button.clicked.connect(self._disconnect)
         layout.addWidget(buttons)
 
+        self._in_flight = False     # a status request is out
+        self._busy = False          # a connect or disconnect is running
+        self._refresh_timer = QTimer(self)
+        self._refresh_timer.setInterval(REFRESH_MS)
+        # noinspection PyUnresolvedReferences
+        self._refresh_timer.timeout.connect(self._refresh)
         self._show({})
         self._set_state(_("Reading the state…"))
         self._refresh()
+
+    def showEvent(self, event):  # noqa: N802 - Qt name
+        super().showEvent(event)
+        self._refresh_timer.start()
+
+    def hideEvent(self, event):  # noqa: N802 - Qt name
+        self._refresh_timer.stop()
+        super().hideEvent(event)
 
     @staticmethod
     def _heading(text):
@@ -121,12 +139,21 @@ class CloudSessionsDialog(QDialog):
         self.head.icon.setPixmap(headline_icon(kind).pixmap(size, size))
 
     def _refresh(self):
+        if self._in_flight:
+            return          # one request at a time: a slow daemon is not queued up
+        self._in_flight = True
         # agents_cloud_status() answers a dict, not an (ok, value) pair.
         self.call_async(lambda: (True, self.core.agents_cloud_status()), self._status_done)
 
     # ---- results (GUI thread) ------------------------------------------------------
 
     def _status_done(self, ok, info):
+        self._in_flight = False
+        if self._busy:
+            return          # a connect or disconnect is running; its answer comes next
+        self._show_result(ok, info)
+
+    def _show_result(self, ok, info):
         self._show(info if ok and isinstance(info, dict) else {})
         if not ok:
             self._set_state(_f("The state could not be read: {msg}", msg=info), "error")
@@ -171,9 +198,14 @@ class CloudSessionsDialog(QDialog):
         self.status.setText(_("Copied to the clipboard."))
 
     def _connect(self):
+        self._busy = True
         self.connect_button.setEnabled(False)
         self._set_state(_("Creating a channel on the relay…"))
-        self.call_async(self.core.agents_cloud_connect, self._status_done)
+
+        def done(ok, info):
+            self._busy = False
+            self._show_result(ok, info)
+        self.call_async(self.core.agents_cloud_connect, done)
 
     def _disconnect(self):
         answer = message_box.question(
@@ -183,9 +215,11 @@ class CloudSessionsDialog(QDialog):
               "Remove the environment variable there too."))
         if answer != QMessageBox.Yes:
             return
+        self._busy = True
         self.disconnect_button.setEnabled(False)
 
         def done(ok, msg):
+            self._busy = False
             if not ok:
                 message_box.warning(self, _("Disconnect Cloud Sessions"), str(msg))
             self._refresh()

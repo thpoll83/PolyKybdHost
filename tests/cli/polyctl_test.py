@@ -9,6 +9,7 @@ runs against the fake server with the connection injected.
 """
 import contextlib
 import io
+import json
 import os
 import sys
 import threading
@@ -111,6 +112,9 @@ class PolyctlTest(unittest.TestCase):
                                           {protocol.M_AGENTS_CLOUD_DISCONNECT: "deleted"})
         self.assertEqual(rc, 0)
         self.assertIn("relay: deleted", out)
+        rc, out, _err, _server = run_main(["agents", "cloud", "disconnect", "--json"],
+                                          {protocol.M_AGENTS_CLOUD_DISCONNECT: "deleted"})
+        self.assertEqual(json.loads(out), {"disconnected": True, "relay": "deleted"})
 
     def test_lang_set_sends_correct_method_and_params(self):
         rc, out, err, server = run_main(["lang", "set", "deDE"],

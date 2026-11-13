@@ -167,9 +167,13 @@ def raise_cloud(agent, windows=None, app_fallback=True):
     text = (agent.label or agent.headline or "").strip().lower()
     target = None
     if text:
+        # Browser windows only: an editor or a document can have the same words in
+        # its title, and taking it would also skip the app and the question.
+        from polyhost.handler.browser_url import is_browser_app
+        from polyhost.services.agents.viewer import _app_of
         target = next((w for w in windows
-                       if (w.title or "").strip() != CLAUDE_APP_TITLE
-                       and text in (w.title or "").lower()), None)
+                       if text in (w.title or "").lower() and is_browser_app(_app_of(w))),
+                      None)
     if target is None and app_fallback:
         target = next((w for w in windows
                        if (w.title or "").strip() == CLAUDE_APP_TITLE), None)

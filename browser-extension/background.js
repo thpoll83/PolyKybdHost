@@ -196,7 +196,11 @@ async function focusUrl(url) {
   const tabs = (await promised(api.tabs.query.bind(api.tabs), {})) || [];
   const tab = tabs.find((t) => sameUrl(t.url, url));
   if (!tab) return false;
-  await promised(api.tabs.update.bind(api.tabs), tab.id, { active: true });
+  // The tab can close between the query and the update: then it was not found.
+  const updated = await promised(api.tabs.update.bind(api.tabs), tab.id, { active: true });
+  if (!updated) return false;
+  // A refused window focus still counts as found: the host brings the window
+  // forward itself, and the tab is the active one now.
   await promised(api.windows.update.bind(api.windows), tab.windowId, { focused: true });
   return true;
 }

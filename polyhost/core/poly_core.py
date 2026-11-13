@@ -2492,7 +2492,11 @@ class PolyCore(Observable):
             "agent_open_request", {"url": agent.url, "title": agent.display_headline})
         self._agent_limits = limits
         self._cloud_relay = None
+        # Start and stop of the client, with the reads they decide on.
         self._cloud_relay_lock = threading.Lock()
+        # Connect and disconnect (network I/O, up to 15 s): never under the lock
+        # above, which a settings change takes on the caller's thread.
+        self._cloud_channel_lock = threading.Lock()
         self._apply_cloud_relay()
         self.worker.add_periodic("agents", 1.0, self._agents_periodic)
         if self._agent_store is not None:
@@ -2617,13 +2621,15 @@ class PolyCore(Observable):
         lock = getattr(self, "_cloud_relay_lock", None)
         if lock is None:
             return
-        try:
-            channel = cloud_relay.load_channel(self._cloud_relay_path())
-        except Exception as e:  # noqa: BLE001 - an optional feature must not stop the start
-            self.log.warning("Cloud relay: could not read the channel: %s", e)
-            channel = None
-        wanted = channel is not None and bool(self.poly_settings.get("agents_enabled"))
         with lock:
+            # Read under the lock: a decision made before it could start a client
+            # after a later call had turned the keys off or deleted the channel.
+            try:
+                channel = cloud_relay.load_channel(self._cloud_relay_path())
+            except Exception as e:  # noqa: BLE001 - an optional feature must not stop the start
+                self.log.warning("Cloud relay: could not read the channel: %s", e)
+                channel = None
+            wanted = channel is not None and bool(self.poly_settings.get("agents_enabled"))
             client = self._cloud_relay
             if client is not None and (not wanted or client.channel != channel):
                 client.stop()
@@ -2663,13 +2669,14 @@ class PolyCore(Observable):
         tray's click thread), never the HID worker. (ok, status or reason)."""
         from polyhost.services.agents import cloud_relay
         path = self._cloud_relay_path()
-        if cloud_relay.load_channel(path) is None:
-            try:
-                cloud_relay.create_channel(path)
-            except (cloud_relay.RelayError, OSError) as e:
-                return False, str(e)
-            self.log.info("Cloud relay: channel created")
-        self._apply_cloud_relay()
+        with self._cloud_channel_lock:      # two clients: one channel, not two
+            if cloud_relay.load_channel(path) is None:
+                try:
+                    cloud_relay.create_channel(path)
+                except (cloud_relay.RelayError, OSError) as e:
+                    return False, str(e)
+                self.log.info("Cloud relay: channel created")
+            self._apply_cloud_relay()
         return True, self.agents_cloud_status()
 
     def agents_cloud_disconnect(self):
@@ -2677,12 +2684,16 @@ class PolyCore(Observable):
         The cloud environment's hooks then fail quietly. (ok, what happened)."""
         from polyhost.services.agents import cloud_relay
         path = self._cloud_relay_path()
-        channel = cloud_relay.load_channel(path)
-        self._stop_cloud_relay()
-        try:
-            result = cloud_relay.delete_channel(path, channel)
-        except OSError as e:
-            return False, f"could not remove {path}: {e}"
+        with self._cloud_channel_lock:
+            channel = cloud_relay.load_channel(path)
+            self._stop_cloud_relay()
+            try:
+                result = cloud_relay.delete_channel(path, channel)
+            except OSError as e:
+                return False, f"could not remove {path}: {e}"
+            # A settings change between the stop and the delete could have
+            # started the client again; with the file gone this stops it.
+            self._apply_cloud_relay()
         cloud_relay.RelaySink(self.agents, b"").forget_all()
         self.log.info("Cloud relay: disconnected by the user (%s)", result)
         return True, result
@@ -2702,7 +2713,11 @@ class PolyCore(Observable):
         if found:
             time.sleep(0.3)     # the window title follows the new active tab
             result = raise_cloud(agent, app_fallback=False)
-            return True if result is False else result
+            if result is False:
+                # The tab is active, but no window with its title came forward:
+                # not "raised", and no question either (the page is open).
+                return "tab switched; its browser window was not brought forward"
+            return result
         return raise_cloud(agent)
 
     def agents_raise(self, vendor, session_id):

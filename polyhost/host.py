@@ -2514,6 +2514,10 @@ class PolyHost(QApplication):
             _f("No browser tab or Claude app window shows the cloud session "
                "\"{title}\". Open it in the browser?", title=title),
             QMessageBox.Cancel, informative=url)
+        # The title comes from the session report: shown as text, never as rich
+        # text, so it cannot add a link of its own (the box's labels open links).
+        box.text.setTextFormat(Qt.PlainText)
+        box.informative.setTextFormat(Qt.PlainText)
         self._agent_open_button = box.add_button(_("Open in Browser"),
                                                  QMessageBox.AcceptRole, "open")
         box.set_default(self._agent_open_button)

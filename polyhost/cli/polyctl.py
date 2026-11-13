@@ -661,7 +661,10 @@ def _cmd_agents_cloud(client, args):
     """`polyctl agents cloud [status|connect|disconnect]`."""
     if args.cloud_cmd == "disconnect":
         result = client.call(protocol.M_AGENTS_CLOUD_DISCONNECT, {})
-        print(f"cloud sessions disconnected (relay: {result})")
+        if args.json:
+            print(json.dumps({"disconnected": True, "relay": result}))
+        else:
+            print(f"cloud sessions disconnected (relay: {result})")
         return 0
     method = (protocol.M_AGENTS_CLOUD_CONNECT if args.cloud_cmd == "connect"
               else protocol.M_AGENTS_CLOUD_STATUS)

@@ -29,6 +29,7 @@ import re
 import secrets
 import socket
 import ssl
+import tempfile
 import threading
 import time
 import urllib.parse
@@ -101,11 +102,20 @@ def save_channel(path: str, channel: dict) -> None:
     data = {"format": FILE_FORMAT, "url": channel["url"], "channel": channel["channel"],
             "read_token": channel["read_token"], "write_token": channel["write_token"],
             "key": base64.urlsafe_b64encode(channel["key"]).decode().rstrip("=")}
-    tmp = f"{path}.{os.getpid()}.tmp"
-    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w", encoding="utf-8") as fh:
-        json.dump(data, fh)
-    os.replace(tmp, path)
+    # A file of its own per write (mkstemp creates it with mode 0600), so two
+    # writers never share a temporary file.
+    fd, tmp = tempfile.mkstemp(prefix=os.path.basename(path) + ".", suffix=".tmp",
+                               dir=os.path.dirname(path) or ".")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump(data, fh)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass    # already moved or never written
+        raise
 
 
 def remove_channel_file(path: str) -> None:
@@ -315,6 +325,7 @@ class WebSocket:
     def __init__(self, sock):
         self.sock = sock
         self._buf = b""
+        self._parts = []        # the frames of a message not yet complete
 
     @classmethod
     def connect(cls, url: str, path: str, token: str, timeout: float = HTTP_TIMEOUT_S):
@@ -369,39 +380,57 @@ class WebSocket:
             raise RelayError("not an HTTP answer") from None
         return status, rest
 
-    def _read(self, n: int) -> bytes:
-        while len(self._buf) < n:
-            chunk = self.sock.recv(65536)
-            if not chunk:
-                raise ConnectionError("the relay closed the connection")
-            self._buf += chunk
-        out, self._buf = self._buf[:n], self._buf[n:]
-        return out
-
-    def _frame(self):
-        b0, b1 = self._read(2)
-        length = b1 & 0x7F
+    def _parse_frame(self):
+        """(fin, opcode, payload) of the first frame in the buffer, consumed, or
+        None while it has not arrived in full. Nothing is consumed before then,
+        so a timeout in the middle of a frame loses no bytes."""
+        buf = self._buf
+        if len(buf) < 2:
+            return None
+        b0, b1 = buf[0], buf[1]
+        length, pos = b1 & 0x7F, 2
         if length == 126:
-            length = int.from_bytes(self._read(2), "big")
+            if len(buf) < 4:
+                return None
+            length, pos = int.from_bytes(buf[2:4], "big"), 4
         elif length == 127:
-            length = int.from_bytes(self._read(8), "big")
+            if len(buf) < 10:
+                return None
+            length, pos = int.from_bytes(buf[2:10], "big"), 10
         if length > MAX_MESSAGE_BYTES:
             raise ConnectionError("a message from the relay is too large")
-        mask = self._read(4) if b1 & 0x80 else None
-        payload = self._read(length)
+        mask = None
+        if b1 & 0x80:
+            if len(buf) < pos + 4:
+                return None
+            mask, pos = buf[pos:pos + 4], pos + 4
+        if len(buf) < pos + length:
+            return None
+        payload = buf[pos:pos + length]
+        self._buf = buf[pos + length:]
         if mask:
             payload = bytes(c ^ mask[i % 4] for i, c in enumerate(payload))
         return bool(b0 & 0x80), b0 & 0x0F, payload
 
+    def _frame(self):
+        """The next whole frame, reading from the socket as needed."""
+        while True:
+            frame = self._parse_frame()
+            if frame is not None:
+                return frame
+            chunk = self.sock.recv(65536)
+            if not chunk:
+                raise ConnectionError("the relay closed the connection")
+            self._buf += chunk
+
     def recv(self, timeout: float):
         """The next text message, or None when `timeout` passed without one.
-        Raises ConnectionError when the connection ends."""
+        Raises ConnectionError when the connection ends. A message that has
+        only partly arrived stays buffered for the next call."""
         self.sock.settimeout(timeout)
-        parts = []
         try:
             while True:
                 fin, op, payload = self._frame()
-                self.sock.settimeout(HTTP_TIMEOUT_S)    # the rest of a started message
                 if op == 0x8:
                     raise ConnectionError("the relay closed the connection")
                 if op == 0x9:
@@ -410,15 +439,15 @@ class WebSocket:
                 if op == 0xA:
                     continue
                 if op in (0x1, 0x0):
-                    parts.append(payload)
-                    if sum(len(p) for p in parts) > MAX_MESSAGE_BYTES:
+                    self._parts.append(payload)
+                    if sum(len(p) for p in self._parts) > MAX_MESSAGE_BYTES:
                         raise ConnectionError("a message from the relay is too large")
                     if fin:
-                        return b"".join(parts).decode("utf-8", errors="replace")
+                        text = b"".join(self._parts).decode("utf-8", errors="replace")
+                        self._parts = []
+                        return text
                 # Binary frames are not part of the relay's protocol: skipped.
         except (socket.timeout, TimeoutError):
-            if parts:
-                raise ConnectionError("a message from the relay stopped halfway") from None
             return None
         except (OSError, ssl.SSLError) as e:
             raise ConnectionError(str(e)) from e

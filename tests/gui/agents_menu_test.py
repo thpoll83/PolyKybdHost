@@ -164,6 +164,15 @@ class AgentOpenRequestTest(unittest.TestCase):
             self.assertEqual(open_url.call_args[0][0].toString(), url + "2")
             self.assertEqual(open_url.call_count, 1)
 
+    def test_the_title_is_plain_text(self):
+        from PyQt5.QtCore import Qt
+        host = self._host()
+        host._on_agent_open_request({"url": "https://claude.ai/code/session_abc",
+                                     "title": '<a href="https://evil.example/">x</a>'})
+        box = host._agent_open_box
+        self.assertEqual(box.text.textFormat(), Qt.PlainText)
+        self.assertIn('<a href="https://evil.example/">', box.text.text())
+
     def test_a_foreign_address_is_not_offered(self):
         host = self._host()
         host._on_agent_open_request({"url": "https://evil.example/", "title": "x"})

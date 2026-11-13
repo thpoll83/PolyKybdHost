@@ -201,6 +201,20 @@ class WebSocketTest(unittest.TestCase):
         self.assertEqual(json.loads(self.ws.recv(2)), {"type": "snapshot"})
         self.assertEqual(self.read_client_frame(), (0xA, b"hi"))     # the pong
 
+    def test_a_frame_split_by_a_timeout_is_kept(self):
+        whole = self.frame(0x1, b'{"type":"event"}')
+        self.b.sendall(whole[:1])
+        self.assertIsNone(self.ws.recv(0.05))             # one byte of the header
+        self.b.sendall(whole[1:5])
+        self.assertIsNone(self.ws.recv(0.05))             # header, part of the payload
+        self.b.sendall(whole[5:])
+        self.assertEqual(json.loads(self.ws.recv(1)), {"type": "event"})
+        first, second = self.frame(0x1, b'{"a":', fin=False), self.frame(0x0, b"1}")
+        self.b.sendall(first)
+        self.assertIsNone(self.ws.recv(0.05))             # half a message
+        self.b.sendall(second)
+        self.assertEqual(json.loads(self.ws.recv(1)), {"a": 1})
+
     def test_send_and_timeout(self):
         self.assertIsNone(self.ws.recv(0.05))
         self.ws.send_text("ping")
@@ -323,10 +337,16 @@ class KeyPressTest(unittest.TestCase):
 
 
 class RaiseCloudTest(unittest.TestCase):
+    APPS = {"Claude": "claude", "Terminal": "gnome-terminal"}
+
     class Win:
-        def __init__(self, title):
+        def __init__(self, title, app):
             self.title = title
+            self.app = app
             self.activated = False
+
+        def getAppName(self):  # noqa: N802 - pywinctl's name
+            return self.app
 
         def activate(self):
             self.activated = True
@@ -338,7 +358,15 @@ class RaiseCloudTest(unittest.TestCase):
 
     def raise_(self, agent, titles):
         from polyhost.services.agents.raiser import raise_cloud
-        wins = [self.Win(t) for t in titles]
+        def app(title):
+            if title in self.APPS:
+                return self.APPS[title]
+            if "Chrome" in title:
+                return "chrome"
+            if "Firefox" in title:
+                return "firefox"
+            return "code"           # an editor
+        wins = [self.Win(t, app(t)) for t in titles]
         with mock.patch.dict(os.environ, {"DISPLAY": ":0"}):
             result = raise_cloud(agent, wins)
         return result, [w.title for w in wins if w.activated]
@@ -350,6 +378,13 @@ class RaiseCloudTest(unittest.TestCase):
         self.assertEqual(self.raise_(self.agent(), ["Terminal", "Claude"]),
                          (True, ["Claude"]))
         self.assertEqual(self.raise_(self.agent(), ["Terminal"]), (False, []))
+
+    def test_only_a_browser_window_counts(self):
+        # An editor whose title names the session is not the session.
+        self.assertEqual(self.raise_(self.agent(), ["Fix the build - notes.md - Code"]),
+                         (False, []))
+        self.assertEqual(self.raise_(self.agent(), ["Fix the build - notes.md - Code", "Claude"]),
+                         (True, ["Claude"]))
 
     def test_the_folder_name_alone_does_not_match(self):
         # display_headline falls back to the folder: an editor showing that folder
@@ -392,7 +427,9 @@ class CoreRaiseChainTest(unittest.TestCase):
     def test_found_by_the_extension(self):
         # The tab is active now; its window is raised, never the Claude app.
         self.assertEqual(self.run_chain(True, True), (True, [URL], [False]))
-        self.assertEqual(self.run_chain(True, False), (True, [URL], [False]))
+        result, _asked, calls = self.run_chain(True, False)
+        self.assertIn("not brought forward", result)      # not "raised"
+        self.assertEqual(calls, [False])
 
     def test_not_found_or_no_extension_falls_back(self):
         self.assertEqual(self.run_chain(False, False), (False, [URL], [True]))
