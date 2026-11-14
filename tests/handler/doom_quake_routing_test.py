@@ -30,6 +30,10 @@ PORTS = {
     "crispy_doom_template.mods.png": (
         ("crispy-doom", "crispy-doom.exe", "io.github.fabiangreffrath.doom"),
         "DOOM 2: Hell on Earth - Crispy Doom 7.2"),
+    "dsda_doom_template.mods.png": (
+        ("dsda-doom", "dsda-doom.exe"), "dsda-doom 0.30.1"),
+    "woof_template.mods.png": (
+        ("woof", "woof.exe", "io.github.fabiangreffrath.woof"), "Woof! 16.0.0"),
 }
 
 

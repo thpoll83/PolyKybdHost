@@ -3613,6 +3613,16 @@ chocolate-doom,chocolate-doom.exe,org.chocolate_doom.Doom:
 # Doom, read from crispy-doom-7.2. Names not checked on an install.
 crispy-doom,crispy-doom.exe,io.github.fabiangreffrath.Doom:
   overlay: crispy_doom_template.mods.png
+# DSDA-Doom (overlay_sources/chocolate_doom/dsda_doom.yaml). dsda-doom is the
+# target of AddGameExecutable() in prboom2/src/CMakeLists.txt (v0.30.1) and the
+# desktop file's StartupWMClass. Names not checked on an install.
+dsda-doom,dsda-doom.exe:
+  overlay: dsda_doom_template.mods.png
+# Woof! (overlay_sources/chocolate_doom/woof.yaml). `woof` is the executable
+# target in src/CMakeLists.txt (woof_16.0.0); the desktop file is
+# io.github.fabiangreffrath.woof. Names not checked on an install.
+woof,woof.exe,io.github.fabiangreffrath.woof:
+  overlay: woof_template.mods.png
 # SQL Server Management Studio (overlay_sources/ssms/), Windows only. The
 # executable is Ssms.exe (SSMS 18 to 20) or SSMS.exe (SSMS 21 and later); both
 # lowercase to `ssms`. Name not checked on an install.
