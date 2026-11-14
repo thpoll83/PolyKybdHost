@@ -2049,6 +2049,20 @@ windowsterminal,wt:
     "(k9s)": *k9s_tui
     "(k9s": *k9s_tui
     "^k9s": *k9s_tui
+    # Roguelike games that run in the terminal (tests/handler/roguelike_routing_test.py).
+    # None of them writes a title, so each is seen through the shell's title, as
+    # htop is. Dungeon Crawl Stone Soup, console build (overlay_sources/dcss/):
+    # `crawl`, and `crawl-console` for the Windows package's crawl-console.exe.
+    crawl: &dcss_tui
+      title: '^(?:(?:sudo\s+)?(?:crawl|crawl-console)(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:crawl|crawl-console)(?:$|\s|\)))'
+      overlay: dcss_template.mods.png
+    "(crawl)": *dcss_tui
+    "(crawl": *dcss_tui
+    "^crawl": *dcss_tui
+    crawl-console: *dcss_tui
+    "(crawl-console)": *dcss_tui
+    "(crawl-console": *dcss_tui
+    "^crawl-console": *dcss_tui
     # GDB and the common cross builds; the set is the prompt's one-letter commands.
     # The PolyKybd GDB script (gdb-plugin/) writes "gdb ⏸ <program>" at the
     # prompt, which this route matches, and "gdb ▶ <program>" while the program
@@ -3522,6 +3536,14 @@ devilutionx,devilutionx.exe,org.diasurgical.DevilutionX:
 # Flathub app id. Names not checked on an install.
 pyrogenesis,pyrogenesis.exe,0ad,com.play0ad.zeroad:
   overlay: [zeroad_template.mods.png, zeroad_template.combo.mods.png]
+# Dungeon Crawl Stone Soup, the tiles build (overlay_sources/dcss/dcss.yaml).
+# `crawl` is GAME in crawl-ref/source/Makefile (release 0.34.1); the Windows
+# packages name the tiles build crawl-tiles.exe and Debian names it crawl-tiles.
+# The macOS bundle is "Dungeon Crawl Stone Soup - Tiles". The console build runs
+# in a terminal and is routed by the `crawl` title route in &editor_titles.
+# Names not checked on an install.
+crawl,crawl.exe,crawl-tiles,crawl-tiles.exe,dungeon crawl stone soup - tiles:
+  overlay: dcss_template.mods.png
 # League of Legends (overlay_sources/lol/lol.yaml), the in-game window only. The
 # game is `League of Legends.exe` on Windows and the `LeagueofLegends` app on
 # macOS. The lobby client (LeagueClient, LeagueClientUx) is a different process
