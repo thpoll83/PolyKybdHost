@@ -325,6 +325,11 @@ def program(out: Path) -> None:
     bright parts (OWN_ICON_OUTLINE, OWN_ICON_BRIGHT)."""
     import numpy as np
     from PIL import Image
+    if (out / "program.png").exists():
+        # Taken from the game's own art: the committed PNG is the source, and an
+        # owner's edit of it must survive a re-run. Delete the file to redraw it.
+        print("  program.png  <- committed asset (left as-is)")
+        return
     im = Image.open(io.BytesIO(_get(OWN_ICON_URL))).convert("RGBA")
     luma = np.asarray(im.convert("L"))
     alpha = np.asarray(im.getchannel("A"))
