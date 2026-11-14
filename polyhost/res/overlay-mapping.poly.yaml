@@ -3638,6 +3638,13 @@ luanti,minetest,org.luanti.luanti,net.minetest.minetest:
 # app id. Names not checked on an install.
 mindustry,com.github.anuken.mindustry:
   overlay: [mindustry_template.mods.png, mindustry_template.combo.mods.png]
+# Veloren (overlay_sources/veloren/veloren.yaml). `veloren-voxygen` is the game
+# client's binary (voxygen/Cargo.toml, release v0.18.0; the launcher Airshipper
+# starts it too). The window's app id is net.veloren.veloren and its X11
+# instance name `veloren` (voxygen/src/window.rs). Names not checked on an
+# install.
+veloren-voxygen,veloren,net.veloren.veloren:
+  overlay: veloren_template.mods.png
 # Total Commander (overlay_sources/totalcmd/). Windows only. The 11.58.1
 # installers ship TOTALCMD64.EXE (64-bit) and TOTALCMD.EXE (32-bit). Not checked
 # on a running install.
