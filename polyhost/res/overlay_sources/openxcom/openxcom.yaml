@@ -1,0 +1,94 @@
+# OpenXcom (free engine for UFO: Enemy Unknown and X-COM: Terror from the Deep)
+# overlay for PolyKybd.
+#
+# Keys: the default key options in src/Engine/Options.cpp of OpenXcom/OpenXcom,
+# master at commit 4a4bae5. See SOURCES.md.
+#
+# The game has two main screens. Where a key means one thing on the Battlescape
+# and another on the Geoscape, the Battlescape meaning is drawn; the table in
+# SOURCES.md lists the other. No default uses a modifier, so only the plain
+# layer is drawn.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/openxcom/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/openxcom/openxcom.yaml --preview /tmp/openxcom_preview
+app: openxcom
+match: [openxcom, openxcomex]
+output: openxcom_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for the other game sets: the icon uses the full height on the right; the
+# firmware clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# The game's icon at 40 x 40, at the right edge beside the ESC legend.
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [40, 40]
+program_icon_anchor: right
+program_icon_margin: 0
+
+bindings:
+
+  # Battlescape: view and units
+  - { key: PGUP, icon: levelup.png, label: "View level above" }
+  - { key: PGDN, icon: leveldown.png, label: "View level below" }
+  - { key: HOME, icon: centerunit.png, label: "Centre on selected unit" }
+  - { key: TAB, icon: nextunit.png, label: "Next unit" }
+  - { key: KC_LEFT_SHIFT, icon: prevunit.png, label: "Previous unit", region: [34, 40] }
+  - { key: BACKSLASH, icon: deselect.png, label: "Deselect unit" }
+  - { key: M, icon: minimap.png, label: "Minimap" }
+  - { key: L, icon: lighting.png, label: "Personal lighting on / off" }
+
+  # Battlescape: centre on visible enemy 1 to 10
+  - { key: "1", icon: enemy1.png, label: "Centre on enemy 1" }
+  - { key: "2", icon: enemy2.png, label: "Centre on enemy 2" }
+  - { key: "3", icon: enemy3.png, label: "Centre on enemy 3" }
+  - { key: "4", icon: enemy4.png, label: "Centre on enemy 4" }
+  - { key: "5", icon: enemy5.png, label: "Centre on enemy 5" }
+  - { key: "6", icon: enemy6.png, label: "Centre on enemy 6" }
+  - { key: "7", icon: enemy7.png, label: "Centre on enemy 7" }
+  - { key: "8", icon: enemy8.png, label: "Centre on enemy 8" }
+  - { key: "9", icon: enemy9.png, label: "Centre on enemy 9" }
+  - { key: "0", icon: enemy10.png, label: "Centre on enemy 10" }
+
+  # Battlescape: the selected soldier
+  - { key: Q, icon: lefthand.png, label: "Use left hand" }
+  - { key: E, icon: righthand.png, label: "Use right hand" }
+  - { key: I, icon: inventory.png, label: "Inventory" }
+  - { key: S, icon: stats.png, label: "Unit stats" }
+  - { key: K, icon: kneel.png, label: "Kneel / stand" }
+  - { key: R, icon: reload.png, label: "Reload", shared: false }
+
+  # Battlescape: time units and the turn
+  - { key: F1, icon: reservenone.png, label: "Reserve no time units", region: [34, 40] }
+  - { key: F2, icon: reservesnap.png, label: "Reserve for snap shot", region: [34, 40] }
+  - { key: F3, icon: reserveaimed.png, label: "Reserve for aimed shot" }
+  - { key: F4, icon: reserveauto.png, label: "Reserve for auto shot", region: [30, 40] }
+  - { key: J, icon: reservekneel.png, label: "Reserve for kneeling" }
+  - { key: DELETE, icon: zerotus.png, label: "Expend all time units" }
+  - { key: BACKSPACE, icon: endturn.png, label: "End turn" }
+  - { key: A, icon: abort.png, label: "Abort mission" }
+
+  # Inventory screen (no Battlescape meaning)
+  - { key: C, icon: savetemplate.png, label: "Create inventory template" }
+  - { key: V, icon: applytemplate.png, label: "Apply inventory template" }
+  - { key: X, icon: clearinventory.png, label: "Clear inventory" }
+  - { key: Z, icon: autoequip.png, label: "Auto equip" }
+
+  # Geoscape (no Battlescape meaning)
+  - { key: B, icon: bases.png, label: "Bases (Geoscape)" }
+  - { key: G, icon: graphs.png, label: "Graphs (Geoscape)" }
+  - { key: U, icon: ufopaedia.png, label: "UFOpaedia (Geoscape)" }
+  - { key: F, icon: funding.png, label: "Funding (Geoscape)" }
+
+  # Every screen
+  - { key: F5, icon: quicksave.png, label: "Quick save", region: [34, 40] }
+  - { key: F9, icon: quickload.png, label: "Quick load", region: [34, 40] }
+  - { key: F7, icon: fps.png, label: "FPS counter", region: [34, 40] }
+  - { key: F12, icon: screenshot.png, label: "Take screenshot" }
