@@ -6,9 +6,10 @@ What it pins:
 * every process name of a set loads that set, on all three platforms;
 * a set with a macOS branch loads its macOS files there;
 * a window title does not reroute a set that is matched by process name;
-* Unciv started from its jar is a `java` or `javaw` process: the window title
-  "Unciv" loads the Unciv set there, and the other programs on those process
-  names (a JetBrains IDE, Minecraft, Ghidra) keep their sets;
+* Unciv started from its jar and FreeCol are `java` or `javaw` processes: the
+  window titles "Unciv" and "FreeCol <version>" load their sets there, and the
+  other programs on those process names (a JetBrains IDE, Minecraft, Ghidra)
+  keep their sets;
 * every named file exists.
 """
 
@@ -28,12 +29,14 @@ WESNOTH_MAC = ["wesnoth_template_mac.mods.png", "wesnoth_template_mac.combo.mods
 VCMI = "vcmi_template.mods.png"
 UNCIV = "unciv_template.mods.png"
 FREEORION = ["freeorion_template.mods.png", "freeorion_template.combo.mods.png"]
+FREECOL = ["freecol_template.mods.png", "freecol_template.combo.mods.png"]
 
 MINECRAFT = ["minecraft_java_template.mods.png", "minecraft_java_template.combo.mods.png"]
 GHIDRA = ["ghidra_template.mods.png", "ghidra_template.combo.mods.png"]
 # Games that run in a JVM: (window title, overlay).
 JAVA_GAMES = [
     ("Unciv", UNCIV),
+    ("FreeCol 1.2.0", FREECOL),
 ]
 
 OSES = ("windows", "macos", "linux")
@@ -48,6 +51,8 @@ BY_PROCESS = [
     (("unciv", "unciv.exe", "io.github.yairm210.unciv"), "Unciv", {"windows": UNCIV}),
     (("freeorion", "freeorion.exe", "org.freeorion.freeorion"),
      "FreeOrion v0.5.1.2", {"windows": FREEORION}),
+    (("freecol", "freecol.exe", "net-sf-freecol-freecol", "org.freecol.freecol"),
+     "FreeCol 1.2.0", {"windows": FREECOL}),
 ]
 
 
@@ -113,13 +118,16 @@ class TbsGamesRoutingTest(unittest.TestCase):
             with self.subTest(os=os_name):
                 self.assertEqual(self._route("java", os_name, "Minecraft 1.21.4"), MINECRAFT)
                 # An IDE window of a project that has a game's name.
-                ide = self._route("java", os_name, "Unciv \u2013 KeyboardBinding.kt")
-                self.assertIsNotNone(ide)
-                self.assertIn("jetbrains", _files(ide)[0])
+                for title in ("Unciv \u2013 KeyboardBinding.kt",
+                              "FreeCol \u2013 FreeColFrame.java"):
+                    ide = self._route("java", os_name, title)
+                    self.assertIsNotNone(ide)
+                    self.assertIn("jetbrains", _files(ide)[0])
                 self.assertNotIn(self._route("java", os_name, "Some other program"), game_sets)
         self.assertEqual(self._route("javaw", "windows", "Minecraft 1.21.4"), MINECRAFT)
         self.assertEqual(self._route("javaw", "windows", "CodeBrowser: demo:/a.exe"), GHIDRA)
         self.assertIsNone(self._route("javaw", "windows", "Unciv \u2013 KeyboardBinding.kt"))
+        self.assertIsNone(self._route("javaw", "windows", "FreeCol \u2013 FreeColFrame.java"))
         self.assertIsNone(self._route("javaw", "windows", "Some other program"))
 
     def test_every_named_file_exists(self):
