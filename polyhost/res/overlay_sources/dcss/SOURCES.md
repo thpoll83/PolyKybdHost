@@ -237,6 +237,7 @@ URL; the same URLs are in `SOURCES` of `cnc_remastered/fetch_icons.py`.
 
 - Font Awesome Free 6.5.2, solid (`fa:<name>`): `https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/svgs/solid/<name>.svg`
 - game-icons.net (`gi:<author>/<name>`): `https://game-icons.net/icons/000000/transparent/1x1/<author>/<name>.svg`
+- Material Design Icons (`mdi:<name>`): `https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/<name>.svg`
 
 Material Design Icons are from <https://pictogrammers.com/library/mdi/>
 (Templarian/MaterialDesign at commit 2424e74).
