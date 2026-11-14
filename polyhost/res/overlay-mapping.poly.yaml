@@ -2070,6 +2070,13 @@ windowsterminal,wt:
     "(cataclysm)": *cdda_tui
     "(cataclysm": *cdda_tui
     "^cataclysm": *cdda_tui
+    # NetHack, tty and curses interfaces (overlay_sources/nethack/).
+    nethack: &nethack_tui
+      title: '^(?:(?:sudo\s+)?(?:nethack)(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:nethack)(?:$|\s|\)))'
+      overlay: [nethack_template.mods.png, nethack_template.combo.mods.png]
+    "(nethack)": *nethack_tui
+    "(nethack": *nethack_tui
+    "^nethack": *nethack_tui
     # GDB and the common cross builds; the set is the prompt's one-letter commands.
     # The PolyKybd GDB script (gdb-plugin/) writes "gdb ⏸ <program>" at the
     # prompt, which this route matches, and "gdb ▶ <program>" while the program
@@ -3559,6 +3566,14 @@ crawl,crawl.exe,crawl-tiles,crawl-tiles.exe,dungeon crawl stone soup - tiles:
 # in &editor_titles. Names not checked on an install.
 cataclysm-tiles,cataclysm-tiles.exe,org.cataclysmdda.CataclysmDDA,cataclysm:
   overlay: cdda_template.mods.png
+# NetHack with a window of its own (overlay_sources/nethack/nethack.yaml):
+# NetHackW.exe is the Windows graphical build and NetHack.exe the console build
+# (sys/windows/GNUmakefile, NetHack 5.0.0); `nethack` is GAME in
+# sys/unix/Makefile.top, the process of a Qt or X11 interface built into it.
+# The tty and curses interfaces run in a terminal and are routed by the
+# `nethack` title route in &editor_titles. Names not checked on an install.
+nethack,nethack.exe,nethackw,nethackw.exe:
+  overlay: [nethack_template.mods.png, nethack_template.combo.mods.png]
 # League of Legends (overlay_sources/lol/lol.yaml), the in-game window only. The
 # game is `League of Legends.exe` on Windows and the `LeagueofLegends` app on
 # macOS. The lobby client (LeagueClient, LeagueClientUx) is a different process

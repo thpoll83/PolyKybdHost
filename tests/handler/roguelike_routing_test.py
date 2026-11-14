@@ -27,6 +27,7 @@ WT = "windowsterminal_template.mods.png"
 
 DCSS = ["dcss_template.mods.png"]
 CDDA = ["cdda_template.mods.png"]
+NETHACK = ["nethack_template.mods.png", "nethack_template.combo.mods.png"]
 
 # Process name (as the host reports it, lower case) -> (window title, set).
 PROCESSES = {
@@ -39,6 +40,10 @@ PROCESSES = {
     "cataclysm-tiles.exe": ("Cataclysm: Dark Days Ahead - 0.I", CDDA),
     "org.cataclysmdda.cataclysmdda": ("Cataclysm: Dark Days Ahead - 0.I", CDDA),
     "cataclysm": ("Cataclysm: Dark Days Ahead - 0.I", CDDA),
+    "nethack": ("NetHack-Qt", NETHACK),
+    "nethack.exe": ("NetHack", NETHACK),
+    "nethackw": ("NetHack for Windows - Graphical Interface", NETHACK),
+    "nethackw.exe": ("NetHack for Windows - Graphical Interface", NETHACK),
 }
 
 # Process names that serve another program too; their set needs the title.
@@ -62,12 +67,20 @@ TITLES = {
         "Default (cataclysm)",
         "~/cdda> cataclysm",
     ]),
+    "nethack": (NETHACK, [
+        "nethack",
+        "nethack -u Wizard -p Val",
+        "sudo nethack",
+        "Default (nethack)",
+        "[pi] nethack",
+    ]),
 }
 
 # The other keys that must be the same route as the first key.
 ALIASES = {
     "crawl": ["crawl-console"],
     "cataclysm": [],
+    "nethack": [],
 }
 
 # Titles that mention a game, or look like one, but are not it running.
@@ -80,6 +93,10 @@ OTHER_TITLES = [
     "crawl : bash — Konsole",                 # Konsole idle in ~/crawl
     "crawl.log",
     "cataclysm-launcher",
+    "ssh nethack@nethack.example.org",
+    "vim nethackrc",
+    "cat nethack.txt",
+    "user@host: ~/nethack",
     "vim cataclysm.txt",
     "user@host: ~/cataclysm",
     "bash",

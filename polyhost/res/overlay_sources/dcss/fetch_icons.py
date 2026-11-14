@@ -209,6 +209,10 @@ RUN = [_chevron(5), _chevron(18)]
 RUSH = [[(6, 3), (34, 3), (34, 8), (6, 8)],
         [(20, 11), (32, 24), (24, 24), (24, 38), (16, 38), (16, 24), (8, 24)]]
 STYLES = {"move": ARROW, "run": RUN, "rush": RUSH}
+# A diagonal has more room for an arrow or a chevron, so the drawing is enlarged
+# about the centre. The bar of a rush arrow would leave the key area: it is
+# reduced.
+DIAGONAL_SCALE = {"move": 1.2, "run": 1.2, "rush": 0.95}
 
 
 def direction_icon(style: str, direction: str, work: Path):
@@ -220,8 +224,8 @@ def direction_icon(style: str, direction: str, work: Path):
         return _centre(_fit(sword, (40, 40)), (40, 40))
     polygons = STYLES[style]
     if angle % 90:
-        # A diagonal has more room: the drawing is enlarged about the centre.
-        polygons = [[(20 + (x - 20) * 1.2, 20 + (y - 20) * 1.2) for x, y in p] for p in polygons]
+        k = DIAGONAL_SCALE[style]
+        polygons = [[(20 + (x - 20) * k, 20 + (y - 20) * k) for x, y in p] for p in polygons]
     return _polygons(polygons, angle)
 
 
