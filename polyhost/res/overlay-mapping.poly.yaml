@@ -3585,6 +3585,12 @@ pyrogenesis,pyrogenesis.exe,0ad,com.play0ad.zeroad:
 # this set too. Names not checked on an install.
 spring,spring.exe,beyond-all-reason,beyond-all-reason.exe,info.beyondallreason.bar:
   overlay: [beyond_all_reason_template.mods.png, beyond_all_reason_template.combo.mods.png]
+# KeeperFX, the open source Dungeon Keeper engine
+# (overlay_sources/keeperfx/keeperfx.yaml). `keeperfx` and `keeperfx_hvlog`
+# (the logging build) are the executable targets in CMakeLists.txt (v1.4.0).
+# Names not checked on an install.
+keeperfx,keeperfx.exe,keeperfx_hvlog,keeperfx_hvlog.exe:
+  overlay: keeperfx_template.mods.png
 # League of Legends (overlay_sources/lol/lol.yaml), the in-game window only. The
 # game is `League of Legends.exe` on Windows and the `LeagueofLegends` app on
 # macOS. The lobby client (LeagueClient, LeagueClientUx) is a different process

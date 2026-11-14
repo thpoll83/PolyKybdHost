@@ -26,6 +26,9 @@ GAMES = {
         ("spring", "spring.exe", "beyond-all-reason", "beyond-all-reason.exe",
          "info.beyondallreason.bar"),
         "Beyond All Reason"),
+    ("keeperfx_template.mods.png",): (
+        ("keeperfx", "keeperfx.exe", "keeperfx_hvlog", "keeperfx_hvlog.exe"),
+        "KeeperFX"),
 }
 
 
