@@ -25,9 +25,14 @@ XONOTIC_NAMES = (
     "xonotic-wgl.exe", "xonotic-x86-wgl.exe", "xonotic-x64.exe", "xonotic-sdl.exe",
     "xonotic-x64-sdl.exe", "xonotic-osx-sdl-bin", "org.xonotic.xonotic")
 
+UNVANQUISHED = "unvanquished_template.mods.png"
+UNVANQUISHED_NAMES = ("daemon", "daemon.exe", "daemon-vulkan", "unvanquished",
+                      "net.unvanquished.unvanquished")
+
 # (set, process names, a window title of the game)
 GAMES = (
     (XONOTIC, XONOTIC_NAMES, "Xonotic"),
+    (UNVANQUISHED, UNVANQUISHED_NAMES, "Unvanquished"),
 )
 
 
