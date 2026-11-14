@@ -3620,6 +3620,13 @@ xonotic,xonotic-sdl,xonotic-glx,xonotic-linux64-sdl,xonotic-linux64-glx,xonotic-
 # the desktop file name. Names not checked on an install.
 daemon,daemon.exe,daemon-vulkan,unvanquished,net.unvanquished.unvanquished:
   overlay: unvanquished_template.mods.png
+# Red Eclipse (overlay_sources/redeclipse/redeclipse.yaml). The start script
+# redeclipse.sh runs redeclipse_linux, redeclipse.exe or redeclipse_universal
+# (macOS); src/CMakeLists.txt builds redeclipse_osx, redeclipse_windows.exe and
+# redeclipse_native (base v2.0.0). net.redeclipse.RedEclipse is the Flathub app
+# id. Names not checked on an install.
+redeclipse,redeclipse.exe,redeclipse_linux,redeclipse_universal,redeclipse_bsd,redeclipse_osx,redeclipse_windows.exe,redeclipse_native,net.redeclipse.redeclipse:
+  overlay: redeclipse_template.mods.png
 # Total Commander (overlay_sources/totalcmd/). Windows only. The 11.58.1
 # installers ship TOTALCMD64.EXE (64-bit) and TOTALCMD.EXE (32-bit). Not checked
 # on a running install.

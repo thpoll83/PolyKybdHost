@@ -29,10 +29,17 @@ UNVANQUISHED = "unvanquished_template.mods.png"
 UNVANQUISHED_NAMES = ("daemon", "daemon.exe", "daemon-vulkan", "unvanquished",
                       "net.unvanquished.unvanquished")
 
+REDECLIPSE = "redeclipse_template.mods.png"
+REDECLIPSE_NAMES = (
+    "redeclipse", "redeclipse.exe", "redeclipse_linux", "redeclipse_universal",
+    "redeclipse_bsd", "redeclipse_osx", "redeclipse_windows.exe", "redeclipse_native",
+    "net.redeclipse.redeclipse")
+
 # (set, process names, a window title of the game)
 GAMES = (
     (XONOTIC, XONOTIC_NAMES, "Xonotic"),
     (UNVANQUISHED, UNVANQUISHED_NAMES, "Unvanquished"),
+    (REDECLIPSE, REDECLIPSE_NAMES, "Red Eclipse"),
 )
 
 

@@ -1,0 +1,98 @@
+# Red Eclipse overlay for PolyKybd.
+#
+# Keys: the default `bind` lines in config/setup.cfg of redeclipse/base,
+# release 2.0.0 (tag v2.0.0). See SOURCES.md.
+#
+# The keys of a running match are drawn. The spectator, waiting and map editor
+# binds (specbind, waitbind, editbind) are not. No default binding uses a
+# modifier chord; left Shift (crouch) and left Ctrl (walk) have no overlay
+# cell. A user who rebinds a key in the game still sees the default here.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/redeclipse/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/redeclipse/redeclipse.yaml --preview /tmp/redeclipse_preview
+app: red eclipse
+match: [redeclipse, redeclipse.exe, redeclipse_linux, redeclipse_universal, redeclipse_bsd,
+        redeclipse_osx, redeclipse_windows.exe, redeclipse_native, net.redeclipse.redeclipse]
+output: redeclipse_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for Xonotic: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# The game's name drawn over the whole cell, without the ESC legend
+# (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Movement
+  - { key: W, icon: forward.png, label: "Move forward" }
+  - { key: S, icon: back.png, label: "Move back" }
+  - { key: A, icon: left.png, label: "Strafe left" }
+  - { key: D, icon: right.png, label: "Strafe right" }
+  - { key: SPACE, icon: jump.png, label: "Jump" }
+  - { key: Q, icon: special.png, label: "Special move" }
+
+  # Weapons
+  - { key: "1", icon: claw.png, label: "Claw" }
+  - { key: "2", icon: pistol.png, label: "Pistol" }
+  - { key: "3", icon: sword.png, label: "Sword" }
+  - { key: "4", icon: shotgun.png, label: "Shotgun" }
+  - { key: "5", icon: smg.png, label: "SMG" }
+  - { key: "6", icon: flamer.png, label: "Flamer" }
+  - { key: "7", icon: plasma.png, label: "Plasma" }
+  - { key: "8", icon: zapper.png, label: "Zapper" }
+  - { key: "9", icon: rifle.png, label: "Rifle" }
+  - { key: "0", icon: grenade.png, label: "Grenade" }
+  - { key: MINUS, icon: mine.png, label: "Mine" }
+  - { key: EQUAL, icon: rocket.png, label: "Rocket" }
+
+  # Weapon actions
+  - { key: "[", icon: weaponup.png, label: "Weapon cycle +1 (as wheel up)" }
+  - { key: "]", icon: weapondown.png, label: "Weapon cycle -1 (as wheel down)" }
+  - { key: R, icon: reload.png, label: "Reload", shared: false }
+  - { key: Z, icon: drop.png, label: "Drop weapon" }
+  - { key: E, icon: use.png, label: "Use" }
+  - { key: F, icon: affinity.png, label: "Drop the flag or bomb" }
+  - { key: K, icon: suicide.png, label: "Suicide" }
+
+  # Communication
+  - { key: T, icon: chat.png, label: "Chat" }
+  - { key: ENTER, icon: chat.png, label: "Chat" }
+  - { key: Y, icon: teamchat.png, label: "Team chat" }
+  - { key: GRAVE, icon: command.png, label: "Command line" }
+  - { key: SLASH, icon: command.png, label: "Command line" }
+
+  # Match
+  - { key: TAB, icon: scoreboard.png, label: "Scoreboard" }
+  - { key: M, icon: bindmap.png, label: "Key bindings" }
+  - { key: PAUSE, icon: pause.png, label: "Pause" }
+  - { key: INSERT, icon: addbot.png, label: "Add a bot" }
+  - { key: DELETE, icon: delbot.png, label: "Remove a bot" }
+  - { key: HOME, icon: spectate.png, label: "Spectate" }
+  - { key: END, icon: play.png, label: "Leave spectating" }
+  - { key: COMMA, icon: profile.png, label: "Profile" }
+  - { key: DOT, icon: team.png, label: "Team" }
+
+  # Function keys
+  - { key: F1, icon: help.png, label: "Help", region: [34, 40], shared: false }
+  - { key: F2, icon: edit.png, label: "Map editor", region: [34, 40] }
+  - { key: F3, icon: maps.png, label: "Maps", region: [34, 40] }
+  - { key: F4, icon: votes.png, label: "Votes", region: [34, 40] }
+  - { key: F5, icon: servers.png, label: "Servers", region: [34, 40] }
+  - { key: F6, icon: profile_f.png, label: "Profile", region: [34, 40] }
+  - { key: F7, icon: team_f.png, label: "Team", region: [34, 40] }
+  - { key: F8, icon: console.png, label: "Console", region: [34, 40] }
+  - { key: F9, icon: thirdperson.png, label: "Third person view", region: [34, 40] }
+  - { key: F11, icon: screenshot.png, label: "Screenshot", region: [30, 40] }
