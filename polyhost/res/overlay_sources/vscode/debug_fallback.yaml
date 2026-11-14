@@ -32,10 +32,11 @@ threshold: 150
 _reclaimed: &reclaimed { region: [72, 40], anchor: center }
 
 bindings:
-  # Moved here unchanged from bindings.yaml (and Cursor's and Windsurf's copy),
-  # so the fallback draws exactly what the app's set drew before. Ctrl+F6 is
-  # kept as shipped; VS Code's Pause is F6 (debug_running.yaml).
-  - { key: F6,  mods: [CTRL],  icon: pause.png,      <<: *reclaimed, label: "Pause (debug)",     source: reclaimed }
+  # Moved here from bindings.yaml (and Cursor's and Windsurf's copy). Pause was
+  # drawn on Ctrl+F6 there, which is no VS Code key; workbench.action.debug.pause
+  # is F6 on every platform (debugCommands.ts, `primary: KeyCode.F6`, no win /
+  # mac / linux override), as in debug_running.yaml.
+  - { key: F6,  mods: [],      icon: pause.png,      <<: *reclaimed, label: "Pause (debug)",     source: reclaimed }
   - { key: F5,  mods: [],      icon: rundebug.png,   <<: *reclaimed, label: "Start debugging",   source: reclaimed }
   - { key: F5,  mods: [SHIFT], icon: stopdebug.png,  <<: *reclaimed, label: "Stop debugging",    source: "reclaimed (JetBrains stop, shared)" }
   - { key: F10, mods: [],      icon: stepover.png,   <<: *reclaimed, label: "Step over",         source: "reclaimed (JetBrains, shared)" }

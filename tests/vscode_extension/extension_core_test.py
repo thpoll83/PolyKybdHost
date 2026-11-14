@@ -60,7 +60,11 @@ class NodeUnitTest(unittest.TestCase):
         if node is None or ver is None or ver < (22, 6):
             self.skipTest(f"needs Node 22.6+ to run TypeScript directly (found {ver})")
         r = subprocess.run(
-            [node, "--experimental-strip-types", "--no-warnings", "--test",
+            # TAP output: the default reporter is spec on Node 23+. Module
+            # detection: Node 22.6 treats core.ts as CommonJS without it (on by
+            # default from 22.7). The compiled out/extension.js stays CommonJS.
+            [node, "--experimental-strip-types", "--experimental-detect-module",
+             "--no-warnings", "--test", "--test-reporter=tap",
              str(EXT / "test" / "core.test.ts")],
             capture_output=True, text=True, timeout=120, cwd=EXT)
         self.assertEqual(r.returncode, 0, r.stdout[-4000:] + r.stderr[-2000:])

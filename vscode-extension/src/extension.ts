@@ -18,14 +18,14 @@ import * as http from "http";
 import * as vscode from "vscode";
 
 import {
-  appToken, HTTP_TIMEOUT_MS, KEEPALIVE_MS, modeFor, modeUrl, payload,
-  SendPolicy, SessionState, validPort,
+  activeMode, appToken, HTTP_TIMEOUT_MS, InputClock, KEEPALIVE_MS, modeUrl, payload,
+  ReportQueue, SendPolicy, SessionState, settleWithin, validPort,
 } from "./core";
 
 const sessions = new Map<string, SessionState>();
 const policy = new SendPolicy();
 let app = "vscode";
-let lastInput = Date.now();
+const clock = new InputClock(Date.now());
 let reported = false;
 let timer: ReturnType<typeof setInterval> | undefined;
 let errorsShown = new Set<string>();
@@ -34,8 +34,7 @@ let output: vscode.OutputChannel | undefined;
 // A dedicated agent: a loopback report must not go through a configured
 // HTTP proxy, and must not wait behind other requests of the extension host.
 const agent = new http.Agent({ keepAlive: false, maxSockets: 1 });
-let inFlight = false;
-let queued: { port: number; body: string } | null = null;
+const queue = new ReportQueue(send);
 
 function config() {
   const c = vscode.workspace.getConfiguration("polykybd");
@@ -47,19 +46,12 @@ function config() {
 }
 
 function post(port: number, body: string): void {
-  // Only the newest report matters: a report waiting behind a slow one is
-  // replaced, never queued up.
-  if (inFlight) {
-    queued = { port, body };
-    return;
-  }
-  inFlight = true;
-  const done = () => {
-    inFlight = false;
-    const next = queued;
-    queued = null;
-    if (next) post(next.port, next.body);
-  };
+  queue.post(port, body);
+}
+
+/** One request. `done` can be called twice (request and response error);
+ *  ReportQueue counts only the first. */
+function send(port: number, body: string, done: () => void): void {
   const req = http.request({
     host: "127.0.0.1", port, path: "/report", method: "POST", agent,
     timeout: HTTP_TIMEOUT_MS,
@@ -82,9 +74,11 @@ function note(msg: string): void {
   output?.appendLine(`Report not delivered: ${msg}`);
 }
 
-function currentUrl(): string {
+/** The URL to report, or null when the active session has no tracker. */
+function currentUrl(): string | null {
   const active = vscode.debug.activeDebugSession;
-  return modeUrl(app, modeFor(active ? sessions.get(active.id) ?? new SessionState() : undefined));
+  const mode = activeMode(active !== undefined, active ? sessions.get(active.id) : undefined);
+  return mode ? modeUrl(app, mode) : null;
 }
 
 function tick(force = false): void {
@@ -94,12 +88,16 @@ function tick(force = false): void {
     return;
   }
   const url = currentUrl();
+  if (url === null) {
+    if (reported) withdraw(c.port, c.token);
+    return;
+  }
   const focused = vscode.window.state.focused;
   const now = Date.now();
   if (!force && !policy.due(url, focused, now)) return;
   policy.sent(url, focused, now);
   reported = true;
-  post(c.port, payload(app, url, focused, process.pid, (now - lastInput) / 1000, c.token));
+  post(c.port, payload(app, url, focused, process.pid, clock.ageS(now), c.token));
 }
 
 function withdraw(port: number, token: string): void {
@@ -109,7 +107,7 @@ function withdraw(port: number, token: string): void {
 }
 
 function input(): void {
-  lastInput = Date.now();
+  clock.input(vscode.window.state.focused, Date.now());
 }
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -132,11 +130,12 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.debug.onDidChangeActiveDebugSession(() => tick()),
     vscode.debug.onDidTerminateDebugSession((s) => { sessions.delete(s.id); tick(); }),
     vscode.window.onDidChangeWindowState((s) => {
-      if (s.focused) input();
+      if (s.focused) clock.focus(Date.now());
       tick();
     }),
-    // Input in this window: with several windows open, the host follows the
-    // one with the newest input (`input_age`).
+    // Input in this window, counted only while it is focused: with several
+    // windows open, the host follows the one with the newest input
+    // (`input_age`).
     vscode.window.onDidChangeTextEditorSelection(input),
     vscode.window.onDidChangeActiveTextEditor(input),
     vscode.workspace.onDidChangeConfiguration((e) => {
@@ -153,9 +152,13 @@ export function activate(context: vscode.ExtensionContext): void {
   tick(true);
 }
 
-export function deactivate(): void {
+/** Returns a promise, so the extension host waits for the last report (the
+ *  withdrawal, and a report still on the way before it), at most two request
+ *  timeouts. */
+export function deactivate(): Promise<void> {
   if (timer) clearInterval(timer);
   timer = undefined;
   const c = config();
   if (reported) withdraw(c.port, c.token);
+  return settleWithin(queue.idle(), 2 * HTTP_TIMEOUT_MS + 200);
 }

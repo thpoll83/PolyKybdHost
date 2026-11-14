@@ -32,14 +32,17 @@ or window focus and as a keep-alive every 3 s:
 - `focused` is `vscode.window.state.focused`. The host uses a report only while
   this app is the focused application and the report is less than 8 s old.
 - `pid` is the extension host's process id, one per window. `input_age` is the
-  seconds since this window last had focus or a cursor or editor change. With
-  several windows open, the host follows the one with the most recent input.
+  seconds since this window last had focus or a cursor or editor change while it
+  was focused. With several windows open, the host follows the one with the
+  most recent input.
 - **Nothing else.** No file names, workspace names, window titles, document
   content or debug configuration names.
 - `token` is added only if you set one (see below).
 
 When you turn the setting off, or the extension stops (window closed, extension
-disabled), it sends one last report with `"url": null, "focused": false`.
+disabled), it sends one last report with `"url": null, "focused": false`. On
+stop, `deactivate()` returns a promise that settles when that report (and a
+report still on the way before it) is done, or after 1.2 s.
 
 The request runs asynchronously and has a 0.5 s timeout. If PolyKybdHost is not
 running, the request fails and the editor does not wait. Each distinct error is
@@ -62,8 +65,15 @@ decides which debug key is active, cannot be read by an extension. The tracker
 follows the same DAP messages it is built from: a `stopped` event, a `continued`
 event, and a successful response to `continue`, `next`, `stepIn`, `stepOut`,
 `stepBack` or `reverseContinue` (`singleThread` and `allThreadsContinued`
-respected). The state shown is the one of the active debug session (the one in
-the debug toolbar).
+respected). After a stop of all threads, a thread resumed on its own leaves the
+others stopped; the program counts as running only when every thread of the
+last `threads` response has resumed. The state shown is the one of the active
+debug session (the one in the debug toolbar).
+
+The extension activates on `onDebug` too, so its tracker is registered before
+the first debug adapter starts. A session that has no tracker (one that started
+before the extension was activated) gets **no report**: the keyboard shows
+every debug key, as without the extension, and not a guessed state.
 
 **Not reported: whether the terminal or the editor has keyboard focus.** The
 extension API has no signal for it. `window.activeTerminal` is "the one that
@@ -74,6 +84,17 @@ extension. The terminal keys are therefore not a mode.
 The extension declares `"extensionKind": ["ui"]`, so in a Remote SSH, WSL or
 container window it runs on your computer, where PolyKybdHost is, and not on the
 remote side.
+
+**Limit: no debug state in a remote window.** In a Remote SSH, WSL or container
+window the debugger extensions run in the remote extension host, and VS Code
+creates a debug adapter tracker only in the extension host where the adapter
+runs. The tracker this extension registers on your computer therefore sees no
+messages from a remote debug session. The extension then sends no report for
+that session, and the keyboard shows every debug key (the "no report" row
+below). `<app>://edit` is still reported while the remote window has no debug
+session. Reading a remote session's state needs a second part of the extension
+that runs on the remote side and passes the state to the part on your computer.
+That part does not exist yet (`docs/FUTURE_WORK.md`).
 
 ## Install
 
@@ -133,7 +154,7 @@ VS Code's source, `src/vs/workbench/contrib/debug/browser/debugCommands.ts`.
 ## Tests
 
 ```bash
-npm test     # node --experimental-strip-types --test test/core.test.ts (Node 22.6+)
+npm test     # node --experimental-strip-types --experimental-detect-module --test test/core.test.ts (Node 22.6+)
 ```
 
 The host suite runs the same tests (`tests/vscode_extension/`) when Node 22.6 or

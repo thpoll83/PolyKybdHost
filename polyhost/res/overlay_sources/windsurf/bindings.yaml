@@ -64,7 +64,7 @@ bindings:
   # ⌃⇧-). Kept exactly as shipped rather than re-chorded.
   - { key: "-", mods: [CTRL, SHIFT], icon: goforward.png, <<: *reclaimed, label: "Go forward", source: reclaimed }
   - { key: "-", mods: [CTRL, ALT],   icon: goback.png,    <<: *reclaimed, label: "Go back",    source: reclaimed }
-  # The debug-session keys (F5, Shift+F5, Ctrl+F6, F10, F11, Shift+F11) are in
+  # The debug-session keys (F5, Shift+F5, F6, F10, F11, Shift+F11) are in
   # ../vscode/debug_*.yaml, shared by VS Code, Cursor and Windsurf: the mode
   # reporter (vscode-extension/) swaps them per debug state. The mapping lists
   # debug_fallback.yaml's set after this one when no report arrives.

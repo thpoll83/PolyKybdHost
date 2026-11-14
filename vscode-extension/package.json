@@ -15,7 +15,7 @@
   "keywords": ["keyboard", "PolyKybd", "debug", "shortcuts"],
   "engines": { "vscode": "^1.75.0" },
   "extensionKind": ["ui"],
-  "activationEvents": ["onStartupFinished"],
+  "activationEvents": ["onStartupFinished", "onDebug"],
   "main": "./out/extension.js",
   "capabilities": {
     "untrustedWorkspaces": { "supported": true },
@@ -47,7 +47,7 @@
   },
   "scripts": {
     "compile": "tsc -p .",
-    "test": "node --experimental-strip-types --test test/core.test.ts",
+    "test": "node --experimental-strip-types --experimental-detect-module --test test/core.test.ts",
     "package": "./build.sh"
   },
   "devDependencies": {
