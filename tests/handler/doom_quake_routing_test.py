@@ -24,6 +24,12 @@ PORTS = {
         ("gzdoom", "gzdoom.exe", "org.zdoom.gzdoom"), "DOOM 2: Hell on Earth"),
     "uzdoom_template.mods.png": (
         ("uzdoom", "uzdoom.exe", "org.zdoom.uzdoom"), "The Ultimate DOOM"),
+    "chocolate_doom_template.mods.png": (
+        ("chocolate-doom", "chocolate-doom.exe", "org.chocolate_doom.doom"),
+        "The Ultimate DOOM - Chocolate Doom 3.1.1"),
+    "crispy_doom_template.mods.png": (
+        ("crispy-doom", "crispy-doom.exe", "io.github.fabiangreffrath.doom"),
+        "DOOM 2: Hell on Earth - Crispy Doom 7.2"),
 }
 
 

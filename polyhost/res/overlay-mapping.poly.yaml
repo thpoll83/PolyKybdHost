@@ -3601,6 +3601,18 @@ gzdoom,gzdoom.exe,org.zdoom.GZDoom:
 # an install.
 uzdoom,uzdoom.exe,org.zdoom.UZDoom:
   overlay: uzdoom_template.mods.png
+# Chocolate Doom (overlay_sources/chocolate_doom/chocolate_doom.yaml), the keys
+# of the original Doom. The Doom binary is "${PROGRAM_PREFIX}doom" in
+# src/CMakeLists.txt (chocolate-doom-3.1.1); org.chocolate_doom is PACKAGE_RDNS.
+# chocolate-heretic, -hexen and -strife are not matched: their keys differ.
+# Names not checked on an install.
+chocolate-doom,chocolate-doom.exe,org.chocolate_doom.Doom:
+  overlay: chocolate_doom_template.mods.png
+# Crispy Doom (overlay_sources/chocolate_doom/crispy_doom.yaml): the Chocolate
+# Doom keys plus W A S D, Caps Lock and two automap keys. Names as for Chocolate
+# Doom, read from crispy-doom-7.2. Names not checked on an install.
+crispy-doom,crispy-doom.exe,io.github.fabiangreffrath.Doom:
+  overlay: crispy_doom_template.mods.png
 # SQL Server Management Studio (overlay_sources/ssms/), Windows only. The
 # executable is Ssms.exe (SSMS 18 to 20) or SSMS.exe (SSMS 21 and later); both
 # lowercase to `ssms`. Name not checked on an install.
