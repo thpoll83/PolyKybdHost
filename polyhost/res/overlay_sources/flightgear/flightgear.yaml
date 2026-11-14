@@ -1,0 +1,171 @@
+# FlightGear overlay for PolyKybd.
+#
+# Keys: the global default keys in keyboard.xml of flightgear/fgdata, release
+# 2024.1.7. An aircraft adds and replaces keys of its own; those are not drawn.
+# See SOURCES.md.
+#
+# FlightGear binds characters, not keys: `g` and `G` are two bindings. The
+# overlay puts a capital letter and a shifted symbol on the Shift layer, as a
+# US layout types them.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/flightgear/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/flightgear/flightgear.yaml --preview /tmp/flightgear_preview
+app: flightgear
+match: [fgfs, fgfs.exe, flightgear, org.flightgear.FlightGear]
+output: flightgear_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for fheroes2: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# FlightGear's own application icon, 40 x 40 at the right edge.
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [40, 40]
+program_icon_anchor: right
+program_icon_margin: 0
+
+bindings:
+
+  # Flight controls: arrow keys and the navigation cluster
+  - { key: LEFT, icon: aileronleft.png, label: "Aileron left" }
+  - { key: RIGHT, icon: aileronright.png, label: "Aileron right" }
+  - { key: UP, icon: elevatordown.png, label: "Elevator down (nose down)" }
+  - { key: DOWN, icon: elevatorup.png, label: "Elevator up (nose up)" }
+  - { key: PAGEUP, icon: throttleup.png, label: "Increase throttle" }
+  - { key: PAGEDOWN, icon: throttledown.png, label: "Decrease throttle" }
+  - { key: HOME, icon: trimup.png, label: "Elevator trim up" }
+  - { key: END, icon: trimdown.png, label: "Elevator trim down" }
+  - { key: INSERT, icon: rudderleft.png, label: "Rudder left" }
+  - { key: ENTER, icon: rudderright.png, label: "Rudder right" }
+
+  # Flight controls: the digits (the same characters as the keypad)
+  - { key: 0, icon: rudderleft.png, label: "Rudder left" }
+  - { key: 1, icon: trimdown.png, label: "Elevator trim down" }
+  - { key: 2, icon: elevatorup.png, label: "Elevator up (nose up)" }
+  - { key: 3, icon: throttledown.png, label: "Decrease throttle" }
+  - { key: 4, icon: aileronleft.png, label: "Aileron left" }
+  - { key: 5, icon: center.png, label: "Centre aileron, elevator and rudder" }
+  - { key: 6, icon: aileronright.png, label: "Aileron right" }
+  - { key: 7, icon: trimup.png, label: "Elevator trim up" }
+  - { key: 8, icon: elevatordown.png, label: "Elevator down (nose down)" }
+  - { key: 9, icon: throttleup.png, label: "Increase throttle" }
+  - { key: 1, mods: [CTRL], icon: trimdownfast.png, label: "Elevator trim down fast" }
+  - { key: 7, mods: [CTRL], icon: trimupfast.png, label: "Elevator trim up fast" }
+  - { key: 4, mods: [CTRL], icon: ailerontrimleft.png, label: "Aileron trim left" }
+  - { key: 6, mods: [CTRL], icon: ailerontrimright.png, label: "Aileron trim right" }
+  - { key: 5, mods: [CTRL], icon: cleartrims.png, label: "Clear all trims" }
+  - { key: 2, mods: [ALT], icon: autocoordination.png, label: "Toggle auto-coordination" }
+
+  # Engines
+  - { key: 1, mods: [SHIFT], icon: engine1.png, label: "Select first engine (!)" }
+  - { key: 2, mods: [SHIFT], icon: engine2.png, label: "Select second engine (@)" }
+  - { key: 3, mods: [SHIFT], icon: engine3.png, label: "Select third engine (#)" }
+  - { key: 4, mods: [SHIFT], icon: engine4.png, label: "Select fourth engine ($)" }
+  - { key: GRAVE, mods: [SHIFT], icon: allengines.png, label: "Select all engines (~)" }
+  - { key: S, icon: starter.png, label: "Starter on selected engines" }
+  - { key: "[", mods: [SHIFT], icon: magnetoless.png, label: "Decrease magneto ({)" }
+  - { key: "]", mods: [SHIFT], icon: magnetomore.png, label: "Increase magneto (})" }
+  - { key: M, icon: mixturericher.png, label: "Mixture richer" }
+  - { key: M, mods: [SHIFT], icon: mixtureleaner.png, label: "Mixture leaner" }
+  - { key: N, icon: propfiner.png, label: "Propeller finer" }
+  - { key: N, mods: [SHIFT], icon: propcoarser.png, label: "Propeller coarser" }
+
+  # Brakes, gear and surfaces
+  - { key: B, icon: allbrakes.png, label: "Apply all brakes" }
+  - { key: B, mods: [SHIFT], icon: parkingbrake.png, label: "Toggle parking brake" }
+  - { key: ",", icon: leftbrake.png, label: "Left brake" }
+  - { key: ".", icon: rightbrake.png, label: "Right brake" }
+  - { key: G, icon: gearup.png, label: "Gear up" }
+  - { key: G, mods: [SHIFT], icon: geardown.png, label: "Gear down" }
+  - { key: "[", icon: flapsup.png, label: "Decrease flaps" }
+  - { key: "]", icon: flapsdown.png, label: "Increase flaps" }
+  - { key: J, icon: spoilersless.png, label: "Decrease spoilers" }
+  - { key: K, icon: spoilersmore.png, label: "Increase spoilers" }
+  - { key: B, mods: [CTRL], icon: speedbrake.png, label: "Toggle speedbrake" }
+  - { key: L, icon: tailwheellock.png, label: "Toggle tail-wheel lock" }
+
+  # Autopilot
+  - { key: A, mods: [CTRL], icon: apaltitude.png, label: "Autopilot altitude lock" }
+  - { key: G, mods: [CTRL], icon: apglideslope.png, label: "Autopilot glide slope lock" }
+  - { key: H, mods: [CTRL], icon: apheading.png, label: "Autopilot heading lock" }
+  - { key: N, mods: [CTRL], icon: apnav1.png, label: "Autopilot NAV1 lock" }
+  - { key: P, mods: [CTRL], icon: appitch.png, label: "Pitch hold" }
+  - { key: S, mods: [CTRL], icon: autothrottle.png, label: "Auto-throttle lock" }
+  - { key: T, mods: [CTRL], icon: apterrain.png, label: "Autopilot terrain lock" }
+  - { key: W, mods: [CTRL], icon: apwing.png, label: "Autopilot wing leveler" }
+  - { key: U, mods: [CTRL], icon: cheataltitude.png, label: "Add 1000 ft of altitude (cheat)" }
+  - { key: F6, icon: headingmode.png, label: "Toggle autopilot heading mode", region: [34, 40] }
+  - { key: F11, icon: autopilotdialog.png, label: "Autopilot dialog" }
+  - { key: F12, icon: radiodialog.png, label: "Radio settings dialog" }
+
+  # Simulator
+  - { key: P, icon: pause.png, label: "Pause the simulator", shared: false }
+  - { key: A, icon: speedup.png, label: "Increase simulation speed" }
+  - { key: A, mods: [SHIFT], icon: slowdown.png, label: "Decrease simulation speed" }
+  - { key: T, icon: warpforward.png, label: "Warp time forwards" }
+  - { key: T, mods: [SHIFT], icon: warpback.png, label: "Warp time backwards" }
+  - { key: R, mods: [CTRL], icon: replay.png, label: "Instant replay" }
+  - { key: M, mods: [CTRL], icon: map.png, label: "Map dialog" }
+  - { key: TAB, icon: mousemode.png, label: "Cycle mouse mode" }
+  - { key: C, mods: [CTRL], icon: hotspots.png, label: "Show clickable panel hotspots" }
+  - { key: C, mods: [ALT], icon: tooltips.png, label: "Toggle tooltips for animated objects" }
+  - { key: "/", icon: propertybrowser.png, label: "Property browser" }
+  - { key: "/", mods: [SHIFT], icon: help.png, label: "Show help dialog (?)", shared: false }
+  - { key: ";", mods: [SHIFT], icon: multikey.png, label: "Start multikey command (:)" }
+
+  # Radio and chat
+  - { key: SPACE, icon: ptt.png, label: "Push to talk" }
+  - { key: "'", icon: atc.png, label: "ATC dialog" }
+  - { key: "=", mods: [SHIFT], icon: atcrepeat.png, label: "ATC repeats last message (+)" }
+  - { key: "-", icon: chatmenu.png, label: "Chat menu" }
+  - { key: "-", mods: [SHIFT], icon: composechat.png, label: "Compose chat (_)" }
+
+  # View
+  - { key: V, icon: nextview.png, label: "Next view" }
+  - { key: V, mods: [SHIFT], icon: prevview.png, label: "Previous view" }
+  - { key: V, mods: [CTRL], icon: initialview.png, label: "Initial view (view 0)" }
+  - { key: X, icon: zoomin.png, label: "Zoom in (decrease field of view)", shared: false }
+  - { key: X, mods: [SHIFT], icon: zoomout.png, label: "Zoom out (increase field of view)", shared: false }
+  - { key: X, mods: [CTRL], icon: zoomreset.png, label: "Reset zoom to default" }
+  - { key: Z, icon: visibilitymore.png, label: "Increase visibility" }
+  - { key: Z, mods: [SHIFT], icon: visibilityless.png, label: "Decrease visibility" }
+  - { key: Z, mods: [CTRL], icon: visibilityreset.png, label: "Reset visibility to default" }
+  - { key: C, icon: cockpit.png, label: "Toggle 3D or 2D cockpit" }
+  - { key: LEFT, mods: [SHIFT], icon: lookleft.png, label: "Look left" }
+  - { key: RIGHT, mods: [SHIFT], icon: lookright.png, label: "Look right" }
+  - { key: UP, mods: [SHIFT], icon: lookforward.png, label: "Look forward" }
+  - { key: DOWN, mods: [SHIFT], icon: lookback.png, label: "Look back" }
+  - { key: HOME, mods: [SHIFT], icon: lookfrontleft.png, label: "Look front left" }
+  - { key: PAGEUP, mods: [SHIFT], icon: lookfrontright.png, label: "Look front right" }
+  - { key: END, mods: [SHIFT], icon: lookbackleft.png, label: "Look back left" }
+  - { key: PAGEDOWN, mods: [SHIFT], icon: lookbackright.png, label: "Look back right" }
+
+  # HUD and 2D panels
+  - { key: H, icon: hud.png, label: "HUD master switch" }
+  - { key: H, mods: [SHIFT], icon: hudbrightness.png, label: "Cycle HUD brightness" }
+  - { key: I, icon: hudnormal.png, label: "Normal HUD" }
+  - { key: I, mods: [SHIFT], icon: hudalternative.png, label: "Alternative HUD types" }
+  - { key: P, mods: [SHIFT], icon: panel.png, label: "Toggle panel" }
+  - { key: S, mods: [SHIFT], icon: swappanels.png, label: "Swap panels" }
+  - { key: F3, mods: [SHIFT], icon: loadpanel.png, label: "Load panel", region: [34, 40] }
+  - { key: F5, mods: [SHIFT], icon: paneldown.png, label: "Scroll panel down", region: [34, 40] }
+  - { key: F6, mods: [SHIFT], icon: panelup.png, label: "Scroll panel up", region: [34, 40] }
+  - { key: F7, mods: [SHIFT], icon: panelleft.png, label: "Scroll panel left", region: [34, 40] }
+  - { key: F8, mods: [SHIFT], icon: panelright.png, label: "Scroll panel right", region: [34, 40] }
+
+  # Function keys
+  - { key: F1, mods: [SHIFT], icon: loadtape.png, label: "Load flight recorder tape", region: [34, 40] }
+  - { key: F2, mods: [SHIFT], icon: savetape.png, label: "Save flight recorder tape", region: [34, 40] }
+  - { key: F3, icon: screenshot.png, label: "Capture screen", region: [34, 40], shared: false }
+  - { key: F3, mods: [CTRL], icon: cubemap.png, label: "Capture cube map", region: [34, 40] }
+  - { key: F3, mods: [ALT], icon: panorama.png, label: "Capture panorama", region: [34, 40] }
+  - { key: F10, icon: menubar.png, label: "Toggle menubar" }
+  - { key: F10, mods: [SHIFT], icon: fullscreen.png, label: "Toggle full screen" }

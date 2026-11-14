@@ -1,0 +1,53 @@
+# SuperTuxKart overlay for PolyKybd.
+#
+# Keys: the default keyboard binds in src/input/keyboard_config.cpp
+# (KeyboardConfig::setDefaultBinds) and the fixed keys in
+# src/input/input_manager.cpp (InputManager::handleStaticAction) of
+# supertuxkart/stk-code, release 1.5. See SOURCES.md.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/supertuxkart/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/supertuxkart/supertuxkart.yaml --preview /tmp/supertuxkart_preview
+app: supertuxkart
+match: [supertuxkart, supertuxkart.exe, net.supertuxkart.SuperTuxKart]
+output: supertuxkart_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for fheroes2: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# "Super" over "TuxKart" drawn over the whole cell, without the ESC legend
+# (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Driving (player 1 defaults)
+  - { key: UP, icon: accelerate.png, label: "Accelerate" }
+  - { key: DOWN, icon: brake.png, label: "Brake and reverse" }
+  - { key: LEFT, icon: steerleft.png, label: "Steer left" }
+  - { key: RIGHT, icon: steerright.png, label: "Steer right" }
+  - { key: N, icon: nitro.png, label: "Nitro" }
+  - { key: V, icon: skid.png, label: "Skid" }
+  - { key: SPACE, icon: fire.png, label: "Use power-up" }
+  - { key: B, icon: lookback.png, label: "Look back" }
+  - { key: BACKSPACE, icon: rescue.png, label: "Rescue" }
+
+  # Every screen
+  - { key: PRINTSCREEN, icon: screenshot.png, label: "Take screenshot", shared: false }
+  - { key: PRINTSCREEN, mods: [CTRL], icon: recordvideo.png, label: "Start or stop video recording" }
+  - { key: F11, icon: savereplay.png, label: "Save replay of this race" }
+  - { key: F11, mods: [CTRL], icon: savehistory.png, label: "Save race history" }
+  - { key: F12, icon: fps.png, label: "Show or hide FPS display" }
+  - { key: F12, mods: [CTRL], icon: kartpowerups.png, label: "Show power-ups above karts" }
+  - { key: F12, mods: [SHIFT], icon: soccerplayers.png, label: "Show soccer player list" }

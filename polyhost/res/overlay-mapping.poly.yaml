@@ -3582,6 +3582,34 @@ devilutionx,devilutionx.exe,org.diasurgical.DevilutionX:
 # Flathub app id. Names not checked on an install.
 pyrogenesis,pyrogenesis.exe,0ad,com.play0ad.zeroad:
   overlay: [zeroad_template.mods.png, zeroad_template.combo.mods.png]
+# SuperTuxKart 1.5 (overlay_sources/supertuxkart/supertuxkart.yaml).
+# `supertuxkart` is the CMake executable target and the desktop file's Exec=
+# and StartupWMClass= (supertuxkart.exe on Windows, also under Wine);
+# net.supertuxkart.SuperTuxKart is the Flatpak id. Names not checked on an
+# install.
+supertuxkart,supertuxkart.exe,net.supertuxkart.SuperTuxKart:
+  overlay: supertuxkart_template.mods.png
+# Hedgewars (overlay_sources/hedgewars/hedgewars.yaml). A match runs in the
+# engine, `hwengine` (add_executable in hedgewars/CMakeLists.txt); the frontend
+# is `hedgewars` (QTfrontend/CMakeLists.txt, the desktop file's Exec=), and
+# org.hedgewars.Hedgewars is the Flathub app id. Names not checked on an
+# install.
+hwengine,hwengine.exe,hedgewars,hedgewars.exe,org.hedgewars.Hedgewars:
+  overlay: hedgewars_template.mods.png
+# FlightGear 2024.1.7 (overlay_sources/flightgear/flightgear.yaml). The global
+# default keys only: an aircraft adds and replaces keys of its own. `fgfs` is
+# the CMake executable target and the desktop file's Exec= (fgfs.exe on
+# Windows); the macOS bundle sets OUTPUT_NAME "FlightGear", and
+# org.flightgear.FlightGear is the Flathub app id. Names not checked on an
+# install.
+fgfs,fgfs.exe,flightgear,org.flightgear.FlightGear:
+  overlay: flightgear_template.mods.png
+# Thrive 1.7.0 (overlay_sources/thrive/thrive.yaml). A Godot project: the
+# export paths in export_presets.cfg are Thrive.x86_64 (Linux) and Thrive.exe
+# (Windows), and the project name is Thrive. The macOS and Steam names were
+# not looked up. Names not checked on an install.
+thrive,thrive.exe,thrive.x86_64:
+  overlay: [thrive_template.mods.png, thrive_template.combo.mods.png]
 # League of Legends (overlay_sources/lol/lol.yaml), the in-game window only. The
 # game is `League of Legends.exe` on Windows and the `LeagueofLegends` app on
 # macOS. The lobby client (LeagueClient, LeagueClientUx) is a different process
