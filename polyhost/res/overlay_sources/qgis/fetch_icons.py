@@ -9,6 +9,10 @@ in DejaVu Sans Bold. The ESC mark is QGIS's own monochrome logo
 (`images/icons/qgis-icon-minimal-black.svg` at tag final-4_2_3), rendered at
 32x32 and reduced to 1 bit. See SOURCES.md.
 
+The drawn text glyphs, the lock composites and the ESC mark are skipped when
+their PNG exists, so a hand edit survives a re-run. To redraw one, delete its
+PNG first. The fetched and borrowed icons are written again on every run.
+
     pip install cairosvg Pillow
     python polyhost/res/overlay_sources/qgis/fetch_icons.py
 """
@@ -26,6 +30,7 @@ from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
+from dcc_glyphs import guarded  # noqa: E402
 
 RENDER_PX = 96
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
@@ -253,18 +258,19 @@ def main() -> int:
     _add_sign(out / "zoomintool.png", plus=True)
     _add_sign(out / "zoomouttool.png", plus=False)
     for name, text in TEXT.items():
-        _draw_text(out / f"{name}.png", text)
-        n += 1
+        guarded(out / f"{name}.png", lambda p, t=text: _draw_text(p, t),
+                f"text {text!r} in DejaVu Sans Bold")
     for name, text in LOCKS.items():
-        _lock_with(out / "cadlock.png", out / f"{name}.png", text)
-        n += 1
+        guarded(out / f"{name}.png",
+                lambda p, t=text: _lock_with(out / "cadlock.png", p, t),
+                f"cadlock.png + {text!r} in DejaVu Sans Bold")
     mark = out / "qgis.png"
     if mark.exists():
         print("  qgis.png  <- committed asset (left as-is)")
     else:
         _qgis_mark(mark)
         print(f"  qgis.png  <- QGIS {QGIS_TAG} qgis-icon-minimal-black.svg at {MARK_PX}x{MARK_PX}")
-    print(f"Wrote {n + 1} icons to {out}")
+    print(f"Fetched {n} icons to {out}")
     return 0
 
 

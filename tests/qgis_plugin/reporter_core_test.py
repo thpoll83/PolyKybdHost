@@ -75,16 +75,17 @@ class PayloadTest(unittest.TestCase):
 
 class SenderTest(unittest.TestCase):
     def test_latest_wins_and_stop_delivers_the_withdrawal(self):
-        gate, got = threading.Event(), []
+        gate, started, got = threading.Event(), threading.Event(), []
 
         def slow_post(port, body):
+            started.set()
             gate.wait(2)
             got.append(json.loads(body))
 
         s = core.Sender(post=slow_post)
-        t0 = time.monotonic()
         s.submit(50164, "qgis://map/pan")
-        time.sleep(0.05)                       # the first post is now in flight
+        self.assertTrue(started.wait(2))       # the first post is now in flight
+        t0 = time.monotonic()
         for tool in ("select", "measure"):
             s.submit(50164, f"qgis://map/{tool}")
         s.submit(50164, None, focused=False)

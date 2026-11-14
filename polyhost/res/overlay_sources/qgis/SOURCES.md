@@ -19,9 +19,9 @@ plugin, and for every other tool or window, the main set above loads.
 | Set | URL | Spec | Keys changed from the main set |
 |---|---|---|---|
 | `qgis_digitize_template` | `qgis://map/digitize` | `digitize.yaml` | Del and Backspace remove the last vertex |
-| `qgis_digitize_cad_template` | `qgis://map/digitize/cad` | `digitize_cad.yaml` | as above, plus the Advanced Digitizing keys |
+| `qgis_digitize_cad_template` | `qgis://map/digitize/cad` | `digitize_cad.yaml` | as above, plus the Advanced Digitizing keys; Ctrl+N and Ctrl+Shift+N left out |
 | `qgis_vertex_template` | `qgis://map/vertex` | `vertex.yaml` | Del/Backspace delete the vertex, O, Shift+R, comma, period; R, T and Ctrl+Shift+G left out |
-| `qgis_vertex_cad_template` | `qgis://map/vertex/cad` | `vertex_cad.yaml` | as above, plus the Advanced Digitizing keys |
+| `qgis_vertex_cad_template` | `qgis://map/vertex/cad` | `vertex_cad.yaml` | as above, plus the Advanced Digitizing keys; Ctrl+N and Ctrl+Shift+N left out |
 | `qgis_layout_template` | `qgis://layout` | `layout.yaml` | the print layout designer's own keys |
 
 The four map-tool specs are GENERATED from `bindings.yaml` by
@@ -48,7 +48,10 @@ NURBS key below, which is new in 4.x):
   (Z: Alt only, Ctrl+Z stays Undo); C construction mode; P cycles
   perpendicular/parallel; N and Shift+N the next and previous common angle.
   The filter takes Ctrl+X, Ctrl+A, Ctrl+D and Ctrl+M from Cut, Select All,
-  Remove Layer and New Map View, so the CAD sets draw the lock there. Qt's
+  Remove Layer and New Map View, so the CAD sets draw the lock there. Its N
+  case accepts the key whatever the modifiers, so Ctrl+N (New) and
+  Ctrl+Shift+N (New GeoPackage layer) also change the common angle; the CAD
+  sets leave those two keys out (`CAD_DROP` in `gen_mode_specs.py`). Qt's
   Control is Cmd on macOS. Backspace/Delete remove the previous point
   (`canvasKeyPressEventFilter`).
 - `src/ui/layout/qgslayoutdesignerbase.ui` (every `shortcut` property) and
@@ -61,7 +64,8 @@ NURBS key below, which is new in 4.x):
 New icons: Material Symbols (Apache-2.0) through `fetch_icons.py`, the same
 source as the main set. The Advanced Digitizing value keys are text in DejaVu
 Sans Bold (`X=`, `ΔX`, `∠+`, `⊥∥`, `1:1`, ...); a lock key is the Material
-`lock` glyph with the value it locks drawn beside it (`_lock_with`).
+`lock` glyph with the value it locks drawn beside it in DejaVu Sans Bold
+(`_lock_with`). The font, its licence and the file names are under Icons.
 
 ## App names (routing)
 
@@ -160,8 +164,25 @@ Platform differences in the set:
   `recallview.png` (FreeCAD), `measure.png`, `zoomfit.png`, `unselectall.png`,
   `search.png`, `togglelayer.png` (KiCad). Their sources are in those sets'
   SOURCES.md.
-- Text in DejaVu Sans Bold, drawn in `fetch_icons.py`: PG, ORA, SL, WMS, CSV,
-  GPKG (the layer types) and ε (QGIS's expression symbol).
+- Text in DejaVu Sans Bold, drawn in `fetch_icons.py` (`_draw_text`). Font:
+  `/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf` from the Debian/Ubuntu
+  package `fonts-dejavu-core` 2.37, <https://dejavu-fonts.github.io/>;
+  Bitstream Vera licence, with the DejaVu changes in the public domain. Files:
+  - layer types and expression: `pglayer.png` (PG), `oralayer.png` (ORA),
+    `sllayer.png` (SL), `wmslayer.png` (WMS), `csvlayer.png` (CSV),
+    `gpkglayer.png` (GPKG), `expression.png` (ε);
+  - Advanced Digitizing values: `cadx.png`, `cady.png`, `cadz.png`,
+    `cadm.png`, `cada.png`, `cadd.png` (`X=` ... `d=`), `cadrelx.png`,
+    `cadrely.png`, `cadrelz.png`, `cadrelm.png`, `cadrela.png` (`ΔX` ...
+    `Δ∠`), `cadperp.png` (⊥∥), `cadnext.png` (∠+), `cadprev.png` (∠-);
+  - `zoom100.png` (1:1).
+- Lock keys, drawn in `fetch_icons.py` (`_lock_with`): `cadlockx.png`,
+  `cadlocky.png`, `cadlockz.png`, `cadlockm.png`, `cadlocka.png`,
+  `cadlockd.png`. Each is `cadlock.png` (Material Symbols `lock`, Apache-2.0)
+  on the left and X, Y, Z, M, ∠ or d in DejaVu Sans Bold (same font and
+  licence as above) on the right.
+- `fetch_icons.py` leaves the text glyphs and the lock keys as they are when
+  the PNG exists, so a hand edit is kept. Delete a PNG to draw it again.
 - `zoomintool.png` and `zoomouttool.png` (Ctrl+Alt+= / Ctrl+Alt+-) are
   `ms:zoom_in_map` / `ms:zoom_out_map` with a + or - drawn in the middle by
   `fetch_icons.py` (`_add_sign`), so the two keys read apart.

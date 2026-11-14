@@ -80,6 +80,10 @@ class PolyKybdContextReporter:
 
         self.sender = core.Sender()
         self.policy = core.SendPolicy()
+        # applicationStateChanged reports changes only: a plugin loaded or
+        # enabled while QGIS is in the background starts its focus age now.
+        self.inactive_since = None
+        self._on_app_state(QApplication.applicationState(), report=False)
         self._connect()
         self.timer = QTimer()
         self.timer.setInterval(int(core.POLL_S * 1000))
@@ -148,12 +152,15 @@ class PolyKybdContextReporter:
         self._watch_layer(layer)
         self._tick()
 
-    def _on_app_state(self, state):
-        if state == Qt.ApplicationActive:
+    def _on_app_state(self, state, report=True):
+        # The scoped name: PyQt6 (QGIS 4, Qt 6 builds of 3.x) has no
+        # Qt.ApplicationActive; PyQt5 accepts both spellings.
+        if state == Qt.ApplicationState.ApplicationActive:
             self.inactive_since = None
         elif self.inactive_since is None:
             self.inactive_since = time.monotonic()
-        self._tick()
+        if report:
+            self._tick()
 
     def _on_toggled(self, checked):
         QgsSettings().setValue(SETTINGS + "enabled", bool(checked))

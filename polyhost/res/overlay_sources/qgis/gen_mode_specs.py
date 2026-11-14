@@ -21,7 +21,9 @@ Key sources (QGIS final-4_2_3, see SOURCES.md):
       field; Shift+X/Y/Z/M/A relative; Ctrl or Alt + X/Y/M/A/D lock (Z: Alt
       only); C construction mode; P perpendicular/parallel; N / Shift+N
       next/previous common angle. canvasKeyPressEventFilter: Backspace/Delete
-      remove the previous point.
+      remove the previous point. The N handler accepts the ShortcutOverride
+      whatever the modifiers, so Ctrl+N and Ctrl+Shift+N also change the
+      common angle and the main window's New actions do not run.
 
     python polyhost/res/overlay_sources/qgis/gen_mode_specs.py           # write
     python polyhost/res/overlay_sources/qgis/gen_mode_specs.py --check   # compare only
@@ -73,6 +75,10 @@ for key, f, ctrl_locks in _FIELDS:
                         "label": f"Lock {_NAMES[f]}"})
     CAD_ADD.append({"key": key, "mods": ["ALT"], "icon": f"cadlock{f}.png",
                     "label": f"Lock {_NAMES[f]}"})
+# With CAD on, QGIS takes every N key press for the common angle (see above),
+# so the base set's Ctrl+N (New) and Ctrl+Shift+N (New GeoPackage layer) never
+# run. The CAD sets drop them.
+CAD_DROP = {("N", ("CMDCTRL",)), ("N", ("CMDCTRL", "SHIFT"))}
 CAD_ADD += [
     {"key": "C", "mods": [], "icon": "construction.png", "label": "Construction mode"},
     {"key": "P", "mods": [], "icon": "cadperp.png", "label": "Perpendicular / parallel"},
@@ -108,13 +114,13 @@ def specs():
     return {
         "digitize.yaml": _derive(base, DIGITIZE_DROP, DIGITIZE_ADD, "qgis_digitize_template",
                                  "a capture tool (qgis://map/digitize)"),
-        "digitize_cad.yaml": _derive(base, DIGITIZE_DROP, DIGITIZE_ADD + CAD_ADD,
+        "digitize_cad.yaml": _derive(base, DIGITIZE_DROP | CAD_DROP, DIGITIZE_ADD + CAD_ADD,
                                      "qgis_digitize_cad_template",
                                      "a capture tool with Advanced Digitizing on "
                                      "(qgis://map/digitize/cad)"),
         "vertex.yaml": _derive(base, VERTEX_DROP, VERTEX_ADD, "qgis_vertex_template",
                                "the vertex tool (qgis://map/vertex)"),
-        "vertex_cad.yaml": _derive(base, VERTEX_DROP, VERTEX_ADD + CAD_ADD,
+        "vertex_cad.yaml": _derive(base, VERTEX_DROP | CAD_DROP, VERTEX_ADD + CAD_ADD,
                                    "qgis_vertex_cad_template",
                                    "the vertex tool with Advanced Digitizing on "
                                    "(qgis://map/vertex/cad)"),

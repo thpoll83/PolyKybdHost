@@ -18,7 +18,6 @@ program_icon_anchor: right
 program_icon_region: [37, 32]
 program_icon_margin: 0
 bindings:
-  - {key: N, mods: [CMDCTRL], label: New}
   - {key: O, mods: [CMDCTRL], label: Open}
   - {key: S, mods: [CMDCTRL], label: Save}
   - {key: S, mods: [CMDCTRL, SHIFT], label: Save as}
@@ -46,7 +45,6 @@ bindings:
   - {key: L, mods: [CMDCTRL, SHIFT], icon: sllayer.png, label: Add SpatiaLite layer}
   - {key: O, mods: [CMDCTRL, SHIFT], icon: oralayer.png, label: Add Oracle layer}
   - {key: W, mods: [CMDCTRL, SHIFT], icon: wmslayer.png, label: Add WMS/WMTS layer}
-  - {key: N, mods: [CMDCTRL, SHIFT], icon: gpkglayer.png, label: New GeoPackage layer}
   - {key: V, mods: [CMDCTRL, ALT], icon: scratchlayer.png, label: Paste as scratch layer}
   - {key: C, mods: [CMDCTRL, SHIFT], icon: setcrs.png, label: Set layer CRS}
   - {key: F, mods: [CMDCTRL], icon: filter.png, label: Filter}
