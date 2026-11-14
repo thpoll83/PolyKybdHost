@@ -232,6 +232,12 @@ Licence texts for the icon licences named in this file:
 - GPL-2.0-or-later (the game): https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 - CC0 1.0: https://creativecommons.org/publicdomain/zero/1.0/
 
+Where each icon file comes from. The icon table gives the name to put in the
+URL; the same URLs are in `SOURCES` of `cnc_remastered/fetch_icons.py`.
+
+- Font Awesome Free 6.5.2, solid (`fa:<name>`): `https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/svgs/solid/<name>.svg`
+- game-icons.net (`gi:<author>/<name>`): `https://game-icons.net/icons/000000/transparent/1x1/<author>/<name>.svg`
+
 Material Design Icons are from <https://pictogrammers.com/library/mdi/>
 (Templarian/MaterialDesign at commit 2424e74).
 
