@@ -1741,6 +1741,19 @@ windowsterminal,wt:
     # modes come before `emacs://`. org-mode lists the global set FIRST and its
     # own after it (a later file takes priority per key); Dired's set is
     # complete on its own.
+    # Evil states (`emacs://<major-mode>/<state>`) come first: evil's state
+    # maps take priority over the major mode's keys, so in Org or Dired normal
+    # state h j k l d x are evil's. Each set is the Vim set of that mode
+    # without the keys evil binds differently (overlay_sources/emacs/evil.yaml).
+    # The needle only selects the route; `url` requires the state at the end of
+    # an emacs:// report, so `vim://normal` (matched above) and a major mode
+    # such as `visual-basic-mode` never match. Emacs state, operator state and
+    # no evil fall through to the major-mode routes below.
+    "/normal": { url: '^emacs://[^/]+/normal$', overlay: emacs_evil_normal_template.mods.png }
+    "/visual": { url: '^emacs://[^/]+/visual$', overlay: emacs_evil_visual_template.mods.png }
+    "/insert": { url: '^emacs://[^/]+/insert$', overlay: emacs_evil_insert_template.mods.png }
+    "/replace": { url: '^emacs://[^/]+/replace$', overlay: emacs_evil_replace_template.mods.png }
+    "/motion": { url: '^emacs://[^/]+/motion$', overlay: emacs_evil_motion_template.mods.png }
     "emacs://org-mode":
       overlay: [emacs_template.mods.png, emacs_template.combo.mods.png, emacs_template.extra.mods.png, emacs_org_template.mods.png, emacs_org_template.combo.mods.png]
     "emacs://dired-mode":

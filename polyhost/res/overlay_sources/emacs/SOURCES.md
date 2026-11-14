@@ -1,13 +1,16 @@
 # GNU Emacs overlays: sources
 
 Three overlay sets for GNU Emacs, chosen by the `emacs://<major-mode>` report of
-the `polykybd-mode` package (`emacs-package/` at the repository root):
+the `polykybd-mode` package (`emacs-package/` at the repository root), and five
+sets for the evil states it adds to the report (`emacs://<major-mode>/<state>`,
+see "Evil states" below):
 
 | spec | output | used for |
 |---|---|---|
 | `global.yaml` | `emacs_template` | every major mode, and GUI Emacs with no report |
 | `org.yaml` | `emacs_org_template` | org-mode, loaded AFTER the global set (a later file takes priority per key) |
 | `dired.yaml` | `emacs_dired_template` | Dired; a complete set, not drawn on top of the global set |
+| `evil_<state>.yaml` (generated) | `emacs_evil_<state>_template` | evil normal, visual, insert, replace and motion state, in every major mode |
 
 Regenerate:
 
@@ -18,6 +21,56 @@ for s in global org dired; do
       --preview /tmp/emacs_$s
 done
 ```
+
+## Evil states
+
+[evil](https://github.com/emacs-evil/evil) emulates Vim. Its state keymaps take
+priority over the major mode's keys, so an evil state route comes before the
+major-mode routes in the mapping: Org or Dired in normal state shows the evil
+normal set. Each set is the Vim set of the same mode (`../vim/`) without the
+keys that evil's default keymaps bind differently, so a key never shows Vim's
+action where evil does something else. The icons are the Vim files; ESC shows
+the state word (NOR, VIS, INS, REP, MOT) beside the Emacs logo.
+
+```bash
+python polyhost/res/overlay_sources/emacs/fetch_icons.py          # the ESC marks
+python polyhost/res/overlay_sources/emacs/gen_evil_bindings.py --render --preview /tmp/evil_preview
+```
+
+`evil.yaml` is the input: which Vim set each state starts from, the keys left
+out (each with what evil does instead) and the motion-state keys. Source:
+`evil-maps.el` and `evil-vars.el` of evil 1.15.0
+(https://github.com/emacs-evil/evil, branch master, read 2026-11-14), with the
+default settings: `evil-want-C-u-scroll` nil, `evil-want-C-d-scroll` t,
+`evil-want-C-i-jump` t, `evil-want-C-w-delete` t, `evil-want-C-u-delete` nil,
+`evil-want-C-h-delete` nil, `evil-toggle-key` C-z, `evil-undo-system` nil. A
+user who changes one of these sees a blank key or a key that no longer
+matches; the sets follow the defaults only.
+
+| state | starts from | keys | left out (evil does something else) |
+|---|---|---|---|
+| normal | Vim Normal | 105 | C-u (universal argument), C-r (redo: with `evil-undo-system` nil it only reports that no undo system is set), U, C-a, C-x, C-g, C-l, C-z (Emacs state), C-Left/C-Right, S-Left/S-Right, S-Up/S-Down |
+| visual | Vim Visual | 90 | C-u, C-a, C-x, C-c, C-Left/C-Right, S-Left/S-Right, S-Up/S-Down |
+| insert | Vim Insert | 15 | C-u, C-h (help prefix), C-c |
+| replace | Vim Replace | 15 | C-u, C-h, C-c, C-w (it deletes the word and does not restore it) |
+| motion | Vim Normal: the `motions` section of `../vim/keys.yaml` and the motion-map keys K v V C-v : ! y Y C-o C-i TAB C-6 C-w F1 | 71 | as normal, and Backspace (DEL is in the normal map only) |
+
+Keys evil does not bind fall through to the Emacs global keymap. They are drawn
+only where that binding does what the picture shows: PgUp/PgDn, C-Home/C-End,
+Delete, F1.
+
+Not drawn as a set:
+
+- **Emacs state** (`/emacs`, C-z): the Emacs keys are active, so the major-mode
+  route applies (global, Org or Dired set).
+- **Operator-pending state** (`/operator`, after `d`, `c`, `y` ...): evil reads
+  the motion inside the operator command, so `post-command-hook` does not run
+  and the package does not report this state. A report of it would get the
+  major-mode set.
+- **Insert state keeps only evil's keys**: the Emacs global keys that still work
+  in insert state (C-f, M-x ...) are not drawn, because the global set also
+  draws C-z (suspend) and C-n, C-p, C-a, C-e, C-k, C-y, C-w, C-v, C-d, C-t, C-o,
+  C-r with their Emacs meaning, which evil's insert state replaces.
 
 ## Shortcut references (read 2026-10-30)
 
@@ -134,7 +187,7 @@ pixels at 40x40) reads better, so it is the one used.
 | file | source | licence |
 |---|---|---|
 | `emacs.png` | Simple Icons `gnuemacs` | CC0-1.0 (nominative use of the mark) |
-| `esc_global.png`, `esc_org.png`, `esc_dired.png` | `emacs.png` and a word, drawn by `fetch_icons.py` | as `emacs.png`; the word GPL-3.0-or-later |
+| `esc_global.png`, `esc_org.png`, `esc_dired.png`, `esc_evil_<state>.png` | `emacs.png` and a word, drawn by `fetch_icons.py` | as `emacs.png`; the word GPL-3.0-or-later |
 | `dump_keys.el` | this repository | GPL-3.0-or-later |
 
 ### Microsoft Fluent UI System Icons (MIT)
