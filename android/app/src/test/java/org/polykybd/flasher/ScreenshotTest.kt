@@ -56,8 +56,10 @@ class ScreenshotTest {
         v.findViewById<Button>(R.id.sign_in).visibility = View.GONE
         v.findViewById<TextView>(R.id.message).visibility = View.GONE
         val list = v.findViewById<LinearLayout>(R.id.releases)
-        fun card(title: String, info: String, run: String?) {
+        fun card(title: String, info: String, run: String?, enabled: Boolean = true) {
             val c = paparazzi.inflate<View>(R.layout.item_release)
+            c.findViewById<Button>(R.id.dry_run).isEnabled = enabled
+            c.findViewById<Button>(R.id.publish).isEnabled = enabled
             c.findViewById<TextView>(R.id.title).text = title
             c.findViewById<TextView>(R.id.info).text = info
             if (run != null) {
@@ -68,8 +70,9 @@ class ScreenshotTest {
         }
         card("Firmware release", "Ready to publish: PolyKybd-fw-v1.13.0\n“PolyKybd v1.13.0 AI agent keys and USB MIDI”\n" +
             "Latest published: PolyKybd-fw-v1.12.0", null)
-        card("Host app release", "v1.22.6 is already published.\n“PolyKybdHost v1.22.6”\nLatest published: v1.22.6",
-            "✓ Workflow succeeded.")
+        card("Host app release", "Nothing new to publish: v1.22.6 is already released. " +
+            "Prepare the next notes on the release-notes branch.\nLatest published: v1.22.6",
+            "✓ Workflow succeeded.", enabled = false)
         paparazzi.snapshot(v)
     }
 
