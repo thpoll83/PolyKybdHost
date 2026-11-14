@@ -1,11 +1,15 @@
 # Unreal Tournament 2004 overlay for PolyKybd.
 #
-# Keys: the weapon slots. 1 to 0 run SwitchWeapon 1 to 10, which selects the
-# weapon whose InventoryGroup is that number (read from the stock weapon
-# classes in XWeapons.u, UT2004 3369). See SOURCES.md.
+# Keys: the default bindings in System/DefUser.ini (UT2004 3369). 1 to 0
+# select the weapon whose InventoryGroup is that number (the stock weapon
+# classes in XWeapons.u). See SOURCES.md.
 #
-# The other default bindings were not checked against DefUser.ini and are
-# left out until they are.
+# Each binding names its game command (`command:`, as DefUser.ini writes it).
+# With the game's files on the machine, the reader reads the player's
+# User.ini and moves every icon to the keys the player bound that command to.
+#
+# W A S D, the arrows and the other movement keys stay blank: the legend is
+# enough. Ctrl and Shift (jump, duck) are modifier keys and get no icon.
 #
 # Regenerate:
 #   python polyhost/res/overlay_sources/ut2004/fetch_icons.py
@@ -35,16 +39,64 @@ bindings:
 
   # Weapon slots (InventoryGroup). 9 is the Lightning Gun; 0 holds the
   # Redeemer and the Ion Painter, whichever the player picked up.
-  - { key: "1", icon: shieldgun.png, label: "Shield Gun", region: [48, 40] }
-  - { key: "2", icon: assaultrifle.png, label: "Assault Rifle", region: [48, 40] }
-  - { key: "3", icon: biorifle.png, label: "Bio-Rifle", region: [48, 40] }
-  - { key: "4", icon: shockrifle.png, label: "Shock Rifle", region: [48, 40] }
-  - { key: "5", icon: linkgun.png, label: "Link Gun", region: [48, 40] }
-  - { key: "6", icon: minigun.png, label: "Minigun", region: [48, 40] }
-  - { key: "7", icon: flakcannon.png, label: "Flak Cannon", region: [48, 40] }
-  - { key: "8", icon: rocketlauncher.png, label: "Rocket Launcher", region: [48, 40] }
-  - { key: "9", icon: lightninggun.png, label: "Lightning Gun", region: [48, 40] }
-  - { key: "0", icon: superweapon.png, label: "Redeemer / Ion Painter", region: [48, 40] }
+  - { key: "1", command: SwitchWeapon 1, icon: shieldgun.png, label: "Shield Gun", region: [48, 40] }
+  - { key: "2", command: SwitchWeapon 2, icon: assaultrifle.png, label: "Assault Rifle", region: [48, 40] }
+  - { key: "3", command: SwitchWeapon 3, icon: biorifle.png, label: "Bio-Rifle", region: [48, 40] }
+  - { key: "4", command: SwitchWeapon 4, icon: shockrifle.png, label: "Shock Rifle", region: [48, 40] }
+  - { key: "5", command: SwitchWeapon 5, icon: linkgun.png, label: "Link Gun", region: [48, 40] }
+  - { key: "6", command: SwitchWeapon 6, icon: minigun.png, label: "Minigun", region: [48, 40] }
+  - { key: "7", command: SwitchWeapon 7, icon: flakcannon.png, label: "Flak Cannon", region: [48, 40] }
+  - { key: "8", command: SwitchWeapon 8, icon: rocketlauncher.png, label: "Rocket Launcher", region: [48, 40] }
+  - { key: "9", command: SwitchWeapon 9, icon: lightninggun.png, label: "Lightning Gun", region: [48, 40] }
+  - { key: "0", command: SwitchWeapon 0, icon: superweapon.png, label: "Redeemer / Ion Painter", region: [48, 40] }
+  - { key: Q, command: SwitchWeapon 10, icon: translocator.png, label: "Translocator" }
+
+  # Weapons and inventory
+  - { key: B, command: SwitchToLastWeapon, icon: lastweapon.png, label: "Last weapon" }
+  - { key: G, command: SwitchToBestWeapon, icon: bestweapon.png, label: "Best weapon" }
+  - { key: BACKSLASH, command: ThrowWeapon, icon: throwweapon.png, label: "Throw weapon" }
+  - { key: SLASH, command: NextWeapon, icon: nextweapon.png, label: "Next weapon" }
+  - { key: LBRACKET, command: InventoryPrevious, icon: invprev.png, label: "Previous item" }
+  - { key: RBRACKET, command: InventoryNext, icon: invnext.png, label: "Next item" }
+
+  # Movement and actions
+  - { key: SPACE, command: Jump, icon: jump.png, label: "Jump" }
+  - { key: BSPC, command: Jump, icon: jump.png, label: "Jump" }
+  - { key: C, command: Duck, icon: crouch.png, label: "Crouch" }
+  - { key: E, command: Use, icon: use.png, label: "Use" }
+  - { key: U, command: Use, icon: use.png, label: "Use" }
+  - { key: ENTER, command: Use, icon: use.png, label: "Use" }
+  - { key: J, command: Taunt pthrust, icon: taunt.png, label: "Taunt 1" }
+  - { key: K, command: Taunt asssmack, icon: taunt.png, label: "Taunt 2" }
+  - { key: L, command: Taunt throatcut, icon: taunt.png, label: "Taunt 3" }
+  - { key: SEMICOLON, command: Taunt gesture_point, icon: taunt.png, label: "Point" }
+  - { key: M, command: BasePath 0, icon: basepath.png, label: "Base path 0" }
+  - { key: N, command: BasePath 1, icon: basepath.png, label: "Base path 1" }
+
+  # Communication
+  - { key: T, command: Talk, icon: talk.png, label: "Say" }
+  - { key: R, command: TeamTalk, icon: teamtalk.png, label: "Team say" }
+  - { key: TAB, command: Type, icon: type.png, label: "Console line" }
+  - { key: F, command: VoiceTalk, icon: voicetalk.png, label: "Voice chat (hold)" }
+  - { key: I, command: ToggleTeamChat, icon: voiceteam.png, label: "Voice: team channel" }
+  - { key: O, command: ToggleLocalChat, icon: voicelocal.png, label: "Voice: local channel" }
+  - { key: P, command: TogglePublicChat, icon: voicepublic.png, label: "Voice: public channel" }
+  - { key: V, command: SpeechMenuToggle, icon: speechmenu.png, label: "Speech menu" }
+  - { key: X, command: ShowVoteMenu, icon: vote.png, label: "Vote menu" }
+
+  # Display and menus
+  - { key: F1, command: ShowScores, icon: scores.png, label: "Scores", region: [34, 40] }
+  - { key: F2, command: InGameChat, icon: ingamechat.png, label: "In-game chat", region: [34, 40] }
+  - { key: F3, command: ShowStats, icon: stats.png, label: "Stats", region: [34, 40] }
+  - { key: F4, command: ToggleBehindView, icon: behindview.png, label: "Third-person view", region: [34, 40] }
+  - { key: F6, command: Stat Net, icon: netstats.png, label: "Network stats", region: [34, 40] }
+  - { key: F9, command: shot, icon: screenshot.png, label: "Screenshot" }
+  - { key: F11, command: MusicMenu, icon: music.png, label: "Music menu" }
+  - { key: F12, command: ToggleRadarMap, icon: radar.png, label: "Radar map" }
+  - { key: GRAVE, command: ConsoleToggle, icon: console.png, label: "Console" }
+  - { key: EQUAL, command: GrowHUD, icon: growhud.png, label: "Larger HUD" }
+  - { key: MINUS, command: ShrinkHUD, icon: shrinkhud.png, label: "Smaller HUD" }
+  - { key: PAUSE, command: Pause, icon: pause.png, label: "Pause" }
 
 # The weapon keys drawn from the player's own install when it is on the
 # machine (polyhost/services/game_assets/unreal2, reader ut2004): the weapon

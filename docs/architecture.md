@@ -440,7 +440,9 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
     drawing the weapon keys from the HUD texture in HudContent.utx at the
     IconCoords each weapon class in XWeapons.u declares, with the Unreal package
     format in `package.py` and DXT1/3/5 in `dxt.py`; run on the UT2004 3369
-    files). `openra.py` lists the folders where OpenRA installs the
+    files; it also reads the player's key bindings from User.ini
+    (`bindings.py`), and `build.remap` moves each icon whose binding names a
+    `command:` to the keys the player bound that command to). `openra.py` lists the folders where OpenRA installs the
     original game files; the Red Alert, Tiberian Dawn and Dune 2000 readers
     search them. Its
     `__init__.py` declares `READER` (module, settings, folder and variant

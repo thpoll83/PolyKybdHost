@@ -12,6 +12,10 @@ block says what to draw on each key, as a recipe, and ``build.py`` places it:
 - ``{weapon: ShockRifle}``: the weapon bar picture of that class, from
   XWeapons.u. ``package: Onslaught.u`` reads the class from that file.
 
+``bindings()`` reads the player's key bindings from System/User.ini, so the
+build moves each icon to the keys the player bound its command to
+(``build.remap``).
+
 The picture is drawn like the C&C sprites (``dither.keycap``): the grey
 dithered inside, the outline lit. The game draws a dark glow round each
 weapon, so the cover is eroded by ``erode`` px (default 1) first. The result
@@ -28,11 +32,12 @@ import numpy as np
 
 from polyhost.services.game_assets import dither
 from polyhost.services.game_assets.unreal2 import dxt
+from polyhost.services.game_assets.unreal2.bindings import MAX_INI, parse
 from polyhost.services.game_assets.unreal2.package import Package
 
 TEXTURES = ("textures", "hudcontent.utx")
 WEAPONS = ("system", "xweapons.u")
-OPTIONAL = {"onslaught.u": ("system", "onslaught.u")}
+OPTIONAL = {"onslaught.u": ("system", "onslaught.u"), "user.ini": ("system", "user.ini")}
 
 SHARP = {"lo_p": 5, "hi_p": 95, "curve": 0.6, "sharpen": 1.5}
 ALPHA = 0.5                      # a pixel belongs to the weapon from this alpha on
@@ -127,6 +132,18 @@ def find(folder: str = "", hint=None) -> dict | None:
         if files:
             return files
     return None
+
+
+def bindings(files: dict) -> dict | None:
+    """{command: [key, ...]} from the player's User.ini, or None without one
+    (``bindings.parse``)."""
+    path = files.get("user.ini")
+    if path is None:
+        return None
+    if os.path.getsize(path) > MAX_INI:
+        raise ValueError(f"{Path(path).name} is larger than a User.ini this reader opens")
+    with open(path, "rb") as f:
+        return parse(f.read().decode("latin-1"))
 
 
 def fingerprint(files: dict) -> list:

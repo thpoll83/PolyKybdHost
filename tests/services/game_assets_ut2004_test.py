@@ -20,6 +20,7 @@ from polyhost.device.keys import KeyCode, Modifier
 from polyhost.services import game_assets
 from polyhost.services.game_assets import build, dither
 from polyhost.services.game_assets.readers import READERS, reader_defaults
+from polyhost.services.game_assets.unreal2 import bindings as ut_bindings
 from polyhost.services.game_assets.unreal2 import dxt
 from polyhost.services.game_assets.unreal2 import reader as ut
 from polyhost.services.game_assets.unreal2.package import Package, compact, encode_compact
@@ -153,14 +154,30 @@ def hud_texture(n=10, cell=(64, 32)):
     return tex, boxes
 
 
-def make_install(root: Path, boxes=None, tex=None, system="System", textures="Textures"):
+def make_install(root: Path, boxes=None, tex=None, system="System", textures="Textures",
+                 user_ini=None):
     if tex is None or boxes is None:
         tex, boxes = hud_texture()
     (root / system).mkdir(parents=True, exist_ok=True)
     (root / textures).mkdir(parents=True, exist_ok=True)
     (root / textures / "HudContent.utx").write_bytes(texture_package(tex))
     (root / system / "XWeapons.u").write_bytes(weapons_package(boxes))
+    if user_ini is not None:
+        (root / system / "User.ini").write_text(user_ini, encoding="latin-1")
     return boxes
+
+
+def default_user_ini(overrides=None) -> str:
+    """A User.ini with the spec's default bindings, in UT2004's key names,
+    with `overrides` ({UT key name: command}) applied."""
+    names = {v: k for k, v in ut_bindings.KEY_NAMES.items()}
+    lines = {}
+    for b in build.bindings(build.load_spec(SPEC)):
+        if "command" in b:
+            lines[names[str(b["key"]).upper()]] = b["command"]
+    lines.update({k.lower(): v for k, v in (overrides or {}).items()})
+    body = "\n".join(f"{k}={v}" for k, v in lines.items())
+    return f"[DefaultPlayer]\nName=Player\n\n[Engine.Input]\nLeftMouse=Fire\n{body}\n\n[Engine.HUD]\nT=Talk\n"
 
 # --------------------------------------------------------------------------- #
 # the file formats
@@ -421,7 +438,67 @@ class BuildTest(unittest.TestCase):
                 self.assertIsNone(build.build(TEMPLATE, SPEC, {"game_ut2004_dir": d}.get, Path(d)))
 
 
+class BindingsTest(unittest.TestCase):
+
+    def test_parse_reads_only_the_input_section(self):
+        text = ("[DefaultPlayer]\nName=Space\n[Engine.Input]\nAliases[0]=(Command=\"Jump\",Alias=Jump)\n"
+                "Space=Jump\nbackspace=Jump\nE=Use\nH=\nLeftMouse=Fire\nNumPad8=MoveForward\n"
+                "Ctrl=Jump\n; Q=Talk\nTilde=ConsoleToggle\n4=SwitchWeapon  4\n"
+                "[Engine.HUD]\nT=Talk\n")
+        got = ut_bindings.parse(text)
+        self.assertEqual(got, {"Jump": ["SPACE", "BSPC"], "Use": ["E"], "ConsoleToggle": ["GRAVE"],
+                               "SwitchWeapon  4": ["4"]})
+
+    def test_every_key_name_has_a_keycap_cell(self):
+        from polyhost.res.overlay_layout import resolve_key
+        for ut_name, name in ut_bindings.KEY_NAMES.items():
+            self.assertNotEqual(resolve_key(name), KeyCode.KC_LEFT_CTRL, ut_name)
+
+
+class RemapTest(unittest.TestCase):
+    """The icons follow the player's User.ini."""
+
+    def built(self, user_ini):
+        with tempfile.TemporaryDirectory() as d:
+            make_install(Path(d) / "ut", user_ini=user_ini)
+            out = build.build(TEMPLATE, SPEC, {"game_ut2004_dir": str(Path(d) / "ut")}.get, Path(d) / "c")
+            return cells(out, Modifier.NO_MOD)
+
+    def test_the_default_bindings_move_nothing(self):
+        self.assertEqual(self.built(default_user_ini()), self.built(None))
+
+    def test_rebound_keys_take_the_icon_and_the_old_keys_are_cleared(self):
+        plain = self.built(None)
+        got = self.built(default_user_ini({"Q": "", "H": "SwitchWeapon 10", "Space": "Use",
+                                           "T": "", "Y": "talk", "Escape": "Jump"}))
+        kc = {k: KeyCode[f"KC_{k}"].value for k in ("Q", "H", "SPACE", "E", "T", "Y", "BACKSPACE",
+                                                     "ESCAPE", "R")}
+        blank = got.get(kc["Q"])
+        self.assertEqual(got[kc["H"]], plain[kc["Q"]], "the Translocator moved to H")
+        self.assertNotEqual(plain[kc["Q"]], blank, "and left Q")
+        self.assertEqual(got[kc["SPACE"]], plain[kc["E"]], "Space shows Use")
+        self.assertEqual(got[kc["BACKSPACE"]], plain[kc["BACKSPACE"]], "Jump stays on Backspace")
+        self.assertEqual(got[kc["Y"]], plain[kc["T"]], "a command in another case still matches")
+        self.assertEqual(got.get(kc["T"]), blank)
+        self.assertEqual(got[kc["ESCAPE"]], plain[kc["ESCAPE"]], "ESC keeps the program mark")
+        self.assertEqual(got[kc["R"]], plain[kc["R"]], "an untouched key is unchanged")
+
+    def test_an_unreadable_user_ini_leaves_the_defaults(self):
+        plain = self.built(None)
+        with mock.patch.object(ut, "MAX_INI", 4), self.assertLogs("PolyHost", "WARNING"):
+            got = self.built(default_user_ini({"Q": "", "H": "SwitchWeapon 10"}))
+        self.assertEqual(got, plain)
+
+    def test_a_reader_without_bindings_is_not_remapped(self):
+        self.assertIsNone(build.player_bindings(object(), {}))
+
+
 class SpecTest(unittest.TestCase):
+
+    def test_every_binding_but_esc_names_its_command(self):
+        for b in build.bindings(build.load_spec(SPEC)):
+            self.assertIn("command", b, b["key"])
+
 
     def test_every_recipe_replaces_a_bound_weapon_key(self):
         spec = build.load_spec(SPEC)
