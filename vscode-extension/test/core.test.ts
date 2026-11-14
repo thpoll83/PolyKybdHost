@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 
 import {
   activeMode, appToken, BRIDGE_VERSION, bridgeMessage, DEFAULT_PORT, InputClock, isTextDiff,
-  MAX_REMOTE_SESSIONS, modeFor, modeUrl, parseBridgeMessage, payload, RemoteStates, ReportQueue,
+  MAX_ENTRIES, MAX_REMOTE_SESSIONS, modeFor, modeUrl, parseBridgeMessage, payload, RemoteStates, ReportQueue,
   SendPolicy, SessionState, settleWithin, validPort, WorkspaceBridge,
 } from "../src/core.ts";
 
@@ -83,7 +83,7 @@ test("other requests and events change nothing; pending map is bounded", () => {
   s.fromAdapter({ type: "event", event: "output", body: { output: "x" } });
   assert.equal(s.isStopped(), false);
   for (let i = 0; i < 200; i++) s.toAdapter({ type: "request", seq: i, command: "next", arguments: {} });
-  assert.ok(s.pending.size <= 64);
+  assert.ok(s.pending.size <= MAX_ENTRIES);
   s.toAdapter(null);
   s.fromAdapter(undefined);
 });

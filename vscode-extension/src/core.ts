@@ -30,7 +30,7 @@ export type Mode = "edit" | "debug/running" | "debug/stopped";
 
 // The most requests waiting for a response that SessionState keeps. A request
 // past it drops the oldest one.
-export const MAX_ENTRIES = 64;
+export const MAX_ENTRIES = 128;
 
 // The most remote debug sessions RemoteStates keeps (states and last seqs). A
 // session past it drops the oldest one.
