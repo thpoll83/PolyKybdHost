@@ -40,6 +40,7 @@ DOLPHIN = _set("dolphin_template")
 PPSSPP = {"windows": _set("ppsspp_template"),
           "macos": _set("ppsspp_template_mac"),
           "linux": _set("ppsspp_template_linux")}
+PCSX2 = _set("pcsx2_template", "combo")
 
 
 def _overlay_handler_class():
@@ -124,6 +125,17 @@ class Emulator2RoutingTest(unittest.TestCase):
 
     def test_ppsspp_files_exist(self):
         self._assert_files_exist(PPSSPP.values())
+
+    def _assert_one_set(self, apps, title, overlay):
+        for app in apps:
+            for os_name in ALL_OS:
+                with self.subTest(app=app, os=os_name):
+                    self.assertEqual(self._route(app, os_name, title), overlay)
+        self._assert_files_exist([overlay])
+
+    def test_pcsx2(self):
+        self._assert_one_set(("pcsx2-qt", "pcsx2", "net.pcsx2.pcsx2"),
+                             "PCSX2 v2.8.2 - Katamari Damacy", PCSX2)
 
 
 if __name__ == "__main__":

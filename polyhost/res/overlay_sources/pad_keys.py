@@ -10,6 +10,8 @@ letter and the START / SELECT pills come from `retroarch/fetch_icons.py`
     stick()     one direction of an analog stick or of the N64 C buttons
     dpad()      one direction of the D-pad
     shape()     a PlayStation face button (triangle, circle, cross, square)
+    shoulder()  a shoulder button or stick click with a two-character name
+    ps_pad()    the whole PlayStation controller, as PCSX2 and DuckStation map it
     numbered()  an action icon with a slot number beside it
     logo_mark() an ESC mark cut from the program's own icon
     wordmark()  an ESC mark set in a font, for a program whose art is not usable
@@ -102,6 +104,24 @@ def shape(name: str, dest: Path) -> None:
     cnc._save_mask(_ring() | (np.asarray(im) > 127), dest)
 
 
+SHOULDER_SIZE = (40, 24)             # w, h of a shoulder() icon
+
+
+def shoulder(text: str, dest: Path) -> None:
+    """A shoulder button or stick click (L1, R2, L3, ZL): two characters at
+    16 px in a 2 px rounded outline, on a SHOULDER_SIZE canvas."""
+    import numpy as np
+    from PIL import Image, ImageDraw
+    w, h = SHOULDER_SIZE
+    g = ra._text_mask(text, 16)
+    im = Image.new("L", (w, h), 0)
+    ImageDraw.Draw(im).rounded_rectangle([0, 0, w - 1, h - 1], radius=8, outline=255, width=2)
+    m = np.array(im) > 127
+    y0, x0 = (h - g.shape[0]) // 2, (w - g.shape[1]) // 2
+    m[y0:y0 + g.shape[0], x0:x0 + g.shape[1]] |= g
+    cnc._save_mask(m, dest)
+
+
 NUMBERED_SIZE = (38, 32)             # w, h of a numbered() icon
 NUMBERED_ICON = 22                   # the action icon's box
 
@@ -123,6 +143,22 @@ def numbered(icon: Path, text: str, dest: Path) -> None:
     m[h - a.shape[0]:, :a.shape[1]] = a
     m[h - g.shape[0]:, w - g.shape[1]:] |= g
     cnc._save_mask(m, dest)
+
+
+def ps_pad(out: Path) -> None:
+    """The PlayStation controller icons the PCSX2 and DuckStation sets share:
+    the four shapes, L1 to L3 and R1 to R3, START and SELECT, the D-pad, and
+    the left and right stick (`lstick<dir>.png`, `rstick<dir>.png`)."""
+    for name in SHAPES:
+        shape(name, out / f"{name}.png")
+    for text in ("L1", "L2", "L3", "R1", "R2", "R3"):
+        shoulder(text, out / f"{text.lower()}.png")
+    ra.pill("START", out / "start.png")
+    ra.pill("SELECT", out / "select.png")
+    for d in DIRECTIONS:
+        dpad(d, out / f"dpad{d}.png")
+        stick(d, out / f"lstick{d}.png", "L")
+        stick(d, out / f"rstick{d}.png", "R")
 
 
 def logo_mark(dest: Path, url: str, lit: str = "alpha", cut: int = 120, box=(37, 32)) -> None:

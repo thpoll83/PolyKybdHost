@@ -3742,6 +3742,12 @@ ppsspp,ppssppwindows64,ppssppwindows,ppssppwindowsarm64,ppssppsdl,ppssppqt,ppssp
       overlay: ppsspp_template_mac.mods.png
     linux:
       overlay: ppsspp_template_linux.mods.png
+# PCSX2, the PlayStation 2 emulator (overlay_sources/pcsx2/). The default
+# hotkeys and the keyboard map of controller 1, release 2.8.2. Process names:
+# pcsx2-qt (CMake target; pcsx2-qt.exe on Windows), the macOS app "PCSX2" and
+# the Flatpak id net.pcsx2.PCSX2. Not checked on a running install.
+pcsx2-qt,pcsx2,net.pcsx2.pcsx2:
+  overlay: [pcsx2_template.mods.png, pcsx2_template.combo.mods.png]
 # PTC Mathcad Prime (overlay_sources/mathcad/). Windows only: MathcadPrime.exe.
 # English / US keys from PTC's 12.0.1.0 shortcut PDF. Name not checked on an
 # install.
