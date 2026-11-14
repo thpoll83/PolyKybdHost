@@ -10,6 +10,8 @@ as the htop route does (tui_routing_test). What it pins:
 * every terminal title of a console build loads the game's set, in Windows
   Terminal and in the terminals without a set of their own;
 * a title that only mentions a game keeps the terminal's own overlay;
+* `java` and `javaw` load the Shattered Pixel Dungeon set for its title and
+  still load the Minecraft and Ghidra sets for theirs;
 * every named file exists.
 """
 
@@ -28,6 +30,9 @@ WT = "windowsterminal_template.mods.png"
 DCSS = ["dcss_template.mods.png"]
 CDDA = ["cdda_template.mods.png"]
 NETHACK = ["nethack_template.mods.png", "nethack_template.combo.mods.png"]
+SPD = ["shattered_pixel_dungeon_template.mods.png"]
+MINECRAFT = ["minecraft_java_template.mods.png", "minecraft_java_template.combo.mods.png"]
+GHIDRA = "ghidra_template"
 
 # Process name (as the host reports it, lower case) -> (window title, set).
 PROCESSES = {
@@ -44,6 +49,9 @@ PROCESSES = {
     "nethack.exe": ("NetHack", NETHACK),
     "nethackw": ("NetHack for Windows - Graphical Interface", NETHACK),
     "nethackw.exe": ("NetHack for Windows - Graphical Interface", NETHACK),
+    "shattered pixel dungeon": ("Shattered Pixel Dungeon", SPD),
+    "shattered pixel dungeon.exe": ("Shattered Pixel Dungeon", SPD),
+    "com.shatteredpixel.shatteredpixeldungeon": ("Shattered Pixel Dungeon", SPD),
 }
 
 # Process names that serve another program too; their set needs the title.
@@ -177,6 +185,25 @@ class RoguelikeRoutingTest(unittest.TestCase):
             for title in ("", None):
                 with self.subTest(app=app, title=title):
                     self.assertEqual(self._route(app, title, "linux"), files)
+
+    def test_java_routes_shattered_pixel_dungeon_by_title(self):
+        for app, os_names in (("java", ("windows", "macos", "linux", "linux_gnome", "linux_kde")),
+                              ("javaw", ("windows",))):
+            for os_name in os_names:
+                with self.subTest(app=app, os=os_name):
+                    self.assertEqual(self._route(app, "Shattered Pixel Dungeon", os_name), SPD)
+
+    def test_java_still_routes_the_other_programs(self):
+        """The other side of the shared process names."""
+        for app, os_name in (("java", "windows"), ("java", "macos"), ("java", "linux"),
+                             ("javaw", "windows")):
+            with self.subTest(app=app, os=os_name):
+                self.assertEqual(self._route(app, "Minecraft 1.21.4", os_name), MINECRAFT)
+                ghidra = self._route(app, "CodeBrowser: demo:/prog.exe", os_name)
+                self.assertTrue(ghidra and ghidra[0].startswith(GHIDRA), ghidra)
+                self.assertNotEqual(self._route(app, "Shattered Notes", os_name), SPD)
+                self.assertNotEqual(self._route(app, "", os_name), SPD)
+                self.assertNotEqual(self._route(app, None, os_name), SPD)
 
     def test_each_title_loads_its_set_in_windows_terminal(self):
         for first, (files, titles) in TITLES.items():

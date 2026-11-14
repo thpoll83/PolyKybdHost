@@ -1477,6 +1477,8 @@ java:
     Minecraft: &minecraft_java_branch
       title: '^Minecraft\*? \d'
       overlay: [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
+    "Shattered Pixel Dungeon": &spd_branch
+      overlay: shattered_pixel_dungeon_template.mods.png
     "Minecraft*": *minecraft_java_branch
     "CodeBrowser:":
       overlay: &ghidra_win [ghidra_template.mods.png, ghidra_template.combo.mods.png]
@@ -1487,6 +1489,7 @@ java:
       title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
       titles-startswith:
         Minecraft: *minecraft_java_branch
+        "Shattered Pixel Dungeon": *spd_branch
         "Minecraft*": *minecraft_java_branch
         "CodeBrowser:":
           overlay: &ghidra_mac [ghidra_template_mac.mods.png, ghidra_template_mac.combo.mods.png,
@@ -1502,6 +1505,7 @@ java:
         DBeaver:
           overlay: [dbeaver_template_linux.mods.png, dbeaver_template_linux.combo.mods.png, dbeaver_template_linux.extra.mods.png]
         Minecraft: *minecraft_java_branch
+        "Shattered Pixel Dungeon": *spd_branch
         "Minecraft*": *minecraft_java_branch
         "CodeBrowser:":
           overlay: *ghidra_win
@@ -1511,6 +1515,7 @@ java:
       title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
       titles-startswith:
         Minecraft: *minecraft_java_branch
+        "Shattered Pixel Dungeon": *spd_branch
         "Minecraft*": *minecraft_java_branch
         "CodeBrowser:":
           overlay: *ghidra_win
@@ -1520,9 +1525,14 @@ java:
       title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
       titles-startswith:
         Minecraft: *minecraft_java_branch
+        "Shattered Pixel Dungeon": *spd_branch
         "Minecraft*": *minecraft_java_branch
         "CodeBrowser:":
           overlay: *ghidra_win
+# Shattered Pixel Dungeon started from its .jar (`java -jar`) has the window
+# title "Shattered Pixel Dungeon" (overlay_sources/shattered_pixel_dungeon/);
+# the `java` and `javaw` entries route that title to its set. Not checked on an
+# install.
 # `javaw` on Windows serves two programs, told apart by the window title. The
 # title sub-map is tried before the parent's own title gate.
 # Minecraft: Java Edition: the launcher starts the game with the `javaw.exe` of
@@ -1537,6 +1547,7 @@ javaw:
   title: '^CodeBrowser(\(\d+\))?: '
   titles-startswith:
     Minecraft: *minecraft_java_branch
+    "Shattered Pixel Dungeon": *spd_branch
     "Minecraft*": *minecraft_java_branch
 # Ghidra under its own name. Linux: on GNOME and KDE the host reports WM_CLASS,
 # which Java sets from the main class `ghidra.Ghidra` as "ghidra-Ghidra"
@@ -3574,6 +3585,15 @@ cataclysm-tiles,cataclysm-tiles.exe,org.cataclysmdda.CataclysmDDA,cataclysm:
 # `nethack` title route in &editor_titles. Names not checked on an install.
 nethack,nethack.exe,nethackw,nethackw.exe:
   overlay: [nethack_template.mods.png, nethack_template.combo.mods.png]
+# Shattered Pixel Dungeon, desktop build
+# (overlay_sources/shattered_pixel_dungeon/). The packaged game is a jpackage
+# image named after appName in build.gradle (v4.0.2), "Shattered Pixel Dungeon"
+# ("Shattered Pixel Dungeon.exe" on Windows); the window title and, through
+# GLFW, the window class are the same words. A game started from the .jar runs
+# in `java` or `javaw`: those entries route its title. Names not checked on an
+# install.
+shattered pixel dungeon,shattered pixel dungeon.exe,com.shatteredpixel.shatteredpixeldungeon:
+  overlay: shattered_pixel_dungeon_template.mods.png
 # League of Legends (overlay_sources/lol/lol.yaml), the in-game window only. The
 # game is `League of Legends.exe` on Windows and the `LeagueofLegends` app on
 # macOS. The lobby client (LeagueClient, LeagueClientUx) is a different process

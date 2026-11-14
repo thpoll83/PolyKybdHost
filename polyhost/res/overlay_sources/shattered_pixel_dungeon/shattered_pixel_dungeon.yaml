@@ -1,0 +1,78 @@
+# Shattered Pixel Dungeon (desktop build) overlay for PolyKybd.
+#
+# Keys: `defaultBindings` in core/src/main/java/com/shatteredpixel/
+# shatteredpixeldungeon/SPDAction.java of 00-Evan/shattered-pixel-dungeon,
+# release v4.0.2. See SOURCES.md.
+#
+# No default binding uses a modifier, so only the plain layer is drawn.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/shattered_pixel_dungeon/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/shattered_pixel_dungeon/shattered_pixel_dungeon.yaml \
+#       --preview /tmp/spd_preview
+app: shattered pixel dungeon
+match: [shattered pixel dungeon, shattered pixel dungeon.exe, com.shatteredpixel.shatteredpixeldungeon]
+output: shattered_pixel_dungeon_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for fheroes2: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# "Shattered", "Pixel", "Dungeon" drawn over the whole cell, without the ESC
+# legend (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Movement
+  - { key: W, icon: move_n.png, label: "Move north" }
+  - { key: A, icon: move_w.png, label: "Move west" }
+  - { key: S, icon: move_s.png, label: "Move south" }
+  - { key: D, icon: move_e.png, label: "Move east" }
+  - { key: SPACE, icon: wait.png, label: "Wait, or pick up the item here" }
+  - { key: Z, icon: rest.png, label: "Rest" }
+
+  # The hero's actions
+  - { key: E, icon: examine.png, label: "Examine" }
+  - { key: Q, icon: attack.png, label: "Attack the tagged enemy" }
+  - { key: TAB, icon: cycle.png, label: "Tag the next enemy" }
+  - { key: X, icon: action.png, label: "Do the tagged special action" }
+  - { key: C, icon: loot.png, label: "Pick up the tagged item" }
+  - { key: ENTER, icon: loot.png, label: "Pick up the tagged item" }
+  - { key: R, icon: resume.png, label: "Resume the interrupted movement" }
+
+  # Windows
+  - { key: F, icon: inventory.png, label: "Open the inventory" }
+  - { key: I, icon: inventory.png, label: "Open the inventory" }
+  - { key: H, icon: heroinfo.png, label: "Hero information" }
+  - { key: J, icon: journal.png, label: "Open the journal" }
+  - { key: BACKSPACE, icon: back.png, label: "Go back or open the game menu" }
+
+  # Quickslots
+  - { key: 1, icon: slot1.png, label: "Use quickslot 1" }
+  - { key: 2, icon: slot2.png, label: "Use quickslot 2" }
+  - { key: 3, icon: slot3.png, label: "Use quickslot 3" }
+  - { key: 4, icon: slot4.png, label: "Use quickslot 4" }
+  - { key: 5, icon: slot5.png, label: "Use quickslot 5" }
+  - { key: 6, icon: slot6.png, label: "Use quickslot 6" }
+
+  # Inventory bags
+  - { key: F1, icon: bag1.png, label: "Open bag 1 (the backpack)", region: [34, 40] }
+  - { key: F2, icon: bag2.png, label: "Open bag 2", region: [34, 40] }
+  - { key: F3, icon: bag3.png, label: "Open bag 3", region: [34, 40] }
+  - { key: F4, icon: bag4.png, label: "Open bag 4", region: [34, 40] }
+  - { key: F5, icon: bag5.png, label: "Open bag 5", region: [34, 40] }
+
+  # View
+  - { key: EQUAL, icon: zoomin.png, label: "Zoom in", shared: false }
+  - { key: MINUS, icon: zoomout.png, label: "Zoom out", shared: false }
