@@ -13,16 +13,25 @@ arrives:
   of `global` plus the pseudocode window's own keys (`PSEUDOCODE` below, from
   the Hex-Rays decompiler manual, IDA 9.2). Where a key has another meaning
   there (N, Y, H, Tab, F5, Ins, ...), the pseudocode meaning is drawn.
-* `bindings_global.yaml` (`ida_global_template`): every other widget (lists,
-  local types, output, command line). Only the keys that act from any window:
-  the function keys and the modifier chords that open views, jump, search,
-  save and run the debugger. Single letters are left out, because a list
-  takes them as a quick search.
+* `bindings_hex.yaml` (`ida_hex_template`): the hex view. The disassembly set
+  with F2 drawn as "Edit / commit patch" (`HEX` below): in the hex view F2
+  starts patching and a second F2 commits it (Hex-Rays, "Igor's tip of the
+  week #38: Hex view").
+* `bindings_global.yaml` (`ida_global_template`): every other widget (output,
+  command line, ...). Only the keys that act from any window: the function
+  keys and the modifier chords that open views, jump, search, save and run the
+  debugger. Single letters are left out, because a list takes them as a quick
+  search.
+* `bindings_types.yaml` (`ida_types_template`): Local Types. The global set
+  plus Ins, Del and Ctrl+E (`TYPES` below, from the IDA 9.3 "Subviews" page).
+* `bindings_list.yaml` (`ida_list_template`): the list windows (choosers). The
+  global set plus the list viewer keys (`LIST` below, from the IDA 9.3 "List
+  viewers" page): Ins, Del, Ctrl+E, Ctrl+U and Ctrl+F.
 
 Edit `bindings.yaml` or the tables below, never the generated files, then:
 
     python polyhost/res/overlay_sources/ida/gen_views.py
-    for v in disasm pseudocode global; do
+    for v in disasm pseudocode global hex types list; do
         python scripts/generate_app_overlays.py \\
             polyhost/res/overlay_sources/ida/bindings_$v.yaml
     done
@@ -91,10 +100,39 @@ PSEUDOCODE = [
     {"key": "F4", "icon": "run_to_cursor.png", "label": "Run to cursor", **_WORD},
 ]
 
+# The hex view's own keys. Source: Hex-Rays, "Igor's tip of the week #38: Hex
+# view" (2021): "press F2, enter new values and press F2 again to commit".
+HEX = [
+    {"key": "F2", "icon": "patch_hex.png", "label": "Edit / commit patch", **_WORD},
+]
+
+# The Local Types window's own keys. Source: IDA 9.3 "Subviews", Local Types.
+TYPES = [
+    {"key": "INSERT", "icon": "type_add.png", "label": "Add type", **_WORD},
+    {"key": "DELETE", "icon": "type_del.png", "label": "Delete type", **_WORD},
+    {"key": "E", "mods": ["CMDCTRL"], "icon": "type_edit.png", "label": "Edit type", **_WORD},
+]
+
+# The keys of every list window (chooser). Source: IDA 9.3 "List viewers".
+LIST = [
+    {"key": "INSERT", "icon": "item_add.png", "label": "Insert item", **_WORD},
+    {"key": "DELETE", "icon": "item_del.png", "label": "Delete item", **_WORD},
+    {"key": "E", "mods": ["CMDCTRL"], "icon": "item_edit.png", "label": "Edit item", **_WORD},
+    {"key": "U", "mods": ["CMDCTRL"], "icon": "refresh.png", "label": "Refresh list"},
+    {"key": "F", "mods": ["CMDCTRL"], "icon": "list_filter.png", "label": "Quick filter", **_WORD},
+]
+
+# The view's own keys, drawn over (and in place of) the base keys of the same
+# chord.
+OWN = {"pseudocode": PSEUDOCODE, "hex": HEX, "types": TYPES, "list": LIST}
+
 VIEWS = {
-    "disasm": "the disassembly view (text and graph) and the hex view",
+    "disasm": "the disassembly view (text and graph)",
     "pseudocode": "the pseudocode window",
-    "global": "every other IDA window (lists, local types, output, command line)",
+    "global": "every other IDA window (output, command line, ...)",
+    "hex": "the hex view",
+    "types": "the Local Types window",
+    "list": "the list windows (choosers)",
 }
 
 
@@ -114,13 +152,16 @@ def is_global(b: dict) -> bool:
 
 
 def view_bindings(view: str, base: list[dict]) -> list[dict]:
+    disasm = [b for b in base if chord(b) not in PSEUDOCODE_ONLY]
     if view == "disasm":
-        return [b for b in base if chord(b) not in PSEUDOCODE_ONLY]
+        return disasm
     globals_ = [b for b in base if is_global(b)]
     if view == "global":
         return globals_
-    own = {chord(b) for b in PSEUDOCODE}
-    return [*(b for b in globals_ if chord(b) not in own), *PSEUDOCODE]
+    keys = OWN[view]
+    own = {chord(b) for b in keys}
+    under = disasm if view == "hex" else globals_
+    return [*(b for b in under if chord(b) not in own), *keys]
 
 
 def render(view: str, spec: dict) -> str:

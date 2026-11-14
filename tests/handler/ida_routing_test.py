@@ -4,13 +4,15 @@ Drives `polyhost/res/overlay-mapping.poly.yaml` itself, like
 blender_routing_test. What it pins:
 
 * every `ida://<view>` the plugin (ida-plugin/) can send lands on its set:
-  pseudocode, disassembly (text, graph, proximity) and hex, the rest `global`;
+  pseudocode, disassembly (text, graph, proximity), hex, Local Types
+  (`types`) and the list windows (`list`), the rest `global`;
 * no report keeps the `ida_template` fallback, and a view's set replaces it
   (`layer: false`) on every OS branch;
 * the entry's names are exactly the host's `CONTEXT_REPORTERS` "ida" names,
   and the macOS name with a version still finds the reporter;
 * a report is taken from the provider only while IDA is the focused app;
-* the generated view specs are current, and every named file exists.
+* the generated view specs are current, and every named file exists;
+* the hex, Local Types and list sets draw their own keys over the base keys.
 """
 
 import importlib.util
@@ -74,6 +76,41 @@ class IdaMappingFileTest(unittest.TestCase):
         self.assertEqual(mod.main(["--check"]), 0)
 
 
+class IdaViewSpecTest(unittest.TestCase):
+    """The hex, Local Types and list specs draw the view's own action on the
+    keys that act differently there, once per chord."""
+
+    def _labels(self, view):
+        spec = yaml.safe_load((GEN_VIEWS.parent / f"bindings_{view}.yaml").read_text(encoding="utf-8"))
+        out = {}
+        for b in spec["bindings"]:
+            chord = (str(b["key"]), tuple(sorted(b.get("mods") or ())))
+            self.assertNotIn(chord, out, (view, chord))
+            out[chord] = b["label"]
+        return out
+
+    def test_hex_f2_is_patching_not_a_breakpoint(self):
+        hex_, disasm = self._labels("hex"), self._labels("disasm")
+        self.assertEqual(hex_[("F2", ())], "Edit / commit patch")
+        self.assertEqual(disasm[("F2", ())], "Toggle breakpoint")
+        self.assertEqual(set(hex_), set(disasm))
+
+    def test_types_and_list_own_keys(self):
+        types, lists, glob = self._labels("types"), self._labels("list"), self._labels("global")
+        self.assertEqual(glob[("E", ("CMDCTRL",))], "Jump to entry point")
+        self.assertEqual(types[("INSERT", ())], "Add type")
+        self.assertEqual(types[("DELETE", ())], "Delete type")
+        self.assertEqual(types[("E", ("CMDCTRL",))], "Edit type")
+        self.assertEqual(lists[("INSERT", ())], "Insert item")
+        self.assertEqual(lists[("DELETE", ())], "Delete item")
+        self.assertEqual(lists[("E", ("CMDCTRL",))], "Edit item")
+        self.assertEqual(lists[("U", ("CMDCTRL",))], "Refresh list")
+        self.assertEqual(lists[("F", ("CMDCTRL",))], "Quick filter")
+        # No single letter: a list takes letters as a quick search.
+        for view in (types, lists):
+            self.assertFalse([c for c in view if len(c[0]) == 1 and c[0].isalpha() and not c[1]])
+
+
 class IdaRoutingTest(unittest.TestCase):
 
     @classmethod
@@ -91,9 +128,9 @@ class IdaRoutingTest(unittest.TestCase):
             "ida://disasm/text": "ida_disasm_template.mods.png",
             "ida://disasm/graph": "ida_disasm_template.mods.png",
             "ida://disasm/proximity": "ida_disasm_template.mods.png",
-            "ida://hex": "ida_disasm_template.mods.png",
-            "ida://types": "ida_global_template.mods.png",
-            "ida://list": "ida_global_template.mods.png",
+            "ida://hex": "ida_hex_template.mods.png",
+            "ida://types": "ida_types_template.mods.png",
+            "ida://list": "ida_list_template.mods.png",
             "ida://output": "ida_global_template.mods.png",
             "ida://cli": "ida_global_template.mods.png",
             "ida://other": "ida_global_template.mods.png",
@@ -118,7 +155,10 @@ class IdaRoutingTest(unittest.TestCase):
                          "ida_pseudocode_template_mac.mods.png")
         self.assertEqual(self._route("ida://disasm/graph", "macos"),
                          "ida_disasm_template_mac.mods.png")
-        self.assertEqual(self._route("ida://list", "macos"), "ida_global_template_mac.mods.png")
+        self.assertEqual(self._route("ida://hex", "macos"), "ida_hex_template_mac.mods.png")
+        self.assertEqual(self._route("ida://types", "macos"), "ida_types_template_mac.mods.png")
+        self.assertEqual(self._route("ida://list", "macos"), "ida_list_template_mac.mods.png")
+        self.assertEqual(self._route("ida://output", "macos"), "ida_global_template_mac.mods.png")
 
 
 class IdaReportProviderTest(unittest.TestCase):

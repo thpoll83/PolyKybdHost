@@ -29,9 +29,9 @@ and as a keep-alive every 3 s while nothing changes:
 |---|---|---|
 | `ida://disasm/text`, `ida://disasm/graph`, `ida://disasm/proximity` | `BWN_DISASM`, with `get_view_renderer_type` | `ida_disasm_template` |
 | `ida://pseudocode` | `BWN_PSEUDOCODE` | `ida_pseudocode_template` |
-| `ida://hex` | `BWN_HEXVIEW` | `ida_disasm_template` |
-| `ida://types` | `BWN_TICSR` / `BWN_TILVIEW` / `BWN_LOCTYPS` (IDA 9), `BWN_STRUCTS` / `BWN_ENUMS` (IDA 8) | `ida_global_template` |
-| `ida://list` | the choosers (`BWN_CHOOSER`, `BWN_FUNCS`, `BWN_NAMES`, `BWN_STRINGS`, ...) | `ida_global_template` |
+| `ida://hex` | `BWN_HEXVIEW` | `ida_hex_template` |
+| `ida://types` | `BWN_TICSR` / `BWN_TILVIEW` / `BWN_LOCTYPS` (IDA 9), `BWN_STRUCTS` / `BWN_ENUMS` (IDA 8) | `ida_types_template` |
+| `ida://list` | the choosers (`BWN_CHOOSER`, `BWN_FUNCS`, `BWN_NAMES`, `BWN_STRINGS`, ...) | `ida_list_template` |
 | `ida://output`, `ida://cli`, `ida://other` | `BWN_OUTPUT`, `BWN_CLI`, any other widget | `ida_global_template` |
 
 - `pid` is IDA's process id and `input_age` the seconds since this IDA last saw
