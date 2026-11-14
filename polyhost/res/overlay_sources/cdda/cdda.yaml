@@ -15,7 +15,7 @@
 #   python scripts/generate_app_overlays.py \
 #       polyhost/res/overlay_sources/cdda/cdda.yaml --preview /tmp/cdda_preview
 app: cdda
-match: [cataclysm-tiles, cataclysm-tiles.exe, org.cataclysmdda.CataclysmDDA]
+match: [cataclysm-tiles, cataclysm-tiles.exe, org.cataclysmdda.CataclysmDDA, cataclysm]
 output: cdda_template
 icon_dir: icons
 fit: contain

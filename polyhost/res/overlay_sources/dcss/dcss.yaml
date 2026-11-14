@@ -12,7 +12,7 @@
 #   python scripts/generate_app_overlays.py \
 #       polyhost/res/overlay_sources/dcss/dcss.yaml --preview /tmp/dcss_preview
 app: dcss
-match: [crawl, crawl-tiles, crawl.exe, crawl-tiles.exe]
+match: [crawl, crawl-tiles, crawl.exe, crawl-tiles.exe, "dungeon crawl stone soup - tiles"]
 output: dcss_template
 icon_dir: icons
 fit: contain
