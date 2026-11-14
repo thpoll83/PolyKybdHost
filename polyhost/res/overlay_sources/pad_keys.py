@@ -12,6 +12,7 @@ letter and the START / SELECT pills come from `retroarch/fetch_icons.py`
     shape()     a PlayStation face button (triangle, circle, cross, square)
     shoulder()  a shoulder button or stick click with a two-character name
     ps_pad()    the whole PlayStation controller, as PCSX2 and DuckStation map it
+    n64_pad()   the whole Nintendo 64 controller, for the console ports
     numbered()  an action icon with a slot number beside it
     logo_mark() an ESC mark cut from the program's own icon
     wordmark()  an ESC mark set in a font, for a program whose art is not usable
@@ -159,6 +160,19 @@ def ps_pad(out: Path) -> None:
         dpad(d, out / f"dpad{d}.png")
         stick(d, out / f"lstick{d}.png", "L")
         stick(d, out / f"rstick{d}.png", "R")
+
+
+def n64_pad(out: Path, extra: str = "") -> None:
+    """The Nintendo 64 controller icons the console-port sets share: A, B, L, R
+    and Z (plus each letter of `extra`) as rings, START, the D-pad, the control
+    stick (`stick<dir>.png`) and the four C buttons (`c<dir>.png`)."""
+    for letter in "ABLRZ" + extra:
+        ra.ring(letter, out / f"btn{letter.lower()}.png")
+    ra.pill("START", out / "start.png")
+    for d in DIRECTIONS:
+        dpad(d, out / f"dpad{d}.png")
+        stick(d, out / f"stick{d}.png")
+        stick(d, out / f"c{d}.png", "C")
 
 
 def logo_mark(dest: Path, url: str, lit: str = "alpha", cut: int = 120, box=(37, 32)) -> None:

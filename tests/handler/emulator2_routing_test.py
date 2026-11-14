@@ -43,6 +43,7 @@ PPSSPP = {"windows": _set("ppsspp_template"),
 PCSX2 = _set("pcsx2_template", "combo")
 DUCKSTATION = _set("duckstation_template")
 OPENGOAL = _set("opengoal_template")
+SOH = _set("soh_template")
 
 
 def _overlay_handler_class():
@@ -148,6 +149,9 @@ class Emulator2RoutingTest(unittest.TestCase):
 
     def test_opengoal(self):
         self._assert_one_set(("gk",), "OpenGOAL - Work in Progress - v0.3.9", OPENGOAL)
+
+    def test_ship_of_harkinian(self):
+        self._assert_one_set(("soh", "soh.elf", "soh-macos"), "Ship of Harkinian", SOH)
 
 
 if __name__ == "__main__":

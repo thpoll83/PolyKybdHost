@@ -3762,6 +3762,13 @@ duckstation-qt,duckstation-qt-x64-releaseltcg,duckstation-qt-arm64-releaseltcg,d
 # on Windows). Not checked on a running install.
 gk:
   overlay: opengoal_template.mods.png
+# Ship of Harkinian, the PC port of Ocarina of Time (overlay_sources/soh/). The
+# default keyboard map of libultraship, drawn as the Nintendo 64 controls the
+# keys press. Process names: soh (soh.exe on Windows), soh.elf on Linux and
+# soh-macos on macOS (OUTPUT_NAME in soh/CMakeLists.txt, release 9.3.1). Not
+# checked on a running install.
+soh,soh.elf,soh-macos:
+  overlay: soh_template.mods.png
 # PTC Mathcad Prime (overlay_sources/mathcad/). Windows only: MathcadPrime.exe.
 # English / US keys from PTC's 12.0.1.0 shortcut PDF. Name not checked on an
 # install.
