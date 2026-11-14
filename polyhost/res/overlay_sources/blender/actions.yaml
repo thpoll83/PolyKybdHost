@@ -514,3 +514,307 @@
 "wm.context_toggle(data_path=space_data.show_handles)": {label: "Show handles", icon: handle}
 "wm.call_menu(name=GRAPH_MT_key_blending)": {label: "Blend keys", icon: blend_neighbor}
 "wm.call_menu(name=GRAPH_MT_key_smoothing)": {label: "Smooth keys", icon: br_smooth}
+
+# ================================================================ mode audit (2026-11)
+# Operators of the editors and modes added from the mode audit. Labels are the
+# operator / menu names in Blender 5.2.2 (blender_default.py and the operator
+# definitions), shortened to fit.
+
+# ---------------------------------------------------------------- Video Sequencer
+"sequencer.split(type=SOFT)": {label: Split, icon: split}
+"sequencer.split(type=HARD)": {label: "Hard split", icon: split}
+"sequencer.split_multicam(camera=1)": {label: "Multicam cut 1", icon: multicam}
+"sequencer.split_multicam(camera=2)": {label: "Multicam cut 2", icon: multicam}
+"sequencer.split_multicam(camera=3)": {label: "Multicam cut 3", icon: multicam}
+"sequencer.split_multicam(camera=4)": {label: "Multicam cut 4", icon: multicam}
+"sequencer.split_multicam(camera=5)": {label: "Multicam cut 5", icon: multicam}
+"sequencer.split_multicam(camera=6)": {label: "Multicam cut 6", icon: multicam}
+"sequencer.split_multicam(camera=7)": {label: "Multicam cut 7", icon: multicam}
+"sequencer.split_multicam(camera=8)": {label: "Multicam cut 8", icon: multicam}
+"sequencer.split_multicam(camera=9)": {label: "Multicam cut 9", icon: multicam}
+"sequencer.split_multicam(camera=10)": {label: "Multicam cut 10", icon: multicam}
+"sequencer.strip_jump(center=False,next=False)": {label: "Previous strip", icon: same_prev}
+"sequencer.strip_jump(center=False,next=True)": {label: "Next strip", icon: same_next}
+"sequencer.strip_jump(center=True,next=False)": {label: "Previous strip, center", icon: same_prev}
+"sequencer.strip_jump(center=True,next=True)": {label: "Next strip, center", icon: same_next}
+"sequencer.swap(side=LEFT)": {label: "Swap left", icon: swap}
+"sequencer.swap(side=RIGHT)": {label: "Swap right", icon: swap}
+"sequencer.swap_inputs": {label: "Swap inputs", icon: swap}
+"sequencer.delete": {label: Delete}
+"sequencer.gap_insert": {label: "Insert gap", icon: gap_insert}
+"sequencer.gap_remove(all=False)": {label: "Remove gap", icon: gap_remove}
+"sequencer.gap_remove(all=True)": {label: "Remove all gaps", icon: gap_remove}
+"sequencer.images_separate": {label: "Separate images", icon: separate}
+"sequencer.lock": {label: "Lock strips", icon: lock_channel}
+"sequencer.unlock": {label: "Unlock strips", icon: lock_pie}
+"sequencer.meta_make": {label: "Make meta strip", icon: group}
+"sequencer.meta_separate": {label: "Separate meta", icon: ungroup}
+"sequencer.meta_toggle": {label: "Enter / exit meta", icon: group_enter}
+"sequencer.mute(unselected=False)": {label: "Mute strips", icon: mute}
+"sequencer.mute(unselected=True)": {label: "Mute unselected", icon: mute}
+"sequencer.unmute(unselected=False)": {label: "Unmute strips", icon: unmute}
+"sequencer.unmute(unselected=True)": {label: "Unmute unselected", icon: unmute}
+"sequencer.offset_clear": {label: "Clear offsets", icon: offset_clear}
+"sequencer.paste(keep_offset=True)": {label: "Paste in place", icon: paste_place}
+"sequencer.reload": {label: Reload}
+"sequencer.reload(adjust_length=True)": {label: "Reload + length", icon: refresh}
+"sequencer.retiming_segment_speed_set": {label: "Segment speed", icon: speed}
+"sequencer.retiming_show": {label: "Retiming keys", icon: retime}
+"wm.call_menu(name=SEQUENCER_MT_retiming)": {label: "Retiming menu", icon: retime}
+"sequencer.select_linked_pick": {label: "Select linked (cursor)", icon: select_linked}
+"sequencer.select_linked_pick(extend=True)": {label: "Extend linked", icon: select_linked}
+"sequencer.select_side_of_frame(side=LEFT)": {label: "Select before", icon: select_left}
+"sequencer.select_side_of_frame(side=RIGHT)": {label: "Select after", icon: select_right}
+"sequencer.slip(use_cursor_position=False)": {label: "Slip strip", icon: slip}
+"sequencer.snap(keep_offset=True)": {label: "Snap strips", icon: snap_cursor}
+"sequencer.view_all": {label: "Frame all", icon: frame_all}
+"transform.seq_slide*": {label: Move, icon: move}
+"wm.call_menu(name=SEQUENCER_MT_add)": {label: Add, icon: add}
+"wm.call_menu(name=SEQUENCER_MT_change)": {label: "Change strip", icon: change}
+"wm.call_menu_pie(name=SEQUENCER_MT_view_pie)": {label: "View pie", icon: view_pie}
+"wm.context_set_int(data_path=scene.sequence_editor.overlay_frame,value=0)": {label: "Reset overlay frame", icon: overlays}
+"wm.context_toggle(data_path=scene.sequence_editor.show_overlay_frame)": {label: "Frame overlay", icon: overlays}
+"wm.context_toggle(data_path=space_data.show_overlays)": {label: Overlays, icon: overlays}
+"sequencer.connect(toggle=True)": {label: "Connect strips", icon: link}
+"sequencer.refresh_all": {label: "Refresh all", icon: refresh}
+"wm.context_toggle(data_path=tool_settings.use_snap_sequencer)": {label: Snap, icon: snap}
+"wm.context_toggle_enum(data_path=space_data.view_type,value_1=SEQUENCER,value_2=PREVIEW)": {label: "Sequencer / preview", icon: render_view}
+
+# ---------------------------------------------------------------- Outliner
+"anim.keyframe_delete": {label: "Delete keyframe", icon: key_delete}
+"outliner.clear_filter": {label: "Clear filter", icon: filter_off}
+"outliner.collection_exclude_set": {label: "Exclude collection", icon: collection_hide}
+"outliner.collection_exclude_clear": {label: "Include collection", icon: collection_include}
+"outliner.collection_new": {label: "New collection", icon: collection_new}
+"outliner.delete": {label: Delete}
+"outliner.drivers_add_selected": {label: "Add drivers", icon: driver}
+"outliner.drivers_delete_selected": {label: "Delete drivers", icon: constraint_clear}
+"outliner.expanded_toggle": {label: "Expand / collapse", icon: collapse}
+"outliner.hide": {label: Hide}
+"outliner.unhide_all": {label: "Reveal all", icon: reveal}
+"outliner.id_copy": {label: Copy}
+"outliner.id_paste": {label: Paste}
+"outliner.item_rename(use_active=True)": {label: Rename, icon: rename}
+"outliner.keyingset_add_selected": {label: "Add to keying set", icon: keying_set}
+"outliner.keyingset_remove_selected": {label: "Remove from keying set", icon: keying_set_remove}
+"outliner.scroll_page(up=True)": {label: "Page up", icon: page_up}
+"outliner.scroll_page(up=False)": {label: "Page down", icon: page_down}
+"outliner.select_walk(direction=UP)": {label: Up}
+"outliner.select_walk(direction=DOWN)": {label: Down}
+"outliner.select_walk(direction=LEFT)": {label: Collapse, icon: collapse}
+"outliner.select_walk(direction=RIGHT)": {label: Expand, icon: shrink_fatten}
+"outliner.select_walk(direction=UP,extend=True)": {label: "Extend up", icon: hier_parent}
+"outliner.select_walk(direction=DOWN,extend=True)": {label: "Extend down", icon: hier_child}
+"outliner.select_walk(direction=LEFT,toggle_all=True)": {label: "Collapse all", icon: collapse}
+"outliner.select_walk(direction=RIGHT,toggle_all=True)": {label: "Expand all", icon: shrink_fatten}
+"outliner.show_active": {label: "Show active", icon: localview}
+"outliner.show_hierarchy": {label: "Show hierarchy", icon: ed_outliner}
+"outliner.start_filter": {label: Find}
+"wm.call_menu_pie(name=OUTLINER_MT_view_pie)": {label: "View pie", icon: view_pie}
+
+# ---------------------------------------------------------------- Text Editor + Edit Text
+# Every printable key types text in both (TEXTINPUT, see the generator); these
+# are the keys that still run something.
+"text.comment_toggle": {label: Comment}
+"text.cut": {label: Cut}
+"text.delete(type=NEXT_CHARACTER)": {label: Delete}
+"text.delete(type=PREVIOUS_CHARACTER)": {label: Backspace, icon: backspace}
+"text.delete(type=NEXT_WORD)": {label: "Delete word", icon: del_forward}
+"text.delete(type=PREVIOUS_WORD)": {label: "Delete word back", icon: backspace}
+"font.delete(type=NEXT_OR_SELECTION)": {label: Delete}
+"font.delete(type=PREVIOUS_OR_SELECTION)": {label: Backspace, icon: backspace}
+"font.delete(type=NEXT_WORD)": {label: "Delete word", icon: del_forward}
+"font.delete(type=PREVIOUS_WORD)": {label: "Delete word back", icon: backspace}
+"text.duplicate_line": {label: "Duplicate line", icon: duplicate}
+"text.indent_or_autocomplete": {label: Indent}
+"text.unindent": {label: Outdent}
+"text.line_break": {label: "Line break", icon: line_break}
+"font.line_break": {label: "Line break", icon: line_break}
+"*.move(type=FILE_TOP)": {label: "Text start", icon: top}
+"*.move(type=FILE_BOTTOM)": {label: "Text end", icon: bottom}
+"*.move(type=TEXT_BEGIN)": {label: "Text start", icon: top}
+"*.move(type=TEXT_END)": {label: "Text end", icon: bottom}
+"*.move(type=LINE_BEGIN)": {label: "Line start", icon: jump_start}
+"*.move(type=LINE_END)": {label: "Line end", icon: jump_end}
+"*.move(type=NEXT_CHARACTER)": {label: Right}
+"*.move(type=PREVIOUS_CHARACTER)": {label: Left}
+"*.move(type=NEXT_LINE)": {label: Down}
+"*.move(type=PREVIOUS_LINE)": {label: Up}
+"*.move(type=NEXT_PAGE)": {label: "Page down", icon: page_down}
+"*.move(type=PREVIOUS_PAGE)": {label: "Page up", icon: page_up}
+"*.move(type=NEXT_WORD)": {label: "Next word", icon: propagate}
+"*.move(type=PREVIOUS_WORD)": {label: "Previous word", icon: word_prev}
+"*.move_select(type=FILE_TOP)": {label: "Select to start", icon: top}
+"*.move_select(type=FILE_BOTTOM)": {label: "Select to end", icon: bottom}
+"*.move_select(type=TEXT_BEGIN)": {label: "Select to start", icon: top}
+"*.move_select(type=TEXT_END)": {label: "Select to end", icon: bottom}
+"*.move_select(type=LINE_BEGIN)": {label: "Select to line start", icon: jump_start}
+"*.move_select(type=LINE_END)": {label: "Select to line end", icon: jump_end}
+"*.move_select(type=NEXT_CHARACTER)": {label: "Select right", icon: arrow_right}
+"*.move_select(type=PREVIOUS_CHARACTER)": {label: "Select left", icon: arrow_left}
+"*.move_select(type=NEXT_LINE)": {label: "Select down", icon: hier_child}
+"*.move_select(type=PREVIOUS_LINE)": {label: "Select up", icon: hier_parent}
+"*.move_select(type=NEXT_PAGE)": {label: "Select page down", icon: page_down}
+"*.move_select(type=PREVIOUS_PAGE)": {label: "Select page up", icon: page_up}
+"*.move_select(type=NEXT_WORD)": {label: "Select next word", icon: propagate}
+"*.move_select(type=PREVIOUS_WORD)": {label: "Select previous word", icon: word_prev}
+"text.move_lines(direction=UP)": {label: "Move line up", icon: hier_parent}
+"text.move_lines(direction=DOWN)": {label: "Move line down", icon: hier_child}
+"text.new": {label: "New text", icon: text_new}
+"text.open": {label: "Open text", icon: text_open}
+"text.overwrite_toggle": {label: Overwrite, icon: overwrite}
+"text.reload": {label: Reload}
+"text.run_script": {label: "Run script", icon: play}
+"text.save": {label: Save}
+"text.save_as": {label: "Save as"}
+"text.select_all": {label: "Select all"}
+"font.select_all": {label: "Select all"}
+"text.select_line": {label: "Select line", icon: select_line}
+"text.find_set_selected": {label: "Find next"}
+"text.jump": {label: "Go to"}
+"text.replace": {label: Replace}
+"text.start_find": {label: Find}
+"font.change_character(delta=1)": {label: "Character code +1", icon: subdiv_up}
+"font.change_character(delta=-1)": {label: "Character code -1", icon: subdiv_down}
+"font.change_spacing(delta=-1.0)": {label: "Less spacing", icon: spacing_less}
+"font.change_spacing(delta=-0.1)": {label: "Less spacing, fine", icon: spacing_less}
+"font.change_spacing(delta=1.0)": {label: "More spacing", icon: spacing_more}
+"font.change_spacing(delta=0.1)": {label: "More spacing, fine", icon: spacing_more}
+"font.style_toggle(style=BOLD)": {label: Bold}
+"font.style_toggle(style=ITALIC)": {label: Italic}
+"font.style_toggle(style=UNDERLINE)": {label: Underline}
+"font.style_toggle(style=SMALL_CAPS)": {label: "Small caps", icon: small_caps}
+"font.text_copy": {label: Copy}
+"font.text_cut": {label: Cut}
+"font.text_paste": {label: Paste}
+"font.text_insert(accent=True)": {label: "Insert accent", icon: accent}
+
+# ---------------------------------------------------------------- Edit Curve / Surface
+"curve.cyclic_toggle": {label: "Toggle cyclic", icon: cyclic}
+"curve.dissolve_verts": {label: Dissolve, icon: dissolve}
+"curve.extrude_move": {label: Extrude, icon: extrude}
+"curve.handle_type_set": {label: "Handle type", icon: handle}
+"curve.make_segment": {label: "Make segment", icon: connect}
+"curve.normals_make_consistent": {label: "Recalc handles", icon: handle}
+"curve.select_row": {label: "Select row", icon: row}
+"curve.tilt_clear": {label: "Clear tilt", icon: clear_rot}
+"transform.tilt": {label: Tilt, icon: rotate}
+"transform.transform(mode=CURVE_SHRINKFATTEN)": {label: "Radius / thickness", icon: shrink_fatten}
+"wm.call_menu(name=TOPBAR_MT_edit_curve_add)": {label: Add, icon: add}
+"wm.call_menu(name=VIEW3D_MT_edit_curve_delete)": {label: Delete}
+
+# ---------------------------------------------------------------- Grease Pencil (all modes)
+"grease_pencil.delete_frame(type=ALL_FRAMES)": {label: "Delete frame, all layers", icon: key_delete}
+"grease_pencil.insert_blank_frame": {label: "Blank keyframe", icon: key_insert}
+"grease_pencil.interpolate*": {label: Interpolate, icon: interpolation}
+"grease_pencil.interpolate_sequence*": {label: "Interpolate sequence", icon: interpolation}
+"grease_pencil.layer_hide(unselected=False)": {label: "Hide layer", icon: layer_hide}
+"grease_pencil.layer_hide(unselected=True)": {label: "Hide other layers", icon: hide_others}
+"grease_pencil.layer_reveal": {label: "Reveal layers", icon: reveal}
+"grease_pencil.layer_merge(mode=ACTIVE)": {label: "Merge layer down", icon: merge}
+"wm.call_menu(name=GREASE_PENCIL_MT_draw_delete)": {label: "Delete frame", icon: key_delete}
+"wm.call_menu(name=GREASE_PENCIL_MT_layer_active)": {label: "Active layer", icon: layers}
+"wm.call_menu(name=VIEW3D_MT_edit_greasepencil_animation)": {label: "Animation menu", icon: key_menu}
+"wm.call_menu(name=VIEW3D_MT_greasepencil_material_active)": {label: "Active material", icon: material}
+"wm.radial_control(*data_path_primary=tool_settings.gpencil*.brush.size*": {label: "Brush radius", icon: radius}
+"wm.radial_control(*data_path_primary=tool_settings.gpencil*.brush.strength*": {label: "Brush strength", icon: strength}
+"wm.radial_control(*data_path_primary=tool_settings.gpencil*.brush.weight*": {label: "Brush weight", icon: weight}
+"wm.context_toggle(data_path=space_data.overlay.use_gpencil_edit_lines)": {label: "Edit lines", icon: edit_lines}
+"wm.context_toggle(data_path=space_data.overlay.use_gpencil_multiedit_line_only)": {label: "Multi-frame lines only", icon: edit_lines}
+"grease_pencil.erase_box(wait_for_input=True)": {label: "Erase box", icon: erase}
+"grease_pencil.cyclical_set(subdivide_cyclic_segment=False,type=TOGGLE)": {label: "Toggle cyclic", icon: cyclic}
+"grease_pencil.cyclical_set(subdivide_cyclic_segment=True,type=CLOSE)": {label: "Close stroke", icon: make_face}
+"grease_pencil.dissolve": {label: Dissolve, icon: dissolve}
+"grease_pencil.extrude_move": {label: Extrude, icon: extrude}
+"grease_pencil.join_fills": {label: "Join fills", icon: join}
+"grease_pencil.join_selection(type=JOINSTROKES)": {label: "Join strokes", icon: join}
+"grease_pencil.join_selection(type=SPLITCOPY)": {label: "Join as copy", icon: join}
+"grease_pencil.paste(paste_back=True)": {label: "Paste behind", icon: paste_flipped}
+"grease_pencil.reorder(direction=TOP)": {label: "Bring to front", icon: to_front}
+"grease_pencil.reorder(direction=UP)": {label: "Bring forward", icon: hier_parent}
+"grease_pencil.reorder(direction=DOWN)": {label: "Send backward", icon: hier_child}
+"grease_pencil.reorder(direction=BOTTOM)": {label: "Send to back", icon: select_invert}
+"grease_pencil.separate_fills": {label: "Separate fills", icon: separate}
+"grease_pencil.set_handle_type": {label: "Handle type", icon: handle}
+"grease_pencil.set_selection_mode(mode=POINT)": {label: "Point select", icon: sel_vert}
+"grease_pencil.set_selection_mode(mode=STROKE)": {label: "Stroke select", icon: stroke}
+"grease_pencil.set_selection_mode(mode=SEGMENT)": {label: "Segment select", icon: sel_edge}
+"grease_pencil.stroke_split": {label: "Split stroke", icon: split}
+"transform.transform(mode=GPENCIL_OPACITY)": {label: "Stroke opacity", icon: opacity}
+"wm.call_menu(name=GREASE_PENCIL_MT_move_to_layer)": {label: "Move to layer", icon: collection_move}
+"wm.call_menu(name=VIEW3D_MT_edit_greasepencil_delete)": {label: Delete}
+"wm.call_menu(name=VIEW3D_MT_greasepencil_vertex_group)": {label: "Vertex groups", icon: vgroup}
+"wm.call_menu_pie(name=GREASE_PENCIL_MT_snap_pie)": {label: "Snap pie", icon: snap_cursor}
+"grease_pencil.select_fill": {label: "Select fill", icon: fill}
+"grease_pencil.select_linked(deselect=True)": {label: "Deselect linked", icon: deselect}
+"wm.call_menu_pie(name=VIEW3D_MT_grease_pencil_sculpt_automasking_pie)": {label: "Auto-masking", icon: automask}
+"wm.context_toggle(data_path=scene.tool_settings.use_gpencil_*select_mask_point)": {label: "Point mask", icon: sel_vert}
+"wm.context_toggle(data_path=scene.tool_settings.use_gpencil_*select_mask_stroke)": {label: "Stroke mask", icon: stroke}
+"wm.context_toggle(data_path=scene.tool_settings.use_gpencil_*select_mask_segment)": {label: "Segment mask", icon: sel_edge}
+"grease_pencil.weight_sample": {label: "Sample weight", icon: eyedropper}
+"grease_pencil.weight_toggle_direction": {label: "Toggle direction", icon: switch_dir}
+
+# ---------------------------------------------------------------- NLA Editor
+"nla.actionclip_add": {label: "Add action strip", icon: add}
+"nla.apply_scale": {label: "Apply scale", icon: apply}
+"nla.clear_scale": {label: "Clear scale", icon: clear_scale}
+"nla.delete": {label: Delete}
+"nla.duplicate_linked_move": {label: "Duplicate linked", icon: duplicate_linked}
+"nla.fmodifier_add": {label: "Add F-modifier", icon: modifier}
+"nla.make_single_user": {label: "Make single user", icon: single_user}
+"nla.meta_add": {label: "Make meta strip", icon: group}
+"nla.meta_remove": {label: "Remove meta strip", icon: ungroup}
+"nla.move_up": {label: "Move strip up", icon: hier_parent}
+"nla.move_down": {label: "Move strip down", icon: hier_child}
+"nla.mute_toggle": {label: Mute, icon: mute}
+"nla.previewrange_set": {label: "Preview range", icon: preview_range}
+"nla.soundclip_add": {label: "Add sound strip", icon: sound}
+"nla.swap": {label: "Swap strips", icon: swap}
+"nla.transition_add": {label: "Add transition", icon: transition}
+"nla.view_all": {label: "Frame all", icon: frame_all}
+"transform.transform(mode=TRANSLATION)": {label: Move, icon: move}
+"wm.call_menu_pie(name=NLA_MT_snap_pie)": {label: "Snap pie", icon: snap_cursor}
+"wm.call_menu_pie(name=NLA_MT_view_pie)": {label: "View pie", icon: view_pie}
+"nla.tweakmode_exit": {label: "Tweak mode", icon: group_enter}
+"nla.tweakmode_exit(isolate_action=True)": {label: "Tweak mode, isolate", icon: group_enter}
+
+# ---------------------------------------------------------------- Movie Clip Editor
+"clip.open": {label: "Open clip", icon: clip_open}
+"clip.prefetch": {label: "Prefetch frames", icon: prefetch}
+"clip.track_markers(backwards=False,sequence=False)": {label: "Track next frame", icon: frame_next}
+"clip.track_markers(backwards=True,sequence=False)": {label: "Track previous frame", icon: frame_prev}
+"clip.track_markers(backwards=False,sequence=True)": {label: "Track forward", icon: time_fwd}
+"clip.track_markers(backwards=True,sequence=True)": {label: "Track backward", icon: time_back}
+"wm.call_menu_pie(name=CLIP_MT_marker_pie)": {label: "Marker pie", icon: marker}
+"wm.call_menu_pie(name=CLIP_MT_reconstruction_pie)": {label: "Reconstruction pie", icon: reconstruct}
+"wm.call_menu_pie(name=CLIP_MT_solving_pie)": {label: "Solving pie", icon: solve}
+"wm.call_menu_pie(name=CLIP_MT_tracking_pie)": {label: "Tracking pie", icon: track}
+"wm.call_menu_pie(name=CLIP_MT_view_pie)": {label: "View pie", icon: view_pie}
+"wm.context_toggle_enum(data_path=space_data.mode,value_1=TRACKING,value_2=MASK)": {label: "Tracking / mask", icon: br_mask}
+"clip.clear_track_path(action=ALL,clear_active=False)": {label: "Clear path", icon: path_clear}
+"clip.clear_track_path(action=REMAINED,clear_active=False)": {label: "Clear path after", icon: path_clear}
+"clip.clear_track_path(action=UPTO,clear_active=False)": {label: "Clear path before", icon: path_clear}
+"clip.copy_tracks": {label: Copy}
+"clip.paste_tracks": {label: Paste}
+"clip.delete_marker": {label: "Delete marker", icon: key_delete}
+"clip.delete_track": {label: Delete}
+"clip.disable_markers(action=TOGGLE)": {label: "Toggle markers", icon: mute}
+"clip.frame_jump(position=FAILEDPREV)": {label: "Jump to failed", icon: key_jump}
+"clip.frame_jump(position=PATHSTART)": {label: "Jump to path start", icon: jump_start}
+"clip.frame_jump(position=PATHEND)": {label: "Jump to path end", icon: jump_end}
+"clip.hide_tracks(unselected=False)": {label: Hide}
+"clip.hide_tracks(unselected=True)": {label: "Hide unselected", icon: hide_others}
+"clip.hide_tracks_clear": {label: "Reveal hidden", icon: reveal}
+"clip.join_tracks": {label: "Join tracks", icon: join}
+"clip.keyframe_insert": {label: "Insert keyframe", icon: key_insert}
+"clip.keyframe_delete": {label: "Delete keyframe", icon: key_delete}
+"clip.lock_selection_toggle": {label: "Lock to selection", icon: pin}
+"clip.lock_tracks(action=LOCK)": {label: "Lock tracks", icon: lock_channel}
+"clip.lock_tracks(action=UNLOCK)": {label: "Unlock tracks", icon: lock_pie}
+"clip.view_all": {label: "Frame all", icon: frame_all}
+"clip.view_all(fit_view=True)": {label: "Fit view", icon: fit_view}
+"wm.call_menu(name=CLIP_MT_select_grouped)": {label: "Select grouped", icon: select_grouped}
+"wm.call_menu_pie(name=CLIP_MT_pivot_pie)": {label: "Pivot point", icon: pivot}
+"wm.context_toggle(data_path=space_data.show_disabled)": {label: "Show disabled", icon: reveal}
+"wm.context_toggle(data_path=space_data.show_marker_search)": {label: "Show search area", icon: search}
+"wm.context_toggle(data_path=space_data.use_mute_footage)": {label: "Mute footage", icon: mute}

@@ -149,6 +149,26 @@ ICONS = {
     "handle": "ms:line_curve", "interpolation": "ms:timeline", "lock_channel": "ms:lock",
     "filter": "ms:filter_alt", "marker": "ms:flag", "camera_bind": "ms:linked_camera",
     "samples": "ms:scatter_plot", "modifier": "ms:build_circle",
+    # --- mode audit (2026-11): sequencer, outliner, text, curve, grease pencil, NLA, clip
+    "multicam": "ms:switch_video", "gap_insert": "ms:space_bar",
+    "gap_remove": "ms:horizontal_distribute", "unmute": "ms:do_not_disturb_off",
+    "offset_clear": "ms:format_clear", "paste_place": "ms:content_paste", "speed": "ms:speed",
+    "retime": "ms:slow_motion_video", "slip": "ms:settings_ethernet", "change": "ms:change_circle",
+    "filter_off": "ms:filter_alt_off", "collection_include": "ms:folder", "driver": "ms:functions",
+    "keying_set_remove": "ms:key_off", "page_up": "ms:keyboard_double_arrow_up",
+    "page_down": "ms:keyboard_double_arrow_down", "backspace": "ms:backspace",
+    "line_break": "ms:keyboard_return", "top": "ms:vertical_align_top",
+    "bottom": "ms:vertical_align_bottom", "word_prev": "ms:keyboard_double_arrow_left",
+    "arrow_left": "ms:arrow_back", "arrow_right": "ms:arrow_forward", "text_new": "ms:note_add",
+    "text_open": "ms:file_open", "overwrite": "ms:keyboard", "select_line": "ms:short_text",
+    "spacing_less": "ms:format_letter_spacing", "spacing_more": "ms:format_letter_spacing_wide",
+    "small_caps": "ms:format_size", "accent": "ms:translate", "cyclic": "ms:cycle",
+    "row": "ms:table_rows", "erase": "ms:ink_eraser", "layer_hide": "ms:visibility_off",
+    "layers": "ms:layers", "material": "ms:style", "to_front": "ms:flip_to_front",
+    "opacity": "ms:opacity", "edit_lines": "ms:line_style", "single_user": "ms:person",
+    "sound": "ms:music_note", "transition": "ms:transition_fade", "clip_open": "ms:video_file",
+    "prefetch": "ms:download", "reconstruct": "ms:view_in_ar", "solve": "ms:calculate",
+    "track": "ms:location_searching", "path_clear": "ms:remove_road",
 }
 
 # Borrowed drawn glyphs: byte-identical copies from sibling apps.
@@ -253,6 +273,12 @@ def _play_reverse(path: Path, out: Path) -> None:
     Image.open(out / "play.png").transpose(Image.FLIP_LEFT_RIGHT).save(path)
 
 
+def _del_forward(path: Path, out: Path) -> None:
+    """Backspace mirrored: delete the word AFTER the cursor (Material has no
+    forward-delete key glyph)."""
+    Image.open(out / "backspace.png").transpose(Image.FLIP_LEFT_RIGHT).save(path)
+
+
 DRAWN = {
     "sel_vert.png": lambda p: _select_mode(p, "vert"),
     "sel_edge.png": lambda p: _select_mode(p, "edge"),
@@ -291,6 +317,8 @@ def main() -> int:
     # limited to other stems on a fresh icons/ must not fail on it.
     if (out / "play.png").exists():
         _play_reverse(out / "play_reverse.png", out)
+    if (out / "backspace.png").exists():
+        _del_forward(out / "del_forward.png", out)
     # Drawn and borrowed glyphs are guarded: the committed file is the source of
     # truth once it exists, so a hand-tuned one survives. The program mark is
     # NOT guarded: it is rebuilt from the vendored marks/si_blender.svg every

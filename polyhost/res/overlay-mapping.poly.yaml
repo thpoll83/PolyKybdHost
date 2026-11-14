@@ -2346,6 +2346,11 @@ blender,org.blender.blender:
     "EDIT_MESH/IMAGE_EDITOR/UV": { overlay: [blender_uv_template.mods.png, blender_uv_template.combo.mods.png, blender_uv_template.extra.mods.png] }
     "/DOPESHEET_EDITOR": { overlay: [blender_dopesheet_template.mods.png, blender_dopesheet_template.combo.mods.png] }
     "/GRAPH_EDITOR": { overlay: [blender_graph_template.mods.png, blender_graph_template.combo.mods.png] }
+    "/SEQUENCE_EDITOR": { overlay: [blender_sequencer_template.mods.png, blender_sequencer_template.combo.mods.png] }
+    "/OUTLINER": { overlay: [blender_outliner_template.mods.png, blender_outliner_template.combo.mods.png] }
+    "/TEXT_EDITOR": { overlay: [blender_text_template.mods.png, blender_text_template.combo.mods.png, blender_text_template.extra.mods.png] }
+    "/CLIP_EDITOR": { overlay: [blender_clip_template.mods.png, blender_clip_template.combo.mods.png] }
+    "/NLA_EDITOR": { overlay: [blender_nla_template.mods.png, blender_nla_template.combo.mods.png] }
     "blender://OBJECT/VIEW_3D": { overlay: [blender_object_template.mods.png, blender_object_template.combo.mods.png, blender_object_template.extra.mods.png] }
     "blender://EDIT_MESH/VIEW_3D": { overlay: [blender_edit_mesh_template.mods.png, blender_edit_mesh_template.combo.mods.png, blender_edit_mesh_template.extra.mods.png] }
     "blender://SCULPT/VIEW_3D": { overlay: [blender_sculpt_template.mods.png, blender_sculpt_template.combo.mods.png] }
@@ -2354,6 +2359,14 @@ blender,org.blender.blender:
     "blender://PAINT_WEIGHT/VIEW_3D": { overlay: [blender_paint_weight_template.mods.png, blender_paint_weight_template.combo.mods.png] }
     "blender://PAINT_VERTEX/VIEW_3D": { overlay: [blender_paint_vertex_template.mods.png, blender_paint_vertex_template.combo.mods.png] }
     "blender://PAINT_TEXTURE/VIEW_3D": { overlay: [blender_paint_texture_template.mods.png, blender_paint_texture_template.combo.mods.png] }
+    "blender://EDIT_CURVE/VIEW_3D": { overlay: [blender_edit_curve_template.mods.png, blender_edit_curve_template.combo.mods.png] }
+    "blender://EDIT_SURFACE/VIEW_3D": { overlay: [blender_edit_curve_template.mods.png, blender_edit_curve_template.combo.mods.png] }
+    "blender://EDIT_TEXT/VIEW_3D": { overlay: [blender_edit_text_template.mods.png, blender_edit_text_template.combo.mods.png] }
+    "blender://EDIT_GREASE_PENCIL/VIEW_3D": { overlay: [blender_gp_edit_template.mods.png, blender_gp_edit_template.combo.mods.png, blender_gp_edit_template.extra.mods.png] }
+    "blender://PAINT_GREASE_PENCIL/VIEW_3D": { overlay: [blender_gp_draw_template.mods.png, blender_gp_draw_template.combo.mods.png] }
+    "blender://SCULPT_GREASE_PENCIL/VIEW_3D": { overlay: [blender_gp_sculpt_template.mods.png, blender_gp_sculpt_template.combo.mods.png] }
+    "blender://WEIGHT_GREASE_PENCIL/VIEW_3D": { overlay: [blender_gp_weight_template.mods.png, blender_gp_weight_template.combo.mods.png] }
+    "blender://VERTEX_GREASE_PENCIL/VIEW_3D": { overlay: [blender_gp_vertex_template.mods.png, blender_gp_vertex_template.combo.mods.png] }
     "/VIEW_3D": { overlay: [blender_common_template.mods.png, blender_common_template.combo.mods.png] }
     "blender://": { overlay: [blender_global_template.mods.png, blender_global_template.combo.mods.png] }
   os:
@@ -2365,6 +2378,11 @@ blender,org.blender.blender:
         "EDIT_MESH/IMAGE_EDITOR/UV": { overlay: [blender_uv_template_mac.mods.png, blender_uv_template_mac.combo.mods.png, blender_uv_template_mac.extra.mods.png, blender_uv_template_mac.gui.mods.png] }
         "/DOPESHEET_EDITOR": { overlay: [blender_dopesheet_template_mac.mods.png, blender_dopesheet_template_mac.combo.mods.png, blender_dopesheet_template_mac.extra.mods.png] }
         "/GRAPH_EDITOR": { overlay: [blender_graph_template_mac.mods.png, blender_graph_template_mac.combo.mods.png, blender_graph_template_mac.extra.mods.png] }
+        "/SEQUENCE_EDITOR": { overlay: [blender_sequencer_template_mac.mods.png, blender_sequencer_template_mac.combo.mods.png, blender_sequencer_template_mac.extra.mods.png] }
+        "/OUTLINER": { overlay: [blender_outliner_template_mac.mods.png, blender_outliner_template_mac.combo.mods.png, blender_outliner_template_mac.extra.mods.png] }
+        "/TEXT_EDITOR": { overlay: [blender_text_template_mac.mods.png, blender_text_template_mac.combo.mods.png, blender_text_template_mac.extra.mods.png, blender_text_template_mac.gui.mods.png] }
+        "/CLIP_EDITOR": { overlay: [blender_clip_template_mac.mods.png, blender_clip_template_mac.combo.mods.png, blender_clip_template_mac.extra.mods.png] }
+        "/NLA_EDITOR": { overlay: [blender_nla_template_mac.mods.png, blender_nla_template_mac.combo.mods.png, blender_nla_template_mac.extra.mods.png] }
         "blender://OBJECT/VIEW_3D": { overlay: [blender_object_template_mac.mods.png, blender_object_template_mac.combo.mods.png, blender_object_template_mac.extra.mods.png, blender_object_template_mac.gui.mods.png] }
         "blender://EDIT_MESH/VIEW_3D": { overlay: [blender_edit_mesh_template_mac.mods.png, blender_edit_mesh_template_mac.combo.mods.png, blender_edit_mesh_template_mac.extra.mods.png, blender_edit_mesh_template_mac.gui.mods.png] }
         "blender://SCULPT/VIEW_3D": { overlay: [blender_sculpt_template_mac.mods.png, blender_sculpt_template_mac.combo.mods.png, blender_sculpt_template_mac.extra.mods.png] }
@@ -2373,6 +2391,14 @@ blender,org.blender.blender:
         "blender://PAINT_WEIGHT/VIEW_3D": { overlay: [blender_paint_weight_template_mac.mods.png, blender_paint_weight_template_mac.combo.mods.png, blender_paint_weight_template_mac.extra.mods.png] }
         "blender://PAINT_VERTEX/VIEW_3D": { overlay: [blender_paint_vertex_template_mac.mods.png, blender_paint_vertex_template_mac.combo.mods.png, blender_paint_vertex_template_mac.extra.mods.png] }
         "blender://PAINT_TEXTURE/VIEW_3D": { overlay: [blender_paint_texture_template_mac.mods.png, blender_paint_texture_template_mac.combo.mods.png, blender_paint_texture_template_mac.extra.mods.png] }
+        "blender://EDIT_CURVE/VIEW_3D": { overlay: [blender_edit_curve_template_mac.mods.png, blender_edit_curve_template_mac.combo.mods.png, blender_edit_curve_template_mac.extra.mods.png] }
+        "blender://EDIT_SURFACE/VIEW_3D": { overlay: [blender_edit_curve_template_mac.mods.png, blender_edit_curve_template_mac.combo.mods.png, blender_edit_curve_template_mac.extra.mods.png] }
+        "blender://EDIT_TEXT/VIEW_3D": { overlay: [blender_edit_text_template_mac.mods.png, blender_edit_text_template_mac.combo.mods.png, blender_edit_text_template_mac.extra.mods.png] }
+        "blender://EDIT_GREASE_PENCIL/VIEW_3D": { overlay: [blender_gp_edit_template_mac.mods.png, blender_gp_edit_template_mac.combo.mods.png, blender_gp_edit_template_mac.extra.mods.png, blender_gp_edit_template_mac.gui.mods.png] }
+        "blender://PAINT_GREASE_PENCIL/VIEW_3D": { overlay: [blender_gp_draw_template_mac.mods.png, blender_gp_draw_template_mac.combo.mods.png, blender_gp_draw_template_mac.extra.mods.png] }
+        "blender://SCULPT_GREASE_PENCIL/VIEW_3D": { overlay: [blender_gp_sculpt_template_mac.mods.png, blender_gp_sculpt_template_mac.combo.mods.png, blender_gp_sculpt_template_mac.extra.mods.png] }
+        "blender://WEIGHT_GREASE_PENCIL/VIEW_3D": { overlay: [blender_gp_weight_template_mac.mods.png, blender_gp_weight_template_mac.combo.mods.png, blender_gp_weight_template_mac.extra.mods.png] }
+        "blender://VERTEX_GREASE_PENCIL/VIEW_3D": { overlay: [blender_gp_vertex_template_mac.mods.png, blender_gp_vertex_template_mac.combo.mods.png, blender_gp_vertex_template_mac.extra.mods.png] }
         "/VIEW_3D": { overlay: [blender_common_template_mac.mods.png, blender_common_template_mac.combo.mods.png, blender_common_template_mac.extra.mods.png] }
         "blender://": { overlay: [blender_global_template_mac.mods.png, blender_global_template_mac.combo.mods.png, blender_global_template_mac.extra.mods.png] }
 # Microsoft Teams (sources: overlay_sources/teams/). The desktop app is
