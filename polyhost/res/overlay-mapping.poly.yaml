@@ -3699,6 +3699,19 @@ amiberry,amiberry-lite:
   overlay: amiberry_template.mods.png
   glyph_script: amiga
   glyph_script_position: top-left
+# ScummVM (overlay_sources/scummvm/). The global keys of release 2.9.1; the keys
+# of the games differ per engine and are not drawn. Quit is Ctrl+Z / Alt+F4 on
+# Windows, Ctrl+Q on Linux and Cmd+Q on macOS, hence the branches. Process
+# names: scummvm (Exec= and StartupWMClass= of the desktop file, scummvm.exe on
+# Windows, the macOS app "ScummVM") and the Flatpak id org.scummvm.ScummVM. Not
+# checked on a running install.
+scummvm,org.scummvm.scummvm:
+  overlay: [scummvm_template.mods.png, scummvm_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [scummvm_template_mac.mods.png, scummvm_template_mac.combo.mods.png]
+    linux:
+      overlay: [scummvm_template_linux.mods.png, scummvm_template_linux.combo.mods.png]
 # PTC Mathcad Prime (overlay_sources/mathcad/). Windows only: MathcadPrime.exe.
 # English / US keys from PTC's 12.0.1.0 shortcut PDF. Name not checked on an
 # install.
