@@ -87,7 +87,7 @@ bindings:
   - { key: PAUSE, icon: mute.png, label: "Mute actions" }
 
   # Window
-  - { key: PRINT_SCREEN, icon: screenshot.png, label: "Screenshot (JPEG)" }
-  - { key: PRINT_SCREEN, mods: [SHIFT], icon: screenshotraw.png, label: "Screenshot (PNG)" }
+  - { key: PRINT_SCREEN, icon: screenshotraw.png, label: "Screenshot (PNG)" }
+  - { key: PRINT_SCREEN, mods: [SHIFT], icon: screenshot.png, label: "Screenshot (JPEG)" }
   - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Toggle full screen" }
   - { key: F4, mods: [ALT], icon: quit.png, label: "Quit the game", region: [34, 40] }

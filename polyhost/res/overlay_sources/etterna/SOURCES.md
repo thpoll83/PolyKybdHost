@@ -80,7 +80,7 @@ A user who maps a key in the game still sees the default here.
 | F3 (held) | `HoldForDebug1` | Show the debug menu |
 | Tab (held) | `HoldForFast` | The game runs 4 times faster |
 | Pause | `ToggleMute` | Mute actions on or off |
-| Print Screen, Shift+Print Screen | `SaveScreenshot()` | Screenshot as JPEG, as PNG |
+| Print Screen, Shift+Print Screen | `SaveScreenshot()` | Screenshot as PNG, as JPEG. `HandleGlobalInputs()` sets `bSaveCompressed = bHoldingShift`, the reverse of StepMania 5 (`!bHoldingShift`) |
 | Alt+Enter | `SetToggleWindowed()` | Toggle full screen (not on macOS) |
 | Alt+F4 | `SetUserQuit()` | Quit (not on macOS) |
 
