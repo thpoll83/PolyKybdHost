@@ -3619,6 +3619,13 @@ everything:
 # build, so there is no macOS name. Names not checked on an install.
 dota2,steam_app_570:
   overlay: dota2_template.mods.png
+# StepMania 5 (overlay_sources/stepmania/stepmania.yaml). `stepmania` is the Linux
+# executable and the Exec= line of stepmania.desktop; the Windows installer
+# ships StepMania.exe and StepMania-SSE2.exe (stepmania.nsi, release 5.0.12).
+# `stepmania-sse2` is what Windows reports for the second one: the host cuts
+# the process name at the first dot. Names not checked on an install.
+stepmania,stepmania.exe,stepmania-sse2.exe,stepmania-sse2:
+  overlay: [stepmania_template.mods.png, stepmania_template.combo.mods.png]
 # Total Commander (overlay_sources/totalcmd/). Windows only. The 11.58.1
 # installers ship TOTALCMD64.EXE (64-bit) and TOTALCMD.EXE (32-bit). Not checked
 # on a running install.
