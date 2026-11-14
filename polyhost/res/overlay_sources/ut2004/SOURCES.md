@@ -44,6 +44,7 @@ the Grenade Launcher in 7 and the AVRiL in 8 (`System/Onslaught.u`).
 | \\ | `ThrowWeapon` | Throw weapon |
 | / | `NextWeapon` | Next weapon |
 | [, ] | `InventoryPrevious`, `InventoryNext` | Previous and next item |
+| W, S, A, D | `MoveForward`, `MoveBackward`, `StrafeLeft`, `StrafeRight` | Move and strafe (arrows) |
 | Space, Backspace | `Jump` | Jump |
 | C | `Duck` | Crouch |
 | E, U, Enter | `Use` | Use |
@@ -73,9 +74,12 @@ send after that.
 
 ## Left out
 
-- W, A, S, D, the arrows, `,` and `.`, Numpad 7 to 9 (move and strafe), Z and
-  `'` (strafe), Caps Lock, Delete, Page Down and End (look): the legend is
-  enough.
+- The arrow keys, `,` and `.` and Numpad 7 to 9 (move and strafe, like WASD):
+  their legends say the same. The spec lists them as `undrawn:` on the WASD
+  bindings, so they count as default keys when the icons follow `User.ini`,
+  and no icon is drawn on them.
+- Z and `'` (strafe while held), Caps Lock, Delete, Page Down and End (look):
+  the legend is enough.
 - Ctrl (`Jump`) and Shift (`Duck`): modifier keys, which the overlay does not
   draw.
 - F5, F7, F8 and F10 (`ToggleFreeCam`, `ToggleFreeCamSwivel`, `NextStats`,
@@ -137,6 +141,7 @@ weapon's details.
 | `tauntthroat.png` | game-icons.net `lorc/decapitation` | Lorc | CC BY 3.0 |
 | `tauntpoint.png` | game-icons.net `lorc/pointing` | Lorc | CC BY 3.0 |
 | `crouch.png` | drawn by `fetch_icons.py` (`crouch()`) | - | - |
+| `moveforward.png`, `movebackward.png`, `strafeleft.png`, `straferight.png` | Material Symbols `arrow_upward`, `arrow_downward`, `arrow_back`, `arrow_forward` | Google | Apache-2.0 |
 | `lastweapon.png`, `bestweapon.png`, `throwweapon.png`, `nextweapon.png`, `invprev.png`, `invnext.png`, `use.png`, `basepath0.png` and `basepath1.png` (with the number in DejaVu Sans Bold), `talk.png`, `teamtalk.png`, `type.png`, `voicetalk.png`, `voiceteam.png`, `voicelocal.png`, `voicepublic.png`, `vote.png`, `ingamechat.png`, `scores.png`, `stats.png`, `behindview.png`, `netstats.png`, `screenshot.png`, `music.png`, `radar.png`, `console.png`, `growhud.png`, `shrinkhud.png`, `pause.png` | Material Symbols `history`, `star`, `place_item`, `skip_next`, `chevron_left`, `chevron_right`, `touch_app`, `route`, `chat`, `forum`, `keyboard`, `mic`, `groups`, `near_me`, `public`, `how_to_vote`, `chat_bubble`, `scoreboard`, `bar_chart`, `3p`, `network_check`, `screenshot_monitor`, `music_note`, `radar`, `terminal`, `zoom_out_map`, `zoom_in_map`, `pause` | Google | Apache-2.0 |
 | `program.png` | UT2004 set in Bebas Neue | Dharma Type | SIL OFL 1.1 |
 

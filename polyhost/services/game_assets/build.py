@@ -153,7 +153,10 @@ def remap(arr, spec: dict, tiers: dict, player: dict | None, complete: bool = Tr
     command, or to nothing the overlay draws, comes out blank. ESC keeps the
     program mark. A command with a default or a new key in a tier this file
     does not hold (`tiers`: the primary or the combo file) is left as it is.
-    With `complete` (the reader's file lists every key, as UT2004's User.ini
+    A binding's ``undrawn:`` lists keys the game also gives that command by
+    default but the overlay leaves blank (UT2004's arrow keys next to WASD):
+    they count as default keys, and no icon is drawn on them. With
+    `complete` (the reader's file lists every key, as UT2004's User.ini
     does) a command missing from `player` is unbound and its keys are
     cleared; without it the command is unknown and keeps its keys. Returns the
     number of cells drawn."""
@@ -164,11 +167,14 @@ def remap(arr, spec: dict, tiers: dict, player: dict | None, complete: bool = Tr
         return 0
     player = {command_key(c): keys for c, keys in player.items()}
     defaults: dict = {}
+    undrawn: dict = {}
     for b in bindings(spec):
         if "command" in b:
             mod = modifier(b.get("mods"))
             if mod is not None:
                 defaults.setdefault(command_key(b["command"]), []).append((resolve_key(b["key"]), mod))
+                undrawn.setdefault(command_key(b["command"]), set()).update(
+                    key_token(t) for t in b.get("undrawn") or ())
     want = {}
     for command, keys in defaults.items():
         if command not in player and not complete:
@@ -181,8 +187,9 @@ def remap(arr, spec: dict, tiers: dict, player: dict | None, complete: bool = Tr
                 continue                    # a key with no keycap cell
             if kc != KeyCode.KC_ESCAPE:
                 got.add((kc, mod))
-        if got != set(keys) and all(m in tiers for _, m in set(keys) | got):
-            want[command] = got
+        blank = undrawn.get(command, set())
+        if got != set(keys) | blank and all(m in tiers for _, m in set(keys) | (got - blank)):
+            want[command] = got - blank
     if not want:
         return 0
 

@@ -46,7 +46,12 @@ ICONS = {
     "nextweapon": "ms:skip_next",
     "invprev": "ms:chevron_left",
     "invnext": "ms:chevron_right",
-    # Movement and actions
+    # Movement
+    "moveforward": "ms:arrow_upward",
+    "movebackward": "ms:arrow_downward",
+    "strafeleft": "ms:arrow_back",
+    "straferight": "ms:arrow_forward",
+    # Actions
     "jump": "gi:delapouite/jump-across",
     "use": "ms:touch_app",
     # Taunts: one picture per taunt, after what the animation shows
