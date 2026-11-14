@@ -3606,6 +3606,13 @@ everything:
 # build, so there is no macOS name. Names not checked on an install.
 dota2,steam_app_570:
   overlay: dota2_template.mods.png
+# Luanti, the voxel game engine named Minetest up to 5.9
+# (overlay_sources/luanti/luanti.yaml). `luanti` is the CMake project name and
+# the desktop file's Exec= and StartupWMClass= (release 5.18.0), luanti.exe on
+# Windows; `minetest` and net.minetest.minetest are the names before the rename.
+# Names not checked on an install.
+luanti,minetest,org.luanti.luanti,net.minetest.minetest:
+  overlay: luanti_template.mods.png
 # Total Commander (overlay_sources/totalcmd/). Windows only. The 11.58.1
 # installers ship TOTALCMD64.EXE (64-bit) and TOTALCMD.EXE (32-bit). Not checked
 # on a running install.
