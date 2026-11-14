@@ -206,6 +206,11 @@ Licence texts for the icon and font licences named in this file:
 - Apache-2.0: https://www.apache.org/licenses/LICENSE-2.0
 - CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
 - SIL OFL 1.1: https://openfontlicense.org/open-font-license-official-text/
+
+Where each icon file comes from. The icon table gives the name to put in the
+URL; the same URLs are in `SOURCES` of `cnc_remastered/fetch_icons.py`.
+
+- Font Awesome Free 6.5.2, solid (`fa:<name>`): `https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/svgs/solid/<name>.svg`
 - GPL-2.0-or-later: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 
 Material Design Icons (author: Pictogrammers, Apache-2.0) are from
