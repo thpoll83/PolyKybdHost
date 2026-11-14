@@ -31,9 +31,12 @@ def dilate(m: np.ndarray, n: int) -> np.ndarray:
 
 
 def keycap(img, cover, size, blur=0.4, floor=0.15, mirror=False,
-           lo_p=3, hi_p=97, curve=0.0, sharpen=0.0, outline=True, gamma=1.0, levels=0):
+           lo_p=3, hi_p=97, curve=0.0, sharpen=0.0, outline=True, gamma=1.0, levels=0,
+           erode=0):
     """Fit `img` (grey, 0..1) inside `size` (w, h), dither the inside and light
     the 1 px outline of `cover` (with `outline` False, dither all of `cover`).
+    `erode` > 0 takes that many px off the fitted cover before the outline is
+    lit, to drop a glow or dark rim drawn round the picture.
 
     `lo_p`/`hi_p` are the percentiles stretched to black and white. `curve` > 0
     adds an S-curve that pushes mid-tones to black or white, and `sharpen` > 0 an
@@ -54,6 +57,10 @@ def keycap(img, cover, size, blur=0.4, floor=0.15, mirror=False,
         gi = gi.filter(ImageFilter.UnsharpMask(radius=1.5, percent=int(sharpen * 100), threshold=0))
     g = np.asarray(gi, float) / 255
     a = np.asarray(Image.fromarray((cover * 255).astype(np.uint8)).resize(size, Image.LANCZOS)) > 127
+    for _ in range(erode):
+        a = a & ~edge(a)
+    if erode and not a.any():
+        raise ValueError(f"the picture is gone after eroding {erode} px")
     lo, hi = np.percentile(g[a], lo_p), np.percentile(g[a], hi_p)
     g = np.clip((g - lo) / max(hi - lo, 1e-6), 0, 1) ** gamma
     if curve:
