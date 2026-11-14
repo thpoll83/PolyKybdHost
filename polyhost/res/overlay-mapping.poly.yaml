@@ -3603,6 +3603,22 @@ cs2,steam_app_730:
 ut2004,ut2004.exe,ut2004-bin,ut2004-bin-linux-amd64,unreal tournament 2004,steam_app_13230:
   overlay: ut2004_template.mods.png
   game_assets: ut2004/ut2004.yaml
+# Endless Sky (overlay_sources/endless_sky/endless_sky.yaml). CMakeLists.txt
+# (v0.11.4) names the binary `endless-sky` on Linux and `Endless Sky` on Windows
+# and macOS; io.github.endless_sky.endless_sky is the desktop file and Flatpak
+# id. Names not checked on an install.
+endless-sky,endless sky,endless sky.exe,io.github.endless_sky.endless_sky:
+  overlay: endless_sky_template.mods.png
+# Naev (overlay_sources/naev/naev.yaml). `naev` is the meson executable target
+# (v0.13.5), `naev.exe` on Windows; org.naev.Naev is the desktop file and
+# Flatpak id. Names not checked on an install.
+naev,naev.exe,org.naev.naev:
+  overlay: naev_template.mods.png
+# Oolite (overlay_sources/oolite/oolite.yaml). `oolite` is OBJC_PROGRAM_NAME in
+# GNUmakefile (1.92.1) and the desktop file's StartupWMClass, `oolite.exe` on
+# Windows; space.oolite.Oolite is the Flatpak id. Names not checked on an install.
+oolite,oolite.exe,space.oolite.oolite:
+  overlay: [oolite_template.mods.png, oolite_template.combo.mods.png]
 # SQL Server Management Studio (overlay_sources/ssms/), Windows only. The
 # executable is Ssms.exe (SSMS 18 to 20) or SSMS.exe (SSMS 21 and later); both
 # lowercase to `ssms`. Name not checked on an install.
