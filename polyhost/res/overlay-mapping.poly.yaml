@@ -3590,6 +3590,17 @@ league of legends,league of legends.exe,leagueoflegends:
 # macOS. Names not checked on an install.
 cs2,steam_app_730:
   overlay: cs2_template.mods.png
+# GZDoom (overlay_sources/gzdoom/gzdoom.yaml), drawn for Doom and Doom II.
+# `gzdoom` is ZDOOM_EXE_NAME in CMakeLists.txt (g4.14.2), gzdoom.exe on Windows;
+# org.zdoom.GZDoom is the Flathub app id. Names not checked on an install.
+gzdoom,gzdoom.exe,org.zdoom.GZDoom:
+  overlay: gzdoom_template.mods.png
+# UZDoom, the continuation of GZDoom (overlay_sources/gzdoom/uzdoom.yaml): the
+# GZDoom keys plus R (reload). `uzdoom` is ZDOOM_EXE_NAME in CMakeLists.txt
+# (5.0.3) and org.zdoom.UZDoom is APPID in src/version.h. Names not checked on
+# an install.
+uzdoom,uzdoom.exe,org.zdoom.UZDoom:
+  overlay: uzdoom_template.mods.png
 # SQL Server Management Studio (overlay_sources/ssms/), Windows only. The
 # executable is Ssms.exe (SSMS 18 to 20) or SSMS.exe (SSMS 21 and later); both
 # lowercase to `ssms`. Name not checked on an install.
