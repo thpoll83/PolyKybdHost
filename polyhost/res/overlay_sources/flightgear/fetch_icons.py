@@ -265,6 +265,11 @@ def program(out: Path) -> None:
     rounded tile, 128 units wide in its own drawing: a 48 unit chequered band of
     16 unit squares and a blue F on white. At 40 px a square is exactly 5 px.
     The yellow squares and the F are lit."""
+    if (out / "program.png").exists():
+        # Taken from the program's own art: the committed PNG is the source, and
+        # an owner's edit of it must survive a re-run. Delete the file to redraw it.
+        print("  program.png  <- committed asset (left as-is)")
+        return
     import cairosvg
     import numpy as np
     from PIL import Image
