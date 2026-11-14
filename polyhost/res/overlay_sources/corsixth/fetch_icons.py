@@ -279,6 +279,11 @@ def _name(width: int):
 def program(out: Path) -> None:
     """program.png: the logo's figure at the right edge of the 72x40 cell, the
     name in two lines in the columns left of it."""
+    if (out / "program.png").exists():
+        # Taken from the program's own art: the committed PNG is the source, and
+        # an owner's edit of it must survive a re-run. Delete the file to redraw it.
+        print("  program.png  <- committed asset (left as-is)")
+        return
     import numpy as np
     w, h = 72, 40
     figure = _figure()
