@@ -70,8 +70,8 @@ bindings:
   - { key: K, command: Taunt asssmack, icon: tauntsmack.png, label: "Taunt: smack" }
   - { key: L, command: Taunt throatcut, icon: tauntthroat.png, label: "Taunt: throat cut" }
   - { key: SEMICOLON, command: Taunt gesture_point, icon: tauntpoint.png, label: "Point" }
-  - { key: M, command: BasePath 0, icon: basepath.png, label: "Base path 0" }
-  - { key: N, command: BasePath 1, icon: basepath.png, label: "Base path 1" }
+  - { key: M, command: BasePath 0, icon: basepath0.png, label: "Base path 0" }
+  - { key: N, command: BasePath 1, icon: basepath1.png, label: "Base path 1" }
 
   # Communication
   - { key: T, command: Talk, icon: talk.png, label: "Say" }

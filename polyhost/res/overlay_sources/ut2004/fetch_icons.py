@@ -54,7 +54,7 @@ ICONS = {
     "tauntsmack": "gi:delapouite/peach",         # Taunt asssmack
     "tauntthroat": "gi:lorc/decapitation",       # Taunt throatcut
     "tauntpoint": "gi:lorc/pointing",            # Taunt gesture_point
-    "basepath": "ms:route",
+    "basepath": "ms:route",            # only drawn with its number, in base_paths()
     # Communication
     "talk": "ms:chat",
     "teamtalk": "ms:forum",
@@ -97,10 +97,38 @@ INK.update({"talk": (34, 34), "teamtalk": (34, 34), "voicepublic": (34, 34), "pa
 def flat_icons(out: Path) -> None:
     """Every fetched icon as a flat 1-bit silhouette, drawn at exactly its key area."""
     for stem in ICONS:
+        if stem == "basepath":
+            continue                     # base_paths() draws it with its number
         size = SIZES.get(stem, (40, 40))
         cnc._save_mask(zeroad._flat(out / f"{stem}.png", size, INK.get(stem, size)),
                        out / f"{stem}.png")
     print(f"  {len(ICONS)} key icons drawn flat")
+
+
+# M and N (BasePath 0 and 1): the route with the number in the top-left corner,
+# as the Counter-Strike 2 radio keys carry their wheel number.
+BASE_PATHS = ("0", "1")
+PATH_BOX = (28, 28)       # the route, at the bottom right of the 40 x 40 area
+PATH_DIGIT_PX = 15        # digit height
+
+
+def base_paths(out: Path) -> None:
+    """basepath<n>.png: the route at the right with the base number in the
+    top-left corner. The plain route is deleted afterwards, since no key
+    draws it."""
+    src = out / "basepath.png"
+    for n in BASE_PATHS:
+        import numpy as np
+
+        from polyhost.services.game_assets.dither import dilate
+        m = zeroad._flat(src, (40, 40), PATH_BOX)
+        d = zeroad._digit(n, PATH_DIGIT_PX)
+        digit = np.zeros_like(m)
+        digit[0:d.shape[0], 0:d.shape[1]] = d
+        m = (m & ~dilate(digit, 2)) | digit       # 2 px clear round the number
+        cnc._save_mask(m, out / f"basepath{n}.png")
+        print(f"  basepath{n}.png  <- route + {n}")
+    src.unlink()
 
 
 def crouch(out: Path) -> None:
@@ -156,6 +184,7 @@ def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     fac.render(ICONS, out)
     flat_icons(out)
+    base_paths(out)
     crouch(out)
     program(out)
     print(f"Wrote icons to {out}")

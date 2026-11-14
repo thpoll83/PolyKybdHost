@@ -48,7 +48,7 @@ the Grenade Launcher in 7 and the AVRiL in 8 (`System/Onslaught.u`).
 | C | `Duck` | Crouch |
 | E, U, Enter | `Use` | Use |
 | J, K, L, ; | `Taunt pthrust`, `Taunt asssmack`, `Taunt throatcut`, `Taunt gesture_point` | Taunts, each with its own picture: a flexing figure, a peach, a throat cut, a pointing hand |
-| M, N | `BasePath 0`, `BasePath 1` | Show the path to a base (which team each number means was not checked) |
+| M, N | `BasePath 0`, `BasePath 1` | Show the path to a base; the icon carries the number (which team each number means was not checked) |
 | T, R | `Talk`, `TeamTalk` | Say, team say |
 | Tab | `Type` | Console line |
 | F | `VoiceTalk` | Voice chat while held |
@@ -137,7 +137,7 @@ weapon's details.
 | `tauntthroat.png` | game-icons.net `lorc/decapitation` | Lorc | CC BY 3.0 |
 | `tauntpoint.png` | game-icons.net `lorc/pointing` | Lorc | CC BY 3.0 |
 | `crouch.png` | drawn by `fetch_icons.py` (`crouch()`) | - | - |
-| `lastweapon.png`, `bestweapon.png`, `throwweapon.png`, `nextweapon.png`, `invprev.png`, `invnext.png`, `use.png`, `basepath.png`, `talk.png`, `teamtalk.png`, `type.png`, `voicetalk.png`, `voiceteam.png`, `voicelocal.png`, `voicepublic.png`, `vote.png`, `ingamechat.png`, `scores.png`, `stats.png`, `behindview.png`, `netstats.png`, `screenshot.png`, `music.png`, `radar.png`, `console.png`, `growhud.png`, `shrinkhud.png`, `pause.png` | Material Symbols `history`, `star`, `place_item`, `skip_next`, `chevron_left`, `chevron_right`, `touch_app`, `route`, `chat`, `forum`, `keyboard`, `mic`, `groups`, `near_me`, `public`, `how_to_vote`, `chat_bubble`, `scoreboard`, `bar_chart`, `3p`, `network_check`, `screenshot_monitor`, `music_note`, `radar`, `terminal`, `zoom_out_map`, `zoom_in_map`, `pause` | Google | Apache-2.0 |
+| `lastweapon.png`, `bestweapon.png`, `throwweapon.png`, `nextweapon.png`, `invprev.png`, `invnext.png`, `use.png`, `basepath0.png` and `basepath1.png` (with the number in DejaVu Sans Bold), `talk.png`, `teamtalk.png`, `type.png`, `voicetalk.png`, `voiceteam.png`, `voicelocal.png`, `voicepublic.png`, `vote.png`, `ingamechat.png`, `scores.png`, `stats.png`, `behindview.png`, `netstats.png`, `screenshot.png`, `music.png`, `radar.png`, `console.png`, `growhud.png`, `shrinkhud.png`, `pause.png` | Material Symbols `history`, `star`, `place_item`, `skip_next`, `chevron_left`, `chevron_right`, `touch_app`, `route`, `chat`, `forum`, `keyboard`, `mic`, `groups`, `near_me`, `public`, `how_to_vote`, `chat_bubble`, `scoreboard`, `bar_chart`, `3p`, `network_check`, `screenshot_monitor`, `music_note`, `radar`, `terminal`, `zoom_out_map`, `zoom_in_map`, `pause` | Google | Apache-2.0 |
 | `program.png` | UT2004 set in Bebas Neue | Dharma Type | SIL OFL 1.1 |
 
 game-icons.net: <https://game-icons.net>, CC BY 3.0
