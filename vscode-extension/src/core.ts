@@ -28,10 +28,13 @@ export const HTTP_TIMEOUT_MS = 500;
 
 export type Mode = "edit" | "debug/running" | "debug/stopped";
 
-// The most entries any of the bounded maps here holds (requests waiting for a
-// response, and the states the remote part sent). An entry past it drops the
-// oldest one.
+// The most requests waiting for a response that SessionState keeps. A request
+// past it drops the oldest one.
 export const MAX_ENTRIES = 64;
+
+// The most remote debug sessions RemoteStates keeps (states and last seqs). A
+// session past it drops the oldest one.
+export const MAX_REMOTE_SESSIONS = 128;
 
 /**
  * The `app` token for the editor this extension runs in, from `env.appName`
@@ -408,7 +411,7 @@ export function parseBridgeMessage(arg: unknown): BridgeMessage | null {
 /**
  * The UI part's copy of the states the workspace part sent, per session.
  * A message older than the last one applied for its session is dropped
- * (`seq` counts up in the workspace part). Bounded to MAX_ENTRIES sessions.
+ * (`seq` counts up in the workspace part). Bounded to MAX_REMOTE_SESSIONS sessions.
  */
 export class RemoteStates {
   states: Map<string, { state: "running" | "stopped"; seq: number }> = new Map();
@@ -424,14 +427,14 @@ export class RemoteStates {
     if (last !== undefined && m.seq <= last) return false;
     this.seqs.delete(m.session);
     this.seqs.set(m.session, m.seq);
-    bound(this.seqs);
+    bound(this.seqs, MAX_REMOTE_SESSIONS);
     const before = this.states.get(m.session)?.state ?? null;
     if (m.state === null) {
       this.states.delete(m.session);
     } else {
       this.states.delete(m.session);
       this.states.set(m.session, { state: m.state, seq: m.seq });
-      bound(this.states);
+      bound(this.states, MAX_REMOTE_SESSIONS);
     }
     return before !== m.state;
   }
@@ -447,8 +450,8 @@ export class RemoteStates {
   }
 }
 
-function bound<K, V>(m: Map<K, V>): void {
-  while (m.size > MAX_ENTRIES) {
+function bound<K, V>(m: Map<K, V>, max: number): void {
+  while (m.size > max) {
     const first = m.keys().next().value;
     if (first === undefined) return;
     m.delete(first);

@@ -135,7 +135,7 @@ the first part on your computer. A debug session has the same `id` in both
 extension hosts, so the first part matches the state to
 `debug.activeDebugSession`. Its own tracker takes priority when it has one. A
 message older than the last one for its session (`seq`) is dropped, and at most
-64 sessions are kept. When the first part starts in a remote window it calls
+128 sessions are kept. When the first part starts in a remote window it calls
 `polykybd.modeReporter.remoteSync`, and the remote part sends every session's
 state again. Nothing else crosses: no thread ids, file names or configuration
 names.

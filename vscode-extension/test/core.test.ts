@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 
 import {
   activeMode, appToken, BRIDGE_VERSION, bridgeMessage, DEFAULT_PORT, InputClock, isTextDiff,
-  MAX_ENTRIES, modeFor, modeUrl, parseBridgeMessage, payload, RemoteStates, ReportQueue,
+  MAX_REMOTE_SESSIONS, modeFor, modeUrl, parseBridgeMessage, payload, RemoteStates, ReportQueue,
   SendPolicy, SessionState, settleWithin, validPort, WorkspaceBridge,
 } from "../src/core.ts";
 
@@ -329,11 +329,11 @@ test("remote states: newer seq wins, a late message cannot revive an ended sessi
 
 test("remote states are bounded", () => {
   const r = new RemoteStates();
-  for (let i = 0; i < MAX_ENTRIES + 10; i++) r.apply({ v: 1, session: `s${i}`, state: "running", seq: i });
-  assert.equal(r.states.size, MAX_ENTRIES);
-  assert.equal(r.seqs.size, MAX_ENTRIES);
+  for (let i = 0; i < MAX_REMOTE_SESSIONS + 10; i++) r.apply({ v: 1, session: `s${i}`, state: "running", seq: i });
+  assert.equal(r.states.size, MAX_REMOTE_SESSIONS);
+  assert.equal(r.seqs.size, MAX_REMOTE_SESSIONS);
   assert.equal(r.get("s0"), undefined);
-  assert.equal(r.get(`s${MAX_ENTRIES + 9}`), "running");
+  assert.equal(r.get(`s${MAX_REMOTE_SESSIONS + 9}`), "running");
 });
 
 test("workspace bridge: sends on a change of state only", () => {
