@@ -25,6 +25,9 @@ them directly:
   `source/MainPanel.cpp`. `Engine::Step()` in `source/Engine.cpp` stores the
   selected ships as the group with Ctrl and adds the group to the selection
   with Shift.
+  `MainPanel::KeyDown()` passes `mod & (KMOD_CTRL | KMOD_GUI)`, so the Cmd
+  key (the Windows key on a PC keyboard) stores a group as Ctrl does. The set
+  draws the store icons on the Ctrl layer only.
 - Shift with a command key: `Engine::HandleKeyboardInputs()` in
   `source/Engine.cpp` (Shift+Reverse stops the ship, Shift+Jump is the fleet
   jump) and `source/AI.cpp` (the other Shift rows below).
