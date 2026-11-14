@@ -3597,6 +3597,9 @@ keeperfx,keeperfx.exe,keeperfx_hvlog,keeperfx_hvlog.exe:
 # not checked on an install.
 widelands,widelands.exe,org.widelands.widelands:
   overlay: widelands_template.mods.png
+  os:
+    macos:
+      overlay: [widelands_template_mac.mods.png, widelands_template_mac.combo.mods.png]
 # League of Legends (overlay_sources/lol/lol.yaml), the in-game window only. The
 # game is `League of Legends.exe` on Windows and the `LeagueofLegends` app on
 # macOS. The lobby client (LeagueClient, LeagueClientUx) is a different process

@@ -1,12 +1,15 @@
 """The SHIPPED routing of the real-time strategy and management game sets in
 `overlay-mapping.poly.yaml`: Beyond All Reason, KeeperFX and Widelands.
 
-Each game uses the same keys on every OS, so each entry has one set and no
-`os:` branch. What it pins:
+Beyond All Reason and KeeperFX use the same keys on every OS, so each entry has
+one set and no `os:` branch. Widelands puts its Ctrl defaults on Cmd on macOS
+(`kDefaultCtrlModifier`), so its entry has an `os: macos:` branch with a second
+set. What it pins:
 
 * every process name of a game (lower case, as the handler reports it) loads
   that game's set on all three platforms;
 * a window title does not reroute it, and neither does a missing title;
+* Widelands loads its Cmd set on macOS;
 * every named file exists.
 """
 
@@ -32,6 +35,12 @@ GAMES = {
     ("widelands_template.mods.png",): (
         ("widelands", "widelands.exe", "org.widelands.widelands"),
         "Widelands"),
+}
+
+# {overlay of the default branch: overlay on macOS}, for a game with an `os:` branch
+MACOS = {
+    ("widelands_template.mods.png",):
+        ("widelands_template_mac.mods.png", "widelands_template_mac.combo.mods.png"),
 }
 
 
@@ -74,7 +83,8 @@ class RtsManagementRoutingTest(unittest.TestCase):
             for app in apps:
                 for os_name in ("windows", "macos", "linux"):
                     with self.subTest(app=app, os=os_name):
-                        self.assertEqual(self._route(app, os_name, title), list(overlay))
+                        want = MACOS.get(overlay, overlay) if os_name == "macos" else overlay
+                        self.assertEqual(self._route(app, os_name, title), list(want))
 
     def test_an_empty_and_a_missing_title_route_the_same(self):
         for overlay, (apps, _title) in GAMES.items():
@@ -83,7 +93,7 @@ class RtsManagementRoutingTest(unittest.TestCase):
                     self.assertEqual(self._route(apps[0], "linux", title), list(overlay))
 
     def test_every_named_file_exists(self):
-        missing = [f for overlay in GAMES for f in overlay
+        missing = [f for overlay in list(GAMES) + list(MACOS.values()) for f in overlay
                    if not (RES / "overlays" / f).is_file()]
         self.assertEqual(missing, [])
 

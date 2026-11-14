@@ -5,7 +5,7 @@ rebuilds `icons/`.
 
 | Set | Loads for |
 |---|---|
-| `widelands_template` (1 file) | Widelands: `widelands` on Linux and macOS, `widelands.exe` on Windows, `org.widelands.Widelands` as a Flatpak |
+| `widelands_template` (1 file), on macOS `widelands_template_mac` (2 files) | Widelands: `widelands` on Linux and macOS, `widelands.exe` on Windows, `org.widelands.Widelands` as a Flatpak |
 
 `widelands` is the binary target in `src/CMakeLists.txt`
 (`wl_binary(widelands ...)`), and `xdg/org.widelands.Widelands.desktop` has
@@ -18,7 +18,11 @@ The default shortcut table (`KeyboardShortcut` to `KeyboardShortcutInfo`) in
 `src/wlapplication_options.cc` of <https://github.com/widelands/widelands>,
 release tag `v1.3.1`, read 2026-11-14. The player changes the keys in the
 game's options; this overlay shows the defaults. The entries with the scope
-`kGame` or `kGlobal` are drawn. `kDefaultCtrlModifier` is Ctrl.
+`kGame` or `kGlobal` are drawn. `kDefaultCtrlModifier` is Ctrl on Windows and Linux
+and Cmd on macOS (`KMOD_GUI` under `__APPLE__`). Every Ctrl default of the game
+uses it, so the spec writes these keys as `CMDCTRL` and the generator emits a
+second set, `widelands_template_mac`, with the same icons on the Cmd layer.
+Read "Ctrl" in the table below as Cmd on macOS.
 
 | Key | Plain | Ctrl | Shift |
 |---|---|---|---|
