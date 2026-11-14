@@ -285,3 +285,66 @@ def apply(changes: list[FileChange]) -> list[str]:
             os.remove(change.path)
         done.append(change.path)
     return done
+
+
+# ---- Status (the Integrations dialog) --------------------------------------------
+
+STATE_INSTALLED = "installed"          # the hooks match what install would write
+STATE_NOT_INSTALLED = "not-installed"  # no PolyKybd hook in the file
+STATE_OUTDATED = "outdated"            # PolyKybd hooks of another path or version
+STATE_CONFLICT = "conflict"            # Codex: a notify program of the user's own
+STATE_ERROR = "error"                  # the file cannot be read or parsed
+
+# The file each vendor's hooks are written to, below the home folder. The
+# planners above use the same paths.
+CONFIG_FILES = {
+    "claude-code": (".claude", "settings.json"),
+    "codex": (".codex", "config.toml"),
+    "copilot": (".copilot", "hooks", "polykybd.json"),
+    "gemini": (".gemini", "settings.json"),
+    "qwen": (".qwen", "settings.json"),
+    "opencode": (".config", "opencode", "plugins", "polykybd.js"),
+}
+
+
+@dataclass
+class HookStatus:
+    vendor: str
+    path: str
+    state: str
+    detail: str = ""   # the conflict or error text
+
+    @property
+    def has_ours(self) -> bool:
+        """Whether Remove has PolyKybd hooks to take out."""
+        return self.state in (STATE_INSTALLED, STATE_OUTDATED)
+
+
+def config_path(vendor: str, home: str | None = None) -> str:
+    return os.path.join(home or os.path.expanduser("~"), *CONFIG_FILES[vendor])
+
+
+def _contains_ours(text: str) -> bool:
+    # A command string has "agents hook <vendor>"; Codex's notify line and the
+    # OpenCode plugin have the argv as JSON: "agents", "hook".
+    return HOOK_MARK in text or '"agents", "hook"' in text
+
+
+def status(vendor: str, home: str | None = None,
+           argv: list[str] | None = None) -> HookStatus:
+    """The state of one vendor's hooks, read from its config file. Never raises
+    for a broken file: the state is then STATE_ERROR."""
+    home = home or os.path.expanduser("~")
+    path = config_path(vendor, home)
+    try:
+        text = _read(path)
+        if vendor == "codex":
+            conflict = codex_conflict(home)
+            if conflict:
+                return HookStatus(vendor, path, STATE_CONFLICT, conflict)
+        if not plan(vendor, home, True, argv):
+            return HookStatus(vendor, path, STATE_INSTALLED)
+    except (OSError, ValueError) as e:
+        return HookStatus(vendor, path, STATE_ERROR, str(e))
+    return HookStatus(vendor, path, STATE_OUTDATED if _contains_ours(text)
+                      else STATE_NOT_INSTALLED)

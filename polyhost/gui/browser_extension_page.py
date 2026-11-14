@@ -1,5 +1,5 @@
-"""AI Agents → Install Browser Extension…: copy the PolyKybd browser extension to
-a folder and show how to load it (services/browser_extension.py).
+"""Integrations > Browser: copy the PolyKybd browser extension to a folder and
+show how to load it (services/browser_extension.py).
 
 The extension reports the focused tab's address (website overlays) and switches
 to a Claude Code cloud session's tab on its agent key. Until it is in the browser
@@ -10,36 +10,33 @@ from __future__ import annotations
 
 import os
 
-from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import (QApplication, QDialog, QDialogButtonBox, QFileDialog,
-                             QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout)
+from PyQt5.QtWidgets import (QApplication, QFileDialog, QHBoxLayout, QLabel, QLineEdit,
+                             QPushButton, QVBoxLayout, QWidget)
 
-from polyhost.gui.ui_kit import (CARD_STYLE, Headline, StatusLabel, WrapLabel, card,
-                                 fit_height, muted, px, set_button_icon, style_button_box)
+from polyhost.gui.ui_kit import (Headline, StatusLabel, WrapLabel, card, muted,
+                                 set_button_icon)
 from polyhost.i18n import _, _f
 from polyhost.services import browser_extension as be
 
-WIDTH = 560
 EXTENSIONS_PAGE = "chrome://extensions"
 
 
 
-class BrowserExtensionDialog(QDialog):
+class BrowserPage(QWidget):
     def __init__(self, log, parent=None, receiver_port=None):
         super().__init__(parent)
         self.log = log
-        self.setWindowTitle(_("Install Browser Extension"))
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
-        self.setStyleSheet(CARD_STYLE)
-        self.setMinimumWidth(px(WIDTH))
         if receiver_port is None:
             from polyhost.settings import read_setting
             receiver_port = read_setting("browser_report_port", 50164)
         version = be.source_version()
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(px(16), px(14), px(16), px(12))
-        layout.setSpacing(px(12))
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(12)
+        head = QLabel(_("Browser"))
+        head.setObjectName("settingsSectionTitle")
+        layout.addWidget(head)
         layout.addWidget(Headline(
             _f("PolyKybd browser extension {version}", version=version or "?"),
             _("Shows website overlays for the focused browser tab, and switches to a "
@@ -90,17 +87,10 @@ class BrowserExtensionDialog(QDialog):
 
         self.status = StatusLabel("", self)
         layout.addWidget(self.status)
-        buttons = style_button_box(QDialogButtonBox(QDialogButtonBox.Close))
-        # noinspection PyUnresolvedReferences
-        buttons.rejected.connect(self.close)
-        layout.addWidget(buttons)
+        layout.addStretch(1)
         if not version:
             self.copy_button.setEnabled(False)
             self.status.setText(_("This installation has no browser extension files."))
-
-    def showEvent(self, event):  # noqa: N802 - Qt name
-        super().showEvent(event)
-        QTimer.singleShot(0, lambda: fit_height(self))     # after the text wrapped
 
     @staticmethod
     def _heading(text):

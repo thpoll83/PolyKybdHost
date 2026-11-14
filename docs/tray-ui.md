@@ -228,20 +228,34 @@ and relative links were adjusted to suit a standalone file.
   applies the mode on the next add event. `scripts/install.sh` writes the same file with
   `sudo`; its old inline copy lacked the tty lines (1.17.28 and 1.17.29).
 
+- **Integrations… (every OS)**: one top-level entry above Settings, in the tray app
+  and in the forwarder, opens `gui/integrations_dialog.py`. It has the Settings layout
+  (the same sidebar style and window size) with one page per category: **AI agents**
+  (the hooks in each agent's config file, `services/agents/hook_install.py`),
+  **Terminals** and **Editors** (`gui/shell_editor_pages.py`) and **Browser** (the
+  extension folder, `gui/browser_extension_page.py`). The forwarder has no Browser page:
+  its computer sends no browser reports. AI Agents → "Set Up Hooks…" opens the dialog at
+  its AI agents page. Each row page (`RowsPage`) reads its status on a `QThread`, shows
+  one row per program with a checkbox, the file that changes and the state under it, and
+  has its own Install and Remove; Remove is enabled only for a row that has PolyKybd
+  parts to remove. The AI agents page asks before writing, with the diff in the
+  details, as the old menu did. Local files only, so the entry stays enabled with no
+  keyboard. Modeless and kept like the log-bundle dialog; `reopen()` reads every page
+  again when it is opened after being closed.
+
 - **Shell title integration (every OS)**: the host sees a program inside a terminal
   (GNU nano) only through the window title, and plain bash, zsh and PowerShell show the
-  prompt's title, not the command. **"Set up the terminal and editors…"**
-  is always visible under Updates, after the udev row, in the tray app and in the
-  forwarder (the forwarder reports its own machine's titles). It opens
-  `gui/shell_title_dialog.py`: one row per shell found (bash, zsh, PowerShell 7 `pwsh`,
-  Windows PowerShell 5.1) with its startup file and state, a checkbox, and Install /
-  Remove; fish, cmd.exe and Terminal.app/iTerm2 are listed as needing no setup. The
+  prompt's title, not the command. Integrations → **Terminals** (tray app and forwarder;
+  the forwarder reports its own machine's titles) lists one row per shell found (bash,
+  zsh, PowerShell 7 `pwsh`, Windows PowerShell 5.1) with its startup file and state, a
+  checkbox, and Install / Remove; fish, cmd.exe and Terminal.app/iTerm2 are listed as
+  needing no setup. The
   status runs on a `QThread`, because the PowerShell `$PROFILE` path and execution
   policy come from running `pwsh -NoProfile -NonInteractive -Command …` (20 s timeout,
   cached per process, except an answer with a blocking policy, so a
   `Set-ExecutionPolicy` shows on the next refresh). zsh's startup directory comes from
   `zsh -c 'print -r -- ${ZDOTDIR:-$HOME}'` (10 s timeout), which reads `.zshenv`, so a
-  `ZDOTDIR` set only there is found; without an answer `$ZDOTDIR` or the home is used. Modeless and retained like the log-bundle dialog.
+  `ZDOTDIR` set only there is found; without an answer `$ZDOTDIR` or the home is used.
   `services/shell_title.py` (Qt-free, also `polyctl shell-integration install|remove|status
   [--shell …]`, which never connects to the host) adds one line between
   `# >>> PolyKybd title integration >>>` / `# <<< … <<<` that sources
@@ -367,8 +381,8 @@ and relative links were adjusted to suit a standalone file.
   `ui_kit.fit_height(dialog)` after it is shown** (`QTimer.singleShot(0, …)` in
   `showEvent`, and after an `adjustSize()`). The dialog's height and its
   `minimumSizeHint()` are computed before the labels measured their wrapped text,
-  and stay at that value. In German the step text of "Install Browser Extension…"
-  ran under its button, and the setup-script box of "Connect Cloud Sessions…"
+  and stay at that value. In German the step text of the browser extension dialog
+  (now Integrations → Browser, in a scroll area that sizes it) ran under its button, and the setup-script box of "Connect Cloud Sessions…"
   covered the note below it. `fit_height` invalidates the layouts, takes
   `totalHeightForWidth(width)`, and sets it as the minimum height.
   `test_the_long_step_text_does_not_overlap_its_button` pins it. An offscreen
