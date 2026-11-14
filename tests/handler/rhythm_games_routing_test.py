@@ -25,9 +25,13 @@ MAPPING = RES / "overlay-mapping.poly.yaml"
 STEPMANIA = ["stepmania_template.mods.png", "stepmania_template.combo.mods.png"]
 STEPMANIA_NAMES = ("stepmania", "stepmania.exe", "stepmania-sse2.exe", "stepmania-sse2")
 
+ETTERNA = ["etterna_template.mods.png", "etterna_template.combo.mods.png"]
+ETTERNA_NAMES = ("etterna", "etterna.exe")
+
 # (set, process names, a window title of the game, spec under overlay_sources/)
 GAMES = (
     (STEPMANIA, STEPMANIA_NAMES, "StepMania", "stepmania/stepmania.yaml"),
+    (ETTERNA, ETTERNA_NAMES, "Etterna", "etterna/etterna.yaml"),
 )
 
 

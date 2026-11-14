@@ -3626,6 +3626,11 @@ dota2,steam_app_570:
 # the process name at the first dot. Names not checked on an install.
 stepmania,stepmania.exe,stepmania-sse2.exe,stepmania-sse2:
   overlay: [stepmania_template.mods.png, stepmania_template.combo.mods.png]
+# Etterna (overlay_sources/etterna/etterna.yaml), a StepMania 5 fork with other
+# default keys. `Etterna` is the executable target in CMakeLists.txt (release
+# 0.75.1), Etterna.exe on Windows. Names not checked on an install.
+etterna,etterna.exe:
+  overlay: [etterna_template.mods.png, etterna_template.combo.mods.png]
 # Total Commander (overlay_sources/totalcmd/). Windows only. The 11.58.1
 # installers ship TOTALCMD64.EXE (64-bit) and TOTALCMD.EXE (32-bit). Not checked
 # on a running install.

@@ -1,0 +1,93 @@
+# Etterna overlay for PolyKybd.
+#
+# Keys: the default key map in src/Etterna/Singletons/InputMapper.cpp and
+# GameManager.cpp (game "dance"), the global keys in
+# src/Etterna/Globals/StepMania.cpp, the song list chords in
+# src/Etterna/Screen/Others/ScreenSelectMusic.cpp, the sync keys in
+# ScreenSyncOverlay.cpp and the debug keys in Themes/_fallback/metrics.ini of
+# etternagame/etterna, release 0.75.1 (tag v0.75.1). See SOURCES.md.
+#
+# Etterna is a fork of StepMania 5 with other default keys (Z X , . for the
+# four columns, ` to restart, Ctrl chords on the song list), so it has its own
+# set. The keys that are the same use the StepMania icons. A user who maps a
+# key in the game still sees the default here.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/etterna/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/etterna/etterna.yaml --preview /tmp/etterna_preview
+app: etterna
+match: [etterna, etterna.exe]
+output: etterna_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for StepMania: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# Etterna's logo drawn in the centre of the whole cell, without the ESC legend
+# (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # The four columns (game type dance, 4 keys)
+  - { key: Z, icon: colleft.png, label: "Column 1 (left)" }
+  - { key: X, icon: coldown.png, label: "Column 2 (down)" }
+  - { key: COMMA, icon: colup.png, label: "Column 3 (up)" }
+  - { key: DOT, icon: colright.png, label: "Column 4 (right)" }
+
+  # Menu buttons
+  - { key: ENTER, icon: start.png, label: "Start" }
+  - { key: SLASH, icon: select.png, label: "Select" }
+  - { key: SCROLL_LOCK, mods: [CTRL], icon: operator.png, label: "Operator menu (options)" }
+
+  # During a song
+  - { key: GRAVE, icon: restart.png, label: "Restart the song (hold)" }
+  - { key: F4, icon: revertsync.png, label: "Revert sync changes", region: [34, 40] }
+  - { key: F6, icon: autosync.png, label: "Autosync: off, song, machine", region: [34, 40] }
+  - { key: F7, icon: assist.png, label: "Assist clap", region: [34, 40] }
+  - { key: F7, mods: [SHIFT], icon: metronome.png, label: "Assist metronome", region: [34, 40] }
+  - { key: F8, icon: autoplay.png, label: "Autoplay", region: [34, 40] }
+  - { key: F11, icon: offsetdown.png, label: "Song offset down", region: [30, 40] }
+  - { key: F12, icon: offsetup.png, label: "Song offset up", region: [30, 40] }
+  - { key: F11, mods: [SHIFT], icon: globaldown.png, label: "Global offset down", region: [30, 40] }
+  - { key: F12, mods: [SHIFT], icon: globalup.png, label: "Global offset up", region: [30, 40] }
+
+  # Song list
+  - { key: F9, icon: translit.png, label: "Titles transliterated or in the native script", region: [34, 40] }
+  - { key: F, mods: [CTRL], icon: favorite.png, label: "Favorite on or off" }
+  - { key: M, mods: [CTRL], icon: mirror.png, label: "Always mirror this chart, on or off" }
+  - { key: G, mods: [CTRL], icon: goal.png, label: "Add a goal for this chart" }
+  - { key: O, mods: [CTRL], icon: practice.png, label: "Practice mode on or off" }
+  - { key: P, mods: [CTRL], icon: newplaylist.png, label: "New playlist" }
+  - { key: A, mods: [CTRL], icon: addtoplaylist.png, label: "Add the chart to the active playlist" }
+  - { key: S, mods: [CTRL], icon: saveprofile.png, label: "Save the profile" }
+  - { key: Q, mods: [CTRL], icon: newsongs.png, label: "Load new songs from disk" }
+  - { key: R, mods: [CTRL, SHIFT], icon: reloadsong.png, label: "Reload the selected song from disk" }
+  - { key: P, mods: [CTRL, SHIFT], icon: reloadpack.png, label: "Reload the selected pack from disk" }
+
+  # Reload the theme
+  - { key: F2, icon: reload.png, label: "Reload metrics and textures", region: [34, 40] }
+  - { key: F2, mods: [SHIFT], icon: reloadmetrics.png, label: "Reload metrics only", region: [34, 40] }
+  - { key: F2, mods: [CTRL], icon: reloadscripts.png, label: "Reload scripts", region: [34, 40] }
+  - { key: F2, mods: [CTRL, SHIFT], icon: reloadoverlays.png, label: "Reload overlay screens", region: [34, 40] }
+
+  # Debug and game speed
+  - { key: F3, icon: debug.png, label: "Debug menu (hold)", region: [34, 40] }
+  - { key: TAB, icon: fast.png, label: "Game speed x4 (hold)" }
+  - { key: PAUSE, icon: mute.png, label: "Mute actions" }
+
+  # Window
+  - { key: PRINT_SCREEN, icon: screenshot.png, label: "Screenshot (JPEG)" }
+  - { key: PRINT_SCREEN, mods: [SHIFT], icon: screenshotraw.png, label: "Screenshot (PNG)" }
+  - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Toggle full screen" }
+  - { key: F4, mods: [ALT], icon: quit.png, label: "Quit the game", region: [34, 40] }
