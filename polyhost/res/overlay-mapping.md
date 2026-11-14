@@ -135,7 +135,7 @@ sub-entry **replace** the parent instead.
 
 `urls-contains` matches only a URL the host attributes to the **focused** app: a
 browser's active tab, or a context report from an app on the allow-list in
-`handler/browser_url.py` (`CONTEXT_REPORTERS`: Blender, and GUI Vim and Emacs).
+`handler/browser_url.py` (`CONTEXT_REPORTERS`: Blender, GUI Vim and Emacs, and VS Code, Cursor and Windsurf).
 The entry's names and that list must agree; the routing test checks it. A
 terminal on `TERMINAL_APPS` takes the report of a vim or emacs running in it
 (`HOSTED_REPORTERS`), so a terminal entry can route `vim://` and `emacs://` the

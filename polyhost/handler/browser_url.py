@@ -106,6 +106,9 @@ CONTEXT_REPORTERS = {
     "macvim": "vim",
     "neovide": "vim",
     "emacs": "emacs",
+    # VS Code and its forks: vscode-extension/ sends <token>://<debug mode>.
+    "code": "vscode", "cursor": "cursor",
+    "windsurf": "windsurf", "devin": "windsurf", "devin-desktop": "windsurf",
     # Bitwig Studio's controller extension (bitwig-extension/): the names of the
     # mapping's `bitwig studio` entry.
     "bitwig studio": "bitwig", "bitwigstudio": "bitwig", "bitwig-studio": "bitwig",
