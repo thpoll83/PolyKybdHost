@@ -14,6 +14,12 @@ Drives `polyhost/res/overlay-mapping.poly.yaml` itself. What it pins:
 * the whole chain from a report to the overlay, through `BrowserUrlProvider`;
 * the GUI entry's names are exactly the `emacs` context reporters, and every
   terminal on `TERMINAL_APPS` carries the routes;
+* an evil state report (`emacs://<major-mode>/<state>`) gets that state's
+  set in every major mode, ahead of the major-mode routes; Emacs state, an
+  unknown state and no evil keep the major-mode set, and a Vim report or a
+  major mode whose name holds a state word never takes an evil set;
+* every evil set draws only Vim keys evil binds the same way: none of
+  `evil.yaml`'s dropped keys is in it;
 * every file named exists.
 """
 
@@ -34,6 +40,12 @@ GLOBAL = "emacs_template.mods.png"
 ORG = "emacs_org_template.mods.png"
 DIRED = "emacs_dired_template.mods.png"
 WT = "windowsterminal_template.mods.png"
+EVIL_STATES = ("normal", "visual", "insert", "replace", "motion")
+SOURCES = RES / "overlay_sources" / "emacs"
+
+
+def _evil(state):
+    return f"emacs_evil_{state}_template.mods.png"
 
 
 def _overlay_handler_class():
@@ -66,7 +78,11 @@ def _underlays(entry):
 
 
 def _emacs_routes(entry):
-    return [k for k in (entry.get("urls-contains") or {}) if k.startswith("emacs://")]
+    """The Emacs routes: the major-mode needles, and the evil-state needles
+    whose `url` regex names an emacs:// report."""
+    routes = entry.get("urls-contains") or {}
+    return [k for k, v in routes.items() if k.startswith("emacs://")
+            or str((v or {}).get("url", "")).startswith("^emacs://")]
 
 
 class EmacsMappingFileTest(unittest.TestCase):
@@ -98,16 +114,49 @@ class EmacsMappingFileTest(unittest.TestCase):
     def test_specific_modes_come_before_the_catch_all(self):
         routes = _emacs_routes(self.raw[GUI_KEY])
         self.assertEqual(routes[-1], "emacs://")
-        self.assertEqual(set(routes[:-1]), {"emacs://org-mode", "emacs://dired-mode"})
+        self.assertEqual(set(routes[:-1]), {"emacs://org-mode", "emacs://dired-mode",
+                                            *(f"/{st}" for st in EVIL_STATES)})
+        # The evil states come before every major-mode route.
+        self.assertEqual(routes[:len(EVIL_STATES)], [f"/{st}" for st in EVIL_STATES])
 
     def test_every_named_file_exists(self):
         files = set()
         routes = self.raw[GUI_KEY]["urls-contains"]
         for e in [self.raw[GUI_KEY], *(routes[k] for k in _emacs_routes(self.raw[GUI_KEY]))]:
             files |= set(_files(e))
-        self.assertGreaterEqual(len(files), 7)
+        self.assertGreaterEqual(len(files), 12)
         missing = [f for f in files if not (RES / "overlays" / f).is_file()]
         self.assertEqual(missing, [])
+
+
+class EvilSetsTest(unittest.TestCase):
+    """The generated evil binding files against evil.yaml's drop list."""
+
+    def test_no_dropped_key_is_drawn(self):
+        evil = yaml.safe_load((SOURCES / "evil.yaml").read_text(encoding="utf-8"))
+
+        def chord(b):
+            return (str(b["key"]).upper(), tuple(sorted(str(m).upper() for m in b.get("mods") or [])))
+
+        self.assertEqual(set(evil["states"]), set(EVIL_STATES))
+        for state in EVIL_STATES:
+            spec = yaml.safe_load((SOURCES / f"evil_{state}.yaml").read_text(encoding="utf-8"))
+            self.assertEqual(spec["output"] + ".mods.png", _evil(state))
+            drawn = {chord(b) for b in spec["bindings"]}
+            self.assertGreater(len(drawn), 10, state)
+            dropped = {chord(d) for d in evil["drop"] if state in d["states"]}
+            self.assertTrue(dropped, state)
+            self.assertFalse(drawn & dropped, state)
+        # Spot checks against evil-maps.el defaults.
+        normal = {chord(b) for b in yaml.safe_load(
+            (SOURCES / "evil_normal.yaml").read_text(encoding="utf-8"))["bindings"]}
+        self.assertIn(("D", ("CTRL",)), normal)      # evil-want-C-d-scroll t
+        self.assertNotIn(("U", ("CTRL",)), normal)   # evil-want-C-u-scroll nil
+        self.assertNotIn(("R", ("CTRL",)), normal)   # evil-undo-system nil: no redo
+        motion = {chord(b) for b in yaml.safe_load(
+            (SOURCES / "evil_motion.yaml").read_text(encoding="utf-8"))["bindings"]}
+        self.assertNotIn(("D", ()), motion)          # d is in the normal map only
+        self.assertIn(("J", ()), motion)
 
 
 class EmacsRoutingTest(unittest.TestCase):
@@ -125,10 +174,10 @@ class EmacsRoutingTest(unittest.TestCase):
     def test_gui_emacs_routes_each_mode(self):
         cases = {
             "emacs://org-mode": ORG,
-            "emacs://org-mode/normal": ORG,         # evil state appended
+            "emacs://org-mode/emacs": ORG,          # evil's Emacs state: Emacs keys
             "emacs://dired-mode": DIRED,
             "emacs://fundamental-mode": GLOBAL,
-            "emacs://emacs-lisp-mode/insert": GLOBAL,
+            "emacs://emacs-lisp-mode/operator": GLOBAL,  # not reported in practice
             "emacs://org-agenda-mode": GLOBAL,      # not org-mode's keymap
             "emacs://wdired-mode": GLOBAL,          # editable Dired: editing keys
         }
@@ -139,6 +188,31 @@ class EmacsRoutingTest(unittest.TestCase):
                 primary = [f for f in files if not f.endswith(".combo.mods.png")
                            and not f.endswith(".extra.mods.png")][-1]
                 self.assertEqual(primary, want, (url, os_name))
+
+    def test_evil_states_pick_their_set_in_every_major_mode(self):
+        for os_name in ("linux", "windows", "macos"):
+            for mode in ("fundamental-mode", "org-mode", "dired-mode", "emacs-lisp-mode",
+                         "visual-basic-mode"):
+                for state in EVIL_STATES:
+                    url = f"emacs://{mode}/{state}"
+                    self.assertEqual(self._route("emacs", url, os_name=os_name),
+                                     [_evil(state)], (url, os_name))
+
+    def test_a_state_word_elsewhere_is_not_an_evil_state(self):
+        # A major mode named like a state, a state that is not the last part,
+        # and a Vim report keep their own routes.
+        self.assertEqual(self._route("emacs", "emacs://visual-basic-mode")[0], GLOBAL)
+        self.assertEqual(self._route("emacs", "emacs://normal-mode")[0], GLOBAL)
+        self.assertEqual(self._route("emacs", "emacs://org-mode/normalx"),
+                         _files(self.mapping["emacs"]["urls-contains"]["emacs://org-mode"]))
+        self.assertEqual(self._route("emacs", "vim://normal"), ["vim_normal_template.mods.png"])
+        self.assertEqual(self._route("kitty", "vim://insert"), ["vim_insert_template.mods.png"])
+
+    def test_terminal_with_an_evil_report_takes_the_evil_set(self):
+        for app in ("kitty", "alacritty", "windowsterminal", "iterm2"):
+            for state in EVIL_STATES:
+                self.assertEqual(self._route(app, f"emacs://text-mode/{state}"),
+                                 [_evil(state)], (app, state))
 
     def test_gui_emacs_without_a_report_is_the_global_set(self):
         self.assertEqual(self._route("emacs", None)[0], GLOBAL)

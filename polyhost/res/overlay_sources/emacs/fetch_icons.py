@@ -373,7 +373,10 @@ COMPOSITES = {
 # The ESC mark of each set: a word for the set left of the GNU Emacs logo, over
 # the whole 72x40 cell, drawn without the ESC legend (program_icon_legend:
 # false in the spec). global.yaml serves every major mode but Org and Dired.
-ESC_WORDS = {"global": "EDIT", "org": "ORG", "dired": "DIRED"}
+ESC_WORDS = {"global": "EDIT", "org": "ORG", "dired": "DIRED",
+             # evil states (gen_evil_bindings.py), the words of the Vim sets
+             "evil_normal": "NOR", "evil_visual": "VIS", "evil_insert": "INS",
+             "evil_replace": "REP", "evil_motion": "MOT"}
 ESC_W, ESC_H, ESC_LOGO = 72, 40, 36
 ESC_WORD_PX, ESC_WORD_W = 22, 33
 

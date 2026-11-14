@@ -1,0 +1,99 @@
+# Evil (the Vim emulation for Emacs): which Vim keys act the same in each evil
+# state. The input of gen_evil_bindings.py.
+#
+# polykybd.el sends `emacs://<major-mode>/<evil-state>` while evil-local-mode
+# is on. Each set below starts from the Vim set of the same mode
+# (../vim/bindings_<vim>.yaml, generated from ../vim/keys.yaml) and leaves out
+# every key that evil's DEFAULT keymaps bind differently. A left-out key stays
+# blank: the set never draws Vim's action on a key that does something else.
+#
+# Source: evil-maps.el and evil-vars.el, evil 1.15.0
+# (https://github.com/emacs-evil/evil, branch master, read 2026-11-14). The
+# defaults that decide a key: evil-want-C-u-scroll nil, evil-want-C-d-scroll t,
+# evil-want-C-i-jump t, evil-want-C-w-delete t, evil-want-C-u-delete nil,
+# evil-want-C-h-delete nil, evil-toggle-key "C-z", evil-undo-system nil.
+# A key evil does not bind falls through to the Emacs global keymap; it is
+# kept only where that binding does what the picture shows (PgUp/PgDn scroll a
+# page, C-Home/C-End go to the buffer's start and end, F1 is help).
+
+# state -> the Vim set it starts from. `motion` has no Vim set: it is the
+# Vim Normal set reduced to the `motions` section of keys.yaml plus the keys
+# in `motion_extra`, because evil's motion state enables only
+# evil-motion-state-map (evil-states.el: normal state is `:enable (motion)`,
+# motion state enables nothing else).
+states:
+  normal: normal
+  visual: visual
+  insert: insert
+  replace: replace
+  motion: normal
+
+# The keys of the Vim Normal set (outside the `motions` section) that are in
+# evil-motion-state-map, so they act in motion state too.
+motion_extra:
+  - { key: K, mods: [SHIFT] }     # evil-lookup
+  - { key: V }                    # evil-visual-char
+  - { key: V, mods: [SHIFT] }     # evil-visual-line
+  - { key: V, mods: [CTRL] }      # evil-visual-block
+  - { key: ";", mods: [SHIFT] }   # ":" evil-ex
+  - { key: "1", mods: [SHIFT] }   # "!" evil-shell-command
+  - { key: Y }                    # evil-yank
+  - { key: Y, mods: [SHIFT] }     # evil-yank-line
+  - { key: O, mods: [CTRL] }      # evil-jump-backward
+  - { key: I, mods: [CTRL] }      # evil-jump-forward (evil-want-C-i-jump t)
+  - { key: TAB }                  # TAB is C-i
+  - { key: "6", mods: [CTRL] }    # evil-switch-to-windows-last-buffer
+  - { key: W, mods: [CTRL] }      # evil-window-map
+  - { key: F1 }                   # global: help
+
+# Keys left out, with the states they are left out of and what evil does
+# instead. `all` is every state above.
+drop:
+  # --- motions (normal, visual, motion) ---
+  - { key: U, mods: [CTRL], states: [normal, visual, motion],
+      why: "universal-argument: evil-want-C-u-scroll is nil, so C-u keeps its Emacs binding" }
+  - { key: RIGHT, mods: [CTRL], states: [normal, visual, motion],
+      why: "not in evil's maps; global right-word moves to the END of the word, not to the next word" }
+  - { key: LEFT, mods: [CTRL], states: [normal, visual, motion],
+      why: "not in evil's maps; global left-word (backward-word)" }
+  - { key: RIGHT, mods: [SHIFT], states: [normal, visual, motion],
+      why: "not in the normal or motion map (only insert state binds S-right); global right-char with shift selection" }
+  - { key: LEFT, mods: [SHIFT], states: [normal, visual, motion],
+      why: "not in the normal or motion map (only insert state binds S-left); global left-char with shift selection" }
+  - { key: DOWN, mods: [SHIFT], states: [normal, visual, motion],
+      why: "not in evil's maps; global next-line with shift selection, not page down" }
+  - { key: UP, mods: [SHIFT], states: [normal, visual, motion],
+      why: "not in evil's maps; global previous-line with shift selection, not page up" }
+  - { key: BACKSPACE, states: [motion],
+      why: "DEL (evil-backward-char) is in evil-normal-state-map only; in motion state it falls through to the major mode" }
+  # --- normal ---
+  - { key: U, mods: [SHIFT], states: [normal],
+      why: "not bound by evil: there is no undo-line command" }
+  - { key: R, mods: [CTRL], states: [normal],
+      why: "evil-redo, which with evil-undo-system nil (the default) only reports 'Customize evil-undo-system for redo functionality'" }
+  - { key: A, mods: [CTRL], states: [normal, visual],
+      why: "not bound by evil; global move-beginning-of-line, not increment" }
+  - { key: X, mods: [CTRL], states: [normal, visual],
+      why: "not bound by evil; C-x is Emacs's prefix key, not decrement" }
+  - { key: G, mods: [CTRL], states: [normal],
+      why: "not bound by evil; keyboard-quit, not file information" }
+  - { key: L, mods: [CTRL], states: [normal],
+      why: "not bound by evil; global recenter-top-bottom, not redraw" }
+  - { key: Z, mods: [CTRL], states: [normal],
+      why: "evil-toggle-key: switches to Emacs state, not suspend" }
+  # --- visual ---
+  - { key: C, mods: [CTRL], states: [visual],
+      why: "not bound by evil; C-c is the mode-specific prefix key, not stop Visual mode" }
+  # --- insert and replace ---
+  - { key: U, mods: [CTRL], states: [insert, replace],
+      why: "universal-argument: evil-want-C-u-delete is nil" }
+  - { key: H, mods: [CTRL], states: [insert, replace],
+      why: "help prefix: evil-want-C-h-delete is nil" }
+  - { key: C, mods: [CTRL], states: [insert, replace],
+      why: "not bound by evil; C-c is the mode-specific prefix key, not back to Normal state" }
+  - { key: W, mods: [CTRL], states: [replace],
+      why: "evil-delete-backward-word (from evil-insert-state-bindings): it deletes and does not restore the replaced word" }
+
+# A label that names Vim or Neovim behaviour evil does not have.
+labels:
+  - { key: Y, mods: [SHIFT], label: "Yank line" }
