@@ -3590,6 +3590,12 @@ league of legends,league of legends.exe,leagueoflegends:
 # macOS. Names not checked on an install.
 cs2,steam_app_730:
   overlay: cs2_template.mods.png
+# Endless Sky (overlay_sources/endless_sky/endless_sky.yaml). CMakeLists.txt
+# (v0.11.4) names the binary `endless-sky` on Linux and `Endless Sky` on Windows
+# and macOS; io.github.endless_sky.endless_sky is the desktop file and Flatpak
+# id. Names not checked on an install.
+endless-sky,endless sky,endless sky.exe,io.github.endless_sky.endless_sky:
+  overlay: endless_sky_template.mods.png
 # SQL Server Management Studio (overlay_sources/ssms/), Windows only. The
 # executable is Ssms.exe (SSMS 18 to 20) or SSMS.exe (SSMS 21 and later); both
 # lowercase to `ssms`. Name not checked on an install.
