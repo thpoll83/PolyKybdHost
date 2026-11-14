@@ -3549,6 +3549,12 @@ vcmiclient,vcmi_client,vcmi_client.exe,eu.vcmi.vcmi:
 # load the same set. Names not checked on an install.
 unciv,unciv.exe,io.github.yairm210.unciv:
   overlay: unciv_template.mods.png
+# FreeOrion (overlay_sources/freeorion/freeorion.yaml). `freeorion` is the
+# client's executable target in CMakeLists.txt (release v0.5.1.2), with
+# OUTPUT_NAME FreeOrion on Windows and macOS; the Flatpak id is
+# org.freeorion.FreeOrion. Names not checked on an install.
+freeorion,freeorion.exe,org.freeorion.freeorion:
+  overlay: [freeorion_template.mods.png, freeorion_template.combo.mods.png]
 # DevilutionX, Diablo and Hellfire (overlay_sources/devilutionx/devilutionx.yaml).
 # devilutionx is the CMake binary target (devilutionx.exe on Windows, also under
 # Wine); the Flatpak id is org.diasurgical.DevilutionX and the window title

@@ -1,0 +1,73 @@
+# FreeOrion overlay for PolyKybd.
+#
+# Keys: the default hotkeys the client registers with Hotkey::AddHotkey in
+# UI/MapWnd.cpp and client/human/GGHumanClientApp.cpp of freeorion/freeorion,
+# release v0.5.1.2. See SOURCES.md.
+#
+# Almost every hotkey is a Ctrl or Alt chord, so the plain layer has only F1
+# and F10.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/freeorion/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/freeorion/freeorion.yaml --preview /tmp/freeorion_preview
+app: freeorion
+match: [freeorion, freeorion.exe, org.freeorion.freeorion]
+output: freeorion_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for Freeciv: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# "FREE" over "ORION" drawn over the whole cell, without the ESC legend
+# (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Windows of the map screen
+  - { key: ENTER, mods: [CTRL], icon: endturn.png, label: "End turn" }
+  - { key: N, mods: [CTRL], icon: sitrep.png, label: "Situation report" }
+  - { key: R, mods: [CTRL], icon: research.png, label: "Research" }
+  - { key: P, mods: [CTRL], icon: production.png, label: "Production" }
+  - { key: I, mods: [CTRL], icon: government.png, label: "Government" }
+  - { key: D, mods: [CTRL], icon: design.png, label: "Ship design" }
+  - { key: O, mods: [CTRL], icon: objects.png, label: "Objects list" }
+  - { key: E, mods: [CTRL], icon: empires.png, label: "Empires" }
+  - { key: T, mods: [ALT], icon: messages.png, label: "Messages" }
+  - { key: F1, icon: pedia.png, label: "Pedia", region: [34, 40] }
+  - { key: F10, icon: menu.png, label: "Game menu" }
+
+  # Map view
+  - { key: Z, mods: [CTRL], icon: zoomin.png, label: "Zoom in", shared: false }
+  - { key: X, mods: [CTRL], icon: zoomout.png, label: "Zoom out", shared: false }
+  - { key: H, mods: [CTRL], icon: homesystem.png, label: "Zoom to home system" }
+  - { key: COMMA, mods: [CTRL], icon: system_prev.png, label: "Zoom to previous system" }
+  - { key: DOT, mods: [CTRL], icon: system_next.png, label: "Zoom to next system" }
+  - { key: COMMA, mods: [CTRL, SHIFT], icon: ownedsystem_prev.png, label: "Zoom to previous owned system" }
+  - { key: DOT, mods: [CTRL, SHIFT], icon: ownedsystem_next.png, label: "Zoom to next owned system" }
+  - { key: F, mods: [CTRL], icon: fleet_prev.png, label: "Zoom to previous fleet" }
+  - { key: G, mods: [CTRL], icon: fleet_next.png, label: "Zoom to next fleet" }
+  - { key: F, mods: [ALT], icon: idlefleet_prev.png, label: "Zoom to previous idle fleet" }
+  - { key: G, mods: [ALT], icon: idlefleet_next.png, label: "Zoom to next idle fleet" }
+  - { key: UP, mods: [CTRL], icon: panup.png, label: "Pan up" }
+  - { key: DOWN, mods: [CTRL], icon: pandown.png, label: "Pan down" }
+  - { key: LEFT, mods: [CTRL], icon: panleft.png, label: "Pan left" }
+  - { key: RIGHT, mods: [CTRL], icon: panright.png, label: "Pan right" }
+  - { key: L, mods: [ALT], icon: scaleline.png, label: "Toggle map scale line" }
+  - { key: C, mods: [ALT], icon: scalecircle.png, label: "Toggle map scale circle" }
+  - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Toggle full screen", shared: false }
+
+  # Text fields
+  - { key: C, mods: [CTRL], icon: copy.png, label: "Copy", shared: false }
+  - { key: V, mods: [CTRL], icon: paste.png, label: "Paste", shared: false }
+  - { key: A, mods: [CTRL], icon: selectall.png, label: "Select all", shared: false }

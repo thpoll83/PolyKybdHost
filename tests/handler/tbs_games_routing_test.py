@@ -27,6 +27,7 @@ WESNOTH_MAC = ["wesnoth_template_mac.mods.png", "wesnoth_template_mac.combo.mods
                "wesnoth_template_mac.extra.mods.png"]
 VCMI = "vcmi_template.mods.png"
 UNCIV = "unciv_template.mods.png"
+FREEORION = ["freeorion_template.mods.png", "freeorion_template.combo.mods.png"]
 
 MINECRAFT = ["minecraft_java_template.mods.png", "minecraft_java_template.combo.mods.png"]
 GHIDRA = ["ghidra_template.mods.png", "ghidra_template.combo.mods.png"]
@@ -45,6 +46,8 @@ BY_PROCESS = [
     (("vcmiclient", "vcmi_client", "vcmi_client.exe", "eu.vcmi.vcmi"),
      "VCMI 1.7.5", {"windows": VCMI}),
     (("unciv", "unciv.exe", "io.github.yairm210.unciv"), "Unciv", {"windows": UNCIV}),
+    (("freeorion", "freeorion.exe", "org.freeorion.freeorion"),
+     "FreeOrion v0.5.1.2", {"windows": FREEORION}),
 ]
 
 
