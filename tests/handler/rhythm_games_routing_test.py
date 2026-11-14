@@ -28,10 +28,14 @@ STEPMANIA_NAMES = ("stepmania", "stepmania.exe", "stepmania-sse2.exe", "stepmani
 ETTERNA = ["etterna_template.mods.png", "etterna_template.combo.mods.png"]
 ETTERNA_NAMES = ("etterna", "etterna.exe")
 
+OSU = ["osu_template.mods.png", "osu_template.combo.mods.png"]
+OSU_NAMES = ("osu!", "osu!.exe", "sh.ppy.osu")
+
 # (set, process names, a window title of the game, spec under overlay_sources/)
 GAMES = (
     (STEPMANIA, STEPMANIA_NAMES, "StepMania", "stepmania/stepmania.yaml"),
     (ETTERNA, ETTERNA_NAMES, "Etterna", "etterna/etterna.yaml"),
+    (OSU, OSU_NAMES, "osu!", "osu/osu.yaml"),
 )
 
 

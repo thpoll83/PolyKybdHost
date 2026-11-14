@@ -3631,6 +3631,12 @@ stepmania,stepmania.exe,stepmania-sse2.exe,stepmania-sse2:
 # 0.75.1), Etterna.exe on Windows. Names not checked on an install.
 etterna,etterna.exe:
   overlay: [etterna_template.mods.png, etterna_template.combo.mods.png]
+# osu! (lazer) (overlay_sources/osu/osu.yaml). The assembly is named `osu!`
+# (osu.Desktop.csproj, release 2026.921.0), so Windows runs osu!.exe, which the
+# host cuts to `osu!`; sh.ppy.osu is the Flathub app id. The older closed-source
+# client is also osu!.exe and loads this set too. Names not checked on an install.
+osu!,osu!.exe,sh.ppy.osu:
+  overlay: [osu_template.mods.png, osu_template.combo.mods.png]
 # Total Commander (overlay_sources/totalcmd/). Windows only. The 11.58.1
 # installers ship TOTALCMD64.EXE (64-bit) and TOTALCMD.EXE (32-bit). Not checked
 # on a running install.
