@@ -22,6 +22,7 @@ MAPPING = RES / "overlay-mapping.poly.yaml"
 WESNOTH = ["wesnoth_template.mods.png", "wesnoth_template.combo.mods.png"]
 WESNOTH_MAC = ["wesnoth_template_mac.mods.png", "wesnoth_template_mac.combo.mods.png",
                "wesnoth_template_mac.extra.mods.png"]
+VCMI = "vcmi_template.mods.png"
 
 OSES = ("windows", "macos", "linux")
 
@@ -30,6 +31,8 @@ OSES = ("windows", "macos", "linux")
 BY_PROCESS = [
     (("wesnoth", "wesnoth.exe", "org.wesnoth.wesnoth", "the battle for wesnoth"),
      "The Battle for Wesnoth - 1.18.8", {"windows": WESNOTH, "macos": WESNOTH_MAC}),
+    (("vcmiclient", "vcmi_client", "vcmi_client.exe", "eu.vcmi.vcmi"),
+     "VCMI 1.7.5", {"windows": VCMI}),
 ]
 
 

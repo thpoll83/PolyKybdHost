@@ -3520,6 +3520,13 @@ wesnoth,wesnoth.exe,org.wesnoth.wesnoth,the battle for wesnoth:
   os:
     macos:
       overlay: [wesnoth_template_mac.mods.png, wesnoth_template_mac.combo.mods.png, wesnoth_template_mac.extra.mods.png]
+# VCMI, the free Heroes of Might and Magic III engine
+# (overlay_sources/vcmi/vcmi.yaml). `vcmiclient` is the executable target in
+# clientapp/CMakeLists.txt (release 1.7.5), `VCMI_client.exe` on Windows; the
+# Flatpak id is eu.vcmi.VCMI. The launcher (vcmilauncher) gets no overlay.
+# Names not checked on an install.
+vcmiclient,vcmi_client,vcmi_client.exe,eu.vcmi.vcmi:
+  overlay: vcmi_template.mods.png
 # DevilutionX, Diablo and Hellfire (overlay_sources/devilutionx/devilutionx.yaml).
 # devilutionx is the CMake binary target (devilutionx.exe on Windows, also under
 # Wine); the Flatpak id is org.diasurgical.DevilutionX and the window title
