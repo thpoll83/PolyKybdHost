@@ -1,0 +1,94 @@
+# DSDA-Doom overlay for PolyKybd.
+#
+# Keys: the default input table `input_defs[]` in prboom2/src/m_misc.c of
+# kraflab/dsda-doom, release v0.30.1. See SOURCES.md.
+#
+# No default binding uses a modifier, so only the plain layer is drawn. F, G, M,
+# C, R, O and H do nothing in the game view; they show what they do while the
+# automap is open.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/chocolate_doom/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/chocolate_doom/dsda_doom.yaml --preview /tmp/dsda_preview
+app: dsda-doom
+match: [dsda-doom, dsda-doom.exe]
+output: dsda_doom_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for fheroes2: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# DSDA-Doom's own icon (a goose), at the right of the ESC key.
+program_icon: program_dsda.png
+program_icon_mode: alpha
+program_icon_region: [40, 40]
+program_icon_anchor: right
+program_icon_margin: 0
+
+bindings:
+
+  # Movement
+  - { key: W, icon: forward.png, label: "Move forward" }
+  - { key: S, icon: back.png, label: "Move backward" }
+  - { key: A, icon: strafeleft.png, label: "Strafe left" }
+  - { key: D, icon: straferight.png, label: "Strafe right" }
+  - { key: E, icon: turnleft.png, label: "Turn left" }
+  - { key: Q, icon: turnright.png, label: "Turn right" }
+  - { key: SLASH, icon: reverse.png, label: "Turn 180 degrees" }
+  - { key: SPACE, icon: use.png, label: "Use" }
+  - { key: CAPS_LOCK, icon: autorun.png, label: "Toggle always run" }
+  - { key: BACKSLASH, icon: mouselook.png, label: "Toggle mouse look" }
+
+  # Weapons
+  - { key: "1", icon: fist.png, label: "Fist, chainsaw" }
+  - { key: "2", icon: pistol.png, label: "Pistol" }
+  - { key: "3", icon: shotgun.png, label: "Shotgun, super shotgun" }
+  - { key: "4", icon: chaingun.png, label: "Chaingun" }
+  - { key: "5", icon: rocket.png, label: "Rocket launcher" }
+  - { key: "6", icon: plasma.png, label: "Plasma rifle" }
+  - { key: "7", icon: bfg.png, label: "BFG 9000" }
+  - { key: "8", icon: chainsaw.png, label: "Chainsaw" }
+  - { key: "9", icon: supershotgun.png, label: "Super shotgun" }
+  - { key: "0", icon: weapontoggle.png, label: "Toggle between the two best weapons" }
+
+  # Automap
+  - { key: TAB, icon: map.png, label: "Automap" }
+  - { key: F, icon: mapfollow.png, label: "Automap: follow player" }
+  - { key: G, icon: mapgrid.png, label: "Automap: grid" }
+  - { key: M, icon: mapmark.png, label: "Automap: set mark" }
+  - { key: C, icon: mapclear.png, label: "Automap: clear marks" }
+  - { key: R, icon: maprotate.png, label: "Automap: rotate mode" }
+  - { key: O, icon: mapoverlay.png, label: "Automap: overlay mode" }
+  - { key: H, icon: maptag.png, label: "Automap: highlight by tag" }
+
+  # Function keys
+  - { key: F1, icon: help.png, label: "Help screen", region: [34, 40] }
+  - { key: F2, icon: save.png, label: "Save game", region: [34, 40] }
+  - { key: F3, icon: load.png, label: "Load game", region: [34, 40] }
+  - { key: F4, icon: volume.png, label: "Sound volume", region: [34, 40] }
+  - { key: F5, icon: hud.png, label: "Cycle HUD", region: [34, 40] }
+  - { key: F6, icon: quicksave.png, label: "Quick save", region: [34, 40] }
+  - { key: F7, icon: endgame.png, label: "End game", region: [34, 40] }
+  - { key: F8, icon: messages.png, label: "Toggle messages", region: [34, 40] }
+  - { key: F9, icon: quickload.png, label: "Quick load", region: [34, 40] }
+  - { key: F10, icon: quit.png, label: "Quit", region: [30, 40] }
+  - { key: F11, icon: gamma.png, label: "Gamma correction", region: [30, 40] }
+  - { key: F12, icon: spy.png, label: "View next player (spy)", region: [30, 40] }
+
+  # Screen and game
+  - { key: MINUS, icon: sizedown.png, label: "Screen size down" }
+  - { key: EQUAL, icon: sizeup.png, label: "Screen size up" }
+  - { key: PAUSE, icon: pause.png, label: "Pause game" }
+
+  # Levels and demos
+  - { key: HOME, icon: restart.png, label: "Restart level" }
+  - { key: PGDN, icon: nextlevel.png, label: "Next level" }
+  - { key: PGUP, icon: prevlevel.png, label: "Previous level" }
+  - { key: INSERT, icon: demoskip.png, label: "Demo: skip ahead" }
+  - { key: END, icon: demoend.png, label: "Demo: skip to the end of the level" }

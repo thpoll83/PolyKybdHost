@@ -3603,6 +3603,45 @@ cs2,steam_app_730:
 ut2004,ut2004.exe,ut2004-bin,ut2004-bin-linux-amd64,unreal tournament 2004,steam_app_13230:
   overlay: ut2004_template.mods.png
   game_assets: ut2004/ut2004.yaml
+# GZDoom (overlay_sources/gzdoom/gzdoom.yaml), drawn for Doom and Doom II.
+# `gzdoom` is ZDOOM_EXE_NAME in CMakeLists.txt (g4.14.2), gzdoom.exe on Windows;
+# org.zdoom.GZDoom is the Flathub app id. Names not checked on an install.
+gzdoom,gzdoom.exe,org.zdoom.GZDoom:
+  overlay: gzdoom_template.mods.png
+# UZDoom, the continuation of GZDoom (overlay_sources/gzdoom/uzdoom.yaml): the
+# GZDoom keys plus R (reload). `uzdoom` is ZDOOM_EXE_NAME in CMakeLists.txt
+# (5.0.3) and org.zdoom.UZDoom is APPID in src/version.h. Names not checked on
+# an install.
+uzdoom,uzdoom.exe,org.zdoom.UZDoom:
+  overlay: uzdoom_template.mods.png
+# Chocolate Doom (overlay_sources/chocolate_doom/chocolate_doom.yaml), the keys
+# of the original Doom. The Doom binary is "${PROGRAM_PREFIX}doom" in
+# src/CMakeLists.txt (chocolate-doom-3.1.1); org.chocolate_doom is PACKAGE_RDNS.
+# chocolate-heretic, -hexen and -strife are not matched: their keys differ.
+# Names not checked on an install.
+chocolate-doom,chocolate-doom.exe,org.chocolate_doom.Doom:
+  overlay: chocolate_doom_template.mods.png
+# Crispy Doom (overlay_sources/chocolate_doom/crispy_doom.yaml): the Chocolate
+# Doom keys plus W A S D, Caps Lock and two automap keys. Names as for Chocolate
+# Doom, read from crispy-doom-7.2. Names not checked on an install.
+crispy-doom,crispy-doom.exe,io.github.fabiangreffrath.Doom:
+  overlay: crispy_doom_template.mods.png
+# DSDA-Doom (overlay_sources/chocolate_doom/dsda_doom.yaml). dsda-doom is the
+# target of AddGameExecutable() in prboom2/src/CMakeLists.txt (v0.30.1) and the
+# desktop file's StartupWMClass. Names not checked on an install.
+dsda-doom,dsda-doom.exe:
+  overlay: dsda_doom_template.mods.png
+# Woof! (overlay_sources/chocolate_doom/woof.yaml). `woof` is the executable
+# target in src/CMakeLists.txt (woof_16.0.0); the desktop file is
+# io.github.fabiangreffrath.woof. Names not checked on an install.
+woof,woof.exe,io.github.fabiangreffrath.woof:
+  overlay: woof_template.mods.png
+# Quake source ports Ironwail, vkQuake and QuakeSpasm
+# (overlay_sources/quake/quake.yaml): the three ship the same default.cfg key
+# bindings. The names are DEFAULT_TARGET in each port's Quake/Makefile (Ironwail
+# v0.8.2, vkQuake 1.37.0, QuakeSpasm 0.97.0). Names not checked on an install.
+ironwail,ironwail.exe,vkquake,vkquake.exe,quakespasm,quakespasm.exe:
+  overlay: quake_template.mods.png
 # SQL Server Management Studio (overlay_sources/ssms/), Windows only. The
 # executable is Ssms.exe (SSMS 18 to 20) or SSMS.exe (SSMS 21 and later); both
 # lowercase to `ssms`. Name not checked on an install.

@@ -1,0 +1,88 @@
+# GZDoom overlay for PolyKybd.
+#
+# Keys: the default bindings in wadsrc/static/engine/commonbinds.txt and
+# defbinds.txt of ZDoom/gzdoom, release g4.14.2. See SOURCES.md.
+#
+# The keys are drawn for Doom and Doom II. No default binding uses a modifier,
+# so only the plain layer is drawn. F, G, P, M, C and 0 do nothing in the game
+# view; they show what they do while the automap is open.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/gzdoom/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/gzdoom/gzdoom.yaml --preview /tmp/gzdoom_preview
+app: gzdoom
+match: [gzdoom, gzdoom.exe, org.zdoom.GZDoom]
+output: gzdoom_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for fheroes2: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# The "GZ" of GZDoom's own icon, at the right of the ESC key.
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [40, 23]
+program_icon_anchor: right
+program_icon_margin: 0
+
+bindings:
+
+  # Movement
+  - { key: W, icon: forward.png, label: "Move forward" }
+  - { key: S, icon: back.png, label: "Move backward" }
+  - { key: A, icon: strafeleft.png, label: "Strafe left" }
+  - { key: D, icon: straferight.png, label: "Strafe right" }
+  - { key: SPACE, icon: jump.png, label: "Jump" }
+  - { key: X, icon: crouch.png, label: "Toggle crouch" }
+  - { key: E, icon: use.png, label: "Use" }
+  - { key: CAPS_LOCK, icon: autorun.png, label: "Toggle always run" }
+  - { key: PGDN, icon: lookup.png, label: "Look up" }
+  - { key: DEL, icon: lookdown.png, label: "Look down" }
+  - { key: END, icon: centerview.png, label: "Centre view" }
+
+  # Weapon slots (Doom and Doom II)
+  - { key: "1", icon: fist.png, label: "Slot 1: fist, chainsaw" }
+  - { key: "2", icon: pistol.png, label: "Slot 2: pistol" }
+  - { key: "3", icon: shotgun.png, label: "Slot 3: shotgun, super shotgun" }
+  - { key: "4", icon: chaingun.png, label: "Slot 4: chaingun" }
+  - { key: "5", icon: rocket.png, label: "Slot 5: rocket launcher" }
+  - { key: "6", icon: plasma.png, label: "Slot 6: plasma rifle" }
+  - { key: "7", icon: bfg.png, label: "Slot 7: BFG 9000" }
+
+  # Automap
+  - { key: TAB, icon: map.png, label: "Automap" }
+  - { key: F, icon: mapfollow.png, label: "Automap: follow player" }
+  - { key: G, icon: mapgrid.png, label: "Automap: grid" }
+  - { key: P, icon: maptexture.png, label: "Automap: textures" }
+  - { key: M, icon: mapmark.png, label: "Automap: set mark" }
+  - { key: C, icon: mapclear.png, label: "Automap: clear marks" }
+  - { key: "0", icon: mapmaxzoom.png, label: "Automap: show whole map" }
+
+  # Function keys
+  - { key: F1, icon: help.png, label: "Help screen", region: [34, 40] }
+  - { key: F2, icon: save.png, label: "Save game", region: [34, 40] }
+  - { key: F3, icon: load.png, label: "Load game", region: [34, 40] }
+  - { key: F4, icon: options.png, label: "Options menu", region: [34, 40] }
+  - { key: F5, icon: display.png, label: "Display options", region: [34, 40] }
+  - { key: F6, icon: quicksave.png, label: "Quick save", region: [34, 40] }
+  - { key: F7, icon: endgame.png, label: "End game", region: [34, 40] }
+  - { key: F8, icon: messages.png, label: "Toggle messages", region: [34, 40] }
+  - { key: F9, icon: quickload.png, label: "Quick load", region: [34, 40] }
+  - { key: F10, icon: quit.png, label: "Quit", region: [30, 40] }
+  - { key: F11, icon: gamma.png, label: "Gamma correction", region: [30, 40] }
+  - { key: F12, icon: spy.png, label: "View next player (spy)", region: [30, 40] }
+
+  # Screen and game
+  - { key: MINUS, icon: sizedown.png, label: "Screen size down" }
+  - { key: EQUAL, icon: sizeup.png, label: "Screen size up" }
+  - { key: PAUSE, icon: pause.png, label: "Pause game" }
+  - { key: PRINT_SCREEN, icon: screenshot.png, label: "Take screenshot" }
+  - { key: T, icon: chat.png, label: "Chat" }
+  - { key: BACKSLASH, icon: scores.png, label: "Show scores" }
+  - { key: GRAVE, icon: console.png, label: "Console" }
