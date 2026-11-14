@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "ES2018",
+    "strict": true,
+    "outDir": "build-test",
+    "rootDir": "src",
+    "skipLibCheck": true
+  },
+  "files": ["src/context.ts"]
+}

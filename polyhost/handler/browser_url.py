@@ -116,6 +116,10 @@ CONTEXT_REPORTERS = {
     # Autodesk Maya (maya-plugin/): Windows maya.exe, macOS "Maya", Linux maya.bin.
     "maya": "maya",
     "maya.bin": "maya",
+    # JupyterLab Desktop (jupyterlab-extension/); names as its mapping entry.
+    "jupyterlab": "jupyter",
+    "jupyterlab-desktop": "jupyter",
+    "jupyterlab desktop": "jupyter",
 }
 
 # Reporters that also run INSIDE a terminal (vim, emacs -nw). While a terminal
@@ -125,6 +129,12 @@ CONTEXT_REPORTERS = {
 # terminal window running a plain shell gets no URL.
 HOSTED_REPORTERS = frozenset({"vim", "emacs"})
 _REPORTER_TOKENS = frozenset(CONTEXT_REPORTERS.values()) | HOSTED_REPORTERS
+
+# Reporters that also run as a web page INSIDE a browser (JupyterLab). The page
+# knows whether it has focus (document.hasFocus()) and sends focused=false when
+# it loses it, so while a browser is focused, a fresh focused report from one
+# answers for the browser before its tab URL does.
+PAGE_REPORTERS = frozenset({"jupyter"})
 
 # Terminal apps that host those reporters, as the OS reports them (lowercased).
 # Only local terminals: an editor in an SSH session (PuTTY, a remote shell)
@@ -346,7 +356,8 @@ class BrowserUrlProvider:
           (cross-browser leakage guarded: a Chrome report never answers for
           Firefox). A report naming no recognisable browser (an older
           extension) stays permissive. Otherwise the macOS AppleScript fallback
-          is tried (a no-op off macOS / for Firefox).
+          is tried (a no-op off macOS / for Firefox). A fresh, focused
+          report of a page reporter (a JupyterLab page) answers first.
         * Any other app gets ``None``, so neither a website nor a background
           Blender's context can ever leak onto a native app's overlay."""
         token = context_reporter_for(app_name)
@@ -368,6 +379,9 @@ class BrowserUrlProvider:
         """The answer current_url() takes from stored reports (lock held)."""
         if token is not None:
             return self._app_url(token)
+        page = self._app_url(PAGE_REPORTERS)
+        if page:
+            return page
         brand = _canonical_browser(app_name)
         # The anonymous slot (an older extension naming no browser) answers
         # only when this browser has no fresh report of its own. A fresh one

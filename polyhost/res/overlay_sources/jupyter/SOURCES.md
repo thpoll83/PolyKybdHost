@@ -6,11 +6,70 @@
 
 | Set | Loads for |
 |---|---|
-| `jupyter_template` (2 files), `_mac` (3 files) | JupyterLab and Jupyter Notebook 7 in a browser (by URL, or by a title ending "- JupyterLab" / "- Jupyter Notebook"), and the JupyterLab Desktop app |
+| `jupyter_template` (2 files), `_mac` (3 files) | JupyterLab and Jupyter Notebook 7 in a browser (by URL, or by a title ending "- JupyterLab" / "- Jupyter Notebook"), and the JupyterLab Desktop app, while no mode is reported |
+| `jupyter_command_template` | `jupyter://notebook/command` |
+| `jupyter_edit_template` | `jupyter://notebook/edit` |
+| `jupyter_editor_template` | `jupyter://editor` |
+| `jupyter_console_template` | `jupyter://console` |
+| `jupyter_terminal_template` | `jupyter://terminal` |
+| `jupyter_global_template` | `jupyter://other` |
 
 Jupyter Notebook 7 is built from the JupyterLab packages and uses the same
 default keys, so one set serves both. Google Colab is a different app with
 other keys and is not covered.
+
+## Mode sets
+
+The `jupyterlab-extension/` reporter sends `jupyter://<activity>[/<mode>]`
+(its README). `gen_specs.py` writes one `bindings_<mode>.yaml` per URL that
+changes the keys. Each has only the rows whose `selector` in the schema
+matches in that mode (the `SCOPE` table in `gen_specs.py`):
+
+| set | rows |
+|---|---|
+| `command` | global, save/print, search, undo/redo/select all, run cell, and the command-mode keys (`.jp-Notebook.jp-mod-commandMode`): the single keys, merge, move, collapse/expand |
+| `edit` | global, save/print, search, undo/redo/select all, run cell, the edit-mode keys (`.jp-mod-editMode`: Ctrl+M, split cell, Alt+Up/Down history) and the code editor keys (`.cm-content`) |
+| `editor` | global, save/print, search, undo/redo/select all, the code editor keys |
+| `console` | global, undo/redo/select all, the code editor keys, and Shift+Enter "Run code" (`console:run-forced`) |
+| `global` | the `body` keys only: panels, tabs, side panels, debugger |
+| `terminal` | the `global` keys that the terminal does not send to the shell, and Ctrl+V paste (see *Terminal* below) |
+
+The JupyterLab Desktop entry routes the URL with `layer: false`, so a mode
+set replaces the all-modes set. The browser entries route it on top of the
+browser's set, with a `url: '^jupyter://'` gate. In a browser the host uses
+the report only while the page has focus (`PAGE_REPORTERS` in
+`handler/browser_url.py`).
+
+## Terminal
+
+A JupyterLab terminal is xterm.js. xterm.js reads each keydown first. When it
+turns the key into terminal input, it sends the input to the shell and calls
+`preventDefault()`. JupyterLab's key handler listens in the bubbling phase
+(`bubblingKeydown: true`) and ignores an event with `defaultPrevented`, so that
+key runs no JupyterLab command. Checked in the JupyterLab 4.5.11 wheel's
+bundled JavaScript (`static/7856.*.js`: xterm.js `_keyDown`,
+`evaluateKeyboardEvent`, `cancel`; `static/jlab_core.*.js`: the terminal
+widget's `attachCustomKeyEventHandler` and Lumino `processKeydownEvent`), by
+running `evaluateKeyboardEvent` from that bundle under Node for each `body`,
+`.jp-Activity` and `.jp-mod-searchable` key with the terminal's default
+settings. Not checked in a running JupyterLab.
+
+| platform | keys that still act | keys sent to the shell instead |
+|---|---|---|
+| Windows/Linux | the Ctrl+Shift chords (palette, shortcuts, file browser, table of contents, running sessions, launcher, extensions, debugger panel, property inspector, the tab keys), Ctrl+, (settings) | Ctrl+B, Ctrl+J, Ctrl+I, Ctrl+S, Ctrl+P, Ctrl+F, Ctrl+G, Alt+W, Alt(+Shift)+1..0, F9 to F11 |
+| macOS | every Cmd chord, the Ctrl+Shift tab keys, and the Option keys (Alt+W, Alt(+Shift)+1..9): with `macOptionIsMeta` off (the default) xterm.js does not read Option as input | F9 to F11 |
+
+The `terminal` set draws the `global` rows that act (the `TERMINAL_*` tables
+in `gen_specs.py`). The debugger keys F9, Shift+F9, F10 and Shift+F11 are left
+out on all platforms. Save, Save as and Print are not drawn: a terminal is not
+a document. Find (Accel+F) is not drawn either. The terminal has a search
+provider, but on Windows/Linux Ctrl+F is input, and Find is not a `global`
+row.
+
+The terminal's own keys (`packages/terminal/src/widget.ts`, Windows/Linux
+only): Ctrl+V pastes while the `pasteWithCtrlV` setting is on (the default),
+and is drawn. Ctrl+C copies only while text is selected and otherwise sends
+an interrupt, so it is not drawn.
 
 ## Routing
 

@@ -47,6 +47,15 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     keep.google.com:
       url: '^https?://keep\.google\.com([/?#]|$)'
       overlay: [googlekeep_template.mods.png, googlekeep_template.combo.mods.png]
+    # Jupyter mode reports (jupyterlab-extension/): while the browser is focused,
+    # a focused JupyterLab page's jupyter:// report replaces the tab URL.
+    # The url gate keeps a web address that only contains the text off the set.
+    "jupyter://notebook/command": { url: '^jupyter://', overlay: [jupyter_command_template.mods.png, jupyter_command_template.combo.mods.png] }
+    "jupyter://notebook/edit": { url: '^jupyter://', overlay: [jupyter_edit_template.mods.png, jupyter_edit_template.combo.mods.png] }
+    "jupyter://editor": { url: '^jupyter://', overlay: [jupyter_editor_template.mods.png, jupyter_editor_template.combo.mods.png] }
+    "jupyter://console": { url: '^jupyter://', overlay: [jupyter_console_template.mods.png, jupyter_console_template.combo.mods.png] }
+    "jupyter://terminal": { url: '^jupyter://', overlay: [jupyter_terminal_template.mods.png, jupyter_terminal_template.combo.mods.png] }
+    "jupyter://": { url: '^jupyter://', overlay: [jupyter_global_template.mods.png, jupyter_global_template.combo.mods.png] }
     # Jupyter (sources: overlay_sources/jupyter/): a local server or a
     # JupyterHub. The url gate needs /lab, /notebooks or /tree right after the
     # host (or /user/<name>), so github.com/<o>/<r>/tree/... does not match;
@@ -457,6 +466,13 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         keep.google.com:
           url: '^https?://keep\.google\.com([/?#]|$)'
           overlay: [googlekeep_template_mac.mods.png, googlekeep_template_mac.combo.mods.png, googlekeep_template_mac.extra.mods.png]
+        # Jupyter mode reports (jupyterlab-extension/), as above.
+        "jupyter://notebook/command": { url: '^jupyter://', overlay: [jupyter_command_template_mac.mods.png, jupyter_command_template_mac.combo.mods.png, jupyter_command_template_mac.extra.mods.png] }
+        "jupyter://notebook/edit": { url: '^jupyter://', overlay: [jupyter_edit_template_mac.mods.png, jupyter_edit_template_mac.combo.mods.png, jupyter_edit_template_mac.extra.mods.png] }
+        "jupyter://editor": { url: '^jupyter://', overlay: [jupyter_editor_template_mac.mods.png, jupyter_editor_template_mac.combo.mods.png, jupyter_editor_template_mac.extra.mods.png] }
+        "jupyter://console": { url: '^jupyter://', overlay: [jupyter_console_template_mac.mods.png, jupyter_console_template_mac.combo.mods.png, jupyter_console_template_mac.extra.mods.png] }
+        "jupyter://terminal": { url: '^jupyter://', overlay: [jupyter_terminal_template_mac.mods.png, jupyter_terminal_template_mac.combo.mods.png, jupyter_terminal_template_mac.extra.mods.png] }
+        "jupyter://": { url: '^jupyter://', overlay: [jupyter_global_template_mac.mods.png, jupyter_global_template_mac.combo.mods.png, jupyter_global_template_mac.extra.mods.png] }
         # Jupyter (sources: overlay_sources/jupyter/): a local server or a
         # JupyterHub. The url gate needs /lab, /notebooks or /tree right after the
         # host (or /user/<name>), so github.com/<o>/<r>/tree/... does not match;
@@ -3329,12 +3345,32 @@ sumatrapdf:
 okular,org.kde.okular:
   overlay: [okular_template.mods.png, okular_template.combo.mods.png]
 # JupyterLab Desktop (sources: overlay_sources/jupyter/); Jupyter in a browser
-# is under the browser entries. Names not checked on an install.
+# is under the browser entries. Names not checked on an install; they are
+# exactly CONTEXT_REPORTERS' "jupyter" names (tests/handler/jupyter_routing_test.py).
+# The jupyterlab-extension/ reporter sends jupyter://<activity>[/<mode>]; each
+# route is one mode's set. `layer: false`: a mode replaces the all-modes set,
+# which stays the fallback while no report arrives.
 jupyterlab,jupyterlab-desktop,jupyterlab desktop:
   overlay: [jupyter_template.mods.png, jupyter_template.combo.mods.png]
+  layer: false
+  urls-contains:
+    "jupyter://notebook/command": { overlay: [jupyter_command_template.mods.png, jupyter_command_template.combo.mods.png] }
+    "jupyter://notebook/edit": { overlay: [jupyter_edit_template.mods.png, jupyter_edit_template.combo.mods.png] }
+    "jupyter://editor": { overlay: [jupyter_editor_template.mods.png, jupyter_editor_template.combo.mods.png] }
+    "jupyter://console": { overlay: [jupyter_console_template.mods.png, jupyter_console_template.combo.mods.png] }
+    "jupyter://terminal": { overlay: [jupyter_terminal_template.mods.png, jupyter_terminal_template.combo.mods.png] }
+    "jupyter://": { overlay: [jupyter_global_template.mods.png, jupyter_global_template.combo.mods.png] }
   os:
     macos:
       overlay: [jupyter_template_mac.mods.png, jupyter_template_mac.combo.mods.png, jupyter_template_mac.extra.mods.png]
+      layer: false
+      urls-contains:
+        "jupyter://notebook/command": { overlay: [jupyter_command_template_mac.mods.png, jupyter_command_template_mac.combo.mods.png, jupyter_command_template_mac.extra.mods.png] }
+        "jupyter://notebook/edit": { overlay: [jupyter_edit_template_mac.mods.png, jupyter_edit_template_mac.combo.mods.png, jupyter_edit_template_mac.extra.mods.png] }
+        "jupyter://editor": { overlay: [jupyter_editor_template_mac.mods.png, jupyter_editor_template_mac.combo.mods.png, jupyter_editor_template_mac.extra.mods.png] }
+        "jupyter://console": { overlay: [jupyter_console_template_mac.mods.png, jupyter_console_template_mac.combo.mods.png, jupyter_console_template_mac.extra.mods.png] }
+        "jupyter://terminal": { overlay: [jupyter_terminal_template_mac.mods.png, jupyter_terminal_template_mac.combo.mods.png, jupyter_terminal_template_mac.extra.mods.png] }
+        "jupyter://": { overlay: [jupyter_global_template_mac.mods.png, jupyter_global_template_mac.combo.mods.png, jupyter_global_template_mac.extra.mods.png] }
 # RStudio (sources: overlay_sources/rstudio/). Process and WM_CLASS `rstudio` on
 # Linux (measured, 2026.10.0).
 rstudio:
