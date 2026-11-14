@@ -5,6 +5,9 @@ Every set uses the same keys on every OS, so each entry has one set and no
 `os:` branch. What it pins:
 
 * every process name of each game loads that game's set on all three platforms;
+* Mindustry started from its jar is a `java` / `javaw` process: the title
+  "Mindustry" routes it, and Minecraft and Ghidra on the same process names
+  keep their own sets;
 * every named file exists.
 """
 
@@ -20,11 +23,16 @@ MAPPING = RES / "overlay-mapping.poly.yaml"
 PLATFORMS = ("windows", "macos", "linux")
 
 LUANTI = "luanti_template.mods.png"
+MINDUSTRY = ["mindustry_template.mods.png", "mindustry_template.combo.mods.png"]
+MINECRAFT_JAVA = ["minecraft_java_template.mods.png", "minecraft_java_template.combo.mods.png"]
+GHIDRA = ["ghidra_template.mods.png", "ghidra_template.combo.mods.png"]
+JAVA_PLATFORMS = ("windows", "macos", "linux", "linux_gnome", "linux_kde")
 
 # (overlay, window title, process names)
 GAMES = [
     (LUANTI, "Luanti 5.18.0 [Singleplayer]",
      ("luanti", "minetest", "org.luanti.luanti", "net.minetest.minetest")),
+    (MINDUSTRY, "Mindustry", ("mindustry", "com.github.anuken.mindustry")),
 ]
 
 
@@ -76,6 +84,29 @@ class SandboxRpgRoutingTest(unittest.TestCase):
             for app in apps:
                 with self.subTest(app=app):
                     self.assertEqual(self._route(app, "linux", ""), overlay)
+
+    def test_mindustry_in_a_java_process(self):
+        for os_name in JAVA_PLATFORMS:
+            with self.subTest(app="java", os=os_name):
+                self.assertEqual(self._route("java", os_name, "Mindustry"), MINDUSTRY)
+        self.assertEqual(self._route("javaw", "windows", "Mindustry"), MINDUSTRY)
+
+    def test_java_still_routes_minecraft_and_ghidra(self):
+        """The other programs on `java` and `javaw` keep their sets."""
+        for os_name in JAVA_PLATFORMS:
+            with self.subTest(os=os_name):
+                self.assertEqual(
+                    self._route("java", os_name, "Minecraft 1.21.4 - Singleplayer"),
+                    MINECRAFT_JAVA)
+        self.assertEqual(self._route("javaw", "windows", "Minecraft 1.21.4"), MINECRAFT_JAVA)
+        self.assertEqual(self._route("java", "windows", "CodeBrowser: demo:/a.exe"), GHIDRA)
+        self.assertEqual(self._route("javaw", "windows", "CodeBrowser: demo:/a.exe"), GHIDRA)
+
+    def test_another_java_program_gets_no_mindustry_set(self):
+        for app, title in (("java", "Mindustry Mod Tool"), ("javaw", "Server Console"),
+                           ("javaw", ""), ("java", "")):
+            with self.subTest(app=app, title=title):
+                self.assertNotEqual(self._route(app, "windows", title), MINDUSTRY)
 
     def test_every_named_file_exists(self):
         names = [f for overlay, _title, _apps in GAMES for f in _files(overlay)]
