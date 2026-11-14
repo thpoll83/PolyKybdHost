@@ -42,7 +42,7 @@ matching degrades to app-name + title exactly as before this feature existed.
 import threading
 import time
 
-from polyhost.handler.common import _TRAILING_YEAR, OS, mapping_key
+from polyhost.handler.common import OS, mapping_key
 from polyhost.services import browser_url_macos
 
 # Focused-app gate. `getAppName()` normalises differently per OS (Windows
@@ -106,6 +106,13 @@ CONTEXT_REPORTERS = {
     "macvim": "vim",
     "neovide": "vim",
     "emacs": "emacs",
+    # SideFX Houdini (houdini-package/): the names of the mapping's houdini
+    # entry. macOS reports "Houdini FX 22.0.368"; context_reporter_for() drops
+    # the version the way the matcher does.
+    "houdini": "houdini", "houdinifx": "houdini", "houdinicore": "houdini",
+    "happrentice": "houdini", "hindie": "houdini", "hescape": "houdini",
+    "houdini-bin": "houdini", "houdini fx": "houdini", "houdini core": "houdini",
+    "houdini apprentice": "houdini", "houdini indie": "houdini",
     # VS Code and its forks: vscode-extension/ sends <token>://<debug mode>.
     "code": "vscode", "cursor": "cursor",
     "windsurf": "windsurf", "devin": "windsurf", "devin-desktop": "windsurf",
@@ -170,9 +177,10 @@ def _app_key(app_name):
 
 def context_reporter_for(app_name):
     """The reporter token for a focused app with a context add-on, or None.
-    A trailing release year is dropped as `mapping_key` does ("maya 2026")."""
-    key = _app_key(app_name)
-    return CONTEXT_REPORTERS.get(key) or CONTEXT_REPORTERS.get(_TRAILING_YEAR.sub("", key or ""))
+    A trailing version or release year is dropped as `mapping_key` drops it
+    for the mapping (``houdini fx 22.0.368`` -> ``houdini fx``, ``maya 2026``
+    -> ``maya``)."""
+    return CONTEXT_REPORTERS.get(mapping_key(_app_key(app_name), CONTEXT_REPORTERS))
 
 
 def is_terminal_app(app_name) -> bool:

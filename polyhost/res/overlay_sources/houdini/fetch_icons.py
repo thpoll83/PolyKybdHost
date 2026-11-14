@@ -47,6 +47,32 @@ ICONS = {
     # --- composite inputs (no binding draws them directly)
     "selectall": "Select All On",
     "camera": "ms:videocam",
+    # --- Network Editor (network.yaml)
+    "file_node": "ms:draft",
+    "cut_wires": "ms:content_cut",
+    "net_overview": "ms:picture_in_picture",
+    "color_palette": "ms:palette",
+    "shape_palette": "ms:shapes",
+    "prev_view": "ms:history",
+    "layout_nodes": "ms:schema",
+    "align_nodes": "ms:align_horizontal_left",
+    "distribute_nodes": "ms:horizontal_distribute",
+    "network_box": "ms:select",
+    "notes_min": "ms:unfold_less",
+    "notes_restore": "ms:unfold_more",
+    "box_fit": "ms:close_fullscreen",
+    "sibling_prev": "ms:west",
+    "sibling_next": "ms:east",
+    "mark_set": "ms:bookmark_add",
+    "match_next": "ms:keyboard_double_arrow_down",
+    "match_prev": "ms:keyboard_double_arrow_up",
+    # --- Animation Editor, graph view (anim.yaml)
+    "slope_flat": "ms:trending_flat",
+    "slope_auto": "ms:auto_graph",
+    "isolate": "ms:filter_alt",
+    "isolate_revert": "ms:filter_alt_off",
+    "sel_channel": "ms:highlight_mouse_cursor",
+    "ed_table": "ms:table",
 }
 
 # Same action as in a sibling set: a byte-identical copy.
@@ -88,6 +114,35 @@ BORROW = {
     "open.png": "cinema4d",
     "save.png": "cinema4d",
     "undo.png": "cinema4d",
+    # --- Network Editor (network.yaml)
+    "fit_view.png": "blender",        # G: show the selected nodes
+    "group_enter.png": "blender",     # Enter: go inside the node
+    "group_exit.png": "blender",      # U: go up a level
+    "mute.png": "blender",            # Q, B: bypass flag
+    "search.png": "blender",          # /, Ctrl+F: find
+    "upstream.png": "nuke",           # PgUp: select the upstream node
+    "downstream.png": "nuke",         # PgDn: select the downstream node
+    "stickynote.png": "nuke",         # Shift+P: sticky note
+    "jumpbookmark.png": "nuke",       # Shift+1..5: go to a quick mark
+    # --- Animation Editor, graph view (anim.yaml)
+    "key_delete.png": "blender",      # Del: delete the selected keys
+    "ed_dopesheet.png": "blender",    # 2: dopesheet view
+    "copy.png": "maya",               # Ctrl+C, Alt+C: copy key values
+    "paste.png": "maya",              # Ctrl+V, Alt+V: paste key values
+    "bm_prev.png": "maya",            # Ctrl+Left: previous bookmark
+    "bm_next.png": "maya",            # Ctrl+Right: next bookmark
+    # --- Python Shell and Textport (python.yaml, textport.yaml)
+    "line_start.png": "nano",         # Home, Ctrl+A: start of the line
+    "line_end.png": "nano",           # End, Ctrl+E: end of the line
+    "file_start.png": "nano",         # Textport Home: scroll to the top
+    "file_end.png": "nano",           # Textport End: scroll to the end
+    "page_up.png": "nano",            # Textport PgUp: scroll up
+    "page_down.png": "nano",          # Textport PgDn: scroll down
+    "exit.png": "nano",               # Ctrl+D: close the floating shell
+    "histprev.png": "jupyter",        # Up: previous command
+    "histnext.png": "jupyter",        # Down: next command
+    "run.png": "jupyter",             # Enter: run the command
+    "stop.png": "aicli",              # Ctrl+C: KeyboardInterrupt
 }
 
 HOUDINI_ICON_URL = "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/houdini.svg"

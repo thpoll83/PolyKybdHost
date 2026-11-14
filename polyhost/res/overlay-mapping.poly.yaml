@@ -3767,11 +3767,31 @@ mathcadprime:
 # macOS apps "Houdini FX <version>", "Houdini Core ...", "Houdini Apprentice
 # ...", "Houdini Indie ..." (the trailing dotted version is dropped by the
 # matcher). Not checked on an install.
+# With the Houdini package (houdini-package/) installed, Houdini reports the
+# pane under the mouse pointer as `houdini://<pane>[/<network type>]`; a
+# Network Editor loads the Network Editor set (network.yaml), an Animation
+# Editor the graph view set (anim.yaml), and the Python Shell and Textport a set
+# with only their line-editing keys (python.yaml, textport.yaml; one file for
+# every OS). `layer: false` makes a pane set replace the Scene View set instead
+# of drawing it dimmed underneath; with no report, or for any other pane, the
+# Scene View set stays.
 houdini,houdinifx,houdinicore,happrentice,hindie,hescape,houdini-bin,houdini fx,houdini core,houdini apprentice,houdini indie:
   overlay: [houdini_template.mods.png, houdini_template.combo.mods.png]
+  layer: false
+  urls-contains:
+    "houdini://network": { overlay: [houdini_network_template.mods.png, houdini_network_template.combo.mods.png] }
+    "houdini://anim": { overlay: [houdini_anim_template.mods.png, houdini_anim_template.combo.mods.png] }
+    "houdini://python": { overlay: [houdini_python_template.mods.png] }
+    "houdini://textport": { overlay: [houdini_textport_template.mods.png] }
   os:
     macos:
       overlay: [houdini_template_mac.mods.png, houdini_template_mac.combo.mods.png]
+      layer: false
+      urls-contains:
+        "houdini://network": { overlay: [houdini_network_template_mac.mods.png, houdini_network_template_mac.combo.mods.png, houdini_network_template_mac.extra.mods.png] }
+        "houdini://anim": { overlay: [houdini_anim_template_mac.mods.png, houdini_anim_template_mac.combo.mods.png] }
+        "houdini://python": { overlay: [houdini_python_template.mods.png] }
+        "houdini://textport": { overlay: [houdini_textport_template.mods.png] }
 # QGIS Desktop (overlay_sources/qgis/). Windows (OSGeo4W and the standalone
 # installer): qgis-bin.exe, qgis-ltr-bin.exe, qgis-dev-bin.exe, qgis-qt6-bin.exe.
 # Linux: the process `qgis` (X11), the WM_CLASS class QGIS4 / QGIS3 (the GNOME and

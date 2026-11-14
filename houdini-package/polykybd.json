@@ -1,0 +1,9 @@
+{
+    "env": [
+        {"POLYKYBD_HOUDINI": "$HOUDINI_PACKAGE_PATH/polykybd"},
+        {"POLYKYBD_REPORT": "1"},
+        {"POLYKYBD_REPORT_PORT": "50164"},
+        {"POLYKYBD_REPORT_TOKEN": ""}
+    ],
+    "hpath": "$HOUDINI_PACKAGE_PATH/polykybd"
+}
