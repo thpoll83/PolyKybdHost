@@ -142,14 +142,20 @@ of the File keys and of Undo / Redo, as in `bindings.yaml`.
   <https://help.autodesk.com/cloudhelp/2026/ENU/Maya-KeyboardShortcuts/files/GUID-0AFB7E06-7F51-4D4D-A3DD-E0221CDF73AB.htm>.
   "Ctrl + < or >" is drawn on Ctrl+Shift+, and Ctrl+Shift+. (US layout). The
   selection keys F8 to F12 of *All Maya Hotkeys* are added.
-- **Node Editor and Hypershade:** Maya 2017 help, *Node Editor and Hypershade
-  Hotkeys*,
-  <https://help.autodesk.com/cloudhelp/2017/ENU/Maya/files/GUID-8E175070-AB7C-41A2-B0D7-85E842F83C4E.htm>.
-  The Maya 2026 help has no such table; its *Node Editor basics* page
-  (<https://help.autodesk.com/cloudhelp/2026/ENU/Maya-Basics/files/GUID-68E825E4-140B-4B4E-97AC-E1C5E0AA84A0.htm>)
-  still lists 1 to 4, Tab, P and Delete / Backspace with the same meaning. The
-  Hypershade keys @, # and ! are drawn on Shift+2, Shift+3 and Shift+1 (US
-  layout). ⚠️ Not checked in a current Maya.
+- **Node Editor and Hypershade:** Maya 2026 help, *Node Editor basics*
+  (<https://help.autodesk.com/cloudhelp/2026/ENU/Maya-Basics/files/GUID-68E825E4-140B-4B4E-97AC-E1C5E0AA84A0.htm>,
+  read 2026-11-14): 1 to 4 (view modes), Tab (create node), Backspace or
+  Delete, and P (pin / unpin). The Hypershade work area is the same Node
+  Editor, so it gets the same keys. The 2026 hotkey tables have no section
+  for either editor; the keys only the Maya 2017 *Node Editor and Hypershade
+  Hotkeys* table lists (5, zoom, upstream / downstream selection, graph and
+  regraph chords, S, C, V, pick walk, Hypershade solo) are left out until a
+  current source confirms them.
+- **F8 and F12** (viewport and UV Editor): Maya 2026 *All Maya Hotkeys*.
+  F8 draws `mode_toggle` (Material Symbols toggle_on); F12 Select UV draws
+  `sel_uv`, the F9..F11 component square with "UV", drawn by `_sel_uv()`,
+  so it no longer shares the `uv_unwrap` map with Ctrl+U Unfold. Ctrl+F12
+  `conv_uv` is `sel_uv` with the convert badge.
 
 The Dope Sheet and the Outliner have no table of their own in the help and keep
 the viewport set. Largest set: 50 keys plus the ESC mark (macOS), far below the

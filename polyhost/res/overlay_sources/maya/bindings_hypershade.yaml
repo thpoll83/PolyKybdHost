@@ -2,9 +2,10 @@
 #
 # Loaded only while the Maya mode reporter (maya-plugin/) reports
 # `maya://hypershade/...`, so these keys replace the viewport set (bindings.yaml).
-# Source: Maya 2017 help, Node Editor and Hypershade hotkeys (the last
-# version with that table), https://help.autodesk.com/cloudhelp/2017/ENU/Maya/files/GUID-8E175070-AB7C-41A2-B0D7-85E842F83C4E.htm
-# Only keys the page lists for this editor, plus the File, Undo and menu keys
+# Source: Maya 2026 help, Node Editor basics, https://help.autodesk.com/cloudhelp/2026/ENU/Maya-Basics/files/GUID-68E825E4-140B-4B4E-97AC-E1C5E0AA84A0.htm
+# (1 to 4, Tab, Delete / Backspace, P; the Hypershade work area is the same
+# Node Editor). The 2026 help has no hotkey table for these editors, so keys
+# that only the Maya 2017 table lists are left out. Plus plus the File, Undo and menu keys
 # that act everywhere in Maya. macOS adds the Cmd copies of the File keys and
 # of Undo / Redo, as in bindings.yaml.
 #
@@ -29,32 +30,16 @@ program_icon_region: [37, 32]
 program_icon_margin: 0
 
 bindings:
-  # --- Node Editor and Hypershade (both) ---
+  # --- Node Editor and Hypershade (both), Maya 2026 Node Editor basics ---
   - { key: "1", mods: [], icon: node_simple.png, label: "Simple view" }
   - { key: "2", mods: [], icon: node_connected.png, label: "Connected view" }
   - { key: "3", mods: [], icon: node_full.png, label: "Full view" }
   - { key: "4", mods: [], icon: node_custom.png, label: "Custom attribute view" }
-  - { key: "5", mods: [], icon: node_label.png, label: "Name / type / no title" }
-  - { key: "=", mods: [], icon: zoom_in.png, label: "Zoom in" }
-  - { key: "-", mods: [], icon: zoom_out.png, label: "Zoom out" }
   - { key: DELETE, mods: [], icon: node_delete.png, label: "Delete selected nodes" }
   - { key: BACKSPACE, mods: [], icon: node_delete.png, label: "Delete selected nodes" }
   - { key: TAB, mods: [], icon: node_create.png, label: "Create node" }
-  - { key: ",", mods: [], icon: linked_from.png, label: "Select upstream" }
-  - { key: ".", mods: [], icon: linked_to.png, label: "Select downstream" }
-  - { key: "/", mods: [], icon: select_linked.png, label: "Select upstream and downstream" }
-  - { key: L, mods: [CTRL], icon: graph_remove.png, label: "Remove selected from graph" }
-  - { key: "/", mods: [CTRL], icon: graph_remove_unsel.png, label: "Remove unselected from graph" }
-  - { key: ",", mods: [CTRL], icon: graph_remove_up.png, label: "Remove upstream from graph" }
-  - { key: ".", mods: [CTRL], icon: graph_remove_down.png, label: "Remove downstream from graph" }
-  - { key: ",", mods: [SHIFT], icon: regraph_up.png, label: "Regraph upstream" }
-  - { key: ".", mods: [SHIFT], icon: regraph_down.png, label: "Regraph downstream" }
-  - { key: "/", mods: [SHIFT], icon: regraph_both.png, label: "Regraph upstream and downstream" }
+  - { key: P, mods: [], icon: pin.png, label: "Pin / unpin" }
 
-  # --- Hypershade only (@, #, ! are Shift+2, Shift+3, Shift+1 on a US layout) ---
-  - { key: "2", mods: [SHIFT], icon: node_solo.png, label: "Solo selected node" }
-  - { key: "3", mods: [SHIFT], icon: node_unsolo.png, label: "Remove soloing" }
-  - { key: "1", mods: [SHIFT], icon: node_resolo.png, label: "Solo last soloed" }
 
   # --- everywhere in Maya (All Maya Hotkeys: File, Edit, menus) ---
   - { key: N, mods: [CTRL], icon: new.png, label: "New scene" }

@@ -35,6 +35,7 @@ from polyhost.res.overlay_sources import icon_fetch  # noqa: E402
 
 ICONS = {
     # --- tools
+    "mode_toggle": "ms:toggle_on",    # F8: object / component mode
     "complete": "ms:check",
     # --- file and edit
     "reference": "ms:link",
@@ -211,7 +212,7 @@ BADGES = [
     ("conv_vert.png", "sel_vert.png", "b_convert.png"),
     ("conv_edge.png", "sel_edge.png", "b_convert.png"),
     ("conv_face.png", "sel_face.png", "b_convert.png"),
-    ("conv_uv.png", "uv_unwrap.png", "b_convert.png"),
+    ("conv_uv.png", "sel_uv.png", "b_convert.png"),
     ("key_move.png", "move.png", "key_insert.png"),
     ("key_rotate.png", "rotate.png", "key_insert.png"),
     ("key_scale.png", "scale.png", "key_insert.png"),
@@ -439,6 +440,22 @@ def _space_hotbox(path: Path) -> None:
     _save_white(m, path)
 
 
+def _sel_uv(path: Path) -> None:
+    """F12 Select UV: the component square of F9..F11 with "UV" inside.
+
+    `uv_unwrap` (an unfolded map) stays on Ctrl+U Unfold in the UV Editor, so
+    the two keys no longer share art.
+    """
+    from PIL import ImageDraw, ImageFont
+    img = Image.new("RGBA", (96, 96), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rectangle((14, 14, 81, 81), outline=(0, 0, 0, 255), width=6)
+    font = ImageFont.truetype(
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", 38)
+    d.text((48, 49), "UV", fill=(0, 0, 0, 255), font=font, anchor="mm")
+    img.save(path)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -449,6 +466,7 @@ def main() -> int:
     g.guarded(out / "wireframe.png", _wireframe, "drawn wire sphere")
     g.guarded(out / "shaded.png", _shaded, "drawn dithered sphere")
     g.guarded(out / "textured.png", _textured, "drawn checker sphere")
+    g.guarded(out / "sel_uv.png", _sel_uv, "drawn component square + UV")
     g.guarded(out / "space_hotbox.png", _space_hotbox, "drawn hotbox (Space, hold), 72x40")
     for dr in ("up", "down", "left", "right"):
         g.guarded(out / f"nudge_{dr}.png", lambda p, k=dr: _nudge(p, k), f"drawn nudge ({dr})")
