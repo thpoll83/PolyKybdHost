@@ -2063,6 +2063,13 @@ windowsterminal,wt:
     "(crawl-console)": *dcss_tui
     "(crawl-console": *dcss_tui
     "^crawl-console": *dcss_tui
+    # Cataclysm: Dark Days Ahead, curses build (overlay_sources/cdda/).
+    cataclysm: &cdda_tui
+      title: '^(?:(?:sudo\s+)?(?:cataclysm)(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:cataclysm)(?:$|\s|\)))'
+      overlay: cdda_template.mods.png
+    "(cataclysm)": *cdda_tui
+    "(cataclysm": *cdda_tui
+    "^cataclysm": *cdda_tui
     # GDB and the common cross builds; the set is the prompt's one-letter commands.
     # The PolyKybd GDB script (gdb-plugin/) writes "gdb ⏸ <program>" at the
     # prompt, which this route matches, and "gdb ▶ <program>" while the program
@@ -3544,6 +3551,14 @@ pyrogenesis,pyrogenesis.exe,0ad,com.play0ad.zeroad:
 # Names not checked on an install.
 crawl,crawl.exe,crawl-tiles,crawl-tiles.exe,dungeon crawl stone soup - tiles:
   overlay: dcss_template.mods.png
+# Cataclysm: Dark Days Ahead, the tiles build (overlay_sources/cdda/cdda.yaml).
+# cataclysm-tiles is TILES_TARGET_NAME in the Makefile (stable tag
+# cdda-0.I-2026-09-19-2324) and the Exec= line of the desktop file; the Flatpak
+# id is org.cataclysmdda.CataclysmDDA and the macOS bundle is "Cataclysm". The
+# curses build runs in a terminal and is routed by the `cataclysm` title route
+# in &editor_titles. Names not checked on an install.
+cataclysm-tiles,cataclysm-tiles.exe,org.cataclysmdda.CataclysmDDA,cataclysm:
+  overlay: cdda_template.mods.png
 # League of Legends (overlay_sources/lol/lol.yaml), the in-game window only. The
 # game is `League of Legends.exe` on Windows and the `LeagueofLegends` app on
 # macOS. The lobby client (LeagueClient, LeagueClientUx) is a different process

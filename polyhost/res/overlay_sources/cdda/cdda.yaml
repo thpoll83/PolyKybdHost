@@ -1,0 +1,133 @@
+# Cataclysm: Dark Days Ahead overlay for PolyKybd.
+#
+# Keys: the default bindings in data/raw/keybindings.json of
+# CleverRaven/Cataclysm-DDA, stable tag cdda-0.I-2026-09-19-2324: the
+# DEFAULTMODE category (the main game screen) and the movement keys of the
+# global category. See SOURCES.md.
+#
+# The game gives a lower-case and an upper-case letter different commands, so
+# the plain and the Shift layer are drawn. No main-screen command uses Ctrl or
+# Alt. The Shift layer's symbol keys follow the US layout, which the file
+# itself names (`"mod": ["shift"], "key": "7"` beside `&`).
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/cdda/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/cdda/cdda.yaml --preview /tmp/cdda_preview
+app: cdda
+match: [cataclysm-tiles, cataclysm-tiles.exe, org.cataclysmdda.CataclysmDDA]
+output: cdda_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for fheroes2: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# "Cataclysm" over "DDA" drawn over the whole cell, without the ESC legend
+# (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # --- Plain keys ---------------------------------------------------------
+  # Movement: the vi keys and the digit row
+  - { key: H, icon: move_w.png, label: "Move west" }
+  - { key: J, icon: move_s.png, label: "Move south" }
+  - { key: K, icon: move_n.png, label: "Move north" }
+  - { key: L, icon: move_e.png, label: "Move east" }
+  - { key: Y, icon: move_nw.png, label: "Move north-west" }
+  - { key: U, icon: move_ne.png, label: "Move north-east" }
+  - { key: B, icon: move_sw.png, label: "Move south-west" }
+  - { key: N, icon: move_se.png, label: "Move south-east" }
+  - { key: 1, icon: move_sw.png, label: "Move south-west" }
+  - { key: 2, icon: move_s.png, label: "Move south" }
+  - { key: 3, icon: move_se.png, label: "Move south-east" }
+  - { key: 4, icon: move_w.png, label: "Move west" }
+  - { key: 6, icon: move_e.png, label: "Move east" }
+  - { key: 7, icon: move_nw.png, label: "Move north-west" }
+  - { key: 8, icon: move_n.png, label: "Move north" }
+  - { key: 9, icon: move_ne.png, label: "Move north-east" }
+  - { key: 5, icon: pause.png, label: "Wait one turn" }
+  - { key: DOT, icon: pause.png, label: "Wait one turn" }
+  - { key: TAB, icon: autoattack.png, label: "Attack the nearest enemy" }
+  # The surroundings
+  - { key: O, icon: opendoor.png, label: "Open a door" }
+  - { key: C, icon: closedoor.png, label: "Close a door" }
+  - { key: S, icon: smash.png, label: "Smash nearby terrain" }
+  - { key: E, icon: examine.png, label: "Examine nearby terrain or furniture" }
+  - { key: G, icon: pickup.png, label: "Pick up items" }
+  - { key: X, icon: look.png, label: "Look around" }
+  - { key: SEMICOLON, icon: look.png, label: "Look around" }
+  - { key: BACKSLASH, icon: haul.png, label: "Haul items along the ground" }
+  - { key: QUOTE, icon: ignoreenemy.png, label: "Ignore the nearby enemy" }
+  - { key: M, icon: map.png, label: "View the map" }
+  # Items
+  - { key: I, icon: inventory.png, label: "Open the inventory" }
+  - { key: SLASH, icon: advinv.png, label: "Advanced inventory manager" }
+  - { key: EQUAL, icon: organize.png, label: "Swap inventory letters" }
+  - { key: A, icon: apply.png, label: "Use an item" }
+  - { key: W, icon: wield.png, label: "Wield an item" }
+  - { key: V, icon: insert.png, label: "Insert an item into a container" }
+  - { key: T, icon: throw.png, label: "Throw an item" }
+  - { key: F, icon: fire.png, label: "Fire the wielded item" }
+  - { key: R, icon: reload.png, label: "Reload an item" }
+  - { key: D, icon: drop.png, label: "Drop an item" }
+  - { key: F3, icon: defaultammo.png, label: "Select the default ammunition", region: [34, 40] }
+  - { key: MINUS, icon: recraft.png, label: "Craft the last recipe again" }
+  # The character
+  - { key: P, icon: bionics.png, label: "View or activate bionics" }
+  - { key: LBRACKET, icon: mutations.png, label: "View or activate mutations" }
+  - { key: RBRACKET, icon: spells.png, label: "Supernatural abilities" }
+  - { key: ENTER, icon: actionmenu.png, label: "Action menu" }
+  - { key: 0, icon: help.png, label: "View the help" }
+  - { key: Z, icon: zoomin.png, label: "Zoom in", shared: false }
+
+  # --- Shift --------------------------------------------------------------
+  - { key: G, mods: [SHIFT], icon: grab.png, label: "Grab something nearby" }
+  - { key: O, mods: [SHIFT], icon: zoneactivity.png, label: "Zone activities" }
+  - { key: B, mods: [SHIFT], icon: butcher.png, label: "Butcher" }
+  - { key: C, mods: [SHIFT], icon: chat.png, label: "Talk to a character" }
+  - { key: X, mods: [SHIFT], icon: peek.png, label: "Peek around a corner" }
+  - { key: V, mods: [SHIFT], icon: listitems.png, label: "List the items and monsters around" }
+  - { key: Y, mods: [SHIFT], icon: zones.png, label: "Zones manager" }
+  - { key: I, mods: [SHIFT], icon: compare.png, label: "Compare two items" }
+  - { key: A, mods: [SHIFT], icon: applywielded.png, label: "Use the wielded item" }
+  - { key: W, mods: [SHIFT], icon: wear.png, label: "Wear an item" }
+  - { key: T, mods: [SHIFT], icon: takeoff.png, label: "Take off a worn item" }
+  - { key: E, mods: [SHIFT], icon: eat.png, label: "Eat, drink or take a medicine" }
+  - { key: R, mods: [SHIFT], icon: read.png, label: "Read a book" }
+  - { key: U, mods: [SHIFT], icon: unload.png, label: "Unload an item" }
+  - { key: F, mods: [SHIFT], icon: firemode.png, label: "Change the attack mode of the wielded item" }
+  - { key: D, mods: [SHIFT], icon: dropadjacent.png, label: "Drop an item on an adjacent tile" }
+  - { key: N, mods: [SHIFT], icon: medical.png, label: "View the medical screen" }
+  - { key: S, mods: [SHIFT], icon: save.png, label: "Save the game and quit" }
+  - { key: M, mods: [SHIFT], icon: missions.png, label: "View missions" }
+  - { key: P, mods: [SHIFT], icon: messages.png, label: "View the message log" }
+  - { key: Z, mods: [SHIFT], icon: zoomout.png, label: "Zoom out", shared: false }
+  - { key: 1, mods: [SHIFT], icon: safemode.png, label: "Toggle safe mode" }
+  - { key: 2, mods: [SHIFT], icon: playerinfo.png, label: "View the player information" }
+  - { key: 3, mods: [SHIFT], icon: factions.png, label: "View factions" }
+  - { key: 4, mods: [SHIFT], icon: sleep.png, label: "Sleep" }
+  - { key: 5, mods: [SHIFT], icon: itemactions.png, label: "Item action menu" }
+  - { key: 6, mods: [SHIFT], icon: vehicle.png, label: "Control a vehicle" }
+  - { key: 7, mods: [SHIFT], icon: craft.png, label: "Craft items" }
+  - { key: 8, mods: [SHIFT], icon: construct.png, label: "Construct terrain" }
+  - { key: 9, mods: [SHIFT], icon: disassemble.png, label: "Disassemble items" }
+  - { key: 0, mods: [SHIFT], icon: diary.png, label: "Diary, achievements and scores" }
+  - { key: MINUS, mods: [SHIFT], icon: martialarts.png, label: "Select a martial arts style" }
+  - { key: EQUAL, mods: [SHIFT], icon: sortarmor.png, label: "Sort the worn armor" }
+  - { key: LBRACKET, mods: [SHIFT], icon: bodystatus.png, label: "View the body status" }
+  - { key: BACKSLASH, mods: [SHIFT], icon: wait.png, label: "Wait for a chosen time" }
+  - { key: QUOTE, mods: [SHIFT], icon: movemode.png, label: "Movement mode menu" }
+  - { key: GRAVE, mods: [SHIFT], icon: whitelist.png, label: "Add the enemy to the safe mode whitelist" }
+  - { key: COMMA, mods: [SHIFT], icon: upstairs.png, label: "Go up" }
+  - { key: DOT, mods: [SHIFT], icon: downstairs.png, label: "Go down" }
+  - { key: SLASH, mods: [SHIFT], icon: keybindings.png, label: "Keybindings menu" }
