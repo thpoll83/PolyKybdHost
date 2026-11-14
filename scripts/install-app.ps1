@@ -74,9 +74,12 @@ try {
     Write-Host ">> Downloading Python $PythonVersion"
     & $uv python install $PythonVersion
     if ($LASTEXITCODE -ne 0) { throw "uv python install $PythonVersion failed." }
-    $py = (& $uv python find $PythonVersion | Select-Object -First 1)
-    if ($LASTEXITCODE -ne 0 -or -not $py) { throw "uv python find $PythonVersion failed." }
-    $py = $py.Trim()
+    # Read all of the output before taking the first line. In Windows
+    # PowerShell 5.1 `| Select-Object -First 1` stops the native process
+    # early, and $LASTEXITCODE is then not 0 (CI, 2026-11-14).
+    $found = @(& $uv python find $PythonVersion)
+    if ($LASTEXITCODE -ne 0 -or $found.Count -eq 0) { throw "uv python find $PythonVersion failed." }
+    $py = "$($found[0])".Trim()
 
     # --- install ---------------------------------------------------------------
     $script = Join-Path $tmp "install_app.py"

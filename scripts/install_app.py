@@ -199,7 +199,8 @@ def install_native_macos() -> None:
 
 def run_hint(target: Path) -> str:
     if sys.platform == "win32":
-        return f'"{venv_python(target)}" -m polyhost'
+        # `&`: PowerShell reads a quoted path alone as a string, not a command.
+        return f'& "{venv_python(target)}" -m polyhost'
     return f'cd "{target}" && .venv/bin/python -m polyhost'
 
 

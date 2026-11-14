@@ -7,8 +7,10 @@
 # from a tarball.
 #
 # POLYKYBD_REPO and POLYKYBD_REF point the installer at the pull request's own
-# branch (a fork's too), so the job installs the code under review and not the
-# latest release. install_app.py is fetched from that branch too.
+# head commit (a fork's too), so the job installs the code under review and not
+# the latest release. install_app.py is fetched from that commit too. The
+# checkout uses the same commit: its default on a pull request is the merge
+# commit with main, whose file list can differ from the installed head.
 name: App installer
 
 on:
@@ -40,7 +42,7 @@ permissions:
 env:
   POLYKYBD_NO_LAUNCH: "1"
   POLYKYBD_REPO: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
-  POLYKYBD_REF: ${{ github.head_ref || github.ref_name }}
+  POLYKYBD_REF: ${{ github.event.pull_request.head.sha || github.sha }}
 
 jobs:
   windows:
@@ -60,6 +62,8 @@ jobs:
       # For the script and the expected file list; the installer downloads
       # its own copy of the code.
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.POLYKYBD_REF }}
 
       - name: Run install-app.ps1
         env:
@@ -91,6 +95,8 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.POLYKYBD_REF }}
 
       # PyQt5's xcb plugin needs these to import QtWidgets in the check below,
       # and pymonctl (under pywinctl) exits on import without xrandr
