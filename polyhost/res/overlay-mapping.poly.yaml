@@ -3769,6 +3769,16 @@ gk:
 # checked on a running install.
 soh,soh.elf,soh-macos:
   overlay: soh_template.mods.png
+# Super Mario 64 PC ports (overlay_sources/sm64/): sm64ex and sm64coopdx. The
+# default keyboard binds of src/pc/configfile.c, drawn as the Nintendo 64
+# controls the keys press. sm64ex: sm64.<version>.f3dex2e on Linux (Makefile
+# TARGET), which the host cuts to `sm64` on Windows. sm64coopdx: sm64coopdx
+# (Makefile EXE), with its chat, player list and console keys. Not checked on a
+# running install.
+sm64,sm64.us.f3dex2e,sm64.eu.f3dex2e,sm64.jp.f3dex2e,sm64.sh.f3dex2e:
+  overlay: sm64ex_template.mods.png
+sm64coopdx:
+  overlay: sm64coopdx_template.mods.png
 # PTC Mathcad Prime (overlay_sources/mathcad/). Windows only: MathcadPrime.exe.
 # English / US keys from PTC's 12.0.1.0 shortcut PDF. Name not checked on an
 # install.

@@ -44,6 +44,8 @@ PCSX2 = _set("pcsx2_template", "combo")
 DUCKSTATION = _set("duckstation_template")
 OPENGOAL = _set("opengoal_template")
 SOH = _set("soh_template")
+SM64EX = _set("sm64ex_template")
+SM64COOPDX = _set("sm64coopdx_template")
 
 
 def _overlay_handler_class():
@@ -152,6 +154,14 @@ class Emulator2RoutingTest(unittest.TestCase):
 
     def test_ship_of_harkinian(self):
         self._assert_one_set(("soh", "soh.elf", "soh-macos"), "Ship of Harkinian", SOH)
+
+    def test_sm64ex(self):
+        self._assert_one_set(
+            ("sm64", "sm64.us.f3dex2e", "sm64.eu.f3dex2e", "sm64.jp.f3dex2e", "sm64.sh.f3dex2e"),
+            "Super Mario 64 EX (OpenGL)", SM64EX)
+
+    def test_sm64coopdx_is_not_sm64ex(self):
+        self._assert_one_set(("sm64coopdx",), "Super Mario 64 Coop Deluxe", SM64COOPDX)
 
 
 if __name__ == "__main__":

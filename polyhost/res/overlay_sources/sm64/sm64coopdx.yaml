@@ -1,0 +1,62 @@
+# sm64coopdx (online co-op PC port of Super Mario 64) overlay for PolyKybd.
+# See SOURCES.md.
+#
+# Keys are sm64coopdx's default keyboard binds, release v1.5.1
+# (coop-deluxe/sm64coopdx): the first entry of each configKey* array in
+# src/pc/configfile.c, a scancode (the console has two keys). The controller
+# keys are those of sm64ex plus X, Y and a D-pad; the port adds chat, player
+# list, console, page and disconnect keys. Esc carries the mark.
+#
+# Regenerate:
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/sm64/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/sm64/sm64coopdx.yaml --preview /tmp/sm64coopdx_preview
+app: sm64coopdx
+match: [sm64coopdx]
+output: sm64coopdx_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [32, 32]
+margin: 2
+mode: alpha
+threshold: 128
+
+# "sm64" over "coopdx" drawn over the whole cell, without the ESC legend
+# (protocol v25).
+program_icon: sm64coopdx.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+  # Keys of the port
+  - { key: ENTER, mods: [], icon: chat.png, label: "Open chat", region: [36, 32], margin: 0 }
+  - { key: TAB, mods: [], icon: playerlist.png, label: "Player list", region: [36, 32], margin: 0 }
+  - { key: GRAVE, mods: [], icon: console.png, label: "Console", region: [36, 32], margin: 0 }
+  - { key: F1, mods: [], icon: console.png, label: "Console", region: [36, 32], margin: 0 }
+  - { key: U, mods: [], icon: prevpage.png, label: "Previous page", region: [36, 32], margin: 0 }
+  - { key: O, mods: [], icon: nextpage.png, label: "Next page", region: [36, 32], margin: 0 }
+  - { key: F12, mods: [], icon: disconnect.png, label: "Disconnect", region: [36, 32], margin: 0 }
+  # Controller; drawn 1:1 at their own size
+  - { key: L, mods: [], icon: btna.png, label: "A" }
+  - { key: COMMA, mods: [], icon: btnb.png, label: "B" }
+  - { key: I, mods: [], icon: btnx.png, label: "X" }
+  - { key: M, mods: [], icon: btny.png, label: "Y" }
+  - { key: K, mods: [], icon: btnz.png, label: "Z" }
+  - { key: KC_LEFT_SHIFT, mods: [], icon: btnl.png, label: "L" }
+  - { key: KC_RIGHT_SHIFT, mods: [], icon: btnr.png, label: "R" }
+  - { key: SPACE, mods: [], icon: start.png, label: "Start", region: [49, 15] }
+  - { key: UP, mods: [], icon: cup.png, label: "C up" }
+  - { key: DOWN, mods: [], icon: cdown.png, label: "C down" }
+  - { key: LEFT, mods: [], icon: cleft.png, label: "C left" }
+  - { key: RIGHT, mods: [], icon: cright.png, label: "C right" }
+  - { key: HOME, mods: [], icon: dpadup.png, label: "D-pad up" }
+  - { key: END, mods: [], icon: dpaddown.png, label: "D-pad down" }
+  - { key: DELETE, mods: [], icon: dpadleft.png, label: "D-pad left" }
+  - { key: PGDN, mods: [], icon: dpadright.png, label: "D-pad right" }
+  - { key: W, mods: [], icon: stickup.png, label: "Control stick up" }
+  - { key: S, mods: [], icon: stickdown.png, label: "Control stick down" }
+  - { key: A, mods: [], icon: stickleft.png, label: "Control stick left" }
+  - { key: D, mods: [], icon: stickright.png, label: "Control stick right" }
