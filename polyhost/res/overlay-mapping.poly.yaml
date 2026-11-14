@@ -3596,6 +3596,11 @@ cs2,steam_app_730:
 # id. Names not checked on an install.
 endless-sky,endless sky,endless sky.exe,io.github.endless_sky.endless_sky:
   overlay: endless_sky_template.mods.png
+# Naev (overlay_sources/naev/naev.yaml). `naev` is the meson executable target
+# (v0.13.5), `naev.exe` on Windows; org.naev.Naev is the desktop file and
+# Flatpak id. Names not checked on an install.
+naev,naev.exe,org.naev.naev:
+  overlay: naev_template.mods.png
 # SQL Server Management Studio (overlay_sources/ssms/), Windows only. The
 # executable is Ssms.exe (SSMS 18 to 20) or SSMS.exe (SSMS 21 and later); both
 # lowercase to `ssms`. Name not checked on an install.

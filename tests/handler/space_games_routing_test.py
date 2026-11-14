@@ -24,6 +24,10 @@ GAMES = {
         ("endless-sky", "endless sky", "endless sky.exe", "io.github.endless_sky.endless_sky"),
         "Endless Sky",
         "endless_sky_template.mods.png"),
+    "Naev": (
+        ("naev", "naev.exe", "org.naev.naev"),
+        "Naev - Sea of Darkness",
+        "naev_template.mods.png"),
 }
 
 
