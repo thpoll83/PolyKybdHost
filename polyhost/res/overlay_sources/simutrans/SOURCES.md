@@ -38,6 +38,10 @@ its own `config/menuconf.tab`, and the engine adds a few fixed keys.
   at the same tag. The tool names are from the comments in `menuconf.tab` and
   the `get_tooltip()` texts in `src/simutrans/tool/simtool.h` and
   `simtool-dialogs.h`.
+- macOS: `ModifierKeys()` in `src/simutrans/sys/simsys_s2.cc` at the same tag
+  reads the Command key as Ctrl, in addition to Ctrl itself. The set draws the
+  Ctrl chords on the Ctrl layer only, so on macOS Ctrl+S shows the icon and
+  Cmd+S shows none. Both chords work in the game.
 
 **Other paksets differ.** pak128, pak128.Britain, pak128.German, pak192.comic
 and the others ship their own `menuconf.tab` with other keys and other
