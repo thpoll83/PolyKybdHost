@@ -138,6 +138,11 @@ Licence texts for the icon, logo and font licences named in this file:
 - Apache-2.0: https://www.apache.org/licenses/LICENSE-2.0
 - MIT (CorsixTH): https://github.com/CorsixTH/CorsixTH/blob/v0.70.2/LICENSE.txt
 - SIL OFL 1.1: https://openfontlicense.org/open-font-license-official-text/
+
+Where each icon file comes from. The icon table gives the name to put in the
+URL; the same URLs are in `SOURCES` of `cnc_remastered/fetch_icons.py`.
+
+- Font Awesome Free 6.5.2, solid (`fa:<name>`): `https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/svgs/solid/<name>.svg`
 - Bitstream Vera licence (DejaVu Sans Bold, the digits):
   https://dejavu-fonts.github.io/License.html
 
