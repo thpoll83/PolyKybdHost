@@ -1,0 +1,95 @@
+# Xonotic overlay for PolyKybd.
+#
+# Keys: the default bindings in binds-xonotic.cfg of xonotic-data.pk3dir,
+# release 0.8.6 (tag xonotic-v0.8.6). See SOURCES.md.
+#
+# No default binding uses a modifier chord, so only the plain layer is drawn.
+# Shift (crouch) has no overlay cell. A user who rebinds a key in the game
+# still sees the default here.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/xonotic/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/xonotic/xonotic.yaml --preview /tmp/xonotic_preview
+app: xonotic
+match: [xonotic, xonotic-sdl, xonotic-glx, xonotic-linux64-sdl, xonotic-linux64-glx,
+        xonotic-linux-sdl, xonotic-linux-glx, xonotic.exe, xonotic-x86.exe,
+        xonotic-wgl.exe, xonotic-x86-wgl.exe, xonotic-x64.exe, xonotic-sdl.exe,
+        xonotic-x64-sdl.exe, xonotic-osx-sdl-bin, org.xonotic.xonotic]
+output: xonotic_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for Counter-Strike 2: the icon uses the full height on the right; the
+# firmware clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# Xonotic's icon in the centre of the whole cell, without the ESC legend
+# (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Movement
+  - { key: W, icon: forward.png, label: "Move forward" }
+  - { key: S, icon: back.png, label: "Move back" }
+  - { key: A, icon: left.png, label: "Strafe left" }
+  - { key: D, icon: right.png, label: "Strafe right" }
+  - { key: SPACE, icon: jump.png, label: "Jump" }
+
+  # Weapon groups
+  - { key: "1", icon: blaster.png, label: "Blaster" }
+  - { key: "2", icon: shotgun.png, label: "Shotgun" }
+  - { key: "3", icon: machinegun.png, label: "Machine gun" }
+  - { key: "4", icon: mortar.png, label: "Mortar" }
+  - { key: "5", icon: electro.png, label: "Electro" }
+  - { key: "6", icon: crylink.png, label: "Crylink" }
+  - { key: "7", icon: vortex.png, label: "Vortex" }
+  - { key: "8", icon: hagar.png, label: "Hagar" }
+  - { key: "9", icon: devastator.png, label: "Devastator" }
+  - { key: "0", icon: superweapon.png, label: "Superweapons" }
+
+  # Weapon actions
+  - { key: Q, icon: lastweapon.png, label: "Last weapon" }
+  - { key: R, icon: reload.png, label: "Reload", shared: false }
+  - { key: G, icon: drop.png, label: "Drop weapon" }
+  - { key: BACKSPACE, icon: drop.png, label: "Drop weapon" }
+  - { key: E, icon: hook.png, label: "Grappling hook" }
+  - { key: F, icon: use.png, label: "Use" }
+  - { key: V, icon: drag.png, label: "Drag object" }
+  - { key: K, icon: kill.png, label: "Kill yourself" }
+
+  # Communication
+  - { key: T, icon: chat.png, label: "Chat" }
+  - { key: ENTER, icon: chat.png, label: "Chat" }
+  - { key: Y, icon: teamchat.png, label: "Team chat" }
+  - { key: Z, icon: teamchat.png, label: "Team chat" }
+  - { key: U, icon: chathistory.png, label: "Chat history" }
+  - { key: B, icon: quickmenu.png, label: "Quick menu" }
+
+  # Views
+  - { key: TAB, icon: scoreboard.png, label: "Scoreboard" }
+  - { key: M, icon: radar.png, label: "Enlarge radar" }
+  - { key: I, icon: info.png, label: "Server info" }
+  - { key: GRAVE, icon: console.png, label: "Console" }
+  - { key: PAUSE, icon: pause.png, label: "Pause" }
+
+  # Function keys
+  - { key: F1, icon: voteyes.png, label: "Vote yes", region: [34, 40] }
+  - { key: F2, icon: voteno.png, label: "Vote no", region: [34, 40] }
+  - { key: F3, icon: spectate.png, label: "Spectate", region: [34, 40] }
+  - { key: F4, icon: ready.png, label: "Ready", region: [34, 40] }
+  - { key: F5, icon: teamselect.png, label: "Team selection", region: [34, 40] }
+  - { key: F6, icon: autojoin.png, label: "Join the team the server selects", region: [34, 40] }
+  - { key: F7, icon: sandbox.png, label: "Sandbox tools", region: [34, 40] }
+  - { key: F8, icon: quickmenu_f.png, label: "Quick menu", region: [34, 40] }
+  - { key: F9, icon: minigames.png, label: "Minigames", region: [34, 40] }
+  - { key: F10, icon: quit.png, label: "Quit", region: [30, 40] }
+  - { key: F12, icon: screenshot.png, label: "Screenshot", region: [30, 40] }

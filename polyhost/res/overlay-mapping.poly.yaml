@@ -3619,6 +3619,27 @@ everything:
 # build, so there is no macOS name. Names not checked on an install.
 dota2,steam_app_570:
   overlay: dota2_template.mods.png
+# Xonotic (overlay_sources/xonotic/xonotic.yaml). The binary names are the release
+# archive layout in misc/tools/all/release.subr (0.8.6, and 0.7.0 for the
+# -x64 and -sdl .exe names); xonotic-sdl and xonotic-glx are the Exec= lines of
+# the project's desktop files. org.xonotic.Xonotic is the Flathub app id.
+# Names not checked on an install.
+xonotic,xonotic-sdl,xonotic-glx,xonotic-linux64-sdl,xonotic-linux64-glx,xonotic-linux-sdl,xonotic-linux-glx,xonotic.exe,xonotic-x86.exe,xonotic-wgl.exe,xonotic-x86-wgl.exe,xonotic-x64.exe,xonotic-sdl.exe,xonotic-x64-sdl.exe,xonotic-osx-sdl-bin,org.xonotic.xonotic:
+  overlay: xonotic_template.mods.png
+# Unvanquished (overlay_sources/unvanquished/unvanquished.yaml). The game runs in
+# the Daemon engine, whose client executable is `daemon` (daemon.exe on Windows,
+# daemon-vulkan with the Vulkan renderer; CMakeLists.txt of DaemonEngine/Daemon
+# v0.56.2). `unvanquished` is the launcher script and net.unvanquished.Unvanquished
+# the desktop file name. Names not checked on an install.
+daemon,daemon.exe,daemon-vulkan,unvanquished,net.unvanquished.unvanquished:
+  overlay: unvanquished_template.mods.png
+# Red Eclipse (overlay_sources/redeclipse/redeclipse.yaml). The start script
+# redeclipse.sh runs redeclipse_linux, redeclipse.exe or redeclipse_universal
+# (macOS); src/CMakeLists.txt builds redeclipse_osx, redeclipse_windows.exe and
+# redeclipse_native (base v2.0.0). net.redeclipse.RedEclipse is the Flathub app
+# id. Names not checked on an install.
+redeclipse,redeclipse.exe,redeclipse_linux,redeclipse_universal,redeclipse_bsd,redeclipse_osx,redeclipse_windows.exe,redeclipse_native,net.redeclipse.redeclipse:
+  overlay: redeclipse_template.mods.png
 # Total Commander (overlay_sources/totalcmd/). Windows only. The 11.58.1
 # installers ship TOTALCMD64.EXE (64-bit) and TOTALCMD.EXE (32-bit). Not checked
 # on a running install.
