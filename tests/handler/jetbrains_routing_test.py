@@ -3,8 +3,9 @@
 Drives `polyhost/res/overlay-mapping.poly.yaml` itself. What it pins:
 
 * each window/debug state the plugin (`jetbrains-plugin/`) can send lands on the
-  overlay for that mode: Terminal, a paused debug session, Project, and every
-  other report on the editor set; on every `os:` branch of the entry;
+  overlay for that mode: Terminal, a paused debug session, Project, the tool
+  windows in `TOOL_WINDOW_SETS`, and every other report on the editor set; on
+  every `os:` branch of the entry;
 * no report (or a stale one, which `current_url` turns into None) keeps the
   full fallback set the entry had before the plugin existed;
 * a mode REPLACES the fallback (`layer: false`) on the entry and every branch;
@@ -131,15 +132,54 @@ class JetBrainsRoutingTest(unittest.TestCase):
          "jetbrains_terminal_kde_template"),
     )
 
+    # Window token -> set stem, for the tool-window sets of gen_mode_specs.py.
+    # The Debug window shows the run set while the session runs.
+    TOOL_WINDOW_SETS = {
+        "commit": "commit", "git": "git", "run": "run", "debug": "run",
+        "services": "services", "find": "find", "problems": "problems",
+        "bookmarks": "bookmarks", "structure": "structure",
+    }
+    # Which tool-window sets have artwork of their own per branch; the others
+    # use the next one down (desktop -> linux -> Windows). From the keymaps:
+    # GNOME moves Next/Previous occurrence, KDE moves Ctrl+F2/F4/F5.
+    OWN_SET = {
+        "macos": {"commit", "git", "run", "services", "find", "problems", "bookmarks", "structure"},
+        "linux": set(),
+        "linux_gnome": {"run", "find", "bookmarks"},
+        "linux_kde": {"git", "run", "services", "find"},
+    }
+    SUFFIX = {"macos": "_mac", "linux_gnome": "_gnome", "linux_kde": "_kde"}
+
+    def _tool_stem(self, os_name, stem):
+        if stem in self.OWN_SET.get(os_name, ()):
+            return f"jetbrains_{stem}{self.SUFFIX[os_name]}_template"
+        return f"jetbrains_{stem}_template"
+
+    def test_each_tool_window_gets_its_set_on_every_platform(self):
+        for os_name, *_ in self.CASES:
+            for token, stem in self.TOOL_WINDOW_SETS.items():
+                expect = self._tool_stem(os_name, stem)
+                for url in (f"jetbrains://{token}", f"jetbrains://{token}/running"):
+                    with self.subTest(os=os_name, url=url):
+                        files = self._route(url, os_name)
+                        self.assertEqual(files[0], f"{expect}.mods.png")
+                        self.assertTrue(all(f.startswith(expect + ".") for f in files), files)
+
+    def test_a_paused_session_wins_over_every_tool_window(self):
+        for os_name, _fallback, _editor, debug, *_ in self.CASES:
+            for token in self.TOOL_WINDOW_SETS:
+                with self.subTest(os=os_name, token=token):
+                    self.assertEqual(self._route(f"jetbrains://{token}/paused", os_name)[0],
+                                     f"{debug}.mods.png")
+
     def test_each_mode_gets_its_overlay_on_every_platform(self):
         for os_name, fallback, editor, debug, project, terminal in self.CASES:
             cases = {
                 None: fallback,
                 "jetbrains://editor": editor,
                 "jetbrains://editor/running": editor,
-                "jetbrains://run": editor,
-                "jetbrains://git": editor,
                 "jetbrains://other": editor,
+                "jetbrains://other/running": editor,
                 "jetbrains://editor/paused": debug,
                 "jetbrains://debug/paused": debug,
                 "jetbrains://project/paused": debug,

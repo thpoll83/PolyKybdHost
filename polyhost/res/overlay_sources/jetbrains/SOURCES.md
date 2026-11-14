@@ -145,10 +145,22 @@ stay the fallback.
 | Debugger paused | `bindings_debug.yaml` (generated) | 5 keymaps | `/paused` |
 | Project tool window | `bindings_project.yaml` | Windows, macOS, Linux | `jetbrains://project` |
 | Terminal tool window | `bindings_terminal.yaml` | Windows, macOS, Linux, KDE | `jetbrains://terminal` |
+| Commit tool window | `bindings_commit.yaml` (generated) | Windows, macOS | `jetbrains://commit` |
+| Git tool window | `bindings_git.yaml` (generated) | Windows, macOS, KDE | `jetbrains://git` |
+| Run tool window, Debug window while running | `bindings_run.yaml` (generated) | Windows, macOS, GNOME, KDE | `jetbrains://run`, `jetbrains://debug` |
+| Services tool window | `bindings_services.yaml` (generated) | Windows, macOS, KDE | `jetbrains://services` |
+| Find tool window | `bindings_find.yaml` (generated) | Windows, macOS, GNOME, KDE | `jetbrains://find` |
+| Problems tool window | `bindings_problems.yaml` (generated) | Windows, macOS | `jetbrains://problems` |
+| Bookmarks tool window | `bindings_bookmarks.yaml` (generated) | Windows, macOS, GNOME | `jetbrains://bookmarks` |
+| Structure tool window | `bindings_structure.yaml` (generated) | Windows, macOS | `jetbrains://structure` |
+
+A platform without its own set in this table uses the next one down: GNOME and
+KDE use the Linux set, and Linux uses the Windows set. A paused debug session
+takes priority over every tool window (`/paused` is the second route).
 
 ```bash
 .venv/bin/python polyhost/res/overlay_sources/jetbrains/gen_mode_specs.py
-for m in editor debug project terminal; do
+for m in editor debug project terminal commit git run services find problems bookmarks structure; do
   .venv/bin/python scripts/generate_app_overlays.py \
       polyhost/res/overlay_sources/jetbrains/bindings_$m.yaml --preview /tmp/jb_$m
 done
@@ -190,3 +202,84 @@ done
 - New icons (in `fetch_icons.py`, "mode sets"): Fluent UI System Icons (MIT)
   and Material Symbols (Apache-2.0: `delete_forever`, `compare`,
   `manage_search`). Fetched on 2026-11-13.
+
+## Tool window sets (mode audit, 2026-11-14)
+
+The plugin already sent these window tokens; until now they all showed the
+editor set. `gen_mode_specs.py` (`TOOL_WINDOWS`) writes one spec per window.
+Each set draws the keys that window handles, plus the keys that work in every
+tool window: the tool-window row (Alt+1…0, ⌘1…⌘0, Alt+F12), Go to file, Go to
+class, Recent files, Find action, Settings (chords from `bindings.yaml`) and
+Hide window (`HideActiveWindow`, Shift+Esc). Editing and refactoring keys are
+not drawn: they do nothing while a tool window has the focus.
+
+Sources: the keymap XML (`platform/platform-resources/src/keymaps/`) and the
+plugin XML files that add `keyboard-shortcut` entries to `$default`:
+`platform/vcs-impl/resources/META-INF/VcsActions.xml`,
+`plugins/git4idea/backend/resources/intellij.vcs.git.backend.xml`,
+`platform/vcs-log/impl/resources/intellij.platform.vcs.log.impl.xml`, and the
+`use-shortcut-of` attributes in `platform/usageView-impl`, `platform/bookmarks`,
+`platform/execution.dashboard` and `platform/problemsView` (intellij-community
+`master` at f5ca7abe, read 2026-11-14). The parent chain is applied as for the
+fallback set; macOS converts an inherited `control` to Cmd unless
+`Mac OS X 10.5+.xml` sets the action itself.
+
+| Window | Action id | $default | macOS | Linux differences |
+|---|---|---|---|---|
+| Commit | commit button (`CommitActionsPanel.DEFAULT_COMMIT_ACTION_SHORTCUT`) | Ctrl+Enter | Ctrl+Enter or ⌘Enter | |
+| Commit | `Git.Commit.And.Push.Executor` | Ctrl+Alt+K | ⌘⌥K | |
+| Commit | `Vcs.ToggleAmendCommitMode` | Alt+M | ⌃⌥M | |
+| Commit | `Vcs.ShowMessageHistory` | Ctrl+M | ⌃M | |
+| Commit | `ChangesView.ShowCommitOptions` | Ctrl+O | ⌃O | |
+| Commit | `ChangesView.Revert`, `Vcs.RollbackChangedLines` | Ctrl+Alt+Z | ⌘⌥Z | |
+| Commit | `ChangesView.Move` | Alt+Shift+M | ⌘⇧M | |
+| Commit | `ChangesView.Rename` | F2, Shift+F6 | same | |
+| Commit | `ChangesView.SetDefault` | Ctrl+Space | ⌃Space | |
+| Commit | `ChangesView.AddUnversioned`, `ShelveSilently`, `UnshelveSilently` | Ctrl+Alt+A, Ctrl+Shift+H, Ctrl+Alt+U | ⌘ for Ctrl | |
+| Commit, Git | `Vcs.QuickListPopupAction` | Alt+` | ⌃V | |
+| Commit, Git | `Git.Branches` | Ctrl+Shift+` | ⌘⇧` | |
+| Commit, Git | `Diff.ShowDiff` | Ctrl+D | ⌘D | |
+| Git | `Git.CreateNewBranch`, `Git.New.Branch.In.Log` | Ctrl+Alt+N | ⌘⌥N | |
+| Git | `Git.Reword.Commit`, `Git.Rename.Local.Branch` | F2, Shift+F6 | same | |
+| Git | `VcsHistory.ShowAllAffected` | Alt+Shift+A | ⌘⌃A | |
+| Git | `Vcs.Log.FocusTextFilter` | Ctrl+L | ⌘L | |
+| Git | `Vcs.Log.Refresh` (uses `Refresh`) | Ctrl+F5 | ⌘R | KDE Ctrl+5 |
+| Run | `Rerun`, `Stop` | Ctrl+F5, Ctrl+F2 | ⌘R, ⌘F2 | KDE Ctrl+5, Ctrl+2 |
+| Run, Find | `NextOccurence`, `PreviousOccurence` | Ctrl+Alt+↓/↑ | ⌘⌥↓/↑ | GNOME Alt+Shift+↓/↑ |
+| Run, Git, Find | `NextTab`, `PreviousTab` | Alt+→/← | ⌘⇧] / ⌘⇧[ | |
+| Services | `RunDashboard.Run` (uses `RunClass`) | Ctrl+Shift+F10 | ⌃⇧R | |
+| Services | `RunDashboard.Debug` (uses `DebugClass`) | none | ⌃⇧D | none |
+| Services | `RunDashboard.EditConfiguration` (uses `EditSourceInNewWindow`) | Shift+F4 | same | |
+| Services | `RunDashboard.CopyConfiguration` (uses `EditorDuplicate`) | Ctrl+D | ⌘D | |
+| Services, Bookmarks | `ServiceView.AddService`, `BookmarksView.Create` (use `NewElement`) | Alt+Insert | ⌘N | |
+| Services | `ServiceView.GroupByContributor` | Ctrl+Alt+T | ⌃T | |
+| Find | `UsageView.Exclude` (uses `$Delete`), `UsageView.Include` | Delete, Insert | Delete, ⇧⌫ | |
+| Find | `UsageView.Rerun` (uses `Rerun`) | Ctrl+F5 | ⌘R | KDE Ctrl+5 |
+| Find | `UsageGrouping.UsageType`, `UsageGrouping.Directory` | Ctrl+Alt+T, Ctrl+Alt+P | ⌃T, ⌃P | |
+| Find | `UsageFiltering.ReadAccess`, `WriteAccess`, `Imports` | Ctrl+R, Ctrl+W, Ctrl+I | ⌃R, ⌃W, ⌃I | |
+| Find | `ExportToTextFile` | Alt+O | ⌃O | |
+| Problems | quick fix (uses `ShowIntentionActions`) | Alt+Enter | ⌥Enter | |
+| Bookmarks | `BookmarksView.Rename` (uses `Tree-startEditing`) | F2 | F2 | |
+| Bookmarks | `BookmarksView.Delete` (uses `$Delete`) | Delete | Delete | |
+| Bookmarks | `BookmarksView.ChooseType` (uses `ToggleBookmarkWithMnemonic`) | Ctrl+F11 | ⌥F3 | |
+| Bookmarks | `BookmarksView.MoveUp/MoveDown` (use `PreviousOccurence` / `NextOccurence`) | Ctrl+Alt+↑/↓ | ⌘⌥↑/↓ | GNOME Alt+Shift+↑/↓ |
+| all | `EditSource`, `CollapseAll`, `ExpandAll` | F4, Ctrl+-, Ctrl+= | F4, ⌘-, ⌘= | |
+
+Notes:
+
+- On macOS `ChangesView.GroupBy.Module` is also ⌃M. The Commit set labels ⌃M
+  as Commit message history, the action of the message field.
+- `ServiceView.GroupByContributor` and `UsageGrouping.UsageType` are Ctrl+Alt+T
+  in the Linux keymaps too, although Ubuntu's GNOME opens a terminal on that
+  chord. The set draws what the keymap binds.
+- Not drawn: `Pause` and `XDebugger.MuteBreakpoints` have no default shortcut;
+  the Problems view implements no occurrence navigator, so it has no Next/Previous
+  problem key; `RerunTests` (Alt+Shift+R) only applies to test runs; the change
+  list grouping keys collide on macOS (`GroupBy.Module` ⌃M).
+- The Run set is also the Debug window's set while the session runs. Typed text
+  goes to the program, so the set draws chords and function keys only.
+- The Commit set draws the clipboard and undo chords for the commit message
+  field. Its letters type text and are not drawn.
+- New icons are Fluent UI System Icons (MIT), in `fetch_icons.py` under
+  "tool window sets". Fetched on 2026-11-14.
+- Not checked in a running IDE. Each chord was checked against the files above.

@@ -1629,8 +1629,10 @@ minecraft:
 # (handler/browser_url.py): the PolyKybd plugin (jetbrains-plugin/) reports
 # `jetbrains://<window>[/running|/paused]`. Routes, first match wins: the
 # Terminal tool window, then a paused debug session (the debugger set), then
-# the Project tool window, then any other report (the editor set: the fallback
-# set without the keys that only work while paused). With no plugin, or a stale
+# the Project tool window, then the Commit, Git, Run (also the Debug window
+# while the session runs), Services, Find, Problems, Bookmarks and Structure
+# tool windows, each with its own set, then any other report (the editor set:
+# the fallback set without the keys that only work while paused). With no plugin, or a stale
 # report, the full set below applies. `layer: false` makes a route replace the
 # fallback. Sources: overlay_sources/jetbrains/ (bindings_*.yaml, SOURCES.md).
 idea64,pycharm64,clion64,webstorm64,goland64,rider64,phpstorm64,rubymine64,datagrip64,rustrover64,studio64,jetbrains_client,idea,pycharm,clion,webstorm,goland,rider,phpstorm,rubymine,datagrip,rustrover,jetbrains-idea,jetbrains-idea-ce,jetbrains-pycharm,jetbrains-pycharm-ce,jetbrains-clion,jetbrains-webstorm,jetbrains-goland,jetbrains-rider,jetbrains-phpstorm,jetbrains-rubymine,jetbrains-datagrip,jetbrains-rustrover,jetbrains-studio,intellij idea,intellij idea ce,intellij idea ultimate,pycharm ce,pycharm professional,android studio:
@@ -1640,6 +1642,15 @@ idea64,pycharm64,clion64,webstorm64,goland64,rider64,phpstorm64,rubymine64,datag
     "jetbrains://terminal": { overlay: [jetbrains_terminal_template.mods.png, jetbrains_terminal_template.combo.mods.png] }
     "/paused": { overlay: [jetbrains_debug_template.mods.png, jetbrains_debug_template.combo.mods.png, jetbrains_debug_template.extra.mods.png] }
     "jetbrains://project": { overlay: [jetbrains_project_template.mods.png, jetbrains_project_template.combo.mods.png, jetbrains_project_template.extra.mods.png] }
+    "jetbrains://commit": { overlay: [jetbrains_commit_template.mods.png, jetbrains_commit_template.combo.mods.png] }
+    "jetbrains://git": { overlay: [jetbrains_git_template.mods.png, jetbrains_git_template.combo.mods.png] }
+    "jetbrains://run": { overlay: [jetbrains_run_template.mods.png, jetbrains_run_template.combo.mods.png] }
+    "jetbrains://debug": { overlay: [jetbrains_run_template.mods.png, jetbrains_run_template.combo.mods.png] }
+    "jetbrains://services": { overlay: [jetbrains_services_template.mods.png, jetbrains_services_template.combo.mods.png] }
+    "jetbrains://find": { overlay: [jetbrains_find_template.mods.png, jetbrains_find_template.combo.mods.png] }
+    "jetbrains://problems": { overlay: [jetbrains_problems_template.mods.png, jetbrains_problems_template.combo.mods.png] }
+    "jetbrains://bookmarks": { overlay: [jetbrains_bookmarks_template.mods.png, jetbrains_bookmarks_template.combo.mods.png] }
+    "jetbrains://structure": { overlay: [jetbrains_structure_template.mods.png, jetbrains_structure_template.combo.mods.png] }
     "jetbrains://": { overlay: [jetbrains_editor_template.mods.png, jetbrains_editor_template.combo.mods.png, jetbrains_editor_template.extra.mods.png] }
   os:
     macos:
@@ -1649,6 +1660,15 @@ idea64,pycharm64,clion64,webstorm64,goland64,rider64,phpstorm64,rubymine64,datag
         "jetbrains://terminal": { overlay: [jetbrains_terminal_mac_template.mods.png, jetbrains_terminal_mac_template.combo.mods.png, jetbrains_terminal_mac_template.extra.mods.png] }
         "/paused": { overlay: [jetbrains_debug_mac_template.mods.png, jetbrains_debug_mac_template.combo.mods.png, jetbrains_debug_mac_template.extra.mods.png, jetbrains_debug_mac_template.gui.mods.png] }
         "jetbrains://project": { overlay: [jetbrains_project_mac_template.mods.png, jetbrains_project_mac_template.combo.mods.png, jetbrains_project_mac_template.extra.mods.png, jetbrains_project_mac_template.gui.mods.png] }
+        "jetbrains://commit": { overlay: [jetbrains_commit_mac_template.mods.png, jetbrains_commit_mac_template.combo.mods.png, jetbrains_commit_mac_template.extra.mods.png] }
+        "jetbrains://git": { overlay: [jetbrains_git_mac_template.mods.png, jetbrains_git_mac_template.combo.mods.png, jetbrains_git_mac_template.extra.mods.png] }
+        "jetbrains://run": { overlay: [jetbrains_run_mac_template.mods.png, jetbrains_run_mac_template.combo.mods.png, jetbrains_run_mac_template.extra.mods.png] }
+        "jetbrains://debug": { overlay: [jetbrains_run_mac_template.mods.png, jetbrains_run_mac_template.combo.mods.png, jetbrains_run_mac_template.extra.mods.png] }
+        "jetbrains://services": { overlay: [jetbrains_services_mac_template.mods.png, jetbrains_services_mac_template.combo.mods.png, jetbrains_services_mac_template.extra.mods.png] }
+        "jetbrains://find": { overlay: [jetbrains_find_mac_template.mods.png, jetbrains_find_mac_template.combo.mods.png, jetbrains_find_mac_template.extra.mods.png] }
+        "jetbrains://problems": { overlay: [jetbrains_problems_mac_template.mods.png, jetbrains_problems_mac_template.combo.mods.png, jetbrains_problems_mac_template.extra.mods.png] }
+        "jetbrains://bookmarks": { overlay: [jetbrains_bookmarks_mac_template.mods.png, jetbrains_bookmarks_mac_template.combo.mods.png, jetbrains_bookmarks_mac_template.extra.mods.png] }
+        "jetbrains://structure": { overlay: [jetbrains_structure_mac_template.mods.png, jetbrains_structure_mac_template.combo.mods.png, jetbrains_structure_mac_template.extra.mods.png] }
         "jetbrains://": { overlay: [jetbrains_editor_mac_template.mods.png, jetbrains_editor_mac_template.combo.mods.png, jetbrains_editor_mac_template.extra.mods.png, jetbrains_editor_mac_template.gui.mods.png] }
     linux:
       overlay: [jetbrains_linux_template.mods.png, jetbrains_linux_template.combo.mods.png, jetbrains_linux_template.extra.mods.png]
@@ -1657,6 +1677,15 @@ idea64,pycharm64,clion64,webstorm64,goland64,rider64,phpstorm64,rubymine64,datag
         "jetbrains://terminal": { overlay: [jetbrains_terminal_linux_template.mods.png, jetbrains_terminal_linux_template.combo.mods.png] }
         "/paused": { overlay: [jetbrains_debug_linux_template.mods.png, jetbrains_debug_linux_template.combo.mods.png, jetbrains_debug_linux_template.extra.mods.png] }
         "jetbrains://project": { overlay: [jetbrains_project_linux_template.mods.png, jetbrains_project_linux_template.combo.mods.png, jetbrains_project_linux_template.extra.mods.png] }
+        "jetbrains://commit": { overlay: [jetbrains_commit_template.mods.png, jetbrains_commit_template.combo.mods.png] }
+        "jetbrains://git": { overlay: [jetbrains_git_template.mods.png, jetbrains_git_template.combo.mods.png] }
+        "jetbrains://run": { overlay: [jetbrains_run_template.mods.png, jetbrains_run_template.combo.mods.png] }
+        "jetbrains://debug": { overlay: [jetbrains_run_template.mods.png, jetbrains_run_template.combo.mods.png] }
+        "jetbrains://services": { overlay: [jetbrains_services_template.mods.png, jetbrains_services_template.combo.mods.png] }
+        "jetbrains://find": { overlay: [jetbrains_find_template.mods.png, jetbrains_find_template.combo.mods.png] }
+        "jetbrains://problems": { overlay: [jetbrains_problems_template.mods.png, jetbrains_problems_template.combo.mods.png] }
+        "jetbrains://bookmarks": { overlay: [jetbrains_bookmarks_template.mods.png, jetbrains_bookmarks_template.combo.mods.png] }
+        "jetbrains://structure": { overlay: [jetbrains_structure_template.mods.png, jetbrains_structure_template.combo.mods.png] }
         "jetbrains://": { overlay: [jetbrains_editor_linux_template.mods.png, jetbrains_editor_linux_template.combo.mods.png, jetbrains_editor_linux_template.extra.mods.png] }
     linux_gnome:
       overlay: [jetbrains_gnome_template.mods.png, jetbrains_gnome_template.combo.mods.png, jetbrains_gnome_template.extra.mods.png]
@@ -1665,6 +1694,15 @@ idea64,pycharm64,clion64,webstorm64,goland64,rider64,phpstorm64,rubymine64,datag
         "jetbrains://terminal": { overlay: [jetbrains_terminal_linux_template.mods.png, jetbrains_terminal_linux_template.combo.mods.png] }
         "/paused": { overlay: [jetbrains_debug_gnome_template.mods.png, jetbrains_debug_gnome_template.combo.mods.png, jetbrains_debug_gnome_template.extra.mods.png] }
         "jetbrains://project": { overlay: [jetbrains_project_linux_template.mods.png, jetbrains_project_linux_template.combo.mods.png, jetbrains_project_linux_template.extra.mods.png] }
+        "jetbrains://commit": { overlay: [jetbrains_commit_template.mods.png, jetbrains_commit_template.combo.mods.png] }
+        "jetbrains://git": { overlay: [jetbrains_git_template.mods.png, jetbrains_git_template.combo.mods.png] }
+        "jetbrains://run": { overlay: [jetbrains_run_gnome_template.mods.png, jetbrains_run_gnome_template.combo.mods.png] }
+        "jetbrains://debug": { overlay: [jetbrains_run_gnome_template.mods.png, jetbrains_run_gnome_template.combo.mods.png] }
+        "jetbrains://services": { overlay: [jetbrains_services_template.mods.png, jetbrains_services_template.combo.mods.png] }
+        "jetbrains://find": { overlay: [jetbrains_find_gnome_template.mods.png, jetbrains_find_gnome_template.combo.mods.png] }
+        "jetbrains://problems": { overlay: [jetbrains_problems_template.mods.png, jetbrains_problems_template.combo.mods.png] }
+        "jetbrains://bookmarks": { overlay: [jetbrains_bookmarks_gnome_template.mods.png, jetbrains_bookmarks_gnome_template.combo.mods.png] }
+        "jetbrains://structure": { overlay: [jetbrains_structure_template.mods.png, jetbrains_structure_template.combo.mods.png] }
         "jetbrains://": { overlay: [jetbrains_editor_gnome_template.mods.png, jetbrains_editor_gnome_template.combo.mods.png, jetbrains_editor_gnome_template.extra.mods.png] }
     linux_kde:
       overlay: [jetbrains_kde_template.mods.png, jetbrains_kde_template.combo.mods.png, jetbrains_kde_template.extra.mods.png]
@@ -1673,6 +1711,15 @@ idea64,pycharm64,clion64,webstorm64,goland64,rider64,phpstorm64,rubymine64,datag
         "jetbrains://terminal": { overlay: [jetbrains_terminal_kde_template.mods.png, jetbrains_terminal_kde_template.combo.mods.png] }
         "/paused": { overlay: [jetbrains_debug_kde_template.mods.png, jetbrains_debug_kde_template.combo.mods.png, jetbrains_debug_kde_template.extra.mods.png] }
         "jetbrains://project": { overlay: [jetbrains_project_linux_template.mods.png, jetbrains_project_linux_template.combo.mods.png, jetbrains_project_linux_template.extra.mods.png] }
+        "jetbrains://commit": { overlay: [jetbrains_commit_template.mods.png, jetbrains_commit_template.combo.mods.png] }
+        "jetbrains://git": { overlay: [jetbrains_git_kde_template.mods.png, jetbrains_git_kde_template.combo.mods.png] }
+        "jetbrains://run": { overlay: [jetbrains_run_kde_template.mods.png, jetbrains_run_kde_template.combo.mods.png] }
+        "jetbrains://debug": { overlay: [jetbrains_run_kde_template.mods.png, jetbrains_run_kde_template.combo.mods.png] }
+        "jetbrains://services": { overlay: [jetbrains_services_kde_template.mods.png, jetbrains_services_kde_template.combo.mods.png] }
+        "jetbrains://find": { overlay: [jetbrains_find_kde_template.mods.png, jetbrains_find_kde_template.combo.mods.png] }
+        "jetbrains://problems": { overlay: [jetbrains_problems_template.mods.png, jetbrains_problems_template.combo.mods.png] }
+        "jetbrains://bookmarks": { overlay: [jetbrains_bookmarks_template.mods.png, jetbrains_bookmarks_template.combo.mods.png] }
+        "jetbrains://structure": { overlay: [jetbrains_structure_template.mods.png, jetbrains_structure_template.combo.mods.png] }
         "jetbrains://": { overlay: [jetbrains_editor_kde_template.mods.png, jetbrains_editor_kde_template.combo.mods.png, jetbrains_editor_kde_template.extra.mods.png] }
 # Eclipse IDE (sources: overlay_sources/eclipse/), the Default key scheme. Linux
 # has its own set because GTK moves Redo to Ctrl+Shift+Z and Occurrences in
