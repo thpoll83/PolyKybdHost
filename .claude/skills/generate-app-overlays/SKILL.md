@@ -512,6 +512,37 @@ depends on the neighbourhood. The Keep bulb's second thread band, copied 24 px
 same pixels as the first band. Sweep a few offsets and read the ESC cell back
 from the generated overlay instead of computing the offset.
 
+**Two helpers draw a mark at keycap size**, so the spec places it 1:1
+(`program_icon_mode: alpha`, `program_icon_region` = the PNG's size, at most 40 wide
+or it runs into the Esc legend):
+
+| helper | for |
+|---|---|
+| `program_marks.silhouette_mark(path, source, cut=120, crop=None)` | an app icon whose drawing sits on a coloured tile (the ArtCraft animals). It cuts the drawing off the tile as one filled shape, fits it into 40x40, and cuts inner pixels darker than luma `cut` back out. All ten ArtCraft marks use cut 120, at the maintainer's request, so the set matches (#818). An open outline (FigCraft) cannot be filled. |
+| `program_marks.pictogram_mark(path, svg_url)` | a single-colour SVG: a Simple Icons brand mark (CC0, nominative use) or a Material Design Icons pictogram (Apache-2.0) standing in for a proprietary icon. Pin the CDN version in the URL. Bitwig, Logic Pro and GarageBand use it (#816). |
+
+⚠️ **Both helpers are guarded.** To make a mark again, delete its PNG and call the
+helper directly, not the whole `fetch_icons.py`: a full re-run rewrote unrelated
+icons of the same set, which had to be restored with `git checkout`. Then run the
+generator and check two things on every regenerated overlay PNG: only the ESC cell
+differs from `origin/main`, and the ESC cell equals the mark, placed at the spec's
+`program_icon_anchor`, in all four channels.
+
+⚠️ **A macOS-only spec with `program_icon:` also writes a default-platform
+`<output>.mods.png`** that holds only the mark, because the generator always writes
+the primary set. Logic Pro and GarageBand do this. No mapping entry names that file,
+so don't commit it. `claude_code_web` is different: its macOS set, which holds only
+the mark, is in the mapping on purpose.
+
+To show the maintainer the ESC keys of several apps side by side, as the OLED shows
+them, run `esc_marks_sheet.py` (next to this file). It reads the ESC cell from each
+committed overlay PNG:
+
+```bash
+.venv/bin/python .claude/skills/generate-app-overlays/esc_marks_sheet.py \
+    '*craft_template' logicpro_template_mac --out /tmp/esc.png
+```
+
 **Fetching the app's icon when its site refuses automated requests:** Google's
 favicon service, `https://www.google.com/s2/favicons?domain=<site>&sz=256`,
 returns the site's apple-touch icon (Canva 180 px, Photopea and Steam 256 px).

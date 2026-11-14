@@ -106,6 +106,10 @@ CONTEXT_REPORTERS = {
     "macvim": "vim",
     "neovide": "vim",
     "emacs": "emacs",
+    # Bitwig Studio's controller extension (bitwig-extension/): the names of the
+    # mapping's `bitwig studio` entry.
+    "bitwig studio": "bitwig", "bitwigstudio": "bitwig", "bitwig-studio": "bitwig",
+    "com.bitwig.bitwigstudio": "bitwig",
     # Autodesk Maya (maya-plugin/): Windows maya.exe, macOS "Maya", Linux maya.bin.
     "maya": "maya",
     "maya.bin": "maya",

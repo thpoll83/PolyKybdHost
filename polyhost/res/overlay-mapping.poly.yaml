@@ -2794,14 +2794,24 @@ musescore4,musescore studio,musescore 4,mscore,musescore,org.musescore.musescore
       midi: true
 # Bitwig Studio: "Bitwig Studio" on Windows and macOS; on Linux the binary
 # BitwigStudio, the launcher bitwig-studio and the Flatpak id
-# com.bitwig.BitwigStudio. Not checked on an install.
+# com.bitwig.BitwigStudio. Not checked on an install. The controller extension
+# in bitwig-extension/ reports the panel layout as bitwig://<layout>; the Edit
+# View gets the Detail Editor's arrow keys (overlay_sources/bitwig/
+# bindings_edit.yaml). ARRANGE, MIX and no report keep the default set.
+# These names are CONTEXT_REPORTERS in handler/browser_url.py.
 bitwig studio,bitwigstudio,bitwig-studio,com.bitwig.bitwigstudio:
   overlay: [bitwig_template.mods.png, bitwig_template.combo.mods.png]
   midi: true
+  layer: false
+  urls-contains:
+    "bitwig://edit": { overlay: [bitwig_edit_template.mods.png, bitwig_edit_template.combo.mods.png, bitwig_edit_template.extra.mods.png], midi: true }
   os:
     macos:
       overlay: [bitwig_template_mac.mods.png, bitwig_template_mac.combo.mods.png, bitwig_template_mac.extra.mods.png]
       midi: true
+      layer: false
+      urls-contains:
+        "bitwig://edit": { overlay: [bitwig_edit_template_mac.mods.png, bitwig_edit_template_mac.combo.mods.png, bitwig_edit_template_mac.extra.mods.png], midi: true }
 # Steinberg Cubase: Cubase<version>.exe on Windows, "Cubase <version>" on macOS;
 # no Linux version. The number has no dot, so the matcher keeps it: each major
 # version is listed. Not checked on an install.
