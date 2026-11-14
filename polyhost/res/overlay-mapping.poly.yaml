@@ -3585,6 +3585,13 @@ julius,julius.exe,com.github.bvschaik.julius:
 # com.github.keriew.augustus. Names not checked on an install.
 augustus,augustus.exe,com.github.keriew.augustus:
   overlay: augustus_template.mods.png
+# CorsixTH, the open source engine for Theme Hospital
+# (overlay_sources/corsixth/corsixth.yaml). The CMake target CorsixTH is built
+# as `corsix-th` on Linux (OUTPUT_NAME, v0.70.2), CorsixTH.exe on Windows and
+# CorsixTH on macOS; the Flatpak id is com.corsixth.corsixth. Names not
+# checked on an install.
+corsix-th,corsixth,corsixth.exe,com.corsixth.corsixth:
+  overlay: [corsixth_template.mods.png, corsixth_template.combo.mods.png]
 # fheroes2, the free Heroes of Might and Magic II engine
 # (overlay_sources/fheroes2/fheroes2.yaml). `fheroes2` is the executable target
 # in src/fheroes2/CMakeLists.txt (release 1.1.17), `fheroes2.exe` on Windows;

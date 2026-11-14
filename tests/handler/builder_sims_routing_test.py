@@ -19,20 +19,23 @@ from polyhost.handler.common import find_matching_entry, mapping_key
 RES = Path(__file__).resolve().parents[2] / "polyhost" / "res"
 MAPPING = RES / "overlay-mapping.poly.yaml"
 
-# overlay -> (process names, a window title of the game)
+# overlay files -> (process names, a window title of the game)
 SETS = {
-    "simutrans_template.mods.png": (
+    ("simutrans_template.mods.png",): (
         ("simutrans", "simutrans.exe", "com.simutrans.simutrans"),
         "Simutrans 125.0.1"),
-    "openloco_template.mods.png": (
+    ("openloco_template.mods.png",): (
         ("openloco", "openloco.exe"),
         "OpenLoco"),
-    "julius_template.mods.png": (
+    ("julius_template.mods.png",): (
         ("julius", "julius.exe", "com.github.bvschaik.julius"),
         "Julius"),
-    "augustus_template.mods.png": (
+    ("augustus_template.mods.png",): (
         ("augustus", "augustus.exe", "com.github.keriew.augustus"),
         "Augustus"),
+    ("corsixth_template.mods.png", "corsixth_template.combo.mods.png"): (
+        ("corsix-th", "corsixth", "corsixth.exe", "com.corsixth.corsixth"),
+        "CorsixTH"),
 }
 
 
@@ -77,10 +80,16 @@ class BuilderSimsRoutingTest(unittest.TestCase):
                     for shown in (title, "", None):
                         with self.subTest(app=app, os=os_name, title=shown):
                             self.assertEqual(
-                                _files(self._route(app, os_name, shown)), [overlay])
+                                _files(self._route(app, os_name, shown)), list(overlay))
+
+    def test_julius_and_augustus_load_different_sets(self):
+        """Augustus has four default hotkeys Julius does not have."""
+        self.assertNotEqual(self._route("julius", "linux", "Julius"),
+                            self._route("augustus", "linux", "Augustus"))
 
     def test_every_named_file_exists(self):
-        missing = [f for f in SETS if not (RES / "overlays" / f).is_file()]
+        missing = [f for files in SETS for f in files
+                   if not (RES / "overlays" / f).is_file()]
         self.assertEqual(missing, [])
 
 
