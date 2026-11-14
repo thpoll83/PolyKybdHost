@@ -28,6 +28,10 @@ GAMES = {
         ("naev", "naev.exe", "org.naev.naev"),
         "Naev - Sea of Darkness",
         "naev_template.mods.png"),
+    "Oolite": (
+        ("oolite", "oolite.exe", "space.oolite.oolite"),
+        "Oolite v1.92.1",
+        ["oolite_template.mods.png", "oolite_template.combo.mods.png"]),
 }
 
 

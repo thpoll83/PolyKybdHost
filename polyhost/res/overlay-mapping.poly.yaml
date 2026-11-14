@@ -3601,6 +3601,11 @@ endless-sky,endless sky,endless sky.exe,io.github.endless_sky.endless_sky:
 # Flatpak id. Names not checked on an install.
 naev,naev.exe,org.naev.naev:
   overlay: naev_template.mods.png
+# Oolite (overlay_sources/oolite/oolite.yaml). `oolite` is OBJC_PROGRAM_NAME in
+# GNUmakefile (1.92.1) and the desktop file's StartupWMClass, `oolite.exe` on
+# Windows; space.oolite.Oolite is the Flatpak id. Names not checked on an install.
+oolite,oolite.exe,space.oolite.oolite:
+  overlay: [oolite_template.mods.png, oolite_template.combo.mods.png]
 # SQL Server Management Studio (overlay_sources/ssms/), Windows only. The
 # executable is Ssms.exe (SSMS 18 to 20) or SSMS.exe (SSMS 21 and later); both
 # lowercase to `ssms`. Name not checked on an install.
