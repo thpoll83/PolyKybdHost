@@ -109,6 +109,10 @@ CONTEXT_REPORTERS = {
     # VS Code and its forks: vscode-extension/ sends <token>://<debug mode>.
     "code": "vscode", "cursor": "cursor",
     "windsurf": "windsurf", "devin": "windsurf", "devin-desktop": "windsurf",
+    # Bitwig Studio's controller extension (bitwig-extension/): the names of the
+    # mapping's `bitwig studio` entry.
+    "bitwig studio": "bitwig", "bitwigstudio": "bitwig", "bitwig-studio": "bitwig",
+    "com.bitwig.bitwigstudio": "bitwig",
 }
 
 # Reporters that also run INSIDE a terminal (vim, emacs -nw). While a terminal
