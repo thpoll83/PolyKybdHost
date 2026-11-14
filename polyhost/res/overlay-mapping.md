@@ -135,7 +135,7 @@ sub-entry **replace** the parent instead.
 
 `urls-contains` matches only a URL the host attributes to the **focused** app: a
 browser's active tab, or a context report from an app on the allow-list in
-`handler/browser_url.py` (`CONTEXT_REPORTERS`: Blender, GUI Vim and Emacs, and JupyterLab Desktop). A
+`handler/browser_url.py` (`CONTEXT_REPORTERS`: Blender, GUI Vim and Emacs, VS Code, Cursor and Windsurf, and JupyterLab Desktop). A
 browser also takes the report of a JupyterLab page that has focus
 (`PAGE_REPORTERS`), before its tab URL.
 The entry's names and that list must agree; the routing test checks it. A

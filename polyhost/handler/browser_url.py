@@ -42,7 +42,7 @@ matching degrades to app-name + title exactly as before this feature existed.
 import threading
 import time
 
-from polyhost.handler.common import OS, mapping_key
+from polyhost.handler.common import _TRAILING_YEAR, OS, mapping_key
 from polyhost.services import browser_url_macos
 
 # Focused-app gate. `getAppName()` normalises differently per OS (Windows
@@ -106,6 +106,16 @@ CONTEXT_REPORTERS = {
     "macvim": "vim",
     "neovide": "vim",
     "emacs": "emacs",
+    # VS Code and its forks: vscode-extension/ sends <token>://<debug mode>.
+    "code": "vscode", "cursor": "cursor",
+    "windsurf": "windsurf", "devin": "windsurf", "devin-desktop": "windsurf",
+    # Bitwig Studio's controller extension (bitwig-extension/): the names of the
+    # mapping's `bitwig studio` entry.
+    "bitwig studio": "bitwig", "bitwigstudio": "bitwig", "bitwig-studio": "bitwig",
+    "com.bitwig.bitwigstudio": "bitwig",
+    # Autodesk Maya (maya-plugin/): Windows maya.exe, macOS "Maya", Linux maya.bin.
+    "maya": "maya",
+    "maya.bin": "maya",
     # JupyterLab Desktop (jupyterlab-extension/); names as its mapping entry.
     "jupyterlab": "jupyter",
     "jupyterlab-desktop": "jupyter",
@@ -169,8 +179,10 @@ def _app_key(app_name):
 
 
 def context_reporter_for(app_name):
-    """The reporter token for a focused app with a context add-on, or None."""
-    return CONTEXT_REPORTERS.get(_app_key(app_name))
+    """The reporter token for a focused app with a context add-on, or None.
+    A trailing release year is dropped as `mapping_key` does ("maya 2026")."""
+    key = _app_key(app_name)
+    return CONTEXT_REPORTERS.get(key) or CONTEXT_REPORTERS.get(_TRAILING_YEAR.sub("", key or ""))
 
 
 def is_terminal_app(app_name) -> bool:

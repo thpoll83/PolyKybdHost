@@ -67,6 +67,10 @@ FLUENT = {
     "output": "Document Text",
     "terminal": "Window Console",
     "mdpreview": "Eye",
+    # --- debug-mode sets (debug_*.yaml) ---
+    "restart": "Arrow Clockwise",
+    "fullscreen": "Full Screen Maximize",
+    "continue": "ms:resume",       # Material Symbols `resume`: VS Code's |> Continue
 }
 
 
