@@ -44,9 +44,12 @@ IL level changes and as a keep-alive every 3 s while nothing changes:
   title.
 - `token` is added only if you set one (see below).
 
-With no file open (start screen), when you turn reporting off, and when Binary
-Ninja quits, it sends one last report with `"url": null, "focused": false`, so
-the keyboard returns to the main set at once.
+When you turn reporting off and when Binary Ninja quits, it sends one last
+report with `"url": null, "focused": false`, so the keyboard returns to the
+main set at once. With no file open (start screen, last file closed), it sends
+that report too, and repeats it every 3 s with its `input_age`: with a second
+Binary Ninja process that still shows a view, the host keeps following the
+instance you work in, and does not show the other one's view after 8 s.
 
 The host uses a report only while Binary Ninja is the focused application and
 only while the report is less than 8 s old. The HTTP request runs on a

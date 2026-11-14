@@ -9,7 +9,8 @@ view. See ../README.md; the wire format is in core.py.
   at once when the view or the IL level changes.
 - A `QTimer` (every 0.5 s, on the UI thread) reads it too: it catches a change
   that has no notification (a click into another pane) and sends the 3 s
-  keep-alive. It only reads two values; the network I/O is on the sender
+  keep-alive. With no view open it keeps a report without a URL fresh on the
+  same keep-alive. It only reads two values; the network I/O is on the sender
   thread (`core.Sender`).
 """
 import json
@@ -31,6 +32,8 @@ from . import core
 _KEY_ENABLED = "polykybd.reportContext"
 _KEY_PORT = "polykybd.port"
 _KEY_TOKEN = "polykybd.token"
+# The SendPolicy key while no view is open (the report itself has no URL).
+_NO_VIEW = "binaryninja://<none>"
 
 _state = {
     "sender": None,
@@ -105,7 +108,8 @@ def _withdraw(port, token):
     sender = _state["sender"]
     if not _state["reported"] or sender is None:
         return
-    sender.submit(port, None, token, pid=os.getpid(), focused=False)
+    sender.submit(port, None, token, pid=os.getpid(),
+                  input_age=_input_age(time.monotonic()), focused=False)
     _state["reported"] = False
     _state["policy"] = core.SendPolicy()
 
@@ -120,13 +124,17 @@ def _tick():
             _withdraw(port, token)
             return
         url = _current_url()
-        if url is None:
-            _withdraw(port, token)       # start screen, last file closed
-            return
         now = time.monotonic()
-        if policy.due(url, now):
-            sender.submit(port, url, token, pid=os.getpid(), input_age=_input_age(now))
-            policy.sent(url, now)
+        # No view (start screen, last file closed): the report has no URL, and
+        # it is kept fresh on the same keep-alive with this instance's input
+        # age. One withdrawal expires after the host's 8 s window, and another
+        # Binary Ninja process that still reports a view would then answer for
+        # this instance's window.
+        key = url if url is not None else _NO_VIEW
+        if policy.due(key, now):
+            sender.submit(port, url, token, pid=os.getpid(),
+                          input_age=_input_age(now), focused=url is not None)
+            policy.sent(key, now)
             _state["reported"] = True
     except Exception as e:   # noqa: BLE001 -- never let a report break the UI
         _print_once(e)
