@@ -189,7 +189,10 @@ no title. The formats are in
 
 htop, btop, Midnight Commander, micro, Helix, less (and man, which pages
 through less), k9s and GDB have routes in the same list, built the same way
-(`overlay_sources/tui/SOURCES.md`). Midnight Commander writes
+(`overlay_sources/tui/SOURCES.md`). So do the terminal builds of three games:
+`crawl` and `crawl-console` (Dungeon Crawl Stone Soup), `cataclysm`
+(Cataclysm: Dark Days Ahead) and `nethack`
+(`tests/handler/roguelike_routing_test.py`). Midnight Commander writes
 `mc [user@host]:<dir>` itself. Vim and Neovim with `set title` write
 `<file> (<dir>) - VIM` and `<file> - NVIM`; those titles load the Normal-mode
 Vim set, and the plugin's mode report takes priority. The PolyKybd GDB script (`gdb-plugin/`) writes
