@@ -34,6 +34,9 @@ PORTS = {
         ("dsda-doom", "dsda-doom.exe"), "dsda-doom 0.30.1"),
     "woof_template.mods.png": (
         ("woof", "woof.exe", "io.github.fabiangreffrath.woof"), "Woof! 16.0.0"),
+    "quake_template.mods.png": (
+        ("ironwail", "ironwail.exe", "vkquake", "vkquake.exe", "quakespasm",
+         "quakespasm.exe"), "e1m1 - Ironwail 0.8.2"),
 }
 
 

@@ -3623,6 +3623,12 @@ dsda-doom,dsda-doom.exe:
 # io.github.fabiangreffrath.woof. Names not checked on an install.
 woof,woof.exe,io.github.fabiangreffrath.woof:
   overlay: woof_template.mods.png
+# Quake source ports Ironwail, vkQuake and QuakeSpasm
+# (overlay_sources/quake/quake.yaml): the three ship the same default.cfg key
+# bindings. The names are DEFAULT_TARGET in each port's Quake/Makefile (Ironwail
+# v0.8.2, vkQuake 1.37.0, QuakeSpasm 0.97.0). Names not checked on an install.
+ironwail,ironwail.exe,vkquake,vkquake.exe,quakespasm,quakespasm.exe:
+  overlay: quake_template.mods.png
 # SQL Server Management Studio (overlay_sources/ssms/), Windows only. The
 # executable is Ssms.exe (SSMS 18 to 20) or SSMS.exe (SSMS 21 and later); both
 # lowercase to `ssms`. Name not checked on an install.
