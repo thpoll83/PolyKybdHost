@@ -70,7 +70,7 @@ The hotkeys are in `soh/soh/OTRGlobals.cpp` at `9.3.1` (the `switch` on
 
 | file | source | licence |
 |---|---|---|
-| `altassets.png`, `tts.png` | Material Symbols (`google/material-design-icons`), `swap_horiz` and `record_voice_over` | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) |
+| `altassets.png`, `tts.png` | [Material Symbols](https://github.com/google/material-design-icons), `swap_horiz` and `record_voice_over` | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) |
 | `btna.png`, `btnb.png`, `btnz.png`, `btnl.png`, `btnr.png`, `start.png`, `c*.png`, `stick*.png`, `dpad*.png` | drawn by `pad_keys.n64_pad()` with `retroarch/fetch_icons.py` (`ring()`, `pill()`); text in Press Start 2P by CodeMan38 (`google/fonts`, `ofl/pressstart2p`, pinned commit) | the drawing is this repo's; the font is [SIL OFL 1.1](https://openfontlicense.org/open-font-license-official-text/) |
 | `program.png` | "Ship of" / "Harkinian" set in Russo One by Jovanny Lemonad (`google/fonts`, `ofl/russoone`, pinned commit), drawn by `pad_keys.wordmark()` | the font is SIL OFL 1.1 |
 

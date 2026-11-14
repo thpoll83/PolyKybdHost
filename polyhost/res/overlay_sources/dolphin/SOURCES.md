@@ -77,8 +77,8 @@ Dolphin (<https://github.com/dolphin-emu/dolphin>), tag `2609b`, read 2026-11-14
 
 | file | source | licence |
 |---|---|---|
-| `pause.png`, `fullscreen.png`, `ffhold.png`, `achievements.png`, `undoload.png`, `undosave.png`, `balance.png` | Material Symbols (`google/material-design-icons`), names in `fetch_icons.py` | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) |
-| `open.png` (Folder Open), `screenshot.png` (Camera) | Microsoft Fluent UI System Icons (`microsoft/fluentui-system-icons`) | [MIT](https://github.com/microsoft/fluentui-system-icons/blob/main/LICENSE) |
+| `pause.png`, `fullscreen.png`, `ffhold.png`, `achievements.png`, `undoload.png`, `undosave.png`, `balance.png` | [Material Symbols](https://github.com/google/material-design-icons), names in `fetch_icons.py` | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) |
+| `open.png` (Folder Open), `screenshot.png` (Camera) | [Microsoft Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) | [MIT](https://github.com/microsoft/fluentui-system-icons/blob/main/LICENSE) |
 | `load1.png` … `load8.png`, `save1.png` … `save8.png` | Fluent "Folder Open" and "Save" with the slot number, composed by `pad_keys.numbered()`; the digit in Press Start 2P by CodeMan38 (`google/fonts`, `ofl/pressstart2p`, pinned commit) | MIT; the font is [SIL OFL 1.1](https://openfontlicense.org/open-font-license-official-text/) |
 | `wiimote1.png` … `wiimote4.png` | Material Symbols `settings_remote` with the number, composed the same way | Apache-2.0; the font is SIL OFL 1.1 |
 | `gca.png` … `gcr.png`, `gcstart.png`, `dpad*.png`, `stick*.png`, `cstick*.png` | drawn by `retroarch/fetch_icons.py` (`ring()`, `pill()`) and `pad_keys.py` (`dpad()`, `stick()`); text in Press Start 2P | the drawing is this repo's; the font is SIL OFL 1.1 |

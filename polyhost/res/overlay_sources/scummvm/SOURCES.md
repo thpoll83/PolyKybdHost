@@ -67,8 +67,8 @@ Windows, a Linux and a macOS version that differ only in that key.
 
 | file | source | licence |
 |---|---|---|
-| `menu.png`, `debugger.png`, `fullscreen.png`, `grabmouse.png`, `aspect.png`, `filter.png`, `stretch.png`, `scaledown.png`, `scalernext.png`, `scalerprev.png` | Material Symbols (`google/material-design-icons`), names in `fetch_icons.py` | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) |
-| `mute.png` (Speaker Mute), `screenshot.png` (Camera), `quit.png` (Sign Out) | Microsoft Fluent UI System Icons (`microsoft/fluentui-system-icons`) | [MIT](https://github.com/microsoft/fluentui-system-icons/blob/main/LICENSE) |
+| `menu.png`, `debugger.png`, `fullscreen.png`, `grabmouse.png`, `aspect.png`, `filter.png`, `stretch.png`, `scaledown.png`, `scalernext.png`, `scalerprev.png` | [Material Symbols](https://github.com/google/material-design-icons), names in `fetch_icons.py` | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) |
+| `mute.png` (Speaker Mute), `screenshot.png` (Camera), `quit.png` (Sign Out) | [Microsoft Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) | [MIT](https://github.com/microsoft/fluentui-system-icons/blob/main/LICENSE) |
 | `scummvm.png` | ScummVM's own icon, `icons/scummvm.svg` at tag `v2.9.1`, cut to 1 bit by `pad_keys.logo_mark()` | [GPL-3.0-or-later](https://github.com/scummvm/scummvm/blob/v2.9.1/COPYING) |
 
 The same action has the same icon as in the RetroArch and MAME sets (menu, mute,

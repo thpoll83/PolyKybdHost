@@ -77,8 +77,8 @@ keyboard map and Ctrl+W.
 
 | file | source | licence |
 |---|---|---|
-| `ffhold.png`, `speed.png`, `rewind.png`, `pause.png`, `rapidfire.png`, `debugger.png`, `slotplus.png`, `open.png`, `stop.png`, `reset.png`, `cheat.png`, `resolution.png`, `fullscreen.png` | Material Symbols (`google/material-design-icons`), names in `fetch_icons.py` | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) |
-| `savestate.png` (Save), `loadstate.png` (Folder Open) | Microsoft Fluent UI System Icons (`microsoft/fluentui-system-icons`) | [MIT](https://github.com/microsoft/fluentui-system-icons/blob/main/LICENSE) |
+| `ffhold.png`, `speed.png`, `rewind.png`, `pause.png`, `rapidfire.png`, `debugger.png`, `slotplus.png`, `open.png`, `stop.png`, `reset.png`, `cheat.png`, `resolution.png`, `fullscreen.png` | [Material Symbols](https://github.com/google/material-design-icons), names in `fetch_icons.py` | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) |
+| `savestate.png` (Save), `loadstate.png` (Folder Open) | [Microsoft Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) | [MIT](https://github.com/microsoft/fluentui-system-icons/blob/main/LICENSE) |
 | `square.png`, `triangle.png`, `circle.png`, `cross.png`, `dpad*.png`, `stick*.png` | drawn by `pad_keys.py` (`shape()`, `dpad()`, `stick()`) | the drawing is this repo's |
 | `pspl.png`, `pspr.png`, `pspstart.png`, `pspselect.png` | drawn by `retroarch/fetch_icons.py` (`ring()`, `pill()`); text in Press Start 2P by CodeMan38 (`google/fonts`, `ofl/pressstart2p`, pinned commit) | the drawing is this repo's; the font is [SIL OFL 1.1](https://openfontlicense.org/open-font-license-official-text/) |
 | `ppsspp.png` | PPSSPP's own icon, `icons/icon-512.svg` at tag `v1.20.4`, cut to 1 bit by `pad_keys.logo_mark()` | [GPL-2.0-or-later](https://github.com/hrydgard/ppsspp/blob/v1.20.4/LICENSE.TXT) |

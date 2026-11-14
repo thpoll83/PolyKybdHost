@@ -62,7 +62,7 @@ keyboard binds of both ports. Nothing is left out.
 
 | file | source | licence |
 |---|---|---|
-| `chat.png`, `playerlist.png`, `console.png`, `prevpage.png`, `nextpage.png`, `disconnect.png` | Material Symbols (`google/material-design-icons`), names in `fetch_icons.py` | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) |
+| `chat.png`, `playerlist.png`, `console.png`, `prevpage.png`, `nextpage.png`, `disconnect.png` | [Material Symbols](https://github.com/google/material-design-icons), names in `fetch_icons.py` | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) |
 | `btna.png` … `btnz.png`, `start.png`, `c*.png`, `stick*.png`, `dpad*.png` | drawn by `pad_keys.n64_pad()` with `retroarch/fetch_icons.py` (`ring()`, `pill()`); text in Press Start 2P by CodeMan38 (`google/fonts`, `ofl/pressstart2p`, pinned commit) | the drawing is this repo's; the font is [SIL OFL 1.1](https://openfontlicense.org/open-font-license-official-text/) |
 | `sm64ex.png`, `sm64coopdx.png` | the port names set in Russo One by Jovanny Lemonad (`google/fonts`, `ofl/russoone`, pinned commit), drawn by `pad_keys.wordmark()` | the font is SIL OFL 1.1 |
 

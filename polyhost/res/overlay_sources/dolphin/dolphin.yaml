@@ -15,7 +15,7 @@
 #   .venv/bin/python scripts/generate_app_overlays.py \
 #       polyhost/res/overlay_sources/dolphin/dolphin.yaml --preview /tmp/dolphin_preview
 app: dolphin
-match: [dolphin-emu, org.dolphinemu.dolphin-emu]
+match: [dolphin-emu, org.dolphinemu.dolphin-emu, dolphinqt]
 output: dolphin_template
 icon_dir: icons
 fit: contain

@@ -75,8 +75,8 @@ release; the 2.9 tags are nightly builds), read 2026-11-14:
 
 | file | source | licence |
 |---|---|---|
-| `slotplus.png`, `slotminus.png`, `framelimit.png`, `pause.png`, `turbo.png`, `ffhold.png`, `slowmo.png`, `fullscreen.png`, `aspect.png`, `interlace.png`, `mipmap.png`, `software.png`, `gsdump.png`, `gsdumpmulti.png`, `zoomout.png` | Material Symbols (`google/material-design-icons`), names in `fetch_icons.py` | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) |
-| `savestate.png` (Save), `loadstate.png` (Folder Open), `screenshot.png` (Camera) | Microsoft Fluent UI System Icons (`microsoft/fluentui-system-icons`) | [MIT](https://github.com/microsoft/fluentui-system-icons/blob/main/LICENSE) |
+| `slotplus.png`, `slotminus.png`, `framelimit.png`, `pause.png`, `turbo.png`, `ffhold.png`, `slowmo.png`, `fullscreen.png`, `aspect.png`, `interlace.png`, `mipmap.png`, `software.png`, `gsdump.png`, `gsdumpmulti.png`, `zoomout.png` | [Material Symbols](https://github.com/google/material-design-icons), names in `fetch_icons.py` | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) |
+| `savestate.png` (Save), `loadstate.png` (Folder Open), `screenshot.png` (Camera) | [Microsoft Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) | [MIT](https://github.com/microsoft/fluentui-system-icons/blob/main/LICENSE) |
 | `triangle.png`, `circle.png`, `cross.png`, `square.png`, `dpad*.png` | drawn by `pad_keys.py` (`shape()`, `dpad()`) | the drawing is this repo's |
 | `l1.png` … `r3.png`, `start.png`, `select.png`, `lstick*.png`, `rstick*.png` | drawn by `pad_keys.py` (`shoulder()`, `stick()`) and `retroarch/fetch_icons.py` (`pill()`); text in Press Start 2P by CodeMan38 (`google/fonts`, `ofl/pressstart2p`, pinned commit) | the drawing is this repo's; the font is [SIL OFL 1.1](https://openfontlicense.org/open-font-license-official-text/) |
 | `pcsx2.png` | PCSX2's own icon, `bin/resources/icons/AppIconLarge.png` at tag `v2.8.2`, cut to 1 bit by `pad_keys.logo_mark()` | [GPL-3.0-or-later](https://github.com/PCSX2/pcsx2/blob/v2.8.2/COPYING.GPLv3) |

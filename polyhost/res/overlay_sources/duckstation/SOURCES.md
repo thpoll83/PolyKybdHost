@@ -79,8 +79,8 @@ default key.
 
 | file | source | licence |
 |---|---|---|
-| `ffhold.png`, `pause.png`, `fullscreen.png`, `slotminus.png`, `slotplus.png` | Material Symbols (`google/material-design-icons`), names in `fetch_icons.py` | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) |
-| `loadstate.png` (Folder Open), `savestate.png` (Save), `screenshot.png` (Camera) | Microsoft Fluent UI System Icons (`microsoft/fluentui-system-icons`) | [MIT](https://github.com/microsoft/fluentui-system-icons/blob/main/LICENSE) |
+| `ffhold.png`, `pause.png`, `fullscreen.png`, `slotminus.png`, `slotplus.png` | [Material Symbols](https://github.com/google/material-design-icons), names in `fetch_icons.py` | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) |
+| `loadstate.png` (Folder Open), `savestate.png` (Save), `screenshot.png` (Camera) | [Microsoft Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) | [MIT](https://github.com/microsoft/fluentui-system-icons/blob/main/LICENSE) |
 | `triangle.png`, `circle.png`, `cross.png`, `square.png`, `dpad*.png` | drawn by `pad_keys.py` (`shape()`, `dpad()`) | the drawing is this repo's |
 | `l1.png` … `r3.png`, `start.png`, `select.png`, `lstick*.png`, `rstick*.png` | drawn by `pad_keys.py` (`shoulder()`, `stick()`) and `retroarch/fetch_icons.py` (`pill()`); text in Press Start 2P by CodeMan38 (`google/fonts`, `ofl/pressstart2p`, pinned commit) | the drawing is this repo's; the font is [SIL OFL 1.1](https://openfontlicense.org/open-font-license-official-text/) |
 | `program.png` | "Duck" / "Station" set in Russo One by Jovanny Lemonad (`google/fonts`, `ofl/russoone`, pinned commit), drawn by `pad_keys.wordmark()` | the font is [SIL OFL 1.1](https://openfontlicense.org/open-font-license-official-text/) |

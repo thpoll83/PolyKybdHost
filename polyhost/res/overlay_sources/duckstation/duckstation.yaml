@@ -15,7 +15,7 @@
 #   .venv/bin/python scripts/generate_app_overlays.py \
 #       polyhost/res/overlay_sources/duckstation/duckstation.yaml --preview /tmp/duckstation_preview
 app: duckstation
-match: [duckstation-qt, duckstation, org.duckstation.duckstation]
+match: [duckstation-qt, duckstation-qt-x64-releaseltcg, duckstation-qt-arm64-releaseltcg, duckstation, org.duckstation.duckstation]
 output: duckstation_template
 icon_dir: icons
 fit: contain
