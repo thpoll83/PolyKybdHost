@@ -1,0 +1,40 @@
+# VS Code, Cursor and Windsurf: a text diff editor is the active editor tab
+# (<app>://edit/diff, <app>://debug/running/diff, <app>://debug/stopped/diff).
+#
+# Shared by the three apps, like the debug_*.yaml sets. The mapping lists it
+# LAST, after the app's own set and the debug set of the current mode, so a
+# debug session keeps its debug keys while a diff is open. No key here is drawn
+# by any debug set or by the app sets (F7 and Alt+F5 are free there).
+#
+# The reporter is vscode-extension/: it adds `/diff` to the URL while
+# `window.tabGroups.activeTabGroup.activeTab.input instanceof TabInputTextDiff`.
+# Keys and conditions are from VS Code's source (microsoft/vscode, main at
+# 4347d45a, read 2026-11-14), see SOURCES.md "Diff view". Every key is the same
+# on Windows, Linux and macOS (no `mac:` or `linux:` override; Alt is Option on
+# macOS), so one set serves all three.
+#
+# Regenerate (from the repo root, with the project venv):
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/vscode/diff.yaml --preview /tmp/diff_preview
+app: code
+match: [code, cursor, windsurf, devin, devin-desktop]
+output: vscode_diff
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# No program_icon: the app's own set draws the ESC key.
+
+bindings:
+  # workbench.action.compareEditor.nextChange / previousChange:
+  # KeyMod.Alt | F5 and KeyMod.Alt | KeyMod.Shift | F5, when textCompareEditorVisible
+  # (src/vs/workbench/browser/parts/editor/diffEditorCommands.ts).
+  - { key: F5, mods: [ALT],        icon: nextchange.png, label: "Next change",     source: "ms-fluent/Arrow Down (MIT)" }
+  - { key: F5, mods: [ALT, SHIFT], icon: prevchange.png, label: "Previous change", source: "ms-fluent/Arrow Up (MIT)" }
+  # editor.action.accessibleDiffViewer.next / prev: F7 and Shift+F7, when
+  # isInDiffEditor (src/vs/editor/browser/widget/diffEditor/commands.ts).
+  - { key: F7, mods: [],           icon: nextdiff.png,   label: "Next difference (diff viewer)",     source: "ms-fluent/Arrow Sort Down Lines (MIT)" }
+  - { key: F7, mods: [SHIFT],      icon: prevdiff.png,   label: "Previous difference (diff viewer)", source: "ms-fluent/Arrow Sort Up Lines (MIT)" }
