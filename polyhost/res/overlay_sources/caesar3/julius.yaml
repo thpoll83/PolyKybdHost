@@ -1,0 +1,96 @@
+# Julius overlay for PolyKybd.
+#
+# Keys: the default hotkeys set in init_defaults()
+# (src/core/hotkey_config.c, bvschaik/julius v1.8.0). See SOURCES.md.
+#
+# Every default hotkey of the city view on a key with a cell is labelled; none
+# of them changes meaning with the selection. Augustus has four more default
+# hotkeys and its own set, augustus.yaml, in this folder.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/caesar3/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/caesar3/julius.yaml --preview /tmp/julius_preview
+app: julius
+match: [julius, julius.exe, com.github.bvschaik.julius]
+output: julius_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for OpenTTD and 0 A.D.: the icon uses the full height on the right; the
+# firmware clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# "Julius" drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program_julius.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Game
+  - { key: P, icon: pause.png, label: "Pause" }
+  - { key: "[", icon: slower.png, label: "Decrease game speed" }
+  - { key: "]", icon: faster.png, label: "Increase game speed" }
+  - { key: PGDN, icon: slower.png, label: "Decrease game speed" }
+  - { key: PGUP, icon: faster.png, label: "Increase game speed" }
+  - { key: O, mods: [CTRL], icon: load.png, label: "Load file", shared: false }
+  - { key: S, mods: [CTRL], icon: save.png, label: "Save file", shared: false }
+
+  # City view
+  - { key: SPACE, icon: overlay.png, label: "Toggle the current overlay" }
+  - { key: L, icon: legion.png, label: "Cycle through the legions" }
+  - { key: HOME, icon: rotateleft.png, label: "Rotate the map left" }
+  - { key: END, icon: rotateright.png, label: "Rotate the map right" }
+
+  # Advisors
+  - { key: "1", icon: labor.png, label: "Labor advisor" }
+  - { key: "2", icon: military.png, label: "Military advisor" }
+  - { key: "3", icon: imperial.png, label: "Imperial advisor" }
+  - { key: "4", icon: ratings.png, label: "Ratings advisor" }
+  - { key: "5", icon: trade.png, label: "Trade advisor" }
+  - { key: "6", icon: population.png, label: "Population advisor" }
+  - { key: "7", icon: health.png, label: "Health advisor" }
+  - { key: "8", icon: education.png, label: "Education advisor" }
+  - { key: "9", icon: entertainment.png, label: "Entertainment advisor" }
+  - { key: "0", icon: religion.png, label: "Religion advisor" }
+  - { key: "-", icon: financial.png, label: "Financial advisor" }
+  - { key: "=", icon: chief.png, label: "Chief advisor" }
+
+  # Overlays
+  - { key: W, icon: water.png, label: "Water overlay" }
+  - { key: F, icon: fire.png, label: "Fire overlay" }
+  - { key: D, icon: damage.png, label: "Damage overlay" }
+  - { key: C, icon: crime.png, label: "Crime overlay" }
+  - { key: T, icon: problems.png, label: "Problems overlay" }
+
+  # Map bookmarks. Alt sets a bookmark like Ctrl: the source adds it for macOS,
+  # where Ctrl+F1 is taken, and it is a default on every OS.
+  - { key: F1, icon: jump1.png, label: "Go to bookmark 1", region: [34, 40] }
+  - { key: F2, icon: jump2.png, label: "Go to bookmark 2", region: [34, 40] }
+  - { key: F3, icon: jump3.png, label: "Go to bookmark 3", region: [34, 40] }
+  - { key: F4, icon: jump4.png, label: "Go to bookmark 4", region: [34, 40] }
+  - { key: F1, mods: [CTRL], icon: jumpset1.png, label: "Set bookmark 1", region: [34, 40] }
+  - { key: F2, mods: [CTRL], icon: jumpset2.png, label: "Set bookmark 2", region: [34, 40] }
+  - { key: F3, mods: [CTRL], icon: jumpset3.png, label: "Set bookmark 3", region: [34, 40] }
+  - { key: F4, mods: [CTRL], icon: jumpset4.png, label: "Set bookmark 4", region: [34, 40] }
+  - { key: F1, mods: [ALT], icon: jumpset1.png, label: "Set bookmark 1", region: [34, 40] }
+  - { key: F2, mods: [ALT], icon: jumpset2.png, label: "Set bookmark 2", region: [34, 40] }
+  - { key: F3, mods: [ALT], icon: jumpset3.png, label: "Set bookmark 3", region: [34, 40] }
+  - { key: F4, mods: [ALT], icon: jumpset4.png, label: "Set bookmark 4", region: [34, 40] }
+
+  # Window
+  - { key: F5, icon: centerwindow.png, label: "Center the window", region: [34, 40] }
+  - { key: F6, icon: fullscreen_f6.png, label: "Toggle fullscreen", region: [34, 40] }
+  - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Toggle fullscreen" }
+  - { key: F7, icon: resize640.png, label: "Resize the window to 640x480", region: [34, 40] }
+  - { key: F8, icon: resize800.png, label: "Resize the window to 800x600", region: [34, 40] }
+  - { key: F9, icon: resize1024.png, label: "Resize the window to 1024x768", region: [34, 40] }
+  - { key: F12, icon: screenshot.png, label: "Save a screenshot" }
+  - { key: F12, mods: [ALT], icon: screenshot.png, label: "Save a screenshot" }
+  - { key: F12, mods: [CTRL], icon: cityscreenshot.png, label: "Save a screenshot of the whole city" }

@@ -3564,6 +3564,38 @@ rimworldwin64,rimworldwin64.exe,rimworldlinux,rimworld,rimworldmac,steam_app_294
 # and the Flatpak app id is io.openrct2.OpenRCT2. Names not checked on an install.
 openrct2,openrct2.exe,io.openrct2.openrct2:
   overlay: [openrct2_template.mods.png, openrct2_template.combo.mods.png]
+# Simutrans with the pak64 pakset (overlay_sources/simutrans/simutrans.yaml).
+# `simutrans` is the CMake target and the desktop file's Exec= (125.0.1),
+# simutrans.exe on Windows; the Flatpak id is com.simutrans.Simutrans. Every
+# pakset sets its own tool keys, and the process name does not show the pakset:
+# the set draws the pak64 keys. Names not checked on an install.
+simutrans,simutrans.exe,com.simutrans.simutrans:
+  overlay: simutrans_template.mods.png
+# OpenLoco, the open source engine for Chris Sawyer's Locomotion
+# (overlay_sources/openloco/openloco.yaml). The binary is `OpenLoco`
+# (OUTPUT_NAME in src/App/CMakeLists.txt, v26.09), OpenLoco.exe on Windows.
+# Names not checked on an install.
+openloco,openloco.exe:
+  overlay: openloco_template.mods.png
+# Julius, the open source engine for Caesar III
+# (overlay_sources/caesar3/julius.yaml). `julius` is the CMake target and the
+# desktop file's Exec= (v1.8.0), julius.exe on Windows; the Flatpak id is
+# com.github.bvschaik.julius. Names not checked on an install.
+julius,julius.exe,com.github.bvschaik.julius:
+  overlay: julius_template.mods.png
+# Augustus, the fork of Julius (overlay_sources/caesar3/augustus.yaml): the
+# Julius keys and four more. `augustus` is the CMake target and the desktop
+# file's Exec= (v4.0.0), augustus.exe on Windows; the Flatpak id is
+# com.github.keriew.augustus. Names not checked on an install.
+augustus,augustus.exe,com.github.keriew.augustus:
+  overlay: augustus_template.mods.png
+# CorsixTH, the open source engine for Theme Hospital
+# (overlay_sources/corsixth/corsixth.yaml). The CMake target CorsixTH is built
+# as `corsix-th` on Linux (OUTPUT_NAME, v0.70.2), CorsixTH.exe on Windows and
+# CorsixTH on macOS; the Flatpak id is com.corsixth.corsixth. Names not
+# checked on an install.
+corsix-th,corsixth,corsixth.exe,com.corsixth.corsixth:
+  overlay: [corsixth_template.mods.png, corsixth_template.combo.mods.png]
 # fheroes2, the free Heroes of Might and Magic II engine
 # (overlay_sources/fheroes2/fheroes2.yaml). `fheroes2` is the executable target
 # in src/fheroes2/CMakeLists.txt (release 1.1.17), `fheroes2.exe` on Windows;
