@@ -54,6 +54,7 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     "jupyter://notebook/edit": { url: '^jupyter://', overlay: [jupyter_edit_template.mods.png, jupyter_edit_template.combo.mods.png] }
     "jupyter://editor": { url: '^jupyter://', overlay: [jupyter_editor_template.mods.png, jupyter_editor_template.combo.mods.png] }
     "jupyter://console": { url: '^jupyter://', overlay: [jupyter_console_template.mods.png, jupyter_console_template.combo.mods.png] }
+    "jupyter://terminal": { url: '^jupyter://', overlay: [jupyter_terminal_template.mods.png, jupyter_terminal_template.combo.mods.png] }
     "jupyter://": { url: '^jupyter://', overlay: [jupyter_global_template.mods.png, jupyter_global_template.combo.mods.png] }
     # Jupyter (sources: overlay_sources/jupyter/): a local server or a
     # JupyterHub. The url gate needs /lab, /notebooks or /tree right after the
@@ -470,6 +471,7 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         "jupyter://notebook/edit": { url: '^jupyter://', overlay: [jupyter_edit_template_mac.mods.png, jupyter_edit_template_mac.combo.mods.png, jupyter_edit_template_mac.extra.mods.png] }
         "jupyter://editor": { url: '^jupyter://', overlay: [jupyter_editor_template_mac.mods.png, jupyter_editor_template_mac.combo.mods.png, jupyter_editor_template_mac.extra.mods.png] }
         "jupyter://console": { url: '^jupyter://', overlay: [jupyter_console_template_mac.mods.png, jupyter_console_template_mac.combo.mods.png, jupyter_console_template_mac.extra.mods.png] }
+        "jupyter://terminal": { url: '^jupyter://', overlay: [jupyter_terminal_template_mac.mods.png, jupyter_terminal_template_mac.combo.mods.png, jupyter_terminal_template_mac.extra.mods.png] }
         "jupyter://": { url: '^jupyter://', overlay: [jupyter_global_template_mac.mods.png, jupyter_global_template_mac.combo.mods.png, jupyter_global_template_mac.extra.mods.png] }
         # Jupyter (sources: overlay_sources/jupyter/): a local server or a
         # JupyterHub. The url gate needs /lab, /notebooks or /tree right after the
@@ -3356,6 +3358,7 @@ jupyterlab,jupyterlab-desktop,jupyterlab desktop:
     "jupyter://notebook/edit": { overlay: [jupyter_edit_template.mods.png, jupyter_edit_template.combo.mods.png] }
     "jupyter://editor": { overlay: [jupyter_editor_template.mods.png, jupyter_editor_template.combo.mods.png] }
     "jupyter://console": { overlay: [jupyter_console_template.mods.png, jupyter_console_template.combo.mods.png] }
+    "jupyter://terminal": { overlay: [jupyter_terminal_template.mods.png, jupyter_terminal_template.combo.mods.png] }
     "jupyter://": { overlay: [jupyter_global_template.mods.png, jupyter_global_template.combo.mods.png] }
   os:
     macos:
@@ -3366,6 +3369,7 @@ jupyterlab,jupyterlab-desktop,jupyterlab desktop:
         "jupyter://notebook/edit": { overlay: [jupyter_edit_template_mac.mods.png, jupyter_edit_template_mac.combo.mods.png, jupyter_edit_template_mac.extra.mods.png] }
         "jupyter://editor": { overlay: [jupyter_editor_template_mac.mods.png, jupyter_editor_template_mac.combo.mods.png, jupyter_editor_template_mac.extra.mods.png] }
         "jupyter://console": { overlay: [jupyter_console_template_mac.mods.png, jupyter_console_template_mac.combo.mods.png, jupyter_console_template_mac.extra.mods.png] }
+        "jupyter://terminal": { overlay: [jupyter_terminal_template_mac.mods.png, jupyter_terminal_template_mac.combo.mods.png, jupyter_terminal_template_mac.extra.mods.png] }
         "jupyter://": { overlay: [jupyter_global_template_mac.mods.png, jupyter_global_template_mac.combo.mods.png, jupyter_global_template_mac.extra.mods.png] }
 # RStudio (sources: overlay_sources/rstudio/). Process and WM_CLASS `rstudio` on
 # Linux (measured, 2026.10.0).

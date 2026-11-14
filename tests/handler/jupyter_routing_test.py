@@ -11,9 +11,11 @@ it pins:
 * a Jupyter report never reaches an app that is neither JupyterLab Desktop
   nor a browser, and a web address that only contains the text is not routed;
 * the Desktop entry's names are exactly the `jupyter` context reporters;
-* every file named exists, and no mode set exceeds the overlay pool.
+* every file named exists, and no mode set exceeds the overlay pool;
+* the terminal set draws only keys that xterm.js does not send to the shell.
 """
 
+import re
 import unittest
 from pathlib import Path
 
@@ -34,7 +36,7 @@ MODES = {
     "jupyter://notebook/edit": "edit",
     "jupyter://editor": "editor",
     "jupyter://console": "console",
-    "jupyter://terminal": "global",
+    "jupyter://terminal": "terminal",
     "jupyter://other": "global",
 }
 
@@ -86,7 +88,7 @@ class JupyterMappingFileTest(unittest.TestCase):
             files |= set(_files(branch))
             for sub in branch["urls-contains"].values():
                 files |= set(_files(sub))
-        self.assertGreaterEqual(len(files), 5 * 5 + 5)
+        self.assertGreaterEqual(len(files), 6 * 5 + 5)
         missing = [f for f in files if not (RES / "overlays" / f).is_file()]
         self.assertEqual(missing, [])
 
@@ -97,6 +99,26 @@ class JupyterMappingFileTest(unittest.TestCase):
         for mode in set(MODES.values()):
             spec = yaml.safe_load((src / f"bindings_{mode}.yaml").read_text(encoding="utf-8"))
             self.assertLess(len(spec["bindings"]), 600, mode)
+
+
+    def test_terminal_set_draws_only_keys_xterm_lets_through(self):
+        # In a terminal, xterm.js sends Ctrl+letter, Alt+key and the F keys to
+        # the shell, so on Windows/Linux only the Ctrl+Shift chords, Ctrl+,
+        # and the terminal's Ctrl+V paste act. On macOS the F keys are input.
+        src = RES / "overlay_sources" / "jupyter"
+        spec = yaml.safe_load((src / "bindings_terminal.yaml").read_text(encoding="utf-8"))
+        win = [b for b in spec["bindings"] if b.get("except") == ["macos"]]
+        mac = [b for b in spec["bindings"] if b.get("only") == ["macos"]]
+        self.assertEqual(len(win) + len(mac), len(spec["bindings"]))
+        for b in win:
+            mods = set(b["mods"])
+            ok = (mods == {"CTRL", "SHIFT"}
+                  or (mods == {"CTRL"} and b["key"] in ("COMMA", "V")))
+            self.assertTrue(ok, b)
+        self.assertIn("Paste", {b["label"] for b in win})
+        self.assertFalse([b for b in win + mac if re.fullmatch(r"F\d+", str(b["key"]))])
+        self.assertNotIn("Paste", {b["label"] for b in mac})
+        self.assertIn("Left sidebar", {b["label"] for b in mac})
 
 
 class JupyterRoutingTest(unittest.TestCase):

@@ -13,7 +13,7 @@ the keys left out.
 
     python polyhost/res/overlay_sources/jupyter/gen_specs.py
     python scripts/generate_app_overlays.py polyhost/res/overlay_sources/jupyter/bindings.yaml
-    for m in command edit editor console global; do
+    for m in command edit editor console global terminal; do
         python scripts/generate_app_overlays.py polyhost/res/overlay_sources/jupyter/bindings_$m.yaml
     done
 
@@ -170,8 +170,30 @@ def scope(index: int, label: str) -> str:
 # "Run, select next".
 CONSOLE_ROWS = [("run", "Run code", *both("S+Enter"))]
 
-# One set per jupyter:// URL that changes the keys. Terminal and "other" (the
-# launcher, a side panel) share `global`.
+# Terminal (xterm.js in a `.jp-Activity` main area widget). xterm.js handles a
+# keydown first. A key that it turns into terminal input is sent to the shell
+# and the event is cancelled (preventDefault), so JupyterLab's key handler,
+# which listens in the bubbling phase, ignores it. Only a key that xterm.js
+# does not turn into input still reaches a JupyterLab command. The labels
+# below are the `global` rows that pass, per platform (SOURCES.md, Terminal).
+# Windows/Linux: Ctrl+letter, Alt+key and the F keys are input, so only the
+# Ctrl+Shift chords and Ctrl+, act.
+TERMINAL_WIN = {
+    "Command palette", "Keyboard shortcuts", "File browser", "Table of contents",
+    "Running sessions", "Launcher", "Extension manager", "Debugger panel",
+    "Property inspector", "Settings", "Next tab", "Previous tab",
+    "Next tab bar", "Previous tab bar", "Previously used tab",
+}
+# macOS: xterm.js sends nothing for Cmd chords, and with "macOptionIsMeta" off
+# (the default) Option chords are not input either, so every `global` row acts
+# except the F keys of the debugger.
+TERMINAL_MAC_SKIP = {"Continue", "Terminate", "Next line", "Step out"}
+# The terminal's own key: with "pasteWithCtrlV" on (the default) Ctrl+V pastes
+# (Windows/Linux only; the terminal widget skips this handler on macOS).
+TERMINAL_ROWS = [(None, "Paste", "C+V", None)]
+
+# One set per jupyter:// URL that changes the keys. "other" (the launcher, a
+# side panel) gets `global`.
 MODES = {
     "command": ({"global", "file", "search", "text", "nb", "cmd"}, []),
     "edit": ({"global", "file", "search", "text", "nb", "edit", "cm"}, []),
@@ -259,6 +281,17 @@ def main() -> int:
                            f"shortcut overlays for PolyKybd: the `{mode}` mode set\n"
                            f"# (jupyterlab-extension/ reports it; see SOURCES.md)."))
         write(f"bindings_{mode}.yaml", header, rows)
+    rows = [(icon, label,
+             win if label in TERMINAL_WIN else None,
+             None if label in TERMINAL_MAC_SKIP else mac)
+            for i, (icon, label, win, mac) in enumerate(ROWS)
+            if scope(i, label) == "global"] + TERMINAL_ROWS
+    header = (HEADER
+              .replace("output: jupyter_template", "output: jupyter_terminal_template")
+              .replace("shortcut overlays for PolyKybd.",
+                       "shortcut overlays for PolyKybd: the `terminal` mode set\n"
+                       "# (jupyterlab-extension/ reports it; see SOURCES.md)."))
+    write("bindings_terminal.yaml", header, rows)
     return 0
 
 
