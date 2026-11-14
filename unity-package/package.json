@@ -1,0 +1,13 @@
+{
+  "name": "org.polykybd.context-reporter",
+  "version": "1.0.0",
+  "displayName": "PolyKybd Context Reporter",
+  "description": "Reports the Unity Editor's play state and the type of the focused editor window (Scene, Game, Animation, ...) to the local PolyKybdHost, so the PolyKybd keyboard shows that window's shortcuts. Editor only; sends nothing else, and only to 127.0.0.1.",
+  "unity": "2021.3",
+  "license": "GPL-3.0-or-later",
+  "author": {
+    "name": "PolyKybd",
+    "url": "https://www.polykybd.org"
+  },
+  "keywords": ["polykybd", "keyboard", "shortcuts"]
+}
