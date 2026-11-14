@@ -128,6 +128,11 @@ Licence texts:
 - Apache-2.0: https://www.apache.org/licenses/LICENSE-2.0
 - SIL OFL 1.1: https://openfontlicense.org/open-font-license-official-text/
 
+Where each icon file comes from. The icon table gives the name to put in the
+URL; the same URLs are in `SOURCES` of `cnc_remastered/fetch_icons.py`.
+
+- game-icons.net (`gi:<author>/<name>`): `https://game-icons.net/icons/000000/transparent/1x1/<author>/<name>.svg`
+
 | File | Source | Author | Licence |
 |---|---|---|---|
 | `jump.png` | game-icons.net `delapouite/jump-across` | delapouite | CC BY 3.0 |

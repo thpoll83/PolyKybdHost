@@ -117,6 +117,11 @@ Licence texts:
 
 - CC BY 3.0: https://creativecommons.org/licenses/by/3.0/
 - Apache-2.0: https://www.apache.org/licenses/LICENSE-2.0
+
+Where each icon file comes from. The icon table gives the name to put in the
+URL; the same URLs are in `SOURCES` of `cnc_remastered/fetch_icons.py`.
+
+- game-icons.net (`gi:<author>/<name>`): `https://game-icons.net/icons/000000/transparent/1x1/<author>/<name>.svg`
 - GPL-3.0-or-later: https://www.gnu.org/licenses/gpl-3.0.html
 
 | File | Source | Author | Licence |
