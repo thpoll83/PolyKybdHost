@@ -27,6 +27,7 @@ MINDUSTRY = ["mindustry_template.mods.png", "mindustry_template.combo.mods.png"]
 MINECRAFT_JAVA = ["minecraft_java_template.mods.png", "minecraft_java_template.combo.mods.png"]
 GHIDRA = ["ghidra_template.mods.png", "ghidra_template.combo.mods.png"]
 VELOREN = "veloren_template.mods.png"
+OPENMW = "openmw_template.mods.png"
 JAVA_PLATFORMS = ("windows", "macos", "linux", "linux_gnome", "linux_kde")
 
 # (overlay, window title, process names)
@@ -35,6 +36,7 @@ GAMES = [
      ("luanti", "minetest", "org.luanti.luanti", "net.minetest.minetest")),
     (MINDUSTRY, "Mindustry", ("mindustry", "com.github.anuken.mindustry")),
     (VELOREN, "Veloren", ("veloren-voxygen", "veloren", "net.veloren.veloren")),
+    (OPENMW, "OpenMW", ("openmw", "org.openmw.openmw")),
 ]
 
 

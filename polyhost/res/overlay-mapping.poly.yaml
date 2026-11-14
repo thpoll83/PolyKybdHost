@@ -3645,6 +3645,13 @@ mindustry,com.github.anuken.mindustry:
 # install.
 veloren-voxygen,veloren,net.veloren.veloren:
   overlay: veloren_template.mods.png
+# OpenMW, the free engine for The Elder Scrolls III: Morrowind
+# (overlay_sources/openmw/openmw.yaml). `openmw` is the executable target in
+# apps/openmw/CMakeLists.txt (release openmw-0.51.0), openmw.exe on Windows;
+# org.openmw.openmw is the Flathub id. The launcher (openmw-launcher) and the
+# editor (openmw-cs) get no set. Names not checked on an install.
+openmw,org.openmw.openmw:
+  overlay: openmw_template.mods.png
 # Total Commander (overlay_sources/totalcmd/). Windows only. The 11.58.1
 # installers ship TOTALCMD64.EXE (64-bit) and TOTALCMD.EXE (32-bit). Not checked
 # on a running install.
