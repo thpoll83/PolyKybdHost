@@ -436,7 +436,17 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
     R16 sprite file; `starcraft/` for the StarCraft 1.16.1 MPQ archives, drawing
     the StarCraft II control groups, with the MPQ format in `mpq.py`, PKWARE
     explode in `explode.py` and GRP sprites in `grp.py`; it was not run against
-    real game files). `openra.py` lists the folders where OpenRA installs the
+    real game files; `unreal2/` (reader `ut2004`) for Unreal Tournament 2004,
+    drawing the weapon keys from the HUD texture in HudContent.utx at the
+    IconCoords each weapon class in XWeapons.u declares, with the Unreal package
+    format in `package.py` and DXT1/3/5 in `dxt.py`; run on the UT2004 3369
+    files; it also reads the player's key bindings from User.ini
+    (`bindings.py`), and `build.remap` moves each icon whose binding names a
+    `command:` to the keys the player bound that command to; `warcraft3/`
+    for Warcraft III, which reads no pictures, only the hotkeys of the installed
+    language (EscMenuMainPanel.fdf, GlobalStrings.fdf, CommandStrings.txt in
+    the MPQs) and of CustomKeys.txt, for `build.remap`; run on the German 1.22
+    files). `openra.py` lists the folders where OpenRA installs the
     original game files; the Red Alert, Tiberian Dawn and Dune 2000 readers
     search them. Its
     `__init__.py` declares `READER` (module, settings, folder and variant

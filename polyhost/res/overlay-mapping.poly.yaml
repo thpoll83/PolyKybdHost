@@ -3386,11 +3386,15 @@ age2_x1,empires2,aok hd,age2_x1.exe,empires2.exe,aok hd.exe:
 # under Proton on KDE Plasma (both measured 2026-10-23).
 aoe2de_s,steam_app_813780:
   overlay: aoe2_de_template.mods.png
-# Warcraft III classic, 1.26 to 1.31 (overlay_sources/warcraft3/warcraft3.yaml).
-# war3.exe, "Warcraft III.exe" and "Frozen Throne.exe"; under Wine the WM_CLASS
-# keeps the `.exe`. Names not checked on an install.
+# Warcraft III classic, the MPQ releases up to 1.31
+# (overlay_sources/warcraft3/warcraft3.yaml). war3.exe, "Warcraft III.exe" and
+# "Frozen Throne.exe"; under Wine the WM_CLASS keeps the `.exe`. Names not
+# checked on an install. The icons follow the hotkeys of the installed language
+# and of CustomKeys.txt when the game's files are on the machine (game_assets
+# reader `warcraft3`).
 war3,war3.exe,warcraft iii,warcraft iii.exe,frozen throne,frozen throne.exe:
   overlay: warcraft3_template.mods.png
+  game_assets: warcraft3/warcraft3.yaml
 # StarCraft II (overlay_sources/starcraft2/starcraft2.yaml). The game runs as
 # SC2_x64.exe (SC2.exe for the 32-bit client) from Versions/Base<N>/; under Wine
 # the WM_CLASS keeps the `.exe`. `starcraft ii` is the launcher's name and the
@@ -3590,6 +3594,15 @@ league of legends,league of legends.exe,leagueoflegends:
 # macOS. Names not checked on an install.
 cs2,steam_app_730:
   overlay: cs2_template.mods.png
+# Unreal Tournament 2004 (overlay_sources/ut2004/ut2004.yaml). UT2004.exe on
+# Windows, ut2004-bin / ut2004-bin-linux-amd64 for the Linux installer's
+# binaries, steam_app_13230 under Proton; "unreal tournament 2004" is the
+# assumed macOS name. Names not checked on an install. The weapon keys are
+# redrawn from the user's own UT2004 files when they are on the machine
+# (game_assets reader `ut2004`).
+ut2004,ut2004.exe,ut2004-bin,ut2004-bin-linux-amd64,unreal tournament 2004,steam_app_13230:
+  overlay: ut2004_template.mods.png
+  game_assets: ut2004/ut2004.yaml
 # Endless Sky (overlay_sources/endless_sky/endless_sky.yaml). CMakeLists.txt
 # (v0.11.4) names the binary `endless-sky` on Linux and `Endless Sky` on Windows
 # and macOS; io.github.endless_sky.endless_sky is the desktop file and Flatpak
