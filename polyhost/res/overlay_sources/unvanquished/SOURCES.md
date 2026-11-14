@@ -123,6 +123,9 @@ Where each icon file comes from. The icon table gives the name to put in the
 URL; the same URLs are in `SOURCES` of `cnc_remastered/fetch_icons.py`.
 
 - game-icons.net (`gi:<author>/<name>`): `https://game-icons.net/icons/000000/transparent/1x1/<author>/<name>.svg`
+- Material Symbols (`ms:<name>`), outlined style at weight 300: `https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/<name>/materialsymbolsoutlined/<name>_wght300_24px.svg` (`RAW` in `material_symbols.py`; the URL names the `master` branch, not a commit, so a later fetch can return a changed drawing)
+- Bebas Neue (ESC mark): `https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/bebasneue/BebasNeue-Regular.ttf`
+- DejaVu Sans Bold (the T on F3 and F4): `https://raw.githubusercontent.com/matplotlib/matplotlib/a254b687df97cda8c6affa37a1dfcf213f8e6c3a/lib/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf` (`DIGIT_FONT_URL` in `cnc_remastered/fetch_icons.py`), Bitstream Vera and DejaVu licence: https://dejavu-fonts.github.io/License.html
 
 | File | Source | Author | Licence |
 |---|---|---|---|

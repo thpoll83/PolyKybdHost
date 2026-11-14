@@ -3611,7 +3611,7 @@ dota2,steam_app_570:
 # -x64 and -sdl .exe names); xonotic-sdl and xonotic-glx are the Exec= lines of
 # the project's desktop files. org.xonotic.Xonotic is the Flathub app id.
 # Names not checked on an install.
-xonotic,xonotic-sdl,xonotic-glx,xonotic-linux64-sdl,xonotic-linux64-glx,xonotic-linux-sdl,xonotic-linux-glx,xonotic.exe,xonotic-x86.exe,xonotic-wgl.exe,xonotic-x86-wgl.exe,xonotic-x64.exe,xonotic-sdl.exe,xonotic-x64-sdl.exe,xonotic-osx-sdl-bin,org.xonotic.xonotic:
+xonotic,xonotic-sdl,xonotic-glx,xonotic-linux64-sdl,xonotic-linux64-glx,xonotic-linux-sdl,xonotic-linux-glx,xonotic.exe,xonotic-x86.exe,xonotic-wgl.exe,xonotic-x86-wgl.exe,xonotic-x64.exe,xonotic-sdl.exe,xonotic-x64-sdl.exe,xonotic-osx-sdl-bin,org.xonotic.xonotic,xonotic-x86,xonotic-wgl,xonotic-x86-wgl,xonotic-x64,xonotic-x64-sdl:
   overlay: xonotic_template.mods.png
 # Unvanquished (overlay_sources/unvanquished/unvanquished.yaml). The game runs in
 # the Daemon engine, whose client executable is `daemon` (daemon.exe on Windows,
@@ -3625,7 +3625,7 @@ daemon,daemon.exe,daemon-vulkan,unvanquished,net.unvanquished.unvanquished:
 # (macOS); src/CMakeLists.txt builds redeclipse_osx, redeclipse_windows.exe and
 # redeclipse_native (base v2.0.0). net.redeclipse.RedEclipse is the Flathub app
 # id. Names not checked on an install.
-redeclipse,redeclipse.exe,redeclipse_linux,redeclipse_universal,redeclipse_bsd,redeclipse_osx,redeclipse_windows.exe,redeclipse_native,net.redeclipse.redeclipse:
+redeclipse,redeclipse.exe,redeclipse_linux,redeclipse_universal,redeclipse_bsd,redeclipse_osx,redeclipse_windows.exe,redeclipse_native,net.redeclipse.redeclipse,redeclipse_windows:
   overlay: redeclipse_template.mods.png
 # Total Commander (overlay_sources/totalcmd/). Windows only. The 11.58.1
 # installers ship TOTALCMD64.EXE (64-bit) and TOTALCMD.EXE (32-bit). Not checked

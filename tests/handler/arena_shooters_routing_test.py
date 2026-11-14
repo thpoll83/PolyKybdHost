@@ -5,6 +5,8 @@ Each game uses the same keys on every OS, so each entry has one set and no
 
 * every process name of a game loads that game's set, on all three platforms
   and whatever the window title is, including no title;
+* on Windows the host cuts the process name at the first dot before the lookup
+  (`active_window.py`), so every `.exe` name also routes by its bare stem;
 * every named file exists.
 """
 
@@ -23,7 +25,8 @@ XONOTIC_NAMES = (
     "xonotic", "xonotic-sdl", "xonotic-glx", "xonotic-linux64-sdl", "xonotic-linux64-glx",
     "xonotic-linux-sdl", "xonotic-linux-glx", "xonotic.exe", "xonotic-x86.exe",
     "xonotic-wgl.exe", "xonotic-x86-wgl.exe", "xonotic-x64.exe", "xonotic-sdl.exe",
-    "xonotic-x64-sdl.exe", "xonotic-osx-sdl-bin", "org.xonotic.xonotic")
+    "xonotic-x64-sdl.exe", "xonotic-osx-sdl-bin", "org.xonotic.xonotic",
+    "xonotic-x86", "xonotic-wgl", "xonotic-x86-wgl", "xonotic-x64", "xonotic-x64-sdl")
 
 UNVANQUISHED = "unvanquished_template.mods.png"
 UNVANQUISHED_NAMES = ("daemon", "daemon.exe", "daemon-vulkan", "unvanquished",
@@ -33,7 +36,7 @@ REDECLIPSE = "redeclipse_template.mods.png"
 REDECLIPSE_NAMES = (
     "redeclipse", "redeclipse.exe", "redeclipse_linux", "redeclipse_universal",
     "redeclipse_bsd", "redeclipse_osx", "redeclipse_windows.exe", "redeclipse_native",
-    "net.redeclipse.redeclipse")
+    "net.redeclipse.redeclipse", "redeclipse_windows")
 
 # (set, process names, a window title of the game)
 GAMES = (
@@ -72,6 +75,16 @@ class ArenaShooterRoutingTest(unittest.TestCase):
             return None
         m = find_matching_entry(title, self.mapping[key], None, os_name)
         return None if m is None else m["overlay"]
+
+    def test_windows_names_route_after_the_first_dot_cut(self):
+        # active_window.py: `raw_app_name.split(".", -1)[0].lower()` on Windows.
+        for overlay, names, title in GAMES:
+            for app in names:
+                if not app.endswith(".exe"):
+                    continue
+                stem = app.split(".", -1)[0].lower()
+                with self.subTest(app=app, stem=stem):
+                    self.assertEqual(self._route(stem, "windows", title), overlay)
 
     def test_every_process_name_on_every_platform(self):
         for overlay, names, title in GAMES:

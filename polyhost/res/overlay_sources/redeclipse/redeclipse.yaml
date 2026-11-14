@@ -14,7 +14,8 @@
 #       polyhost/res/overlay_sources/redeclipse/redeclipse.yaml --preview /tmp/redeclipse_preview
 app: red eclipse
 match: [redeclipse, redeclipse.exe, redeclipse_linux, redeclipse_universal, redeclipse_bsd,
-        redeclipse_osx, redeclipse_windows.exe, redeclipse_native, net.redeclipse.redeclipse]
+        redeclipse_osx, redeclipse_windows.exe, redeclipse_native, net.redeclipse.redeclipse,
+        redeclipse_windows]
 output: redeclipse_template
 icon_dir: icons
 fit: contain

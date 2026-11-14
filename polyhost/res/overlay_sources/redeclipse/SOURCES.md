@@ -132,6 +132,8 @@ Where each icon file comes from. The icon table gives the name to put in the
 URL; the same URLs are in `SOURCES` of `cnc_remastered/fetch_icons.py`.
 
 - game-icons.net (`gi:<author>/<name>`): `https://game-icons.net/icons/000000/transparent/1x1/<author>/<name>.svg`
+- Material Symbols (`ms:<name>`), outlined style at weight 300: `https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/<name>/materialsymbolsoutlined/<name>_wght300_24px.svg` (`RAW` in `material_symbols.py`; the URL names the `master` branch, not a commit, so a later fetch can return a changed drawing)
+- Bebas Neue (ESC mark): `https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/bebasneue/BebasNeue-Regular.ttf`
 
 | File | Source | Author | Licence |
 |---|---|---|---|
