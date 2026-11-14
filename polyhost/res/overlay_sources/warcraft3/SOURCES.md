@@ -5,16 +5,46 @@ rebuilds `icons/`.
 
 | Set | Loads for |
 |---|---|
-| `warcraft3_template` (1 file) | Warcraft III classic, 1.26 to 1.31: `war3.exe`, `Warcraft III.exe`, `Frozen Throne.exe`, on Windows and under Wine |
+| `warcraft3_template` (1 file) | Warcraft III classic, the MPQ releases up to 1.31: `war3.exe`, `Warcraft III.exe`, `Frozen Throne.exe`, on Windows and under Wine |
 
 The app names were not checked on an install.
 
 ## Shortcut reference
 
 The default hotkeys printed on the back of the Reign of Chaos manual, as listed
-on <https://warcraft.wiki.gg/wiki/Warcraft_III:_Hotkeys> (read 2026-10-28). The
-Frozen Throne uses the same defaults; that was not checked. A user's
-`CustomKeys.txt` changes the letter keys only, which this overlay leaves blank.
+on <https://warcraft.wiki.gg/wiki/Warcraft_III:_Hotkeys> (read 2026-10-28), and
+the game's own files of the German 1.22 install (read 2026-11-14): the help page
+`UI\HelpStrings.txt`, the menu `UI\FrameDef\UI\EscMenuMainPanel.fdf`, the
+tooltips in `UI\FrameDef\GlobalStrings.fdf` and the command card
+`Units\CommandStrings.txt`. The help page added F6 (quick save) and the menu
+and tooltip files the Alt keys below.
+
+| Key | Command (the game's name) | Action | Source |
+|---|---|---|---|
+| F6 | - | Quick save (single player; the help page lists F1 to F7 as hero keys in multiplayer) | help page |
+| Alt+G | `MINIMAPSIGNALTOOLTIP` | Minimap signal | tooltip |
+| Alt+A | `MINIMAPALLYCOLORTOOLTIP` | Ally colour mode | tooltip |
+| Alt+F | `FORMATION_TOOLTIP` | Formation movement on / off | tooltip |
+| A, M, S, H, P | `CmdAttack`, `CmdMove`, `CmdStop`, `CmdHoldPos`, `CmdPatrol` | Attack, move, stop, hold position, patrol | command card |
+| Alt+O, Alt+S, Alt+L, Alt+H, Alt+Q | `OptionsButton`, `SaveGameButton`, `LoadGameButton`, `HelpButton`, `QuitButton` | Options, save, load, help, quit | menu |
+
+The German files have the same letters as the English defaults here, except
+move (B, for Bewegen) and quit (Alt+B, for beenden). M and Alt+Q are the
+English letters: Alt+Q is on the manual page; M was not checked on English
+files.
+
+## Keys of the installed game
+
+Hotkeys depend on the game's language, and a player can change the
+command-card keys with a `CustomKeys.txt` in the install folder. With the
+game's files on the machine, the `warcraft3` reader
+(`polyhost/services/game_assets/warcraft3/`) reads the key of each binding
+that has a `command:`, from the installed language's files and from
+`CustomKeys.txt`, and the icon moves there (`build.remap`). On the German
+files, Move moves from M to B and Quit from Alt+Q to Alt+B; every other key
+stays. A command the reader does not find keeps its default key. The reader
+reads no pictures: the painted command-button icons read worse than the
+shipped silhouettes (`docs/FUTURE_WORK.md`).
 
 Control groups: 1 to 0 select a group, Ctrl+digit creates one, Shift+digit
 adds the selection to the active group. Each digit has its own unit, drawn
@@ -24,10 +54,14 @@ group number to a unit type; the icons only suggest a habit.
 
 ## Left out
 
-- The letter keys alone. They train, build and cast, and what each does
-  depends on the selection.
-- F4 to F7. The page lists F1 to F7 as hero keys, but a melee game allows three
-  heroes; only campaigns and custom maps reach a fourth.
+- The letter keys alone, except the five unit commands. They train, build and
+  cast, and what each does depends on the selection.
+- F4, F5 and F7. The page lists F1 to F7 as hero keys, but a melee game allows
+  three heroes; only campaigns and custom maps reach a fourth. F6 shows quick
+  save.
+- Alt+T and Alt+C in the English game for the minimap terrain and creep
+  buttons (Alt+K and Alt+R in German): the English letters were not checked,
+  and Alt+C already centres on the portrait unit.
 - Arrow keys (scroll the view): the arrows keep their own legends.
 
 ## Placement
@@ -78,6 +112,15 @@ A pixel of WARCRAFT is lit from grey 60 of 255 and a pixel of III from 110: at
 | `chatlog.png` | game-icons.net `delapouite/notebook` | delapouite | CC BY 3.0 |
 | `options.png` | Font Awesome Free 6.5.2 `gear` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `save.png` | Font Awesome Free 6.5.2 `floppy-disk` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `quicksave.png` | Font Awesome Free 6.5.2 `file-pen` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `signal.png` | Font Awesome Free 6.5.2 `location-dot` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `allycolors.png` | Font Awesome Free 6.5.2 `palette` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `formation.png` | Font Awesome Free 6.5.2 `table-cells` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `stop.png` | Font Awesome Free 6.5.2 `hand` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `patrol.png` | Font Awesome Free 6.5.2 `right-left` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `attack.png` | game-icons.net `lorc/crossed-swords` | lorc | CC BY 3.0 |
+| `move.png` | game-icons.net `lorc/boot-prints` | lorc | CC BY 3.0 |
+| `hold.png` | game-icons.net `lorc/checked-shield` | lorc | CC BY 3.0 |
 | `load.png` | Font Awesome Free 6.5.2 `folder-open` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `help.png` | Font Awesome Free 6.5.2 `circle-question` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `quit.png` | Font Awesome Free 6.5.2 `door-open` (solid) | Fonticons, Inc. | CC BY 4.0 |
