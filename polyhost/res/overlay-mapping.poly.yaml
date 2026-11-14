@@ -3728,6 +3728,20 @@ dolphin:
       overlay: dolphin_template.mods.png
     macos:
       overlay: dolphin_template.mods.png
+# PPSSPP, the PSP emulator (overlay_sources/ppsspp/). The default QWERTY
+# keyboard map of release 1.20.4 (PSP controls and emulator keys) and, on
+# Windows, the menu accelerators; Select is V on Windows and Enter elsewhere,
+# hence the branches. Process names: PPSSPPWindows64.exe, PPSSPPWindows.exe and
+# PPSSPPWindowsARM64.exe, PPSSPPSDL / PPSSPPQt / PPSSPPGold on Linux and macOS,
+# the macOS app "PPSSPP" and the Flatpak id org.ppsspp.PPSSPP. Not checked on a
+# running install.
+ppsspp,ppssppwindows64,ppssppwindows,ppssppwindowsarm64,ppssppsdl,ppssppqt,ppssppgold,org.ppsspp.ppsspp:
+  overlay: ppsspp_template.mods.png
+  os:
+    macos:
+      overlay: ppsspp_template_mac.mods.png
+    linux:
+      overlay: ppsspp_template_linux.mods.png
 # PTC Mathcad Prime (overlay_sources/mathcad/). Windows only: MathcadPrime.exe.
 # English / US keys from PTC's 12.0.1.0 shortcut PDF. Name not checked on an
 # install.

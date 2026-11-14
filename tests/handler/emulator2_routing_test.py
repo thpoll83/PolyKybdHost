@@ -37,6 +37,9 @@ SCUMMVM = {"windows": _set("scummvm_template", "combo"),
            "macos": _set("scummvm_template_mac", "combo"),
            "linux": _set("scummvm_template_linux", "combo")}
 DOLPHIN = _set("dolphin_template")
+PPSSPP = {"windows": _set("ppsspp_template"),
+          "macos": _set("ppsspp_template_mac"),
+          "linux": _set("ppsspp_template_linux")}
 
 
 def _overlay_handler_class():
@@ -109,6 +112,18 @@ class Emulator2RoutingTest(unittest.TestCase):
 
     def test_dolphin_files_exist(self):
         self._assert_files_exist([DOLPHIN])
+
+    def test_ppsspp_per_os(self):
+        for app in ("ppsspp", "ppssppwindows64", "ppssppwindows", "ppssppwindowsarm64",
+                    "ppssppsdl", "ppssppqt", "ppssppgold", "org.ppsspp.ppsspp"):
+            for os_name in ALL_OS:
+                with self.subTest(app=app, os=os_name):
+                    self.assertEqual(
+                        self._route(app, os_name, "PPSSPP v1.20.4 - ULUS10041 : Lumines"),
+                        PPSSPP[os_name])
+
+    def test_ppsspp_files_exist(self):
+        self._assert_files_exist(PPSSPP.values())
 
 
 if __name__ == "__main__":
