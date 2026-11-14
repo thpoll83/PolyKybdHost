@@ -1499,6 +1499,8 @@ java:
     Minecraft: &minecraft_java_branch
       title: '^Minecraft\*? \d'
       overlay: [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
+    "Shattered Pixel Dungeon": &spd_branch
+      overlay: shattered_pixel_dungeon_template.mods.png
     "Minecraft*": *minecraft_java_branch
     "CodeBrowser:":
       overlay: &ghidra_win [ghidra_template.mods.png, ghidra_template.combo.mods.png]
@@ -1509,6 +1511,7 @@ java:
       title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
       titles-startswith:
         Minecraft: *minecraft_java_branch
+        "Shattered Pixel Dungeon": *spd_branch
         "Minecraft*": *minecraft_java_branch
         "CodeBrowser:":
           overlay: &ghidra_mac [ghidra_template_mac.mods.png, ghidra_template_mac.combo.mods.png,
@@ -1524,6 +1527,7 @@ java:
         DBeaver:
           overlay: [dbeaver_template_linux.mods.png, dbeaver_template_linux.combo.mods.png, dbeaver_template_linux.extra.mods.png]
         Minecraft: *minecraft_java_branch
+        "Shattered Pixel Dungeon": *spd_branch
         "Minecraft*": *minecraft_java_branch
         "CodeBrowser:":
           overlay: *ghidra_win
@@ -1533,6 +1537,7 @@ java:
       title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
       titles-startswith:
         Minecraft: *minecraft_java_branch
+        "Shattered Pixel Dungeon": *spd_branch
         "Minecraft*": *minecraft_java_branch
         "CodeBrowser:":
           overlay: *ghidra_win
@@ -1542,9 +1547,14 @@ java:
       title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
       titles-startswith:
         Minecraft: *minecraft_java_branch
+        "Shattered Pixel Dungeon": *spd_branch
         "Minecraft*": *minecraft_java_branch
         "CodeBrowser:":
           overlay: *ghidra_win
+# Shattered Pixel Dungeon started from its .jar (`java -jar`) has the window
+# title "Shattered Pixel Dungeon" (overlay_sources/shattered_pixel_dungeon/);
+# the `java` and `javaw` entries route that title to its set. Not checked on an
+# install.
 # `javaw` on Windows serves two programs, told apart by the window title. The
 # title sub-map is tried before the parent's own title gate.
 # Minecraft: Java Edition: the launcher starts the game with the `javaw.exe` of
@@ -1559,6 +1569,7 @@ javaw:
   title: '^CodeBrowser(\(\d+\))?: '
   titles-startswith:
     Minecraft: *minecraft_java_branch
+    "Shattered Pixel Dungeon": *spd_branch
     "Minecraft*": *minecraft_java_branch
 # Ghidra under its own name. Linux: on GNOME and KDE the host reports WM_CLASS,
 # which Java sets from the main class `ghidra.Ghidra` as "ghidra-Ghidra"
@@ -2071,6 +2082,34 @@ windowsterminal,wt:
     "(k9s)": *k9s_tui
     "(k9s": *k9s_tui
     "^k9s": *k9s_tui
+    # Roguelike games that run in the terminal (tests/handler/roguelike_routing_test.py).
+    # None of them writes a title, so each is seen through the shell's title, as
+    # htop is. Dungeon Crawl Stone Soup, console build (overlay_sources/dcss/):
+    # `crawl`, and `crawl-console` for the Windows package's crawl-console.exe.
+    crawl: &dcss_tui
+      title: '^(?:(?:sudo\s+)?(?:crawl|crawl-console)(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:crawl|crawl-console)(?:$|\s|\)))'
+      overlay: dcss_template.mods.png
+    "(crawl)": *dcss_tui
+    "(crawl": *dcss_tui
+    "^crawl": *dcss_tui
+    crawl-console: *dcss_tui
+    "(crawl-console)": *dcss_tui
+    "(crawl-console": *dcss_tui
+    "^crawl-console": *dcss_tui
+    # Cataclysm: Dark Days Ahead, curses build (overlay_sources/cdda/).
+    cataclysm: &cdda_tui
+      title: '^(?:(?:sudo\s+)?(?:cataclysm)(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:cataclysm)(?:$|\s|\)))'
+      overlay: cdda_template.mods.png
+    "(cataclysm)": *cdda_tui
+    "(cataclysm": *cdda_tui
+    "^cataclysm": *cdda_tui
+    # NetHack, tty and curses interfaces (overlay_sources/nethack/).
+    nethack: &nethack_tui
+      title: '^(?:(?:sudo\s+)?(?:nethack)(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:nethack)(?:$|\s|\)))'
+      overlay: [nethack_template.mods.png, nethack_template.combo.mods.png]
+    "(nethack)": *nethack_tui
+    "(nethack": *nethack_tui
+    "^nethack": *nethack_tui
     # GDB and the common cross builds; the set is the prompt's one-letter commands.
     # The PolyKybd GDB script (gdb-plugin/) writes "gdb ⏸ <program>" at the
     # prompt, which this route matches, and "gdb ▶ <program>" while the program
@@ -3582,6 +3621,39 @@ devilutionx,devilutionx.exe,org.diasurgical.DevilutionX:
 # Flathub app id. Names not checked on an install.
 pyrogenesis,pyrogenesis.exe,0ad,com.play0ad.zeroad:
   overlay: [zeroad_template.mods.png, zeroad_template.combo.mods.png]
+# Dungeon Crawl Stone Soup, the tiles build (overlay_sources/dcss/dcss.yaml).
+# `crawl` is GAME in crawl-ref/source/Makefile (release 0.34.1); the Windows
+# packages name the tiles build crawl-tiles.exe and Debian names it crawl-tiles.
+# The macOS bundle is "Dungeon Crawl Stone Soup - Tiles". The console build runs
+# in a terminal and is routed by the `crawl` title route in &editor_titles.
+# Names not checked on an install.
+crawl,crawl.exe,crawl-tiles,crawl-tiles.exe,dungeon crawl stone soup - tiles:
+  overlay: dcss_template.mods.png
+# Cataclysm: Dark Days Ahead, the tiles build (overlay_sources/cdda/cdda.yaml).
+# cataclysm-tiles is TILES_TARGET_NAME in the Makefile (stable tag
+# cdda-0.I-2026-09-19-2324) and the Exec= line of the desktop file; the Flatpak
+# id is org.cataclysmdda.CataclysmDDA and the macOS bundle is "Cataclysm". The
+# curses build runs in a terminal and is routed by the `cataclysm` title route
+# in &editor_titles. Names not checked on an install.
+cataclysm-tiles,cataclysm-tiles.exe,org.cataclysmdda.CataclysmDDA,cataclysm:
+  overlay: cdda_template.mods.png
+# NetHack with a window of its own (overlay_sources/nethack/nethack.yaml):
+# NetHackW.exe is the Windows graphical build and NetHack.exe the console build
+# (sys/windows/GNUmakefile, NetHack 5.0.0); `nethack` is GAME in
+# sys/unix/Makefile.top, the process of a Qt or X11 interface built into it.
+# The tty and curses interfaces run in a terminal and are routed by the
+# `nethack` title route in &editor_titles. Names not checked on an install.
+nethack,nethack.exe,nethackw,nethackw.exe:
+  overlay: [nethack_template.mods.png, nethack_template.combo.mods.png]
+# Shattered Pixel Dungeon, desktop build
+# (overlay_sources/shattered_pixel_dungeon/). The packaged game is a jpackage
+# image named after appName in build.gradle (v4.0.2), "Shattered Pixel Dungeon"
+# ("Shattered Pixel Dungeon.exe" on Windows); the window title and, through
+# GLFW, the window class are the same words. A game started from the .jar runs
+# in `java` or `javaw`: those entries route its title. Names not checked on an
+# install.
+shattered pixel dungeon,shattered pixel dungeon.exe,com.shatteredpixel.shatteredpixeldungeon:
+  overlay: shattered_pixel_dungeon_template.mods.png
 # League of Legends (overlay_sources/lol/lol.yaml), the in-game window only. The
 # game is `League of Legends.exe` on Windows and the `LeagueofLegends` app on
 # macOS. The lobby client (LeagueClient, LeagueClientUx) is a different process
