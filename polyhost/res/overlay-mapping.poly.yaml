@@ -3585,6 +3585,13 @@ pyrogenesis,pyrogenesis.exe,0ad,com.play0ad.zeroad:
 # install.
 supertuxkart,supertuxkart.exe,net.supertuxkart.SuperTuxKart:
   overlay: supertuxkart_template.mods.png
+# Hedgewars (overlay_sources/hedgewars/hedgewars.yaml). A match runs in the
+# engine, `hwengine` (add_executable in hedgewars/CMakeLists.txt); the frontend
+# is `hedgewars` (QTfrontend/CMakeLists.txt, the desktop file's Exec=), and
+# org.hedgewars.Hedgewars is the Flathub app id. Names not checked on an
+# install.
+hwengine,hwengine.exe,hedgewars,hedgewars.exe,org.hedgewars.Hedgewars:
+  overlay: hedgewars_template.mods.png
 # League of Legends (overlay_sources/lol/lol.yaml), the in-game window only. The
 # game is `League of Legends.exe` on Windows and the `LeagueofLegends` app on
 # macOS. The lobby client (LeagueClient, LeagueClientUx) is a different process

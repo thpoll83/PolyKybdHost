@@ -24,6 +24,9 @@ GAMES = {
     "supertuxkart_template.mods.png": (
         ("supertuxkart", "supertuxkart.exe", "net.supertuxkart.supertuxkart"),
         "SuperTuxKart"),
+    "hedgewars_template.mods.png": (
+        ("hwengine", "hwengine.exe", "hedgewars", "hedgewars.exe", "org.hedgewars.hedgewars"),
+        "Hedgewars"),
 }
 
 
