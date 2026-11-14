@@ -1,10 +1,13 @@
 # SideFX Houdini overlay: sources
 
-Two specs. `bindings.yaml` is the Scene View set, with two artwork sets:
+Five specs. `bindings.yaml` is the Scene View set, with two artwork sets:
 `houdini_template.*` (Windows and Linux) and `houdini_template_mac.*` (macOS).
-`network.yaml` is the Network Editor set (`houdini_network_template*`), loaded
-while the Houdini package (`houdini-package/`) reports a Network Editor under
-the pointer; see *Network Editor set* below. Rebuild with
+The other four are loaded while the Houdini package (`houdini-package/`)
+reports that pane under the pointer: `network.yaml` the Network Editor
+(`houdini_network_template*`, *Network Editor set* below), `anim.yaml` the
+Animation Editor (`houdini_anim_template*`), and `python.yaml` and
+`textport.yaml` the Python Shell and the Textport (*Animation Editor set* and
+*Python Shell and Textport sets* below). Rebuild with
 `fetch_icons.py`, then `scripts/generate_app_overlays.py` on the spec.
 
 ## Shortcuts
@@ -125,6 +128,58 @@ Apache-2.0). `fit_view, group_enter, group_exit, mute, search` are byte copies
 of `../blender/icons/`, and `upstream, downstream, stickynote, jumpbookmark` of
 `../nuke/icons/` (Material Symbols there, Apache-2.0).
 
+## Animation Editor set
+
+`anim.yaml`, routed on `houdini://anim`. 45 keys on each platform, plus the ESC
+mark. The package reports the Animation Editor pane but not which of its three
+views (graph, dopesheet, table) is shown, so the set draws the graph view keys.
+Sources (Houdini 22.0, read 2026-11-14):
+
+- <https://www.sidefx.com/docs/houdini/ref/panes/changraph.html> (graph view):
+  K set keyframe, Del delete the selected keys, 0 slopes to zero, 9 slopes to
+  automatic, `,` or Shift+Left previous keyframe, `.` or Shift+Right next
+  keyframe, Ctrl+C or Alt+C copy key values, Ctrl+V or Alt+V paste key values,
+  I isolate channels, Shift+I revert isolate, S (hold) box-select handles on
+  one channel only.
+- <https://www.sidefx.com/docs/houdini/ref/panes/animeditor.html>: 1, 2 and 3
+  switch to the graph, dopesheet and table view; Ctrl+Left / Ctrl+Right go to
+  the previous / next bookmark. These replace the quick reference's "previous /
+  next scoped keyframe" on the same keys, because the hotkey goes to the pane
+  under the pointer.
+- The keys of `bindings.yaml` that work in every pane: the timeline arrows,
+  Ctrl+Up, pane tabs, Alt+1..9 pane types, Alt+K Auto-key, and the File and
+  Edit menu keys (Ctrl+N, Ctrl+O, Ctrl+S, Ctrl+Z, not on a SideFX page).
+
+Left out: the dopesheet keys (W ripple tool, A and Shift+A expand the selection
+to the row or column, <https://www.sidefx.com/docs/houdini/ref/panes/dopesheet.html>),
+the channel list keys (S select the object, G channel group, Ctrl+Del delete
+channels, Ctrl+2 / Ctrl+4 subpanes,
+<https://www.sidefx.com/docs/houdini/ref/panes/chanlist.html>), and every mouse
+chord (Alt+click add a key, Ctrl+drag, Shift+drag). Y (box handle), named in
+an earlier audit, is on no SideFX page that was found, so it is not drawn.
+
+## Python Shell and Textport sets
+
+Letters, digits and most chords type text in these two panes, so each set
+draws only the keys SideFX names for it; every other key is blank (the route
+has `layer: false`, so the Scene View set is not drawn under it). One artwork
+set serves every OS: no binding uses Cmd.
+
+- `python.yaml`, routed on `houdini://python`, 9 keys. Source:
+  <https://www.sidefx.com/docs/houdini/hom/intro.html> (Getting Started, read
+  2026-11-14): Home or Ctrl+A start of the line, End or Ctrl+E end of the line,
+  Up / Down history, Ctrl+C sends KeyboardInterrupt (it does not copy), Ctrl+D
+  closes a floating Python Shell window. Enter runs the line. ⚠️ The page gives
+  the chords as Ctrl. Whether they are Ctrl or Cmd on macOS is not checked;
+  they are drawn as Ctrl.
+- `textport.yaml`, routed on `houdini://textport`, 7 keys. Source:
+  <https://www.sidefx.com/docs/houdini/ref/windows/textport.html> (read
+  2026-11-14): PgUp / PgDn scroll, Home scroll to the top, End scroll to the
+  end, Up / Down history. Enter runs the command.
+
+Not checked in Houdini: whether the pane keys (Alt+1..9, Ctrl+T, Ctrl+W) still
+act while the pointer is over these panes. They are not drawn.
+
 ## Icons
 
 | File | Source | Licence |
@@ -141,6 +196,17 @@ of `../blender/icons/`, and `upstream, downstream, stickynote, jumpbookmark` of
 | `space_view` | the F8 object cube with four arrows, drawn in `fetch_icons.py` through `../space_hint.py` on the whole 72x40 keycap. Space shows that holding it is the view tool; the Space+key combinations stay undrawn | GPL-3.0-or-later |
 | `key_move, key_rotate, key_scale, key_handle, pin_camera` | composites, `../dcc_glyphs.py` `with_badge` (move / rotate / scale / gizmo + `badge_key`, `camera` + `badge_pin`) | as their parts |
 | `houdini.png` (ESC mark) | Simple Icons `houdini`, see below | artwork CC0-1.0; SideFX's mark |
+
+| `slope_flat, slope_auto, isolate, isolate_revert, sel_channel, ed_table` (Animation Editor) | Material Symbols (`ms:` names in `fetch_icons.py`) | Apache-2.0 |
+| `ed_dopesheet` | byte copy of `../blender/icons/` (Material Symbols there) | Apache-2.0 |
+| `key_delete` | byte copy of `../blender/icons/` (keyframe diamond drawn there) | GPL-3.0-or-later |
+| `copy, paste` | byte copies of `../maya/icons/` (Fluent, from `../cinema4d/`) | MIT |
+| `bm_prev, bm_next` | byte copies of `../maya/icons/` (Material Symbols bookmark with an arrow, `../dcc_glyphs.py` composite) | as their parts |
+| `line_start, line_end, file_start, file_end, page_up, page_down` (Python Shell, Textport) | byte copies of `../nano/icons/` (drawn there) | GPL-3.0-or-later |
+| `exit` | byte copy of `../nano/icons/` (Fluent) | MIT |
+| `histprev, histnext` | byte copies of `../jupyter/icons/` (Material Symbols) | Apache-2.0 |
+| `run` | byte copy of `../jupyter/icons/` (Fluent) | MIT |
+| `stop` | byte copy of `../aicli/icons/` (Fluent) | MIT |
 
 `camera`, `badge_key` and `badge_pin` are inputs of the composites; no binding
 draws them directly. Labels that name a shared concept (Select all, Save, Undo)
@@ -193,7 +259,8 @@ python scripts/generate_app_overlays.py \
     polyhost/res/overlay_sources/houdini/bindings.yaml --preview /tmp/houdini_preview
 ```
 
-Run the Blender, 3ds Max, Nuke and Cinema 4D `fetch_icons.py` first on a fresh
+Run the Blender, 3ds Max, Nuke, Cinema 4D, Maya, nano, Jupyter and AI CLI
+(`aicli`) `fetch_icons.py` first on a fresh
 checkout: the borrowed icons are copied from those sets. `fetch_icons.py` does
 not redraw a drawn icon, a composite or the mark when the PNG exists. Delete it
 first to redraw it.

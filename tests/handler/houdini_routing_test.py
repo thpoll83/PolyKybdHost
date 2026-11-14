@@ -9,9 +9,10 @@ Houdini binds Ctrl on Windows/Linux and Cmd on macOS, so the entry has an
   reach the entry and load the macOS set;
 * every file the route names exists;
 * with the Houdini package's report (`houdini://<pane>[/<network type>]`), a
-  Network Editor loads the Network Editor set, any other pane and no report
-  keep the Scene View set, and the report REPLACES the fallback
-  (`layer: false`);
+  Network Editor loads the Network Editor set, an Animation Editor the graph
+  view set, the Python Shell and the Textport their text-input sets, any other
+  pane and no report keep the Scene View set, and the report REPLACES the
+  fallback (`layer: false`);
 * the entry's names are exactly the host's context-reporter allow-list, and a
   macOS name with a version reaches the reporter too.
 
@@ -37,6 +38,12 @@ NETWORK = ["houdini_network_template.mods.png", "houdini_network_template.combo.
 NETWORK_MAC = ["houdini_network_template_mac.mods.png",
                "houdini_network_template_mac.combo.mods.png",
                "houdini_network_template_mac.extra.mods.png"]
+ANIM = ["houdini_anim_template.mods.png", "houdini_anim_template.combo.mods.png"]
+ANIM_MAC = ["houdini_anim_template_mac.mods.png", "houdini_anim_template_mac.combo.mods.png"]
+# Text-input panes: one artwork set for every OS (no binding uses Cmd).
+PYTHON = ["houdini_python_template.mods.png"]
+TEXTPORT = ["houdini_textport_template.mods.png"]
+PANE_SETS = NETWORK + NETWORK_MAC + ANIM + ANIM_MAC + PYTHON + TEXTPORT
 KEY = ("houdini,houdinifx,houdinicore,happrentice,hindie,hescape,houdini-bin,"
        "houdini fx,houdini core,houdini apprentice,houdini indie")
 
@@ -141,9 +148,15 @@ class HoudiniRoutingTest(unittest.TestCase):
             "houdini://network/obj": NETWORK,
             "houdini://network/lop": NETWORK,
             "houdini://network": NETWORK,
+            "houdini://anim": ANIM,
+            "houdini://anim/obj": ANIM,
+            "houdini://python": PYTHON,
+            "houdini://textport": TEXTPORT,
             "houdini://scene/sop": HOUDINI,
-            "houdini://textport": HOUDINI,
             "houdini://parms/obj": HOUDINI,
+            "houdini://channels": HOUDINI,
+            "houdini://compositor": HOUDINI,
+            "houdini://other": HOUDINI,
             None: HOUDINI,
         }
         for url, want in cases.items():
@@ -153,15 +166,43 @@ class HoudiniRoutingTest(unittest.TestCase):
         self.assertEqual(self._route_url("houdini://network/dop", "macos"), NETWORK_MAC)
         self.assertEqual(self._route_url("houdini://scene/obj", "macos"), HOUDINI_MAC)
         self.assertEqual(self._route_url(None, "macos"), HOUDINI_MAC)
+        self.assertEqual(self._route_url("houdini://anim", "macos"), ANIM_MAC)
+        self.assertEqual(self._route_url("houdini://python", "macos"), PYTHON)
+        self.assertEqual(self._route_url("houdini://textport", "macos"), TEXTPORT)
+        self.assertEqual(self._route_url("houdini://channels", "macos"), HOUDINI_MAC)
 
-    def test_the_network_set_replaces_the_scene_view_set(self):
-        got = find_matching_entry("Untitled", self.mapping["houdini"],
-                                  "houdini://network/sop", "linux")
-        self.assertFalse([f for f in got["overlay"] if getattr(f, "underlay", False)])
+    def test_a_pane_set_replaces_the_scene_view_set(self):
+        # A text pane must not show the Scene View tool letters dimmed under it.
+        for url in ("houdini://network/sop", "houdini://anim",
+                    "houdini://python", "houdini://textport"):
+            for os_name in ("linux", "macos"):
+                with self.subTest(url=url, os=os_name):
+                    got = find_matching_entry("Untitled", self.mapping["houdini"], url, os_name)
+                    self.assertFalse([f for f in got["overlay"] if getattr(f, "underlay", False)])
 
-    def test_network_files_exist(self):
-        missing = [f for f in NETWORK + NETWORK_MAC if not (RES / "overlays" / f).is_file()]
+    def test_pane_set_files_exist(self):
+        missing = [f for f in PANE_SETS if not (RES / "overlays" / f).is_file()]
         self.assertEqual(missing, [])
+
+    def test_pool_capacity(self):
+        # One switch shows at most 600 distinct images (OVERLAY_POOL_CAPACITY):
+        # count the lit 72x40 cells per colour channel of each route's PNGs.
+        import numpy as np
+        from PIL import Image
+
+        def slots(files):
+            n = 0
+            for f in files:
+                a = np.asarray(Image.open(RES / "overlays" / f).convert("RGBA")) > 127
+                for r in range(a.shape[0] // 40):
+                    for c in range(a.shape[1] // 72):
+                        cell = a[r * 40:(r + 1) * 40, c * 72:(c + 1) * 72]
+                        n += int(cell.any(axis=(0, 1)).sum())
+            return n
+
+        for files in (NETWORK, NETWORK_MAC, ANIM, ANIM_MAC, PYTHON, TEXTPORT):
+            with self.subTest(files=files[0]):
+                self.assertLessEqual(slots(files), 600)
 
     def test_unrelated_names_do_not_match(self):
         # A name that only starts with "houdini" is not the app.
