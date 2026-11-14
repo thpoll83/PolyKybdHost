@@ -1492,6 +1492,12 @@ code:
 # route that title to the Ghidra set (sources: overlay_sources/ghidra/) before
 # the JetBrains title gate is tried. A second CodeBrowser instance is titled
 # "CodeBrowser(2): ..." and keeps the default here.
+#
+# Unciv started from its jar (overlay_sources/unciv/) is a `java` process too.
+# Its window title is "Unciv" (DesktopLauncher.kt), so the "Unciv" branch below
+# routes it on every platform.
+# FreeCol (overlay_sources/freecol/) is a Java program as well; its title is
+# "FreeCol <version>".
 java:
   overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png, jetbrains_template.extra.mods.png]
   title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
@@ -1502,6 +1508,17 @@ java:
     "Minecraft*": *minecraft_java_branch
     "CodeBrowser:":
       overlay: &ghidra_win [ghidra_template.mods.png, ghidra_template.combo.mods.png]
+    # The title is exactly "Unciv". The `title:` keeps an IDE window of a
+    # project named Unciv ("Unciv – Foo.kt") on the JetBrains set.
+    Unciv: &unciv_java_branch
+      title: '^Unciv$'
+      overlay: unciv_template.mods.png
+    # The title is "FreeCol <version>" (FreeColFrame.getFrameName()). The
+    # `title:` asks for the version digit, so an IDE window of a project named
+    # FreeCol stays on the JetBrains set.
+    FreeCol: &freecol_java_branch
+      title: '^FreeCol \d'
+      overlay: [freecol_template.mods.png, freecol_template.combo.mods.png]
   os:
     macos:
       overlay: [jetbrains_mac_template.mods.png, jetbrains_mac_template.combo.mods.png,
@@ -1513,6 +1530,8 @@ java:
         "CodeBrowser:":
           overlay: &ghidra_mac [ghidra_template_mac.mods.png, ghidra_template_mac.combo.mods.png,
                                 ghidra_template_mac.extra.mods.png]
+        Unciv: *unciv_java_branch
+        FreeCol: *freecol_java_branch
     linux:
       overlay: [jetbrains_linux_template.mods.png, jetbrains_linux_template.combo.mods.png,
                 jetbrains_linux_template.extra.mods.png]
@@ -1527,6 +1546,8 @@ java:
         "Minecraft*": *minecraft_java_branch
         "CodeBrowser:":
           overlay: *ghidra_win
+        Unciv: *unciv_java_branch
+        FreeCol: *freecol_java_branch
     linux_gnome:
       overlay: [jetbrains_gnome_template.mods.png, jetbrains_gnome_template.combo.mods.png,
                 jetbrains_gnome_template.extra.mods.png]
@@ -1536,6 +1557,8 @@ java:
         "Minecraft*": *minecraft_java_branch
         "CodeBrowser:":
           overlay: *ghidra_win
+        Unciv: *unciv_java_branch
+        FreeCol: *freecol_java_branch
     linux_kde:
       overlay: [jetbrains_kde_template.mods.png, jetbrains_kde_template.combo.mods.png,
                 jetbrains_kde_template.extra.mods.png]
@@ -1545,6 +1568,8 @@ java:
         "Minecraft*": *minecraft_java_branch
         "CodeBrowser:":
           overlay: *ghidra_win
+        Unciv: *unciv_java_branch
+        FreeCol: *freecol_java_branch
 # `javaw` on Windows serves two programs, told apart by the window title. The
 # title sub-map is tried before the parent's own title gate.
 # Minecraft: Java Edition: the launcher starts the game with the `javaw.exe` of
@@ -1553,13 +1578,17 @@ java:
 # mode); the "fg" and "debug" modes use java.exe, which the `java` entry above
 # routes. Only the CodeBrowser window gets the set; the project window
 # ("Ghidra: <project>") does not.
-# Every other `javaw` program matches neither and stays unmatched.
+# Unciv: the jar started with javaw.exe; its window title is "Unciv".
+# FreeCol: started with javaw.exe; its window title is "FreeCol <version>".
+# Every other `javaw` program matches none of these and stays unmatched.
 javaw:
   overlay: *ghidra_win
   title: '^CodeBrowser(\(\d+\))?: '
   titles-startswith:
     Minecraft: *minecraft_java_branch
     "Minecraft*": *minecraft_java_branch
+    Unciv: *unciv_java_branch
+    FreeCol: *freecol_java_branch
 # Ghidra under its own name. Linux: on GNOME and KDE the host reports WM_CLASS,
 # which Java sets from the main class `ghidra.Ghidra` as "ghidra-Ghidra"
 # (unverified on an install). macOS: launch.sh passes -Xdock:name=Ghidra, so
@@ -3570,6 +3599,44 @@ openrct2,openrct2.exe,io.openrct2.openrct2:
 # the Flatpak id is io.github.ihhub.Fheroes2. Names not checked on an install.
 fheroes2,fheroes2.exe,io.github.ihhub.fheroes2:
   overlay: fheroes2_template.mods.png
+# The Battle for Wesnoth (overlay_sources/wesnoth/wesnoth.yaml). `wesnoth` is
+# the executable target in src/CMakeLists.txt (release 1.18.8), `wesnoth.exe` on
+# Windows; the Flatpak id is org.wesnoth.Wesnoth and the macOS app is "The
+# Battle for Wesnoth". The game binds Cmd on macOS where it binds Ctrl on
+# Windows and Linux, hence the macOS branch. Names not checked on an install.
+wesnoth,wesnoth.exe,org.wesnoth.wesnoth,the battle for wesnoth:
+  overlay: [wesnoth_template.mods.png, wesnoth_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [wesnoth_template_mac.mods.png, wesnoth_template_mac.combo.mods.png, wesnoth_template_mac.extra.mods.png]
+# VCMI, the free Heroes of Might and Magic III engine
+# (overlay_sources/vcmi/vcmi.yaml). `vcmiclient` is the executable target in
+# clientapp/CMakeLists.txt (release 1.7.5), `VCMI_client.exe` on Windows; the
+# Flatpak id is eu.vcmi.VCMI. The launcher (vcmilauncher) gets no overlay.
+# Names not checked on an install.
+vcmiclient,vcmi_client,vcmi_client.exe,eu.vcmi.vcmi:
+  overlay: vcmi_template.mods.png
+# Unciv (overlay_sources/unciv/unciv.yaml). The packr builds start a program
+# named `Unciv` (`Unciv.exe` on Windows; desktop/build.gradle.kts, release
+# 5.0.0); io.github.yairm210.unciv is the Flathub id. Started from the jar the
+# process is `java` or `javaw`: the "Unciv" title branches of those entries
+# load the same set. Names not checked on an install.
+unciv,unciv.exe,io.github.yairm210.unciv:
+  overlay: unciv_template.mods.png
+# FreeOrion (overlay_sources/freeorion/freeorion.yaml). `freeorion` is the
+# client's executable target in CMakeLists.txt (release v0.5.1.2), with
+# OUTPUT_NAME FreeOrion on Windows and macOS; the Flatpak id is
+# org.freeorion.FreeOrion. Names not checked on an install.
+freeorion,freeorion.exe,org.freeorion.freeorion:
+  overlay: [freeorion_template.mods.png, freeorion_template.combo.mods.png]
+# FreeCol (overlay_sources/freecol/freecol.yaml), a Java program (release
+# v1.2.0). `freecol` is the launcher (freecol.exe in the Windows installer),
+# net-sf-freecol-FreeCol the window class Java sets on X11 and
+# org.freecol.FreeCol the Flathub id. Started with `java -jar` the process is
+# `java` or `javaw`: the "FreeCol" title branches of those entries load the
+# same set. Names not checked on an install.
+freecol,freecol.exe,net-sf-freecol-freecol,org.freecol.freecol:
+  overlay: [freecol_template.mods.png, freecol_template.combo.mods.png]
 # DevilutionX, Diablo and Hellfire (overlay_sources/devilutionx/devilutionx.yaml).
 # devilutionx is the CMake binary target (devilutionx.exe on Windows, also under
 # Wine); the Flatpak id is org.diasurgical.DevilutionX and the window title

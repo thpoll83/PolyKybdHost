@@ -1,0 +1,105 @@
+# FreeCol overlay for PolyKybd.
+#
+# Keys: the default accelerators (the `*.accelerator` entries) in
+# data/strings/FreeColMessages.properties of FreeCol/freecol, release v1.2.0.
+# See SOURCES.md.
+#
+# A unit order keeps one key whatever unit is selected, so the letters are
+# drawn. The accelerators name the Control key on every system, so there is
+# one set.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/freecol/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/freecol/freecol.yaml --preview /tmp/freecol_preview
+app: freecol
+match: [freecol, freecol.exe, net-sf-freecol-freecol, org.freecol.freecol]
+output: freecol_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for Freeciv: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# "FreeCol" drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Unit orders
+  - { key: B, icon: buildcolony.png, label: "Build colony" }
+  - { key: F, icon: fortify.png, label: "Fortify" }
+  - { key: S, icon: sentry.png, label: "Sentry" }
+  - { key: W, icon: wait.png, label: "Wait" }
+  - { key: SPACE, icon: skip.png, label: "Skip unit" }
+  - { key: D, icon: disband.png, label: "Disband unit" }
+  - { key: Z, icon: clearorders.png, label: "Clear orders" }
+  - { key: H, icon: goto.png, label: "Go to a destination", shared: false }
+  - { key: G, icon: gototile.png, label: "Go to tile" }
+  - { key: O, icon: executegoto.png, label: "Execute go to orders" }
+  - { key: R, icon: road.png, label: "Build road" }
+  - { key: P, icon: plow.png, label: "Plow" }
+  - { key: C, icon: clearforest.png, label: "Clear forest" }
+  - { key: L, icon: load.png, label: "Load cargo" }
+  - { key: U, icon: unload.png, label: "Unload" }
+  - { key: A, icon: assigntraderoute.png, label: "Assign trade route" }
+  - { key: N, icon: rename.png, label: "Rename", shared: false }
+  - { key: TAB, icon: nextontile.png, label: "Next unit on tile" }
+  - { key: A, mods: [CTRL], icon: rangedattack.png, label: "Ranged attack" }
+  - { key: HOME, icon: moveNW.png, label: "Move north-west" }
+  - { key: PGUP, icon: moveNE.png, label: "Move north-east" }
+  - { key: END, icon: moveSW.png, label: "Move south-west" }
+  - { key: PGDN, icon: moveSE.png, label: "Move south-east" }
+
+  # Game and view
+  - { key: ENTER, icon: endturn.png, label: "End turn" }
+  - { key: E, icon: europe.png, label: "Europe" }
+  - { key: T, icon: traderoutes.png, label: "Trade routes" }
+  - { key: C, mods: [CTRL], icon: center.png, label: "Center on the active unit" }
+  - { key: T, mods: [CTRL], icon: chat.png, label: "Chat" }
+  - { key: B, mods: [CTRL], icon: borders.png, label: "Display borders" }
+  - { key: G, mods: [CTRL], icon: grid.png, label: "Display grid" }
+  - { key: F, mods: [CTRL], icon: findsettlement.png, label: "Find settlement" }
+  - { key: M, mods: [CTRL], icon: mapcontrols.png, label: "Map controls" }
+  - { key: T, mods: [SHIFT], icon: showtile.png, label: "Show tile" }
+  - { key: V, mods: [CTRL, SHIFT], icon: viewmode.png, label: "Toggle view mode" }
+  - { key: EQUAL, mods: [SHIFT], icon: zoomin.png, label: "Zoom in", shared: false }
+  - { key: MINUS, icon: zoomout.png, label: "Zoom out", shared: false }
+  - { key: MINUS, mods: [CTRL], icon: minimapzoomout.png, label: "Zoom out the mini-map" }
+  - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Toggle windowed mode", shared: false }
+  - { key: N, mods: [CTRL], icon: newgame.png, label: "New game" }
+  - { key: O, mods: [CTRL], icon: open.png, label: "Open a saved game", shared: false }
+  - { key: S, mods: [CTRL], icon: save.png, label: "Save game", shared: false }
+  - { key: X, mods: [CTRL], icon: saveandquit.png, label: "Save and exit" }
+  - { key: Q, mods: [CTRL], icon: quit.png, label: "Quit", shared: false }
+  - { key: P, mods: [CTRL], icon: preferences.png, label: "Preferences", shared: false }
+  - { key: R, mods: [CTRL], icon: reconnect.png, label: "Reconnect" }
+
+  # Reports
+  - { key: F1, icon: religion.png, label: "Religion report", region: [34, 40] }
+  - { key: F2, icon: labour.png, label: "Labour report", region: [34, 40] }
+  - { key: F3, icon: colonies.png, label: "Colony report", region: [34, 40] }
+  - { key: F4, icon: foreign.png, label: "Foreign affairs report", region: [30, 40] }
+  - { key: F5, icon: indian.png, label: "Indian report", region: [30, 40] }
+  - { key: F6, icon: congress.png, label: "Continental Congress report", region: [30, 40] }
+  - { key: F7, icon: military.png, label: "Military report", region: [30, 40] }
+  - { key: F8, icon: naval.png, label: "Naval report", region: [34, 40] }
+  - { key: F9, icon: trade.png, label: "Trade report" }
+  - { key: F11, icon: turnreport.png, label: "Turn report" }
+  - { key: F12, icon: requirements.png, label: "Requirements report" }
+  - { key: F1, mods: [SHIFT], icon: cargo.png, label: "Cargo report", region: [34, 40] }
+  - { key: F2, mods: [SHIFT], icon: exploration.png, label: "Exploration report", region: [34, 40] }
+  - { key: F3, mods: [SHIFT], icon: history.png, label: "History report", region: [34, 40] }
+  - { key: F4, mods: [SHIFT], icon: production.png, label: "Production report", region: [30, 40] }
+  - { key: F5, mods: [SHIFT], icon: education.png, label: "Education report", region: [30, 40] }
+  - { key: F9, mods: [SHIFT], icon: difficulty.png, label: "Show difficulty" }
+  - { key: F11, mods: [SHIFT], icon: gameoptions.png, label: "Show game options" }
+  - { key: F12, mods: [SHIFT], icon: mapoptions.png, label: "Show map generator options" }

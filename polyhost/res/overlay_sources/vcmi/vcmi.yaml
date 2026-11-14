@@ -1,0 +1,106 @@
+# VCMI (free engine for Heroes of Might and Magic III) overlay for PolyKybd.
+#
+# Keys: the default shortcuts in config/keyBindingsConfig.json of vcmi/vcmi,
+# release 1.7.5. See SOURCES.md.
+#
+# Where a key means one thing on the adventure map and another in battle or in
+# a town, the adventure-map meaning is drawn. The icons of actions that fheroes2
+# also has are the ones of the fheroes2 set.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/vcmi/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/vcmi/vcmi.yaml --preview /tmp/vcmi_preview
+app: vcmi
+match: [vcmiclient, vcmi_client, vcmi_client.exe, eu.vcmi.vcmi]
+output: vcmi_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for fheroes2: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# "VCMI" drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Adventure map: heroes and towns
+  - { key: E, icon: endturn.png, label: "End turn" }
+  - { key: H, icon: nexthero.png, label: "Next hero" }
+  - { key: H, mods: [CTRL], icon: firsthero.png, label: "First hero" }
+  - { key: T, icon: nexttown.png, label: "Next town" }
+  - { key: T, mods: [CTRL], icon: firsttown.png, label: "First town" }
+  - { key: N, icon: nextobject.png, label: "Next hero or town" }
+  - { key: M, icon: movehero.png, label: "Move hero along its path" }
+  - { key: Z, icon: sleephero.png, label: "Put hero to sleep" }
+  - { key: W, icon: wakehero.png, label: "Wake hero" }
+  - { key: C, icon: castspell.png, label: "Cast spell" }
+  - { key: D, icon: dig.png, label: "Dig for the grail" }
+  - { key: SPACE, icon: visitobject.png, label: "Visit object under the hero" }
+  - { key: ENTER, icon: openselected.png, label: "Open hero or town" }
+  - { key: F5, icon: trackhero.png, label: "Track hero", region: [30, 40] }
+  - { key: HOME, icon: moveNW.png, label: "Move hero north-west" }
+  - { key: PGUP, icon: moveNE.png, label: "Move hero north-east" }
+  - { key: END, icon: moveSW.png, label: "Move hero south-west" }
+  - { key: PGDN, icon: moveSE.png, label: "Move hero south-east" }
+  - { key: PGUP, mods: [CTRL], icon: listup.png, label: "Move hero or town up in the list" }
+  - { key: PGDN, mods: [CTRL], icon: listdown.png, label: "Move hero or town down in the list" }
+  - { key: HOME, mods: [CTRL], icon: listtop.png, label: "Move hero or town to the top of the list" }
+  - { key: END, mods: [CTRL], icon: listbottom.png, label: "Move hero or town to the bottom of the list" }
+  - { key: DEL, icon: dismiss.png, label: "Dismiss hero" }
+
+  # Adventure map: views and dialogs
+  - { key: V, icon: viewworld.png, label: "View world" }
+  - { key: "1", icon: world1.png, label: "View world at 1x" }
+  - { key: "2", icon: world2.png, label: "View world at 2x" }
+  - { key: "4", icon: world4.png, label: "View world at 4x" }
+  - { key: U, icon: maplevel.png, label: "Switch surface and underground" }
+  - { key: K, icon: kingdom.png, label: "Kingdom overview" }
+  - { key: P, icon: puzzle.png, label: "Puzzle map" }
+  - { key: I, icon: scenarioinfo.png, label: "Scenario information" }
+  - { key: Q, icon: questlog.png, label: "Quest log" }
+  - { key: G, icon: thievesguild.png, label: "Thieves' guild" }
+  - { key: J, icon: statistics.png, label: "Statistics" }
+  - { key: B, icon: marketplace.png, label: "Marketplace" }
+  - { key: F6, icon: grid.png, label: "Toggle map grid", region: [30, 40] }
+  - { key: BSPC, icon: zoomreset.png, label: "Reset zoom" }
+  - { key: F, mods: [CTRL], icon: search.png, label: "Search for a map object", shared: false }
+  - { key: F, mods: [ALT], icon: searchnext.png, label: "Continue the search" }
+  - { key: F1, icon: wiki.png, label: "Open the wiki", region: [34, 40] }
+
+  # Game
+  - { key: O, icon: options.png, label: "Options", shared: false }
+  - { key: S, icon: save.png, label: "Save game", shared: false }
+  - { key: L, icon: load.png, label: "Load game", shared: false }
+  - { key: F8, icon: quicksave.png, label: "Quick save", region: [34, 40] }
+  - { key: F9, icon: quickload.png, label: "Quick load" }
+  - { key: R, icon: restart.png, label: "Restart game" }
+  - { key: N, mods: [CTRL], icon: newgame.png, label: "New game" }
+  - { key: M, mods: [CTRL], icon: mainmenu.png, label: "Main menu" }
+  - { key: Q, mods: [CTRL], icon: quit.png, label: "Quit", shared: false }
+  - { key: TAB, mods: [CTRL], icon: lobby.png, label: "Online lobby" }
+  - { key: TAB, icon: console.png, label: "Game console" }
+  - { key: F3, icon: screenshot.png, label: "Screenshot", region: [34, 40] }
+  - { key: F4, icon: fullscreen.png, label: "Toggle full screen", region: [30, 40], shared: false }
+
+  # Battle (no adventure-map meaning)
+  - { key: A, icon: autocombat.png, label: "Auto combat" }
+
+  # Town screen (no adventure-map meaning)
+  - { key: F, icon: fort.png, label: "Town fort" }
+  - { key: H, mods: [SHIFT], icon: garrisonhero.png, label: "Open garrisoned hero" }
+
+  # Hero exchange screen
+  - { key: F10, icon: swaparmies.png, label: "Swap armies" }
+  - { key: F11, icon: swapartifacts.png, label: "Swap artifacts" }
+  - { key: F11, mods: [SHIFT], icon: swapbackpack.png, label: "Swap backpack artifacts" }
+  - { key: F11, mods: [CTRL], icon: swapequipped.png, label: "Swap equipped artifacts" }
