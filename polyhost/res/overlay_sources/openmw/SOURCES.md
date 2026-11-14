@@ -107,6 +107,13 @@ Licence texts for the icon and font licences named in this file:
 - Apache-2.0: https://www.apache.org/licenses/LICENSE-2.0
 - SIL OFL 1.1: https://openfontlicense.org/open-font-license-official-text/
 
+Where each icon file comes from. The icon table gives the name to put in the
+URL; the same URLs are in `SOURCES` of `cnc_remastered/fetch_icons.py`.
+
+- Font Awesome Free 6.5.2, solid (`fa:<name>`): `https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/svgs/solid/<name>.svg`
+- game-icons.net (`gi:<author>/<name>`): `https://game-icons.net/icons/000000/transparent/1x1/<author>/<name>.svg`
+- Material Design Icons (`mdi:<name>`): `https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/<name>.svg`
+
 | File | Source | Author | Licence |
 |---|---|---|---|
 | `forward.png`, `left.png`, `back.png`, `right.png` | Font Awesome Free 6.5.2 `arrow-up`, `arrow-left`, `arrow-down`, `arrow-right` (solid) | Fonticons, Inc. | CC BY 4.0 |

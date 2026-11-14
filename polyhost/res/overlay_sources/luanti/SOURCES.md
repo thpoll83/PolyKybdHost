@@ -112,6 +112,11 @@ Licence texts for the icon and font licences named in this file:
 - CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
 - SIL OFL 1.1: https://openfontlicense.org/open-font-license-official-text/
 
+Where each icon file comes from. The icon table gives the name to put in the
+URL; the same URLs are in `SOURCES` of `cnc_remastered/fetch_icons.py`.
+
+- Font Awesome Free 6.5.2, solid (`fa:<name>`): `https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/svgs/solid/<name>.svg`
+
 | File | Source | Author | Licence |
 |---|---|---|---|
 | `forward.png`, `left.png`, `back.png`, `right.png` | Font Awesome Free 6.5.2 `arrow-up`, `arrow-left`, `arrow-down`, `arrow-right` (solid) | Fonticons, Inc. | CC BY 4.0 |
