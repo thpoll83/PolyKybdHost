@@ -423,10 +423,15 @@ Don't hand-download icons. Write a tiny per-app `fetch_icons.py` next to
   draw white-on-transparent with PIL at ~4× then downscale; the *alpha is the
   shape*, so the binding renders it with `mode: alpha`. Keep the draw function in
   `fetch_icons.py` so it reproduces.
-- **Guard hand-editable assets so a re-run never clobbers them.** Any icon the
-  user may hand-edit — the program mark, custom-drawn glyphs, composites — must be
-  **skipped if it already exists**; the committed PNG is then the source of truth.
-  (Plain Fluent downloads are deterministic, so they may re-fetch freely.)
+- **Guard what a person may retouch, so a re-run never clobbers it.** Skip the
+  file **if it already exists** for: the app's or game's own logo (a frame cut from
+  its `.ico` or SVG), and any mark or glyph that an owner tuned by hand. The
+  committed PNG is then the source of truth. Do not guard an icon that the script
+  draws from code and committed inputs only: a name set in a pinned font, a number
+  or a sign added to a committed icon, a flat icon from an icon set. For these the
+  script is the source, and a guard would keep a stale PNG after a change to a
+  shared helper. (Plain Fluent downloads are deterministic, so they may re-fetch
+  freely.)
   ```python
   if (out / "word.png").exists():
       print("  word.png  <- committed asset (left as-is)")
