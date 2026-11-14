@@ -1,0 +1,102 @@
+# Unciv overlay for PolyKybd.
+#
+# Keys: the default key bindings in
+# core/src/com/unciv/ui/components/input/KeyboardBinding.kt of yairm210/Unciv,
+# release 5.0.0: the world screen, map panning and unit action categories. See
+# SOURCES.md.
+#
+# A unit action keeps its key whatever unit is selected, so the letters are
+# drawn. Where several actions share a key (G for every great person action),
+# the common meaning is drawn and SOURCES.md lists the others.
+#
+# Unciv binds Ctrl on macOS too, so there is one set.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/unciv/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/unciv/unciv.yaml --preview /tmp/unciv_preview
+app: unciv
+match: [unciv, unciv.exe, io.github.yairm210.unciv]
+output: unciv_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for Freeciv: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# "UNCIV" drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # World screen
+  - { key: N, icon: nextturn.png, label: "Next turn" }
+  - { key: SPACE, icon: nextturn.png, label: "Next turn" }
+  - { key: TAB, icon: menu.png, label: "Menu" }
+  - { key: E, icon: empire.png, label: "Empire overview" }
+  - { key: COMMA, icon: idleprev.png, label: "Previous idle unit" }
+  - { key: DOT, icon: idlenext.png, label: "Next idle unit" }
+  - { key: HOME, icon: capital.png, label: "View capital city" }
+  - { key: GRAVE, icon: console.png, label: "Developer console" }
+
+  # Map panning
+  - { key: W, icon: panup.png, label: "Pan up" }
+  - { key: A, icon: panleft.png, label: "Pan left" }
+  - { key: S, icon: pandown.png, label: "Pan down" }
+  - { key: D, icon: panright.png, label: "Pan right" }
+
+  # World screen: function keys
+  - { key: F1, icon: civilopedia.png, label: "Civilopedia", region: [34, 40] }
+  - { key: F2, icon: trades.png, label: "Empire overview: trades", region: [34, 40] }
+  - { key: F3, icon: units.png, label: "Empire overview: units", region: [34, 40] }
+  - { key: F4, icon: politics.png, label: "Empire overview: politics", region: [30, 40] }
+  - { key: F5, icon: policies.png, label: "Social policies", region: [30, 40] }
+  - { key: F6, icon: technology.png, label: "Technology tree", region: [30, 40] }
+  - { key: F7, icon: notifications.png, label: "Empire overview: notifications", region: [30, 40] }
+  - { key: F8, icon: victory.png, label: "Victory status", region: [34, 40] }
+  - { key: F9, icon: stats.png, label: "Empire overview: stats" }
+  - { key: F10, icon: resources.png, label: "Empire overview: resources" }
+  - { key: F11, icon: quicksave.png, label: "Quick save" }
+  - { key: F12, icon: quickload.png, label: "Quick load" }
+
+  # World screen: Ctrl
+  - { key: A, mods: [CTRL], icon: autoplay.png, label: "Start AutoPlay" }
+  - { key: M, mods: [CTRL], icon: music.png, label: "Music player" }
+  - { key: O, mods: [CTRL], icon: options.png, label: "Options", shared: false }
+  - { key: S, mods: [CTRL], icon: save.png, label: "Save game", shared: false }
+  - { key: L, mods: [CTRL], icon: load.png, label: "Load game", shared: false }
+  - { key: R, mods: [CTRL], icon: resourceicons.png, label: "Toggle resource display" }
+  - { key: Y, mods: [CTRL], icon: yieldicons.png, label: "Toggle yield display" }
+  - { key: Q, mods: [CTRL], icon: quit.png, label: "Quit game", shared: false }
+  - { key: N, mods: [CTRL], icon: newgame.png, label: "New game" }
+  - { key: Z, mods: [CTRL], icon: undo.png, label: "Undo", shared: false }
+  - { key: U, mods: [CTRL], icon: toggleui.png, label: "Toggle UI" }
+
+  # Unit actions
+  - { key: C, icon: foundcity.png, label: "Found city" }
+  - { key: M, icon: automate.png, label: "Automate" }
+  - { key: F, icon: fortify.png, label: "Fortify or sleep" }
+  - { key: H, icon: heal.png, label: "Fortify or sleep until healed" }
+  - { key: X, icon: explore.png, label: "Explore" }
+  - { key: O, icon: promote.png, label: "Promote" }
+  - { key: U, icon: upgrade.png, label: "Upgrade" }
+  - { key: K, icon: transform.png, label: "Transform" }
+  - { key: P, icon: pillage.png, label: "Pillage" }
+  - { key: T, icon: setup.png, label: "Set up" }
+  - { key: I, icon: improve.png, label: "Construct improvement" }
+  - { key: R, icon: repair.png, label: "Repair" }
+  - { key: G, icon: greatperson.png, label: "Great person action" }
+  - { key: Z, icon: skip.png, label: "Skip turn" }
+  - { key: J, icon: destination.png, label: "Show unit destination" }
+  - { key: Y, icon: swapunits.png, label: "Swap units" }
+  - { key: DEL, icon: disband.png, label: "Disband unit" }
+  - { key: PGDN, icon: moreactions.png, label: "Show more actions" }
+  - { key: PGUP, icon: lessactions.png, label: "Back to the first actions" }

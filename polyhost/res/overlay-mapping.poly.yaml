@@ -1470,6 +1470,10 @@ code:
 # route that title to the Ghidra set (sources: overlay_sources/ghidra/) before
 # the JetBrains title gate is tried. A second CodeBrowser instance is titled
 # "CodeBrowser(2): ..." and keeps the default here.
+#
+# Unciv started from its jar (overlay_sources/unciv/) is a `java` process too.
+# Its window title is "Unciv" (DesktopLauncher.kt), so the "Unciv" branch below
+# routes it on every platform.
 java:
   overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png, jetbrains_template.extra.mods.png]
   title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
@@ -1480,6 +1484,11 @@ java:
     "Minecraft*": *minecraft_java_branch
     "CodeBrowser:":
       overlay: &ghidra_win [ghidra_template.mods.png, ghidra_template.combo.mods.png]
+    # The title is exactly "Unciv". The `title:` keeps an IDE window of a
+    # project named Unciv ("Unciv – Foo.kt") on the JetBrains set.
+    Unciv: &unciv_java_branch
+      title: '^Unciv$'
+      overlay: unciv_template.mods.png
   os:
     macos:
       overlay: [jetbrains_mac_template.mods.png, jetbrains_mac_template.combo.mods.png,
@@ -1491,6 +1500,7 @@ java:
         "CodeBrowser:":
           overlay: &ghidra_mac [ghidra_template_mac.mods.png, ghidra_template_mac.combo.mods.png,
                                 ghidra_template_mac.extra.mods.png]
+        Unciv: *unciv_java_branch
     linux:
       overlay: [jetbrains_linux_template.mods.png, jetbrains_linux_template.combo.mods.png,
                 jetbrains_linux_template.extra.mods.png]
@@ -1505,6 +1515,7 @@ java:
         "Minecraft*": *minecraft_java_branch
         "CodeBrowser:":
           overlay: *ghidra_win
+        Unciv: *unciv_java_branch
     linux_gnome:
       overlay: [jetbrains_gnome_template.mods.png, jetbrains_gnome_template.combo.mods.png,
                 jetbrains_gnome_template.extra.mods.png]
@@ -1514,6 +1525,7 @@ java:
         "Minecraft*": *minecraft_java_branch
         "CodeBrowser:":
           overlay: *ghidra_win
+        Unciv: *unciv_java_branch
     linux_kde:
       overlay: [jetbrains_kde_template.mods.png, jetbrains_kde_template.combo.mods.png,
                 jetbrains_kde_template.extra.mods.png]
@@ -1523,6 +1535,7 @@ java:
         "Minecraft*": *minecraft_java_branch
         "CodeBrowser:":
           overlay: *ghidra_win
+        Unciv: *unciv_java_branch
 # `javaw` on Windows serves two programs, told apart by the window title. The
 # title sub-map is tried before the parent's own title gate.
 # Minecraft: Java Edition: the launcher starts the game with the `javaw.exe` of
@@ -1531,13 +1544,15 @@ java:
 # mode); the "fg" and "debug" modes use java.exe, which the `java` entry above
 # routes. Only the CodeBrowser window gets the set; the project window
 # ("Ghidra: <project>") does not.
-# Every other `javaw` program matches neither and stays unmatched.
+# Unciv: the jar started with javaw.exe; its window title is "Unciv".
+# Every other `javaw` program matches none of these and stays unmatched.
 javaw:
   overlay: *ghidra_win
   title: '^CodeBrowser(\(\d+\))?: '
   titles-startswith:
     Minecraft: *minecraft_java_branch
     "Minecraft*": *minecraft_java_branch
+    Unciv: *unciv_java_branch
 # Ghidra under its own name. Linux: on GNOME and KDE the host reports WM_CLASS,
 # which Java sets from the main class `ghidra.Ghidra` as "ghidra-Ghidra"
 # (unverified on an install). macOS: launch.sh passes -Xdock:name=Ghidra, so
@@ -3527,6 +3542,13 @@ wesnoth,wesnoth.exe,org.wesnoth.wesnoth,the battle for wesnoth:
 # Names not checked on an install.
 vcmiclient,vcmi_client,vcmi_client.exe,eu.vcmi.vcmi:
   overlay: vcmi_template.mods.png
+# Unciv (overlay_sources/unciv/unciv.yaml). The packr builds start a program
+# named `Unciv` (`Unciv.exe` on Windows; desktop/build.gradle.kts, release
+# 5.0.0); io.github.yairm210.unciv is the Flathub id. Started from the jar the
+# process is `java` or `javaw`: the "Unciv" title branches of those entries
+# load the same set. Names not checked on an install.
+unciv,unciv.exe,io.github.yairm210.unciv:
+  overlay: unciv_template.mods.png
 # DevilutionX, Diablo and Hellfire (overlay_sources/devilutionx/devilutionx.yaml).
 # devilutionx is the CMake binary target (devilutionx.exe on Windows, also under
 # Wine); the Flatpak id is org.diasurgical.DevilutionX and the window title

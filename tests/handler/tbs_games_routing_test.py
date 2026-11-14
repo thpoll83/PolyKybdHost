@@ -6,6 +6,9 @@ What it pins:
 * every process name of a set loads that set, on all three platforms;
 * a set with a macOS branch loads its macOS files there;
 * a window title does not reroute a set that is matched by process name;
+* Unciv started from its jar is a `java` or `javaw` process: the window title
+  "Unciv" loads the Unciv set there, and the other programs on those process
+  names (a JetBrains IDE, Minecraft, Ghidra) keep their sets;
 * every named file exists.
 """
 
@@ -23,6 +26,14 @@ WESNOTH = ["wesnoth_template.mods.png", "wesnoth_template.combo.mods.png"]
 WESNOTH_MAC = ["wesnoth_template_mac.mods.png", "wesnoth_template_mac.combo.mods.png",
                "wesnoth_template_mac.extra.mods.png"]
 VCMI = "vcmi_template.mods.png"
+UNCIV = "unciv_template.mods.png"
+
+MINECRAFT = ["minecraft_java_template.mods.png", "minecraft_java_template.combo.mods.png"]
+GHIDRA = ["ghidra_template.mods.png", "ghidra_template.combo.mods.png"]
+# Games that run in a JVM: (window title, overlay).
+JAVA_GAMES = [
+    ("Unciv", UNCIV),
+]
 
 OSES = ("windows", "macos", "linux")
 
@@ -33,6 +44,7 @@ BY_PROCESS = [
      "The Battle for Wesnoth - 1.18.8", {"windows": WESNOTH, "macos": WESNOTH_MAC}),
     (("vcmiclient", "vcmi_client", "vcmi_client.exe", "eu.vcmi.vcmi"),
      "VCMI 1.7.5", {"windows": VCMI}),
+    (("unciv", "unciv.exe", "io.github.yairm210.unciv"), "Unciv", {"windows": UNCIV}),
 ]
 
 
@@ -85,9 +97,32 @@ class TbsGamesRoutingTest(unittest.TestCase):
                     self.assertEqual(self._route(apps[0], "windows", title),
                                      expected["windows"])
 
+    def test_java_games_route_by_title(self):
+        for title, expected in JAVA_GAMES:
+            for app in ("java", "javaw"):
+                for os_name in OSES:
+                    with self.subTest(app=app, os=os_name, title=title):
+                        self.assertEqual(self._route(app, os_name, title), expected)
+
+    def test_other_java_programs_keep_their_sets(self):
+        game_sets = [overlay for _title, overlay in JAVA_GAMES]
+        for os_name in OSES:
+            with self.subTest(os=os_name):
+                self.assertEqual(self._route("java", os_name, "Minecraft 1.21.4"), MINECRAFT)
+                # An IDE window of a project that has a game's name.
+                ide = self._route("java", os_name, "Unciv \u2013 KeyboardBinding.kt")
+                self.assertIsNotNone(ide)
+                self.assertIn("jetbrains", _files(ide)[0])
+                self.assertNotIn(self._route("java", os_name, "Some other program"), game_sets)
+        self.assertEqual(self._route("javaw", "windows", "Minecraft 1.21.4"), MINECRAFT)
+        self.assertEqual(self._route("javaw", "windows", "CodeBrowser: demo:/a.exe"), GHIDRA)
+        self.assertIsNone(self._route("javaw", "windows", "Unciv \u2013 KeyboardBinding.kt"))
+        self.assertIsNone(self._route("javaw", "windows", "Some other program"))
+
     def test_every_named_file_exists(self):
         named = [f for _apps, _title, expected in BY_PROCESS
                  for overlay in expected.values() for f in _files(overlay)]
+        named += [f for _title, overlay in JAVA_GAMES for f in _files(overlay)]
         missing = [f for f in named if not (RES / "overlays" / f).is_file()]
         self.assertEqual(missing, [])
 
