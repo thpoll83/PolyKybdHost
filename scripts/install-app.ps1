@@ -19,6 +19,11 @@
                             install_app.py is then taken from that ref too.
                             .github/workflows/app-installer.yml uses these two.
 #>
+# `irm | iex` runs this in the user's own session. The script block keeps
+# $ErrorActionPreference, $ProgressPreference and the script's variables out
+# of that session; the UV_* variables are process-wide and are restored in
+# the finally block below.
+& {
 $ErrorActionPreference = "Stop"
 # Invoke-WebRequest in Windows PowerShell 5.1 is many times slower with the
 # progress bar on.
@@ -52,6 +57,10 @@ $uvAsset = if ($arch -eq "ARM64") { "uv-aarch64-pc-windows-msvc.zip" } else { "u
 
 $tmp = Join-Path ([IO.Path]::GetTempPath()) ("polykybd-" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path $tmp | Out-Null
+$uvVars = @("UV_PYTHON_INSTALL_DIR", "UV_CACHE_DIR", "UV_PYTHON_PREFERENCE",
+            "UV_PYTHON_INSTALL_BIN", "UV_PYTHON_INSTALL_REGISTRY")
+$savedEnv = @{}
+foreach ($name in $uvVars) { $savedEnv[$name] = [Environment]::GetEnvironmentVariable($name, "Process") }
 try {
     # --- uv ------------------------------------------------------------------
     Write-Host ">> Downloading uv $UvVersion"
@@ -90,5 +99,8 @@ try {
     & $py @installArgs
     if ($LASTEXITCODE -ne 0) { throw "install_app.py failed." }
 } finally {
+    # A $null value removes the variable, as before the installer ran.
+    foreach ($name in $uvVars) { [Environment]::SetEnvironmentVariable($name, $savedEnv[$name], "Process") }
     Remove-Item -Recurse -Force -Path $tmp -ErrorAction SilentlyContinue
+}
 }

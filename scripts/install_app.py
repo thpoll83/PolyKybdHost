@@ -219,9 +219,11 @@ def launch(target: Path) -> None:
         if not pyw.exists():
             pyw = venv_python(target)
         flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+        # No handles to the installer's console or pipes: the app outlives it.
         # Audit: fixed argv (the venv interpreter + "-m polyhost"); no shell.
         subprocess.Popen([str(pyw), "-m", "polyhost"], cwd=target, env=env,  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
-                         creationflags=flags, close_fds=True)
+                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL, creationflags=flags, close_fds=True)
         say("PolyKybd started. It also registers itself to start at login.")
         return
     log_path = target / "polyhost_launch.log"
