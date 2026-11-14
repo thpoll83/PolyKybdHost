@@ -3578,6 +3578,13 @@ devilutionx,devilutionx.exe,org.diasurgical.DevilutionX:
 # Flathub app id. Names not checked on an install.
 pyrogenesis,pyrogenesis.exe,0ad,com.play0ad.zeroad:
   overlay: [zeroad_template.mods.png, zeroad_template.combo.mods.png]
+# Beyond All Reason (overlay_sources/beyond_all_reason/beyond_all_reason.yaml).
+# The game runs in the Recoil engine, whose process is `spring` (`spring.exe`);
+# the launcher is `Beyond-All-Reason`, and info.beyondallreason.bar is the
+# Flatpak id. Other Spring and Recoil games have the same process name and get
+# this set too. Names not checked on an install.
+spring,spring.exe,beyond-all-reason,beyond-all-reason.exe,info.beyondallreason.bar:
+  overlay: [beyond_all_reason_template.mods.png, beyond_all_reason_template.combo.mods.png]
 # League of Legends (overlay_sources/lol/lol.yaml), the in-game window only. The
 # game is `League of Legends.exe` on Windows and the `LeagueofLegends` app on
 # macOS. The lobby client (LeagueClient, LeagueClientUx) is a different process
