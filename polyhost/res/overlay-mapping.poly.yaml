@@ -3748,6 +3748,14 @@ ppsspp,ppssppwindows64,ppssppwindows,ppssppwindowsarm64,ppssppsdl,ppssppqt,ppssp
 # the Flatpak id net.pcsx2.PCSX2. Not checked on a running install.
 pcsx2-qt,pcsx2,net.pcsx2.pcsx2:
   overlay: [pcsx2_template.mods.png, pcsx2_template.combo.mods.png]
+# DuckStation, the PlayStation emulator (overlay_sources/duckstation/). The
+# default hotkeys and the keyboard map of controller 1, release v0.1-12442.
+# DuckStation is CC BY-NC-ND: only its default keys were read, and the ESC mark
+# is the name set in an open font. Process names: duckstation-qt (CMake target),
+# duckstation-qt-x64-ReleaseLTCG.exe on Windows, the macOS app "DuckStation" and
+# the Flatpak id org.duckstation.DuckStation. Not checked on a running install.
+duckstation-qt,duckstation-qt-x64-releaseltcg,duckstation-qt-arm64-releaseltcg,duckstation,org.duckstation.duckstation:
+  overlay: duckstation_template.mods.png
 # PTC Mathcad Prime (overlay_sources/mathcad/). Windows only: MathcadPrime.exe.
 # English / US keys from PTC's 12.0.1.0 shortcut PDF. Name not checked on an
 # install.
