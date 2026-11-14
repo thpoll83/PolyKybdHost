@@ -113,6 +113,16 @@ CONTEXT_REPORTERS = {
     "happrentice": "houdini", "hindie": "houdini", "hescape": "houdini",
     "houdini-bin": "houdini", "houdini fx": "houdini", "houdini core": "houdini",
     "houdini apprentice": "houdini", "houdini indie": "houdini",
+    # VS Code and its forks: vscode-extension/ sends <token>://<debug mode>.
+    "code": "vscode", "cursor": "cursor",
+    "windsurf": "windsurf", "devin": "windsurf", "devin-desktop": "windsurf",
+    # Bitwig Studio's controller extension (bitwig-extension/): the names of the
+    # mapping's `bitwig studio` entry.
+    "bitwig studio": "bitwig", "bitwigstudio": "bitwig", "bitwig-studio": "bitwig",
+    "com.bitwig.bitwigstudio": "bitwig",
+    # Autodesk Maya (maya-plugin/): Windows maya.exe, macOS "Maya", Linux maya.bin.
+    "maya": "maya",
+    "maya.bin": "maya",
 }
 
 # Reporters that also run INSIDE a terminal (vim, emacs -nw). While a terminal
@@ -167,8 +177,9 @@ def _app_key(app_name):
 
 def context_reporter_for(app_name):
     """The reporter token for a focused app with a context add-on, or None.
-    A trailing version is dropped as `mapping_key` drops it for the mapping
-    (``houdini fx 22.0.368`` -> ``houdini fx``)."""
+    A trailing version or release year is dropped as `mapping_key` drops it
+    for the mapping (``houdini fx 22.0.368`` -> ``houdini fx``, ``maya 2026``
+    -> ``maya``)."""
     return CONTEXT_REPORTERS.get(mapping_key(_app_key(app_name), CONTEXT_REPORTERS))
 
 

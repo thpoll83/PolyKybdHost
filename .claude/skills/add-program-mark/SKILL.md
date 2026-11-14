@@ -42,6 +42,32 @@ Three outcomes, three different jobs:
 | a catalog mark is offered but reads badly | check polarity first: a mark `score()` reads *inverted* is a solid blob on this panel |
 | nothing in either catalog | draw one — the rest of this skill |
 
+An open case of the first row: Bitwig Studio's candidates are `si:bitwigstudio` and
+`mdi:bitwig-studio`, both 404, while `si:bitwig` exists and reads cleanly. #816 baked
+it into the overlay set instead; the naming rule is not fixed yet.
+
+**See what the OS-icon path draws before deciding.** The OS icon goes first at
+runtime, and the container has no installed apps, so render the app's real icon
+through the same conversion. For a Mac App Store app, the iTunes search API gives
+the 512 px artwork:
+
+```bash
+curl -s "https://itunes.apple.com/search?term=logic%20pro&entity=macSoftware&limit=3" \
+  | python3 -c "import sys,json; [print(r['trackName'], r['artworkUrl512']) for r in json.load(sys.stdin)['results']]"
+.venv/bin/python -c "
+from polyhost.services import app_icons as a
+mask, conversion, score = a.render_os_overlay(open('/tmp/icon.png','rb').read())
+print(conversion, round(score, 3))"            # mask is the 40x72 ESC cell
+```
+
+`program_overlay(app, types.SimpleNamespace(names=['<Display Name>'], icon=None,
+icon_path=''), allow_network=True)` gives the catalog path alone. A website's
+apple-touch icon is the company's logo, not always the app's (steinberg.net shows
+Steinberg's, not Cubase's). Say which stand-in a preview used. In #816 this showed
+Logic Pro as a bare ring, GarageBand as dither and Bitwig as a solid block, and the
+maintainer chose baked marks (`program_marks.pictogram_mark()`, see
+generate-app-overlays).
+
 ## 2. Draw it, under the real constraints
 
 `polyhost/services/svg_raster.py` is the primary rasteriser (cairosvg is a

@@ -1420,17 +1420,29 @@ x2,dxp:
 capture:
   overlay: [orcad_capture_template.mods.png, orcad_capture_template.combo.mods.png]
 code:
-  overlay: [vscode_template.mods.png, vscode_template.combo.mods.png]
-  title: .* Visual Studio Code
+  # The debug keys are a separate set shared with Cursor and Windsurf
+  # (overlay_sources/vscode/debug_*.yaml). The mode reporter (vscode-extension/)
+  # sends vscode://edit, vscode://debug/running or vscode://debug/stopped and
+  # the route puts that mode's debug set on top of the app's set. `layer: false`:
+  # a route REPLACES the list below, which is the fallback with every debug key
+  # (vscode_debug_fallback) while no fresh report arrives. The names are exactly
+  # CONTEXT_REPORTERS' "vscode" names (tests/handler/vscode_routing_test.py).
   # macOS runs the Cmd-resolved set: VS Code registers most of its chords as
   # KeyMod.CtrlCmd, so the artwork moves from Ctrl to Cmd. Generated from the
   # SAME bindings file via the CMDCTRL token -- the two sets cannot drift.
   # `title` is repeated on purpose: a matched os: branch REPLACES the outer
-  # entry, so a constraint left outside it is dropped.
+  # entry, so a constraint left outside it is dropped. The routes are repeated
+  # in each branch for the same reason.
+  overlay: [vscode_template.mods.png, vscode_template.combo.mods.png, vscode_debug_fallback.mods.png]
+  title: .* Visual Studio Code
+  layer: false
+  urls-contains:
+    "vscode://debug/stopped": { overlay: [vscode_template.mods.png, vscode_template.combo.mods.png, vscode_debug_stopped.mods.png, vscode_debug_stopped.combo.mods.png] }
+    "vscode://debug/running": { overlay: [vscode_template.mods.png, vscode_template.combo.mods.png, vscode_debug_running.mods.png, vscode_debug_running.combo.mods.png] }
+    "vscode://edit": { overlay: [vscode_template.mods.png, vscode_template.combo.mods.png, vscode_debug_edit.mods.png] }
   os:
     macos:
-      overlay: [vscode_mac_template.mods.png, vscode_mac_template.combo.mods.png,
-                vscode_mac_template.extra.mods.png]
+      overlay: [vscode_mac_template.mods.png, vscode_mac_template.combo.mods.png, vscode_mac_template.extra.mods.png, vscode_debug_fallback.mods.png]
       # ⚠️ NO `title:` here, deliberately -- a macOS window title does not carry
       # the application name. VS Code titles a window `Welcome — PolyKybdHost`
       # where Windows and Linux give `... - Visual Studio Code`, so the outer
@@ -1438,13 +1450,23 @@ code:
       # 2026-09-21). Nothing is lost by dropping it: the app name `code` is
       # already unambiguous, and the constraint exists for the platforms whose
       # titles can be checked.
+      layer: false
+      urls-contains:
+        "vscode://debug/stopped": { overlay: [vscode_mac_template.mods.png, vscode_mac_template.combo.mods.png, vscode_mac_template.extra.mods.png, vscode_debug_stopped_mac.mods.png, vscode_debug_stopped_mac.extra.mods.png] }
+        "vscode://debug/running": { overlay: [vscode_mac_template.mods.png, vscode_mac_template.combo.mods.png, vscode_mac_template.extra.mods.png, vscode_debug_running_mac.mods.png, vscode_debug_running_mac.extra.mods.png] }
+        "vscode://edit": { overlay: [vscode_mac_template.mods.png, vscode_mac_template.combo.mods.png, vscode_mac_template.extra.mods.png, vscode_debug_edit_mac.mods.png] }
     # Linux differs from the default set by exactly ONE cell: Show Output, which
     # Linux moves to the two-stroke chord Ctrl+K Ctrl+H. Scoped out there rather
     # than dropped outright, which would also have cost the correct Windows and
     # macOS cells. Same bindings file, so the three sets cannot drift.
     linux:
-      overlay: [vscode_linux_template.mods.png, vscode_linux_template.combo.mods.png]
+      overlay: [vscode_linux_template.mods.png, vscode_linux_template.combo.mods.png, vscode_debug_fallback.mods.png]
       title: .* Visual Studio Code
+      layer: false
+      urls-contains:
+        "vscode://debug/stopped": { overlay: [vscode_linux_template.mods.png, vscode_linux_template.combo.mods.png, vscode_debug_stopped.mods.png, vscode_debug_stopped.combo.mods.png] }
+        "vscode://debug/running": { overlay: [vscode_linux_template.mods.png, vscode_linux_template.combo.mods.png, vscode_debug_running.mods.png, vscode_debug_running.combo.mods.png] }
+        "vscode://edit": { overlay: [vscode_linux_template.mods.png, vscode_linux_template.combo.mods.png, vscode_debug_edit.mods.png] }
 # JetBrains IDEs. Generated from overlay_sources/jetbrains/bindings.yaml.
 # One set per default keymap JetBrains ships: $default (Windows), "Mac OS X
 # 10.5+" (macOS), "Default for GNOME", "Default for KDE" and "Default for XWin"
@@ -2694,20 +2716,54 @@ materialcraft,ai.storyteller.materialcraft:
 # the app name. Windsurf was renamed Devin Desktop on 2026-06-02 (Devin.exe,
 # Devin.app, devin-desktop on Linux); `windsurf` covers installs from before.
 # Zed's GUI binary on Linux is zed-editor; its app id is dev.zed.Zed per channel.
+# cursor: the same debug sets and routes as `code` (cursor://<mode>, sent by
+# vscode-extension/ installed from Open VSX; CONTEXT_REPORTERS' "cursor" names).
 cursor:
-  overlay: [cursor_template.mods.png, cursor_template.combo.mods.png]
+  overlay: [cursor_template.mods.png, cursor_template.combo.mods.png, vscode_debug_fallback.mods.png]
+  layer: false
+  urls-contains:
+    "cursor://debug/stopped": { overlay: [cursor_template.mods.png, cursor_template.combo.mods.png, vscode_debug_stopped.mods.png, vscode_debug_stopped.combo.mods.png] }
+    "cursor://debug/running": { overlay: [cursor_template.mods.png, cursor_template.combo.mods.png, vscode_debug_running.mods.png, vscode_debug_running.combo.mods.png] }
+    "cursor://edit": { overlay: [cursor_template.mods.png, cursor_template.combo.mods.png, vscode_debug_edit.mods.png] }
   os:
     macos:
-      overlay: [cursor_mac_template.mods.png, cursor_mac_template.combo.mods.png, cursor_mac_template.extra.mods.png]
+      overlay: [cursor_mac_template.mods.png, cursor_mac_template.combo.mods.png, cursor_mac_template.extra.mods.png, vscode_debug_fallback.mods.png]
+      layer: false
+      urls-contains:
+        "cursor://debug/stopped": { overlay: [cursor_mac_template.mods.png, cursor_mac_template.combo.mods.png, cursor_mac_template.extra.mods.png, vscode_debug_stopped_mac.mods.png, vscode_debug_stopped_mac.extra.mods.png] }
+        "cursor://debug/running": { overlay: [cursor_mac_template.mods.png, cursor_mac_template.combo.mods.png, cursor_mac_template.extra.mods.png, vscode_debug_running_mac.mods.png, vscode_debug_running_mac.extra.mods.png] }
+        "cursor://edit": { overlay: [cursor_mac_template.mods.png, cursor_mac_template.combo.mods.png, cursor_mac_template.extra.mods.png, vscode_debug_edit_mac.mods.png] }
     linux:
-      overlay: [cursor_linux_template.mods.png, cursor_linux_template.combo.mods.png]
+      overlay: [cursor_linux_template.mods.png, cursor_linux_template.combo.mods.png, vscode_debug_fallback.mods.png]
+      layer: false
+      urls-contains:
+        "cursor://debug/stopped": { overlay: [cursor_linux_template.mods.png, cursor_linux_template.combo.mods.png, vscode_debug_stopped.mods.png, vscode_debug_stopped.combo.mods.png] }
+        "cursor://debug/running": { overlay: [cursor_linux_template.mods.png, cursor_linux_template.combo.mods.png, vscode_debug_running.mods.png, vscode_debug_running.combo.mods.png] }
+        "cursor://edit": { overlay: [cursor_linux_template.mods.png, cursor_linux_template.combo.mods.png, vscode_debug_edit.mods.png] }
+# windsurf: the same debug sets and routes as `code` (windsurf://<mode>, sent by
+# vscode-extension/ installed from Open VSX; CONTEXT_REPORTERS' "windsurf" names).
 windsurf,devin,devin-desktop:
-  overlay: [windsurf_template.mods.png, windsurf_template.combo.mods.png]
+  overlay: [windsurf_template.mods.png, windsurf_template.combo.mods.png, vscode_debug_fallback.mods.png]
+  layer: false
+  urls-contains:
+    "windsurf://debug/stopped": { overlay: [windsurf_template.mods.png, windsurf_template.combo.mods.png, vscode_debug_stopped.mods.png, vscode_debug_stopped.combo.mods.png] }
+    "windsurf://debug/running": { overlay: [windsurf_template.mods.png, windsurf_template.combo.mods.png, vscode_debug_running.mods.png, vscode_debug_running.combo.mods.png] }
+    "windsurf://edit": { overlay: [windsurf_template.mods.png, windsurf_template.combo.mods.png, vscode_debug_edit.mods.png] }
   os:
     macos:
-      overlay: [windsurf_mac_template.mods.png, windsurf_mac_template.combo.mods.png, windsurf_mac_template.extra.mods.png]
+      overlay: [windsurf_mac_template.mods.png, windsurf_mac_template.combo.mods.png, windsurf_mac_template.extra.mods.png, vscode_debug_fallback.mods.png]
+      layer: false
+      urls-contains:
+        "windsurf://debug/stopped": { overlay: [windsurf_mac_template.mods.png, windsurf_mac_template.combo.mods.png, windsurf_mac_template.extra.mods.png, vscode_debug_stopped_mac.mods.png, vscode_debug_stopped_mac.extra.mods.png] }
+        "windsurf://debug/running": { overlay: [windsurf_mac_template.mods.png, windsurf_mac_template.combo.mods.png, windsurf_mac_template.extra.mods.png, vscode_debug_running_mac.mods.png, vscode_debug_running_mac.extra.mods.png] }
+        "windsurf://edit": { overlay: [windsurf_mac_template.mods.png, windsurf_mac_template.combo.mods.png, windsurf_mac_template.extra.mods.png, vscode_debug_edit_mac.mods.png] }
     linux:
-      overlay: [windsurf_linux_template.mods.png, windsurf_linux_template.combo.mods.png]
+      overlay: [windsurf_linux_template.mods.png, windsurf_linux_template.combo.mods.png, vscode_debug_fallback.mods.png]
+      layer: false
+      urls-contains:
+        "windsurf://debug/stopped": { overlay: [windsurf_linux_template.mods.png, windsurf_linux_template.combo.mods.png, vscode_debug_stopped.mods.png, vscode_debug_stopped.combo.mods.png] }
+        "windsurf://debug/running": { overlay: [windsurf_linux_template.mods.png, windsurf_linux_template.combo.mods.png, vscode_debug_running.mods.png, vscode_debug_running.combo.mods.png] }
+        "windsurf://edit": { overlay: [windsurf_linux_template.mods.png, windsurf_linux_template.combo.mods.png, vscode_debug_edit.mods.png] }
 zed,zed preview,zed nightly,zed dev,zed-editor,dev.zed.zed,dev.zed.zed-preview,dev.zed.zed-nightly,dev.zed.zed-dev:
   overlay: [zed_template.mods.png, zed_template.combo.mods.png, zed_template.extra.mods.png, zed_template.gui.mods.png]
   os:
@@ -2794,14 +2850,24 @@ musescore4,musescore studio,musescore 4,mscore,musescore,org.musescore.musescore
       midi: true
 # Bitwig Studio: "Bitwig Studio" on Windows and macOS; on Linux the binary
 # BitwigStudio, the launcher bitwig-studio and the Flatpak id
-# com.bitwig.BitwigStudio. Not checked on an install.
+# com.bitwig.BitwigStudio. Not checked on an install. The controller extension
+# in bitwig-extension/ reports the panel layout as bitwig://<layout>; the Edit
+# View gets the Detail Editor's arrow keys (overlay_sources/bitwig/
+# bindings_edit.yaml). ARRANGE, MIX and no report keep the default set.
+# These names are CONTEXT_REPORTERS in handler/browser_url.py.
 bitwig studio,bitwigstudio,bitwig-studio,com.bitwig.bitwigstudio:
   overlay: [bitwig_template.mods.png, bitwig_template.combo.mods.png]
   midi: true
+  layer: false
+  urls-contains:
+    "bitwig://edit": { overlay: [bitwig_edit_template.mods.png, bitwig_edit_template.combo.mods.png, bitwig_edit_template.extra.mods.png], midi: true }
   os:
     macos:
       overlay: [bitwig_template_mac.mods.png, bitwig_template_mac.combo.mods.png, bitwig_template_mac.extra.mods.png]
       midi: true
+      layer: false
+      urls-contains:
+        "bitwig://edit": { overlay: [bitwig_edit_template_mac.mods.png, bitwig_edit_template_mac.combo.mods.png, bitwig_edit_template_mac.extra.mods.png], midi: true }
 # Steinberg Cubase: Cubase<version>.exe on Windows, "Cubase <version>" on macOS;
 # no Linux version. The number has no dot, so the matcher keeps it: each major
 # version is listed. Not checked on an install.
@@ -3734,11 +3800,29 @@ qgis,qgis3,qgis4,org.qgis.qgis,qgis-bin,qgis-ltr-bin,qgis-dev-bin,qgis-qt6-bin,q
 # and the macOS app "Maya" (a trailing release year such as "Maya 2026" is
 # dropped by the matcher); on Linux the process is maya.bin. macOS takes the set
 # with Cmd copies of the File and Edit keys. Not checked on an install.
+# The Maya plug-in (maya-plugin/) reports `maya://<panel>/<selection mode>`; the
+# Graph Editor, Time Editor, UV Editor, Node Editor and Hypershade get their own
+# set (bindings_<panel>.yaml). `layer: false`: a panel set replaces the viewport
+# set, which stays the fallback for other panels and without the plug-in.
 maya,maya.bin:
   overlay: [maya_template.mods.png, maya_template.combo.mods.png]
+  layer: false
+  urls-contains:
+    "maya://graph/": { overlay: [maya_graph_template.mods.png, maya_graph_template.combo.mods.png] }
+    "maya://timeeditor/": { overlay: [maya_timeeditor_template.mods.png, maya_timeeditor_template.combo.mods.png] }
+    "maya://uv/": { overlay: [maya_uv_template.mods.png, maya_uv_template.combo.mods.png] }
+    "maya://node/": { overlay: [maya_node_template.mods.png, maya_node_template.combo.mods.png] }
+    "maya://hypershade/": { overlay: [maya_hypershade_template.mods.png, maya_hypershade_template.combo.mods.png] }
   os:
     macos:
       overlay: [maya_template_mac.mods.png, maya_template_mac.combo.mods.png, maya_template_mac.extra.mods.png]
+      layer: false
+      urls-contains:
+        "maya://graph/": { overlay: [maya_graph_template_mac.mods.png, maya_graph_template_mac.combo.mods.png, maya_graph_template_mac.extra.mods.png] }
+        "maya://timeeditor/": { overlay: [maya_timeeditor_template_mac.mods.png, maya_timeeditor_template_mac.combo.mods.png, maya_timeeditor_template_mac.extra.mods.png] }
+        "maya://uv/": { overlay: [maya_uv_template_mac.mods.png, maya_uv_template_mac.combo.mods.png, maya_uv_template_mac.extra.mods.png] }
+        "maya://node/": { overlay: [maya_node_template_mac.mods.png, maya_node_template_mac.combo.mods.png, maya_node_template_mac.extra.mods.png] }
+        "maya://hypershade/": { overlay: [maya_hypershade_template_mac.mods.png, maya_hypershade_template_mac.combo.mods.png, maya_hypershade_template_mac.extra.mods.png] }
 # Avid Pro Tools, Edit window keys (overlay_sources/protools/). Windows
 # "ProTools.exe" and the macOS app "Pro Tools". The keys without a modifier are
 # the Commands Keyboard Focus keys, which act only while that focus is on (the
