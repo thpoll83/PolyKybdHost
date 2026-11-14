@@ -109,6 +109,16 @@ CONTEXT_REPORTERS = {
     # IDA Pro (ida-plugin/): the names of the mapping's `ida` entry.
     "ida": "ida", "ida64": "ida", "idaq": "ida", "idaq64": "ida", "ida pro": "ida",
     "ida professional": "ida", "ida home": "ida", "ida free": "ida", "ida classroom": "ida",
+    # VS Code and its forks: vscode-extension/ sends <token>://<debug mode>.
+    "code": "vscode", "cursor": "cursor",
+    "windsurf": "windsurf", "devin": "windsurf", "devin-desktop": "windsurf",
+    # Bitwig Studio's controller extension (bitwig-extension/): the names of the
+    # mapping's `bitwig studio` entry.
+    "bitwig studio": "bitwig", "bitwigstudio": "bitwig", "bitwig-studio": "bitwig",
+    "com.bitwig.bitwigstudio": "bitwig",
+    # Autodesk Maya (maya-plugin/): Windows maya.exe, macOS "Maya", Linux maya.bin.
+    "maya": "maya",
+    "maya.bin": "maya",
 }
 
 # Reporters that also run INSIDE a terminal (vim, emacs -nw). While a terminal
@@ -163,7 +173,8 @@ def _app_key(app_name):
 
 def context_reporter_for(app_name):
     """The reporter token for a focused app with a context add-on, or None.
-    A trailing version is dropped as the mapping does (macOS: "IDA Professional 9.1")."""
+    A trailing release year or version is dropped as the mapping does ("maya 2026",
+    macOS "IDA Professional 9.1")."""
     key = mapping_key(_app_key(app_name), CONTEXT_REPORTERS)
     return CONTEXT_REPORTERS.get(key) if key else None
 
