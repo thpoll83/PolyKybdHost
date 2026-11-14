@@ -109,6 +109,13 @@ Licence texts for the icon and font licences named in this file:
 - CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
 - SIL OFL 1.1: https://openfontlicense.org/open-font-license-official-text/
 
+Where each icon file comes from. The table below gives the name to put in the
+URL; the same URLs are in `SOURCES` of `cnc_remastered/fetch_icons.py`, which
+`fetch_icons.py` fetches through.
+
+- Font Awesome Free 6.5.2, solid (`fa:<name>`): `https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/svgs/solid/<name>.svg`
+- game-icons.net (`gi:<author>/<name>`): `https://game-icons.net/icons/000000/transparent/1x1/<author>/<name>.svg`
+
 | File | Source | Author | Licence |
 |---|---|---|---|
 | `endturn.png` | Font Awesome Free 6.5.2 `hourglass-end` (solid) | Fonticons, Inc. | CC BY 4.0 |

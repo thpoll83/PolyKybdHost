@@ -174,6 +174,14 @@ Licence texts for the icon and font licences named in this file:
 - SIL OFL 1.1: https://openfontlicense.org/open-font-license-official-text/
 - Bitstream Vera licence: https://dejavu-fonts.github.io/License.html
 
+Where each icon file comes from. The table below gives the name to put in the
+URL; the same URLs are in `SOURCES` of `cnc_remastered/fetch_icons.py`, which
+`fetch_icons.py` fetches through.
+
+- Font Awesome Free 6.5.2, solid (`fa:<name>`): `https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/svgs/solid/<name>.svg`
+- game-icons.net (`gi:<author>/<name>`): `https://game-icons.net/icons/000000/transparent/1x1/<author>/<name>.svg`
+- Material Design Icons (`mdi:<name>`): `https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/<name>.svg`
+
 | File | Source | Author | Licence |
 |---|---|---|---|
 | `nextunit.png` | Font Awesome Free 6.5.2 `forward-step` (solid) | Fonticons, Inc. | CC BY 4.0 |
