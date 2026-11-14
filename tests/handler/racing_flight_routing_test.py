@@ -30,6 +30,9 @@ GAMES = {
     "flightgear_template.mods.png": (
         ("fgfs", "fgfs.exe", "flightgear", "org.flightgear.flightgear"),
         "FlightGear"),
+    "thrive_template.mods.png": (
+        ("thrive", "thrive.exe", "thrive.x86_64"),
+        "Thrive"),
 }
 
 

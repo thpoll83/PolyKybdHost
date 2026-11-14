@@ -3600,6 +3600,12 @@ hwengine,hwengine.exe,hedgewars,hedgewars.exe,org.hedgewars.Hedgewars:
 # install.
 fgfs,fgfs.exe,flightgear,org.flightgear.FlightGear:
   overlay: flightgear_template.mods.png
+# Thrive 1.7.0 (overlay_sources/thrive/thrive.yaml). A Godot project: the
+# export paths in export_presets.cfg are Thrive.x86_64 (Linux) and Thrive.exe
+# (Windows), and the project name is Thrive. The macOS and Steam names were
+# not looked up. Names not checked on an install.
+thrive,thrive.exe,thrive.x86_64:
+  overlay: [thrive_template.mods.png, thrive_template.combo.mods.png]
 # League of Legends (overlay_sources/lol/lol.yaml), the in-game window only. The
 # game is `League of Legends.exe` on Windows and the `LeagueofLegends` app on
 # macOS. The lobby client (LeagueClient, LeagueClientUx) is a different process
