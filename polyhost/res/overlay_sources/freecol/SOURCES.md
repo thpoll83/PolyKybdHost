@@ -158,6 +158,8 @@ v2 and partly CC BY 4.0, "refer to the README file in the same directory as
 the included content", and that per-directory note was not read for the icon.
 The icon is also a coloured drawing that does not read at 1 bit in 72x40.
 
+Font file: <https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/imfellenglishsc/IMFeENsc28P.ttf>
+
 ## Icons
 
 Licence texts for the icon and font licences named in this file:

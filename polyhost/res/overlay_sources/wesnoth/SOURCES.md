@@ -164,6 +164,8 @@ are CC BY-SA 4.0, and the logo files have no licence note of their own, so
 their licence is not clear. The logo is also a painted shield with a script
 wordmark, which does not read at 1 bit in 72x40.
 
+Font file: <https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/almendra/Almendra-Bold.ttf>
+
 ## Icons
 
 Licence texts for the icon and font licences named in this file:

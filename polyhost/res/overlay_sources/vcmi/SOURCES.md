@@ -140,6 +140,8 @@ painted, shaded drawing that does not read at 1 bit in 72x40. The game's art
 (units, towns, interface) comes from the original Heroes of Might and Magic
 III data files, which are proprietary and not used.
 
+Font file: <https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/cinzel/Cinzel%5Bwght%5D.ttf>
+
 ## Icons
 
 Licence texts for the icon and font licences named in this file:

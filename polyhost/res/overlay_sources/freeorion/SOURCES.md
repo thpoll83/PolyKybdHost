@@ -101,6 +101,8 @@ The game's logo is not used: `default/COPYING` puts the art under CC BY-SA
 3.0, and the source code under GPL version 2 without "or any later version".
 Neither is compatible with this repository's GPL-3.0-or-later.
 
+Font file: <https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/orbitron/Orbitron%5Bwght%5D.ttf>
+
 ## Icons
 
 Licence texts for the icon and font licences named in this file:
