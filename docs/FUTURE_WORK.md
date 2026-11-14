@@ -55,6 +55,27 @@ files, every changed key drawn white on black beside the shipped icon:
 
 ---
 
+## Game-file reader for Warcraft III
+
+**Status:** compared on real game files, not built (2026-11-14). The existing
+MPQ code (`game_assets/starcraft/mpq.py`) opens the Warcraft III 1.22 archives
+(war3.mpq, War3x.mpq, War3Patch.mpq), and Pillow decodes the BLP1 icons, so a
+reader would have been short.
+
+**What was compared.** The command-button icons
+(`ReplaceableTextures\CommandButtons\BTN<unit>.blp`, 64×64) for the 14 keys the
+shipped `warcraft3` overlay draws as units or heroes: the control groups 1 to 0,
+F1 to F3 and Backspace. Each was drawn at 40×40, bevel frame removed, by error
+diffusion, by three flat levels and by a threshold, beside the shipped
+silhouette. The icons are painted portraits on painted backgrounds with no
+transparency, so there is no outline to light; every conversion read as noise,
+and the shipped silhouettes were clearer on all 14 keys (maintainer's verdict).
+
+**What would reopen it.** Warcraft III art with transparency or flat shapes for
+those keys. The skill `evaluate-game-asset-reader` repeats the comparison.
+
+---
+
 ## `AXMenuItemCmdGlyph` — the macOS Carbon glyph path
 
 **Status:** deferred, no work started. `parse_mac_accel`

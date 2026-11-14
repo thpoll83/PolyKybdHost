@@ -3590,6 +3590,15 @@ league of legends,league of legends.exe,leagueoflegends:
 # macOS. Names not checked on an install.
 cs2,steam_app_730:
   overlay: cs2_template.mods.png
+# Unreal Tournament 2004 (overlay_sources/ut2004/ut2004.yaml). UT2004.exe on
+# Windows, ut2004-bin / ut2004-bin-linux-amd64 for the Linux installer's
+# binaries, steam_app_13230 under Proton; "unreal tournament 2004" is the
+# assumed macOS name. Names not checked on an install. The weapon keys are
+# redrawn from the user's own UT2004 files when they are on the machine
+# (game_assets reader `ut2004`).
+ut2004,ut2004.exe,ut2004-bin,ut2004-bin-linux-amd64,unreal tournament 2004,steam_app_13230:
+  overlay: ut2004_template.mods.png
+  game_assets: ut2004/ut2004.yaml
 # SQL Server Management Studio (overlay_sources/ssms/), Windows only. The
 # executable is Ssms.exe (SSMS 18 to 20) or SSMS.exe (SSMS 21 and later); both
 # lowercase to `ssms`. Name not checked on an install.
