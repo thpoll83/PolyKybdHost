@@ -3578,6 +3578,13 @@ devilutionx,devilutionx.exe,org.diasurgical.DevilutionX:
 # Flathub app id. Names not checked on an install.
 pyrogenesis,pyrogenesis.exe,0ad,com.play0ad.zeroad:
   overlay: [zeroad_template.mods.png, zeroad_template.combo.mods.png]
+# SuperTuxKart 1.5 (overlay_sources/supertuxkart/supertuxkart.yaml).
+# `supertuxkart` is the CMake executable target and the desktop file's Exec=
+# and StartupWMClass= (supertuxkart.exe on Windows, also under Wine);
+# net.supertuxkart.SuperTuxKart is the Flatpak id. Names not checked on an
+# install.
+supertuxkart,supertuxkart.exe,net.supertuxkart.SuperTuxKart:
+  overlay: supertuxkart_template.mods.png
 # League of Legends (overlay_sources/lol/lol.yaml), the in-game window only. The
 # game is `League of Legends.exe` on Windows and the `LeagueofLegends` app on
 # macOS. The lobby client (LeagueClient, LeagueClientUx) is a different process
