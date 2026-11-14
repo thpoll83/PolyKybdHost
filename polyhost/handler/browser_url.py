@@ -42,7 +42,7 @@ matching degrades to app-name + title exactly as before this feature existed.
 import threading
 import time
 
-from polyhost.handler.common import _TRAILING_YEAR, OS, mapping_key
+from polyhost.handler.common import OS, mapping_key
 from polyhost.services import browser_url_macos
 
 # Focused-app gate. `getAppName()` normalises differently per OS (Windows
@@ -106,6 +106,9 @@ CONTEXT_REPORTERS = {
     "macvim": "vim",
     "neovide": "vim",
     "emacs": "emacs",
+    # IDA Pro (ida-plugin/): the names of the mapping's `ida` entry.
+    "ida": "ida", "ida64": "ida", "idaq": "ida", "idaq64": "ida", "ida pro": "ida",
+    "ida professional": "ida", "ida home": "ida", "ida free": "ida", "ida classroom": "ida",
     # VS Code and its forks: vscode-extension/ sends <token>://<debug mode>.
     "code": "vscode", "cursor": "cursor",
     "windsurf": "windsurf", "devin": "windsurf", "devin-desktop": "windsurf",
@@ -170,9 +173,10 @@ def _app_key(app_name):
 
 def context_reporter_for(app_name):
     """The reporter token for a focused app with a context add-on, or None.
-    A trailing release year is dropped as `mapping_key` does ("maya 2026")."""
-    key = _app_key(app_name)
-    return CONTEXT_REPORTERS.get(key) or CONTEXT_REPORTERS.get(_TRAILING_YEAR.sub("", key or ""))
+    A trailing release year or version is dropped as the mapping does ("maya 2026",
+    macOS "IDA Professional 9.1")."""
+    key = mapping_key(_app_key(app_name), CONTEXT_REPORTERS)
+    return CONTEXT_REPORTERS.get(key) if key else None
 
 
 def is_terminal_app(app_name) -> bool:

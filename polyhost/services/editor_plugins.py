@@ -14,6 +14,9 @@ terminal's keys. This module does the copy that their READMEs describe:
 - GDB: ``polykybd.py`` (``gdb-plugin/``) into ``<config>/gdb/polykybd/``, and
   a marked block in the GDB init file that sources it. The script writes GDB's
   state (prompt or running) into the terminal title.
+- IDA: ``polykybd_ida.py`` and ``ida-plugin.json`` (``ida-plugin/``) into
+  ``<IDAUSR>/plugins/polykybd/``, which IDA 8.5 and later load as a plugin
+  folder. The plugin reports which IDA view has the focus.
 
 Each copy gets a stamp file with the SHA-256 of every file written.
 :func:`refresh_installed` runs at every start: it copies the shipped files
@@ -50,12 +53,14 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 VIM_SOURCE = REPO_ROOT / "vim-plugin"
 EMACS_SOURCE = REPO_ROOT / "emacs-package"
 GDB_SOURCE = REPO_ROOT / "gdb-plugin"
+IDA_SOURCE = REPO_ROOT / "ida-plugin"
 
 VIM = "vim"
 NEOVIM = "neovim"
 EMACS = "emacs"
 GDB = "gdb"
-EDITORS = (VIM, NEOVIM, EMACS, GDB)
+IDA = "ida"
+EDITORS = (VIM, NEOVIM, EMACS, GDB, IDA)
 # The ones loaded through a marked block in an init file, beside a copy.
 INIT_EDITORS = (EMACS, GDB)
 
@@ -63,6 +68,7 @@ INIT_EDITORS = (EMACS, GDB)
 _VIM_DIRS = ("plugin", "lua", "doc")
 _EMACS_FILES = ("polykybd.el",)
 _GDB_FILES = ("polykybd.py",)
+_IDA_FILES = ("polykybd_ida.py", "ida-plugin.json")
 
 STAMP_NAME = ".polykybd-host.json"
 BEGIN_MARKER = ";; >>> PolyKybd editor integration >>>"
@@ -254,10 +260,33 @@ def gdb_plugin_dir(home=None, env=None, system=None):
     return config / "gdb" / "polykybd"
 
 
-def _present(editor, which, system):
+def ida_user_dir(home=None, env=None, system=None):
+    """IDA's user directory: the first entry of ``IDAUSR``, else
+    ``%APPDATA%/Hex-Rays/IDA Pro`` on Windows and ``~/.idapro`` elsewhere
+    (Hex-Rays, "Environment variables": IDAUSR)."""
+    env = os.environ if env is None else env
+    system = system or platform.system()
+    first = (env.get("IDAUSR") or "").split(";" if system == "Windows" else ":")[0]
+    if first:
+        return Path(first)
+    h = _home(home, env, system)
+    if system == "Windows":
+        appdata = env.get("APPDATA")
+        return (Path(appdata) if appdata else h / "AppData" / "Roaming") / "Hex-Rays" / "IDA Pro"
+    return h / ".idapro"
+
+
+def ida_plugin_dir(home=None, env=None, system=None):
+    """The plugin folder IDA loads ``polykybd_ida.py`` from."""
+    return ida_user_dir(home, env, system) / "plugins" / "polykybd"
+
+
+def _present(editor, which, system, home=None, env=None):
     which = which or shutil.which
     names = {VIM: ("vim", "gvim"), NEOVIM: ("nvim",), EMACS: ("emacs", "runemacs"),
-             GDB: ("gdb", "gdb-multiarch")}[editor]
+             GDB: ("gdb", "gdb-multiarch"), IDA: ("ida", "ida64")}[editor]
+    if editor == IDA and ida_user_dir(home, env, system).is_dir():
+        return True          # IDA is rarely on PATH; it writes its user dir at first start
     return any(which(n) for n in names)
 
 
@@ -287,6 +316,11 @@ def shipped_files(editor, source=None):
         if not all((source / name).is_file() for name in names):
             return None
         return {name: (source / name).read_bytes() for name in names}
+    if editor == IDA:
+        source = Path(source or IDA_SOURCE)
+        if not all((source / name).is_file() for name in _IDA_FILES):
+            return None
+        return {name: (source / name).read_bytes() for name in _IDA_FILES}
     source = Path(source or VIM_SOURCE)
     if not (source / "plugin" / "polykybd.vim").is_file():
         return None
@@ -534,16 +568,17 @@ def _other_vim_copies(editor, folder):
     return None
 
 
-def _sources(vim_source, emacs_source, gdb_source):
-    return {VIM: vim_source, NEOVIM: vim_source, EMACS: emacs_source, GDB: gdb_source}
+def _sources(vim_source, emacs_source, gdb_source, ida_source=None):
+    return {VIM: vim_source, NEOVIM: vim_source, EMACS: emacs_source, GDB: gdb_source,
+            IDA: ida_source}
 
 
 def status(editors=None, home=None, env=None, which=None, system=None,
-           vim_source=None, emacs_source=None, gdb_source=None):
+           vim_source=None, emacs_source=None, gdb_source=None, ida_source=None):
     """An EditorStatus for each editor (``editors`` filters by id)."""
     env = os.environ if env is None else env
     system = system or platform.system()
-    sources = _sources(vim_source, emacs_source, gdb_source)
+    sources = _sources(vim_source, emacs_source, gdb_source, ida_source)
     out = []
     for editor in EDITORS:
         if editors is not None and editor not in editors:
@@ -583,14 +618,19 @@ def _status_one(editor, home, env, which, system, source):
             # The block is there and the copy is gone or not ours.
             state = STATE_OUTDATED if state == STATE_NOT_INSTALLED else STATE_MANUAL
         return EditorStatus(editor, state, init, str(want) if state == STATE_MANUAL else "")
-    folder = vim_dir(editor, home, env, system)
+    if editor == IDA:
+        folder = ida_plugin_dir(home, env, system)
+        default = IDA_SOURCE
+    else:
+        folder = vim_dir(editor, home, env, system)
+        default = VIM_SOURCE
     if shipped is None:
-        return EditorStatus(editor, STATE_NO_SOURCE, folder, str(source or VIM_SOURCE))
-    if not _present(editor, which, system) and not folder.exists():
+        return EditorStatus(editor, STATE_NO_SOURCE, folder, str(source or default))
+    if not _present(editor, which, system, home, env) and not folder.exists():
         return EditorStatus(editor, STATE_NOT_PRESENT, folder, "")
     state = _copy_state(folder, shipped)
     detail = str(folder) if state == STATE_MANUAL else ""
-    if state == STATE_NOT_INSTALLED:
+    if state == STATE_NOT_INSTALLED and editor != IDA:
         other = _other_vim_copies(editor, folder)
         if other is not None:
             state, detail = STATE_MANUAL, str(other)
@@ -746,11 +786,12 @@ def _change(st, install, sources, now=None, home=None, env=None, system=None):
 
 
 def _apply(install, editors, statuses, home, env, which, system, vim_source, emacs_source,
-           gdb_source=None):
+           gdb_source=None, ida_source=None):
     if statuses is None:
         statuses = status(editors, home=home, env=env, which=which, system=system,
-                          vim_source=vim_source, emacs_source=emacs_source, gdb_source=gdb_source)
-    sources = _sources(vim_source, emacs_source, gdb_source)
+                          vim_source=vim_source, emacs_source=emacs_source, gdb_source=gdb_source,
+                          ida_source=ida_source)
+    sources = _sources(vim_source, emacs_source, gdb_source, ida_source)
     results = []
     for st in statuses:
         if editors is not None and st.editor not in editors:
@@ -765,22 +806,22 @@ def _apply(install, editors, statuses, home, env, which, system, vim_source, ema
 
 
 def install(editors=None, statuses=None, home=None, env=None, which=None,
-            system=None, vim_source=None, emacs_source=None, gdb_source=None):
+            system=None, vim_source=None, emacs_source=None, gdb_source=None, ida_source=None):
     """Copy the plugin for each editor (the ones default_selection() picks
     when ``editors`` is None). Returns a list of Result."""
     return _apply(True, editors, statuses, home, env, which, system, vim_source, emacs_source,
-                  gdb_source)
+                  gdb_source, ida_source)
 
 
 def remove(editors=None, statuses=None, home=None, env=None, which=None,
-           system=None, vim_source=None, emacs_source=None, gdb_source=None):
+           system=None, vim_source=None, emacs_source=None, gdb_source=None, ida_source=None):
     """Delete this app's copy and, for Emacs and GDB, the marked block."""
     return _apply(False, editors, statuses, home, env, which, system, vim_source, emacs_source,
-                  gdb_source)
+                  gdb_source, ida_source)
 
 
 def refresh_installed(home=None, env=None, which=None, system=None,
-                      vim_source=None, emacs_source=None, gdb_source=None):
+                      vim_source=None, emacs_source=None, gdb_source=None, ida_source=None):
     """Copy the shipped files again for each editor whose copy is this app's
     and older than them. Runs at every start, so an update reaches the
     editors without a visit to the dialog. Returns the editors refreshed.
@@ -788,11 +829,12 @@ def refresh_installed(home=None, env=None, which=None, system=None,
     refreshed = []
     try:
         statuses = status(None, home=home, env=env, which=which, system=system,
-                          vim_source=vim_source, emacs_source=emacs_source, gdb_source=gdb_source)
+                          vim_source=vim_source, emacs_source=emacs_source, gdb_source=gdb_source,
+                          ida_source=ida_source)
     except Exception:  # noqa: BLE001 - a start must not fail for this
         log.warning("Editor plugin refresh: status failed", exc_info=True)
         return refreshed
-    sources = _sources(vim_source, emacs_source, gdb_source)
+    sources = _sources(vim_source, emacs_source, gdb_source, ida_source)
     for st in statuses:
         if st.state != STATE_OUTDATED:
             continue

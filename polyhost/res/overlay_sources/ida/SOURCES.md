@@ -7,6 +7,17 @@
 |---|---|---|
 | `ida_template` (2 files) | Windows and Linux | 157 + ESC mark |
 | `ida_template_mac` (3 files) | macOS | 153 + ESC mark |
+| `ida_disasm_template` (+ `_mac`) | the IDA plugin reports the disassembly view | `bindings.yaml` without `/` `\` `=` Shift+5 |
+| `ida_hex_template` (+ `_mac`) | the IDA plugin reports the hex view | the disassembly set, F2 drawn as "Edit / commit patch" |
+| `ida_pseudocode_template` (+ `_mac`) | the IDA plugin reports the pseudocode window | 90 + ESC mark (Windows/Linux) |
+| `ida_global_template` (+ `_mac`) | the IDA plugin reports any other window | 67 + ESC mark (Windows/Linux) |
+| `ida_types_template` (+ `_mac`) | the IDA plugin reports Local Types (`ida://types`) | the global set, Ins, Del and Ctrl+E drawn as the Local Types actions |
+| `ida_list_template` (+ `_mac`) | the IDA plugin reports a list window (`ida://list`) | the global set plus Ins, Del, Ctrl+E, Ctrl+U and Ctrl+F of the list viewers |
+
+The six view sets are written by `gen_views.py` from `bindings.yaml`; never
+edit `bindings_<view>.yaml` by hand (a test runs `gen_views.py --check`). The
+`ida` mapping entry routes the plugin's `ida://<view>` reports
+(`ida-plugin/README.md`) to them; `ida_template` stays the fallback.
 
 ## Process names
 
@@ -76,6 +87,67 @@ not show:
 | Tab | Jump to pseudocode | Jump to disassembly |
 | F5 | Decompile | Refresh |
 
+### Per-view sets
+
+`ida_global_template` has the keys that act from any window: function keys,
+and the Ctrl/Cmd and Alt chords that open views, jump, search, save and run
+the debugger (`gen_views.is_global`). Single letters are left out, because a
+list window takes them as a quick search. Chords that act on the listing
+(`gen_views.LISTING`) are left out too.
+
+`ida_pseudocode_template` is the global set plus the pseudocode window's own
+keys, from the Hex-Rays decompiler manual, "Interactive operation"
+(<https://docs.hex-rays.com/ida-9.2/user-guide/decompiler/interactive.md> and
+its `cmd_*.md` pages, IDA 9.2, read 2026-11-13): N rename, Y set type, H R M T
+`_` number representation, `/` comment, Ins block comment, `\` hide casts, `=`
+map variable, Shift+S split variable, Alt+Y select union field, Shift+Del
+delete function argument, Ctrl+Shift+R add/delete return type, `%` paired
+paren, Tab jump to disassembly, F5 refresh, Ctrl+Enter decompile in a new
+window, and X jump to cross reference. G, F2 and F4 act as in the disassembly
+view. Keypad +/- (hide statements, variadic arguments) have no overlay cell.
+The pages give no Mac binding for Ins; the mac set draws it on Ins as well (not
+tested on a Mac).
+
+### Hex view
+
+`ida_hex_template` is the disassembly set with one change: F2 is drawn as
+"Edit / commit patch", not "Toggle breakpoint". In the hex view, F2 starts
+patching and a second F2 commits the new values; Esc cancels the edit
+(Hex-Rays, "Igor's tip of the week #38: Hex view", 2021-05-07,
+<https://hex-rays.com/blog/igors-tip-of-the-week-38-hex-view>, read
+2026-11-14). Esc keeps the program mark. The other keys stay as in the
+disassembly set: the hex view's Edit menu has the same actions (Code, Data,
+Undefine, Rename, the operand types; "Hex View" actions page,
+<https://docs.hex-rays.com/core/user-interface/reference/menu-bar-actions/edit/hex-view-actions.md>).
+While a patch is being typed, the hex digit keys enter values and still show
+their disassembly actions: the plugin reports `ida://hex` for both states.
+Not checked on an install.
+
+### Local Types and the list windows
+
+`ida_types_template` is the global set plus the three keys the IDA 9.3
+"Subviews" page gives for Local Types
+(<https://docs.hex-rays.com/ida-9.3/core/user-interface/concepts/subviews>,
+read 2026-11-14): Ins adds a type, Del deletes the selected type, Ctrl+E edits
+it. Ctrl+E replaces "Jump to entry point" of the global set. IDA 8 and older
+report the Structures and Enums windows as `ida://types` too; their keys were
+not checked against a doc, so this set is only checked for IDA 9.
+
+`ida_list_template` is the global set plus the list viewer keys of the IDA 9.3
+"List viewers" page
+(<https://docs.hex-rays.com/ida-9.3/core/user-interface/concepts/list-viewers>,
+read 2026-11-14): Ins inserts an item, Del deletes the current item, Ctrl+E
+edits it, Ctrl+U refreshes the window, Ctrl+F turns on the quick filter. Ins,
+Del, Ctrl+E and Ctrl+U act only in a list that is not a modal dialog, and only
+in a list that supports the action (the "Subviews" page names Ins for the
+cross references, signatures, type libraries, segments and bookmarks lists).
+Ctrl+E replaces "Jump to entry point". Letters stay blank, because a list
+takes them as a search by prefix. Alt+T and Ctrl+T (search text, search
+again) are the same as in the global set.
+
+Neither page gives a macOS binding for these keys; the mac sets draw them on
+Ins, Del and Cmd+E/U/F (IDA is a Qt application). Not tested on a Mac.
+
 ## Left out
 
 - Esc: it shows the program mark (Jump to previous position).
@@ -86,9 +158,10 @@ not show:
   the keyboard has no overlay cell for them. `*` (Shift+8) is drawn.
 - Ctrl+F1 (external help): Windows only (`#ifdef __NT__`); it would need a
   third artwork set for one key.
-- Keys of other windows and dialogs: the local types and enum editors (I, Ins,
-  Del, U, N, Ctrl+E, Ctrl+N, Ctrl+P), lists and choosers (Ctrl+F quick filter,
-  Ctrl+E, Ctrl+U refresh, Ctrl+Shift+F, Ctrl+Shift+N, Ctrl+Shift+Ins, Del), the
+- Keys of other windows and dialogs: the local types and enum editors' member
+  keys (I, U, N, Ctrl+N, Ctrl+P; not checked against a doc), lists and
+  choosers (Ctrl+Enter next line with the same prefix, Ctrl+Shift+F,
+  Ctrl+Shift+N, Ctrl+Shift+Ins), the
   output window (Ctrl+S, Ctrl+X, Ctrl+A), the command line (Tab, Ctrl+Up/Down),
   the script snippets window (Ctrl+Shift+X), the structure window (Ctrl+S
   shrink), the watch list (Del).
@@ -114,8 +187,9 @@ alike.
 
 | File | Source | Licence |
 |---|---|---|
-| `disassemble.png`, `clear.png`, `label.png`, `comment.png`, `function.png`, `goto.png`, `references.png`, `array.png`, `structure.png`, `markselect.png`, `autoanalyze.png`, `decompiler.png`, `casts.png`, `bookmarks.png`, `addbookmark.png`, `searchtext.png`, `registers.png`, `functiongraph.png`, `symboltable.png`, `nextcomponent.png`, `prevcomponent.png`, `lastactive.png`, `scripts.png`, `import.png`, `export.png`, `editfield.png`, `forward.png`, `cycle_int.png`, `type_retype.png`, `next_ins.png`, `next_data.png`, `next_undef.png`, `next_bytes.png`, `next_func.png`, `prev_func.png`, `next_highlight.png`, `prev_highlight.png`, `next_window.png`, `prev_window.png`, `g_list.png`, `g_search.png`, `g_pointer.png`, `g_edit.png`, `g_cycle.png` | byte copies of `../ghidra/icons/` (see `../ghidra/SOURCES.md`) | MIT / Apache-2.0 as listed there |
+| `disassemble.png`, `clear.png`, `label.png`, `comment.png`, `function.png`, `goto.png`, `references.png`, `array.png`, `structure.png`, `markselect.png`, `autoanalyze.png`, `decompiler.png`, `casts.png`, `bookmarks.png`, `addbookmark.png`, `searchtext.png`, `registers.png`, `functiongraph.png`, `symboltable.png`, `nextcomponent.png`, `prevcomponent.png`, `lastactive.png`, `scripts.png`, `import.png`, `export.png`, `editfield.png`, `forward.png`, `cycle_int.png`, `type_retype.png`, `next_ins.png`, `next_data.png`, `next_undef.png`, `next_bytes.png`, `next_func.png`, `prev_func.png`, `next_highlight.png`, `prev_highlight.png`, `next_window.png`, `prev_window.png`, `g_list.png`, `g_search.png`, `g_pointer.png`, `g_edit.png`, `g_cycle.png`, `g_wrench.png`, `type_edit.png` | byte copies of `../ghidra/icons/` (see `../ghidra/SOURCES.md`) | MIT / Apache-2.0 as listed there |
 | `jump_newwin.png` | Fluent `Window New` | MIT |
+| `refresh.png` | Fluent `Arrow Clockwise` | MIT |
 | `calculator.png` | Fluent `Calculator` | MIT |
 | `cli.png` | Material `terminal` | Apache-2.0 |
 | `flags.png` | Fluent `Flag` | MIT |

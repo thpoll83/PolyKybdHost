@@ -59,9 +59,9 @@ BORROWED = {f"{n}.png": "ghidra" for n in (
     "import", "export", "editfield", "forward",
     "cycle_int", "type_retype", "next_ins", "next_data", "next_undef", "next_bytes",
     "next_func", "prev_func", "next_highlight", "prev_highlight",
-    "next_window", "prev_window",
+    "next_window", "prev_window", "type_edit",
     # glyphs used only inside the composites below
-    "g_list", "g_search", "g_pointer", "g_edit", "g_cycle",
+    "g_list", "g_search", "g_pointer", "g_edit", "g_cycle", "g_wrench",
 )}
 
 FLUENT = {
@@ -80,6 +80,7 @@ FLUENT = {
     "debugger": "Bug",
     "plugins": "Puzzle Piece",
     "snapshot": "Camera",
+    "refresh": "Arrow Clockwise",          # pseudocode F5
     # glyphs used only inside the composites below
     "g_quote": "Text Quote",
     "g_align": "Align Left",
@@ -125,6 +126,13 @@ COMPOSITES = {
     "map_var": ("text:=", "MAP"),
     "paren_pair": ("text:( )", "PAIR"),
     "c_file": ("export", "C"),
+    # pseudocode window only (bindings_pseudocode.yaml)
+    "asm_toggle": ("lastactive", "ASM"),
+    "comment_block": ("comment", "BLCK"),
+    "op_hexdec": ("text:0x", "H/D"),
+    "split_var": ("editfield", "SPLT"),
+    "del_arg": ("function", "-ARG"),
+    "ret_type": ("type_retype", "RET"),
     # jumps
     "jump_name": ("goto", "NAME"),
     "jump_func": ("goto", "FUNC"),
@@ -188,6 +196,14 @@ COMPOSITES = {
     "lumina_push": ("g_cloud_up", "PUSH"),
     "lumina_view": ("g_cloud", "VIEW"),
     "highlight_lock": ("text:H", "LOCK"),
+    # hex view, Local Types and the list windows (gen_views.HEX, TYPES, LIST)
+    "patch_hex": ("g_wrench", "PTCH"),
+    "type_add": ("structure", "ADD"),
+    "type_del": ("structure", "DEL"),
+    "item_add": ("g_list", "ADD"),
+    "item_del": ("g_list", "DEL"),
+    "item_edit": ("g_list", "EDIT"),
+    "list_filter": ("g_search", "FLTR"),
 }
 # Alt+1..9 (Control+1..9 on macOS): switch to window N.
 COMPOSITES.update({f"window_{n}": (f"text:{n}", "WIN") for n in range(1, 10)})

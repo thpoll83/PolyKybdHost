@@ -1578,11 +1578,34 @@ ghidra-ghidra,ghidra:
 # macOS reports the bundle name, e.g. "IDA Professional 9.1" or "IDA Pro 9.0";
 # the matcher drops the trailing version. One set serves every edition (Pro,
 # Home, Free, Classroom). None of these names were checked on an install.
+# The IDA plugin (ida-plugin/) reports the focused widget as `ida://<view>`;
+# the names here are exactly CONTEXT_REPORTERS' "ida" names
+# (tests/handler/ida_routing_test.py). Pseudocode, the disassembly (text,
+# graph), the hex view, Local Types (`ida://types`), the list windows
+# (`ida://list`) and every other window each get a set
+# (overlay_sources/ida/gen_views.py). `layer: false`: a view's set replaces
+# ida_template, which stays the fallback when no report arrives.
 ida,ida64,idaq,idaq64,ida pro,ida professional,ida home,ida free,ida classroom:
   overlay: [ida_template.mods.png, ida_template.combo.mods.png]
+  layer: false
+  urls-contains:
+    "ida://pseudocode": { overlay: [ida_pseudocode_template.mods.png, ida_pseudocode_template.combo.mods.png] }
+    "ida://disasm": { overlay: [ida_disasm_template.mods.png, ida_disasm_template.combo.mods.png] }
+    "ida://hex": { overlay: [ida_hex_template.mods.png, ida_hex_template.combo.mods.png] }
+    "ida://types": { overlay: [ida_types_template.mods.png, ida_types_template.combo.mods.png] }
+    "ida://list": { overlay: [ida_list_template.mods.png, ida_list_template.combo.mods.png] }
+    "ida://": { overlay: [ida_global_template.mods.png, ida_global_template.combo.mods.png] }
   os:
     macos:
       overlay: [ida_template_mac.mods.png, ida_template_mac.combo.mods.png, ida_template_mac.extra.mods.png]
+      layer: false
+      urls-contains:
+        "ida://pseudocode": { overlay: [ida_pseudocode_template_mac.mods.png, ida_pseudocode_template_mac.combo.mods.png, ida_pseudocode_template_mac.extra.mods.png] }
+        "ida://disasm": { overlay: [ida_disasm_template_mac.mods.png, ida_disasm_template_mac.combo.mods.png, ida_disasm_template_mac.extra.mods.png] }
+        "ida://hex": { overlay: [ida_hex_template_mac.mods.png, ida_hex_template_mac.combo.mods.png, ida_hex_template_mac.extra.mods.png] }
+        "ida://types": { overlay: [ida_types_template_mac.mods.png, ida_types_template_mac.combo.mods.png, ida_types_template_mac.extra.mods.png] }
+        "ida://list": { overlay: [ida_list_template_mac.mods.png, ida_list_template_mac.combo.mods.png, ida_list_template_mac.extra.mods.png] }
+        "ida://": { overlay: [ida_global_template_mac.mods.png, ida_global_template_mac.combo.mods.png, ida_global_template_mac.extra.mods.png] }
 # Binary Ninja (overlay_sources/binaryninja/). Windows `binaryninja.exe` and the
 # Linux binary `binaryninja` (unverified on an install); macOS "Binary Ninja"
 # (the app bundle name).
