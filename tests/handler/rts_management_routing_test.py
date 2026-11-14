@@ -29,6 +29,9 @@ GAMES = {
     ("keeperfx_template.mods.png",): (
         ("keeperfx", "keeperfx.exe", "keeperfx_hvlog", "keeperfx_hvlog.exe"),
         "KeeperFX"),
+    ("widelands_template.mods.png",): (
+        ("widelands", "widelands.exe", "org.widelands.widelands"),
+        "Widelands"),
 }
 
 

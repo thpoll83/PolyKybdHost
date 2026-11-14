@@ -3591,6 +3591,12 @@ spring,spring.exe,beyond-all-reason,beyond-all-reason.exe,info.beyondallreason.b
 # Names not checked on an install.
 keeperfx,keeperfx.exe,keeperfx_hvlog,keeperfx_hvlog.exe:
   overlay: keeperfx_template.mods.png
+# Widelands (overlay_sources/widelands/widelands.yaml). `widelands` is the
+# binary target in src/CMakeLists.txt (v1.3.1) and the Exec= and StartupWMClass=
+# of xdg/org.widelands.Widelands.desktop, whose name is the Flatpak id. Names
+# not checked on an install.
+widelands,widelands.exe,org.widelands.widelands:
+  overlay: widelands_template.mods.png
 # League of Legends (overlay_sources/lol/lol.yaml), the in-game window only. The
 # game is `League of Legends.exe` on Windows and the `LeagueofLegends` app on
 # macOS. The lobby client (LeagueClient, LeagueClientUx) is a different process
