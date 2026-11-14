@@ -35,6 +35,7 @@ from polyhost.res.overlay_sources import icon_fetch  # noqa: E402
 
 ICONS = {
     # --- tools
+    "mode_toggle": "ms:toggle_on",    # F8: object / component mode
     "complete": "ms:check",
     # --- file and edit
     "reference": "ms:link",
@@ -78,6 +79,42 @@ ICONS = {
     "b_bookmark": "ms:bookmark",
     "b_width": "ms:width",
     "b_close": "ms:close",
+    # --- per-editor sets (bindings_<editor>.yaml, mode reporter)
+    "center_time": "ms:filter_center_focus",
+    "ge_absolute": "ms:show_chart",
+    "ge_stacked": "ms:stacked_line_chart",
+    "ge_normalized": "ms:height",
+    "unlock_channel": "ms:lock_open",
+    "track_solo": "ms:headphones",
+    "clip_export": "ms:output",
+    "clip_import": "ms:input",
+    "audio_import": "ms:audio_file",
+    "clip_split": "ms:call_split",
+    "trim_start": "ms:align_horizontal_left",
+    "trim_end": "ms:align_horizontal_right",
+    "clip_trim": "ms:crop",
+    "clip_scale": "ms:open_in_full",
+    "clip_loop": "ms:all_inclusive",
+    "clip_hold": "ms:pause",
+    "uv_distort": "ms:blur_on",
+    "select_all": "ms:select_all",
+    "uv_layout": "ms:view_quilt",
+    "uv_shell": "ms:shape_line",
+    "node_simple": "ms:crop_square",
+    "node_connected": "ms:view_list",
+    "node_full": "ms:view_agenda",
+    "node_custom": "ms:checklist",
+    "node_label": "ms:label",
+    "zoom_in": "ms:zoom_in",
+    "zoom_out": "ms:zoom_out",
+    "node_delete": "ms:delete",
+    "node_create": "ms:add_box",
+    "swatch_size": "ms:photo_size_select_large",
+    "node_solo": "ms:target",
+    "b_layers": "ms:layers",
+    "b_minus": "ms:remove",
+    "b_track": "ms:view_stream",
+    "b_node": "ms:schema",
     "b_lock": "ms:lock",
     "b_straighten": "ms:straighten",
     "b_sync": "ms:sync",
@@ -149,6 +186,19 @@ BORROW = {
     "cut.png": "cinema4d",
     "copy.png": "cinema4d",
     "paste.png": "cinema4d",
+    # per-editor sets
+    "lock_channel.png": "blender",    # Graph Editor: lock curve channel
+    "easing.png": "blender",          # Graph Editor: auto tangents
+    "mute.png": "blender",            # Time Editor mute
+    "ungroup.png": "blender",
+    "select_invert.png": "blender",
+    "seam.png": "blender",            # UV: cut edges
+    "stitch.png": "blender",          # UV: sew edges
+    "linked_from.png": "blender",     # Node Editor: select upstream
+    "linked_to.png": "blender",       # select downstream
+    "select_linked.png": "blender",   # select upstream and downstream
+    "search.png": "blender",          # attribute search field
+    "pin.png": "blender",             # pin / unpin
 }
 
 # (output, base, badge): ``base`` in the upper left, ``badge`` in the lower right.
@@ -162,7 +212,7 @@ BADGES = [
     ("conv_vert.png", "sel_vert.png", "b_convert.png"),
     ("conv_edge.png", "sel_edge.png", "b_convert.png"),
     ("conv_face.png", "sel_face.png", "b_convert.png"),
-    ("conv_uv.png", "uv_unwrap.png", "b_convert.png"),
+    ("conv_uv.png", "sel_uv.png", "b_convert.png"),
     ("key_move.png", "move.png", "key_insert.png"),
     ("key_rotate.png", "rotate.png", "key_insert.png"),
     ("key_scale.png", "scale.png", "key_insert.png"),
@@ -188,6 +238,26 @@ BADGES = [
     ("frame_sel_views.png", "zoomextsel.png", "quadview.png"),
     ("bm_frame.png", "b_bookmark.png", "b_width.png"),
     ("bm_unframe.png", "b_bookmark.png", "b_close.png"),
+    # per-editor sets
+    ("time_to_key.png", "key_insert.png", "snap.png"),
+    ("track_mute.png", "b_track.png", "mute.png"),
+    ("layer_additive.png", "b_layers.png", "b_plus.png"),
+    ("layer_override.png", "b_layers.png", "b_convert.png"),
+    ("anim_add.png", "set_animation.png", "b_plus.png"),
+    ("pose_add.png", "rigdisplay.png", "b_plus.png"),
+    ("scale_start.png", "trim_start.png", "scale.png"),
+    ("scale_end.png", "trim_end.png", "scale.png"),
+    ("checker_up.png", "b_grid.png", "b_plus.png"),
+    ("checker_down.png", "b_grid.png", "b_minus.png"),
+    ("graph_remove.png", "b_node.png", "b_close.png"),
+    ("graph_remove_unsel.png", "select_invert.png", "b_close.png"),
+    ("graph_remove_up.png", "linked_from.png", "b_close.png"),
+    ("graph_remove_down.png", "linked_to.png", "b_close.png"),
+    ("regraph_up.png", "linked_from.png", "b_sync.png"),
+    ("regraph_down.png", "linked_to.png", "b_sync.png"),
+    ("regraph_both.png", "select_linked.png", "b_sync.png"),
+    ("node_unsolo.png", "node_solo.png", "b_close.png"),
+    ("node_resolo.png", "node_solo.png", "b_history.png"),
 ]
 
 # (output, base, forward): ``base`` over a heavy arrow.
@@ -196,6 +266,8 @@ ARROWS = [
     ("bm_prev.png", "b_bookmark.png", False),
     ("bm_range_next.png", "bm_frame.png", True),
     ("bm_range_prev.png", "bm_frame.png", False),
+    ("keys_right.png", "key_insert.png", True),     # Graph Editor: move keys right
+    ("keys_left.png", "key_insert.png", False),
 ]
 
 MAYA_ICON_URL = ("https://raw.githubusercontent.com/simple-icons/simple-icons/"
@@ -368,6 +440,22 @@ def _space_hotbox(path: Path) -> None:
     _save_white(m, path)
 
 
+def _sel_uv(path: Path) -> None:
+    """F12 Select UV: the component square of F9..F11 with "UV" inside.
+
+    `uv_unwrap` (an unfolded map) stays on Ctrl+U Unfold in the UV Editor, so
+    the two keys no longer share art.
+    """
+    from PIL import ImageDraw, ImageFont
+    img = Image.new("RGBA", (96, 96), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rectangle((14, 14, 81, 81), outline=(0, 0, 0, 255), width=6)
+    font = ImageFont.truetype(
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", 38)
+    d.text((48, 49), "UV", fill=(0, 0, 0, 255), font=font, anchor="mm")
+    img.save(path)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -378,6 +466,7 @@ def main() -> int:
     g.guarded(out / "wireframe.png", _wireframe, "drawn wire sphere")
     g.guarded(out / "shaded.png", _shaded, "drawn dithered sphere")
     g.guarded(out / "textured.png", _textured, "drawn checker sphere")
+    g.guarded(out / "sel_uv.png", _sel_uv, "drawn component square + UV")
     g.guarded(out / "space_hotbox.png", _space_hotbox, "drawn hotbox (Space, hold), 72x40")
     for dr in ("up", "down", "left", "right"):
         g.guarded(out / f"nudge_{dr}.png", lambda p, k=dr: _nudge(p, k), f"drawn nudge ({dr})")
