@@ -597,6 +597,79 @@ class TestHelpTags(unittest.TestCase):
         self.assertEqual(files["doc/tags"], (tmp / "tags").read_bytes())
 
 
+class TestBinaryNinja(Fixture):
+
+    def setUp(self):
+        super().setUp()
+        self.bn_src = self.tmp / "binaryninja-plugin"
+        self.bn_src.mkdir()
+        (self.bn_src / "__init__.py").write_text("# glue v1\n")
+        (self.bn_src / "core.py").write_text("# core v1\n")
+        (self.bn_src / "README.md").write_text("not copied\n")
+        patcher = mock.patch.object(ep, "BINJA_SOURCE", self.bn_src)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    @property
+    def bn_dir(self):
+        return self.home / ".binaryninja/plugins/polykybd_mode_reporter"
+
+    def test_user_folder_per_os_and_override(self):
+        h = self.home
+        self.assertEqual(ep.binaryninja_dir(h, {}, "Linux"), self.bn_dir)
+        self.assertEqual(ep.binaryninja_dir(h, {"APPDATA": "C:/Users/u/AppData/Roaming"}, "Windows"),
+                         Path("C:/Users/u/AppData/Roaming/Binary Ninja/plugins/polykybd_mode_reporter"))
+        self.assertEqual(ep.binaryninja_dir(h, {}, "Darwin"),
+                         h / "Library/Application Support/Binary Ninja/plugins/polykybd_mode_reporter")
+        self.assertEqual(ep.binaryninja_dir(h, {"BN_USER_DIRECTORY": "/opt/bn-user"}, "Linux"),
+                         Path("/opt/bn-user/plugins/polykybd_mode_reporter"))
+
+    def test_not_present_without_a_user_folder(self):
+        self.assertEqual(self.status(ep.BINARYNINJA).state, ep.STATE_NOT_PRESENT)
+
+    def test_the_user_folder_makes_it_present_and_install_copies_the_package(self):
+        (self.home / ".binaryninja").mkdir()
+        st = self.status(ep.BINARYNINJA)
+        self.assertEqual(st.state, ep.STATE_NOT_INSTALLED)
+        self.assertTrue(ep.default_selection(st))
+        [r] = ep.install([ep.BINARYNINJA], **self.kw())
+        self.assertTrue(r.ok and r.changed, r)
+        self.assertEqual((self.bn_dir / "core.py").read_text(), "# core v1\n")
+        self.assertTrue((self.bn_dir / "__init__.py").is_file())
+        self.assertFalse((self.bn_dir / "README.md").exists())
+        self.assertEqual(self.status(ep.BINARYNINJA).state, ep.STATE_INSTALLED)
+
+    def test_a_changed_source_is_refreshed(self):
+        (self.home / ".binaryninja").mkdir()
+        ep.install([ep.BINARYNINJA], **self.kw())
+        (self.bn_src / "core.py").write_text("# core v2\n")
+        self.assertEqual(self.status(ep.BINARYNINJA).state, ep.STATE_OUTDATED)
+        self.assertEqual(ep.refresh_installed(**self.kw()), [ep.BINARYNINJA])
+        self.assertEqual((self.bn_dir / "core.py").read_text(), "# core v2\n")
+
+    def test_remove_keeps_the_plugins_folder(self):
+        (self.home / ".binaryninja").mkdir()
+        ep.install([ep.BINARYNINJA], **self.kw())
+        [r] = ep.remove([ep.BINARYNINJA], **self.kw())
+        self.assertTrue(r.ok and r.changed)
+        self.assertFalse(self.bn_dir.exists())
+        self.assertTrue((self.home / ".binaryninja/plugins").is_dir())
+
+    def test_a_hand_copy_is_set_aside_outside_the_plugins_folder(self):
+        self.bn_dir.mkdir(parents=True)
+        (self.bn_dir / "__init__.py").write_text("# hand copy\n")
+        self.assertEqual(self.status(ep.BINARYNINJA).state, ep.STATE_MANUAL)
+        [r] = ep.install([ep.BINARYNINJA], **self.kw())
+        self.assertTrue(r.ok and r.changed)
+        self.assertEqual(r.backup.parent, self.home / ".binaryninja")
+        self.assertEqual(self.status(ep.BINARYNINJA).state, ep.STATE_INSTALLED)
+
+    def test_the_real_package_is_shipped(self):
+        files = ep.shipped_files(ep.BINARYNINJA, ep.REPO_ROOT / "binaryninja-plugin"
+                                 / "polykybd_mode_reporter")
+        self.assertEqual(sorted(files), ["__init__.py", "core.py"])
+
+
 class TestSettings(unittest.TestCase):
 
     def test_only_a_changed_port_or_a_token_needs_settings(self):

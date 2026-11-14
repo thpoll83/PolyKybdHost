@@ -98,6 +98,7 @@ COMPOSITES = {
     "stepout_back": ("stepout", "BACK"),
     "run_back_here": ("rewind", "HERE"),
     "ttd_time": ("goto", "TIME"),
+    "hex_ascii_col": ("text:Aa", "COL"),   # Hex view: Tab, hex <-> ASCII column
 }
 # Ctrl+1..0 go to bookmark N; Ctrl+Alt+1..0 set bookmark N (0 is bookmark 10).
 for _n in range(1, 11):

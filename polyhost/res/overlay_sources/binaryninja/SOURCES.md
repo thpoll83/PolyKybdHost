@@ -7,6 +7,24 @@
 |---|---|---|
 | `binaryninja_template` (2 files) | Windows and Linux | 90 + ESC mark |
 | `binaryninja_template_mac` (3 files) | macOS | 90 + ESC mark |
+| `binaryninja_linear_template` (2 files, `_mac` 3) | Linear view (mode reporter) | 88 + ESC mark |
+| `binaryninja_hex_template` (2 files, `_mac` 3) | Hex view (mode reporter) | 55 + ESC mark |
+
+## Per-view sets
+
+The mode reporter (`binaryninja-plugin/`) sends `binaryninja://<view>[/<il>]`.
+`gen_view_sets.py` derives `bindings_linear.yaml` and `bindings_hex.yaml` from
+`bindings.yaml` (`--check` tests that they are current):
+
+- Linear: without Ctrl+Shift+= / Ctrl+Shift+- (Cmd on macOS), which the guide
+  lists as "Graph view zoom in / out".
+- Hex: the guide says that in Hex view you "type in hexadecimal or ASCII
+  values" and that Tab moves between the hex and the ASCII column. So a key
+  with no modifier or with Shift only is blank, Tab draws `hex_ascii_col.png`,
+  and the graph zoom keys are left out. Not checked on an install: whether
+  those keys type text while the editing lock is on.
+- Graph view, the other views and no report keep the main set. The IL level
+  changes no default hotkey in the guide, so it has no set.
 
 ## Process names
 
