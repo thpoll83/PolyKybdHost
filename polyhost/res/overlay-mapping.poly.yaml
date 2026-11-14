@@ -3510,6 +3510,16 @@ openrct2,openrct2.exe,io.openrct2.openrct2:
 # the Flatpak id is io.github.ihhub.Fheroes2. Names not checked on an install.
 fheroes2,fheroes2.exe,io.github.ihhub.fheroes2:
   overlay: fheroes2_template.mods.png
+# The Battle for Wesnoth (overlay_sources/wesnoth/wesnoth.yaml). `wesnoth` is
+# the executable target in src/CMakeLists.txt (release 1.18.8), `wesnoth.exe` on
+# Windows; the Flatpak id is org.wesnoth.Wesnoth and the macOS app is "The
+# Battle for Wesnoth". The game binds Cmd on macOS where it binds Ctrl on
+# Windows and Linux, hence the macOS branch. Names not checked on an install.
+wesnoth,wesnoth.exe,org.wesnoth.wesnoth,the battle for wesnoth:
+  overlay: [wesnoth_template.mods.png, wesnoth_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [wesnoth_template_mac.mods.png, wesnoth_template_mac.combo.mods.png, wesnoth_template_mac.extra.mods.png]
 # DevilutionX, Diablo and Hellfire (overlay_sources/devilutionx/devilutionx.yaml).
 # devilutionx is the CMake binary target (devilutionx.exe on Windows, also under
 # Wine); the Flatpak id is org.diasurgical.DevilutionX and the window title

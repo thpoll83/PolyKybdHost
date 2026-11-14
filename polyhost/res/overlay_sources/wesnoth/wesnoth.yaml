@@ -1,0 +1,104 @@
+# The Battle for Wesnoth overlay for PolyKybd.
+#
+# Keys: the default hotkeys of the game screen in data/core/hotkeys.cfg of
+# wesnoth/wesnoth, release 1.18.8. See SOURCES.md.
+#
+# Wesnoth binds most commands to Ctrl on Windows and Linux and to Cmd on macOS
+# (the IF_APPLE_CMD_ELSE_CTRL macro in hotkeys.cfg): those are CMDCTRL below, so
+# the generator also writes a macOS set. Three keys differ on macOS: End turn is
+# Alt+Space, Preferences is Cmd+comma, and Quit to desktop has no key.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/wesnoth/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/wesnoth/wesnoth.yaml --preview /tmp/wesnoth_preview
+app: wesnoth
+match: [wesnoth, wesnoth.exe, org.wesnoth.wesnoth, the battle for wesnoth]
+output: wesnoth_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for Freeciv: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# "Wesnoth" drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Units
+  - { key: N, icon: nextunit.png, label: "Next unit" }
+  - { key: N, mods: [SHIFT], icon: prevunit.png, label: "Previous unit" }
+  - { key: SPACE, icon: endunitturn.png, label: "End unit turn" }
+  - { key: SPACE, mods: [SHIFT], icon: holdposition.png, label: "Hold position" }
+  - { key: T, icon: continuemove.png, label: "Continue interrupted move" }
+  - { key: L, icon: leader.png, label: "Scroll to leader" }
+  - { key: D, icon: describeunit.png, label: "Unit description" }
+  - { key: N, mods: [CMDCTRL], icon: renameunit.png, label: "Rename unit" }
+  - { key: R, mods: [CMDCTRL], icon: recruit.png, label: "Recruit" }
+  - { key: R, mods: [ALT], icon: recall.png, label: "Recall" }
+  - { key: R, mods: [CMDCTRL, ALT], icon: repeatrecruit.png, label: "Repeat recruit" }
+  - { key: V, mods: [CMDCTRL], icon: enemymoves.png, label: "Show enemy moves" }
+  - { key: B, mods: [CMDCTRL], icon: bestenemymoves.png, label: "Best possible enemy moves" }
+  - { key: U, mods: [ALT], icon: unitlist.png, label: "Unit list" }
+
+  # Turn and game
+  - { key: SPACE, mods: [CTRL], icon: endturn.png, label: "End turn", except: [macos] }
+  - { key: SPACE, mods: [ALT], icon: endturn.png, label: "End turn", only: [macos] }
+  - { key: U, icon: undo.png, label: "Undo", shared: false }
+  - { key: R, icon: redo.png, label: "Redo", shared: false }
+  - { key: S, mods: [CMDCTRL], icon: save.png, label: "Save game", shared: false }
+  - { key: O, mods: [CMDCTRL], icon: load.png, label: "Load game", shared: false }
+  - { key: W, mods: [CMDCTRL], icon: quit.png, label: "Quit to title screen" }
+  - { key: Q, mods: [CTRL], icon: quitdesktop.png, label: "Quit to desktop", except: [macos] }
+  - { key: P, mods: [CTRL], icon: preferences.png, label: "Preferences", shared: false, except: [macos] }
+  - { key: COMMA, mods: [GUI], icon: preferences.png, label: "Preferences", shared: false, only: [macos] }
+  - { key: F1, icon: help.png, label: "Help", shared: false, region: [34, 40] }
+  - { key: J, mods: [CMDCTRL], icon: objectives.png, label: "Objectives" }
+  - { key: S, icon: statistics.png, label: "Statistics" }
+  - { key: S, mods: [ALT], icon: statustable.png, label: "Status table" }
+  - { key: A, mods: [CMDCTRL, SHIFT], icon: achievements.png, label: "Achievements" }
+  - { key: S, mods: [CTRL, SHIFT], icon: surrender.png, label: "Surrender game" }
+  - { key: A, mods: [CMDCTRL], icon: accelerated.png, label: "Toggle accelerated speed" }
+  - { key: F, mods: [CMDCTRL], icon: fullscreen.png, label: "Toggle full screen", shared: false }
+  - { key: M, mods: [CMDCTRL, ALT], icon: mute.png, label: "Mute" }
+  - { key: S, mods: [ALT, SHIFT], icon: screenshot.png, label: "Map screenshot" }
+  - { key: SEMICOLON, mods: [SHIFT], icon: command.png, label: "Enter user command" }
+
+  # Map
+  - { key: SLASH, icon: search.png, label: "Search", shared: false }
+  - { key: EQUAL, icon: zoomin.png, label: "Zoom in", shared: false }
+  - { key: MINUS, icon: zoomout.png, label: "Zoom out", shared: false }
+  - { key: "0", icon: zoomdefault.png, label: "Default zoom" }
+  - { key: G, mods: [CMDCTRL], icon: grid.png, label: "Toggle grid" }
+  - { key: E, mods: [CMDCTRL], icon: ellipses.png, label: "Toggle ellipses" }
+  - { key: T, mods: [CMDCTRL], icon: describeterrain.png, label: "Terrain description" }
+  - { key: L, mods: [ALT], icon: label.png, label: "Set label" }
+  - { key: L, mods: [CMDCTRL], icon: teamlabel.png, label: "Set team label" }
+  - { key: C, mods: [CMDCTRL], icon: clearlabels.png, label: "Clear labels" }
+  - { key: S, mods: [SHIFT], icon: updateshroud.png, label: "Update shroud now" }
+
+  # Chat
+  - { key: M, icon: chat.png, label: "Speak" }
+  - { key: M, mods: [ALT], icon: chatall.png, label: "Speak to all" }
+  - { key: M, mods: [CMDCTRL], icon: chatally.png, label: "Speak to ally" }
+  - { key: C, mods: [ALT], icon: chatlog.png, label: "Chat log" }
+  - { key: X, mods: [CMDCTRL], icon: clearmessages.png, label: "Clear messages" }
+
+  # Planning mode (whiteboard). Ctrl+Y is Ctrl on macOS too: hotkeys.cfg
+  # writes ctrl=yes for it, not the macro.
+  - { key: P, icon: planning.png, label: "Planning mode" }
+  - { key: Y, icon: planexecute.png, label: "Execute planned action" }
+  - { key: Y, mods: [CTRL], icon: planexecuteall.png, label: "Execute all planned actions" }
+  - { key: H, icon: plandelete.png, label: "Delete planned action" }
+  - { key: PGUP, icon: planup.png, label: "Move planned action up" }
+  - { key: PGDN, icon: plandown.png, label: "Move planned action down" }
+  - { key: I, icon: supposedead.png, label: "Suppose dead" }
