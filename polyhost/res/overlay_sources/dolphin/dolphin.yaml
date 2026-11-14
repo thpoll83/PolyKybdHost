@@ -1,0 +1,86 @@
+# Dolphin (GameCube and Wii emulator) shortcut overlay for PolyKybd. See SOURCES.md.
+#
+# Keys are Dolphin's defaults, release 2609b (dolphin-emu/dolphin): the hotkeys
+# of HotkeyManager::LoadDefaults in Source/Core/Core/HotkeyManager.cpp and the
+# GameCube controller of port 1 from GCPad::LoadDefaults in
+# Source/Core/Core/HW/GCPadEmu.cpp. F1 to F8 load state slot 1 to 8 and
+# Shift+F1 to F8 save it. Esc stops the game and carries the Dolphin mark.
+#
+# Not drawn: the debugger keys, the keys of the integrated GBA, the Triforce
+# arcade inputs, the two stick modifier keys, and the emulated Wii Remote, which
+# uses some of the same keys for other buttons.
+#
+# Regenerate:
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/dolphin/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/dolphin/dolphin.yaml --preview /tmp/dolphin_preview
+app: dolphin
+match: [dolphin-emu, org.dolphinemu.dolphin-emu]
+output: dolphin_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: alpha
+threshold: 128
+
+program_icon: dolphin.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # General hotkeys
+  - { key: O, mods: [CTRL], icon: open.png, label: Open }
+  - { key: F10, mods: [], icon: pause.png, label: "Play / pause" }
+  - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Full screen" }
+  - { key: A, mods: [ALT], icon: achievements.png, label: "Open achievements" }
+  - { key: F9, mods: [], icon: screenshot.png, label: Screenshot }
+  - { key: TAB, mods: [], icon: ffhold.png, label: "Disable speed limit (hold)" }
+  - { key: F5, mods: [ALT], icon: wiimote1.png, label: "Connect Wii Remote 1", region: [38, 32] }
+  - { key: F6, mods: [ALT], icon: wiimote2.png, label: "Connect Wii Remote 2", region: [38, 32] }
+  - { key: F7, mods: [ALT], icon: wiimote3.png, label: "Connect Wii Remote 3", region: [38, 32] }
+  - { key: F8, mods: [ALT], icon: wiimote4.png, label: "Connect Wii Remote 4", region: [38, 32] }
+  - { key: F9, mods: [ALT], icon: balance.png, label: "Connect Balance Board" }
+  # Save states; the numbered icons are drawn 1:1 at their own size
+  - { key: F1, mods: [], icon: load1.png, label: "Load state slot 1", region: [38, 32] }
+  - { key: F2, mods: [], icon: load2.png, label: "Load state slot 2", region: [38, 32] }
+  - { key: F3, mods: [], icon: load3.png, label: "Load state slot 3", region: [38, 32] }
+  - { key: F4, mods: [], icon: load4.png, label: "Load state slot 4", region: [38, 32] }
+  - { key: F5, mods: [], icon: load5.png, label: "Load state slot 5", region: [38, 32] }
+  - { key: F6, mods: [], icon: load6.png, label: "Load state slot 6", region: [38, 32] }
+  - { key: F7, mods: [], icon: load7.png, label: "Load state slot 7", region: [38, 32] }
+  - { key: F8, mods: [], icon: load8.png, label: "Load state slot 8", region: [38, 32] }
+  - { key: F1, mods: [SHIFT], icon: save1.png, label: "Save state slot 1", region: [38, 32] }
+  - { key: F2, mods: [SHIFT], icon: save2.png, label: "Save state slot 2", region: [38, 32] }
+  - { key: F3, mods: [SHIFT], icon: save3.png, label: "Save state slot 3", region: [38, 32] }
+  - { key: F4, mods: [SHIFT], icon: save4.png, label: "Save state slot 4", region: [38, 32] }
+  - { key: F5, mods: [SHIFT], icon: save5.png, label: "Save state slot 5", region: [38, 32] }
+  - { key: F6, mods: [SHIFT], icon: save6.png, label: "Save state slot 6", region: [38, 32] }
+  - { key: F7, mods: [SHIFT], icon: save7.png, label: "Save state slot 7", region: [38, 32] }
+  - { key: F8, mods: [SHIFT], icon: save8.png, label: "Save state slot 8", region: [38, 32] }
+  - { key: F12, mods: [], icon: undoload.png, label: "Undo load state" }
+  - { key: F12, mods: [SHIFT], icon: undosave.png, label: "Undo save state" }
+  # GameCube controller, port 1; drawn 1:1 at their own size
+  - { key: X, mods: [], icon: gca.png, label: "GameCube A", region: [32, 32], margin: 2 }
+  - { key: Z, mods: [], icon: gcb.png, label: "GameCube B", region: [32, 32], margin: 2 }
+  - { key: C, mods: [], icon: gcx.png, label: "GameCube X", region: [32, 32], margin: 2 }
+  - { key: S, mods: [], icon: gcy.png, label: "GameCube Y", region: [32, 32], margin: 2 }
+  - { key: D, mods: [], icon: gcz.png, label: "GameCube Z", region: [32, 32], margin: 2 }
+  - { key: Q, mods: [], icon: gcl.png, label: "GameCube L", region: [32, 32], margin: 2 }
+  - { key: W, mods: [], icon: gcr.png, label: "GameCube R", region: [32, 32], margin: 2 }
+  - { key: ENTER, mods: [], icon: gcstart.png, label: "GameCube Start", region: [49, 15], margin: 2 }
+  - { key: T, mods: [], icon: dpadup.png, label: "D-pad up", region: [32, 32], margin: 2 }
+  - { key: G, mods: [], icon: dpaddown.png, label: "D-pad down", region: [32, 32], margin: 2 }
+  - { key: F, mods: [], icon: dpadleft.png, label: "D-pad left", region: [32, 32], margin: 2 }
+  - { key: H, mods: [], icon: dpadright.png, label: "D-pad right", region: [32, 32], margin: 2 }
+  - { key: I, mods: [], icon: cstickup.png, label: "C stick up", region: [32, 32], margin: 2 }
+  - { key: K, mods: [], icon: cstickdown.png, label: "C stick down", region: [32, 32], margin: 2 }
+  - { key: J, mods: [], icon: cstickleft.png, label: "C stick left", region: [32, 32], margin: 2 }
+  - { key: L, mods: [], icon: cstickright.png, label: "C stick right", region: [32, 32], margin: 2 }
+  - { key: UP, mods: [], icon: stickup.png, label: "Control stick up", region: [32, 32], margin: 2 }
+  - { key: DOWN, mods: [], icon: stickdown.png, label: "Control stick down", region: [32, 32], margin: 2 }
+  - { key: LEFT, mods: [], icon: stickleft.png, label: "Control stick left", region: [32, 32], margin: 2 }
+  - { key: RIGHT, mods: [], icon: stickright.png, label: "Control stick right", region: [32, 32], margin: 2 }

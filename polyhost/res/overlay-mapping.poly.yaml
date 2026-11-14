@@ -3712,6 +3712,22 @@ scummvm,org.scummvm.scummvm:
       overlay: [scummvm_template_mac.mods.png, scummvm_template_mac.combo.mods.png]
     linux:
       overlay: [scummvm_template_linux.mods.png, scummvm_template_linux.combo.mods.png]
+# Dolphin, the GameCube and Wii emulator (overlay_sources/dolphin/). The default
+# hotkeys and the GameCube controller of port 1, release 2609b. Process names:
+# dolphin-emu on Linux (CMake target and desktop file), the Flatpak id
+# org.DolphinEmu.dolphin-emu, DolphinQt inside the macOS bundle. Not checked on a
+# running install.
+dolphin-emu,dolphinqt,org.dolphinemu.dolphin-emu:
+  overlay: dolphin_template.mods.png
+# Dolphin.exe on Windows and the macOS app "Dolphin". The entry has no overlay of
+# its own: on Linux the process `dolphin` is the KDE file manager, which gets no
+# emulator set.
+dolphin:
+  os:
+    windows:
+      overlay: dolphin_template.mods.png
+    macos:
+      overlay: dolphin_template.mods.png
 # PTC Mathcad Prime (overlay_sources/mathcad/). Windows only: MathcadPrime.exe.
 # English / US keys from PTC's 12.0.1.0 shortcut PDF. Name not checked on an
 # install.

@@ -36,6 +36,7 @@ def _set(stem, *tiers):
 SCUMMVM = {"windows": _set("scummvm_template", "combo"),
            "macos": _set("scummvm_template_mac", "combo"),
            "linux": _set("scummvm_template_linux", "combo")}
+DOLPHIN = _set("dolphin_template")
 
 
 def _overlay_handler_class():
@@ -87,6 +88,27 @@ class Emulator2RoutingTest(unittest.TestCase):
 
     def test_scummvm_files_exist(self):
         self._assert_files_exist(SCUMMVM.values())
+
+    def test_dolphin_emu_on_every_platform(self):
+        title = "Dolphin 2609b | JIT64 DC | OpenGL | HLE | Luigi's Mansion (GLME01)"
+        for app in ("dolphin-emu", "dolphinqt", "org.dolphinemu.dolphin-emu"):
+            for os_name in ALL_OS:
+                with self.subTest(app=app, os=os_name):
+                    self.assertEqual(self._route(app, os_name, title), DOLPHIN)
+
+    def test_dolphin_is_the_emulator_on_windows_and_macos(self):
+        for os_name in ("windows", "macos"):
+            with self.subTest(os=os_name):
+                self.assertEqual(self._route("dolphin", os_name, "Dolphin 2609b"), DOLPHIN)
+
+    def test_dolphin_on_linux_is_the_file_manager(self):
+        for os_name in ("linux", "linux_kde", "linux_gnome", None):
+            for title in ("Home — Dolphin", ""):
+                with self.subTest(os=os_name, title=title):
+                    self.assertIsNone(self._route("dolphin", os_name, title))
+
+    def test_dolphin_files_exist(self):
+        self._assert_files_exist([DOLPHIN])
 
 
 if __name__ == "__main__":
