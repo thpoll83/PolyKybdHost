@@ -3756,6 +3756,12 @@ pcsx2-qt,pcsx2,net.pcsx2.pcsx2:
 # the Flatpak id org.duckstation.DuckStation. Not checked on a running install.
 duckstation-qt,duckstation-qt-x64-releaseltcg,duckstation-qt-arm64-releaseltcg,duckstation,org.duckstation.duckstation:
   overlay: duckstation_template.mods.png
+# OpenGOAL, the PC port of the Jak and Daxter games (overlay_sources/opengoal/).
+# The default keyboard binds of release v0.3.9, drawn as the PlayStation 2
+# controls they press. Process name: gk, the game runtime (CMake target; gk.exe
+# on Windows). Not checked on a running install.
+gk:
+  overlay: opengoal_template.mods.png
 # PTC Mathcad Prime (overlay_sources/mathcad/). Windows only: MathcadPrime.exe.
 # English / US keys from PTC's 12.0.1.0 shortcut PDF. Name not checked on an
 # install.

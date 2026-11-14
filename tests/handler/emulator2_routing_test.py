@@ -42,6 +42,7 @@ PPSSPP = {"windows": _set("ppsspp_template"),
           "linux": _set("ppsspp_template_linux")}
 PCSX2 = _set("pcsx2_template", "combo")
 DUCKSTATION = _set("duckstation_template")
+OPENGOAL = _set("opengoal_template")
 
 
 def _overlay_handler_class():
@@ -144,6 +145,9 @@ class Emulator2RoutingTest(unittest.TestCase):
              "duckstation-qt-arm64-releaseltcg", "duckstation",
              "org.duckstation.duckstation"),
             "Gran Turismo 2 (USA)", DUCKSTATION)
+
+    def test_opengoal(self):
+        self._assert_one_set(("gk",), "OpenGOAL - Work in Progress - v0.3.9", OPENGOAL)
 
 
 if __name__ == "__main__":
