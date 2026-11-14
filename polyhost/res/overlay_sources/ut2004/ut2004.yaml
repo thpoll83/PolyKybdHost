@@ -66,10 +66,10 @@ bindings:
   - { key: E, command: Use, icon: use.png, label: "Use" }
   - { key: U, command: Use, icon: use.png, label: "Use" }
   - { key: ENTER, command: Use, icon: use.png, label: "Use" }
-  - { key: J, command: Taunt pthrust, icon: taunt.png, label: "Taunt 1" }
-  - { key: K, command: Taunt asssmack, icon: taunt.png, label: "Taunt 2" }
-  - { key: L, command: Taunt throatcut, icon: taunt.png, label: "Taunt 3" }
-  - { key: SEMICOLON, command: Taunt gesture_point, icon: taunt.png, label: "Point" }
+  - { key: J, command: Taunt pthrust, icon: tauntthrust.png, label: "Taunt: pelvic thrust" }
+  - { key: K, command: Taunt asssmack, icon: tauntsmack.png, label: "Taunt: smack" }
+  - { key: L, command: Taunt throatcut, icon: tauntthroat.png, label: "Taunt: throat cut" }
+  - { key: SEMICOLON, command: Taunt gesture_point, icon: tauntpoint.png, label: "Point" }
   - { key: M, command: BasePath 0, icon: basepath.png, label: "Base path 0" }
   - { key: N, command: BasePath 1, icon: basepath.png, label: "Base path 1" }
 

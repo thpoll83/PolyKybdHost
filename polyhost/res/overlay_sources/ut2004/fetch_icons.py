@@ -49,7 +49,11 @@ ICONS = {
     # Movement and actions
     "jump": "gi:delapouite/jump-across",
     "use": "ms:touch_app",
-    "taunt": "ms:mood",
+    # Taunts: one picture per taunt, after what the animation shows
+    "tauntthrust": "gi:lorc/muscle-up",          # Taunt pthrust
+    "tauntsmack": "gi:delapouite/peach",         # Taunt asssmack
+    "tauntthroat": "gi:lorc/decapitation",       # Taunt throatcut
+    "tauntpoint": "gi:lorc/pointing",            # Taunt gesture_point
     "basepath": "ms:route",
     # Communication
     "talk": "ms:chat",
