@@ -211,8 +211,8 @@ class TestContextReporter(unittest.TestCase):
         self.assertTrue(self.p.update(app="blender", url="blender://SCULPT/VIEW_3D"))
 
     def test_unknown_app_token_is_dropped(self):
-        self.assertFalse(self.p.update(app="maya", url="maya://x", focused=True))
-        self.assertIsNone(self.p.current_url("maya"))
+        self.assertFalse(self.p.update(app="notanapp", url="notanapp://x", focused=True))
+        self.assertIsNone(self.p.current_url("notanapp"))
         self.assertEqual(self.p._reports, {})
 
 
