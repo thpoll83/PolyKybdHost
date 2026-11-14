@@ -3652,6 +3652,14 @@ veloren-voxygen,veloren,net.veloren.veloren:
 # editor (openmw-cs) get no set. Names not checked on an install.
 openmw,org.openmw.openmw:
   overlay: openmw_template.mods.png
+# OpenXcom, the free engine for UFO: Enemy Unknown and X-COM: Terror from the
+# Deep (overlay_sources/openxcom/openxcom.yaml). `openxcom` is the executable
+# target in src/CMakeLists.txt (master, commit 4a4bae5), OpenXcom.exe on
+# Windows; `openxcomex` is OpenXcomEx.exe of OpenXcom Extended. Where a key
+# differs between the two main screens the set shows the Battlescape meaning.
+# Names not checked on an install.
+openxcom,openxcomex:
+  overlay: openxcom_template.mods.png
 # Total Commander (overlay_sources/totalcmd/). Windows only. The 11.58.1
 # installers ship TOTALCMD64.EXE (64-bit) and TOTALCMD.EXE (32-bit). Not checked
 # on a running install.
