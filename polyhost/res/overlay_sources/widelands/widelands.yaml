@@ -1,0 +1,104 @@
+# Widelands overlay for PolyKybd.
+#
+# Keys: the default shortcut table (KeyboardShortcut) in
+# src/wlapplication_options.cc of widelands/widelands, release v1.3.1, the
+# shortcuts of the game scope. See SOURCES.md.
+#
+# The main menu and the map editor use the same keys for other functions; the
+# meaning in a running game is drawn.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/widelands/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/widelands/widelands.yaml --preview /tmp/widelands_preview
+app: widelands
+match: [widelands, widelands.exe, org.widelands.widelands]
+output: widelands_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for 0 A.D. and fheroes2: the icon uses the full height on the right; the
+# firmware clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# The game's logo, 40 x 40 at the right edge, drawn 1:1 beside the ESC legend.
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [40, 40]
+program_icon_anchor: right
+program_icon_margin: 0
+
+bindings:
+
+  # Map display
+  - { key: SPACE, icon: buildhelp.png, label: "Toggle building spaces" }
+  - { key: M, icon: minimap.png, label: "Toggle minimap" }
+  - { key: C, icon: census.png, label: "Toggle census" }
+  - { key: S, icon: statuslabels.png, label: "Toggle status labels" }
+  - { key: L, icon: soldierlevels.png, label: "Toggle soldier levels" }
+  - { key: U, icon: buildings.png, label: "Toggle buildings visibility" }
+  - { key: W, icon: workareas.png, label: "Toggle overlapping workareas" }
+
+  # Statistics and windows
+  - { key: A, icon: statsgeneral.png, label: "General statistics" }
+  - { key: P, icon: statswares.png, label: "Ware statistics" }
+  - { key: B, icon: statsbuildings.png, label: "Building statistics" }
+  - { key: I, icon: stock.png, label: "Stock inventory" }
+  - { key: X, icon: statssoldiers.png, label: "Soldier statistics" }
+  - { key: E, icon: seafaring.png, label: "Seafaring statistics" }
+  - { key: T, icon: objectives.png, label: "Objectives" }
+  - { key: D, icon: diplomacy.png, label: "Diplomacy" }
+  - { key: N, icon: messages.png, label: "Messages" }
+  - { key: F1, icon: encyclopedia.png, label: "Encyclopedia", region: [34, 40] }
+  - { key: F8, icon: pinnednote.png, label: "Pinned note", region: [34, 40] }
+  - { key: ENTER, icon: chat.png, label: "Chat", shared: false }
+
+  # Navigation
+  - { key: HOME, icon: starthq.png, label: "Scroll to the starting field" }
+  - { key: V, icon: quicknav.png, label: "Toggle quick navigation" }
+  - { key: DOT, icon: locationnext.png, label: "Jump to the next location" }
+  - { key: COMMA, icon: locationprev.png, label: "Jump to the previous location" }
+  - { key: MINUS, mods: [CTRL], icon: zoomout.png, label: "Camera: zoom out" }
+  - { key: "0", mods: [CTRL], icon: zoomreset.png, label: "Reset zoom" }
+
+  # Landmarks: digit goes to one, Ctrl+digit sets it
+  - { key: "1", icon: landmark1.png, label: "Go to landmark 1", region: [34, 40] }
+  - { key: "2", icon: landmark2.png, label: "Go to landmark 2", region: [34, 40] }
+  - { key: "3", icon: landmark3.png, label: "Go to landmark 3", region: [34, 40] }
+  - { key: "4", icon: landmark4.png, label: "Go to landmark 4", region: [34, 40] }
+  - { key: "5", icon: landmark5.png, label: "Go to landmark 5", region: [34, 40] }
+  - { key: "6", icon: landmark6.png, label: "Go to landmark 6", region: [34, 40] }
+  - { key: "7", icon: landmark7.png, label: "Go to landmark 7", region: [34, 40] }
+  - { key: "8", icon: landmark8.png, label: "Go to landmark 8", region: [34, 40] }
+  - { key: "9", icon: landmark9.png, label: "Go to landmark 9", region: [34, 40] }
+  - { key: "1", mods: [CTRL], icon: landmarkset1.png, label: "Set landmark 1", region: [34, 40] }
+  - { key: "2", mods: [CTRL], icon: landmarkset2.png, label: "Set landmark 2", region: [34, 40] }
+  - { key: "3", mods: [CTRL], icon: landmarkset3.png, label: "Set landmark 3", region: [34, 40] }
+  - { key: "4", mods: [CTRL], icon: landmarkset4.png, label: "Set landmark 4", region: [34, 40] }
+  - { key: "5", mods: [CTRL], icon: landmarkset5.png, label: "Set landmark 5", region: [34, 40] }
+  - { key: "6", mods: [CTRL], icon: landmarkset6.png, label: "Set landmark 6", region: [34, 40] }
+  - { key: "7", mods: [CTRL], icon: landmarkset7.png, label: "Set landmark 7", region: [34, 40] }
+  - { key: "8", mods: [CTRL], icon: landmarkset8.png, label: "Set landmark 8", region: [34, 40] }
+  - { key: "9", mods: [CTRL], icon: landmarkset9.png, label: "Set landmark 9", region: [34, 40] }
+
+  # Game speed
+  - { key: PGUP, icon: speedup.png, label: "Increase game speed by 1×" }
+  - { key: PGDN, icon: speeddown.png, label: "Decrease game speed by 1×" }
+  - { key: PGUP, mods: [SHIFT], icon: speedupslow.png, label: "Increase game speed by 0.25×" }
+  - { key: PGDN, mods: [SHIFT], icon: speeddownslow.png, label: "Decrease game speed by 0.25×" }
+  - { key: PGUP, mods: [CTRL], icon: speedupfast.png, label: "Increase game speed by 10×" }
+  - { key: PGDN, mods: [CTRL], icon: speeddownfast.png, label: "Decrease game speed by 10×" }
+
+  # Game and program
+  - { key: S, mods: [CTRL], icon: save.png, label: "Save", shared: false }
+  - { key: L, mods: [CTRL], icon: load.png, label: "Load", shared: false }
+  - { key: Q, mods: [CTRL], icon: exit.png, label: "Exit", shared: false }
+  - { key: R, mods: [CTRL], icon: restart.png, label: "Restart scenario or replay" }
+  - { key: O, mods: [CTRL], icon: soundoptions.png, label: "Sound options" }
+  - { key: F, mods: [CTRL], icon: fullscreen.png, label: "Toggle fullscreen", shared: false }
+  - { key: F11, icon: screenshot.png, label: "Take screenshot", region: [30, 40] }
+  - { key: F9, icon: music.png, label: "Change music", region: [34, 40] }
+  - { key: F2, icon: tooltipmode.png, label: "Tooltip accessibility mode key", region: [34, 40] }

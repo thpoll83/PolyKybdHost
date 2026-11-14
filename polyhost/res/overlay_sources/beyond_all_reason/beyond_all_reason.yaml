@@ -1,0 +1,216 @@
+# Beyond All Reason overlay for PolyKybd.
+#
+# Keys: the "Grid" profile (the default) in common/configs/keybind_defaults.json
+# of beyond-all-reason/Beyond-All-Reason at commit d90b8ad, and two widget
+# manifests. See SOURCES.md.
+#
+# The grid build-menu keys (Z X C V, and Q W E R / A S D F with a builder or a
+# factory selected) depend on the selection and are not drawn. The order keys
+# are drawn; where the profile binds Shift+key to the same order (queued), the
+# Shift layer shows the same icon.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/beyond_all_reason/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/beyond_all_reason/beyond_all_reason.yaml --preview /tmp/bar_preview
+app: beyond_all_reason
+match: [spring, spring.exe, beyond-all-reason, beyond-all-reason.exe, info.beyondallreason.bar]
+output: beyond_all_reason_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for 0 A.D. and StarCraft II: the icon uses the full height on the right;
+# the firmware clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# BAR drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Orders. Shift+key queues the same order.
+  - { key: A, icon: attack.png, label: "Attack" }
+  - { key: A, mods: [SHIFT], icon: attack.png, label: "Attack (queued)" }
+  - { key: D, icon: manualfire.png, label: "Manual fire (D-gun) or manual launch" }
+  - { key: D, mods: [SHIFT], icon: manualfire.png, label: "Manual fire (D-gun) or manual launch (queued)" }
+  - { key: E, icon: reclaim.png, label: "Reclaim" }
+  - { key: E, mods: [SHIFT], icon: reclaim.png, label: "Reclaim (queued)" }
+  - { key: F, icon: fight.png, label: "Fight" }
+  - { key: F, mods: [SHIFT], icon: fight.png, label: "Fight (queued)" }
+  - { key: G, icon: stop.png, label: "Stop" }
+  - { key: G, mods: [SHIFT], icon: stop.png, label: "Stop (queued)" }
+  - { key: H, icon: patrol.png, label: "Patrol" }
+  - { key: H, mods: [SHIFT], icon: patrol.png, label: "Patrol (queued)" }
+  - { key: J, icon: loadunits.png, label: "Load units" }
+  - { key: J, mods: [SHIFT], icon: loadunits.png, label: "Load units (queued)" }
+  - { key: K, icon: cloak.png, label: "Cloak" }
+  - { key: K, mods: [SHIFT], icon: cloak.png, label: "Cloak (queued)" }
+  - { key: L, icon: firestate.png, label: "Cycle fire state" }
+  - { key: L, mods: [SHIFT], icon: firestate.png, label: "Cycle fire state (queued)" }
+  - { key: SEMICOLON, icon: movestate.png, label: "Cycle move state" }
+  - { key: SEMICOLON, mods: [SHIFT], icon: movestate.png, label: "Cycle move state (queued)" }
+  - { key: M, icon: restore.png, label: "Restore terrain" }
+  - { key: M, mods: [SHIFT], icon: restore.png, label: "Restore terrain (queued)" }
+  - { key: O, icon: guard.png, label: "Guard" }
+  - { key: O, mods: [SHIFT], icon: guard.png, label: "Guard (queued)" }
+  - { key: P, icon: gatherwait.png, label: "Gather and wait" }
+  - { key: P, mods: [SHIFT], icon: gatherwait.png, label: "Gather and wait (queued)" }
+  - { key: R, icon: repair.png, label: "Repair" }
+  - { key: R, mods: [SHIFT], icon: repair.png, label: "Repair (queued)" }
+  - { key: S, icon: settarget.png, label: "Set target" }
+  - { key: S, mods: [SHIFT], icon: settarget.png, label: "Set target (queued)" }
+  - { key: T, icon: repeat.png, label: "Repeat orders" }
+  - { key: T, mods: [SHIFT], icon: repeat.png, label: "Repeat orders (queued)" }
+  - { key: U, icon: unloadunits.png, label: "Unload units" }
+  - { key: U, mods: [SHIFT], icon: unloadunits.png, label: "Unload units (queued)" }
+  - { key: W, icon: resurrect.png, label: "Resurrect or capture" }
+  - { key: W, mods: [SHIFT], icon: resurrect.png, label: "Resurrect or capture (queued)" }
+  - { key: Y, icon: wait.png, label: "Wait" }
+  - { key: Y, mods: [SHIFT], icon: wait.png, label: "Wait (queued)" }
+  - { key: "[", icon: facingccw.png, label: "Rotate the building to place: next facing" }
+  - { key: "[", mods: [SHIFT], icon: facingccw.png, label: "Rotate the building to place: next facing (queued)" }
+  - { key: "]", icon: facingcw.png, label: "Rotate the building to place: previous facing" }
+  - { key: "]", mods: [SHIFT], icon: facingcw.png, label: "Rotate the building to place: previous facing (queued)" }
+  - { key: N, icon: skipcommand.png, label: "Skip the current command" }
+
+  # Selection
+  - { key: Q, icon: sametypeview.png, label: "Select the units of the selected types in view" }
+  - { key: Q, mods: [CTRL], icon: selecthalf.png, label: "Keep half of the selection" }
+  - { key: Q, mods: [ALT], icon: damaged.png, label: "Keep the damaged mobile units of the selection" }
+  - { key: W, mods: [CTRL], icon: sametypemap.png, label: "Select the units of the selected types on the map" }
+  - { key: E, mods: [CTRL], icon: selectall.png, label: "Select all units" }
+  - { key: R, mods: [CTRL], icon: idletransports.png, label: "Select all idle transports" }
+  - { key: Y, mods: [CTRL], icon: waitingunits.png, label: "Select the waiting units in view" }
+  - { key: TAB, icon: commander.png, label: "Select the commander and go to it" }
+  - { key: TAB, mods: [SHIFT], icon: commanderadd.png, label: "Add the commander to the selection" }
+  - { key: TAB, mods: [CTRL], icon: idlebuilder.png, label: "Select one idle builder" }
+  - { key: GRAVE, mods: [CTRL], icon: groupunset.png, label: "Remove the selection from its group" }
+  - { key: GRAVE, mods: [ALT], icon: autogroupremove.png, label: "Remove the unit type from its auto group" }
+
+  # Orders on the Ctrl and Alt layers
+  - { key: A, mods: [CTRL], icon: areaattack.png, label: "Area attack" }
+  - { key: B, mods: [CTRL], icon: selfdestruct.png, label: "Self-destruct" }
+  - { key: S, mods: [CTRL], icon: canceltarget.png, label: "Cancel target" }
+  - { key: S, mods: [ALT], icon: targetunits.png, label: "Set target, units only" }
+  - { key: N, mods: [CTRL], icon: cancellast.png, label: "Cancel the last queued command" }
+  - { key: G, mods: [CTRL], icon: factoryguard.png, label: "Toggle factory guard" }
+  - { key: G, mods: [ALT], icon: queuemode.png, label: "Factory queue mode" }
+  - { key: Z, mods: [ALT], icon: spacingup.png, label: "Increase build spacing" }
+  - { key: X, mods: [ALT], icon: spacingdown.png, label: "Decrease build spacing" }
+  - { key: DOT, mods: [ALT], icon: rangeup.png, label: "Increase attack range" }
+  - { key: COMMA, mods: [ALT], icon: rangedown.png, label: "Decrease attack range" }
+
+  # Blueprints
+  - { key: B, mods: [ALT], icon: blueprintplace.png, label: "Place blueprint" }
+  - { key: T, mods: [ALT], icon: blueprintcreate.png, label: "Create blueprint" }
+  - { key: Y, mods: [ALT], icon: blueprintdelete.png, label: "Delete blueprint" }
+  - { key: "[", mods: [ALT], icon: blueprintprev.png, label: "Previous blueprint" }
+  - { key: "]", mods: [ALT], icon: blueprintnext.png, label: "Next blueprint" }
+
+  # Information, camera and display
+  - { key: I, icon: unitstats.png, label: "Unit statistics" }
+  - { key: I, mods: [CTRL], icon: gameinfo.png, label: "Game information" }
+  - { key: F1, icon: anchor1.png, label: "Go to camera anchor 1", region: [34, 40] }
+  - { key: F2, icon: anchor2.png, label: "Go to camera anchor 2", region: [34, 40] }
+  - { key: F3, icon: anchor3.png, label: "Go to camera anchor 3", region: [34, 40] }
+  - { key: F4, icon: anchor4.png, label: "Go to camera anchor 4", region: [34, 40] }
+  - { key: F1, mods: [CTRL], icon: anchorset1.png, label: "Set camera anchor 1", region: [34, 40] }
+  - { key: F2, mods: [CTRL], icon: anchorset2.png, label: "Set camera anchor 2", region: [34, 40] }
+  - { key: F3, mods: [CTRL], icon: anchorset3.png, label: "Set camera anchor 3", region: [34, 40] }
+  - { key: F4, mods: [CTRL], icon: anchorset4.png, label: "Set camera anchor 4", region: [34, 40] }
+  - { key: F5, icon: lastmessage.png, label: "Go to the last message position", region: [34, 40] }
+  - { key: F6, icon: pathmap.png, label: "Show the path map", region: [34, 40] }
+  - { key: F7, icon: metalmap.png, label: "Show the metal map", region: [34, 40] }
+  - { key: F7, mods: [CTRL], icon: hideinterface.png, label: "Hide the interface", region: [34, 40] }
+  - { key: F8, icon: heightmap.png, label: "Show the height map", region: [34, 40] }
+  - { key: F10, icon: options.png, label: "Options", region: [30, 40] }
+  - { key: F11, icon: widgets.png, label: "Widget list", region: [30, 40] }
+  - { key: F12, icon: screenshot.png, label: "Take screenshot", region: [30, 40] }
+  - { key: PGUP, icon: cameraup.png, label: "Move the camera up" }
+  - { key: PGDN, icon: cameradown.png, label: "Move the camera down" }
+  - { key: O, mods: [ALT], icon: cameraflip.png, label: "Flip the camera" }
+  - { key: P, mods: [CTRL], icon: fovup.png, label: "Increase the field of view" }
+  - { key: O, mods: [CTRL], icon: fovdown.png, label: "Decrease the field of view" }
+  - { key: GRAVE, icon: drawinmap.png, label: "Draw on the map" }
+
+  # Chat, sound and the game
+  - { key: ENTER, icon: chat.png, label: "Chat" }
+  - { key: A, mods: [CTRL, ALT], icon: allychat.png, label: "Switch chat to allies" }
+  - { key: S, mods: [CTRL, ALT], icon: specchat.png, label: "Switch chat to spectators" }
+  - { key: BSPC, icon: mute.png, label: "Mute sound" }
+  - { key: EQUAL, icon: volumeup.png, label: "Increase volume" }
+  - { key: MINUS, icon: volumedown.png, label: "Decrease volume" }
+  - { key: EQUAL, mods: [ALT], icon: speedup.png, label: "Increase game speed" }
+  - { key: MINUS, mods: [ALT], icon: slowdown.png, label: "Decrease game speed" }
+  - { key: F, mods: [ALT], icon: forcestart.png, label: "Force start" }
+
+  # Control groups: digit selects, Ctrl sets, Shift adds the group to the
+  # selection, Ctrl+Shift adds the selection to the group, Ctrl+Alt toggles
+  # the group in the selection, Alt adds the unit type to the auto group.
+  - { key: "1", icon: group1.png, label: "Select group 1", region: [48, 40], margin: 5 }
+  - { key: "2", icon: group2.png, label: "Select group 2", region: [48, 40], margin: 5 }
+  - { key: "3", icon: group3.png, label: "Select group 3", region: [48, 40], margin: 5 }
+  - { key: "4", icon: group4.png, label: "Select group 4", region: [48, 40], margin: 5 }
+  - { key: "5", icon: group5.png, label: "Select group 5", region: [48, 40], margin: 5 }
+  - { key: "6", icon: group6.png, label: "Select group 6", region: [48, 40], margin: 5 }
+  - { key: "7", icon: group7.png, label: "Select group 7", region: [48, 40], margin: 5 }
+  - { key: "8", icon: group8.png, label: "Select group 8", region: [48, 40], margin: 5 }
+  - { key: "9", icon: group9.png, label: "Select group 9", region: [48, 40], margin: 5 }
+  - { key: "0", icon: group0.png, label: "Select group 0", region: [48, 40], margin: 5 }
+  - { key: "1", mods: [CTRL], icon: groupset1.png, label: "Set group 1", region: [48, 40], margin: 5 }
+  - { key: "2", mods: [CTRL], icon: groupset2.png, label: "Set group 2", region: [48, 40], margin: 5 }
+  - { key: "3", mods: [CTRL], icon: groupset3.png, label: "Set group 3", region: [48, 40], margin: 5 }
+  - { key: "4", mods: [CTRL], icon: groupset4.png, label: "Set group 4", region: [48, 40], margin: 5 }
+  - { key: "5", mods: [CTRL], icon: groupset5.png, label: "Set group 5", region: [48, 40], margin: 5 }
+  - { key: "6", mods: [CTRL], icon: groupset6.png, label: "Set group 6", region: [48, 40], margin: 5 }
+  - { key: "7", mods: [CTRL], icon: groupset7.png, label: "Set group 7", region: [48, 40], margin: 5 }
+  - { key: "8", mods: [CTRL], icon: groupset8.png, label: "Set group 8", region: [48, 40], margin: 5 }
+  - { key: "9", mods: [CTRL], icon: groupset9.png, label: "Set group 9", region: [48, 40], margin: 5 }
+  - { key: "0", mods: [CTRL], icon: groupset0.png, label: "Set group 0", region: [48, 40], margin: 5 }
+  - { key: "1", mods: [SHIFT], icon: groupselectadd1.png, label: "Add group 1 to the selection", region: [48, 40], margin: 5 }
+  - { key: "2", mods: [SHIFT], icon: groupselectadd2.png, label: "Add group 2 to the selection", region: [48, 40], margin: 5 }
+  - { key: "3", mods: [SHIFT], icon: groupselectadd3.png, label: "Add group 3 to the selection", region: [48, 40], margin: 5 }
+  - { key: "4", mods: [SHIFT], icon: groupselectadd4.png, label: "Add group 4 to the selection", region: [48, 40], margin: 5 }
+  - { key: "5", mods: [SHIFT], icon: groupselectadd5.png, label: "Add group 5 to the selection", region: [48, 40], margin: 5 }
+  - { key: "6", mods: [SHIFT], icon: groupselectadd6.png, label: "Add group 6 to the selection", region: [48, 40], margin: 5 }
+  - { key: "7", mods: [SHIFT], icon: groupselectadd7.png, label: "Add group 7 to the selection", region: [48, 40], margin: 5 }
+  - { key: "8", mods: [SHIFT], icon: groupselectadd8.png, label: "Add group 8 to the selection", region: [48, 40], margin: 5 }
+  - { key: "9", mods: [SHIFT], icon: groupselectadd9.png, label: "Add group 9 to the selection", region: [48, 40], margin: 5 }
+  - { key: "0", mods: [SHIFT], icon: groupselectadd0.png, label: "Add group 0 to the selection", region: [48, 40], margin: 5 }
+  - { key: "1", mods: [CTRL, SHIFT], icon: groupadd1.png, label: "Add the selection to group 1", region: [48, 40], margin: 5 }
+  - { key: "2", mods: [CTRL, SHIFT], icon: groupadd2.png, label: "Add the selection to group 2", region: [48, 40], margin: 5 }
+  - { key: "3", mods: [CTRL, SHIFT], icon: groupadd3.png, label: "Add the selection to group 3", region: [48, 40], margin: 5 }
+  - { key: "4", mods: [CTRL, SHIFT], icon: groupadd4.png, label: "Add the selection to group 4", region: [48, 40], margin: 5 }
+  - { key: "5", mods: [CTRL, SHIFT], icon: groupadd5.png, label: "Add the selection to group 5", region: [48, 40], margin: 5 }
+  - { key: "6", mods: [CTRL, SHIFT], icon: groupadd6.png, label: "Add the selection to group 6", region: [48, 40], margin: 5 }
+  - { key: "7", mods: [CTRL, SHIFT], icon: groupadd7.png, label: "Add the selection to group 7", region: [48, 40], margin: 5 }
+  - { key: "8", mods: [CTRL, SHIFT], icon: groupadd8.png, label: "Add the selection to group 8", region: [48, 40], margin: 5 }
+  - { key: "9", mods: [CTRL, SHIFT], icon: groupadd9.png, label: "Add the selection to group 9", region: [48, 40], margin: 5 }
+  - { key: "0", mods: [CTRL, SHIFT], icon: groupadd0.png, label: "Add the selection to group 0", region: [48, 40], margin: 5 }
+  - { key: "1", mods: [CTRL, ALT], icon: grouptoggle1.png, label: "Toggle group 1 in the selection", region: [48, 40], margin: 5 }
+  - { key: "2", mods: [CTRL, ALT], icon: grouptoggle2.png, label: "Toggle group 2 in the selection", region: [48, 40], margin: 5 }
+  - { key: "3", mods: [CTRL, ALT], icon: grouptoggle3.png, label: "Toggle group 3 in the selection", region: [48, 40], margin: 5 }
+  - { key: "4", mods: [CTRL, ALT], icon: grouptoggle4.png, label: "Toggle group 4 in the selection", region: [48, 40], margin: 5 }
+  - { key: "5", mods: [CTRL, ALT], icon: grouptoggle5.png, label: "Toggle group 5 in the selection", region: [48, 40], margin: 5 }
+  - { key: "6", mods: [CTRL, ALT], icon: grouptoggle6.png, label: "Toggle group 6 in the selection", region: [48, 40], margin: 5 }
+  - { key: "7", mods: [CTRL, ALT], icon: grouptoggle7.png, label: "Toggle group 7 in the selection", region: [48, 40], margin: 5 }
+  - { key: "8", mods: [CTRL, ALT], icon: grouptoggle8.png, label: "Toggle group 8 in the selection", region: [48, 40], margin: 5 }
+  - { key: "9", mods: [CTRL, ALT], icon: grouptoggle9.png, label: "Toggle group 9 in the selection", region: [48, 40], margin: 5 }
+  - { key: "0", mods: [CTRL, ALT], icon: grouptoggle0.png, label: "Toggle group 0 in the selection", region: [48, 40], margin: 5 }
+  - { key: "1", mods: [ALT], icon: autogroup1.png, label: "Add the unit type to auto group 1", region: [48, 40], margin: 5 }
+  - { key: "2", mods: [ALT], icon: autogroup2.png, label: "Add the unit type to auto group 2", region: [48, 40], margin: 5 }
+  - { key: "3", mods: [ALT], icon: autogroup3.png, label: "Add the unit type to auto group 3", region: [48, 40], margin: 5 }
+  - { key: "4", mods: [ALT], icon: autogroup4.png, label: "Add the unit type to auto group 4", region: [48, 40], margin: 5 }
+  - { key: "5", mods: [ALT], icon: autogroup5.png, label: "Add the unit type to auto group 5", region: [48, 40], margin: 5 }
+  - { key: "6", mods: [ALT], icon: autogroup6.png, label: "Add the unit type to auto group 6", region: [48, 40], margin: 5 }
+  - { key: "7", mods: [ALT], icon: autogroup7.png, label: "Add the unit type to auto group 7", region: [48, 40], margin: 5 }
+  - { key: "8", mods: [ALT], icon: autogroup8.png, label: "Add the unit type to auto group 8", region: [48, 40], margin: 5 }
+  - { key: "9", mods: [ALT], icon: autogroup9.png, label: "Add the unit type to auto group 9", region: [48, 40], margin: 5 }
+  - { key: "0", mods: [ALT], icon: autogroup0.png, label: "Add the unit type to auto group 0", region: [48, 40], margin: 5 }
