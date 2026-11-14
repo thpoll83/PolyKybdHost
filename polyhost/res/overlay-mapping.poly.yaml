@@ -3592,6 +3592,14 @@ supertuxkart,supertuxkart.exe,net.supertuxkart.SuperTuxKart:
 # install.
 hwengine,hwengine.exe,hedgewars,hedgewars.exe,org.hedgewars.Hedgewars:
   overlay: hedgewars_template.mods.png
+# FlightGear 2024.1.7 (overlay_sources/flightgear/flightgear.yaml). The global
+# default keys only: an aircraft adds and replaces keys of its own. `fgfs` is
+# the CMake executable target and the desktop file's Exec= (fgfs.exe on
+# Windows); the macOS bundle sets OUTPUT_NAME "FlightGear", and
+# org.flightgear.FlightGear is the Flathub app id. Names not checked on an
+# install.
+fgfs,fgfs.exe,flightgear,org.flightgear.FlightGear:
+  overlay: flightgear_template.mods.png
 # League of Legends (overlay_sources/lol/lol.yaml), the in-game window only. The
 # game is `League of Legends.exe` on Windows and the `LeagueofLegends` app on
 # macOS. The lobby client (LeagueClient, LeagueClientUx) is a different process

@@ -27,6 +27,9 @@ GAMES = {
     "hedgewars_template.mods.png": (
         ("hwengine", "hwengine.exe", "hedgewars", "hedgewars.exe", "org.hedgewars.hedgewars"),
         "Hedgewars"),
+    "flightgear_template.mods.png": (
+        ("fgfs", "fgfs.exe", "flightgear", "org.flightgear.flightgear"),
+        "FlightGear"),
 }
 
 
