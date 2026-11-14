@@ -1,0 +1,58 @@
+# Ship of Harkinian (PC port of Ocarina of Time) overlay for PolyKybd. See SOURCES.md.
+#
+# Keys are the default keyboard map of libultraship, the library the port is
+# built on (kenix3/libultraship, branch port-maintenance): the Nintendo 64
+# controller of port 1 in
+# src/libultraship/controller/controldevice/controller/mapping/ControllerDefaultMappings.cpp
+# and the stick in src/ship/.../ControllerDefaultMappings.cpp. The two hotkeys are
+# from soh/soh/OTRGlobals.cpp of HarbourMasters/Shipwright 9.3.1. Esc opens the
+# port's menu and carries the mark.
+#
+# Not drawn: F5, F6, F7 (save states, off by default).
+#
+# Regenerate:
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/soh/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/soh/soh.yaml --preview /tmp/soh_preview
+app: soh
+match: [soh, soh.elf, soh-macos]
+output: soh_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [32, 32]
+margin: 2
+mode: alpha
+threshold: 128
+
+# "Ship of" over "Harkinian" drawn over the whole cell, without the ESC legend
+# (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+  # Hotkeys of the port
+  - { key: TAB, mods: [], icon: altassets.png, label: "Alternate assets on/off", region: [36, 32], margin: 0 }
+  - { key: F9, mods: [], icon: tts.png, label: "Text to speech on/off", region: [36, 32], margin: 0 }
+  # Nintendo 64 controller, port 1; drawn 1:1 at their own size
+  - { key: X, mods: [], icon: btna.png, label: "N64 A" }
+  - { key: C, mods: [], icon: btnb.png, label: "N64 B" }
+  - { key: Z, mods: [], icon: btnz.png, label: "N64 Z" }
+  - { key: E, mods: [], icon: btnl.png, label: "N64 L" }
+  - { key: R, mods: [], icon: btnr.png, label: "N64 R" }
+  - { key: SPACE, mods: [], icon: start.png, label: "N64 Start", region: [49, 15] }
+  - { key: UP, mods: [], icon: cup.png, label: "C up" }
+  - { key: DOWN, mods: [], icon: cdown.png, label: "C down" }
+  - { key: LEFT, mods: [], icon: cleft.png, label: "C left" }
+  - { key: RIGHT, mods: [], icon: cright.png, label: "C right" }
+  - { key: T, mods: [], icon: dpadup.png, label: "D-pad up" }
+  - { key: G, mods: [], icon: dpaddown.png, label: "D-pad down" }
+  - { key: F, mods: [], icon: dpadleft.png, label: "D-pad left" }
+  - { key: H, mods: [], icon: dpadright.png, label: "D-pad right" }
+  - { key: W, mods: [], icon: stickup.png, label: "Control stick up" }
+  - { key: S, mods: [], icon: stickdown.png, label: "Control stick down" }
+  - { key: A, mods: [], icon: stickleft.png, label: "Control stick left" }
+  - { key: D, mods: [], icon: stickright.png, label: "Control stick right" }

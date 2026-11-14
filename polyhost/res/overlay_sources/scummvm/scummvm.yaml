@@ -1,0 +1,54 @@
+# ScummVM shortcut overlay for PolyKybd. See SOURCES.md.
+#
+# Keys are ScummVM's global keymap, release 2.9.1: the "Global" keymap in
+# backends/events/default/default-events.cpp and the SDL graphics keymap in
+# backends/graphics/sdl/sdl-graphics.cpp (scummvm/scummvm). They act in the
+# launcher and in every game. Esc skips a cutscene or closes a dialog and
+# carries the ScummVM mark.
+#
+# Quit differs per system: Ctrl+Q on Linux, Ctrl+Z and Alt+F4 on Windows,
+# Cmd+Q on macOS. Hence the `only:` / `except:` keys and the three sets.
+#
+# Not drawn: the keys of the games themselves. Each engine has its own keymap
+# (verbs, inventory, movement), and it differs per game.
+#
+# Regenerate:
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/scummvm/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/scummvm/scummvm.yaml --preview /tmp/scummvm_preview
+app: scummvm
+match: [scummvm, org.scummvm.scummvm]
+output: scummvm_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: alpha
+threshold: 128
+
+program_icon: scummvm.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [25, 32]
+program_icon_margin: 0
+
+bindings:
+  # Global keymap
+  - { key: F5, mods: [CTRL], icon: menu.png, label: "Global main menu" }
+  - { key: U, mods: [CTRL], icon: mute.png, label: Mute }
+  - { key: Q, mods: [CTRL], icon: quit.png, label: Quit, only: [linux] }
+  - { key: Z, mods: [CTRL], icon: quit.png, label: Quit, except: [linux, macos] }
+  - { key: F4, mods: [ALT], icon: quit.png, label: Quit, except: [linux, macos] }
+  - { key: Q, mods: [GUI], icon: quit.png, label: Quit, only: [macos] }
+  - { key: D, mods: [CTRL, ALT], icon: debugger.png, label: "Open debugger" }
+  # SDL graphics keymap
+  - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Full screen" }
+  - { key: M, mods: [CTRL], icon: grabmouse.png, label: "Capture mouse" }
+  - { key: S, mods: [ALT], icon: screenshot.png, label: Screenshot }
+  - { key: A, mods: [CTRL, ALT], icon: aspect.png, label: "Aspect ratio correction" }
+  - { key: F, mods: [CTRL, ALT], icon: filter.png, label: "Linear filtering" }
+  - { key: S, mods: [CTRL, ALT], icon: stretch.png, label: "Next stretch mode" }
+  - { key: MINUS, mods: [CTRL, ALT], icon: scaledown.png, label: "Decrease scale factor" }
+  - { key: "0", mods: [CTRL, ALT], icon: scalernext.png, label: "Next scaler" }
+  - { key: "9", mods: [CTRL, ALT], icon: scalerprev.png, label: "Previous scaler" }

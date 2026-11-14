@@ -3755,6 +3755,86 @@ amiberry,amiberry-lite:
   overlay: amiberry_template.mods.png
   glyph_script: amiga
   glyph_script_position: top-left
+# ScummVM (overlay_sources/scummvm/). The global keys of release 2.9.1; the keys
+# of the games differ per engine and are not drawn. Quit is Ctrl+Z / Alt+F4 on
+# Windows, Ctrl+Q on Linux and Cmd+Q on macOS, hence the branches. Process
+# names: scummvm (Exec= and StartupWMClass= of the desktop file, scummvm.exe on
+# Windows, the macOS app "ScummVM") and the Flatpak id org.scummvm.ScummVM. Not
+# checked on a running install.
+scummvm,org.scummvm.scummvm:
+  overlay: [scummvm_template.mods.png, scummvm_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [scummvm_template_mac.mods.png, scummvm_template_mac.combo.mods.png]
+    linux:
+      overlay: [scummvm_template_linux.mods.png, scummvm_template_linux.combo.mods.png]
+# Dolphin, the GameCube and Wii emulator (overlay_sources/dolphin/). The default
+# hotkeys and the GameCube controller of port 1, release 2609b. Process names:
+# dolphin-emu on Linux (CMake target and desktop file), the Flatpak id
+# org.DolphinEmu.dolphin-emu, DolphinQt inside the macOS bundle. Not checked on a
+# running install.
+dolphin-emu,dolphinqt,org.dolphinemu.dolphin-emu:
+  overlay: dolphin_template.mods.png
+# Dolphin.exe on Windows and the macOS app "Dolphin". The entry has no overlay of
+# its own: on Linux the process `dolphin` is the KDE file manager, which gets no
+# emulator set.
+dolphin:
+  os:
+    windows:
+      overlay: dolphin_template.mods.png
+    macos:
+      overlay: dolphin_template.mods.png
+# PPSSPP, the PSP emulator (overlay_sources/ppsspp/). The default QWERTY
+# keyboard map of release 1.20.4 (PSP controls and emulator keys) and, on
+# Windows, the menu accelerators; Select is V on Windows and Enter elsewhere,
+# hence the branches. Process names: PPSSPPWindows64.exe, PPSSPPWindows.exe and
+# PPSSPPWindowsARM64.exe, PPSSPPSDL / PPSSPPQt / PPSSPPGold on Linux and macOS,
+# the macOS app "PPSSPP" and the Flatpak id org.ppsspp.PPSSPP. Not checked on a
+# running install.
+ppsspp,ppssppwindows64,ppssppwindows,ppssppwindowsarm64,ppssppsdl,ppssppqt,ppssppgold,org.ppsspp.ppsspp:
+  overlay: ppsspp_template.mods.png
+  os:
+    macos:
+      overlay: ppsspp_template_mac.mods.png
+    linux:
+      overlay: ppsspp_template_linux.mods.png
+# PCSX2, the PlayStation 2 emulator (overlay_sources/pcsx2/). The default
+# hotkeys and the keyboard map of controller 1, release 2.8.2. Process names:
+# pcsx2-qt (CMake target; pcsx2-qt.exe on Windows), the macOS app "PCSX2" and
+# the Flatpak id net.pcsx2.PCSX2. Not checked on a running install.
+pcsx2-qt,pcsx2,net.pcsx2.pcsx2:
+  overlay: [pcsx2_template.mods.png, pcsx2_template.combo.mods.png]
+# DuckStation, the PlayStation emulator (overlay_sources/duckstation/). The
+# default hotkeys and the keyboard map of controller 1, release v0.1-12442.
+# DuckStation is CC BY-NC-ND: only its default keys were read, and the ESC mark
+# is the name set in an open font. Process names: duckstation-qt (CMake target),
+# duckstation-qt-x64-ReleaseLTCG.exe on Windows, the macOS app "DuckStation" and
+# the Flatpak id org.duckstation.DuckStation. Not checked on a running install.
+duckstation-qt,duckstation-qt-x64-releaseltcg,duckstation-qt-arm64-releaseltcg,duckstation,org.duckstation.duckstation:
+  overlay: duckstation_template.mods.png
+# OpenGOAL, the PC port of the Jak and Daxter games (overlay_sources/opengoal/).
+# The default keyboard binds of release v0.3.9, drawn as the PlayStation 2
+# controls they press. Process name: gk, the game runtime (CMake target; gk.exe
+# on Windows). Not checked on a running install.
+gk:
+  overlay: opengoal_template.mods.png
+# Ship of Harkinian, the PC port of Ocarina of Time (overlay_sources/soh/). The
+# default keyboard map of libultraship, drawn as the Nintendo 64 controls the
+# keys press. Process names: soh (soh.exe on Windows), soh.elf on Linux and
+# soh-macos on macOS (OUTPUT_NAME in soh/CMakeLists.txt, release 9.3.1). Not
+# checked on a running install.
+soh,soh.elf,soh-macos:
+  overlay: soh_template.mods.png
+# Super Mario 64 PC ports (overlay_sources/sm64/): sm64ex and sm64coopdx. The
+# default keyboard binds of src/pc/configfile.c, drawn as the Nintendo 64
+# controls the keys press. sm64ex: sm64.<version>.f3dex2e on Linux (Makefile
+# TARGET), which the host cuts to `sm64` on Windows. sm64coopdx: sm64coopdx
+# (Makefile EXE), with its chat, player list and console keys. Not checked on a
+# running install.
+sm64,sm64.us.f3dex2e,sm64.eu.f3dex2e,sm64.jp.f3dex2e,sm64.sh.f3dex2e:
+  overlay: sm64ex_template.mods.png
+sm64coopdx:
+  overlay: sm64coopdx_template.mods.png
 # PTC Mathcad Prime (overlay_sources/mathcad/). Windows only: MathcadPrime.exe.
 # English / US keys from PTC's 12.0.1.0 shortcut PDF. Name not checked on an
 # install.

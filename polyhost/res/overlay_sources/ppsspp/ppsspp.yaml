@@ -1,0 +1,74 @@
+# PPSSPP (PSP emulator) shortcut overlay for PolyKybd. See SOURCES.md.
+#
+# Keys are PPSSPP's defaults, release 1.20.4 (hrydgard/ppsspp): the QWERTY
+# keyboard map `defaultQwertyKeyboardKeyMap` in Core/KeyMapDefaults.cpp (the PSP
+# controls and the emulator keys), and on Windows the menu accelerators
+# `IDR_ACCELS` in Windows/ppsspp.rc. Esc pauses and opens the pause menu, and
+# carries the PPSSPP mark.
+#
+# Windows differs from Linux and macOS: Select is V on Windows and Enter
+# elsewhere, and only the Windows build has the menu keys (F2 / F4 save and load
+# state, Ctrl+B reset, Alt+Enter full screen). The SDL build has Ctrl+W alone.
+# Hence the `only:` / `except:` keys and the three sets.
+#
+# Not drawn: the debugger windows, the right Shift analog limiter and the chat key.
+#
+# Regenerate:
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/ppsspp/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/ppsspp/ppsspp.yaml --preview /tmp/ppsspp_preview
+app: ppsspp
+match: [ppsspp, ppssppwindows64, ppssppwindows, ppssppwindowsarm64, ppssppsdl, ppssppqt, ppssppgold, org.ppsspp.ppsspp]
+output: ppsspp_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: alpha
+threshold: 128
+
+program_icon: ppsspp.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [32, 32]
+program_icon_margin: 0
+
+bindings:
+  # Emulator keys of the keyboard map
+  - { key: TAB, mods: [], icon: ffhold.png, label: "Fast-forward (hold)" }
+  - { key: GRAVE, mods: [], icon: speed.png, label: "Alternate speed on/off" }
+  - { key: BACKSPACE, mods: [], icon: rewind.png, label: Rewind }
+  - { key: F8, mods: [], icon: pause.png, label: "Pause without menu" }
+  - { key: F12, mods: [], icon: debugger.png, label: "Debugger on/off" }
+  - { key: KC_LEFT_SHIFT, mods: [], icon: rapidfire.png, label: "Rapid fire (hold)" }
+  # PSP controls; drawn 1:1 at their own size
+  - { key: A, mods: [], icon: square.png, label: "PSP Square", region: [32, 32], margin: 2 }
+  - { key: S, mods: [], icon: triangle.png, label: "PSP Triangle", region: [32, 32], margin: 2 }
+  - { key: X, mods: [], icon: circle.png, label: "PSP Circle", region: [32, 32], margin: 2 }
+  - { key: Z, mods: [], icon: cross.png, label: "PSP Cross", region: [32, 32], margin: 2 }
+  - { key: Q, mods: [], icon: pspl.png, label: "PSP L", region: [32, 32], margin: 2 }
+  - { key: W, mods: [], icon: pspr.png, label: "PSP R", region: [32, 32], margin: 2 }
+  - { key: SPACE, mods: [], icon: pspstart.png, label: "PSP Start", region: [49, 15], margin: 2 }
+  - { key: V, mods: [], icon: pspselect.png, label: "PSP Select", region: [57, 15], margin: 2, except: [linux, macos] }
+  - { key: ENTER, mods: [], icon: pspselect.png, label: "PSP Select", region: [57, 15], margin: 2, only: [linux, macos] }
+  - { key: UP, mods: [], icon: dpadup.png, label: "D-pad up", region: [32, 32], margin: 2 }
+  - { key: DOWN, mods: [], icon: dpaddown.png, label: "D-pad down", region: [32, 32], margin: 2 }
+  - { key: LEFT, mods: [], icon: dpadleft.png, label: "D-pad left", region: [32, 32], margin: 2 }
+  - { key: RIGHT, mods: [], icon: dpadright.png, label: "D-pad right", region: [32, 32], margin: 2 }
+  - { key: I, mods: [], icon: stickup.png, label: "Analog stick up", region: [32, 32], margin: 2 }
+  - { key: K, mods: [], icon: stickdown.png, label: "Analog stick down", region: [32, 32], margin: 2 }
+  - { key: J, mods: [], icon: stickleft.png, label: "Analog stick left", region: [32, 32], margin: 2 }
+  - { key: L, mods: [], icon: stickright.png, label: "Analog stick right", region: [32, 32], margin: 2 }
+  # Stop: the Windows menu and the SDL build
+  - { key: W, mods: [CTRL], icon: stop.png, label: "Stop the game" }
+  # Windows menu accelerators
+  - { key: F2, mods: [], icon: savestate.png, label: "Save state", except: [linux, macos] }
+  - { key: F3, mods: [], icon: slotplus.png, label: "Next state slot", except: [linux, macos] }
+  - { key: F4, mods: [], icon: loadstate.png, label: "Load state", except: [linux, macos] }
+  - { key: O, mods: [CTRL], icon: open.png, label: "Load a game", except: [linux, macos] }
+  - { key: B, mods: [CTRL], icon: reset.png, label: "Reset game", except: [linux, macos] }
+  - { key: T, mods: [CTRL], icon: cheat.png, label: Cheats, except: [linux, macos] }
+  - { key: "1", mods: [CTRL], icon: resolution.png, label: "Next rendering resolution", except: [linux, macos] }
+  - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Full screen", except: [linux, macos] }
+  - { key: F11, mods: [], icon: fullscreen.png, label: "Full screen", except: [linux, macos] }
