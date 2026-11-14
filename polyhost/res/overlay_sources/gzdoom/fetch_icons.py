@@ -246,6 +246,11 @@ def own_icon_mark(path: Path, url: str, crop, cut: int, dark: bool = False,
     right, bottom; None for the whole icon) of the icon at `url`, box-filtered
     to fit `box`, lit where the grey level is above `cut` (below it with
     `dark`). `frame` selects one size of an .ico file."""
+    if path.exists():
+        # Taken from the program's own art: the committed PNG is the source, and
+        # an owner's edit of it must survive a re-run. Delete the file to redraw it.
+        print(f"  {path.name}  <- committed asset (left as-is)")
+        return
     import numpy as np
     from PIL import Image
     im = Image.open(io.BytesIO(_get(url)))
