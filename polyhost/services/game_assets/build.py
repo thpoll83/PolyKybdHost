@@ -336,6 +336,28 @@ def player_bindings(reader, files: dict) -> dict | None:
         return None
 
 
+def bindings_source(spec: dict, reader, files: dict):
+    """(player bindings or None, complete, files that key the cache) for a spec.
+
+    A spec's ``game_assets:`` block may name a bindings source of its own
+    (``bindings: openra``: the module ``<name>_keys`` here, with ``find()``,
+    ``bindings(path)`` and ``BINDINGS_COMPLETE``), for a game whose hotkeys
+    are kept apart from the files its reader draws from. Otherwise the
+    reader's own ``bindings(files)`` is used."""
+    name = (spec.get("game_assets") or {}).get("bindings")
+    if not name:
+        return player_bindings(reader, files), getattr(reader, "BINDINGS_COMPLETE", True), []
+    source = importlib.import_module(f"polyhost.services.game_assets.{name}_keys")
+    try:
+        path = source.find()
+        player = source.bindings(path) if path else None
+    except (OSError, ValueError, UnicodeError) as e:
+        log.warning("Game art: could not read the %s key bindings (%s: %s); "
+                    "the icons stay on the default keys.", name, type(e).__name__, e)
+        return None, source.BINDINGS_COMPLETE, []
+    return player, source.BINDINGS_COMPLETE, [path] if path else []
+
+
 def build(template: str, spec_path: Path, settings_get, cache_dir: Path, hint=None) -> Path | None:
     """The copy of `template` drawn from the game files, built if not cached;
     None when the reader finds no game files."""
@@ -356,13 +378,13 @@ def build(template: str, spec_path: Path, settings_get, cache_dir: Path, hint=No
         return None
     remove_stale_temp(cache_dir)
     shipped = RES / "overlays" / template
-    out = Path(cache_dir) / cache_name(template, reader.fingerprint(files) + [shipped, spec_path],
+    player, complete, key_files = bindings_source(spec, reader, files)
+    out = Path(cache_dir) / cache_name(template, reader.fingerprint(files) + key_files + [shipped, spec_path],
                                        variant, name)
     if out.exists():
         return out
     icons = render(reader, reader.open_source(files), spec, variant)
-    n = patch(shipped, spec, icons, out, player_bindings(reader, files),
-              getattr(reader, "BINDINGS_COMPLETE", True))
+    n = patch(shipped, spec, icons, out, player, complete)
     log.info("Game art: %d keys of %s drawn by %s (%s) from %s.", n, template, name,
              variant or "-", shown_folder(Path(reader.fingerprint(files)[0]).parent))
     return out

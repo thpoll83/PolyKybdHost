@@ -18,32 +18,32 @@ END_MOD_KEYS = "  # End of the mod keys"
 GAME_ASSETS = "# Keys redrawn from the user's own Red Alert files"
 
 
-def _tab(key, icon, label):
-    return f'  - {{ key: {key}, icon: {icon}.png, label: "{label}" }}\n'
+def _tab(key, command, icon, label):
+    return f'  - {{ key: {key}, command: {command}, icon: {icon}.png, label: "{label}" }}\n'
 
 
 MODS = {
     "cnc": {
         "title": "Tiberian Dawn",
-        "keys": [_tab("E", "tabstructures", "Production tab: buildings"),
-                 _tab("R", "tabdefense", "Production tab: defenses"),
-                 _tab("T", "tabinfantry", "Production tab: infantry"),
-                 _tab("Y", "tabvehicles", "Production tab: vehicles"),
-                 _tab("U", "tabaircraft", "Production tab: aircraft"),
-                 _tab("PGUP", "prevtab", "Previous production tab"),
-                 _tab("PGDN", "nexttab", "Next production tab")],
+        "keys": [_tab("E", "ProductionTypeBuilding", "tabstructures", "Production tab: buildings"),
+                 _tab("R", "ProductionTypeDefense", "tabdefense", "Production tab: defenses"),
+                 _tab("T", "ProductionTypeInfantry", "tabinfantry", "Production tab: infantry"),
+                 _tab("Y", "ProductionTypeVehicle", "tabvehicles", "Production tab: vehicles"),
+                 _tab("U", "ProductionTypeAircraft", "tabaircraft", "Production tab: aircraft"),
+                 _tab("PGUP", "PreviousProductionTab", "prevtab", "Previous production tab"),
+                 _tab("PGDN", "NextProductionTab", "nexttab", "Next production tab")],
         "game_assets": "cnc_game_assets.yaml",
     },
     "d2k": {
         "title": "Dune 2000",
-        "keys": [_tab("E", "tabstructures", "Production tab: buildings"),
-                 _tab("R", "tabupgrade", "Production tab: upgrades"),
-                 _tab("T", "tabinfantry", "Production tab: infantry"),
-                 _tab("Y", "tablight", "Production tab: light vehicles"),
-                 _tab("U", "tabaircraft", "Production tab: aircraft"),
-                 _tab("I", "tabvehicles", "Production tab: tanks"),
-                 _tab("O", "tabstarport", "Production tab: starport"),
-                 _tab("X", "powerdown", "Power down")],
+        "keys": [_tab("E", "ProductionTypeBuilding", "tabstructures", "Production tab: buildings"),
+                 _tab("R", "ProductionTypeUpgrade", "tabupgrade", "Production tab: upgrades"),
+                 _tab("T", "ProductionTypeInfantry", "tabinfantry", "Production tab: infantry"),
+                 _tab("Y", "ProductionTypeVehicle", "tablight", "Production tab: light vehicles"),
+                 _tab("U", "ProductionTypeAircraft", "tabaircraft", "Production tab: aircraft"),
+                 _tab("I", "ProductionTypeTank", "tabvehicles", "Production tab: tanks"),
+                 _tab("O", "ProductionTypeMerchant", "tabstarport", "Production tab: starport"),
+                 _tab("X", "PowerDown", "powerdown", "Power down")],
         "game_assets": "d2k_game_assets.yaml",
     },
 }

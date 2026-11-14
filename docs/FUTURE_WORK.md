@@ -57,21 +57,21 @@ files, every changed key drawn white on black beside the shipped icon:
 
 ## The player's key bindings for the other game readers
 
-**Status:** built for UT2004 and Warcraft III (2026-11-14). A reader with a `bindings(files)`
+**Status:** built for UT2004, Warcraft III and the three OpenRA mods (2026-11-14). A reader with a `bindings(files)`
 function returns the player's {command: [key, ...]}, and `build.remap` moves
 every icon whose spec binding names a `command:` to those keys
 (`game_assets/build.py`; the UT2004 reader parses System/User.ini, the
 Warcraft III reader the hotkeys of the installed language and CustomKeys.txt).
-The other readers have no `bindings()`, so their icons stay on the default
-keys.
+A spec may also name a bindings source apart from its art reader
+(`bindings: openra`: `openra_keys.py` reads OpenRA's settings.yaml). The
+other overlays keep their default keys.
 
 **What each would need.** A parser for the game's binding file and a
 `command:` on each binding of its spec. Candidates, none checked against real
 files: StarCraft II keeps hotkeys in `.SC2Hotkeys` text files under the
-player's Documents folder (the `starcraft` reader draws its overlay); OpenRA
-keeps hotkeys in its `settings.yaml` (it runs the C&C, Red Alert and Dune 2000
-files those readers already find). The DOS releases of C&C, Red Alert and
-Dune II have fixed keys, so there is nothing to read there. The C&C
+player's Documents folder (the `starcraft` reader draws its overlay). The DOS
+releases of C&C, Red Alert and Dune II have fixed keys, so there is nothing to
+read there. The C&C
 Remastered Collection's binding file was not looked for.
 
 **Limit.** `remap` moves an icon within one overlay file: the primary file

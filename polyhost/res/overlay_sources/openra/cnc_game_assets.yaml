@@ -4,6 +4,8 @@
 # gen_mods.py puts this block in openra_cnc.yaml in place of the Red Alert one.
 game_assets:
   reader: westwood_td
+  # The player's hotkeys from OpenRA's settings.yaml (game_assets/openra_keys.py)
+  bindings: openra
   icons:
     group1: {crowd: e1, frame: 5}
     group2: {gdi: {unit: jeep, face: 12, turret: 44}, nod: {unit: bggy, face: 28, turret: 60}}
