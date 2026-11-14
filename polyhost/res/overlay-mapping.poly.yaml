@@ -3573,6 +3573,18 @@ simutrans,simutrans.exe,com.simutrans.simutrans:
 # Names not checked on an install.
 openloco,openloco.exe:
   overlay: openloco_template.mods.png
+# Julius, the open source engine for Caesar III
+# (overlay_sources/caesar3/julius.yaml). `julius` is the CMake target and the
+# desktop file's Exec= (v1.8.0), julius.exe on Windows; the Flatpak id is
+# com.github.bvschaik.julius. Names not checked on an install.
+julius,julius.exe,com.github.bvschaik.julius:
+  overlay: julius_template.mods.png
+# Augustus, the fork of Julius (overlay_sources/caesar3/augustus.yaml): the
+# Julius keys and four more. `augustus` is the CMake target and the desktop
+# file's Exec= (v4.0.0), augustus.exe on Windows; the Flatpak id is
+# com.github.keriew.augustus. Names not checked on an install.
+augustus,augustus.exe,com.github.keriew.augustus:
+  overlay: augustus_template.mods.png
 # fheroes2, the free Heroes of Might and Magic II engine
 # (overlay_sources/fheroes2/fheroes2.yaml). `fheroes2` is the executable target
 # in src/fheroes2/CMakeLists.txt (release 1.1.17), `fheroes2.exe` on Windows;

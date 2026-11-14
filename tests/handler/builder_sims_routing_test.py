@@ -27,6 +27,12 @@ SETS = {
     "openloco_template.mods.png": (
         ("openloco", "openloco.exe"),
         "OpenLoco"),
+    "julius_template.mods.png": (
+        ("julius", "julius.exe", "com.github.bvschaik.julius"),
+        "Julius"),
+    "augustus_template.mods.png": (
+        ("augustus", "augustus.exe", "com.github.keriew.augustus"),
+        "Augustus"),
 }
 
 
