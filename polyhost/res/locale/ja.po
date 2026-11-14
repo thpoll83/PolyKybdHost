@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-14 08:55+0000\n"
+"POT-Creation-Date: 2026-11-14 10:02+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -5071,6 +5071,14 @@ msgstr "UT2004 のフォルダー"
 #: polyhost/services/game_assets/unreal2/__init__.py:15
 msgid "The Unreal Tournament 2004 install folder, the one that holds the System and Textures folders. Empty: the folder of the running game and the usual install folders on Windows, Linux, macOS and under Wine are searched."
 msgstr "Unreal Tournament 2004 のインストールフォルダー（System と Textures フォルダーがあるフォルダー）。空: 実行中のゲームのフォルダーと、Windows、Linux、macOS、Wine の通常のインストールフォルダーを検索します。"
+
+#: polyhost/services/game_assets/warcraft3/__init__.py:13
+msgid "Warcraft III folder"
+msgstr "Warcraft III のフォルダー"
+
+#: polyhost/services/game_assets/warcraft3/__init__.py:14
+msgid "The Warcraft III install folder, the one that holds war3.mpq. The overlay then shows the hotkeys of the installed language and of the player's CustomKeys.txt. Empty: the folder of the running game and the usual install folders on Windows, macOS and under Wine are searched. Reforged keeps its files in a format this app does not read; the default keys are shown then."
+msgstr "war3.mpq がある Warcraft III のインストールフォルダー。オーバーレイには、インストールされた言語とプレイヤーの CustomKeys.txt のホットキーが表示されます。空: 実行中のゲームのフォルダーと、Windows、macOS、Wine の通常のインストールフォルダーを検索します。Reforged はこのアプリが読めない形式でファイルを保存するため、その場合は既定のキーが表示されます。"
 
 #: polyhost/services/game_assets/westwood_d2/__init__.py:13
 msgid "Dune II folder"

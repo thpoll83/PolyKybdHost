@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-14 08:55+0000\n"
+"POT-Creation-Date: 2026-11-14 10:02+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -5093,6 +5093,14 @@ msgstr "Dossier UT2004"
 #: polyhost/services/game_assets/unreal2/__init__.py:15
 msgid "The Unreal Tournament 2004 install folder, the one that holds the System and Textures folders. Empty: the folder of the running game and the usual install folders on Windows, Linux, macOS and under Wine are searched."
 msgstr "Le dossier d'installation d'Unreal Tournament 2004, celui qui contient les dossiers System et Textures. Vide : le dossier du jeu en cours et les dossiers d'installation habituels sous Windows, Linux, macOS et Wine sont recherchés."
+
+#: polyhost/services/game_assets/warcraft3/__init__.py:13
+msgid "Warcraft III folder"
+msgstr "Dossier Warcraft III"
+
+#: polyhost/services/game_assets/warcraft3/__init__.py:14
+msgid "The Warcraft III install folder, the one that holds war3.mpq. The overlay then shows the hotkeys of the installed language and of the player's CustomKeys.txt. Empty: the folder of the running game and the usual install folders on Windows, macOS and under Wine are searched. Reforged keeps its files in a format this app does not read; the default keys are shown then."
+msgstr "Le dossier d'installation de Warcraft III, celui qui contient war3.mpq. L'overlay affiche alors les raccourcis de la langue installée et du fichier CustomKeys.txt du joueur. Vide : le dossier du jeu en cours et les dossiers d'installation habituels sous Windows, macOS et Wine sont recherchés. Reforged stocke ses fichiers dans un format que cette application ne lit pas ; les touches par défaut sont alors affichées."
 
 #: polyhost/services/game_assets/westwood_d2/__init__.py:13
 msgid "Dune II folder"

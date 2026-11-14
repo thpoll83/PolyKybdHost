@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-14 08:55+0000\n"
+"POT-Creation-Date: 2026-11-14 10:02+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: vi\n"
@@ -5071,6 +5071,14 @@ msgstr "Thư mục UT2004"
 #: polyhost/services/game_assets/unreal2/__init__.py:15
 msgid "The Unreal Tournament 2004 install folder, the one that holds the System and Textures folders. Empty: the folder of the running game and the usual install folders on Windows, Linux, macOS and under Wine are searched."
 msgstr "Thư mục cài đặt Unreal Tournament 2004, thư mục chứa các thư mục System và Textures. Để trống: tìm trong thư mục của trò chơi đang chạy và các thư mục cài đặt thông thường trên Windows, Linux, macOS và Wine."
+
+#: polyhost/services/game_assets/warcraft3/__init__.py:13
+msgid "Warcraft III folder"
+msgstr "Thư mục Warcraft III"
+
+#: polyhost/services/game_assets/warcraft3/__init__.py:14
+msgid "The Warcraft III install folder, the one that holds war3.mpq. The overlay then shows the hotkeys of the installed language and of the player's CustomKeys.txt. Empty: the folder of the running game and the usual install folders on Windows, macOS and under Wine are searched. Reforged keeps its files in a format this app does not read; the default keys are shown then."
+msgstr "Thư mục cài đặt Warcraft III, thư mục chứa war3.mpq. Khi đó lớp phủ hiển thị phím tắt của ngôn ngữ đã cài và của tệp CustomKeys.txt của người chơi. Để trống: tìm trong thư mục của trò chơi đang chạy và các thư mục cài đặt thông thường trên Windows, macOS và Wine. Reforged lưu tệp ở định dạng mà ứng dụng này không đọc; khi đó các phím mặc định được hiển thị."
 
 #: polyhost/services/game_assets/westwood_d2/__init__.py:13
 msgid "Dune II folder"

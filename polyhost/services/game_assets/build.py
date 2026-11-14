@@ -131,59 +131,79 @@ def command_key(command) -> str:
     return " ".join(str(command).split()).lower()
 
 
-def remap(arr, spec: dict, tiers: dict, player: dict | None) -> int:
-    """Move the unmodified icons to the keys the player bound their commands
-    to. `player` is a reader's ``bindings(files)``: {command: [key, ...]}.
+def key_token(token: str):
+    """("ALT+S" | "S" | "CTRL+SHIFT+F1") -> (KeyCode, Modifier); ValueError for a
+    key with no keycap cell or a modifier the overlay files do not hold."""
+    from polyhost.res.overlay_layout import resolve_key
+    *mods, key = [p.strip() for p in str(token).split("+")]
+    mod = modifier(mods)
+    if mod is None:
+        raise ValueError(f"modifier in {token!r} has no overlay tier")
+    return resolve_key(key), mod
+
+
+def remap(arr, spec: dict, tiers: dict, player: dict | None, complete: bool = True) -> int:
+    """Move icons to the keys the player bound their commands to. `player` is
+    a reader's ``bindings(files)``: {command: ["S", "ALT+Q", ...]}.
 
     Each binding with a ``command:`` names the game command its default key
-    runs. A command whose keys differ from the defaults gets the picture of
-    its first default key on each of the player's keys; its default keys are
-    cleared first, so a key the player gave to another command, or to nothing
-    the overlay draws, comes out blank. ESC keeps the program mark. Returns
-    the number of cells drawn."""
-    from polyhost.device.keys import KeyCode, Modifier
+    (with its ``mods``) runs. A command whose keys differ from the defaults
+    gets the picture of its first default key on each of the player's keys;
+    its default keys are cleared first, so a key the player gave to another
+    command, or to nothing the overlay draws, comes out blank. ESC keeps the
+    program mark. A command with a default or a new key in a tier this file
+    does not hold (`tiers`: the primary or the combo file) is left as it is.
+    With `complete` (the reader's file lists every key, as UT2004's User.ini
+    does) a command missing from `player` is unbound and its keys are
+    cleared; without it the command is unknown and keeps its keys. Returns the
+    number of cells drawn."""
+    from polyhost.device.keys import KeyCode
     from polyhost.res.overlay_layout import CH, SLOT_H, SLOT_W, cell_for, resolve_key
 
-    if not player or Modifier.NO_MOD not in tiers:
+    if not player:
         return 0
-    ch = CH[tiers[Modifier.NO_MOD]]
     player = {command_key(c): keys for c, keys in player.items()}
     defaults: dict = {}
     for b in bindings(spec):
-        if "command" in b and modifier(b.get("mods")) == Modifier.NO_MOD:
-            defaults.setdefault(command_key(b["command"]), []).append(resolve_key(b["key"]))
+        if "command" in b:
+            mod = modifier(b.get("mods"))
+            if mod is not None:
+                defaults.setdefault(command_key(b["command"]), []).append((resolve_key(b["key"]), mod))
     want = {}
     for command, keys in defaults.items():
+        if command not in player and not complete:
+            continue
         got = set()
-        for name in player.get(command, ()):
+        for token in player.get(command, ()):
             try:
-                kc = resolve_key(name)
+                kc, mod = key_token(token)
             except ValueError:
                 continue                    # a key with no keycap cell
             if kc != KeyCode.KC_ESCAPE:
-                got.add(kc)
-        if got != set(keys):
+                got.add((kc, mod))
+        if got != set(keys) and all(m in tiers for _, m in set(keys) | got):
             want[command] = got
     if not want:
         return 0
 
-    def cell(kc):
+    def cell(kc, mod):
         row, col = cell_for(kc)
-        return arr[row * SLOT_H:(row + 1) * SLOT_H, col * SLOT_W:(col + 1) * SLOT_W, ch]
+        return arr[row * SLOT_H:(row + 1) * SLOT_H, col * SLOT_W:(col + 1) * SLOT_W, CH[tiers[mod]]]
 
-    pictures = {command: cell(defaults[command][0]).copy() for command in want}
+    pictures = {command: cell(*defaults[command][0]).copy() for command in want}
     for command in want:
-        for kc in defaults[command]:
-            cell(kc)[:] = 0
+        for kc, mod in defaults[command]:
+            cell(kc, mod)[:] = 0
     drawn = 0
     for command, keys in want.items():
-        for kc in sorted(keys, key=lambda k: k.value):
-            cell(kc)[:] = pictures[command]
+        for kc, mod in sorted(keys, key=lambda k: (k[1].value, k[0].value)):
+            cell(kc, mod)[:] = pictures[command]
             drawn += 1
     return drawn
 
 
-def patch(shipped: Path, spec: dict, icons: dict, out: Path, player: dict | None = None) -> int:
+def patch(shipped: Path, spec: dict, icons: dict, out: Path, player: dict | None = None,
+          complete: bool = True) -> int:
     """Write `shipped` to `out` with the cells of every binding whose icon is in
     `icons` replaced, then the icons moved to the player's keys (`remap`).
     Returns the number of cells replaced. The no-legend PNG text chunk is
@@ -230,7 +250,7 @@ def patch(shipped: Path, spec: dict, icons: dict, out: Path, player: dict | None
         h, w = max(0, min(mask.shape[0], bh, SLOT_H - y0)), max(0, min(mask.shape[1], bw, SLOT_W - x0))
         cell[y0:y0 + h, x0:x0 + w] = np.where(mask[:h, :w], 255, 0)
         count += 1
-    remap(arr, spec, tiers, player)
+    remap(arr, spec, tiers, player, complete)
     info = PngInfo()
     if no_legend:
         info.add_text(NO_LEGEND_CHUNK, no_legend)
@@ -341,7 +361,8 @@ def build(template: str, spec_path: Path, settings_get, cache_dir: Path, hint=No
     if out.exists():
         return out
     icons = render(reader, reader.open_source(files), spec, variant)
-    n = patch(shipped, spec, icons, out, player_bindings(reader, files))
+    n = patch(shipped, spec, icons, out, player_bindings(reader, files),
+              getattr(reader, "BINDINGS_COMPLETE", True))
     log.info("Game art: %d keys of %s drawn by %s (%s) from %s.", n, template, name,
              variant or "-", shown_folder(Path(reader.fingerprint(files)[0]).parent))
     return out

@@ -1,11 +1,17 @@
-# Warcraft III (classic, 1.26 to 1.31) overlay for PolyKybd.
+# Warcraft III (classic, the MPQ releases up to 1.31) overlay for PolyKybd.
 #
 # Keys: the default hotkeys from the back of the Reign of Chaos manual, as
-# listed by the Warcraft Wiki. See SOURCES.md.
+# listed by the Warcraft Wiki, and the game's own help page, menu and
+# command-card files (German 1.22). See SOURCES.md.
 #
-# Only keys that do the same thing whatever is selected are labelled. The
-# letter keys alone train, build and cast, and their meaning changes with the
-# selection, so they stay blank.
+# Letter keys alone train, build and cast, and their meaning changes with the
+# selection, so they stay blank, except attack, move, stop, hold position
+# and patrol, which every unit that moves and fights has on the same key.
+#
+# A binding with `command:` names the game's own identifier for it. With the
+# game's files on the machine, the warcraft3 reader reads which key the
+# installed language and the player's CustomKeys.txt give each one, and the
+# icon moves there (German: move on B, quit on Alt+B).
 #
 # Regenerate:
 #   python polyhost/res/overlay_sources/warcraft3/fetch_icons.py
@@ -87,11 +93,24 @@ bindings:
   - { key: F10, icon: gamemenu.png, label: "Game menu" }
   - { key: F11, icon: allies.png, label: "Allies menu" }
   - { key: F12, icon: chatlog.png, label: "Message log" }
-  - { key: O, mods: [ALT], icon: options.png, label: "Options" }
-  - { key: S, mods: [ALT], icon: save.png, label: "Save game" }
-  - { key: L, mods: [ALT], icon: load.png, label: "Load game" }
-  - { key: H, mods: [ALT], icon: help.png, label: "Help", shared: false }
-  - { key: Q, mods: [ALT], icon: quit.png, label: "Quit", shared: false }
+  - { key: O, mods: [ALT], command: OptionsButton, icon: options.png, label: "Options" }
+  - { key: S, mods: [ALT], command: SaveGameButton, icon: save.png, label: "Save game" }
+  - { key: L, mods: [ALT], command: LoadGameButton, icon: load.png, label: "Load game" }
+  - { key: H, mods: [ALT], command: HelpButton, icon: help.png, label: "Help", shared: false }
+  - { key: Q, mods: [ALT], command: QuitButton, icon: quit.png, label: "Quit", shared: false }
+  - { key: F6, icon: quicksave.png, label: "Quick save (single player)", region: [34, 40] }
+
+  # Minimap and formation
+  - { key: G, mods: [ALT], command: MINIMAPSIGNALTOOLTIP, icon: signal.png, label: "Minimap signal" }
+  - { key: A, mods: [ALT], command: MINIMAPALLYCOLORTOOLTIP, icon: allycolors.png, label: "Ally colour mode" }
+  - { key: F, mods: [ALT], command: FORMATION_TOOLTIP, icon: formation.png, label: "Formation movement on / off" }
+
+  # Unit commands: on the command card of every unit that moves and fights
+  - { key: A, command: CmdAttack, icon: attack.png, label: "Attack" }
+  - { key: M, command: CmdMove, icon: move.png, label: "Move" }
+  - { key: S, command: CmdStop, icon: stop.png, label: "Stop" }
+  - { key: H, command: CmdHoldPos, icon: hold.png, label: "Hold position" }
+  - { key: P, command: CmdPatrol, icon: patrol.png, label: "Patrol" }
   - { key: M, mods: [CTRL], icon: music.png, label: "Music on / off" }
   - { key: S, mods: [CTRL], icon: sound.png, label: "Sound effects on / off" }
   - { key: PRTSC, icon: screenshot.png, label: "Screenshot" }
@@ -100,3 +119,9 @@ bindings:
   - { key: ENTER, icon: chat.png, label: "Chat" }
   - { key: ENTER, mods: [SHIFT], icon: chatall.png, label: "Chat to all players" }
   - { key: ENTER, mods: [CTRL], icon: chatallies.png, label: "Chat to allies" }
+
+# The key assignments of the installed game (polyhost/services/game_assets/
+# warcraft3, reader warcraft3). It draws no pictures, so no icon is listed.
+game_assets:
+  reader: warcraft3
+  icons: {}

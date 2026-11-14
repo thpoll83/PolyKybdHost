@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-14 08:55+0000\n"
+"POT-Creation-Date: 2026-11-14 10:02+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -5071,6 +5071,14 @@ msgstr "UT2004 폴더"
 #: polyhost/services/game_assets/unreal2/__init__.py:15
 msgid "The Unreal Tournament 2004 install folder, the one that holds the System and Textures folders. Empty: the folder of the running game and the usual install folders on Windows, Linux, macOS and under Wine are searched."
 msgstr "System 및 Textures 폴더가 들어 있는 Unreal Tournament 2004 설치 폴더입니다. 비어 있으면: 실행 중인 게임의 폴더와 Windows, Linux, macOS 및 Wine의 일반적인 설치 폴더를 검색합니다."
+
+#: polyhost/services/game_assets/warcraft3/__init__.py:13
+msgid "Warcraft III folder"
+msgstr "Warcraft III 폴더"
+
+#: polyhost/services/game_assets/warcraft3/__init__.py:14
+msgid "The Warcraft III install folder, the one that holds war3.mpq. The overlay then shows the hotkeys of the installed language and of the player's CustomKeys.txt. Empty: the folder of the running game and the usual install folders on Windows, macOS and under Wine are searched. Reforged keeps its files in a format this app does not read; the default keys are shown then."
+msgstr "war3.mpq가 들어 있는 Warcraft III 설치 폴더입니다. 그러면 오버레이에 설치된 언어와 플레이어의 CustomKeys.txt 단축키가 표시됩니다. 비어 있으면: 실행 중인 게임의 폴더와 Windows, macOS 및 Wine의 일반적인 설치 폴더를 검색합니다. Reforged는 이 앱이 읽지 않는 형식으로 파일을 저장하므로 그 경우 기본 키가 표시됩니다."
 
 #: polyhost/services/game_assets/westwood_d2/__init__.py:13
 msgid "Dune II folder"
