@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write the four Unity Editor overlay specs from one table (reproducible).
+"""Write the five Unity Editor overlay specs from one table (reproducible).
 
 Unity's keys depend on the focused editor window: a shortcut with a context
 (`typeof(SceneView)`, `typeof(AnimationWindow)`) works only while that window
@@ -9,12 +9,13 @@ lists, and each set is a list of those lists:
     unity.yaml            global keys            any other window (Hierarchy, Project, ...)
     unity_scene.yaml      global + Scene view    Scene view; also the fallback with no report
     unity_animation.yaml  global + Animation     Animation window
+    unity_timeline.yaml   global + Timeline      Timeline window (com.unity.timeline)
     unity_play.yaml       play controls only     Game view in Play mode (the game gets the keys)
 
 Run it after changing a binding, then the generator on each spec:
 
     python polyhost/res/overlay_sources/unity/gen_unity_specs.py
-    for s in unity unity_scene unity_animation unity_play; do
+    for s in unity unity_scene unity_animation unity_timeline unity_play; do
       python scripts/generate_app_overlays.py polyhost/res/overlay_sources/unity/$s.yaml
     done
 
@@ -24,6 +25,8 @@ Sources (SOURCES.md has the detail):
   hk   Unity 2017.4 "Unity HotKeys" sheet and the 2018.4 manual page
        UnityHotkeys.html: menu items Unity defines in native code, which the C#
        source does not show.
+  tl   com.unity.timeline 1.8.13 (the registry package, read 2026-11-14): a
+       [Shortcut] / [ClutchShortcut] attribute in the named file.
 """
 from __future__ import annotations
 
@@ -152,6 +155,51 @@ ANIMATION = [
     ("2", ["SHIFT"], "rippletoggle", "Toggle ripple", "cs: AnimationWindowShortcuts.cs"),
 ]
 
+# typeof(TimelineWindow), com.unity.timeline 1.8.13. Every key with a default
+# binding in Editor/Shortcuts.cs, plus Jog (Manipulators/Sequence/Jog.cs) and the
+# Edit-mode keys held while dragging (Manipulators/EditMode.cs, documented in
+# Documentation~/clip-overview.md). Timeline/Collapse Track and Expand Track
+# have no default key.
+TL = "tl: Shortcuts.cs"
+TIMELINE = [
+    ("S", [], "tl_split", "Split clip", TL + " Timeline/Editing/Split"),
+    ("I", [], "tl_trimstart", "Trim start", TL + " Timeline/Editing/TrimStart"),
+    ("O", [], "tl_trimend", "Trim end", TL + " Timeline/Editing/TrimEnd"),
+    ("SPACE", [], "play", "Play timeline", TL + " Timeline/Play"),
+    ("COMMA", [], "frame_prev", "Previous frame", TL + " Timeline/PrevFrame"),
+    ("DOT", [], "frame_next", "Next frame", TL + " Timeline/NextFrame"),
+    ("A", [], "frame_all", "Frame all", TL + " Timeline/FrameAll"),
+    ("COMMA", [C], "key_prev", "Previous key", TL + " Timeline/PrevKey", {"except": ["macos"]}),
+    ("DOT", [C], "key_next", "Next key", TL + " Timeline/NextKey", {"except": ["macos"]}),
+    ("COMMA", [C, "SHIFT"], "key_prev", "Previous key", TL + " Timeline/PrevKey (UNITY_EDITOR_OSX)", {"only": ["macos"]}),
+    ("DOT", [C, "SHIFT"], "key_next", "Next key", TL + " Timeline/NextKey (UNITY_EDITOR_OSX)", {"only": ["macos"]}),
+    ("COMMA", ["SHIFT"], "jump_start", "Go to start", TL + " Timeline/GotoStart"),
+    ("DOT", ["SHIFT"], "jump_end", "Go to end", TL + " Timeline/GotoEnd"),
+    ("EQUAL", [], "zoom_in", "Zoom in", TL + " Timeline/ZoomIn"),
+    ("MINUS", [], "zoom_out", "Zoom out", TL + " Timeline/ZoomOut"),
+    ("LEFT", [], "fly_left", "Select left", TL + " Timeline/MoveLeft"),
+    ("RIGHT", [], "fly_right", "Select right", TL + " Timeline/MoveRight"),
+    ("UP", [], "fly_up", "Select up", TL + " Timeline/MoveUp"),
+    ("DOWN", [], "fly_down", "Select down", TL + " Timeline/MoveDown"),
+    ("LEFT", ["SHIFT"], "tl_multileft", "Extend selection left", TL + " Timeline/SelectLeft"),
+    ("RIGHT", ["SHIFT"], "tl_multiright", "Extend selection right", TL + " Timeline/SelectRight"),
+    ("UP", ["SHIFT"], "tl_multiup", "Extend selection up", TL + " Timeline/SelectUp"),
+    ("DOWN", ["SHIFT"], "tl_multidown", "Extend selection down", TL + " Timeline/SelectDown"),
+    ("TAB", [], "tl_area", "Clips / tracks", TL + " Timeline/ToggleClipTrackArea"),
+    ("C", [], "tl_match", "Match content", TL + " Timeline/MatchContent"),
+    ("L", [], "lock_channel", "Lock track", TL + " Timeline/ToggleLock"),
+    ("M", [], "mute", "Mute track", TL + " Timeline/ToggleMute"),
+    ("J", [], "tl_jog", "Jog (hold)", "tl: Jog.cs Timeline/Jog (ClutchShortcut)"),
+    ("1", [], "tl_mix", "Mix mode (hold)", "tl: EditMode.cs clutchKey Alpha1; clip-overview.md"),
+    ("2", [], "ripple", "Ripple mode (hold)", "tl: EditMode.cs clutchKey Alpha2; clip-overview.md"),
+    ("3", [], "tl_replace", "Replace mode (hold)", "tl: EditMode.cs clutchKey Alpha3; clip-overview.md"),
+]
+
+# A Timeline window key replaces a global key on the same chord (the window's
+# context takes priority over the global one in the Shortcut Manager): L.
+_TL_CHORDS = {(b[0], tuple(sorted(b[1]))) for b in TIMELINE}
+GLOBAL_UNDER_TIMELINE = [b for b in GLOBAL if (b[0], tuple(sorted(b[1]))) not in _TL_CHORDS]
+
 # Play mode with the Game view focused: every plain key goes to the game, so
 # only the Play-mode controls and the window keys that leave the Game view.
 PLAY_KEYS = {("P", (C,)), ("P", (C, "SHIFT")), ("P", (C, "ALT")),
@@ -165,6 +213,8 @@ SETS = {
                     "Scene view: global keys plus the Scene view's. Also the set with no report."),
     "unity_animation": ("unity_animation_template", [GLOBAL, ANIMATION],
                         "Animation window: global keys plus the Animation window's."),
+    "unity_timeline": ("unity_timeline_template", [GLOBAL_UNDER_TIMELINE, TIMELINE],
+                       "Timeline window: global keys plus the Timeline window's."),
     "unity_play": ("unity_play_template", [PLAY],
                    "Game view in Play mode: only the Play-mode and window keys."),
 }

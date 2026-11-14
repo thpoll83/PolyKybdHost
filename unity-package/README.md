@@ -3,8 +3,9 @@
 Tells PolyKybdHost whether the Unity Editor is in Edit or Play mode and which
 **editor window** has keyboard focus, so the keycaps show the shortcuts that
 work there: the grid and render-mode keys in the Scene view, the frame and
-keyframe keys in the Animation window, and only the Play-mode keys while the
-Game view in Play mode receives the keys. Without the package the keyboard
+keyframe keys in the Animation window, the clip and track keys in the
+Timeline window, and only the Play-mode keys while the Game view in Play mode
+receives the keys. Without the package the keyboard
 still shows a Unity overlay: the Scene view set.
 
 ⚠️ **Untested in Unity.** The C# has not been run in a Unity Editor. What was
@@ -94,6 +95,7 @@ routes the URL, in this order:
 | `unity://play/game` | Play mode: Play, Pause, Step, the window keys, Maximize |
 | `.../scene` | Scene view: global keys plus grid, snapping, render modes, overlays |
 | `.../animation` | Animation window: global keys plus frame, keyframe, ripple |
+| `.../timeline` | Timeline window: global keys plus split, trim, play, frame, key, zoom, track lock and mute |
 | any other `unity://` | global keys (tools, File, Edit, GameObject, Window) |
 | no report | the Scene view set |
 

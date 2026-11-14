@@ -117,6 +117,21 @@ FLUENT = {
     "curves": "ms:show_chart",
     "ripple": "ms:waves",
     "rippletoggle": "ms:water",
+    # --- Timeline window ---
+    "tl_split": "Split Vertical",
+    "tl_trimstart": "ms:align_horizontal_left",
+    "tl_trimend": "ms:align_horizontal_right",
+    "zoom_in": "Zoom In",
+    "zoom_out": "Zoom Out",
+    "tl_multileft": "ms:keyboard_double_arrow_left",
+    "tl_multiright": "ms:keyboard_double_arrow_right",
+    "tl_multiup": "ms:keyboard_double_arrow_up",
+    "tl_multidown": "ms:keyboard_double_arrow_down",
+    "tl_area": "ms:keyboard_tab",
+    "tl_match": "ms:fit_width",
+    "tl_jog": "ms:swipe",
+    "tl_mix": "ms:join",
+    "tl_replace": "ms:swap_horiz",
 }
 
 # Drawn by the Blender set already: copy, so both show the same pixels.
@@ -132,6 +147,8 @@ BORROW = {
     "wireframe.png": "blender",
     "shading.png": "blender",
     "select_invert.png": "blender",
+    "lock_channel.png": "blender",
+    "mute.png": "blender",
 }
 
 # Scene view render modes and 2D mode: no icon set has a glyph for them.
