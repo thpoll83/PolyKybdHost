@@ -106,6 +106,19 @@ CONTEXT_REPORTERS = {
     "macvim": "vim",
     "neovide": "vim",
     "emacs": "emacs",
+    # JetBrains IDEs (jetbrains-plugin/): exactly the names of the
+    # `idea64,pycharm64,...` mapping entry (tests/handler/jetbrains_routing_test.py).
+    **dict.fromkeys((
+        "idea64", "pycharm64", "clion64", "webstorm64", "goland64", "rider64",
+        "phpstorm64", "rubymine64", "datagrip64", "rustrover64", "studio64",
+        "jetbrains_client", "idea", "pycharm", "clion", "webstorm", "goland", "rider",
+        "phpstorm", "rubymine", "datagrip", "rustrover", "jetbrains-idea",
+        "jetbrains-idea-ce", "jetbrains-pycharm", "jetbrains-pycharm-ce",
+        "jetbrains-clion", "jetbrains-webstorm", "jetbrains-goland", "jetbrains-rider",
+        "jetbrains-phpstorm", "jetbrains-rubymine", "jetbrains-datagrip",
+        "jetbrains-rustrover", "jetbrains-studio", "intellij idea", "intellij idea ce",
+        "intellij idea ultimate", "pycharm ce", "pycharm professional", "android studio",
+    ), "jetbrains"),
     # VS Code and its forks: vscode-extension/ sends <token>://<debug mode>.
     "code": "vscode", "cursor": "cursor",
     "windsurf": "windsurf", "devin": "windsurf", "devin-desktop": "windsurf",

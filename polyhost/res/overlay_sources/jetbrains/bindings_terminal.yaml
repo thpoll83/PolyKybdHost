@@ -1,0 +1,60 @@
+# JetBrains IDEs, Terminal tool window focused (the plugin reports
+# `jetbrains://terminal`). With the terminal's default "Override IDE shortcuts",
+# most keys go to the shell, so this set draws only the terminal's own actions
+# and, on macOS and Linux, the shell keys bash and zsh bind by default.
+#
+# Terminal actions from JetBrains/intellij-community plugins/terminal
+# (resources/META-INF/plugin.xml and frontend/resources/
+# intellij.terminal.frontend.xml): Terminal.NewTab, Terminal.CopySelectedText,
+# Terminal.Paste, Terminal.ClearBuffer (macOS), Terminal.Find (= Find),
+# Terminal.CloseTab (= CloseContent), Terminal.PageUp/PageDown. Close tab moves
+# to Ctrl+4 in the KDE keymap. See SOURCES.md.
+#
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/jetbrains/bindings_terminal.yaml --preview /tmp/jb_terminal
+app: jetbrains
+match: [idea64, pycharm64]
+output: jetbrains_terminal_template
+output_macos: jetbrains_terminal_mac_template
+output_linux: jetbrains_terminal_linux_template
+output_kde: jetbrains_terminal_kde_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: auto
+threshold: 150
+
+bindings:
+  # -- tabs --
+  - { key: T,  mods: [CTRL, SHIFT], only: [windows, linux], icon: newtab.png, label: "New terminal tab" }
+  - { key: T,  mods: [GUI],         only: [macos],          icon: newtab.png, label: "New terminal tab" }
+  - { key: F4, mods: [CTRL], only: [windows, linux], except: [linux_kde], icon: closetab.png, label: "Close tab", concept: close }
+  - { key: "4", mods: [CTRL], only: [linux_kde],                          icon: closetab.png, label: "Close tab", concept: close }
+  - { key: W,  mods: [GUI],  only: [macos],                               icon: closetab.png, label: "Close tab", concept: close }
+  # NextTab / PreviousTab
+  - { key: RIGHT, mods: [ALT], only: [windows, linux], icon: nexttab.png, label: "Next tab" }
+  - { key: LEFT,  mods: [ALT], only: [windows, linux], icon: prevtab.png, label: "Previous tab" }
+  - { key: "]",   mods: [GUI, SHIFT], only: [macos],   icon: nexttab.png, label: "Next tab" }
+  - { key: "[",   mods: [GUI, SHIFT], only: [macos],   icon: prevtab.png, label: "Previous tab" }
+  # -- clipboard: Ctrl+C/V on Windows, Ctrl+Shift+C/V on Linux (XWin), Cmd on macOS --
+  - { key: C, mods: [CTRL],        only: [windows], label: Copy }
+  - { key: V, mods: [CTRL],        only: [windows], label: Paste }
+  - { key: C, mods: [CTRL, SHIFT], only: [linux],   label: Copy }
+  - { key: V, mods: [CTRL, SHIFT], only: [linux],   label: Paste }
+  - { key: C, mods: [GUI],         only: [macos],   label: Copy }
+  - { key: V, mods: [GUI],         only: [macos],   label: Paste }
+  - { key: F, mods: [CMDCTRL], label: Find }
+  - { key: K, mods: [GUI], only: [macos], icon: clearbuffer.png, label: "Clear terminal" }
+  # -- scrolling (Terminal.PageUp / PageDown) --
+  - { key: PGUP,   mods: [SHIFT], only: [windows, linux], icon: pageup.png,   label: "Scroll page up" }
+  - { key: PGDN,   mods: [SHIFT], only: [windows, linux], icon: pagedown.png, label: "Scroll page down" }
+  # -- shell keys (bash/zsh defaults; Windows shells bind Ctrl+C only) --
+  - { key: C, mods: [CTRL], only: [macos, linux], icon: interrupt.png,     label: "Interrupt" }
+  - { key: D, mods: [CTRL], only: [macos, linux], icon: closesession.png,  label: "End of input" }
+  - { key: R, mods: [CTRL], only: [macos, linux], icon: historysearch.png, label: "Search history" }
+  - { key: W, mods: [CTRL], only: [macos, linux], icon: deleteword.png,    label: "Delete previous word" }
+  # -- the window itself --
+  - { key: F12,    mods: [ALT],   icon: terminal.png,   label: "Hide terminal" }
+  - { key: ESCAPE, mods: [SHIFT], icon: hidewindow.png, label: "Hide window" }
