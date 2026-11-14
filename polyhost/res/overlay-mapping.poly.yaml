@@ -3567,6 +3567,12 @@ openrct2,openrct2.exe,io.openrct2.openrct2:
 # the set draws the pak64 keys. Names not checked on an install.
 simutrans,simutrans.exe,com.simutrans.simutrans:
   overlay: simutrans_template.mods.png
+# OpenLoco, the open source engine for Chris Sawyer's Locomotion
+# (overlay_sources/openloco/openloco.yaml). The binary is `OpenLoco`
+# (OUTPUT_NAME in src/App/CMakeLists.txt, v26.09), OpenLoco.exe on Windows.
+# Names not checked on an install.
+openloco,openloco.exe:
+  overlay: openloco_template.mods.png
 # fheroes2, the free Heroes of Might and Magic II engine
 # (overlay_sources/fheroes2/fheroes2.yaml). `fheroes2` is the executable target
 # in src/fheroes2/CMakeLists.txt (release 1.1.17), `fheroes2.exe` on Windows;

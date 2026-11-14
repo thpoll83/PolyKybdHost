@@ -24,6 +24,9 @@ SETS = {
     "simutrans_template.mods.png": (
         ("simutrans", "simutrans.exe", "com.simutrans.simutrans"),
         "Simutrans 125.0.1"),
+    "openloco_template.mods.png": (
+        ("openloco", "openloco.exe"),
+        "OpenLoco"),
 }
 
 
