@@ -4,8 +4,11 @@
  *
  * Everything here runs in plain Node (the unit tests in ../test run it with
  * `node --test`): the app token, the pseudo-URL, the debug state read from the
- * Debug Adapter Protocol messages, when to send, and the JSON body.
- * `extension.ts` connects it to the `vscode` API and to the network.
+ * Debug Adapter Protocol messages, the bridge from a remote extension host,
+ * when to send, and the JSON body. `extension.ts` (the UI part) connects it to
+ * the `vscode` API and to the network; `remote.ts` (the workspace part, a
+ * second small extension in `remote/`) runs the debug tracker in a remote
+ * extension host and passes the state to the UI part.
  *
  * What is sent, and nothing else:
  *
@@ -25,6 +28,11 @@ export const HTTP_TIMEOUT_MS = 500;
 
 export type Mode = "edit" | "debug/running" | "debug/stopped";
 
+// The most entries any of the bounded maps here holds (requests waiting for a
+// response, and the states the remote part sent). An entry past it drops the
+// oldest one.
+export const MAX_ENTRIES = 64;
+
 /**
  * The `app` token for the editor this extension runs in, from `env.appName`
  * ("Visual Studio Code", "Cursor", "Windsurf", "Devin"). The host keeps one
@@ -37,9 +45,28 @@ export function appToken(appName: unknown): string {
   return "vscode";
 }
 
-/** `<app>://edit`, `<app>://debug/running` or `<app>://debug/stopped`. */
-export function modeUrl(app: string, mode: Mode): string {
-  return `${app}://${mode}`;
+/**
+ * `<app>://<mode>`, and `/diff` after it while a diff editor is the active
+ * editor tab: `<app>://edit`, `<app>://edit/diff`, `<app>://debug/running`,
+ * `<app>://debug/running/diff`, `<app>://debug/stopped`,
+ * `<app>://debug/stopped/diff`.
+ *
+ * The debug mode comes first, so a host that routes on the debug mode alone
+ * (`urls-contains`, a substring match) still finds it in a diff URL.
+ */
+export function modeUrl(app: string, mode: Mode, diff: boolean = false): string {
+  return `${app}://${mode}${diff ? "/diff" : ""}`;
+}
+
+/**
+ * Whether the active editor tab is a text diff editor. `input` is
+ * `window.tabGroups.activeTabGroup.activeTab?.input`, `textDiff` the
+ * `vscode.TabInputTextDiff` class (a parameter, so this runs without the
+ * editor). A notebook diff (`TabInputNotebookDiff`) does not count: its change
+ * keys are other keys (Alt+F3, Shift+Alt+F3), see README.md.
+ */
+export function isTextDiff(input: unknown, textDiff: unknown): boolean {
+  return typeof textDiff === "function" && input instanceof (textDiff as new (...a: any[]) => unknown);
 }
 
 /** The mode for the active debug session: none, or its tracked state. */
@@ -55,9 +82,14 @@ export function modeFor(session: SessionState | undefined): Mode {
  * adapter runs in a remote extension host) has an unknown state: report
  * nothing, so the host shows every debug key, instead of claiming "running".
  */
-export function activeMode(hasActive: boolean, state: SessionState | undefined): Mode | null {
+export function activeMode(hasActive: boolean, state: SessionState | undefined,
+                           remote?: RemoteState): Mode | null {
   if (!hasActive) return "edit";
-  return state ? modeFor(state) : null;
+  if (state) return modeFor(state);
+  // No tracker in this extension host: the state the remote part sent, if any.
+  if (remote === "running") return "debug/running";
+  if (remote === "stopped") return "debug/stopped";
+  return null;
 }
 
 // DAP requests that resume the program when they succeed. Without
@@ -88,7 +120,10 @@ export class SessionState {
   // The thread ids of the last `threads` response (VS Code asks after every
   // stop), or null before one arrives.
   threads: Set<number> | null = null;
-  pending: Map<number, { command: string; threadId?: number; single: boolean }> = new Map();
+  // Counts the all-threads stops. A `threads` response answers for the stop
+  // it was requested after; one requested before the latest stop is stale.
+  stopGeneration = 0;
+  pending: Map<number, { command: string; threadId?: number; single: boolean; generation: number }> = new Map();
 
   isStopped(): boolean {
     if (this.stopped.size > 0) return true;
@@ -109,9 +144,10 @@ export class SessionState {
       command: msg.command,
       threadId: typeof args.threadId === "number" ? args.threadId : undefined,
       single: args.singleThread === true,
+      generation: this.stopGeneration,
     });
     // Bounded: a response that never comes must not grow the map.
-    if (this.pending.size > 64) {
+    if (this.pending.size > MAX_ENTRIES) {
       const first = this.pending.keys().next().value;
       if (first !== undefined) this.pending.delete(first);
     }
@@ -126,6 +162,10 @@ export class SessionState {
         if (body.allThreadsStopped || typeof body.threadId !== "number") {
           this.allStopped = true;
           this.resumed.clear();
+          // A thread can have started since the last `threads` response.
+          // Until a fresh list arrives, every thread counts as stopped.
+          this.threads = null;
+          this.stopGeneration++;
         }
         if (typeof body.threadId === "number") {
           this.stopped.add(body.threadId);
@@ -142,6 +182,7 @@ export class SessionState {
       this.pending.delete(msg.request_seq);
       if (!msg.success) return;
       if (req.command === "threads") {
+        if (req.generation !== this.stopGeneration) return;
         const list = msg.body && Array.isArray(msg.body.threads) ? msg.body.threads : null;
         if (list) {
           this.threads = new Set(list.map((t: any) => t && t.id).filter((id: unknown) => typeof id === "number"));
@@ -303,4 +344,165 @@ export function settleWithin(p: Promise<void>, ms: number): Promise<void> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const limit = new Promise<void>((resolve) => { timer = setTimeout(resolve, ms); });
   return Promise.race([p, limit]).finally(() => clearTimeout(timer));
+}
+
+// ---------------------------------------------------------------------------
+// The bridge from a remote extension host (Remote SSH, WSL, Dev Containers,
+// Codespaces).
+//
+// VS Code creates a debug adapter tracker only in the extension host where the
+// debug adapter runs. In a remote window that is the remote extension host, so
+// the UI part's tracker sees nothing. The workspace part (`remote/`,
+// `"extensionKind": ["workspace"]`) registers the same tracker there and calls
+// a command the UI part registers. `vscode.commands.executeCommand` runs a
+// command in whichever extension host registered it, and its arguments cross
+// as JSON. A debug session has the same `id` in both extension hosts (the
+// window assigns it), so the UI part matches the state to
+// `debug.activeDebugSession.id`.
+//
+// The HTTP report stays in the UI part: only there is 127.0.0.1 the user's
+// computer, where PolyKybdHost runs.
+
+/** Registered by the UI part; the workspace part calls it on every change. */
+export const BRIDGE_STATE_COMMAND = "polykybd.modeReporter.remoteState";
+/** Registered by the workspace part; the UI part calls it when it starts, to
+ *  get the states of sessions that began before it. */
+export const BRIDGE_SYNC_COMMAND = "polykybd.modeReporter.remoteSync";
+export const BRIDGE_VERSION = 1;
+
+/** A session's state as the workspace part reports it; null: no state (the
+ *  adapter exited, or the session has no tracker). */
+export type RemoteState = "running" | "stopped" | null;
+
+export interface BridgeMessage {
+  v: number;
+  session: string;
+  state: RemoteState;
+  seq: number;
+}
+
+/**
+ * The message for one session. Only the session id and running or stopped
+ * cross: no thread ids, no file names.
+ */
+export function bridgeMessage(session: string, state: SessionState | undefined,
+                              seq: number): BridgeMessage {
+  return { v: BRIDGE_VERSION, session, state: state ? (state.isStopped() ? "stopped" : "running") : null, seq };
+}
+
+/**
+ * A message as received, or null when it is not one this version reads. Any
+ * extension can call a registered command, so nothing is trusted: the fields
+ * are checked one by one and nothing else is kept.
+ */
+export function parseBridgeMessage(arg: unknown): BridgeMessage | null {
+  if (!arg || typeof arg !== "object") return null;
+  const m = arg as Record<string, unknown>;
+  if (m.v !== BRIDGE_VERSION) return null;
+  if (typeof m.session !== "string" || m.session.length === 0) return null;
+  if (m.state !== "running" && m.state !== "stopped" && m.state !== null) return null;
+  if (typeof m.seq !== "number" || !Number.isSafeInteger(m.seq) || m.seq < 0) return null;
+  return { v: BRIDGE_VERSION, session: m.session, state: m.state, seq: m.seq };
+}
+
+/**
+ * The UI part's copy of the states the workspace part sent, per session.
+ * A message older than the last one applied for its session is dropped
+ * (`seq` counts up in the workspace part). Bounded to MAX_ENTRIES sessions.
+ */
+export class RemoteStates {
+  states: Map<string, { state: "running" | "stopped"; seq: number }> = new Map();
+  // The last seq per session, also after its state was cleared, so a late
+  // "running" cannot bring back a session that exited.
+  seqs: Map<string, number> = new Map();
+
+  /** Applies one command argument. True when the stored state changed. */
+  apply(arg: unknown): boolean {
+    const m = parseBridgeMessage(arg);
+    if (!m) return false;
+    const last = this.seqs.get(m.session);
+    if (last !== undefined && m.seq <= last) return false;
+    this.seqs.delete(m.session);
+    this.seqs.set(m.session, m.seq);
+    bound(this.seqs);
+    const before = this.states.get(m.session)?.state ?? null;
+    if (m.state === null) {
+      this.states.delete(m.session);
+    } else {
+      this.states.delete(m.session);
+      this.states.set(m.session, { state: m.state, seq: m.seq });
+      bound(this.states);
+    }
+    return before !== m.state;
+  }
+
+  get(session: string | undefined): RemoteState | undefined {
+    if (session === undefined) return undefined;
+    return this.states.get(session)?.state;
+  }
+
+  /** The session ended (`debug.onDidTerminateDebugSession` in the UI part). */
+  forget(session: string): void {
+    this.states.delete(session);
+  }
+}
+
+function bound<K, V>(m: Map<K, V>): void {
+  while (m.size > MAX_ENTRIES) {
+    const first = m.keys().next().value;
+    if (first === undefined) return;
+    m.delete(first);
+  }
+}
+
+/**
+ * The workspace part's trackers. `send` delivers one message to the UI part
+ * (`executeCommand(BRIDGE_STATE_COMMAND, msg)`). A message goes out only when
+ * a session's state changes, not on every DAP message.
+ */
+export class WorkspaceBridge {
+  send: (msg: BridgeMessage) => void;
+  sessions: Map<string, SessionState> = new Map();
+  sent: Map<string, RemoteState> = new Map();
+  seq = 0;
+
+  constructor(send: (msg: BridgeMessage) => void) {
+    this.send = send;
+  }
+
+  /** The tracker's three callbacks for one new debug session. */
+  track(session: string): { toAdapter: (m: unknown) => void; fromAdapter: (m: unknown) => void; exit: () => void } {
+    const state = new SessionState();
+    this.sessions.set(session, state);
+    this.push(session);
+    return {
+      toAdapter: (m: unknown) => state.toAdapter(m),
+      fromAdapter: (m: unknown) => { state.fromAdapter(m); this.push(session); },
+      exit: () => this.end(session),
+    };
+  }
+
+  /** The adapter exited, or the session terminated. */
+  end(session: string): void {
+    if (!this.sessions.has(session) && !this.sent.has(session)) return;
+    this.sessions.delete(session);
+    this.sent.delete(session);
+    this.send(bridgeMessage(session, undefined, ++this.seq));
+  }
+
+  /** Sends every session's state again (the UI part started later). */
+  resync(): void {
+    for (const id of this.sessions.keys()) {
+      this.sent.delete(id);
+      this.push(id);
+    }
+  }
+
+  push(session: string): void {
+    const msg = bridgeMessage(session, this.sessions.get(session), this.seq + 1);
+    if (this.sent.has(session) && this.sent.get(session) === msg.state) return;
+    this.seq = msg.seq;
+    this.sent.set(session, msg.state);
+    this.send(msg);
+  }
 }

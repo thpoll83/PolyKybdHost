@@ -6,6 +6,7 @@ the parts of the contract the host depends on from the source text: the port
 and keep-alive agree with the host's receiver, and the URL tokens are the ones
 the mapping routes on.
 """
+import json
 import re
 import shutil
 import subprocess
@@ -52,6 +53,42 @@ class SourceContractTest(unittest.TestCase):
         # loopback receiver on the user's computer.
         pkg = (EXT / "package.json").read_text(encoding="utf-8")
         self.assertRegex(pkg, r'"extensionKind":\s*\[\s*"ui"\s*\]')
+
+
+class RemotePartTest(unittest.TestCase):
+    """The workspace part (vscode-extension/remote/) and its bridge to the UI part."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.ui = json.loads((EXT / "package.json").read_text(encoding="utf-8"))
+        cls.remote = json.loads((EXT / "remote" / "package.json").read_text(encoding="utf-8"))
+
+    def test_remote_part_runs_on_the_workspace_side(self):
+        # It must run where the debug adapters run in a remote window.
+        self.assertEqual(self.remote["extensionKind"], ["workspace"])
+        self.assertEqual(self.ui["extensionKind"], ["ui"])
+
+    def test_remote_part_is_built_from_src(self):
+        self.assertEqual(self.remote["main"], "./out/remote.js")
+        self.assertTrue((EXT / "src" / "remote.ts").is_file())
+        build = (EXT / "build.sh").read_text(encoding="utf-8")
+        self.assertIn("cp out/core.js out/remote.js remote/out/", build)
+
+    def test_sync_command_activates_the_remote_part(self):
+        m = re.search(r'BRIDGE_SYNC_COMMAND = "([\w.]+)";', CORE)
+        self.assertIn(f"onCommand:{m.group(1)}", self.remote["activationEvents"])
+        self.assertIn("onDebug", self.remote["activationEvents"])
+
+    def test_same_publisher_and_engine(self):
+        for k in ("publisher", "license", "engines"):
+            self.assertEqual(self.remote[k], self.ui[k], k)
+
+    def test_remote_part_opens_no_connection(self):
+        # Only the UI part may send the report: on the remote side 127.0.0.1 is
+        # the remote machine.
+        remote_src = (EXT / "src" / "remote.ts").read_text(encoding="utf-8")
+        self.assertNotRegex(remote_src, r'from "(http|https|net)"')
+        self.assertNotRegex(CORE, r'from "(http|https|net)"')
 
 
 class NodeUnitTest(unittest.TestCase):

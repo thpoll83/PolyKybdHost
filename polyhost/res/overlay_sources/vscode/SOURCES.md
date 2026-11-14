@@ -216,6 +216,54 @@ and RStudio use it), `fullscreen.png` (Fluent *Full Screen Maximize*), and
 `continue.png` (Material Symbols `resume`, Apache-2.0, as Jupyter and RStudio use
 it; it is VS Code's own "bar and triangle" Continue shape).
 
+### Diff view (`diff.yaml`, 2026-11-14)
+
+One set, shared by VS Code, Cursor and Windsurf, that the mapping puts LAST for a
+`/diff` URL (`<app>://edit/diff`, `<app>://debug/running/diff`,
+`<app>://debug/stopped/diff`). The extension adds `/diff` while
+`window.tabGroups.activeTabGroup.activeTab.input instanceof TabInputTextDiff`.
+
+Every diff-editor key with a default binding, from `microsoft/vscode` `main` at
+`4347d45a5a71e1d3c20a953ff727fbc3a4c6b2d1` (read 2026-11-14). None has a `mac:`
+or `linux:` override, and `KeyMod.Alt` is Option on macOS, so the set is the same
+on all three platforms:
+
+| Command | Key | `when` | Source file | Drawn |
+|---|---|---|---|---|
+| `workbench.action.compareEditor.nextChange` | `Alt+F5` | `textCompareEditorVisible` | `src/vs/workbench/browser/parts/editor/diffEditorCommands.ts` | yes, *Arrow Down* |
+| `workbench.action.compareEditor.previousChange` | `Shift+Alt+F5` | `textCompareEditorVisible` | same | yes, *Arrow Up* |
+| `editor.action.accessibleDiffViewer.next` | `F7` | `isInDiffEditor` (precondition) | `src/vs/editor/browser/widget/diffEditor/commands.ts` | yes, *Arrow Sort Down Lines* |
+| `editor.action.accessibleDiffViewer.prev` | `Shift+F7` | `isInDiffEditor` (precondition) | same | yes, *Arrow Sort Up Lines* |
+| `workbench.action.compareEditor.openSide` | `Ctrl+K Shift+O` (`CtrlCmd`) | `isInDiffEditor` | `diffEditorCommands.ts` | no: a two-stroke chord |
+| `git.stageSelectedRanges` | `Ctrl+K Ctrl+Alt+S` (mac `Cmd+K Cmd+Alt+S`) | `editorTextFocus && resourceScheme == file` | `extensions/git/package.json` | no: a two-stroke chord |
+| `git.unstageSelectedRanges` | `Ctrl+K Ctrl+N` (mac `Cmd+K Cmd+N`) | `isInDiffEditor && isInDiffRightEditor && resourceScheme == git` | same | no: a two-stroke chord |
+| `git.revertSelectedRanges` | `Ctrl+K Ctrl+R` (mac `Cmd+K Cmd+R`) | `editorTextFocus && resourceScheme == file` | same | no: a two-stroke chord |
+| `diffEditor.exitCompareMove` | `Escape` | `comparingMovedCode` | `commands.ts` | no: only while comparing moved code |
+
+No default key: `diffEditor.revert` (Revert block), `toggle.diff.renderSideBySide`,
+`toggle.diff.ignoreTrimWhitespace`, `workbench.action.compareEditor.swapSides`,
+the `focus*Side` commands, and the collapse and show unchanged regions commands.
+
+Not in the set: the notebook diff editor's `notebook.diff.action.next` /
+`previous` (`Alt+F3` / `Shift+Alt+F3`, `src/vs/workbench/contrib/notebook/browser/diff/notebookDiffActions.ts`),
+because the extension reports `/diff` for a text diff only, and `Alt+F3` in a
+text editor is Quick Diff's Next Change, a different command. The multi-file
+diff editor binds `Alt+F5` / `Shift+Alt+F5` too
+(`src/vs/workbench/contrib/multiDiffEditor/browser/actions.ts`), but it is not a
+`TabInputTextDiff` either.
+
+Cursor and Windsurf are assumed to keep these bindings unchanged, as they keep
+the debug contribution: their own `bindings.yaml` draw no key on `Alt+F5`,
+`Shift+Alt+F5`, `F7` or `Shift+F7`. Not checked in a running Cursor or Windsurf.
+`tests/handler/vscode_routing_test.py` checks that no app set or debug set draws
+any of the four keys.
+
+Icons (Microsoft Fluent UI System Icons, MIT, fetched by `fetch_icons.py`):
+`nextchange.png` *Arrow Down* and `prevchange.png` *Arrow Up* (byte-identical to
+Cursor's, and the arrows VS Code's own diff toolbar shows), `nextdiff.png`
+*Arrow Sort Down Lines* and `prevdiff.png` *Arrow Sort Up Lines* (a list with an
+arrow: the accessible diff viewer steps through a list of the differences).
+
 ### Everything else
 
 All other shortcut icons: **Microsoft Fluent UI System Icons** — MIT.

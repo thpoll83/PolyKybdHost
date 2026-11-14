@@ -71,6 +71,11 @@ FLUENT = {
     "restart": "Arrow Clockwise",
     "fullscreen": "Full Screen Maximize",
     "continue": "ms:resume",       # Material Symbols `resume`: VS Code's |> Continue
+    # --- diff-view set (diff.yaml) ---
+    "nextchange": "Arrow Down",             # Alt+F5, as Cursor's set and VS Code's toolbar
+    "prevchange": "Arrow Up",               # Shift+Alt+F5
+    "nextdiff": "Arrow Sort Down Lines",    # F7, accessible diff viewer
+    "prevdiff": "Arrow Sort Up Lines",      # Shift+F7
 }
 
 

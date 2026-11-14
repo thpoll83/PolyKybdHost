@@ -11,24 +11,6 @@ Siblings: `qmk_firmware/keyboards/polykybd/lang/FUTURE_LANGUAGES.md`,
 
 ---
 
-## VS Code debug state in a remote window
-
-**Status:** not done (2026-11-14, PR #839). The VS Code / Cursor / Windsurf
-mode reporter (`vscode-extension/`) is a UI extension (`"extensionKind":
-["ui"]`), because it posts to PolyKybdHost on `127.0.0.1` of the user's
-computer. In a Remote SSH, WSL or container window the debugger extensions run
-in the remote extension host, and VS Code creates a debug adapter tracker only
-in the extension host where the adapter runs, so the UI-side tracker sees no
-messages from a remote session. The extension then sends no report for that
-session and the keyboard shows every debug key.
-
-**What it would take:** a second extension part with `"extensionKind":
-["workspace"]` that registers the tracker on the remote side and passes the
-state to the UI part (a command the UI part registers, called with
-`vscode.commands.executeCommand`, crosses the extension hosts). Making the whole
-extension a workspace extension is not an option: its HTTP report would then go
-to the loopback of the remote machine.
-
 ## Game-file readers for Factorio and Minecraft
 
 **Status:** built, run on real game files, not merged (2026-11-04). Both readers
