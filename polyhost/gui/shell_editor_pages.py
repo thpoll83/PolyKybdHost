@@ -63,6 +63,7 @@ def editor_label(editor):
     """The editor's name as the dialog shows it (product names, not translated)."""
     return {editor_plugins.VIM: "Vim", editor_plugins.NEOVIM: "Neovim",
             editor_plugins.EMACS: "Emacs", editor_plugins.GDB: "GDB",
+            editor_plugins.IDA: "IDA",
             editor_plugins.BINARYNINJA: "Binary Ninja",
             editor_plugins.RESOLVE: "DaVinci Resolve",
             editor_plugins.ABLETON: "Ableton Live"}.get(editor, editor)
