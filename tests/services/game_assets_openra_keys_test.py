@@ -46,7 +46,7 @@ class ParseTest(unittest.TestCase):
     def test_a_huge_settings_file_is_refused(self):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "settings.yaml"
-            p.write_text(settings_yaml({"Stop": "Q"}))
+            p.write_text(settings_yaml({"Stop": "Q"}), encoding="utf-8")
             with mock.patch.object(keys, "MAX_SETTINGS", 4), self.assertRaises(ValueError):
                 keys.bindings(p)
 
@@ -58,11 +58,11 @@ class FindTest(unittest.TestCase):
             appdata, xdg = Path(d) / "appdata", Path(d) / "xdg"
             for folder in (appdata / "OpenRA", xdg / "openra"):
                 folder.mkdir(parents=True)
-            (xdg / "openra" / "settings.yaml").write_text("Keys:\n")
+            (xdg / "openra" / "settings.yaml").write_text("Keys:\n", encoding="utf-8")
             env = {"APPDATA": str(appdata), "XDG_CONFIG_HOME": str(xdg), "HOME": d, "USERPROFILE": d}
             with mock.patch.dict(os.environ, env):
                 self.assertEqual(keys.find(), xdg / "openra" / "settings.yaml")
-                (appdata / "OpenRA" / "settings.yaml").write_text("Keys:\n")
+                (appdata / "OpenRA" / "settings.yaml").write_text("Keys:\n", encoding="utf-8")
                 self.assertEqual(keys.find(), appdata / "OpenRA" / "settings.yaml")
 
 
@@ -116,9 +116,9 @@ class RemapTest(unittest.TestCase):
             path = Path(d) / "settings.yaml"
             settings = {"game_ra_data_dir": str(self.ra), "game_ra_faction": "allies"}.get
             with mock.patch.object(keys, "find", return_value=path):
-                path.write_text(settings_yaml({"AttackMove": "G"}))
+                path.write_text(settings_yaml({"AttackMove": "G"}), encoding="utf-8")
                 first = build.build("openra_ra_template.mods.png", RA_SPEC, settings, Path(d) / "c")
-                path.write_text(settings_yaml({"AttackMove": "G", "Stop": "K", "Guard": "L"}))
+                path.write_text(settings_yaml({"AttackMove": "G", "Stop": "K", "Guard": "L"}), encoding="utf-8")
                 second = build.build("openra_ra_template.mods.png", RA_SPEC, settings, Path(d) / "c")
             self.assertNotEqual(first, second)
 
