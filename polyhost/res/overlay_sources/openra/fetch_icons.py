@@ -48,6 +48,7 @@ ICONS = {
     "harvesters": "fa:truck",
     "toselection": "fa:crosshairs",
     "cycleproduction": "fa:industry",
+    "selectproduction": "fa:building-circle-check",   # Tab; E (buildings tab) is tabstructures
     # Production tabs (each mod's own keys, gen_mods.py) and power
     "tabdefense": "gi:delapouite/watchtower",
     "tabaircraft": "gi:delapouite/jet-fighter",

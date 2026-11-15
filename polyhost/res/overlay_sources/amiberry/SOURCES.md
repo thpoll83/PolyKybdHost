@@ -16,8 +16,8 @@ From <https://github.com/BlitterStudio/amiberry>, master at 7165b42
 | key | action | source |
 |---|---|---|
 | F12 | open the GUI | `enter_gui_key` falls back to F12 when `open_gui` is empty (`src/osdep/amiberry.cpp`) |
-| Pause | Action Replay | `action_replay_key` falls back to Pause when `action_replay` is empty (same file) |
-| Page Up | cartridge freeze | the key table in `src/osdep/keyboard.cpp` |
+| Pause | cartridge freeze (Action Replay): `AKS_FREEZEBUTTON` in `src/osdep/keyboard.cpp` | `action_replay_key` falls back to Pause when `action_replay` is empty (same file) |
+| Page Up | cartridge freeze (Action Replay): `INPUTEVENT_SPC_FREEZEBUTTON`, the same button | the key table in `src/osdep/keyboard.cpp` |
 
 Quit, full screen, minimize and screenshot have no default key. The End+key
 shortcuts are not drawn, because End is not a modifier the keyboard can show.

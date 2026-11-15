@@ -97,6 +97,11 @@ INK = {"lastalert": (34, 34), "quicksave": (34, 34), "help": (34, 34), "chat": (
        "subgroupprev": (30, 30), "fullscreen": (30, 30), "chatplayer": (30, 34),
        "voice": (30, 34), "rotatecw": (32, 32), "rotateccw": (32, 32)}
 
+# Ctrl+Shift+F (follow the unit, on / off): the follow icon with a switch;
+# Ctrl+F (follow while held) keeps the plain follow icon.
+TOGGLE = "fa:toggle-on"
+TOGGLE_BOX = (22, 13)
+
 # Camera locations (F5 to F8): a film camera with the number cut out of its body.
 CAMERA = "fa:video"
 CAMERA_SIZE = (34, 40)
@@ -172,6 +177,20 @@ def _text(text: str, font):
     m = np.asarray(im) > 110
     ys, xs = np.nonzero(m)
     return m[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+
+
+def follow_toggle(out: Path) -> None:
+    """followtoggle.png: the follow icon in a 30x30 box at the top left and the
+    switch at the bottom right, 3 px clear of it. Reads _follow and _toggle."""
+    import numpy as np
+    m = np.zeros((40, 40), bool)
+    m[:30, :30] = _flat(out / "_follow.png", (30, 30), (30, 30))
+    box = np.zeros((40, 40), bool)
+    box[40 - TOGGLE_BOX[1]:, 40 - TOGGLE_BOX[0]:] = True
+    m &= ~dither.dilate(box, 3)
+    m |= _flat(out / "_toggle.png", (40, 40), TOGGLE_BOX)
+    cnc._save_mask(m, out / "followtoggle.png")
+    print(f"  followtoggle.png  <- {ICONS['follow']} + {TOGGLE}")
 
 
 def cameras(out: Path) -> None:
@@ -267,11 +286,14 @@ def program(out: Path) -> None:
 
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
-    cnc.render({**ICONS, "_camera": CAMERA}, out)
+    cnc.render({**ICONS, "_camera": CAMERA, "_follow": ICONS["follow"], "_toggle": TOGGLE}, out)
     game_icons.render({f"_unit{d}": n for d, n in GROUP_UNITS.items()}, out, render_px=256)
     flat_icons(out)
     groups(out)
     cameras(out)
+    follow_toggle(out)
+    for stem in ("_follow", "_toggle"):
+        (out / f"{stem}.png").unlink()
     health_bars(out)
     program(out)
     print(f"Wrote icons to {out}")

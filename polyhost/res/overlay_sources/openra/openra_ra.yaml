@@ -106,7 +106,7 @@ bindings:
   - { key: H, command: CycleBase, icon: conyard.png, label: "Next base building" }
   - { key: HOME, command: ToSelection, icon: toselection.png, label: "Jump to selection" }
   - { key: SPACE, command: ToLastEvent, icon: lastevent.png, label: "Jump to last event" }
-  - { key: TAB, command: SelectProductionBuilding, icon: tabstructures.png, label: "Select production building" }
+  - { key: TAB, command: SelectProductionBuilding, icon: selectproduction.png, label: "Select production building" }
   - { key: TAB, mods: [CTRL], command: CycleProductionBuildings, icon: cycleproduction.png, label: "Next production building" }
 
   # Production tabs and power: each mod's own keys (mods/<mod>/hotkeys.yaml).
