@@ -1,0 +1,115 @@
+# Simutrans overlay for PolyKybd.
+#
+# Keys: the tool keys of the pak64 pakset (config/menuconf.tab, revision 2234
+# of the Simutrans pakset repository) and the keys fixed in the engine
+# (src/simutrans/siminteraction.cc, Simutrans 125.0.1). See SOURCES.md.
+#
+# Simutrans has no key table of its own: every pakset sets its tool keys in its
+# menuconf.tab, so other paksets (pak128, pak128.Britain, pak192.comic) differ.
+# The game matches a key by the character it types. A capital letter is drawn
+# on the Shift layer, and the characters > < ! # % " ? + are drawn on the keys
+# that type them on a US layout.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/simutrans/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/simutrans/simutrans.yaml --preview /tmp/simutrans_preview
+app: simutrans
+match: [simutrans, simutrans.exe, com.simutrans.simutrans]
+output: simutrans_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for OpenTTD: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# "Simu" over "trans" drawn over the whole cell, without the ESC legend
+# (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Tools (general_tool[] and the toolbar entries with a key)
+  - { key: A, icon: query.png, label: "Query tool" }
+  - { key: R, icon: remove.png, label: "Remove tool" }
+  - { key: U, icon: raise.png, label: "Raise land" }
+  - { key: D, icon: lower.png, label: "Lower land" }
+  - { key: T, icon: buildrail.png, label: "Build railway track" }
+  - { key: S, icon: buildroad.png, label: "Build road" }
+  - { key: E, icon: electrify.png, label: "Build overhead lines" }
+  - { key: L, icon: powerline.png, label: "Build power line" }
+  - { key: G, icon: transformer.png, label: "Build transformer station" }
+  - { key: H, icon: headquarters.png, label: "Build headquarters" }
+  - { key: B, icon: clearblock.png, label: "Remove block reservation" }
+  - { key: Z, icon: lastused.png, label: "Last used tools" }
+  - { key: M, mods: [SHIFT], icon: marker.png, label: "Place a label" }
+  - { key: C, mods: [SHIFT], icon: foundcity.png, label: "Found a city" }
+  - { key: K, mods: [CTRL], icon: buyhouse.png, label: "Buy a house" }
+
+  # Game (simple_tool[])
+  - { key: P, icon: pause.png, label: "Pause" }
+  - { key: P, mods: [CTRL], icon: pause.png, label: "Pause" }
+  - { key: ".", icon: faster.png, label: "Increase game speed" }
+  - { key: ",", icon: slower.png, label: "Reduce game speed" }
+  - { key: W, mods: [SHIFT], icon: fastforward.png, label: "Fast forward" }
+  - { key: C, icon: screenshot.png, label: "Screenshot", shared: false }
+  - { key: Z, mods: [CTRL], icon: undo.png, label: "Undo the last way", shared: false }
+  - { key: P, mods: [SHIFT], icon: switchplayer.png, label: "Switch player" }
+  - { key: Q, mods: [CTRL], icon: quit.png, label: "Quit", shared: false }
+
+  # View (simple_tool[])
+  - { key: ".", mods: [SHIFT], icon: zoomin.png, label: "Zoom in", shared: false }
+  - { key: ",", mods: [SHIFT], icon: zoomout.png, label: "Zoom out", shared: false }
+  - { key: R, mods: [SHIFT], icon: rotatemap.png, label: "Rotate the map" }
+  - { key: U, mods: [SHIFT], icon: underground.png, label: "Underground view" }
+  - { key: U, mods: [CTRL], icon: sliced.png, label: "Sliced underground view" }
+  - { key: "=", mods: [SHIFT], icon: sliceup.png, label: "Sliced view one level up" }
+  - { key: "-", icon: slicedown.png, label: "Sliced view one level down" }
+  - { key: "3", mods: [SHIFT], icon: grid.png, label: "Show grid" }
+  - { key: "1", mods: [SHIFT], icon: names.png, label: "Show station names" }
+  - { key: "5", mods: [SHIFT], icon: hidetrees.png, label: "Hide trees" }
+  - { key: "'", mods: [SHIFT], icon: hidehouses.png, label: "Hide buildings" }
+  - { key: V, icon: coverage.png, label: "Show station coverage" }
+  - { key: O, mods: [SHIFT], icon: owner.png, label: "Show owner colours" }
+  - { key: B, mods: [CTRL], icon: showblocks.png, label: "Show block reservations" }
+  - { key: "/", icon: tooltips.png, label: "Vehicle tooltips" }
+  - { key: "]", icon: singleways.png, label: "Highlight single ways" }
+
+  # Windows (dialog_tool[])
+  - { key: F1, icon: help_f1.png, label: "Help", region: [34, 40], shared: false }
+  - { key: "/", mods: [SHIFT], icon: help.png, label: "Help", shared: false }
+  - { key: Q, mods: [SHIFT], icon: options.png, label: "Options" }
+  - { key: M, icon: minimap.png, label: "Map" }
+  - { key: W, icon: lines.png, label: "Line management" }
+  - { key: B, mods: [SHIFT], icon: messages.png, label: "Messages" }
+  - { key: F, icon: finances.png, label: "Finances" }
+  - { key: K, icon: players.png, label: "Player list" }
+  - { key: J, mods: [SHIFT], icon: jump.png, label: "Jump to a map position" }
+  - { key: N, icon: gameinfo.png, label: "Game information" }
+  - { key: F6, icon: scenarioinfo.png, label: "Scenario information", region: [30, 40] }
+  - { key: F7, icon: waybuilder.png, label: "Way builder", region: [30, 40] }
+  - { key: O, mods: [CTRL], icon: load.png, label: "Load game", shared: false }
+  - { key: S, mods: [CTRL], icon: save.png, label: "Save game", shared: false }
+
+  # Lists (dialog_tool[])
+  - { key: H, mods: [SHIFT], icon: stations.png, label: "Station list", region: [30, 40] }
+  - { key: V, mods: [SHIFT], icon: convoys.png, label: "Convoy list" }
+  - { key: T, mods: [SHIFT], icon: towns.png, label: "Town list" }
+  - { key: G, mods: [SHIFT], icon: goods.png, label: "Goods list" }
+  - { key: F, mods: [SHIFT], icon: factories.png, label: "Factory list" }
+  - { key: A, mods: [SHIFT], icon: attractions.png, label: "Attraction list" }
+  - { key: D, mods: [CTRL], icon: depots.png, label: "Depot list" }
+  - { key: E, mods: [CTRL], icon: vehicles.png, label: "Vehicle list" }
+  - { key: M, mods: [CTRL], icon: labels.png, label: "Label list" }
+
+  # Fixed in the engine (siminteraction.cc)
+  - { key: BSPC, icon: closeall.png, label: "Close all windows" }
+  - { key: DEL, icon: closetop.png, label: "Close the top window" }

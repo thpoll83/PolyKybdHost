@@ -1,0 +1,83 @@
+# StepMania 5 overlay for PolyKybd.
+#
+# Keys: the default key map in src/InputMapper.cpp and src/GameManager.cpp
+# (game "dance"), the global keys in src/StepMania.cpp, the debug keys in
+# src/ScreenDebugOverlay.cpp and the sync keys in src/ScreenSyncOverlay.cpp of
+# stepmania/stepmania, release 5.0.12 (tag v5.0.12). 5.1.0-b2 has the same
+# keys. See SOURCES.md.
+#
+# Where a key means one thing during a song and another on the song list, the
+# meaning during a song is drawn. A user who maps a key in the game still sees
+# the default here.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/stepmania/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/stepmania/stepmania.yaml --preview /tmp/stepmania_preview
+app: stepmania
+match: [stepmania, stepmania.exe, stepmania-sse2.exe, stepmania-sse2]
+output: stepmania_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for fheroes2: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# The game's name drawn over the whole cell, without the ESC legend
+# (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Menu buttons (player 1)
+  - { key: ENTER, icon: start.png, label: "Start" }
+  - { key: SLASH, icon: select.png, label: "Select" }
+  - { key: DELETE, icon: menuleft.png, label: "Menu left" }
+  - { key: PAGE_DOWN, icon: menuright.png, label: "Menu right" }
+  - { key: HOME, icon: menuup.png, label: "Menu up" }
+  - { key: END, icon: menudown.png, label: "Menu down" }
+  - { key: MINUS, icon: back2.png, label: "Back (player 2)" }
+  - { key: F1, icon: coin.png, label: "Insert coin", region: [34, 40] }
+  - { key: SCROLL_LOCK, icon: operator.png, label: "Operator menu (options)" }
+
+  # Reload the theme
+  - { key: F2, icon: reload.png, label: "Reload metrics and textures", region: [34, 40] }
+  - { key: F2, mods: [SHIFT], icon: reloadmetrics.png, label: "Reload metrics only", region: [34, 40] }
+  - { key: F2, mods: [CTRL], icon: reloadscripts.png, label: "Reload scripts", region: [34, 40] }
+  - { key: F2, mods: [CTRL, SHIFT], icon: reloadoverlays.png, label: "Reload overlay screens", region: [34, 40] }
+
+  # Debug and game speed
+  - { key: F3, icon: debug.png, label: "Debug menu (hold)", region: [34, 40] }
+  - { key: TAB, icon: fast.png, label: "Game speed x4 (hold)" }
+  - { key: GRAVE, icon: slow.png, label: "Game speed 1/4 (hold)" }
+  - { key: PAUSE, icon: mute.png, label: "Mute actions" }
+
+  # During a song
+  - { key: F4, icon: revertsync.png, label: "Revert sync changes", region: [34, 40] }
+  - { key: F6, icon: autosync.png, label: "Autosync: off, song, machine, tempo", region: [34, 40] }
+  - { key: F7, icon: assist.png, label: "Assist clap", region: [34, 40] }
+  - { key: F7, mods: [SHIFT], icon: metronome.png, label: "Assist metronome", region: [34, 40] }
+  - { key: F8, icon: autoplay.png, label: "Autoplay", region: [34, 40] }
+  - { key: F9, icon: bpmdown.png, label: "Song BPM down", region: [34, 40] }
+  - { key: F10, icon: bpmup.png, label: "Song BPM up", region: [30, 40] }
+  - { key: F11, icon: offsetdown.png, label: "Song offset down", region: [30, 40] }
+  - { key: F12, icon: offsetup.png, label: "Song offset up", region: [30, 40] }
+  - { key: F11, mods: [SHIFT], icon: globaldown.png, label: "Global offset down", region: [30, 40] }
+  - { key: F12, mods: [SHIFT], icon: globalup.png, label: "Global offset up", region: [30, 40] }
+
+  # Song list
+  - { key: R, mods: [CTRL, SHIFT], icon: reloadsong.png, label: "Reload the selected song from disk" }
+
+  # Window
+  - { key: PRINT_SCREEN, icon: screenshot.png, label: "Screenshot (JPEG)" }
+  - { key: PRINT_SCREEN, mods: [SHIFT], icon: screenshotraw.png, label: "Screenshot (PNG)" }
+  - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Toggle full screen" }
+  - { key: F4, mods: [ALT], icon: quit.png, label: "Quit the game", region: [34, 40] }

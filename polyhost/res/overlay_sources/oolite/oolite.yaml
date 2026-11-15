@@ -1,0 +1,113 @@
+# Oolite overlay for PolyKybd.
+#
+# Keys: the "default" layout of Resources/Config/keyconfig2.plist of
+# OoliteProject/oolite, release 1.92.1. The flight meaning of a key is drawn.
+# F1 to F4 show what they do while docked (launch and three screens), because
+# the digits 1 to 4 already show the four views. See SOURCES.md.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/oolite/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/oolite/oolite.yaml --preview /tmp/oolite_preview
+app: oolite
+match: [oolite, oolite.exe, space.oolite.oolite]
+output: oolite_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for AoE2 and fheroes2: the icon uses the full height on the right; the
+# firmware clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# "Oolite" drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Flying
+  - { key: LEFT, icon: rollleft.png, label: "Roll left" }
+  - { key: RIGHT, icon: rollright.png, label: "Roll right" }
+  - { key: UP, icon: pitchforward.png, label: "Pitch forward (nose down)" }
+  - { key: DOWN, icon: pitchback.png, label: "Pitch back (nose up)" }
+  - { key: ",", icon: yawleft.png, label: "Yaw left" }
+  - { key: ".", icon: yawright.png, label: "Yaw right" }
+  - { key: W, icon: speedup.png, label: "Increase speed" }
+  - { key: S, icon: speeddown.png, label: "Decrease speed" }
+  - { key: I, icon: injectfuel.png, label: "Inject fuel" }
+  - { key: J, icon: jumpdrive.png, label: "Jump drive" }
+  - { key: H, icon: hyperspace.png, label: "Hyperspace" }
+  - { key: G, icon: galactic.png, label: "Galactic hyperspace" }
+  - { key: C, icon: autopilot.png, label: "Docking computer" }
+  - { key: C, mods: [SHIFT], icon: fastdock.png, label: "Fast docking" }
+  - { key: L, mods: [SHIFT], icon: clearance.png, label: "Request docking clearance" }
+  - { key: M, mods: [SHIFT], icon: mouseroll.png, label: "Mouse control (roll)" }
+  - { key: M, mods: [CTRL, SHIFT], icon: mouseyaw.png, label: "Mouse control (yaw)" }
+
+  # Weapons and equipment
+  - { key: A, icon: lasers.png, label: "Fire lasers" }
+  - { key: "-", mods: [SHIFT], icon: weaponsonline.png, label: "Weapons online or offline" }
+  - { key: M, icon: missile.png, label: "Launch missile" }
+  - { key: Y, icon: nextmissile.png, label: "Next missile" }
+  - { key: T, icon: targetmissile.png, label: "Target missile" }
+  - { key: U, icon: unarmmissile.png, label: "Unarm missile" }
+  - { key: T, mods: [SHIFT], icon: targetincoming.png, label: "Target incoming missile" }
+  - { key: R, icon: ident.png, label: "Ident system" }
+  - { key: "=", mods: [SHIFT], icon: targetnext.png, label: "Next target" }
+  - { key: "-", icon: targetprev.png, label: "Previous target" }
+  - { key: E, icon: ecm.png, label: "ECM" }
+  - { key: N, icon: activate.png, label: "Activate primed equipment" }
+  - { key: B, icon: equipmode.png, label: "Mode of primed equipment" }
+  - { key: N, mods: [SHIFT], icon: primenext.png, label: "Prime next equipment" }
+  - { key: N, mods: [CTRL, SHIFT], icon: primeprev.png, label: "Prime previous equipment" }
+  - { key: "0", icon: fasta.png, label: "Fast equipment activation A" }
+  - { key: TAB, icon: fastb.png, label: "Fast equipment activation B" }
+  - { key: D, mods: [SHIFT], icon: dumpcargo.png, label: "Dump cargo" }
+  - { key: R, mods: [SHIFT], icon: rotatecargo.png, label: "Rotate cargo" }
+
+  # Views and instruments
+  - { key: "1", icon: viewforward.png, label: "Forward view" }
+  - { key: "2", icon: viewaft.png, label: "Aft view" }
+  - { key: "3", icon: viewport.png, label: "Port view" }
+  - { key: "4", icon: viewstarboard.png, label: "Starboard view" }
+  - { key: V, icon: customview.png, label: "External view" }
+  - { key: L, icon: fovwider.png, label: "Wider field of view" }
+  - { key: K, icon: fovnarrower.png, label: "Narrower field of view" }
+  - { key: Z, icon: scannerzoom.png, label: "Scanner zoom" }
+  - { key: Z, mods: [SHIFT], icon: scannerunzoom.png, label: "Scanner unzoom" }
+  - { key: "\\", icon: compassnext.png, label: "Next compass mode" }
+  - { key: "\\", mods: [SHIFT], icon: compassprev.png, label: "Previous compass mode" }
+  - { key: ";", icon: mfdcyclenext.png, label: "Next content of the display (MFD)" }
+  - { key: ";", mods: [CTRL], icon: mfdcycleprev.png, label: "Previous content of the display (MFD)" }
+  - { key: ";", mods: [SHIFT], icon: mfdswitchnext.png, label: "Select next display (MFD)" }
+  - { key: ";", mods: [CTRL, SHIFT], icon: mfdswitchprev.png, label: "Select previous display (MFD)" }
+  - { key: "6", mods: [SHIFT], icon: navnext.png, label: "Advanced navigation array: next" }
+  - { key: "6", mods: [CTRL, SHIFT], icon: navprev.png, label: "Advanced navigation array: previous" }
+  - { key: O, icon: hud.png, label: "Toggle HUD" }
+  - { key: F9, icon: bloom.png, label: "Toggle bloom", region: [34, 40] }
+
+  # Screens
+  - { key: F1, icon: launch.png, label: "Launch (docked)", region: [34, 40] }
+  - { key: F2, icon: options.png, label: "Game options (docked)", region: [34, 40] }
+  - { key: F3, icon: equipship.png, label: "Equip ship (docked)", region: [34, 40] }
+  - { key: F4, icon: interfaces.png, label: "Interfaces (docked)", region: [30, 40] }
+  - { key: "5", icon: status.png, label: "Status screen" }
+  - { key: F5, icon: fstatus.png, label: "Status screen", region: [34, 40] }
+  - { key: "6", icon: charts.png, label: "Chart screens" }
+  - { key: F6, icon: fcharts.png, label: "Chart screens", region: [34, 40] }
+  - { key: "7", icon: systemdata.png, label: "System data" }
+  - { key: F7, icon: fsystemdata.png, label: "System data", region: [34, 40] }
+  - { key: "8", icon: market.png, label: "Market screen" }
+  - { key: F8, icon: fmarket.png, label: "Market screen", region: [34, 40] }
+  - { key: GRAVE, icon: commslog.png, label: "Comms log" }
+
+  # Game
+  - { key: P, icon: pause.png, label: "Pause the game" }
+  - { key: "8", mods: [SHIFT], icon: snapshot.png, label: "Take a snapshot" }
+  - { key: F, mods: [SHIFT], icon: fps.png, label: "Show frame rate" }

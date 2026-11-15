@@ -1,0 +1,124 @@
+# KeeperFX (open source Dungeon Keeper engine) overlay for PolyKybd.
+#
+# Keys: the default key table game_key_settings[] and the fixed keys in
+# src/front_input.c of dkfans/keeperfx, release v1.4.0. See SOURCES.md.
+#
+# The dungeon view meaning is drawn. The keys that act only while a creature is
+# possessed (X, Z, comma, semicolon, slash) have no dungeon view meaning and are
+# drawn with the meaning they have.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/keeperfx/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/keeperfx/keeperfx.yaml --preview /tmp/keeperfx_preview
+app: keeperfx
+match: [keeperfx, keeperfx.exe, keeperfx_hvlog, keeperfx_hvlog.exe]
+output: keeperfx_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for 0 A.D. and fheroes2: the icon uses the full height on the right; the
+# firmware clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# "Keeper" over "FX" drawn over the whole cell, without the ESC legend
+# (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Camera
+  - { key: W, icon: moveup.png, label: "Move the camera up" }
+  - { key: S, icon: movedown.png, label: "Move the camera down" }
+  - { key: A, icon: moveleft.png, label: "Move the camera left" }
+  - { key: D, icon: moveright.png, label: "Move the camera right" }
+  - { key: DELETE, icon: rotatecw.png, label: "Rotate the camera clockwise" }
+  - { key: PGDN, icon: rotateccw.png, label: "Rotate the camera counterclockwise" }
+  - { key: HOME, icon: zoomin.png, label: "Camera: zoom in" }
+  - { key: END, icon: zoomout.png, label: "Camera: zoom out" }
+  - { key: PGUP, mods: [SHIFT], icon: tiltup.png, label: "Tilt the camera up" }
+  - { key: PGDN, mods: [SHIFT], icon: tiltdown.png, label: "Tilt the camera down" }
+  - { key: INSERT, mods: [SHIFT], icon: tiltreset.png, label: "Reset the camera tilt" }
+
+  # Go to a room
+  - { key: T, icon: treasure.png, label: "Go to the treasure room" }
+  - { key: L, icon: library.png, label: "Go to the library" }
+  - { key: G, icon: graveyard.png, label: "Go to the graveyard" }
+  - { key: B, icon: barracks.png, label: "Go to the barracks" }
+  - { key: H, icon: heart.png, label: "Go to the dungeon heart" }
+  - { key: L, mods: [SHIFT], icon: lair.png, label: "Go to the lair" }
+  - { key: P, mods: [SHIFT], icon: prison.png, label: "Go to the prison" }
+  - { key: T, mods: [SHIFT], icon: training.png, label: "Go to the training room" }
+  - { key: H, mods: [SHIFT], icon: hatchery.png, label: "Go to the hatchery" }
+  - { key: G, mods: [SHIFT], icon: guardpost.png, label: "Go to the guard post" }
+  - { key: B, mods: [SHIFT], icon: bridge.png, label: "Go to the bridge" }
+  - { key: T, mods: [CTRL], icon: temple.png, label: "Go to the temple" }
+  - { key: P, mods: [CTRL], icon: portal.png, label: "Go to the portal" }
+  - { key: T, mods: [ALT], icon: torture.png, label: "Go to the torture chamber" }
+  - { key: W, mods: [ALT], icon: workshop.png, label: "Go to the workshop" }
+  - { key: S, mods: [ALT], icon: scavenger.png, label: "Go to the scavenger room" }
+
+  # Go to creatures
+  - { key: F, icon: fight.png, label: "Go to a fight" }
+  - { key: A, mods: [ALT], icon: annoyed.png, label: "Go to an annoyed creature" }
+
+  # Panel tabs
+  - { key: "1", icon: tabinfo.png, label: "Information panel" }
+  - { key: "2", icon: tabrooms.png, label: "Rooms panel" }
+  - { key: "3", icon: tabspells.png, label: "Spells panel" }
+  - { key: "4", icon: tabworkshop.png, label: "Traps and doors panel" }
+  - { key: "5", icon: tabcreatures.png, label: "Creatures panel" }
+
+  # Map bookmarks: Shift+digit goes to one, Ctrl+digit stores the view
+  - { key: "1", mods: [SHIFT], icon: bookmark1.png, label: "Go to bookmark 1", region: [34, 40] }
+  - { key: "2", mods: [SHIFT], icon: bookmark2.png, label: "Go to bookmark 2", region: [34, 40] }
+  - { key: "3", mods: [SHIFT], icon: bookmark3.png, label: "Go to bookmark 3", region: [34, 40] }
+  - { key: "4", mods: [SHIFT], icon: bookmark4.png, label: "Go to bookmark 4", region: [34, 40] }
+  - { key: "5", mods: [SHIFT], icon: bookmark5.png, label: "Go to bookmark 5", region: [34, 40] }
+  - { key: "1", mods: [CTRL], icon: bookmarkset1.png, label: "Store bookmark 1", region: [34, 40] }
+  - { key: "2", mods: [CTRL], icon: bookmarkset2.png, label: "Store bookmark 2", region: [34, 40] }
+  - { key: "3", mods: [CTRL], icon: bookmarkset3.png, label: "Store bookmark 3", region: [34, 40] }
+  - { key: "4", mods: [CTRL], icon: bookmarkset4.png, label: "Store bookmark 4", region: [34, 40] }
+  - { key: "5", mods: [CTRL], icon: bookmarkset5.png, label: "Store bookmark 5", region: [34, 40] }
+
+  # Hand and creatures
+  - { key: Q, icon: query.png, label: "Query a creature (held)" }
+  - { key: BSPC, icon: undopickup.png, label: "Undo pickup" }
+  - { key: X, icon: ascend.png, label: "Ascend (possessed creature)" }
+  - { key: Z, icon: descend.png, label: "Descend (possessed creature)" }
+  - { key: SEMICOLON, icon: teleportwork.png, label: "Teleport to the last work room (possessed creature)" }
+  - { key: SLASH, icon: teleportarms.png, label: "Teleport to the call to arms (possessed creature)" }
+  - { key: COMMA, icon: teleportlair.png, label: "Teleport to the default place (possessed creature)" }
+
+  # Game and display
+  - { key: P, icon: pause.png, label: "Pause" }
+  - { key: M, icon: map.png, label: "Map" }
+  - { key: ENTER, icon: chat.png, label: "Write a message" }
+  - { key: SPACE, icon: finishlevel.png, label: "Finish the level" }
+  - { key: F8, icon: tooltips.png, label: "Toggle tooltips", region: [34, 40] }
+  - { key: GRAVE, icon: console.png, label: "Toggle console" }
+  - { key: TAB, mods: [CTRL], icon: togglegui.png, label: "Toggle the interface" }
+  - { key: M, mods: [SHIFT], icon: record.png, label: "Record the screen" }
+  - { key: C, mods: [SHIFT], icon: screenshot.png, label: "Take screenshot" }
+  - { key: EQUAL, mods: [CTRL], icon: frameskipup.png, label: "Increase frame skip" }
+  - { key: MINUS, mods: [CTRL], icon: frameskipdown.png, label: "Decrease frame skip" }
+  - { key: R, mods: [ALT], icon: resolution.png, label: "Switch screen resolution" }
+  - { key: F, mods: [ALT], icon: healthflowers.png, label: "Toggle hero health flowers" }
+  - { key: X, mods: [ALT], icon: exit.png, label: "Exit the game" }
+
+  # Quick messages (multiplayer)
+  - { key: F1, mods: [CTRL], icon: message1.png, label: "Send quick message 1", region: [34, 40] }
+  - { key: F2, mods: [CTRL], icon: message2.png, label: "Send quick message 2", region: [34, 40] }
+  - { key: F3, mods: [CTRL], icon: message3.png, label: "Send quick message 3", region: [34, 40] }
+  - { key: F4, mods: [CTRL], icon: message4.png, label: "Send quick message 4", region: [34, 40] }
+  - { key: F5, mods: [CTRL], icon: message5.png, label: "Send quick message 5", region: [34, 40] }
+  - { key: F6, mods: [CTRL], icon: message6.png, label: "Send quick message 6", region: [34, 40] }
+  - { key: F7, mods: [CTRL], icon: message7.png, label: "Send quick message 7", region: [34, 40] }
+  - { key: F8, mods: [CTRL], icon: message8.png, label: "Send quick message 8", region: [34, 40] }

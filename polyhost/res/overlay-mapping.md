@@ -158,7 +158,7 @@ GNU nano sends no report and sets no title, so it is visible only when the
 shell or the terminal puts the running command into the window title (cmd.exe,
 macOS Terminal and iTerm2, Konsole, fish, Nushell, xonsh and oh-my-zsh do by default; bash,
 PowerShell and plain zsh need the scripts in [`shell/`](shell/), which the
-tray's Updates → "Set up the terminal and editors…" or
+tray's Integrations… → Terminals or
 `polyctl shell-integration install` adds to their startup files). The
 terminal entries carry `titles-contains: &editor_titles`: the word
 `nano` selects the route and the sub-entry's `title` regex requires nano at

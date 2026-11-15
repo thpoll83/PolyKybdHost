@@ -1492,6 +1492,12 @@ code:
 # route that title to the Ghidra set (sources: overlay_sources/ghidra/) before
 # the JetBrains title gate is tried. A second CodeBrowser instance is titled
 # "CodeBrowser(2): ..." and keeps the default here.
+#
+# Unciv started from its jar (overlay_sources/unciv/) is a `java` process too.
+# Its window title is "Unciv" (DesktopLauncher.kt), so the "Unciv" branch below
+# routes it on every platform.
+# FreeCol (overlay_sources/freecol/) is a Java program as well; its title is
+# "FreeCol <version>".
 java:
   overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png, jetbrains_template.extra.mods.png]
   title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
@@ -1504,6 +1510,17 @@ java:
     "Minecraft*": *minecraft_java_branch
     "CodeBrowser:":
       overlay: &ghidra_win [ghidra_template.mods.png, ghidra_template.combo.mods.png]
+    # The title is exactly "Unciv". The `title:` keeps an IDE window of a
+    # project named Unciv ("Unciv – Foo.kt") on the JetBrains set.
+    Unciv: &unciv_java_branch
+      title: '^Unciv$'
+      overlay: unciv_template.mods.png
+    # The title is "FreeCol <version>" (FreeColFrame.getFrameName()). The
+    # `title:` asks for the version digit, so an IDE window of a project named
+    # FreeCol stays on the JetBrains set.
+    FreeCol: &freecol_java_branch
+      title: '^FreeCol \d'
+      overlay: [freecol_template.mods.png, freecol_template.combo.mods.png]
   os:
     macos:
       overlay: [jetbrains_mac_template.mods.png, jetbrains_mac_template.combo.mods.png,
@@ -1516,6 +1533,8 @@ java:
         "CodeBrowser:":
           overlay: &ghidra_mac [ghidra_template_mac.mods.png, ghidra_template_mac.combo.mods.png,
                                 ghidra_template_mac.extra.mods.png]
+        Unciv: *unciv_java_branch
+        FreeCol: *freecol_java_branch
     linux:
       overlay: [jetbrains_linux_template.mods.png, jetbrains_linux_template.combo.mods.png,
                 jetbrains_linux_template.extra.mods.png]
@@ -1531,6 +1550,8 @@ java:
         "Minecraft*": *minecraft_java_branch
         "CodeBrowser:":
           overlay: *ghidra_win
+        Unciv: *unciv_java_branch
+        FreeCol: *freecol_java_branch
     linux_gnome:
       overlay: [jetbrains_gnome_template.mods.png, jetbrains_gnome_template.combo.mods.png,
                 jetbrains_gnome_template.extra.mods.png]
@@ -1541,6 +1562,8 @@ java:
         "Minecraft*": *minecraft_java_branch
         "CodeBrowser:":
           overlay: *ghidra_win
+        Unciv: *unciv_java_branch
+        FreeCol: *freecol_java_branch
     linux_kde:
       overlay: [jetbrains_kde_template.mods.png, jetbrains_kde_template.combo.mods.png,
                 jetbrains_kde_template.extra.mods.png]
@@ -1555,6 +1578,8 @@ java:
 # title "Shattered Pixel Dungeon" (overlay_sources/shattered_pixel_dungeon/);
 # the `java` and `javaw` entries route that title to its set. Not checked on an
 # install.
+        Unciv: *unciv_java_branch
+        FreeCol: *freecol_java_branch
 # `javaw` on Windows serves two programs, told apart by the window title. The
 # title sub-map is tried before the parent's own title gate.
 # Minecraft: Java Edition: the launcher starts the game with the `javaw.exe` of
@@ -1563,7 +1588,9 @@ java:
 # mode); the "fg" and "debug" modes use java.exe, which the `java` entry above
 # routes. Only the CodeBrowser window gets the set; the project window
 # ("Ghidra: <project>") does not.
-# Every other `javaw` program matches neither and stays unmatched.
+# Unciv: the jar started with javaw.exe; its window title is "Unciv".
+# FreeCol: started with javaw.exe; its window title is "FreeCol <version>".
+# Every other `javaw` program matches none of these and stays unmatched.
 javaw:
   overlay: *ghidra_win
   title: '^CodeBrowser(\(\d+\))?: '
@@ -1571,6 +1598,8 @@ javaw:
     Minecraft: *minecraft_java_branch
     "Shattered Pixel Dungeon": *spd_branch
     "Minecraft*": *minecraft_java_branch
+    Unciv: *unciv_java_branch
+    FreeCol: *freecol_java_branch
 # Ghidra under its own name. Linux: on GNOME and KDE the host reports WM_CLASS,
 # which Java sets from the main class `ghidra.Ghidra` as "ghidra-Ghidra"
 # (unverified on an install). macOS: launch.sh passes -Xdock:name=Ghidra, so
@@ -3425,11 +3454,15 @@ age2_x1,empires2,aok hd,age2_x1.exe,empires2.exe,aok hd.exe:
 # under Proton on KDE Plasma (both measured 2026-10-23).
 aoe2de_s,steam_app_813780:
   overlay: aoe2_de_template.mods.png
-# Warcraft III classic, 1.26 to 1.31 (overlay_sources/warcraft3/warcraft3.yaml).
-# war3.exe, "Warcraft III.exe" and "Frozen Throne.exe"; under Wine the WM_CLASS
-# keeps the `.exe`. Names not checked on an install.
+# Warcraft III classic, the MPQ releases up to 1.31
+# (overlay_sources/warcraft3/warcraft3.yaml). war3.exe, "Warcraft III.exe" and
+# "Frozen Throne.exe"; under Wine the WM_CLASS keeps the `.exe`. Names not
+# checked on an install. The icons follow the hotkeys of the installed language
+# and of CustomKeys.txt when the game's files are on the machine (game_assets
+# reader `warcraft3`).
 war3,war3.exe,warcraft iii,warcraft iii.exe,frozen throne,frozen throne.exe:
   overlay: warcraft3_template.mods.png
+  game_assets: warcraft3/warcraft3.yaml
 # StarCraft II (overlay_sources/starcraft2/starcraft2.yaml). The game runs as
 # SC2_x64.exe (SC2.exe for the 32-bit client) from Versions/Base<N>/; under Wine
 # the WM_CLASS keeps the `.exe`. `starcraft ii` is the launcher's name and the
@@ -3573,6 +3606,15 @@ dosbox,dosbox.exe,dosbox-staging,dosbox-staging.exe,dosbox-x,dosbox-x.exe:
 stratagus,stratagus.exe,wargus,wargus.exe:
   overlay: [wargus_template.mods.png, wargus_template.combo.mods.png]
   title: Wargus
+# Command & Conquer Generals and Zero Hour (overlay_sources/generals/generals.yaml).
+# Both run as Game.dat, which the host reads as `game`, a name other programs
+# may use too, so the window title gates the entry: "Command and Conquer
+# Generals" (the original) and "Command & Conquer (TM) Generals Zero Hour",
+# both seen in a log of the Steam release (2026-11-14). Not checked under Wine
+# or on the EA app release.
+game:
+  overlay: generals_template.mods.png
+  title: '^Command (and|&) Conquer.*Generals'
 # Command & Conquer Remastered Collection, Steam app 1213210
 # (overlay_sources/cnc_remastered/cnc_remastered.yaml). ClientG.exe on Windows,
 # steam_app_1213210 under Proton. Names not checked on an install.
@@ -3599,12 +3641,82 @@ rimworldwin64,rimworldwin64.exe,rimworldlinux,rimworld,rimworldmac,steam_app_294
 # and the Flatpak app id is io.openrct2.OpenRCT2. Names not checked on an install.
 openrct2,openrct2.exe,io.openrct2.openrct2:
   overlay: [openrct2_template.mods.png, openrct2_template.combo.mods.png]
+# Simutrans with the pak64 pakset (overlay_sources/simutrans/simutrans.yaml).
+# `simutrans` is the CMake target and the desktop file's Exec= (125.0.1),
+# simutrans.exe on Windows; the Flatpak id is com.simutrans.Simutrans. Every
+# pakset sets its own tool keys, and the process name does not show the pakset:
+# the set draws the pak64 keys. Names not checked on an install.
+simutrans,simutrans.exe,com.simutrans.simutrans:
+  overlay: simutrans_template.mods.png
+# OpenLoco, the open source engine for Chris Sawyer's Locomotion
+# (overlay_sources/openloco/openloco.yaml). The binary is `OpenLoco`
+# (OUTPUT_NAME in src/App/CMakeLists.txt, v26.09), OpenLoco.exe on Windows.
+# Names not checked on an install.
+openloco,openloco.exe:
+  overlay: openloco_template.mods.png
+# Julius, the open source engine for Caesar III
+# (overlay_sources/caesar3/julius.yaml). `julius` is the CMake target and the
+# desktop file's Exec= (v1.8.0), julius.exe on Windows; the Flatpak id is
+# com.github.bvschaik.julius. Names not checked on an install.
+julius,julius.exe,com.github.bvschaik.julius:
+  overlay: julius_template.mods.png
+# Augustus, the fork of Julius (overlay_sources/caesar3/augustus.yaml): the
+# Julius keys and four more. `augustus` is the CMake target and the desktop
+# file's Exec= (v4.0.0), augustus.exe on Windows; the Flatpak id is
+# com.github.keriew.augustus. Names not checked on an install.
+augustus,augustus.exe,com.github.keriew.augustus:
+  overlay: augustus_template.mods.png
+# CorsixTH, the open source engine for Theme Hospital
+# (overlay_sources/corsixth/corsixth.yaml). The CMake target CorsixTH is built
+# as `corsix-th` on Linux (OUTPUT_NAME, v0.70.2), CorsixTH.exe on Windows and
+# CorsixTH on macOS; the Flatpak id is com.corsixth.corsixth. Names not
+# checked on an install.
+corsix-th,corsixth,corsixth.exe,com.corsixth.corsixth:
+  overlay: [corsixth_template.mods.png, corsixth_template.combo.mods.png]
 # fheroes2, the free Heroes of Might and Magic II engine
 # (overlay_sources/fheroes2/fheroes2.yaml). `fheroes2` is the executable target
 # in src/fheroes2/CMakeLists.txt (release 1.1.17), `fheroes2.exe` on Windows;
 # the Flatpak id is io.github.ihhub.Fheroes2. Names not checked on an install.
 fheroes2,fheroes2.exe,io.github.ihhub.fheroes2:
   overlay: fheroes2_template.mods.png
+# The Battle for Wesnoth (overlay_sources/wesnoth/wesnoth.yaml). `wesnoth` is
+# the executable target in src/CMakeLists.txt (release 1.18.8), `wesnoth.exe` on
+# Windows; the Flatpak id is org.wesnoth.Wesnoth and the macOS app is "The
+# Battle for Wesnoth". The game binds Cmd on macOS where it binds Ctrl on
+# Windows and Linux, hence the macOS branch. Names not checked on an install.
+wesnoth,wesnoth.exe,org.wesnoth.wesnoth,the battle for wesnoth:
+  overlay: [wesnoth_template.mods.png, wesnoth_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [wesnoth_template_mac.mods.png, wesnoth_template_mac.combo.mods.png, wesnoth_template_mac.extra.mods.png]
+# VCMI, the free Heroes of Might and Magic III engine
+# (overlay_sources/vcmi/vcmi.yaml). `vcmiclient` is the executable target in
+# clientapp/CMakeLists.txt (release 1.7.5), `VCMI_client.exe` on Windows; the
+# Flatpak id is eu.vcmi.VCMI. The launcher (vcmilauncher) gets no overlay.
+# Names not checked on an install.
+vcmiclient,vcmi_client,vcmi_client.exe,eu.vcmi.vcmi:
+  overlay: vcmi_template.mods.png
+# Unciv (overlay_sources/unciv/unciv.yaml). The packr builds start a program
+# named `Unciv` (`Unciv.exe` on Windows; desktop/build.gradle.kts, release
+# 5.0.0); io.github.yairm210.unciv is the Flathub id. Started from the jar the
+# process is `java` or `javaw`: the "Unciv" title branches of those entries
+# load the same set. Names not checked on an install.
+unciv,unciv.exe,io.github.yairm210.unciv:
+  overlay: unciv_template.mods.png
+# FreeOrion (overlay_sources/freeorion/freeorion.yaml). `freeorion` is the
+# client's executable target in CMakeLists.txt (release v0.5.1.2), with
+# OUTPUT_NAME FreeOrion on Windows and macOS; the Flatpak id is
+# org.freeorion.FreeOrion. Names not checked on an install.
+freeorion,freeorion.exe,org.freeorion.freeorion:
+  overlay: [freeorion_template.mods.png, freeorion_template.combo.mods.png]
+# FreeCol (overlay_sources/freecol/freecol.yaml), a Java program (release
+# v1.2.0). `freecol` is the launcher (freecol.exe in the Windows installer),
+# net-sf-freecol-FreeCol the window class Java sets on X11 and
+# org.freecol.FreeCol the Flathub id. Started with `java -jar` the process is
+# `java` or `javaw`: the "FreeCol" title branches of those entries load the
+# same set. Names not checked on an install.
+freecol,freecol.exe,net-sf-freecol-freecol,org.freecol.freecol:
+  overlay: [freecol_template.mods.png, freecol_template.combo.mods.png]
 # DevilutionX, Diablo and Hellfire (overlay_sources/devilutionx/devilutionx.yaml).
 # devilutionx is the CMake binary target (devilutionx.exe on Windows, also under
 # Wine); the Flatpak id is org.diasurgical.DevilutionX and the window title
@@ -3650,6 +3762,56 @@ nethack,nethack.exe,nethackw,nethackw.exe:
 # install.
 shattered pixel dungeon,shattered pixel dungeon.exe,com.shatteredpixel.shatteredpixeldungeon:
   overlay: shattered_pixel_dungeon_template.mods.png
+# SuperTuxKart 1.5 (overlay_sources/supertuxkart/supertuxkart.yaml).
+# `supertuxkart` is the CMake executable target and the desktop file's Exec=
+# and StartupWMClass= (supertuxkart.exe on Windows, also under Wine);
+# net.supertuxkart.SuperTuxKart is the Flatpak id. Names not checked on an
+# install.
+supertuxkart,supertuxkart.exe,net.supertuxkart.SuperTuxKart:
+  overlay: supertuxkart_template.mods.png
+# Hedgewars (overlay_sources/hedgewars/hedgewars.yaml). A match runs in the
+# engine, `hwengine` (add_executable in hedgewars/CMakeLists.txt); the frontend
+# is `hedgewars` (QTfrontend/CMakeLists.txt, the desktop file's Exec=), and
+# org.hedgewars.Hedgewars is the Flathub app id. Names not checked on an
+# install.
+hwengine,hwengine.exe,hedgewars,hedgewars.exe,org.hedgewars.Hedgewars:
+  overlay: hedgewars_template.mods.png
+# FlightGear 2024.1.7 (overlay_sources/flightgear/flightgear.yaml). The global
+# default keys only: an aircraft adds and replaces keys of its own. `fgfs` is
+# the CMake executable target and the desktop file's Exec= (fgfs.exe on
+# Windows); the macOS bundle sets OUTPUT_NAME "FlightGear", and
+# org.flightgear.FlightGear is the Flathub app id. Names not checked on an
+# install.
+fgfs,fgfs.exe,flightgear,org.flightgear.FlightGear:
+  overlay: flightgear_template.mods.png
+# Thrive 1.7.0 (overlay_sources/thrive/thrive.yaml). A Godot project: the
+# export paths in export_presets.cfg are Thrive.x86_64 (Linux) and Thrive.exe
+# (Windows), and the project name is Thrive. The macOS and Steam names were
+# not looked up. Names not checked on an install.
+thrive,thrive.exe,thrive.x86_64:
+  overlay: [thrive_template.mods.png, thrive_template.combo.mods.png]
+# Beyond All Reason (overlay_sources/beyond_all_reason/beyond_all_reason.yaml).
+# The game runs in the Recoil engine, whose process is `spring` (`spring.exe`);
+# the launcher is `Beyond-All-Reason`, and info.beyondallreason.bar is the
+# Flatpak id. Other Spring and Recoil games have the same process name and get
+# this set too. Names not checked on an install.
+spring,spring.exe,beyond-all-reason,beyond-all-reason.exe,info.beyondallreason.bar:
+  overlay: [beyond_all_reason_template.mods.png, beyond_all_reason_template.combo.mods.png]
+# KeeperFX, the open source Dungeon Keeper engine
+# (overlay_sources/keeperfx/keeperfx.yaml). `keeperfx` and `keeperfx_hvlog`
+# (the logging build) are the executable targets in CMakeLists.txt (v1.4.0).
+# Names not checked on an install.
+keeperfx,keeperfx.exe,keeperfx_hvlog,keeperfx_hvlog.exe:
+  overlay: keeperfx_template.mods.png
+# Widelands (overlay_sources/widelands/widelands.yaml). `widelands` is the
+# binary target in src/CMakeLists.txt (v1.3.1) and the Exec= and StartupWMClass=
+# of xdg/org.widelands.Widelands.desktop, whose name is the Flatpak id. Names
+# not checked on an install.
+widelands,widelands.exe,org.widelands.widelands:
+  overlay: widelands_template.mods.png
+  os:
+    macos:
+      overlay: [widelands_template_mac.mods.png, widelands_template_mac.combo.mods.png]
 # League of Legends (overlay_sources/lol/lol.yaml), the in-game window only. The
 # game is `League of Legends.exe` on Windows and the `LeagueofLegends` app on
 # macOS. The lobby client (LeagueClient, LeagueClientUx) is a different process
@@ -3662,6 +3824,70 @@ league of legends,league of legends.exe,leagueoflegends:
 # macOS. Names not checked on an install.
 cs2,steam_app_730:
   overlay: cs2_template.mods.png
+# Unreal Tournament 2004 (overlay_sources/ut2004/ut2004.yaml). UT2004.exe on
+# Windows, ut2004-bin / ut2004-bin-linux-amd64 for the Linux installer's
+# binaries, steam_app_13230 under Proton; "unreal tournament 2004" is the
+# assumed macOS name. Names not checked on an install. The weapon keys are
+# redrawn from the user's own UT2004 files when they are on the machine
+# (game_assets reader `ut2004`).
+ut2004,ut2004.exe,ut2004-bin,ut2004-bin-linux-amd64,unreal tournament 2004,steam_app_13230:
+  overlay: ut2004_template.mods.png
+  game_assets: ut2004/ut2004.yaml
+# Endless Sky (overlay_sources/endless_sky/endless_sky.yaml). CMakeLists.txt
+# (v0.11.4) names the binary `endless-sky` on Linux and `Endless Sky` on Windows
+# and macOS; io.github.endless_sky.endless_sky is the desktop file and Flatpak
+# id. Names not checked on an install.
+endless-sky,endless sky,endless sky.exe,io.github.endless_sky.endless_sky:
+  overlay: endless_sky_template.mods.png
+# Naev (overlay_sources/naev/naev.yaml). `naev` is the meson executable target
+# (v0.13.5), `naev.exe` on Windows; org.naev.Naev is the desktop file and
+# Flatpak id. Names not checked on an install.
+naev,naev.exe,org.naev.naev:
+  overlay: naev_template.mods.png
+# Oolite (overlay_sources/oolite/oolite.yaml). `oolite` is OBJC_PROGRAM_NAME in
+# GNUmakefile (1.92.1) and the desktop file's StartupWMClass, `oolite.exe` on
+# Windows; space.oolite.Oolite is the Flatpak id. Names not checked on an install.
+oolite,oolite.exe,space.oolite.oolite:
+  overlay: [oolite_template.mods.png, oolite_template.combo.mods.png]
+# GZDoom (overlay_sources/gzdoom/gzdoom.yaml), drawn for Doom and Doom II.
+# `gzdoom` is ZDOOM_EXE_NAME in CMakeLists.txt (g4.14.2), gzdoom.exe on Windows;
+# org.zdoom.GZDoom is the Flathub app id. Names not checked on an install.
+gzdoom,gzdoom.exe,org.zdoom.GZDoom:
+  overlay: gzdoom_template.mods.png
+# UZDoom, the continuation of GZDoom (overlay_sources/gzdoom/uzdoom.yaml): the
+# GZDoom keys plus R (reload). `uzdoom` is ZDOOM_EXE_NAME in CMakeLists.txt
+# (5.0.3) and org.zdoom.UZDoom is APPID in src/version.h. Names not checked on
+# an install.
+uzdoom,uzdoom.exe,org.zdoom.UZDoom:
+  overlay: uzdoom_template.mods.png
+# Chocolate Doom (overlay_sources/chocolate_doom/chocolate_doom.yaml), the keys
+# of the original Doom. The Doom binary is "${PROGRAM_PREFIX}doom" in
+# src/CMakeLists.txt (chocolate-doom-3.1.1); org.chocolate_doom is PACKAGE_RDNS.
+# chocolate-heretic, -hexen and -strife are not matched: their keys differ.
+# Names not checked on an install.
+chocolate-doom,chocolate-doom.exe,org.chocolate_doom.Doom:
+  overlay: chocolate_doom_template.mods.png
+# Crispy Doom (overlay_sources/chocolate_doom/crispy_doom.yaml): the Chocolate
+# Doom keys plus W A S D, Caps Lock and two automap keys. Names as for Chocolate
+# Doom, read from crispy-doom-7.2. Names not checked on an install.
+crispy-doom,crispy-doom.exe,io.github.fabiangreffrath.Doom:
+  overlay: crispy_doom_template.mods.png
+# DSDA-Doom (overlay_sources/chocolate_doom/dsda_doom.yaml). dsda-doom is the
+# target of AddGameExecutable() in prboom2/src/CMakeLists.txt (v0.30.1) and the
+# desktop file's StartupWMClass. Names not checked on an install.
+dsda-doom,dsda-doom.exe:
+  overlay: dsda_doom_template.mods.png
+# Woof! (overlay_sources/chocolate_doom/woof.yaml). `woof` is the executable
+# target in src/CMakeLists.txt (woof_16.0.0); the desktop file is
+# io.github.fabiangreffrath.woof. Names not checked on an install.
+woof,woof.exe,io.github.fabiangreffrath.woof:
+  overlay: woof_template.mods.png
+# Quake source ports Ironwail, vkQuake and QuakeSpasm
+# (overlay_sources/quake/quake.yaml): the three ship the same default.cfg key
+# bindings. The names are DEFAULT_TARGET in each port's Quake/Makefile (Ironwail
+# v0.8.2, vkQuake 1.37.0, QuakeSpasm 0.97.0). Names not checked on an install.
+ironwail,ironwail.exe,vkquake,vkquake.exe,quakespasm,quakespasm.exe:
+  overlay: quake_template.mods.png
 # SQL Server Management Studio (overlay_sources/ssms/), Windows only. The
 # executable is Ssms.exe (SSMS 18 to 20) or SSMS.exe (SSMS 21 and later); both
 # lowercase to `ssms`. Name not checked on an install.
@@ -3678,6 +3904,45 @@ everything:
 # build, so there is no macOS name. Names not checked on an install.
 dota2,steam_app_570:
   overlay: dota2_template.mods.png
+# Xonotic (overlay_sources/xonotic/xonotic.yaml). The binary names are the release
+# archive layout in misc/tools/all/release.subr (0.8.6, and 0.7.0 for the
+# -x64 and -sdl .exe names); xonotic-sdl and xonotic-glx are the Exec= lines of
+# the project's desktop files. org.xonotic.Xonotic is the Flathub app id.
+# Names not checked on an install.
+xonotic,xonotic-sdl,xonotic-glx,xonotic-linux64-sdl,xonotic-linux64-glx,xonotic-linux-sdl,xonotic-linux-glx,xonotic.exe,xonotic-x86.exe,xonotic-wgl.exe,xonotic-x86-wgl.exe,xonotic-x64.exe,xonotic-sdl.exe,xonotic-x64-sdl.exe,xonotic-osx-sdl-bin,org.xonotic.xonotic,xonotic-x86,xonotic-wgl,xonotic-x86-wgl,xonotic-x64,xonotic-x64-sdl:
+  overlay: xonotic_template.mods.png
+# Unvanquished (overlay_sources/unvanquished/unvanquished.yaml). The game runs in
+# the Daemon engine, whose client executable is `daemon` (daemon.exe on Windows,
+# daemon-vulkan with the Vulkan renderer; CMakeLists.txt of DaemonEngine/Daemon
+# v0.56.2). `unvanquished` is the launcher script and net.unvanquished.Unvanquished
+# the desktop file name. Names not checked on an install.
+daemon,daemon.exe,daemon-vulkan,unvanquished,net.unvanquished.unvanquished:
+  overlay: unvanquished_template.mods.png
+# Red Eclipse (overlay_sources/redeclipse/redeclipse.yaml). The start script
+# redeclipse.sh runs redeclipse_linux, redeclipse.exe or redeclipse_universal
+# (macOS); src/CMakeLists.txt builds redeclipse_osx, redeclipse_windows.exe and
+# redeclipse_native (base v2.0.0). net.redeclipse.RedEclipse is the Flathub app
+# id. Names not checked on an install.
+redeclipse,redeclipse.exe,redeclipse_linux,redeclipse_universal,redeclipse_bsd,redeclipse_osx,redeclipse_windows.exe,redeclipse_native,net.redeclipse.redeclipse,redeclipse_windows:
+  overlay: redeclipse_template.mods.png
+# StepMania 5 (overlay_sources/stepmania/stepmania.yaml). `stepmania` is the Linux
+# executable and the Exec= line of stepmania.desktop; the Windows installer
+# ships StepMania.exe and StepMania-SSE2.exe (stepmania.nsi, release 5.0.12).
+# `stepmania-sse2` is what Windows reports for the second one: the host cuts
+# the process name at the first dot. Names not checked on an install.
+stepmania,stepmania.exe,stepmania-sse2.exe,stepmania-sse2:
+  overlay: [stepmania_template.mods.png, stepmania_template.combo.mods.png]
+# Etterna (overlay_sources/etterna/etterna.yaml), a StepMania 5 fork with other
+# default keys. `Etterna` is the executable target in CMakeLists.txt (release
+# 0.75.1), Etterna.exe on Windows. Names not checked on an install.
+etterna,etterna.exe:
+  overlay: [etterna_template.mods.png, etterna_template.combo.mods.png]
+# osu! (lazer) (overlay_sources/osu/osu.yaml). The assembly is named `osu!`
+# (osu.Desktop.csproj, release 2026.921.0), so Windows runs osu!.exe, which the
+# host cuts to `osu!`; sh.ppy.osu is the Flathub app id. The older closed-source
+# client is also osu!.exe and loads this set too. Names not checked on an install.
+osu!,osu!.exe,sh.ppy.osu:
+  overlay: [osu_template.mods.png, osu_template.combo.mods.png]
 # Total Commander (overlay_sources/totalcmd/). Windows only. The 11.58.1
 # installers ship TOTALCMD64.EXE (64-bit) and TOTALCMD.EXE (32-bit). Not checked
 # on a running install.
@@ -3827,6 +4092,86 @@ amiberry,amiberry-lite:
   overlay: amiberry_template.mods.png
   glyph_script: amiga
   glyph_script_position: top-left
+# ScummVM (overlay_sources/scummvm/). The global keys of release 2.9.1; the keys
+# of the games differ per engine and are not drawn. Quit is Ctrl+Z / Alt+F4 on
+# Windows, Ctrl+Q on Linux and Cmd+Q on macOS, hence the branches. Process
+# names: scummvm (Exec= and StartupWMClass= of the desktop file, scummvm.exe on
+# Windows, the macOS app "ScummVM") and the Flatpak id org.scummvm.ScummVM. Not
+# checked on a running install.
+scummvm,org.scummvm.scummvm:
+  overlay: [scummvm_template.mods.png, scummvm_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [scummvm_template_mac.mods.png, scummvm_template_mac.combo.mods.png]
+    linux:
+      overlay: [scummvm_template_linux.mods.png, scummvm_template_linux.combo.mods.png]
+# Dolphin, the GameCube and Wii emulator (overlay_sources/dolphin/). The default
+# hotkeys and the GameCube controller of port 1, release 2609b. Process names:
+# dolphin-emu on Linux (CMake target and desktop file), the Flatpak id
+# org.DolphinEmu.dolphin-emu, DolphinQt inside the macOS bundle. Not checked on a
+# running install.
+dolphin-emu,dolphinqt,org.dolphinemu.dolphin-emu:
+  overlay: dolphin_template.mods.png
+# Dolphin.exe on Windows and the macOS app "Dolphin". The entry has no overlay of
+# its own: on Linux the process `dolphin` is the KDE file manager, which gets no
+# emulator set.
+dolphin:
+  os:
+    windows:
+      overlay: dolphin_template.mods.png
+    macos:
+      overlay: dolphin_template.mods.png
+# PPSSPP, the PSP emulator (overlay_sources/ppsspp/). The default QWERTY
+# keyboard map of release 1.20.4 (PSP controls and emulator keys) and, on
+# Windows, the menu accelerators; Select is V on Windows and Enter elsewhere,
+# hence the branches. Process names: PPSSPPWindows64.exe, PPSSPPWindows.exe and
+# PPSSPPWindowsARM64.exe, PPSSPPSDL / PPSSPPQt / PPSSPPGold on Linux and macOS,
+# the macOS app "PPSSPP" and the Flatpak id org.ppsspp.PPSSPP. Not checked on a
+# running install.
+ppsspp,ppssppwindows64,ppssppwindows,ppssppwindowsarm64,ppssppsdl,ppssppqt,ppssppgold,org.ppsspp.ppsspp:
+  overlay: ppsspp_template.mods.png
+  os:
+    macos:
+      overlay: ppsspp_template_mac.mods.png
+    linux:
+      overlay: ppsspp_template_linux.mods.png
+# PCSX2, the PlayStation 2 emulator (overlay_sources/pcsx2/). The default
+# hotkeys and the keyboard map of controller 1, release 2.8.2. Process names:
+# pcsx2-qt (CMake target; pcsx2-qt.exe on Windows), the macOS app "PCSX2" and
+# the Flatpak id net.pcsx2.PCSX2. Not checked on a running install.
+pcsx2-qt,pcsx2,net.pcsx2.pcsx2:
+  overlay: [pcsx2_template.mods.png, pcsx2_template.combo.mods.png]
+# DuckStation, the PlayStation emulator (overlay_sources/duckstation/). The
+# default hotkeys and the keyboard map of controller 1, release v0.1-12442.
+# DuckStation is CC BY-NC-ND: only its default keys were read, and the ESC mark
+# is the name set in an open font. Process names: duckstation-qt (CMake target),
+# duckstation-qt-x64-ReleaseLTCG.exe on Windows, the macOS app "DuckStation" and
+# the Flatpak id org.duckstation.DuckStation. Not checked on a running install.
+duckstation-qt,duckstation-qt-x64-releaseltcg,duckstation-qt-arm64-releaseltcg,duckstation,org.duckstation.duckstation:
+  overlay: duckstation_template.mods.png
+# OpenGOAL, the PC port of the Jak and Daxter games (overlay_sources/opengoal/).
+# The default keyboard binds of release v0.3.9, drawn as the PlayStation 2
+# controls they press. Process name: gk, the game runtime (CMake target; gk.exe
+# on Windows). Not checked on a running install.
+gk:
+  overlay: opengoal_template.mods.png
+# Ship of Harkinian, the PC port of Ocarina of Time (overlay_sources/soh/). The
+# default keyboard map of libultraship, drawn as the Nintendo 64 controls the
+# keys press. Process names: soh (soh.exe on Windows), soh.elf on Linux and
+# soh-macos on macOS (OUTPUT_NAME in soh/CMakeLists.txt, release 9.3.1). Not
+# checked on a running install.
+soh,soh.elf,soh-macos:
+  overlay: soh_template.mods.png
+# Super Mario 64 PC ports (overlay_sources/sm64/): sm64ex and sm64coopdx. The
+# default keyboard binds of src/pc/configfile.c, drawn as the Nintendo 64
+# controls the keys press. sm64ex: sm64.<version>.f3dex2e on Linux (Makefile
+# TARGET), which the host cuts to `sm64` on Windows. sm64coopdx: sm64coopdx
+# (Makefile EXE), with its chat, player list and console keys. Not checked on a
+# running install.
+sm64,sm64.us.f3dex2e,sm64.eu.f3dex2e,sm64.jp.f3dex2e,sm64.sh.f3dex2e:
+  overlay: sm64ex_template.mods.png
+sm64coopdx:
+  overlay: sm64coopdx_template.mods.png
 # PTC Mathcad Prime (overlay_sources/mathcad/). Windows only: MathcadPrime.exe.
 # English / US keys from PTC's 12.0.1.0 shortcut PDF. Name not checked on an
 # install.

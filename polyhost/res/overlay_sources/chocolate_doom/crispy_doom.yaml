@@ -1,0 +1,91 @@
+# Crispy Doom overlay for PolyKybd.
+#
+# Keys: the default key variables in src/m_controls.c of
+# fabiangreffrath/crispy-doom, release crispy-doom-7.2. See SOURCES.md.
+#
+# Crispy Doom keeps every Chocolate Doom default and adds W A S D as second
+# movement keys, Caps Lock (always run) and two automap keys (O, R). So this
+# spec is chocolate_doom.yaml plus those keys, with its own ESC mark. A change to
+# one of the two specs usually belongs in the other too.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/chocolate_doom/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/chocolate_doom/crispy_doom.yaml --preview /tmp/crispy_preview
+app: crispy-doom
+match: [crispy-doom, crispy-doom.exe, io.github.fabiangreffrath.Doom]
+output: crispy_doom_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for fheroes2: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# "Crispy" over "Doom" drawn over the whole cell, without the ESC legend
+# (protocol v25). Crispy Doom's own icon is the "D" of the Doom logo and is not
+# used.
+program_icon: program_crispy.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Movement
+  - { key: UP, icon: forward.png, label: "Move forward" }
+  - { key: DOWN, icon: back.png, label: "Move backward" }
+  - { key: LEFT, icon: turnleft.png, label: "Turn left" }
+  - { key: RIGHT, icon: turnright.png, label: "Turn right" }
+  - { key: W, icon: forward.png, label: "Move forward (second key)" }
+  - { key: S, icon: back.png, label: "Move backward (second key)" }
+  - { key: A, icon: strafeleft.png, label: "Strafe left (second key)" }
+  - { key: D, icon: straferight.png, label: "Strafe right (second key)" }
+  - { key: COMMA, icon: strafeleft.png, label: "Strafe left" }
+  - { key: DOT, icon: straferight.png, label: "Strafe right" }
+  - { key: SPACE, icon: use.png, label: "Use" }
+  - { key: CAPS_LOCK, icon: autorun.png, label: "Toggle always run" }
+
+  # Weapons
+  - { key: "1", icon: fist.png, label: "Fist, chainsaw" }
+  - { key: "2", icon: pistol.png, label: "Pistol" }
+  - { key: "3", icon: shotgun.png, label: "Shotgun, super shotgun" }
+  - { key: "4", icon: chaingun.png, label: "Chaingun" }
+  - { key: "5", icon: rocket.png, label: "Rocket launcher" }
+  - { key: "6", icon: plasma.png, label: "Plasma rifle" }
+  - { key: "7", icon: bfg.png, label: "BFG 9000" }
+  - { key: "8", icon: chainsaw.png, label: "Chainsaw" }
+
+  # Automap
+  - { key: TAB, icon: map.png, label: "Automap" }
+  - { key: F, icon: mapfollow.png, label: "Automap: follow player" }
+  - { key: G, icon: mapgrid.png, label: "Automap: grid" }
+  - { key: M, icon: mapmark.png, label: "Automap: set mark" }
+  - { key: C, icon: mapclear.png, label: "Automap: clear marks" }
+  - { key: "0", icon: mapmaxzoom.png, label: "Automap: show whole map" }
+  - { key: O, icon: mapoverlay.png, label: "Automap: overlay mode" }
+  - { key: R, icon: maprotate.png, label: "Automap: rotate mode" }
+
+  # Function keys
+  - { key: F1, icon: help.png, label: "Help screen", region: [34, 40] }
+  - { key: F2, icon: save.png, label: "Save game", region: [34, 40] }
+  - { key: F3, icon: load.png, label: "Load game", region: [34, 40] }
+  - { key: F4, icon: volume.png, label: "Sound volume", region: [34, 40] }
+  - { key: F5, icon: detail.png, label: "Toggle graphic detail", region: [34, 40] }
+  - { key: F6, icon: quicksave.png, label: "Quick save", region: [34, 40] }
+  - { key: F7, icon: endgame.png, label: "End game", region: [34, 40] }
+  - { key: F8, icon: messages.png, label: "Toggle messages", region: [34, 40] }
+  - { key: F9, icon: quickload.png, label: "Quick load", region: [34, 40] }
+  - { key: F10, icon: quit.png, label: "Quit", region: [30, 40] }
+  - { key: F11, icon: gamma.png, label: "Gamma correction", region: [30, 40] }
+  - { key: F12, icon: spy.png, label: "View next player (spy)", region: [30, 40] }
+
+  # Screen and game
+  - { key: MINUS, icon: sizedown.png, label: "Screen size down" }
+  - { key: EQUAL, icon: sizeup.png, label: "Screen size up" }
+  - { key: PAUSE, icon: pause.png, label: "Pause game" }
+  - { key: T, icon: chat.png, label: "Chat (multiplayer)" }
