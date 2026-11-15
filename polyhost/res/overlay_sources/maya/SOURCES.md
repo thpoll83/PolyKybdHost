@@ -164,7 +164,7 @@ the viewport set. Largest set: 50 keys plus the ESC mark (macOS), far below the
 New icons (`fetch_icons.py`, "per-editor sets" lines): Material Symbols
 (Apache-2.0) `center_time, ge_absolute, ge_stacked, ge_normalized,
 unlock_channel, track_solo, clip_export, clip_import, audio_import, clip_split,
-trim_start, trim_end, clip_trim, clip_scale, clip_loop, clip_hold, uv_distort,
+trim_start, trim_end, clip_trim, clip_loop, clip_hold, uv_distort,
 select_all, uv_layout, uv_shell, node_simple, node_connected, node_full,
 node_custom, node_label, zoom_in, zoom_out, node_delete, node_create,
 swatch_size, node_solo` and the bases `b_layers, b_minus, b_track, b_node`;
@@ -173,6 +173,18 @@ select_invert, seam, stitch, linked_from, linked_to, select_linked, search,
 pin`; licence as there); and composites of those (`time_to_key, track_mute,
 layer_*, anim_add, pose_add, scale_start, scale_end, checker_*, graph_remove*,
 regraph_*, node_unsolo, node_resolo, keys_left, keys_right`).
+
+One icon per action: two keys share an image only when they do the same thing.
+An editor's own version of a viewport action is a composite with a badge
+(`fetch_icons.py`, end of `BADGES`): `clip_scale` (R Scale clip: `b_track` +
+`scale`), `group_clips` (Ctrl+G: `group` + `b_track`), `key_curve` (Graph Editor
+Alt+I, which keys only the selected curve: `key_insert` + `b_curve`), and in the
+UV Editor `copy_uv`, `paste_uv` (Ctrl+C / Ctrl+V copy and paste the face UVs)
+and `uv_image` (6 Display texture image: `b_image`), each with the drawn badge
+`b_uv` ("UV" in Liberation Sans Bold, SIL OFL 1.1). A and F frame all / the
+selection of the focused panel in every editor, so they keep one image and one
+label ("Frame all", "Frame selected"), as R Scale Tool does in the viewport and
+the UV Editor.
 
 Routing: `maya://<panel>/` in the `urls-contains` of the `maya,maya.bin`
 entry and of its `os: macos` branch, with `layer: false`.
