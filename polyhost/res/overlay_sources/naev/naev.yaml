@@ -1,0 +1,91 @@
+# Naev overlay for PolyKybd.
+#
+# Keys: input_setDefault() in src/input.c of naev/naev, release v0.13.5, with
+# the WASD layout that src/conf.c selects for a new configuration. See
+# SOURCES.md.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/naev/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/naev/naev.yaml --preview /tmp/naev_preview
+app: naev
+match: [naev, naev.exe, org.naev.naev]
+output: naev_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for AoE2 and fheroes2: the icon uses the full height on the right; the
+# firmware clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# "NAEV" drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Flying
+  - { key: W, icon: accel.png, label: "Accelerate" }
+  - { key: A, icon: turnleft.png, label: "Turn left" }
+  - { key: D, icon: turnright.png, label: "Turn right" }
+  - { key: S, icon: reverse.png, label: "Reverse" }
+  - { key: Q, icon: face.png, label: "Face target" }
+  - { key: F, icon: stealth.png, label: "Stealth" }
+  - { key: X, mods: [CTRL], icon: mousefly.png, label: "Mouse flight" }
+  - { key: S, mods: [CTRL], icon: cooldown.png, label: "Active cooldown" }
+
+  # Weapons
+  - { key: SPACE, icon: primary.png, label: "Fire primary weapon" }
+  - { key: KC_LEFT_SHIFT, icon: secondary.png, label: "Fire secondary weapon" }
+  - { key: "1", icon: weapset1.png, label: "Weapon set 1" }
+  - { key: "2", icon: weapset2.png, label: "Weapon set 2" }
+  - { key: "3", icon: weapset3.png, label: "Weapon set 3" }
+  - { key: "4", icon: weapset4.png, label: "Weapon set 4" }
+  - { key: "5", icon: weapset5.png, label: "Weapon set 5" }
+  - { key: "6", icon: weapset6.png, label: "Weapon set 6" }
+  - { key: "7", icon: weapset7.png, label: "Weapon set 7" }
+  - { key: "8", icon: weapset8.png, label: "Weapon set 8" }
+  - { key: "9", icon: weapset9.png, label: "Weapon set 9" }
+  - { key: "0", icon: weapset0.png, label: "Weapon set 0" }
+
+  # Targets
+  - { key: T, icon: targetnearest.png, label: "Target nearest" }
+  - { key: R, icon: targethostile.png, label: "Target nearest hostile" }
+  - { key: C, icon: targetclear.png, label: "Clear target" }
+  - { key: E, mods: [CTRL], icon: targetnext.png, label: "Target next" }
+  - { key: Q, mods: [CTRL], icon: targetprev.png, label: "Target previous" }
+
+  # Escorts
+  - { key: END, icon: escortattack.png, label: "Escorts: attack my target" }
+  - { key: INSERT, icon: escorthold.png, label: "Escorts: hold formation" }
+  - { key: DELETE, icon: escortreturn.png, label: "Escorts: return to the hangars", shared: false }
+  - { key: HOME, icon: escortclear.png, label: "Escorts: clear commands" }
+
+  # Navigation
+  - { key: P, icon: targetspob.png, label: "Target space object" }
+  - { key: L, icon: approach.png, label: "Approach or land" }
+  - { key: H, icon: targetjump.png, label: "Target jump point" }
+  - { key: J, icon: jump.png, label: "Initiate jump" }
+  - { key: J, mods: [CTRL], icon: autonav.png, label: "Autonavigation on" }
+  - { key: M, icon: starmap.png, label: "Star map" }
+  - { key: TAB, icon: overlaymap.png, label: "Overlay map" }
+
+  # Communication
+  - { key: Y, icon: hail.png, label: "Hail target" }
+  - { key: Y, mods: [CTRL], icon: autohail.png, label: "Autohail" }
+  - { key: U, icon: scan.png, label: "Scan target" }
+  - { key: PAGE_UP, icon: logup.png, label: "Log scroll up" }
+  - { key: PAGE_DOWN, icon: logdown.png, label: "Log scroll down" }
+
+  # Game
+  - { key: I, icon: info.png, label: "Information menu" }
+  - { key: PAUSE, icon: pause.png, label: "Pause the game" }
+  - { key: GRAVE, icon: speed.png, label: "Toggle speed" }
+  - { key: F11, icon: screenshot.png, label: "Take a screenshot", region: [21, 40] }
+  - { key: F2, icon: console.png, label: "Lua console", region: [34, 40] }

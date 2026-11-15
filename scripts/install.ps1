@@ -13,6 +13,18 @@
     branch instead of main; .github/workflows/windows-installer.yml uses them
     to install a pull request's own code.
 #>
+# `irm | iex` runs this in the user's own session. The script block keeps
+# $ErrorActionPreference, the function and the variables out of it, and the
+# finally block below puts back the process environment variables this script
+# sets (PYYAML_FORCE_LIBYAML; VIRTUAL_ENV and PATH for the app it starts, which
+# keeps its own copy). The working folder stays in the install folder, so the
+# printed ".venv\..." commands work as shown.
+& {
+$savedEnv = @{}
+foreach ($name in @("PYYAML_FORCE_LIBYAML", "VIRTUAL_ENV", "PATH")) {
+    $savedEnv[$name] = [Environment]::GetEnvironmentVariable($name, "Process")
+}
+try {
 $ErrorActionPreference = "Stop"
 
 $RepoUrl   = if ($env:POLYKYBD_REPO_URL) { $env:POLYKYBD_REPO_URL } else { "https://github.com/thpoll83/PolyKybdHost.git" }
@@ -101,6 +113,13 @@ if ($LASTEXITCODE -ne 0) { throw "Creating the virtual environment failed." }
 $venvPy = Join-Path (Get-Location) ".venv\Scripts\python.exe"
 & $venvPy -m pip install --upgrade pip
 if ($LASTEXITCODE -ne 0) { throw "pip install --upgrade pip failed." }
+# PyYAML has no wheel for a new Python version until its next release (6.0.3
+# has none for 3.15). pip then builds it from source, and the C extension
+# needs "Microsoft C++ Build Tools", which most PCs do not have, so the
+# install stopped. With PYYAML_FORCE_LIBYAML=0 the source build is pure
+# Python and needs no compiler. A wheel, where one exists, is not affected.
+# The host does not use the C loaders (yaml.CSafeLoader).
+$env:PYYAML_FORCE_LIBYAML = "0"
 & $venvPy -m pip install -r requirements.txt
 if ($LASTEXITCODE -ne 0) { throw "pip install -r requirements.txt failed." }
 # Editable install too, so the `polyctl` console script lands in .venv\Scripts
@@ -140,4 +159,17 @@ if ($env:POLYKYBD_NO_LAUNCH) {
 } else {
     # Not started interactively - start right away.
     Start-PolyKybd
+}
+} finally {
+    # Remove-Item for a variable that was not set: in PowerShell 7.5+ (.NET 9),
+    # SetEnvironmentVariable with $null (passed as "") sets an empty value
+    # instead of removing the variable.
+    foreach ($name in @($savedEnv.Keys)) {
+        if ($null -eq $savedEnv[$name]) {
+            Remove-Item -Path "Env:\$name" -ErrorAction SilentlyContinue
+        } else {
+            Set-Item -Path "Env:\$name" -Value $savedEnv[$name]
+        }
+    }
+}
 }
