@@ -202,7 +202,7 @@ URL; the same URLs are in `SOURCES` of `cnc_remastered/fetch_icons.py`, which
 | `upgrade.png` | Font Awesome Free 6.5.2 `circle-up` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `transform.png` | Font Awesome Free 6.5.2 `shuffle` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `pillage.png` | Font Awesome Free 6.5.2 `fire` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `setup.png` | game-icons.net `lorc/cannon` | lorc | CC BY 3.0 |
+| `setup.png` | game-icons.net `delapouite/trebuchet` | delapouite | CC BY 3.0 |
 | `improve.png` | Font Awesome Free 6.5.2 `person-digging` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `repair.png` | Font Awesome Free 6.5.2 `screwdriver-wrench` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `greatperson.png` | Font Awesome Free 6.5.2 `user-graduate` (solid) | Fonticons, Inc. | CC BY 4.0 |

@@ -76,7 +76,7 @@ ICONS = {
     "upgrade": "fa:circle-up",
     "transform": "fa:shuffle",
     "pillage": "fa:fire",
-    "setup": "gi:lorc/cannon",
+    "setup": "gi:delapouite/trebuchet",
     "improve": "fa:person-digging",
     "repair": "fa:screwdriver-wrench",
     "greatperson": "fa:user-graduate",
