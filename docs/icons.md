@@ -117,7 +117,7 @@ entry counts. A rule separated from those numbers cannot be re-derived.
   twin, so a mixed-opsz set renders visibly uneven — the new icons look bolder
   than the untouched ones sitting next to them in the same menu. This cost a
   full re-fetch of 28 files (2026-07).
-  - Source: `https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/<name>/materialsymbolsoutlined/<name>_48px.svg`
+  - Source: `https://raw.githubusercontent.com/google/material-design-icons/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/symbols/web/<name>/materialsymbolsoutlined/<name>_48px.svg`
     (filled variant: `<name>_fill1_48px.svg` — that's how brightness 100% differs
     from 50%). Emit as a single `<path>` under
     `<svg height="48px" viewBox="0 -960 960 960" width="48px" fill="#RRGGBB">`,
