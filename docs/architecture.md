@@ -324,7 +324,7 @@ Per-platform implementations:
   settled it in one.
 
 ### GUI (`polyhost/gui/`)
-PyQt5 widgets: main window (`host.py`), settings dialog, command menu, log viewer, layout editor (`layout_dialog/`), tray icon state manager.
+PyQt5 widgets: main window (`host.py`), settings dialog, command menu, log viewer, layout editor (`layout_dialog/`), tutorials dialog and step panel (`tutorials_dialog.py`), tray icon state manager.
 
 ### Shared components (extracted duplication — reuse these, don't re-type them)
 
@@ -407,6 +407,12 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
 
 ### Services (`polyhost/services/`)
 - `unicode_cache.py` — pre-computed unicode character mappings
+- `tutorials/` — host-driven tutorials ([`tutorials-plan.md`](tutorials-plan.md)).
+  `loader.py` reads the YAML scripts (`res/tutorials/` and `<config dir>/tutorials/`);
+  `runner.py` is one run, on the worker: it rings keys (cmd 47) and ends `seconds`
+  steps from `PolyCore._tutorial_periodic`. The core emits `tutorial` with the run's
+  state; `gui/tutorials_dialog.py` has the dialog and the step panel; `polyctl
+  tutorial` drives it from a terminal.
 - `sunlight_helper.py` — adaptive brightness via solar irradiance
 - `add_to_startup.py` — OS autostart registration (see Key notes below)
 - `keycap_face.py` — the per-application keycap face: an overlay-mapping entry's

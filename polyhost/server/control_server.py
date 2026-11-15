@@ -224,6 +224,11 @@ class ControlServer(MpcListenerServer):
                     params.get("period_ms", 4000))),
             p.M_MIDI_GUIDE: lambda conn, params: _unwrap(
                 c.midi_guide(_bool_param(params, "reset") if "reset" in params else False)),
+            p.M_TUTORIALS_LIST: lambda conn, params: c.tutorials_list(),
+            p.M_TUTORIAL_START: lambda conn, params: _unwrap(c.tutorial_start(params["id"])),
+            p.M_TUTORIAL_ACTION: lambda conn, params: _unwrap(
+                c.tutorial_action(params["action"])),
+            p.M_TUTORIAL_STATE: lambda conn, params: c.tutorial_state(),
             p.M_AGENTS_LIST: lambda conn, params: c.agents_list(),
             p.M_AGENTS_REPORT: lambda conn, params: _unwrap(c.agents_report(params)),
             p.M_AGENTS_LABEL: lambda conn, params: _unwrap(c.agents_label(

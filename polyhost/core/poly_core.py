@@ -245,6 +245,10 @@ class PolyCore(Observable):
         # a guide cancel that runs after such a request, even one that jumped the
         # queue (run_sync goes to the front), sees a newer count and does nothing.
         self._manual_ring_seq = 0
+        # The running tutorial (services/tutorials), touched on the worker only, and
+        # the last state() it emitted, read from any thread (a reference swap).
+        self._tutorial_run = None
+        self._tutorial_state = None
         # Apps already told they get no shortcut icons because they are
         # forwarded -- one line each, not one per window change.
         self._told_no_remote_shortcuts = set()
@@ -399,6 +403,7 @@ class PolyCore(Observable):
                                  self._console_periodic)
         self.worker.add_periodic("brightness", PERIODIC_10MIN_CYCLE_MSEC / 1000.0,
                                  self._brightness_periodic)
+        self.worker.add_periodic("tutorial", 0.5, self._tutorial_periodic)
         self._init_agents()
 
         # Persist the keyboard MRU just before the system sleeps (Linux/logind).
@@ -915,6 +920,8 @@ class PolyCore(Observable):
                                coalesce_key="midi_guide_cancel")
         if key is None or self._midi_seen.has(key):
             return
+        if getattr(self, "_tutorial_state", None) is not None:
+            return          # a tutorial owns the ring; the program gets it next time
         if not protocol_supports(self.keeb.protocol_version, "key_guide"):
             return
         self.worker.submit("midi_guide", lambda c, k=key: self._run_midi_guide(k),
@@ -969,6 +976,85 @@ class PolyCore(Observable):
         if ok:
             self._midi_guide_owner = None
         return ok, msg
+
+    # ---- tutorials (services/tutorials, docs/tutorials-plan.md) ---------------------
+
+    def tutorials_list(self):
+        """The tutorial scripts, read from disk on each call so a file just put in
+        the user folder shows up. No device I/O."""
+        from polyhost.services.tutorials import loader
+        found, errors = loader.load_all(user_directory=loader.user_dir())
+        return {
+            "tutorials": [t.to_dict() for t in sorted(found.values(),
+                                                      key=lambda t: (t.category, t.id))],
+            "errors": errors,
+            "protocol": self.keeb.get_protocol_version(),
+            "user_dir": loader.user_dir(),
+            "running": self._tutorial_state,
+        }
+
+    def tutorial_state(self):
+        """The running tutorial's state, or None. No device I/O."""
+        return self._tutorial_state
+
+    def tutorial_start(self, tutorial_id):
+        """Start the tutorial `tutorial_id`, ending one that runs. (ok, state|msg)."""
+        if self.safe_mode:
+            return False, SAFE_MODE_REFUSAL
+        from polyhost.services.tutorials import loader
+        found, _errors = loader.load_all(user_directory=loader.user_dir())
+        tutorial = found.get(str(tutorial_id))
+        if tutorial is None:
+            return False, f"No tutorial {tutorial_id!r}"
+        return self._device_call(
+            "tutorial", lambda c, t=tutorial: self._tutorial_begin(t))
+
+    def tutorial_action(self, action):
+        """`next`, `back` or `stop` on the running tutorial. (ok, state|msg)."""
+        if action not in ("next", "back", "stop"):
+            return False, f"Unknown tutorial action {action!r}"
+        return self._device_call(
+            "tutorial", lambda c, a=action: self._tutorial_step(a))
+
+    def _tutorial_begin(self, tutorial):
+        """Worker: end a running tutorial, then start `tutorial`."""
+        from polyhost.services.tutorials.runner import TutorialRun
+        if self._tutorial_run is not None and not self._tutorial_run.finished:
+            self._tutorial_run.stop()
+        run = TutorialRun(tutorial, self.keeb, self.log)
+        ok, msg = run.start()
+        if not ok:
+            return False, msg
+        self._tutorial_run = run
+        self.log.info("Tutorial %s started", tutorial.id)
+        return True, self._tutorial_publish()
+
+    def _tutorial_step(self, action):
+        run = self._tutorial_run
+        if run is None or run.finished:
+            return False, "No tutorial is running"
+        getattr(run, action)()
+        return True, self._tutorial_publish()
+
+    def _tutorial_periodic(self, _cancel=None):
+        """Worker: end a `seconds` step whose time is up."""
+        run = self._tutorial_run
+        if run is not None and run.tick():
+            self._tutorial_publish()
+
+    def _tutorial_publish(self):
+        """Worker: store and emit the run's state; drop a finished run."""
+        run = self._tutorial_run
+        state = run.state()
+        # The run's ring is a manual request: a queued MIDI guide cancel must not end it.
+        self._manual_ring_seq += 1
+        if run.finished:
+            self._tutorial_run = None
+            self._tutorial_state = None
+        else:
+            self._tutorial_state = state
+        self.emit("tutorial", state)
+        return state
 
     def _send_template_with_fill(self, handler):
         """Send the focused window's templates WITH the generic gap fill.
