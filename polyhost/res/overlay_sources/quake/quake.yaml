@@ -1,0 +1,85 @@
+# Quake source ports (Ironwail, vkQuake, QuakeSpasm) overlay for PolyKybd.
+#
+# Keys: the default.cfg each port ships in its own pak file: Ironwail v0.8.2
+# (Quake/ironwail.pak), vkQuake 1.37.0 (Misc/vq_pak/default.cfg) and QuakeSpasm
+# 0.97.0 (Misc/qs_pak/default.cfg). The three bind the drawn keys the same way.
+# See SOURCES.md.
+#
+# No default binding uses a modifier, so only the plain layer is drawn.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/quake/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/quake/quake.yaml --preview /tmp/quake_preview
+app: quake
+match: [ironwail, ironwail.exe, vkquake, vkquake.exe, quakespasm, quakespasm.exe]
+output: quake_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for fheroes2: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# "Quake" drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Movement
+  - { key: W, icon: forward.png, label: "Move forward" }
+  - { key: S, icon: back.png, label: "Move backward" }
+  - { key: A, icon: strafeleft.png, label: "Strafe left" }
+  - { key: D, icon: straferight.png, label: "Strafe right" }
+  - { key: UP, icon: forward.png, label: "Move forward (second key)" }
+  - { key: DOWN, icon: back.png, label: "Move backward (second key)" }
+  - { key: LEFT, icon: turnleft.png, label: "Turn left" }
+  - { key: RIGHT, icon: turnright.png, label: "Turn right" }
+  - { key: COMMA, icon: strafeleft.png, label: "Strafe left (second key)" }
+  - { key: DOT, icon: straferight.png, label: "Strafe right (second key)" }
+  - { key: SPACE, icon: jump.png, label: "Jump" }
+  - { key: E, icon: swimup.png, label: "Swim up" }
+  - { key: C, icon: swimdown.png, label: "Swim down" }
+  - { key: PGDN, icon: lookup.png, label: "Look up" }
+  - { key: DEL, icon: lookdown.png, label: "Look down" }
+  - { key: END, icon: centerview.png, label: "Centre view" }
+  - { key: BACKSLASH, icon: mouselook.png, label: "Mouse look" }
+  - { key: INSERT, icon: keylook.png, label: "Keyboard look" }
+
+  # Weapons
+  - { key: "1", icon: axe.png, label: "Axe" }
+  - { key: "2", icon: shotgun.png, label: "Shotgun" }
+  - { key: "3", icon: supershotgun.png, label: "Double-barrelled shotgun" }
+  - { key: "4", icon: nailgun.png, label: "Nailgun" }
+  - { key: "5", icon: chaingun.png, label: "Super nailgun" }
+  - { key: "6", icon: grenade.png, label: "Grenade launcher" }
+  - { key: "7", icon: rocket.png, label: "Rocket launcher" }
+  - { key: "8", icon: thunderbolt.png, label: "Thunderbolt" }
+  - { key: SLASH, icon: nextweapon.png, label: "Next weapon" }
+
+  # Function keys
+  - { key: F1, icon: help.png, label: "Help screen", region: [34, 40] }
+  - { key: F2, icon: save.png, label: "Save game", region: [34, 40] }
+  - { key: F3, icon: load.png, label: "Load game", region: [34, 40] }
+  - { key: F4, icon: options.png, label: "Options menu", region: [34, 40] }
+  - { key: F5, icon: multiplayer.png, label: "Multiplayer menu", region: [34, 40] }
+  - { key: F6, icon: quicksave.png, label: "Quick save", region: [34, 40] }
+  - { key: F9, icon: quickload.png, label: "Quick load", region: [34, 40] }
+  - { key: F10, icon: quit.png, label: "Quit", region: [30, 40] }
+  - { key: F11, icon: zoom.png, label: "Zoom", region: [30, 40] }
+  - { key: F12, icon: screenshot.png, label: "Take screenshot", region: [30, 40] }
+
+  # Screen and game
+  - { key: TAB, icon: scores.png, label: "Show scores" }
+  - { key: MINUS, icon: sizedown.png, label: "Screen size down" }
+  - { key: EQUAL, icon: sizeup.png, label: "Screen size up" }
+  - { key: PAUSE, icon: pause.png, label: "Pause game" }
+  - { key: T, icon: chat.png, label: "Chat" }
+  - { key: GRAVE, icon: console.png, label: "Console" }
