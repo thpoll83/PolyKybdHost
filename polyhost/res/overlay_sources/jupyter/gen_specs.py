@@ -168,7 +168,7 @@ def scope(index: int, label: str) -> str:
 # Console prompt cell: Shift+Enter runs the input (console:run-forced, both
 # interaction modes). Only in the console set: elsewhere Shift+Enter is
 # "Run, select next".
-CONSOLE_ROWS = [("run", "Run code", *both("S+Enter"))]
+CONSOLE_ROWS = [("run", "Run cell", *both("S+Enter"))]
 
 # Terminal (xterm.js in a `.jp-Activity` main area widget). xterm.js handles a
 # keydown first. A key that it turns into terminal input is sent to the shell

@@ -127,5 +127,5 @@ bindings:
   - { key: "8", mods: [ALT, SHIFT], icon: right8.png, label: "Right panel 8", only: [macos] }
   - { key: "9", mods: [ALT, SHIFT], icon: right9.png, label: "Right panel 9", except: [macos] }
   - { key: "9", mods: [ALT, SHIFT], icon: right9.png, label: "Right panel 9", only: [macos] }
-  - { key: "ENTER", mods: [SHIFT], icon: run.png, label: "Run code", except: [macos] }
-  - { key: "ENTER", mods: [SHIFT], icon: run.png, label: "Run code", only: [macos] }
+  - { key: "ENTER", mods: [SHIFT], icon: run.png, label: "Run cell", except: [macos] }
+  - { key: "ENTER", mods: [SHIFT], icon: run.png, label: "Run cell", only: [macos] }

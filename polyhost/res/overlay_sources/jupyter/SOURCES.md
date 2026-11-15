@@ -30,7 +30,7 @@ matches in that mode (the `SCOPE` table in `gen_specs.py`):
 | `command` | global, save/print, search, undo/redo/select all, run cell, and the command-mode keys (`.jp-Notebook.jp-mod-commandMode`): the single keys, merge, move, collapse/expand |
 | `edit` | global, save/print, search, undo/redo/select all, run cell, the edit-mode keys (`.jp-mod-editMode`: Ctrl+M, split cell, Alt+Up/Down history) and the code editor keys (`.cm-content`) |
 | `editor` | global, save/print, search, undo/redo/select all, the code editor keys |
-| `console` | global, undo/redo/select all, the code editor keys, and Shift+Enter "Run code" (`console:run-forced`) |
+| `console` | global, undo/redo/select all, the code editor keys, and Shift+Enter "Run cell" (`console:run-forced`, the same action as Run cell in a notebook) |
 | `global` | the `body` keys only: panels, tabs, side panels, debugger |
 | `terminal` | the `global` keys that the terminal does not send to the shell, and Ctrl+V paste (see *Terminal* below) |
 
@@ -127,6 +127,12 @@ letter stays readable while the user types. From
 
 `heading1.png` to `heading6.png` are Material `title` with the level digit
 from `../number_badge.py`.
+`headingabove.png` and `headingbelow.png` are the same `title` glyph with an
+up or down arrow badge (Material `arrow_upward_alt` / `arrow_downward_alt`,
+`../dcc_glyphs.py` `with_badge`). Merge with cell above / below are Material
+`vertical_align_top` / `vertical_align_bottom`, and `runnext.png` (Shift+Enter,
+run and select the next cell) is the run glyph with the down arrow badge, so it
+differs from J (select the cell below).
 
 ### Left out
 
