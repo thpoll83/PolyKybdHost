@@ -131,6 +131,11 @@ class RowsPage(QWidget):
     def status_error_text(self, exc):
         return _f("The check failed: {error}", error=str(exc))
 
+    def before_apply(self, install):
+        """Runs on the GUI thread before apply(). A page whose apply() runs on
+        the worker thread reads its widgets here: Qt widgets must not be
+        touched from another thread."""
+
     def clear_rows(self):
         self._boxes = {}
         self._removable = set()
@@ -230,6 +235,7 @@ class RowsPage(QWidget):
             keys = [k for k in keys if k in self._removable]
         if not keys or self.busy():
             return
+        self.before_apply(install)
         if self.APPLY_ON_THREAD:
             self._checking.show()
             self.install_button.setEnabled(False)

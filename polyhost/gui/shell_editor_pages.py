@@ -152,11 +152,15 @@ class TerminalsPage(RowsPage):
             info.insert(0, _("No bash, zsh or PowerShell was found on this computer."))
         self.set_info("\n".join(info))
 
+    def before_apply(self, install):
+        self._codex_for_apply = self.codex_box.isChecked()
+
     def apply(self, install, keys):
+        # Runs on the worker thread: the checkbox was read in before_apply().
         lines = []
         if install:
             results = self._install_fn(keys, statuses=self._statuses,
-                                       codex=self.codex_box.isChecked())
+                                       codex=self._codex_for_apply)
         else:
             results = self._remove_fn(keys, statuses=self._statuses)
         for r in results:
