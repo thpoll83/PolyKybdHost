@@ -135,7 +135,7 @@ sub-entry **replace** the parent instead.
 
 `urls-contains` matches only a URL the host attributes to the **focused** app: a
 browser's active tab, or a context report from an app on the allow-list in
-`handler/browser_url.py` (`CONTEXT_REPORTERS`: Blender, and GUI Vim and Emacs).
+`handler/browser_url.py` (`CONTEXT_REPORTERS`: Blender, GUI Vim and Emacs, and VS Code, Cursor and Windsurf).
 The entry's names and that list must agree; the routing test checks it. A
 terminal on `TERMINAL_APPS` takes the report of a vim or emacs running in it
 (`HOSTED_REPORTERS`), so a terminal entry can route `vim://` and `emacs://` the
@@ -158,7 +158,7 @@ GNU nano sends no report and sets no title, so it is visible only when the
 shell or the terminal puts the running command into the window title (cmd.exe,
 macOS Terminal and iTerm2, Konsole, fish, Nushell, xonsh and oh-my-zsh do by default; bash,
 PowerShell and plain zsh need the scripts in [`shell/`](shell/), which the
-tray's Updates → "Set up the terminal and editors…" or
+tray's Integrations… → Terminals or
 `polyctl shell-integration install` adds to their startup files). The
 terminal entries carry `titles-contains: &editor_titles`: the word
 `nano` selects the route and the sub-entry's `title` regex requires nano at

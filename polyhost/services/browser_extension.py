@@ -14,7 +14,7 @@ restart.
 Firefox keeps an unsigned extension only until it restarts, so this is for
 Chromium browsers only.
 
-Qt-free: the tray dialog (gui/browser_extension_dialog.py) and tests call it.
+Qt-free: Integrations > Browser (gui/browser_extension_page.py) and tests call it.
 """
 from __future__ import annotations
 

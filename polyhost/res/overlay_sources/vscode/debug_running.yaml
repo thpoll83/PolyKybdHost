@@ -1,0 +1,40 @@
+# VS Code, Cursor and Windsurf: a debug session whose program is running (<app>://debug/running).
+#
+# One of four debug-key sets shared by the three apps (their icons are
+# byte-identical, see ../cursor/bindings.yaml). The mapping lists one of them
+# AFTER the app's own set (bindings.yaml), so these keys sit on top of it:
+#
+#   debug_fallback.yaml  no report from the mode reporter: every debug key, as
+#                        the app's set drew them before the reporter existed
+#   debug_edit.yaml      <app>://edit            no debug session
+#   debug_running.yaml   <app>://debug/running   a session, program running
+#   debug_stopped.yaml   <app>://debug/stopped   a session, program paused
+#
+# The reporter is vscode-extension/. Keys and the "when" condition of each are
+# from VS Code's source (src/vs/workbench/contrib/debug/browser/debugCommands.ts,
+# workbench/browser/actions/windowActions.ts), see SOURCES.md "Debug modes".
+#
+# Regenerate (from the repo root, with the project venv):
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/vscode/debug_running.yaml --preview /tmp/debug_running_preview
+app: code
+match: [code, cursor, windsurf, devin, devin-desktop]
+output: vscode_debug_running
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# No program_icon: the app's own set draws the ESC key.
+
+_reclaimed: &reclaimed { region: [72, 40], anchor: center }
+
+bindings:
+  # workbench.action.debug.pause: F6, when debugState == 'running'.
+  - { key: F6, mods: [],               icon: pause.png,     <<: *reclaimed, label: "Pause",           source: reclaimed }
+  # workbench.action.debug.stop: Shift+F5, when inDebugMode.
+  - { key: F5, mods: [SHIFT],          icon: stopdebug.png, <<: *reclaimed, label: "Stop debugging",  source: "reclaimed (JetBrains stop, shared)" }
+  # workbench.action.debug.restart: KeyMod.Shift | KeyMod.CtrlCmd | F5, when inDebugMode.
+  - { key: F5, mods: [CMDCTRL, SHIFT], icon: restart.png,   label: "Restart debugging", source: "ms-fluent/Arrow Clockwise (MIT)" }
