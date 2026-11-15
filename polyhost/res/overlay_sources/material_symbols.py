@@ -41,7 +41,11 @@ from pathlib import Path
 import cairosvg
 
 # Per-icon SVGs live in the google/material-design-icons repo under symbols/web/.
-RAW = ("https://raw.githubusercontent.com/google/material-design-icons/master/"
+# Pinned to one commit of google/material-design-icons (master on 2026-11-15), so
+# a later fetch returns the same drawing. To take newer glyphs, change the commit
+# and run the fetch script of every set that uses a Material Symbols icon.
+COMMIT = "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7"
+RAW = ("https://raw.githubusercontent.com/google/material-design-icons/" + COMMIT + "/"
        "symbols/web/{name}/materialsymbols{style}/{file}")
 STYLES = ("outlined", "rounded", "sharp")
 RENDER_PX = 96
