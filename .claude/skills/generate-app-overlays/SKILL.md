@@ -430,8 +430,10 @@ Don't hand-download icons. Write a tiny per-app `fetch_icons.py` next to
   draws from code and committed inputs only: a name set in a pinned font, a number
   or a sign added to a committed icon, a flat icon from an icon set. For these the
   script is the source, and a guard would keep a stale PNG after a change to a
-  shared helper. (Plain Fluent downloads are deterministic, so they may re-fetch
-  freely.)
+  shared helper. (Fluent and Material Symbols icons that `icon_fetch.py` downloads
+  come from a pinned commit, so they may re-fetch freely. A script that downloads
+  from the `main` branch of an icon repository by its own URL can return a changed
+  drawing.)
   ```python
   if (out / "word.png").exists():
       print("  word.png  <- committed asset (left as-is)")
