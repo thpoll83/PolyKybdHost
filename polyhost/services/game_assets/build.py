@@ -365,9 +365,33 @@ def bindings_source(spec: dict, reader, files: dict):
     return player, source.BINDINGS_COMPLETE, [path] if path else []
 
 
+def keys_only(template: str, spec: dict, spec_path: Path, shipped: Path, variant: str,
+              cache_dir: Path) -> Path | None:
+    """The shipped overlay with its icons moved to the player's keys, for a
+    spec whose ``bindings:`` source is found while its art reader finds no
+    game files (StarCraft II's hotkeys without a StarCraft install); None
+    without such a source or bindings."""
+    name = (spec.get("game_assets") or {}).get("bindings")
+    if not name:
+        return None
+    player, complete, key_files = bindings_source(spec, None, {})
+    if not player:
+        return None
+    remove_stale_temp(cache_dir)
+    out = Path(cache_dir) / cache_name(template, key_files + [shipped, spec_path], variant, f"{name}-keys")
+    if out.exists():
+        return out
+    patch(shipped, spec, {}, out, player, complete)
+    log.info("Game art: the icons of %s follow the %s key bindings (no game art found).",
+             template, name)
+    return out
+
+
 def build(template: str, spec_path: Path, settings_get, cache_dir: Path, hint=None) -> Path | None:
-    """The copy of `template` drawn from the game files, built if not cached;
-    None when the reader finds no game files."""
+    """The copy of `template` drawn from the game files, built if not cached.
+    When the reader finds no game files: the shipped overlay remapped to the
+    player's keys if the spec names a bindings source that has them
+    (`keys_only`), else None."""
     spec = load_spec(spec_path)
     name = spec["game_assets"]["reader"]
     decl = READERS[name]
@@ -379,12 +403,12 @@ def build(template: str, spec_path: Path, settings_get, cache_dir: Path, hint=No
         variant = choices[0]
     folder = str(settings_get(decl.folder) or "") if decl.folder else ""
     files = reader.find(folder, hint)
+    shipped = RES / "overlays" / template
     if not files:
         log.info("Game art: %s found no files for %s in %s.", name, template,
                  searched_text(reader, folder, hint))
-        return None
+        return keys_only(template, spec, spec_path, shipped, variant, cache_dir)
     remove_stale_temp(cache_dir)
-    shipped = RES / "overlays" / template
     player, complete, key_files = bindings_source(spec, reader, files)
     out = Path(cache_dir) / cache_name(template, reader.fingerprint(files) + key_files + [shipped, spec_path],
                                        variant, name)

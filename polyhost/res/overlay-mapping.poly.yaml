@@ -3497,7 +3497,9 @@ war3,war3.exe,warcraft iii,warcraft iii.exe,frozen throne,frozen throne.exe:
 # the WM_CLASS keeps the `.exe`. `starcraft ii` is the launcher's name and the
 # assumed macOS name. None of the names was checked on an install.
 # Control groups, F1 and Backspace are redrawn from the user's own StarCraft
-# 1.16.1 files when they are on the machine (game_assets reader `starcraft`).
+# 1.16.1 files when they are on the machine (game_assets reader `starcraft`),
+# and the icons follow the player's active StarCraft II hotkey profile
+# (`bindings: sc2`), with or without those files.
 sc2_x64,sc2,sc2_x64.exe,sc2.exe,starcraft ii:
   overlay: [starcraft2_template.mods.png, starcraft2_template.combo.mods.png]
   game_assets: starcraft2/starcraft2.yaml
@@ -3640,10 +3642,12 @@ stratagus,stratagus.exe,wargus,wargus.exe:
 # may use too, so the window title gates the entry: "Command and Conquer
 # Generals" (the original) and "Command & Conquer (TM) Generals Zero Hour",
 # both seen in a log of the Steam release (2026-11-14). Not checked under Wine
-# or on the EA app release.
+# or on the EA app release. The icons follow the hotkeys of the installed
+# language and of a loose CommandMap.ini (game_assets reader `generals`).
 game:
   overlay: generals_template.mods.png
   title: '^Command (and|&) Conquer.*Generals'
+  game_assets: generals/generals.yaml
 # Command & Conquer Remastered Collection, Steam app 1213210
 # (overlay_sources/cnc_remastered/cnc_remastered.yaml). ClientG.exe on Windows,
 # steam_app_1213210 under Proton. Names not checked on an install.
