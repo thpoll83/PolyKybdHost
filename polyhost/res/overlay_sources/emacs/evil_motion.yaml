@@ -207,7 +207,7 @@ bindings:
 - key: G
   mods:
   - SHIFT
-  icon: file_end.png
+  icon: goto_line.png
   label: Last line (or line N)
   shared: false
   source: :help G; evil-maps.el
@@ -368,13 +368,13 @@ bindings:
   source: :help CTRL-]; evil-maps.el
 - key: Y
   icon: copy.png
-  label: Yank (operator)
+  label: Yank
   shared: false
   source: :help y; evil-maps.el
 - key: Y
   mods:
   - SHIFT
-  icon: copy.png
+  icon: yank_lines.png
   label: Yank line
   shared: false
   source: :help Y; evil-maps.el
@@ -394,21 +394,21 @@ bindings:
   source: :help :; evil-maps.el
 - key: V
   icon: visual_char.png
-  label: Visual mode
+  label: Visual mode (or stop)
   shared: false
   source: :help v; evil-maps.el
 - key: V
   mods:
   - SHIFT
   icon: visual_line.png
-  label: Visual line mode
+  label: Visual line mode (or stop)
   shared: false
   source: :help V; evil-maps.el
 - key: V
   mods:
   - CTRL
   icon: visual_block.png
-  label: Visual block mode
+  label: Visual block mode (or stop)
   shared: false
   source: :help CTRL-V; evil-maps.el
 - key: K

@@ -212,7 +212,7 @@ bindings:
 - key: G
   mods:
   - SHIFT
-  icon: file_end.png
+  icon: goto_line.png
   label: Last line (or line N)
   shared: false
   source: :help G; evil-maps.el
@@ -431,7 +431,7 @@ bindings:
   source: :help X; evil-maps.el
 - key: D
   icon: delete.png
-  label: Delete (operator)
+  label: Delete
   shared: false
   source: :help d; evil-maps.el
 - key: D
@@ -443,7 +443,7 @@ bindings:
   source: :help D; evil-maps.el
 - key: C
   icon: change.png
-  label: Change (operator)
+  label: Change
   shared: false
   source: :help c; evil-maps.el
 - key: C
@@ -462,18 +462,18 @@ bindings:
   mods:
   - SHIFT
   icon: change_line.png
-  label: Substitute line
+  label: Change lines
   shared: false
   source: :help S; evil-maps.el
 - key: Y
   icon: copy.png
-  label: Yank (operator)
+  label: Yank
   shared: false
   source: :help y; evil-maps.el
 - key: Y
   mods:
   - SHIFT
-  icon: copy.png
+  icon: yank_lines.png
   label: Yank line
   shared: false
   source: :help Y; evil-maps.el
@@ -496,7 +496,7 @@ bindings:
   source: :help u; evil-maps.el
 - key: R
   icon: replace_char.png
-  label: Replace character
+  label: Replace with a character
   shared: false
   source: :help r; evil-maps.el
 - key: R
@@ -524,19 +524,19 @@ bindings:
   mods:
   - SHIFT
   icon: indent_inc.png
-  label: Indent (operator)
+  label: Indent
   shared: false
   source: :help >; evil-maps.el
 - key: ','
   mods:
   - SHIFT
   icon: indent_dec.png
-  label: Unindent (operator)
+  label: Unindent
   shared: false
   source: :help <; evil-maps.el
 - key: '='
   icon: align_left.png
-  label: Re-indent (operator)
+  label: Re-indent
   shared: false
   source: :help =; evil-maps.el
 - key: '1'
@@ -591,21 +591,21 @@ bindings:
   source: :help :; evil-maps.el
 - key: V
   icon: visual_char.png
-  label: Visual mode
+  label: Visual mode (or stop)
   shared: false
   source: :help v; evil-maps.el
 - key: V
   mods:
   - SHIFT
   icon: visual_line.png
-  label: Visual line mode
+  label: Visual line mode (or stop)
   shared: false
   source: :help V; evil-maps.el
 - key: V
   mods:
   - CTRL
   icon: visual_block.png
-  label: Visual block mode
+  label: Visual block mode (or stop)
   shared: false
   source: :help CTRL-V; evil-maps.el
 - key: K

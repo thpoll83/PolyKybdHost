@@ -94,6 +94,52 @@ drop:
   - { key: W, mods: [CTRL], states: [replace],
       why: "evil-delete-backward-word (from evil-insert-state-bindings): it deletes and does not restore the replaced word" }
 
-# A label that names Vim or Neovim behaviour evil does not have.
+# A label that names Vim or Neovim behaviour evil does not have, or that
+# names one evil command two ways. `states` defaults to every state. A key
+# that visual state does not rebind runs the same command as in normal state
+# (visual state enables the normal and motion maps), so it gets the same
+# label and shares the normal state's picture.
 labels:
   - { key: Y, mods: [SHIFT], label: "Yank line" }
+  - { key: Y, states: [normal, visual, motion], label: "Yank" }                   # evil-yank
+  - { key: D, states: [normal, visual], label: "Delete" }                        # evil-delete
+  - { key: X, states: [visual], label: "Delete" }                                # evil-delete-char on a selection
+  - { key: DELETE, states: [visual], label: "Delete" }                           # evil-delete-char on a selection
+  - { key: C, states: [normal, visual], label: "Change" }                        # evil-change
+  - { key: S, states: [visual], label: "Change" }                                # evil-substitute on a selection
+  - { key: S, mods: [SHIFT], states: [normal], label: "Change lines" }           # evil-change-whole-line
+  - { key: R, states: [normal, visual], label: "Replace with a character" }      # evil-replace
+  - { key: ".", mods: [SHIFT], states: [normal, visual], label: "Indent" }       # evil-shift-right
+  - { key: ",", mods: [SHIFT], states: [normal, visual], label: "Unindent" }     # evil-shift-left
+  - { key: "=", states: [normal, visual], label: "Re-indent" }                   # evil-indent
+  - { key: ";", mods: [SHIFT], states: [normal, visual, motion], label: "Command line" }  # evil-ex
+  - { key: K, mods: [SHIFT], states: [normal, visual, motion], label: "Look up keyword" } # evil-lookup: the word at point
+  - { key: V, states: [normal, visual, motion], label: "Visual mode (or stop)" }                     # evil-visual-char
+  - { key: V, mods: [SHIFT], states: [normal, visual, motion], label: "Visual line mode (or stop)" } # evil-visual-line
+  - { key: V, mods: [CTRL], states: [normal, visual, motion], label: "Visual block mode (or stop)" } # evil-visual-block
+  - { key: INSERT, states: [replace], label: "Append after cursor" }             # evil-append
+
+# Keys that get another picture than the Vim set gives them, so that two keys
+# of the Emacs sets (every state, and global, Org and Dired) that do different
+# things never share an image. The files are in ../vim/icons (drawn by
+# ../vim/fetch_icons.py); the Vim sets do not use goto_line, put_keep,
+# paste_reg, indent_line_inc, indent_line_dec, insert_block or append_block.
+icons:
+  - { key: G, mods: [SHIFT], states: [normal, visual, motion], icon: goto_line.png,
+      why: "evil-goto-line takes a count (line N); C-End is end-of-buffer, always the last line" }
+  - { key: Y, mods: [SHIFT], states: [normal, motion], icon: yank_lines.png,
+      why: "evil-yank-line yanks whole lines; y is the yank operator" }
+  - { key: P, mods: [SHIFT], states: [visual], icon: put_keep.png,
+      why: "evil-paste-before in visual state keeps the register; p replaces it with the selection" }
+  - { key: R, mods: [CTRL], states: [insert, replace], icon: paste_reg.png,
+      why: "evil-paste-from-register inserts a register; visual p puts over the selection" }
+  - { key: T, mods: [CTRL], states: [insert, replace], icon: indent_line_inc.png,
+      why: "evil-shift-right-line indents the current line; > is an operator" }
+  - { key: D, mods: [CTRL], states: [insert, replace], icon: indent_line_dec.png,
+      why: "evil-shift-left-line unindents the current line; < is an operator" }
+  - { key: I, mods: [SHIFT], states: [visual], icon: insert_block.png,
+      why: "visual I is evil-insert: insert before the block on every line; normal I is evil-insert-line" }
+  - { key: A, mods: [SHIFT], states: [visual], icon: append_block.png,
+      why: "visual A is evil-append: append after the block on every line; normal A is evil-append-line" }
+  - { key: INSERT, states: [replace], icon: append.png,
+      why: "evil-replace-state-map binds <insert> to evil-append, the command of normal a" }

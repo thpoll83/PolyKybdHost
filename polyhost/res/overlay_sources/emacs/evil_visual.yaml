@@ -212,7 +212,7 @@ bindings:
 - key: G
   mods:
   - SHIFT
-  icon: file_end.png
+  icon: goto_line.png
   label: Last line (or line N)
   shared: false
   source: :help G; evil-maps.el
@@ -373,17 +373,17 @@ bindings:
   source: :help CTRL-]; evil-maps.el
 - key: D
   icon: delete.png
-  label: Delete selection
+  label: Delete
   shared: false
   source: :help v_d; evil-maps.el
 - key: X
   icon: delete.png
-  label: Delete selection
+  label: Delete
   shared: false
   source: :help v_x; evil-maps.el
 - key: DELETE
   icon: delete.png
-  label: Delete selection
+  label: Delete
   shared: false
   source: :help v_x; evil-maps.el
 - key: D
@@ -402,7 +402,7 @@ bindings:
   source: :help v_X; evil-maps.el
 - key: Y
   icon: copy.png
-  label: Yank selection
+  label: Yank
   shared: false
   source: :help v_y; evil-maps.el
 - key: Y
@@ -414,12 +414,12 @@ bindings:
   source: :help v_Y; evil-maps.el
 - key: C
   icon: change.png
-  label: Change selection
+  label: Change
   shared: false
   source: :help v_c; evil-maps.el
 - key: S
   icon: change.png
-  label: Change selection
+  label: Change
   shared: false
   source: :help v_s; evil-maps.el
 - key: C
@@ -509,7 +509,7 @@ bindings:
   source: :help v_O; evil-maps.el
 - key: R
   icon: replace_char.png
-  label: Replace every character
+  label: Replace with a character
   shared: false
   source: :help v_r; evil-maps.el
 - key: P
@@ -520,21 +520,21 @@ bindings:
 - key: P
   mods:
   - SHIFT
-  icon: paste.png
+  icon: put_keep.png
   label: Put over selection, keep register
   shared: false
   source: :help v_P; evil-maps.el
 - key: I
   mods:
   - SHIFT
-  icon: insert_bol.png
+  icon: insert_block.png
   label: Insert before block
   shared: false
   source: :help v_b_I; evil-maps.el
 - key: A
   mods:
   - SHIFT
-  icon: append_eol.png
+  icon: append_block.png
   label: Append after block
   shared: false
   source: :help v_b_A; evil-maps.el
@@ -542,7 +542,7 @@ bindings:
   mods:
   - SHIFT
   icon: cmdline.png
-  label: Command line on selection
+  label: Command line
   shared: false
   source: :help v_:; evil-maps.el
 - key: V
@@ -568,6 +568,6 @@ bindings:
   mods:
   - SHIFT
   icon: book_q.png
-  label: Look up selection
+  label: Look up keyword
   shared: false
   source: :help v_K; evil-maps.el

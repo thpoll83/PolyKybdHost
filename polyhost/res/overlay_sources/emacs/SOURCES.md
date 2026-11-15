@@ -38,7 +38,26 @@ python polyhost/res/overlay_sources/emacs/gen_evil_bindings.py --render --previe
 ```
 
 `evil.yaml` is the input: which Vim set each state starts from, the keys left
-out (each with what evil does instead) and the motion-state keys. Source:
+out (each with what evil does instead), the motion-state keys, `labels` and
+`icons`. One picture means one action across all the Emacs sets. A key that
+visual state does not rebind runs the normal-state command on the selection,
+so it keeps the normal state's picture and gets the same label (`d`, `c`, `y`,
+`r`, `>`, `<`, `=`, `:`, `K`, `v`, `V`, `C-v`). `icons` gives a key another
+picture where the command differs:
+
+| key | evil command | picture | instead of (the other action) |
+|---|---|---|---|
+| Shift+G | evil-goto-line (takes a count) | `goto_line.png` ("line N") | `file_end.png`, Ctrl+End end-of-buffer |
+| Shift+Y | evil-yank-line | `yank_lines.png` | `copy.png`, the y operator |
+| visual Shift+P | evil-paste-before, keeps the register | `put_keep.png` ("keep") | `paste.png`, visual p |
+| insert/replace Ctrl+R | evil-paste-from-register | `paste_reg.png` ("reg") | `paste.png`, visual p |
+| insert/replace Ctrl+T, Ctrl+D | evil-shift-right-line, -left-line | `indent_line_inc.png`, `indent_line_dec.png` | `indent_inc.png`, `indent_dec.png`, the > < operators |
+| visual Shift+I, Shift+A | evil-insert, evil-append on a block | `insert_block.png`, `append_block.png` | `insert_bol.png`, `append_eol.png`, normal I A |
+| replace Insert | evil-append | `append.png` (label of normal a) | `insert.png`, normal i |
+
+The new files are drawn by `../vim/fetch_icons.py` (Fluent glyphs from
+`../vim/icons/src/` and Liberation Sans Bold words, see `../vim/SOURCES.md`)
+and are not used by the Vim sets. Source:
 `evil-maps.el` and `evil-vars.el` of evil 1.15.0
 (https://github.com/emacs-evil/evil, branch master, read 2026-11-14), with the
 default settings: `evil-want-C-u-scroll` nil, `evil-want-C-d-scroll` t,

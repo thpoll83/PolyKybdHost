@@ -7,7 +7,8 @@ leaves out the keys `evil.yaml` lists under `drop`, the keys that evil's
 default keymaps bind differently. Motion state is the Vim Normal set reduced
 to the `motions` section of `../vim/keys.yaml` plus `motion_extra`. The icons
 are the Vim set's own files (`icon_dir: ../vim/icons`), so a picture costs no
-extra overlay slot when Vim and Emacs show it; ESC shows the state word beside
+extra overlay slot when Vim and Emacs show it; `icons` in `evil.yaml` swaps
+the picture of a key that would otherwise share one with a different action; ESC shows the state word beside
 the Emacs logo (`icons/esc_evil_<state>.png`, drawn by `fetch_icons.py`).
 
     python polyhost/res/overlay_sources/emacs/gen_evil_bindings.py --render \
@@ -45,15 +46,17 @@ def bindings_for(state: str, evil: dict, vim_keys: dict) -> tuple[list[dict], di
     vim = evil["states"][state]
     spec = yaml.safe_load((VIM / f"bindings_{vim}.yaml").read_text(encoding="utf-8"))
     drop = {chord(d) for d in evil["drop"] if state in d["states"]}
-    labels = {chord(l): l["label"] for l in evil.get("labels", [])}
+    labels = {chord(l): l["label"] for l in evil.get("labels", [])
+              if state in l.get("states", evil["states"])}
+    icons = {chord(i): i["icon"] for i in evil.get("icons", []) if state in i["states"]}
     keep = None
     if state == "motion":
         keep = {chord(b) for b in vim_keys["motions"]} | {chord(b) for b in evil["motion_extra"]}
     # A drop that names no key of the Vim set is a typo that would leave a
     # wrong key drawn; refuse it.
-    unknown = drop - {chord(b) for b in spec["bindings"]}
+    unknown = (drop | set(icons)) - {chord(b) for b in spec["bindings"]}
     if unknown:
-        raise SystemExit(f"evil.yaml drops keys not in the Vim {vim} set ({state}): {sorted(unknown)}")
+        raise SystemExit(f"evil.yaml drops or redraws keys not in the Vim {vim} set ({state}): {sorted(unknown)}")
     out = []
     for b in spec["bindings"]:
         c = chord(b)
@@ -62,6 +65,8 @@ def bindings_for(state: str, evil: dict, vim_keys: dict) -> tuple[list[dict], di
         e = dict(b)
         if c in labels:
             e["label"] = labels[c]
+        if c in icons:
+            e["icon"] = icons[c]
         e["source"] = f"{b['source']}; evil-maps.el"
         out.append(e)
     return out, spec
