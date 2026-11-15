@@ -53,10 +53,10 @@ VERTEX_DROP = DIGITIZE_DROP | {("R", ()), ("T", ()), ("G", ("CMDCTRL", "SHIFT"))
 VERTEX_ADD = [
     {"key": "DEL", "mods": [], "icon": "deletevertex.png", "label": "Delete vertex"},
     {"key": "BSPC", "mods": [], "icon": "deletevertex.png", "label": "Delete vertex"},
-    {"key": "O", "mods": [], "icon": "curve.png", "label": "Toggle curve vertex"},
+    {"key": "O", "mods": [], "icon": "curvevertex.png", "label": "Toggle curve vertex"},
     {"key": "R", "mods": ["SHIFT"], "icon": "rangesel.png", "label": "Range vertex selection"},
-    {"key": "COMMA", "mods": [], "icon": "prevfeat.png", "label": "Previous vertex"},
-    {"key": "DOT", "mods": [], "icon": "nextfeat.png", "label": "Next vertex"},
+    {"key": "COMMA", "mods": [], "icon": "prevvertex.png", "label": "Previous vertex"},
+    {"key": "DOT", "mods": [], "icon": "nextvertex.png", "label": "Next vertex"},
 ]
 
 # Advanced Digitizing. Qt's ControlModifier is Cmd on macOS, so "Ctrl" is CMDCTRL.

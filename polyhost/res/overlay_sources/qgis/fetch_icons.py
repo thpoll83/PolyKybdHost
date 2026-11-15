@@ -30,7 +30,8 @@ from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
-from dcc_glyphs import guarded  # noqa: E402
+import space_hint  # noqa: E402
+from dcc_glyphs import guarded, with_badge  # noqa: E402
 
 RENDER_PX = 96
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
@@ -45,7 +46,9 @@ MARK_ALPHA = 128      # alpha at or above this is lit
 FLUENT = {
     # --- project, windows, panels ---
     "datasource": "ms:database",
-    "newlayout": "ms:print",
+    "newlayout": "ms:print_add",
+    "printlayout": "ms:print",
+    "zoomarea": "ms:pageview",
     "projprops": "ms:settings_applications",
     "newmap": "ms:map",
     "elevation": "ms:landscape",
@@ -111,12 +114,11 @@ FLUENT = {
     "cadlock": "ms:lock",
     # --- print layout designer (mode set) ---
     "pagesetup": "ms:aspect_ratio",
-    "rulers": "ms:straighten",
     "grid": "ms:grid_on",
     "snapgrid": "ms:grid_4x4",
     "guides": "ms:border_vertical",
     "smartguides": "ms:auto_fix_high",
-    "boxes": "ms:crop_free",
+    "boxes": "ms:activity_zone",
     "selbelow": "ms:move_down",
     "selabove": "ms:move_up",
     "lockitems": "ms:lock",
@@ -225,6 +227,75 @@ def _lock_with(src: Path, dest: Path, text: str) -> None:
     img.save(dest)
 
 
+def _vertex_step(dest: Path, forward: bool) -> None:
+    """Previous / next vertex: a vertex (filled square) on a line segment, with a
+    chevron on the side it steps to. Differs from the bare chevrons of
+    Previous / Next edited feature (`prevfeat.png`, `nextfeat.png`)."""
+    ss = 4
+    u = RENDER_PX * ss
+    m = Image.new("L", (u, u), 0)
+    d = ImageDraw.Draw(m)
+    cy, t = u // 2, int(u * 0.05)
+    sq = int(u * 0.17)
+    # chevron at the left for "previous"; mirrored at the end for "next"
+    cx0, cx1, ch = int(u * 0.04), int(u * 0.30), int(u * 0.28)
+    w = int(u * 0.09)
+    d.line([(cx1, cy - ch), (cx0, cy), (cx1, cy + ch)], fill=255, width=w, joint="curve")
+    vx = int(u * 0.66)
+    d.rectangle([int(u * 0.40), cy - t, u - 1, cy + t], fill=255)
+    d.rectangle([vx - sq, cy - sq, vx + sq, cy + sq], fill=255)
+    if forward:
+        m = m.transpose(Image.FLIP_LEFT_RIGHT)
+    a = m.resize((RENDER_PX, RENDER_PX), Image.LANCZOS)
+    img = Image.new("RGBA", (RENDER_PX, RENDER_PX), (0, 0, 0, 0))
+    img.putalpha(a)
+    img.save(dest)
+
+
+def _curve_vertex(dest: Path) -> None:
+    """Toggle curve vertex: a quarter arc (like `curve.png`) with a filled
+    square vertex on its middle, so it differs from Digitize with curve."""
+    import math
+    ss = 4
+    u = RENDER_PX * ss
+    m = Image.new("L", (u, u), 0)
+    d = ImageDraw.Draw(m)
+    cx, cy, r, w = 0.10 * u, 0.95 * u, 0.80 * u, int(u * 0.08)
+    d.arc([cx - r, cy - r, cx + r, cy + r], 270, 360, fill=255, width=w)
+    mx = cx + (r - w / 2) * math.cos(math.radians(45))
+    my = cy - (r - w / 2) * math.sin(math.radians(45))
+    h = 0.13 * u
+    d.rectangle([mx - h, my - h, mx + h, my + h], fill=255)
+    a = m.resize((RENDER_PX, RENDER_PX), Image.LANCZOS)
+    img = Image.new("RGBA", (RENDER_PX, RENDER_PX), (0, 0, 0, 0))
+    img.putalpha(a)
+    img.save(dest)
+
+
+def _rulers_frame(dest: Path) -> None:
+    """Show rulers: a page with a ruler along its top and its left edge, each
+    with tick marks. Differs from the single ruler of Measure line."""
+    ss = 4
+    u = RENDER_PX * ss
+    m = Image.new("L", (u, u), 0)
+    d = ImageDraw.Draw(m)
+    w, band = int(u * 0.06), int(u * 0.20)
+    x0, y0, x1, y1 = int(u * 0.06), int(u * 0.10), int(u * 0.94), int(u * 0.90)
+    d.rectangle([x0, y0, x1, y1], outline=255, width=w)          # page
+    d.rectangle([x0, y0, x1, y0 + band], fill=255)               # top ruler
+    d.rectangle([x0, y0, x0 + band, y1], fill=255)               # left ruler
+    t = int(u * 0.04)
+    for i in range(1, 5):                                        # ticks cut out
+        x = x0 + band + i * (x1 - x0 - band) // 5
+        d.rectangle([x - t // 2, y0 + band // 2, x + t // 2, y0 + band], fill=0)
+        y = y0 + band + i * (y1 - y0 - band) // 5
+        d.rectangle([x0 + band // 2, y - t // 2, x0 + band, y + t // 2], fill=0)
+    a = m.resize((RENDER_PX, RENDER_PX), Image.LANCZOS)
+    img = Image.new("RGBA", (RENDER_PX, RENDER_PX), (0, 0, 0, 0))
+    img.putalpha(a)
+    img.save(dest)
+
+
 def _logo_svg() -> bytes:
     """The logo SVG with its QGIS SVG-marker parameters resolved: every
     `param(x) <default>` takes its default, and the three without one take a
@@ -264,6 +335,28 @@ def main() -> int:
         guarded(out / f"{name}.png",
                 lambda p, t=text: _lock_with(out / "cadlock.png", p, t),
                 f"cadlock.png + {text!r} in DejaVu Sans Bold")
+    guarded(out / "prevvertex.png", lambda p: _vertex_step(p, forward=False),
+            "drawn: chevron + vertex on a segment (_vertex_step)")
+    guarded(out / "nextvertex.png", lambda p: _vertex_step(p, forward=True),
+            "drawn: vertex on a segment + chevron (_vertex_step)")
+    guarded(out / "space_pan.png",
+            lambda p: space_hint.draw(space_hint.glyph_from_png(out / "pan.png", 20), p),
+            "pan.png + four arrows (space_hint.py)")
+    composites = {
+        # name: (base, badge) -- dcc_glyphs.with_badge
+        "deselalllayers": ("unselectall", "togglelayer"),  # Deselect all layers
+        "snapguides": ("snap", "guides"),                  # Snap to guides (layout)
+        "atlasfirst": ("firstfeat", "atlaspreview"),       # atlas navigation (layout)
+        "atlasprev": ("prevfeat", "atlaspreview"),
+        "atlasnext": ("nextfeat", "atlaspreview"),
+        "atlaslast": ("lastfeat", "atlaspreview"),
+    }
+    for name, (base, badge) in composites.items():
+        guarded(out / f"{name}.png",
+                lambda p, b=base, g=badge: with_badge(out / f"{b}.png", out / f"{g}.png", p),
+                f"{base}.png + {badge}.png badge (dcc_glyphs.with_badge)")
+    guarded(out / "curvevertex.png", _curve_vertex, "drawn: arc + square vertex (_curve_vertex)")
+    guarded(out / "showrulers.png", _rulers_frame, "drawn: page with two rulers (_rulers_frame)")
     mark = out / "qgis.png"
     if mark.exists():
         print("  qgis.png  <- committed asset (left as-is)")

@@ -31,9 +31,9 @@ program_icon_margin: 0
 
 bindings:
   # --- layout ---
-  - { key: N, mods: [CMDCTRL], icon: newlayout.png, label: "New layout" }
+  - { key: N, mods: [CMDCTRL], icon: newlayout.png, label: "New print layout" }
   - { key: S, mods: [CMDCTRL], label: Save }
-  - { key: P, mods: [CMDCTRL], icon: newlayout.png, label: "Print layout" }
+  - { key: P, mods: [CMDCTRL], icon: printlayout.png, label: "Print layout" }
   - { key: P, mods: [CMDCTRL, SHIFT], icon: pagesetup.png, label: "Page setup" }
   - { key: Q, mods: [CMDCTRL], icon: close.png, label: "Close designer" }
 
@@ -55,8 +55,8 @@ bindings:
   - { key: V, mods: [], icon: selectmove.png, label: "Select/move item" }
   - { key: C, mods: [], icon: movecontent.png, label: "Move item content" }
   - { key: P, mods: [], icon: pan.png, label: "Pan layout" }
-  - { key: Z, mods: [], icon: zoomintool.png, label: "Zoom tool" }
-  - { key: SPACE, mods: [], icon: pan.png, label: "Pan layout (hold)" }
+  - { key: Z, mods: [], icon: zoomarea.png, label: "Zoom tool" }
+  - { key: SPACE, mods: [], icon: space_pan.png, label: "Pan view (hold)", region: [72, 40], mode: alpha }
 
   # --- items ---
   - { key: G, mods: [CMDCTRL], icon: group.png, label: "Group items" }
@@ -73,11 +73,11 @@ bindings:
   - { key: MINUS, mods: [CMDCTRL], label: "Zoom out" }
   - { key: "0", mods: [CMDCTRL], icon: zoomfit.png, label: "Zoom full" }
   - { key: "1", mods: [CMDCTRL], icon: zoom100.png, label: "Zoom to 100%" }
-  - { key: R, mods: [CMDCTRL], icon: rulers.png, label: "Show rulers" }
+  - { key: R, mods: [CMDCTRL], icon: showrulers.png, label: "Show rulers" }
   - { key: QUOTE, mods: [CMDCTRL], icon: grid.png, label: "Show grid" }
   - { key: QUOTE, mods: [CMDCTRL, SHIFT], icon: snapgrid.png, label: "Snap to grid" }
   - { key: SEMICOLON, mods: [CMDCTRL], icon: guides.png, label: "Show guides" }
-  - { key: SEMICOLON, mods: [CMDCTRL, SHIFT], icon: snap.png, label: "Snap to guides" }
+  - { key: SEMICOLON, mods: [CMDCTRL, SHIFT], icon: snapguides.png, label: "Snap to guides" }
   - { key: SEMICOLON, mods: [CMDCTRL, ALT], icon: smartguides.png, label: "Smart guides" }
   - { key: B, mods: [CMDCTRL, SHIFT], icon: boxes.png, label: "Show bounding boxes" }
   - { key: TAB, mods: [CTRL], icon: panelsvis.png, label: "Toggle panels", except: [macos] }
@@ -85,8 +85,8 @@ bindings:
   - { key: F11, mods: [], icon: fullscreen.png, label: "Full screen" }
 
   # --- atlas ---
-  - { key: COMMA, mods: [CMDCTRL, SHIFT], icon: firstfeat.png, label: "First atlas feature" }
-  - { key: COMMA, mods: [CMDCTRL], icon: prevfeat.png, label: "Previous atlas feature" }
-  - { key: DOT, mods: [CMDCTRL], icon: nextfeat.png, label: "Next atlas feature" }
-  - { key: DOT, mods: [CMDCTRL, SHIFT], icon: lastfeat.png, label: "Last atlas feature" }
+  - { key: COMMA, mods: [CMDCTRL, SHIFT], icon: atlasfirst.png, label: "First atlas feature" }
+  - { key: COMMA, mods: [CMDCTRL], icon: atlasprev.png, label: "Previous atlas feature" }
+  - { key: DOT, mods: [CMDCTRL], icon: atlasnext.png, label: "Next atlas feature" }
+  - { key: DOT, mods: [CMDCTRL, SHIFT], icon: atlaslast.png, label: "Last atlas feature" }
   - { key: SLASH, mods: [CMDCTRL, ALT], icon: atlaspreview.png, label: "Preview atlas" }

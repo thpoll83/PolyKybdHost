@@ -186,6 +186,30 @@ Platform differences in the set:
 - `zoomintool.png` and `zoomouttool.png` (Ctrl+Alt+= / Ctrl+Alt+-) are
   `ms:zoom_in_map` / `ms:zoom_out_map` with a + or - drawn in the middle by
   `fetch_icons.py` (`_add_sign`), so the two keys read apart.
+- One icon per action: keys that do different things have different icons,
+  also across the main, digitizing, vertex and layout sets.
+  - `printlayout.png` (Print layout) is `ms:print`; `newlayout.png` (New print
+    layout, the same action in the main window and the designer) is
+    `ms:print_add`. `zoomarea.png` (the designer's Zoom tool, a zoom-to-area
+    tool) is `ms:pageview`. `boxes.png` (Show bounding boxes) is
+    `ms:activity_zone`, so it differs from Full screen. Material Symbols,
+    Apache-2.0.
+  - `space_pan.png` (Space, pan while held, in every set) is `pan.png` with an
+    arrow on each side, drawn by `../space_hint.py`; P (the designer's pan
+    tool) keeps `pan.png`.
+  - Drawn in `fetch_icons.py`, white on transparent, no external source:
+    `prevvertex.png` / `nextvertex.png` (a chevron beside a vertex on a
+    segment, `_vertex_step`), `curvevertex.png` (an arc with a square vertex,
+    `_curve_vertex`), `showrulers.png` (a page with a ruler on the top and left
+    edges, `_rulers_frame`).
+  - Composites from `dcc_glyphs.with_badge` (the base glyph with a smaller
+    badge at the lower right), same licences as their parts:
+    `deselalllayers.png` (`unselectall.png` + `togglelayer.png`),
+    `snapguides.png` (`snap.png` + `guides.png`), and the atlas keys
+    `atlasfirst.png`, `atlasprev.png`, `atlasnext.png`, `atlaslast.png`
+    (`firstfeat.png` ... `lastfeat.png` + `atlaspreview.png`).
+  - `fetch_icons.py` leaves the drawn and composite PNGs as they are when they
+    exist.
 - New, Open, Save, Save As, Quit, Undo, Redo, Cut, Copy, Paste, Select All,
   Delete, Zoom In, Zoom Out and Help are drawn by the shared concept renderer.
 

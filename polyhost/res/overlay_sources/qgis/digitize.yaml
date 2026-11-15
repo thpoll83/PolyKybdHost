@@ -32,7 +32,7 @@ bindings:
   - {key: V, mods: [CMDCTRL], label: Paste}
   - {key: A, mods: [CMDCTRL], label: Select all}
   - {key: A, mods: [CMDCTRL, SHIFT], icon: deselectlayer.png, label: Deselect current layer}
-  - {key: A, mods: [CMDCTRL, ALT], icon: unselectall.png, label: Deselect all layers}
+  - {key: A, mods: [CMDCTRL, ALT], icon: deselalllayers.png, label: Deselect all layers}
   - {key: F3, mods: [], icon: selbyvalue.png, label: Select by value}
   - {key: F3, mods: [CMDCTRL], icon: expression.png, label: Select by expression}
   - {key: DOT, mods: [CMDCTRL], icon: addfeature.png, label: Add feature}
@@ -63,7 +63,7 @@ bindings:
   - {key: MINUS, mods: [CMDCTRL, ALT], icon: zoomouttool.png, label: Zoom out tool}
   - {key: F, mods: [CMDCTRL, SHIFT], icon: zoomfit.png, label: Zoom full}
   - {key: J, mods: [CMDCTRL], icon: zoomsel.png, label: Zoom to selection}
-  - {key: SPACE, mods: [], icon: pan.png, label: Pan map (hold)}
+  - {key: SPACE, mods: [], icon: space_pan.png, label: Pan view (hold), region: [72, 40], mode: alpha}
   - {key: F5, mods: [], icon: refresh.png, label: Refresh}
   - {key: F11, mods: [], icon: fullscreen.png, label: Full screen}
   - {key: TAB, mods: [CTRL], icon: panelsvis.png, label: Toggle panels, except: [macos]}
