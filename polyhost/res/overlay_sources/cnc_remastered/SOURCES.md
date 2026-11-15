@@ -95,6 +95,11 @@ dithers the result with a lit 1 px outline.
 
 `fetch_icons.py` renders each SVG at 256 px, then gives it a raised-plate
 shading and the same dither and outline as the units, at its exact key area.
+A Font Awesome icon named `<name>` below is
+`https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/svgs/solid/<name>.svg`;
+a Material Design Icons one is
+`https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/<name>.svg`
+(the `SOURCES` table in `fetch_icons.py`).
 
 | File | Icon | Source and licence |
 |---|---|---|
