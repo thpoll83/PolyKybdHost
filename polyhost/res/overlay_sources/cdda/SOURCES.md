@@ -5,7 +5,7 @@ rebuilds `icons/`.
 
 | Set | Loads for |
 |---|---|
-| `cdda_template` (1 file) | Cataclysm: Dark Days Ahead. Tiles build: `cataclysm-tiles` on Linux, `cataclysm-tiles.exe` on Windows, `org.cataclysmdda.CataclysmDDA` as a Flatpak, "Cataclysm" on macOS. Curses build: a terminal whose title has `cataclysm` at the command position |
+| `cdda_template` (1 file) | Cataclysm: Dark Days Ahead. Tiles build: `cataclysm-tiles` on Linux, `cataclysm-tiles.exe` on Windows, `org.cataclysmdda.CataclysmDDA` as a Flatpak, "Cataclysm" on macOS. Curses build: a terminal whose title has `cataclysm` or `cataclysm-launcher` at the command position |
 
 `cataclysm` is `TARGET_NAME` in the `Makefile` and `cataclysm-tiles` is
 `TILES_TARGET_NAME` (with `.exe` for a Windows target). `cataclysm-tiles` is
@@ -19,8 +19,14 @@ in `src/ncurses_def.cpp` is empty), so the host sees it only when the shell or
 the terminal puts the running command into the title
 (`polyhost/res/overlay-mapping.md`, "An editor seen only in the window title").
 The `cataclysm` route in `&editor_titles` of the mapping file requires
-`cataclysm` at the command position, as the `htop` route does. The launcher
-script `cataclysm-launcher` is a different word and is not matched.
+`cataclysm` or `cataclysm-launcher` at the command position, as the `htop`
+route does. `cataclysm-launcher` is the script of the release archive. It starts
+`cataclysm-tiles` when that file exists and `cataclysm` otherwise, so with a
+tiles build the game runs in its own window and the terminal title is not in
+use. The archive's script has to be started as `./cataclysm-launcher`, and a
+path in front of the command does not match (a folder named after the game
+would match too). The route sees the script only when it is in the search path,
+for example as a symlink in `~/.local/bin`.
 
 ## Shortcut reference
 

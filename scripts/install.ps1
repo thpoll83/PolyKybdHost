@@ -13,6 +13,18 @@
     branch instead of main; .github/workflows/windows-installer.yml uses them
     to install a pull request's own code.
 #>
+# `irm | iex` runs this in the user's own session. The script block keeps
+# $ErrorActionPreference, the function and the variables out of it, and the
+# finally block below puts back the process environment variables this script
+# sets (PYYAML_FORCE_LIBYAML; VIRTUAL_ENV and PATH for the app it starts, which
+# keeps its own copy). The working folder stays in the install folder, so the
+# printed ".venv\..." commands work as shown.
+& {
+$savedEnv = @{}
+foreach ($name in @("PYYAML_FORCE_LIBYAML", "VIRTUAL_ENV", "PATH")) {
+    $savedEnv[$name] = [Environment]::GetEnvironmentVariable($name, "Process")
+}
+try {
 $ErrorActionPreference = "Stop"
 
 $RepoUrl   = if ($env:POLYKYBD_REPO_URL) { $env:POLYKYBD_REPO_URL } else { "https://github.com/thpoll83/PolyKybdHost.git" }
@@ -147,4 +159,17 @@ if ($env:POLYKYBD_NO_LAUNCH) {
 } else {
     # Not started interactively - start right away.
     Start-PolyKybd
+}
+} finally {
+    # Remove-Item for a variable that was not set: in PowerShell 7.5+ (.NET 9),
+    # SetEnvironmentVariable with $null (passed as "") sets an empty value
+    # instead of removing the variable.
+    foreach ($name in @($savedEnv.Keys)) {
+        if ($null -eq $savedEnv[$name]) {
+            Remove-Item -Path "Env:\$name" -ErrorAction SilentlyContinue
+        } else {
+            Set-Item -Path "Env:\$name" -Value $savedEnv[$name]
+        }
+    }
+}
 }

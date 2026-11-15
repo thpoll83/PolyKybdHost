@@ -74,6 +74,9 @@ TITLES = {
         "cataclysm --world Test",
         "Default (cataclysm)",
         "~/cdda> cataclysm",
+        "cataclysm-launcher",
+        "sudo cataclysm-launcher --world Test",
+        "[pi] cataclysm-launcher",
     ]),
     "nethack": (NETHACK, [
         "nethack",
@@ -81,14 +84,17 @@ TITLES = {
         "sudo nethack",
         "Default (nethack)",
         "[pi] nethack",
+        "nethack-console",
+        "nethack-console -u Wizard",
+        "Default (nethack-console)",
     ]),
 }
 
 # The other keys that must be the same route as the first key.
 ALIASES = {
     "crawl": ["crawl-console"],
-    "cataclysm": [],
-    "nethack": [],
+    "cataclysm": ["cataclysm-launcher"],
+    "nethack": ["nethack-console"],
 }
 
 # Titles that mention a game, or look like one, but are not it running.
@@ -100,7 +106,9 @@ OTHER_TITLES = [
     "/home/me/crawl",                         # Nushell, idle in ~/crawl
     "crawl : bash — Konsole",                 # Konsole idle in ~/crawl
     "crawl.log",
-    "cataclysm-launcher",
+    "~/games/cataclysm-launcher",             # Terminal.app, idle in a folder of that name
+    "/home/me/nethack-console",
+    "vim cataclysm-launcher.sh",
     "ssh nethack@nethack.example.org",
     "vim nethackrc",
     "cat nethack.txt",
