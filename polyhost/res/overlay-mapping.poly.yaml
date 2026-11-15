@@ -2144,18 +2144,30 @@ windowsterminal,wt:
     "^crawl-console": *dcss_tui
     # Cataclysm: Dark Days Ahead, curses build (overlay_sources/cdda/).
     cataclysm: &cdda_tui
-      title: '^(?:(?:sudo\s+)?(?:cataclysm)(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:cataclysm)(?:$|\s|\)))'
+      title: '^(?:(?:sudo\s+)?(?:cataclysm|cataclysm-launcher)(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:cataclysm|cataclysm-launcher)(?:$|\s|\)))'
       overlay: cdda_template.mods.png
     "(cataclysm)": *cdda_tui
     "(cataclysm": *cdda_tui
     "^cataclysm": *cdda_tui
+    # `cataclysm-launcher` is the script of the release archive. It starts
+    # `cataclysm-tiles` when that exists and `cataclysm` otherwise.
+    cataclysm-launcher: *cdda_tui
+    "(cataclysm-launcher)": *cdda_tui
+    "(cataclysm-launcher": *cdda_tui
+    "^cataclysm-launcher": *cdda_tui
     # NetHack, tty and curses interfaces (overlay_sources/nethack/).
     nethack: &nethack_tui
-      title: '^(?:(?:sudo\s+)?(?:nethack)(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:nethack)(?:$|\s|\)))'
+      title: '^(?:(?:sudo\s+)?(?:nethack|nethack-console)(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:nethack|nethack-console)(?:$|\s|\)))'
       overlay: [nethack_template.mods.png, nethack_template.combo.mods.png]
     "(nethack)": *nethack_tui
     "(nethack": *nethack_tui
     "^nethack": *nethack_tui
+    # `nethack-console` is the binary of the Debian and Ubuntu package of the
+    # same name (/usr/games/nethack-console).
+    nethack-console: *nethack_tui
+    "(nethack-console)": *nethack_tui
+    "(nethack-console": *nethack_tui
+    "^nethack-console": *nethack_tui
     # GDB and the common cross builds; the set is the prompt's one-letter commands.
     # The PolyKybd GDB script (gdb-plugin/) writes "gdb ⏸ <program>" at the
     # prompt, which this route matches, and "gdb ▶ <program>" while the program

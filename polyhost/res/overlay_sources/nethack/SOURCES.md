@@ -5,19 +5,21 @@ rebuilds `icons/`.
 
 | Set | Loads for |
 |---|---|
-| `nethack_template` (2 files) | NetHack. A terminal whose title has `nethack` at the command position (the tty and curses interfaces). A window of the process `nethack` (the Qt and X11 interfaces on Linux and macOS, when they are built into the main binary), `NetHackW.exe` (the Windows graphical interface) or `NetHack.exe` |
+| `nethack_template` (2 files) | NetHack. A terminal whose title has `nethack` or `nethack-console` at the command position (the tty and curses interfaces). A window of the process `nethack` (the Qt and X11 interfaces on Linux and macOS, when they are built into the main binary), `NetHackW.exe` (the Windows graphical interface) or `NetHack.exe` |
 
 `nethack` is `GAME` in `sys/unix/Makefile.top`. `NetHack.exe` (console) and
 `NetHackW.exe` (graphical) are the targets `NHTARGET` and `NHWTARGETS` in
 `sys/windows/GNUmakefile`. Names not checked on an install. Distribution
 packages that give a graphical build another binary name are not covered: no
-such name is in the NetHack source.
+such name is in the NetHack source. The Debian and Ubuntu package
+`nethack-console` installs `/usr/games/nethack-console` (read from the package's
+file list, 2026-11-15), so the console route accepts that command too.
 
 The tty and curses interfaces run in a terminal and write no window title, so
 the host sees the game only when the shell or the terminal puts the running
 command into the title (`polyhost/res/overlay-mapping.md`, "An editor seen
 only in the window title"). The `nethack` route in `&editor_titles` of the
-mapping file requires `nethack` at the command position, as the `htop` route
+mapping file requires `nethack` or `nethack-console` at the command position, as the `htop` route
 does. A game on a public server over SSH or telnet (`ssh nethack@example.org`)
 is not recognised. `NetHack.exe` started by a double click on Windows runs in a
 console window whose process is the console host; its title was not measured,
