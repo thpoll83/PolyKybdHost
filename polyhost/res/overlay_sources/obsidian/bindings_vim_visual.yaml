@@ -303,17 +303,17 @@ bindings:
   source: vim :help <PageUp>; codemirror-vim <PageUp>
 - key: D
   icon: delete.png
-  label: Delete selection
+  label: Delete
   shared: false
   source: vim :help v_d; codemirror-vim d
 - key: X
   icon: delete.png
-  label: Delete selection
+  label: Delete
   shared: false
   source: vim :help v_x; codemirror-vim x
 - key: DELETE
   icon: delete.png
-  label: Delete selection
+  label: Delete
   shared: false
   source: vim :help v_x; codemirror-vim <Del>
 - key: D
@@ -332,7 +332,7 @@ bindings:
   source: vim :help v_X; codemirror-vim X
 - key: Y
   icon: copy.png
-  label: Yank selection
+  label: Yank
   shared: false
   source: vim :help v_y; codemirror-vim y
 - key: Y
@@ -344,12 +344,12 @@ bindings:
   source: vim :help v_Y; codemirror-vim Y
 - key: C
   icon: change.png
-  label: Change selection
+  label: Change
   shared: false
   source: vim :help v_c; codemirror-vim c
 - key: S
   icon: change.png
-  label: Change selection
+  label: Change
   shared: false
   source: vim :help v_s; codemirror-vim s
 - key: C
@@ -425,7 +425,7 @@ bindings:
   source: vim :help v_O; codemirror-vim O
 - key: R
   icon: replace_char.png
-  label: Replace every character
+  label: Replace with a character
   shared: false
   source: vim :help v_r; codemirror-vim r
 - key: P
@@ -437,20 +437,20 @@ bindings:
   mods:
   - SHIFT
   icon: paste.png
-  label: Put over selection, keep register
+  label: Put over selection
   shared: false
   source: vim :help v_P; codemirror-vim P
 - key: I
   mods:
   - SHIFT
-  icon: insert_bol.png
+  icon: insert_block.png
   label: Insert before block
   shared: false
   source: vim :help v_b_I; codemirror-vim I
 - key: A
   mods:
   - SHIFT
-  icon: append_eol.png
+  icon: append_block.png
   label: Append after block
   shared: false
   source: vim :help v_b_A; codemirror-vim A
@@ -458,7 +458,7 @@ bindings:
   mods:
   - SHIFT
   icon: cmdline.png
-  label: Command line on selection
+  label: Command line
   shared: false
   source: 'vim :help v_:; codemirror-vim :'
 - key: V

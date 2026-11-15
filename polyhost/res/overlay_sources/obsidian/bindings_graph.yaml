@@ -113,39 +113,39 @@ bindings:
   label: Zoom out
   source: 'Obsidian help: Graph view / ms-fluent/Zoom Out (MIT)'
 - key: LEFT
-  icon: back.png
+  icon: panleft.png
   label: Move graph left
-  source: 'Obsidian help: Graph view / ms-fluent arrows (MIT)'
+  source: 'Obsidian help: Graph view / material-symbols/keyboard_arrow_left (Apache-2.0)'
 - key: RIGHT
-  icon: forward.png
+  icon: panright.png
   label: Move graph right
-  source: 'Obsidian help: Graph view / ms-fluent arrows (MIT)'
+  source: 'Obsidian help: Graph view / material-symbols/keyboard_arrow_right (Apache-2.0)'
 - key: UP
   icon: panup.png
   label: Move graph up
-  source: 'Obsidian help: Graph view / ms-fluent arrows (MIT)'
+  source: 'Obsidian help: Graph view / material-symbols/keyboard_arrow_up (Apache-2.0)'
 - key: DOWN
   icon: pandown.png
   label: Move graph down
-  source: 'Obsidian help: Graph view / ms-fluent arrows (MIT)'
+  source: 'Obsidian help: Graph view / material-symbols/keyboard_arrow_down (Apache-2.0)'
 - key: LEFT
   mods: &id001
   - SHIFT
-  icon: back.png
+  icon: fastleft.png
   label: Move graph faster left
-  source: 'Obsidian help: Graph view / ms-fluent arrows (MIT)'
+  source: 'Obsidian help: Graph view / material-symbols/keyboard_double_arrow_left (Apache-2.0)'
 - key: RIGHT
   mods: *id001
-  icon: forward.png
+  icon: fastright.png
   label: Move graph faster right
-  source: 'Obsidian help: Graph view / ms-fluent arrows (MIT)'
+  source: 'Obsidian help: Graph view / material-symbols/keyboard_double_arrow_right (Apache-2.0)'
 - key: UP
   mods: *id001
-  icon: panup.png
+  icon: fastup.png
   label: Move graph faster up
-  source: 'Obsidian help: Graph view / ms-fluent arrows (MIT)'
+  source: 'Obsidian help: Graph view / material-symbols/keyboard_double_arrow_up (Apache-2.0)'
 - key: DOWN
   mods: *id001
-  icon: pandown.png
+  icon: fastdown.png
   label: Move graph faster down
-  source: 'Obsidian help: Graph view / ms-fluent arrows (MIT)'
+  source: 'Obsidian help: Graph view / material-symbols/keyboard_double_arrow_down (Apache-2.0)'

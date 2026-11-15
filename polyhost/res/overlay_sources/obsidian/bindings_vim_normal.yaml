@@ -366,7 +366,7 @@ bindings:
   source: vim :help X; codemirror-vim X
 - key: D
   icon: delete.png
-  label: Delete (operator)
+  label: Delete
   shared: false
   source: vim :help d; codemirror-vim d
 - key: D
@@ -378,7 +378,7 @@ bindings:
   source: vim :help D; codemirror-vim D
 - key: C
   icon: change.png
-  label: Change (operator)
+  label: Change
   shared: false
   source: vim :help c; codemirror-vim c
 - key: C
@@ -397,18 +397,18 @@ bindings:
   mods:
   - SHIFT
   icon: change_line.png
-  label: Substitute line
+  label: Change lines
   shared: false
   source: vim :help S; codemirror-vim S
 - key: Y
   icon: copy.png
-  label: Yank (operator)
+  label: Yank
   shared: false
   source: vim :help y; codemirror-vim y
 - key: Y
   mods:
   - SHIFT
-  icon: copy.png
+  icon: yank_lines.png
   label: Yank line
   shared: false
   source: vim :help Y; codemirror-vim Y
@@ -431,7 +431,7 @@ bindings:
   source: vim :help u; codemirror-vim u
 - key: R
   icon: replace_char.png
-  label: Replace character
+  label: Replace with a character
   shared: false
   source: vim :help r; codemirror-vim r
 - key: R
@@ -459,12 +459,12 @@ bindings:
   mods:
   - SHIFT
   icon: indent_inc.png
-  label: Indent (operator)
+  label: Indent
   shared: false
   source: vim :help >; codemirror-vim >
 - key: '='
   icon: align_left.png
-  label: Re-indent (operator)
+  label: Re-indent
   shared: false
   source: vim :help =; codemirror-vim =
 - key: .
@@ -505,13 +505,13 @@ bindings:
   source: 'vim :help :; codemirror-vim :'
 - key: V
   icon: visual_char.png
-  label: Visual mode
+  label: Visual mode (or stop)
   shared: false
   source: vim :help v; codemirror-vim v
 - key: V
   mods:
   - SHIFT
   icon: visual_line.png
-  label: Visual line mode
+  label: Visual line mode (or stop)
   shared: false
   source: vim :help V; codemirror-vim V

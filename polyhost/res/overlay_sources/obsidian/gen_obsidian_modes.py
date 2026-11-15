@@ -79,12 +79,15 @@ GRAPH = [
     {"key": "-", "icon": "zoomout.png", "label": "Zoom out",
      "source": "Obsidian help: Graph view / ms-fluent/Zoom Out (MIT)"},
 ]
-for _mods, _what in (([], "Move graph"), (["SHIFT"], "Move graph faster")):
-    for _key, _icon in (("LEFT", "back"), ("RIGHT", "forward"),
-                        ("UP", "panup"), ("DOWN", "pandown")):
+# A chevron moves the graph, a double chevron moves it faster; the arrows
+# (back.png, forward.png) stay with Navigate back/forward.
+for _mods, _what, _prefix, _ms in (([], "Move graph", "pan", "keyboard_arrow"),
+                                   (["SHIFT"], "Move graph faster", "fast", "keyboard_double_arrow")):
+    for _key in ("LEFT", "RIGHT", "UP", "DOWN"):
+        _dir = _key.lower()
         GRAPH.append({"key": _key, **({"mods": _mods} if _mods else {}),
-                      "icon": f"{_icon}.png", "label": f"{_what} {_key.lower()}",
-                      "source": "Obsidian help: Graph view / ms-fluent arrows (MIT)"})
+                      "icon": f"{_prefix}{_dir}.png", "label": f"{_what} {_dir}",
+                      "source": f"Obsidian help: Graph view / material-symbols/{_ms}_{_dir} (Apache-2.0)"})
 
 VIEWS = {
     "global": ("every other view (PDF, image, settings, sidebars)", GLOBAL, []),
@@ -104,8 +107,42 @@ NAMED = {"LEFT": "<Left>", "RIGHT": "<Right>", "UP": "<Up>", "DOWN": "<Down>",
          "BACKSPACE": "<BS>", "SPACE": "<Space>", "DELETE": "<Del>", "HOME": "<Home>",
          "END": "<End>", "PAGEUP": "<PageUp>", "PAGEDOWN": "<PageDown>",
          "ENTER": "<CR>", "INSERT": "<Ins>", "TAB": "<Tab>", "F1": "<F1>"}
-# Vim's keys.yaml label that does not fit the emulation.
-VIM_LABELS = {("Y", ("SHIFT",)): "Yank line"}
+# Vim's keys.yaml label that does not fit the emulation, per mode ("-" = both).
+# A visual-mode operator is the normal-mode operator run on the selection, so
+# both modes get one label and share the picture. In codemirror-vim, visual
+# P replaces the selection and puts it in the register like p (vim.js
+# `continuePaste`), so P is the same action as p.
+VIM_LABELS = {
+    ("Y", ("SHIFT",), "-"): "Yank line",
+    ("Y", (), "-"): "Yank",
+    ("D", (), "-"): "Delete",
+    ("X", (), "visual"): "Delete",
+    ("DELETE", (), "visual"): "Delete",
+    ("C", (), "-"): "Change",
+    ("S", (), "visual"): "Change",
+    ("S", ("SHIFT",), "normal"): "Change lines",
+    ("R", (), "-"): "Replace with a character",
+    (".", ("SHIFT",), "-"): "Indent",
+    (",", ("SHIFT",), "-"): "Unindent",
+    ("=", (), "-"): "Re-indent",
+    (";", ("SHIFT",), "-"): "Command line",
+    ("V", (), "-"): "Visual mode (or stop)",
+    ("V", ("SHIFT",), "-"): "Visual line mode (or stop)",
+    ("V", ("CTRL",), "-"): "Visual block mode (or stop)",
+    ("P", ("SHIFT",), "visual"): "Put over selection",
+}
+# Another ../vim/icons picture where the Vim set's picture is shared with a
+# different action of this app.
+VIM_ICONS = {
+    ("Y", ("SHIFT",), "normal"): "yank_lines",       # Y: yank the line, not the y operator
+    ("P", ("SHIFT",), "visual"): "paste",            # the same action as visual p
+    ("I", ("SHIFT",), "visual"): "insert_block",     # startOfSelectedArea, not firstNonBlank
+    ("A", ("SHIFT",), "visual"): "append_block",     # endOfSelectedArea, not eol
+}
+
+
+def _per_mode(table: dict, chord: tuple, mode: str, default):
+    return table.get((*chord, mode), table.get((*chord, "-"), default))
 
 VIM_SPEC = {
     "app": "obsidian",
@@ -165,7 +202,8 @@ def vim_bindings(vim_keys: dict, cm_rows: list, mode: str) -> list[dict]:
         e = {"key": b["key"]}
         if b.get("mods"):
             e["mods"] = list(b["mods"])
-        e.update({"icon": f"{b['icon']}.png", "label": VIM_LABELS.get(chord, b["label"]),
+        e.update({"icon": f"{_per_mode(VIM_ICONS, chord, mode, b['icon'])}.png",
+                  "label": _per_mode(VIM_LABELS, chord, mode, b["label"]),
                   "shared": False, "source": f"vim :help {b['tag']}; codemirror-vim {t}"})
         out.append(e)
     return out

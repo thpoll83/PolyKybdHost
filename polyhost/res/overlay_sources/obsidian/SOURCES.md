@@ -155,8 +155,10 @@ Sources:
 - Graph view: Obsidian help "Graph view" (`en/Plugins/Graph view.md`): `+` and
   `-` zoom, the arrow keys move the graph, Shift moves it faster. `+` is drawn
   on Shift+=, where a US keyboard types it; which key code Obsidian reads for
-  `+` was not checked. Icons: Fluent Zoom In, Zoom Out, Arrow Up/Down (MIT),
-  and the existing arrow icons.
+  `+` was not checked. Icons: Fluent Zoom In, Zoom Out (MIT); Material Symbols
+  `keyboard_arrow_<dir>` (move the graph, `pan<dir>.png`) and
+  `keyboard_double_arrow_<dir>` (move it faster, `fast<dir>.png`), Apache-2.0.
+  The arrows `back.png` and `forward.png` stay with Navigate back/forward.
 - Reading view: the app commands, plus the keys that do not edit text. Copy and
   Select all are the framework's ("Editing shortcuts" help page); Bold, Paste
   and the other editing keys do nothing in Reading view and are left out.
@@ -170,6 +172,15 @@ Sources:
   when both bind a Ctrl key (Ctrl+O, Ctrl+R) was not checked in Obsidian. The
   layers have no ESC mark, so the Obsidian mark stays on ESC. One file serves
   every OS: Vim's keys do not change with the platform.
+- One picture per action across all Obsidian sets (`VIM_LABELS`, `VIM_ICONS`
+  in `gen_obsidian_modes.py`). A visual-mode operator (`d`, `x`, `c`, `s`, `y`,
+  `r`, `>`, `<`, `=`, `:`) is the normal-mode operator run on the selection,
+  so both modes get one label and share the picture. Visual `P` replaces the
+  selection and puts the old text in the register, the same as `p` (vim.js
+  `continuePaste`), so it is labelled "Put over selection" too. Normal `Y`
+  (yank the line) shows `yank_lines.png`; visual `I` and `A`
+  (`startOfSelectedArea`, `endOfSelectedArea`) show `insert_block.png` and
+  `append_block.png`, drawn by `../vim/fetch_icons.py`.
 
 Largest set: 85 images (`.../vim-normal` adds 85 Vim keys to the editor set,
 under 120 together), far below the 600-image limit.
