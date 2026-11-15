@@ -8,8 +8,9 @@
 # With the game's files on the machine, the reader reads the player's
 # User.ini and moves every icon to the keys the player bound that command to.
 #
-# W A S D, the arrows and the other movement keys stay blank: the legend is
-# enough. Ctrl and Shift (jump, duck) are modifier keys and get no icon.
+# W A S D show arrows; the arrow keys and the other movement keys stay blank,
+# as their legends say the same. Ctrl and Shift (jump, duck) are modifier keys
+# and get no icon.
 #
 # Regenerate:
 #   python polyhost/res/overlay_sources/ut2004/fetch_icons.py
@@ -59,7 +60,14 @@ bindings:
   - { key: LBRACKET, command: InventoryPrevious, icon: invprev.png, label: "Previous item" }
   - { key: RBRACKET, command: InventoryNext, icon: invnext.png, label: "Next item" }
 
-  # Movement and actions
+  # Movement. DefUser.ini also gives these commands the arrow keys, `,` and
+  # `.` and the keypad; those keep their own legends (`undrawn`).
+  - { key: W, command: MoveForward, undrawn: [UP], icon: moveforward.png, label: "Move forward" }
+  - { key: S, command: MoveBackward, undrawn: [DOWN], icon: movebackward.png, label: "Move backward" }
+  - { key: A, command: StrafeLeft, undrawn: [LEFT, COMMA], icon: strafeleft.png, label: "Strafe left" }
+  - { key: D, command: StrafeRight, undrawn: [RIGHT, DOT], icon: straferight.png, label: "Strafe right" }
+
+  # Actions
   - { key: SPACE, command: Jump, icon: jump.png, label: "Jump" }
   - { key: BSPC, command: Jump, icon: jump.png, label: "Jump" }
   - { key: C, command: Duck, icon: crouch.png, label: "Crouch" }

@@ -3538,6 +3538,15 @@ dosbox,dosbox.exe,dosbox-staging,dosbox-staging.exe,dosbox-x,dosbox-x.exe:
 stratagus,stratagus.exe,wargus,wargus.exe:
   overlay: [wargus_template.mods.png, wargus_template.combo.mods.png]
   title: Wargus
+# Command & Conquer Generals and Zero Hour (overlay_sources/generals/generals.yaml).
+# Both run as Game.dat, which the host reads as `game`, a name other programs
+# may use too, so the window title gates the entry: "Command and Conquer
+# Generals" (the original) and "Command & Conquer (TM) Generals Zero Hour",
+# both seen in a log of the Steam release (2026-11-14). Not checked under Wine
+# or on the EA app release.
+game:
+  overlay: generals_template.mods.png
+  title: '^Command (and|&) Conquer.*Generals'
 # Command & Conquer Remastered Collection, Steam app 1213210
 # (overlay_sources/cnc_remastered/cnc_remastered.yaml). ClientG.exe on Windows,
 # steam_app_1213210 under Proton. Names not checked on an install.

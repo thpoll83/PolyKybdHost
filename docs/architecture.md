@@ -446,7 +446,9 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
     for Warcraft III, which reads no pictures, only the hotkeys of the installed
     language (EscMenuMainPanel.fdf, GlobalStrings.fdf, CommandStrings.txt in
     the MPQs) and of CustomKeys.txt, for `build.remap`; run on the German 1.22
-    files). `openra.py` lists the folders where OpenRA installs the
+    files). `openra_keys.py` reads the player's OpenRA hotkeys from OpenRA's
+    settings.yaml; a spec names it with `bindings: openra`, a bindings source
+    kept apart from the art reader (`build.bindings_source`). `openra.py` lists the folders where OpenRA installs the
     original game files; the Red Alert, Tiberian Dawn and Dune 2000 readers
     search them. Its
     `__init__.py` declares `READER` (module, settings, folder and variant

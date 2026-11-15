@@ -172,9 +172,11 @@ def default_user_ini(overrides=None) -> str:
     with `overrides` ({UT key name: command}) applied."""
     names = {v: k for k, v in ut_bindings.KEY_NAMES.items()}
     lines = {}
+    names["DOT"] = "period"
     for b in build.bindings(build.load_spec(SPEC)):
         if "command" in b:
-            lines[names[str(b["key"]).upper()]] = b["command"]
+            for key in [b["key"], *(b.get("undrawn") or ())]:
+                lines[names[str(key).upper()]] = b["command"]
     lines.update({k.lower(): v for k, v in (overrides or {}).items()})
     body = "\n".join(f"{k}={v}" for k, v in lines.items())
     return f"[DefaultPlayer]\nName=Player\n\n[Engine.Input]\nLeftMouse=Fire\n{body}\n\n[Engine.HUD]\nT=Talk\n"
@@ -466,6 +468,17 @@ class RemapTest(unittest.TestCase):
 
     def test_the_default_bindings_move_nothing(self):
         self.assertEqual(self.built(default_user_ini()), self.built(None))
+
+    def test_undrawn_keys_count_as_defaults_and_stay_blank(self):
+        """DefUser.ini also binds the arrow keys, `,` and `.` to movement: the
+        stock file moves nothing, and a moved W draws only on the new key."""
+        plain = self.built(None)
+        self.assertEqual(self.built(default_user_ini()), plain)
+        got = self.built(default_user_ini({"W": "", "I": "MoveForward"}))
+        kc = {k: KeyCode[f"KC_{k}"].value for k in ("W", "I", "UP")}
+        self.assertEqual(got[kc["I"]], plain[kc["W"]])
+        self.assertNotIn(kc["UP"], got, "the arrow key keeps its own legend")
+        self.assertNotIn(kc["W"], got, "W is blank")
 
     def test_rebound_keys_take_the_icon_and_the_old_keys_are_cleared(self):
         plain = self.built(None)
