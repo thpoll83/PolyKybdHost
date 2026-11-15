@@ -231,7 +231,6 @@ bindings:
   - linux
   icon: win_find.png
   label: Find window
-  concept: find
 - key: '4'
   mods:
   - ALT
@@ -309,7 +308,6 @@ bindings:
   - macos
   icon: win_find.png
   label: Find window
-  concept: find
 - key: '4'
   mods:
   - GUI

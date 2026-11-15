@@ -133,7 +133,7 @@ bindings:
   # -- tool windows: Alt+digit on Windows/Linux, Cmd+digit on macOS --
   - { key: "1", mods: [ALT], only: [windows, linux], icon: win_project.png,   label: "Project window" }
   - { key: "2", mods: [ALT], only: [windows, linux], icon: win_bookmarks.png, label: "Bookmarks window" }
-  - { key: "3", mods: [ALT], only: [windows, linux], icon: win_find.png,      label: "Find window", concept: find }
+  - { key: "3", mods: [ALT], only: [windows, linux], icon: win_find.png,      label: "Find window" }
   - { key: "4", mods: [ALT], only: [windows, linux], icon: win_run.png,       label: "Run window" }
   - { key: "5", mods: [ALT], only: [windows, linux], icon: win_debug.png,     label: "Debug window" }
   - { key: "6", mods: [ALT], only: [windows, linux], icon: win_problems.png,  label: "Problems window" }
@@ -143,7 +143,7 @@ bindings:
   - { key: "0", mods: [ALT], only: [windows, linux], icon: win_commit.png,    label: "Commit window" }
   - { key: "1", mods: [GUI], only: [macos], icon: win_project.png,   label: "Project window" }
   - { key: "2", mods: [GUI], only: [macos], icon: win_bookmarks.png, label: "Bookmarks window" }
-  - { key: "3", mods: [GUI], only: [macos], icon: win_find.png,      label: "Find window", concept: find }
+  - { key: "3", mods: [GUI], only: [macos], icon: win_find.png,      label: "Find window" }
   - { key: "4", mods: [GUI], only: [macos], icon: win_run.png,       label: "Run window" }
   - { key: "5", mods: [GUI], only: [macos], icon: win_debug.png,     label: "Debug window" }
   - { key: "6", mods: [GUI], only: [macos], icon: win_problems.png,  label: "Problems window" }

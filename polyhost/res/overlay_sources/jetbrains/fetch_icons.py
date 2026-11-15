@@ -55,7 +55,7 @@ FLUENT = {
     # --- tool windows (Alt+1..0 / Cmd+1..0, Alt+F12) ---
     "win_project": "Folder",
     "win_bookmarks": "Bookmark",
-    "win_find": "Search",
+    "win_find": "Text Bullet List Square Search",
     "win_run": "Window Play",
     "win_debug": "Bug",
     "win_problems": "Warning",

@@ -93,6 +93,7 @@ image only when they do the same thing. New images, all drawn by `fetch_icons.py
 | `copyconfig.png` | Services: Copy configuration | `copyfile.png` (Fluent `Document Copy`, MIT) + Fluent `Settings` (MIT) badge |
 | `newelement.png` | New element (Project, Bookmarks, Services) | Fluent `Add` (MIT) |
 | `changelistmove.png` | Move to another changelist | Material `move_group` (Apache-2.0) |
+| `win_find.png` | Find window (Alt+3, Cmd+3) | Fluent `Text Bullet List Square Search` (MIT); it was Fluent `Search` drawn as the shared find concept, the same picture as Find |
 
 `part_*.png` are the badges and bases of these composites and are not drawn on
 their own. The composites are guarded: delete one to redraw it.
