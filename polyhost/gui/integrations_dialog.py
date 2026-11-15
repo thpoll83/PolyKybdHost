@@ -64,6 +64,9 @@ class RowsPage(QWidget):
 
     # The first column of the grid, so the paths of every page start at the same x.
     NAME_COLUMN_W = 170
+    # Run apply() on the worker thread. Only for a page whose apply() shows no
+    # dialog: it may start a program (GDB, PowerShell) that takes seconds.
+    APPLY_ON_THREAD = False
 
     def __init__(self, title, intro, parent=None):
         super().__init__(parent)
@@ -225,16 +228,37 @@ class RowsPage(QWidget):
         keys = self.selected()
         if not install:
             keys = [k for k in keys if k in self._removable]
-        if not keys:
+        if not keys or self.busy():
+            return
+        if self.APPLY_ON_THREAD:
+            self._checking.show()
+            self.install_button.setEnabled(False)
+            self.remove_button.setEnabled(False)
+            self._thread = _StatusThread(lambda: self.apply(install, keys), self)
+            # noinspection PyUnresolvedReferences
+            self._thread.done.connect(self._on_applied)
+            self._thread.start()
             return
         try:
             lines = self.apply(install, keys)
         except Exception as exc:  # noqa: BLE001 - a dialog must not take the tray down
-            lines = [_f("The change failed: {error}", error=str(exc))]
-        if lines is None:       # cancelled
-            return
-        self.show_results(lines)
-        self.refresh()
+            lines = exc
+        self._on_applied(lines)
+
+    def _on_applied(self, lines):
+        self._checking.hide()
+        if isinstance(lines, Exception):
+            lines = [_f("The change failed: {error}", error=str(lines))]
+        if lines is not None:   # None: cancelled
+            self.show_results(lines)
+        # After `done` the thread may still count as running for a moment;
+        # refresh() waits for it so the two threads never overlap.
+        if self._thread is not None and self._thread.isRunning():
+            self._thread.wait()
+        if lines is not None:
+            self.refresh()
+        else:
+            self.update_buttons()
 
     def show_results(self, lines):
         self.results.setText("\n".join(lines))

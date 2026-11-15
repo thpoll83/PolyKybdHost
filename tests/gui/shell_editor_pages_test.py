@@ -182,6 +182,29 @@ class TerminalsPageTest(_PageTestBase):
         self.assertTrue(page._checking.isHidden())
         self.assertTrue(page.install_button.isEnabled())
 
+    def test_a_slow_install_runs_off_the_gui_thread(self):
+        """Install may start PowerShell or GDB. The click returns at once,
+        the buttons stay off while it runs, and the result arrives after."""
+        def slow_install(shells, statuses=None, codex=None):
+            time.sleep(0.4)
+            return [st.Result(st.BASH, True, True, st.MSG_INSTALLED.format(path="/h/.bashrc"), None)]
+        page = sep.TerminalsPage(status_fn=_statuses, install_fn=slow_install)
+        self.addCleanup(page.deleteLater)
+        self.settle(page)
+        page.boxes()[st.BASH].setChecked(True)
+        start = time.monotonic()
+        page.install_button.click()
+        self.assertLess(time.monotonic() - start, 0.2)
+        self.assertFalse(page.install_button.isEnabled())
+        self.assertFalse(page.remove_button.isEnabled())
+        end = time.monotonic() + 5
+        while page.results.isHidden() and time.monotonic() < end:
+            self.app.processEvents()
+            time.sleep(0.01)
+        self.settle(page)
+        self.assertIn("/h/.bashrc", page.results.text())
+        self.assertTrue(page.install_button.isEnabled())
+
     def test_fish_says_it_needs_setup_only_for_codex(self):
         text = sep.state_text(st.ShellStatus(st.FISH, st.STATE_NOT_INSTALLED, None, ""))
         self.assertIn("Codex", text)

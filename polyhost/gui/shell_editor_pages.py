@@ -88,6 +88,8 @@ class TerminalsPage(RowsPage):
     """``status_fn``, ``install_fn`` and ``remove_fn`` are the service's
     functions; tests pass fakes."""
 
+    APPLY_ON_THREAD = True
+
     def __init__(self, parent=None, status_fn=None, install_fn=None, remove_fn=None):
         super().__init__(_("Terminals"), _(
             "The keyboard shows the shortcuts of a program running in a terminal "
@@ -170,6 +172,8 @@ class EditorsPage(RowsPage):
     """``status_fn``, ``install_fn`` and ``remove_fn`` are the service's
     functions; tests pass fakes. ``report_settings`` is the (port, token) of
     the report listener, read from the settings file when None."""
+
+    APPLY_ON_THREAD = True
 
     def __init__(self, parent=None, status_fn=None, install_fn=None, remove_fn=None,
                  report_settings=None):
