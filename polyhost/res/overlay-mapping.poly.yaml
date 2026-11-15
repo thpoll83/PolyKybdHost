@@ -3538,6 +3538,15 @@ dosbox,dosbox.exe,dosbox-staging,dosbox-staging.exe,dosbox-x,dosbox-x.exe:
 stratagus,stratagus.exe,wargus,wargus.exe:
   overlay: [wargus_template.mods.png, wargus_template.combo.mods.png]
   title: Wargus
+# Command & Conquer Generals and Zero Hour (overlay_sources/generals/generals.yaml).
+# Both run as Game.dat, which the host reads as `game`, a name other programs
+# may use too, so the window title gates the entry: "Command and Conquer
+# Generals" (the original) and "Command & Conquer (TM) Generals Zero Hour",
+# both seen in a log of the Steam release (2026-11-14). Not checked under Wine
+# or on the EA app release.
+game:
+  overlay: generals_template.mods.png
+  title: '^Command (and|&) Conquer.*Generals'
 # Command & Conquer Remastered Collection, Steam app 1213210
 # (overlay_sources/cnc_remastered/cnc_remastered.yaml). ClientG.exe on Windows,
 # steam_app_1213210 under Proton. Names not checked on an install.
@@ -3582,6 +3591,56 @@ devilutionx,devilutionx.exe,org.diasurgical.DevilutionX:
 # Flathub app id. Names not checked on an install.
 pyrogenesis,pyrogenesis.exe,0ad,com.play0ad.zeroad:
   overlay: [zeroad_template.mods.png, zeroad_template.combo.mods.png]
+# SuperTuxKart 1.5 (overlay_sources/supertuxkart/supertuxkart.yaml).
+# `supertuxkart` is the CMake executable target and the desktop file's Exec=
+# and StartupWMClass= (supertuxkart.exe on Windows, also under Wine);
+# net.supertuxkart.SuperTuxKart is the Flatpak id. Names not checked on an
+# install.
+supertuxkart,supertuxkart.exe,net.supertuxkart.SuperTuxKart:
+  overlay: supertuxkart_template.mods.png
+# Hedgewars (overlay_sources/hedgewars/hedgewars.yaml). A match runs in the
+# engine, `hwengine` (add_executable in hedgewars/CMakeLists.txt); the frontend
+# is `hedgewars` (QTfrontend/CMakeLists.txt, the desktop file's Exec=), and
+# org.hedgewars.Hedgewars is the Flathub app id. Names not checked on an
+# install.
+hwengine,hwengine.exe,hedgewars,hedgewars.exe,org.hedgewars.Hedgewars:
+  overlay: hedgewars_template.mods.png
+# FlightGear 2024.1.7 (overlay_sources/flightgear/flightgear.yaml). The global
+# default keys only: an aircraft adds and replaces keys of its own. `fgfs` is
+# the CMake executable target and the desktop file's Exec= (fgfs.exe on
+# Windows); the macOS bundle sets OUTPUT_NAME "FlightGear", and
+# org.flightgear.FlightGear is the Flathub app id. Names not checked on an
+# install.
+fgfs,fgfs.exe,flightgear,org.flightgear.FlightGear:
+  overlay: flightgear_template.mods.png
+# Thrive 1.7.0 (overlay_sources/thrive/thrive.yaml). A Godot project: the
+# export paths in export_presets.cfg are Thrive.x86_64 (Linux) and Thrive.exe
+# (Windows), and the project name is Thrive. The macOS and Steam names were
+# not looked up. Names not checked on an install.
+thrive,thrive.exe,thrive.x86_64:
+  overlay: [thrive_template.mods.png, thrive_template.combo.mods.png]
+# Beyond All Reason (overlay_sources/beyond_all_reason/beyond_all_reason.yaml).
+# The game runs in the Recoil engine, whose process is `spring` (`spring.exe`);
+# the launcher is `Beyond-All-Reason`, and info.beyondallreason.bar is the
+# Flatpak id. Other Spring and Recoil games have the same process name and get
+# this set too. Names not checked on an install.
+spring,spring.exe,beyond-all-reason,beyond-all-reason.exe,info.beyondallreason.bar:
+  overlay: [beyond_all_reason_template.mods.png, beyond_all_reason_template.combo.mods.png]
+# KeeperFX, the open source Dungeon Keeper engine
+# (overlay_sources/keeperfx/keeperfx.yaml). `keeperfx` and `keeperfx_hvlog`
+# (the logging build) are the executable targets in CMakeLists.txt (v1.4.0).
+# Names not checked on an install.
+keeperfx,keeperfx.exe,keeperfx_hvlog,keeperfx_hvlog.exe:
+  overlay: keeperfx_template.mods.png
+# Widelands (overlay_sources/widelands/widelands.yaml). `widelands` is the
+# binary target in src/CMakeLists.txt (v1.3.1) and the Exec= and StartupWMClass=
+# of xdg/org.widelands.Widelands.desktop, whose name is the Flatpak id. Names
+# not checked on an install.
+widelands,widelands.exe,org.widelands.widelands:
+  overlay: widelands_template.mods.png
+  os:
+    macos:
+      overlay: [widelands_template_mac.mods.png, widelands_template_mac.combo.mods.png]
 # League of Legends (overlay_sources/lol/lol.yaml), the in-game window only. The
 # game is `League of Legends.exe` on Windows and the `LeagueofLegends` app on
 # macOS. The lobby client (LeagueClient, LeagueClientUx) is a different process
@@ -3619,6 +3678,45 @@ naev,naev.exe,org.naev.naev:
 # Windows; space.oolite.Oolite is the Flatpak id. Names not checked on an install.
 oolite,oolite.exe,space.oolite.oolite:
   overlay: [oolite_template.mods.png, oolite_template.combo.mods.png]
+# GZDoom (overlay_sources/gzdoom/gzdoom.yaml), drawn for Doom and Doom II.
+# `gzdoom` is ZDOOM_EXE_NAME in CMakeLists.txt (g4.14.2), gzdoom.exe on Windows;
+# org.zdoom.GZDoom is the Flathub app id. Names not checked on an install.
+gzdoom,gzdoom.exe,org.zdoom.GZDoom:
+  overlay: gzdoom_template.mods.png
+# UZDoom, the continuation of GZDoom (overlay_sources/gzdoom/uzdoom.yaml): the
+# GZDoom keys plus R (reload). `uzdoom` is ZDOOM_EXE_NAME in CMakeLists.txt
+# (5.0.3) and org.zdoom.UZDoom is APPID in src/version.h. Names not checked on
+# an install.
+uzdoom,uzdoom.exe,org.zdoom.UZDoom:
+  overlay: uzdoom_template.mods.png
+# Chocolate Doom (overlay_sources/chocolate_doom/chocolate_doom.yaml), the keys
+# of the original Doom. The Doom binary is "${PROGRAM_PREFIX}doom" in
+# src/CMakeLists.txt (chocolate-doom-3.1.1); org.chocolate_doom is PACKAGE_RDNS.
+# chocolate-heretic, -hexen and -strife are not matched: their keys differ.
+# Names not checked on an install.
+chocolate-doom,chocolate-doom.exe,org.chocolate_doom.Doom:
+  overlay: chocolate_doom_template.mods.png
+# Crispy Doom (overlay_sources/chocolate_doom/crispy_doom.yaml): the Chocolate
+# Doom keys plus W A S D, Caps Lock and two automap keys. Names as for Chocolate
+# Doom, read from crispy-doom-7.2. Names not checked on an install.
+crispy-doom,crispy-doom.exe,io.github.fabiangreffrath.Doom:
+  overlay: crispy_doom_template.mods.png
+# DSDA-Doom (overlay_sources/chocolate_doom/dsda_doom.yaml). dsda-doom is the
+# target of AddGameExecutable() in prboom2/src/CMakeLists.txt (v0.30.1) and the
+# desktop file's StartupWMClass. Names not checked on an install.
+dsda-doom,dsda-doom.exe:
+  overlay: dsda_doom_template.mods.png
+# Woof! (overlay_sources/chocolate_doom/woof.yaml). `woof` is the executable
+# target in src/CMakeLists.txt (woof_16.0.0); the desktop file is
+# io.github.fabiangreffrath.woof. Names not checked on an install.
+woof,woof.exe,io.github.fabiangreffrath.woof:
+  overlay: woof_template.mods.png
+# Quake source ports Ironwail, vkQuake and QuakeSpasm
+# (overlay_sources/quake/quake.yaml): the three ship the same default.cfg key
+# bindings. The names are DEFAULT_TARGET in each port's Quake/Makefile (Ironwail
+# v0.8.2, vkQuake 1.37.0, QuakeSpasm 0.97.0). Names not checked on an install.
+ironwail,ironwail.exe,vkquake,vkquake.exe,quakespasm,quakespasm.exe:
+  overlay: quake_template.mods.png
 # SQL Server Management Studio (overlay_sources/ssms/), Windows only. The
 # executable is Ssms.exe (SSMS 18 to 20) or SSMS.exe (SSMS 21 and later); both
 # lowercase to `ssms`. Name not checked on an install.
