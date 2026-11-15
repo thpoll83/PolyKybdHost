@@ -1,0 +1,121 @@
+# Command & Conquer Generals and Zero Hour overlay for PolyKybd.
+#
+# Keys: the default hotkeys in Data\English\CommandMap.ini (EnglishZH.big of
+# the Steam release) and the command-card letters of generals.csf (&Attack
+# Move, &Guard). Each binding names its CommandMap command (or the csf label
+# of a command-card button). See SOURCES.md.
+#
+# Letter keys alone build and use abilities, and their meaning changes with the
+# selection, so they stay blank, except attack move, guard and stop, and the
+# CommandMap keys that do the same thing whatever is selected.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/generals/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/generals/generals.yaml --preview /tmp/generals_preview
+app: generals
+match: [game]
+output: generals_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for C&C: the icon uses the full height on the right; the firmware clears
+# 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# GENERALS over the whole cell, without the ESC legend (protocol v25). Esc
+# opens the options menu in the game.
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Control groups: digit selects, Ctrl creates, Shift adds the selection,
+  # Alt centres the view on the group
+  - { key: "1", command: SELECT_TEAM1, icon: group1.png, label: "Select group 1", region: [48, 40], margin: 5 }
+  - { key: "2", command: SELECT_TEAM2, icon: group2.png, label: "Select group 2", region: [48, 40], margin: 5 }
+  - { key: "3", command: SELECT_TEAM3, icon: group3.png, label: "Select group 3", region: [48, 40], margin: 5 }
+  - { key: "4", command: SELECT_TEAM4, icon: group4.png, label: "Select group 4", region: [48, 40], margin: 5 }
+  - { key: "5", command: SELECT_TEAM5, icon: group5.png, label: "Select group 5", region: [48, 40], margin: 5 }
+  - { key: "6", command: SELECT_TEAM6, icon: group6.png, label: "Select group 6", region: [48, 40], margin: 5 }
+  - { key: "7", command: SELECT_TEAM7, icon: group7.png, label: "Select group 7", region: [48, 40], margin: 5 }
+  - { key: "8", command: SELECT_TEAM8, icon: group8.png, label: "Select group 8", region: [48, 40], margin: 5 }
+  - { key: "9", command: SELECT_TEAM9, icon: group9.png, label: "Select group 9", region: [48, 40], margin: 5 }
+  - { key: "0", command: SELECT_TEAM0, icon: group0.png, label: "Select group 0", region: [48, 40], margin: 5 }
+  - { key: "1", mods: [CTRL], command: CREATE_TEAM1, icon: groupnew1.png, label: "Create group 1", region: [48, 40], margin: 5 }
+  - { key: "2", mods: [CTRL], command: CREATE_TEAM2, icon: groupnew2.png, label: "Create group 2", region: [48, 40], margin: 5 }
+  - { key: "3", mods: [CTRL], command: CREATE_TEAM3, icon: groupnew3.png, label: "Create group 3", region: [48, 40], margin: 5 }
+  - { key: "4", mods: [CTRL], command: CREATE_TEAM4, icon: groupnew4.png, label: "Create group 4", region: [48, 40], margin: 5 }
+  - { key: "5", mods: [CTRL], command: CREATE_TEAM5, icon: groupnew5.png, label: "Create group 5", region: [48, 40], margin: 5 }
+  - { key: "6", mods: [CTRL], command: CREATE_TEAM6, icon: groupnew6.png, label: "Create group 6", region: [48, 40], margin: 5 }
+  - { key: "7", mods: [CTRL], command: CREATE_TEAM7, icon: groupnew7.png, label: "Create group 7", region: [48, 40], margin: 5 }
+  - { key: "8", mods: [CTRL], command: CREATE_TEAM8, icon: groupnew8.png, label: "Create group 8", region: [48, 40], margin: 5 }
+  - { key: "9", mods: [CTRL], command: CREATE_TEAM9, icon: groupnew9.png, label: "Create group 9", region: [48, 40], margin: 5 }
+  - { key: "0", mods: [CTRL], command: CREATE_TEAM0, icon: groupnew0.png, label: "Create group 0", region: [48, 40], margin: 5 }
+  - { key: "1", mods: [SHIFT], command: ADD_TEAM1, icon: groupadd1.png, label: "Add selection to group 1", region: [48, 40], margin: 5 }
+  - { key: "2", mods: [SHIFT], command: ADD_TEAM2, icon: groupadd2.png, label: "Add selection to group 2", region: [48, 40], margin: 5 }
+  - { key: "3", mods: [SHIFT], command: ADD_TEAM3, icon: groupadd3.png, label: "Add selection to group 3", region: [48, 40], margin: 5 }
+  - { key: "4", mods: [SHIFT], command: ADD_TEAM4, icon: groupadd4.png, label: "Add selection to group 4", region: [48, 40], margin: 5 }
+  - { key: "5", mods: [SHIFT], command: ADD_TEAM5, icon: groupadd5.png, label: "Add selection to group 5", region: [48, 40], margin: 5 }
+  - { key: "6", mods: [SHIFT], command: ADD_TEAM6, icon: groupadd6.png, label: "Add selection to group 6", region: [48, 40], margin: 5 }
+  - { key: "7", mods: [SHIFT], command: ADD_TEAM7, icon: groupadd7.png, label: "Add selection to group 7", region: [48, 40], margin: 5 }
+  - { key: "8", mods: [SHIFT], command: ADD_TEAM8, icon: groupadd8.png, label: "Add selection to group 8", region: [48, 40], margin: 5 }
+  - { key: "9", mods: [SHIFT], command: ADD_TEAM9, icon: groupadd9.png, label: "Add selection to group 9", region: [48, 40], margin: 5 }
+  - { key: "0", mods: [SHIFT], command: ADD_TEAM0, icon: groupadd0.png, label: "Add selection to group 0", region: [48, 40], margin: 5 }
+  - { key: "1", mods: [ALT], command: VIEW_TEAM1, icon: groupjump1.png, label: "Centre on group 1", region: [48, 40], margin: 5 }
+  - { key: "2", mods: [ALT], command: VIEW_TEAM2, icon: groupjump2.png, label: "Centre on group 2", region: [48, 40], margin: 5 }
+  - { key: "3", mods: [ALT], command: VIEW_TEAM3, icon: groupjump3.png, label: "Centre on group 3", region: [48, 40], margin: 5 }
+  - { key: "4", mods: [ALT], command: VIEW_TEAM4, icon: groupjump4.png, label: "Centre on group 4", region: [48, 40], margin: 5 }
+  - { key: "5", mods: [ALT], command: VIEW_TEAM5, icon: groupjump5.png, label: "Centre on group 5", region: [48, 40], margin: 5 }
+  - { key: "6", mods: [ALT], command: VIEW_TEAM6, icon: groupjump6.png, label: "Centre on group 6", region: [48, 40], margin: 5 }
+  - { key: "7", mods: [ALT], command: VIEW_TEAM7, icon: groupjump7.png, label: "Centre on group 7", region: [48, 40], margin: 5 }
+  - { key: "8", mods: [ALT], command: VIEW_TEAM8, icon: groupjump8.png, label: "Centre on group 8", region: [48, 40], margin: 5 }
+  - { key: "9", mods: [ALT], command: VIEW_TEAM9, icon: groupjump9.png, label: "Centre on group 9", region: [48, 40], margin: 5 }
+  - { key: "0", mods: [ALT], command: VIEW_TEAM0, icon: groupjump0.png, label: "Centre on group 0", region: [48, 40], margin: 5 }
+
+  # Camera views: F1 to F8 go to a saved view, Ctrl+F1 to F8 save it
+  - { key: F1, command: VIEW_VIEW1, icon: view1.png, label: "Go to view 1", region: [30, 40] }
+  - { key: F2, command: VIEW_VIEW2, icon: view2.png, label: "Go to view 2", region: [30, 40] }
+  - { key: F3, command: VIEW_VIEW3, icon: view3.png, label: "Go to view 3", region: [30, 40] }
+  - { key: F4, command: VIEW_VIEW4, icon: view4.png, label: "Go to view 4", region: [30, 40] }
+  - { key: F5, command: VIEW_VIEW5, icon: view5.png, label: "Go to view 5", region: [30, 40] }
+  - { key: F6, command: VIEW_VIEW6, icon: view6.png, label: "Go to view 6", region: [30, 40] }
+  - { key: F7, command: VIEW_VIEW7, icon: view7.png, label: "Go to view 7", region: [30, 40] }
+  - { key: F8, command: VIEW_VIEW8, icon: view8.png, label: "Go to view 8", region: [30, 40] }
+  - { key: F1, mods: [CTRL], command: SAVE_VIEW1, icon: viewset1.png, label: "Save view 1", region: [30, 40] }
+  - { key: F2, mods: [CTRL], command: SAVE_VIEW2, icon: viewset2.png, label: "Save view 2", region: [30, 40] }
+  - { key: F3, mods: [CTRL], command: SAVE_VIEW3, icon: viewset3.png, label: "Save view 3", region: [30, 40] }
+  - { key: F4, mods: [CTRL], command: SAVE_VIEW4, icon: viewset4.png, label: "Save view 4", region: [30, 40] }
+  - { key: F5, mods: [CTRL], command: SAVE_VIEW5, icon: viewset5.png, label: "Save view 5", region: [30, 40] }
+  - { key: F6, mods: [CTRL], command: SAVE_VIEW6, icon: viewset6.png, label: "Save view 6", region: [30, 40] }
+  - { key: F7, mods: [CTRL], command: SAVE_VIEW7, icon: viewset7.png, label: "Save view 7", region: [30, 40] }
+  - { key: F8, mods: [CTRL], command: SAVE_VIEW8, icon: viewset8.png, label: "Save view 8", region: [30, 40] }
+
+  # Unit orders: on the command card of every unit that moves and fights
+  - { key: A, command: CONTROLBAR:AttackMove, icon: attackmove.png, label: "Attack move" }
+  - { key: G, command: CONTROLBAR:Guard, icon: guard.png, label: "Guard" }
+  - { key: S, command: STOP, icon: stop.png, label: "Stop" }
+
+  # Selection and view
+  - { key: E, command: SELECT_MATCHING_UNITS, icon: sametype.png, label: "Select matching units" }
+  - { key: X, command: SELECT_ALL, icon: selectall.png, label: "Select all units" }
+  - { key: H, command: VIEW_COMMAND_CENTER, icon: commandcenter.png, label: "Go to command center" }
+  - { key: H, mods: [CTRL], command: SELECT_HERO, icon: hero.png, label: "Select hero" }
+  - { key: SPACE, command: VIEW_LAST_RADAR_EVENT, icon: lastevent.png, label: "Go to last radar event" }
+  - { key: F, mods: [CTRL], command: CREATE_FORMATION, icon: formation.png, label: "Create formation" }
+  - { key: F9, command: TOGGLE_CONTROL_BAR, icon: controlbar.png, label: "Show / hide the control bar" }
+
+  # Communication and other
+  - { key: ENTER, command: CHAT_EVERYONE, icon: chatall.png, label: "Chat to everyone" }
+  - { key: BSPC, command: CHAT_ALLIES, icon: chatallies.png, label: "Chat to allies" }
+  - { key: TAB, command: DIPLOMACY, icon: diplomacy.png, label: "Diplomacy" }
+  - { key: B, mods: [CTRL], command: PLACE_BEACON, icon: beacon.png, label: "Place beacon" }
+  - { key: DELETE, command: DELETE_BEACON, icon: deletebeacon.png, label: "Delete beacon" }
+  - { key: C, mods: [CTRL], command: ALL_CHEER, icon: cheer.png, label: "Cheer" }
+  - { key: F12, command: TAKE_SCREENSHOT, icon: screenshot.png, label: "Screenshot" }
