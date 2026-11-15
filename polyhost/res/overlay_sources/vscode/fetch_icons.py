@@ -52,7 +52,7 @@ FLUENT = {
     "rename": "Rename",
     # --- search ---
     "findinfiles": "Folder Search",
-    "replaceinfiles": "Arrow Swap",
+    "replaceinfiles": "ms:find_replace",  # not Arrow Swap: that reads as the Replace concept
     "selectall": "Select All On",
     # --- editing ---
     "comment": "Comment",

@@ -272,6 +272,12 @@ All other shortcut icons: **Microsoft Fluent UI System Icons** — MIT.
 per-binding `source:` field in `bindings.yaml` names the exact glyph for each.
 MIT is GPL-3.0-compatible, so redistribution here is fine.
 
+One exception: `replaceinfiles.png` (Replace in files, Ctrl+Shift+H) is Google
+Material Symbols `find_replace` (Apache-2.0), not Fluent Arrow Swap. Arrow Swap
+looks the same as the shared Replace concept on Ctrl+H, and the two keys do
+different things (maintainer rule, 2026-11-15: one image per action within an
+app). Cursor and Windsurf borrow the same file.
+
 ## Program mark (ESC key) — ⚠️ trademark note
 
 `icons/vscode.png` is the **VS Code ribbon logo**, and it is a **committed
