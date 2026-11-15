@@ -73,7 +73,7 @@ bindings:
 - key: KC_END
   mods: []
   label: Line end
-  icon: jump_end.png
+  icon: line_end.png
   source: 'Text: text.move(type=LINE_END)'
 - key: KC_ENTER
   mods: []
@@ -83,7 +83,7 @@ bindings:
 - key: KC_HOME
   mods: []
   label: Line start
-  icon: jump_start.png
+  icon: line_start.png
   source: 'Text: text.move(type=LINE_BEGIN)'
 - key: KC_INSERT
   mods: []
@@ -138,7 +138,7 @@ bindings:
   mods:
   - ALT
   label: Run script
-  icon: play.png
+  icon: run_script.png
   source: 'Text: text.run_script'
 - key: R
   mods:
@@ -243,19 +243,19 @@ bindings:
   mods:
   - SHIFT
   label: Select down
-  icon: hier_child.png
+  icon: sel_down.png
   source: 'Text: text.move_select(type=NEXT_LINE)'
 - key: KC_END
   mods:
   - SHIFT
   label: Select to line end
-  icon: jump_end.png
+  icon: sel_line_end.png
   source: 'Text: text.move_select(type=LINE_END)'
 - key: KC_HOME
   mods:
   - SHIFT
   label: Select to line start
-  icon: jump_start.png
+  icon: sel_line_start.png
   source: 'Text: text.move_select(type=LINE_BEGIN)'
 - key: KC_INSERT
   mods:
@@ -272,13 +272,13 @@ bindings:
   mods:
   - SHIFT
   label: Select page down
-  icon: page_down.png
+  icon: sel_page_down.png
   source: 'Text: text.move_select(type=NEXT_PAGE)'
 - key: KC_PAGE_UP
   mods:
   - SHIFT
   label: Select page up
-  icon: page_up.png
+  icon: sel_page_up.png
   source: 'Text: text.move_select(type=PREVIOUS_PAGE)'
 - key: KC_RIGHT
   mods:
@@ -295,7 +295,7 @@ bindings:
   mods:
   - SHIFT
   label: Select up
-  icon: hier_parent.png
+  icon: sel_up.png
   source: 'Text: text.move_select(type=PREVIOUS_LINE)'
 - key: A
   mods:
@@ -311,13 +311,13 @@ bindings:
   mods:
   - CTRL
   label: Duplicate line
-  icon: duplicate.png
+  icon: duplicate_line.png
   source: 'Text: text.duplicate_line'
 - key: E
   mods:
   - CTRL
   label: Line end
-  icon: jump_end.png
+  icon: line_end.png
   source: 'Text: text.move(type=LINE_END)'
 - key: F
   mods:
@@ -361,7 +361,7 @@ bindings:
   mods:
   - CTRL
   label: Delete word back
-  icon: backspace.png
+  icon: delete_word.png
   source: 'Text: text.delete(type=PREVIOUS_WORD)'
 - key: KC_COMMA
   mods:
@@ -396,7 +396,7 @@ bindings:
   mods:
   - CTRL
   label: Previous word
-  icon: word_prev.png
+  icon: word_prev_w.png
   source: 'Text: text.move(type=PREVIOUS_WORD)'
 - key: KC_PAGE_DOWN
   mods:
@@ -414,7 +414,7 @@ bindings:
   mods:
   - CTRL
   label: Next word
-  icon: propagate.png
+  icon: word_next_w.png
   source: 'Text: text.move(type=NEXT_WORD)'
 - key: KC_SLASH
   mods:
@@ -513,42 +513,42 @@ bindings:
   - CTRL
   - SHIFT
   label: Line end
-  icon: jump_end.png
+  icon: line_end.png
   source: 'Text: text.move(type=LINE_END)'
 - key: KC_DOWN
   mods:
   - CTRL
   - SHIFT
   label: Move line down
-  icon: hier_child.png
+  icon: line_down.png
   source: 'Text: text.move_lines(direction=DOWN)'
 - key: KC_END
   mods:
   - CTRL
   - SHIFT
   label: Select to end
-  icon: bottom.png
+  icon: sel_text_end.png
   source: 'Text: text.move_select(type=FILE_BOTTOM)'
 - key: KC_HOME
   mods:
   - CTRL
   - SHIFT
   label: Select to start
-  icon: top.png
+  icon: sel_text_start.png
   source: 'Text: text.move_select(type=FILE_TOP)'
 - key: KC_LEFT
   mods:
   - CTRL
   - SHIFT
   label: Select previous word
-  icon: word_prev.png
+  icon: sel_word_prev.png
   source: 'Text: text.move_select(type=PREVIOUS_WORD)'
 - key: KC_RIGHT
   mods:
   - CTRL
   - SHIFT
   label: Select next word
-  icon: propagate.png
+  icon: sel_word_next.png
   source: 'Text: text.move_select(type=NEXT_WORD)'
 - key: KC_TAB
   mods:
@@ -562,7 +562,7 @@ bindings:
   - CTRL
   - SHIFT
   label: Move line up
-  icon: hier_parent.png
+  icon: line_up.png
   source: 'Text: text.move_lines(direction=UP)'
 - key: O
   mods:
@@ -608,7 +608,7 @@ bindings:
   mods:
   - GUI
   label: Duplicate line
-  icon: duplicate.png
+  icon: duplicate_line.png
   source: 'Text: text.duplicate_line'
   only:
   - macos
@@ -616,7 +616,7 @@ bindings:
   mods:
   - GUI
   label: Line end
-  icon: jump_end.png
+  icon: line_end.png
   source: 'Text: text.move(type=LINE_END)'
   only:
   - macos
@@ -669,7 +669,7 @@ bindings:
   mods:
   - GUI
   label: Delete word back
-  icon: backspace.png
+  icon: delete_word.png
   source: 'Text: text.delete(type=PREVIOUS_WORD)'
   only:
   - macos
@@ -716,7 +716,7 @@ bindings:
   mods:
   - GUI
   label: Previous word
-  icon: word_prev.png
+  icon: word_prev_w.png
   source: 'Text: text.move(type=PREVIOUS_WORD)'
   only:
   - macos
@@ -740,7 +740,7 @@ bindings:
   mods:
   - GUI
   label: Next word
-  icon: propagate.png
+  icon: word_next_w.png
   source: 'Text: text.move(type=NEXT_WORD)'
   only:
   - macos
@@ -848,7 +848,7 @@ bindings:
   - SHIFT
   - GUI
   label: Line end
-  icon: jump_end.png
+  icon: line_end.png
   source: 'Text: text.move(type=LINE_END)'
   only:
   - macos
@@ -857,7 +857,7 @@ bindings:
   - SHIFT
   - GUI
   label: Move line down
-  icon: hier_child.png
+  icon: line_down.png
   source: 'Text: text.move_lines(direction=DOWN)'
   only:
   - macos
@@ -866,7 +866,7 @@ bindings:
   - SHIFT
   - GUI
   label: Select to end
-  icon: bottom.png
+  icon: sel_text_end.png
   source: 'Text: text.move_select(type=FILE_BOTTOM)'
   only:
   - macos
@@ -875,7 +875,7 @@ bindings:
   - SHIFT
   - GUI
   label: Select to start
-  icon: top.png
+  icon: sel_text_start.png
   source: 'Text: text.move_select(type=FILE_TOP)'
   only:
   - macos
@@ -884,7 +884,7 @@ bindings:
   - SHIFT
   - GUI
   label: Select previous word
-  icon: word_prev.png
+  icon: sel_word_prev.png
   source: 'Text: text.move_select(type=PREVIOUS_WORD)'
   only:
   - macos
@@ -893,7 +893,7 @@ bindings:
   - SHIFT
   - GUI
   label: Select next word
-  icon: propagate.png
+  icon: sel_word_next.png
   source: 'Text: text.move_select(type=NEXT_WORD)'
   only:
   - macos
@@ -911,7 +911,7 @@ bindings:
   - SHIFT
   - GUI
   label: Move line up
-  icon: hier_parent.png
+  icon: line_up.png
   source: 'Text: text.move_lines(direction=UP)'
   only:
   - macos

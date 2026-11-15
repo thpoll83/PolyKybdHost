@@ -36,7 +36,7 @@ bindings:
 - key: D
   mods: []
   label: Toggle direction
-  icon: switch_dir.png
+  icon: weight_direction.png
   source: 'Grease Pencil Weight Paint: grease_pencil.weight_toggle_direction'
 - key: F
   mods: []
@@ -85,7 +85,7 @@ bindings:
 - key: I
   mods: []
   label: Animation menu
-  icon: key_menu.png
+  icon: gp_anim_menu.png
   source: 'Grease Pencil Weight Paint: wm.call_menu(name=VIEW3D_MT_edit_greasepencil_animation)'
 - key: KC_APPLICATION
   mods: []
@@ -205,13 +205,13 @@ bindings:
   mods:
   - ALT
   label: Reveal layers
-  icon: reveal.png
+  icon: reveal_layers.png
   source: 'Grease Pencil Weight Paint: grease_pencil.layer_reveal'
 - key: I
   mods:
   - ALT
   label: Delete frame
-  icon: key_delete.png
+  icon: gp_frame_delete.png
   source: 'Grease Pencil Weight Paint: wm.call_menu(name=GREASE_PENCIL_MT_draw_delete)'
 - key: KC_SLASH
   mods:
@@ -331,19 +331,19 @@ bindings:
   mods:
   - SHIFT
   label: Hide other layers
-  icon: hide_others.png
+  icon: hide_other_layers.png
   source: 'Grease Pencil Weight Paint: grease_pencil.layer_hide(unselected=True)'
 - key: I
   mods:
   - SHIFT
   label: Blank keyframe
-  icon: key_insert.png
+  icon: gp_blank_key.png
   source: 'Grease Pencil Weight Paint: grease_pencil.insert_blank_frame'
 - key: KC_DELETE
   mods:
   - SHIFT
   label: Delete frame, all layers
-  icon: key_delete.png
+  icon: gp_frame_delete_all.png
   source: 'Grease Pencil Weight Paint: grease_pencil.delete_frame(type=ALL_FRAMES)'
 - key: KC_GRAVE
   mods:
@@ -539,7 +539,7 @@ bindings:
   - SHIFT
   - ALT
   label: Multi-frame lines only
-  icon: edit_lines.png
+  icon: multiframe_lines.png
   source: 'Grease Pencil Weight Paint: wm.context_toggle(data_path=space_data.overlay.use_gpencil_multiedit_line_only)'
 - key: Z
   mods:
@@ -615,7 +615,7 @@ bindings:
   - CTRL
   - SHIFT
   label: Merge layer down
-  icon: merge.png
+  icon: layer_merge.png
   source: 'Grease Pencil Weight Paint: grease_pencil.layer_merge(mode=ACTIVE)'
 - key: O
   mods:
@@ -863,7 +863,7 @@ bindings:
   - SHIFT
   - GUI
   label: Merge layer down
-  icon: merge.png
+  icon: layer_merge.png
   source: 'Grease Pencil Weight Paint: grease_pencil.layer_merge(mode=ACTIVE)'
   only:
   - macos

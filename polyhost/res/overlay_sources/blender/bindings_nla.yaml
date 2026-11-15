@@ -118,12 +118,12 @@ bindings:
 - key: KC_PAGE_DOWN
   mods: []
   label: Move strip down
-  icon: hier_child.png
+  icon: strip_down.png
   source: 'NLA Editor: nla.move_down'
 - key: KC_PAGE_UP
   mods: []
   label: Move strip up
-  icon: hier_parent.png
+  icon: strip_up.png
   source: 'NLA Editor: nla.move_up'
 - key: KC_RIGHT
   mods: []
@@ -143,7 +143,7 @@ bindings:
 - key: KC_TAB
   mods: []
   label: Tweak mode
-  icon: group_enter.png
+  icon: tweak.png
   source: 'NLA Generic: nla.tweakmode_exit'
 - key: KC_UP
   mods: []
@@ -211,7 +211,7 @@ bindings:
   mods:
   - ALT
   label: Swap strips
-  icon: swap.png
+  icon: swap_strips.png
   source: 'NLA Editor: nla.swap'
 - key: F12
   mods:
@@ -241,7 +241,7 @@ bindings:
   mods:
   - SHIFT
   label: Add action strip
-  icon: add.png
+  icon: add_action_strip.png
   source: 'NLA Editor: nla.actionclip_add'
 - key: B
   mods:
@@ -355,7 +355,7 @@ bindings:
   mods:
   - SHIFT
   label: Tweak mode, isolate
-  icon: group_enter.png
+  icon: tweak_isolate.png
   source: 'NLA Generic: nla.tweakmode_exit(isolate_action=True)'
 - key: R
   mods:
@@ -379,7 +379,7 @@ bindings:
   mods:
   - CTRL
   label: Apply scale
-  icon: apply.png
+  icon: apply_scale.png
   source: 'NLA Editor: nla.apply_scale'
 - key: F
   mods:
@@ -409,7 +409,7 @@ bindings:
   mods:
   - CTRL
   label: Make meta strip
-  icon: group.png
+  icon: meta_make.png
   source: 'NLA Editor: nla.meta_add'
 - key: I
   mods:
@@ -513,8 +513,8 @@ bindings:
   mods:
   - CTRL
   - ALT
-  label: Remove meta strip
-  icon: ungroup.png
+  label: Ungroup meta
+  icon: meta_ungroup.png
   source: 'NLA Editor: nla.meta_remove'
 - key: KC_SPACE
   mods:
@@ -587,7 +587,7 @@ bindings:
   mods:
   - GUI
   label: Apply scale
-  icon: apply.png
+  icon: apply_scale.png
   source: 'NLA Editor: nla.apply_scale'
   only:
   - macos
@@ -627,7 +627,7 @@ bindings:
   mods:
   - GUI
   label: Make meta strip
-  icon: group.png
+  icon: meta_make.png
   source: 'NLA Editor: nla.meta_add'
   only:
   - macos
@@ -751,8 +751,8 @@ bindings:
   mods:
   - ALT
   - GUI
-  label: Remove meta strip
-  icon: ungroup.png
+  label: Ungroup meta
+  icon: meta_ungroup.png
   source: 'NLA Editor: nla.meta_remove'
   only:
   - macos

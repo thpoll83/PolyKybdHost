@@ -45,7 +45,7 @@ bindings:
 - key: F
   mods: []
   label: Make segment
-  icon: connect.png
+  icon: make_segment.png
   source: 'Curve: curve.make_segment'
 - key: F1
   mods: []
@@ -270,13 +270,13 @@ bindings:
   mods:
   - ALT
   label: Radius / thickness
-  icon: shrink_fatten.png
+  icon: curve_radius.png
   source: 'Curve: transform.transform(mode=CURVE_SHRINKFATTEN)'
 - key: T
   mods:
   - ALT
   label: Clear tilt
-  icon: clear_rot.png
+  icon: tilt_clear.png
   source: 'Curve: curve.tilt_clear'
 - key: W
   mods:
@@ -438,7 +438,7 @@ bindings:
   mods:
   - SHIFT
   label: Recalc handles
-  icon: handle.png
+  icon: handles_recalc.png
   source: 'Curve: curve.normals_make_consistent'
 - key: O
   mods:
@@ -623,7 +623,7 @@ bindings:
   mods:
   - CTRL
   label: Tilt
-  icon: rotate.png
+  icon: tilt.png
   source: 'Curve: transform.tilt'
 - key: V
   mods:
@@ -901,7 +901,7 @@ bindings:
   mods:
   - GUI
   label: Tilt
-  icon: rotate.png
+  icon: tilt.png
   source: 'Curve: transform.tilt'
   only:
   - macos

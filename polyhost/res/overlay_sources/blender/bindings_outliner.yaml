@@ -90,7 +90,7 @@ bindings:
 - key: E
   mods: []
   label: Exclude collection
-  icon: collection_hide.png
+  icon: collection_exclude.png
   source: 'Outliner: outliner.collection_exclude_set'
 - key: F1
   mods: []
@@ -108,7 +108,7 @@ bindings:
   source: 'Screen: render.render(use_viewport=True)'
 - key: F2
   mods: []
-  label: Rename
+  label: Rename active
   icon: rename.png
   source: 'Outliner: outliner.item_rename(use_active=True)'
 - key: F3
@@ -138,7 +138,7 @@ bindings:
 - key: K
   mods: []
   label: Add to keying set
-  icon: keying_set.png
+  icon: keying_set_add.png
   source: 'Outliner: outliner.keyingset_add_selected'
 - key: KC_DELETE
   mods: []
@@ -147,7 +147,7 @@ bindings:
 - key: KC_DOT
   mods: []
   label: Show active
-  icon: localview.png
+  icon: show_active.png
   source: 'Outliner: outliner.show_active'
 - key: KC_DOWN
   mods: []
@@ -161,12 +161,12 @@ bindings:
 - key: KC_HOME
   mods: []
   label: Show hierarchy
-  icon: ed_outliner.png
+  icon: show_hierarchy.png
   source: 'Outliner: outliner.show_hierarchy'
 - key: KC_LEFT
   mods: []
   label: Collapse
-  icon: collapse.png
+  icon: collapse_item.png
   source: 'Outliner: outliner.select_walk(direction=LEFT)'
 - key: KC_PAGE_DOWN
   mods: []
@@ -181,7 +181,7 @@ bindings:
 - key: KC_RIGHT
   mods: []
   label: Expand
-  icon: shrink_fatten.png
+  icon: expand_item.png
   source: 'Outliner: outliner.select_walk(direction=RIGHT)'
 - key: KC_UP
   mods: []
@@ -289,7 +289,7 @@ bindings:
   mods:
   - ALT
   label: Reveal all
-  icon: reveal.png
+  icon: reveal_all.png
   source: 'Outliner: outliner.unhide_all'
 - key: I
   mods:
@@ -373,7 +373,7 @@ bindings:
   mods:
   - SHIFT
   label: Expand / collapse
-  icon: collapse.png
+  icon: expand_toggle.png
   source: 'Outliner: outliner.expanded_toggle'
 - key: B
   mods:
@@ -457,19 +457,19 @@ bindings:
   mods:
   - SHIFT
   label: Extend down
-  icon: hier_child.png
+  icon: extend_down.png
   source: 'Outliner: outliner.select_walk(direction=DOWN,extend=True)'
 - key: KC_LEFT
   mods:
   - SHIFT
   label: Collapse all
-  icon: collapse.png
+  icon: collapse_all.png
   source: 'Outliner: outliner.select_walk(direction=LEFT,toggle_all=True)'
 - key: KC_RIGHT
   mods:
   - SHIFT
   label: Expand all
-  icon: shrink_fatten.png
+  icon: expand_all.png
   source: 'Outliner: outliner.select_walk(direction=RIGHT,toggle_all=True)'
 - key: KC_SPACE
   mods:
@@ -481,7 +481,7 @@ bindings:
   mods:
   - SHIFT
   label: Extend up
-  icon: hier_parent.png
+  icon: extend_up.png
   source: 'Outliner: outliner.select_walk(direction=UP,extend=True)'
 - key: M
   mods:
@@ -670,7 +670,7 @@ bindings:
   - CTRL
   - ALT
   label: Delete drivers
-  icon: constraint_clear.png
+  icon: drivers_delete.png
   source: 'Outliner: outliner.drivers_delete_selected'
 - key: F12
   mods:
@@ -850,7 +850,7 @@ bindings:
   - ALT
   - GUI
   label: Delete drivers
-  icon: constraint_clear.png
+  icon: drivers_delete.png
   source: 'Outliner: outliner.drivers_delete_selected'
   only:
   - macos

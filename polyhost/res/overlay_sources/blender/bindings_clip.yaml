@@ -142,7 +142,7 @@ bindings:
 - key: KC_TAB
   mods: []
   label: Tracking / mask
-  icon: br_mask.png
+  icon: clip_mode.png
   source: 'Clip: wm.context_toggle_enum(data_path=space_data.mode,value_1=TRACKING,value_2=MASK)'
 - key: KC_UP
   mods: []
@@ -152,7 +152,7 @@ bindings:
 - key: L
   mods: []
   label: Lock to selection
-  icon: pin.png
+  icon: lock_selection.png
   source: 'Clip Editor: clip.lock_selection_toggle'
 - key: N
   mods: []
@@ -198,7 +198,7 @@ bindings:
   mods:
   - ALT
   label: Show disabled
-  icon: reveal.png
+  icon: show_disabled.png
   source: 'Clip Editor: wm.context_toggle(data_path=space_data.show_disabled)'
 - key: F12
   mods:
@@ -222,19 +222,19 @@ bindings:
   mods:
   - ALT
   label: Track previous frame
-  icon: frame_prev.png
+  icon: track_prev.png
   source: 'Clip: clip.track_markers(backwards=True,sequence=False)'
 - key: KC_RIGHT
   mods:
   - ALT
   label: Track next frame
-  icon: frame_next.png
+  icon: track_next.png
   source: 'Clip: clip.track_markers(backwards=False,sequence=False)'
 - key: L
   mods:
   - ALT
   label: Unlock tracks
-  icon: lock_pie.png
+  icon: unlock_tracks.png
   source: 'Clip Editor: clip.lock_tracks(action=UNLOCK)'
 - key: O
   mods:
@@ -246,13 +246,13 @@ bindings:
   mods:
   - ALT
   label: Show search area
-  icon: search.png
+  icon: search_area.png
   source: 'Clip Editor: wm.context_toggle(data_path=space_data.show_marker_search)'
 - key: T
   mods:
   - ALT
   label: Clear path after
-  icon: path_clear.png
+  icon: path_clear_after.png
   source: 'Clip Editor: clip.clear_track_path(action=REMAINED,clear_active=False)'
 - key: W
   mods:
@@ -264,13 +264,13 @@ bindings:
   mods:
   - SHIFT
   label: Toggle markers
-  icon: mute.png
+  icon: markers_toggle.png
   source: 'Clip Editor: clip.disable_markers(action=TOGGLE)'
 - key: E
   mods:
   - SHIFT
   label: Marker pie
-  icon: marker.png
+  icon: marker_pie.png
   source: 'Clip: wm.call_menu_pie(name=CLIP_MT_marker_pie)'
 - key: F1
   mods:
@@ -360,7 +360,7 @@ bindings:
   mods:
   - SHIFT
   label: Delete marker
-  icon: key_delete.png
+  icon: marker_delete.png
   source: 'Clip Editor: clip.delete_marker'
 - key: KC_LEFT
   mods:
@@ -396,7 +396,7 @@ bindings:
   mods:
   - SHIFT
   label: Clear path before
-  icon: path_clear.png
+  icon: path_clear_before.png
   source: 'Clip Editor: clip.clear_track_path(action=UPTO,clear_active=False)'
 - key: W
   mods:
@@ -408,7 +408,7 @@ bindings:
   mods:
   - SHIFT
   label: Delete marker
-  icon: key_delete.png
+  icon: marker_delete.png
   source: 'Clip Editor: clip.delete_marker'
 - key: C
   mods:
@@ -437,7 +437,7 @@ bindings:
   mods:
   - CTRL
   label: Mute footage
-  icon: mute.png
+  icon: mute_footage.png
   source: 'Clip Editor: wm.context_toggle(data_path=space_data.use_mute_footage)'
 - key: I
   mods:
@@ -449,7 +449,7 @@ bindings:
   mods:
   - CTRL
   label: Join tracks
-  icon: join.png
+  icon: join_tracks.png
   source: 'Clip Editor: clip.join_tracks'
 - key: KC_COMMA
   mods:
@@ -497,7 +497,7 @@ bindings:
   mods:
   - CTRL
   label: Lock tracks
-  icon: lock_channel.png
+  icon: lock_tracks.png
   source: 'Clip Editor: clip.lock_tracks(action=LOCK)'
 - key: N
   mods:
@@ -523,7 +523,7 @@ bindings:
   mods:
   - CTRL
   label: Track forward
-  icon: time_fwd.png
+  icon: track_fwd.png
   source: 'Clip: clip.track_markers(backwards=False,sequence=True)'
 - key: V
   mods:
@@ -540,14 +540,14 @@ bindings:
   - SHIFT
   - ALT
   label: Jump to failed
-  icon: key_jump.png
+  icon: jump_failed.png
   source: 'Clip Editor: clip.frame_jump(position=FAILEDPREV)'
 - key: KC_RIGHT
   mods:
   - SHIFT
   - ALT
   label: Jump to path start
-  icon: jump_start.png
+  icon: path_start.png
   source: 'Clip Editor: clip.frame_jump(position=PATHSTART)'
 - key: T
   mods:
@@ -595,14 +595,14 @@ bindings:
   - CTRL
   - SHIFT
   label: Jump to path start
-  icon: jump_start.png
+  icon: path_start.png
   source: 'Clip Editor: clip.frame_jump(position=PATHSTART)'
 - key: KC_RIGHT
   mods:
   - CTRL
   - SHIFT
   label: Jump to path end
-  icon: jump_end.png
+  icon: path_end.png
   source: 'Clip Editor: clip.frame_jump(position=PATHEND)'
 - key: KC_SPACE
   mods:
@@ -636,7 +636,7 @@ bindings:
   - CTRL
   - SHIFT
   label: Track backward
-  icon: time_back.png
+  icon: track_back.png
   source: 'Clip: clip.track_markers(backwards=True,sequence=True)'
 - key: Z
   mods:
@@ -687,7 +687,7 @@ bindings:
   mods:
   - GUI
   label: Join tracks
-  icon: join.png
+  icon: join_tracks.png
   source: 'Clip Editor: clip.join_tracks'
   only:
   - macos
@@ -735,7 +735,7 @@ bindings:
   mods:
   - GUI
   label: Lock tracks
-  icon: lock_channel.png
+  icon: lock_tracks.png
   source: 'Clip Editor: clip.lock_tracks(action=LOCK)'
   only:
   - macos
@@ -771,7 +771,7 @@ bindings:
   mods:
   - GUI
   label: Track forward
-  icon: time_fwd.png
+  icon: track_fwd.png
   source: 'Clip: clip.track_markers(backwards=False,sequence=True)'
   only:
   - macos
@@ -820,7 +820,7 @@ bindings:
   - SHIFT
   - GUI
   label: Jump to path start
-  icon: jump_start.png
+  icon: path_start.png
   source: 'Clip Editor: clip.frame_jump(position=PATHSTART)'
   only:
   - macos
@@ -829,7 +829,7 @@ bindings:
   - SHIFT
   - GUI
   label: Jump to path end
-  icon: jump_end.png
+  icon: path_end.png
   source: 'Clip Editor: clip.frame_jump(position=PATHEND)'
   only:
   - macos
@@ -873,7 +873,7 @@ bindings:
   - SHIFT
   - GUI
   label: Track backward
-  icon: time_back.png
+  icon: track_back.png
   source: 'Clip: clip.track_markers(backwards=True,sequence=True)'
   only:
   - macos

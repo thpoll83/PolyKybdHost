@@ -26,17 +26,17 @@ bindings:
 - key: '1'
   mods: []
   label: Point mask
-  icon: sel_vert.png
+  icon: gp_point_mask.png
   source: 'Grease Pencil Vertex Paint: wm.context_toggle(data_path=scene.tool_settings.use_gpencil_vertex_select_mask_point)'
 - key: '2'
   mods: []
   label: Stroke mask
-  icon: stroke.png
+  icon: gp_stroke_mask.png
   source: 'Grease Pencil Vertex Paint: wm.context_toggle(data_path=scene.tool_settings.use_gpencil_vertex_select_mask_stroke)'
 - key: '3'
   mods: []
   label: Segment mask
-  icon: sel_edge.png
+  icon: gp_segment_mask.png
   source: 'Grease Pencil Vertex Paint: wm.context_toggle(data_path=scene.tool_settings.use_gpencil_vertex_select_mask_segment)'
 - key: A
   mods: []
@@ -94,7 +94,7 @@ bindings:
 - key: I
   mods: []
   label: Animation menu
-  icon: key_menu.png
+  icon: gp_anim_menu.png
   source: 'Grease Pencil Vertex Paint: wm.call_menu(name=VIEW3D_MT_edit_greasepencil_animation)'
 - key: KC_APPLICATION
   mods: []
@@ -235,7 +235,7 @@ bindings:
   mods:
   - ALT
   label: Delete frame
-  icon: key_delete.png
+  icon: gp_frame_delete.png
   source: 'Grease Pencil Vertex Paint: wm.call_menu(name=GREASE_PENCIL_MT_draw_delete)'
 - key: KC_SLASH
   mods:
@@ -361,13 +361,13 @@ bindings:
   mods:
   - SHIFT
   label: Blank keyframe
-  icon: key_insert.png
+  icon: gp_blank_key.png
   source: 'Grease Pencil Vertex Paint: grease_pencil.insert_blank_frame'
 - key: KC_DELETE
   mods:
   - SHIFT
   label: Delete frame, all layers
-  icon: key_delete.png
+  icon: gp_frame_delete_all.png
   source: 'Grease Pencil Vertex Paint: grease_pencil.delete_frame(type=ALL_FRAMES)'
 - key: KC_GRAVE
   mods:
@@ -538,7 +538,7 @@ bindings:
   mods:
   - CTRL
   label: Select fill
-  icon: fill.png
+  icon: select_fill.png
   source: 'Grease Pencil Selection: grease_pencil.select_fill'
 - key: N
   mods:
@@ -575,7 +575,7 @@ bindings:
   - SHIFT
   - ALT
   label: Multi-frame lines only
-  icon: edit_lines.png
+  icon: multiframe_lines.png
   source: 'Grease Pencil Vertex Paint: wm.context_toggle(data_path=space_data.overlay.use_gpencil_multiedit_line_only)'
 - key: Z
   mods:
@@ -651,7 +651,7 @@ bindings:
   - CTRL
   - SHIFT
   label: Merge layer down
-  icon: merge.png
+  icon: layer_merge.png
   source: 'Grease Pencil Vertex Paint: grease_pencil.layer_merge(mode=ACTIVE)'
 - key: O
   mods:
@@ -785,7 +785,7 @@ bindings:
   mods:
   - GUI
   label: Select fill
-  icon: fill.png
+  icon: select_fill.png
   source: 'Grease Pencil Selection: grease_pencil.select_fill'
   only:
   - macos
@@ -907,7 +907,7 @@ bindings:
   - SHIFT
   - GUI
   label: Merge layer down
-  icon: merge.png
+  icon: layer_merge.png
   source: 'Grease Pencil Vertex Paint: grease_pencil.layer_merge(mode=ACTIVE)'
   only:
   - macos

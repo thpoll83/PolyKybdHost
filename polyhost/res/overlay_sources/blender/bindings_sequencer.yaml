@@ -26,52 +26,52 @@ bindings:
 - key: '0'
   mods: []
   label: Multicam cut 10
-  icon: multicam.png
+  icon: multicam_10.png
   source: 'Sequencer: sequencer.split_multicam(camera=10)'
 - key: '1'
   mods: []
   label: Multicam cut 1
-  icon: multicam.png
+  icon: multicam_1.png
   source: 'Sequencer: sequencer.split_multicam(camera=1)'
 - key: '2'
   mods: []
   label: Multicam cut 2
-  icon: multicam.png
+  icon: multicam_2.png
   source: 'Sequencer: sequencer.split_multicam(camera=2)'
 - key: '3'
   mods: []
   label: Multicam cut 3
-  icon: multicam.png
+  icon: multicam_3.png
   source: 'Sequencer: sequencer.split_multicam(camera=3)'
 - key: '4'
   mods: []
   label: Multicam cut 4
-  icon: multicam.png
+  icon: multicam_4.png
   source: 'Sequencer: sequencer.split_multicam(camera=4)'
 - key: '5'
   mods: []
   label: Multicam cut 5
-  icon: multicam.png
+  icon: multicam_5.png
   source: 'Sequencer: sequencer.split_multicam(camera=5)'
 - key: '6'
   mods: []
   label: Multicam cut 6
-  icon: multicam.png
+  icon: multicam_6.png
   source: 'Sequencer: sequencer.split_multicam(camera=6)'
 - key: '7'
   mods: []
   label: Multicam cut 7
-  icon: multicam.png
+  icon: multicam_7.png
   source: 'Sequencer: sequencer.split_multicam(camera=7)'
 - key: '8'
   mods: []
   label: Multicam cut 8
-  icon: multicam.png
+  icon: multicam_8.png
   source: 'Sequencer: sequencer.split_multicam(camera=8)'
 - key: '9'
   mods: []
   label: Multicam cut 9
-  icon: multicam.png
+  icon: multicam_9.png
   source: 'Sequencer: sequencer.split_multicam(camera=9)'
 - key: A
   mods: []
@@ -134,12 +134,12 @@ bindings:
 - key: H
   mods: []
   label: Mute strips
-  icon: mute.png
+  icon: mute_strips.png
   source: 'Sequencer: sequencer.mute(unselected=False)'
 - key: I
   mods: []
   label: Retiming menu
-  icon: retime.png
+  icon: retime_menu.png
   source: 'Sequencer: wm.call_menu(name=SEQUENCER_MT_retiming)'
 - key: K
   mods: []
@@ -188,12 +188,12 @@ bindings:
 - key: KC_PAGE_DOWN
   mods: []
   label: Next strip
-  icon: same_next.png
+  icon: strip_next.png
   source: 'Sequencer: sequencer.strip_jump(center=False,next=True)'
 - key: KC_PAGE_UP
   mods: []
   label: Previous strip
-  icon: same_prev.png
+  icon: strip_prev.png
   source: 'Sequencer: sequencer.strip_jump(center=False,next=False)'
 - key: KC_RIGHT
   mods: []
@@ -213,7 +213,7 @@ bindings:
 - key: KC_TAB
   mods: []
   label: Enter / exit meta
-  icon: group_enter.png
+  icon: meta_toggle.png
   source: 'Sequencer: sequencer.meta_toggle'
 - key: KC_UP
   mods: []
@@ -238,7 +238,7 @@ bindings:
 - key: O
   mods: []
   label: Reset overlay frame
-  icon: overlays.png
+  icon: overlay_reset.png
   source: 'Sequencer: wm.context_set_int(data_path=scene.sequence_editor.overlay_frame,value=0)'
 - key: P
   mods: []
@@ -277,7 +277,7 @@ bindings:
 - key: Y
   mods: []
   label: Separate images
-  icon: separate.png
+  icon: separate_images.png
   source: 'Sequencer: sequencer.images_separate'
 - key: A
   mods:
@@ -307,25 +307,25 @@ bindings:
   mods:
   - ALT
   label: Swap left
-  icon: swap.png
+  icon: swap_left.png
   source: 'Sequencer: sequencer.swap(side=LEFT)'
 - key: KC_PAGE_DOWN
   mods:
   - ALT
   label: Next strip, center
-  icon: same_next.png
+  icon: strip_next_center.png
   source: 'Sequencer: sequencer.strip_jump(center=True,next=True)'
 - key: KC_PAGE_UP
   mods:
   - ALT
   label: Previous strip, center
-  icon: same_prev.png
+  icon: strip_prev_center.png
   source: 'Sequencer: sequencer.strip_jump(center=True,next=False)'
 - key: KC_RIGHT
   mods:
   - ALT
   label: Swap right
-  icon: swap.png
+  icon: swap_right.png
   source: 'Sequencer: sequencer.swap(side=RIGHT)'
 - key: O
   mods:
@@ -348,7 +348,7 @@ bindings:
   mods:
   - ALT
   label: Swap inputs
-  icon: swap.png
+  icon: swap_inputs.png
   source: 'Sequencer: sequencer.swap_inputs'
 - key: W
   mods:
@@ -462,19 +462,19 @@ bindings:
   mods:
   - SHIFT
   label: Mute unselected
-  icon: mute.png
+  icon: mute_unsel.png
   source: 'Sequencer: sequencer.mute(unselected=True)'
 - key: K
   mods:
   - SHIFT
   label: Hard split
-  icon: split.png
+  icon: split_hard.png
   source: 'Sequencer: sequencer.split(type=HARD)'
 - key: KC_BACKSPACE
   mods:
   - SHIFT
   label: Remove all gaps
-  icon: gap_remove.png
+  icon: gap_remove_all.png
   source: 'Sequencer: sequencer.gap_remove(all=True)'
 - key: KC_EQUAL
   mods:
@@ -510,13 +510,13 @@ bindings:
   mods:
   - SHIFT
   label: Extend linked
-  icon: select_linked.png
+  icon: linked_extend.png
   source: 'Sequencer: sequencer.select_linked_pick(extend=True)'
 - key: O
   mods:
   - SHIFT
   label: Frame overlay
-  icon: overlays.png
+  icon: overlay_frame.png
   source: 'Video Sequence Editor: wm.context_toggle(data_path=scene.sequence_editor.show_overlay_frame)'
 - key: R
   mods:
@@ -528,13 +528,13 @@ bindings:
   mods:
   - SHIFT
   label: Snap strips
-  icon: snap_cursor.png
+  icon: strips_snap.png
   source: 'Sequencer: sequencer.snap(keep_offset=True)'
 - key: B
   mods:
   - CTRL
-  label: Box select
-  icon: select_box.png
+  label: Box select + handles
+  icon: select_box_handles.png
   source: 'Sequencer: sequencer.select_box(include_handles=True)'
 - key: C
   mods:
@@ -545,7 +545,7 @@ bindings:
   mods:
   - CTRL
   label: Refresh all
-  icon: refresh.png
+  icon: refresh_all.png
   source: 'Video Sequence Editor: sequencer.refresh_all'
 - key: F11
   mods:
@@ -569,13 +569,13 @@ bindings:
   mods:
   - CTRL
   label: Make meta strip
-  icon: group.png
+  icon: meta_make.png
   source: 'Sequencer: sequencer.meta_make'
 - key: H
   mods:
   - CTRL
   label: Lock strips
-  icon: lock_channel.png
+  icon: lock_strips.png
   source: 'Sequencer: sequencer.lock'
 - key: I
   mods:
@@ -635,7 +635,7 @@ bindings:
   mods:
   - CTRL
   label: Sequencer / preview
-  icon: render_view.png
+  icon: view_type.png
   source: 'Video Sequence Editor: wm.context_toggle_enum(data_path=space_data.view_type,value_1=SEQUENCER,value_2=PREVIEW)'
 - key: L
   mods:
@@ -690,14 +690,14 @@ bindings:
   - SHIFT
   - ALT
   label: Unmute unselected
-  icon: unmute.png
+  icon: unmute_unsel.png
   source: 'Sequencer: sequencer.unmute(unselected=True)'
 - key: R
   mods:
   - SHIFT
   - ALT
   label: Reload + length
-  icon: refresh.png
+  icon: reload_length.png
   source: 'Sequencer: sequencer.reload(adjust_length=True)'
 - key: Z
   mods:
@@ -711,7 +711,7 @@ bindings:
   - CTRL
   - ALT
   label: Connect strips
-  icon: link.png
+  icon: strips_connect.png
   source: 'Sequencer: sequencer.connect(toggle=True)'
 - key: F12
   mods:
@@ -724,15 +724,15 @@ bindings:
   mods:
   - CTRL
   - ALT
-  label: Separate meta
-  icon: ungroup.png
+  label: Ungroup meta
+  icon: meta_ungroup.png
   source: 'Sequencer: sequencer.meta_separate'
 - key: H
   mods:
   - CTRL
   - ALT
   label: Unlock strips
-  icon: lock_pie.png
+  icon: unlock_strips.png
   source: 'Sequencer: sequencer.unlock'
 - key: KC_SPACE
   mods:
@@ -797,8 +797,8 @@ bindings:
 - key: B
   mods:
   - GUI
-  label: Box select
-  icon: select_box.png
+  label: Box select + handles
+  icon: select_box_handles.png
   source: 'Sequencer: sequencer.select_box(include_handles=True)'
   only:
   - macos
@@ -813,7 +813,7 @@ bindings:
   mods:
   - GUI
   label: Refresh all
-  icon: refresh.png
+  icon: refresh_all.png
   source: 'Video Sequence Editor: sequencer.refresh_all'
   only:
   - macos
@@ -845,7 +845,7 @@ bindings:
   mods:
   - GUI
   label: Make meta strip
-  icon: group.png
+  icon: meta_make.png
   source: 'Sequencer: sequencer.meta_make'
   only:
   - macos
@@ -984,7 +984,7 @@ bindings:
   - ALT
   - GUI
   label: Connect strips
-  icon: link.png
+  icon: strips_connect.png
   source: 'Sequencer: sequencer.connect(toggle=True)'
   only:
   - macos
@@ -1001,8 +1001,8 @@ bindings:
   mods:
   - ALT
   - GUI
-  label: Separate meta
-  icon: ungroup.png
+  label: Ungroup meta
+  icon: meta_ungroup.png
   source: 'Sequencer: sequencer.meta_separate'
   only:
   - macos
@@ -1011,7 +1011,7 @@ bindings:
   - ALT
   - GUI
   label: Unlock strips
-  icon: lock_pie.png
+  icon: unlock_strips.png
   source: 'Sequencer: sequencer.unlock'
   only:
   - macos

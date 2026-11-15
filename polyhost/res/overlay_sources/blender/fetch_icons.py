@@ -294,6 +294,130 @@ DRAWN = {
 }
 
 
+# ------------------------------------------------------------------ worded variants
+# One icon per action (maintainer rule, 2026-11-15): two keys may share an image
+# only when they do the same thing, across all Blender sets. A variant of an
+# action ("all", "fine", "select to", a numbered slot, another target) is its
+# base glyph over a short bold word. Drawn 1-bit, white on transparent, at the
+# spec's region size (36x32), so `mode: auto` renders it in alpha 1:1.
+# Not guarded: drawn from code and committed icons only (the skill's guard rule).
+#
+# stem -> (glyph, word). `glyph` is a stem in icons/ or "text:<characters>".
+WORDED = {f"multicam_{n}": ("multicam", str(n)) for n in range(1, 11)}
+WORDED.update({
+    # sequencer / NLA
+    "add_action_strip": ("add", "ACT"), "apply_scale": ("apply", "SCL"),
+    "meta_make": ("group", "META"), "meta_ungroup": ("ungroup", "META"),
+    "meta_toggle": ("group_enter", "META"), "tweak": ("group_enter", "TWK"),
+    "tweak_isolate": ("group_enter", "ISO"),
+    "strip_up": ("hier_parent", "STRIP"), "strip_down": ("hier_child", "STRIP"),
+    "swap_strips": ("swap", "STRIP"), "swap_left": ("swap", "LEFT"),
+    "swap_right": ("swap", "RIGHT"), "swap_inputs": ("swap", "IN"),
+    "lock_strips": ("lock_channel", "STRIP"), "unlock_strips": ("lock_pie", "STRIP"),
+    "lock_tracks": ("lock_channel", "TRK"), "unlock_tracks": ("lock_pie", "TRK"),
+    "mute_strips": ("mute", "STRIP"), "mute_unsel": ("mute", "OTHR"),
+    "unmute_unsel": ("unmute", "OTHR"), "markers_toggle": ("mute", "MRK"),
+    "mute_footage": ("mute", "CLIP"), "gap_remove_all": ("gap_remove", "ALL"),
+    "retime_menu": ("retime", "MENU"), "split_hard": ("split", "HARD"),
+    "split_stroke": ("split", "STRK"), "separate_images": ("separate", "IMG"),
+    "separate_fills": ("separate", "FILL"), "view_type": ("render_view", "PREV"),
+    "overlay_reset": ("overlays", "RST"), "overlay_frame": ("overlays", "FRM"),
+    "refresh_all": ("refresh", "ALL"), "reload_length": ("refresh", "LEN"),
+    "strips_connect": ("link", "CONN"), "strips_snap": ("snap", "STRIP"),
+    "strip_next": ("same_next", "STRIP"), "strip_next_center": ("same_next", "CTR"),
+    "strip_prev": ("same_prev", "STRIP"), "strip_prev_center": ("same_prev", "CTR"),
+    "linked_extend": ("select_linked", "EXT"), "select_box_handles": ("select_box", "HNDL"),
+    # movie clip
+    "clip_mode": ("track", "MASK"), "track_next": ("track", "+1"),
+    "track_prev": ("track", "-1"), "track_fwd": ("track", "FWD"), "track_back": ("track", "BWD"),
+    "path_end": ("jump_end", "PATH"), "path_start": ("jump_start", "PATH"),
+    "jump_failed": ("key_jump", "FAIL"), "marker_delete": ("marker", "DEL"),
+    "marker_pie": ("marker", "PIE"), "join_tracks": ("join", "TRK"),
+    "lock_selection": ("pin", "SEL"), "show_disabled": ("reveal", "DSBL"),
+    "search_area": ("search", "AREA"), "path_clear_after": ("path_clear", "AFT"),
+    "path_clear_before": ("path_clear", "BEF"),
+    # outliner
+    "collapse_all": ("collapse", "ALL"), "expand_all": ("shrink_fatten", "ALL"),
+    "collapse_item": ("collapse", "ONE"), "expand_item": ("shrink_fatten", "ONE"),
+    "expand_toggle": ("collapse", "TOGL"),
+    "extend_up": ("hier_parent", "EXT"), "extend_down": ("hier_child", "EXT"),
+    "collection_exclude": ("collection_include", "EXCL"),
+    "show_hierarchy": ("ed_outliner", "TREE"), "show_active": ("localview", "ACT"),
+    "reveal_all": ("reveal", "ALL"), "drivers_delete": ("driver", "DEL"),
+    "keying_set_add": ("keying_set", "ADD"),
+    # text editor and text objects
+    "delete_word": ("backspace", "WORD"), "line_end": ("jump_end", "LINE"),
+    "line_start": ("jump_start", "LINE"), "sel_line_end": ("jump_end", "SEL"),
+    "sel_line_start": ("jump_start", "SEL"), "sel_text_end": ("bottom", "SEL"),
+    "sel_text_start": ("top", "SEL"), "sel_page_down": ("page_down", "SEL"),
+    "sel_page_up": ("page_up", "SEL"), "word_prev_w": ("word_prev", "WORD"),
+    "word_next_w": ("propagate", "WORD"), "sel_word_prev": ("word_prev", "SEL"),
+    "sel_word_next": ("propagate", "SEL"), "sel_up": ("hier_parent", "SEL"),
+    "sel_down": ("hier_child", "SEL"), "line_up": ("hier_parent", "LINE"),
+    "line_down": ("hier_child", "LINE"), "duplicate_line": ("duplicate", "LINE"),
+    "run_script": ("play", "PY"), "char_up": ("text:A", "+1"), "char_down": ("text:A", "-1"),
+    "spacing_less_fine": ("spacing_less", "FINE"), "spacing_more_fine": ("spacing_more", "FINE"),
+    # curve
+    "tilt_clear": ("clear_rot", "TILT"), "tilt": ("rotate", "TILT"),
+    "make_segment": ("connect", "SEG"), "handles_recalc": ("handle", "CALC"),
+    "curve_radius": ("shrink_fatten", "RAD"),
+    # grease pencil
+    "multiframe_lines": ("edit_lines", "MULTI"), "select_fill": ("fill", "SEL"),
+    "hide_other_layers": ("hide_others", "LYR"), "reveal_layers": ("reveal", "LYR"),
+    "order_forward": ("hier_parent", "FWD"), "order_backward": ("hier_child", "BWD"),
+    "order_to_back": ("select_invert", "BACK"),
+    "gp_interpolate": ("interpolation", "GP"), "gp_interpolate_seq": ("interpolation", "SEQ"),
+    "join_fills": ("join", "FILL"), "join_strokes": ("join", "STRK"),
+    "join_copy": ("join", "COPY"), "layer_move": ("layers", "MOVE"),
+    "stroke_close": ("make_face", "CLS"), "gp_frame_delete": ("key_delete", "FRM"),
+    "gp_frame_delete_all": ("key_delete", "ALL"), "gp_blank_key": ("key_insert", "BLNK"),
+    "gp_anim_menu": ("key_menu", "ANIM"), "layer_merge": ("merge", "LYR"),
+    "paste_behind": ("paste_place", "BACK"),
+    "gp_point_select": ("sel_vert", "SEL"), "gp_point_mask": ("sel_vert", "MASK"),
+    "gp_segment_select": ("sel_edge", "SEL"), "gp_segment_mask": ("sel_edge", "MASK"),
+    "gp_stroke_select": ("stroke", "SEL"), "gp_stroke_mask": ("stroke", "MASK"),
+    "weight_direction": ("switch_dir", "WGT"),
+})
+
+WORD_BOLD = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
+WORD_SIZE = (36, 32)            # the spec's region: placed 1:1
+WORD_GLYPH_BOX = (2, 0, 34, 20)  # x0, y0, x1, y1 of the glyph above the word
+WORD_PX = 11
+WORD_GLYPH_TEXT_PX = 18
+WORD_BASELINE = 31
+
+
+def _worded(dest: Path, out: Path, glyph: str, word: str) -> None:
+    from PIL import ImageFont
+    w, h = WORD_SIZE
+    mask = Image.new("L", WORD_SIZE, 0)
+    d = ImageDraw.Draw(mask)
+    x0, y0, x1, y1 = WORD_GLYPH_BOX
+    if glyph.startswith("text:"):
+        f = ImageFont.truetype(WORD_BOLD, WORD_GLYPH_TEXT_PX)
+        d.text((w / 2, (y0 + y1) / 2), glyph[5:], font=f, fill=255, anchor="mm")
+    else:
+        im = Image.open(out / f"{glyph}.png").convert("RGBA")
+        a = np.asarray(im).astype(np.float32)
+        # ink = alpha where the art is dark (Material, drawn glyphs) or light (borrowed)
+        ink = Image.fromarray(a[..., 3].astype(np.uint8), "L")
+        bbox = ink.getbbox() or (0, 0, im.width, im.height)
+        ink = ink.crop(bbox)
+        k = min((x1 - x0) / ink.width, (y1 - y0) / ink.height)
+        nw, nh = max(1, round(ink.width * k)), max(1, round(ink.height * k))
+        ink = ink.resize((nw, nh), Image.LANCZOS).point(lambda v: 255 if v >= 128 else 0)
+        mask.paste(255, (x0 + (x1 - x0 - nw) // 2, y0 + (y1 - y0 - nh) // 2), ink)
+    f = ImageFont.truetype(WORD_BOLD, WORD_PX)
+    tw = d.textlength(word, font=f)
+    if tw > w:
+        raise ValueError(f"{dest.name}: word {word!r} is {tw:.0f} px wide (max {w})")
+    d.text(((w - tw) / 2, WORD_BASELINE), word, font=f, fill=255, anchor="ls")
+    mask = mask.point(lambda v: 255 if v >= 128 else 0)
+    img = Image.new("RGBA", WORD_SIZE, (255, 255, 255, 0))
+    img.putalpha(mask)
+    img.save(dest)
+
+
 def _blender_mark(path):
     """ESC mark: Simple Icons' Blender logo (marks/si_blender.svg, vendored
     from simple-icons@15.22.0), rendered by the host's own ESC renderer so the
@@ -330,6 +454,11 @@ def main() -> int:
             draw(out / name)
             print(f"  {name}  <- drawn")
     icon_fetch.borrow(BORROWED, out)
+    for name, (glyph, word) in WORDED.items():
+        if only and name not in only:
+            continue
+        _worded(out / f"{name}.png", out, glyph, word)
+        print(f"  {name}.png  <- drawn {glyph} + '{word}'")
     _blender_mark(out / "blender_mark.png")
     return 0
 
