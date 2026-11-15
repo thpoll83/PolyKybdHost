@@ -2061,7 +2061,8 @@ def build_parser():
         description="Copies the plugin shipped with this installation to "
                     "~/.vim/pack/polykybd/start/polykybd (Vim), the Neovim "
                     "site/pack folder, <emacs dir>/polykybd (Emacs) or "
-                    "~/.config/gdb/polykybd (GDB); for Emacs and GDB also a "
+                    "~/.config/gdb/polykybd (GDB) or <User Library>/Remote "
+                    "Scripts/PolyKybd (Ableton Live); for Emacs and GDB also a "
                     "marked block in the init file, saved first. Copies made "
                     "this way are refreshed when the app starts after an update.")
     ep_sub = p_ep.add_subparsers(dest="ep_action", required=True)
@@ -2072,7 +2073,7 @@ def build_parser():
     ep_status = ep_sub.add_parser("status", help="show what is set up, per editor")
     for p in (ep_install, ep_remove, ep_status):
         p.add_argument("--editor", action="append",
-                       choices=("vim", "neovim", "emacs", "gdb", "binaryninja", "resolve"),
+                       choices=("vim", "neovim", "emacs", "gdb", "binaryninja", "resolve", "ableton"),
                        help="only this editor (repeat for more)")
     p_ep.set_defaults(func=_cmd_editor_plugins)
 

@@ -8,9 +8,12 @@
 #   only: / except:  where the Mac key is not the Cmd/Option version
 #                    (Redo, Full Screen, Stop at End of Selection).
 #
-# ⚠️ Session View and Arrangement View are one OS window, so the host cannot
-# tell them apart. This set has the global keys and the Arrangement View keys;
-# keys whose meaning changes with the view are left out. While the Computer MIDI
+# ⚠️ Session View and Arrangement View are one OS window, so the window
+# tracker cannot tell them apart. This set has the global keys and the
+# Arrangement View keys. With the PolyKybd remote script
+# (ableton-remote-script/) the host knows the view: it shows this set for
+# `ableton://arrangement` and `session.yaml` for `ableton://session`. Without
+# a report this set stays the fallback. While the Computer MIDI
 # Keyboard (M) is on, the letter keys play notes; Live 12 then reaches the
 # single-letter shortcuts with Shift. See SOURCES.md.
 #

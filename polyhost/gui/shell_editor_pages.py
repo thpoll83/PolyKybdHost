@@ -13,7 +13,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QCheckBox
 
 from polyhost.gui.integrations_dialog import RowsPage
-from polyhost.gui.ui_kit import WrapLabel
+from polyhost.gui.ui_kit import WrapLabel, muted
 from polyhost.i18n import _, _f, translate_message
 from polyhost.services import editor_plugins, shell_title
 
@@ -64,7 +64,8 @@ def editor_label(editor):
     return {editor_plugins.VIM: "Vim", editor_plugins.NEOVIM: "Neovim",
             editor_plugins.EMACS: "Emacs", editor_plugins.GDB: "GDB",
             editor_plugins.BINARYNINJA: "Binary Ninja",
-            editor_plugins.RESOLVE: "DaVinci Resolve"}.get(editor, editor)
+            editor_plugins.RESOLVE: "DaVinci Resolve",
+            editor_plugins.ABLETON: "Ableton Live"}.get(editor, editor)
 
 
 def editor_state_text(st):
@@ -222,6 +223,13 @@ class EditorsPage(RowsPage):
                          editor_state_text(st),
                          checked=old.get(st.editor, editor_plugins.default_selection(st)),
                          enabled=st.state != editor_plugins.STATE_NO_SOURCE)
+            if st.editor == editor_plugins.ABLETON:
+                hint = muted(WrapLabel(_(
+                    "Live shows Session View or Arrangement View keys with this script. "
+                    "After Install, restart Live and choose PolyKybd as a Control Surface "
+                    "in Settings > Link, Tempo & MIDI.")))
+                hint.setWordWrap(True)
+                self.grid.addWidget(hint, self.grid.rowCount(), 1)
         if not self.boxes():
             self.add_message(_("No Vim, Neovim or Emacs was found on this computer."))
         note = ""
