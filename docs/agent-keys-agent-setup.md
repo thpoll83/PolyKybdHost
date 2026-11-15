@@ -100,7 +100,7 @@ without command-line flags. Without the key it would be refused with "digest sen
 was rejected". `--report-rpc` and `--report-authkey-file` still work and take
 priority over the pairing.
 
-Then install the hooks as on any computer (forwarder tray > "Set Up Agent Hooks", or):
+Then install the hooks as on any computer (forwarder tray > Integrations… > AI agents, or):
 
 ```
 polyctl agents hooks install claude-code
@@ -265,7 +265,7 @@ per folder. Copilot has no event for a permission prompt; the host shows
 
 ## Other agents
 
-`polyctl agents hooks install <vendor>` (or the tray's Set Up Hooks menu) also
+`polyctl agents hooks install <vendor>` (or the tray's Integrations… > AI agents page) also
 writes the hooks for these, keeping any hooks of your own. Their formats were not
 tested with the keyboard yet.
 

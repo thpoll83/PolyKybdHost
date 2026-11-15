@@ -101,6 +101,13 @@ if ($LASTEXITCODE -ne 0) { throw "Creating the virtual environment failed." }
 $venvPy = Join-Path (Get-Location) ".venv\Scripts\python.exe"
 & $venvPy -m pip install --upgrade pip
 if ($LASTEXITCODE -ne 0) { throw "pip install --upgrade pip failed." }
+# PyYAML has no wheel for a new Python version until its next release (6.0.3
+# has none for 3.15). pip then builds it from source, and the C extension
+# needs "Microsoft C++ Build Tools", which most PCs do not have, so the
+# install stopped. With PYYAML_FORCE_LIBYAML=0 the source build is pure
+# Python and needs no compiler. A wheel, where one exists, is not affected.
+# The host does not use the C loaders (yaml.CSafeLoader).
+$env:PYYAML_FORCE_LIBYAML = "0"
 & $venvPy -m pip install -r requirements.txt
 if ($LASTEXITCODE -ne 0) { throw "pip install -r requirements.txt failed." }
 # Editable install too, so the `polyctl` console script lands in .venv\Scripts

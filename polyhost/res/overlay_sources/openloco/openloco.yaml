@@ -1,0 +1,83 @@
+# OpenLoco overlay for PolyKybd.
+#
+# Keys: the default shortcuts registered in Shortcuts::initialize()
+# (src/OpenLoco/src/Input/Shortcuts.cpp, OpenLoco v26.09). See SOURCES.md.
+#
+# Every default shortcut on a key with a cell is labelled; none of them changes
+# meaning with the selection. The shortcuts without a default key (the track
+# construction keys, the game speeds, options, jukebox) are left out.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/openloco/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/openloco/openloco.yaml --preview /tmp/openloco_preview
+app: openloco
+match: [openloco, openloco.exe]
+output: openloco_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for OpenRCT2: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# OpenLoco drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Construction
+  - { key: L, icon: land.png, label: "Adjust land" }
+  - { key: W, icon: water.png, label: "Adjust water" }
+  - { key: P, icon: trees.png, label: "Plant trees" }
+  - { key: X, icon: bulldoze.png, label: "Bulldoze area" }
+  - { key: T, icon: buildtracks.png, label: "Build tracks" }
+  - { key: R, icon: buildroads.png, label: "Build roads" }
+  - { key: A, icon: airports.png, label: "Build airports" }
+  - { key: D, icon: ports.png, label: "Build ship ports" }
+  - { key: N, icon: newvehicles.png, label: "Build new vehicles" }
+  - { key: Z, icon: rotateobject.png, label: "Rotate construction object" }
+
+  # Lists and windows
+  - { key: V, icon: vehicles.png, label: "Show vehicles list" }
+  - { key: S, icon: stations.png, label: "Show stations list", region: [30, 40] }
+  - { key: U, icon: towns.png, label: "Show towns list" }
+  - { key: I, icon: industries.png, label: "Show industries list" }
+  - { key: C, icon: companies.png, label: "Show companies list" }
+  - { key: Q, icon: company.png, label: "Show company information" }
+  - { key: M, icon: map.png, label: "Show map" }
+  - { key: F, icon: finances.png, label: "Show finances" }
+  - { key: TAB, icon: announcements.png, label: "Show announcements list" }
+  - { key: SPACE, icon: lastannouncement.png, label: "Toggle last announcement" }
+  - { key: F1, icon: chat.png, label: "Send message", region: [34, 40] }
+  - { key: F10, icon: debug.png, label: "Debug window" }
+
+  # View toggles
+  - { key: "1", icon: underground.png, label: "Underground view toggle" }
+  - { key: "2", icon: seetracks.png, label: "See-through tracks toggle" }
+  - { key: "3", icon: seeroads.png, label: "See-through roads toggle" }
+  - { key: "4", icon: seetrees.png, label: "See-through trees toggle" }
+  - { key: "5", icon: seebuildings.png, label: "See-through buildings toggle" }
+  - { key: "6", icon: seebridges.png, label: "See-through bridges toggle" }
+  - { key: "7", icon: seescenery.png, label: "See-through scenery toggle" }
+  - { key: "8", icon: heightland.png, label: "Height marks on land toggle" }
+  - { key: "9", icon: heighttrack.png, label: "Height marks on tracks toggle" }
+  - { key: "0", icon: dirarrows.png, label: "Direction arrows on tracks toggle" }
+
+  # Camera
+  - { key: PGUP, icon: zoomout.png, label: "Zoom view out" }
+  - { key: PGDN, icon: zoomin.png, label: "Zoom view in" }
+  - { key: ENTER, icon: rotateview.png, label: "Rotate view" }
+
+  # Game
+  - { key: PAUSE, icon: pause.png, label: "Pause game" }
+  - { key: BSPC, icon: closetop.png, label: "Close top-most window" }
+  - { key: BSPC, mods: [SHIFT], icon: closeall.png, label: "Close all floating windows" }
+  - { key: S, mods: [CTRL], icon: screenshot.png, label: "Screenshot", shared: false }
