@@ -347,15 +347,15 @@ def player_bindings(reader, files: dict) -> dict | None:
         return None
 
 
-MAX_DIGEST = 16 * 1024 * 1024        # the largest bindings file hashed for the cache key
+MAX_KEY_FILE = 16 * 1024 * 1024      # the largest bindings file read here; each source has its own limit too
 
 
-def _digest(path: Path) -> str:
-    """The content hash of a bindings file; empty for one too large to hash
-    (its source refuses it anyway)."""
-    if os.path.getsize(path) > MAX_DIGEST:
-        return ""
-    return hashlib.sha1(Path(path).read_bytes()).hexdigest()
+def _snapshot(path: Path) -> bytes | None:
+    """One read of a bindings file, or None for one too large (its source
+    refuses it then)."""
+    if os.path.getsize(path) > MAX_KEY_FILE:
+        return None
+    return Path(path).read_bytes()
 
 
 def bindings_source(spec: dict, reader, files: dict):
@@ -364,21 +364,22 @@ def bindings_source(spec: dict, reader, files: dict):
 
     A spec's ``game_assets:`` block may name a bindings source of its own
     (``bindings: openra``: the module ``<name>_keys`` here, with ``find()``,
-    ``bindings(path)`` and ``BINDINGS_COMPLETE``), for a game whose hotkeys
+    ``bindings(path, data)`` and ``BINDINGS_COMPLETE``), for a game whose hotkeys
     are kept apart from the files its reader draws from. Otherwise the
     reader's own ``bindings(files)`` is used.
 
-    The hash is taken before the file is parsed: if the game saves the file in
-    between, the key names the older content and the next build sees the
-    change, so a copy is never cached under content it was not built from."""
+    The file is read once: the hash and the parse use the same bytes, so a
+    copy is never cached under content it was not built from, even when the
+    game saves the file during the build."""
     name = (spec.get("game_assets") or {}).get("bindings")
     if not name:
         return player_bindings(reader, files), getattr(reader, "BINDINGS_COMPLETE", True), [], []
     source = importlib.import_module(f"polyhost.services.game_assets.{name}_keys")
     try:
         path = source.find()
-        digest = _digest(path) if path else ""
-        player = source.bindings(path) if path else None
+        data = _snapshot(path) if path else None
+        digest = hashlib.sha1(data).hexdigest() if data is not None else ""
+        player = source.bindings(path, data) if path else None
     except (OSError, ValueError, UnicodeError) as e:
         log.warning("Game art: could not read the %s key bindings (%s: %s); "
                     "the icons stay on the default keys.", name, type(e).__name__, e)

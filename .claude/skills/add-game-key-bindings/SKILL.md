@@ -63,7 +63,7 @@ as default keys, so the stock file moves nothing, and no icon is drawn on them.
   `fingerprint(files)` keys the cache on it.
 - **The bindings live apart from the files the art reader finds** (OpenRA's
   support folder): write `game_assets/<name>_keys.py` with `find() -> Path|None`,
-  `bindings(path)` and `BINDINGS_COMPLETE`, and add `bindings: <name>` to the
+  `bindings(path, data=None)` (parse `data` when given: the build hashes and parses one read) and `BINDINGS_COMPLETE`, and add `bindings: <name>` to the
   spec's `game_assets:` block. `build.bindings_source` adds that path to the cache
   key.
 - **No art at all** (Warcraft III): a reader whose `draw()` raises and whose spec

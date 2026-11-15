@@ -203,23 +203,43 @@ class RemapTest(unittest.TestCase):
                 self.assertEqual(cells(second, nm)[KeyCode.KC_F4.value],
                                  self.shipped[PRIMARY][nm][KeyCode.KC_F1.value])
 
-    def test_the_key_names_the_content_read_before_the_parse(self):
-        """A save between the hash and the parse costs a rebuild, never a
-        stale copy: the key names the older content."""
+    def test_the_hash_and_the_parse_use_one_read(self):
+        """A save during the build cannot put one content's overlay under
+        another content's key: the hash is of the bytes that were parsed."""
+        import hashlib
         with tempfile.TemporaryDirectory() as d:
             path = Path(d) / "Mine.SC2Hotkeys"
             path.write_text(profile({"IdleWorker": "F3"}), encoding="utf-8")
-            parse = keys.bindings
+            parse, seen = keys.bindings, []
 
-            def saved_meanwhile(p):
+            def saved_meanwhile(p, data=None):
                 path.write_text(profile({"IdleWorker": "F4"}), encoding="utf-8")
-                return parse(p)
+                seen.append(data)
+                return parse(p, data)
             spec = build.load_spec(SPEC)
             with mock.patch.object(keys, "find", return_value=path), \
                  mock.patch.object(keys, "bindings", side_effect=saved_meanwhile):
                 player, _, _, digests = build.bindings_source(spec, None, {})
-            self.assertEqual(player["IdleWorker"], ["F4"])
-            self.assertNotEqual(digests, [build._digest(path)])
+            self.assertEqual(player["IdleWorker"], ["F3"], "parsed from the bytes read before the save")
+            self.assertEqual(digests, [hashlib.sha1(seen[0]).hexdigest()])
+
+    def test_a_profile_saved_back_gets_its_own_copy(self):
+        """A -> B -> A with the same size and second: each content has its own copy."""
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "Mine.SC2Hotkeys"
+            settings = {"game_sc1_data_dir": str(Path(d) / "none"), "game_sc1_race": "terran"}.get
+            outs = []
+            with mock.patch.object(keys, "find", return_value=path), \
+                 mock.patch.object(sc, "install_candidates", return_value=[]):
+                for key in ("F3", "F4", "F3"):
+                    path.write_text(profile({"IdleWorker": key}), encoding="utf-8")
+                    os.utime(path, (1_700_000_000, 1_700_000_000))
+                    outs.append(build.build(PRIMARY, SPEC, settings, Path(d) / "c"))
+                nm = Modifier.NO_MOD
+                self.assertEqual(outs[0], outs[2])
+                self.assertNotEqual(outs[0], outs[1])
+                self.assertEqual(cells(outs[2], nm)[KeyCode.KC_F3.value],
+                                 self.shipped[PRIMARY][nm][KeyCode.KC_F1.value])
 
     def test_an_unreadable_profile_leaves_the_defaults(self):
         with mock.patch.object(keys, "MAX_FILE", 4), self.assertLogs("PolyHost", "WARNING"):
