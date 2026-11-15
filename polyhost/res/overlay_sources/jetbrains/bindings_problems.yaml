@@ -23,7 +23,7 @@ bindings:
   mods:
   - ALT
   icon: intentions.png
-  label: Show quick fixes
+  label: Show context actions
 - key: F4
   mods: []
   icon: editsource.png

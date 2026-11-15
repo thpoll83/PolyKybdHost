@@ -53,15 +53,15 @@ bindings:
   only:
   - windows
   - linux
-  icon: generate.png
-  label: New bookmark list
+  icon: newelement.png
+  label: New element
 - key: N
   mods:
   - GUI
   only:
   - macos
-  icon: generate.png
-  label: New bookmark list
+  icon: newelement.png
+  label: New element
 - key: DOWN
   mods:
   - CTRL

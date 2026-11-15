@@ -71,17 +71,14 @@ bindings:
   icon: findinpath.png
   label: Find in files
   source: reclaimed
-- region: *id001
-  anchor: center
-  key: F8
+- key: F8
   mods:
   - CMDCTRL
   - SHIFT
   except:
   - linux_kde
-  icon: ../../cursor/icons/breakpoint.png
+  icon: viewbreakpoints_list.png
   label: View breakpoints
-  source: reclaimed
 - region: *id001
   anchor: center
   key: B
@@ -716,7 +713,7 @@ bindings:
   - CMDCTRL
   except:
   - linux_kde
-  icon: win_structure.png
+  icon: filestructure.png
   label: File structure
 - key: F11
   mods: []
@@ -845,13 +842,13 @@ bindings:
   mods:
   - CMDCTRL
   - SHIFT
-  icon: moveup.png
+  icon: movestatement_up.png
   label: Move statement up
 - key: DOWN
   mods:
   - CMDCTRL
   - SHIFT
-  icon: movedown.png
+  icon: movestatement_down.png
   label: Move statement down
 - key: UP
   mods:
@@ -859,7 +856,7 @@ bindings:
   - SHIFT
   except:
   - linux_gnome
-  icon: moveup.png
+  icon: moveline_up.png
   label: Move line up
 - key: DOWN
   mods:
@@ -867,7 +864,7 @@ bindings:
   - SHIFT
   except:
   - linux_gnome
-  icon: movedown.png
+  icon: moveline_down.png
   label: Move line down
 - key: ENTER
   mods:
@@ -1042,7 +1039,7 @@ bindings:
 - key: K
   mods:
   - CMDCTRL
-  icon: win_commit.png
+  icon: commit.png
   label: Commit
 - key: K
   mods:
@@ -1136,17 +1133,14 @@ bindings:
   icon: stop.png
   label: Stop
   source: reclaimed
-- region: *id001
-  anchor: center
-  key: '8'
+- key: '8'
   mods:
   - CTRL
   - SHIFT
   only:
   - linux_kde
-  icon: ../../cursor/icons/breakpoint.png
+  icon: viewbreakpoints_list.png
   label: View breakpoints
-  source: reclaimed
 - region: *id001
   anchor: center
   key: L
@@ -1163,7 +1157,7 @@ bindings:
   - CTRL
   only:
   - linux_kde
-  icon: win_structure.png
+  icon: filestructure.png
   label: File structure
 - key: V
   mods:

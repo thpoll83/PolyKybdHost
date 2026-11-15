@@ -56,5 +56,5 @@ bindings:
   - { key: R, mods: [CTRL], only: [macos, linux], icon: historysearch.png, label: "Search history" }
   - { key: W, mods: [CTRL], only: [macos, linux], icon: deleteword.png,    label: "Delete previous word" }
   # -- the window itself --
-  - { key: F12,    mods: [ALT],   icon: terminal.png,   label: "Hide terminal" }
+  - { key: F12,    mods: [ALT],   icon: terminal.png,   label: "Terminal window" }
   - { key: ESCAPE, mods: [SHIFT], icon: hidewindow.png, label: "Hide window" }

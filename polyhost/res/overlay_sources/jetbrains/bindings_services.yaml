@@ -26,39 +26,24 @@ bindings:
   only:
   - windows
   - linux
-  icon: run.png
-  region:
-  - 72
-  - 40
-  anchor: center
+  icon: run_selected.png
   label: Run selected
-  source: reclaimed
 - key: R
   mods:
   - CTRL
   - SHIFT
   only:
   - macos
-  icon: run.png
-  region:
-  - 72
-  - 40
-  anchor: center
+  icon: run_selected.png
   label: Run selected
-  source: reclaimed
 - key: D
   mods:
   - CTRL
   - SHIFT
   only:
   - macos
-  icon: debug.png
-  region:
-  - 72
-  - 40
-  anchor: center
+  icon: debug_selected.png
   label: Debug selected
-  source: reclaimed
 - key: F4
   mods:
   - SHIFT
@@ -67,7 +52,7 @@ bindings:
 - key: D
   mods:
   - CMDCTRL
-  icon: copyfile.png
+  icon: copyconfig.png
   label: Copy configuration
 - key: INSERT
   mods:
@@ -75,15 +60,15 @@ bindings:
   only:
   - windows
   - linux
-  icon: generate.png
-  label: Add service
+  icon: newelement.png
+  label: New element
 - key: N
   mods:
   - GUI
   only:
   - macos
-  icon: generate.png
-  label: Add service
+  icon: newelement.png
+  label: New element
 - key: T
   mods:
   - CTRL

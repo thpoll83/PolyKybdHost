@@ -77,6 +77,41 @@ drawn on, KDE included, and each set's cells were checked for collisions
   Run, Debug, Stop and the three step icons are the drawings VS Code now uses as
   well, and Notepad++'s Run uses the same triangle.
 
+## One icon per action (2026-11-15)
+
+Maintainer's rule: two keys of the JetBrains sets (all modes together) share an
+image only when they do the same thing. New images, all drawn by `fetch_icons.py`:
+
+| Image | Action | Source |
+|---|---|---|
+| `commit.png` | Commit (Ctrl+K, Ctrl+Enter in the Commit window) | Material `commit` (Apache-2.0) + Fluent `Checkmark` (MIT) badge, `dcc_glyphs.with_badge` |
+| `viewbreakpoints_list.png` | View breakpoints | the reclaimed `breakpoint.png` + Fluent `List` (MIT) badge |
+| `filestructure.png` | File structure popup | Fluent `Document Bullet List` (MIT) |
+| `moveline_up.png`, `moveline_down.png` | Move line up / down | Fluent `Text Align Left` (MIT) + drawn arrow, `dcc_glyphs.with_vertical_arrow` |
+| `movestatement_up.png`, `movestatement_down.png` | Move statement up / down | `surroundwith.png` (Fluent `Braces`, MIT) + drawn arrow |
+| `run_selected.png`, `debug_selected.png` | Services: Run / Debug selected | the reclaimed `run.png` / `debug.png` + Fluent `Checkbox Checked` (MIT) badge |
+| `copyconfig.png` | Services: Copy configuration | `copyfile.png` (Fluent `Document Copy`, MIT) + Fluent `Settings` (MIT) badge |
+| `newelement.png` | New element (Project, Bookmarks, Services) | Fluent `Add` (MIT) |
+| `changelistmove.png` | Move to another changelist | Material `move_group` (Apache-2.0) |
+
+`part_*.png` are the badges and bases of these composites and are not drawn on
+their own. The composites are guarded: delete one to redraw it.
+
+Kept as one image, because the keys do the same thing (labels made the same):
+
+- **Rename** (Shift+F6, F2): every tool window binds its rename (changelist,
+  bookmark, branch, commit message) to the Rename shortcut.
+- **Terminal window** (Alt+F12): `ActivateTerminalToolWindow` toggles, so in the
+  Terminal set it hides the window.
+- **Show context actions** (Alt+Enter): the Problems view's quick fix is
+  `ShowIntentionActions`.
+- **Rerun** (Ctrl+F5): the Find window's `UsageView.Rerun` reruns the search.
+- **Show diff** (Ctrl+D): the Project view compares the selected files with the
+  same diff action.
+- **Group by type** (Ctrl+Alt+T): groups the list by type in Services and Find.
+- **New element** (Alt+Insert): `NewElement` in each view.
+- **Show in file manager** (Explorer, Finder or the Linux file manager).
+
 ## KDE
 
 JetBrains' `Default for KDE` keymap moves 14 of the drawn actions away from the

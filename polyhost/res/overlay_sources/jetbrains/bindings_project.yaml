@@ -27,8 +27,8 @@ _reclaimed: &reclaimed { region: [72, 40], anchor: center }
 
 bindings:
   # -- file operations (NewElement, RenameElement, CopyElement, Move, $Delete, SafeDelete) --
-  - { key: INSERT, mods: [ALT], only: [windows, linux], icon: generate.png, label: "New file or folder" }
-  - { key: N,      mods: [GUI], only: [macos],          icon: generate.png, label: "New file or folder" }
+  - { key: INSERT, mods: [ALT], only: [windows, linux], icon: newelement.png, label: "New element" }
+  - { key: N,      mods: [GUI], only: [macos],          icon: newelement.png, label: "New element" }
   - { key: F6,     mods: [SHIFT], icon: rename.png, <<: *reclaimed, label: Rename, source: reclaimed }
   - { key: F5,     mods: [],      icon: copyfile.png, label: "Copy file" }
   - { key: F6,     mods: [],      icon: movefile.png, label: "Move file" }
@@ -38,15 +38,15 @@ bindings:
   # -- open / compare (EditSource, OpenInRightSplit, CompareTwoFiles) --
   - { key: F4,    mods: [],        icon: editsource.png, label: "Jump to source" }
   - { key: ENTER, mods: [SHIFT],   icon: opensplit.png,  label: "Open in right split" }
-  - { key: D,     mods: [CMDCTRL], icon: compare.png,    label: "Compare files" }
+  - { key: D,     mods: [CMDCTRL], icon: compare.png,    label: "Show diff" }
   # -- tree (CollapseAll, ExpandAll) --
   - { key: "-", mods: [CMDCTRL], icon: collapseall.png, label: "Collapse all" }
   - { key: "=", mods: [CMDCTRL], icon: expandall.png,   label: "Expand all" }
   # -- paths (CopyPaths, CopyReference, ShowFilePath) --
   - { key: C, mods: [CMDCTRL, SHIFT],      icon: copypath.png, label: "Copy path" }
   - { key: C, mods: [CMDCTRL, ALT, SHIFT], icon: copyreference.png, <<: *reclaimed, label: "Copy reference", source: reclaimed }
-  - { key: F12, mods: [CTRL, ALT],        only: [windows], icon: revealin.png, label: "Show in Explorer" }
-  - { key: F12, mods: [GUI, ALT],         only: [macos],   icon: revealin.png, label: "Show in Finder" }
+  - { key: F12, mods: [CTRL, ALT],        only: [windows], icon: revealin.png, label: "Show in file manager" }
+  - { key: F12, mods: [GUI, ALT],         only: [macos],   icon: revealin.png, label: "Show in file manager" }
   - { key: "2", mods: [CTRL, ALT, SHIFT], only: [linux],   icon: revealin.png, label: "Show in file manager" }
   # -- search in the selected folder (FindInPath, ReplaceInPath) --
   - { key: F, mods: [CMDCTRL, SHIFT], icon: findinpath.png, <<: *reclaimed, label: "Find in files", source: reclaimed }

@@ -167,7 +167,7 @@ TOOL_WINDOWS = {
     "commit": (VCS_LABELS | {"Rename", "Undo", "Redo", "Cut", "Copy", "Paste", "Select all"}, [
         # The commit button (CommitActionsPanel.DEFAULT_COMMIT_ACTION_SHORTCUT):
         # Ctrl+Enter, on macOS Ctrl+Enter or Cmd+Enter.
-        {"key": "ENTER", "mods": ["CMDCTRL"], "icon": "win_commit.png", "label": "Commit"},
+        {"key": "ENTER", "mods": ["CMDCTRL"], "icon": "commit.png", "label": "Commit"},
         # Git.Commit.And.Push.Executor: Ctrl+Alt+K, macOS Cmd+Alt+K.
         {"key": "K", "mods": ["CMDCTRL", "ALT"], "icon": "commitpush.png", "label": "Commit and push"},
         # Vcs.ToggleAmendCommitMode: Alt+M, macOS Ctrl+Alt+M.
@@ -179,12 +179,12 @@ TOOL_WINDOWS = {
         # ChangesView.Revert / Vcs.RollbackChangedLines: Ctrl+Alt+Z, macOS Cmd+Alt+Z.
         {"key": "Z", "mods": ["CMDCTRL", "ALT"], "icon": "rollback.png", "label": "Rollback"},
         # ChangesView.Move: Alt+Shift+M, macOS Cmd+Shift+M.
-        {"key": "M", "mods": ["ALT", "SHIFT"], "only": ["windows", "linux"], "icon": "movefile.png",
+        {"key": "M", "mods": ["ALT", "SHIFT"], "only": ["windows", "linux"], "icon": "changelistmove.png",
          "label": "Move to another changelist"},
-        {"key": "M", "mods": ["GUI", "SHIFT"], "only": ["macos"], "icon": "movefile.png",
+        {"key": "M", "mods": ["GUI", "SHIFT"], "only": ["macos"], "icon": "changelistmove.png",
          "label": "Move to another changelist"},
         # ChangesView.Rename: F2 (and Shift+F6, the fallback set's Rename).
-        {**_RENAME_F2, "label": "Rename changelist"},
+        {**_RENAME_F2, "label": "Rename"},
         # ChangesView.SetDefault: Ctrl+Space in every keymap.
         {"key": "SPACE", "mods": ["CTRL"], "icon": "activechangelist.png", "label": "Set active changelist"},
         # VcsActions.xml: ChangesView.AddUnversioned Ctrl+Alt+A, ShelveSilently
@@ -197,9 +197,9 @@ TOOL_WINDOWS = {
         # Git.CreateNewBranch / Git.New.Branch.In.Log: Ctrl+Alt+N, macOS Cmd+Alt+N.
         {"key": "N", "mods": ["CMDCTRL", "ALT"], "icon": "newbranch.png", "label": "New branch"},
         # Git.Reword.Commit and Git.Rename.Local.Branch: F2 and Shift+F6.
-        {**_RENAME_F2, "label": "Reword or rename"},
+        {**_RENAME_F2, "label": "Rename"},
         {"key": "F6", "mods": ["SHIFT"], "icon": "rename.png", "region": [72, 40], "anchor": "center",
-         "label": "Reword or rename", "source": "reclaimed"},
+         "label": "Rename", "source": "reclaimed"},
         # VcsHistory.ShowAllAffected: Alt+Shift+A, macOS Cmd+Ctrl+A.
         {"key": "A", "mods": ["ALT", "SHIFT"], "only": ["windows", "linux"], "icon": "affectedfiles.png",
          "label": "Show all affected files"},
@@ -219,21 +219,21 @@ TOOL_WINDOWS = {
     ] + TABS),
     "services": ({"Stop", "Find", "Copy"}, [
         # RunDashboard.Run uses RunClass: Ctrl+Shift+F10, macOS Ctrl+Shift+R.
-        {"key": "F10", "mods": ["CTRL", "SHIFT"], "only": ["windows", "linux"], "icon": "run.png",
-         "region": [72, 40], "anchor": "center", "label": "Run selected", "source": "reclaimed"},
-        {"key": "R", "mods": ["CTRL", "SHIFT"], "only": ["macos"], "icon": "run.png",
-         "region": [72, 40], "anchor": "center", "label": "Run selected", "source": "reclaimed"},
+        {"key": "F10", "mods": ["CTRL", "SHIFT"], "only": ["windows", "linux"], "icon": "run_selected.png",
+         "label": "Run selected"},
+        {"key": "R", "mods": ["CTRL", "SHIFT"], "only": ["macos"], "icon": "run_selected.png",
+         "label": "Run selected"},
         # RunDashboard.Debug uses DebugClass: bound on macOS only (Ctrl+Shift+D).
-        {"key": "D", "mods": ["CTRL", "SHIFT"], "only": ["macos"], "icon": "debug.png",
-         "region": [72, 40], "anchor": "center", "label": "Debug selected", "source": "reclaimed"},
+        {"key": "D", "mods": ["CTRL", "SHIFT"], "only": ["macos"], "icon": "debug_selected.png",
+         "label": "Debug selected"},
         # RunDashboard.EditConfiguration uses EditSourceInNewWindow (Shift+F4),
         # CopyConfiguration uses EditorDuplicate (Ctrl+D, Cmd+D).
         {"key": "F4", "mods": ["SHIFT"], "icon": "editconfig.png", "label": "Edit configuration"},
-        {"key": "D", "mods": ["CMDCTRL"], "icon": "copyfile.png", "label": "Copy configuration"},
+        {"key": "D", "mods": ["CMDCTRL"], "icon": "copyconfig.png", "label": "Copy configuration"},
         # ServiceView.AddService uses NewElement: Alt+Insert, macOS Cmd+N.
-        {"key": "INSERT", "mods": ["ALT"], "only": ["windows", "linux"], "icon": "generate.png",
-         "label": "Add service"},
-        {"key": "N", "mods": ["GUI"], "only": ["macos"], "icon": "generate.png", "label": "Add service"},
+        {"key": "INSERT", "mods": ["ALT"], "only": ["windows", "linux"], "icon": "newelement.png",
+         "label": "New element"},
+        {"key": "N", "mods": ["GUI"], "only": ["macos"], "icon": "newelement.png", "label": "New element"},
         # ServiceView.GroupByContributor: Ctrl+Alt+T, macOS Ctrl+T.
         {"key": "T", "mods": ["CTRL", "ALT"], "only": ["windows", "linux"], "icon": "groupbytype.png",
          "label": "Group by type"},
@@ -248,8 +248,8 @@ TOOL_WINDOWS = {
         *_occurrence("nextoccurrence.png", "prevoccurrence.png", "Next occurrence", "Previous occurrence"),
         # UsageGrouping.UsageType / Directory: Ctrl+Alt+T / P, macOS Ctrl+T / P.
         {"key": "T", "mods": ["CTRL", "ALT"], "only": ["windows", "linux"], "icon": "groupbytype.png",
-         "label": "Group by usage type"},
-        {"key": "T", "mods": ["CTRL"], "only": ["macos"], "icon": "groupbytype.png", "label": "Group by usage type"},
+         "label": "Group by type"},
+        {"key": "T", "mods": ["CTRL"], "only": ["macos"], "icon": "groupbytype.png", "label": "Group by type"},
         {"key": "P", "mods": ["CTRL", "ALT"], "only": ["windows", "linux"], "icon": "groupbydirectory.png",
          "label": "Group by directory"},
         {"key": "P", "mods": ["CTRL"], "only": ["macos"], "icon": "groupbydirectory.png", "label": "Group by directory"},
@@ -260,10 +260,10 @@ TOOL_WINDOWS = {
         # ExportToTextFile: Alt+O, macOS Ctrl+O.
         {"key": "O", "mods": ["ALT"], "only": ["windows", "linux"], "icon": "export.png", "label": "Export to text file"},
         {"key": "O", "mods": ["CTRL"], "only": ["macos"], "icon": "export.png", "label": "Export to text file"},
-    ] + _rerun_chord("rerun.png", "Search again") + TREE + TABS),
+    ] + _rerun_chord("rerun.png", "Rerun") + TREE + TABS),
     "problems": ({"Copy"}, [
         # The Problems view's quick-fix action uses ShowIntentionActions (Alt+Enter).
-        {"key": "ENTER", "mods": ["ALT"], "icon": "intentions.png", "label": "Show quick fixes"},
+        {"key": "ENTER", "mods": ["ALT"], "icon": "intentions.png", "label": "Show context actions"},
     ] + TREE + TABS),
     "bookmarks": ({"Show bookmarks"}, [
         # BookmarksView.Rename uses Tree-startEditing (F2), Delete uses $Delete,
@@ -274,9 +274,9 @@ TOOL_WINDOWS = {
         {"key": "DELETE", "mods": [], "icon": "deletebookmark.png", "label": "Delete bookmark"},
         {"key": "F11", "mods": ["CTRL"], "only": ["windows", "linux"], "icon": "mnemonic.png", "label": "Change mnemonic"},
         {"key": "F3", "mods": ["ALT"], "only": ["macos"], "icon": "mnemonic.png", "label": "Change mnemonic"},
-        {"key": "INSERT", "mods": ["ALT"], "only": ["windows", "linux"], "icon": "generate.png",
-         "label": "New bookmark list"},
-        {"key": "N", "mods": ["GUI"], "only": ["macos"], "icon": "generate.png", "label": "New bookmark list"},
+        {"key": "INSERT", "mods": ["ALT"], "only": ["windows", "linux"], "icon": "newelement.png",
+         "label": "New element"},
+        {"key": "N", "mods": ["GUI"], "only": ["macos"], "icon": "newelement.png", "label": "New element"},
         *_occurrence("movedown.png", "moveup.png", "Move down", "Move up"),
     ] + TREE),
     "structure": (set(), list(TREE)),

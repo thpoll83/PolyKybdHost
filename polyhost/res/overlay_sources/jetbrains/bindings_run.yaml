@@ -134,17 +134,14 @@ bindings:
   icon: stop.png
   label: Stop
   source: reclaimed
-- region: *id001
-  anchor: center
-  key: F8
+- key: F8
   mods:
   - CMDCTRL
   - SHIFT
   except:
   - linux_kde
-  icon: ../../cursor/icons/breakpoint.png
+  icon: viewbreakpoints_list.png
   label: View breakpoints
-  source: reclaimed
 - region: *id001
   anchor: center
   key: F9
@@ -481,17 +478,14 @@ bindings:
   icon: stop.png
   label: Stop
   source: reclaimed
-- region: *id001
-  anchor: center
-  key: '8'
+- key: '8'
   mods:
   - CTRL
   - SHIFT
   only:
   - linux_kde
-  icon: ../../cursor/icons/breakpoint.png
+  icon: viewbreakpoints_list.png
   label: View breakpoints
-  source: reclaimed
 - key: '5'
   mods:
   - CTRL

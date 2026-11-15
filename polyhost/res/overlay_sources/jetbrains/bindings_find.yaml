@@ -99,14 +99,14 @@ bindings:
   - windows
   - linux
   icon: groupbytype.png
-  label: Group by usage type
+  label: Group by type
 - key: T
   mods:
   - CTRL
   only:
   - macos
   icon: groupbytype.png
-  label: Group by usage type
+  label: Group by type
 - key: P
   mods:
   - CTRL
@@ -162,21 +162,21 @@ bindings:
   except:
   - linux_kde
   icon: rerun.png
-  label: Search again
+  label: Rerun
 - key: '5'
   mods:
   - CTRL
   only:
   - linux_kde
   icon: rerun.png
-  label: Search again
+  label: Rerun
 - key: R
   mods:
   - GUI
   only:
   - macos
   icon: rerun.png
-  label: Search again
+  label: Rerun
 - key: F4
   mods: []
   icon: editsource.png

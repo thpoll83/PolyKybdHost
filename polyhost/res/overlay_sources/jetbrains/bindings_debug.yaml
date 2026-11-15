@@ -71,17 +71,14 @@ bindings:
   icon: findinpath.png
   label: Find in files
   source: reclaimed
-- region: *id001
-  anchor: center
-  key: F8
+- key: F8
   mods:
   - CMDCTRL
   - SHIFT
   except:
   - linux_kde
-  icon: ../../cursor/icons/breakpoint.png
+  icon: viewbreakpoints_list.png
   label: View breakpoints
-  source: reclaimed
 - region: *id001
   anchor: center
   key: B
@@ -448,7 +445,7 @@ bindings:
   - CMDCTRL
   except:
   - linux_kde
-  icon: win_structure.png
+  icon: filestructure.png
   label: File structure
 - key: F11
   mods: []
@@ -576,23 +573,20 @@ bindings:
   icon: stop.png
   label: Stop
   source: reclaimed
-- region: *id001
-  anchor: center
-  key: '8'
+- key: '8'
   mods:
   - CTRL
   - SHIFT
   only:
   - linux_kde
-  icon: ../../cursor/icons/breakpoint.png
+  icon: viewbreakpoints_list.png
   label: View breakpoints
-  source: reclaimed
 - key: '0'
   mods:
   - CTRL
   only:
   - linux_kde
-  icon: win_structure.png
+  icon: filestructure.png
   label: File structure
 - region: *id001
   anchor: center

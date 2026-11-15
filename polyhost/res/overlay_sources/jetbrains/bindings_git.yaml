@@ -33,7 +33,7 @@ bindings:
   - 40
   anchor: center
   source: reclaimed
-  label: Reword or rename
+  label: Rename
 - key: F6
   mods:
   - SHIFT
@@ -42,7 +42,7 @@ bindings:
   - 72
   - 40
   anchor: center
-  label: Reword or rename
+  label: Rename
   source: reclaimed
 - key: A
   mods:
@@ -393,7 +393,7 @@ bindings:
 - key: K
   mods:
   - CMDCTRL
-  icon: win_commit.png
+  icon: commit.png
   label: Commit
 - key: K
   mods:
