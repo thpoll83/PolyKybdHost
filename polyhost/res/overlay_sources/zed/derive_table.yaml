@@ -192,7 +192,7 @@ actions:
   "search::ToggleSelection": ["Search", "Find in selection", "findinselection.png"]
   "pane::DeploySearch": ["Search", "Find in project", "findinfiles.png"]
   "project_search::ToggleFocus": ["Search", "Find in project", "findinfiles.png"]
-  "pane::DeploySearch {\"replace_enabled\": true}": ["Search", "Replace in project", "replaceinfiles.png"]
+  "pane::DeploySearch {\"replace_enabled\": true}": ["Search", "Replace in project", "replaceinproject.png"]
   "project_search::ToggleFilters": ["Search", "Search filters", "filters.png"]
   "text_finder::Toggle": ["Search", "Text finder", "textfinder.png"]
   "editor::Copy": ["Editing", "Copy", null]

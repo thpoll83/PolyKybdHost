@@ -230,7 +230,7 @@ bindings:
   - { key: L, mods: [CTRL, ALT, SHIFT], only: [linux], icon: findinselection.png, label: "Find in selection", source: "search::ToggleSelection @ l522" }
   - { key: F, mods: [GUI, SHIFT], only: [macos], icon: findinfiles.png, label: "Find in project", source: "pane::DeploySearch @ m692" }
   - { key: F, mods: [CTRL, SHIFT], only: [windows, linux], icon: findinfiles.png, label: "Find in project", source: "project_search::ToggleFocus @ w524 l520" }
-  - { key: H, mods: [CTRL, SHIFT], only: [windows, linux], icon: replaceinfiles.png, label: "Replace in project", concept: replace, source: "pane::DeploySearch @ w684 l694" }
+  - { key: H, mods: [CTRL, SHIFT], only: [windows, linux], icon: replaceinproject.png, label: "Replace in project", source: "pane::DeploySearch @ w684 l694" }
   - { key: F, mods: [ALT], only: [windows], icon: filters.png, label: "Search filters", source: "project_search::ToggleFilters @ w530" }
   - { key: F, mods: [CMDCTRL, ALT], icon: textfinder.png, label: "Text finder", source: "text_finder::Toggle @ w144 l148 m169" }
 

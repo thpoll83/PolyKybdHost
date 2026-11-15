@@ -218,6 +218,7 @@ Two keys of this app share an image only when they do the same thing (maintainer
 | File | Source | License |
 |---|---|---|
 | `projectsymbols.png` | `gotosymbol.png` with the tag "ALL", drawn by `../action_variants.py` | same as the base icon |
+| `replaceinproject.png` | `replaceinfiles.png` with the tag "ALL", drawn by `../action_variants.py` (Replace in project; without it, the key drew the same `replace` concept as Ctrl+H) | same as the base icon |
 | `recentbranches.png` | `win_git.png` with `history.png` at the lower right, drawn by `../action_variants.py` | same as the base icon |
 | `docksshrink_all.png` | `dockshrink.png` with the tag "ALL", drawn by `../action_variants.py` | same as the base icon |
 | `insertafter.png` | Fluent `Text Add Space After` (copied from ../sublime/icons) | MIT |

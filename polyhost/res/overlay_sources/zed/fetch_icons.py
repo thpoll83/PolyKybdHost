@@ -262,6 +262,7 @@ def _zed_mark(path: Path) -> None:
 # (one icon per action, maintainer 2026-11-15). See action_variants.py.
 VARIANTS = {
     "projectsymbols.png": ("tag", "gotosymbol.png", "ALL"),
+    "replaceinproject.png": ("tag", "replaceinfiles.png", "ALL"),
     "recentbranches.png": ("combine", "win_git.png", "history.png"),
     "docksshrink_all.png": ("tag", "dockshrink.png", "ALL"),
 }
