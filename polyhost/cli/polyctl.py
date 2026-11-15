@@ -626,8 +626,10 @@ def _print_tutorial_state(state):
     if text:
         print(f"  {text}")
     wait = state.get("wait") or {}
-    if state.get("auto"):
-        print(f"  ends in {state.get('remaining_s')} s")
+    if state.get("remaining_s") is not None:
+        print(f"  ends in {state['remaining_s']} s")
+    elif state.get("auto"):
+        print(f"  ends when the keyboard reports: {wait.get('kind')} {wait.get('value')}")
     else:
         print(f"  ends with: polyctl tutorial next (waits for {wait.get('kind')})")
     if state.get("ring_error"):

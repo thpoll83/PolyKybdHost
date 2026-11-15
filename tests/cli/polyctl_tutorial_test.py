@@ -56,6 +56,13 @@ class PolyctlTutorialTest(unittest.TestCase):
                 self.assertEqual(dict(server.received)[protocol.M_TUTORIAL_ACTION],
                                  {"action": action})
 
+    def test_a_keyboard_event_wait(self):
+        state = {**_STATE, "auto": True, "wait": {"kind": "layer", "value": "MIDI"}}
+        rc, out, _err, _server = run_main(["tutorial", "status"],
+                                          {protocol.M_TUTORIAL_STATE: state})
+        self.assertIn("ends when the keyboard reports: layer MIDI", out)
+        self.assertNotIn("None", out)
+
     def test_status_and_the_end(self):
         rc, out, _err, _server = run_main(["tutorial", "status"],
                                           {protocol.M_TUTORIAL_STATE: None})
