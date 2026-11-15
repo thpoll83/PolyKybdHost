@@ -38,7 +38,11 @@ import cairosvg
 from polyhost.res.overlay_sources import material_symbols
 
 RENDER_PX = 96
-RAW = "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/main/assets/{}"
+# Pinned to one commit of microsoft/fluentui-system-icons (main on 2026-11-15), so a
+# later fetch returns the same drawing. To take newer glyphs, change the commit and
+# run the fetch script of every set that uses a Fluent icon through this module.
+FLUENT_COMMIT = "67e6dec1ee956af3ab4c746a2b3bb6a2e5520a44"
+RAW = "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/" + FLUENT_COMMIT + "/assets/{}"
 SIZES = (24, 20, 28, 32, 16)
 # Material Symbols (Apache-2.0) is the documented backup source. GPLv3 is
 # Apache-2.0-compatible; under the project's old GPLv2 it would not have been.

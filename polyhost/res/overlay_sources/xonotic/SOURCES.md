@@ -125,7 +125,7 @@ URL. The game-icons.net URL is also in `SOURCES` of
 `material_symbols.py`.
 
 - game-icons.net (`gi:<author>/<name>`): `https://game-icons.net/icons/000000/transparent/1x1/<author>/<name>.svg`
-- Material Symbols (`ms:<name>`), outlined style at weight 300: `https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/<name>/materialsymbolsoutlined/<name>_wght300_24px.svg` (`RAW` in `material_symbols.py`; the URL names the `master` branch, not a commit, so a later fetch can return a changed drawing)
+- Material Symbols (`ms:<name>`), outlined style at weight 300: `https://raw.githubusercontent.com/google/material-design-icons/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/symbols/web/<name>/materialsymbolsoutlined/<name>_wght300_24px.svg` (`RAW` in `material_symbols.py`; the URL names commit `10ecc14` of google/material-design-icons)
 
 | File | Source | Author | Licence |
 |---|---|---|---|
