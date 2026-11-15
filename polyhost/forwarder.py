@@ -273,10 +273,8 @@ class PolyForwarder(QApplication):
         self.menu.addSeparator()
 
         # --- Updates: same submenu, icon and labels as the tray app's ---------
-        # It used to be a single top-level row, because a forwarder owns no
-        # keyboard and so has no firmware or font-pack rows. Once the shell
-        # title row joined it, the two flat rows no longer matched the tray
-        # app: the same entries sat at a different depth in each app.
+        # A forwarder owns no keyboard, so it has only the host update row.
+        # It stays a submenu so the row sits at the same depth as in the tray app.
         self.updates_menu = self.menu.addMenu(get_icon("update.svg"), _("Updates"))
 
         self.update_action = QAction(get_icon("browser_updated.svg"),
@@ -285,34 +283,33 @@ class PolyForwarder(QApplication):
         self.update_action.triggered.connect(self._on_update_clicked)
         self.updates_menu.addAction(self.update_action)
 
-        # The forwarder reports THIS machine's window title, so a terminal here
-        # needs the same shell setup as one on the keyboard's machine. Same
-        # label and dialog as the tray app's entry (services/shell_title.py).
-        # The same dialog copies the Vim/Neovim/Emacs mode plugins
-        # (services/editor_plugins.py); the copies made earlier are refreshed
-        # from this installation on a thread at every start.
+        # The editor plugins copied by Integrations > Editors are refreshed
+        # from this installation on a thread at every start
+        # (services/editor_plugins.py).
         from polyhost.services import editor_plugins
         editor_plugins.start_refresh_thread()
-        self.shell_title_dialog = None
-        self.shell_title_action = QAction(get_icon("terminal.svg"),
-                                          _("Set up the terminal and editors\u2026"),
-                                          parent=self)
-        # noinspection PyUnresolvedReferences
-        self.shell_title_action.triggered.connect(self.open_shell_title_dialog)
-        self.updates_menu.addAction(self.shell_title_action)
-
-        # The hooks of the AI agents on THIS computer (Claude Code, Codex, Copilot
-        # CLI): they report to the keyboard computer this forwarder reports to
-        # (services/agents/remote.py), so the keys show this computer's agents.
-        from polyhost.gui.agent_hooks import add_setup_menu
-        self.agent_hooks_menu = add_setup_menu(
-            self.menu, self.log, title=_("Set Up Agent Hooks"), note=self._agent_hooks_note)
-        self.agent_hooks_menu.setIcon(get_icon("terminal.svg"))
+        # A browser extension copied by Integrations > Browser gets the version
+        # of this install, as in the tray app (services/browser_extension.py).
+        import threading
+        from polyhost.services import browser_extension
+        threading.Thread(target=browser_extension.update_if_outdated,
+                         name="browser-extension-update", daemon=True).start()
         self.pair_action = QAction(get_icon("sync_alt.svg"), _("Pair with the Keyboard Computer…"),
                                    parent=self)
         # noinspection PyUnresolvedReferences
         self.pair_action.triggered.connect(self._pair_clicked)
         self.menu.addAction(self.pair_action)
+
+        # The same Integrations dialog as the tray app, for THIS computer: the
+        # forwarder reports its window titles and the browser URL from its own
+        # BrowserUrlSource, and its agents' hooks report to the keyboard
+        # computer (services/agents/remote.py).
+        self.integrations_dialog = None
+        self.integrations_action = QAction(get_icon("extension.svg"), _("Integrations…"),
+                                           parent=self)
+        # noinspection PyUnresolvedReferences
+        self.integrations_action.triggered.connect(lambda: self.open_integrations())
+        self.menu.addAction(self.integrations_action)
 
         self.settings_action = QAction(get_icon("settings.svg"), _("Settings..."), parent=self)
         # noinspection PyUnresolvedReferences
@@ -817,15 +814,11 @@ class PolyForwarder(QApplication):
         self.log_bundle_dialog.show()
         bring_to_front(self.log_bundle_dialog)
 
-    def open_shell_title_dialog(self):
-        """Shell title integration (retained instance, see PolyHost.open_shell_title_dialog)."""
-        from polyhost.gui.shell_title_dialog import ShellTitleDialog
-        if self.shell_title_dialog is None:
-            self.shell_title_dialog = ShellTitleDialog(parent=None)
-        elif not self.shell_title_dialog.isVisible():
-            self.shell_title_dialog.reopen()
-        self.shell_title_dialog.show()
-        bring_to_front(self.shell_title_dialog)
+    def open_integrations(self, category=None):
+        """Integrations for this computer (kept instance, see
+        PolyHost.open_integrations)."""
+        from polyhost.gui.integrations_dialog import open_integrations
+        open_integrations(self, category=category, agent_note=self._agent_hooks_note)
 
     def open_log(self):
         # assignment is needed otherwise the dialog would go away immediately

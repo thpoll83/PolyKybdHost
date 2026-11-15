@@ -1,4 +1,4 @@
-"""gui/browser_extension_dialog.py: AI Agents → Install Browser Extension…"""
+"""gui/browser_extension_page.py: Integrations > Browser."""
 import json
 import os
 import shutil
@@ -15,12 +15,12 @@ except ImportError:  # no Qt: skip
     _QT = False
 if _QT:
     # Outside the guard: a broken module must fail the run, not skip its tests.
-    from polyhost.gui import browser_extension_dialog as bed
+    from polyhost.gui import browser_extension_page as bep
     from polyhost.services import browser_extension as be
 
 
 @unittest.skipUnless(_QT, "needs PyQt5 and a display (xvfb-run)")
-class BrowserExtensionDialogTest(unittest.TestCase):
+class BrowserPageTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
@@ -34,7 +34,7 @@ class BrowserExtensionDialogTest(unittest.TestCase):
         self.addCleanup(patch.stop)
 
     def _dialog(self):
-        dlg = bed.BrowserExtensionDialog(mock.MagicMock(), receiver_port=50164)
+        dlg = bep.BrowserPage(mock.MagicMock(), receiver_port=50164)
         self.addCleanup(dlg.deleteLater)
         return dlg
 
@@ -75,6 +75,31 @@ class BrowserExtensionDialogTest(unittest.TestCase):
         self.assertEqual(QApplication.clipboard().text(), "chrome://extensions")
 
 
+    def test_reopen_shows_the_receiver_port_as_it_is_now(self):
+        with mock.patch("polyhost.settings.read_setting", return_value=50164):
+            page = bep.BrowserPage(mock.MagicMock())
+        self.addCleanup(page.deleteLater)
+        self.assertIn("50164", page.steps.text())
+        with mock.patch("polyhost.settings.read_setting", return_value=50200):
+            page.reopen()
+        self.assertIn("50200", page.steps.text())
+        self.assertNotIn("50164", page.steps.text())
+
+    def test_reopen_keeps_the_missing_files_message(self):
+        with mock.patch.object(be, "source_version", return_value=""):
+            page = bep.BrowserPage(mock.MagicMock(), receiver_port=50164)
+        self.addCleanup(page.deleteLater)
+        self.assertFalse(page.copy_button.isEnabled())
+        page.reopen()
+        self.assertIn("no browser extension files", page.status.text())
+
+    def test_reopen_clears_the_last_result(self):
+        page = self._dialog()
+        page.copy_button.click()                     # "Choose a folder first."
+        self.assertTrue(page.status.text())
+        page.reopen()
+        self.assertEqual(page.status.text(), "")
+
     def test_the_long_step_text_does_not_overlap_its_button(self):
         # German is the longest; the window opened at a height computed before
         # the labels wrapped, and the step text ran under the button.
@@ -82,17 +107,22 @@ class BrowserExtensionDialogTest(unittest.TestCase):
         from PyQt5.QtWidgets import QPushButton
         from polyhost.gui.i18n_qt import prepare
         from polyhost.gui.ui_kit import WrapLabel
+        from polyhost.gui.integrations_dialog import BROWSER, IntegrationsDialog
         self.addCleanup(prepare, "en")
         prepare("de")
-        dlg = self._dialog()
+        # The page as the tray shows it: in the Integrations dialog's scroll area.
+        dlg = IntegrationsDialog(mock.MagicMock(), categories=(BROWSER,), page_factories={
+            BROWSER: lambda: bep.BrowserPage(mock.MagicMock(), receiver_port=50164)})
+        self.addCleanup(dlg.deleteLater)
         dlg.show()
         for _ in range(5):
             QApplication.processEvents()
             time.sleep(0.02)
-        steps = next(w for w in dlg.findChildren(WrapLabel) if "chrome://" in w.text())
-        button = next(b for b in dlg.findChildren(QPushButton) if "chrome://" in b.text())
-        bottom = steps.mapTo(dlg, steps.rect().bottomLeft()).y()
-        self.assertLess(bottom, button.mapTo(dlg, button.rect().topLeft()).y())
+        page = dlg.pages[BROWSER]
+        steps = next(w for w in page.findChildren(WrapLabel) if "chrome://" in w.text())
+        button = next(b for b in page.findChildren(QPushButton) if "chrome://" in b.text())
+        bottom = steps.mapTo(page, steps.rect().bottomLeft()).y()
+        self.assertLess(bottom, button.mapTo(page, button.rect().topLeft()).y())
         dlg.close()
 
 if __name__ == "__main__":
