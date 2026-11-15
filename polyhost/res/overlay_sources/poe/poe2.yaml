@@ -1,0 +1,88 @@
+# Path of Exile 2 overlay for PolyKybd.
+#
+# Keys: the default [ACTION_KEYS] (mouse movement) of
+# poe2_production_Config.ini; three player files published on GitHub agree
+# (see SOURCES.md). Each binding names its action (`command:`) as the file
+# writes it, so the icons follow the player's own bindings, including the
+# [WASD_ACTION_KEYS] set when the player moves with W A S D
+# (game_assets/poe2_keys.py).
+#
+# The mouse buttons (skill slots 1 to 3) and the modifier keys (Shift: attack
+# in place, Ctrl: second skill bar, Alt: highlight) have no overlay cell.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/poe/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/poe/poe2.yaml --preview /tmp/poe2_preview
+app: path of exile 2
+match: [pathofexile, pathofexile_x64, pathofexilesteam, pathofexile_x64steam, pathofexile_kg, pathofexile_x64_kg]
+output: poe2_template
+icon_dir: icons
+fit: contain
+mode: auto
+threshold: 150
+anchor: right
+region: [40, 40]
+margin: 0
+
+program_icon: program2.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+# The player's own bindings move the icons (game_assets/poe2_keys.py).
+game_assets:
+  reader: keys
+  bindings: poe2
+  icons: {}
+
+bindings:
+
+  # Skills and flasks
+  - { key: Q, command: use_bound_skill4, icon: skill4.png, label: "Skill 4" }
+  - { key: W, command: use_bound_skill5, icon: skill5.png, label: "Skill 5" }
+  - { key: E, command: use_bound_skill6, icon: skill6.png, label: "Skill 6" }
+  - { key: R, command: use_bound_skill7, icon: skill7.png, label: "Skill 7" }
+  - { key: T, command: use_bound_skill8, icon: skill8.png, label: "Skill 8" }
+  - { key: Q, mods: [CTRL], command: use_bound_skill9, icon: skill9.png, label: "Skill 9" }
+  - { key: W, mods: [CTRL], command: use_bound_skill10, icon: skill10.png, label: "Skill 10" }
+  - { key: E, mods: [CTRL], command: use_bound_skill11, icon: skill11.png, label: "Skill 11" }
+  - { key: R, mods: [CTRL], command: use_bound_skill12, icon: skill12.png, label: "Skill 12" }
+  - { key: T, mods: [CTRL], command: use_bound_skill13, icon: skill13.png, label: "Skill 13" }
+  - { key: 1, command: use_flask_in_slot1, icon: flask.png, label: "Life flask" }
+  - { key: 2, command: use_flask_in_slot2, icon: flask.png, label: "Mana flask" }
+  - { key: 6, command: use_temporary_skill1, icon: tempskill.png, label: "Temporary skill 1" }
+  - { key: 7, command: use_temporary_skill2, icon: tempskill.png, label: "Temporary skill 2" }
+  - { key: SPACE, command: use_dodge_roll, icon: dodge.png, label: "Dodge roll" }
+  - { key: GRAVE, command: direct_minions, icon: minions.png, label: "Direct minions" }
+
+  # Panels
+  - { key: I, command: open_inventory_panel, icon: inventory.png, label: "Inventory" }
+  - { key: C, command: open_character_panel, icon: character.png, label: "Character" }
+  - { key: P, command: open_passive_skills_panel, icon: passives.png, label: "Passive skill tree" }
+  - { key: H, command: open_challenges_panel, icon: challenges.png, label: "Challenges" }
+  - { key: L, command: open_ladder_panel, icon: ladder.png, label: "Ladder" }
+  - { key: K, command: open_cosmetics_inventory, icon: cosmetics.png, label: "Cosmetics" }
+  - { key: N, command: open_mtx_stash, icon: mtxstash.png, label: "Microtransaction stash" }
+  - { key: M, command: open_microtransaction_panel, icon: shop.png, label: "Shop" }
+  - { key: O, command: open_options, icon: options.png, label: "Options" }
+  - { key: V, command: generic_league_key, icon: league.png, label: "League mechanic" }
+  - { key: QUOTE, command: generic_league_panel_key, icon: leaguepanel.png, label: "League panel" }
+  - { key: G, command: open_skill_panel, icon: skills.png, label: "Skills" }
+  - { key: U, command: open_world_panel, icon: world.png, label: "World" }
+  - { key: U, command: open_atlas_passives_screen, icon: atlaspassives.png, label: "Atlas passive tree", mods: [CTRL] }
+  - { key: J, command: open_social_panel, icon: social.png, label: "Social" }
+  - { key: SLASH, command: open_market_panel, icon: market.png, label: "Trade market" }
+
+  # Interface
+  - { key: TAB, command: open_map, icon: map.png, label: "Overlay map" }
+  - { key: ENTER, command: chat, icon: chat.png, label: "Chat" }
+  - { key: PGUP, command: zoom_in, icon: zoomin.png, label: "Zoom in" }
+  - { key: PGDN, command: zoom_out, icon: zoomout.png, label: "Zoom out" }
+  - { key: F1, command: performance_overlay, icon: performance.png, label: "Performance overlay", region: [34, 40] }
+  - { key: F8, command: take_screenshot, icon: screenshot.png, label: "Screenshot", region: [34, 40] }
+  - { key: Z, command: highlight_toggle, icon: labels.png, label: "Toggle item labels" }
+  - { key: X, command: weapon_swap, icon: weaponswap.png, label: "Weapon swap" }
+  - { key: D, command: detonate_mines, icon: mines.png, label: "Detonate mines" }
+  - { key: F, command: enable_key_pickup, icon: pickup.png, label: "Pick up" }

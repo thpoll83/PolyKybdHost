@@ -1,0 +1,60 @@
+# Overwatch 2 overlay for PolyKybd.
+#
+# Keys: the default PC keyboard bindings, from two independent key lists that
+# agree (see SOURCES.md). Overwatch keeps the player's key bindings on
+# Blizzard's servers, not in a local file, so the overlay cannot follow a
+# rebind: a player who rebinds a key still sees the default here.
+#
+# W A S D (move) stay blank: the letter legend is enough. Shift (ability 1),
+# Ctrl (crouch) and Alt (perks) are modifier keys and have no overlay cell.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/overwatch/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/overwatch/overwatch.yaml --preview /tmp/overwatch_preview
+app: overwatch 2
+match: [overwatch, steam_app_2357570]
+output: overwatch_template
+icon_dir: icons
+fit: contain
+mode: auto
+threshold: 150
+anchor: right
+region: [40, 40]
+margin: 0
+
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Abilities and weapons
+  - { key: Q, icon: ultimate.png, label: "Ultimate" }
+  - { key: E, icon: ability2.png, label: "Ability 2" }
+  - { key: R, icon: reload.png, label: "Reload", shared: false }
+  - { key: V, icon: melee.png, label: "Quick melee" }
+  - { key: F, icon: interact.png, label: "Interact" }
+  - { key: "1", icon: weapon.png, label: "Weapon 1" }
+  - { key: "2", icon: weapon.png, label: "Weapon 2" }
+  - { key: SPACE, icon: jump.png, label: "Jump" }
+
+  # Communication
+  - { key: G, icon: ping.png, label: "Ping" }
+  - { key: C, icon: comms.png, label: "Communication wheel" }
+  - { key: X, icon: healing.png, label: "Need healing" }
+  - { key: Z, icon: ultstatus.png, label: "Ultimate status" }
+  - { key: Y, icon: spray.png, label: "Spray" }
+  - { key: GRAVE, icon: pushtotalk.png, label: "Push to talk" }
+  - { key: M, icon: mute.png, label: "Mute microphone" }
+  - { key: ENTER, icon: chat.png, label: "Text chat" }
+
+  # Menus
+  - { key: TAB, icon: scoreboard.png, label: "Scoreboard" }
+  - { key: H, icon: heroselect.png, label: "Change hero" }
+  - { key: N, icon: endorse.png, label: "Endorse players" }
+  - { key: P, icon: social.png, label: "Social" }
+  - { key: F9, icon: highlight.png, label: "Capture highlight", region: [34, 40] }
+  - { key: PRTSC, icon: screenshot.png, label: "Screenshot" }

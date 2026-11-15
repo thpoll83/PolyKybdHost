@@ -1,0 +1,70 @@
+# Apex Legends overlay for PolyKybd.
+#
+# Keys: the keyboard bindings that the player settings files published on
+# GitHub have in common (see SOURCES.md). Respawn publishes no default file,
+# so the defaults are not checked against the game. Each binding names the
+# command its key runs (`command:`), so the icons follow the player's own
+# binds in Saved Games/Respawn/Apex/local/settings.cfg
+# (game_assets/apex_keys.py).
+#
+# W A S D (move) stay blank: the letter legend is enough. Shift (sprint) and
+# Ctrl (crouch) are modifier keys and have no overlay cell.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/apex/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/apex/apex.yaml --preview /tmp/apex_preview
+app: apex legends
+match: [r5apex, r5apex_dx12, steam_app_1172470]
+output: apex_template
+icon_dir: icons
+fit: contain
+mode: auto
+threshold: 150
+anchor: right
+region: [40, 40]
+margin: 0
+
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+# The player's own binds move the icons (game_assets/apex_keys.py).
+game_assets:
+  reader: keys
+  bindings: apex
+  icons: {}
+
+bindings:
+
+  # Weapons and abilities
+  - { key: "1", command: weaponSelectPrimary0, icon: weapon.png, label: "Weapon 1" }
+  - { key: "2", command: weaponSelectPrimary1, icon: weapon.png, label: "Weapon 2" }
+  - { key: "3", command: weaponSelectPrimary2, icon: holster.png, label: "Holster weapons" }
+  - { key: Q, command: +offhand1, icon: tactical.png, label: "Tactical ability" }
+  - { key: Z, command: +offhand4, icon: ultimate.png, label: "Ultimate ability" }
+  - { key: G, command: weaponSelectOrdnance, icon: grenade.png, label: "Grenade" }
+  - { key: B, command: +scriptCommand3, icon: fireselect.png, label: "Fire select" }
+  - { key: R, command: +reload, icon: reload.png, label: "Reload", shared: false }
+  - { key: V, command: +melee, icon: melee.png, label: "Melee" }
+  - { key: N, command: weapon_inspect, icon: inspect.png, label: "Inspect weapon" }
+  - { key: SPACE, command: +jump, icon: jump.png, label: "Jump" }
+  - { key: C, command: +toggle_duck, icon: crouch.png, label: "Crouch (toggle)" }
+
+  # Healing items
+  - { key: "4", command: +scriptCommand4, icon: heal.png, label: "Heal" }
+  - { key: "5", command: use_consumable HEALTH_SMALL, icon: syringe.png, label: "Syringe" }
+  - { key: "6", command: use_consumable HEALTH_LARGE, icon: medkit.png, label: "Med kit" }
+  - { key: "7", command: use_consumable SHIELD_SMALL, icon: cell.png, label: "Shield cell" }
+  - { key: "8", command: use_consumable SHIELD_LARGE, icon: battery.png, label: "Shield battery" }
+  - { key: "9", command: use_consumable PHOENIX_KIT, icon: phoenix.png, label: "Phoenix kit" }
+
+  # Interface
+  - { key: E, command: +use, icon: interact.png, label: "Interact" }
+  - { key: TAB, command: toggle_inventory, icon: inventory.png, label: "Inventory", undrawn: [I] }
+  - { key: M, command: toggle_map, icon: map.png, label: "Map" }
+  - { key: T, command: +pushtotalk, icon: pushtotalk.png, label: "Push to talk" }
+  - { key: ENTER, command: say_team, icon: chat.png, label: "Team chat" }
+  - { key: F10, command: screenshotDevNet_noRPROF, icon: screenshot.png, label: "Screenshot", region: [34, 40] }

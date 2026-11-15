@@ -1,0 +1,73 @@
+# Genshin Impact overlay for PolyKybd.
+#
+# Keys: the default PC keyboard bindings, from two independent key lists that
+# agree (see SOURCES.md). The game keeps the player's controls in a binary
+# value in the Windows registry, whose layout is not documented, so the
+# overlay cannot follow a rebind: a player who rebinds a key still sees the
+# default here.
+#
+# W A S D (move) stay blank: the letter legend is enough. Shift (sprint), Ctrl
+# (walk) and Alt (show cursor) are modifier keys and have no overlay cell.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/genshin/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/genshin/genshin.yaml --preview /tmp/genshin_preview
+app: genshin impact
+match: [genshinimpact, yuanshen]
+output: genshin_template
+icon_dir: icons
+fit: contain
+mode: auto
+threshold: 150
+anchor: right
+region: [40, 40]
+margin: 0
+
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Combat
+  - { key: E, icon: skill.png, label: "Elemental skill" }
+  - { key: Q, icon: burst.png, label: "Elemental burst" }
+  - { key: R, icon: aim.png, label: "Aim mode" }
+  - { key: "1", icon: member.png, label: "Party member 1" }
+  - { key: "2", icon: member.png, label: "Party member 2" }
+  - { key: "3", icon: member.png, label: "Party member 3" }
+  - { key: "4", icon: member.png, label: "Party member 4" }
+  - { key: "1", mods: [ALT], icon: burst.png, label: "Member 1: burst" }
+  - { key: "2", mods: [ALT], icon: burst.png, label: "Member 2: burst" }
+  - { key: "3", mods: [ALT], icon: burst.png, label: "Member 3: burst" }
+  - { key: "4", mods: [ALT], icon: burst.png, label: "Member 4: burst" }
+  - { key: SPACE, icon: jump.png, label: "Jump" }
+
+  # World
+  - { key: F, icon: interact.png, label: "Interact" }
+  - { key: Z, icon: gadget.png, label: "Gadget" }
+  - { key: T, icon: special.png, label: "Special action" }
+  - { key: X, icon: drop.png, label: "Drop from climb" }
+  - { key: V, icon: navigate.png, label: "Quest navigation" }
+  - { key: P, icon: abandon.png, label: "Abandon challenge" }
+
+  # Menus
+  - { key: B, icon: bag.png, label: "Inventory" }
+  - { key: C, icon: character.png, label: "Characters" }
+  - { key: M, icon: map.png, label: "Map" }
+  - { key: J, icon: quests.png, label: "Quests" }
+  - { key: L, icon: party.png, label: "Party setup" }
+  - { key: O, icon: friends.png, label: "Friends" }
+  - { key: Y, icon: notification.png, label: "Notification details" }
+  - { key: G, icon: tutorial.png, label: "Tutorials" }
+  - { key: ENTER, icon: chat.png, label: "Chat" }
+  - { key: TAB, icon: wheel.png, label: "Shortcut wheel" }
+  - { key: F1, icon: handbook.png, label: "Adventurer Handbook", region: [34, 40] }
+  - { key: F2, icon: coop.png, label: "Co-op", region: [34, 40] }
+  - { key: F3, icon: wish.png, label: "Wish", region: [34, 40] }
+  - { key: F4, icon: battlepass.png, label: "Battle Pass", region: [34, 40] }
+  - { key: F5, icon: events.png, label: "Events", region: [34, 40] }
+  - { key: F7, icon: teapot.png, label: "Serenitea Pot", region: [34, 40] }
