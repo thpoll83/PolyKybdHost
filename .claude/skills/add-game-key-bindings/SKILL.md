@@ -11,7 +11,7 @@ or plays a localized install whose hotkeys differ, the icon sits on the wrong ke
 `polyhost/services/game_assets/build.py` can move each icon to the player's key at
 build time (`remap`). This skill wires one game into that.
 
-Done six times on 2026-11-14/15 (PolyKybdHost#869, #874 and the PR after #894):
+Done six times on 2026-11-14/15 (PolyKybdHost#869, #874, #898):
 
 | Game | Binding source | Hook | Complete? |
 |---|---|---|---|
