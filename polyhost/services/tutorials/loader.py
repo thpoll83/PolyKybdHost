@@ -30,9 +30,9 @@ BASE_PROTOCOL = 32
 
 _ID = re.compile(r"[a-z0-9][a-z0-9-]*")
 _SCRIPT_KEYS = {"id", "category", "title", "summary", "min_protocol", "steps"}
-_STEP_KEYS = {"say", "text", "point", "guide_to_layer", "wait"}
+_STEP_KEYS = {"say", "text", "point", "guide_to_layer", "spotlight", "reveal", "wait"}
 _POINT_KINDS = {"keycode", "layer_key", "key"}
-_WAIT_KINDS = {"seconds", "layer", "press", "keycode"}
+_WAIT_KINDS = {"seconds", "layer", "press"}
 
 
 class ScriptError(ValueError):
@@ -43,7 +43,8 @@ class ScriptError(ValueError):
 class Point:
     """Which key the ring points at. `kind` is "keycode" (value: int), "layer_key"
     (value: a layer name from cmd 35; the key that moves to that layer) or "key"
-    (value: (row, col))."""
+    (value: (row, col)). In a spotlight list only, "layer" (value: a layer name) is
+    every key that has a keycode on that layer."""
     kind: str
     value: object
 
@@ -51,8 +52,9 @@ class Point:
 @dataclass(frozen=True)
 class Wait:
     """How a step ends. "next": the user presses Next. "seconds": after `value`
-    seconds. "layer" / "press" / "keycode": a keyboard event; these need firmware
-    events (cmd 49) and end with Next until then."""
+    seconds. "layer": that layer is on. "press": a key with keycode `value` is
+    pressed. The two keyboard events need cmd 49 (protocol 35); on older firmware the
+    step ends with Next."""
     kind: str
     value: object = None
 
@@ -63,6 +65,12 @@ class Step:
     text: dict = field(default_factory=dict)
     point: Point | None = None
     guide_to_layer: str | None = None
+    # None: no spotlight (every key lit). A tuple of Points: only those keys, and the
+    # key the step rings, stay lit (cmd 49 SPOTLIGHT).
+    spotlight: tuple | None = None
+    # The key the reveal wave starts from (cmd 49 REVEAL); it lights the dark keys and
+    # ends the spotlight. A step with a reveal and no spotlight keeps the one before.
+    reveal: Point | None = None
     wait: Wait = Wait("next")
 
 
@@ -117,7 +125,45 @@ def _say(value, where: str) -> tuple:
         if any(not 0x20 <= ord(ch) <= 0x7E for ch in line):
             raise ScriptError(f"{where}: {line!r} has a character the status display "
                               f"cannot show (ASCII 0x20..0x7E only)")
+        width = say_width(line)
+        if width is not None and width > STATUS_PANEL_W:
+            raise ScriptError(f"{where}: {line!r} is {width} px wide; the status display "
+                              f"is {STATUS_PANEL_W} px")
+    if sum(len(x) for x in lines) > SAY_BYTES:
+        raise ScriptError(f"{where}: both lines together have more than {SAY_BYTES} "
+                          f"characters, which one report holds")
     return tuple(lines)
+
+
+# The status display (split72: 128 x 64) and its face; the firmware draws `say` in
+# NotoSans_Regular_Small_15px7b, centred (oled_helper.c, oled_host_tutorial_screen).
+STATUS_PANEL_W = 128
+STATUS_FONT = "NotoSans_Regular_Small_15px7b"
+# Cmd 49 TEXT: two length bytes and both lines in one 64-byte report (HostTutorial).
+SAY_BYTES = 59
+_SAY_FONT = None
+
+
+def say_width(line: str):
+    """The pixel width of `line` in the status face, measured as the firmware does,
+    or None when the shipped face cannot be read (the check is then skipped)."""
+    global _SAY_FONT
+    if _SAY_FONT is None:
+        _SAY_FONT = False
+        try:
+            import json
+            from polyhost.services import fontpack_reader as fr
+            preview = os.path.join(os.path.dirname(SHIPPED_DIR), "preview")
+            with open(os.path.join(preview, "legends.json"), encoding="utf-8") as f:
+                names = json.load(f).get("ui_fonts") or []
+            fonts = fr.decode_pack_file(os.path.join(preview, "ui_fonts.plyf"), "ui").fonts
+            _SAY_FONT = dict(zip(names, fonts)).get(STATUS_FONT) or False
+        except (OSError, ValueError, ImportError):
+            _SAY_FONT = False
+    if not _SAY_FONT:
+        return None
+    from polyhost.services.macro_label import measure
+    return measure(line, _SAY_FONT)
 
 
 _CUSTOM = None
@@ -183,7 +229,7 @@ def _wait(value, where: str) -> Wait:
         return Wait("next")
     if not isinstance(value, dict) or len(value) != 1 or next(iter(value)) not in _WAIT_KINDS:
         raise ScriptError(f"{where}: next, or one of {{seconds: N}}, {{layer: NAME}}, "
-                          f"{{press: KEYCODE}}, {{keycode: KEYCODE}}")
+                          f"{{press: KEYCODE}}")
     kind, v = next(iter(value.items()))
     if kind == "seconds":
         if isinstance(v, bool) or not isinstance(v, (int, float)) or v <= 0:
@@ -192,6 +238,24 @@ def _wait(value, where: str) -> Wait:
     if kind == "layer":
         return Wait(kind, _layer_name(v, f"{where}.layer"))
     return Wait(kind, _keycode(v, f"{where}.{kind}"))
+
+
+def _spotlight(value, where: str) -> tuple:
+    if not isinstance(value, list):
+        raise ScriptError(f"{where}: a list of keys, e.g. [{{keycode: KC_A}}, {{layer: MIDI}}]")
+    out = []
+    for i, item in enumerate(value):
+        if isinstance(item, dict) and len(item) == 1 and "layer" in item:
+            out.append(Point("layer", _layer_name(item["layer"], f"{where}[{i}].layer")))
+        else:
+            out.append(_point(item, f"{where}[{i}]"))
+    return tuple(out)
+
+
+def _reveal(value, where: str) -> Point:
+    if not isinstance(value, dict) or set(value) != {"from"}:
+        raise ScriptError(f"{where}: {{from: {{keycode: ...}}}} or another key")
+    return _point(value["from"], f"{where}.from")
 
 
 def _step(raw, where: str) -> Step:
@@ -208,6 +272,8 @@ def _step(raw, where: str) -> Step:
         point=_point(raw["point"], f"{where}.point") if "point" in raw else None,
         guide_to_layer=(_layer_name(raw["guide_to_layer"], f"{where}.guide_to_layer")
                         if "guide_to_layer" in raw else None),
+        spotlight=_spotlight(raw["spotlight"], f"{where}.spotlight") if "spotlight" in raw else None,
+        reveal=_reveal(raw["reveal"], f"{where}.reveal") if "reveal" in raw else None,
         wait=_wait(raw["wait"], f"{where}.wait") if "wait" in raw else Wait("next"))
 
 

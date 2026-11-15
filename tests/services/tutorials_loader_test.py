@@ -64,6 +64,24 @@ class ParseTest(unittest.TestCase):
         self.assertEqual(parse_script(_step(point={"key": [2, 3]})).steps[0].point,
                          Point("key", (2, 3)))
 
+    def test_spotlight_and_reveal(self):
+        step = parse_script(_step(spotlight=[{"keycode": "KC_A"}, {"layer": "MIDI"},
+                                             {"key": [1, 2]}, {"layer_key": "Fn"}],
+                                  reveal={"from": {"key": [3, 4]}})).steps[0]
+        self.assertEqual(step.spotlight, (Point("keycode", 4), Point("layer", "MIDI"),
+                                          Point("key", (1, 2)), Point("layer_key", "Fn")))
+        self.assertEqual(step.reveal, Point("key", (3, 4)))
+        self.assertEqual(parse_script(_step(spotlight=[])).steps[0].spotlight, ())
+        self.assertIsNone(parse_script(_step(say="x")).steps[0].spotlight)
+
+    def test_say_width_is_measured_in_the_status_face(self):
+        # Measured with the shipped face: 'W' is 14 px, 'i' 4 px.
+        self.assertEqual(loader.say_width("Hold Fn"), 53)
+        self.assertEqual(loader.say_width("Min 1/4 1/2 3/4 Max"), 143)
+        parse_script(_step(say=["i" * 29, "i" * 30]))          # 59 bytes, narrow
+        with self.assertRaises(ScriptError):
+            parse_script(_step(say=["W" * 10]))                  # 10 x 14 px > 128
+
     def test_waits(self):
         self.assertEqual(parse_script(_step(wait={"seconds": 3})).steps[0].wait,
                          Wait("seconds", 3.0))
@@ -75,7 +93,14 @@ class ParseTest(unittest.TestCase):
     def test_refusals(self):
         bad = {
             "unknown top field": _script(colour="red"),
-            "unknown step field": _step(spotlight={"keys": []}),
+            "unknown step field": _step(colour="red"),
+            "spotlight not a list": _step(spotlight={"keys": []}),
+            "a spotlight item that is no key": _step(spotlight=[{"row": 1}]),
+            "reveal without from": _step(reveal={"keycode": "KC_A"}),
+            "reveal from a layer": _step(reveal={"from": {"layer": "MIDI"}}),
+            "the old keycode wait": _step(wait={"keycode": "KC_A"}),
+            "a line wider than the panel": _step(say=["Min 1/4 1/2 3/4 Max"]),
+            "two lines over 59 bytes": _step(say=["i" * 30, "i" * 30]),
             "a typo in wait": _step(wait="nxt"),
             "two wait kinds": _step(wait={"seconds": 1, "layer": "Fn"}),
             "seconds not above 0": _step(wait={"seconds": 0}),

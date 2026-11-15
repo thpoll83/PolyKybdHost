@@ -1037,9 +1037,13 @@ class PolyCore(Observable):
         return True, self._tutorial_publish()
 
     def _tutorial_periodic(self, _cancel=None):
-        """Worker: end a `seconds` step whose time is up."""
+        """Worker: end a `seconds` step whose time is up, and POLL the keyboard (cmd 49):
+        that keeps its 10 s session watchdog fed and ends a step whose key or layer
+        event happened."""
         run = self._tutorial_run
-        if run is not None and run.tick():
+        if run is None:
+            return
+        if run.tick() or run.poll():
             self._tutorial_publish()
 
     def _tutorial_publish(self):

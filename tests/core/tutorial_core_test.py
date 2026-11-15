@@ -115,6 +115,16 @@ class TutorialCoreTest(unittest.TestCase):
         core._tutorial_periodic()
         self.assertEqual(core._tutorial_state["step"], 1)
 
+    def test_the_periodic_polls_on_protocol_35(self):
+        kb = _Keyboard(protocol=35)
+        core = _core(kb)
+        _call(core, "tutorial_start", "demo")
+        core._tutorial_periodic()
+        self.assertIn(("poll",), kb.calls)
+        events = len(core.events)
+        core._tutorial_periodic()      # nothing matched, the step waits: no event
+        self.assertEqual(len(core.events), events)
+
     def test_the_periodic_with_no_tutorial(self):
         core = _core(_Keyboard())
         core._tutorial_periodic()
