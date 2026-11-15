@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-13 11:31+0000\n"
+"POT-Creation-Date: 2026-11-15 11:46+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: id\n"
@@ -335,125 +335,121 @@ msgstr "Tekan untuk menjeda penerusan"
 msgid "Stop sending this machine's active window to the keyboard machine."
 msgstr "Berhenti mengirim jendela aktif komputer ini ke komputer keyboard."
 
-#: polyhost/forwarder.py:283
+#: polyhost/forwarder.py:281
 msgid "Check for host update…"
 msgstr "Periksa pembaruan host…"
 
-#: polyhost/forwarder.py:309
-msgid "Set Up Agent Hooks"
-msgstr "Siapkan Hook Agen"
-
-#: polyhost/forwarder.py:311
+#: polyhost/forwarder.py:297
 msgid "Pair with the Keyboard Computer…"
 msgstr "Pasangkan dengan Komputer Keyboard…"
 
-#: polyhost/forwarder.py:393
+#: polyhost/forwarder.py:390
 #, python-brace-format
 msgid "no host (waiting for {path})"
 msgstr "tidak ada host (menunggu {path})"
 
-#: polyhost/forwarder.py:394
+#: polyhost/forwarder.py:391
 msgid "no host configured"
 msgstr "host belum dikonfigurasi"
 
-#: polyhost/forwarder.py:397
+#: polyhost/forwarder.py:394
 #, python-brace-format
 msgid "PolyKybdHost {version} (forwarder) → {target}"
 msgstr "PolyKybdHost {version} (forwarder) → {target}"
 
-#: polyhost/forwarder.py:402
+#: polyhost/forwarder.py:399
 msgid "Forwarding paused"
 msgstr "Penerusan dijeda"
 
-#: polyhost/forwarder.py:405
+#: polyhost/forwarder.py:402
 #, python-brace-format
 msgid "Forwarding to {target}…"
 msgstr "Meneruskan ke {target}…"
 
-#: polyhost/forwarder.py:407
+#: polyhost/forwarder.py:404
 #, python-brace-format
 msgid "Forwarding to {target}"
 msgstr "Meneruskan ke {target}"
 
-#: polyhost/forwarder.py:408
+#: polyhost/forwarder.py:405
 #, python-brace-format
 msgid "Cannot reach {target}"
 msgstr "Tidak dapat menjangkau {target}"
 
-#: polyhost/forwarder.py:556
+#: polyhost/forwarder.py:553
 msgid "The hooks are written, but this forwarder runs without --report-rpc, so it cannot pass agent reports on. Start it with --report-rpc to show this computer's agents on the keys."
 msgstr "Hook sudah ditulis, tetapi forwarder ini berjalan tanpa --report-rpc, jadi tidak dapat meneruskan laporan agen. Jalankan dengan --report-rpc untuk menampilkan agen komputer ini di tombol."
 
-#: polyhost/forwarder.py:559
+#: polyhost/forwarder.py:556
 msgid "The hooks are written. On the keyboard computer, turn on Settings > AI agents > \"Agents from other computers\"."
 msgstr "Hook sudah ditulis. Di komputer keyboard, nyalakan Pengaturan > Agen AI > \"Agen dari komputer lain\"."
 
-#: polyhost/forwarder.py:890
+#: polyhost/forwarder.py:885
 msgid "PolyForwarder settings"
 msgstr "Pengaturan PolyForwarder"
 
-#: polyhost/forwarder.py:891
+#: polyhost/forwarder.py:886
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
 msgstr "Pengaturan tidak dapat disimpan ke file pengaturan, jadi tidak akan berlaku. Mungkin ada program lain yang sedang membukanya. Coba lagi, atau lihat log."
 
-#: polyhost/forwarder.py:909
+#: polyhost/forwarder.py:904
 msgid "Paired. The forwarder uses the authenticated connection from its next start. Restart it now?"
 msgstr "Berhasil dipasangkan. Forwarder menggunakan koneksi terautentikasi mulai saat dijalankan berikutnya. Mulai ulang sekarang?"
 
-#: polyhost/forwarder.py:924
+#: polyhost/forwarder.py:919
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
 msgstr "RPC terautentikasi (port {port})"
 
-#: polyhost/forwarder.py:926
+#: polyhost/forwarder.py:921
 msgid "legacy plaintext TCP relay"
 msgstr "relai TCP teks biasa lama"
 
-#: polyhost/forwarder.py:929
+#: polyhost/forwarder.py:924
 msgid "reaching the keyboard machine"
 msgstr "menjangkau komputer keyboard"
 
-#: polyhost/forwarder.py:930
+#: polyhost/forwarder.py:925
 msgid "not reaching the keyboard machine"
 msgstr "tidak menjangkau komputer keyboard"
 
-#: polyhost/forwarder.py:931
+#: polyhost/forwarder.py:926
 msgid "starting up"
 msgstr "sedang memulai"
 
-#: polyhost/forwarder.py:933
+#: polyhost/forwarder.py:928
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
 msgstr "<b>Mode:</b> forwarder — tidak ada keyboard yang terpasang di komputer ini"
 
-#: polyhost/forwarder.py:934
+#: polyhost/forwarder.py:929
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
 msgstr "<b>Tujuan:</b> {target}"
 
-#: polyhost/forwarder.py:936
+#: polyhost/forwarder.py:931
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
 msgstr "<b>Laporan jendela:</b> {transport}"
 
-#: polyhost/forwarder.py:939
+#: polyhost/forwarder.py:934
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
 msgstr "<b>File host:</b> {path}"
 
-#: polyhost/forwarder.py:960
+#: polyhost/forwarder.py:955
 msgid "About PolyKybdHost (forwarder)"
 msgstr "Tentang PolyKybdHost (forwarder)"
 
 #. TRANSLATORS: the run mode in the About dialog's environment line
-#: polyhost/forwarder.py:967
+#: polyhost/forwarder.py:962
 msgid "forwarder"
 msgstr "forwarder"
 
-#: polyhost/forwarder.py:969
+#: polyhost/forwarder.py:964
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "Mode forwarder: komputer ini tidak memiliki keyboard. Aplikasi memantau jendela aktif di sini dan meneruskannya ke PolyKybdHost yang berjalan di komputer tempat keyboard terpasang."
 
-#: polyhost/forwarder.py:1009
+#: polyhost/forwarder.py:1004
 msgid "Download, install, and restart the forwarder now?"
 msgstr "Unduh, instal, dan mulai ulang forwarder sekarang?"
 
@@ -477,19 +473,6 @@ msgstr "Salin diagnostik"
 #: polyhost/gui/about_dialog.py:156
 msgid "Copied ✓"
 msgstr "Tersalin ✓"
-
-#: polyhost/gui/agent_hooks.py:23 polyhost/gui/agent_hooks.py:35
-msgid "Set Up Hooks"
-msgstr "Siapkan Hook"
-
-#: polyhost/gui/agent_hooks.py:44
-msgid "The hooks are already set up."
-msgstr "Hook sudah disiapkan."
-
-#: polyhost/gui/agent_hooks.py:47
-#, python-brace-format
-msgid "Write the PolyKybd hooks into {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
-msgstr "Tulis hook PolyKybd ke {files}? Hook Anda sendiri tetap dipertahankan, dan salinan setiap file disimpan sebagai <file>.polykybd.bak."
 
 #: polyhost/gui/boot_loop_dialog.py:26
 msgid "Reboots the keyboard again and again to catch an intermittent boot hang. After each reboot it waits for the keyboard to come back and reads its crash record. It stops at the first boot that left a fresh crash record, at a boot that does not come back within a minute, or after the last round.<br><br>The keyboard does not type while this runs, and each round takes a few seconds."
@@ -568,82 +551,84 @@ msgstr "Tidak dapat menghentikan: {error}"
 msgid "<b>Failed:</b> {reason}"
 msgstr "<b>Gagal:</b> {reason}"
 
-#: polyhost/gui/browser_extension_dialog.py:30
-msgid "Install Browser Extension"
-msgstr "Pasang Ekstensi Browser"
+#: polyhost/gui/browser_extension_page.py:37
+#: polyhost/gui/integrations_dialog.py:391
+msgid "Browser"
+msgstr "Browser"
 
-#: polyhost/gui/browser_extension_dialog.py:43
+#: polyhost/gui/browser_extension_page.py:41
 #, python-brace-format
 msgid "PolyKybd browser extension {version}"
 msgstr "Ekstensi browser PolyKybd {version}"
 
-#: polyhost/gui/browser_extension_dialog.py:44
+#: polyhost/gui/browser_extension_page.py:42
 msgid "Shows website overlays for the focused browser tab, and switches to a Claude Code cloud session's tab when you press its agent key. For Chrome, Edge, Brave, Vivaldi, Opera and Arc."
 msgstr "Menampilkan overlay situs web untuk tab browser yang aktif, dan beralih ke tab sesi cloud Claude Code saat Anda menekan tombol agennya. Untuk Chrome, Edge, Brave, Vivaldi, Opera, dan Arc."
 
-#: polyhost/gui/browser_extension_dialog.py:49
+#: polyhost/gui/browser_extension_page.py:47
 msgid "1. Copy it to a folder"
 msgstr "1. Salin ke sebuah folder"
 
-#: polyhost/gui/browser_extension_dialog.py:51
+#: polyhost/gui/browser_extension_page.py:49
 msgid "Choose an empty folder that stays where it is. After each update of this app, the new version is copied there too."
 msgstr "Pilih folder kosong yang tidak dipindahkan. Setelah setiap pembaruan aplikasi ini, versi baru juga disalin ke sana."
 
-#: polyhost/gui/browser_extension_dialog.py:55
+#: polyhost/gui/browser_extension_page.py:53
 msgid "Folder"
 msgstr "Folder"
 
-#: polyhost/gui/browser_extension_dialog.py:56
+#: polyhost/gui/browser_extension_page.py:54
 msgid "Choose…"
 msgstr "Pilih…"
 
-#: polyhost/gui/browser_extension_dialog.py:59
+#: polyhost/gui/browser_extension_page.py:57
 msgid "Copy Extension"
 msgstr "Salin Ekstensi"
 
-#: polyhost/gui/browser_extension_dialog.py:69
+#: polyhost/gui/browser_extension_page.py:67
 msgid "2. Load it in the browser"
 msgstr "2. Muat di browser"
 
-#: polyhost/gui/browser_extension_dialog.py:71
-#, python-brace-format
-msgid "Open {page} (Edge: edge://extensions), turn on Developer mode, click \"Load unpacked\" and choose the folder. In the extension's Options, the port must be {port}, the same as \"Receiver port\" in this app's settings. After an update of this app, click Reload on the extension's card."
-msgstr "Buka {page} (Edge: edge://extensions), nyalakan \"Developer mode\", klik \"Load unpacked\", lalu pilih folder tersebut. Di Opsi ekstensi, port harus {port}, sama dengan \"Port penerima\" di pengaturan aplikasi ini. Setelah aplikasi ini diperbarui, klik \"Reload\" pada kartu ekstensi."
-
-#: polyhost/gui/browser_extension_dialog.py:78
+#: polyhost/gui/browser_extension_page.py:71
 #, python-brace-format
 msgid "Copy \"{page}\""
 msgstr "Salin \"{page}\""
 
-#: polyhost/gui/browser_extension_dialog.py:86
+#: polyhost/gui/browser_extension_page.py:79
 msgid "Firefox keeps an extension loaded from a folder only until it restarts. Use the version from Firefox Add-ons there once it is published."
 msgstr "Firefox hanya menyimpan ekstensi yang dimuat dari folder sampai Firefox dimulai ulang. Di sana, gunakan versi dari Firefox Add-ons setelah diterbitkan."
 
-#: polyhost/gui/browser_extension_dialog.py:98
+#: polyhost/gui/browser_extension_page.py:89
+#: polyhost/gui/browser_extension_page.py:111
 msgid "This installation has no browser extension files."
 msgstr "Instalasi ini tidak memiliki file ekstensi browser."
 
-#: polyhost/gui/browser_extension_dialog.py:110
-#: polyhost/gui/cloud_sessions_dialog.py:203
+#: polyhost/gui/browser_extension_page.py:99
+#, python-brace-format
+msgid "Open {page} (Edge: edge://extensions), turn on Developer mode, click \"Load unpacked\" and choose the folder. In the extension's Options, the port must be {port}, the same as \"Receiver port\" in this app's settings. After an update of this app, click Reload on the extension's card."
+msgstr "Buka {page} (Edge: edge://extensions), nyalakan \"Developer mode\", klik \"Load unpacked\", lalu pilih folder tersebut. Di Opsi ekstensi, port harus {port}, sama dengan \"Port penerima\" di pengaturan aplikasi ini. Setelah aplikasi ini diperbarui, klik \"Reload\" pada kartu ekstensi."
+
+#: polyhost/gui/browser_extension_page.py:123
+#: polyhost/gui/cloud_sessions_dialog.py:206
 #: polyhost/gui/crash_alert_dialog.py:208 polyhost/gui/error_dialog.py:74
 #: polyhost/gui/problem_alert_dialog.py:108
 msgid "Copied to the clipboard."
 msgstr "Disalin ke papan klip."
 
-#: polyhost/gui/browser_extension_dialog.py:114
+#: polyhost/gui/browser_extension_page.py:127
 msgid "Folder for the extension"
 msgstr "Folder untuk ekstensi"
 
-#: polyhost/gui/browser_extension_dialog.py:121
+#: polyhost/gui/browser_extension_page.py:134
 msgid "Choose a folder first."
 msgstr "Pilih folder terlebih dahulu."
 
-#: polyhost/gui/browser_extension_dialog.py:127
+#: polyhost/gui/browser_extension_page.py:140
 #, python-brace-format
 msgid "Not copied: {msg}"
 msgstr "Tidak disalin: {msg}"
 
-#: polyhost/gui/browser_extension_dialog.py:130
+#: polyhost/gui/browser_extension_page.py:143
 #, python-brace-format
 msgid "Copied version {version}. Now load the folder in the browser (step 2)."
 msgstr "Versi {version} disalin. Sekarang muat folder tersebut di browser (langkah 2)."
@@ -698,47 +683,47 @@ msgstr "Hubungkan"
 msgid "Disconnect…"
 msgstr "Putuskan…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:164
+#: polyhost/gui/cloud_sessions_dialog.py:165
 #, python-brace-format
 msgid "The state could not be read: {msg}"
 msgstr "Status tidak dapat dibaca: {msg}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:182
+#: polyhost/gui/cloud_sessions_dialog.py:185
 msgid "Not connected. \"Connect\" creates a channel on the relay for this computer."
 msgstr "Tidak terhubung. \"Hubungkan\" membuat saluran di relai untuk komputer ini."
 
-#: polyhost/gui/cloud_sessions_dialog.py:188
+#: polyhost/gui/cloud_sessions_dialog.py:191
 msgid "The agent keys are off: turn on \"Show on the Number Row\" in the AI Agents menu."
 msgstr "Tombol agen nonaktif: nyalakan \"Tampilkan di Baris Angka\" di menu Agen AI."
 
-#: polyhost/gui/cloud_sessions_dialog.py:191
+#: polyhost/gui/cloud_sessions_dialog.py:194
 msgid "Connected to the relay."
 msgstr "Terhubung ke relai."
 
-#: polyhost/gui/cloud_sessions_dialog.py:193
+#: polyhost/gui/cloud_sessions_dialog.py:196
 #, python-brace-format
 msgid "The relay cannot be reached; trying again: {error}"
 msgstr "Relai tidak dapat dijangkau; mencoba lagi: {error}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:196
+#: polyhost/gui/cloud_sessions_dialog.py:199
 msgid "Connecting to the relay…"
 msgstr "Menghubungkan ke relai…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:208
+#: polyhost/gui/cloud_sessions_dialog.py:211
 msgid "Creating a channel on the relay…"
 msgstr "Membuat saluran di relai…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:218
+#: polyhost/gui/cloud_sessions_dialog.py:221
 #, python-brace-format
 msgid "Could not connect: {msg}"
 msgstr "Tidak dapat terhubung: {msg}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:224
-#: polyhost/gui/cloud_sessions_dialog.py:236
+#: polyhost/gui/cloud_sessions_dialog.py:227
+#: polyhost/gui/cloud_sessions_dialog.py:239
 msgid "Disconnect Cloud Sessions"
 msgstr "Putuskan Sesi Cloud"
 
-#: polyhost/gui/cloud_sessions_dialog.py:225
+#: polyhost/gui/cloud_sessions_dialog.py:228
 msgid "Delete the channel on the relay? The cloud sessions leave the agent keys, and the hooks in your cloud environment stop reaching this computer. Remove the environment variable there too."
 msgstr "Hapus saluran di relai? Sesi cloud dihapus dari tombol agen, dan hook di lingkungan cloud Anda tidak lagi menjangkau komputer ini. Hapus juga variabel lingkungan di sana."
 
@@ -940,7 +925,7 @@ msgstr "Kanan"
 #: polyhost/gui/cmd_menu.py:396 polyhost/gui/fontpack_extend_dialog.py:242
 #: polyhost/gui/fontpack_extend_dialog.py:815
 #: polyhost/gui/hid_fw_up_dialog.py:208 polyhost/gui/log_viewer.py:309
-#: polyhost/host.py:189
+#: polyhost/host.py:191
 msgid "Cancel"
 msgstr "Batal"
 
@@ -1015,7 +1000,7 @@ msgid "ok"
 msgstr "ok"
 
 #. TRANSLATORS: font-pack bundle state in a status table
-#: polyhost/gui/cmd_menu.py:555 polyhost/host.py:2470
+#: polyhost/gui/cmd_menu.py:555 polyhost/host.py:2466
 msgid "stale"
 msgstr "usang"
 
@@ -1035,7 +1020,7 @@ msgstr "bawaan"
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "Perintah PolyKybd (*.poly.cmd)"
 
-#: polyhost/gui/cmd_menu.py:566 polyhost/host.py:2810
+#: polyhost/gui/cmd_menu.py:566 polyhost/host.py:2795
 msgid "Open file"
 msgstr "Buka file"
 
@@ -1923,7 +1908,7 @@ msgstr "Pasangkan Forwarder"
 msgid "On the other computer, open the forwarder's menu, choose \"Pair with the Keyboard Computer…\" and enter this code. Anyone with this code can send window and agent reports to this computer, so pass it on only over a channel you trust. \"Accept forwarders\" must be on in Settings."
 msgstr "Di komputer lain, buka menu forwarder, pilih \"Pasangkan dengan Komputer Keyboard…\" lalu masukkan kode ini. Siapa pun yang memiliki kode ini dapat mengirim laporan jendela dan agen ke komputer ini, jadi berikan kode ini hanya melalui saluran yang Anda percayai. \"Terima forwarder\" harus dinyalakan di Pengaturan."
 
-#: polyhost/forwarder.py:908 polyhost/gui/forwarder_pairing.py:37
+#: polyhost/forwarder.py:903 polyhost/gui/forwarder_pairing.py:37
 #: polyhost/gui/forwarder_pairing.py:44 polyhost/gui/forwarder_pairing.py:51
 msgid "Pair with the Keyboard Computer"
 msgstr "Pasangkan dengan Komputer Keyboard"
@@ -1936,8 +1921,8 @@ msgstr "Masukkan kode yang ditampilkan \"Pasangkan Forwarder…\" di komputer ke
 msgid "That is not a pairing code: it has 64 letters and digits (a to f, 0 to 9), in groups of 8."
 msgstr "Itu bukan kode pemasangan: kode pemasangan terdiri dari 64 huruf dan angka (a sampai f, 0 sampai 9), dalam kelompok berisi 8."
 
-#: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:3421
-#: polyhost/host.py:3462 polyhost/host.py:3494
+#: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:3406
+#: polyhost/host.py:3447 polyhost/host.py:3479
 msgid "Firmware Update"
 msgstr "Pembaruan Firmware"
 
@@ -1979,6 +1964,106 @@ msgstr "Bahasa"
 #: polyhost/gui/i18n_qt.py:90
 msgid "The new language is used after a restart. Restart now?"
 msgstr "Bahasa baru digunakan setelah aplikasi dimulai ulang. Mulai ulang sekarang?"
+
+#: polyhost/gui/integrations_dialog.py:96
+msgid "Checking…"
+msgstr "Memeriksa…"
+
+#: polyhost/gui/integrations_dialog.py:110
+msgid "Install"
+msgstr "Instal"
+
+#: polyhost/gui/integrations_dialog.py:111
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:149
+msgid "Remove"
+msgstr "Hapus"
+
+#: polyhost/gui/integrations_dialog.py:132
+#, python-brace-format
+msgid "The check failed: {error}"
+msgstr "Pemeriksaan gagal: {error}"
+
+#: polyhost/gui/integrations_dialog.py:257
+#: polyhost/gui/integrations_dialog.py:375
+#, python-brace-format
+msgid "The change failed: {error}"
+msgstr "Perubahan gagal: {error}"
+
+#: polyhost/gui/integrations_dialog.py:288
+#: polyhost/gui/shell_editor_pages.py:39 polyhost/gui/shell_editor_pages.py:72
+msgid "Set up"
+msgstr "Sudah diatur"
+
+#: polyhost/gui/integrations_dialog.py:290
+msgid "Set up for another copy of the app, or an older version. Install updates it."
+msgstr "Diatur untuk salinan lain aplikasi ini, atau versi yang lebih lama. Instal akan memperbaruinya."
+
+#: polyhost/gui/integrations_dialog.py:295
+#, python-brace-format
+msgid "The file cannot be read: {error}"
+msgstr "File tidak dapat dibaca: {error}"
+
+#: polyhost/gui/integrations_dialog.py:296
+#: polyhost/gui/shell_editor_pages.py:43 polyhost/gui/shell_editor_pages.py:74
+msgid "Not set up"
+msgstr "Belum diatur"
+
+#: polyhost/gui/integrations_dialog.py:315
+#: polyhost/gui/integrations_dialog.py:349
+#: polyhost/gui/integrations_dialog.py:390 polyhost/gui/settings_dialog.py:102
+msgid "AI agents"
+msgstr "Agen AI"
+
+#: polyhost/gui/integrations_dialog.py:316
+msgid ""
+"An agent's key shows whether the agent works, waits for you or is finished only when the agent runs the PolyKybd hook.\n"
+"\n"
+"Install adds the hooks to the agent's settings file. Your own hooks and settings are kept, and a copy of each file is saved as <file>.polykybd.bak. Remove takes out only the PolyKybd hooks. Restart the agent for the change to take effect."
+msgstr ""
+"Tombol agen menunjukkan apakah agen sedang bekerja, menunggu Anda, atau sudah selesai hanya jika agen menjalankan hook PolyKybd.\n"
+"\n"
+"Instal menambahkan hook ke file pengaturan agen. Hook dan pengaturan Anda sendiri tetap disimpan, dan salinan setiap file disimpan sebagai <file>.polykybd.bak. Hapus hanya mengeluarkan hook PolyKybd. Mulai ulang agen agar perubahan berlaku."
+
+#: polyhost/gui/integrations_dialog.py:363
+msgid "Nothing to change."
+msgstr "Tidak ada yang perlu diubah."
+
+#: polyhost/gui/integrations_dialog.py:365
+#, python-brace-format
+msgid "Write the PolyKybd hooks into {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
+msgstr "Tulis hook PolyKybd ke {files}? Hook Anda sendiri tetap dipertahankan, dan salinan setiap file disimpan sebagai <file>.polykybd.bak."
+
+#: polyhost/gui/integrations_dialog.py:368
+#, python-brace-format
+msgid "Remove the PolyKybd hooks from {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
+msgstr "Hapus hook PolyKybd dari {files}? Hook Anda sendiri tetap disimpan, dan salinan setiap file disimpan sebagai <file>.polykybd.bak."
+
+#: polyhost/gui/integrations_dialog.py:378
+#, python-brace-format
+msgid "Changed: {path}"
+msgstr "Diubah: {path}"
+
+#: polyhost/gui/integrations_dialog.py:383
+msgid "Restart the agent for the change to take effect."
+msgstr "Mulai ulang agen agar perubahan berlaku."
+
+#: polyhost/gui/integrations_dialog.py:390
+#: polyhost/gui/shell_editor_pages.py:95
+msgid "Terminals"
+msgstr "Terminal"
+
+#: polyhost/gui/integrations_dialog.py:390
+#: polyhost/gui/shell_editor_pages.py:185
+msgid "Editors"
+msgstr "Editor"
+
+#: polyhost/gui/integrations_dialog.py:402
+msgid "Integrations"
+msgstr "Integrasi"
+
+#: polyhost/gui/integrations_dialog.py:457
+msgid "Changes apply to the program after it restarts."
+msgstr "Perubahan berlaku pada program setelah program dimulai ulang."
 
 #: polyhost/gui/layout_dialog/combo_tab.py:101
 msgid "Save"
@@ -2256,7 +2341,7 @@ msgstr "tidak ada data pratinjau (bawaan atau checkout)"
 msgid "the shipped language table is missing"
 msgstr "tabel bahasa bawaan tidak ada"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:595 polyhost/host.py:3437
+#: polyhost/gui/layout_dialog/keycap_preview.py:595 polyhost/host.py:3422
 msgid "unknown"
 msgstr "tidak diketahui"
 
@@ -2921,7 +3006,7 @@ msgstr "Tidak ada yang cocok"
 msgid "{index} of {total}"
 msgstr "{index} dari {total}"
 
-#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:2111
+#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:2107
 msgid "Mock keyboard"
 msgstr "Keyboard tiruan"
 
@@ -3274,11 +3359,7 @@ msgstr "Deteksi masalah"
 msgid "Logs"
 msgstr "Log"
 
-#: polyhost/gui/settings_dialog.py:102
-msgid "AI agents"
-msgstr "Agen AI"
-
-#: polyhost/gui/settings_dialog.py:107 polyhost/host.py:895
+#: polyhost/gui/settings_dialog.py:107 polyhost/host.py:894
 msgid "Developer"
 msgstr "Pengembang"
 
@@ -3731,69 +3812,53 @@ msgstr "Buat"
 msgid "Fills in a new random token and copies it. Paste it into the browser extension's Options and save both."
 msgstr "Mengisi token acak baru dan menyalinnya. Tempelkan ke Opsi ekstensi browser, lalu simpan keduanya."
 
-#: polyhost/gui/shell_title_dialog.py:44 polyhost/gui/shell_title_dialog.py:76
-msgid "Set up"
-msgstr "Sudah diatur"
-
-#: polyhost/gui/shell_title_dialog.py:46
+#: polyhost/gui/shell_editor_pages.py:41
 msgid "Shows the command without setup. Install adds only the Codex option."
 msgstr "Menampilkan perintah tanpa pengaturan. Instal hanya menambahkan opsi Codex."
 
-#: polyhost/gui/shell_title_dialog.py:48 polyhost/gui/shell_title_dialog.py:78
-msgid "Not set up"
-msgstr "Belum diatur"
-
-#: polyhost/gui/shell_title_dialog.py:50 polyhost/gui/shell_title_dialog.py:84
+#: polyhost/gui/shell_editor_pages.py:45 polyhost/gui/shell_editor_pages.py:80
 #, python-brace-format
 msgid "Set up for another copy of the app: {path}"
 msgstr "Diatur untuk salinan aplikasi yang lain: {path}"
 
-#: polyhost/gui/shell_title_dialog.py:52 polyhost/gui/shell_title_dialog.py:89
+#: polyhost/gui/shell_editor_pages.py:47 polyhost/gui/shell_editor_pages.py:85
 msgid "Not found"
 msgstr "Tidak ditemukan"
 
-#: polyhost/gui/shell_title_dialog.py:54
+#: polyhost/gui/shell_editor_pages.py:49
 #, python-brace-format
 msgid "The profile path is unknown: {error}"
 msgstr "Jalur profil tidak diketahui: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:56
+#: polyhost/gui/shell_editor_pages.py:51
 #, python-brace-format
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts."
 msgstr "Kebijakan eksekusi PowerShell ({policy}) tidak menjalankan skrip profil."
 
-#: polyhost/gui/shell_title_dialog.py:58
+#: polyhost/gui/shell_editor_pages.py:53
 msgid "Shows the command without setup"
 msgstr "Menampilkan perintah tanpa pengaturan"
 
-#: polyhost/gui/shell_title_dialog.py:80
+#: polyhost/gui/shell_editor_pages.py:76
 msgid "Set up with older plugin files. Install copies the current ones."
 msgstr "Sudah diatur dengan berkas plugin yang lebih lama. Instal menyalin berkas yang terbaru."
 
-#: polyhost/gui/shell_title_dialog.py:82
+#: polyhost/gui/shell_editor_pages.py:78
 msgid "Set up, and changed by hand since. This app leaves it alone."
 msgstr "Sudah diatur, lalu diubah secara manual. Aplikasi ini tidak mengubahnya."
 
-#: polyhost/gui/shell_title_dialog.py:86
+#: polyhost/gui/shell_editor_pages.py:82
 #, python-brace-format
 msgid "The plugin is already loaded from {path}."
 msgstr "Plugin sudah dimuat dari {path}."
 
-#: polyhost/gui/shell_title_dialog.py:88
-#: polyhost/services/editor_plugins.py:102
+#: polyhost/gui/shell_editor_pages.py:84
+#: polyhost/services/editor_plugins.py:108
 #, python-brace-format
 msgid "This installation has no plugin files ({path})."
 msgstr "Instalasi ini tidak memiliki berkas plugin ({path})."
 
-#: polyhost/gui/shell_title_dialog.py:131
-msgid "Terminal and editor setup"
-msgstr "Pengaturan terminal dan editor"
-
-#: polyhost/gui/shell_title_dialog.py:140
-msgid "Terminals"
-msgstr "Terminal"
-
-#: polyhost/gui/shell_title_dialog.py:142
+#: polyhost/gui/shell_editor_pages.py:96
 msgid ""
 "The keyboard shows the shortcuts of a program running in a terminal (nano, for example) only when the terminal's window title names the program. bash, zsh and PowerShell do not do this without setup.\n"
 "\n"
@@ -3803,15 +3868,39 @@ msgstr ""
 "\n"
 "Instal menambahkan satu baris ke berkas awal setiap shell yang dipilih, di antara dua komentar penanda, dan sebelumnya menyimpan salinan berkas di sebelahnya. Hapus menghapus baris tersebut. Perubahan berlaku untuk jendela terminal yang dibuka sesudahnya. Untuk mengubah opsi Codex, pilih shell lalu tekan Instal lagi."
 
-#: polyhost/gui/shell_title_dialog.py:157
+#: polyhost/gui/shell_editor_pages.py:110
 msgid "Also show Codex in the title (wraps the codex command)"
 msgstr "Tampilkan juga Codex di judul (membungkus perintah codex)"
 
-#: polyhost/gui/shell_title_dialog.py:159
+#: polyhost/gui/shell_editor_pages.py:112
 msgid "Codex replaces the terminal title with the thread and project name, so the keyboard cannot tell that it is running. With this option the codex command starts Codex with a title that begins with \"codex\". A codex alias or function of your own, and a title set in Codex's config.toml, are kept."
 msgstr "Codex mengganti judul terminal dengan nama thread dan proyek, sehingga keyboard tidak tahu bahwa Codex sedang berjalan. Dengan opsi ini, perintah codex menjalankan Codex dengan judul yang diawali \"codex\". Alias atau fungsi codex milik Anda sendiri, dan judul yang diatur di config.toml Codex, tetap dipertahankan."
 
-#: polyhost/gui/shell_title_dialog.py:171
+#: polyhost/gui/shell_editor_pages.py:124
+#, python-brace-format
+msgid "The shells could not be checked: {error}"
+msgstr "Shell tidak dapat diperiksa: {error}"
+
+#: polyhost/gui/shell_editor_pages.py:141
+#, python-brace-format
+msgid "{shell}: shows the command without setup."
+msgstr "{shell}: menampilkan perintah tanpa pengaturan."
+
+#: polyhost/gui/shell_editor_pages.py:153
+msgid "No bash, zsh or PowerShell was found on this computer."
+msgstr "Tidak ditemukan bash, zsh, atau PowerShell di komputer ini."
+
+#: polyhost/gui/shell_editor_pages.py:170
+#: polyhost/gui/shell_editor_pages.py:257
+#, python-brace-format
+msgid "Copy of the previous file: {path}"
+msgstr "Salinan berkas sebelumnya: {path}"
+
+#: polyhost/gui/shell_editor_pages.py:172
+msgid "Open a new terminal window for the change to take effect."
+msgstr "Buka jendela terminal baru agar perubahan berlaku."
+
+#: polyhost/gui/shell_editor_pages.py:186
 msgid ""
 "Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin. GDB shows whether the program runs or waits at the prompt only with it.\n"
 "\n"
@@ -3821,77 +3910,30 @@ msgstr ""
 "\n"
 "Instal menyalin plugin dari instalasi ini ke lokasi tempat program memuatnya. Untuk Emacs dan GDB, Instal juga menambahkan baris yang memuat plugin ke berkas init, di antara dua komentar penanda, dan sebelumnya menyimpan salinan berkas tersebut. Saat aplikasi ini diperbarui, aplikasi menyalin berkas plugin yang baru ketika dimulai berikutnya. Mulai ulang program agar perubahan berlaku."
 
-#: polyhost/gui/shell_title_dialog.py:181
-msgid "Editors"
-msgstr "Editor"
-
-#: polyhost/gui/shell_title_dialog.py:185
+#: polyhost/gui/shell_editor_pages.py:200
 msgid "FreeCAD shows the keys of the active workbench only with the PolyKybd add-on. Install copies it to FreeCAD's Mod folder."
 msgstr ""
 
-#: polyhost/gui/shell_title_dialog.py:192
-msgid "Checking the shells…"
-msgstr "Memeriksa shell…"
-
-#: polyhost/gui/shell_title_dialog.py:205
-msgid "Install"
-msgstr "Instal"
-
-#: polyhost/gui/layout_dialog/macro_steps_dialog.py:149
-#: polyhost/gui/shell_title_dialog.py:206
-msgid "Remove"
-msgstr "Hapus"
-
-#: polyhost/gui/shell_title_dialog.py:277
-#, python-brace-format
-msgid "The shells could not be checked: {error}"
-msgstr "Shell tidak dapat diperiksa: {error}"
-
-#: polyhost/gui/shell_title_dialog.py:305
-#, python-brace-format
-msgid "{shell}: shows the command without setup."
-msgstr "{shell}: menampilkan perintah tanpa pengaturan."
-
-#: polyhost/gui/shell_title_dialog.py:333
-msgid "No bash, zsh or PowerShell was found on this computer."
-msgstr "Tidak ditemukan bash, zsh, atau PowerShell di komputer ini."
-
-#: polyhost/gui/shell_title_dialog.py:352
+#: polyhost/gui/shell_editor_pages.py:212
 #, python-brace-format
 msgid "The editors could not be checked: {error}"
 msgstr "Editor tidak dapat diperiksa: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:375
+#: polyhost/gui/shell_editor_pages.py:230
 msgid "No Vim, Neovim or Emacs was found on this computer."
 msgstr "Tidak ditemukan Vim, Neovim, atau Emacs di komputer ini."
 
-#: polyhost/gui/shell_title_dialog.py:381
+#: polyhost/gui/shell_editor_pages.py:236
 #, python-brace-format
 msgid "This app listens on port {port} and requires a token. The plugins use port 50164 and no token: set g:polykybd_port and g:polykybd_token in Vim, or polykybd-port and polykybd-token in Emacs, to the same values."
 msgstr "Aplikasi ini mendengarkan di port {port} dan memerlukan token. Plugin memakai port 50164 tanpa token: atur g:polykybd_port dan g:polykybd_token di Vim, atau polykybd-port dan polykybd-token di Emacs, ke nilai yang sama."
 
-#: polyhost/gui/shell_title_dialog.py:386
+#: polyhost/gui/shell_editor_pages.py:241
 #, python-brace-format
 msgid "This app listens on port {port}. The plugins use port 50164: set g:polykybd_port in Vim, or polykybd-port in Emacs, to the same value."
 msgstr "Aplikasi ini mendengarkan di port {port}. Plugin memakai port 50164: atur g:polykybd_port di Vim, atau polykybd-port di Emacs, ke nilai yang sama."
 
-#: polyhost/gui/shell_title_dialog.py:424
-#: polyhost/gui/shell_title_dialog.py:437
-#, python-brace-format
-msgid "The change failed: {error}"
-msgstr "Perubahan gagal: {error}"
-
-#: polyhost/gui/shell_title_dialog.py:428
-#: polyhost/gui/shell_title_dialog.py:441
-#, python-brace-format
-msgid "Copy of the previous file: {path}"
-msgstr "Salinan berkas sebelumnya: {path}"
-
-#: polyhost/gui/shell_title_dialog.py:430
-msgid "Open a new terminal window for the change to take effect."
-msgstr "Buka jendela terminal baru agar perubahan berlaku."
-
-#: polyhost/gui/shell_title_dialog.py:443
+#: polyhost/gui/shell_editor_pages.py:259
 msgid "Restart the editor for the change to take effect."
 msgstr "Mulai ulang editor agar perubahan berlaku."
 
@@ -3941,7 +3983,7 @@ msgstr "Tombol dengan aksi ketuk dan aksi tahan mengirim aksi ketuknya jika Anda
 msgid "With Auto Shift on, holding a letter, digit or symbol key longer than the Auto Shift timeout types its shifted character."
 msgstr "Dengan Auto Shift aktif, menahan tombol huruf, angka, atau simbol lebih lama dari waktu Auto Shift mengetik karakter Shift-nya."
 
-#: polyhost/gui/tap_terms_dialog.py:34 polyhost/host.py:2085
+#: polyhost/gui/tap_terms_dialog.py:34 polyhost/host.py:2081
 msgid "Tap-Hold Timing"
 msgstr "Waktu Ketuk-Tahan"
 
@@ -3994,21 +4036,21 @@ msgstr "{prefix} — host v{host_version} tersedia"
 msgid "{prefix} — firmware v{fw_version} available"
 msgstr "{prefix} — firmware v{fw_version} tersedia"
 
-#: polyhost/forwarder.py:280 polyhost/gui/tray_notify.py:81
-#: polyhost/host.py:750
+#: polyhost/forwarder.py:278 polyhost/gui/tray_notify.py:81
+#: polyhost/host.py:761
 msgid "Updates"
 msgstr "Pembaruan"
 
-#: polyhost/gui/update_dialog.py:134
+#: polyhost/gui/update_dialog.py:144
 msgid "What's new"
 msgstr "Yang baru"
 
-#: polyhost/gui/update_dialog.py:137
+#: polyhost/gui/update_dialog.py:147
 #, python-brace-format
 msgid "What's new — {release_name}"
 msgstr "Yang baru — {release_name}"
 
-#: polyhost/gui/update_dialog.py:155
+#: polyhost/gui/update_dialog.py:165
 msgid "View full release notes on GitHub"
 msgstr "Lihat catatan rilis lengkap di GitHub"
 
@@ -4096,248 +4138,248 @@ msgstr "C64 keycap"
 msgid "Small (standard)"
 msgstr "Kecil (standar)"
 
-#: polyhost/host.py:85 polyhost/host.py:704
+#: polyhost/host.py:85 polyhost/host.py:715
 msgid "Medium"
 msgstr "Sedang"
 
-#: polyhost/host.py:86 polyhost/host.py:704
+#: polyhost/host.py:86 polyhost/host.py:715
 msgid "Large"
 msgstr "Besar"
 
-#: polyhost/host.py:215
+#: polyhost/host.py:217
 msgid "Updating keyboard font pack — please wait, do not unplug…"
 msgstr "Memperbarui paket font keyboard — harap tunggu, jangan cabut kabel…"
 
-#: polyhost/host.py:216
+#: polyhost/host.py:218
 #, python-brace-format
 msgid "PolyKybd — updating font pack ({percent}%)"
 msgstr "PolyKybd — memperbarui paket font ({percent}%)"
 
-#: polyhost/host.py:217
+#: polyhost/host.py:219
 msgid "Keyboard font pack is up to date."
 msgstr "Paket font keyboard sudah mutakhir."
 
-#: polyhost/host.py:218
+#: polyhost/host.py:220
 #, python-brace-format
 msgid "Font pack update failed: {error}"
 msgstr "Pembaruan paket font gagal: {error}"
 
-#: polyhost/host.py:221
+#: polyhost/host.py:223
 msgid "Updating keyboard game data — please wait, do not unplug…"
 msgstr "Memperbarui data game keyboard — harap tunggu, jangan cabut kabel…"
 
-#: polyhost/host.py:222
+#: polyhost/host.py:224
 #, python-brace-format
 msgid "PolyKybd — updating game data ({percent}%)"
 msgstr "PolyKybd — memperbarui data game ({percent}%)"
 
-#: polyhost/host.py:223
+#: polyhost/host.py:225
 msgid "Keyboard game data is up to date."
 msgstr "Data game keyboard sudah mutakhir."
 
-#: polyhost/host.py:224
+#: polyhost/host.py:226
 #, python-brace-format
 msgid "Game data update failed: {error}"
 msgstr "Pembaruan data game gagal: {error}"
 
-#: polyhost/host.py:227
+#: polyhost/host.py:229
 msgid "Updating keyboard engine pack — please wait, do not unplug…"
 msgstr "Memperbarui paket engine keyboard — harap tunggu, jangan cabut kabel…"
 
-#: polyhost/host.py:228
+#: polyhost/host.py:230
 #, python-brace-format
 msgid "PolyKybd — updating engine pack ({percent}%)"
 msgstr "PolyKybd — memperbarui paket engine ({percent}%)"
 
-#: polyhost/host.py:229
+#: polyhost/host.py:231
 msgid "Keyboard engine pack is up to date."
 msgstr "Paket engine keyboard sudah mutakhir."
 
-#: polyhost/host.py:230
+#: polyhost/host.py:232
 #, python-brace-format
 msgid "Engine pack update failed: {error}"
 msgstr "Pembaruan paket engine gagal: {error}"
 
-#: polyhost/host.py:427 polyhost/host.py:1601
+#: polyhost/host.py:429 polyhost/host.py:1602
 msgid "Waiting for PolyKybd..."
 msgstr "Menunggu PolyKybd..."
 
-#: polyhost/host.py:428 polyhost/host.py:1448
+#: polyhost/host.py:430 polyhost/host.py:1449
 msgid "Press to pause connection"
 msgstr "Tekan untuk menjeda koneksi"
 
-#: polyhost/forwarder.py:361 polyhost/host.py:431
+#: polyhost/forwarder.py:358 polyhost/host.py:433
 msgid "Quit"
 msgstr "Keluar"
 
-#: polyhost/host.py:440
+#: polyhost/host.py:442
 msgid "Quit && stop background daemon"
 msgstr "Keluar && hentikan daemon latar belakang"
 
-#: polyhost/forwarder.py:328 polyhost/host.py:445
+#: polyhost/forwarder.py:325 polyhost/host.py:447
 msgid "About"
 msgstr "Tentang"
 
-#: polyhost/forwarder.py:317 polyhost/host.py:449
+#: polyhost/forwarder.py:308 polyhost/host.py:455
+msgid "Integrations…"
+msgstr "Integrasi…"
+
+#: polyhost/forwarder.py:314 polyhost/host.py:460
 msgid "Settings..."
 msgstr "Pengaturan..."
 
-#: polyhost/forwarder.py:332 polyhost/host.py:453
+#: polyhost/forwarder.py:329 polyhost/host.py:464
 msgid "Log file..."
 msgstr "File log..."
 
-#: polyhost/forwarder.py:338 polyhost/host.py:462
+#: polyhost/forwarder.py:335 polyhost/host.py:473
 msgid "Report a Problem..."
 msgstr "Laporkan Masalah..."
 
-#: polyhost/forwarder.py:344 polyhost/host.py:482
+#: polyhost/forwarder.py:341 polyhost/host.py:493
 msgid "Collect logs..."
 msgstr "Kumpulkan log..."
 
-#: polyhost/host.py:491
+#: polyhost/host.py:502
 msgid "Read keyboard crash record"
 msgstr "Baca catatan crash keyboard"
 
-#: polyhost/host.py:493
+#: polyhost/host.py:504
 msgid "Read the keyboard's last crash record from both halves and copy it to the clipboard."
 msgstr "Baca catatan crash terakhir keyboard dari kedua belahan dan salin ke papan klip."
 
-#: polyhost/host.py:498
+#: polyhost/host.py:509
 msgid "Inspect Font Packs..."
 msgstr "Periksa Paket Font..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
-#: polyhost/forwarder.py:266 polyhost/forwarder.py:419 polyhost/host.py:512
-#: polyhost/host.py:1450
+#: polyhost/forwarder.py:266 polyhost/forwarder.py:416 polyhost/host.py:523
+#: polyhost/host.py:1451
 msgid "Pause"
 msgstr "Jeda"
 
-#: polyhost/host.py:522
+#: polyhost/host.py:533
 msgid "Firmware newer than this app — safe mode…"
 msgstr "Firmware lebih baru dari aplikasi ini — mode aman…"
 
-#: polyhost/host.py:524
+#: polyhost/host.py:535
 msgid "Choose how to handle a keyboard whose firmware is newer than this host app."
 msgstr "Pilih cara menangani keyboard yang firmware-nya lebih baru daripada aplikasi host ini."
 
-#: polyhost/host.py:571
+#: polyhost/host.py:582
 msgid "Idle Display"
 msgstr "Tampilan Diam"
 
-#: polyhost/host.py:574
+#: polyhost/host.py:585
 msgid "Pulse (legacy)"
 msgstr "Denyut (lama)"
 
-#: polyhost/host.py:576
+#: polyhost/host.py:587
 msgid "Jitter (move legend)"
 msgstr "Getar (geser legenda)"
 
-#: polyhost/host.py:580
+#: polyhost/host.py:591
 msgid "IDDQD (attract demo)"
 msgstr "IDDQD (demo atraksi)"
 
-#: polyhost/host.py:584 polyhost/host.py:600
+#: polyhost/host.py:595 polyhost/host.py:611
 msgid "Eden"
 msgstr "Eden"
 
-#: polyhost/host.py:600
+#: polyhost/host.py:611
 msgid "Pulse"
 msgstr "Denyut"
 
-#: polyhost/host.py:600
+#: polyhost/host.py:611
 msgid "Jitter"
 msgstr "Getar"
 
-#: polyhost/host.py:611
+#: polyhost/host.py:622
 msgid "Idle After"
 msgstr "Diam Setelah"
 
-#: polyhost/host.py:632
+#: polyhost/host.py:643
 msgid "Keycap Script"
 msgstr "Skrip Keycap"
 
-#: polyhost/host.py:656
+#: polyhost/host.py:667
 msgid "Centred on the keycap"
 msgstr "Di tengah tombol"
 
-#: polyhost/host.py:657
+#: polyhost/host.py:668
 msgid "In the top-left corner"
 msgstr "Di sudut kiri atas"
 
-#: polyhost/host.py:684
+#: polyhost/host.py:695
 msgid "Keycap Size"
 msgstr "Ukuran Keycap"
 
-#: polyhost/host.py:704
+#: polyhost/host.py:715
 msgid "Small"
 msgstr "Kecil"
 
-#: polyhost/host.py:712
+#: polyhost/host.py:723
 msgid "Emoji Search Language"
 msgstr "Bahasa pencarian emoji"
 
-#: polyhost/host.py:723
+#: polyhost/host.py:734
 msgid "Tap-Hold Timing…"
 msgstr "Waktu Ketuk-Tahan…"
 
-#: polyhost/host.py:734
+#: polyhost/host.py:745
 msgid "AI Agents"
 msgstr "Agen AI"
 
-#: polyhost/host.py:742
+#: polyhost/host.py:753
 msgid "Configure Keymap"
 msgstr "Konfigurasi Keymap"
 
-#: polyhost/host.py:752
+#: polyhost/host.py:763
 msgid "Check for host update..."
 msgstr "Periksa pembaruan host..."
 
-#: polyhost/host.py:791 polyhost/host.py:2899 polyhost/host.py:3434
-#: polyhost/host.py:3612
+#: polyhost/host.py:802 polyhost/host.py:2884 polyhost/host.py:3419
+#: polyhost/host.py:3597
 msgid "Check for firmware update…"
 msgstr "Periksa pembaruan firmware…"
 
-#: polyhost/host.py:800
+#: polyhost/host.py:811
 msgid "Keyboard fonts"
 msgstr "Font keyboard"
 
-#: polyhost/host.py:835
+#: polyhost/host.py:846
 msgid "Install WinCompose…"
 msgstr "Instal WinCompose…"
 
-#: polyhost/host.py:857
+#: polyhost/host.py:868
 msgid "Allow access to the keyboard (udev rule)…"
 msgstr "Izinkan akses ke keyboard (aturan udev)…"
 
-#: polyhost/forwarder.py:298 polyhost/host.py:878
-msgid "Set up the terminal and editors…"
-msgstr "Atur terminal dan editor…"
-
-#: polyhost/host.py:897
+#: polyhost/host.py:896
 msgid "Change System Input Language"
 msgstr "Ubah Bahasa Input Sistem"
 
-#: polyhost/host.py:903
+#: polyhost/host.py:902
 msgid "Inspect MRU Cache..."
 msgstr "Periksa Cache MRU..."
 
-#: polyhost/host.py:909
+#: polyhost/host.py:908
 msgid "Mock Keyboard..."
 msgstr "Keyboard Tiruan..."
 
-#: polyhost/host.py:917
+#: polyhost/host.py:916
 msgid "Refresh unicode input mode"
 msgstr "Segarkan mode input unicode"
 
-#: polyhost/host.py:921
+#: polyhost/host.py:920
 msgid "Save MRU cache now"
 msgstr "Simpan cache MRU sekarang"
 
-#: polyhost/forwarder.py:354 polyhost/host.py:935
+#: polyhost/forwarder.py:351 polyhost/host.py:935
 msgid "Help && About"
 msgstr "Bantuan && Tentang"
 
-#: polyhost/forwarder.py:350 polyhost/host.py:944
+#: polyhost/forwarder.py:347 polyhost/host.py:944
 msgid "Open config folder"
 msgstr "Buka folder konfigurasi"
 
@@ -4385,84 +4427,84 @@ msgstr ""
 "Setiap bundel font bawaan sudah ada di keyboard.\n"
 "Pengembang → Paket Font → Flash ulang semua bundel akan memaksa pengiriman ulang jika keycap masih tampil salah."
 
-#: polyhost/forwarder.py:853 polyhost/host.py:1313
+#: polyhost/forwarder.py:846 polyhost/host.py:1313
 msgid "Config folder"
 msgstr "Folder konfigurasi"
 
 #. TRANSLATORS: {rate} is like "0.6 MB/s"; the fast USB link's measured speed.
-#: polyhost/host.py:1417
+#: polyhost/host.py:1418
 #, python-brace-format
 msgid "{rate} link"
 msgstr "tautan {rate}"
 
 #. TRANSLATORS: {kbps} is the HID channel's ceiling in KB/s (64).
-#: polyhost/host.py:1419
+#: polyhost/host.py:1420
 #, python-brace-format
 msgid "HID link, up to {kbps} KB/s"
 msgstr "tautan HID, hingga {kbps} KB/s"
 
 #. TRANSLATORS: tray tooltip line; {link} is "0.6 MB/s link" or "HID link, up
 #. to 64 KB/s".
-#: polyhost/host.py:1426
+#: polyhost/host.py:1427
 #, python-brace-format
 msgid "Connected: {link}"
 msgstr "Terhubung: {link}"
 
 #. TRANSLATORS: status row while paused; clicking it reconnects (verb).
-#: polyhost/host.py:1442
+#: polyhost/host.py:1443
 msgid "Reconnect"
 msgstr "Hubungkan ulang"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:419 polyhost/host.py:1445
+#: polyhost/forwarder.py:416 polyhost/host.py:1446
 msgid "Resume"
 msgstr "Lanjutkan"
 
-#: polyhost/host.py:1528 polyhost/host.py:1593
+#: polyhost/host.py:1529 polyhost/host.py:1594
 #, python-brace-format
 msgid "Could not change OS language {language}."
 msgstr "Tidak dapat mengubah bahasa OS {language}."
 
 #. TRANSLATORS: file-dialog filter; keep "(*.bin)" unchanged.
-#: polyhost/host.py:1617
+#: polyhost/host.py:1618
 msgid "Firmware image (*.bin)"
 msgstr "Image firmware (*.bin)"
 
-#: polyhost/host.py:1618
+#: polyhost/host.py:1619
 msgid "Select firmware .bin"
 msgstr "Pilih firmware .bin"
 
-#: polyhost/host.py:1669
+#: polyhost/host.py:1670
 msgid "Firmware apply failed"
 msgstr "Penerapan firmware gagal"
 
-#: polyhost/host.py:1670
+#: polyhost/host.py:1671
 msgid "Firmware flash failed"
 msgstr "Flash firmware gagal"
 
-#: polyhost/host.py:1718 polyhost/host.py:1775
+#: polyhost/host.py:1719 polyhost/host.py:1776
 #, python-brace-format
 msgid "Selected Language: {language} {country}"
 msgstr "Bahasa Terpilih: {language} {country}"
 
-#: polyhost/host.py:1830
+#: polyhost/host.py:1831
 msgid "PolyHost settings"
 msgstr "Pengaturan PolyHost"
 
-#: polyhost/host.py:1831
+#: polyhost/host.py:1832
 msgid "The settings are applied, but they could not be saved to the settings file. Another program may be holding it open. Change a setting again later to retry, or see the log."
 msgstr "Pengaturan diterapkan, tetapi tidak dapat disimpan ke file pengaturan. Mungkin ada program lain yang sedang membukanya. Ubah pengaturan lagi nanti untuk mencoba ulang, atau lihat log."
 
-#: polyhost/host.py:1933
+#: polyhost/host.py:1934
 #, python-brace-format
 msgid "{side}: unreadable record {record}"
 msgstr "{side}: catatan {record} tidak terbaca"
 
-#: polyhost/host.py:1936
+#: polyhost/host.py:1937
 msgid "Neither keyboard half holds a crash record."
 msgstr "Tidak ada belahan keyboard yang menyimpan catatan crash."
 
-#: polyhost/host.py:1938
+#: polyhost/host.py:1939
 #, python-brace-format
 msgid ""
 "Could not read the crash record.\n"
@@ -4473,129 +4515,129 @@ msgstr ""
 "\n"
 "{errors}"
 
-#: polyhost/host.py:1940
+#: polyhost/host.py:1941
 msgid "Keyboard crash record"
 msgstr "Catatan crash keyboard"
 
-#: polyhost/host.py:1949
+#: polyhost/host.py:1950
 #, python-brace-format
 msgid "Copied to the clipboard. Not read: {errors}"
 msgstr "Disalin ke papan klip. Tidak terbaca: {errors}"
 
-#: polyhost/host.py:2046
+#: polyhost/host.py:2042
 msgid "Could not read the tap-hold timing from the keyboard."
 msgstr "Tidak dapat membaca waktu ketuk-tahan dari keyboard."
 
-#: polyhost/host.py:2078
+#: polyhost/host.py:2074
 msgid "The keyboard did not accept the tap-hold timing."
 msgstr "Keyboard tidak menerima waktu ketuk-tahan."
 
-#: polyhost/host.py:2101
+#: polyhost/host.py:2097
 msgid "MRU Cache"
 msgstr "Cache MRU"
 
-#: polyhost/host.py:2101
+#: polyhost/host.py:2097
 msgid "MRU cache is not active (device not connected or MRU mode disabled)."
 msgstr "Cache MRU tidak aktif (perangkat tidak terhubung atau mode MRU dinonaktifkan)."
 
-#: polyhost/host.py:2153
+#: polyhost/host.py:2149
 msgid "daemon client"
 msgstr "klien daemon"
 
-#: polyhost/host.py:2153
+#: polyhost/host.py:2149
 msgid "standalone"
 msgstr "mandiri"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:928 polyhost/host.py:2211
+#: polyhost/forwarder.py:923 polyhost/host.py:2207
 msgid "paused"
 msgstr "dijeda"
 
-#: polyhost/host.py:2213
+#: polyhost/host.py:2209
 msgid "connected"
 msgstr "terhubung"
 
-#: polyhost/host.py:2214
+#: polyhost/host.py:2210
 msgid "present — not connected (protocol/version)"
 msgstr "ada — tidak terhubung (protokol/versi)"
 
-#: polyhost/host.py:2221
+#: polyhost/host.py:2217
 msgid "Keyboard"
 msgstr "Keyboard"
 
-#: polyhost/host.py:2222
+#: polyhost/host.py:2218
 msgid "No keyboard connected."
 msgstr "Tidak ada keyboard yang terhubung."
 
-#: polyhost/host.py:2226
+#: polyhost/host.py:2222
 msgid "⚠ mismatch"
 msgstr "⚠ tidak cocok"
 
-#: polyhost/host.py:2228
+#: polyhost/host.py:2224
 #, python-brace-format
 msgid "{n} languages loaded"
 msgid_plural "{n} languages loaded"
 msgstr[0] "{n} bahasa dimuat"
 msgstr[1] "{n} bahasa dimuat"
 
-#: polyhost/host.py:2231
+#: polyhost/host.py:2227
 #, python-brace-format
 msgid "<b>Connected keyboard:</b> {name} {state}"
 msgstr "<b>Keyboard terhubung:</b> {name} {state}"
 
-#: polyhost/host.py:2233
+#: polyhost/host.py:2229
 #, python-brace-format
 msgid "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
 msgstr "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protokol {protocol}"
 
-#: polyhost/host.py:2235
+#: polyhost/host.py:2231
 #, python-brace-format
 msgid "<b>Hardware:</b> {hardware}"
 msgstr "<b>Perangkat keras:</b> {hardware}"
 
-#: polyhost/host.py:2236
+#: polyhost/host.py:2232
 #, python-brace-format
 msgid "<b>Language:</b> {language}"
 msgstr "<b>Bahasa:</b> {language}"
 
-#: polyhost/host.py:2239
+#: polyhost/host.py:2235
 #, python-brace-format
 msgid "<b>Link:</b> {link}"
 msgstr "<b>Tautan:</b> {link}"
 
-#: polyhost/host.py:2246
+#: polyhost/host.py:2242
 #, python-brace-format
 msgid "<b>Uptime:</b> {uptime}"
 msgstr "<b>Waktu aktif:</b> {uptime}"
 
-#: polyhost/host.py:2248
+#: polyhost/host.py:2244
 #, python-brace-format
 msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>Pemetaan overlay:</b> {n} aplikasi"
 msgstr[1] "<b>Pemetaan overlay:</b> {n} aplikasi"
 
-#: polyhost/forwarder.py:945 polyhost/host.py:2250
+#: polyhost/forwarder.py:940 polyhost/host.py:2246
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>Konfigurasi:</b> {path}"
 
-#: polyhost/forwarder.py:946 polyhost/host.py:2251
+#: polyhost/forwarder.py:941 polyhost/host.py:2247
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>Log:</b> {path}"
 
-#: polyhost/forwarder.py:964 polyhost/host.py:2305
+#: polyhost/forwarder.py:959 polyhost/host.py:2301
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "Protokol HID P{protocol}"
 
-#: polyhost/host.py:2310
+#: polyhost/host.py:2306
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
 msgstr "Perangkat lunak host untuk keyboard split PolyKybd dengan layar OLED di setiap keycap — melacak jendela aktif dan mengirim overlay, bahasa, serta pembaruan keymap ke keyboard."
 
-#: polyhost/host.py:2336
+#: polyhost/host.py:2332
 #, python-brace-format
 msgid ""
 "Changing input language to '{language}' failed with:\n"
@@ -4604,163 +4646,163 @@ msgstr ""
 "Mengubah bahasa input ke '{language}' gagal dengan:\n"
 "\"{error}\""
 
-#: polyhost/host.py:2356 polyhost/host.py:2373
+#: polyhost/host.py:2352 polyhost/host.py:2369
 #, python-brace-format
 msgid "Could not set {language}: {error}"
 msgstr "Tidak dapat menyetel {language}: {error}"
 
-#: polyhost/host.py:2428
+#: polyhost/host.py:2424
 msgid "Show on the Number Row"
 msgstr "Tampilkan di Baris Angka"
 
-#: polyhost/host.py:2437
+#: polyhost/host.py:2433
 msgid "Remove Agent"
 msgstr "Hapus Agen"
 
-#: polyhost/host.py:2442
+#: polyhost/host.py:2438
+msgid "Set Up Hooks…"
+msgstr "Atur Hook…"
+
+#: polyhost/host.py:2443
 msgid "Pair a Forwarder…"
 msgstr "Pasangkan Forwarder…"
 
-#: polyhost/host.py:2446
+#: polyhost/host.py:2447
 msgid "Connect Cloud Sessions…"
 msgstr "Hubungkan Sesi Cloud…"
 
-#: polyhost/host.py:2450
-msgid "Install Browser Extension…"
-msgstr "Pasang Ekstensi Browser…"
-
-#: polyhost/host.py:2466
+#: polyhost/host.py:2462
 msgid "No agents reported"
 msgstr "Tidak ada agen yang melapor"
 
-#: polyhost/host.py:2469
+#: polyhost/host.py:2465
 msgid "working"
 msgstr "bekerja"
 
-#: polyhost/host.py:2469
+#: polyhost/host.py:2465
 msgid "waiting"
 msgstr "menunggu"
 
-#: polyhost/host.py:2469
+#: polyhost/host.py:2465
 msgid "done"
 msgstr "selesai"
 
-#: polyhost/host.py:2470
+#: polyhost/host.py:2466
 msgid "idle"
 msgstr "diam"
 
-#: polyhost/host.py:2473
+#: polyhost/host.py:2469
 #, python-brace-format
 msgid "Key {key}: {name}, {state}, {title}"
 msgstr "Tombol {key}: {name}, {state}, {title}"
 
-#: polyhost/host.py:2478
+#: polyhost/host.py:2474
 #, python-brace-format
 msgid "Page {page}, {text}"
 msgstr "Halaman {page}, {text}"
 
-#: polyhost/host.py:2501
+#: polyhost/host.py:2497
 msgid "Remove All Inactive"
 msgstr "Hapus Semua yang Tidak Aktif"
 
-#: polyhost/host.py:2574
+#: polyhost/host.py:2559
 msgid "Open Cloud Session"
 msgstr "Buka Sesi Cloud"
 
-#: polyhost/host.py:2575
+#: polyhost/host.py:2560
 #, python-brace-format
 msgid "No browser tab or Claude app window shows the cloud session \"{title}\". Open it in the browser?"
 msgstr "Tidak ada tab browser atau jendela aplikasi Claude yang menampilkan sesi cloud “{title}”. Buka di browser?"
 
-#: polyhost/host.py:2582
+#: polyhost/host.py:2567
 msgid "Open in Browser"
 msgstr "Buka di Browser"
 
-#: polyhost/host.py:2707
+#: polyhost/host.py:2692
 msgid "No emoji search dictionaries shipped"
 msgstr "Tidak ada kamus pencarian emoji yang disertakan"
 
-#: polyhost/host.py:2713
+#: polyhost/host.py:2698
 msgid "Needs newer keyboard firmware"
 msgstr "Memerlukan firmware keyboard yang lebih baru"
 
-#: polyhost/host.py:2741
+#: polyhost/host.py:2726
 msgid "Own dictionary file..."
 msgstr "Berkas kamus sendiri..."
 
-#: polyhost/host.py:2743
+#: polyhost/host.py:2728
 #, python-brace-format
 msgid "Own dictionary (cannot be used): {name}"
 msgstr "Kamus sendiri (tidak dapat dipakai): {name}"
 
-#: polyhost/host.py:2745
+#: polyhost/host.py:2730
 #, python-brace-format
 msgid "Own dictionary: {name}"
 msgstr "Kamus sendiri: {name}"
 
-#: polyhost/host.py:2762
+#: polyhost/host.py:2747
 msgid "Choose an emoji search dictionary"
 msgstr "Pilih kamus pencarian emoji"
 
-#: polyhost/host.py:2763
+#: polyhost/host.py:2748
 msgid "Emoji search dictionary (*.plyd)"
 msgstr "Kamus pencarian emoji (*.plyd)"
 
-#: polyhost/host.py:2776
+#: polyhost/host.py:2761
 msgid "Emoji search dictionary"
 msgstr "Kamus pencarian emoji"
 
-#: polyhost/host.py:2777
+#: polyhost/host.py:2762
 #, python-brace-format
 msgid "This file cannot be used: {reason}"
 msgstr "Berkas ini tidak dapat dipakai: {reason}"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-#: polyhost/host.py:2809
+#: polyhost/host.py:2794
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "Pemetaan overlay PolyKybd (*.poly.yaml)"
 
-#: polyhost/host.py:2897 polyhost/host.py:3393 polyhost/host.py:3541
+#: polyhost/host.py:2882 polyhost/host.py:3378 polyhost/host.py:3526
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "Perbarui firmware ke v{version}…"
 
-#: polyhost/forwarder.py:1003 polyhost/forwarder.py:1014
-#: polyhost/forwarder.py:1020 polyhost/host.py:2917 polyhost/host.py:3038
-#: polyhost/host.py:3042
+#: polyhost/forwarder.py:998 polyhost/forwarder.py:1009
+#: polyhost/forwarder.py:1015 polyhost/host.py:2902 polyhost/host.py:3023
+#: polyhost/host.py:3027
 msgid "Check for updates..."
 msgstr "Periksa pembaruan..."
 
-#: polyhost/host.py:2985
+#: polyhost/host.py:2970
 #, python-brace-format
 msgid "Update to v{version} available"
 msgstr "Pembaruan ke v{version} tersedia"
 
-#: polyhost/forwarder.py:1016 polyhost/forwarder.py:1022
-#: polyhost/forwarder.py:1033 polyhost/host.py:2996 polyhost/host.py:3036
-#: polyhost/host.py:3043 polyhost/host.py:3066
+#: polyhost/forwarder.py:1011 polyhost/forwarder.py:1017
+#: polyhost/forwarder.py:1028 polyhost/host.py:2981 polyhost/host.py:3021
+#: polyhost/host.py:3028 polyhost/host.py:3051
 msgid "PolyKybdHost Update"
 msgstr "Pembaruan PolyKybdHost"
 
-#: polyhost/host.py:2997
+#: polyhost/host.py:2982
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "Versi {version} tersedia. Klik ikon baki sistem untuk memperbarui."
 
-#: polyhost/forwarder.py:990 polyhost/host.py:3022
+#: polyhost/forwarder.py:985 polyhost/host.py:3007
 msgid "Checking for updates..."
 msgstr "Memeriksa pembaruan..."
 
-#: polyhost/host.py:3035
+#: polyhost/host.py:3020
 msgid "No updates available"
 msgstr "Tidak ada pembaruan"
 
-#: polyhost/forwarder.py:1017 polyhost/host.py:3037
+#: polyhost/forwarder.py:1012 polyhost/host.py:3022
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "Anda menjalankan versi terbaru (v{version})."
 
-#: polyhost/forwarder.py:1023 polyhost/host.py:3044
+#: polyhost/forwarder.py:1018 polyhost/host.py:3029
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -4775,70 +4817,70 @@ msgstr ""
 "\n"
 "Jalankan dengan --dev 1 untuk detailnya."
 
-#: polyhost/host.py:3049 polyhost/host.py:3466
+#: polyhost/host.py:3034 polyhost/host.py:3451
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "Dirilis: {date}"
 
-#: polyhost/forwarder.py:1004 polyhost/host.py:3050
+#: polyhost/forwarder.py:999 polyhost/host.py:3035
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "Versi {version} tersedia."
 
-#: polyhost/forwarder.py:1005 polyhost/host.py:3051
+#: polyhost/forwarder.py:1000 polyhost/host.py:3036
 msgid "Update PolyKybdHost"
 msgstr "Perbarui PolyKybdHost"
 
-#: polyhost/host.py:3055
+#: polyhost/host.py:3040
 msgid "Download, install, and restart now?"
 msgstr "Unduh, instal, dan mulai ulang sekarang?"
 
-#: polyhost/forwarder.py:1032 polyhost/host.py:3066
+#: polyhost/forwarder.py:1027 polyhost/host.py:3051
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "Mengunduh v{version}…"
 
-#: polyhost/forwarder.py:1073 polyhost/host.py:3191
+#: polyhost/forwarder.py:1068 polyhost/host.py:3176
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "Tidak dapat memulai relai pembaruan; pembaruan belum selesai. Lihat log untuk detailnya."
 
-#: polyhost/forwarder.py:1085 polyhost/host.py:3206
+#: polyhost/forwarder.py:1080 polyhost/host.py:3191
 msgid "Update failed"
 msgstr "Pembaruan gagal"
 
-#: polyhost/forwarder.py:1085 polyhost/host.py:3206
+#: polyhost/forwarder.py:1080 polyhost/host.py:3191
 msgid "The update did not finish."
 msgstr "Pembaruan tidak selesai."
 
-#: polyhost/host.py:3353
+#: polyhost/host.py:3338
 #, python-brace-format
 msgid "{n} keyboard font bundle is out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
 msgid_plural "{n} keyboard font bundles are out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
 msgstr[0] "{n} paket font keyboard sudah usang, dan Flash Otomatis nonaktif. Gunakan Pembaruan → Perbarui font keyboard."
 msgstr[1] "{n} paket font keyboard sudah usang, dan Flash Otomatis nonaktif. Gunakan Pembaruan → Perbarui font keyboard."
 
-#: polyhost/host.py:3404
+#: polyhost/host.py:3389
 msgid "PolyKybd Firmware Update"
 msgstr "Pembaruan Firmware PolyKybd"
 
-#: polyhost/host.py:3405
+#: polyhost/host.py:3390
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "Firmware baru v{version} tersedia. Klik ikon baki sistem untuk memperbarui."
 
-#: polyhost/host.py:3422 polyhost/host.py:3463
+#: polyhost/host.py:3407 polyhost/host.py:3448
 msgid "The keyboard must be connected to update the firmware."
 msgstr "Keyboard harus terhubung untuk memperbarui firmware."
 
-#: polyhost/host.py:3428
+#: polyhost/host.py:3413
 msgid "Checking for firmware update…"
 msgstr "Memeriksa pembaruan firmware…"
 
-#: polyhost/host.py:3442 polyhost/host.py:3452 polyhost/host.py:3455
+#: polyhost/host.py:3427 polyhost/host.py:3437 polyhost/host.py:3440
 msgid "PolyKybd Firmware"
 msgstr "Firmware PolyKybd"
 
-#: polyhost/host.py:3443
+#: polyhost/host.py:3428
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -4849,63 +4891,63 @@ msgstr ""
 "\n"
 "Keyboard Anda menggunakan v{current}. Biasanya ini berarti build rilis gagal — halaman rilis akan mendapatkan firmware-nya setelah masalah itu diperbaiki."
 
-#: polyhost/host.py:3453
+#: polyhost/host.py:3438
 msgid "No firmware release could be found."
 msgstr "Rilis firmware tidak ditemukan."
 
-#: polyhost/host.py:3456
+#: polyhost/host.py:3441
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "Anda menjalankan firmware terbaru (v{version})."
 
-#: polyhost/host.py:3468
+#: polyhost/host.py:3453
 #, python-brace-format
 msgid "Installed: v{version}"
 msgstr "Terpasang: v{version}"
 
-#: polyhost/host.py:3469
+#: polyhost/host.py:3454
 msgid "Installed: unknown (the keyboard did not report its version)"
 msgstr "Terpasang: tidak diketahui (keyboard tidak melaporkan versinya)"
 
-#: polyhost/host.py:3470
+#: polyhost/host.py:3455
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "Firmware {version} tersedia."
 
-#: polyhost/host.py:3472
+#: polyhost/host.py:3457
 msgid "Both halves update over HID and reboot automatically."
 msgstr "Kedua belahan diperbarui melalui HID dan boot ulang secara otomatis."
 
-#: polyhost/host.py:3475
+#: polyhost/host.py:3460
 msgid "This update changes your stored keymap once:"
 msgstr "Pembaruan ini mengubah keymap tersimpan Anda satu kali:"
 
-#: polyhost/host.py:3477
+#: polyhost/host.py:3462
 msgid "Keys you remapped and your macros stay as they are."
 msgstr "Tombol yang Anda petakan ulang dan makro Anda tetap seperti semula."
 
-#: polyhost/host.py:3478
+#: polyhost/host.py:3463
 msgid "Update PolyKybd Firmware"
 msgstr "Perbarui Firmware PolyKybd"
 
-#: polyhost/host.py:3482
+#: polyhost/host.py:3467
 msgid "Download and flash now?"
 msgstr "Unduh dan flash sekarang?"
 
-#: polyhost/host.py:3493
+#: polyhost/host.py:3478
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "Mengunduh firmware v{version}…"
 
-#: polyhost/host.py:3515 polyhost/host.py:3816
+#: polyhost/host.py:3500 polyhost/host.py:3801
 msgid "Cancelling…"
 msgstr "Membatalkan…"
 
-#: polyhost/host.py:3552
+#: polyhost/host.py:3537
 msgid "Firmware Update Failed"
 msgstr "Pembaruan Firmware Gagal"
 
-#: polyhost/host.py:3553
+#: polyhost/host.py:3538
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -4916,11 +4958,11 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3659 polyhost/host.py:3701 polyhost/host.py:3709
+#: polyhost/host.py:3644 polyhost/host.py:3686 polyhost/host.py:3694
 msgid "Allow access to the keyboard"
 msgstr "Izinkan akses ke keyboard"
 
-#: polyhost/host.py:3660
+#: polyhost/host.py:3645
 msgid ""
 "On Linux a udev rule lets this app open the keyboard without root: its HID interface, and its serial port for faster firmware and font-pack updates. The rule file is /etc/udev/rules.d/99-hid.rules.\n"
 "\n"
@@ -4930,7 +4972,7 @@ msgstr ""
 "\n"
 "Sistem akan meminta kata sandi Anda (PolicyKit). Setelah itu, cabut keyboard lalu pasang kembali."
 
-#: polyhost/host.py:3702
+#: polyhost/host.py:3687
 msgid ""
 "The udev rule is installed.\n"
 "\n"
@@ -4940,11 +4982,11 @@ msgstr ""
 "\n"
 "Cabut keyboard lalu pasang kembali agar izin yang baru berlaku."
 
-#: polyhost/host.py:3710
+#: polyhost/host.py:3695
 msgid "The udev rule was not installed."
 msgstr "Aturan udev tidak terpasang."
 
-#: polyhost/host.py:3711
+#: polyhost/host.py:3696
 #, python-brace-format
 msgid ""
 "{error}\n"
@@ -4957,12 +4999,12 @@ msgstr ""
 "Anda juga dapat menjalankan perintah berikut di terminal:\n"
 "{commands}"
 
-#: polyhost/host.py:3780 polyhost/host.py:3794 polyhost/host.py:3840
-#: polyhost/host.py:3849 polyhost/host.py:3855
+#: polyhost/host.py:3765 polyhost/host.py:3779 polyhost/host.py:3825
+#: polyhost/host.py:3834 polyhost/host.py:3840
 msgid "Install WinCompose"
 msgstr "Instal WinCompose"
 
-#: polyhost/host.py:3781
+#: polyhost/host.py:3766
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -4972,11 +5014,11 @@ msgstr ""
 "\n"
 "Build WinCompose dari PolyKybd akan diunduh dari GitHub dan penginstalnya dijalankan (Windows akan meminta Anda mengonfirmasi)."
 
-#: polyhost/host.py:3794
+#: polyhost/host.py:3779
 msgid "Looking for the latest WinCompose release…"
 msgstr "Mencari rilis WinCompose terbaru…"
 
-#: polyhost/host.py:3841
+#: polyhost/host.py:3826
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -4986,7 +5028,7 @@ msgstr ""
 "\n"
 "Halaman rilis akan terbuka di browser Anda — unduh dan jalankan setup dari sana."
 
-#: polyhost/host.py:3850
+#: polyhost/host.py:3835
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -4997,7 +5039,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3856
+#: polyhost/host.py:3841
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -5014,46 +5056,46 @@ msgstr ""
 "File disimpan di:\n"
 "{path}"
 
-#: polyhost/host.py:3864
+#: polyhost/host.py:3849
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Penginstal WinCompose telah dijalankan. Setelah selesai dan WinCompose berjalan, PolyKybd akan beralih menggunakannya secara otomatis."
 
-#: polyhost/services/editor_plugins.py:96
+#: polyhost/services/editor_plugins.py:102
 #, python-brace-format
 msgid "Copied the plugin to {path}."
 msgstr "Plugin disalin ke {path}."
 
-#: polyhost/services/editor_plugins.py:97
+#: polyhost/services/editor_plugins.py:103
 #, python-brace-format
 msgid "Replaced the plugin in {path} with the one from this installation."
 msgstr "Plugin di {path} diganti dengan plugin dari instalasi ini."
 
-#: polyhost/services/editor_plugins.py:99
+#: polyhost/services/editor_plugins.py:105
 #, python-brace-format
 msgid "Removed the plugin from {path}."
 msgstr "Plugin dihapus dari {path}."
 
-#: polyhost/services/editor_plugins.py:101
+#: polyhost/services/editor_plugins.py:107
 #, python-brace-format
 msgid "{editor} was not found on this computer."
 msgstr "{editor} tidak ditemukan di komputer ini."
 
-#: polyhost/services/editor_plugins.py:103
+#: polyhost/services/editor_plugins.py:109
 #, python-brace-format
 msgid "{path} was changed by hand. Remove or update it by hand."
 msgstr "{path} diubah secara manual. Hapus atau perbarui secara manual."
 
-#: polyhost/services/editor_plugins.py:106
+#: polyhost/services/editor_plugins.py:112
 #, python-brace-format
 msgid "Copied the plugin to {path} and added the lines that load it to {init}."
 msgstr "Plugin disalin ke {path} dan baris yang memuatnya ditambahkan ke {init}."
 
-#: polyhost/services/editor_plugins.py:107
+#: polyhost/services/editor_plugins.py:113
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}."
 msgstr "Baris yang memuat plugin dihapus dari {init}."
 
-#: polyhost/services/editor_plugins.py:108
+#: polyhost/services/editor_plugins.py:114
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}, and the plugin from {path}."
 msgstr "Baris yang memuat plugin dihapus dari {init}, dan plugin dihapus dari {path}."
@@ -5089,6 +5131,22 @@ msgstr "Protoss"
 #: polyhost/services/game_assets/starcraft/__init__.py:22
 msgid "Zerg"
 msgstr "Zerg"
+
+#: polyhost/services/game_assets/unreal2/__init__.py:14
+msgid "UT2004 folder"
+msgstr "Folder UT2004"
+
+#: polyhost/services/game_assets/unreal2/__init__.py:15
+msgid "The Unreal Tournament 2004 install folder, the one that holds the System and Textures folders. Empty: the folder of the running game and the usual install folders on Windows, Linux, macOS and under Wine are searched."
+msgstr "Folder instalasi Unreal Tournament 2004, yang berisi folder System dan Textures. Kosong: folder game yang sedang berjalan dan folder instalasi biasa di Windows, Linux, macOS, dan Wine akan dicari."
+
+#: polyhost/services/game_assets/warcraft3/__init__.py:13
+msgid "Warcraft III folder"
+msgstr "Folder Warcraft III"
+
+#: polyhost/services/game_assets/warcraft3/__init__.py:14
+msgid "The Warcraft III install folder, the one that holds war3.mpq. The overlay then shows the hotkeys of the installed language and of the player's CustomKeys.txt. Empty: the folder of the running game and the usual install folders on Windows, macOS and under Wine are searched. Reforged keeps its files in a format this app does not read; the default keys are shown then."
+msgstr "Folder instalasi Warcraft III, yang berisi war3.mpq. Overlay lalu menampilkan pintasan bahasa yang terpasang dan CustomKeys.txt milik pemain. Kosong: folder game yang sedang berjalan dan folder instalasi biasa di Windows, macOS, dan Wine akan dicari. Reforged menyimpan berkasnya dalam format yang tidak dibaca aplikasi ini; maka tombol bawaan yang ditampilkan."
 
 #: polyhost/services/game_assets/westwood_d2/__init__.py:13
 msgid "Dune II folder"
@@ -5258,7 +5316,7 @@ msgstr "Baris ditambahkan ke {path}."
 msgid "Replaced the line in {path} with one for this installation."
 msgstr "Baris di {path} diganti dengan baris untuk instalasi ini."
 
-#: polyhost/services/editor_plugins.py:98 polyhost/services/shell_title.py:109
+#: polyhost/services/editor_plugins.py:104 polyhost/services/shell_title.py:109
 #, python-brace-format
 msgid "Already set up in {path}."
 msgstr "Sudah diatur di {path}."
@@ -5278,7 +5336,7 @@ msgstr "Judul Codex dinonaktifkan di {path}."
 msgid "Removed the line from {path}."
 msgstr "Baris dihapus dari {path}."
 
-#: polyhost/services/editor_plugins.py:100 polyhost/services/shell_title.py:113
+#: polyhost/services/editor_plugins.py:106 polyhost/services/shell_title.py:113
 #, python-brace-format
 msgid "Nothing to remove in {path}."
 msgstr "Tidak ada yang perlu dihapus di {path}."
@@ -5298,12 +5356,12 @@ msgstr "{shell} tidak melaporkan jalur profilnya: {error}"
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts. Run 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' in PowerShell first."
 msgstr "Kebijakan eksekusi PowerShell ({policy}) tidak menjalankan skrip profil. Jalankan dulu 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' di PowerShell."
 
-#: polyhost/services/editor_plugins.py:104 polyhost/services/shell_title.py:118
+#: polyhost/services/editor_plugins.py:110 polyhost/services/shell_title.py:118
 #, python-brace-format
 msgid "{path} has a start marker without an end marker. Remove the block by hand."
 msgstr "{path} memiliki penanda awal tanpa penanda akhir. Hapus blok tersebut secara manual."
 
-#: polyhost/services/editor_plugins.py:105 polyhost/services/shell_title.py:119
+#: polyhost/services/editor_plugins.py:111 polyhost/services/shell_title.py:119
 #, python-brace-format
 msgid "Could not change {path}: {error}"
 msgstr "Tidak dapat mengubah {path}: {error}"

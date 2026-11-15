@@ -1,0 +1,61 @@
+# OpenGOAL (PC port of the Jak and Daxter games) overlay for PolyKybd. See SOURCES.md.
+#
+# Keys are OpenGOAL's default keyboard binds, release v0.3.9
+# (open-goal/jak-project): DEFAULT_KEYBOARD_BINDS in
+# game/system/hid/input_bindings.cpp. The game reads a PlayStation 2 controller,
+# and each key presses one of its controls, so the keys show the control.
+# Esc carries the mark.
+#
+# Regenerate:
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/opengoal/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/opengoal/opengoal.yaml --preview /tmp/opengoal_preview
+app: opengoal
+match: [gk]
+output: opengoal_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [32, 32]
+margin: 2
+mode: alpha
+threshold: 128
+
+# "Open" over "GOAL" drawn over the whole cell, without the ESC legend
+# (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+  # Face buttons; every icon is drawn 1:1 at its own size
+  - { key: SPACE, mods: [], icon: cross.png, label: "Cross" }
+  - { key: E, mods: [], icon: circle.png, label: "Circle" }
+  - { key: F, mods: [], icon: square.png, label: "Square" }
+  - { key: R, mods: [], icon: triangle.png, label: "Triangle" }
+  # Shoulder buttons and stick clicks
+  - { key: Q, mods: [], icon: l1.png, label: "L1", region: [40, 24] }
+  - { key: O, mods: [], icon: r1.png, label: "R1", region: [40, 24] }
+  - { key: "1", mods: [], icon: l2.png, label: "L2", region: [40, 24] }
+  - { key: P, mods: [], icon: r2.png, label: "R2", region: [40, 24] }
+  - { key: COMMA, mods: [], icon: l3.png, label: "L3 (left stick click)", region: [40, 24] }
+  - { key: DOT, mods: [], icon: r3.png, label: "R3 (right stick click)", region: [40, 24] }
+  - { key: ENTER, mods: [], icon: start.png, label: "Start", region: [49, 15] }
+  - { key: QUOTE, mods: [], icon: select.png, label: "Select", region: [57, 15] }
+  # D-pad
+  - { key: UP, mods: [], icon: dpadup.png, label: "D-pad up" }
+  - { key: DOWN, mods: [], icon: dpaddown.png, label: "D-pad down" }
+  - { key: LEFT, mods: [], icon: dpadleft.png, label: "D-pad left" }
+  - { key: RIGHT, mods: [], icon: dpadright.png, label: "D-pad right" }
+  # Left stick (movement)
+  - { key: W, mods: [], icon: lstickup.png, label: "Left stick up" }
+  - { key: S, mods: [], icon: lstickdown.png, label: "Left stick down" }
+  - { key: A, mods: [], icon: lstickleft.png, label: "Left stick left" }
+  - { key: D, mods: [], icon: lstickright.png, label: "Left stick right" }
+  # Right stick (camera); L is stick left and J is stick right in the source
+  - { key: I, mods: [], icon: rstickup.png, label: "Right stick up" }
+  - { key: K, mods: [], icon: rstickdown.png, label: "Right stick down" }
+  - { key: L, mods: [], icon: rstickleft.png, label: "Right stick left" }
+  - { key: J, mods: [], icon: rstickright.png, label: "Right stick right" }

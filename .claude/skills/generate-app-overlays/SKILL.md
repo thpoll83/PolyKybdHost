@@ -104,6 +104,26 @@ Prefer machine-readable / official sources, in order:
 - The app's **documented shortcut reference** (official docs page) — `WebFetch`
   it and extract the table.
 - The app's **source repository** (menu/command tables often list accelerators).
+- ⚠️ **A game: its own data files, not a wiki or a manual.** Hotkeys are often
+  kept per LANGUAGE, so a guide's letter can be wrong on the player's install.
+  German Warcraft III quits with Alt+B where the manual says Alt+Q, and moves
+  with B where English uses M; C&C Generals' `Data\INI\CommandMap.ini` in
+  `INIZH.big` is empty, and the real one is `Data\<Language>\CommandMap.ini` in
+  `<Language>ZH.big` (2026-11-14). Sources used so far: UT2004
+  `System/DefUser.ini`; Warcraft III `Units\CommandStrings.txt`,
+  `UI\FrameDef\UI\EscMenuMainPanel.fdf` (`ControlShortcutKey`) and the
+  `ALT-<key>` in `UI\FrameDef\GlobalStrings.fdf` tooltips, inside the MPQs;
+  OpenRA `mods/common/hotkeys/*.yaml` and `mods/<mod>/hotkeys.yaml`; Generals
+  `CommandMap.ini` and the `&` letters of `generals.csf`. Ask the maintainer for
+  the files (`evaluate-game-asset-reader` → *Get real files*) and cite the file
+  in `SOURCES.md`.
+  - Give each binding a `command:` with the game's own name for it
+    (`SwitchWeapon 4`, `CmdMove`, `AttackMove`, `SELECT_TEAM1`). It costs nothing
+    now, and a key-binding reader can then move the icon to the player's key
+    (`add-game-key-bindings`).
+  - When the game binds the same command to more keys than the overlay labels
+    (UT2004's arrow keys and `,`/`.` next to WASD), list them under `undrawn:`
+    on that binding, so a remap counts them as defaults and never draws on them.
 
 Do a **coverage pass, not a sample**: enumerate the app's *whole* Ctrl row (and
 notable Shift/Alt/F-key shortcuts) up front and fill the gaps in one go — users
@@ -423,10 +443,17 @@ Don't hand-download icons. Write a tiny per-app `fetch_icons.py` next to
   draw white-on-transparent with PIL at ~4× then downscale; the *alpha is the
   shape*, so the binding renders it with `mode: alpha`. Keep the draw function in
   `fetch_icons.py` so it reproduces.
-- **Guard hand-editable assets so a re-run never clobbers them.** Any icon the
-  user may hand-edit — the program mark, custom-drawn glyphs, composites — must be
-  **skipped if it already exists**; the committed PNG is then the source of truth.
-  (Plain Fluent downloads are deterministic, so they may re-fetch freely.)
+- **Guard what a person may retouch, so a re-run never clobbers it.** Skip the
+  file **if it already exists** for: the app's or game's own logo (a frame cut from
+  its `.ico` or SVG), and any mark or glyph that an owner tuned by hand. The
+  committed PNG is then the source of truth. Do not guard an icon that the script
+  draws from code and committed inputs only: a name set in a pinned font, a number
+  or a sign added to a committed icon, a flat icon from an icon set. For these the
+  script is the source, and a guard would keep a stale PNG after a change to a
+  shared helper. (Fluent and Material Symbols icons that `icon_fetch.py` downloads
+  come from a pinned commit, so they may re-fetch freely. A script that downloads
+  from the `main` branch of an icon repository by its own URL can return a changed
+  drawing.)
   ```python
   if (out / "word.png").exists():
       print("  word.png  <- committed asset (left as-is)")
@@ -511,6 +538,37 @@ depends on the neighbourhood. The Keep bulb's second thread band, copied 24 px
 (3 keycap px) below the first, rendered with a different shape; 23 px gave the
 same pixels as the first band. Sweep a few offsets and read the ESC cell back
 from the generated overlay instead of computing the offset.
+
+**Two helpers draw a mark at keycap size**, so the spec places it 1:1
+(`program_icon_mode: alpha`, `program_icon_region` = the PNG's size, at most 40 wide
+or it runs into the Esc legend):
+
+| helper | for |
+|---|---|
+| `program_marks.silhouette_mark(path, source, cut=120, crop=None)` | an app icon whose drawing sits on a coloured tile (the ArtCraft animals). It cuts the drawing off the tile as one filled shape, fits it into 40x40, and cuts inner pixels darker than luma `cut` back out. All ten ArtCraft marks use cut 120, at the maintainer's request, so the set matches (#818). An open outline (FigCraft) cannot be filled. |
+| `program_marks.pictogram_mark(path, svg_url)` | a single-colour SVG: a Simple Icons brand mark (CC0, nominative use) or a Material Design Icons pictogram (Apache-2.0) standing in for a proprietary icon. Pin the CDN version in the URL. Bitwig, Logic Pro and GarageBand use it (#816). |
+
+⚠️ **Both helpers are guarded.** To make a mark again, delete its PNG and call the
+helper directly, not the whole `fetch_icons.py`: a full re-run rewrote unrelated
+icons of the same set, which had to be restored with `git checkout`. Then run the
+generator and check two things on every regenerated overlay PNG: only the ESC cell
+differs from `origin/main`, and the ESC cell equals the mark, placed at the spec's
+`program_icon_anchor`, in all four channels.
+
+⚠️ **A macOS-only spec with `program_icon:` also writes a default-platform
+`<output>.mods.png`** that holds only the mark, because the generator always writes
+the primary set. Logic Pro and GarageBand do this. No mapping entry names that file,
+so don't commit it. `claude_code_web` is different: its macOS set, which holds only
+the mark, is in the mapping on purpose.
+
+To show the maintainer the ESC keys of several apps side by side, as the OLED shows
+them, run `esc_marks_sheet.py` (next to this file). It reads the ESC cell from each
+committed overlay PNG:
+
+```bash
+.venv/bin/python .claude/skills/generate-app-overlays/esc_marks_sheet.py \
+    '*craft_template' logicpro_template_mac --out /tmp/esc.png
+```
 
 **Fetching the app's icon when its site refuses automated requests:** Google's
 favicon service, `https://www.google.com/s2/favicons?domain=<site>&sz=256`,

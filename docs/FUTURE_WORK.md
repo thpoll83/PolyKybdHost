@@ -11,6 +11,24 @@ Siblings: `qmk_firmware/keyboards/polykybd/lang/FUTURE_LANGUAGES.md`,
 
 ---
 
+## VS Code debug state in a remote window
+
+**Status:** not done (2026-11-14, PR #839). The VS Code / Cursor / Windsurf
+mode reporter (`vscode-extension/`) is a UI extension (`"extensionKind":
+["ui"]`), because it posts to PolyKybdHost on `127.0.0.1` of the user's
+computer. In a Remote SSH, WSL or container window the debugger extensions run
+in the remote extension host, and VS Code creates a debug adapter tracker only
+in the extension host where the adapter runs, so the UI-side tracker sees no
+messages from a remote session. The extension then sends no report for that
+session and the keyboard shows every debug key.
+
+**What it would take:** a second extension part with `"extensionKind":
+["workspace"]` that registers the tracker on the remote side and passes the
+state to the UI part (a command the UI part registers, called with
+`vscode.commands.executeCommand`, crosses the extension hosts). Making the whole
+extension a workspace extension is not an option: its HTTP report would then go
+to the loopback of the remote machine.
+
 ## Game-file readers for Factorio and Minecraft
 
 **Status:** built, run on real game files, not merged (2026-11-04). Both readers
@@ -34,6 +52,55 @@ files, every changed key drawn white on black beside the shipped icon:
 **What would reopen it.** A game whose own icons are flat, one-colour symbols at
 32 px or more, for keys where the shipped icon is weak. The skill
 `evaluate-game-asset-reader` repeats the comparison.
+
+---
+
+## The player's key bindings for the other game readers
+
+**Status:** built for UT2004, Warcraft III and the three OpenRA mods (2026-11-14). A reader with a `bindings(files)`
+function returns the player's {command: [key, ...]}, and `build.remap` moves
+every icon whose spec binding names a `command:` to those keys
+(`game_assets/build.py`; the UT2004 reader parses System/User.ini, the
+Warcraft III reader the hotkeys of the installed language and CustomKeys.txt).
+A spec may also name a bindings source apart from its art reader
+(`bindings: openra`: `openra_keys.py` reads OpenRA's settings.yaml). The
+other overlays keep their default keys.
+
+**What each would need.** A parser for the game's binding file and a
+`command:` on each binding of its spec. Candidates, none checked against real
+files: StarCraft II keeps hotkeys in `.SC2Hotkeys` text files under the
+player's Documents folder (the `starcraft` reader draws its overlay). The DOS
+releases of C&C, Red Alert and Dune II have fixed keys, so there is nothing to
+read there. The C&C
+Remastered Collection's binding file was not looked for.
+
+**Limit.** `remap` moves an icon within one overlay file: the primary file
+holds the plain, Ctrl, Alt and Shift keys, the `.combo` file the
+two-modifier ones. A command whose default and new keys are in different
+files keeps its default key.
+
+---
+
+## Game-file reader for Warcraft III
+
+**Status:** compared on real game files, not built (2026-11-14). A reader
+of the key assignments only (no pictures) was built instead: see *The
+player's key bindings for the other game readers*. The existing
+MPQ code (`game_assets/starcraft/mpq.py`) opens the Warcraft III 1.22 archives
+(war3.mpq, War3x.mpq, War3Patch.mpq), and Pillow decodes the BLP1 icons, so a
+reader would have been short.
+
+**What was compared.** The command-button icons
+(`ReplaceableTextures\CommandButtons\BTN<unit>.blp`, 64×64) for the 14 keys the
+shipped `warcraft3` overlay draws as units or heroes: the control groups 1 to 0,
+F1 to F3 and Backspace. Each was drawn at 40×40, bevel frame removed, by error
+diffusion, by three flat levels and by a threshold, beside the shipped
+silhouette. The icons are painted portraits on painted backgrounds with no
+transparency, so there is no outline to light; every conversion read as noise,
+and the shipped silhouettes were clearer on all 14 keys (maintainer's verdict).
+
+**What would reopen it.** Warcraft III art with transparency or flat shapes for
+those keys. The skill `evaluate-game-asset-reader` repeats the comparison.
 
 ---
 
