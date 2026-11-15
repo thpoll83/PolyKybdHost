@@ -20,6 +20,6 @@ bindings:
   - {key: A, mods: [CMDCTRL], icon: selectall.png, label: Select all references}
   - {key: UP, icon: xref_sel_prev.png, label: Select previous reference, region: [40, 40], mode: alpha}
   - {key: DOWN, icon: xref_sel_next.png, label: Select next reference, region: [40, 40], mode: alpha}
-  - {key: ENTER, icon: goto.png, label: Go to the selected reference}
+  - {key: ENTER, icon: xref_goto.png, label: Go to the selected reference, region: [40, 40], mode: alpha}
   - {key: P, mods: [CMDCTRL], icon: actionchooser.png, label: Command palette}
   - {region: [40, 40], mode: alpha, key: P, mods: [CMDCTRL, SHIFT], icon: palette_all.png, label: 'Command palette, all'}

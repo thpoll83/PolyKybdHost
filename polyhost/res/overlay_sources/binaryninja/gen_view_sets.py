@@ -93,7 +93,8 @@ XREFS = [
      "label": "Select all references"},
     {"key": "UP", "icon": "xref_sel_prev.png", "label": "Select previous reference", **_WORD},
     {"key": "DOWN", "icon": "xref_sel_next.png", "label": "Select next reference", **_WORD},
-    {"key": "ENTER", "icon": "goto.png", "label": "Go to the selected reference"},
+    {"key": "ENTER", "icon": "xref_goto.png", "label": "Go to the selected reference",
+     **_WORD},
 ]
 
 

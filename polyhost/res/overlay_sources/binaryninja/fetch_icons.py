@@ -117,6 +117,7 @@ COMPOSITES = {
     # cross-references pane: select without navigating
     "xref_sel_prev": ("up", "SEL"),
     "xref_sel_next": ("down", "SEL"),
+    "xref_goto": ("goto", "REF"),          # xrefs Enter: go to the selected reference
 }
 # Ctrl+1..0 go to bookmark N; Ctrl+Alt+1..0 set bookmark N (0 is bookmark 10).
 for _n in range(1, 11):
