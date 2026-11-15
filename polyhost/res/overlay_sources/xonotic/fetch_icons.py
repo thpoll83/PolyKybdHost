@@ -39,7 +39,7 @@ ICONS = {
     "blaster": "gi:lorc/ray-gun",
     "shotgun": "gi:delapouite/sawed-off-shotgun",
     "machinegun": "gi:delapouite/uzi",
-    "mortar": "gi:lorc/grenade",
+    "mortar": "gi:delapouite/mortar",
     "electro": "gi:sbed/electric",
     "crylink": "gi:lorc/crystal-shine",
     "vortex": "gi:lorc/vortex",

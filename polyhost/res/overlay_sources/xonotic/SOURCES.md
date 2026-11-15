@@ -133,7 +133,7 @@ URL. The game-icons.net URL is also in `SOURCES` of
 | `blaster.png` | game-icons.net `lorc/ray-gun` | lorc | CC BY 3.0 |
 | `shotgun.png` | game-icons.net `delapouite/sawed-off-shotgun` | delapouite | CC BY 3.0 |
 | `machinegun.png` | game-icons.net `delapouite/uzi` | delapouite | CC BY 3.0 |
-| `mortar.png` | game-icons.net `lorc/grenade` | lorc | CC BY 3.0 |
+| `mortar.png` | game-icons.net `delapouite/mortar` | delapouite | CC BY 3.0 |
 | `electro.png` | game-icons.net `sbed/electric` | sbed | CC BY 3.0 |
 | `crylink.png` | game-icons.net `lorc/crystal-shine` | lorc | CC BY 3.0 |
 | `vortex.png` | game-icons.net `lorc/vortex` | lorc | CC BY 3.0 |
