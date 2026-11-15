@@ -99,6 +99,16 @@ class TutorialCoreTest(unittest.TestCase):
         self.assertEqual(first.finished, "stopped")
         self.assertEqual(core._tutorial_state["id"], "midi-layer")
 
+    def test_a_failed_second_start_leaves_no_stale_run(self):
+        kb = _Keyboard()
+        core = _core(kb)
+        _call(core, "tutorial_start", "demo")
+        kb.protocol_version = 31          # the next start is refused
+        self.assertFalse(_call(core, "tutorial_start", "midi-layer")[0])
+        self.assertIsNone(core._tutorial_run)
+        self.assertIsNone(_call(core, "tutorial_state"))
+        self.assertEqual(core.events[-1][1]["finished"], "stopped")
+
     def test_a_refused_start_keeps_nothing(self):
         core = _core(_Keyboard(protocol=31))
         self.assertFalse(_call(core, "tutorial_start", "demo")[0])

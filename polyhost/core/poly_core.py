@@ -1021,6 +1021,10 @@ class PolyCore(Observable):
         from polyhost.services.tutorials.runner import TutorialRun
         if self._tutorial_run is not None and not self._tutorial_run.finished:
             self._tutorial_run.stop()
+            # Publish the stop now: it clears _tutorial_run and _tutorial_state, so a
+            # start that fails below leaves no stale run behind (the MIDI guide would
+            # stay suppressed and tutorial_state() would report the old tutorial).
+            self._tutorial_publish()
         run = TutorialRun(tutorial, self.keeb, self.log)
         ok, msg = run.start()
         if not ok:

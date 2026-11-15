@@ -1154,8 +1154,8 @@ class PolyKybd:
         return ok, "ok" if ok else reply
 
     def tutorial_spotlight(self, keys=None) -> tuple[bool, str]:
-        """Darken every key except `keys` (a list of (row, col)); None or [] with
-        `keys is None` turns the spotlight off. An empty list darkens every key."""
+        """Darken every key except `keys` (a list of (row, col)). None turns the
+        spotlight off; an empty list darkens every key."""
         ds = self.device_settings
         mask = bytearray(HostTutorial.MASK_BYTES)
         for row, col in keys or ():
