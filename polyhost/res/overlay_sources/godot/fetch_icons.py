@@ -22,6 +22,7 @@ from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import brand_marks  # noqa: E402
+import dcc_glyphs  # noqa: E402
 import icon_fetch  # noqa: E402
 
 RENDER_PX = 96
@@ -56,7 +57,7 @@ FLUENT = {
     "distraction": "ms:self_improvement",
     "fullscreen": "ms:fullscreen",
     "screenshot": "ms:screenshot_monitor",
-    "expandpanel": "ms:open_in_full",
+    "expandpanel": "ms:vertical_align_top",
     "bottompanel": "ms:bottom_panel_open",
     "debugger": "ms:bug_report",
     "filesystem": "ms:folder",
@@ -105,11 +106,11 @@ FLUENT = {
     "vp3": "ms:view_quilt",
     "vp3alt": "ms:view_compact",
     "vp4": "ms:grid_view",
-    "fovless": "ms:photo_size_select_small",
+    "fovless": "ms:crop_portrait",
     "fovmore": "ms:panorama_wide_angle",
     "fovreset": "ms:restart_alt",
     "floor": "ms:vertical_align_bottom",
-    "collision": "ms:move_down",
+    "collision": "ms:ads_click",
     "alignrot": "ms:screen_rotation_alt",
     "aligntransform": "ms:filter_center_focus",
     # --- script editor ---
@@ -121,7 +122,6 @@ FLUENT = {
     "joinlines": "ms:call_merge",
     "fold": "ms:unfold_less",
     "region": "ms:data_object",
-    "dupselection": "ms:control_point_duplicate",
     "duplines": "ms:stacks",
     "evaluate": "ms:calculate",
     "wordwrap": "ms:wrap_text",
@@ -195,6 +195,20 @@ ARROWED = {
     "prevbreakpoint": ("ms:radio_button_checked", "up"),
 }
 
+# The Script screen's version of an action that the shared set binds for
+# scenes or nodes: the same glyph over "</>", so the two keys look different.
+# name -> base icon (already in icons/)
+SCRIPT_VARIANTS = {
+    "saveall_script": "saveall",
+    "reopen_script": "reopen",
+    "tab_next_script": "tab_next",
+    "tab_prev_script": "tab_prev",
+    "moveup_script": "moveup",
+    "movedown_script": "movedown",
+    "dupselection": "duplicate",
+}
+SCRIPT_WORD = "</>"
+
 # The ESC mark of each per-screen set: the screen's name left of the logo,
 # over the whole 72x40 cell, drawn without the ESC legend
 # (program_icon_legend: false). godot.yaml uses the plain logo.
@@ -250,6 +264,21 @@ def _arrowed(path: Path, glyph: Path, direction: str) -> None:
     print(f"  {path.name}  <- drawn: {glyph.name} + {direction} arrow")
 
 
+def over_word(base: Path, word: str, path: Path) -> None:
+    """`base` fitted into the upper 64 % of the square, centred, and `word`
+    (Liberation Sans Bold) in the lower 30 %, as wide as it fits."""
+    u, m, d = dcc_glyphs._canvas()
+    icon = dcc_glyphs._fit_ink(base, int(u * 0.64))
+    m.paste(icon, ((u - icon.width) // 2, 0))
+    probe = ImageFont.truetype(dcc_glyphs.BOLD, 100)
+    l, t, r, b = d.textbbox((0, 0), word, font=probe)
+    k = min(u * 0.96 / (r - l), u * 0.30 / (b - t))
+    font = ImageFont.truetype(dcc_glyphs.BOLD, max(8, int(100 * k)))
+    l, t, r, b = d.textbbox((0, 0), word, font=font)
+    d.text(((u - (r - l)) / 2 - l, u - (b - t) - t), word, fill=255, font=font)
+    dcc_glyphs._save_mask(m, path)
+
+
 def esc_mark(dest: Path, word: str, logo_png: Path) -> None:
     """`word` (Liberation Sans Bold, at most ESC_WORD_W px wide) left of the
     logo (its alpha, ESC_LOGO px), both 1 bit (as in the Emacs set)."""
@@ -295,6 +324,11 @@ def main() -> int:
         icon_fetch.fluent({tmp: spec}, out)
         _arrowed(dest, out / f"{tmp}.png", direction)
         (out / f"{tmp}.png").unlink()
+    for stem, base in SCRIPT_VARIANTS.items():
+        dcc_glyphs.guarded(
+            out / f"{stem}.png",
+            lambda p, b=base: over_word(out / f"{b}.png", SCRIPT_WORD, p),
+            f"drawn: {base}.png over {SCRIPT_WORD!r}")
     brand_marks.ensure(out / "godot.png", "godotengine")
     for name, word in ESC_WORDS.items():
         esc_mark(out / f"esc_{name}.png", word, out / "godot.png")

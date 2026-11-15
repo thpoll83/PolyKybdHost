@@ -42,7 +42,7 @@ bindings:
   - { key: P, icon: preserve.png, label: "Preserve children transform" }
   - { key: B, icon: vertexsnap.png, label: "Vertex snap" }
   # view
-  - { key: F, icon: fit_view.png, label: "Focus selection" }
+  - { key: F, icon: fit_view.png, label: "Frame selection" }
   - { key: O, icon: origin.png, label: "Focus origin" }
   - { key: F, mods: [SHIFT], icon: freelook.png, label: "Toggle freelook" }
   - { key: P, mods: [CTRL], icon: camerapreview.png, label: "Toggle camera preview" }
@@ -63,7 +63,7 @@ bindings:
   - { key: W, mods: [ALT], icon: resetpos.png, label: "Reset position" }
   - { key: E, mods: [ALT], icon: resetrot.png, label: "Reset rotation" }
   - { key: R, mods: [ALT], icon: resetscale.png, label: "Reset scale" }
-  - { key: K, icon: key_insert.png, label: "Insert animation key" }
+  - { key: K, icon: key_insert.png, label: "Insert key" }
   # nodes (editor_node.cpp)
   - { key: L, mods: [CMDCTRL], icon: lock.png, label: "Lock selected" }
   - { key: L, mods: [CMDCTRL, SHIFT], icon: unlock.png, label: "Unlock selected" }

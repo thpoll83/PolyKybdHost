@@ -85,8 +85,19 @@ From the Godot source and the release file names, not checked on an install:
 | `../vscode/icons/` (copied) | see `../vscode/SOURCES.md` | breakpoint, comment, closeeditor, findinfiles, replaceinfiles, goback, goforward, gotoline, gotosymbol, output, palette, pause, quickopen, settings, sidebar, stepinto, stepover |
 | Drawn in `fetch_icons.py`: DejaVu Sans Bold text | Bitstream Vera licence (font) | screen_2d "2D", screen_3d "3D", zoom100 "1:1", upper "AB", lower "ab", capitalize "Ab" |
 | Drawn in `fetch_icons.py`: a Material glyph with a triangle | Apache-2.0 (glyph) | findnext, findprev (`search`), bookmarknext, bookmarkprev (`bookmark`), nextbreakpoint, prevbreakpoint (`radio_button_checked`) |
+| Drawn in `fetch_icons.py` (`SCRIPT_VARIANTS`): an icon of this folder over "</>" in Liberation Sans Bold | as the base icon; SIL OFL 1.1 (font) | saveall_script, reopen_script, tab_next_script, tab_prev_script, moveup_script, movedown_script (the Script screen's version of a scene or node action), dupselection (`duplicate.png`) |
 | Simple Icons `godotengine` | artwork CC0-1.0; the Godot logo is by Andrea Calabró, CC BY 4.0 (<https://godotengine.org/press/>) | `godot.png` (ESC mark of the shared set) |
 | `godot.png` with the screen's name in Liberation Sans Bold | as above; SIL OFL 1.1 (font) | `esc_2d.png`, `esc_3d.png`, `esc_script.png` ("CODE"), `esc_game.png` |
+
+One icon per action: two keys share an image only when they do the same
+thing. The Script screen's "Save all scripts", "Reopen closed script",
+"Next/Previous script", "Move script up/down in list" and "Duplicate selection"
+act on scripts or text, not on scenes or nodes, so they draw the shared set's
+glyph over "</>". Three pairs are one action in two editors and share the image
+and the label: Frame selection (3D `spatial_editor/focus_selection`, F, and 2D
+`canvas_item_editor/frame_selection`, Shift+F: both move the view to fit the
+selection), Zoom to 100% (2D `zoom_100_percent` and the script editor's
+`reset_zoom`, both Ctrl+0) and Insert key (3D K and 2D Insert).
 
 Labels that name a concept (Open, Save, Cut, Copy, Paste, Undo, Redo, Quit,
 Find, Select all, Zoom in, Zoom out) have no icon of their own: the shared

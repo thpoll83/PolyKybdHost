@@ -95,18 +95,18 @@ bindings:
   - { key: N, mods: [CMDCTRL], icon: newscript.png, label: "New script" }
   - { key: N, mods: [CMDCTRL, SHIFT], icon: newtextfile.png, label: "New text file" }
   - { key: S, mods: [CMDCTRL, ALT], icon: savescript.png, label: "Save script" }
-  - { key: S, mods: [SHIFT, ALT], icon: saveall.png, label: "Save all scripts", except: [macos] }
-  - { key: S, mods: [GUI, CTRL], icon: saveall.png, label: "Save all scripts", only: [macos] }
+  - { key: S, mods: [SHIFT, ALT], icon: saveall_script.png, label: "Save all scripts", except: [macos] }
+  - { key: S, mods: [GUI, CTRL], icon: saveall_script.png, label: "Save all scripts", only: [macos] }
   - { key: R, mods: [CMDCTRL, ALT], icon: softreload.png, label: "Soft reload tool script" }
   - { key: W, mods: [CMDCTRL], icon: closeeditor.png, label: "Close script" }
-  - { key: T, mods: [CMDCTRL, SHIFT], icon: reopen.png, label: "Reopen closed script" }
+  - { key: T, mods: [CMDCTRL, SHIFT], icon: reopen_script.png, label: "Reopen closed script" }
   - { key: X, mods: [CMDCTRL, SHIFT], icon: runscript.png, label: "Run script" }
   - { key: BACKSLASH, mods: [CMDCTRL], icon: sidebar.png, label: "Toggle files panel" }
-  - { key: DOT, mods: [CMDCTRL, SHIFT], icon: tab_next.png, label: "Next script" }
-  - { key: COMMA, mods: [CMDCTRL, SHIFT], icon: tab_prev.png, label: "Previous script" }
-  - { key: UP, mods: [SHIFT, ALT], icon: moveup.png, label: "Move script up in list" }
-  - { key: DOWN, mods: [SHIFT, ALT], icon: movedown.png, label: "Move script down in list" }
+  - { key: DOT, mods: [CMDCTRL, SHIFT], icon: tab_next_script.png, label: "Next script" }
+  - { key: COMMA, mods: [CMDCTRL, SHIFT], icon: tab_prev_script.png, label: "Previous script" }
+  - { key: UP, mods: [SHIFT, ALT], icon: moveup_script.png, label: "Move script up in list" }
+  - { key: DOWN, mods: [SHIFT, ALT], icon: movedown_script.png, label: "Move script down in list" }
   # zoom
   - { key: EQUAL, mods: [CMDCTRL], label: "Zoom in" }
   - { key: MINUS, mods: [CMDCTRL], label: "Zoom out" }
-  - { key: "0", mods: [CMDCTRL], icon: zoom100.png, label: "Reset zoom" }
+  - { key: "0", mods: [CMDCTRL], icon: zoom100.png, label: "Zoom to 100%" }
