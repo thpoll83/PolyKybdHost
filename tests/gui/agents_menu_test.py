@@ -34,9 +34,10 @@ class AgentsMenuTest(unittest.TestCase):
         host._core_click = lambda fn, done: (host.calls.append(fn), done(*fn()))
         host.log = mock.MagicMock()
         host.report_device_result = mock.MagicMock()
+        host.open_integrations = mock.MagicMock()
         for name in ("_build_agents_menu", "_set_agent_rows", "_apply_agents_menu",
                      "_toggle_agents_enabled", "_raise_agent_clicked", "_show_pairing_code",
-                     "_show_cloud_sessions", "_show_browser_extension", "_set_remove_rows",
+                     "_show_cloud_sessions", "_set_remove_rows",
                      "_forget_agent_clicked", "_forget_inactive_clicked"):
             setattr(host, name, types.MethodType(getattr(PolyHost, name), host))
         host._build_agents_menu()
@@ -58,7 +59,7 @@ class AgentsMenuTest(unittest.TestCase):
         self.assertTrue(host.agents_menu.actions()[0].isChecked())
         self.assertIn("Key 1: Claude Code, waiting, fix the build", texts)
         self.assertIn("Page 2, Key 1: Codex, idle, docs", texts)
-        self.assertIn("Set Up Hooks", texts)
+        self.assertIn("Set Up Hooks…", texts)
         self.assertIn("Pair a Forwarder…", texts)
         act = next(a for a in host.agents_menu.actions() if a.text().startswith("Key 1: Claude"))
         host.sender = lambda: act
@@ -79,8 +80,8 @@ class AgentsMenuTest(unittest.TestCase):
         host = self._host()            # built, no core.agents_list() answer yet
         texts = self._texts(host.agents_menu)
         self.assertEqual(texts, ["Show on the Number Row", "No agents reported",
-                                 "Remove Agent", "Set Up Hooks", "Pair a Forwarder…",
-                                 "Connect Cloud Sessions…", "Install Browser Extension…"])
+                                 "Remove Agent", "Set Up Hooks…", "Pair a Forwarder…",
+                                 "Connect Cloud Sessions…"])
         self.assertFalse(host._agents_remove_menu.isEnabled())   # nothing to remove
 
     def test_remove_agent_and_remove_all_inactive(self):
@@ -115,10 +116,9 @@ class AgentsMenuTest(unittest.TestCase):
     def test_set_up_hooks_and_pair_have_icons(self):
         host = self._host()
         acts = {a.text(): a for a in host.agents_menu.actions()}
-        self.assertFalse(acts["Set Up Hooks"].icon().isNull())
+        self.assertFalse(acts["Set Up Hooks…"].icon().isNull())
         self.assertFalse(acts["Pair a Forwarder…"].icon().isNull())
         self.assertFalse(acts["Connect Cloud Sessions…"].icon().isNull())
-        self.assertFalse(acts["Install Browser Extension…"].icon().isNull())
         self.assertFalse(acts["Remove Agent"].icon().isNull())
 
     def test_a_failed_fetch_keeps_the_menu(self):
@@ -137,29 +137,16 @@ class AgentsMenuTest(unittest.TestCase):
         host._apply_agents_menu({"enabled": True, "agents": rows})
         texts = self._texts(host.agents_menu)
         self.assertEqual(texts.count("Key 1: Codex, done, x"), 1)
-        self.assertEqual(texts.count("Set Up Hooks"), 1)
+        self.assertEqual(texts.count("Set Up Hooks…"), 1)
         self.assertNotIn("No agents reported", texts)
 
 
-@unittest.skipUnless(_QT, "needs PyQt5 and a display (xvfb-run)")
-class AgentHooksMenuTest(unittest.TestCase):
-    """gui/agent_hooks.py: the submenu the tray app and the forwarder share."""
-
-    @classmethod
-    def setUpClass(cls):
-        cls.app = QApplication.instance() or QApplication([])
-
-    def test_menu_lists_the_vendors_and_installs_on_click(self):
-        from polyhost.gui import agent_hooks
-        menu = QMenu()
-        sub = agent_hooks.add_setup_menu(menu, mock.MagicMock(), title="Set Up Agent Hooks")
-        self.assertEqual(sub.title(), "Set Up Agent Hooks")
-        self.assertEqual([a.text() for a in sub.actions()],
-                         ["Claude Code", "Codex", "Copilot CLI", "Gemini CLI", "Qwen Code",
-                      "OpenCode"])
-        with mock.patch.object(agent_hooks, "install") as install:
-            sub.actions()[1].trigger()
-        self.assertEqual(install.call_args[0][0], "codex")
+    def test_set_up_hooks_opens_integrations_at_the_agents_page(self):
+        from polyhost.gui.integrations_dialog import AGENTS
+        host = self._host()
+        act = next(a for a in host.agents_menu.actions() if a.text() == "Set Up Hooks…")
+        act.trigger()
+        host.open_integrations.assert_called_once_with(AGENTS)
 
 
 @unittest.skipUnless(_QT, "needs PyQt5 and a display (xvfb-run)")

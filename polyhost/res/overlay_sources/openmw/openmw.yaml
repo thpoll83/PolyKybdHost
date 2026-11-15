@@ -1,0 +1,99 @@
+# OpenMW (free engine for The Elder Scrolls III: Morrowind) overlay for PolyKybd.
+#
+# Keys: `loadKeyDefaults()` in apps/openmw/mwinput/bindingsmanager.cpp of
+# OpenMW/openmw, release openmw-0.51.0. See SOURCES.md.
+#
+# Every key here does the same thing whatever the character holds. Run is Left
+# Shift and sneak is Left Ctrl; both are held while the character moves, so
+# movement, jump and activate are drawn on the Shift and Ctrl layers as well.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/openmw/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/openmw/openmw.yaml --preview /tmp/openmw_preview
+app: openmw
+match: [openmw, org.openmw.openmw]
+output: openmw_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for the other game sets: the icon uses the full height on the right; the
+# firmware clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# "Open" over "MW" drawn over the whole cell, without the ESC legend
+# (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Movement, jump and activate, also on the Shift (run) and Ctrl (sneak) layers
+  - { key: W, icon: forward.png, label: "Move forward" }
+  - { key: A, icon: left.png, label: "Move left" }
+  - { key: S, icon: back.png, label: "Move backward" }
+  - { key: D, icon: right.png, label: "Move right" }
+  - { key: E, icon: jump.png, label: "Jump" }
+  - { key: SPACE, icon: activate.png, label: "Activate" }
+  - { key: W, mods: [SHIFT], icon: forward.png, label: "Move forward" }
+  - { key: A, mods: [SHIFT], icon: left.png, label: "Move left" }
+  - { key: S, mods: [SHIFT], icon: back.png, label: "Move backward" }
+  - { key: D, mods: [SHIFT], icon: right.png, label: "Move right" }
+  - { key: E, mods: [SHIFT], icon: jump.png, label: "Jump" }
+  - { key: SPACE, mods: [SHIFT], icon: activate.png, label: "Activate" }
+  - { key: W, mods: [CTRL], icon: forward.png, label: "Move forward" }
+  - { key: A, mods: [CTRL], icon: left.png, label: "Move left" }
+  - { key: S, mods: [CTRL], icon: back.png, label: "Move backward" }
+  - { key: D, mods: [CTRL], icon: right.png, label: "Move right" }
+  - { key: E, mods: [CTRL], icon: jump.png, label: "Jump" }
+  - { key: SPACE, mods: [CTRL], icon: activate.png, label: "Activate" }
+
+  # Run (Left Shift) and sneak (Left Ctrl): on the key itself, without and with
+  # that key held
+  - { key: KC_LEFT_SHIFT, icon: run.png, label: "Run", region: [34, 40] }
+  - { key: KC_LEFT_SHIFT, mods: [SHIFT], icon: run.png, label: "Run", region: [34, 40] }
+  - { key: KC_LEFT_CTRL, icon: sneak.png, label: "Sneak", region: [34, 40] }
+  - { key: KC_LEFT_CTRL, mods: [CTRL], icon: sneak.png, label: "Sneak", region: [34, 40] }
+  - { key: KC_CAPS_LOCK, icon: alwaysrun.png, label: "Always run on / off", region: [34, 40] }
+  - { key: Q, icon: automove.png, label: "Auto move" }
+
+  # Weapon and spell
+  - { key: F, icon: weapon.png, label: "Ready weapon" }
+  - { key: R, icon: spell.png, label: "Ready spell" }
+  - { key: LBRACKET, icon: prevweapon.png, label: "Previous weapon" }
+  - { key: RBRACKET, icon: nextweapon.png, label: "Next weapon" }
+  - { key: MINUS, icon: prevspell.png, label: "Previous spell" }
+  - { key: EQUAL, icon: nextspell.png, label: "Next spell" }
+
+  # Quick keys 1 to 10
+  - { key: "1", icon: quick1.png, label: "Quick key 1" }
+  - { key: "2", icon: quick2.png, label: "Quick key 2" }
+  - { key: "3", icon: quick3.png, label: "Quick key 3" }
+  - { key: "4", icon: quick4.png, label: "Quick key 4" }
+  - { key: "5", icon: quick5.png, label: "Quick key 5" }
+  - { key: "6", icon: quick6.png, label: "Quick key 6" }
+  - { key: "7", icon: quick7.png, label: "Quick key 7" }
+  - { key: "8", icon: quick8.png, label: "Quick key 8" }
+  - { key: "9", icon: quick9.png, label: "Quick key 9" }
+  - { key: "0", icon: quick10.png, label: "Quick key 10" }
+  - { key: F1, icon: quickmenu.png, label: "Quick keys menu", region: [34, 40] }
+
+  # Windows and view
+  - { key: J, icon: journal.png, label: "Journal" }
+  - { key: T, icon: rest.png, label: "Rest" }
+  - { key: TAB, icon: pov.png, label: "First / third person" }
+  - { key: GRAVE, icon: console.png, label: "Console" }
+  - { key: F2, icon: postprocess.png, label: "Post-processing HUD", region: [34, 40] }
+  - { key: F10, icon: debug.png, label: "Debug window" }
+  - { key: F11, icon: hidehud.png, label: "HUD on / off" }
+  - { key: F12, icon: screenshot.png, label: "Take screenshot" }
+
+  # Saves
+  - { key: F5, icon: quicksave.png, label: "Quick save", region: [34, 40] }
+  - { key: F9, icon: quickload.png, label: "Quick load", region: [34, 40] }
