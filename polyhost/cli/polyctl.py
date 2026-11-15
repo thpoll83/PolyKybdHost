@@ -612,6 +612,60 @@ def _cmd_attention(client, args):
     return 0
 
 
+def _print_tutorial_state(state):
+    if not state:
+        print("no tutorial is running")
+        return
+    if state.get("finished"):
+        print(f"tutorial {state['id']}: {state['finished']}")
+        return
+    print(f"tutorial {state['id']}: step {state['step'] + 1} of {state['steps']}")
+    for line in state.get("say") or ():
+        print(f"  | {line}")
+    text = (state.get("text") or {}).get("en")
+    if text:
+        print(f"  {text}")
+    wait = state.get("wait") or {}
+    if state.get("remaining_s") is not None:
+        print(f"  ends in {state['remaining_s']} s")
+    elif state.get("auto"):
+        print(f"  ends when the keyboard reports: {wait.get('kind')} {wait.get('value')}")
+    else:
+        print(f"  ends with: polyctl tutorial next (waits for {wait.get('kind')})")
+    if state.get("ring_error"):
+        print(f"  no ring: {state['ring_error']}")
+
+
+def _cmd_tutorial(client, args):
+    """List, start, step through or stop a tutorial (services/tutorials)."""
+    cmd = args.tutorial_cmd or "list"
+    if cmd == "list":
+        info = client.call(protocol.M_TUTORIALS_LIST, {})
+        if getattr(args, "json", False):
+            print(json.dumps(info, indent=2))
+            return 0
+        protocol_version = info.get("protocol") or 0
+        for t in info.get("tutorials", []):
+            title = t["title"].get("en") or next(iter(t["title"].values()), "")
+            badge = "" if protocol_version >= t["min_protocol"] else \
+                f"  (needs firmware protocol {t['min_protocol']})"
+            print(f"  {t['category']:<10} {t['id']:<24} {title}{badge}")
+        if not info.get("tutorials"):
+            print("  (no tutorials)")
+        for e in info.get("errors", []):
+            print(f"  error: {e['path']}: {e['error']}")
+        print(f"user folder: {info.get('user_dir')}")
+        return 0
+    if cmd == "status":
+        _print_tutorial_state(client.call(protocol.M_TUTORIAL_STATE, {}))
+        return 0
+    if cmd == "start":
+        _print_tutorial_state(client.call(protocol.M_TUTORIAL_START, {"id": args.id}))
+        return 0
+    _print_tutorial_state(client.call(protocol.M_TUTORIAL_ACTION, {"action": cmd}))
+    return 0
+
+
 def _cmd_agents(client, args):
     """List, report, label or forget AI agent sessions (services/agents)."""
     if args.agents_cmd == "list":
@@ -1631,6 +1685,19 @@ def build_parser():
                              help="with --midi: forget which programs had the guide, so "
                                   "each MIDI program shows it again")
     p_attention.set_defaults(func=_cmd_attention)
+
+    p_tutorial = sub.add_parser(
+        "tutorial", help="list, start, step through or stop a tutorial (firmware v32+)")
+    tut_sub = p_tutorial.add_subparsers(dest="tutorial_cmd")
+    p_tut_list = tut_sub.add_parser("list", help="the tutorials, and script errors")
+    p_tut_list.add_argument("--json", action="store_true")
+    tut_sub.add_parser("status", help="the running tutorial's step")
+    p_tut_start = tut_sub.add_parser("start", help="start a tutorial by its id")
+    p_tut_start.add_argument("id")
+    tut_sub.add_parser("next", help="the next step (ends the tutorial after the last)")
+    tut_sub.add_parser("back", help="the step before")
+    tut_sub.add_parser("stop", help="end the tutorial")
+    p_tutorial.set_defaults(func=_cmd_tutorial)
 
     p_tap_terms = sub.add_parser(
         "tap-terms",
