@@ -63,13 +63,24 @@ jobs:
           POLYKYBD_REPO_URL: ${{ github.event.pull_request.head.repo.clone_url || format('{0}/{1}.git', github.server_url, github.repository) }}
           POLYKYBD_REF: ${{ github.head_ref || github.ref_name }}
           INSTALLER: ${{ github.workspace }}\scripts\install.ps1
+          CHECK_VARS: PYYAML_FORCE_LIBYAML,VIRTUAL_ENV,PATH
         # Started from runner.temp, so the installer does not find itself
         # inside a checkout and takes the clone path.
         working-directory: ${{ runner.temp }}
         run: |
           $start = Get-Date
-          & $env:INSTALLER
+          # Run it as `irm | iex` does, then check the session is as it was:
+          # the preference and every variable the installer sets.
+          $prefBefore = $ErrorActionPreference
+          $envBefore = @{}
+          foreach ($n in $env:CHECK_VARS.Split(",")) { $envBefore[$n] = [Environment]::GetEnvironmentVariable($n, "Process") }
+          Get-Content -Raw -Path $env:INSTALLER | Invoke-Expression
           Write-Host ("install.ps1 took {0:N0} s" -f ((Get-Date) - $start).TotalSeconds)
+          if ($ErrorActionPreference -ne $prefBefore) { throw "ErrorActionPreference changed to $ErrorActionPreference" }
+          foreach ($n in $envBefore.Keys) {
+            $now = [Environment]::GetEnvironmentVariable($n, "Process")
+            if ($now -ne $envBefore[$n]) { throw "$n changed: '$($envBefore[$n])' -> '$now'" }
+          }
 
       - name: Check the installed tree
         working-directory: ${{ runner.temp }}\PolyKybdHost

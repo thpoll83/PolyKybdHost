@@ -1,0 +1,87 @@
+# Autodesk Maya shortcut overlay for PolyKybd: Graph Editor. See SOURCES.md.
+#
+# Loaded only while the Maya mode reporter (maya-plugin/) reports
+# `maya://graph/...`, so these keys replace the viewport set (bindings.yaml).
+# Source: Maya 2026 help, Animation hotkeys (Graph Editor section), https://help.autodesk.com/cloudhelp/2026/ENU/Maya-KeyboardShortcuts/files/GUID-0639ADA0-EBE5-4703-A874-92C80E4A0516.htm
+# Only keys the page lists for this editor, plus the File, Undo and menu keys
+# that act everywhere in Maya. macOS adds the Cmd copies of the File keys and
+# of Undo / Redo, as in bindings.yaml.
+#
+# Regenerate:
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/maya/bindings_graph.yaml --preview /tmp/maya_preview
+app: maya
+match: [maya, maya.bin]
+output: maya_graph_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+program_icon: maya.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- Graph Editor section (Animation hotkeys, marked [GE]) ---
+  - { key: Z, mods: [ALT], icon: viewundo.png, label: "Undo view change" }
+  - { key: Y, mods: [ALT], icon: viewredo.png, label: "Redo view change" }
+  - { key: T, mods: [], icon: center_time.png, label: "Center current time" }
+  - { key: "/", mods: [ALT], icon: time_to_key.png, label: "Snap time marker to selected key" }
+  - { key: "1", mods: [], icon: ge_absolute.png, label: "Absolute view" }
+  - { key: "2", mods: [], icon: ge_stacked.png, label: "Stacked view" }
+  - { key: "3", mods: [], icon: ge_normalized.png, label: "Normalized view" }
+  - { key: H, mods: [], icon: lock_channel.png, label: "Lock curve channel" }
+  - { key: J, mods: [], icon: unlock_channel.png, label: "Unlock curve channel" }
+  - { key: D, mods: [], icon: easing.png, label: "Auto tangents" }
+  - { key: "9", mods: [SHIFT], icon: keys_left.png, label: "Move selected keys left" }
+  - { key: "0", mods: [SHIFT], icon: keys_right.png, label: "Move selected keys right" }
+  - { key: ".", mods: [CTRL, ALT], icon: selkey_next.png, label: "Select next key" }
+  - { key: ",", mods: [CTRL, ALT], icon: selkey_prev.png, label: "Select previous key" }
+
+  # --- keys (Animation Operations) ---
+  - { key: S, mods: [], icon: key_insert.png, label: "Set key" }
+  - { key: W, mods: [SHIFT], icon: key_move.png, label: "Key translate" }
+  - { key: E, mods: [SHIFT], icon: key_rotate.png, label: "Key rotate" }
+  - { key: R, mods: [SHIFT], icon: key_scale.png, label: "Key scale" }
+  - { key: W, mods: [CTRL, SHIFT], icon: ins_move.png, label: "Insert translate key" }
+  - { key: E, mods: [CTRL, SHIFT], icon: ins_rotate.png, label: "Insert rotate key" }
+  - { key: R, mods: [CTRL, SHIFT], icon: ins_scale.png, label: "Insert scale key" }
+  - { key: I, mods: [ALT], icon: key_insert_all.png, label: "Key on selected curve" }
+  - { key: ".", mods: [], icon: key_next.png, label: "Next key" }
+  - { key: ",", mods: [], icon: key_prev.png, label: "Previous key" }
+
+  # --- playback (Animation hotkeys, Playback Control) ---
+  - { key: V, mods: [ALT], icon: play.png, label: "Play / stop" }
+  - { key: V, mods: [ALT, SHIFT], icon: jump_start.png, label: "Go to min frame" }
+  - { key: ".", mods: [ALT], icon: frame_next.png, label: "Next frame" }
+  - { key: ",", mods: [ALT], icon: frame_prev.png, label: "Previous frame" }
+
+  # --- everywhere in Maya (All Maya Hotkeys: File, Edit, menus) ---
+  - { key: N, mods: [CTRL], icon: new.png, label: "New scene" }
+  - { key: O, mods: [CTRL], icon: open.png, label: "Open scene" }
+  - { key: S, mods: [CTRL], icon: save.png, label: "Save scene" }
+  - { key: S, mods: [CTRL, SHIFT], icon: saveas.png, label: "Save scene as" }
+  - { key: Q, mods: [CTRL], icon: quit.png, label: "Exit" }
+  - { key: Z, mods: [CTRL], icon: undo.png, label: Undo }
+  - { key: Y, mods: [CTRL], icon: redo.png, label: Redo }
+  - { key: SPACE, mods: [], icon: space_hotbox.png, mode: alpha, region: [72, 40], label: "Hotbox (hold); single / multi-pane (tap)" }
+  - { key: SPACE, mods: [CTRL], icon: fullpanels.png, label: "Full-screen panels" }
+  - { key: A, mods: [CTRL], icon: attributes.png, label: "Attribute Editor / Channel Box" }
+  - { key: F1, mods: [], icon: help.png, label: "Maya Help" }
+  - { key: F2, mods: [], icon: set_modeling.png, label: "Modeling menu set" }
+  - { key: F3, mods: [], icon: set_rigging.png, label: "Rigging menu set" }
+  - { key: F4, mods: [], icon: set_animation.png, label: "Animation menu set" }
+  - { key: F6, mods: [], icon: set_rendering.png, label: "Rendering menu set" }
+  - { key: N, mods: [GUI], icon: new.png, label: "New scene", only: [macos] }
+  - { key: O, mods: [GUI], icon: open.png, label: "Open scene", only: [macos] }
+  - { key: S, mods: [GUI], icon: save.png, label: "Save scene", only: [macos] }
+  - { key: S, mods: [GUI, SHIFT], icon: saveas.png, label: "Save scene as", only: [macos] }
+  - { key: Q, mods: [GUI], icon: quit.png, label: "Exit", only: [macos] }
+  - { key: Z, mods: [GUI], icon: undo.png, label: Undo, only: [macos] }
+  - { key: Y, mods: [GUI], icon: redo.png, label: Redo, only: [macos] }

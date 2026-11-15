@@ -227,9 +227,14 @@ class OpenRaBuildTest(unittest.TestCase):
         make_ra_files(cls.ra)
         cls.td.mkdir()
         make_game_files(cls.td)
+        # A developer's own OpenRA settings.yaml would move icons: these tests
+        # check the art only (the hotkeys: game_assets_openra_keys_test.py).
+        cls.no_keys = mock.patch("polyhost.services.game_assets.openra_keys.find", return_value=None)
+        cls.no_keys.start()
 
     @classmethod
     def tearDownClass(cls):
+        cls.no_keys.stop()
         cls.tmp.cleanup()
 
     def _check(self, spec_path, app, settings):

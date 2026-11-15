@@ -68,7 +68,7 @@ class TestPolyHostModes(unittest.TestCase):
              "Keycap Script", "Keycap Size", "Tap-Hold Timing…", "AI Agents",
              "Configure Keymap",
              "Updates", "Maintenance",
-             "Settings...", "Help && About", "Quit"])
+             "Integrations\u2026", "Settings...", "Help && About", "Quit"])
         # The flat command dump is gone, and so is the demo overlay sender.
         self.assertNotIn("All PolyKybd Commands", top)
         self.assertNotIn("Send Shortcut Overlay", top)
@@ -188,13 +188,14 @@ class TestPolyHostModes(unittest.TestCase):
         rows = _grab(proc.stdout, "FWD_MENU").split("|")
         self.assertEqual(rows[1], "Pause")
         self.assertEqual(rows[-1], "Quit")
-        for expected in ("Updates", "Settings...", "Help && About"):
+        for expected in ("Updates", "Integrations\u2026", "Settings...", "Help && About"):
             self.assertIn(expected, rows)
-        # The same Updates submenu as the tray app, holding the same two rows
-        # the forwarder can act on. They were top-level rows before.
+        # The same Updates submenu as the tray app. The terminal and editor
+        # setup moved to Integrations, as in the tray app.
         self.assertEqual(_grab(proc.stdout, "FWD_UPDATES").split("|"),
-                         ["Check for host update\u2026",
-                          "Set up the terminal and editors\u2026"])
+                         ["Check for host update\u2026"])
+        self.assertLess(rows.index("Integrations\u2026"), rows.index("Settings..."))
+        self.assertNotIn("Set Up Agent Hooks", rows)
         self.assertNotIn("Check for host update\u2026", rows)
         # The status row leads, and it names the target rather than the app.
         self.assertTrue(rows[0].endswith("192.168.1.50"), rows[0])
