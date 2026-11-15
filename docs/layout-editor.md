@@ -22,6 +22,9 @@ and two rounds were spent inferring that from the symptoms instead of asking.
 ## What the editor is
 
 - **Layout dialog** (`polyhost/gui/layout_dialog/`): fully implemented — layer switching re-renders all key labels from the cached buffer; clicking a key then selecting from the browser writes immediately to the device via `set_dynamic_keycode()` and keeps the local buffer in sync. `RenderableKey` carries `matrix_index` for row/col derivation.
+- **The changed key rings once** on the keyboard (cmd 47, protocol 32+), only when the
+  edited layer is the default layer. `PolyCore.keymap_set` does it, so `polyctl keymap
+  set` rings too. [`tutorials-plan.md`](tutorials-plan.md) → *Step 1*.
 
 ---
 

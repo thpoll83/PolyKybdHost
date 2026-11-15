@@ -3524,9 +3524,36 @@ class PolyCore(Observable):
             "keymap_buffer", lambda c: self.keeb.get_dynamic_buffer())
 
     def keymap_set(self, layer, row, col, keycode):
+        """Write one key and, when it is on the default layer, ring it once so the
+        change is visible on the board (docs/tutorials-plan.md, step 1)."""
+        try:
+            layer, row, col, keycode = int(layer), int(row), int(col), int(keycode)
+        except (TypeError, ValueError):
+            return False, f"Invalid key: {layer!r}, {row!r}, {col!r}, {keycode!r}"
         return self._device_call(
-            "keymap_set",
-            lambda c: self.keeb.set_dynamic_keycode(int(layer), int(row), int(col), int(keycode)))
+            "keymap_set", lambda c: self._keymap_set_and_ring(layer, row, col, keycode))
+
+    def _keymap_set_and_ring(self, layer, row, col, keycode):
+        """Worker: the write, then the ring. A ring that is refused or not supported
+        does not change the write's result."""
+        ok, msg = self.keeb.set_dynamic_keycode(layer, row, col, keycode)
+        if ok:
+            self._ring_edited_key(layer, row, col)
+        return ok, msg
+
+    def _ring_edited_key(self, layer, row, col):
+        """Worker: one ripple on (row, col), only on the default layer. On another
+        layer the keycap shows the old legend until that layer is held."""
+        if not self.keeb.supports("key_attention"):
+            return
+        ok, base = self.keeb.get_default_layer()
+        if not ok or base != layer:
+            return
+        from polyhost.device.poly_kybd import KEY_ATTENTION_PERIOD_MIN_MS
+        rok, rmsg = self._manual_ring(
+            lambda: self.keeb.key_attention(row, col, 1, KEY_ATTENTION_PERIOD_MIN_MS))
+        if not rok:
+            self.log.debug("No ring on the edited key (%d, %d): %s", row, col, rmsg)
 
     def get_fw_version(self):
         """Firmware version read LIVE from the keyboard (HID cmd 0x43).
