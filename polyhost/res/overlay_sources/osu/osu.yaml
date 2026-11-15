@@ -1,0 +1,106 @@
+# osu! (lazer) overlay for PolyKybd.
+#
+# Keys: the default bindings in osu.Game/Input/Bindings/GlobalActionContainer.cs
+# and osu.Game.Rulesets.Osu/OsuRuleset.cs of ppy/osu, release 2026.921.0 (tag
+# 2026.921.0-lazer), and the framework keys in
+# osu.Framework/Input/FrameworkActionContainer.cs of ppy/osu-framework 2026.921.0.
+# See SOURCES.md.
+#
+# The keys of the main menu, the song select, a song and a replay are drawn.
+# The beatmap editor keys are not: the editor is another mode of the same
+# process, which the host cannot detect. Where a key means one thing in the
+# song select and another during a song, SOURCES.md says which one is drawn.
+# A user who changes a binding in the game still sees the default here.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/osu/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/osu/osu.yaml --preview /tmp/osu_preview
+app: osu!
+match: ["osu!", "osu!.exe", sh.ppy.osu]
+output: osu_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for StepMania: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# The game's name drawn over the whole cell, without the ESC legend
+# (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # During a song (osu! ruleset)
+  - { key: Z, icon: k1.png, label: "Left button (K1)" }
+  - { key: X, icon: k2.png, label: "Right button (K2)" }
+  - { key: C, icon: smoke.png, label: "Smoke" }
+  - { key: SPACE, icon: skip.png, label: "Skip the intro" }
+  - { key: TAB, icon: leaderboard.png, label: "Show or hide the leaderboard" }
+  - { key: TAB, mods: [SHIFT], icon: hud.png, label: "Show or hide the interface" }
+  - { key: GRAVE, icon: retry.png, label: "Quick retry (hold)" }
+  - { key: R, mods: [CTRL], icon: retry.png, label: "Quick retry (hold)" }
+  - { key: GRAVE, mods: [CTRL], icon: quickexit.png, label: "Quick exit (hold)" }
+  - { key: EQUAL, icon: offsetup.png, label: "Audio offset up" }
+  - { key: MINUS, icon: offsetdown.png, label: "Audio offset down" }
+  - { key: F4, icon: scrollup.png, label: "Scroll speed up", region: [34, 40] }
+  - { key: F10, icon: mousebuttons.png, label: "Mouse buttons during a song, on or off", region: [30, 40] }
+
+  # Replay
+  - { key: COMMA, icon: stepback.png, label: "Replay: one frame back" }
+  - { key: DOT, icon: stepfwd.png, label: "Replay: one frame forward" }
+  - { key: H, mods: [CTRL], icon: replaysettings.png, label: "Replay settings" }
+
+  # Song select
+  - { key: F1, icon: mods.png, label: "Mod selection", region: [34, 40] }
+  - { key: F2, icon: random.png, label: "Random beatmap", region: [34, 40] }
+  - { key: F2, mods: [SHIFT], icon: prevrandom.png, label: "Previous random beatmap", region: [34, 40] }
+  - { key: F3, icon: options.png, label: "Beatmap options", region: [34, 40] }
+  - { key: BACKSPACE, icon: deselect.png, label: "Deselect all mods" }
+  - { key: UP, mods: [CTRL], icon: modspeedup.png, label: "Mod speed up" }
+  - { key: DOWN, mods: [CTRL], icon: modspeeddown.png, label: "Mod speed down" }
+  - { key: LEFT, mods: [SHIFT], icon: groupprev.png, label: "Expand the previous group" }
+  - { key: RIGHT, mods: [SHIFT], icon: groupnext.png, label: "Expand the next group" }
+  - { key: ENTER, mods: [SHIFT], icon: grouptoggle.png, label: "Open or close the group" }
+  - { key: DELETE, mods: [SHIFT], icon: deletebeatmap.png, label: "Delete the beatmap set" }
+
+  # Music and volume
+  - { key: F5, icon: nexttrack.png, label: "Next track", region: [34, 40] }
+  - { key: F6, icon: nowplaying.png, label: "Now playing", region: [34, 40] }
+  - { key: F4, mods: [CTRL], icon: mute.png, label: "Mute on or off", region: [34, 40] }
+  - { key: UP, mods: [ALT], icon: volup.png, label: "Volume up" }
+  - { key: DOWN, mods: [ALT], icon: voldown.png, label: "Volume down" }
+  - { key: LEFT, mods: [ALT], icon: meterprev.png, label: "Previous volume meter" }
+  - { key: RIGHT, mods: [ALT], icon: meternext.png, label: "Next volume meter" }
+
+  # Overlays
+  - { key: F8, icon: chat.png, label: "Chat", region: [34, 40] }
+  - { key: F9, icon: social.png, label: "Social (friends and users)", region: [34, 40] }
+  - { key: T, mods: [CTRL], icon: toolbar.png, label: "Show or hide the toolbar" }
+  - { key: B, mods: [CTRL], icon: beatmaplisting.png, label: "Beatmap listing" }
+  - { key: O, mods: [CTRL], icon: settings.png, label: "Settings", shared: false }
+  - { key: N, mods: [CTRL], icon: notifications.png, label: "Notifications" }
+  - { key: P, mods: [CTRL], icon: profile.png, label: "Profile" }
+  - { key: HOME, mods: [ALT], icon: home.png, label: "Main menu" }
+
+  # Skins and input
+  - { key: S, mods: [CTRL, SHIFT], icon: skineditor.png, label: "Skin editor" }
+  - { key: R, mods: [CTRL, SHIFT], icon: randomskin.png, label: "Random skin" }
+  - { key: E, mods: [CTRL, SHIFT], icon: skinprev.png, label: "Previous skin" }
+  - { key: T, mods: [CTRL, SHIFT], icon: skinnext.png, label: "Next skin" }
+  - { key: R, mods: [CTRL, ALT], icon: resetinput.png, label: "Reset the input settings" }
+
+  # Window and frame rate
+  - { key: F11, icon: fullscreen_f.png, label: "Toggle full screen", region: [30, 40] }
+  - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Toggle full screen" }
+  - { key: F12, icon: screenshot.png, label: "Take a screenshot", region: [30, 40] }
+  - { key: F7, mods: [CTRL], icon: framelimit.png, label: "Change the frame limiter", region: [34, 40] }
+  - { key: F11, mods: [CTRL], icon: framestats.png, label: "Frame statistics", region: [30, 40] }
