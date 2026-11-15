@@ -446,9 +446,17 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
     for Warcraft III, which reads no pictures, only the hotkeys of the installed
     language (EscMenuMainPanel.fdf, GlobalStrings.fdf, CommandStrings.txt in
     the MPQs) and of CustomKeys.txt, for `build.remap`; run on the German 1.22
-    files). `openra_keys.py` reads the player's OpenRA hotkeys from OpenRA's
-    settings.yaml; a spec names it with `bindings: openra`, a bindings source
-    kept apart from the art reader (`build.bindings_source`). `openra.py` lists the folders where OpenRA installs the
+    files; `generals/` for Command & Conquer Generals and Zero Hour, which also
+    reads no pictures: CommandMap.ini and the command-card letters of
+    Generals.csf of the installed language, from the BIG archives (`big.py`,
+    `strings.py`) or the loose files that replace them; run on the English
+    files of the Steam release of Zero Hour). `openra_keys.py` reads the
+    player's OpenRA hotkeys from OpenRA's settings.yaml and `sc2_keys.py` the
+    active StarCraft II hotkey profile (`.SC2Hotkeys`); a spec names one with
+    `bindings: openra` or `bindings: sc2`, a bindings source kept apart from the
+    art reader (`build.bindings_source`). When the art reader finds no game
+    files, `build.keys_only` still remaps the shipped overlay to such a
+    source's keys. `openra.py` lists the folders where OpenRA installs the
     original game files; the Red Alert, Tiberian Dawn and Dune 2000 readers
     search them. Its
     `__init__.py` declares `READER` (module, settings, folder and variant
