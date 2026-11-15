@@ -4,7 +4,7 @@ the front end for :mod:`polyhost.services.shell_title` and
 
 Terminals lists each shell this computer has (bash, zsh, PowerShell 7, Windows
 PowerShell 5.1) with its startup file and whether the title line is in it.
-Editors lists each editor (Vim, Neovim, Emacs, GDB) with the folder or init
+Editors lists each editor (Vim, Neovim, Emacs, GDB, DaVinci Resolve) with the folder or init
 file its plugin goes to. The status runs on a thread because asking PowerShell
 for ``$PROFILE`` starts a PowerShell process.
 """
@@ -63,7 +63,8 @@ def editor_label(editor):
     """The editor's name as the dialog shows it (product names, not translated)."""
     return {editor_plugins.VIM: "Vim", editor_plugins.NEOVIM: "Neovim",
             editor_plugins.EMACS: "Emacs", editor_plugins.GDB: "GDB",
-            editor_plugins.BINARYNINJA: "Binary Ninja"}.get(editor, editor)
+            editor_plugins.BINARYNINJA: "Binary Ninja",
+            editor_plugins.RESOLVE: "DaVinci Resolve"}.get(editor, editor)
 
 
 def editor_state_text(st):
