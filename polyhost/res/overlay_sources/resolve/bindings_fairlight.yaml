@@ -192,13 +192,13 @@ bindings:
   mods:
   - SHIFT
   icon: trimstart.png
-  label: Trim start
+  label: Trim start to playhead
   source: DaVinci Resolve 20 Reference Manual, Ch. 175
 - key: ']'
   mods:
   - SHIFT
   icon: trimend.png
-  label: Trim end
+  label: Trim end to playhead
   source: DaVinci Resolve 20 Reference Manual, Ch. 175
 - key: T
   mods:
@@ -210,43 +210,43 @@ bindings:
 - key: T
   mods:
   - SHIFT
-  icon: transition.png
+  icon: transition_audio.png
   label: Add audio transition
   source: DaVinci Resolve 20 Reference Manual, Ch. 175
 - key: ','
   mods: []
-  icon: nudgeleft.png
+  icon: nudge1_left.png
   label: Nudge 1 frame left
   source: DaVinci Resolve 20 Reference Manual, Ch. 175
 - key: .
   mods: []
-  icon: nudgeright.png
+  icon: nudge1_right.png
   label: Nudge 1 frame right
   source: DaVinci Resolve 20 Reference Manual, Ch. 175
 - key: ','
   mods:
   - SHIFT
-  icon: nudgeleft5.png
+  icon: nudge5_left.png
   label: Nudge 5 frames left
   source: DaVinci Resolve 20 Reference Manual, Ch. 175
 - key: .
   mods:
   - SHIFT
-  icon: nudgeright5.png
+  icon: nudge5_right.png
   label: Nudge 5 frames right
   source: DaVinci Resolve 20 Reference Manual, Ch. 175
 - key: LEFT
   mods:
   - CMDCTRL
   - ALT
-  icon: prevclip.png
+  icon: clip_prev.png
   label: Select previous clip
   source: DaVinci Resolve 20 Reference Manual, Ch. 172
 - key: RIGHT
   mods:
   - CMDCTRL
   - ALT
-  icon: nextclip.png
+  icon: clip_next.png
   label: Select next clip
   source: DaVinci Resolve 20 Reference Manual, Ch. 172
 - key: UP

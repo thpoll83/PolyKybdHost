@@ -132,7 +132,7 @@ bindings:
   source: DaVinci Resolve 20 Reference Manual, Ch. 29
 - key: B
   mods: []
-  icon: blade.png
+  icon: blade_mode.png
   label: Blade edit mode
   mode: alpha
   source: DaVinci Resolve 20 Reference Manual, Ch. 38
@@ -237,13 +237,13 @@ bindings:
   source: DaVinci Resolve 20 Reference Manual, Ch. 39
 - key: Y
   mods: []
-  icon: selfwd.png
+  icon: sel_fwd.png
   label: Select clips forward
   source: DaVinci Resolve 20 Reference Manual, Ch. 36
 - key: Y
   mods:
   - CMDCTRL
-  icon: selback.png
+  icon: sel_back.png
   label: Select clips backward
   source: DaVinci Resolve 20 Reference Manual, Ch. 36
 - key: X
@@ -255,13 +255,13 @@ bindings:
 - key: I
   mods:
   - SHIFT
-  icon: gotoin.png
+  icon: goto_in.png
   label: Go to In
   source: DaVinci Resolve 20 Reference Manual, Ch. 35
 - key: O
   mods:
   - SHIFT
-  icon: gotoout.png
+  icon: goto_out.png
   label: Go to Out
   source: DaVinci Resolve 20 Reference Manual, Ch. 35
 - key: L
@@ -293,12 +293,12 @@ bindings:
   source: DaVinci Resolve 20 Reference Manual, Ch. 35
 - key: ','
   mods: []
-  icon: nudgeleft.png
+  icon: nudge1_left.png
   label: Nudge 1 frame left
   source: DaVinci Resolve 20 Reference Manual, Ch. 38
 - key: .
   mods: []
-  icon: nudgeright.png
+  icon: nudge1_right.png
   label: Nudge 1 frame right
   source: DaVinci Resolve 20 Reference Manual, Ch. 38
 - key: '['
@@ -374,7 +374,7 @@ bindings:
   mods:
   - CMDCTRL
   icon: blade.png
-  label: Razor at playhead
+  label: Razor
   mode: alpha
   source: DaVinci Resolve 20 Reference Manual, Ch. 175 (Timeline > Razor)
 - key: G
@@ -394,7 +394,7 @@ bindings:
   mods:
   - CMDCTRL
   icon: addedit.png
-  label: Add edit
+  label: Split clip
   source: DaVinci Resolve 20 Reference Manual, Ch. 36
 - key: '='
   mods:

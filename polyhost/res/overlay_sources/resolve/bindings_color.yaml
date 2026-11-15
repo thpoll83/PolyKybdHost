@@ -156,7 +156,7 @@ bindings:
 - key: D
   mods:
   - CMDCTRL
-  icon: disable.png
+  icon: disable_node.png
   label: Enable / disable node
   source: DaVinci Resolve 20 Reference Manual, Ch. 127
 - key: D
@@ -169,14 +169,14 @@ bindings:
   mods:
   - ALT
   - SHIFT
-  icon: prevnode.png
+  icon: node_prev.png
   label: Previous node
   source: DaVinci Resolve 20 Reference Manual, Ch. 143
 - key: ''''
   mods:
   - ALT
   - SHIFT
-  icon: nextnode.png
+  icon: node_next.png
   label: Next node
   source: DaVinci Resolve 20 Reference Manual, Ch. 143
 - key: G
@@ -209,14 +209,14 @@ bindings:
   mods:
   - CMDCTRL
   - ALT
-  icon: nextstill.png
+  icon: still_next.png
   label: Next still
   source: DaVinci Resolve 20 Reference Manual, Ch. 141
 - key: B
   mods:
   - CMDCTRL
   - ALT
-  icon: prevstill.png
+  icon: still_prev.png
   label: Previous still
   source: DaVinci Resolve 20 Reference Manual, Ch. 141
 - key: Y
@@ -297,7 +297,7 @@ bindings:
 - key: ']'
   mods:
   - CMDCTRL
-  icon: statickey.png
+  icon: static_key.png
   label: Add static keyframe
   source: DaVinci Resolve 20 Reference Manual, Ch. 148
 - key: ']'
@@ -315,7 +315,7 @@ bindings:
 - key: F
   mods:
   - SHIFT
-  icon: cinema.png
+  icon: fullviewer.png
   label: Full screen viewer
   source: DaVinci Resolve 20 Reference Manual, Ch. 126
 - key: W
@@ -336,24 +336,24 @@ bindings:
   - ALT
   - SHIFT
   icon: zoom100.png
-  label: Zoom 100%
+  label: Viewer 100%
   source: DaVinci Resolve 20 Reference Manual, Ch. 127
 - key: C
   mods:
   - CMDCTRL
   icon: copy.png
-  label: Copy grade
+  label: Copy
   source: DaVinci Resolve 20 Reference Manual, Ch. 142
 - key: V
   mods:
   - CMDCTRL
   icon: paste.png
-  label: Paste grade
+  label: Paste
   source: DaVinci Resolve 20 Reference Manual, Ch. 142
 - key: V
   mods:
   - ALT
-  icon: pasteinsert.png
+  icon: pasteattr.png
   label: Paste attributes
   source: DaVinci Resolve 20 Reference Manual, Ch. 142
 - key: HOME

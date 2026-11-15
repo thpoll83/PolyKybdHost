@@ -117,7 +117,7 @@ bindings:
 - key: Z
   mods:
   - SHIFT
-  icon: zoomfit.png
+  icon: fittimeline.png
   label: Fit timeline
   source: DaVinci Resolve 20 Reference Manual, Ch. 186
 - key: O

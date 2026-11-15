@@ -157,3 +157,30 @@ Symbols** (Apache-2.0, weight 300), listed by name in `fetch_icons.py`
 (`PAGE_ICONS`), for example `nodeserial.png` <- `arrow_forward`,
 `wincircle.png` <- `circle`, `scopes.png` <- `monitoring`. Apache-2.0 is
 GPL-3.0-compatible. `pagemedia.png` (Shift+2) is `perm_media`.
+
+### One icon per action
+
+Two Resolve keys share an image only when they run the same command, on any page.
+Keys that run the same command have the same label (Ctrl+C and Ctrl+V on the Color
+page copy and paste the grade with the ordinary Copy and Paste; Ctrl+B is Razor and
+Ctrl+\ is Split clip on every page; Fusion's Ctrl+G is Group; Fusion's Ctrl+K and the
+Color page's Shift+` both toggle the onscreen controls; Fusion's Ctrl+1 and the Color
+page's Alt+Shift+Z both set the viewer to 100%; Fairlight's Shift+[ and Shift+] are
+the same Trim Start and Trim End as on the Edit page).
+
+Keys with a different action got their own image, all drawn by `fetch_icons.py`:
+
+- Material Symbols (Apache-2.0, weight 300): `nodeappend.png` <- `playlist_add`
+  (was `keyboard_tab`, Go to Out's glyph), `viewerfocus.png` <- `switch_video` (was
+  `flip`, Invert wipe's glyph), `resetgrade.png` <- `settings_backup_restore` (was
+  `layers_clear`, Bypass's glyph), `pasteattr.png` <- `format_paint`,
+  `fittimeline.png` <- `fit_page_width`, `fullviewer.png` <- `desktop_windows`,
+  `pastebase.png` <- `content_paste` (only inside `paste_instance.png`).
+- A glyph over a word (`WORDED`, DejaVu Sans Bold): `nudge1_*` (1 frame) and
+  `nudge5_*` (5 frames, apart from Fast forward and Fast reverse), `node_*`,
+  `clip_*`, `key_*` and `still_*` (the arrow says which way, the word says to what),
+  `disable_node` (the clip toggle is on D), `transition_audio` (AUD), `paste_instance`
+  (INST), `goto_in`, `goto_out` (apart from Import media), `sel_fwd`, `sel_back`
+  (apart from Add serial node and Add node before), `static_key` (apart from Stop).
+- A glyph with a badge (`BADGED`): `blade_mode.png` is the blade glyph with the
+  Selection-mode cursor, for the Blade tool on B; Ctrl+B (Razor) keeps the plain glyph.

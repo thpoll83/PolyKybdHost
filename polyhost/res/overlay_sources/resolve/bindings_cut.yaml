@@ -198,24 +198,24 @@ bindings:
   source: DaVinci Resolve 20 Reference Manual, Ch. 28
 - key: ','
   mods: []
-  icon: nudgeleft.png
+  icon: nudge1_left.png
   label: Nudge 1 frame left
   source: DaVinci Resolve 20 Reference Manual, Ch. 28
 - key: .
   mods: []
-  icon: nudgeright.png
+  icon: nudge1_right.png
   label: Nudge 1 frame right
   source: DaVinci Resolve 20 Reference Manual, Ch. 28
 - key: ','
   mods:
   - SHIFT
-  icon: nudgeleft5.png
+  icon: nudge5_left.png
   label: Nudge 5 frames left
   source: DaVinci Resolve 20 Reference Manual, Ch. 28
 - key: .
   mods:
   - SHIFT
-  icon: nudgeright5.png
+  icon: nudge5_right.png
   label: Nudge 5 frames right
   source: DaVinci Resolve 20 Reference Manual, Ch. 28
 - key: A
