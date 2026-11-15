@@ -47,6 +47,27 @@ Control groups: a digit selects the group, Ctrl creates it (a plus, as in the
 C&C set), Ctrl+Shift adds the selection to it (a plus in a ring), Shift adds
 the group to the selection (a plus in a square), Alt jumps to it (a sight).
 
+## Keys the player rebound
+
+Each binding names its OpenRA hotkey (`command:`, the name in
+`mods/common/hotkeys/*.yaml` or `mods/<mod>/hotkeys.yaml`). The defaults of all
+three specs were compared with those files at commit cd20761 (2026-11-14):
+every key matched.
+
+OpenRA writes a changed hotkey to the `Keys:` section of `settings.yaml` in its
+support folder (`%APPDATA%\OpenRA` or `Documents\OpenRA` on Windows,
+`~/Library/Application Support/OpenRA` on macOS, `$XDG_CONFIG_HOME/openra` or
+`~/.openra` on Linux, `~/.var/app/net.openra.OpenRA/config/openra` for the
+Flatpak). The section is shared by every mod. With the game's files on the
+machine, the build reads it (`game_assets/openra_keys.py`, named by
+`bindings: openra` in each spec's `game_assets:` block) and each icon moves to
+the player's key (`build.remap`). A hotkey the file does not list keeps its
+default key; one set to nothing, or to a key with no keycap (the numeric keypad,
+Meta), comes out blank. A key that moves between the primary and the `.combo`
+file (Ctrl+Shift, Alt+Shift) keeps its default key. The remap runs only when the
+reader finds the game's art files, which OpenRA itself needs to play the mod.
+Not checked on an OpenRA install.
+
 ## Left out
 
 - F1 to F12 and Ctrl+F1 to Ctrl+F12: the items of the open production tab,

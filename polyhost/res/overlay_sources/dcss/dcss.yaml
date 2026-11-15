@@ -1,0 +1,153 @@
+# Dungeon Crawl Stone Soup overlay for PolyKybd.
+#
+# Keys: the default key table in crawl-ref/source/cmd-keys.h of crawl/crawl,
+# release 0.34.1 (the main-view section). See SOURCES.md.
+#
+# The game gives a lower-case letter, an upper-case letter and Ctrl+letter
+# different commands, so three layers are drawn: plain, Shift and Ctrl. The
+# Shift layer's symbol keys (Shift+2 for @, Shift+, for <) follow the US layout.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/dcss/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/dcss/dcss.yaml --preview /tmp/dcss_preview
+app: dcss
+match: [crawl, crawl-tiles, crawl.exe, crawl-tiles.exe, "dungeon crawl stone soup - tiles"]
+output: dcss_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for fheroes2: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# The game's own icon, the cauldron, 32 x 32 placed 1:1.
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+
+  # --- Plain keys ---------------------------------------------------------
+  # Movement (vi keys) and the navigation cluster
+  - { key: H, icon: move_w.png, label: "Move west" }
+  - { key: J, icon: move_s.png, label: "Move south" }
+  - { key: K, icon: move_n.png, label: "Move north" }
+  - { key: L, icon: move_e.png, label: "Move east" }
+  - { key: Y, icon: move_nw.png, label: "Move north-west" }
+  - { key: U, icon: move_ne.png, label: "Move north-east" }
+  - { key: B, icon: move_sw.png, label: "Move south-west" }
+  - { key: N, icon: move_se.png, label: "Move south-east" }
+  - { key: HOME, icon: move_nw.png, label: "Move north-west" }
+  - { key: PGUP, icon: move_ne.png, label: "Move north-east" }
+  - { key: END, icon: move_sw.png, label: "Move south-west" }
+  - { key: PGDN, icon: move_se.png, label: "Move south-east" }
+  - { key: S, icon: wait.png, label: "Wait one turn" }
+  - { key: DOT, icon: wait.png, label: "Wait one turn" }
+  - { key: DELETE, icon: wait.png, label: "Wait one turn" }
+  - { key: 5, icon: rest.png, label: "Rest and search" }
+  - { key: O, icon: explore.png, label: "Auto-explore" }
+  - { key: TAB, icon: autofight.png, label: "Fight the nearest monster" }
+  # Items and actions
+  - { key: A, icon: ability.png, label: "Use an ability" }
+  - { key: C, icon: unequip.png, label: "Unequip an item" }
+  - { key: D, icon: drop.png, label: "Drop an item" }
+  - { key: E, icon: equip.png, label: "Equip an item" }
+  - { key: F, icon: fire.png, label: "Fire the quivered action" }
+  - { key: G, icon: pickup.png, label: "Pick up items" }
+  - { key: COMMA, icon: pickup.png, label: "Pick up items" }
+  - { key: I, icon: inventory.png, label: "Show the inventory" }
+  - { key: M, icon: skills.png, label: "Show skills" }
+  - { key: P, icon: autofire.png, label: "Fire at the nearest monster" }
+  - { key: Q, icon: quaff.png, label: "Quaff a potion" }
+  - { key: R, icon: read.png, label: "Read a scroll" }
+  - { key: T, icon: shout.png, label: "Shout or command allies" }
+  - { key: V, icon: attack.png, label: "Attack with the primary weapon" }
+  - { key: W, icon: wield.png, label: "Wield a weapon" }
+  - { key: X, icon: look.png, label: "Look around" }
+  - { key: Z, icon: cast.png, label: "Cast a spell" }
+  - { key: 0, icon: repeat.png, label: "Repeat a command several times" }
+  - { key: INSERT, icon: repeat.png, label: "Repeat a command several times" }
+  - { key: GRAVE, icon: again.png, label: "Do the previous command again" }
+  - { key: SEMICOLON, icon: inspectfloor.png, label: "Examine the items here" }
+  - { key: EQUAL, icon: adjust.png, label: "Reassign inventory or spell letters" }
+  - { key: QUOTE, icon: weaponswap.png, label: "Swap between weapons a and b" }
+  - { key: LBRACKET, icon: listarmour.png, label: "List worn armour" }
+  - { key: RBRACKET, icon: swapquiver.png, label: "Swap to the previous quiver action" }
+  - { key: BACKSLASH, icon: known.png, label: "List known items" }
+  - { key: F1, icon: gamemenu.png, label: "Game menu", region: [34, 40] }
+
+  # --- Shift --------------------------------------------------------------
+  - { key: H, mods: [SHIFT], icon: run_w.png, label: "Run west" }
+  - { key: J, mods: [SHIFT], icon: run_s.png, label: "Run south" }
+  - { key: K, mods: [SHIFT], icon: run_n.png, label: "Run north" }
+  - { key: L, mods: [SHIFT], icon: run_e.png, label: "Run east" }
+  - { key: Y, mods: [SHIFT], icon: run_nw.png, label: "Run north-west" }
+  - { key: U, mods: [SHIFT], icon: run_ne.png, label: "Run north-east" }
+  - { key: B, mods: [SHIFT], icon: run_sw.png, label: "Run south-west" }
+  - { key: N, mods: [SHIFT], icon: run_se.png, label: "Run south-east" }
+  - { key: A, mods: [SHIFT], icon: mutations.png, label: "Show mutations" }
+  - { key: C, mods: [SHIFT], icon: closedoor.png, label: "Close a door" }
+  - { key: D, mods: [SHIFT], icon: droplast.png, label: "Drop the items picked up last" }
+  - { key: E, mods: [SHIFT], icon: experience.png, label: "Show experience" }
+  - { key: F, mods: [SHIFT], icon: throw.png, label: "Fire or throw an inventory item" }
+  - { key: G, mods: [SHIFT], icon: travel.png, label: "Travel to another level" }
+  - { key: I, mods: [SHIFT], icon: spells.png, label: "List memorised spells" }
+  - { key: M, mods: [SHIFT], icon: memorise.png, label: "Memorise a spell" }
+  - { key: O, mods: [SHIFT], icon: opendoor.png, label: "Open a door" }
+  - { key: P, mods: [SHIFT], icon: puton.png, label: "Put on jewellery" }
+  - { key: Q, mods: [SHIFT], icon: quiver.png, label: "Choose the quiver action" }
+  - { key: R, mods: [SHIFT], icon: remove.png, label: "Remove jewellery" }
+  - { key: S, mods: [SHIFT], icon: save.png, label: "Save the game and exit" }
+  - { key: T, mods: [SHIFT], icon: takeoff.png, label: "Take off armour" }
+  - { key: V, mods: [SHIFT], icon: evoke.png, label: "Evoke an item" }
+  - { key: W, mods: [SHIFT], icon: wear.png, label: "Wear armour" }
+  - { key: X, mods: [SHIFT], icon: map.png, label: "Show the level map" }
+  - { key: Z, mods: [SHIFT], icon: forcecast.png, label: "Cast a spell without a target check" }
+  - { key: TAB, mods: [SHIFT], icon: autofire.png, label: "Fire at the nearest monster" }
+  - { key: COMMA, mods: [SHIFT], icon: upstairs.png, label: "Go up the stairs" }
+  - { key: DOT, mods: [SHIFT], icon: downstairs.png, label: "Go down the stairs" }
+  - { key: 1, mods: [SHIFT], icon: annotate.png, label: "Annotate the level" }
+  - { key: 2, mods: [SHIFT], icon: status.png, label: "Show the character status" }
+  - { key: 3, mods: [SHIFT], icon: dump.png, label: "Write the character to a file" }
+  - { key: 4, mods: [SHIFT], icon: gold.png, label: "Show the gold" }
+  - { key: 5, mods: [SHIFT], icon: resists.png, label: "Show resistances" }
+  - { key: 6, mods: [SHIFT], icon: religion.png, label: "Show the religion screen" }
+  - { key: 9, mods: [SHIFT], icon: quiverprev.png, label: "Previous quiver action" }
+  - { key: 0, mods: [SHIFT], icon: quivernext.png, label: "Next quiver action" }
+  - { key: SEMICOLON, mods: [SHIFT], icon: note.png, label: "Add a note to the character file" }
+  - { key: QUOTE, mods: [SHIFT], icon: jewellery.png, label: "List worn jewellery" }
+  - { key: LBRACKET, mods: [SHIFT], icon: inscribe.png, label: "Inscribe an item" }
+  - { key: RBRACKET, mods: [SHIFT], icon: runes.png, label: "List collected runes" }
+  - { key: BACKSLASH, mods: [SHIFT], icon: terrain.png, label: "Show only the terrain" }
+  - { key: SLASH, mods: [SHIFT], icon: help.png, label: "List of commands" }
+  - { key: GRAVE, mods: [SHIFT], icon: gamemenu.png, label: "Game menu", region: [34, 40] }
+
+  # --- Ctrl ---------------------------------------------------------------
+  - { key: H, mods: [CTRL], icon: attack_w.png, label: "Attack west without moving" }
+  - { key: J, mods: [CTRL], icon: attack_s.png, label: "Attack south without moving" }
+  - { key: K, mods: [CTRL], icon: attack_n.png, label: "Attack north without moving" }
+  - { key: L, mods: [CTRL], icon: attack_e.png, label: "Attack east without moving" }
+  - { key: Y, mods: [CTRL], icon: attack_nw.png, label: "Attack north-west without moving" }
+  - { key: U, mods: [CTRL], icon: attack_ne.png, label: "Attack north-east without moving" }
+  - { key: B, mods: [CTRL], icon: attack_sw.png, label: "Attack south-west without moving" }
+  - { key: N, mods: [CTRL], icon: attack_se.png, label: "Attack south-east without moving" }
+  - { key: A, mods: [CTRL], icon: autopickup.png, label: "Toggle automatic pickup" }
+  - { key: C, mods: [CTRL], icon: clearmap.png, label: "Clear the level map" }
+  - { key: D, mods: [CTRL], icon: macromenu.png, label: "Macro menu" }
+  - { key: E, mods: [CTRL], icon: macroadd.png, label: "Add a macro" }
+  - { key: F, mods: [CTRL], icon: stashes.png, label: "Search the known items" }
+  - { key: G, mods: [CTRL], icon: travel.png, label: "Travel to another level" }
+  - { key: O, mods: [CTRL], icon: overview.png, label: "Dungeon overview" }
+  - { key: P, mods: [CTRL], icon: messages.png, label: "Show earlier messages" }
+  - { key: Q, mods: [CTRL], icon: quit.png, label: "Quit without saving" }
+  - { key: R, mods: [CTRL], icon: redraw.png, label: "Redraw the screen" }
+  - { key: S, mods: [CTRL], icon: savenow.png, label: "Save and exit without a prompt" }
+  - { key: W, mods: [CTRL], icon: waypoint.png, label: "Set a travel waypoint" }
+  - { key: X, mods: [CTRL], icon: fullview.png, label: "List everything in view" }
+  - { key: Z, mods: [CTRL], icon: suspend.png, label: "Suspend the game" }

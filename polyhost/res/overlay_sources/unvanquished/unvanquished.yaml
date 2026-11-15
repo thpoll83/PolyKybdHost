@@ -1,0 +1,78 @@
+# Unvanquished overlay for PolyKybd.
+#
+# Keys: the default bindings in pkg/unvanquished_src.dpkdir/presets/input/wasd.cfg
+# of Unvanquished, release 0.56.2 (default.cfg loads that preset). See SOURCES.md.
+#
+# Only the keys bound for every team are drawn. The keys bound for the human
+# team alone (1, F, G, R) stay blank and are listed in SOURCES.md. Ctrl, Shift
+# and Alt have no overlay cell. A user who rebinds a key in the game still sees
+# the default here.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/unvanquished/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/unvanquished/unvanquished.yaml --preview /tmp/unvanquished_preview
+app: unvanquished
+match: [daemon, daemon.exe, daemon-vulkan, unvanquished, net.unvanquished.unvanquished]
+output: unvanquished_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for Xonotic: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# The game's name drawn over the whole cell, without the ESC legend
+# (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Movement
+  - { key: W, icon: forward.png, label: "Move forward" }
+  - { key: S, icon: back.png, label: "Move back" }
+  - { key: A, icon: left.png, label: "Strafe left" }
+  - { key: D, icon: right.png, label: "Strafe right" }
+  - { key: SPACE, icon: jump.png, label: "Jump" }
+  - { key: DELETE, icon: centerview.png, label: "Centre the view" }
+
+  # Actions
+  - { key: Q, icon: activate.png, label: "Use (humans: armoury, aliens: evolve)" }
+  - { key: E, icon: deconstruct.png, label: "Deconstruct" }
+  - { key: C, icon: taunt.png, label: "Taunt" }
+
+  # Menus
+  - { key: V, icon: vsay.png, label: "Voice message menu" }
+  - { key: B, icon: beacon.png, label: "Beacon menu" }
+  - { key: N, icon: bottactic.png, label: "Bot tactic menu" }
+
+  # Chat
+  - { key: T, icon: chat.png, label: "Public chat" }
+  - { key: ENTER, icon: chat.png, label: "Public chat" }
+  - { key: Y, icon: teamchat.png, label: "Team chat" }
+  - { key: ENTER, mods: [SHIFT], icon: teamchat.png, label: "Team chat" }
+  - { key: U, icon: adminchat.png, label: "Admin chat" }
+
+  # Spectating
+  - { key: BACKSPACE, icon: follow.png, label: "Follow a player" }
+  - { key: HOME, icon: followprev.png, label: "Follow previous player" }
+  - { key: END, icon: follownext.png, label: "Follow next player" }
+
+  # Client
+  - { key: P, icon: pause.png, label: "Pause" }
+  - { key: PAUSE, icon: pause.png, label: "Pause" }
+  - { key: GRAVE, icon: console.png, label: "Console" }
+  - { key: TAB, icon: scoreboard.png, label: "Scoreboard" }
+  - { key: F1, icon: voteyes.png, label: "Vote yes", region: [34, 40] }
+  - { key: F2, icon: voteno.png, label: "Vote no", region: [34, 40] }
+  - { key: F3, icon: teamvoteyes.png, label: "Team vote yes", region: [34, 40] }
+  - { key: F4, icon: teamvoteno.png, label: "Team vote no", region: [34, 40] }
+  - { key: F11, icon: screenshot.png, label: "Screenshot (JPEG)", region: [30, 40] }
+  - { key: F11, mods: [SHIFT], icon: screenshot.png, label: "Screenshot (PNG)", region: [30, 40] }

@@ -50,6 +50,17 @@ ICONS = {
     "music": "fa:music",
     "sound": "fa:volume-high",
     "screenshot": "fa:camera",
+    "quicksave": "fa:file-pen",
+    # Minimap and formation (Alt keys)
+    "signal": "fa:location-dot",
+    "allycolors": "fa:palette",
+    "formation": "fa:table-cells",
+    # Unit commands on every command card
+    "attack": "gi:lorc/crossed-swords",
+    "move": "gi:lorc/boot-prints",
+    "stop": "fa:hand",
+    "hold": "gi:lorc/checked-shield",
+    "patrol": "fa:right-left",
     # Chat
     "chat": "gi:delapouite/chat-bubble",
     "chatall": "gi:delapouite/megaphone",
@@ -71,9 +82,12 @@ GROUP_UNITS = {
 }
 
 # Key area of each icon, from warcraft3.yaml; the default is 40 x 40.
-SIZES = {"hero1": (34, 40), "hero2": (34, 40), "hero3": (34, 40), "idleworker": (34, 40)}
+SIZES = {"hero1": (34, 40), "hero2": (34, 40), "hero3": (34, 40), "idleworker": (34, 40),
+         "quicksave": (34, 40)}
 # Solid icons that read heavier than the rest: drawn in a smaller box.
 INK = {"save": (34, 34), "load": (34, 34), "help": (34, 34), "chat": (34, 34),
+       "quicksave": (30, 34), "signal": (34, 34), "allycolors": (34, 34), "formation": (34, 34),
+       "stop": (34, 34),
        "zoomin": (30, 30), "zoomout": (30, 30), "music": (30, 30), "screenshot": (30, 30)}
 # Insert and Delete (rotate the camera): a person with an arrow around their
 # feet, drawn by rotate_icons() from this Font Awesome icon.
