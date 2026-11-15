@@ -1486,6 +1486,13 @@ code:
 # "Minecraft" and "Minecraft*" are two keys. The titles are from the Minecraft
 # Wiki, not checked on an install.
 #
+# Mindustry started from its jar (`java -jar Mindustry.jar`, and the Flatpak
+# com.github.Anuken.Mindustry, which runs the jar in the runtime's JVM) is a
+# `java` process too. Its window title is "Mindustry" (DesktopLauncher.java,
+# v160.7), so the branch key `Mindustry` routes it; the `title:` inside the
+# branch keeps other programs whose title starts with that word off the set
+# (overlay_sources/mindustry/). Not checked on an install.
+#
 # Ghidra runs in a plain JVM too (`java` on X11 and, unverified, on macOS when
 # the Dock name is not reported). Its CodeBrowser window is titled
 # "CodeBrowser: <project>:/<program>"; the `titles-startswith` sub-maps below
@@ -1508,6 +1515,9 @@ java:
     "Shattered Pixel Dungeon": &spd_branch
       overlay: shattered_pixel_dungeon_template.mods.png
     "Minecraft*": *minecraft_java_branch
+    Mindustry: &mindustry_branch
+      title: '^Mindustry$'
+      overlay: [mindustry_template.mods.png, mindustry_template.combo.mods.png]
     "CodeBrowser:":
       overlay: &ghidra_win [ghidra_template.mods.png, ghidra_template.combo.mods.png]
     # The title is exactly "Unciv". The `title:` keeps an IDE window of a
@@ -1530,6 +1540,7 @@ java:
         Minecraft: *minecraft_java_branch
         "Shattered Pixel Dungeon": *spd_branch
         "Minecraft*": *minecraft_java_branch
+        Mindustry: *mindustry_branch
         "CodeBrowser:":
           overlay: &ghidra_mac [ghidra_template_mac.mods.png, ghidra_template_mac.combo.mods.png,
                                 ghidra_template_mac.extra.mods.png]
@@ -1548,6 +1559,7 @@ java:
         Minecraft: *minecraft_java_branch
         "Shattered Pixel Dungeon": *spd_branch
         "Minecraft*": *minecraft_java_branch
+        Mindustry: *mindustry_branch
         "CodeBrowser:":
           overlay: *ghidra_win
         Unciv: *unciv_java_branch
@@ -1560,6 +1572,7 @@ java:
         Minecraft: *minecraft_java_branch
         "Shattered Pixel Dungeon": *spd_branch
         "Minecraft*": *minecraft_java_branch
+        Mindustry: *mindustry_branch
         "CodeBrowser:":
           overlay: *ghidra_win
         Unciv: *unciv_java_branch
@@ -1572,6 +1585,7 @@ java:
         Minecraft: *minecraft_java_branch
         "Shattered Pixel Dungeon": *spd_branch
         "Minecraft*": *minecraft_java_branch
+        Mindustry: *mindustry_branch
         "CodeBrowser:":
           overlay: *ghidra_win
 # Shattered Pixel Dungeon started from its .jar (`java -jar`) has the window
@@ -1588,6 +1602,8 @@ java:
 # mode); the "fg" and "debug" modes use java.exe, which the `java` entry above
 # routes. Only the CodeBrowser window gets the set; the project window
 # ("Ghidra: <project>") does not.
+# Mindustry: `javaw -jar Mindustry.jar` on Windows, title "Mindustry".
+# Every other `javaw` program matches none of them and stays unmatched.
 # Unciv: the jar started with javaw.exe; its window title is "Unciv".
 # FreeCol: started with javaw.exe; its window title is "FreeCol <version>".
 # Every other `javaw` program matches none of these and stays unmatched.
@@ -1598,6 +1614,7 @@ javaw:
     Minecraft: *minecraft_java_branch
     "Shattered Pixel Dungeon": *spd_branch
     "Minecraft*": *minecraft_java_branch
+    Mindustry: *mindustry_branch
     Unciv: *unciv_java_branch
     FreeCol: *freecol_java_branch
 # Ghidra under its own name. Linux: on GNOME and KDE the host reports WM_CLASS,
@@ -3904,6 +3921,44 @@ everything:
 # build, so there is no macOS name. Names not checked on an install.
 dota2,steam_app_570:
   overlay: dota2_template.mods.png
+# Luanti, the voxel game engine named Minetest up to 5.9
+# (overlay_sources/luanti/luanti.yaml). `luanti` is the CMake project name and
+# the desktop file's Exec= and StartupWMClass= (release 5.18.0), luanti.exe on
+# Windows; `minetest` and net.minetest.minetest are the names before the rename.
+# Names not checked on an install.
+luanti,minetest,org.luanti.luanti,net.minetest.minetest:
+  overlay: luanti_template.mods.png
+# Mindustry (overlay_sources/mindustry/mindustry.yaml). The packaged builds
+# (itch.io, Steam) start the game from a launcher named after `appName`
+# (build.gradle, v160.7): Mindustry.exe on Windows, `Mindustry` on Linux, and
+# the Mindustry app on macOS. The jar and the Flatpak run in `java` / `javaw`,
+# which the `java` and `javaw` entries route by the window title "Mindustry".
+# com.github.anuken.mindustry is the Flatpak id, for a platform that reports the
+# app id. Names not checked on an install.
+mindustry,com.github.anuken.mindustry:
+  overlay: [mindustry_template.mods.png, mindustry_template.combo.mods.png]
+# Veloren (overlay_sources/veloren/veloren.yaml). `veloren-voxygen` is the game
+# client's binary (voxygen/Cargo.toml, release v0.18.0; the launcher Airshipper
+# starts it too). The window's app id is net.veloren.veloren and its X11
+# instance name `veloren` (voxygen/src/window.rs). Names not checked on an
+# install.
+veloren-voxygen,veloren,net.veloren.veloren:
+  overlay: veloren_template.mods.png
+# OpenMW, the free engine for The Elder Scrolls III: Morrowind
+# (overlay_sources/openmw/openmw.yaml). `openmw` is the executable target in
+# apps/openmw/CMakeLists.txt (release openmw-0.51.0), openmw.exe on Windows;
+# org.openmw.openmw is the Flathub id. The launcher (openmw-launcher) and the
+# editor (openmw-cs) get no set. Names not checked on an install.
+openmw,org.openmw.openmw:
+  overlay: openmw_template.mods.png
+# OpenXcom, the free engine for UFO: Enemy Unknown and X-COM: Terror from the
+# Deep (overlay_sources/openxcom/openxcom.yaml). `openxcom` is the executable
+# target in src/CMakeLists.txt (master, commit 4a4bae5), OpenXcom.exe on
+# Windows; `openxcomex` is OpenXcomEx.exe of OpenXcom Extended. Where a key
+# differs between the two main screens the set shows the Battlescape meaning.
+# Names not checked on an install.
+openxcom,openxcomex:
+  overlay: openxcom_template.mods.png
 # Xonotic (overlay_sources/xonotic/xonotic.yaml). The binary names are the release
 # archive layout in misc/tools/all/release.subr (0.8.6, and 0.7.0 for the
 # -x64 and -sdl .exe names); xonotic-sdl and xonotic-glx are the Exec= lines of
