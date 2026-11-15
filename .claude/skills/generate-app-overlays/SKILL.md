@@ -104,6 +104,26 @@ Prefer machine-readable / official sources, in order:
 - The app's **documented shortcut reference** (official docs page) — `WebFetch`
   it and extract the table.
 - The app's **source repository** (menu/command tables often list accelerators).
+- ⚠️ **A game: its own data files, not a wiki or a manual.** Hotkeys are often
+  kept per LANGUAGE, so a guide's letter can be wrong on the player's install.
+  German Warcraft III quits with Alt+B where the manual says Alt+Q, and moves
+  with B where English uses M; C&C Generals' `Data\INI\CommandMap.ini` in
+  `INIZH.big` is empty, and the real one is `Data\<Language>\CommandMap.ini` in
+  `<Language>ZH.big` (2026-11-14). Sources used so far: UT2004
+  `System/DefUser.ini`; Warcraft III `Units\CommandStrings.txt`,
+  `UI\FrameDef\UI\EscMenuMainPanel.fdf` (`ControlShortcutKey`) and the
+  `ALT-<key>` in `UI\FrameDef\GlobalStrings.fdf` tooltips, inside the MPQs;
+  OpenRA `mods/common/hotkeys/*.yaml` and `mods/<mod>/hotkeys.yaml`; Generals
+  `CommandMap.ini` and the `&` letters of `generals.csf`. Ask the maintainer for
+  the files (`evaluate-game-asset-reader` → *Get real files*) and cite the file
+  in `SOURCES.md`.
+  - Give each binding a `command:` with the game's own name for it
+    (`SwitchWeapon 4`, `CmdMove`, `AttackMove`, `SELECT_TEAM1`). It costs nothing
+    now, and a key-binding reader can then move the icon to the player's key
+    (`add-game-key-bindings`).
+  - When the game binds the same command to more keys than the overlay labels
+    (UT2004's arrow keys and `,`/`.` next to WASD), list them under `undrawn:`
+    on that binding, so a remap counts them as defaults and never draws on them.
 
 Do a **coverage pass, not a sample**: enumerate the app's *whole* Ctrl row (and
 notable Shift/Alt/F-key shortcuts) up front and fill the gaps in one go — users
