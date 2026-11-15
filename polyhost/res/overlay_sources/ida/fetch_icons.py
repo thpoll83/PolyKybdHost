@@ -133,6 +133,7 @@ COMPOSITES = {
     "split_var": ("editfield", "SPLT"),
     "del_arg": ("function", "-ARG"),
     "ret_type": ("type_retype", "RET"),
+    "decomp_newwin": ("jump_newwin", "C"),
     # jumps
     "jump_name": ("goto", "NAME"),
     "jump_func": ("goto", "FUNC"),
@@ -204,6 +205,7 @@ COMPOSITES = {
     "item_del": ("g_list", "DEL"),
     "item_edit": ("g_list", "EDIT"),
     "list_filter": ("g_search", "FLTR"),
+    "refresh_list": ("refresh", "LIST"),
 }
 # Alt+1..9 (Control+1..9 on macOS): switch to window N.
 COMPOSITES.update({f"window_{n}": (f"text:{n}", "WIN") for n in range(1, 10)})

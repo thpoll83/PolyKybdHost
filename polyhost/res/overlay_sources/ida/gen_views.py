@@ -74,27 +74,31 @@ _WORD = {"region": [40, 40], "mode": "alpha"}
 
 # The pseudocode window's own keys. Source: the Hex-Rays decompiler manual,
 # "Interactive operation" and its cmd_*.md pages (IDA 9.2); see SOURCES.md.
+# One icon per action across all IDA sets: a key that does the same thing as
+# a key of bindings.yaml (N, Shift+-, X, /, \, =, Alt+Y) has the same icon and
+# label; a key that does something else has its own icon (Ctrl+Enter opens a
+# new pseudocode window, Alt+Enter a new disassembly window).
 PSEUDOCODE = [
-    {"key": "N", "icon": "label.png", "label": "Rename variable"},
+    {"key": "N", "icon": "label.png", "label": "Rename"},
     {"key": "Y", "icon": "type_retype.png", "label": "Set type", **_WORD},
     {"key": "H", "icon": "op_hexdec.png", "label": "Hex / decimal", **_WORD},
     {"key": "R", "icon": "op_char.png", "label": "Character", **_WORD},
     {"key": "M", "icon": "op_enum.png", "label": "Enum member", **_WORD},
     {"key": "T", "icon": "op_structofs.png", "label": "Structure offset", **_WORD},
-    {"key": "-", "mods": ["SHIFT"], "icon": "op_sign.png", "label": "Invert sign (_)", **_WORD},
-    {"key": "/", "icon": "comment_pseudo.png", "label": "Comment", **_WORD},
+    {"key": "-", "mods": ["SHIFT"], "icon": "op_sign.png", "label": "Change sign (_)", **_WORD},
+    {"key": "/", "icon": "comment_pseudo.png", "label": "Comment (pseudocode)", **_WORD},
     {"key": "INSERT", "icon": "comment_block.png", "label": "Block comment", **_WORD},
-    {"key": "X", "icon": "references.png", "label": "Jump to cross reference"},
-    {"key": "\\", "icon": "casts.png", "label": "Hide casts"},
-    {"key": "=", "icon": "map_var.png", "label": "Map to another variable", **_WORD},
+    {"key": "X", "icon": "references.png", "label": "Cross references to operand"},
+    {"key": "\\", "icon": "casts.png", "label": "Hide casts (pseudocode)"},
+    {"key": "=", "icon": "map_var.png", "label": "Map variable (pseudocode)", **_WORD},
     {"key": "S", "mods": ["SHIFT"], "icon": "split_var.png", "label": "Split variable", **_WORD},
-    {"key": "Y", "mods": ["ALT"], "icon": "union_member.png", "label": "Select union field", **_WORD},
+    {"key": "Y", "mods": ["ALT"], "icon": "union_member.png", "label": "Select union member", **_WORD},
     {"key": "DELETE", "mods": ["SHIFT"], "icon": "del_arg.png", "label": "Delete function argument", **_WORD},
     {"key": "R", "mods": ["CMDCTRL", "SHIFT"], "icon": "ret_type.png", "label": "Add/delete return type", **_WORD},
     {"key": "5", "mods": ["SHIFT"], "icon": "paren_pair.png", "label": "Jump to paired paren (%)", **_WORD},
     {"key": "TAB", "icon": "asm_toggle.png", "label": "Jump to disassembly", **_WORD},
     {"key": "F5", "icon": "refresh.png", "label": "Refresh pseudocode"},
-    {"key": "ENTER", "mods": ["CMDCTRL"], "icon": "jump_newwin.png", "label": "Decompile in a new window"},
+    {"key": "ENTER", "mods": ["CMDCTRL"], "icon": "decomp_newwin.png", "label": "Decompile in a new window", **_WORD},
     {"key": "G", "icon": "goto.png", "label": "Jump to address"},
     {"key": "F2", "icon": "breakpoint.png", "label": "Toggle breakpoint"},
     {"key": "F4", "icon": "run_to_cursor.png", "label": "Run to cursor", **_WORD},
@@ -118,7 +122,7 @@ LIST = [
     {"key": "INSERT", "icon": "item_add.png", "label": "Insert item", **_WORD},
     {"key": "DELETE", "icon": "item_del.png", "label": "Delete item", **_WORD},
     {"key": "E", "mods": ["CMDCTRL"], "icon": "item_edit.png", "label": "Edit item", **_WORD},
-    {"key": "U", "mods": ["CMDCTRL"], "icon": "refresh.png", "label": "Refresh list"},
+    {"key": "U", "mods": ["CMDCTRL"], "icon": "refresh_list.png", "label": "Refresh list", **_WORD},
     {"key": "F", "mods": ["CMDCTRL"], "icon": "list_filter.png", "label": "Quick filter", **_WORD},
 ]
 

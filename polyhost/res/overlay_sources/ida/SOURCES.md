@@ -211,3 +211,19 @@ carry only the Hex-Rays company mark), so the mark is traced from the public
 domain painting rather than from the IDA icon. The trace lights the dark hair
 and facial features, which keeps the face recognisable at 32x32; the light-lit
 trace was a solid block. Simple Icons has no IDA icon.
+
+### One icon per action
+
+Two keys of the IDA sets share an icon only when they do the same thing
+(checked against the IDA 9.2 decompiler pages above, 2026-11-15). The
+pseudocode set uses the labels of `bindings.yaml` for N (Rename: the
+decompiler's `cmd_rename` renames the current item, as N does in the
+listing), Shift+- (Change sign: `cmd_numform` negates the constant), X (cross
+references: `cmd_jump_xref` opens the cross references to the current item),
+`/`, `\`, `=` (the same pseudocode commands the fallback set draws) and Alt+Y
+(select union member: `cmd_select_union_field`). Two keys do different things
+and have their own icon: Ctrl+Enter in the pseudocode window opens a new
+pseudocode window (`decomp_newwin.png`, the new-window glyph over "C"), while
+Alt+Enter opens a new disassembly window (`jump_newwin.png`); Ctrl+U in a list
+refreshes the list (`refresh_list.png`, the refresh glyph over "LIST"), while
+F5 in the pseudocode window decompiles the function again (`refresh.png`).

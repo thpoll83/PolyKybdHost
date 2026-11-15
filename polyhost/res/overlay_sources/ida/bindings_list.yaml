@@ -96,5 +96,5 @@ bindings:
   - {key: INSERT, icon: item_add.png, label: Insert item, region: [40, 40], mode: alpha}
   - {key: DELETE, icon: item_del.png, label: Delete item, region: [40, 40], mode: alpha}
   - {key: E, mods: [CMDCTRL], icon: item_edit.png, label: Edit item, region: [40, 40], mode: alpha}
-  - {key: U, mods: [CMDCTRL], icon: refresh.png, label: Refresh list}
+  - {key: U, mods: [CMDCTRL], icon: refresh_list.png, label: Refresh list, region: [40, 40], mode: alpha}
   - {key: F, mods: [CMDCTRL], icon: list_filter.png, label: Quick filter, region: [40, 40], mode: alpha}

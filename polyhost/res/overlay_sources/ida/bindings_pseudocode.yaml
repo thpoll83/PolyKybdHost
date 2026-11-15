@@ -94,26 +94,26 @@ bindings:
   - {key: '7', mods: [CTRL], icon: window_7.png, label: Window 7, region: [40, 40], mode: alpha, only: [macos]}
   - {key: '8', mods: [CTRL], icon: window_8.png, label: Window 8, region: [40, 40], mode: alpha, only: [macos]}
   - {key: '9', mods: [CTRL], icon: window_9.png, label: Window 9, region: [40, 40], mode: alpha, only: [macos]}
-  - {key: N, icon: label.png, label: Rename variable}
+  - {key: N, icon: label.png, label: Rename}
   - {key: Y, icon: type_retype.png, label: Set type, region: [40, 40], mode: alpha}
   - {key: H, icon: op_hexdec.png, label: Hex / decimal, region: [40, 40], mode: alpha}
   - {key: R, icon: op_char.png, label: Character, region: [40, 40], mode: alpha}
   - {key: M, icon: op_enum.png, label: Enum member, region: [40, 40], mode: alpha}
   - {key: T, icon: op_structofs.png, label: Structure offset, region: [40, 40], mode: alpha}
-  - {key: '-', mods: [SHIFT], icon: op_sign.png, label: Invert sign (_), region: [40, 40], mode: alpha}
-  - {key: /, icon: comment_pseudo.png, label: Comment, region: [40, 40], mode: alpha}
+  - {key: '-', mods: [SHIFT], icon: op_sign.png, label: Change sign (_), region: [40, 40], mode: alpha}
+  - {key: /, icon: comment_pseudo.png, label: Comment (pseudocode), region: [40, 40], mode: alpha}
   - {key: INSERT, icon: comment_block.png, label: Block comment, region: [40, 40], mode: alpha}
-  - {key: X, icon: references.png, label: Jump to cross reference}
-  - {key: \, icon: casts.png, label: Hide casts}
-  - {key: '=', icon: map_var.png, label: Map to another variable, region: [40, 40], mode: alpha}
+  - {key: X, icon: references.png, label: Cross references to operand}
+  - {key: \, icon: casts.png, label: Hide casts (pseudocode)}
+  - {key: '=', icon: map_var.png, label: Map variable (pseudocode), region: [40, 40], mode: alpha}
   - {key: S, mods: [SHIFT], icon: split_var.png, label: Split variable, region: [40, 40], mode: alpha}
-  - {key: Y, mods: [ALT], icon: union_member.png, label: Select union field, region: [40, 40], mode: alpha}
+  - {key: Y, mods: [ALT], icon: union_member.png, label: Select union member, region: [40, 40], mode: alpha}
   - {key: DELETE, mods: [SHIFT], icon: del_arg.png, label: Delete function argument, region: [40, 40], mode: alpha}
   - {key: R, mods: [CMDCTRL, SHIFT], icon: ret_type.png, label: Add/delete return type, region: [40, 40], mode: alpha}
   - {key: '5', mods: [SHIFT], icon: paren_pair.png, label: Jump to paired paren (%), region: [40, 40], mode: alpha}
   - {key: TAB, icon: asm_toggle.png, label: Jump to disassembly, region: [40, 40], mode: alpha}
   - {key: F5, icon: refresh.png, label: Refresh pseudocode}
-  - {key: ENTER, mods: [CMDCTRL], icon: jump_newwin.png, label: Decompile in a new window}
+  - {key: ENTER, mods: [CMDCTRL], icon: decomp_newwin.png, label: Decompile in a new window, region: [40, 40], mode: alpha}
   - {key: G, icon: goto.png, label: Jump to address}
   - {key: F2, icon: breakpoint.png, label: Toggle breakpoint}
   - {key: F4, icon: run_to_cursor.png, label: Run to cursor, region: [40, 40], mode: alpha}
