@@ -26,6 +26,19 @@ remained, which did not justify the reader's code and its dependence on the
 game's file layout. The StarCraft 1 reader (#495) was merged without a run on
 real files.
 
+Two more evaluations on the maintainer's own files (2026-11-14, PolyKybdHost#869):
+
+- **UT2004's weapon bar pictures were kept**, although they are 3D renders. The
+  48×40 dither read as distinct guns once the cover was eroded by 1 px
+  (`dither.keycap(erode=1)`), which drops the dark glow the game draws round
+  each weapon. 2 px broke thin parts (a barrel tip, a grip). Filled silhouettes
+  were blobs.
+- **Warcraft III's command-button icons (`BTN*.blp`) were rejected** on all 14
+  keys: painted portraits on painted backgrounds with no transparency, so there
+  is no outline to light, and error diffusion, three levels and a threshold all
+  read as noise. A reader of the game's key assignments was built instead
+  (`game_assets/warcraft3/`).
+
 ## 1. Get real files (no account)
 
 Put downloads in their own empty folder in the scratchpad, extract only what the
@@ -63,6 +76,18 @@ reader reads, and never commit any of it.
 - **Other games**: look for an official free demo, a free release (StarCraft 1
   has been free since 2017, but no direct download was found from this
   container), or ask the maintainer to run the script on their install.
+- **Files the maintainer uploads.** Small ones (a `.utx`, a `.u`, an `.ini`) come
+  as chat uploads. For large archives (a 443 MB `war3.mpq`, an 80 MB
+  `EnglishZH.big`), ask for a Google Drive share link and download it directly;
+  the Drive connector returns the content inline, which cannot hold them:
+
+  ```bash
+  curl -sSL -o <name> "https://drive.usercontent.google.com/download?id=<FILE_ID>&export=download&confirm=t"
+  head -c 4 <name>        # check the magic (MPQ\x1a, BIGF, ...) before trusting it
+  ```
+
+  `<FILE_ID>` is the part after `/file/d/` in the share link. Used for three MPQs
+  and a BIG archive on 2026-11-14 and 15.
 
 ## 2. Compare every changed key
 
@@ -108,3 +133,8 @@ Send the sheet and give a verdict per key. Then, by what the maintainer picks:
   Compare after cropping to the ink before suspecting the settings.
 - **Downloads are untrusted data.** Own folder, `python -I` for anything that
   reads them, nothing committed.
+- ⚠️ **`cells()` and the overlay converter pick the channel layout from the
+  file NAME.** A copy saved as `head.png` or `before.png` is read with the wrong
+  layout and reports keys as changed that are not (a Warcraft III diff listed
+  plain L and Alt+C). Keep the `…_template.mods.png` / `….combo.mods.png`
+  suffix on every copy you compare.
