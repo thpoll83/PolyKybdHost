@@ -65,6 +65,16 @@ class HookStatusTest(unittest.TestCase):
         self.assertIn("notify", st.detail)
         self.assertFalse(st.has_ours)
 
+    def test_valid_json_of_another_shape_is_that_agents_error(self):
+        """{"hooks": null} made plan_claude() raise TypeError, and the page's
+        status scan then showed no row for any agent."""
+        self._write(".claude/settings.json", '{"hooks": null}')
+        self._write(".gemini/settings.json", "[1, 2]")
+        states = {v: self._status(v).state for v in hi.VENDORS}
+        self.assertEqual(states["claude-code"], hi.STATE_ERROR)
+        self.assertEqual(states["gemini"], hi.STATE_ERROR)
+        self.assertEqual(states["codex"], hi.STATE_NOT_INSTALLED)    # the others still read
+
     def test_a_broken_settings_file_is_an_error_not_an_exception(self):
         self._write(".gemini/settings.json", "{ not json")
         st = self._status("gemini")

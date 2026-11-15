@@ -10,13 +10,15 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 try:
     from PyQt5.QtWidgets import QApplication
+    _IMPORT_ERR = None
+except ImportError as e:  # pragma: no cover - no PyQt5
+    _IMPORT_ERR = e
+if _IMPORT_ERR is None:
+    # Outside the guard: a broken module must fail the run, not skip its tests.
     from polyhost.gui import integrations_dialog as idlg
     from polyhost.gui import shell_editor_pages as sep
-    from polyhost.services import editor_plugins as ep
-    from polyhost.services import shell_title as st
-    _IMPORT_ERR = None
-except Exception as e:  # pragma: no cover - no Qt platform available
-    _IMPORT_ERR = e
+from polyhost.services import editor_plugins as ep
+from polyhost.services import shell_title as st
 
 
 def _statuses():
@@ -126,6 +128,7 @@ class TerminalsPageTest(_PageTestBase):
         self.assertFalse(page.remove_button.isEnabled())
         page.boxes()[st.ZSH].setChecked(True)
         page.remove_button.click()
+        self.settle(page)
         self.assertEqual(self.calls[0][:2], ("remove", [st.ZSH]))
 
     def test_the_ticks_survive_the_refresh_after_a_change(self):
@@ -234,7 +237,8 @@ class EditorsPageTest(_PageTestBase):
         self.settle(page)
         [(what, editors, statuses)] = self.calls
         self.assertEqual((what, editors), ("install", [ep.VIM]))
-        self.assertEqual(statuses, _editor_statuses())
+        # The service reads the files again rather than trusting the rows.
+        self.assertIsNone(statuses)
         self.assertIn("/h/.vim/x", page.results.text())
         self.assertIn("Restart the editor", page.results.text())
 
@@ -243,7 +247,31 @@ class EditorsPageTest(_PageTestBase):
         page.boxes()[ep.VIM].setChecked(False)
         page.boxes()[ep.EMACS].setChecked(True)
         page.remove_button.click()
-        self.assertEqual([c[:2] for c in self.calls], [("remove", [ep.EMACS])])
+        self.settle(page)
+        self.assertEqual([c[:3] for c in self.calls], [("remove", [ep.EMACS], None)])
+
+    def test_remove_keeps_a_plugin_changed_after_the_page_was_shown(self):
+        """The real service on a temporary home: a file edited after the
+        rows were read is found as changed by hand, not deleted."""
+        import tempfile
+        home = tempfile.mkdtemp()
+        self.addCleanup(__import__("shutil").rmtree, home, True)
+        kw = dict(home=home, env={}, which=lambda _n: "/usr/bin/vim")
+        ep.install([ep.VIM], **kw)
+        page = sep.EditorsPage(status_fn=lambda: ep.status([ep.VIM], **kw),
+                               install_fn=lambda e, statuses=None: ep.install(e, statuses, **kw),
+                               remove_fn=lambda e, statuses=None: ep.remove(e, statuses, **kw),
+                               report_settings=(50164, ""))
+        self.addCleanup(page.deleteLater)
+        self.settle(page)
+        target = Path(ep.status([ep.VIM], **kw)[0].target)
+        some_file = next(p for p in target.rglob("*") if p.is_file() and p.suffix == ".vim")
+        some_file.write_text(some_file.read_text() + "\n\" my own line\n")
+        page.boxes()[ep.VIM].setChecked(True)
+        page.remove_button.click()
+        self.settle(page)
+        self.assertTrue(some_file.exists())
+        self.assertIn("my own line", some_file.read_text())
 
     def test_no_editor_found(self):
         page = self.make(statuses=[ep.EditorStatus(ep.VIM, ep.STATE_NOT_PRESENT, None, "")])

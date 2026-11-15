@@ -10,8 +10,7 @@ category's page on the right. Each page installs and removes its own parts:
 
 All of it is a local file change on the computer the app runs on. It needs no
 keyboard and no daemon, so it works the same in client mode and in the
-forwarder, which installs for the computer it reports from (the forwarder has
-no Browser page: its computer sends no browser reports).
+forwarder, which installs for the computer it reports from.
 """
 from __future__ import annotations
 
@@ -363,9 +362,8 @@ def category_title(category):
 
 
 class IntegrationsDialog(QDialog):
-    """``categories`` lists the pages to show (the forwarder has no Browser
-    page). ``page_factories`` maps a category to a function that builds its
-    page; tests pass fakes."""
+    """``categories`` lists the pages to show. ``page_factories`` maps a
+    category to a function that builds its page; tests pass fakes."""
 
     def __init__(self, log, parent=None, categories=CATEGORIES, agent_note=None,
                  page_factories=None):

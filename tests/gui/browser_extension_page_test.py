@@ -75,6 +75,16 @@ class BrowserPageTest(unittest.TestCase):
         self.assertEqual(QApplication.clipboard().text(), "chrome://extensions")
 
 
+    def test_reopen_shows_the_receiver_port_as_it_is_now(self):
+        with mock.patch("polyhost.settings.read_setting", return_value=50164):
+            page = bep.BrowserPage(mock.MagicMock())
+        self.addCleanup(page.deleteLater)
+        self.assertIn("50164", page.steps.text())
+        with mock.patch("polyhost.settings.read_setting", return_value=50200):
+            page.reopen()
+        self.assertIn("50200", page.steps.text())
+        self.assertNotIn("50164", page.steps.text())
+
     def test_the_long_step_text_does_not_overlap_its_button(self):
         # German is the longest; the window opened at a height computed before
         # the labels wrapped, and the step text ran under the button.

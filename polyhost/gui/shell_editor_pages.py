@@ -233,7 +233,10 @@ class EditorsPage(RowsPage):
     def apply(self, install, keys):
         lines = []
         fn = self._install_fn if install else self._remove_fn
-        results = fn(keys, statuses=self._statuses)
+        # No cached statuses: the service reads the files again, so a plugin
+        # file changed by hand since the page was shown is found (and kept)
+        # instead of being deleted on a stale "Set up".
+        results = fn(keys, statuses=None)
         for r in results:
             lines.append(f"{editor_label(r.editor)}: {translate_message(r.message)}")
             if r.backup is not None:

@@ -288,6 +288,12 @@ class PolyForwarder(QApplication):
         # (services/editor_plugins.py).
         from polyhost.services import editor_plugins
         editor_plugins.start_refresh_thread()
+        # A browser extension copied by Integrations > Browser gets the version
+        # of this install, as in the tray app (services/browser_extension.py).
+        import threading
+        from polyhost.services import browser_extension
+        threading.Thread(target=browser_extension.update_if_outdated,
+                         name="browser-extension-update", daemon=True).start()
         self.pair_action = QAction(get_icon("sync_alt.svg"), _("Pair with the Keyboard Computer…"),
                                    parent=self)
         # noinspection PyUnresolvedReferences
@@ -295,9 +301,9 @@ class PolyForwarder(QApplication):
         self.menu.addAction(self.pair_action)
 
         # The same Integrations dialog as the tray app, for THIS computer: the
-        # forwarder reports its window titles, and its agents' hooks report to
-        # the keyboard computer (services/agents/remote.py). No Browser page:
-        # this computer sends no browser reports.
+        # forwarder reports its window titles and the browser URL from its own
+        # BrowserUrlSource, and its agents' hooks report to the keyboard
+        # computer (services/agents/remote.py).
         self.integrations_dialog = None
         self.integrations_action = QAction(get_icon("extension.svg"), _("Integrations…"),
                                            parent=self)
@@ -809,13 +815,10 @@ class PolyForwarder(QApplication):
         bring_to_front(self.log_bundle_dialog)
 
     def open_integrations(self, category=None):
-        """Integrations without the Browser page (kept instance, see
+        """Integrations for this computer (kept instance, see
         PolyHost.open_integrations)."""
-        from polyhost.gui.integrations_dialog import (AGENTS, EDITORS, TERMINALS,
-                                                      open_integrations)
-        open_integrations(self, category=category,
-                          categories=(AGENTS, TERMINALS, EDITORS),
-                          agent_note=self._agent_hooks_note)
+        from polyhost.gui.integrations_dialog import open_integrations
+        open_integrations(self, category=category, agent_note=self._agent_hooks_note)
 
     def open_log(self):
         # assignment is needed otherwise the dialog would go away immediately

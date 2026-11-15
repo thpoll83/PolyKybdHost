@@ -344,7 +344,9 @@ def status(vendor: str, home: str | None = None,
                 return HookStatus(vendor, path, STATE_CONFLICT, conflict)
         if not plan(vendor, home, True, argv):
             return HookStatus(vendor, path, STATE_INSTALLED)
-    except (OSError, ValueError) as e:
-        return HookStatus(vendor, path, STATE_ERROR, str(e))
+    except (OSError, ValueError, TypeError, AttributeError) as e:
+        # TypeError/AttributeError: valid JSON of another shape, e.g.
+        # {"hooks": null}. One agent's broken file must not hide the others.
+        return HookStatus(vendor, path, STATE_ERROR, str(e) or type(e).__name__)
     return HookStatus(vendor, path, STATE_OUTDATED if _contains_ours(text)
                       else STATE_NOT_INSTALLED)

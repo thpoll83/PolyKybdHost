@@ -26,9 +26,9 @@ class BrowserPage(QWidget):
     def __init__(self, log, parent=None, receiver_port=None):
         super().__init__(parent)
         self.log = log
-        if receiver_port is None:
-            from polyhost.settings import read_setting
-            receiver_port = read_setting("browser_report_port", 50164)
+        # A fixed port (tests) is kept; otherwise reopen() reads the setting
+        # again, since the dialog is kept and the port can change meanwhile.
+        self._fixed_port = receiver_port
         version = be.source_version()
 
         layout = QVBoxLayout(self)
@@ -65,12 +65,7 @@ class BrowserPage(QWidget):
 
         load_card, load_lay = card(self)
         load_lay.addWidget(self._heading(_("2. Load it in the browser")))
-        steps = WrapLabel(_f(
-            "Open {page} (Edge: edge://extensions), turn on Developer mode, click "
-            "\"Load unpacked\" and choose the folder. In the extension's Options, the "
-            "port must be {port}, the same as \"Receiver port\" in this app's settings. "
-            "After an update of this app, click Reload on the extension's card.",
-            page=EXTENSIONS_PAGE, port=receiver_port))
+        self.steps = steps = WrapLabel(self._steps_text())
         load_lay.addWidget(steps)
         page_row = QHBoxLayout()
         copy_page = set_button_icon(QPushButton(_f("Copy \"{page}\"", page=EXTENSIONS_PAGE)),
@@ -91,6 +86,25 @@ class BrowserPage(QWidget):
         if not version:
             self.copy_button.setEnabled(False)
             self.status.setText(_("This installation has no browser extension files."))
+
+    def _receiver_port(self):
+        if self._fixed_port is not None:
+            return self._fixed_port
+        from polyhost.settings import read_setting
+        return read_setting("browser_report_port", 50164)
+
+    def _steps_text(self):
+        return _f(
+            "Open {page} (Edge: edge://extensions), turn on Developer mode, click "
+            "\"Load unpacked\" and choose the folder. In the extension's Options, the "
+            "port must be {port}, the same as \"Receiver port\" in this app's settings. "
+            "After an update of this app, click Reload on the extension's card.",
+            page=EXTENSIONS_PAGE, port=self._receiver_port())
+
+    def reopen(self):
+        """The dialog opens again: show the receiver port as it is now."""
+        self.steps.setText(self._steps_text())
+        self.status.setText("")
 
     @staticmethod
     def _heading(text):

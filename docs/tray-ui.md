@@ -233,8 +233,9 @@ and relative links were adjusted to suit a standalone file.
   (the same sidebar style and window size) with one page per category: **AI agents**
   (the hooks in each agent's config file, `services/agents/hook_install.py`),
   **Terminals** and **Editors** (`gui/shell_editor_pages.py`) and **Browser** (the
-  extension folder, `gui/browser_extension_page.py`). The forwarder has no Browser page:
-  its computer sends no browser reports. AI Agents → "Set Up Hooks…" opens the dialog at
+  extension folder, `gui/browser_extension_page.py`). The forwarder shows all four
+  pages for its own computer: it runs `BrowserUrlSource` and passes the URL on, and it
+  refreshes a copied extension at start like the tray app. AI Agents → "Set Up Hooks…" opens the dialog at
   its AI agents page. Each row page (`RowsPage`) reads its status on a `QThread`, shows
   one row per program with a checkbox, the file that changes and the state under it, and
   has its own Install and Remove; Remove is enabled only for a row that has PolyKybd

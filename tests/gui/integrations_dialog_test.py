@@ -10,11 +10,13 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 try:
     from PyQt5.QtWidgets import QApplication, QLabel, QWidget
+    _IMPORT_ERR = None
+except ImportError as e:  # pragma: no cover - no PyQt5
+    _IMPORT_ERR = e
+if _IMPORT_ERR is None:
+    # Outside the guard: a broken module must fail the run, not skip its tests.
     from polyhost.gui import integrations_dialog as idlg
     from polyhost.services.agents import hook_install as hi
-    _IMPORT_ERR = None
-except Exception as e:  # pragma: no cover - no Qt platform available
-    _IMPORT_ERR = e
 
 ARGV = ["/opt/poly/polyctl"]
 
@@ -68,7 +70,7 @@ class IntegrationsDialogTest(unittest.TestCase):
         dlg.show_category(idlg.BROWSER)
         self.assertEqual(dlg.stack.currentIndex(), 3)
 
-    def test_the_forwarder_has_no_browser_page(self):
+    def test_only_the_listed_categories_are_shown(self):
         factories, made = self._fake_pages()
         dlg = idlg.IntegrationsDialog(mock.MagicMock(), page_factories=factories,
                                       categories=(idlg.AGENTS, idlg.TERMINALS, idlg.EDITORS))
