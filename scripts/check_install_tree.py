@@ -1,8 +1,11 @@
 """Check that an installer-made checkout has exactly the files it should.
 
-    .venv\\Scripts\\python.exe scripts\\check_install_tree.py <install dir>
+    .venv\\Scripts\\python.exe scripts\\check_install_tree.py <install dir> [<git checkout>]
 
-Run by .github/workflows/windows-installer.yml after `scripts/install.ps1`.
+Run by .github/workflows/windows-installer.yml after `scripts/install.ps1`,
+and by .github/workflows/app-installer.yml after `scripts/install-app.*`.
+The app installer makes no git checkout, so that workflow names the
+checkout of the same commit as the second argument.
 The expected set is every file of the checkout's HEAD that
 `updater.is_build_only()` keeps, so the installers' sparse patterns and the
 updater's rule are compared on a real clone. It also imports the modules a
@@ -16,16 +19,17 @@ import sys
 from pathlib import Path
 
 # Written by the installer or by Python itself, not part of the checkout.
-GENERATED_DIRS = {".git", ".venv", "__pycache__"}
+# .python is the interpreter uv downloads for the app installer.
+GENERATED_DIRS = {".git", ".venv", ".python", "__pycache__"}
 GENERATED_SUFFIXES = (".egg-info",)
 
 
-def expected_files(root: Path) -> set[str]:
+def expected_files(checkout: Path) -> set[str]:
     from polyhost.services import updater
 
     # Audit: a fixed git argv on the install dir the caller named; no shell.
     listing = subprocess.run(  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
-        ["git", "-C", str(root), "ls-tree", "-r", "--name-only", "HEAD"],
+        ["git", "-C", str(checkout), "ls-tree", "-r", "--name-only", "HEAD"],
         capture_output=True, text=True, encoding="utf-8", check=True).stdout
     kept = set()
     for rel in listing.splitlines():
@@ -64,12 +68,13 @@ def check_imports() -> list[str]:
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 2:
+    if len(argv) not in (2, 3):
         print(__doc__)
         return 2
     root = Path(argv[1]).resolve()
+    checkout = Path(argv[2]).resolve() if len(argv) == 3 else root
     sys.path.insert(0, str(root))
-    expected = expected_files(root)
+    expected = expected_files(checkout)
     on_disk = files_on_disk(root)
     missing = sorted(expected - on_disk)
     extra = sorted(on_disk - expected)
