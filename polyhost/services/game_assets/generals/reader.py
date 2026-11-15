@@ -268,12 +268,17 @@ def bindings(files: dict) -> dict | None:
         for command, fields in command_map(_text(data or b"")).items():
             merged.setdefault(command, {}).update(fields)
     out = {command: [t] if (t := token(fields)) else [] for command, fields in merged.items()}
-    if "generals.str" in files:
-        text = strings.str_file(read("generals.str", "", None).decode("utf-8", errors="replace"))
+    # Generals.str takes priority over the csf, loose or in an archive.
+    data = read("generals.str", "lang.big", "Data\\Generals.str")
+    if data is None:
+        data = read("generals.str", "ini.big", "Data\\Generals.str")
+    if data is not None:
+        text = strings.str_file(data.decode("utf-8", errors="replace"))
     else:
         data = read("lang/generals.csf", "lang.big", lang and lang + "Generals.csf")
         text = strings.csf(data) if data else {}
     for label, value in text.items():
-        if label.upper().startswith("CONTROLBAR:") and (key := strings.hotkey(value)):
-            out[label] = [key]
+        if label.upper().startswith("CONTROLBAR:"):
+            key = strings.hotkey(value)
+            out[label] = [key] if key else []       # no & : the button has no hotkey
     return out or None

@@ -119,8 +119,22 @@ class TextTest(unittest.TestCase):
             strings.csf(b"not a csf file at all....")
 
     def test_a_str_file(self):
-        text = strings.str_file('CONTROLBAR:Guard\n"G&uard"\nEND\n// note\nCONTROLBAR:Stop\n"&Halt"\nEND\n')
+        text = strings.str_file('CONTROLBAR:Guard\n"G&uard"\nEND\n// note\nCONTROLBAR:Stop\n"&Halt"\n'
+                                '"&Second string"\nEND\n')
         self.assertEqual(text, {"CONTROLBAR:Guard": "G&uard", "CONTROLBAR:Stop": "&Halt"})
+
+    def test_a_quoted_str_value_runs_over_line_ends(self):
+        text = strings.str_file('CONTROLBAR:AttackMove\r\n"Attack\r\n&Move \\"now\\""=speech.wav\r\nEND\r\n'
+                                'CONTROLBAR:Guard\n"&Guard"\nEND\n')
+        self.assertEqual(text["CONTROLBAR:AttackMove"], 'Attack &Move \\"now\\"')
+        self.assertEqual(strings.hotkey(text["CONTROLBAR:AttackMove"]), "M")
+        self.assertEqual(text["CONTROLBAR:Guard"], "&Guard")
+
+    def test_a_cut_off_csf_is_refused_as_damaged(self):
+        whole = write_csf(CARD)
+        for end in (30, 36, 60, len(whole) - 3):
+            with self.subTest(end=end), self.assertRaises(ValueError):
+                strings.csf(whole[:end])
 
 
 class ParseTest(unittest.TestCase):
@@ -229,6 +243,22 @@ class BindingsTest(unittest.TestCase):
         got = self.bindings(loose={("Data", "Generals.str"): b'CONTROLBAR:AttackMove\r\n"Attack &Move"\r\nEND\r\n'})
         self.assertEqual(got["CONTROLBAR:AttackMove"], ["M"])
         self.assertNotIn("CONTROLBAR:Guard", got)
+
+    def test_a_str_file_in_an_archive_replaces_the_csf(self):
+        with tempfile.TemporaryDirectory() as d:
+            make_install(Path(d))
+            lang = Path(d) / "EnglishZH.big"
+            body = big.Archive.open(lang)
+            files = {n: body.get(n) for n in body.names()}
+            files["Data\\Generals.str"] = b'CONTROLBAR:Guard\r\n"Guar&d"\r\nEND\r\n'
+            lang.write_bytes(write_big(files))
+            got = gen.bindings(gen.find(d))
+        self.assertEqual(got["CONTROLBAR:Guard"], ["D"])
+        self.assertNotIn("CONTROLBAR:AttackMove", got)
+
+    def test_a_button_without_a_hotkey_is_unbound(self):
+        got = self.bindings(card={"CONTROLBAR:AttackMove": "Attack Move", "CONTROLBAR:Guard": "&Guard"})
+        self.assertEqual(got["CONTROLBAR:AttackMove"], [])
 
     def test_a_german_install(self):
         got = self.bindings(language="German", keys={"STOP": ("KEY_H", "NONE")},

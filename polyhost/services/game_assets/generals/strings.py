@@ -14,7 +14,14 @@ import struct
 
 
 def csf(data: bytes) -> dict:
-    """{label: text} of a csf file; ValueError when it is not one."""
+    """{label: text} of a csf file; ValueError when it is not one or is cut off."""
+    try:
+        return _csf(data)
+    except struct.error as e:
+        raise ValueError(f"csf: a record is cut off ({e})") from e
+
+
+def _csf(data: bytes) -> dict:
     if data[:4] != b" FSC" or len(data) < 24:
         raise ValueError("not a csf file")
     labels = struct.unpack("<I", data[8:12])[0]
@@ -30,6 +37,8 @@ def csf(data: bytes) -> dict:
             if kind not in (b" RTS", b"WRTS"):
                 raise ValueError("csf: a string is damaged")
             units = struct.unpack("<I", data[pos + 4:pos + 8])[0]
+            if pos + 8 + 2 * units > len(data):
+                raise ValueError("csf: a string is cut off")
             raw = bytes(~b & 0xFF for b in data[pos + 8:pos + 8 + 2 * units])
             pos += 8 + 2 * units
             if kind == b"WRTS":
@@ -41,19 +50,41 @@ def csf(data: bytes) -> dict:
 
 
 def str_file(text: str) -> dict:
-    """{label: text} of a .str file."""
-    out, label, parts = {}, None, []
-    for raw in text.lstrip("﻿").splitlines():
-        line = raw.strip()
+    """{label: text} of a .str file. As the game's ``readToEndOfQuote``: a
+    quoted value runs on over line ends until a quote that no backslash
+    escapes, and each line end in it becomes a space. A label keeps its first
+    string."""
+    out, label = {}, None
+    lines = text.lstrip("\ufeff").splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        i += 1
         if not line or line.startswith("//"):
             continue
         if label is None:
-            label, parts = line, []
-        elif line.upper() == "END":
-            out.setdefault(label, "".join(parts))
+            label = line
+            continue
+        if line.upper() == "END":
             label = None
-        elif line.startswith('"'):
-            parts.append(line.strip('"').replace("\\n", "\n"))
+            continue
+        if not line.startswith('"'):
+            continue
+        rest, value, slash = line[1:], [], False
+        while True:
+            closed = False
+            for ch in rest:
+                if ch == '"' and not slash:
+                    closed = True
+                    break
+                slash = ch == "\\" and not slash
+                value.append(ch)
+            if closed or i >= len(lines):
+                break
+            value.append(" ")
+            rest, slash = lines[i], False
+            i += 1
+        out.setdefault(label, "".join(value))
     return out
 
 

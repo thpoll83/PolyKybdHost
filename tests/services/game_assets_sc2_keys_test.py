@@ -80,11 +80,15 @@ class FindTest(unittest.TestCase):
 
     def test_the_active_profile_of_the_newest_account(self):
         with tempfile.TemporaryDirectory() as d:
-            got = self.found(d, "Mine", {("111", "Mine"): profile({}), ("222", "Mine"): profile({}),
-                                         ("222", "Other"): profile({})})
-            older = Path(d) / "Documents" / "StarCraft II" / "Accounts" / "111" / "Hotkeys" / "Mine.SC2Hotkeys"
-            os.utime(older, (1, 1))
-            self.assertEqual(got.parent.parent.name, "222")
+            user = make_user_dir(Path(d), "Mine", {("111", "Mine"): profile({}), ("222", "Mine"): profile({}),
+                                                   ("222", "Other"): profile({})})
+            hotkeys = user / "Accounts"
+            for account, when in (("111", 2_000_000_000), ("222", 1_000_000_000)):
+                os.utime(hotkeys / account / "Hotkeys" / "Mine.SC2Hotkeys", (when, when))
+            with mock.patch.object(keys, "user_dirs", return_value=[user]):
+                self.assertEqual(keys.find().parent.parent.name, "111")
+                os.utime(hotkeys / "222" / "Hotkeys" / "Mine.SC2Hotkeys", (2_100_000_000, 2_100_000_000))
+                self.assertEqual(keys.find().parent.parent.name, "222")
 
     def test_a_region_folder_and_any_case(self):
         with tempfile.TemporaryDirectory() as d:
@@ -181,6 +185,41 @@ class RemapTest(unittest.TestCase):
                 path.write_text(profile({"IdleWorker": "F3", "ArmySelect": "F4", "PTT": "T"}), encoding="utf-8")
                 second = build.build(PRIMARY, SPEC, settings, Path(d) / "c")
             self.assertNotEqual(first, second)
+
+    def test_an_edit_that_keeps_the_size_and_the_time_is_a_new_copy(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "Mine.SC2Hotkeys"
+            settings = {"game_sc1_data_dir": str(Path(d) / "none"), "game_sc1_race": "terran"}.get
+            with mock.patch.object(keys, "find", return_value=path), \
+                 mock.patch.object(sc, "install_candidates", return_value=[]):
+                path.write_text(profile({"IdleWorker": "F3"}), encoding="utf-8")
+                os.utime(path, (1_700_000_000, 1_700_000_000))
+                first = build.build(PRIMARY, SPEC, settings, Path(d) / "c")
+                path.write_text(profile({"IdleWorker": "F4"}), encoding="utf-8")
+                os.utime(path, (1_700_000_000, 1_700_000_000))
+                second = build.build(PRIMARY, SPEC, settings, Path(d) / "c")
+                nm = Modifier.NO_MOD
+                self.assertNotEqual(first, second)
+                self.assertEqual(cells(second, nm)[KeyCode.KC_F4.value],
+                                 self.shipped[PRIMARY][nm][KeyCode.KC_F1.value])
+
+    def test_the_key_names_the_content_read_before_the_parse(self):
+        """A save between the hash and the parse costs a rebuild, never a
+        stale copy: the key names the older content."""
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "Mine.SC2Hotkeys"
+            path.write_text(profile({"IdleWorker": "F3"}), encoding="utf-8")
+            parse = keys.bindings
+
+            def saved_meanwhile(p):
+                path.write_text(profile({"IdleWorker": "F4"}), encoding="utf-8")
+                return parse(p)
+            spec = build.load_spec(SPEC)
+            with mock.patch.object(keys, "find", return_value=path), \
+                 mock.patch.object(keys, "bindings", side_effect=saved_meanwhile):
+                player, _, _, digests = build.bindings_source(spec, None, {})
+            self.assertEqual(player["IdleWorker"], ["F4"])
+            self.assertNotEqual(digests, [build._digest(path)])
 
     def test_an_unreadable_profile_leaves_the_defaults(self):
         with mock.patch.object(keys, "MAX_FILE", 4), self.assertLogs("PolyHost", "WARNING"):
