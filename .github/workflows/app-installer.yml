@@ -69,11 +69,22 @@ jobs:
         env:
           POLYKYBD_DIR: ${{ runner.temp }}\PolyKybdHost
           INSTALLER: ${{ github.workspace }}\scripts\install-app.ps1
+          CHECK_VARS: UV_PYTHON_INSTALL_DIR,UV_CACHE_DIR,UV_PYTHON_PREFERENCE,UV_PYTHON_INSTALL_BIN,UV_PYTHON_INSTALL_REGISTRY
         working-directory: ${{ runner.temp }}
         run: |
           $start = Get-Date
-          & $env:INSTALLER
+          # Run it as `irm | iex` does, then check the session is as it was:
+          # the preference and every variable the installer sets.
+          $prefBefore = $ErrorActionPreference
+          $envBefore = @{}
+          foreach ($n in $env:CHECK_VARS.Split(",")) { $envBefore[$n] = [Environment]::GetEnvironmentVariable($n, "Process") }
+          Get-Content -Raw -Path $env:INSTALLER | Invoke-Expression
           Write-Host ("install-app.ps1 took {0:N0} s" -f ((Get-Date) - $start).TotalSeconds)
+          if ($ErrorActionPreference -ne $prefBefore) { throw "ErrorActionPreference changed to $ErrorActionPreference" }
+          foreach ($n in $envBefore.Keys) {
+            $now = [Environment]::GetEnvironmentVariable($n, "Process")
+            if ($now -ne $envBefore[$n]) { throw "$n changed: '$($envBefore[$n])' -> '$now'" }
+          }
 
       - name: Check the installed tree
         working-directory: ${{ runner.temp }}\PolyKybdHost
