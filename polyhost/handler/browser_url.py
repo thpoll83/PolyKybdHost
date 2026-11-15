@@ -112,6 +112,13 @@ CONTEXT_REPORTERS = {
     # QGIS plugin (qgis-plugin/): exactly the names of the `qgis` mapping entry.
     **dict.fromkeys(("qgis", "qgis3", "qgis4", "org.qgis.qgis", "qgis-bin", "qgis-ltr-bin",
                      "qgis-dev-bin", "qgis-qt6-bin", "qgis-ltr"), "qgis"),
+    # SideFX Houdini (houdini-package/): the names of the mapping's houdini
+    # entry. macOS reports "Houdini FX 22.0.368"; context_reporter_for() drops
+    # the version the way the matcher does.
+    "houdini": "houdini", "houdinifx": "houdini", "houdinicore": "houdini",
+    "happrentice": "houdini", "hindie": "houdini", "hescape": "houdini",
+    "houdini-bin": "houdini", "houdini fx": "houdini", "houdini core": "houdini",
+    "houdini apprentice": "houdini", "houdini indie": "houdini",
     # VS Code and its forks: vscode-extension/ sends <token>://<debug mode>.
     "code": "vscode", "cursor": "cursor",
     "windsurf": "windsurf", "devin": "windsurf", "devin-desktop": "windsurf",

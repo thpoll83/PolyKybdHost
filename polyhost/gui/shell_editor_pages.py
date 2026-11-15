@@ -66,7 +66,8 @@ def editor_label(editor):
             editor_plugins.IDA: "IDA",
             editor_plugins.BINARYNINJA: "Binary Ninja",
             editor_plugins.RESOLVE: "DaVinci Resolve",
-            editor_plugins.ABLETON: "Ableton Live"}.get(editor, editor)
+            editor_plugins.ABLETON: "Ableton Live",
+            editor_plugins.HOUDINI: "Houdini"}.get(editor, editor)
 
 
 def editor_state_text(st):
