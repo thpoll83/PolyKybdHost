@@ -106,6 +106,9 @@ CONTEXT_REPORTERS = {
     "macvim": "vim",
     "neovide": "vim",
     "emacs": "emacs",
+    # QGIS plugin (qgis-plugin/): exactly the names of the `qgis` mapping entry.
+    **dict.fromkeys(("qgis", "qgis3", "qgis4", "org.qgis.qgis", "qgis-bin", "qgis-ltr-bin",
+                     "qgis-dev-bin", "qgis-qt6-bin", "qgis-ltr"), "qgis"),
     # VS Code and its forks: vscode-extension/ sends <token>://<debug mode>.
     "code": "vscode", "cursor": "cursor",
     "windsurf": "windsurf", "devin": "windsurf", "devin-desktop": "windsurf",
@@ -116,6 +119,7 @@ CONTEXT_REPORTERS = {
     # Autodesk Maya (maya-plugin/): Windows maya.exe, macOS "Maya", Linux maya.bin.
     "maya": "maya",
     "maya.bin": "maya",
+    "binaryninja": "binaryninja", "binary ninja": "binaryninja",  # binaryninja-plugin/
     # DaVinci Resolve page reporter (resolve-plugin/): Resolve.exe on Windows,
     # resolve on Linux, "DaVinci Resolve" on macOS -- the mapping entry's names.
     "resolve": "resolve",

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-14 23:05+0000\n"
+"POT-Creation-Date: 2026-11-15 11:58+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hant_TW\n"
@@ -339,117 +339,117 @@ msgstr "停止將這台電腦的作用中視窗傳送到連接鍵盤的電腦。
 msgid "Check for host update…"
 msgstr "檢查主機程式更新…"
 
-#: polyhost/forwarder.py:291
+#: polyhost/forwarder.py:297
 msgid "Pair with the Keyboard Computer…"
 msgstr "與鍵盤所在的電腦配對…"
 
-#: polyhost/forwarder.py:384
+#: polyhost/forwarder.py:390
 #, python-brace-format
 msgid "no host (waiting for {path})"
 msgstr "沒有主機（正在等待 {path}）"
 
-#: polyhost/forwarder.py:385
+#: polyhost/forwarder.py:391
 msgid "no host configured"
 msgstr "未設定主機"
 
-#: polyhost/forwarder.py:388
+#: polyhost/forwarder.py:394
 #, python-brace-format
 msgid "PolyKybdHost {version} (forwarder) → {target}"
 msgstr "PolyKybdHost {version}（轉送器）→ {target}"
 
-#: polyhost/forwarder.py:393
+#: polyhost/forwarder.py:399
 msgid "Forwarding paused"
 msgstr "轉送已暫停"
 
-#: polyhost/forwarder.py:396
+#: polyhost/forwarder.py:402
 #, python-brace-format
 msgid "Forwarding to {target}…"
 msgstr "正在轉送至 {target}…"
 
-#: polyhost/forwarder.py:398
+#: polyhost/forwarder.py:404
 #, python-brace-format
 msgid "Forwarding to {target}"
 msgstr "正在轉送至 {target}"
 
-#: polyhost/forwarder.py:399
+#: polyhost/forwarder.py:405
 #, python-brace-format
 msgid "Cannot reach {target}"
 msgstr "無法連線到 {target}"
 
-#: polyhost/forwarder.py:547
+#: polyhost/forwarder.py:553
 msgid "The hooks are written, but this forwarder runs without --report-rpc, so it cannot pass agent reports on. Start it with --report-rpc to show this computer's agents on the keys."
 msgstr "掛鉤已寫入，但此轉送器未使用 --report-rpc 執行，因此無法轉送代理程式回報。請使用 --report-rpc 啟動它，以便在按鍵上顯示這台電腦的代理程式。"
 
-#: polyhost/forwarder.py:550
+#: polyhost/forwarder.py:556
 msgid "The hooks are written. On the keyboard computer, turn on Settings > AI agents > \"Agents from other computers\"."
 msgstr "掛鉤已寫入。請在鍵盤所在的電腦上開啟 設定 > AI 代理程式 > 「來自其他電腦的代理程式」。"
 
-#: polyhost/forwarder.py:882
+#: polyhost/forwarder.py:885
 msgid "PolyForwarder settings"
 msgstr "PolyForwarder 設定"
 
-#: polyhost/forwarder.py:883
+#: polyhost/forwarder.py:886
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
 msgstr "無法將設定儲存到設定檔，因此設定不會生效。可能有其他程式正開啟該檔案。請再試一次，或查看記錄檔。"
 
-#: polyhost/forwarder.py:901
+#: polyhost/forwarder.py:904
 msgid "Paired. The forwarder uses the authenticated connection from its next start. Restart it now?"
 msgstr "已配對。轉送器會從下次啟動起使用經過驗證的連線。要立即重新啟動嗎？"
 
-#: polyhost/forwarder.py:916
+#: polyhost/forwarder.py:919
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
 msgstr "已驗證的 RPC（連接埠 {port}）"
 
-#: polyhost/forwarder.py:918
+#: polyhost/forwarder.py:921
 msgid "legacy plaintext TCP relay"
 msgstr "舊版明文 TCP 轉送"
 
-#: polyhost/forwarder.py:921
+#: polyhost/forwarder.py:924
 msgid "reaching the keyboard machine"
 msgstr "可連線到鍵盤所在的電腦"
 
-#: polyhost/forwarder.py:922
+#: polyhost/forwarder.py:925
 msgid "not reaching the keyboard machine"
 msgstr "無法連線到鍵盤所在的電腦"
 
-#: polyhost/forwarder.py:923
+#: polyhost/forwarder.py:926
 msgid "starting up"
 msgstr "正在啟動"
 
-#: polyhost/forwarder.py:925
+#: polyhost/forwarder.py:928
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
 msgstr "<b>模式：</b>轉送器 — 這台電腦未連接鍵盤"
 
-#: polyhost/forwarder.py:926
+#: polyhost/forwarder.py:929
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
 msgstr "<b>目標：</b>{target}"
 
-#: polyhost/forwarder.py:928
+#: polyhost/forwarder.py:931
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
 msgstr "<b>視窗回報：</b>{transport}"
 
-#: polyhost/forwarder.py:931
+#: polyhost/forwarder.py:934
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
 msgstr "<b>主機檔案：</b>{path}"
 
-#: polyhost/forwarder.py:952
+#: polyhost/forwarder.py:955
 msgid "About PolyKybdHost (forwarder)"
 msgstr "關於 PolyKybdHost（轉送器）"
 
 #. TRANSLATORS: the run mode in the About dialog's environment line
-#: polyhost/forwarder.py:959
+#: polyhost/forwarder.py:962
 msgid "forwarder"
 msgstr "轉送器"
 
-#: polyhost/forwarder.py:961
+#: polyhost/forwarder.py:964
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "轉送器模式：這台電腦沒有連接鍵盤。它會監看這台電腦的作用中視窗，並轉送給連接鍵盤的電腦上執行的 PolyKybdHost。"
 
-#: polyhost/forwarder.py:1001
+#: polyhost/forwarder.py:1004
 msgid "Download, install, and restart the forwarder now?"
 msgstr "要立即下載、安裝並重新啟動轉送器嗎？"
 
@@ -551,7 +551,7 @@ msgid "<b>Failed:</b> {reason}"
 msgstr "<b>失敗：</b>{reason}"
 
 #: polyhost/gui/browser_extension_page.py:37
-#: polyhost/gui/integrations_dialog.py:358
+#: polyhost/gui/integrations_dialog.py:391
 msgid "Browser"
 msgstr "瀏覽器"
 
@@ -588,45 +588,46 @@ msgstr "複製擴充功能"
 msgid "2. Load it in the browser"
 msgstr "2. 在瀏覽器中載入"
 
-#: polyhost/gui/browser_extension_page.py:69
-#, python-brace-format
-msgid "Open {page} (Edge: edge://extensions), turn on Developer mode, click \"Load unpacked\" and choose the folder. In the extension's Options, the port must be {port}, the same as \"Receiver port\" in this app's settings. After an update of this app, click Reload on the extension's card."
-msgstr "開啟 {page}（Edge：edge://extensions），開啟「開發人員模式」，按一下「載入未封裝項目」並選擇該資料夾。在擴充功能的選項中，連接埠必須為 {port}，與此應用程式設定中的「接收連接埠」相同。此應用程式更新後，請在擴充功能的卡片上按一下「重新載入」。"
-
-#: polyhost/gui/browser_extension_page.py:76
+#: polyhost/gui/browser_extension_page.py:71
 #, python-brace-format
 msgid "Copy \"{page}\""
 msgstr "複製「{page}」"
 
-#: polyhost/gui/browser_extension_page.py:84
+#: polyhost/gui/browser_extension_page.py:79
 msgid "Firefox keeps an extension loaded from a folder only until it restarts. Use the version from Firefox Add-ons there once it is published."
 msgstr "Firefox 只會在重新啟動前保留從資料夾載入的擴充功能。在 Firefox 中，請在 Firefox Add-ons 發佈該擴充功能後使用那裡的版本。"
 
-#: polyhost/gui/browser_extension_page.py:93
+#: polyhost/gui/browser_extension_page.py:89
+#: polyhost/gui/browser_extension_page.py:111
 msgid "This installation has no browser extension files."
 msgstr "此安裝中沒有瀏覽器擴充功能檔案。"
 
-#: polyhost/gui/browser_extension_page.py:105
+#: polyhost/gui/browser_extension_page.py:99
+#, python-brace-format
+msgid "Open {page} (Edge: edge://extensions), turn on Developer mode, click \"Load unpacked\" and choose the folder. In the extension's Options, the port must be {port}, the same as \"Receiver port\" in this app's settings. After an update of this app, click Reload on the extension's card."
+msgstr "開啟 {page}（Edge：edge://extensions），開啟「開發人員模式」，按一下「載入未封裝項目」並選擇該資料夾。在擴充功能的選項中，連接埠必須為 {port}，與此應用程式設定中的「接收連接埠」相同。此應用程式更新後，請在擴充功能的卡片上按一下「重新載入」。"
+
+#: polyhost/gui/browser_extension_page.py:123
 #: polyhost/gui/cloud_sessions_dialog.py:206
 #: polyhost/gui/crash_alert_dialog.py:208 polyhost/gui/error_dialog.py:74
 #: polyhost/gui/problem_alert_dialog.py:108
 msgid "Copied to the clipboard."
 msgstr "已複製到剪貼簿。"
 
-#: polyhost/gui/browser_extension_page.py:109
+#: polyhost/gui/browser_extension_page.py:127
 msgid "Folder for the extension"
 msgstr "擴充功能使用的資料夾"
 
-#: polyhost/gui/browser_extension_page.py:116
+#: polyhost/gui/browser_extension_page.py:134
 msgid "Choose a folder first."
 msgstr "請先選擇資料夾。"
 
-#: polyhost/gui/browser_extension_page.py:122
+#: polyhost/gui/browser_extension_page.py:140
 #, python-brace-format
 msgid "Not copied: {msg}"
 msgstr "未複製：{msg}"
 
-#: polyhost/gui/browser_extension_page.py:125
+#: polyhost/gui/browser_extension_page.py:143
 #, python-brace-format
 msgid "Copied version {version}. Now load the folder in the browser (step 2)."
 msgstr "已複製版本 {version}。現在請在瀏覽器中載入該資料夾（步驟 2）。"
@@ -1900,7 +1901,7 @@ msgstr "與轉送器配對"
 msgid "On the other computer, open the forwarder's menu, choose \"Pair with the Keyboard Computer…\" and enter this code. Anyone with this code can send window and agent reports to this computer, so pass it on only over a channel you trust. \"Accept forwarders\" must be on in Settings."
 msgstr "在另一台電腦上，開啟轉送器的選單，選擇「與鍵盤所在的電腦配對…」，然後輸入此代碼。任何持有此代碼的人都可以向這台電腦傳送視窗和代理程式回報，因此請只透過您信任的管道傳遞。必須在「設定」中開啟「接受轉送器」。"
 
-#: polyhost/forwarder.py:900 polyhost/gui/forwarder_pairing.py:37
+#: polyhost/forwarder.py:903 polyhost/gui/forwarder_pairing.py:37
 #: polyhost/gui/forwarder_pairing.py:44 polyhost/gui/forwarder_pairing.py:51
 msgid "Pair with the Keyboard Computer"
 msgstr "與鍵盤所在的電腦配對"
@@ -1957,56 +1958,56 @@ msgstr "語言"
 msgid "The new language is used after a restart. Restart now?"
 msgstr "新語言會在重新啟動後使用。要立即重新啟動嗎？"
 
-#: polyhost/gui/integrations_dialog.py:93
+#: polyhost/gui/integrations_dialog.py:96
 msgid "Checking…"
 msgstr "正在檢查…"
 
-#: polyhost/gui/integrations_dialog.py:107
+#: polyhost/gui/integrations_dialog.py:110
 msgid "Install"
 msgstr "安裝"
 
-#: polyhost/gui/integrations_dialog.py:108
+#: polyhost/gui/integrations_dialog.py:111
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:149
 msgid "Remove"
 msgstr "移除"
 
-#: polyhost/gui/integrations_dialog.py:129
+#: polyhost/gui/integrations_dialog.py:132
 #, python-brace-format
 msgid "The check failed: {error}"
 msgstr "檢查失敗：{error}"
 
-#: polyhost/gui/integrations_dialog.py:230
-#: polyhost/gui/integrations_dialog.py:342
+#: polyhost/gui/integrations_dialog.py:257
+#: polyhost/gui/integrations_dialog.py:375
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "變更失敗：{error}"
 
-#: polyhost/gui/integrations_dialog.py:255
+#: polyhost/gui/integrations_dialog.py:288
 #: polyhost/gui/shell_editor_pages.py:39 polyhost/gui/shell_editor_pages.py:71
 msgid "Set up"
 msgstr "已設定"
 
-#: polyhost/gui/integrations_dialog.py:257
+#: polyhost/gui/integrations_dialog.py:290
 msgid "Set up for another copy of the app, or an older version. Install updates it."
 msgstr "已為本應用程式的另一個副本或舊版本設定。「安裝」會更新它。"
 
-#: polyhost/gui/integrations_dialog.py:262
+#: polyhost/gui/integrations_dialog.py:295
 #, python-brace-format
 msgid "The file cannot be read: {error}"
 msgstr "無法讀取該檔案：{error}"
 
-#: polyhost/gui/integrations_dialog.py:263
+#: polyhost/gui/integrations_dialog.py:296
 #: polyhost/gui/shell_editor_pages.py:43 polyhost/gui/shell_editor_pages.py:73
 msgid "Not set up"
 msgstr "未設定"
 
-#: polyhost/gui/integrations_dialog.py:282
-#: polyhost/gui/integrations_dialog.py:316
-#: polyhost/gui/integrations_dialog.py:357 polyhost/gui/settings_dialog.py:102
+#: polyhost/gui/integrations_dialog.py:315
+#: polyhost/gui/integrations_dialog.py:349
+#: polyhost/gui/integrations_dialog.py:390 polyhost/gui/settings_dialog.py:102
 msgid "AI agents"
 msgstr "AI 代理程式"
 
-#: polyhost/gui/integrations_dialog.py:283
+#: polyhost/gui/integrations_dialog.py:316
 msgid ""
 "An agent's key shows whether the agent works, waits for you or is finished only when the agent runs the PolyKybd hook.\n"
 "\n"
@@ -2016,44 +2017,44 @@ msgstr ""
 "\n"
 "「安裝」會將掛鉤加入代理程式的設定檔。您自己的掛鉤和設定會保留，且每個檔案的副本會儲存為 <file>.polykybd.bak。「移除」只會移除 PolyKybd 掛鉤。請重新啟動代理程式，讓變更生效。"
 
-#: polyhost/gui/integrations_dialog.py:330
+#: polyhost/gui/integrations_dialog.py:363
 msgid "Nothing to change."
 msgstr "沒有需要變更的內容。"
 
-#: polyhost/gui/integrations_dialog.py:332
+#: polyhost/gui/integrations_dialog.py:365
 #, python-brace-format
 msgid "Write the PolyKybd hooks into {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
 msgstr "要將 PolyKybd 掛鉤寫入 {files} 嗎？您自己的掛鉤會保留，且每個檔案的副本會儲存為 <file>.polykybd.bak。"
 
-#: polyhost/gui/integrations_dialog.py:335
+#: polyhost/gui/integrations_dialog.py:368
 #, python-brace-format
 msgid "Remove the PolyKybd hooks from {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
 msgstr "要從 {files} 移除 PolyKybd 掛鉤嗎？您自己的掛鉤會保留，且每個檔案的副本會儲存為 <file>.polykybd.bak。"
 
-#: polyhost/gui/integrations_dialog.py:345
+#: polyhost/gui/integrations_dialog.py:378
 #, python-brace-format
 msgid "Changed: {path}"
 msgstr "已變更：{path}"
 
-#: polyhost/gui/integrations_dialog.py:350
+#: polyhost/gui/integrations_dialog.py:383
 msgid "Restart the agent for the change to take effect."
 msgstr "請重新啟動代理程式，讓變更生效。"
 
-#: polyhost/gui/integrations_dialog.py:357
-#: polyhost/gui/shell_editor_pages.py:92
+#: polyhost/gui/integrations_dialog.py:390
+#: polyhost/gui/shell_editor_pages.py:94
 msgid "Terminals"
 msgstr "終端機"
 
-#: polyhost/gui/integrations_dialog.py:357
-#: polyhost/gui/shell_editor_pages.py:176
+#: polyhost/gui/integrations_dialog.py:390
+#: polyhost/gui/shell_editor_pages.py:184
 msgid "Editors"
 msgstr "編輯器"
 
-#: polyhost/gui/integrations_dialog.py:370
+#: polyhost/gui/integrations_dialog.py:402
 msgid "Integrations"
 msgstr "整合"
 
-#: polyhost/gui/integrations_dialog.py:425
+#: polyhost/gui/integrations_dialog.py:457
 msgid "Changes apply to the program after it restarts."
 msgstr "變更會在程式重新啟動後套用。"
 
@@ -3840,7 +3841,7 @@ msgstr "外掛程式已從 {path} 載入。"
 msgid "This installation has no plugin files ({path})."
 msgstr "此安裝中沒有外掛程式檔案（{path}）。"
 
-#: polyhost/gui/shell_editor_pages.py:93
+#: polyhost/gui/shell_editor_pages.py:95
 msgid ""
 "The keyboard shows the shortcuts of a program running in a terminal (nano, for example) only when the terminal's window title names the program. bash, zsh and PowerShell do not do this without setup.\n"
 "\n"
@@ -3850,39 +3851,39 @@ msgstr ""
 "\n"
 "「安裝」會在每個所選 shell 的啟動檔案中，於兩行標記註解之間加入一行，並先在旁邊儲存該檔案的副本。「移除」會刪除這些行。變更會套用到之後開啟的終端機視窗。若要變更 Codex 選項，請選取 shell 並再按一次「安裝」。"
 
-#: polyhost/gui/shell_editor_pages.py:107
+#: polyhost/gui/shell_editor_pages.py:109
 msgid "Also show Codex in the title (wraps the codex command)"
 msgstr "標題中也顯示 Codex（包裝 codex 指令）"
 
-#: polyhost/gui/shell_editor_pages.py:109
+#: polyhost/gui/shell_editor_pages.py:111
 msgid "Codex replaces the terminal title with the thread and project name, so the keyboard cannot tell that it is running. With this option the codex command starts Codex with a title that begins with \"codex\". A codex alias or function of your own, and a title set in Codex's config.toml, are kept."
 msgstr "Codex 會以對話與專案名稱取代終端機標題，因此鍵盤無法得知它正在執行。啟用此選項後，codex 指令啟動 Codex 時標題以 \"codex\" 開頭。你自己的 codex 別名或函式，以及在 Codex 的 config.toml 中設定的標題，都會保留。"
 
-#: polyhost/gui/shell_editor_pages.py:121
+#: polyhost/gui/shell_editor_pages.py:123
 #, python-brace-format
 msgid "The shells could not be checked: {error}"
 msgstr "無法檢查 shell：{error}"
 
-#: polyhost/gui/shell_editor_pages.py:138
+#: polyhost/gui/shell_editor_pages.py:140
 #, python-brace-format
 msgid "{shell}: shows the command without setup."
 msgstr "{shell}：不需設定即可顯示命令。"
 
-#: polyhost/gui/shell_editor_pages.py:150
+#: polyhost/gui/shell_editor_pages.py:152
 msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "在這台電腦上找不到 bash、zsh 或 PowerShell。"
 
-#: polyhost/gui/shell_editor_pages.py:163
-#: polyhost/gui/shell_editor_pages.py:240
+#: polyhost/gui/shell_editor_pages.py:169
+#: polyhost/gui/shell_editor_pages.py:251
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "原檔案的副本：{path}"
 
-#: polyhost/gui/shell_editor_pages.py:165
+#: polyhost/gui/shell_editor_pages.py:171
 msgid "Open a new terminal window for the change to take effect."
 msgstr "請開啟新的終端機視窗，讓變更生效。"
 
-#: polyhost/gui/shell_editor_pages.py:177
+#: polyhost/gui/shell_editor_pages.py:185
 msgid ""
 "Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin. GDB shows whether the program runs or waits at the prompt only with it.\n"
 "\n"
@@ -3892,26 +3893,26 @@ msgstr ""
 "\n"
 "「安裝」會將此安裝中的外掛程式複製到程式載入外掛程式的位置。對於 Emacs 和 GDB，它還會在 init 檔案中，於兩行標記註解之間加入載入該外掛程式的行，並先儲存該檔案的副本。本應用程式更新後，會在下次啟動時複製新的外掛程式檔案。請重新啟動程式，讓變更生效。"
 
-#: polyhost/gui/shell_editor_pages.py:198
+#: polyhost/gui/shell_editor_pages.py:206
 #, python-brace-format
 msgid "The editors could not be checked: {error}"
 msgstr "無法檢查編輯器：{error}"
 
-#: polyhost/gui/shell_editor_pages.py:216
+#: polyhost/gui/shell_editor_pages.py:224
 msgid "No Vim, Neovim or Emacs was found on this computer."
 msgstr "在這台電腦上找不到 Vim、Neovim 或 Emacs。"
 
-#: polyhost/gui/shell_editor_pages.py:222
+#: polyhost/gui/shell_editor_pages.py:230
 #, python-brace-format
 msgid "This app listens on port {port} and requires a token. The plugins use port 50164 and no token: set g:polykybd_port and g:polykybd_token in Vim, or polykybd-port and polykybd-token in Emacs, to the same values."
 msgstr "本應用程式在連接埠 {port} 上監聽，並且需要權杖。外掛程式使用連接埠 50164，且不使用權杖：請將 Vim 中的 g:polykybd_port 和 g:polykybd_token，或 Emacs 中的 polykybd-port 和 polykybd-token 設定為相同的值。"
 
-#: polyhost/gui/shell_editor_pages.py:227
+#: polyhost/gui/shell_editor_pages.py:235
 #, python-brace-format
 msgid "This app listens on port {port}. The plugins use port 50164: set g:polykybd_port in Vim, or polykybd-port in Emacs, to the same value."
 msgstr "本應用程式在連接埠 {port} 上監聽。外掛程式使用連接埠 50164：請將 Vim 中的 g:polykybd_port，或 Emacs 中的 polykybd-port 設定為相同的值。"
 
-#: polyhost/gui/shell_editor_pages.py:242
+#: polyhost/gui/shell_editor_pages.py:253
 msgid "Restart the editor for the change to take effect."
 msgstr "請重新啟動編輯器，讓變更生效。"
 
@@ -4186,7 +4187,7 @@ msgstr "正在等待 PolyKybd..."
 msgid "Press to pause connection"
 msgstr "按下以暫停連線"
 
-#: polyhost/forwarder.py:352 polyhost/host.py:433
+#: polyhost/forwarder.py:358 polyhost/host.py:433
 msgid "Quit"
 msgstr "結束"
 
@@ -4194,27 +4195,27 @@ msgstr "結束"
 msgid "Quit && stop background daemon"
 msgstr "結束 && 停止背景常駐程式"
 
-#: polyhost/forwarder.py:319 polyhost/host.py:447
+#: polyhost/forwarder.py:325 polyhost/host.py:447
 msgid "About"
 msgstr "關於"
 
-#: polyhost/forwarder.py:302 polyhost/host.py:455
+#: polyhost/forwarder.py:308 polyhost/host.py:455
 msgid "Integrations…"
 msgstr "整合…"
 
-#: polyhost/forwarder.py:308 polyhost/host.py:460
+#: polyhost/forwarder.py:314 polyhost/host.py:460
 msgid "Settings..."
 msgstr "設定..."
 
-#: polyhost/forwarder.py:323 polyhost/host.py:464
+#: polyhost/forwarder.py:329 polyhost/host.py:464
 msgid "Log file..."
 msgstr "記錄檔..."
 
-#: polyhost/forwarder.py:329 polyhost/host.py:473
+#: polyhost/forwarder.py:335 polyhost/host.py:473
 msgid "Report a Problem..."
 msgstr "回報問題..."
 
-#: polyhost/forwarder.py:335 polyhost/host.py:493
+#: polyhost/forwarder.py:341 polyhost/host.py:493
 msgid "Collect logs..."
 msgstr "收集記錄檔..."
 
@@ -4231,7 +4232,7 @@ msgid "Inspect Font Packs..."
 msgstr "檢視字型包..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
-#: polyhost/forwarder.py:266 polyhost/forwarder.py:410 polyhost/host.py:523
+#: polyhost/forwarder.py:266 polyhost/forwarder.py:416 polyhost/host.py:523
 #: polyhost/host.py:1451
 msgid "Pause"
 msgstr "暫停"
@@ -4353,11 +4354,11 @@ msgstr "重新整理 Unicode 輸入模式"
 msgid "Save MRU cache now"
 msgstr "立即儲存 MRU 快取"
 
-#: polyhost/forwarder.py:345 polyhost/host.py:935
+#: polyhost/forwarder.py:351 polyhost/host.py:935
 msgid "Help && About"
 msgstr "說明 && 關於"
 
-#: polyhost/forwarder.py:341 polyhost/host.py:944
+#: polyhost/forwarder.py:347 polyhost/host.py:944
 msgid "Open config folder"
 msgstr "開啟設定資料夾"
 
@@ -4403,7 +4404,7 @@ msgstr ""
 "所有隨附的字型套件都已在鍵盤上。\n"
 "若鍵帽仍顯示錯誤，可使用「開發人員 → 字型包 → 重新燒錄所有套件」強制重新傳送。"
 
-#: polyhost/forwarder.py:843 polyhost/host.py:1313
+#: polyhost/forwarder.py:846 polyhost/host.py:1313
 msgid "Config folder"
 msgstr "設定資料夾"
 
@@ -4432,7 +4433,7 @@ msgid "Reconnect"
 msgstr "重新連線"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:410 polyhost/host.py:1446
+#: polyhost/forwarder.py:416 polyhost/host.py:1446
 msgid "Resume"
 msgstr "繼續"
 
@@ -4526,7 +4527,7 @@ msgstr "獨立執行"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:920 polyhost/host.py:2207
+#: polyhost/forwarder.py:923 polyhost/host.py:2207
 msgid "paused"
 msgstr "已暫停"
 
@@ -4592,17 +4593,17 @@ msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>覆蓋圖對應：</b>{n} 個應用程式"
 
-#: polyhost/forwarder.py:937 polyhost/host.py:2246
+#: polyhost/forwarder.py:940 polyhost/host.py:2246
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>設定：</b>{path}"
 
-#: polyhost/forwarder.py:938 polyhost/host.py:2247
+#: polyhost/forwarder.py:941 polyhost/host.py:2247
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>記錄檔：</b>{path}"
 
-#: polyhost/forwarder.py:956 polyhost/host.py:2301
+#: polyhost/forwarder.py:959 polyhost/host.py:2301
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "HID 協定 P{protocol}"
@@ -4741,8 +4742,8 @@ msgstr "PolyKybd 覆蓋圖對應（*.poly.yaml）"
 msgid "Update firmware to v{version}…"
 msgstr "將韌體更新至 v{version}…"
 
-#: polyhost/forwarder.py:995 polyhost/forwarder.py:1006
-#: polyhost/forwarder.py:1012 polyhost/host.py:2902 polyhost/host.py:3023
+#: polyhost/forwarder.py:998 polyhost/forwarder.py:1009
+#: polyhost/forwarder.py:1015 polyhost/host.py:2902 polyhost/host.py:3023
 #: polyhost/host.py:3027
 msgid "Check for updates..."
 msgstr "檢查更新..."
@@ -4752,8 +4753,8 @@ msgstr "檢查更新..."
 msgid "Update to v{version} available"
 msgstr "有可用的更新 v{version}"
 
-#: polyhost/forwarder.py:1008 polyhost/forwarder.py:1014
-#: polyhost/forwarder.py:1025 polyhost/host.py:2981 polyhost/host.py:3021
+#: polyhost/forwarder.py:1011 polyhost/forwarder.py:1017
+#: polyhost/forwarder.py:1028 polyhost/host.py:2981 polyhost/host.py:3021
 #: polyhost/host.py:3028 polyhost/host.py:3051
 msgid "PolyKybdHost Update"
 msgstr "PolyKybdHost 更新"
@@ -4763,7 +4764,7 @@ msgstr "PolyKybdHost 更新"
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "版本 {version} 已推出。按一下系統匣圖示即可更新。"
 
-#: polyhost/forwarder.py:982 polyhost/host.py:3007
+#: polyhost/forwarder.py:985 polyhost/host.py:3007
 msgid "Checking for updates..."
 msgstr "正在檢查更新..."
 
@@ -4771,12 +4772,12 @@ msgstr "正在檢查更新..."
 msgid "No updates available"
 msgstr "沒有可用的更新"
 
-#: polyhost/forwarder.py:1009 polyhost/host.py:3022
+#: polyhost/forwarder.py:1012 polyhost/host.py:3022
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "您正在執行最新版本（v{version}）。"
 
-#: polyhost/forwarder.py:1015 polyhost/host.py:3029
+#: polyhost/forwarder.py:1018 polyhost/host.py:3029
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -4796,12 +4797,12 @@ msgstr ""
 msgid "Released: {date}"
 msgstr "發行日期：{date}"
 
-#: polyhost/forwarder.py:996 polyhost/host.py:3035
+#: polyhost/forwarder.py:999 polyhost/host.py:3035
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "版本 {version} 已推出。"
 
-#: polyhost/forwarder.py:997 polyhost/host.py:3036
+#: polyhost/forwarder.py:1000 polyhost/host.py:3036
 msgid "Update PolyKybdHost"
 msgstr "更新 PolyKybdHost"
 
@@ -4809,20 +4810,20 @@ msgstr "更新 PolyKybdHost"
 msgid "Download, install, and restart now?"
 msgstr "要立即下載、安裝並重新啟動嗎？"
 
-#: polyhost/forwarder.py:1024 polyhost/host.py:3051
+#: polyhost/forwarder.py:1027 polyhost/host.py:3051
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "正在下載 v{version}…"
 
-#: polyhost/forwarder.py:1065 polyhost/host.py:3176
+#: polyhost/forwarder.py:1068 polyhost/host.py:3176
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "無法啟動更新轉接程序；更新未完成。詳細資訊請查看記錄檔。"
 
-#: polyhost/forwarder.py:1077 polyhost/host.py:3191
+#: polyhost/forwarder.py:1080 polyhost/host.py:3191
 msgid "Update failed"
 msgstr "更新失敗"
 
-#: polyhost/forwarder.py:1077 polyhost/host.py:3191
+#: polyhost/forwarder.py:1080 polyhost/host.py:3191
 msgid "The update did not finish."
 msgstr "更新未完成。"
 
@@ -5076,6 +5077,14 @@ msgstr "已從 {init} 移除載入外掛程式的行，並從 {path} 移除外�
 #: polyhost/services/fw_keymap_changes.py:18
 msgid "The Hyper key on the QWERTY, Stag, Colemak DH and Workman layouts becomes the AI key."
 msgstr "QWERTY、Stag、Colemak DH 和 Workman 配置中的 Hyper 鍵變為 AI 鍵。"
+
+#: polyhost/services/game_assets/generals/__init__.py:13
+msgid "Generals folder"
+msgstr "Generals 資料夾"
+
+#: polyhost/services/game_assets/generals/__init__.py:14
+msgid "The Command & Conquer Generals or Zero Hour install folder, the one that holds Game.dat and EnglishZH.big (or the archive of another language). The overlay then shows the hotkeys of the installed language and of the player's own CommandMap.ini. Empty: the folder of the running game and the usual install folders on Windows, in Steam and under Wine are searched."
+msgstr "Command & Conquer Generals 或 Zero Hour 的安裝資料夾，即包含 Game.dat 和 EnglishZH.big（或其他語言的封存檔）的那個。疊加層隨後顯示已安裝語言和玩家自己的 CommandMap.ini 中的快速鍵。留空：搜尋正在執行的遊戲所在的資料夾，以及 Windows、Steam 和 Wine 下的常用安裝資料夾。"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:13
 msgid "StarCraft folder"

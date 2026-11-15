@@ -11,14 +11,15 @@ or plays a localized install whose hotkeys differ, the icon sits on the wrong ke
 `polyhost/services/game_assets/build.py` can move each icon to the player's key at
 build time (`remap`). This skill wires one game into that.
 
-Done four times on 2026-11-14/15 (PolyKybdHost#869, #874):
+Done six times on 2026-11-14/15 (PolyKybdHost#869, #874, #898):
 
 | Game | Binding source | Hook | Complete? |
 |---|---|---|---|
 | UT2004 | `System/User.ini` `[Engine.Input]` (`Key=Command`) | reader `bindings(files)` (`unreal2/bindings.py`) | yes: the file lists every key |
 | Warcraft III | the installed language's `EscMenuMainPanel.fdf`, `GlobalStrings.fdf`, `CommandStrings.txt` in the MPQs, then `CustomKeys.txt` | reader `bindings(files)` (`warcraft3/reader.py`, no art) | no |
 | OpenRA (3 mods) | `Keys:` in `settings.yaml` in the support folder | spec `bindings: openra` → `openra_keys.py` | no: only changed keys are written |
-| C&C Generals | `Data\<Language>\CommandMap.ini` (in `<Language>ZH.big`) | `command:` names only, no reader yet | - |
+| C&C Generals | `Data\<Language>\CommandMap.ini` and `Generals.csf` (in `<Language>ZH.big`, or a loose file that replaces it), then `Data\INI\CommandMap.ini` | key-only reader `generals` (`generals/reader.py`) | no |
+| StarCraft II | the `.SC2Hotkeys` profile `Variables.txt` names | spec `bindings: sc2` → `sc2_keys.py`, also without the art files (`build.keys_only`) | no: only changes are written |
 
 ## 1. Find the two sources
 
@@ -62,7 +63,7 @@ as default keys, so the stock file moves nothing, and no icon is drawn on them.
   `fingerprint(files)` keys the cache on it.
 - **The bindings live apart from the files the art reader finds** (OpenRA's
   support folder): write `game_assets/<name>_keys.py` with `find() -> Path|None`,
-  `bindings(path)` and `BINDINGS_COMPLETE`, and add `bindings: <name>` to the
+  `bindings(path, data=None)` (parse `data` when given: the build hashes and parses one read) and `BINDINGS_COMPLETE`, and add `bindings: <name>` to the
   spec's `game_assets:` block. `build.bindings_source` adds that path to the cache
   key.
 - **No art at all** (Warcraft III): a reader whose `draw()` raises and whose spec
@@ -99,9 +100,14 @@ translations (`translate-ui-catalogs`).
   holds plain, Ctrl, Alt and Shift; the `.combo` file the two-modifier keys.
   `remap` runs per file, so it leaves a command alone when its old and new keys
   are in different files. Say so in `SOURCES.md`.
-- ⚠️ **The remap needs the reader's `find()` to succeed.** No art files, no
-  build, no remap (OpenRA needs its content anyway; a key-only reader's `find()`
-  should require only the binding source).
+- ⚠️ **A reader's own `bindings(files)` needs its `find()` to succeed.** No
+  files, no build, no remap. A spec-level source (`bindings: sc2`) does not:
+  `build.keys_only` remaps the shipped overlay when the art reader finds
+  nothing. A key-only reader's `find()` should require only the binding files.
+- ⚠️ **Check the shipped spec while you name the commands.** The Generals check
+  found X labelled "select all"; the game binds X to Scatter and Q to select
+  all. Fix the spec and regenerate the overlay, then check that the stock
+  files move nothing.
 - **Never draw on ESC**: `remap` drops it as a target; keep it that way.
 - **Point `find()` at the developer's machine in tests only through a mock**: a
   developer's own settings file would otherwise move icons in unrelated tests

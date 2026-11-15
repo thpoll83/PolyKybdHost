@@ -1643,12 +1643,33 @@ ida,ida64,idaq,idaq64,ida pro,ida professional,ida home,ida free,ida classroom:
 # Binary Ninja (overlay_sources/binaryninja/). Windows `binaryninja.exe` and the
 # Linux binary `binaryninja` (unverified on an install); macOS "Binary Ninja"
 # (the app bundle name).
+# The mode reporter (binaryninja-plugin/) sends binaryninja://<view>[/<il>] for
+# the focused pane, and binaryninja://console / binaryninja://xrefs while the
+# scripting console or the cross-references pane has the keyboard focus.
+# Linear view drops the graph zoom keys; Hex view leaves the keys that type
+# text blank; the console and the cross-references pane draw only their own
+# keys and the command palette. Graph view, the other views and no report
+# (plugin not installed, or a stale report) keep the main set. `layer: false`:
+# a view's set replaces the main one instead of drawing over it. Longer needles
+# first.
 binaryninja,binary ninja:
   overlay: [binaryninja_template.mods.png, binaryninja_template.combo.mods.png]
+  layer: false
+  urls-contains:
+    "binaryninja://console": { overlay: [binaryninja_console_template.mods.png, binaryninja_console_template.combo.mods.png] }
+    "binaryninja://linear": { overlay: [binaryninja_linear_template.mods.png, binaryninja_linear_template.combo.mods.png] }
+    "binaryninja://xrefs": { overlay: [binaryninja_xrefs_template.mods.png, binaryninja_xrefs_template.combo.mods.png] }
+    "binaryninja://hex": { overlay: [binaryninja_hex_template.mods.png, binaryninja_hex_template.combo.mods.png] }
   os:
     macos:
       overlay: [binaryninja_template_mac.mods.png, binaryninja_template_mac.combo.mods.png,
                 binaryninja_template_mac.extra.mods.png]
+      layer: false
+      urls-contains:
+        "binaryninja://console": { overlay: [binaryninja_console_template_mac.mods.png, binaryninja_console_template_mac.combo.mods.png, binaryninja_console_template_mac.extra.mods.png] }
+        "binaryninja://linear": { overlay: [binaryninja_linear_template_mac.mods.png, binaryninja_linear_template_mac.combo.mods.png, binaryninja_linear_template_mac.extra.mods.png] }
+        "binaryninja://xrefs": { overlay: [binaryninja_xrefs_template_mac.mods.png, binaryninja_xrefs_template_mac.combo.mods.png, binaryninja_xrefs_template_mac.extra.mods.png] }
+        "binaryninja://hex": { overlay: [binaryninja_hex_template_mac.mods.png, binaryninja_hex_template_mac.combo.mods.png, binaryninja_hex_template_mac.extra.mods.png] }
 # Minecraft: Bedrock Edition (overlay_sources/minecraft/minecraft_bedrock.yaml).
 # Windows reports `Minecraft.Windows.exe`, cut at the first dot to `minecraft`;
 # the window title is "Minecraft" ("Minecraft Preview" for the preview build).
@@ -3521,7 +3542,9 @@ war3,war3.exe,warcraft iii,warcraft iii.exe,frozen throne,frozen throne.exe:
 # the WM_CLASS keeps the `.exe`. `starcraft ii` is the launcher's name and the
 # assumed macOS name. None of the names was checked on an install.
 # Control groups, F1 and Backspace are redrawn from the user's own StarCraft
-# 1.16.1 files when they are on the machine (game_assets reader `starcraft`).
+# 1.16.1 files when they are on the machine (game_assets reader `starcraft`),
+# and the icons follow the player's active StarCraft II hotkey profile
+# (`bindings: sc2`), with or without those files.
 sc2_x64,sc2,sc2_x64.exe,sc2.exe,starcraft ii:
   overlay: [starcraft2_template.mods.png, starcraft2_template.combo.mods.png]
   game_assets: starcraft2/starcraft2.yaml
@@ -3664,10 +3687,12 @@ stratagus,stratagus.exe,wargus,wargus.exe:
 # may use too, so the window title gates the entry: "Command and Conquer
 # Generals" (the original) and "Command & Conquer (TM) Generals Zero Hour",
 # both seen in a log of the Steam release (2026-11-14). Not checked under Wine
-# or on the EA app release.
+# or on the EA app release. The icons follow the hotkeys of the installed
+# language and of a loose CommandMap.ini (game_assets reader `generals`).
 game:
   overlay: generals_template.mods.png
   title: '^Command (and|&) Conquer.*Generals'
+  game_assets: generals/generals.yaml
 # Command & Conquer Remastered Collection, Steam app 1213210
 # (overlay_sources/cnc_remastered/cnc_remastered.yaml). ClientG.exe on Windows,
 # steam_app_1213210 under Proton. Names not checked on an install.
@@ -4285,14 +4310,39 @@ houdini,houdinifx,houdinicore,happrentice,hindie,hescape,houdini-bin,houdini fx,
 # Linux: the process `qgis` (X11), the WM_CLASS class QGIS4 / QGIS3 (the GNOME and
 # KDE reporters) and the Wayland app id org.qgis.qgis, which is also the Flatpak
 # id. macOS: the app "QGIS" (CFBundleName), installed as QGIS.app or
-# QGIS-LTR.app. Not checked on an install.
+# QGIS-LTR.app. Not checked on an install. The QGIS plugin (qgis-plugin/) reports
+# qgis://map/<tool>[/cad][/edit] and qgis://layout; the digitizing, vertex and
+# print layout sets are routed on it (overlay_sources/qgis/gen_mode_specs.py,
+# layout.yaml). `layer: false`: a mode set replaces the main set, and the main
+# set stays the fallback without the plugin and for every other tool or window.
 qgis,qgis3,qgis4,org.qgis.qgis,qgis-bin,qgis-ltr-bin,qgis-dev-bin,qgis-qt6-bin,qgis-ltr:
   overlay: [qgis_template.mods.png, qgis_template.combo.mods.png, qgis_template.extra.mods.png]
+  layer: false
+  urls-contains:
+    "qgis://map/digitize/cad": { overlay: [qgis_digitize_cad_template.mods.png, qgis_digitize_cad_template.combo.mods.png, qgis_digitize_cad_template.extra.mods.png] }
+    "qgis://map/vertex/cad": { overlay: [qgis_vertex_cad_template.mods.png, qgis_vertex_cad_template.combo.mods.png, qgis_vertex_cad_template.extra.mods.png] }
+    "qgis://map/digitize": { overlay: [qgis_digitize_template.mods.png, qgis_digitize_template.combo.mods.png, qgis_digitize_template.extra.mods.png] }
+    "qgis://map/vertex": { overlay: [qgis_vertex_template.mods.png, qgis_vertex_template.combo.mods.png, qgis_vertex_template.extra.mods.png] }
+    "qgis://layout": { overlay: [qgis_layout_template.mods.png, qgis_layout_template.combo.mods.png] }
   os:
     macos:
       overlay: [qgis_template_mac.mods.png, qgis_template_mac.combo.mods.png, qgis_template_mac.extra.mods.png, qgis_template_mac.gui.mods.png]
+      layer: false
+      urls-contains:
+        "qgis://map/digitize/cad": { overlay: [qgis_digitize_cad_template_mac.mods.png, qgis_digitize_cad_template_mac.combo.mods.png, qgis_digitize_cad_template_mac.extra.mods.png, qgis_digitize_cad_template_mac.gui.mods.png] }
+        "qgis://map/vertex/cad": { overlay: [qgis_vertex_cad_template_mac.mods.png, qgis_vertex_cad_template_mac.combo.mods.png, qgis_vertex_cad_template_mac.extra.mods.png, qgis_vertex_cad_template_mac.gui.mods.png] }
+        "qgis://map/digitize": { overlay: [qgis_digitize_template_mac.mods.png, qgis_digitize_template_mac.combo.mods.png, qgis_digitize_template_mac.extra.mods.png, qgis_digitize_template_mac.gui.mods.png] }
+        "qgis://map/vertex": { overlay: [qgis_vertex_template_mac.mods.png, qgis_vertex_template_mac.combo.mods.png, qgis_vertex_template_mac.extra.mods.png, qgis_vertex_template_mac.gui.mods.png] }
+        "qgis://layout": { overlay: [qgis_layout_template_mac.mods.png, qgis_layout_template_mac.combo.mods.png, qgis_layout_template_mac.extra.mods.png] }
     linux:
       overlay: [qgis_template_linux.mods.png, qgis_template_linux.combo.mods.png, qgis_template_linux.extra.mods.png]
+      layer: false
+      urls-contains:
+        "qgis://map/digitize/cad": { overlay: [qgis_digitize_cad_template_linux.mods.png, qgis_digitize_cad_template_linux.combo.mods.png, qgis_digitize_cad_template_linux.extra.mods.png] }
+        "qgis://map/vertex/cad": { overlay: [qgis_vertex_cad_template_linux.mods.png, qgis_vertex_cad_template_linux.combo.mods.png, qgis_vertex_cad_template_linux.extra.mods.png] }
+        "qgis://map/digitize": { overlay: [qgis_digitize_template_linux.mods.png, qgis_digitize_template_linux.combo.mods.png, qgis_digitize_template_linux.extra.mods.png] }
+        "qgis://map/vertex": { overlay: [qgis_vertex_template_linux.mods.png, qgis_vertex_template_linux.combo.mods.png, qgis_vertex_template_linux.extra.mods.png] }
+        "qgis://layout": { overlay: [qgis_layout_template.mods.png, qgis_layout_template.combo.mods.png] }
 # Autodesk Maya, scene and viewport keys (overlay_sources/maya/). Windows maya.exe
 # and the macOS app "Maya" (a trailing release year such as "Maya 2026" is
 # dropped by the matcher); on Linux the process is maya.bin. macOS takes the set
