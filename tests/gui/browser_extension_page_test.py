@@ -85,6 +85,21 @@ class BrowserPageTest(unittest.TestCase):
         self.assertIn("50200", page.steps.text())
         self.assertNotIn("50164", page.steps.text())
 
+    def test_reopen_keeps_the_missing_files_message(self):
+        with mock.patch.object(be, "source_version", return_value=""):
+            page = bep.BrowserPage(mock.MagicMock(), receiver_port=50164)
+        self.addCleanup(page.deleteLater)
+        self.assertFalse(page.copy_button.isEnabled())
+        page.reopen()
+        self.assertIn("no browser extension files", page.status.text())
+
+    def test_reopen_clears_the_last_result(self):
+        page = self._dialog()
+        page.copy_button.click()                     # "Choose a folder first."
+        self.assertTrue(page.status.text())
+        page.reopen()
+        self.assertEqual(page.status.text(), "")
+
     def test_the_long_step_text_does_not_overlap_its_button(self):
         # German is the longest; the window opened at a height computed before
         # the labels wrapped, and the step text ran under the button.

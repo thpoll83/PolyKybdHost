@@ -83,6 +83,7 @@ class BrowserPage(QWidget):
         self.status = StatusLabel("", self)
         layout.addWidget(self.status)
         layout.addStretch(1)
+        self._has_files = bool(version)
         if not version:
             self.copy_button.setEnabled(False)
             self.status.setText(_("This installation has no browser extension files."))
@@ -104,7 +105,10 @@ class BrowserPage(QWidget):
     def reopen(self):
         """The dialog opens again: show the receiver port as it is now."""
         self.steps.setText(self._steps_text())
-        self.status.setText("")
+        # A result line from the last visit goes; the missing-files message
+        # stays as long as Copy Extension is off.
+        self.status.setText("" if self._has_files
+                            else _("This installation has no browser extension files."))
 
     @staticmethod
     def _heading(text):
