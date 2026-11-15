@@ -35,7 +35,7 @@ button. The original Generals uses the same keys; that was not checked.
 | G | `CONTROLBAR:Guard` | Guard |
 | S | `STOP` | Stop |
 | E | `SELECT_MATCHING_UNITS` | Select matching units |
-| X | `SELECT_ALL` | Select all units |
+| Q | `SELECT_ALL` | Select all units |
 | H | `VIEW_COMMAND_CENTER` | Go to the command center |
 | Ctrl+H | `SELECT_HERO` | Select the hero |
 | Space | `VIEW_LAST_RADAR_EVENT` | Go to the last radar event |
@@ -89,3 +89,26 @@ art is not used.
 | `diplomacy.png` | game-icons.net `delapouite/shaking-hands` | Delapouite | CC BY 3.0 |
 | `formation.png`, `deletebeacon.png`, `controlbar.png`, `cheer.png` | Font Awesome Free 6.5.2 `table-cells`, `trash-can`, `table-columns`, `face-laugh-beam` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `program.png` | GENERALS set in Bebas Neue | Dharma Type | SIL OFL 1.1 |
+
+## The player's hotkeys
+
+With *Art from installed games* on, the `generals` reader
+(`game_assets/generals/`) reads the hotkeys of the installed game and moves
+the icons to them. It reads, as the game does (EA's source release, 2025):
+
+- `Data\<Language>\CommandMap.ini`, then `Data\INI\CommandMap.ini`, whose
+  fields replace the first file's (`SubsystemInterface.cpp`, `MetaEvent.cpp`);
+- the command-card letters after `&` in `Data\<Language>\Generals.csf`, or in
+  `Data\Generals.str` when that file exists (`GameText.cpp`, `HotKey.cpp`).
+
+Each is read from a loose file in the install folder when there is one, else
+from the BIG archives (`<Language>ZH.big`, `INIZH.big`; `<Language>.big` and
+`INI.big` for Generals), as the game opens local files first. The language is
+the one whose archive is in the folder, or the registry's `Language` value on
+Windows when there are several. A German install's own CommandMap.ini thus
+moves its icons too.
+
+Checked on the English Steam files: the stock archives move no icon, and a
+loose `Data\English\CommandMap.ini` with `STOP` on K moves the stop icon to K.
+That check found X labelled "select all": X is `SCATTER`; `SELECT_ALL` is Q,
+which the overlay now shows.
