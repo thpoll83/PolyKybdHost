@@ -106,6 +106,7 @@ default set.
 
 ## Icons
 
+- One icon per action (maintainer rule, 2026-11-15): `split.png` (Split, Ctrl+E) is now copied from `../reaper` (Material `vertical_split`), so it differs from the Knife tool scissors (`slice.png`). `selprevevent.png` and `selnextevent.png` (Edit View, Alt+Left/Right) are an arrow with the word EVT, drawn 1-bit at 40x40 by `../ghidra/fetch_icons.py`'s `composites()` (word in Liberation Sans Bold, SIL OFL 1.1); the clip glyph stays on the Arrange set's Previous/Next clip.
 - Material Symbols, Apache-2.0, <https://fonts.google.com/icons>: `seltoggle`
   (swap_horiz), `subdivless` (grid_3x3), `subdivmore` (grid_4x4).
 - Byte-identical copies of the icons another DAW set draws for the same
