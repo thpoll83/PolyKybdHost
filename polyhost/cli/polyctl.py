@@ -2072,7 +2072,8 @@ def build_parser():
     ep_remove = ep_sub.add_parser("remove", help="delete this app's copies")
     ep_status = ep_sub.add_parser("status", help="show what is set up, per editor")
     for p in (ep_install, ep_remove, ep_status):
-        p.add_argument("--editor", action="append", choices=("vim", "neovim", "emacs", "gdb", "ableton"),
+        p.add_argument("--editor", action="append",
+                       choices=("vim", "neovim", "emacs", "gdb", "binaryninja", "resolve", "ableton"),
                        help="only this editor (repeat for more)")
     p_ep.set_defaults(func=_cmd_editor_plugins)
 

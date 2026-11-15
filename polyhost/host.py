@@ -448,6 +448,15 @@ class PolyHost(QApplication):
         # noinspection PyUnresolvedReferences
         self.about.triggered.connect(self.show_about_dialog)
 
+        # The PolyKybd parts installed into other programs: agent hooks, the
+        # shell title line, editor plugins, the browser extension
+        # (gui/integrations_dialog.py). Local files only: no keyboard needed.
+        self.integrations_dialog = None
+        self.integrations_action = QAction(get_icon("extension.svg"), _("Integrations…"),
+                                           parent=self)
+        # noinspection PyUnresolvedReferences
+        self.integrations_action.triggered.connect(lambda: self.open_integrations())
+
         self.settings_dialog = QAction(get_icon("settings.svg"), _("Settings..."), parent=self)
         # noinspection PyUnresolvedReferences
         self.settings_dialog.triggered.connect(self.open_settings)
@@ -550,7 +559,7 @@ class PolyHost(QApplication):
         # cannot freeze the tray while a menu waits for its answer.
         self._menu_fetch = MenuFetcher(self, self.log)
         self.cmdMenu = CommandsSubMenu(self)
-        # A browser extension copied by "Install Browser Extension…" gets the
+        # A browser extension copied by Integrations > Browser gets the
         # version of this install (services/browser_extension.py). File copies
         # only, on a thread; it never raises.
         import threading
@@ -865,23 +874,11 @@ class PolyHost(QApplication):
             # noinspection PyUnresolvedReferences
             self.menu.aboutToShow.connect(self._refresh_udev_action)
 
-        # Every OS: the line that makes bash, zsh and PowerShell put the
-        # running command into the terminal title, which is how the host sees a
-        # program inside a terminal (the nano overlay matches the title). Local
-        # files only, no device, so it works in client mode and with no keyboard
-        # (services/shell_title.py, gui/shell_title_dialog.py).
-        # The same dialog copies the Vim/Neovim/Emacs mode plugins
-        # (services/editor_plugins.py); the copies made earlier are refreshed
-        # from this installation on a thread at every start.
+        # The editor plugins copied by Integrations > Editors are refreshed
+        # from this installation on a thread at every start
+        # (services/editor_plugins.py).
         from polyhost.services import editor_plugins
         editor_plugins.start_refresh_thread()
-        self.shell_title_dialog = None
-        self.shell_title_action = QAction(get_icon("terminal.svg"),
-                                          _("Set up the terminal and editors\u2026"),
-                                          parent=self)
-        # noinspection PyUnresolvedReferences
-        self.shell_title_action.triggered.connect(self.open_shell_title_dialog)
-        self.updates_menu.addAction(self.shell_title_action)
 
         # The OS theme can change while the tray sits there for weeks, so
         # re-follow it whenever the menu opens — that is when a mismatch is on
@@ -931,6 +928,7 @@ class PolyHost(QApplication):
             self.cmdMenu.build_developer_menus(debug_menu)
 
         self.menu.addSeparator()
+        self.menu.addAction(self.integrations_action)
         self.menu.addAction(self.settings_dialog)
 
         # --- Help & About: the read-only, always-available corner --------------
@@ -1354,6 +1352,7 @@ class PolyHost(QApplication):
         # Available in both modes (driven via core methods).
         self.layout_editor.setEnabled(True)
         self.settings_dialog.setEnabled(True)
+        self.integrations_action.setEnabled(True)    # local files only
         self.log_dialog.setEnabled(True)
         self.fontpack_inspector_action.setEnabled(True)   # inspects shipped bundles offline
         self.update_action.setEnabled(True)
@@ -2022,17 +2021,12 @@ class PolyHost(QApplication):
         self.log_bundle_dialog.show()
         bring_to_front(self.log_bundle_dialog)
 
-    def open_shell_title_dialog(self):
-        """The shell title integration dialog. Modeless and retained, like
-        open_log_bundle: its status QThread is parented to it, so a rebuild
-        while PowerShell is being asked would destroy a running thread."""
-        from polyhost.gui.shell_title_dialog import ShellTitleDialog
-        if self.shell_title_dialog is None:
-            self.shell_title_dialog = ShellTitleDialog(parent=None)
-        elif not self.shell_title_dialog.isVisible():
-            self.shell_title_dialog.reopen()
-        self.shell_title_dialog.show()
-        bring_to_front(self.shell_title_dialog)
+    def open_integrations(self, category=None):
+        """Integrations (gui/integrations_dialog.py). Modeless and kept, like
+        open_log_bundle: the page status QThreads are parented to it, so a
+        rebuild while PowerShell is being asked would destroy a running thread."""
+        from polyhost.gui.integrations_dialog import open_integrations
+        open_integrations(self, category=category)
 
     def open_tap_terms_dialog(self):
         """Tray > Tap-Hold Timing…: read the terms off the GUI thread, then show the
@@ -2425,7 +2419,7 @@ class PolyHost(QApplication):
         rows between the two separators. Rebuilding the whole menu from the fetch
         answer left it empty until the answer came, and a rebuild while the menu
         was open could leave the popup empty on Windows."""
-        from polyhost.gui.agent_hooks import add_setup_menu
+        from polyhost.gui.integrations_dialog import AGENTS
         menu = self.agents_menu
         self._agents_toggle = QAction(_("Show on the Number Row"), parent=menu, checkable=True)
         # noinspection PyUnresolvedReferences
@@ -2439,7 +2433,12 @@ class PolyHost(QApplication):
         self._agents_remove_menu = QMenu(_("Remove Agent"), menu)
         self._agents_remove_menu.setIcon(get_icon("delete.svg"))
         menu.addMenu(self._agents_remove_menu)
-        add_setup_menu(menu, self.log).setIcon(get_icon("terminal.svg"))
+        # Opens Integrations at its AI agents page, where the browser extension
+        # is set up too (Integrations > Browser).
+        hooks = QAction(get_icon("terminal.svg"), _("Set Up Hooks…"), parent=menu)
+        # noinspection PyUnresolvedReferences
+        hooks.triggered.connect(lambda: self.open_integrations(AGENTS))
+        menu.addAction(hooks)
         # The same icons as the forwarder's own Set Up Agent Hooks and Pair entries.
         pair = QAction(get_icon("sync_alt.svg"), _("Pair a Forwarder…"), parent=menu)
         # noinspection PyUnresolvedReferences
@@ -2449,11 +2448,6 @@ class PolyHost(QApplication):
         # noinspection PyUnresolvedReferences
         cloud.triggered.connect(self._show_cloud_sessions)
         menu.addAction(cloud)
-        extension = QAction(get_icon("extension.svg"), _("Install Browser Extension…"),
-                            parent=menu)
-        # noinspection PyUnresolvedReferences
-        extension.triggered.connect(self._show_browser_extension)
-        menu.addAction(extension)
         self._set_agent_rows([])
 
     def _set_agent_rows(self, agents):
@@ -2518,17 +2512,6 @@ class PolyHost(QApplication):
             if not ok:
                 self.log.info("Could not remove the inactive agents: %s", msg)
         self._core_click(self.core.agents_forget_inactive, done)
-
-    def _show_browser_extension(self):
-        """Copy the browser extension to a folder for "Load unpacked"
-        (services/browser_extension.py). One dialog at a time."""
-        from polyhost.gui.browser_extension_dialog import BrowserExtensionDialog
-        dialog = getattr(self, "_extension_dialog", None)
-        if dialog is None or not dialog.isVisible():
-            dialog = self._extension_dialog = BrowserExtensionDialog(self.log)
-        dialog.show()
-        dialog.raise_()
-        dialog.activateWindow()
 
     def _apply_agents_menu(self, info):
         """The answer of core.agents_list(): the switch and the agent rows. A

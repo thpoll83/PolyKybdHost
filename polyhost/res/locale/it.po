@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-13 11:31+0000\n"
+"POT-Creation-Date: 2026-11-15 17:06+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: it\n"
@@ -335,125 +335,121 @@ msgstr "Premi per sospendere l'inoltro"
 msgid "Stop sending this machine's active window to the keyboard machine."
 msgstr "Interrompe l'invio della finestra attiva di questo computer al computer della tastiera."
 
-#: polyhost/forwarder.py:283
+#: polyhost/forwarder.py:281
 msgid "Check for host update…"
 msgstr "Verifica aggiornamenti dell'host…"
 
-#: polyhost/forwarder.py:309
-msgid "Set Up Agent Hooks"
-msgstr "Configura gli hook degli agenti"
-
-#: polyhost/forwarder.py:311
+#: polyhost/forwarder.py:297
 msgid "Pair with the Keyboard Computer…"
 msgstr "Associa al computer della tastiera…"
 
-#: polyhost/forwarder.py:393
+#: polyhost/forwarder.py:390
 #, python-brace-format
 msgid "no host (waiting for {path})"
 msgstr "nessun host (in attesa di {path})"
 
-#: polyhost/forwarder.py:394
+#: polyhost/forwarder.py:391
 msgid "no host configured"
 msgstr "nessun host configurato"
 
-#: polyhost/forwarder.py:397
+#: polyhost/forwarder.py:394
 #, python-brace-format
 msgid "PolyKybdHost {version} (forwarder) → {target}"
 msgstr "PolyKybdHost {version} (forwarder) → {target}"
 
-#: polyhost/forwarder.py:402
+#: polyhost/forwarder.py:399
 msgid "Forwarding paused"
 msgstr "Inoltro in pausa"
 
-#: polyhost/forwarder.py:405
+#: polyhost/forwarder.py:402
 #, python-brace-format
 msgid "Forwarding to {target}…"
 msgstr "Inoltro a {target}…"
 
-#: polyhost/forwarder.py:407
+#: polyhost/forwarder.py:404
 #, python-brace-format
 msgid "Forwarding to {target}"
 msgstr "Inoltro a {target}"
 
-#: polyhost/forwarder.py:408
+#: polyhost/forwarder.py:405
 #, python-brace-format
 msgid "Cannot reach {target}"
 msgstr "Impossibile raggiungere {target}"
 
-#: polyhost/forwarder.py:556
+#: polyhost/forwarder.py:553
 msgid "The hooks are written, but this forwarder runs without --report-rpc, so it cannot pass agent reports on. Start it with --report-rpc to show this computer's agents on the keys."
 msgstr "Gli hook sono stati scritti, ma questo forwarder è in esecuzione senza --report-rpc, quindi non può inoltrare le segnalazioni degli agenti. Avvialo con --report-rpc per mostrare gli agenti di questo computer sui tasti."
 
-#: polyhost/forwarder.py:559
+#: polyhost/forwarder.py:556
 msgid "The hooks are written. On the keyboard computer, turn on Settings > AI agents > \"Agents from other computers\"."
 msgstr "Gli hook sono stati scritti. Sul computer della tastiera, attiva Impostazioni > Agenti IA > «Agenti da altri computer»."
 
-#: polyhost/forwarder.py:890
+#: polyhost/forwarder.py:885
 msgid "PolyForwarder settings"
 msgstr "Impostazioni di PolyForwarder"
 
-#: polyhost/forwarder.py:891
+#: polyhost/forwarder.py:886
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
 msgstr "Impossibile salvare le impostazioni nel file delle impostazioni, quindi non avranno effetto. Un altro programma potrebbe tenerlo aperto. Riprova o consulta il log."
 
-#: polyhost/forwarder.py:909
+#: polyhost/forwarder.py:904
 msgid "Paired. The forwarder uses the authenticated connection from its next start. Restart it now?"
 msgstr "Associazione completata. Il forwarder usa la connessione autenticata dal prossimo avvio. Riavviarlo ora?"
 
-#: polyhost/forwarder.py:924
+#: polyhost/forwarder.py:919
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
 msgstr "RPC autenticato (porta {port})"
 
-#: polyhost/forwarder.py:926
+#: polyhost/forwarder.py:921
 msgid "legacy plaintext TCP relay"
 msgstr "relay TCP in chiaro (legacy)"
 
-#: polyhost/forwarder.py:929
+#: polyhost/forwarder.py:924
 msgid "reaching the keyboard machine"
 msgstr "computer della tastiera raggiungibile"
 
-#: polyhost/forwarder.py:930
+#: polyhost/forwarder.py:925
 msgid "not reaching the keyboard machine"
 msgstr "computer della tastiera non raggiungibile"
 
-#: polyhost/forwarder.py:931
+#: polyhost/forwarder.py:926
 msgid "starting up"
 msgstr "avvio in corso"
 
-#: polyhost/forwarder.py:933
+#: polyhost/forwarder.py:928
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
 msgstr "<b>Modalità:</b> forwarder — nessuna tastiera collegata a questo computer"
 
-#: polyhost/forwarder.py:934
+#: polyhost/forwarder.py:929
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
 msgstr "<b>Destinazione:</b> {target}"
 
-#: polyhost/forwarder.py:936
+#: polyhost/forwarder.py:931
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
 msgstr "<b>Segnalazioni finestra:</b> {transport}"
 
-#: polyhost/forwarder.py:939
+#: polyhost/forwarder.py:934
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
 msgstr "<b>File host:</b> {path}"
 
-#: polyhost/forwarder.py:960
+#: polyhost/forwarder.py:955
 msgid "About PolyKybdHost (forwarder)"
 msgstr "Informazioni su PolyKybdHost (forwarder)"
 
 #. TRANSLATORS: the run mode in the About dialog's environment line
-#: polyhost/forwarder.py:967
+#: polyhost/forwarder.py:962
 msgid "forwarder"
 msgstr "forwarder"
 
-#: polyhost/forwarder.py:969
+#: polyhost/forwarder.py:964
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "Modalità forwarder: questo computer non ha una tastiera. Osserva la finestra attiva qui e la inoltra al PolyKybdHost in esecuzione sul computer a cui è collegata la tastiera."
 
-#: polyhost/forwarder.py:1009
+#: polyhost/forwarder.py:1004
 msgid "Download, install, and restart the forwarder now?"
 msgstr "Scaricare, installare e riavviare ora il forwarder?"
 
@@ -477,19 +473,6 @@ msgstr "Copia diagnostica"
 #: polyhost/gui/about_dialog.py:156
 msgid "Copied ✓"
 msgstr "Copiato ✓"
-
-#: polyhost/gui/agent_hooks.py:23 polyhost/gui/agent_hooks.py:35
-msgid "Set Up Hooks"
-msgstr "Configura hook"
-
-#: polyhost/gui/agent_hooks.py:44
-msgid "The hooks are already set up."
-msgstr "Gli hook sono già configurati."
-
-#: polyhost/gui/agent_hooks.py:47
-#, python-brace-format
-msgid "Write the PolyKybd hooks into {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
-msgstr "Scrivere gli hook di PolyKybd in {files}? I tuoi hook vengono mantenuti e una copia di ogni file viene salvata come <file>.polykybd.bak."
 
 #: polyhost/gui/boot_loop_dialog.py:26
 msgid "Reboots the keyboard again and again to catch an intermittent boot hang. After each reboot it waits for the keyboard to come back and reads its crash record. It stops at the first boot that left a fresh crash record, at a boot that does not come back within a minute, or after the last round.<br><br>The keyboard does not type while this runs, and each round takes a few seconds."
@@ -568,82 +551,84 @@ msgstr "Impossibile interrompere: {error}"
 msgid "<b>Failed:</b> {reason}"
 msgstr "<b>Non riuscito:</b> {reason}"
 
-#: polyhost/gui/browser_extension_dialog.py:30
-msgid "Install Browser Extension"
-msgstr "Installa l'estensione del browser"
+#: polyhost/gui/browser_extension_page.py:37
+#: polyhost/gui/integrations_dialog.py:391
+msgid "Browser"
+msgstr "Browser"
 
-#: polyhost/gui/browser_extension_dialog.py:43
+#: polyhost/gui/browser_extension_page.py:41
 #, python-brace-format
 msgid "PolyKybd browser extension {version}"
 msgstr "Estensione del browser PolyKybd {version}"
 
-#: polyhost/gui/browser_extension_dialog.py:44
+#: polyhost/gui/browser_extension_page.py:42
 msgid "Shows website overlays for the focused browser tab, and switches to a Claude Code cloud session's tab when you press its agent key. For Chrome, Edge, Brave, Vivaldi, Opera and Arc."
 msgstr "Mostra gli overlay dei siti web per la scheda attiva del browser e passa alla scheda di una sessione cloud di Claude Code quando premi il suo tasto agente. Per Chrome, Edge, Brave, Vivaldi, Opera e Arc."
 
-#: polyhost/gui/browser_extension_dialog.py:49
+#: polyhost/gui/browser_extension_page.py:47
 msgid "1. Copy it to a folder"
 msgstr "1. Copiala in una cartella"
 
-#: polyhost/gui/browser_extension_dialog.py:51
+#: polyhost/gui/browser_extension_page.py:49
 msgid "Choose an empty folder that stays where it is. After each update of this app, the new version is copied there too."
 msgstr "Scegli una cartella vuota che non verrà spostata. Dopo ogni aggiornamento di questa app, anche la nuova versione viene copiata lì."
 
-#: polyhost/gui/browser_extension_dialog.py:55
+#: polyhost/gui/browser_extension_page.py:53
 msgid "Folder"
 msgstr "Cartella"
 
-#: polyhost/gui/browser_extension_dialog.py:56
+#: polyhost/gui/browser_extension_page.py:54
 msgid "Choose…"
 msgstr "Scegli…"
 
-#: polyhost/gui/browser_extension_dialog.py:59
+#: polyhost/gui/browser_extension_page.py:57
 msgid "Copy Extension"
 msgstr "Copia estensione"
 
-#: polyhost/gui/browser_extension_dialog.py:69
+#: polyhost/gui/browser_extension_page.py:67
 msgid "2. Load it in the browser"
 msgstr "2. Caricala nel browser"
 
-#: polyhost/gui/browser_extension_dialog.py:71
-#, python-brace-format
-msgid "Open {page} (Edge: edge://extensions), turn on Developer mode, click \"Load unpacked\" and choose the folder. In the extension's Options, the port must be {port}, the same as \"Receiver port\" in this app's settings. After an update of this app, click Reload on the extension's card."
-msgstr "Apri {page} (Edge: edge://extensions), attiva «Modalità sviluppatore», fai clic su «Carica estensione non pacchettizzata» e scegli la cartella. Nelle «Opzioni» dell'estensione la porta deve essere {port}, la stessa di «Porta del ricevitore» nelle impostazioni di questa app. Dopo un aggiornamento di questa app, fai clic su «Ricarica» nella scheda dell'estensione."
-
-#: polyhost/gui/browser_extension_dialog.py:78
+#: polyhost/gui/browser_extension_page.py:71
 #, python-brace-format
 msgid "Copy \"{page}\""
 msgstr "Copia «{page}»"
 
-#: polyhost/gui/browser_extension_dialog.py:86
+#: polyhost/gui/browser_extension_page.py:79
 msgid "Firefox keeps an extension loaded from a folder only until it restarts. Use the version from Firefox Add-ons there once it is published."
 msgstr "Firefox mantiene un'estensione caricata da una cartella solo fino al riavvio. Lì usa la versione di Firefox Add-ons quando sarà pubblicata."
 
-#: polyhost/gui/browser_extension_dialog.py:98
+#: polyhost/gui/browser_extension_page.py:89
+#: polyhost/gui/browser_extension_page.py:111
 msgid "This installation has no browser extension files."
 msgstr "Questa installazione non contiene i file dell'estensione del browser."
 
-#: polyhost/gui/browser_extension_dialog.py:110
-#: polyhost/gui/cloud_sessions_dialog.py:203
+#: polyhost/gui/browser_extension_page.py:99
+#, python-brace-format
+msgid "Open {page} (Edge: edge://extensions), turn on Developer mode, click \"Load unpacked\" and choose the folder. In the extension's Options, the port must be {port}, the same as \"Receiver port\" in this app's settings. After an update of this app, click Reload on the extension's card."
+msgstr "Apri {page} (Edge: edge://extensions), attiva «Modalità sviluppatore», fai clic su «Carica estensione non pacchettizzata» e scegli la cartella. Nelle «Opzioni» dell'estensione la porta deve essere {port}, la stessa di «Porta del ricevitore» nelle impostazioni di questa app. Dopo un aggiornamento di questa app, fai clic su «Ricarica» nella scheda dell'estensione."
+
+#: polyhost/gui/browser_extension_page.py:123
+#: polyhost/gui/cloud_sessions_dialog.py:206
 #: polyhost/gui/crash_alert_dialog.py:208 polyhost/gui/error_dialog.py:74
 #: polyhost/gui/problem_alert_dialog.py:108
 msgid "Copied to the clipboard."
 msgstr "Copiato negli Appunti."
 
-#: polyhost/gui/browser_extension_dialog.py:114
+#: polyhost/gui/browser_extension_page.py:127
 msgid "Folder for the extension"
 msgstr "Cartella per l'estensione"
 
-#: polyhost/gui/browser_extension_dialog.py:121
+#: polyhost/gui/browser_extension_page.py:134
 msgid "Choose a folder first."
 msgstr "Scegli prima una cartella."
 
-#: polyhost/gui/browser_extension_dialog.py:127
+#: polyhost/gui/browser_extension_page.py:140
 #, python-brace-format
 msgid "Not copied: {msg}"
 msgstr "Non copiata: {msg}"
 
-#: polyhost/gui/browser_extension_dialog.py:130
+#: polyhost/gui/browser_extension_page.py:143
 #, python-brace-format
 msgid "Copied version {version}. Now load the folder in the browser (step 2)."
 msgstr "Versione {version} copiata. Ora carica la cartella nel browser (passo 2)."
@@ -698,47 +683,47 @@ msgstr "Collega"
 msgid "Disconnect…"
 msgstr "Scollega…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:164
+#: polyhost/gui/cloud_sessions_dialog.py:165
 #, python-brace-format
 msgid "The state could not be read: {msg}"
 msgstr "Impossibile leggere lo stato: {msg}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:182
+#: polyhost/gui/cloud_sessions_dialog.py:185
 msgid "Not connected. \"Connect\" creates a channel on the relay for this computer."
 msgstr "Non collegato. «Collega» crea un canale sul relay per questo computer."
 
-#: polyhost/gui/cloud_sessions_dialog.py:188
+#: polyhost/gui/cloud_sessions_dialog.py:191
 msgid "The agent keys are off: turn on \"Show on the Number Row\" in the AI Agents menu."
 msgstr "I tasti agente sono disattivati: attiva «Mostra sulla riga dei numeri» nel menu Agenti IA."
 
-#: polyhost/gui/cloud_sessions_dialog.py:191
+#: polyhost/gui/cloud_sessions_dialog.py:194
 msgid "Connected to the relay."
 msgstr "Collegato al relay."
 
-#: polyhost/gui/cloud_sessions_dialog.py:193
+#: polyhost/gui/cloud_sessions_dialog.py:196
 #, python-brace-format
 msgid "The relay cannot be reached; trying again: {error}"
 msgstr "Il relay non è raggiungibile; nuovo tentativo: {error}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:196
+#: polyhost/gui/cloud_sessions_dialog.py:199
 msgid "Connecting to the relay…"
 msgstr "Collegamento al relay…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:208
+#: polyhost/gui/cloud_sessions_dialog.py:211
 msgid "Creating a channel on the relay…"
 msgstr "Creazione di un canale sul relay…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:218
+#: polyhost/gui/cloud_sessions_dialog.py:221
 #, python-brace-format
 msgid "Could not connect: {msg}"
 msgstr "Impossibile connettersi: {msg}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:224
-#: polyhost/gui/cloud_sessions_dialog.py:236
+#: polyhost/gui/cloud_sessions_dialog.py:227
+#: polyhost/gui/cloud_sessions_dialog.py:239
 msgid "Disconnect Cloud Sessions"
 msgstr "Scollega sessioni cloud"
 
-#: polyhost/gui/cloud_sessions_dialog.py:225
+#: polyhost/gui/cloud_sessions_dialog.py:228
 msgid "Delete the channel on the relay? The cloud sessions leave the agent keys, and the hooks in your cloud environment stop reaching this computer. Remove the environment variable there too."
 msgstr "Eliminare il canale sul relay? Le sessioni cloud lasciano i tasti agente e gli hook del tuo ambiente cloud non raggiungono più questo computer. Rimuovi anche la variabile d'ambiente lì."
 
@@ -940,7 +925,7 @@ msgstr "Destro"
 #: polyhost/gui/cmd_menu.py:396 polyhost/gui/fontpack_extend_dialog.py:242
 #: polyhost/gui/fontpack_extend_dialog.py:815
 #: polyhost/gui/hid_fw_up_dialog.py:208 polyhost/gui/log_viewer.py:309
-#: polyhost/host.py:189
+#: polyhost/host.py:191
 msgid "Cancel"
 msgstr "Annulla"
 
@@ -1015,7 +1000,7 @@ msgid "ok"
 msgstr "ok"
 
 #. TRANSLATORS: font-pack bundle state in a status table
-#: polyhost/gui/cmd_menu.py:555 polyhost/host.py:2470
+#: polyhost/gui/cmd_menu.py:555 polyhost/host.py:2466
 msgid "stale"
 msgstr "obsoleto"
 
@@ -1035,7 +1020,7 @@ msgstr "fornito"
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "Comandi PolyKybd (*.poly.cmd)"
 
-#: polyhost/gui/cmd_menu.py:566 polyhost/host.py:2810
+#: polyhost/gui/cmd_menu.py:566 polyhost/host.py:2795
 msgid "Open file"
 msgstr "Apri file"
 
@@ -1923,7 +1908,7 @@ msgstr "Associa un forwarder"
 msgid "On the other computer, open the forwarder's menu, choose \"Pair with the Keyboard Computer…\" and enter this code. Anyone with this code can send window and agent reports to this computer, so pass it on only over a channel you trust. \"Accept forwarders\" must be on in Settings."
 msgstr "Sull'altro computer, apri il menu del forwarder, scegli «Associa al computer della tastiera…» e inserisci questo codice. Chiunque abbia questo codice può inviare segnalazioni di finestre e agenti a questo computer, quindi comunicalo solo tramite un canale di cui ti fidi. «Accetta forwarder» deve essere attivo in Impostazioni."
 
-#: polyhost/forwarder.py:908 polyhost/gui/forwarder_pairing.py:37
+#: polyhost/forwarder.py:903 polyhost/gui/forwarder_pairing.py:37
 #: polyhost/gui/forwarder_pairing.py:44 polyhost/gui/forwarder_pairing.py:51
 msgid "Pair with the Keyboard Computer"
 msgstr "Associa al computer della tastiera"
@@ -1936,8 +1921,8 @@ msgstr "Inserisci il codice che «Associa un forwarder…» mostra sul computer 
 msgid "That is not a pairing code: it has 64 letters and digits (a to f, 0 to 9), in groups of 8."
 msgstr "Questo non è un codice di associazione: il codice ha 64 lettere e cifre (da a a f, da 0 a 9), in gruppi di 8."
 
-#: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:3421
-#: polyhost/host.py:3462 polyhost/host.py:3494
+#: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:3406
+#: polyhost/host.py:3447 polyhost/host.py:3479
 msgid "Firmware Update"
 msgstr "Aggiornamento firmware"
 
@@ -1979,6 +1964,106 @@ msgstr "Lingua"
 #: polyhost/gui/i18n_qt.py:90
 msgid "The new language is used after a restart. Restart now?"
 msgstr "La nuova lingua verrà usata dopo un riavvio. Riavviare ora?"
+
+#: polyhost/gui/integrations_dialog.py:96
+msgid "Checking…"
+msgstr "Verifica in corso…"
+
+#: polyhost/gui/integrations_dialog.py:110
+msgid "Install"
+msgstr "Installa"
+
+#: polyhost/gui/integrations_dialog.py:111
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:149
+msgid "Remove"
+msgstr "Rimuovi"
+
+#: polyhost/gui/integrations_dialog.py:132
+#, python-brace-format
+msgid "The check failed: {error}"
+msgstr "La verifica non è riuscita: {error}"
+
+#: polyhost/gui/integrations_dialog.py:257
+#: polyhost/gui/integrations_dialog.py:375
+#, python-brace-format
+msgid "The change failed: {error}"
+msgstr "La modifica non è riuscita: {error}"
+
+#: polyhost/gui/integrations_dialog.py:288
+#: polyhost/gui/shell_editor_pages.py:39 polyhost/gui/shell_editor_pages.py:74
+msgid "Set up"
+msgstr "Configurato"
+
+#: polyhost/gui/integrations_dialog.py:290
+msgid "Set up for another copy of the app, or an older version. Install updates it."
+msgstr "Configurato per un'altra copia dell'app o per una versione precedente. «Installa» lo aggiorna."
+
+#: polyhost/gui/integrations_dialog.py:295
+#, python-brace-format
+msgid "The file cannot be read: {error}"
+msgstr "Impossibile leggere il file: {error}"
+
+#: polyhost/gui/integrations_dialog.py:296
+#: polyhost/gui/shell_editor_pages.py:43 polyhost/gui/shell_editor_pages.py:76
+msgid "Not set up"
+msgstr "Non configurato"
+
+#: polyhost/gui/integrations_dialog.py:315
+#: polyhost/gui/integrations_dialog.py:349
+#: polyhost/gui/integrations_dialog.py:390 polyhost/gui/settings_dialog.py:102
+msgid "AI agents"
+msgstr "Agenti IA"
+
+#: polyhost/gui/integrations_dialog.py:316
+msgid ""
+"An agent's key shows whether the agent works, waits for you or is finished only when the agent runs the PolyKybd hook.\n"
+"\n"
+"Install adds the hooks to the agent's settings file. Your own hooks and settings are kept, and a copy of each file is saved as <file>.polykybd.bak. Remove takes out only the PolyKybd hooks. Restart the agent for the change to take effect."
+msgstr ""
+"Il tasto di un agente mostra se l'agente sta lavorando, ti sta aspettando o ha finito solo quando l'agente esegue l'hook di PolyKybd.\n"
+"\n"
+"«Installa» aggiunge gli hook al file delle impostazioni dell'agente. I tuoi hook e le tue impostazioni vengono mantenuti e una copia di ogni file viene salvata come <file>.polykybd.bak. «Rimuovi» toglie solo gli hook di PolyKybd. Riavvia l'agente perché la modifica abbia effetto."
+
+#: polyhost/gui/integrations_dialog.py:363
+msgid "Nothing to change."
+msgstr "Niente da modificare."
+
+#: polyhost/gui/integrations_dialog.py:365
+#, python-brace-format
+msgid "Write the PolyKybd hooks into {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
+msgstr "Scrivere gli hook di PolyKybd in {files}? I tuoi hook vengono mantenuti e una copia di ogni file viene salvata come <file>.polykybd.bak."
+
+#: polyhost/gui/integrations_dialog.py:368
+#, python-brace-format
+msgid "Remove the PolyKybd hooks from {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
+msgstr "Rimuovere gli hook di PolyKybd da {files}? I tuoi hook vengono mantenuti e una copia di ogni file viene salvata come <file>.polykybd.bak."
+
+#: polyhost/gui/integrations_dialog.py:378
+#, python-brace-format
+msgid "Changed: {path}"
+msgstr "Modificato: {path}"
+
+#: polyhost/gui/integrations_dialog.py:383
+msgid "Restart the agent for the change to take effect."
+msgstr "Riavvia l'agente perché la modifica abbia effetto."
+
+#: polyhost/gui/integrations_dialog.py:390
+#: polyhost/gui/shell_editor_pages.py:97
+msgid "Terminals"
+msgstr "Terminali"
+
+#: polyhost/gui/integrations_dialog.py:390
+#: polyhost/gui/shell_editor_pages.py:187
+msgid "Editors"
+msgstr "Editor"
+
+#: polyhost/gui/integrations_dialog.py:402
+msgid "Integrations"
+msgstr "Integrazioni"
+
+#: polyhost/gui/integrations_dialog.py:457
+msgid "Changes apply to the program after it restarts."
+msgstr "Le modifiche si applicano al programma dopo il suo riavvio."
 
 #: polyhost/gui/layout_dialog/combo_tab.py:101
 msgid "Save"
@@ -2256,7 +2341,7 @@ msgstr "nessun dato di anteprima (né fornito né da checkout)"
 msgid "the shipped language table is missing"
 msgstr "la tabella delle lingue fornita è mancante"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:595 polyhost/host.py:3437
+#: polyhost/gui/layout_dialog/keycap_preview.py:595 polyhost/host.py:3422
 msgid "unknown"
 msgstr "sconosciuto"
 
@@ -2921,7 +3006,7 @@ msgstr "Nessuna corrispondenza"
 msgid "{index} of {total}"
 msgstr "{index} di {total}"
 
-#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:2111
+#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:2107
 msgid "Mock keyboard"
 msgstr "Tastiera simulata"
 
@@ -3274,11 +3359,7 @@ msgstr "Rilevamento dei problemi"
 msgid "Logs"
 msgstr "Log"
 
-#: polyhost/gui/settings_dialog.py:102
-msgid "AI agents"
-msgstr "Agenti IA"
-
-#: polyhost/gui/settings_dialog.py:107 polyhost/host.py:895
+#: polyhost/gui/settings_dialog.py:107 polyhost/host.py:894
 msgid "Developer"
 msgstr "Sviluppatore"
 
@@ -3731,69 +3812,53 @@ msgstr "Genera"
 msgid "Fills in a new random token and copies it. Paste it into the browser extension's Options and save both."
 msgstr "Inserisce un nuovo token casuale e lo copia. Incollalo nelle «Opzioni» dell'estensione del browser e salva entrambi."
 
-#: polyhost/gui/shell_title_dialog.py:44 polyhost/gui/shell_title_dialog.py:76
-msgid "Set up"
-msgstr "Configurato"
-
-#: polyhost/gui/shell_title_dialog.py:46
+#: polyhost/gui/shell_editor_pages.py:41
 msgid "Shows the command without setup. Install adds only the Codex option."
 msgstr "Mostra il comando senza configurazione. Installa aggiunge solo l'opzione Codex."
 
-#: polyhost/gui/shell_title_dialog.py:48 polyhost/gui/shell_title_dialog.py:78
-msgid "Not set up"
-msgstr "Non configurato"
-
-#: polyhost/gui/shell_title_dialog.py:50 polyhost/gui/shell_title_dialog.py:84
+#: polyhost/gui/shell_editor_pages.py:45 polyhost/gui/shell_editor_pages.py:82
 #, python-brace-format
 msgid "Set up for another copy of the app: {path}"
 msgstr "Configurato per un'altra copia dell'app: {path}"
 
-#: polyhost/gui/shell_title_dialog.py:52 polyhost/gui/shell_title_dialog.py:89
+#: polyhost/gui/shell_editor_pages.py:47 polyhost/gui/shell_editor_pages.py:87
 msgid "Not found"
 msgstr "Non trovato"
 
-#: polyhost/gui/shell_title_dialog.py:54
+#: polyhost/gui/shell_editor_pages.py:49
 #, python-brace-format
 msgid "The profile path is unknown: {error}"
 msgstr "Il percorso del profilo è sconosciuto: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:56
+#: polyhost/gui/shell_editor_pages.py:51
 #, python-brace-format
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts."
 msgstr "Il criterio di esecuzione di PowerShell ({policy}) non esegue gli script di profilo."
 
-#: polyhost/gui/shell_title_dialog.py:58
+#: polyhost/gui/shell_editor_pages.py:53
 msgid "Shows the command without setup"
 msgstr "Mostra il comando senza configurazione"
 
-#: polyhost/gui/shell_title_dialog.py:80
+#: polyhost/gui/shell_editor_pages.py:78
 msgid "Set up with older plugin files. Install copies the current ones."
 msgstr "Configurato con file del plugin più vecchi. Installa copia quelli attuali."
 
-#: polyhost/gui/shell_title_dialog.py:82
+#: polyhost/gui/shell_editor_pages.py:80
 msgid "Set up, and changed by hand since. This app leaves it alone."
 msgstr "Configurato e poi modificato a mano. Questa app non lo modifica."
 
-#: polyhost/gui/shell_title_dialog.py:86
+#: polyhost/gui/shell_editor_pages.py:84
 #, python-brace-format
 msgid "The plugin is already loaded from {path}."
 msgstr "Il plugin viene già caricato da {path}."
 
-#: polyhost/gui/shell_title_dialog.py:88
-#: polyhost/services/editor_plugins.py:102
+#: polyhost/gui/shell_editor_pages.py:86
+#: polyhost/services/editor_plugins.py:123
 #, python-brace-format
 msgid "This installation has no plugin files ({path})."
 msgstr "Questa installazione non contiene file del plugin ({path})."
 
-#: polyhost/gui/shell_title_dialog.py:131
-msgid "Terminal and editor setup"
-msgstr "Configurazione del terminale e degli editor"
-
-#: polyhost/gui/shell_title_dialog.py:140
-msgid "Terminals"
-msgstr "Terminali"
-
-#: polyhost/gui/shell_title_dialog.py:142
+#: polyhost/gui/shell_editor_pages.py:98
 msgid ""
 "The keyboard shows the shortcuts of a program running in a terminal (nano, for example) only when the terminal's window title names the program. bash, zsh and PowerShell do not do this without setup.\n"
 "\n"
@@ -3803,15 +3868,39 @@ msgstr ""
 "\n"
 "Installa aggiunge una riga al file di avvio di ogni shell selezionata, tra due commenti di marcatura, e prima salva una copia del file accanto a esso. Rimuovi cancella quelle righe. La modifica vale per le finestre di terminale aperte dopo. Per cambiare l'opzione Codex, seleziona le shell e premi di nuovo Installa."
 
-#: polyhost/gui/shell_title_dialog.py:157
+#: polyhost/gui/shell_editor_pages.py:112
 msgid "Also show Codex in the title (wraps the codex command)"
 msgstr "Mostra anche Codex nel titolo (avvolge il comando codex)"
 
-#: polyhost/gui/shell_title_dialog.py:159
+#: polyhost/gui/shell_editor_pages.py:114
 msgid "Codex replaces the terminal title with the thread and project name, so the keyboard cannot tell that it is running. With this option the codex command starts Codex with a title that begins with \"codex\". A codex alias or function of your own, and a title set in Codex's config.toml, are kept."
 msgstr "Codex sostituisce il titolo del terminale con il nome del thread e del progetto, quindi la tastiera non sa che è in esecuzione. Con questa opzione il comando codex avvia Codex con un titolo che inizia con \"codex\". Un tuo alias o una tua funzione codex, e un titolo impostato nel config.toml di Codex, vengono mantenuti."
 
-#: polyhost/gui/shell_title_dialog.py:171
+#: polyhost/gui/shell_editor_pages.py:126
+#, python-brace-format
+msgid "The shells could not be checked: {error}"
+msgstr "Impossibile verificare le shell: {error}"
+
+#: polyhost/gui/shell_editor_pages.py:143
+#, python-brace-format
+msgid "{shell}: shows the command without setup."
+msgstr "{shell}: mostra il comando senza configurazione."
+
+#: polyhost/gui/shell_editor_pages.py:155
+msgid "No bash, zsh or PowerShell was found on this computer."
+msgstr "Su questo computer non è stato trovato né bash né zsh né PowerShell."
+
+#: polyhost/gui/shell_editor_pages.py:172
+#: polyhost/gui/shell_editor_pages.py:261
+#, python-brace-format
+msgid "Copy of the previous file: {path}"
+msgstr "Copia del file precedente: {path}"
+
+#: polyhost/gui/shell_editor_pages.py:174
+msgid "Open a new terminal window for the change to take effect."
+msgstr "Apri una nuova finestra di terminale perché la modifica abbia effetto."
+
+#: polyhost/gui/shell_editor_pages.py:188
 msgid ""
 "Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin. GDB shows whether the program runs or waits at the prompt only with it.\n"
 "\n"
@@ -3821,80 +3910,30 @@ msgstr ""
 "\n"
 "Installa copia il plugin da questa installazione nel punto da cui il programma lo carica. Per Emacs e GDB aggiunge anche al file init le righe che caricano il plugin, tra due commenti di marcatura, e prima salva una copia del file. Quando questa app viene aggiornata, copia i nuovi file del plugin al suo avvio successivo. Riavvia il programma perché la modifica abbia effetto."
 
-#: polyhost/gui/shell_title_dialog.py:181
-msgid "Editors"
-msgstr "Editor"
-
-#: polyhost/gui/shell_title_dialog.py:192
-msgid "Checking the shells…"
-msgstr "Verifica delle shell…"
-
-#: polyhost/gui/shell_title_dialog.py:205
-msgid "Install"
-msgstr "Installa"
-
-#: polyhost/gui/layout_dialog/macro_steps_dialog.py:149
-#: polyhost/gui/shell_title_dialog.py:206
-msgid "Remove"
-msgstr "Rimuovi"
-
-#: polyhost/gui/shell_title_dialog.py:277
-#, python-brace-format
-msgid "The shells could not be checked: {error}"
-msgstr "Impossibile verificare le shell: {error}"
-
-#: polyhost/gui/shell_title_dialog.py:305
-#, python-brace-format
-msgid "{shell}: shows the command without setup."
-msgstr "{shell}: mostra il comando senza configurazione."
-
-#: polyhost/gui/shell_title_dialog.py:333
-msgid "No bash, zsh or PowerShell was found on this computer."
-msgstr "Su questo computer non è stato trovato né bash né zsh né PowerShell."
-
-#: polyhost/gui/shell_title_dialog.py:352
+#: polyhost/gui/shell_editor_pages.py:209
 #, python-brace-format
 msgid "The editors could not be checked: {error}"
 msgstr "Impossibile verificare gli editor: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:375
-msgid ""
-"Live shows Session View or Arrangement View keys with this script. After "
-"Install, restart Live and choose PolyKybd as a Control Surface in Settings > "
-"Link, Tempo & MIDI."
+#: polyhost/gui/shell_editor_pages.py:228
+msgid "Live shows Session View or Arrangement View keys with this script. After Install, restart Live and choose PolyKybd as a Control Surface in Settings > Link, Tempo & MIDI."
 msgstr ""
 
-#: polyhost/gui/shell_title_dialog.py:375
+#: polyhost/gui/shell_editor_pages.py:234
 msgid "No Vim, Neovim or Emacs was found on this computer."
 msgstr "Su questo computer non è stato trovato né Vim, né Neovim, né Emacs."
 
-#: polyhost/gui/shell_title_dialog.py:381
+#: polyhost/gui/shell_editor_pages.py:240
 #, python-brace-format
 msgid "This app listens on port {port} and requires a token. The plugins use port 50164 and no token: set g:polykybd_port and g:polykybd_token in Vim, or polykybd-port and polykybd-token in Emacs, to the same values."
 msgstr "Questa app è in ascolto sulla porta {port} e richiede un token. I plugin usano la porta 50164 e nessun token: imposta g:polykybd_port e g:polykybd_token in Vim, o polykybd-port e polykybd-token in Emacs, sugli stessi valori."
 
-#: polyhost/gui/shell_title_dialog.py:386
+#: polyhost/gui/shell_editor_pages.py:245
 #, python-brace-format
 msgid "This app listens on port {port}. The plugins use port 50164: set g:polykybd_port in Vim, or polykybd-port in Emacs, to the same value."
 msgstr "Questa app è in ascolto sulla porta {port}. I plugin usano la porta 50164: imposta g:polykybd_port in Vim, o polykybd-port in Emacs, sullo stesso valore."
 
-#: polyhost/gui/shell_title_dialog.py:424
-#: polyhost/gui/shell_title_dialog.py:437
-#, python-brace-format
-msgid "The change failed: {error}"
-msgstr "La modifica non è riuscita: {error}"
-
-#: polyhost/gui/shell_title_dialog.py:428
-#: polyhost/gui/shell_title_dialog.py:441
-#, python-brace-format
-msgid "Copy of the previous file: {path}"
-msgstr "Copia del file precedente: {path}"
-
-#: polyhost/gui/shell_title_dialog.py:430
-msgid "Open a new terminal window for the change to take effect."
-msgstr "Apri una nuova finestra di terminale perché la modifica abbia effetto."
-
-#: polyhost/gui/shell_title_dialog.py:443
+#: polyhost/gui/shell_editor_pages.py:263
 msgid "Restart the editor for the change to take effect."
 msgstr "Riavvia l'editor perché la modifica abbia effetto."
 
@@ -3944,7 +3983,7 @@ msgstr "Un tasto con un'azione di tocco e una di pressione prolungata invia l'az
 msgid "With Auto Shift on, holding a letter, digit or symbol key longer than the Auto Shift timeout types its shifted character."
 msgstr "Con Auto Shift attivo, tenere premuto un tasto di lettera, cifra o simbolo più a lungo del tempo di Auto Shift scrive il suo carattere con Maiusc."
 
-#: polyhost/gui/tap_terms_dialog.py:34 polyhost/host.py:2085
+#: polyhost/gui/tap_terms_dialog.py:34 polyhost/host.py:2081
 msgid "Tap-Hold Timing"
 msgstr "Tempi tocco-pressione"
 
@@ -3997,21 +4036,21 @@ msgstr "{prefix} — disponibile host v{host_version}"
 msgid "{prefix} — firmware v{fw_version} available"
 msgstr "{prefix} — disponibile firmware v{fw_version}"
 
-#: polyhost/forwarder.py:280 polyhost/gui/tray_notify.py:81
-#: polyhost/host.py:750
+#: polyhost/forwarder.py:278 polyhost/gui/tray_notify.py:81
+#: polyhost/host.py:761
 msgid "Updates"
 msgstr "Aggiornamenti"
 
-#: polyhost/gui/update_dialog.py:134
+#: polyhost/gui/update_dialog.py:144
 msgid "What's new"
 msgstr "Novità"
 
-#: polyhost/gui/update_dialog.py:137
+#: polyhost/gui/update_dialog.py:147
 #, python-brace-format
 msgid "What's new — {release_name}"
 msgstr "Novità — {release_name}"
 
-#: polyhost/gui/update_dialog.py:155
+#: polyhost/gui/update_dialog.py:165
 msgid "View full release notes on GitHub"
 msgstr "Vedi le note di rilascio complete su GitHub"
 
@@ -4099,248 +4138,248 @@ msgstr "C64 keycap"
 msgid "Small (standard)"
 msgstr "Piccola (standard)"
 
-#: polyhost/host.py:85 polyhost/host.py:704
+#: polyhost/host.py:85 polyhost/host.py:715
 msgid "Medium"
 msgstr "Media"
 
-#: polyhost/host.py:86 polyhost/host.py:704
+#: polyhost/host.py:86 polyhost/host.py:715
 msgid "Large"
 msgstr "Grande"
 
-#: polyhost/host.py:215
+#: polyhost/host.py:217
 msgid "Updating keyboard font pack — please wait, do not unplug…"
 msgstr "Aggiornamento del pacchetto font della tastiera in corso: attendi e non scollegare…"
 
-#: polyhost/host.py:216
+#: polyhost/host.py:218
 #, python-brace-format
 msgid "PolyKybd — updating font pack ({percent}%)"
 msgstr "PolyKybd — aggiornamento del pacchetto font ({percent}%)"
 
-#: polyhost/host.py:217
+#: polyhost/host.py:219
 msgid "Keyboard font pack is up to date."
 msgstr "Il pacchetto font della tastiera è aggiornato."
 
-#: polyhost/host.py:218
+#: polyhost/host.py:220
 #, python-brace-format
 msgid "Font pack update failed: {error}"
 msgstr "Aggiornamento del pacchetto font non riuscito: {error}"
 
-#: polyhost/host.py:221
+#: polyhost/host.py:223
 msgid "Updating keyboard game data — please wait, do not unplug…"
 msgstr "Aggiornamento dei dati di gioco della tastiera in corso: attendi e non scollegare…"
 
-#: polyhost/host.py:222
+#: polyhost/host.py:224
 #, python-brace-format
 msgid "PolyKybd — updating game data ({percent}%)"
 msgstr "PolyKybd — aggiornamento dei dati di gioco ({percent}%)"
 
-#: polyhost/host.py:223
+#: polyhost/host.py:225
 msgid "Keyboard game data is up to date."
 msgstr "I dati di gioco della tastiera sono aggiornati."
 
-#: polyhost/host.py:224
+#: polyhost/host.py:226
 #, python-brace-format
 msgid "Game data update failed: {error}"
 msgstr "Aggiornamento dei dati di gioco non riuscito: {error}"
 
-#: polyhost/host.py:227
+#: polyhost/host.py:229
 msgid "Updating keyboard engine pack — please wait, do not unplug…"
 msgstr "Aggiornamento del pacchetto motore della tastiera in corso: attendi e non scollegare…"
 
-#: polyhost/host.py:228
+#: polyhost/host.py:230
 #, python-brace-format
 msgid "PolyKybd — updating engine pack ({percent}%)"
 msgstr "PolyKybd — aggiornamento del pacchetto motore ({percent}%)"
 
-#: polyhost/host.py:229
+#: polyhost/host.py:231
 msgid "Keyboard engine pack is up to date."
 msgstr "Il pacchetto motore della tastiera è aggiornato."
 
-#: polyhost/host.py:230
+#: polyhost/host.py:232
 #, python-brace-format
 msgid "Engine pack update failed: {error}"
 msgstr "Aggiornamento del pacchetto motore non riuscito: {error}"
 
-#: polyhost/host.py:427 polyhost/host.py:1601
+#: polyhost/host.py:429 polyhost/host.py:1602
 msgid "Waiting for PolyKybd..."
 msgstr "In attesa di PolyKybd..."
 
-#: polyhost/host.py:428 polyhost/host.py:1448
+#: polyhost/host.py:430 polyhost/host.py:1449
 msgid "Press to pause connection"
 msgstr "Premi per sospendere la connessione"
 
-#: polyhost/forwarder.py:361 polyhost/host.py:431
+#: polyhost/forwarder.py:358 polyhost/host.py:433
 msgid "Quit"
 msgstr "Esci"
 
-#: polyhost/host.py:440
+#: polyhost/host.py:442
 msgid "Quit && stop background daemon"
 msgstr "Esci && arresta il daemon in background"
 
-#: polyhost/forwarder.py:328 polyhost/host.py:445
+#: polyhost/forwarder.py:325 polyhost/host.py:447
 msgid "About"
 msgstr "Informazioni"
 
-#: polyhost/forwarder.py:317 polyhost/host.py:449
+#: polyhost/forwarder.py:308 polyhost/host.py:455
+msgid "Integrations…"
+msgstr "Integrazioni…"
+
+#: polyhost/forwarder.py:314 polyhost/host.py:460
 msgid "Settings..."
 msgstr "Impostazioni..."
 
-#: polyhost/forwarder.py:332 polyhost/host.py:453
+#: polyhost/forwarder.py:329 polyhost/host.py:464
 msgid "Log file..."
 msgstr "File di log..."
 
-#: polyhost/forwarder.py:338 polyhost/host.py:462
+#: polyhost/forwarder.py:335 polyhost/host.py:473
 msgid "Report a Problem..."
 msgstr "Segnala un problema..."
 
-#: polyhost/forwarder.py:344 polyhost/host.py:482
+#: polyhost/forwarder.py:341 polyhost/host.py:493
 msgid "Collect logs..."
 msgstr "Raccogli log..."
 
-#: polyhost/host.py:491
+#: polyhost/host.py:502
 msgid "Read keyboard crash record"
 msgstr "Leggi registro dei crash della tastiera"
 
-#: polyhost/host.py:493
+#: polyhost/host.py:504
 msgid "Read the keyboard's last crash record from both halves and copy it to the clipboard."
 msgstr "Legge l'ultimo registro dei crash della tastiera da entrambe le metà e lo copia negli Appunti."
 
-#: polyhost/host.py:498
+#: polyhost/host.py:509
 msgid "Inspect Font Packs..."
 msgstr "Ispeziona pacchetti font..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
-#: polyhost/forwarder.py:266 polyhost/forwarder.py:419 polyhost/host.py:512
-#: polyhost/host.py:1450
+#: polyhost/forwarder.py:266 polyhost/forwarder.py:416 polyhost/host.py:523
+#: polyhost/host.py:1451
 msgid "Pause"
 msgstr "Pausa"
 
-#: polyhost/host.py:522
+#: polyhost/host.py:533
 msgid "Firmware newer than this app — safe mode…"
 msgstr "Firmware più recente di questa app: modalità provvisoria…"
 
-#: polyhost/host.py:524
+#: polyhost/host.py:535
 msgid "Choose how to handle a keyboard whose firmware is newer than this host app."
 msgstr "Scegli come gestire una tastiera il cui firmware è più recente di questa app host."
 
-#: polyhost/host.py:571
+#: polyhost/host.py:582
 msgid "Idle Display"
 msgstr "Display inattivo"
 
-#: polyhost/host.py:574
+#: polyhost/host.py:585
 msgid "Pulse (legacy)"
 msgstr "Pulsazione (legacy)"
 
-#: polyhost/host.py:576
+#: polyhost/host.py:587
 msgid "Jitter (move legend)"
 msgstr "Oscillazione (sposta la legenda)"
 
-#: polyhost/host.py:580
+#: polyhost/host.py:591
 msgid "IDDQD (attract demo)"
 msgstr "IDDQD (demo attrattiva)"
 
-#: polyhost/host.py:584 polyhost/host.py:600
+#: polyhost/host.py:595 polyhost/host.py:611
 msgid "Eden"
 msgstr "Eden"
 
-#: polyhost/host.py:600
+#: polyhost/host.py:611
 msgid "Pulse"
 msgstr "Pulsazione"
 
-#: polyhost/host.py:600
+#: polyhost/host.py:611
 msgid "Jitter"
 msgstr "Oscillazione"
 
-#: polyhost/host.py:611
+#: polyhost/host.py:622
 msgid "Idle After"
 msgstr "Inattività dopo"
 
-#: polyhost/host.py:632
+#: polyhost/host.py:643
 msgid "Keycap Script"
 msgstr "Scrittura dei keycap"
 
-#: polyhost/host.py:656
+#: polyhost/host.py:667
 msgid "Centred on the keycap"
 msgstr "Centrato sul tasto"
 
-#: polyhost/host.py:657
+#: polyhost/host.py:668
 msgid "In the top-left corner"
 msgstr "Nell'angolo in alto a sinistra"
 
-#: polyhost/host.py:684
+#: polyhost/host.py:695
 msgid "Keycap Size"
 msgstr "Dimensione dei keycap"
 
-#: polyhost/host.py:704
+#: polyhost/host.py:715
 msgid "Small"
 msgstr "Piccola"
 
-#: polyhost/host.py:712
+#: polyhost/host.py:723
 msgid "Emoji Search Language"
 msgstr "Lingua della ricerca emoji"
 
-#: polyhost/host.py:723
+#: polyhost/host.py:734
 msgid "Tap-Hold Timing…"
 msgstr "Tempi tocco-pressione…"
 
-#: polyhost/host.py:734
+#: polyhost/host.py:745
 msgid "AI Agents"
 msgstr "Agenti IA"
 
-#: polyhost/host.py:742
+#: polyhost/host.py:753
 msgid "Configure Keymap"
 msgstr "Configura mappatura tasti"
 
-#: polyhost/host.py:752
+#: polyhost/host.py:763
 msgid "Check for host update..."
 msgstr "Verifica aggiornamenti dell'host..."
 
-#: polyhost/host.py:791 polyhost/host.py:2899 polyhost/host.py:3434
-#: polyhost/host.py:3612
+#: polyhost/host.py:802 polyhost/host.py:2884 polyhost/host.py:3419
+#: polyhost/host.py:3597
 msgid "Check for firmware update…"
 msgstr "Verifica aggiornamenti del firmware…"
 
-#: polyhost/host.py:800
+#: polyhost/host.py:811
 msgid "Keyboard fonts"
 msgstr "Font della tastiera"
 
-#: polyhost/host.py:835
+#: polyhost/host.py:846
 msgid "Install WinCompose…"
 msgstr "Installa WinCompose…"
 
-#: polyhost/host.py:857
+#: polyhost/host.py:868
 msgid "Allow access to the keyboard (udev rule)…"
 msgstr "Consenti l'accesso alla tastiera (regola udev)…"
 
-#: polyhost/forwarder.py:298 polyhost/host.py:878
-msgid "Set up the terminal and editors…"
-msgstr "Configura il terminale e gli editor…"
-
-#: polyhost/host.py:897
+#: polyhost/host.py:896
 msgid "Change System Input Language"
 msgstr "Cambia lingua di input del sistema"
 
-#: polyhost/host.py:903
+#: polyhost/host.py:902
 msgid "Inspect MRU Cache..."
 msgstr "Ispeziona cache MRU..."
 
-#: polyhost/host.py:909
+#: polyhost/host.py:908
 msgid "Mock Keyboard..."
 msgstr "Tastiera simulata..."
 
-#: polyhost/host.py:917
+#: polyhost/host.py:916
 msgid "Refresh unicode input mode"
 msgstr "Aggiorna modalità di input Unicode"
 
-#: polyhost/host.py:921
+#: polyhost/host.py:920
 msgid "Save MRU cache now"
 msgstr "Salva ora la cache MRU"
 
-#: polyhost/forwarder.py:354 polyhost/host.py:935
+#: polyhost/forwarder.py:351 polyhost/host.py:935
 msgid "Help && About"
 msgstr "Guida && informazioni"
 
-#: polyhost/forwarder.py:350 polyhost/host.py:944
+#: polyhost/forwarder.py:347 polyhost/host.py:944
 msgid "Open config folder"
 msgstr "Apri cartella di configurazione"
 
@@ -4388,84 +4427,84 @@ msgstr ""
 "Tutti i bundle dei font forniti sono già sulla tastiera.\n"
 "Sviluppatore → Pacchetto font → Riscrivi TUTTI i bundle forza un nuovo invio se i keycap vengono ancora visualizzati in modo errato."
 
-#: polyhost/forwarder.py:853 polyhost/host.py:1313
+#: polyhost/forwarder.py:846 polyhost/host.py:1313
 msgid "Config folder"
 msgstr "Cartella di configurazione"
 
 #. TRANSLATORS: {rate} is like "0.6 MB/s"; the fast USB link's measured speed.
-#: polyhost/host.py:1417
+#: polyhost/host.py:1418
 #, python-brace-format
 msgid "{rate} link"
 msgstr "collegamento a {rate}"
 
 #. TRANSLATORS: {kbps} is the HID channel's ceiling in KB/s (64).
-#: polyhost/host.py:1419
+#: polyhost/host.py:1420
 #, python-brace-format
 msgid "HID link, up to {kbps} KB/s"
 msgstr "collegamento HID, fino a {kbps} KB/s"
 
 #. TRANSLATORS: tray tooltip line; {link} is "0.6 MB/s link" or "HID link, up
 #. to 64 KB/s".
-#: polyhost/host.py:1426
+#: polyhost/host.py:1427
 #, python-brace-format
 msgid "Connected: {link}"
 msgstr "Connesso: {link}"
 
 #. TRANSLATORS: status row while paused; clicking it reconnects (verb).
-#: polyhost/host.py:1442
+#: polyhost/host.py:1443
 msgid "Reconnect"
 msgstr "Riconnetti"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:419 polyhost/host.py:1445
+#: polyhost/forwarder.py:416 polyhost/host.py:1446
 msgid "Resume"
 msgstr "Riprendi"
 
-#: polyhost/host.py:1528 polyhost/host.py:1593
+#: polyhost/host.py:1529 polyhost/host.py:1594
 #, python-brace-format
 msgid "Could not change OS language {language}."
 msgstr "Impossibile cambiare la lingua del sistema operativo {language}."
 
 #. TRANSLATORS: file-dialog filter; keep "(*.bin)" unchanged.
-#: polyhost/host.py:1617
+#: polyhost/host.py:1618
 msgid "Firmware image (*.bin)"
 msgstr "Immagine firmware (*.bin)"
 
-#: polyhost/host.py:1618
+#: polyhost/host.py:1619
 msgid "Select firmware .bin"
 msgstr "Seleziona firmware .bin"
 
-#: polyhost/host.py:1669
+#: polyhost/host.py:1670
 msgid "Firmware apply failed"
 msgstr "Applicazione del firmware non riuscita"
 
-#: polyhost/host.py:1670
+#: polyhost/host.py:1671
 msgid "Firmware flash failed"
 msgstr "Scrittura del firmware non riuscita"
 
-#: polyhost/host.py:1718 polyhost/host.py:1775
+#: polyhost/host.py:1719 polyhost/host.py:1776
 #, python-brace-format
 msgid "Selected Language: {language} {country}"
 msgstr "Lingua selezionata: {language} {country}"
 
-#: polyhost/host.py:1830
+#: polyhost/host.py:1831
 msgid "PolyHost settings"
 msgstr "Impostazioni di PolyHost"
 
-#: polyhost/host.py:1831
+#: polyhost/host.py:1832
 msgid "The settings are applied, but they could not be saved to the settings file. Another program may be holding it open. Change a setting again later to retry, or see the log."
 msgstr "Le impostazioni sono state applicate, ma non è stato possibile salvarle nel file delle impostazioni. Un altro programma potrebbe tenerlo aperto. Modifica di nuovo un'impostazione più tardi per riprovare, oppure consulta il log."
 
-#: polyhost/host.py:1933
+#: polyhost/host.py:1934
 #, python-brace-format
 msgid "{side}: unreadable record {record}"
 msgstr "{side}: registro illeggibile {record}"
 
-#: polyhost/host.py:1936
+#: polyhost/host.py:1937
 msgid "Neither keyboard half holds a crash record."
 msgstr "Nessuna delle due metà della tastiera contiene un registro dei crash."
 
-#: polyhost/host.py:1938
+#: polyhost/host.py:1939
 #, python-brace-format
 msgid ""
 "Could not read the crash record.\n"
@@ -4476,129 +4515,129 @@ msgstr ""
 "\n"
 "{errors}"
 
-#: polyhost/host.py:1940
+#: polyhost/host.py:1941
 msgid "Keyboard crash record"
 msgstr "Registro dei crash della tastiera"
 
-#: polyhost/host.py:1949
+#: polyhost/host.py:1950
 #, python-brace-format
 msgid "Copied to the clipboard. Not read: {errors}"
 msgstr "Copiato negli Appunti. Non letti: {errors}"
 
-#: polyhost/host.py:2046
+#: polyhost/host.py:2042
 msgid "Could not read the tap-hold timing from the keyboard."
 msgstr "Impossibile leggere i tempi tocco-pressione dalla tastiera."
 
-#: polyhost/host.py:2078
+#: polyhost/host.py:2074
 msgid "The keyboard did not accept the tap-hold timing."
 msgstr "La tastiera non ha accettato i tempi tocco-pressione."
 
-#: polyhost/host.py:2101
+#: polyhost/host.py:2097
 msgid "MRU Cache"
 msgstr "Cache MRU"
 
-#: polyhost/host.py:2101
+#: polyhost/host.py:2097
 msgid "MRU cache is not active (device not connected or MRU mode disabled)."
 msgstr "La cache MRU non è attiva (dispositivo non connesso o modalità MRU disattivata)."
 
-#: polyhost/host.py:2153
+#: polyhost/host.py:2149
 msgid "daemon client"
 msgstr "client del daemon"
 
-#: polyhost/host.py:2153
+#: polyhost/host.py:2149
 msgid "standalone"
 msgstr "autonomo"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:928 polyhost/host.py:2211
+#: polyhost/forwarder.py:923 polyhost/host.py:2207
 msgid "paused"
 msgstr "in pausa"
 
-#: polyhost/host.py:2213
+#: polyhost/host.py:2209
 msgid "connected"
 msgstr "connessa"
 
-#: polyhost/host.py:2214
+#: polyhost/host.py:2210
 msgid "present — not connected (protocol/version)"
 msgstr "presente, non connessa (protocollo/versione)"
 
-#: polyhost/host.py:2221
+#: polyhost/host.py:2217
 msgid "Keyboard"
 msgstr "Tastiera"
 
-#: polyhost/host.py:2222
+#: polyhost/host.py:2218
 msgid "No keyboard connected."
 msgstr "Nessuna tastiera connessa."
 
-#: polyhost/host.py:2226
+#: polyhost/host.py:2222
 msgid "⚠ mismatch"
 msgstr "⚠ non corrisponde"
 
-#: polyhost/host.py:2228
+#: polyhost/host.py:2224
 #, python-brace-format
 msgid "{n} languages loaded"
 msgid_plural "{n} languages loaded"
 msgstr[0] "{n} lingua caricata"
 msgstr[1] "{n} lingue caricate"
 
-#: polyhost/host.py:2231
+#: polyhost/host.py:2227
 #, python-brace-format
 msgid "<b>Connected keyboard:</b> {name} {state}"
 msgstr "<b>Tastiera connessa:</b> {name} {state}"
 
-#: polyhost/host.py:2233
+#: polyhost/host.py:2229
 #, python-brace-format
 msgid "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
 msgstr "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocollo {protocol}"
 
-#: polyhost/host.py:2235
+#: polyhost/host.py:2231
 #, python-brace-format
 msgid "<b>Hardware:</b> {hardware}"
 msgstr "<b>Hardware:</b> {hardware}"
 
-#: polyhost/host.py:2236
+#: polyhost/host.py:2232
 #, python-brace-format
 msgid "<b>Language:</b> {language}"
 msgstr "<b>Lingua:</b> {language}"
 
-#: polyhost/host.py:2239
+#: polyhost/host.py:2235
 #, python-brace-format
 msgid "<b>Link:</b> {link}"
 msgstr "<b>Collegamento:</b> {link}"
 
-#: polyhost/host.py:2246
+#: polyhost/host.py:2242
 #, python-brace-format
 msgid "<b>Uptime:</b> {uptime}"
 msgstr "<b>Tempo di attività:</b> {uptime}"
 
-#: polyhost/host.py:2248
+#: polyhost/host.py:2244
 #, python-brace-format
 msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>Mappature degli overlay:</b> {n} app"
 msgstr[1] "<b>Mappature degli overlay:</b> {n} app"
 
-#: polyhost/forwarder.py:945 polyhost/host.py:2250
+#: polyhost/forwarder.py:940 polyhost/host.py:2246
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>Configurazione:</b> {path}"
 
-#: polyhost/forwarder.py:946 polyhost/host.py:2251
+#: polyhost/forwarder.py:941 polyhost/host.py:2247
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>Log:</b> {path}"
 
-#: polyhost/forwarder.py:964 polyhost/host.py:2305
+#: polyhost/forwarder.py:959 polyhost/host.py:2301
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "Protocollo HID P{protocol}"
 
-#: polyhost/host.py:2310
+#: polyhost/host.py:2306
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
 msgstr "Software host per la tastiera split PolyKybd con display OLED su ogni keycap: rileva la finestra attiva e invia alla tastiera overlay, lingua e aggiornamenti della mappatura tasti."
 
-#: polyhost/host.py:2336
+#: polyhost/host.py:2332
 #, python-brace-format
 msgid ""
 "Changing input language to '{language}' failed with:\n"
@@ -4607,163 +4646,163 @@ msgstr ""
 "Il cambio della lingua di input in '{language}' non è riuscito:\n"
 "\"{error}\""
 
-#: polyhost/host.py:2356 polyhost/host.py:2373
+#: polyhost/host.py:2352 polyhost/host.py:2369
 #, python-brace-format
 msgid "Could not set {language}: {error}"
 msgstr "Impossibile impostare {language}: {error}"
 
-#: polyhost/host.py:2428
+#: polyhost/host.py:2424
 msgid "Show on the Number Row"
 msgstr "Mostra sulla riga dei numeri"
 
-#: polyhost/host.py:2437
+#: polyhost/host.py:2433
 msgid "Remove Agent"
 msgstr "Rimuovi agente"
 
-#: polyhost/host.py:2442
+#: polyhost/host.py:2438
+msgid "Set Up Hooks…"
+msgstr "Configura gli hook…"
+
+#: polyhost/host.py:2443
 msgid "Pair a Forwarder…"
 msgstr "Associa un forwarder…"
 
-#: polyhost/host.py:2446
+#: polyhost/host.py:2447
 msgid "Connect Cloud Sessions…"
 msgstr "Collega sessioni cloud…"
 
-#: polyhost/host.py:2450
-msgid "Install Browser Extension…"
-msgstr "Installa l'estensione del browser…"
-
-#: polyhost/host.py:2466
+#: polyhost/host.py:2462
 msgid "No agents reported"
 msgstr "Nessun agente segnalato"
 
-#: polyhost/host.py:2469
+#: polyhost/host.py:2465
 msgid "working"
 msgstr "al lavoro"
 
-#: polyhost/host.py:2469
+#: polyhost/host.py:2465
 msgid "waiting"
 msgstr "in attesa"
 
-#: polyhost/host.py:2469
+#: polyhost/host.py:2465
 msgid "done"
 msgstr "completato"
 
-#: polyhost/host.py:2470
+#: polyhost/host.py:2466
 msgid "idle"
 msgstr "inattivo"
 
-#: polyhost/host.py:2473
+#: polyhost/host.py:2469
 #, python-brace-format
 msgid "Key {key}: {name}, {state}, {title}"
 msgstr "Tasto {key}: {name}, {state}, {title}"
 
-#: polyhost/host.py:2478
+#: polyhost/host.py:2474
 #, python-brace-format
 msgid "Page {page}, {text}"
 msgstr "Pagina {page}, {text}"
 
-#: polyhost/host.py:2501
+#: polyhost/host.py:2497
 msgid "Remove All Inactive"
 msgstr "Rimuovi tutti gli inattivi"
 
-#: polyhost/host.py:2574
+#: polyhost/host.py:2559
 msgid "Open Cloud Session"
 msgstr "Apri sessione cloud"
 
-#: polyhost/host.py:2575
+#: polyhost/host.py:2560
 #, python-brace-format
 msgid "No browser tab or Claude app window shows the cloud session \"{title}\". Open it in the browser?"
 msgstr "Nessuna scheda del browser né finestra dell'app Claude mostra la sessione cloud «{title}». Vuoi aprirla nel browser?"
 
-#: polyhost/host.py:2582
+#: polyhost/host.py:2567
 msgid "Open in Browser"
 msgstr "Apri nel browser"
 
-#: polyhost/host.py:2707
+#: polyhost/host.py:2692
 msgid "No emoji search dictionaries shipped"
 msgstr "Nessun dizionario per la ricerca emoji incluso"
 
-#: polyhost/host.py:2713
+#: polyhost/host.py:2698
 msgid "Needs newer keyboard firmware"
 msgstr "Richiede un firmware della tastiera più recente"
 
-#: polyhost/host.py:2741
+#: polyhost/host.py:2726
 msgid "Own dictionary file..."
 msgstr "File di dizionario personale..."
 
-#: polyhost/host.py:2743
+#: polyhost/host.py:2728
 #, python-brace-format
 msgid "Own dictionary (cannot be used): {name}"
 msgstr "Dizionario personale (non utilizzabile): {name}"
 
-#: polyhost/host.py:2745
+#: polyhost/host.py:2730
 #, python-brace-format
 msgid "Own dictionary: {name}"
 msgstr "Dizionario personale: {name}"
 
-#: polyhost/host.py:2762
+#: polyhost/host.py:2747
 msgid "Choose an emoji search dictionary"
 msgstr "Scegli un dizionario di ricerca emoji"
 
-#: polyhost/host.py:2763
+#: polyhost/host.py:2748
 msgid "Emoji search dictionary (*.plyd)"
 msgstr "Dizionario di ricerca emoji (*.plyd)"
 
-#: polyhost/host.py:2776
+#: polyhost/host.py:2761
 msgid "Emoji search dictionary"
 msgstr "Dizionario di ricerca emoji"
 
-#: polyhost/host.py:2777
+#: polyhost/host.py:2762
 #, python-brace-format
 msgid "This file cannot be used: {reason}"
 msgstr "Questo file non può essere usato: {reason}"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-#: polyhost/host.py:2809
+#: polyhost/host.py:2794
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "Mappatura degli overlay PolyKybd (*.poly.yaml)"
 
-#: polyhost/host.py:2897 polyhost/host.py:3393 polyhost/host.py:3541
+#: polyhost/host.py:2882 polyhost/host.py:3378 polyhost/host.py:3526
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "Aggiorna il firmware alla v{version}…"
 
-#: polyhost/forwarder.py:1003 polyhost/forwarder.py:1014
-#: polyhost/forwarder.py:1020 polyhost/host.py:2917 polyhost/host.py:3038
-#: polyhost/host.py:3042
+#: polyhost/forwarder.py:998 polyhost/forwarder.py:1009
+#: polyhost/forwarder.py:1015 polyhost/host.py:2902 polyhost/host.py:3023
+#: polyhost/host.py:3027
 msgid "Check for updates..."
 msgstr "Verifica aggiornamenti..."
 
-#: polyhost/host.py:2985
+#: polyhost/host.py:2970
 #, python-brace-format
 msgid "Update to v{version} available"
 msgstr "Aggiornamento alla v{version} disponibile"
 
-#: polyhost/forwarder.py:1016 polyhost/forwarder.py:1022
-#: polyhost/forwarder.py:1033 polyhost/host.py:2996 polyhost/host.py:3036
-#: polyhost/host.py:3043 polyhost/host.py:3066
+#: polyhost/forwarder.py:1011 polyhost/forwarder.py:1017
+#: polyhost/forwarder.py:1028 polyhost/host.py:2981 polyhost/host.py:3021
+#: polyhost/host.py:3028 polyhost/host.py:3051
 msgid "PolyKybdHost Update"
 msgstr "Aggiornamento di PolyKybdHost"
 
-#: polyhost/host.py:2997
+#: polyhost/host.py:2982
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "È disponibile la versione {version}. Fai clic sull'icona nell'area di notifica per aggiornare."
 
-#: polyhost/forwarder.py:990 polyhost/host.py:3022
+#: polyhost/forwarder.py:985 polyhost/host.py:3007
 msgid "Checking for updates..."
 msgstr "Verifica degli aggiornamenti..."
 
-#: polyhost/host.py:3035
+#: polyhost/host.py:3020
 msgid "No updates available"
 msgstr "Nessun aggiornamento disponibile"
 
-#: polyhost/forwarder.py:1017 polyhost/host.py:3037
+#: polyhost/forwarder.py:1012 polyhost/host.py:3022
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "Stai usando la versione più recente (v{version})."
 
-#: polyhost/forwarder.py:1023 polyhost/host.py:3044
+#: polyhost/forwarder.py:1018 polyhost/host.py:3029
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -4778,70 +4817,70 @@ msgstr ""
 "\n"
 "Esegui con --dev 1 per i dettagli."
 
-#: polyhost/host.py:3049 polyhost/host.py:3466
+#: polyhost/host.py:3034 polyhost/host.py:3451
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "Rilasciata il: {date}"
 
-#: polyhost/forwarder.py:1004 polyhost/host.py:3050
+#: polyhost/forwarder.py:999 polyhost/host.py:3035
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "È disponibile la versione {version}."
 
-#: polyhost/forwarder.py:1005 polyhost/host.py:3051
+#: polyhost/forwarder.py:1000 polyhost/host.py:3036
 msgid "Update PolyKybdHost"
 msgstr "Aggiorna PolyKybdHost"
 
-#: polyhost/host.py:3055
+#: polyhost/host.py:3040
 msgid "Download, install, and restart now?"
 msgstr "Scaricare, installare e riavviare ora?"
 
-#: polyhost/forwarder.py:1032 polyhost/host.py:3066
+#: polyhost/forwarder.py:1027 polyhost/host.py:3051
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "Download della v{version}…"
 
-#: polyhost/forwarder.py:1073 polyhost/host.py:3191
+#: polyhost/forwarder.py:1068 polyhost/host.py:3176
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "Impossibile avviare il relay di aggiornamento; l'aggiornamento è incompleto. Consulta il log per i dettagli."
 
-#: polyhost/forwarder.py:1085 polyhost/host.py:3206
+#: polyhost/forwarder.py:1080 polyhost/host.py:3191
 msgid "Update failed"
 msgstr "Aggiornamento non riuscito"
 
-#: polyhost/forwarder.py:1085 polyhost/host.py:3206
+#: polyhost/forwarder.py:1080 polyhost/host.py:3191
 msgid "The update did not finish."
 msgstr "L’aggiornamento non è stato completato."
 
-#: polyhost/host.py:3353
+#: polyhost/host.py:3338
 #, python-brace-format
 msgid "{n} keyboard font bundle is out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
 msgid_plural "{n} keyboard font bundles are out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
 msgstr[0] "{n} pacchetto di font della tastiera non è aggiornato e la scrittura automatica è disattivata. Usa Aggiornamenti → Aggiorna font della tastiera."
 msgstr[1] "{n} pacchetti di font della tastiera non sono aggiornati e la scrittura automatica è disattivata. Usa Aggiornamenti → Aggiorna font della tastiera."
 
-#: polyhost/host.py:3404
+#: polyhost/host.py:3389
 msgid "PolyKybd Firmware Update"
 msgstr "Aggiornamento firmware PolyKybd"
 
-#: polyhost/host.py:3405
+#: polyhost/host.py:3390
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "È disponibile il nuovo firmware v{version}. Fai clic sull'icona nell'area di notifica per aggiornare."
 
-#: polyhost/host.py:3422 polyhost/host.py:3463
+#: polyhost/host.py:3407 polyhost/host.py:3448
 msgid "The keyboard must be connected to update the firmware."
 msgstr "Per aggiornare il firmware la tastiera deve essere connessa."
 
-#: polyhost/host.py:3428
+#: polyhost/host.py:3413
 msgid "Checking for firmware update…"
 msgstr "Verifica degli aggiornamenti del firmware…"
 
-#: polyhost/host.py:3442 polyhost/host.py:3452 polyhost/host.py:3455
+#: polyhost/host.py:3427 polyhost/host.py:3437 polyhost/host.py:3440
 msgid "PolyKybd Firmware"
 msgstr "Firmware PolyKybd"
 
-#: polyhost/host.py:3443
+#: polyhost/host.py:3428
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -4852,63 +4891,63 @@ msgstr ""
 "\n"
 "La tua tastiera è alla v{current}. Di solito significa che la build della release non è riuscita: la pagina della release riceverà il firmware una volta risolto il problema."
 
-#: polyhost/host.py:3453
+#: polyhost/host.py:3438
 msgid "No firmware release could be found."
 msgstr "Nessuna release del firmware trovata."
 
-#: polyhost/host.py:3456
+#: polyhost/host.py:3441
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "Stai usando il firmware più recente (v{version})."
 
-#: polyhost/host.py:3468
+#: polyhost/host.py:3453
 #, python-brace-format
 msgid "Installed: v{version}"
 msgstr "Installato: v{version}"
 
-#: polyhost/host.py:3469
+#: polyhost/host.py:3454
 msgid "Installed: unknown (the keyboard did not report its version)"
 msgstr "Installato: sconosciuto (la tastiera non ha comunicato la sua versione)"
 
-#: polyhost/host.py:3470
+#: polyhost/host.py:3455
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "È disponibile il firmware {version}."
 
-#: polyhost/host.py:3472
+#: polyhost/host.py:3457
 msgid "Both halves update over HID and reboot automatically."
 msgstr "Entrambe le metà si aggiornano tramite HID e si riavviano automaticamente."
 
-#: polyhost/host.py:3475
+#: polyhost/host.py:3460
 msgid "This update changes your stored keymap once:"
 msgstr "Questo aggiornamento modifica una sola volta la tua mappatura tasti salvata:"
 
-#: polyhost/host.py:3477
+#: polyhost/host.py:3462
 msgid "Keys you remapped and your macros stay as they are."
 msgstr "I tasti che hai riassegnato e le tue macro restano come sono."
 
-#: polyhost/host.py:3478
+#: polyhost/host.py:3463
 msgid "Update PolyKybd Firmware"
 msgstr "Aggiorna firmware PolyKybd"
 
-#: polyhost/host.py:3482
+#: polyhost/host.py:3467
 msgid "Download and flash now?"
 msgstr "Scaricare e scrivere ora?"
 
-#: polyhost/host.py:3493
+#: polyhost/host.py:3478
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "Download del firmware v{version}…"
 
-#: polyhost/host.py:3515 polyhost/host.py:3816
+#: polyhost/host.py:3500 polyhost/host.py:3801
 msgid "Cancelling…"
 msgstr "Annullamento…"
 
-#: polyhost/host.py:3552
+#: polyhost/host.py:3537
 msgid "Firmware Update Failed"
 msgstr "Aggiornamento del firmware non riuscito"
 
-#: polyhost/host.py:3553
+#: polyhost/host.py:3538
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -4919,11 +4958,11 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3659 polyhost/host.py:3701 polyhost/host.py:3709
+#: polyhost/host.py:3644 polyhost/host.py:3686 polyhost/host.py:3694
 msgid "Allow access to the keyboard"
 msgstr "Consenti l'accesso alla tastiera"
 
-#: polyhost/host.py:3660
+#: polyhost/host.py:3645
 msgid ""
 "On Linux a udev rule lets this app open the keyboard without root: its HID interface, and its serial port for faster firmware and font-pack updates. The rule file is /etc/udev/rules.d/99-hid.rules.\n"
 "\n"
@@ -4933,7 +4972,7 @@ msgstr ""
 "\n"
 "Il sistema ti chiederà la password (PolicyKit). Dopo, scollega la tastiera e ricollegala."
 
-#: polyhost/host.py:3702
+#: polyhost/host.py:3687
 msgid ""
 "The udev rule is installed.\n"
 "\n"
@@ -4943,11 +4982,11 @@ msgstr ""
 "\n"
 "Scollega la tastiera e ricollegala perché i nuovi permessi abbiano effetto."
 
-#: polyhost/host.py:3710
+#: polyhost/host.py:3695
 msgid "The udev rule was not installed."
 msgstr "La regola udev non è stata installata."
 
-#: polyhost/host.py:3711
+#: polyhost/host.py:3696
 #, python-brace-format
 msgid ""
 "{error}\n"
@@ -4960,12 +4999,12 @@ msgstr ""
 "Puoi anche eseguire questi comandi in un terminale:\n"
 "{commands}"
 
-#: polyhost/host.py:3780 polyhost/host.py:3794 polyhost/host.py:3840
-#: polyhost/host.py:3849 polyhost/host.py:3855
+#: polyhost/host.py:3765 polyhost/host.py:3779 polyhost/host.py:3825
+#: polyhost/host.py:3834 polyhost/host.py:3840
 msgid "Install WinCompose"
 msgstr "Installa WinCompose"
 
-#: polyhost/host.py:3781
+#: polyhost/host.py:3766
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -4975,11 +5014,11 @@ msgstr ""
 "\n"
 "La build di WinCompose di PolyKybd verrà scaricata da GitHub e ne verrà avviato il programma di installazione (Windows ti chiederà di confermare)."
 
-#: polyhost/host.py:3794
+#: polyhost/host.py:3779
 msgid "Looking for the latest WinCompose release…"
 msgstr "Ricerca dell'ultima versione di WinCompose…"
 
-#: polyhost/host.py:3841
+#: polyhost/host.py:3826
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -4989,7 +5028,7 @@ msgstr ""
 "\n"
 "La pagina delle release si aprirà nel browser: scarica ed esegui il setup da lì."
 
-#: polyhost/host.py:3850
+#: polyhost/host.py:3835
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -5000,7 +5039,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3856
+#: polyhost/host.py:3841
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -5017,46 +5056,46 @@ msgstr ""
 "È stato salvato in:\n"
 "{path}"
 
-#: polyhost/host.py:3864
+#: polyhost/host.py:3849
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Il programma di installazione di WinCompose è stato avviato. Al termine, quando WinCompose sarà in esecuzione, PolyKybd passerà automaticamente a usarlo."
 
-#: polyhost/services/editor_plugins.py:96
+#: polyhost/services/editor_plugins.py:117
 #, python-brace-format
 msgid "Copied the plugin to {path}."
 msgstr "Plugin copiato in {path}."
 
-#: polyhost/services/editor_plugins.py:97
+#: polyhost/services/editor_plugins.py:118
 #, python-brace-format
 msgid "Replaced the plugin in {path} with the one from this installation."
 msgstr "Plugin in {path} sostituito con quello di questa installazione."
 
-#: polyhost/services/editor_plugins.py:99
+#: polyhost/services/editor_plugins.py:120
 #, python-brace-format
 msgid "Removed the plugin from {path}."
 msgstr "Plugin rimosso da {path}."
 
-#: polyhost/services/editor_plugins.py:101
+#: polyhost/services/editor_plugins.py:122
 #, python-brace-format
 msgid "{editor} was not found on this computer."
 msgstr "{editor} non è stato trovato su questo computer."
 
-#: polyhost/services/editor_plugins.py:103
+#: polyhost/services/editor_plugins.py:124
 #, python-brace-format
 msgid "{path} was changed by hand. Remove or update it by hand."
 msgstr "{path} è stato modificato a mano. Rimuovilo o aggiornalo a mano."
 
-#: polyhost/services/editor_plugins.py:106
+#: polyhost/services/editor_plugins.py:127
 #, python-brace-format
 msgid "Copied the plugin to {path} and added the lines that load it to {init}."
 msgstr "Plugin copiato in {path} e righe che lo caricano aggiunte a {init}."
 
-#: polyhost/services/editor_plugins.py:107
+#: polyhost/services/editor_plugins.py:128
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}."
 msgstr "Righe che caricano il plugin rimosse da {init}."
 
-#: polyhost/services/editor_plugins.py:108
+#: polyhost/services/editor_plugins.py:129
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}, and the plugin from {path}."
 msgstr "Righe che caricano il plugin rimosse da {init}, e plugin rimosso da {path}."
@@ -5064,6 +5103,14 @@ msgstr "Righe che caricano il plugin rimosse da {init}, e plugin rimosso da {pat
 #: polyhost/services/fw_keymap_changes.py:18
 msgid "The Hyper key on the QWERTY, Stag, Colemak DH and Workman layouts becomes the AI key."
 msgstr "Il tasto Hyper dei layout QWERTY, Stag, Colemak DH e Workman diventa il tasto IA."
+
+#: polyhost/services/game_assets/generals/__init__.py:13
+msgid "Generals folder"
+msgstr "Cartella di Generals"
+
+#: polyhost/services/game_assets/generals/__init__.py:14
+msgid "The Command & Conquer Generals or Zero Hour install folder, the one that holds Game.dat and EnglishZH.big (or the archive of another language). The overlay then shows the hotkeys of the installed language and of the player's own CommandMap.ini. Empty: the folder of the running game and the usual install folders on Windows, in Steam and under Wine are searched."
+msgstr "La cartella di installazione di Command & Conquer Generals o Zero Hour, quella che contiene Game.dat ed EnglishZH.big (o l'archivio di un'altra lingua). L'overlay mostra quindi le scorciatoie della lingua installata e del CommandMap.ini del giocatore. Vuoto: vengono cercate la cartella del gioco in esecuzione e le solite cartelle di installazione su Windows, in Steam e su Wine."
 
 #: polyhost/services/game_assets/starcraft/__init__.py:13
 msgid "StarCraft folder"
@@ -5092,6 +5139,22 @@ msgstr "Protoss"
 #: polyhost/services/game_assets/starcraft/__init__.py:22
 msgid "Zerg"
 msgstr "Zerg"
+
+#: polyhost/services/game_assets/unreal2/__init__.py:14
+msgid "UT2004 folder"
+msgstr "Cartella di UT2004"
+
+#: polyhost/services/game_assets/unreal2/__init__.py:15
+msgid "The Unreal Tournament 2004 install folder, the one that holds the System and Textures folders. Empty: the folder of the running game and the usual install folders on Windows, Linux, macOS and under Wine are searched."
+msgstr "La cartella di installazione di Unreal Tournament 2004, quella che contiene le cartelle System e Textures. Vuoto: vengono cercate la cartella del gioco in esecuzione e le solite cartelle di installazione su Windows, Linux, macOS e Wine."
+
+#: polyhost/services/game_assets/warcraft3/__init__.py:13
+msgid "Warcraft III folder"
+msgstr "Cartella di Warcraft III"
+
+#: polyhost/services/game_assets/warcraft3/__init__.py:14
+msgid "The Warcraft III install folder, the one that holds war3.mpq. The overlay then shows the hotkeys of the installed language and of the player's CustomKeys.txt. Empty: the folder of the running game and the usual install folders on Windows, macOS and under Wine are searched. Reforged keeps its files in a format this app does not read; the default keys are shown then."
+msgstr "La cartella di installazione di Warcraft III, quella che contiene war3.mpq. L'overlay mostra quindi le scorciatoie della lingua installata e del CustomKeys.txt del giocatore. Vuoto: vengono cercate la cartella del gioco in esecuzione e le solite cartelle di installazione su Windows, macOS e Wine. Reforged salva i file in un formato che questa app non legge; in quel caso vengono mostrati i tasti predefiniti."
 
 #: polyhost/services/game_assets/westwood_d2/__init__.py:13
 msgid "Dune II folder"
@@ -5261,7 +5324,7 @@ msgstr "Riga aggiunta a {path}."
 msgid "Replaced the line in {path} with one for this installation."
 msgstr "La riga in {path} è stata sostituita con una per questa installazione."
 
-#: polyhost/services/editor_plugins.py:98 polyhost/services/shell_title.py:109
+#: polyhost/services/editor_plugins.py:119 polyhost/services/shell_title.py:109
 #, python-brace-format
 msgid "Already set up in {path}."
 msgstr "Già configurato in {path}."
@@ -5281,7 +5344,7 @@ msgstr "Titolo Codex disattivato in {path}."
 msgid "Removed the line from {path}."
 msgstr "Riga rimossa da {path}."
 
-#: polyhost/services/editor_plugins.py:100 polyhost/services/shell_title.py:113
+#: polyhost/services/editor_plugins.py:121 polyhost/services/shell_title.py:113
 #, python-brace-format
 msgid "Nothing to remove in {path}."
 msgstr "Niente da rimuovere in {path}."
@@ -5301,12 +5364,12 @@ msgstr "{shell} non ha indicato il percorso del suo profilo: {error}"
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts. Run 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' in PowerShell first."
 msgstr "Il criterio di esecuzione di PowerShell ({policy}) non esegue gli script di profilo. Esegui prima 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' in PowerShell."
 
-#: polyhost/services/editor_plugins.py:104 polyhost/services/shell_title.py:118
+#: polyhost/services/editor_plugins.py:125 polyhost/services/shell_title.py:118
 #, python-brace-format
 msgid "{path} has a start marker without an end marker. Remove the block by hand."
 msgstr "{path} ha un marcatore di inizio senza marcatore di fine. Rimuovi il blocco a mano."
 
-#: polyhost/services/editor_plugins.py:105 polyhost/services/shell_title.py:119
+#: polyhost/services/editor_plugins.py:126 polyhost/services/shell_title.py:119
 #, python-brace-format
 msgid "Could not change {path}: {error}"
 msgstr "Impossibile modificare {path}: {error}"

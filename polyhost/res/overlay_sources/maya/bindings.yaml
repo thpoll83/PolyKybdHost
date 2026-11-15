@@ -64,11 +64,11 @@ bindings:
   - { key: J, mods: [SHIFT], icon: snap_relative.png, label: "Relative step snapping (hold)" }
 
   # --- selection ---
-  - { key: F8, mods: [], icon: edit_mode.png, label: "Object / component mode" }
+  - { key: F8, mods: [], icon: mode_toggle.png, label: "Object / component mode" }
   - { key: F9, mods: [], icon: sel_vert.png, label: "Select vertex" }
   - { key: F10, mods: [], icon: sel_edge.png, label: "Select edge" }
   - { key: F11, mods: [], icon: sel_face.png, label: "Select face" }
-  - { key: F12, mods: [], icon: uv_unwrap.png, label: "Select UV" }
+  - { key: F12, mods: [], icon: sel_uv.png, label: "Select UV" }
   - { key: F9, mods: [ALT], icon: sel_vertface.png, label: "Select vertex face" }
   - { key: F9, mods: [CTRL], icon: conv_vert.png, label: "Convert selection to vertices" }
   - { key: F10, mods: [CTRL], icon: conv_edge.png, label: "Convert selection to edges" }

@@ -1,0 +1,66 @@
+# Autodesk Maya shortcut overlay for PolyKybd: Hypershade. See SOURCES.md.
+#
+# Loaded only while the Maya mode reporter (maya-plugin/) reports
+# `maya://hypershade/...`, so these keys replace the viewport set (bindings.yaml).
+# Source: Maya 2026 help, Node Editor basics, https://help.autodesk.com/cloudhelp/2026/ENU/Maya-Basics/files/GUID-68E825E4-140B-4B4E-97AC-E1C5E0AA84A0.htm
+# (1 to 4, Tab, Delete / Backspace, P; the Hypershade work area is the same
+# Node Editor). The 2026 help has no hotkey table for these editors, so keys
+# that only the Maya 2017 table lists are left out. Plus plus the File, Undo and menu keys
+# that act everywhere in Maya. macOS adds the Cmd copies of the File keys and
+# of Undo / Redo, as in bindings.yaml.
+#
+# Regenerate:
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/maya/bindings_hypershade.yaml --preview /tmp/maya_preview
+app: maya
+match: [maya, maya.bin]
+output: maya_hypershade_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+program_icon: maya.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- Node Editor and Hypershade (both), Maya 2026 Node Editor basics ---
+  - { key: "1", mods: [], icon: node_simple.png, label: "Simple view" }
+  - { key: "2", mods: [], icon: node_connected.png, label: "Connected view" }
+  - { key: "3", mods: [], icon: node_full.png, label: "Full view" }
+  - { key: "4", mods: [], icon: node_custom.png, label: "Custom attribute view" }
+  - { key: DELETE, mods: [], icon: node_delete.png, label: "Delete selected nodes" }
+  - { key: BACKSPACE, mods: [], icon: node_delete.png, label: "Delete selected nodes" }
+  - { key: TAB, mods: [], icon: node_create.png, label: "Create node" }
+  - { key: P, mods: [], icon: pin.png, label: "Pin / unpin" }
+
+
+  # --- everywhere in Maya (All Maya Hotkeys: File, Edit, menus) ---
+  - { key: N, mods: [CTRL], icon: new.png, label: "New scene" }
+  - { key: O, mods: [CTRL], icon: open.png, label: "Open scene" }
+  - { key: S, mods: [CTRL], icon: save.png, label: "Save scene" }
+  - { key: S, mods: [CTRL, SHIFT], icon: saveas.png, label: "Save scene as" }
+  - { key: Q, mods: [CTRL], icon: quit.png, label: "Exit" }
+  - { key: Z, mods: [CTRL], icon: undo.png, label: Undo }
+  - { key: Y, mods: [CTRL], icon: redo.png, label: Redo }
+  - { key: SPACE, mods: [], icon: space_hotbox.png, mode: alpha, region: [72, 40], label: "Hotbox (hold); single / multi-pane (tap)" }
+  - { key: SPACE, mods: [CTRL], icon: fullpanels.png, label: "Full-screen panels" }
+  - { key: A, mods: [CTRL], icon: attributes.png, label: "Attribute Editor / Channel Box" }
+  - { key: F1, mods: [], icon: help.png, label: "Maya Help" }
+  - { key: F2, mods: [], icon: set_modeling.png, label: "Modeling menu set" }
+  - { key: F3, mods: [], icon: set_rigging.png, label: "Rigging menu set" }
+  - { key: F4, mods: [], icon: set_animation.png, label: "Animation menu set" }
+  - { key: F6, mods: [], icon: set_rendering.png, label: "Rendering menu set" }
+  - { key: N, mods: [GUI], icon: new.png, label: "New scene", only: [macos] }
+  - { key: O, mods: [GUI], icon: open.png, label: "Open scene", only: [macos] }
+  - { key: S, mods: [GUI], icon: save.png, label: "Save scene", only: [macos] }
+  - { key: S, mods: [GUI, SHIFT], icon: saveas.png, label: "Save scene as", only: [macos] }
+  - { key: Q, mods: [GUI], icon: quit.png, label: "Exit", only: [macos] }
+  - { key: Z, mods: [GUI], icon: undo.png, label: Undo, only: [macos] }
+  - { key: Y, mods: [GUI], icon: redo.png, label: Redo, only: [macos] }

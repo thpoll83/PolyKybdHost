@@ -14,6 +14,14 @@ terminal's keys. This module does the copy that their READMEs describe:
 - GDB: ``polykybd.py`` (``gdb-plugin/``) into ``<config>/gdb/polykybd/``, and
   a marked block in the GDB init file that sources it. The script writes GDB's
   state (prompt or running) into the terminal title.
+- Binary Ninja: ``polykybd_mode_reporter/`` (``binaryninja-plugin/``) into
+  the user plugins folder, ``<user folder>/plugins/`` (``BN_USER_DIRECTORY``,
+  else ``~/.binaryninja``, ``%APPDATA%/Binary Ninja`` or
+  ``~/Library/Application Support/Binary Ninja``). It reports the view type and
+  IL level of the focused pane.
+- DaVinci Resolve: ``polykybd_context_reporter.py`` (``resolve-plugin/``)
+  into ``<Fusion>/Scripts/Utility/PolyKybd/``, where Resolve lists it under
+  Workspace > Scripts. It reports the current page (Media, Cut, Edit ...).
 - Ableton Live 12: the remote script (``ableton-remote-script/PolyKybd/``) into
   ``<User Library>/Remote Scripts/PolyKybd/`` at Live's default User Library
   (``~/Documents/Ableton`` on Windows, ``~/Music/Ableton`` on macOS). Live
@@ -29,7 +37,7 @@ changes a shell startup file (bytes outside the block are kept, a timestamped
 copy is written first), with that module's helpers.
 
 Qt-free and stdlib-only: ``polyctl`` imports it without PyQt5, and the tray
-dialog (``gui/shell_title_dialog.py``) only shows it.
+page (Integrations > Editors, ``gui/shell_editor_pages.py``) only shows it.
 """
 import hashlib
 import json
@@ -54,6 +62,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 VIM_SOURCE = REPO_ROOT / "vim-plugin"
 EMACS_SOURCE = REPO_ROOT / "emacs-package"
 GDB_SOURCE = REPO_ROOT / "gdb-plugin"
+BINJA_SOURCE = REPO_ROOT / "binaryninja-plugin" / "polykybd_mode_reporter"
+RESOLVE_SOURCE = REPO_ROOT / "resolve-plugin"
 ABLETON_SOURCE = REPO_ROOT / "ableton-remote-script" / "PolyKybd"
 
 VIM = "vim"
@@ -61,7 +71,9 @@ NEOVIM = "neovim"
 EMACS = "emacs"
 GDB = "gdb"
 ABLETON = "ableton"
-EDITORS = (VIM, NEOVIM, EMACS, GDB, ABLETON)
+RESOLVE = "resolve"
+BINARYNINJA = "binaryninja"
+EDITORS = (VIM, NEOVIM, EMACS, GDB, BINARYNINJA, RESOLVE, ABLETON)
 # The ones loaded through a marked block in an init file, beside a copy.
 INIT_EDITORS = (EMACS, GDB)
 
@@ -69,6 +81,8 @@ INIT_EDITORS = (EMACS, GDB)
 _VIM_DIRS = ("plugin", "lua", "doc")
 _EMACS_FILES = ("polykybd.el",)
 _GDB_FILES = ("polykybd.py",)
+_BINJA_FILES = ("__init__.py", "core.py")
+_RESOLVE_FILES = ("polykybd_context_reporter.py",)
 _ABLETON_FILES = ("__init__.py", "core.py", "reporter.py")
 
 STAMP_NAME = ".polykybd-host.json"
@@ -140,6 +154,46 @@ def vim_dir(editor, home=None, env=None, system=None):
         data = env.get("XDG_DATA_HOME")
         base = (Path(data) if data else h / ".local" / "share") / "nvim" / "site"
     return base / "pack" / "polykybd" / "start" / "polykybd"
+
+
+def resolve_scripts_dir(home=None, env=None, system=None):
+    """The per-user ``Fusion/Scripts`` folder DaVinci Resolve scans at start
+    (README.txt of Resolve's scripting API)."""
+    env = os.environ if env is None else env
+    system = system or platform.system()
+    h = Path(home) if home is not None else Path.home()
+    if system == "Windows":
+        appdata = env.get("APPDATA")
+        base = Path(appdata) if appdata else h / "AppData" / "Roaming"
+        return base / "Blackmagic Design" / "DaVinci Resolve" / "Support" / "Fusion" / "Scripts"
+    if system == "Darwin":
+        return (h / "Library" / "Application Support" / "Blackmagic Design"
+                / "DaVinci Resolve" / "Fusion" / "Scripts")
+    return h / ".local" / "share" / "DaVinciResolve" / "Fusion" / "Scripts"
+
+
+def resolve_plugin_dir(home=None, env=None, system=None):
+    """The folder the Resolve script is copied to: a ``Utility`` subfolder of
+    its own, so removing it never touches the user's other scripts."""
+    return resolve_scripts_dir(home, env, system) / "Utility" / "PolyKybd"
+
+
+# Where Resolve itself is installed, to tell "not installed" from "never run".
+_RESOLVE_APPS = {
+    "Windows": (r"C:\Program Files\Blackmagic Design\DaVinci Resolve\Resolve.exe",),
+    "Darwin": ("/Applications/DaVinci Resolve/DaVinci Resolve.app",),
+}
+_RESOLVE_APPS_LINUX = ("/opt/resolve/bin/resolve", "/home/resolve/bin/resolve")
+
+
+def _resolve_present(home, env, system):
+    """Resolve is installed, or has run for this user (it creates the
+    ``Fusion`` folder above the scripts folder)."""
+    if resolve_scripts_dir(home, env, system).parent.is_dir():
+        return True
+    if home is not None:        # a test's home: the real install does not count
+        return False
+    return any(Path(p).exists() for p in _RESOLVE_APPS.get(system, _RESOLVE_APPS_LINUX))
 
 
 def emacs_init_file(home=None, env=None, system=None):
@@ -276,10 +330,37 @@ def ableton_script_dir(home=None, system=None):
     return lib / "Remote Scripts" / "PolyKybd"
 
 
+def binaryninja_user_dir(home=None, env=None, system=None):
+    """Binary Ninja's user folder (user guide, "User Folder")."""
+    env = os.environ if env is None else env
+    system = system or platform.system()
+    if env.get("BN_USER_DIRECTORY"):
+        return Path(env["BN_USER_DIRECTORY"])
+    h = _home(home, env, system)
+    if system == "Windows":
+        appdata = env.get("APPDATA")
+        return (Path(appdata) if appdata else h / "AppData" / "Roaming") / "Binary Ninja"
+    if system == "Darwin":
+        return h / "Library" / "Application Support" / "Binary Ninja"
+    return h / ".binaryninja"
+
+
+def binaryninja_dir(home=None, env=None, system=None):
+    """The folder the Binary Ninja plugin is copied to, in the user plugins folder."""
+    return binaryninja_user_dir(home, env, system) / "plugins" / "polykybd_mode_reporter"
+
+
+def _copy_dir(editor, home, env, system):
+    """The plugin folder of a copy-only editor (Vim, Neovim, Binary Ninja)."""
+    if editor == BINARYNINJA:
+        return binaryninja_dir(home, env, system)
+    return vim_dir(editor, home, env, system)
+
+
 def _present(editor, which, system):
     which = which or shutil.which
     names = {VIM: ("vim", "gvim"), NEOVIM: ("nvim",), EMACS: ("emacs", "runemacs"),
-             GDB: ("gdb", "gdb-multiarch")}[editor]
+             GDB: ("gdb", "gdb-multiarch"), BINARYNINJA: ("binaryninja",)}[editor]
     return any(which(n) for n in names)
 
 
@@ -303,6 +384,11 @@ def help_tags(doc_name, text):
 def shipped_files(editor, source=None):
     """``{relative path: bytes}`` to write for ``editor``, or None when this
     installation has no plugin files."""
+    if editor == RESOLVE:
+        source = Path(source or RESOLVE_SOURCE)
+        if not all((source / name).is_file() for name in _RESOLVE_FILES):
+            return None
+        return {name: (source / name).read_bytes() for name in _RESOLVE_FILES}
     if editor == ABLETON:
         source = Path(source or ABLETON_SOURCE)
         if not all((source / name).is_file() for name in _ABLETON_FILES):
@@ -314,6 +400,11 @@ def shipped_files(editor, source=None):
         if not all((source / name).is_file() for name in names):
             return None
         return {name: (source / name).read_bytes() for name in names}
+    if editor == BINARYNINJA:
+        source = Path(source or BINJA_SOURCE)
+        if not all((source / name).is_file() for name in _BINJA_FILES):
+            return None
+        return {name: (source / name).read_bytes() for name in _BINJA_FILES}
     source = Path(source or VIM_SOURCE)
     if not (source / "plugin" / "polykybd.vim").is_file():
         return None
@@ -566,6 +657,8 @@ def _other_vim_copies(editor, folder):
 
 def _sources(vim_source, emacs_source, gdb_source, ableton_source=None):
     return {VIM: vim_source, NEOVIM: vim_source, EMACS: emacs_source, GDB: gdb_source,
+            BINARYNINJA: None,     # BINJA_SOURCE
+            RESOLVE: None,
             ABLETON: ableton_source}
 
 
@@ -585,6 +678,14 @@ def status(editors=None, home=None, env=None, which=None, system=None,
 
 def _status_one(editor, home, env, which, system, source):
     shipped = shipped_files(editor, source)
+    if editor == RESOLVE:
+        folder = resolve_plugin_dir(home, env, system)
+        if shipped is None:
+            return EditorStatus(editor, STATE_NO_SOURCE, folder, str(source or RESOLVE_SOURCE))
+        if not folder.exists() and not _resolve_present(home, env, system):
+            return EditorStatus(editor, STATE_NOT_PRESENT, folder, "")
+        state = _copy_state(folder, shipped)
+        return EditorStatus(editor, state, folder, str(folder) if state == STATE_MANUAL else "")
     if editor in INIT_EDITORS:
         # One probe per status call, so the init file and the Python check
         # never rest on two different answers.
@@ -625,14 +726,18 @@ def _status_one(editor, home, env, which, system, source):
             return EditorStatus(editor, STATE_NOT_PRESENT, folder, "")
         state = _copy_state(folder, shipped)
         return EditorStatus(editor, state, folder, str(folder) if state == STATE_MANUAL else "")
-    folder = vim_dir(editor, home, env, system)
+    folder = _copy_dir(editor, home, env, system)
     if shipped is None:
-        return EditorStatus(editor, STATE_NO_SOURCE, folder, str(source or VIM_SOURCE))
-    if not _present(editor, which, system) and not folder.exists():
+        default = BINJA_SOURCE if editor == BINARYNINJA else VIM_SOURCE
+        return EditorStatus(editor, STATE_NO_SOURCE, folder, str(source or default))
+    # Binary Ninja is rarely on PATH: its user folder shows it was run here.
+    present = _present(editor, which, system) or (
+        editor == BINARYNINJA and binaryninja_user_dir(home, env, system).is_dir())
+    if not present and not folder.exists():
         return EditorStatus(editor, STATE_NOT_PRESENT, folder, "")
     state = _copy_state(folder, shipped)
     detail = str(folder) if state == STATE_MANUAL else ""
-    if state == STATE_NOT_INSTALLED:
+    if state == STATE_NOT_INSTALLED and editor != BINARYNINJA:
         other = _other_vim_copies(editor, folder)
         if other is not None:
             state, detail = STATE_MANUAL, str(other)
