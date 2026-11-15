@@ -99,8 +99,16 @@ try {
     & $py @installArgs
     if ($LASTEXITCODE -ne 0) { throw "install_app.py failed." }
 } finally {
-    # A $null value removes the variable, as before the installer ran.
-    foreach ($name in $uvVars) { [Environment]::SetEnvironmentVariable($name, $savedEnv[$name], "Process") }
+    # Remove-Item for a variable that was not set: in PowerShell 7.5+ (.NET 9),
+    # SetEnvironmentVariable with $null (passed as "") sets an empty value
+    # instead of removing the variable.
+    foreach ($name in @($savedEnv.Keys)) {
+        if ($null -eq $savedEnv[$name]) {
+            Remove-Item -Path "Env:\$name" -ErrorAction SilentlyContinue
+        } else {
+            Set-Item -Path "Env:\$name" -Value $savedEnv[$name]
+        }
+    }
     Remove-Item -Recurse -Force -Path $tmp -ErrorAction SilentlyContinue
 }
 }
