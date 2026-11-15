@@ -119,7 +119,7 @@ class GodotNameTest(unittest.TestCase):
         # Every key of the shipped mapping still resolves to itself.
         for name in self.others:
             self.assertIsNone(mapping_key(name, self.keys), name)
-        self.assertIsNone(context_reporter_for("code"))
+        self.assertIsNone(context_reporter_for("notepad"))
         self.assertIsNone(context_reporter_for("godotify"))
 
 

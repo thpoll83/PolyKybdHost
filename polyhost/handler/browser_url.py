@@ -106,6 +106,29 @@ CONTEXT_REPORTERS = {
     "macvim": "vim",
     "neovide": "vim",
     "emacs": "emacs",
+    # QGIS plugin (qgis-plugin/): exactly the names of the `qgis` mapping entry.
+    **dict.fromkeys(("qgis", "qgis3", "qgis4", "org.qgis.qgis", "qgis-bin", "qgis-ltr-bin",
+                     "qgis-dev-bin", "qgis-qt6-bin", "qgis-ltr"), "qgis"),
+    # VS Code and its forks: vscode-extension/ sends <token>://<debug mode>.
+    "code": "vscode", "cursor": "cursor",
+    "windsurf": "windsurf", "devin": "windsurf", "devin-desktop": "windsurf",
+    # Bitwig Studio's controller extension (bitwig-extension/): the names of the
+    # mapping's `bitwig studio` entry.
+    "bitwig studio": "bitwig", "bitwigstudio": "bitwig", "bitwig-studio": "bitwig",
+    "com.bitwig.bitwigstudio": "bitwig",
+    # Autodesk Maya (maya-plugin/): Windows maya.exe, macOS "Maya", Linux maya.bin.
+    "maya": "maya",
+    "maya.bin": "maya",
+    "binaryninja": "binaryninja", "binary ninja": "binaryninja",  # binaryninja-plugin/
+    # DaVinci Resolve page reporter (resolve-plugin/): Resolve.exe on Windows,
+    # resolve on Linux, "DaVinci Resolve" on macOS -- the mapping entry's names.
+    "resolve": "resolve",
+    "davinci resolve": "resolve",
+    # Ableton Live 12 (remote script in ableton-remote-script/): the names the
+    # mapping's Ableton entry is keyed on, one per edition.
+    **dict.fromkeys(("ableton live 12 suite", "ableton live 12 standard",
+                     "ableton live 12 intro", "ableton live 12 lite",
+                     "ableton live 12 trial"), "ableton"),
     # Godot editor 4.x (godot-plugin/): exactly the `godot` mapping entry's names.
     "godot": "godot", "godot_v4": "godot", "godot_mono": "godot", "godot4": "godot",
     "godot-bin": "godot", "org.godotengine.godot": "godot", "org.godotengine.editor": "godot",
@@ -162,10 +185,11 @@ def _app_key(app_name):
 
 
 def context_reporter_for(app_name):
-    """The reporter token for a focused app with a context add-on, or None."""
+    """The reporter token for a focused app with a context add-on, or None.
+    The same version stripping as the mapping lookup, so a release year
+    ("maya 2026") or a versioned name (Godot's Linux download) reaches the
+    reporter its entry matches."""
     key = _app_key(app_name)
-    # The same version stripping as the mapping lookup, so a versioned name
-    # (Godot's Linux download) reaches the reporter its entry matches.
     return CONTEXT_REPORTERS.get(mapping_key(key, CONTEXT_REPORTERS))
 
 

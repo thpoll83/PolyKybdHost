@@ -1,0 +1,139 @@
+# Runs the app installer (scripts/install-app.ps1 and install-app.sh, which
+# need neither git nor Python) on clean Windows, macOS and Linux runners, then
+# checks the result with scripts/check_install_tree.py.
+#
+# The runners have Python and git, but the installer uses neither: uv
+# downloads its own Python into <install dir>/.python, and the code comes
+# from a tarball.
+#
+# POLYKYBD_REPO and POLYKYBD_REF point the installer at the pull request's own
+# head commit (a fork's too), so the job installs the code under review and not
+# the latest release. install_app.py is fetched from that commit too. The
+# checkout uses the same commit: its default on a pull request is the merge
+# commit with main, whose file list can differ from the installed head.
+name: App installer
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - scripts/install-app.ps1
+      - scripts/install-app.sh
+      - scripts/install_app.py
+      - scripts/check_install_tree.py
+      - requirements.txt
+      - setup.py
+      - .github/workflows/app-installer.yml
+  push:
+    branches: [main]
+    paths:
+      - scripts/install-app.ps1
+      - scripts/install-app.sh
+      - scripts/install_app.py
+      - scripts/check_install_tree.py
+      - requirements.txt
+      - setup.py
+      - .github/workflows/app-installer.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  POLYKYBD_NO_LAUNCH: "1"
+  POLYKYBD_REPO: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+  POLYKYBD_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  windows:
+    name: install-app.ps1 (${{ matrix.shell }})
+    runs-on: windows-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # `powershell` is Windows PowerShell 5.1, which is what most users run
+        # the `irm ... | iex` line in. `pwsh` is PowerShell 7.
+        shell: [powershell, pwsh]
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    steps:
+      # For the script and the expected file list; the installer downloads
+      # its own copy of the code.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0 (Node 24)
+        with:
+          ref: ${{ env.POLYKYBD_REF }}
+
+      - name: Run install-app.ps1
+        env:
+          POLYKYBD_DIR: ${{ runner.temp }}\PolyKybdHost
+          INSTALLER: ${{ github.workspace }}\scripts\install-app.ps1
+          CHECK_VARS: UV_PYTHON_INSTALL_DIR,UV_CACHE_DIR,UV_PYTHON_PREFERENCE,UV_PYTHON_INSTALL_BIN,UV_PYTHON_INSTALL_REGISTRY
+        working-directory: ${{ runner.temp }}
+        run: |
+          $start = Get-Date
+          # Run it as `irm | iex` does, then check the session is as it was:
+          # the preference and every variable the installer sets.
+          $prefBefore = $ErrorActionPreference
+          $envBefore = @{}
+          foreach ($n in $env:CHECK_VARS.Split(",")) { $envBefore[$n] = [Environment]::GetEnvironmentVariable($n, "Process") }
+          Get-Content -Raw -Path $env:INSTALLER | Invoke-Expression
+          Write-Host ("install-app.ps1 took {0:N0} s" -f ((Get-Date) - $start).TotalSeconds)
+          if ($ErrorActionPreference -ne $prefBefore) { throw "ErrorActionPreference changed to $ErrorActionPreference" }
+          foreach ($n in $envBefore.Keys) {
+            $now = [Environment]::GetEnvironmentVariable($n, "Process")
+            if ($now -ne $envBefore[$n]) { throw "$n changed: '$($envBefore[$n])' -> '$now'" }
+          }
+
+      - name: Check the installed tree
+        working-directory: ${{ runner.temp }}\PolyKybdHost
+        run: |
+          .venv\Scripts\python.exe scripts\check_install_tree.py . $env:GITHUB_WORKSPACE
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .venv\Scripts\python.exe -c "import sys; print(sys.version); assert sys.base_prefix.startswith(r'${{ runner.temp }}\PolyKybdHost\.python'), sys.base_prefix"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .venv\Scripts\polyctl.exe --help
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+  posix:
+    name: install-app.sh (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0 (Node 24)
+        with:
+          ref: ${{ env.POLYKYBD_REF }}
+
+      # PyQt5's xcb plugin needs these to import QtWidgets in the check below,
+      # and pymonctl (under pywinctl) exits on import without xrandr
+      # (x11-xserver-utils). A desktop Linux has them all.
+      - name: Install Qt runtime libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 \
+            libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 \
+            libxcb-xinerama0 libxcb-xfixes0 x11-xserver-utils xvfb
+
+      - name: Run install-app.sh
+        env:
+          POLYKYBD_DIR: ${{ runner.temp }}/PolyKybdHost
+        working-directory: ${{ runner.temp }}
+        run: |
+          start=$(date +%s)
+          bash "$GITHUB_WORKSPACE/scripts/install-app.sh" < /dev/null
+          echo "install-app.sh took $(( $(date +%s) - start )) s"
+
+      - name: Check the installed tree
+        working-directory: ${{ runner.temp }}/PolyKybdHost
+        run: |
+          run=""
+          if [ "$RUNNER_OS" = Linux ]; then run="xvfb-run -a"; fi
+          $run .venv/bin/python scripts/check_install_tree.py . "$GITHUB_WORKSPACE"
+          .venv/bin/python -c "import sys; print(sys.version); assert sys.base_prefix.startswith('$PWD/.python'), sys.base_prefix"
+          .venv/bin/polyctl --help

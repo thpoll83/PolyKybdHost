@@ -88,6 +88,9 @@ bindings:
   - { key: X, mods: [ALT, SHIFT], icon: xref_prev.png, label: "Previous cross reference", <<: *word }
   - { key: "=", mods: [CMDCTRL, SHIFT], icon: zoomin.png, label: "Zoom in (graph)" }
   - { key: "-", mods: [CMDCTRL, SHIFT], icon: zoomout.png, label: "Zoom out (graph)" }
+  # Graph view only (index.md, "Graph View"): "Zoom to Fit" (`w`), "Zoom to Cursor" (`z`)
+  - { key: W, icon: fitwindow.png, label: "Zoom to fit (graph)" }
+  - { key: Z, icon: zoom100.png, label: "Zoom to cursor (graph)", <<: *word }
 
   # ---------------- Ctrl (Cmd on macOS) ----------------
   - { key: O, mods: [CMDCTRL], label: "Open" }
