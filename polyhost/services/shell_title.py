@@ -31,7 +31,7 @@ everything outside the marked block keeps its bytes, encoding and newlines,
 and a timestamped copy is written next to the file before any change.
 
 Qt-free and stdlib-only, like ``linux_udev``: ``polyctl`` imports it without
-PyQt5, and the tray dialog (``gui/shell_title_dialog.py``) only shows it.
+PyQt5, and Integrations > Terminals (``gui/shell_editor_pages.py``) only shows it.
 """
 import codecs
 import locale

@@ -1,0 +1,45 @@
+# sm64ex (PC port of Super Mario 64) overlay for PolyKybd. See SOURCES.md.
+#
+# Keys are sm64ex's default keyboard binds (sm64pc/sm64ex, branch nightly; the
+# project has no release tags): the first entry of each configKey* array in
+# src/pc/configfile.c, a scancode. Each key presses one control of the Nintendo
+# 64 controller, so the keys show the control. Esc carries the mark.
+#
+# Regenerate:
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/sm64/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/sm64/sm64ex.yaml --preview /tmp/sm64ex_preview
+app: sm64ex
+match: [sm64, sm64.us.f3dex2e, sm64.eu.f3dex2e, sm64.jp.f3dex2e, sm64.sh.f3dex2e]
+output: sm64ex_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [32, 32]
+margin: 2
+mode: alpha
+threshold: 128
+
+# "sm64" over "ex" drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: sm64ex.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+  # Nintendo 64 controller; every icon is drawn 1:1 at its own size
+  - { key: L, mods: [], icon: btna.png, label: "N64 A" }
+  - { key: COMMA, mods: [], icon: btnb.png, label: "N64 B" }
+  - { key: K, mods: [], icon: btnz.png, label: "N64 Z" }
+  - { key: KC_LEFT_SHIFT, mods: [], icon: btnl.png, label: "N64 L" }
+  - { key: KC_RIGHT_SHIFT, mods: [], icon: btnr.png, label: "N64 R" }
+  - { key: SPACE, mods: [], icon: start.png, label: "N64 Start", region: [49, 15] }
+  - { key: UP, mods: [], icon: cup.png, label: "C up" }
+  - { key: DOWN, mods: [], icon: cdown.png, label: "C down" }
+  - { key: LEFT, mods: [], icon: cleft.png, label: "C left" }
+  - { key: RIGHT, mods: [], icon: cright.png, label: "C right" }
+  - { key: W, mods: [], icon: stickup.png, label: "Control stick up" }
+  - { key: S, mods: [], icon: stickdown.png, label: "Control stick down" }
+  - { key: A, mods: [], icon: stickleft.png, label: "Control stick left" }
+  - { key: D, mods: [], icon: stickright.png, label: "Control stick right" }

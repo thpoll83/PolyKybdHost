@@ -5,7 +5,39 @@ pushes overlay / keymap / language updates to the keyboard over HID. It can
 also run as a *forwarder* that relays window info from a remote machine to the
 computer the keyboard is plugged into.
 
-## Quick install (one line)
+## Install (no git or Python needed)
+
+One command installs the latest release. It needs neither git nor Python: it
+downloads [uv](https://docs.astral.sh/uv/) (one binary, checked against a
+pinned SHA-256 and deleted afterwards), and uv downloads Python 3.13 into the
+install folder. Then it downloads the release, creates a virtual environment,
+installs the requirements, and starts the app. Nothing is added to `PATH`.
+To remove the app, quit it and delete the folder.
+
+**Windows (PowerShell)**
+
+```powershell
+irm https://raw.githubusercontent.com/thpoll83/PolyKybdHost/main/scripts/install-app.ps1 | iex
+```
+
+**Linux / macOS**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/thpoll83/PolyKybdHost/main/scripts/install-app.sh | bash
+```
+
+The default folder is `%LOCALAPPDATA%\PolyKybdHost` on Windows and
+`~/PolyKybdHost` on Linux and macOS. The installer asks for another one, or set
+`POLYKYBD_DIR` first. `POLYKYBD_NO_LAUNCH=1` skips starting the app. Running
+the command again updates the folder to the latest release. The app also
+updates itself from its tray menu.
+
+On Linux the installer installs the `hidapi` library and the udev rule with
+`sudo`. On macOS it runs `brew install hidapi`; without
+[Homebrew](https://brew.sh) you must install hidapi yourself, or the app cannot
+talk to the keyboard.
+
+## Developer install (git + Python, one line)
 
 These commands clone the repo, create a virtual environment, install the Python
 requirements, and (on Linux/macOS) set up the native hidapi library and HID
