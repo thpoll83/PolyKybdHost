@@ -1,0 +1,81 @@
+# Thrive overlay for PolyKybd.
+#
+# Keys: the default inputs in the [input] section of project.godot, named by
+# simulation_parameters/common/input_options.json, of Revolutionary-Games/Thrive,
+# release v1.7.0. See SOURCES.md.
+#
+# The microbe stage meaning is drawn where a key has another meaning in the
+# editor or in a later stage.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/thrive/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/thrive/thrive.yaml --preview /tmp/thrive_preview
+app: thrive
+match: [thrive, thrive.exe, thrive.x86_64]
+output: thrive_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for fheroes2: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# "Thrive" drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Movement
+  - { key: W, icon: forward.png, label: "Move forward" }
+  - { key: S, icon: backwards.png, label: "Move backwards" }
+  - { key: A, icon: left.png, label: "Move left" }
+  - { key: D, icon: right.png, label: "Move right" }
+  - { key: UP, icon: forward.png, label: "Move forward" }
+  - { key: DOWN, icon: backwards.png, label: "Move backwards" }
+  - { key: LEFT, icon: left.png, label: "Move left" }
+  - { key: RIGHT, icon: right.png, label: "Move right" }
+  - { key: X, icon: autoforward.png, label: "Auto-move forwards" }
+
+  # Abilities
+  - { key: E, icon: toxin.png, label: "Fire toxin" }
+  - { key: R, icon: slime.png, label: "Secrete slime" }
+  - { key: G, icon: engulf.png, label: "Toggle engulf mode" }
+  - { key: H, icon: eject.png, label: "Eject engulfed objects" }
+  - { key: V, icon: packcommands.png, label: "Hold for pack commands menu" }
+  - { key: T, icon: mucocyst.png, label: "Toggle mucocyst defence" }
+  - { key: I, icon: siderophore.png, label: "Fire siderophore" }
+  - { key: B, icon: binding.png, label: "Toggle binding mode" }
+  - { key: U, icon: unbindall.png, label: "Unbind all" }
+  - { key: U, mods: [SHIFT], icon: unbinding.png, label: "Toggle unbinding mode" }
+  - { key: Y, icon: germinate.png, label: "Germinate spore" }
+  - { key: M, icon: reproduce.png, label: "Reproduce" }
+
+  # Game
+  - { key: SPACE, icon: pause.png, label: "Toggle pause", shared: false }
+  - { key: J, icon: fastmode.png, label: "Toggle fast mode" }
+  - { key: F1, icon: help.png, label: "Show help screen", region: [34, 40], shared: false }
+  - { key: F2, icon: hidehud.png, label: "Hide or show the HUD", region: [34, 40] }
+  - { key: F3, icon: fps.png, label: "Toggle FPS display", region: [34, 40] }
+  - { key: F3, mods: [SHIFT], icon: metrics.png, label: "Toggle performance metrics", region: [34, 40] }
+  - { key: F3, mods: [CTRL], icon: debugpanel.png, label: "Toggle debug panel", region: [34, 40] }
+  - { key: F5, icon: quicksave.png, label: "Quick save", region: [34, 40] }
+  - { key: F9, icon: quickload.png, label: "Quick load" }
+  - { key: F10, icon: console.png, label: "Toggle debug console" }
+  - { key: F11, icon: fullscreen.png, label: "Toggle full screen" }
+  - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Toggle full screen" }
+  - { key: F12, icon: screenshot.png, label: "Take screenshot", shared: false }
+  - { key: PRINTSCREEN, icon: screenshot.png, label: "Take screenshot", shared: false }
+
+  # Editor (no microbe stage meaning)
+  - { key: Z, mods: [CTRL], icon: undo.png, label: "Undo", shared: false }
+  - { key: Y, mods: [CTRL], icon: redo.png, label: "Redo", shared: false }
+  - { key: Z, mods: [CTRL, SHIFT], icon: redo.png, label: "Redo", shared: false }
+  - { key: DELETE, icon: delete.png, label: "Delete organelle", shared: false }
