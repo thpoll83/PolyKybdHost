@@ -1,6 +1,6 @@
 # Host-driven tutorials: plan
 
-Status: steps 1 and 2 done in the host (2026-11-15); step 3 needs firmware. Firmware side:
+Status: steps 1 to 3 done (2026-11-15): host, firmware protocol 35 and rig tests. Firmware side:
 `qmk_firmware/keyboards/polykybd/anim/TUTORIAL.md` and `TUTORIAL_NEXT.md` describe the
 first-run (Eden) tutorial, which is compiled into the firmware. This plan is for
 tutorials the HOST starts: one YAML file per topic, picked in a dialog, played with the
@@ -31,11 +31,11 @@ What does not exist:
 2. **Tutorial runner, YAML loader, dialog and step panel**, with ring and guide only
    (host only, protocol 32/34). Steps that need a firmware event advance with the
    panel's Next button. See *Step 2* below.
-3. **Cmd 49 TUTORIAL** (firmware protocol 35), with the `add-gated-hid-command` skill.
-   Adds status text, spotlight, reveal and armed events. Also takes the first-run
-   tutorial's on/off/replay op that `TUTORIAL_NEXT.md` step 3 plans. HIL test with the
-   `add-hil-test` skill; the ctnd PR merges before the firmware PR; the host release is
-   published before the firmware release.
+3. **Cmd 49 HOST TUTORIAL** (firmware protocol 35): status text, spotlight, reveal and
+   key/layer conditions. See *Cmd 49* below. Rig tests in polykybd-ctnd; the ctnd PR
+   merges before the firmware PR; the host release is published before the firmware
+   release. The first-run tutorial's on/off/replay (`TUTORIAL_NEXT.md` step 3) is a
+   separate change, with a row in the tray's Maintenance menu.
 4. **Whole-layout load and reset in the layout editor**, written with `SET_BUFFER` in
    chunks, followed by the reveal (op 3).
 5. **Docs page** on polykybd.org, after the release that has step 3
@@ -88,12 +88,14 @@ Limits of step 2:
   A key on the settings, language, Intl or emoji layer is found by keycode only if the
   same keycode is also on a readable layer; otherwise the script gives `{key: [row, col]}`,
   which does not follow a user's remap.
-- `say` is shown in the step panel only. It reaches the status OLED with cmd 49.
+- On firmware before protocol 35 (and on the DOOM monolith, which NACKs cmd 49) `say`
+  is shown in the step panel only, and `spotlight`, `reveal` and event waits are left
+  out.
 - Texts in shipped scripts are English. Extracting them into the translation catalogues
   (`scripts/i18n_strings.py`) is not done yet; a script can give
   `{en: ..., de: ...}` maps.
-- `requires`, `spotlight` and `reveal` are not accepted yet: the loader refuses unknown
-  fields. They are added with cmd 49.
+- `requires` is not implemented: a script cannot yet say it needs, for example, a
+  flashed emoji dictionary.
 
 ## Script format
 
@@ -126,13 +128,13 @@ Step fields:
 
 | field | value | needs |
 |---|---|---|
-| `say` | two OLED lines, ASCII 0x20..0x7E | cmd 49 op 1; else shown in the panel only |
+| `say` | one or two status-display lines, ASCII 0x20..0x7E, each at most 128 px in the 15 px status face (the loader measures it), both together at most 59 bytes | cmd 49 TEXT; else shown in the panel only |
 | `text` | longer text for the host panel | none |
 | `point` | `{keycode: ...}`, `{layer_key: NAME}` (the first key of the path to that layer) or `{key: [row, col]}`. A keycode is found in the keymap the keyboard holds, base layer first, so a user's remap is followed. Names: QMK's (`keycodes.h`), PolyKybd's own (`KC_DAUTO`, `KC_BASE`, from `res/preview/legends.json`), `MO(n)`/`TO(n)`/`TG(n)`, or a number | cmd 47 op 0 |
 | `guide_to_layer` | a layer name from cmd 35 | cmd 47 op 2 |
-| `spotlight` (planned) | `{keys: [...]}` or `{layer_keys: NAME}` | cmd 49 op 2 |
-| `reveal` (planned) | `{from: keycode}` | cmd 49 op 3 |
-| `wait` | `next`, `{seconds: N}`, `{layer: NAME}`, `{press: keycode}`, `{keycode: ...}` | `layer`/`press`/`keycode` need cmd 49 op 4/5; else they become `next` |
+| `spotlight` | a list of keys in the `point` forms, plus `{layer: NAME}` (every key with a keycode on that layer); `[]` darkens all but the ringed key. Applies to that step only | cmd 49 SPOTLIGHT |
+| `reveal` | `{from: <point>}`: the wave from that key lights the dark keys and ends the spotlight. A reveal step keeps the spotlight of the step before | cmd 49 REVEAL |
+| `wait` | `next`, `{seconds: N}`, `{layer: NAME}`, `{press: keycode}` | `layer`/`press` need cmd 49 ARM/POLL; else they become `next` |
 
 Rules for the loader:
 
@@ -140,8 +142,9 @@ Rules for the loader:
   "needs firmware" badge and cannot start.
 - An unknown field is an error shown in the dialog, not ignored: a typo in `wait`
   would otherwise make a step wait for ever.
-- Text goes through `_()` for shipped scripts (`scripts/i18n_strings.py` learns the
-  folder). User scripts may give `title: {en: ..., de: ...}`.
+- Planned: shipped scripts' texts go into the translation catalogues
+  (`scripts/i18n_strings.py` learns the folder). Today any script may give
+  `title: {en: ..., de: ...}` maps.
 - The status OLED shows ASCII only. For a UI language that needs other characters,
   `say` is shown in the panel and the OLED shows the key name only.
 
@@ -149,31 +152,28 @@ Rules for the loader:
 
 Built like `SettingsDialog`: categories on the left; on the right one card per script
 with title, summary, step count and the firmware badge. Start opens a small
-always-on-top step panel with Back, Next and Skip and the step's `text`. The panel is
-required because the OLED fits about 2 x 21 characters. It must work in client mode
+always-on-top step panel with Back, Next and Stop and the step's `text`. The panel is
+required because the status display fits two short lines (128 px each). It must work in client mode
 over RPC: the runner is in the core, the dialog and panel only send commands.
 
-## Cmd 49 TUTORIAL (step 3)
+## Cmd 49
 
-| op | does |
-|---|---|
-| 0 INFO | which ops exist, text limits |
-| 1 TEXT | two status OLED lines, which half, timeout |
-| 2 SPOTLIGHT | 72-bit key mask; every other keycap dims (the first-run "lit set") |
-| 3 REVEAL | the board wave from a key (first-run chapter 3) |
-| 4 ARM | conditions: key (row, col) pressed, layer N active, keycode K sent |
-| 5 POLL | sequence number and the conditions matched since the last poll |
-| 6 END | restore text, spotlight and ring |
-| 7 FIRST-RUN | on / off / replay / status of the Eden tutorial |
+The wire format and the firmware side: `qmk_firmware/keyboards/polykybd/
+PROTOCOL_HISTORY.md` → *v35*. What the host does with it:
 
-- The firmware reports only matches against the armed conditions, never raw key
-  positions, and only while a session is open. It must not work as a key logger.
-- If no POLL arrives for about 10 s, the firmware runs END itself, so a host crash does
-  not leave the board dimmed.
-- TEXT and SPOTLIGHT are read by both halves' renderers, so they are part of the
-  `poly_sync_t` contract (`TUTORIAL_NEXT.md` → *Anything the per-half render READS is
-  part of the sync contract*). Measure the free bytes in the sync struct before fixing
-  the text length.
+- `TutorialRun.start()` sends INFO. An answered INFO switches cmd 49 on for the run;
+  a refused one (DOOM monolith) leaves the run ring-only.
+- Each step sends TEXT (`say`, or empty), SPOTLIGHT (the step's keys plus the ringed
+  ones, or off), REVEAL, and ARM with the step's event wait (or none).
+- `PolyCore._tutorial_periodic` (0.5 s) calls `poll()`: POLL feeds the keyboard's 10 s
+  watchdog and moves on when condition 0 matched. A finished or stopped run sends END.
+- The keyboard reports matches against the armed conditions only, never raw key
+  positions, and only while a session is open.
+- The slave learns TEXT, SPOTLIGHT, REVEAL and END as the forwarded report, not
+  through `poly_sync_t` (firmware `SPLIT_SYNC.md` → *Host state goes to the slave as
+  the report*).
+- RAM: +108 B in the pack firmware (main SRAM free 6056 → 5948 B, local gcc 13.2); not
+  in the DOOM monolith.
 
 ## Tutorial candidates
 
