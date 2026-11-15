@@ -162,7 +162,7 @@ bindings:
 - key: D
   mods:
   - ALT
-  icon: disableall.png
+  icon: disable_all.png
   label: Enable / disable all nodes
   source: DaVinci Resolve 20 Reference Manual, Ch. 143
 - key: ;
@@ -303,7 +303,7 @@ bindings:
 - key: ']'
   mods:
   - ALT
-  icon: delkey.png
+  icon: key_delete.png
   label: Delete keyframe
   source: DaVinci Resolve 20 Reference Manual, Ch. 148
 - key: F

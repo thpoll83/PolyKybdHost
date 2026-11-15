@@ -130,6 +130,7 @@ WORDED = {
     "key_prev": ("nudgeleft", "KEY"), "key_next": ("nudgeright", "KEY"),
     "still_prev": ("prevedit", "STILL"), "still_next": ("nextedit", "STILL"),
     "disable_node": ("disable", "NODE"),
+    "disable_all": ("disableall", "ALL"),                              # Alt+D, all nodes
     "transition_audio": ("transition", "AUD"),
     "paste_instance": ("pastebase", "INST"),
     # glyphs that look like another key's without the word
@@ -191,6 +192,19 @@ def badged(path: Path, base: Path, badge: Path) -> None:
     _save_white(mask, path)
 
 
+def minus_diamond(path: Path) -> None:
+    """Delete keyframe (Alt+]): the keyframe diamond with a minus, drawn so it
+    pairs with Material's add_diamond on Add keyframe (Material has no minus form)."""
+    mask = Image.new("L", (COMP_PX, COMP_PX), 0)
+    d = ImageDraw.Draw(mask)
+    c, r, w = COMP_PX // 2, int(COMP_PX * 0.44), max(2, COMP_PX // 12)
+    pts = [(c, c - r), (c + r, c), (c, c + r), (c - r, c), (c, c - r)]
+    d.line(pts, fill=255, width=w, joint="curve")
+    bar = int(r * 0.55)
+    d.rectangle([c - bar, c - w // 2, c + bar, c + w // 2], fill=255)
+    _save_white(mask, path)
+
+
 DRAWN = ["blade", "markin", "markout", "overwrite", "append", "rippledelete", "trim", "snap"]
 
 
@@ -207,6 +221,7 @@ def main() -> int:
         dcc_glyphs.guarded(out / f"{name}.png",
                            lambda p, b=base, x=badge: badged(p, out / f"{b}.png", out / f"{x}.png"),
                            f"{base}.png with a {badge}.png badge")
+    dcc_glyphs.guarded(out / "key_delete.png", minus_diamond, "drawn keyframe diamond with a minus")
     geo_marks.ensure_resolve(out / "resolve.png")
     print(f"Wrote {n} icons (+ program mark) to {out}")
     return 0

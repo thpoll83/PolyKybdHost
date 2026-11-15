@@ -179,8 +179,13 @@ Keys with a different action got their own image, all drawn by `fetch_icons.py`:
 - A glyph over a word (`WORDED`, DejaVu Sans Bold): `nudge1_*` (1 frame) and
   `nudge5_*` (5 frames, apart from Fast forward and Fast reverse), `node_*`,
   `clip_*`, `key_*` and `still_*` (the arrow says which way, the word says to what),
-  `disable_node` (the clip toggle is on D), `transition_audio` (AUD), `paste_instance`
+  `disable_node` (the clip toggle is on D), `disable_all` (ALL, Alt+D: every node),
+  `transition_audio` (AUD), `paste_instance`
   (INST), `goto_in`, `goto_out` (apart from Import media), `sel_fwd`, `sel_back`
   (apart from Add serial node and Add node before), `static_key` (apart from Stop).
 - A glyph with a badge (`BADGED`): `blade_mode.png` is the blade glyph with the
   Selection-mode cursor, for the Blade tool on B; Ctrl+B (Razor) keeps the plain glyph.
+- Drawn in code (`minus_diamond()`): `key_delete.png` is a keyframe diamond with a
+  minus, for Delete keyframe (Alt+]). It pairs with `add_diamond` on Add keyframe;
+  Material Symbols has no minus form, and the plain `remove` line it replaces was
+  easy to miss on the keycap. Maintainer's choice, 2026-11-15.

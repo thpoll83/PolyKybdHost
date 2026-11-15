@@ -181,7 +181,7 @@ pages:
     - { key: G, mods: [ALT], icon: winpolygon.png, label: "Node + polygon window", ref: "Ch. 138" }
     - { key: B, mods: [ALT], icon: wincurve.png, label: "Node + curve window", ref: "Ch. 138" }
     - { key: D, mods: [CMDCTRL], icon: disable_node.png, label: "Enable / disable node", ref: "Ch. 127" }
-    - { key: D, mods: [ALT], icon: disableall.png, label: "Enable / disable all nodes", ref: "Ch. 143" }
+    - { key: D, mods: [ALT], icon: disable_all.png, label: "Enable / disable all nodes", ref: "Ch. 143" }
     - { key: ";", mods: [ALT, SHIFT], icon: node_prev.png, label: "Previous node", ref: "Ch. 143" }
     - { key: "'", mods: [ALT, SHIFT], icon: node_next.png, label: "Next node", ref: "Ch. 143" }
     - { key: G, mods: [CMDCTRL, ALT], icon: grabstill.png, label: "Grab still", ref: "Ch. 127" }
@@ -203,7 +203,7 @@ pages:
     - { key: "`", mods: [SHIFT], icon: showctl.png, label: "Onscreen controls", ref: "Ch. 127" }
     - { key: "[", mods: [CMDCTRL], icon: addkey.png, label: "Add keyframe", ref: "Ch. 148" }
     - { key: "]", mods: [CMDCTRL], icon: static_key.png, label: "Add static keyframe", ref: "Ch. 148" }
-    - { key: "]", mods: [ALT], icon: delkey.png, label: "Delete keyframe", ref: "Ch. 148" }
+    - { key: "]", mods: [ALT], icon: key_delete.png, label: "Delete keyframe", ref: "Ch. 148" }
     - { key: F, mods: [ALT], icon: enhanced.png, label: "Enhanced viewer", ref: "Ch. 126" }
     - { key: F, mods: [SHIFT], icon: fullviewer.png, label: "Full screen viewer", ref: "Ch. 126" }
     - { key: W, mods: [CMDCTRL, SHIFT], icon: scopes.png, label: "Video scopes", ref: "Ch. 127" }
