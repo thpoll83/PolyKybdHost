@@ -2,7 +2,8 @@
 """PolyKybd Mode Reporter -- Binary Ninja UI glue.
 
 Reports the view type (linear, graph, hex, ...) and the IL level of the
-focused pane to the local PolyKybdHost, so the keycaps show the keys of that
+focused pane, or that the scripting console or a cross-references pane has
+the keyboard focus, to the local PolyKybdHost, so the keycaps show the keys of that
 view. See ../README.md; the wire format is in core.py.
 
 - `UIContextNotification.OnViewChange` and `OnILViewTypeChange` read the pane
@@ -10,7 +11,8 @@ view. See ../README.md; the wire format is in core.py.
 - A `QTimer` (every 0.5 s, on the UI thread) reads it too: it catches a change
   that has no notification (a click into another pane) and sends the 3 s
   keep-alive. With no view open it keeps a report without a URL fresh on the
-  same keep-alive. It only reads two values; the network I/O is on the sender
+  same keep-alive. It reads the Qt focus widget first (`core.focus_url`), then
+  the view frame; the network I/O is on the sender
   thread (`core.Sender`).
 """
 import json
@@ -78,7 +80,14 @@ def _prefs():
 
 
 def _current_url():
-    """The pseudo-URL of the focused pane in the active window, or None."""
+    """The pseudo-URL of the focused pane in the active window, or None.
+
+    The Qt focus comes first: with the focus in the console's command line or
+    in a cross-references pane, the view frame still names the last code view,
+    but the keys go to the focused widget."""
+    focused = core.focus_url(QApplication.focusWidget())
+    if focused is not None:
+        return focused
     ctx = UIContext.activeContext()
     frame = ctx.getCurrentViewFrame() if ctx is not None else None
     if frame is None:

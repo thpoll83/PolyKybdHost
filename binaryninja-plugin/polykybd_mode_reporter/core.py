@@ -23,6 +23,11 @@ The URL is ``binaryninja://<view>[/<il>]``:
   ``mapped_mlil_ssa``, ``hlil``, ``hlil_ssa``, or ``pseudo_c`` /
   ``pseudo_rust`` / ``pseudo_python`` (``pseudo`` for another language).
 
+While the keyboard focus is in the scripting console's command line or in a
+cross-references pane, the URL is ``binaryninja://console`` or
+``binaryninja://xrefs`` instead (`focus_url`), because those widgets take the
+keys, not the view behind them.
+
 No file name, address, function name or window title. Keep it that way: the
 host routes on these tokens alone.
 """
@@ -113,6 +118,61 @@ def il_token(il) -> str | None:
         key = lang.strip().lower() if isinstance(lang, str) else "pseudo c"
         return _PSEUDO.get(key, "pseudo")
     return token
+
+
+# Qt class names of the focused widget or one of its parents (binaryninja-api
+# `ui/scriptingconsole.h` and `ui/xreflist.h`, branch dev, commit 23dfe06ed031).
+# Each is a Q_OBJECT class, so its meta-object carries this name.
+# - ScriptingConsoleEdit: the console's command line (a QTextEdit). The
+#   output above it (ScriptingConsoleOutput) is not matched: the console keys
+#   act on the command line.
+# - CrossReferenceWidget: the cross-references sidebar pane (a SidebarWidget),
+#   with its CrossReferenceTree / CrossReferenceTable and its filter line.
+CONSOLE_CLASSES = frozenset({"ScriptingConsoleEdit"})
+XREFS_CLASSES = frozenset({"CrossReferenceWidget"})
+CONSOLE_URL = SCHEME + "console"
+XREFS_URL = SCHEME + "xrefs"
+_MAX_PARENTS = 64             # a guard against a parent loop, not a real depth
+
+
+def class_names(widget):
+    """The Qt class names of one widget: its meta-object chain, else the
+    Python type's MRO. Errors read as no names."""
+    names = []
+    try:
+        mo = widget.metaObject()
+        while mo is not None:
+            names.append(str(mo.className()))
+            mo = mo.superClass()
+    except Exception:         # noqa: BLE001 -- no meta-object: use the Python type
+        names = []
+    if not names:
+        names = [c.__name__ for c in type(widget).__mro__]
+    return names
+
+
+def _parent(widget):
+    try:
+        return widget.parentWidget()
+    except Exception:         # noqa: BLE001
+        return None
+
+
+def focus_url(widget) -> str | None:
+    """``binaryninja://console`` or ``binaryninja://xrefs`` when ``widget``
+    (``QApplication.focusWidget()``) is inside the console's command line or
+    a cross-references pane, else None. The nearest match up the parent chain
+    decides."""
+    for _ in range(_MAX_PARENTS):
+        if widget is None:
+            return None
+        names = set(class_names(widget))
+        if names & CONSOLE_CLASSES:
+            return CONSOLE_URL
+        if names & XREFS_CLASSES:
+            return XREFS_URL
+        widget = _parent(widget)
+    return None
 
 
 def context_url(view_name, il=None) -> str | None:

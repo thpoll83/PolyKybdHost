@@ -85,6 +85,112 @@ class IlTokenTest(unittest.TestCase):
         self.assertIsNone(core.il_token(True))
 
 
+class _Meta:
+    """A Qt meta-object: className() and superClass()."""
+
+    def __init__(self, *names):
+        self._names = names
+
+    def className(self):  # noqa: N802 -- Qt API name
+        return self._names[0]
+
+    def superClass(self):  # noqa: N802 -- Qt API name
+        return _Meta(*self._names[1:]) if len(self._names) > 1 else None
+
+
+class _Widget:
+    """A focused widget: its meta-object chain and its parent."""
+
+    def __init__(self, names, parent=None):
+        self._meta = _Meta(*names)
+        self._parent = parent
+
+    def metaObject(self):  # noqa: N802 -- Qt API name
+        return self._meta
+
+    def parentWidget(self):  # noqa: N802 -- Qt API name
+        return self._parent
+
+
+def _chain(*levels):
+    """The focus widget first, then its parents up to the window."""
+    w = None
+    for names in reversed(levels):
+        w = _Widget(names, w)
+    return w
+
+
+_WINDOW = ("MainWindow", "QMainWindow", "QWidget", "QObject")
+_FRAME = ("ViewFrame", "QWidget", "QObject")
+
+
+class FocusUrlTest(unittest.TestCase):
+    def test_console_command_line(self):
+        w = _chain(("ScriptingConsoleEdit", "QTextEdit", "QWidget", "QObject"),
+                   ("Splitter", "QSplitter", "QWidget", "QObject"),
+                   ("ScriptingConsole", "SidebarWidget", "QWidget", "QObject"),
+                   ("GlobalArea", "QWidget", "QObject"), _WINDOW)
+        self.assertEqual(core.focus_url(w), "binaryninja://console")
+
+    def test_console_viewport_child(self):
+        # Qt gives the focus to the edit; a child under it still counts.
+        w = _chain(("QWidget", "QObject"),
+                   ("ScriptingConsoleEdit", "QTextEdit", "QWidget", "QObject"), _WINDOW)
+        self.assertEqual(core.focus_url(w), "binaryninja://console")
+
+    def test_console_subclass_by_meta_chain(self):
+        w = _chain(("MyConsoleEdit", "ScriptingConsoleEdit", "QTextEdit", "QObject"))
+        self.assertEqual(core.focus_url(w), "binaryninja://console")
+
+    def test_console_output_is_not_the_command_line(self):
+        w = _chain(("ScriptingConsoleOutput", "QPlainTextEdit", "QWidget", "QObject"),
+                   ("ScriptingConsole", "SidebarWidget", "QWidget", "QObject"), _WINDOW)
+        self.assertIsNone(core.focus_url(w))
+
+    def test_xrefs_tree_table_and_filter(self):
+        pane = ("CrossReferenceWidget", "SidebarWidget", "QWidget", "QObject")
+        for inner in (("CrossReferenceTree", "QTreeView", "QWidget", "QObject"),
+                      ("CrossReferenceTable", "QTableView", "QWidget", "QObject"),
+                      ("QLineEdit", "QWidget", "QObject")):
+            w = _chain(inner, ("ExpandableGroup", "QWidget", "QObject"), pane, _WINDOW)
+            self.assertEqual(core.focus_url(w), "binaryninja://xrefs", inner[0])
+
+    def test_code_view_and_no_focus(self):
+        w = _chain(("LinearView", "QAbstractScrollArea", "QWidget", "QObject"), _FRAME, _WINDOW)
+        self.assertIsNone(core.focus_url(w))
+        self.assertIsNone(core.focus_url(None))
+
+    def test_nearest_match_decides(self):
+        # A console edit inside an xrefs pane (not a real layout): the nearer wins.
+        w = _chain(("ScriptingConsoleEdit", "QTextEdit"),
+                   ("CrossReferenceWidget", "SidebarWidget"))
+        self.assertEqual(core.focus_url(w), "binaryninja://console")
+
+    def test_python_type_names_without_meta_object(self):
+        class CrossReferenceWidget:
+            def parentWidget(self):  # noqa: N802 -- Qt API name
+                return None
+        self.assertEqual(core.focus_url(CrossReferenceWidget()), "binaryninja://xrefs")
+
+    def test_a_failing_widget_reads_as_no_match(self):
+        class Broken:
+            def metaObject(self):  # noqa: N802 -- Qt API name
+                raise RuntimeError("deleted C++ object")
+
+            def parentWidget(self):  # noqa: N802 -- Qt API name
+                raise RuntimeError("deleted C++ object")
+        self.assertIsNone(core.focus_url(Broken()))
+
+    def test_a_parent_loop_ends(self):
+        w = _Widget(("QWidget",))
+        w._parent = w
+        self.assertIsNone(core.focus_url(w))
+
+    def test_the_tokens_carry_no_name(self):
+        self.assertEqual({core.CONSOLE_URL, core.XREFS_URL},
+                         {"binaryninja://console", "binaryninja://xrefs"})
+
+
 class ContextUrlTest(unittest.TestCase):
     def test_il_only_for_code_views(self):
         hlil = FunctionGraphType.HighLevelILFunctionGraph

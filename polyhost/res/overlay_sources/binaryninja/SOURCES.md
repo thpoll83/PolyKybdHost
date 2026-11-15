@@ -5,24 +5,49 @@
 
 | Set | Loads for | Keys |
 |---|---|---|
-| `binaryninja_template` (2 files) | Windows and Linux | 90 + ESC mark |
-| `binaryninja_template_mac` (3 files) | macOS | 90 + ESC mark |
+| `binaryninja_template` (2 files) | Windows and Linux | 92 + ESC mark |
+| `binaryninja_template_mac` (3 files) | macOS | 92 + ESC mark |
 | `binaryninja_linear_template` (2 files, `_mac` 3) | Linear view (mode reporter) | 88 + ESC mark |
 | `binaryninja_hex_template` (2 files, `_mac` 3) | Hex view (mode reporter) | 55 + ESC mark |
+| `binaryninja_console_template` (2 files, `_mac` 3) | scripting console command line (mode reporter) | 8 + ESC mark |
+| `binaryninja_xrefs_template` (2 files, `_mac` 3) | cross-references pane (mode reporter) | 7 + ESC mark |
 
 ## Per-view sets
 
-The mode reporter (`binaryninja-plugin/`) sends `binaryninja://<view>[/<il>]`.
-`gen_view_sets.py` derives `bindings_linear.yaml` and `bindings_hex.yaml` from
-`bindings.yaml` (`--check` tests that they are current):
+The mode reporter (`binaryninja-plugin/`) sends `binaryninja://<view>[/<il>]`,
+or `binaryninja://console` / `binaryninja://xrefs` while the scripting
+console's command line or a cross-references pane has the Qt focus.
+`gen_view_sets.py` derives `bindings_linear.yaml`, `bindings_hex.yaml`,
+`bindings_console.yaml` and `bindings_xrefs.yaml` from `bindings.yaml`
+(`--check` tests that they are current):
 
 - Linear: without Ctrl+Shift+= / Ctrl+Shift+- (Cmd on macOS), which the guide
-  lists as "Graph view zoom in / out".
+  lists as "Graph view zoom in / out", and without W and Z, which the "Graph
+  View" section lists as "Zoom to Fit" (`w`) and "Zoom to Cursor" (`z`).
 - Hex: the guide says that in Hex view you "type in hexadecimal or ASCII
   values" and that Tab moves between the hex and the ASCII column. So a key
   with no modifier or with Shift only is blank, Tab draws `hex_ascii_col.png`,
-  and the graph zoom keys are left out. Not checked on an install: whether
-  those keys type text while the editing lock is on.
+  and the graph zoom keys are left out (W and Z are letters, so they are
+  blank there in any case). Not checked on an install: whether those keys
+  type text while the editing lock is on.
+- Console: the command line takes the typed text, so only the keys the guide
+  lists in "Script (Python) Console" are drawn: Tab (completion), Up / Down
+  (command history), Ctrl+R (reverse-search the history), Ctrl+Enter (submit
+  multi-line input), Shift+Enter (force multi-line input). The guide writes
+  `<CTRL>`, not `[CMD/CTRL]`; the sets use Cmd on macOS because Qt maps Ctrl
+  to Cmd there (not checked on a Mac). Also drawn: Ctrl+P and Ctrl+Shift+P,
+  because the guide calls the command palette "application-wide". No plain
+  letter is drawn. Backtick opens and focuses the console but types a
+  backtick inside it, so it is not drawn. Other Ctrl chords of the main set
+  (Open, Save, Settings, ...) are left out: the guide does not say that they
+  reach the main window from the console.
+- Cross-references pane: the keys the guide lists under "Cross-Reference
+  Hotkeys" as "only available when the cross-references pane is in focus":
+  Ctrl+F (open the filter), Ctrl+A (select all cross-references), Up / Down
+  (select without navigating), Enter (navigate to the selected reference),
+  plus the command palette. Esc ("Clear the search dialog") is the program
+  mark, so it is not drawn. No plain letter is drawn: the pane's tree takes
+  typed letters for its keyboard search and the filter line types them.
 - Graph view, the other views and no report keep the main set. The IL level
   changes no default hotkey in the guide, so it has no set.
 
@@ -46,6 +71,11 @@ Read 2026-11-06:
   manipulation": `1 2 4 8 d - 0 ~ a o * s m`); `docs/guide/settings.md`
   (Ctrl+, and Ctrl+.); `docs/guide/migration/migrationguideida.md` (Save is
   Ctrl+S).
+- Read again 2026-11-15, `docs/guide/index.md` at commit `23dfe06ed031`
+  (branch `dev`): "Graph View" (W Zoom to Fit, Z Zoom to Cursor, lines
+  934-935), "Cross-Reference Hotkeys" (lines 556-566), "Script (Python)
+  Console" (lines 1186-1210), "Command Palette" ("application-wide", line
+  676).
 - The debugger's default keys, from the `UIAction::registerAction` calls in
   `ui/ui.cpp` of <https://github.com/Vector35/debugger> at commit `50cf97aac08e`
   (2026-11-05).
@@ -67,8 +97,9 @@ Shift (`+` is Shift+`=`).
 - Ctrl+Z / Ctrl+Shift+Z (Undo / Redo): the guide names Undo but no key; these
   are the Qt standard keys.
 - Ctrl+F: the guide documents it as the filter in the cross-reference panel;
-  the cell draws Find.
-- Ctrl+A: the guide documents it as Select all in the cross-reference panel.
+  the cell of the main set draws Find (the xrefs set draws the filter).
+- Ctrl+A: the guide documents it as Select all in the cross-reference panel
+  (the xrefs set draws it there).
 
 ## Left out
 
@@ -94,6 +125,11 @@ action is the same, the icon is a byte copy of their file
 |---|---|---|
 | `disassemble.png`, `clear.png`, `label.png`, `comment.png`, `function.png`, `goto.png`, `references.png`, `array.png`, `structure.png`, `functiongraph.png`, `actionchooser.png`, `keybinding.png`, `back.png`, `forward.png`, `cycle_int.png`, `type_retype.png`, `pointer.png`, `patch_ins.png`, `symboltable.png`, `lastactive.png`, `g_cycle.png` | byte copies of `../ghidra/icons/` (see `../ghidra/SOURCES.md`) | MIT / Apache-2.0 as listed there |
 | `make_str.png`, `op_char.png`, `op_sign.png`, `op_not.png`, `op_enum.png`, `pseudo_toggle.png`, `view_types.png`, `plugins.png`, `breakpoint.png`, `run.png`, `run_to_cursor.png`, `stepinto.png`, `stepover.png`, `stepout.png`, `g_quote.png` | byte copies of `../ida/icons/` (see `../ida/SOURCES.md`) | MIT / Apache-2.0 as listed there |
+| `fitwindow.png` (W), `zoom100.png` (Z) | byte copies of `../ida/icons/` (Fluent `Arrow Fit`; the IDA set's `1:1` + `ZOOM` composite), see `../ida/SOURCES.md` | MIT / (this repo) |
+| `autocomplete.png` (console Tab) | byte copy of `../sublime/icons/` (Fluent `Text Grammar Wand`) | MIT |
+| `selectall.png` (xrefs Ctrl+A) | byte copy of `../powerpoint/icons/` (Fluent `Select All On`) | MIT |
+| `filter.png` (xrefs Ctrl+F) | byte copy of `../wireshark/icons/` (Fluent `Filter`) | MIT |
+| `g_search.png` (used only inside `hist_search.png`) | byte copy of `../ghidra/icons/` (see `../ghidra/SOURCES.md`) | as listed there |
 | `zoomin.png`, `zoomout.png` | Fluent `Zoom In`, `Zoom Out` | MIT |
 | `openurl.png` | Fluent `Globe` | MIT |
 | `settings.png` | Fluent `Settings` | MIT |

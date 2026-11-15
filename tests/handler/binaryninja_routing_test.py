@@ -3,7 +3,9 @@
 Drives `polyhost/res/overlay-mapping.poly.yaml` itself. What it pins:
 
 * `binaryninja://linear/...` takes the Linear set and `binaryninja://hex` the
-  Hex set, at every IL level;
+  Hex set, at every IL level; `binaryninja://console` and `binaryninja://xrefs`
+  (Qt focus in the scripting console or a cross-references pane) take their
+  own sets;
 * Graph view, the other views and no report keep the main set;
 * a view's set REPLACES the main one (`layer: false`);
 * macOS takes the `_mac` sets;
@@ -33,6 +35,8 @@ KEY = "binaryninja,binary ninja"
 MAIN = "binaryninja_template.mods.png"
 LINEAR = "binaryninja_linear_template.mods.png"
 HEX = "binaryninja_hex_template.mods.png"
+CONSOLE = "binaryninja_console_template.mods.png"
+XREFS = "binaryninja_xrefs_template.mods.png"
 
 
 def _first(entry):
@@ -81,6 +85,7 @@ class BinaryNinjaRoutingTest(unittest.TestCase):
     def setUpClass(cls):
         handler = _overlay_handler_class()(yaml.safe_load(MAPPING.read_text(encoding="utf-8")))
         cls.entry = handler.mapping["binaryninja"]
+        cls.raw_entry = yaml.safe_load(MAPPING.read_text(encoding="utf-8"))[KEY]
         assert handler.mapping["binary ninja"] is cls.entry
 
     def _route(self, url, os_name="linux"):
@@ -93,6 +98,8 @@ class BinaryNinjaRoutingTest(unittest.TestCase):
             "binaryninja://linear/hlil": LINEAR,
             "binaryninja://linear/pseudo_c": LINEAR,
             "binaryninja://hex": HEX,
+            "binaryninja://console": CONSOLE,
+            "binaryninja://xrefs": XREFS,
             "binaryninja://graph/disasm": MAIN,
             "binaryninja://graph/mlil_ssa": MAIN,
             "binaryninja://triage": MAIN,
@@ -105,7 +112,49 @@ class BinaryNinjaRoutingTest(unittest.TestCase):
 
     def test_no_report_is_the_main_set(self):
         self.assertEqual(self._route(None), MAIN)
+        self.assertEqual(self._route(None, "windows"), MAIN)
         self.assertEqual(self._route(None, "macos"), "binaryninja_template_mac.mods.png")
+
+    def test_console_and_xrefs_sets(self):
+        for os_name in ("linux", "windows"):
+            self.assertEqual(self._route("binaryninja://console", os_name), CONSOLE)
+            self.assertEqual(self._route("binaryninja://xrefs", os_name), XREFS)
+        self.assertEqual(self._route("binaryninja://console", "macos"),
+                         "binaryninja_console_template_mac.mods.png")
+        self.assertEqual(self._route("binaryninja://xrefs", "macos"),
+                         "binaryninja_xrefs_template_mac.mods.png")
+        for url in ("binaryninja://console", "binaryninja://xrefs"):
+            for os_name in ("linux", "macos"):
+                got = find_matching_entry("binaryninja", self.entry, url, os_name)
+                names = [str(f) for f in got["overlay"]]
+                self.assertFalse([n for n in names if n.startswith("binaryninja_template")],
+                                 (url, os_name, names))
+
+    def test_needles_are_longest_first(self):
+        for branch in (self.raw_entry, self.raw_entry["os"]["macos"]):
+            needles = list(branch["urls-contains"])
+            self.assertEqual(needles, sorted(needles, key=len, reverse=True))
+
+    def test_graph_zoom_keys_only_in_the_main_set(self):
+        src = RES / "overlay_sources" / "binaryninja"
+        sigs = {}
+        for name in ("bindings", "bindings_linear", "bindings_hex",
+                     "bindings_console", "bindings_xrefs"):
+            spec = yaml.safe_load((src / f"{name}.yaml").read_text(encoding="utf-8"))
+            sigs[name] = {(str(b["key"]), tuple(b.get("mods") or ())) for b in spec["bindings"]}
+        for key in (("W", ()), ("Z", ())):
+            self.assertIn(key, sigs["bindings"])
+            for name in ("bindings_linear", "bindings_hex", "bindings_console",
+                         "bindings_xrefs"):
+                self.assertNotIn(key, sigs[name], name)
+        # The console and the xrefs pane draw no plain letter.
+        for name in ("bindings_console", "bindings_xrefs"):
+            plain = [k for k, m in sigs[name] if len(k) == 1 and k.isalpha()
+                     and not set(m) & {"CMDCTRL", "CTRL", "ALT", "GUI"}]
+            self.assertEqual(plain, [], name)
+        # Esc stays the program mark.
+        for name in sigs:
+            self.assertFalse([k for k, _m in sigs[name] if k.upper() in ("ESC", "ESCAPE")])
 
     def test_a_view_replaces_the_main_set(self):
         got = find_matching_entry("binaryninja", self.entry, "binaryninja://hex", "linux")
@@ -135,6 +184,13 @@ class BinaryNinjaRoutingTest(unittest.TestCase):
         p.update(app="binaryninja", url=None, focused=False, pid=7)
         self.assertIsNone(p.current_url("binaryninja"))
         self.assertEqual(self._route(p.current_url("binaryninja")), MAIN)
+
+    def test_console_report_through_the_provider(self):
+        p = BrowserUrlProvider(macos_lookup=lambda app: None)
+        for url, want in (("binaryninja://console", CONSOLE), ("binaryninja://xrefs", XREFS)):
+            p.update(app="binaryninja", url=url, focused=True, pid=7, input_age=0.0)
+            self.assertEqual(p.current_url("Binary Ninja"), url)
+            self.assertEqual(self._route(p.current_url("Binary Ninja")), want)
 
 
 if __name__ == "__main__":

@@ -1644,15 +1644,21 @@ ida,ida64,idaq,idaq64,ida pro,ida professional,ida home,ida free,ida classroom:
 # Linux binary `binaryninja` (unverified on an install); macOS "Binary Ninja"
 # (the app bundle name).
 # The mode reporter (binaryninja-plugin/) sends binaryninja://<view>[/<il>] for
-# the focused pane. Linear view drops the graph zoom keys; Hex view leaves the
-# keys that type text blank. Graph view, the other views and no report (plugin
-# not installed, or a stale report) keep the main set. `layer: false`: a view's
-# set replaces the main one instead of drawing over it.
+# the focused pane, and binaryninja://console / binaryninja://xrefs while the
+# scripting console or the cross-references pane has the keyboard focus.
+# Linear view drops the graph zoom keys; Hex view leaves the keys that type
+# text blank; the console and the cross-references pane draw only their own
+# keys and the command palette. Graph view, the other views and no report
+# (plugin not installed, or a stale report) keep the main set. `layer: false`:
+# a view's set replaces the main one instead of drawing over it. Longer needles
+# first.
 binaryninja,binary ninja:
   overlay: [binaryninja_template.mods.png, binaryninja_template.combo.mods.png]
   layer: false
   urls-contains:
+    "binaryninja://console": { overlay: [binaryninja_console_template.mods.png, binaryninja_console_template.combo.mods.png] }
     "binaryninja://linear": { overlay: [binaryninja_linear_template.mods.png, binaryninja_linear_template.combo.mods.png] }
+    "binaryninja://xrefs": { overlay: [binaryninja_xrefs_template.mods.png, binaryninja_xrefs_template.combo.mods.png] }
     "binaryninja://hex": { overlay: [binaryninja_hex_template.mods.png, binaryninja_hex_template.combo.mods.png] }
   os:
     macos:
@@ -1660,7 +1666,9 @@ binaryninja,binary ninja:
                 binaryninja_template_mac.extra.mods.png]
       layer: false
       urls-contains:
+        "binaryninja://console": { overlay: [binaryninja_console_template_mac.mods.png, binaryninja_console_template_mac.combo.mods.png, binaryninja_console_template_mac.extra.mods.png] }
         "binaryninja://linear": { overlay: [binaryninja_linear_template_mac.mods.png, binaryninja_linear_template_mac.combo.mods.png, binaryninja_linear_template_mac.extra.mods.png] }
+        "binaryninja://xrefs": { overlay: [binaryninja_xrefs_template_mac.mods.png, binaryninja_xrefs_template_mac.combo.mods.png, binaryninja_xrefs_template_mac.extra.mods.png] }
         "binaryninja://hex": { overlay: [binaryninja_hex_template_mac.mods.png, binaryninja_hex_template_mac.combo.mods.png, binaryninja_hex_template_mac.extra.mods.png] }
 # Minecraft: Bedrock Edition (overlay_sources/minecraft/minecraft_bedrock.yaml).
 # Windows reports `Minecraft.Windows.exe`, cut at the first dot to `minecraft`;

@@ -2,7 +2,8 @@
 
 Tells PolyKybdHost which **view** the focused pane of Binary Ninja shows
 (linear, graph, hex, ...) and at which **IL level** (disassembly, LLIL, MLIL,
-HLIL, pseudo C), so the keycaps show the keys of that view. Without the plugin
+HLIL, pseudo C), or that the scripting console or the cross-references pane
+has the keyboard focus, so the keycaps show the keys of that view. Without the plugin
 the keyboard still shows Binary Ninja's overlay: the set for the disassembly
 and IL views.
 
@@ -11,8 +12,10 @@ What changes on the keycaps:
 | view | set |
 |---|---|
 | Graph | the main set (with the graph zoom keys) |
-| Linear | the main set without the graph zoom keys (Ctrl+Shift+= / Ctrl+Shift+-, Cmd on macOS) |
+| Linear | the main set without the graph zoom keys (Ctrl+Shift+= / Ctrl+Shift+-, Cmd on macOS, and W / Z) |
 | Hex | keys that type a character (no modifier, or Shift only) are blank, because in Hex view they type bytes; Tab shows "switch hex / ASCII column". Chords and function keys keep their cells. |
+| Scripting console (focus in its command line) | only the console keys: Tab complete, Up / Down history, Ctrl+R reverse search, Ctrl+Enter run multi-line input, Shift+Enter force multi-line input, and the command palette (Ctrl+P, Ctrl+Shift+P). Letters are blank. |
+| Cross-references pane (focus anywhere in it) | only the pane keys: Ctrl+F filter, Ctrl+A select all, Up / Down select, Enter go to the reference, and the command palette. Esc keeps the program mark. |
 | Triage, Bytes, any other view, no report | the main set |
 
 The IL level is reported but changes no key: the user guide lists no hotkey
@@ -37,6 +40,9 @@ IL level changes and as a keep-alive every 3 s while nothing changes:
     `llil_ssa`, `mlil`, `mlil_ssa`, `mapped_mlil`, `mapped_mlil_ssa`, `hlil`,
     `hlil_ssa`, `pseudo_c`, `pseudo_rust`, `pseudo_python`, or `pseudo` for
     another decompiler language.
+  - `binaryninja://console` while the keyboard focus is in the scripting
+    console's command line, and `binaryninja://xrefs` while it is in a
+    cross-references pane. These take priority over the view.
 - `pid` is Binary Ninja's process id. `input_age` is 0 while Binary Ninja is
   the active application, else the seconds since it lost focus. With several
   Binary Ninja processes open, the host follows the one with the smallest age.
@@ -71,7 +77,29 @@ Checked against the `binaryninja-api` repository (branch `dev`, commit
   (`ui/viewframe.h`). The IL type is a `FunctionViewType`
   (`BNFunctionGraphType` in `binaryninjacore.h`, plus a language name for
   pseudo code).
-- A `QTimer` (PySide6) every 0.5 s reads the same two values. It catches a
+- `QApplication.focusWidget()` and its `parentWidget()` chain, read first
+  (`core.focus_url`). A widget matches when a class name in its meta-object
+  chain (`metaObject().className()`, then `superClass()`) is one of these
+  Qt class names, all `Q_OBJECT` classes in the binaryninja-api headers
+  (branch `dev`, commit `23dfe06ed031`):
+  - `ScriptingConsoleEdit` (`ui/scriptingconsole.h`, a `QTextEdit`): the
+    console's command line. Reports `binaryninja://console`. The output
+    pane above it, `ScriptingConsoleOutput`, is not matched: the console
+    keys act on the command line. The whole panel is `ScriptingConsole`
+    (a `SidebarWidget`).
+  - `CrossReferenceWidget` (`ui/xreflist.h`, a `SidebarWidget`): the
+    cross-references pane, with its `CrossReferenceTree` /
+    `CrossReferenceTable` and its filter line. Reports
+    `binaryninja://xrefs`. The modal `CrossReferenceDialog` (setting
+    `ui.defaultXrefInterface` = `dialog`) is not matched.
+
+  The names are confirmed from those headers. Not confirmed: that PySide6
+  in Binary Ninja returns these names from `metaObject().className()` for
+  the focused widget (it should, because each class has `Q_OBJECT`), and
+  that the pinned cross-references pane uses the same `CrossReferenceWidget`
+  class (the header has one widget class with a `m_pinned` member, and a
+  separate `PinnedCrossReferenceSidebarWidgetType`).
+- A `QTimer` (PySide6) every 0.5 s reads the same values. It catches a
   change with no notification (a click into another pane), and sends the
   keep-alive.
 - `QApplication.applicationStateChanged` for `input_age`, and
@@ -79,13 +107,13 @@ Checked against the `binaryninja-api` repository (branch `dev`, commit
 - `binaryninja.Settings.register_group()` / `register_setting()` for the
   settings below.
 - User guide: <https://docs.binary.ninja/guide/index.html> ("User Folder",
-  "Default Hotkeys", "Hex View"), and
+  "Default Hotkeys", "Hex View", "Graph View", "Cross-Reference Hotkeys",
+  "Script (Python) Console", "Command Palette"), and
   <https://docs.binary.ninja/guide/plugins.html> (manual plugin install).
 
 ## Install
 
-**From PolyKybdHost**: tray menu → Updates → "Set up the terminal and
-editors…", tick Binary Ninja. Or `polyctl editor-plugins install --editor
+**From PolyKybdHost**: tray menu → Integrations… → Editors, Binary Ninja. Or `polyctl editor-plugins install --editor
 binaryninja`. This copies `polykybd_mode_reporter/` into the user plugins
 folder and updates the copy when PolyKybdHost is updated:
 
@@ -119,5 +147,8 @@ these are unverified: that the Python binding passes `OnILViewTypeChange` (the
 0.5 s timer reads the IL level without it), the type `getILViewType()` returns
 in Python (`core.il_token` accepts the `FunctionViewType` object, the enum and
 an int), the view type names `Bytes` and `Triage`, the process names the host
-sees (`binaryninja`, "Binary Ninja"), and which keys Hex view really takes as
-typed text while the editing lock is on.
+sees (`binaryninja`, "Binary Ninja"), which keys Hex view really takes as
+typed text while the editing lock is on, the focus class names in a running
+Binary Ninja (see above), which Ctrl chords reach the main window from the
+console, and whether Ctrl+R and Ctrl+Enter in the console are Cmd or Ctrl on
+macOS (the guide writes `<CTRL>`; the sets use Cmd, as Qt maps Ctrl to Cmd).

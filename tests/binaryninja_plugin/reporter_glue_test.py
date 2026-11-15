@@ -144,6 +144,81 @@ class TwoProcessesTest(unittest.TestCase):
         self.assertEqual(self.host.current_url("binaryninja"), HEX)
 
 
+class _Frame:
+    """A ViewFrame showing Linear view at HLIL."""
+
+    def getCurrentView(self):  # noqa: N802 -- API name
+        return "Linear:ELF"
+
+    def getCurrentViewInterface(self):  # noqa: N802 -- API name
+        return SimpleNamespace(getILViewType=lambda: 8)
+
+
+class _Focus:
+    """A focus widget whose meta-object is one class name, with no parent."""
+
+    def __init__(self, name):
+        self.name = name
+
+    def metaObject(self):  # noqa: N802 -- Qt API name
+        return SimpleNamespace(className=lambda: self.name, superClass=lambda: None)
+
+    def parentWidget(self):  # noqa: N802 -- Qt API name
+        return None
+
+
+class CurrentUrlTest(unittest.TestCase):
+    """`_current_url()` reads the Qt focus before the view frame."""
+
+    def setUp(self):
+        self.mod = _load_plugin()
+        self.focus = None
+        self.frame = _Frame()
+        self.mod.QApplication = SimpleNamespace(focusWidget=lambda: self.focus)
+        ctx = SimpleNamespace(getCurrentViewFrame=lambda: self.frame)
+        self.mod.UIContext = SimpleNamespace(activeContext=lambda: ctx)
+
+    def test_focus_in_a_code_view_reports_the_view(self):
+        self.focus = _Focus("LinearView")
+        self.assertEqual(self.mod._current_url(), "binaryninja://linear/hlil")
+        self.focus = None
+        self.assertEqual(self.mod._current_url(), "binaryninja://linear/hlil")
+
+    def test_console_and_xrefs_take_priority_over_the_view(self):
+        self.focus = _Focus("ScriptingConsoleEdit")
+        self.assertEqual(self.mod._current_url(), "binaryninja://console")
+        self.focus = _Focus("CrossReferenceWidget")
+        self.assertEqual(self.mod._current_url(), "binaryninja://xrefs")
+
+    def test_console_with_no_view_open(self):
+        self.frame = None
+        self.focus = _Focus("ScriptingConsoleEdit")
+        self.assertEqual(self.mod._current_url(), "binaryninja://console")
+        self.focus = None
+        self.assertIsNone(self.mod._current_url())
+
+    def test_focus_change_is_sent_and_only_the_token(self):
+        clock = _Clock()
+        host = BrowserUrlProvider(clock=clock, macos_lookup=lambda _a: None)
+        sender = _ProviderSender(host)
+        self.mod._state["sender"] = sender
+        self.mod._state["policy"] = self.mod.core.SendPolicy()
+        self.mod._prefs = lambda: (True, 50164, "")
+        self.mod.time = SimpleNamespace(monotonic=clock)
+        self.mod.os = SimpleNamespace(getpid=lambda: 9)
+        self.mod._tick()
+        self.focus = _Focus("ScriptingConsoleEdit")
+        clock.t += 0.5
+        self.mod._tick()
+        self.focus = _Focus("CrossReferenceTree")   # inside no pane: no match
+        clock.t += 0.5
+        self.mod._tick()
+        self.assertEqual([s["url"] for s in sender.sent],
+                         ["binaryninja://linear/hlil", "binaryninja://console",
+                          "binaryninja://linear/hlil"])
+        self.assertEqual(host.current_url("binaryninja"), "binaryninja://linear/hlil")
+
+
 class DisabledTest(unittest.TestCase):
     def test_turning_reporting_off_sends_one_withdrawal_with_input_age(self):
         clock = _Clock()
