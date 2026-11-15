@@ -39,9 +39,11 @@ ICONS = {
     "savereplay": "fa:film",
     "savehistory": "fa:clock-rotate-left",
     "fps": "mdi:counter",
-    "kartpowerups": "mdi:go-kart",
     "soccerplayers": "mdi:soccer",
 }
+
+# Parts of the composed "power-ups above karts" icon: a gift above a kart.
+PARTS = {"_kart": "mdi:go-kart", "_gift": "mdi:gift-outline"}
 
 # Key area of each icon, from supertuxkart.yaml; the default is 40 x 40.
 SIZES: dict[str, tuple[int, int]] = {}
@@ -73,6 +75,17 @@ def flat_icons(out: Path, icons, sizes=None, ink=None) -> None:
     print(f"  {len(icons)} key icons drawn flat")
 
 
+def kartpowerups(out: Path) -> None:
+    """A gift box above a go-kart, one 40 x 40 flat icon (the power-up above the kart)."""
+    import numpy as np
+    canvas = np.zeros((40, 40), bool)
+    for part, box, x, y in (("_gift", (18, 17), 11, 0), ("_kart", (40, 21), 0, 19)):
+        m = _alpha_mask(out / f"{part}.png", box)
+        canvas[y:y + m.shape[0], x:x + m.shape[1]] |= m
+    cnc._save_mask(canvas, out / "kartpowerups.png")
+    print("  kartpowerups.png  <- composed (gift above kart)")
+
+
 def text_mark(path: Path, lines, font_url: str, threshold: int, gap: int = 2, ss: int = 8) -> None:
     """The ESC mark: `lines`, one below the other with `gap` px between them,
     at the largest one size at which each fits 70 px wide and all fit 38 px
@@ -101,8 +114,9 @@ def text_mark(path: Path, lines, font_url: str, threshold: int, gap: int = 2, ss
 
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
-    cnc.render(ICONS, out)
+    cnc.render({**ICONS, **PARTS}, out)
     flat_icons(out, ICONS, SIZES, INK)
+    kartpowerups(out)
     text_mark(out / "program.png", MARK_LINES, FONT_URL, MARK_THRESHOLD)
     print(f"Wrote icons to {out}")
     return 0

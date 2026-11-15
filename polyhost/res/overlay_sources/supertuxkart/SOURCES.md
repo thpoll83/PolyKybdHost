@@ -117,6 +117,6 @@ Material Design Icons are from Templarian/MaterialDesign at commit 2424e74.
 | `savereplay.png` | Font Awesome Free 6.5.2 `film` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `savehistory.png` | Font Awesome Free 6.5.2 `clock-rotate-left` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `fps.png` | Material Design Icons `counter` | Pictogrammers | Apache-2.0 |
-| `kartpowerups.png` | Material Design Icons `go-kart` | Pictogrammers | Apache-2.0 |
+| `kartpowerups.png` | Material Design Icons `gift-outline` above `go-kart`, composed by `fetch_icons.py` from `_gift.png` and `_kart.png` | Pictogrammers | Apache-2.0 |
 | `soccerplayers.png` | Material Design Icons `soccer` | Pictogrammers | Apache-2.0 |
 | `program.png` | "Super" over "TuxKart" set in Racing Sans One by `fetch_icons.py` | Impallari Type (font) | SIL OFL 1.1 |
