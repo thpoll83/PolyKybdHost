@@ -30,7 +30,7 @@ changes a shell startup file (bytes outside the block are kept, a timestamped
 copy is written first), with that module's helpers.
 
 Qt-free and stdlib-only: ``polyctl`` imports it without PyQt5, and the tray
-dialog (``gui/shell_title_dialog.py``) only shows it.
+page (Integrations > Editors, ``gui/shell_editor_pages.py``) only shows it.
 """
 import hashlib
 import json

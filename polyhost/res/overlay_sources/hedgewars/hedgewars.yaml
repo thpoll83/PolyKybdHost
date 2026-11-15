@@ -1,0 +1,98 @@
+# Hedgewars overlay for PolyKybd.
+#
+# Keys: the default binds in hedgewars/uInputHandler.pas (InitDefaultBinds) and
+# the key combinations in QTfrontend/binds.cpp of hedgewars/hw, commit 1629043
+# (1.1.0-dev). See SOURCES.md.
+#
+# "Precise" is the left Shift key by default, so the game's "precise + key"
+# combinations are drawn on the Shift layer.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/hedgewars/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/hedgewars/hedgewars.yaml --preview /tmp/hedgewars_preview
+app: hedgewars
+match: [hwengine, hwengine.exe, hedgewars, hedgewars.exe, org.hedgewars.Hedgewars]
+output: hedgewars_template
+icon_dir: icons
+fit: contain
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+# As for fheroes2: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# "Hedge" over "wars" drawn over the whole cell, without the ESC legend
+# (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Movement
+  - { key: UP, icon: aimup.png, label: "Aim up" }
+  - { key: DOWN, icon: aimdown.png, label: "Aim down" }
+  - { key: LEFT, icon: walkleft.png, label: "Walk left" }
+  - { key: RIGHT, icon: walkright.png, label: "Walk right" }
+  - { key: ENTER, icon: longjump.png, label: "Long jump" }
+  - { key: BACKSPACE, icon: highjump.png, label: "High jump" }
+  - { key: TAB, icon: switch.png, label: "Switch hedgehog" }
+  - { key: TAB, mods: [SHIFT], icon: switchback.png, label: "Switch hedgehog backwards" }
+
+  # Weapons
+  - { key: SPACE, icon: attack.png, label: "Attack" }
+  - { key: F1, icon: slot1.png, label: "Weapon slot 1", region: [30, 40] }
+  - { key: F2, icon: slot2.png, label: "Weapon slot 2", region: [30, 40] }
+  - { key: F3, icon: slot3.png, label: "Weapon slot 3", region: [30, 40] }
+  - { key: F4, icon: slot4.png, label: "Weapon slot 4", region: [30, 40] }
+  - { key: F5, icon: slot5.png, label: "Weapon slot 5", region: [30, 40] }
+  - { key: F6, icon: slot6.png, label: "Weapon slot 6", region: [30, 40] }
+  - { key: F7, icon: slot7.png, label: "Weapon slot 7", region: [30, 40] }
+  - { key: F8, icon: slot8.png, label: "Weapon slot 8", region: [30, 40] }
+  - { key: F9, icon: slot9.png, label: "Weapon slot 9", region: [30, 40] }
+  - { key: F10, icon: slot10.png, label: "Weapon slot 10", region: [30, 40] }
+  - { key: 1, icon: timer1.png, label: "Timer 1 second" }
+  - { key: 2, icon: timer2.png, label: "Timer 2 seconds" }
+  - { key: 3, icon: timer3.png, label: "Timer 3 seconds" }
+  - { key: 4, icon: timer4.png, label: "Timer 4 seconds" }
+  - { key: 5, icon: timer5.png, label: "Timer 5 seconds" }
+  - { key: N, icon: changetimer.png, label: "Change timer" }
+  - { key: 1, mods: [SHIFT], icon: bounce1.png, label: "Bounciness 1" }
+  - { key: 2, mods: [SHIFT], icon: bounce2.png, label: "Bounciness 2" }
+  - { key: 3, mods: [SHIFT], icon: bounce3.png, label: "Bounciness 3" }
+  - { key: 4, mods: [SHIFT], icon: bounce4.png, label: "Bounciness 4" }
+  - { key: 5, mods: [SHIFT], icon: bounce5.png, label: "Bounciness 5" }
+  - { key: N, mods: [SHIFT], icon: changebounce.png, label: "Change bounciness" }
+
+  # Camera
+  - { key: H, icon: findhog.png, label: "Automatic camera, find hedgehog" }
+
+  # Chat
+  - { key: T, icon: chat.png, label: "Chat" }
+  - { key: U, icon: clanchat.png, label: "Clan chat" }
+  - { key: GRAVE, icon: chathistory.png, label: "Chat history" }
+
+  # Game
+  - { key: P, icon: pause.png, label: "Pause, automatic skip", shared: false }
+  - { key: Y, icon: confirm.png, label: "Confirmation" }
+  - { key: W, mods: [CTRL], icon: closeengine.png, label: "Close the game" }
+  - { key: 9, icon: voldown.png, label: "Volume down" }
+  - { key: 0, icon: volup.png, label: "Volume up" }
+  - { key: 8, icon: mute.png, label: "Mute audio" }
+  - { key: F12, icon: fullscreen.png, label: "Toggle full screen" }
+  - { key: C, icon: screenshot.png, label: "Take screenshot", shared: false }
+  - { key: C, mods: [SHIFT], icon: mapimage.png, label: "Save map as image" }
+  - { key: F, icon: speedup.png, label: "Speed up replay" }
+  - { key: R, icon: record.png, label: "Record video" }
+
+  # Heads-up display
+  - { key: M, icon: mission.png, label: "Show mission information" }
+  - { key: O, icon: objectinfo.png, label: "Show object information" }
+  - { key: DELETE, icon: teambars.png, label: "Toggle team bars" }
+  - { key: HOME, icon: hogtags.png, label: "Toggle hedgehog tags" }
+  - { key: HOME, mods: [SHIFT], icon: tagtypes.png, label: "Change hedgehog tag types" }
