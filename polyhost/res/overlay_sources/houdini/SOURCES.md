@@ -128,6 +128,15 @@ Apache-2.0). `fit_view, group_enter, group_exit, mute, search` are byte copies
 of `../blender/icons/`, and `upstream, downstream, stickynote, jumpbookmark` of
 `../nuke/icons/` (Material Symbols there, Apache-2.0).
 
+One icon per action: `parm_float` (P, a floating parameter window) is the
+Parameters glyph with a tear-off badge, `net_tree` (Shift+W, the tree view
+inside the Network Editor) the Tree View glyph with a sidebar badge (`sidebar`,
+Material Symbols `side_navigation`), so they differ from the Alt+3 and Alt+4
+pane types. `mark_go1..5` and `mark_set1..5` are `jumpbookmark` and
+`mark_set` with the quick mark's number beside them in DejaVu Sans Bold, drawn
+1-bit at 36x32 (`_numbered` in `fetch_icons.py`). H is labelled "Home all", the
+same action as Shift+A in the viewport.
+
 ## Animation Editor set
 
 `anim.yaml`, routed on `houdini://anim`. 45 keys on each platform, plus the ESC
@@ -194,10 +203,13 @@ act while the pointer is over these panes. They are not drawn.
 | `new, open, save, undo` | byte copies of `../cinema4d/icons/` (Fluent) | MIT |
 | `sel_vertex, obj_comp_toggle, material_palette, badge_key, badge_pin` | drawn in `fetch_icons.py` | GPL-3.0-or-later |
 | `space_view` | the F8 object cube with four arrows, drawn in `fetch_icons.py` through `../space_hint.py` on the whole 72x40 keycap. Space shows that holding it is the view tool; the Space+key combinations stay undrawn | GPL-3.0-or-later |
+| `sidebar` (badge only) | Material Symbols `side_navigation` | Apache-2.0 |
+| `parm_float, net_tree` | composites, `../dcc_glyphs.py` `with_badge` (`attributes` + `tab_tearoff`, `objectmanager` + `sidebar`) | as their parts |
+| `mark_go1..5, mark_set1..5` | `jumpbookmark` / `mark_set` with a digit in DejaVu Sans Bold (`/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf`, Bitstream Vera licence, DejaVu changes public domain), drawn in `fetch_icons.py` (`_numbered`) | as their parts |
 | `key_move, key_rotate, key_scale, key_handle, pin_camera` | composites, `../dcc_glyphs.py` `with_badge` (move / rotate / scale / gizmo + `badge_key`, `camera` + `badge_pin`) | as their parts |
 | `houdini.png` (ESC mark) | Simple Icons `houdini`, see below | artwork CC0-1.0; SideFX's mark |
 
-| `slope_flat, slope_auto, isolate, isolate_revert, sel_channel, ed_table` (Animation Editor) | Material Symbols (`ms:` names in `fetch_icons.py`) | Apache-2.0 |
+| `slope_flat, slope_auto, isolate, isolate_revert, sel_channel, ed_table, graph_view` (Animation Editor) | Material Symbols (`ms:` names in `fetch_icons.py`) | Apache-2.0 |
 | `ed_dopesheet` | byte copy of `../blender/icons/` (Material Symbols there) | Apache-2.0 |
 | `key_delete` | byte copy of `../blender/icons/` (keyframe diamond drawn there) | GPL-3.0-or-later |
 | `copy, paste` | byte copies of `../maya/icons/` (Fluent, from `../cinema4d/`) | MIT |

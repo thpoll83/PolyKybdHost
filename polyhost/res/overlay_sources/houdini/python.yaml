@@ -34,7 +34,7 @@ program_icon_margin: 0
 
 bindings:
   # --- no modifier
-  - { key: ENTER, mods: [], icon: run.png, label: "Run the line" }
+  - { key: ENTER, mods: [], icon: run.png, label: "Run the command" }
   - { key: HOME, mods: [], icon: line_start.png, region: [40, 32], label: "Start of the line" }
   - { key: END, mods: [], icon: line_end.png, region: [40, 32], label: "End of the line" }
   - { key: UP, mods: [], icon: histprev.png, label: "Previous command" }

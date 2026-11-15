@@ -40,13 +40,13 @@ bindings:
   - { key: DEL, mods: [], icon: key_delete.png, label: "Delete the selected keys" }
   - { key: "0", mods: [], icon: slope_flat.png, label: "Selected slopes to zero" }
   - { key: "9", mods: [], icon: slope_auto.png, label: "Selected slopes to automatic" }
-  - { key: ",", mods: [], icon: key_prev.png, label: "Previous keyframe" }
-  - { key: ".", mods: [], icon: key_next.png, label: "Next keyframe" }
+  - { key: ",", mods: [], icon: key_prev.png, label: "Previous scoped keyframe" }
+  - { key: ".", mods: [], icon: key_next.png, label: "Next scoped keyframe" }
   - { key: I, mods: [], icon: isolate.png, label: "Isolate channels" }
   - { key: S, mods: [], icon: sel_channel.png, label: "Select on one channel (hold, drag)" }
 
   # --- no modifier: views of the Animation Editor
-  - { key: "1", mods: [], icon: ed_graph.png, label: "Graph view" }
+  - { key: "1", mods: [], icon: graph_view.png, label: "Graph view" }
   - { key: "2", mods: [], icon: ed_dopesheet.png, label: "Dopesheet view" }
   - { key: "3", mods: [], icon: ed_table.png, label: "Table view" }
 
@@ -57,8 +57,8 @@ bindings:
   - { key: RIGHT, mods: [], icon: frame_next.png, label: "Next frame" }
 
   # --- Shift
-  - { key: LEFT, mods: [SHIFT], icon: key_prev.png, label: "Previous keyframe" }
-  - { key: RIGHT, mods: [SHIFT], icon: key_next.png, label: "Next keyframe" }
+  - { key: LEFT, mods: [SHIFT], icon: key_prev.png, label: "Previous scoped keyframe" }
+  - { key: RIGHT, mods: [SHIFT], icon: key_next.png, label: "Next scoped keyframe" }
   - { key: I, mods: [SHIFT], icon: isolate_revert.png, label: "Revert isolate channels" }
 
   # --- Ctrl (Cmd on macOS)

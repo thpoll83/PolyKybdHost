@@ -37,12 +37,12 @@ bindings:
   # --- no modifier: adding nodes and view
   - { key: TAB, mods: [], icon: nodesearch.png, label: "Tab menu (add node)" }
   - { key: "=", mods: [], icon: file_node.png, label: "Add a File node" }
-  - { key: H, mods: [], icon: frame_all.png, label: "Show all nodes" }
+  - { key: H, mods: [], icon: frame_all.png, label: "Home all" }
   - { key: G, mods: [], icon: fit_view.png, label: "Show the selected nodes" }
   - { key: "`", mods: [], icon: prev_view.png, label: "Previous view" }
 
   # --- no modifier: tools and palettes
-  - { key: P, mods: [], icon: attributes.png, label: "Floating parameter editor" }
+  - { key: P, mods: [], icon: parm_float.png, label: "Floating parameter editor" }
   - { key: O, mods: [], icon: net_overview.png, label: "Network overview" }
   - { key: C, mods: [], icon: color_palette.png, label: "Color palette" }
   - { key: Z, mods: [], icon: shape_palette.png, label: "Shape palette" }
@@ -67,28 +67,28 @@ bindings:
   # --- Shift
   - { key: O, mods: [SHIFT], icon: network_box.png, label: "Network box" }
   - { key: P, mods: [SHIFT], icon: stickynote.png, label: "Sticky note" }
-  - { key: W, mods: [SHIFT], icon: objectmanager.png, label: "Network tree view" }
+  - { key: W, mods: [SHIFT], icon: net_tree.png, label: "Network tree view" }
   - { key: J, mods: [SHIFT], icon: notes_min.png, label: "Minimize notes and boxes" }
   - { key: K, mods: [SHIFT], icon: notes_restore.png, label: "Restore notes and boxes" }
   - { key: M, mods: [SHIFT], icon: box_fit.png, label: "Fit network box" }
   - { key: A, mods: [SHIFT], icon: align_nodes.png, label: "Align nodes (hold, drag)" }
   - { key: PGUP, mods: [SHIFT], icon: sibling_prev.png, label: "Previous sibling node" }
   - { key: PGDN, mods: [SHIFT], icon: sibling_next.png, label: "Next sibling node" }
-  - { key: "1", mods: [SHIFT], icon: jumpbookmark.png, label: "Go to quick mark 1" }
-  - { key: "2", mods: [SHIFT], icon: jumpbookmark.png, label: "Go to quick mark 2" }
-  - { key: "3", mods: [SHIFT], icon: jumpbookmark.png, label: "Go to quick mark 3" }
-  - { key: "4", mods: [SHIFT], icon: jumpbookmark.png, label: "Go to quick mark 4" }
-  - { key: "5", mods: [SHIFT], icon: jumpbookmark.png, label: "Go to quick mark 5" }
+  - { key: "1", mods: [SHIFT], icon: mark_go1.png, label: "Go to quick mark 1" }
+  - { key: "2", mods: [SHIFT], icon: mark_go2.png, label: "Go to quick mark 2" }
+  - { key: "3", mods: [SHIFT], icon: mark_go3.png, label: "Go to quick mark 3" }
+  - { key: "4", mods: [SHIFT], icon: mark_go4.png, label: "Go to quick mark 4" }
+  - { key: "5", mods: [SHIFT], icon: mark_go5.png, label: "Go to quick mark 5" }
   # ">" and "<" (Shift+. and Shift+,) step through the find matches.
   - { key: ".", mods: [SHIFT], icon: match_next.png, label: "Next match" }
   - { key: ",", mods: [SHIFT], icon: match_prev.png, label: "Previous match" }
 
   # --- Ctrl (Cmd on macOS)
-  - { key: "1", mods: [CMDCTRL], icon: mark_set.png, label: "Set quick mark 1" }
-  - { key: "2", mods: [CMDCTRL], icon: mark_set.png, label: "Set quick mark 2" }
-  - { key: "3", mods: [CMDCTRL], icon: mark_set.png, label: "Set quick mark 3" }
-  - { key: "4", mods: [CMDCTRL], icon: mark_set.png, label: "Set quick mark 4" }
-  - { key: "5", mods: [CMDCTRL], icon: mark_set.png, label: "Set quick mark 5" }
+  - { key: "1", mods: [CMDCTRL], icon: mark_set1.png, label: "Set quick mark 1" }
+  - { key: "2", mods: [CMDCTRL], icon: mark_set2.png, label: "Set quick mark 2" }
+  - { key: "3", mods: [CMDCTRL], icon: mark_set3.png, label: "Set quick mark 3" }
+  - { key: "4", mods: [CMDCTRL], icon: mark_set4.png, label: "Set quick mark 4" }
+  - { key: "5", mods: [CMDCTRL], icon: mark_set5.png, label: "Set quick mark 5" }
   - { key: F, mods: [CMDCTRL], icon: search.png, label: "Find" }
   - { key: G, mods: [CMDCTRL], icon: match_next.png, label: "Next match" }
   - { key: UP, mods: [CMDCTRL], icon: jump_start.png, label: "First frame" }
