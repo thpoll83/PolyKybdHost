@@ -68,3 +68,13 @@ the meeting window was not opened (it needs an account).
 - ESC: the Webex mark from Simple Icons (CC0-1.0 artwork,
   <https://simpleicons.org>), used to name the application
   (`../brand_marks.py`).
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `spacemessages_tab.png` | `chat.png` with the tag "TAB", drawn by `../action_variants.py` | same as the base icon |
+| `tabmeetings.png` | Fluent `Calendar Video` (Meetings tab; was the Video glyph of Video on/off) | MIT |

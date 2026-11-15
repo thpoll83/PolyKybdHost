@@ -121,7 +121,7 @@ single cell: Ctrl+Alt+Super+P, the settings profile.
   - `../vscode`: quickopen, gotosymbol, rename, definition, explorer,
     extensions, debugview, problems, terminal, findinfiles, replaceinfiles,
     sidebar, split, history.
-  - `../sublime`: commandpalette, gotosymbolproject, gotoline, reopentab,
+  - `../sublime`: commandpalette, gotoline, reopentab,
     blockcomment, deleteline, swapup/down, joinlines, insertafter/before,
     fold/unfold, selectline, multicursor, selectalloccur, cursorabove/below,
     matchbracket, autocomplete, gotoword, duplicate.
@@ -209,3 +209,16 @@ Preview and Nightly ship differently coloured icons (`app-icon-preview.png`,
   Wayland and X11 app id / WM_CLASS is `dev.zed.Zed` (or `-Preview`, `-Nightly`,
   `-Dev`) from `ReleaseChannel::app_id()` in `crates/release_channel/src/lib.rs`,
   which is also the `.desktop` file name. All of these are listed lowercased.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `projectsymbols.png` | `gotosymbol.png` with the tag "ALL", drawn by `../action_variants.py` | same as the base icon |
+| `recentbranches.png` | `win_git.png` with `history.png` at the lower right, drawn by `../action_variants.py` | same as the base icon |
+| `docksshrink_all.png` | `dockshrink.png` with the tag "ALL", drawn by `../action_variants.py` | same as the base icon |
+| `insertafter.png` | Fluent `Text Add Space After` (copied from ../sublime/icons) | MIT |
+| `insertbefore.png` | Fluent `Text Add Space Before` (copied from ../sublime/icons) | MIT |

@@ -58,7 +58,7 @@ bindings:
   - { key: LBRACKET, mods: [GUI],   <<: *mac, icon: back.png,        label: "Back in chat history" }
   - { key: RBRACKET, mods: [GUI],   <<: *mac, icon: forward.png,     label: "Forward in chat history" }
   - { key: N, mods: [GUI],          <<: *mac, icon: newmessage.png,  label: "New message" }
-  - { key: "0", mods: [GUI, ALT],   <<: *mac, icon: collapse.png,    label: "Collapse all" }
+  - { key: "0", mods: [GUI, ALT],   <<: *mac, icon: collapse.png,    label: "Collapse chat sections" }
   - { key: I, mods: [GUI, ALT],     <<: *mac, icon: addmember.png,   label: "Add member" }
   - { key: L, mods: [GUI, SHIFT],   <<: *mac, icon: chatlist.png,    label: "Chat list" }
   - { key: N, mods: [GUI, CTRL],    <<: *mac, icon: newmessages.png, label: "Jump to new messages" }

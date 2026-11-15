@@ -39,7 +39,7 @@ program_icon_margin: 0
 bindings:
   # --- Cmd (GUI) -> the `combo` file's A channel ---
   - { key: P, mods: [GUI], icon: gotoanything.png, label: "Goto Anything",  source: "ms-fluent/Document Search (MIT)" }
-  - { key: R, mods: [GUI], icon: gotosymbol.png,   label: "Goto symbol",    source: "ms-fluent/Code (MIT)" }
+  - { key: R, mods: [GUI], icon: gotosymbol.png,   label: "Goto symbol",    source: "ms-fluent/Symbols (MIT)" }
   - { key: F, mods: [GUI], icon: find.png,         label: Find,             source: "ms-fluent/Search (MIT)" }
   - { key: X, mods: [GUI], icon: cutline.png,      label: "Cut line",       source: "ms-fluent/Cut (MIT)" }
   - { key: L, mods: [GUI], icon: selectline.png,   label: "Select line",    source: "custom/editor_glyphs", mode: alpha }
@@ -51,8 +51,8 @@ bindings:
   - { key: J, mods: [GUI, SHIFT], icon: joinlines.png, label: "Join lines",     source: "ms-fluent/Text Wrap Off (MIT)" }
   - { key: Y, mods: [GUI], icon: redo.png,         label: Redo,             source: "ms-fluent/Arrow Redo (MIT)" }
   - { key: U, mods: [GUI], icon: softundo.png,     label: "Soft undo",      source: "ms-fluent/Arrow Undo (MIT)" }
-  - { key: ENTER, mods: [GUI], icon: insertafter.png, label: "Insert line after", source: "ms-fluent/Arrow Enter (MIT)" }
-  - { key: F2, mods: [GUI], icon: bookmark.png,    label: "Toggle bookmark", source: "ms-fluent/Bookmark (MIT)" }
+  - { key: ENTER, mods: [GUI], icon: insertafter.png, label: "Insert line after", source: "ms-fluent/Text Add Space After (MIT)" }
+  - { key: F2, mods: [GUI], icon: bookmark_toggle.png, label: "Toggle bookmark", source: "ms-fluent/Bookmark Add (MIT)" }
   - { key: W, mods: [GUI], icon: closetab.png,     label: "Close tab", concept: close,      source: "ms-fluent/Dismiss (MIT)" }
   - { key: B, mods: [GUI], icon: build.png,        label: Build,            source: "ms-fluent/Play (MIT)" }
 
@@ -63,7 +63,7 @@ bindings:
   - { key: R, mods: [GUI, SHIFT], icon: gotosymbolproject.png, label: "Goto symbol in project", source: "ms-fluent/Folder Search (MIT)" }
   - { key: T, mods: [GUI, SHIFT], icon: reopentab.png,         label: "Reopen closed tab", source: "ms-fluent/Tab Desktop (MIT)" }
   - { key: V, mods: [GUI, SHIFT], icon: pasteindent.png,       label: "Paste with indent", source: "ms-fluent/Clipboard Paste (MIT)" }
-  - { key: ENTER, mods: [GUI, SHIFT], icon: insertbefore.png,  label: "Insert line before", source: "ms-fluent/Arrow Enter (MIT)" }
+  - { key: ENTER, mods: [GUI, SHIFT], icon: insertbefore.png,  label: "Insert line before", source: "ms-fluent/Text Add Space Before (MIT)" }
   - { key: "[", mods: [GUI, SHIFT], icon: cycletableft.png,    label: "Cycle tab left",    source: "ms-fluent/Chevron Left (MIT)" }
   - { key: "]", mods: [GUI, SHIFT], icon: cycletabright.png,   label: "Cycle tab right",   source: "ms-fluent/Chevron Right (MIT)" }
 
@@ -85,7 +85,7 @@ bindings:
   - { key: SPACE, mods: [CTRL], icon: autocomplete.png, label: Autocomplete, source: "ms-fluent/Text Grammar Wand (MIT)" }
 
   # --- Ctrl+Shift (also genuinely Ctrl on macOS) ---
-  - { key: M,    mods: [CTRL, SHIFT], icon: selectbrackets.png, label: "Select inside brackets", source: "ms-fluent/Braces (MIT)" }
+  - { key: M,    mods: [CTRL, SHIFT], icon: selectbrackets_sel.png, label: "Select inside brackets", source: "ms-fluent/Braces (MIT) + 'SEL' tag, fetch_icons.py" }
   - { key: UP,   mods: [CTRL, SHIFT], icon: cursorabove.png,    label: "Add cursor above", source: "custom/editor_glyphs", mode: alpha }
   - { key: DOWN, mods: [CTRL, SHIFT], icon: cursorbelow.png,    label: "Add cursor below", source: "custom/editor_glyphs", mode: alpha }
 
@@ -95,7 +95,7 @@ bindings:
   - { key: P, mods: [GUI, ALT], icon: syntaxinfo.png, label: "Syntax context info", source: "ms-fluent/Info (MIT)" }
 
   # --- no modifier ---
-  - { key: F2, mods: [], icon: bookmark.png, label: "Next bookmark", source: "ms-fluent/Bookmark (MIT)" }
+  - { key: F2, mods: [], icon: bookmark_next.png, label: "Next bookmark", source: "ms-fluent/Bookmark (MIT) + down arrow, fetch_icons.py" }
 
   # --- standard editing (shared Fluent concepts) ---
   # Default (OSX).sublime-keymap. Cmd+X ("Cut line"), Cmd+Y (Redo), Cmd+F,

@@ -112,11 +112,7 @@ the firmware's own ESC legend.
 | `copynames.png` | Fluent `Clipboard Letter` | MIT |
 | `paste.png` | Fluent `Clipboard Paste` | MIT |
 | `incsearch.png` | Fluent `Search` | MIT |
-| `root.png` | Fluent `Home` | MIT |
-| `copylocal.png` | Fluent `Panel Left` | MIT |
-| `copyremote.png` | Fluent `Panel Right` | MIT |
 | `sortname.png` | Fluent `Text Sort Ascending` | MIT |
-| `sortext.png` | Fluent `Filter` | MIT |
 | `sorttime.png` | Fluent `Calendar` | MIT |
 | `sortsize.png` | Fluent `Data Bar Vertical` | MIT |
 | `sortattrs.png` | Fluent `Options` | MIT |
@@ -146,7 +142,6 @@ the firmware's own ESC legend.
 | `commandline.png` | Fluent `Text Grammar Settings` | MIT |
 | `prevtab.png` | Fluent `Arrow Left` | MIT |
 | `tree.png` | Fluent `Organization` | MIT |
-| `syncbrowse.png` | Fluent `Arrow Swap` | MIT |
 | `prefs.png` | Fluent `Settings` | MIT |
 | `autorefresh.png` | Fluent `Arrow Repeat All` | MIT |
 | `copypaths.png` | Fluent `Clipboard Link` | MIT |
@@ -173,3 +168,18 @@ incremental search, Ctrl+N new session, Ctrl+W close tab, Ctrl+R re-read
 (reload); and Ctrl+S (Synchronize), Ctrl+O (bookmarks), Ctrl+P (open in PuTTY)
 are NOT Save/Open/Print. Ctrl+X, Ctrl+Z, Ctrl+Y and Ctrl+plus/minus are not
 listed for the Commander interface, so Cut/Undo/Redo/Zoom are not drawn.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `renamemove.png` | `rename.png` with `movefiles.png` at the lower right, drawn by `../action_variants.py` | same as the base icon |
+| `syncbrowse_link.png` | `switchpanel.png` with `link.png` at the lower right, drawn by `../action_variants.py` | same as the base icon |
+| `rootdir.png` | `homedir.png` with the tag "ROOT", drawn by `../action_variants.py` | same as the base icon |
+| `copyclip.png` | `copyfiles.png` with `paste.png` at the lower right, drawn by `../action_variants.py` | same as the base icon |
+| `copylocal_l.png` | `copypaths.png` with the tag "L", drawn by `../action_variants.py` | same as the base icon |
+| `copyremote_r.png` | `copypaths.png` with the tag "R", drawn by `../action_variants.py` | same as the base icon |
+| `sortext_tag.png` | `sortname.png` with the tag "EXT", drawn by `../action_variants.py` | same as the base icon |

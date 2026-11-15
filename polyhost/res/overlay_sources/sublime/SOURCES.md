@@ -30,7 +30,7 @@ palette (`Ctrl+Shift+P`, which *is* shipped) cover them.
 
 | File(s) | Source | License |
 |---|---|---|
-| 34 shortcut icons (`gotoanything, commandpalette, gotosymbol, gotoline, gotoword, find, replace, findinfiles, selectalloccur, indent, unindent, comment, blockcomment, duplicate, joinlines, cutline, swapup, swapdown, matchbracket, selectbrackets, autocomplete, insertafter, insertbefore, pasteindent, softundo, redo, build, closetab, reopentab, sidebar, fold, unfold, bookmark, wraptag`) | [Microsoft Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) | MIT |
+| 34 shortcut icons (`gotoanything, commandpalette, gotosymbol, gotoline, gotoword, find, replace, findinfiles, selectalloccur, indent, unindent, comment, blockcomment, duplicate, joinlines, cutline, swapup, swapdown, matchbracket, autocomplete, insertafter, insertbefore, pasteindent, softundo, redo, build, closetab, reopentab, sidebar, fold, unfold, bookmark, wraptag`) | [Microsoft Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) | MIT |
 | `multicursor, cursorabove, cursorbelow, selectline` | Custom-drawn, `../editor_glyphs.py` | GPL-3.0-or-later (this repo) |
 | `deleteline` | Fluent `Delete Lines`, copied from `../jetbrains/icons` (shared with JetBrains, Visual Studio, Notepad++) | MIT |
 | `sublime.png` (ESC program mark) | [Simple Icons](https://github.com/simple-icons/simple-icons) via `../brand_marks.py` | CC0-1.0 (artwork) |
@@ -140,3 +140,18 @@ Deliberately NOT added:
 - **Print** — Sublime Text has no print command.
 - **Reload** — *File → Revert File* has no default key binding.
 - **Ctrl+P** — Goto Anything, not Print.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `selectbrackets_sel.png` | `matchbracket.png` with the tag "SEL", drawn by `../action_variants.py` | same as the base icon |
+| `closetag.png` | `wraptag.png` with the tag "END", drawn by `../action_variants.py` | same as the base icon |
+| `bookmark_next.png` | `bookmark.png` with a down triangle at the top right, drawn by `../action_variants.py` | same as the base icon |
+| `gotosymbol.png` | Fluent `Symbols` (Goto symbol; was the Code glyph of the HTML tag keys) | MIT |
+| `insertafter.png` | Fluent `Text Add Space After` (Insert line after; was Arrow Enter for both) | MIT |
+| `insertbefore.png` | Fluent `Text Add Space Before` (Insert line before) | MIT |
+| `bookmark_toggle.png` | Fluent `Bookmark Add` (Toggle bookmark (macOS set)) | MIT |

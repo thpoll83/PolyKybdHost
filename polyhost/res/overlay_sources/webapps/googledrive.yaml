@@ -34,7 +34,7 @@ bindings:
 
   - { key: SLASH, mods: [CMDCTRL], icon: shortcuts.png, label: "Keyboard shortcuts" }
   - { key: SLASH, icon: search.png, label: "Search Drive", concept: find }
-  - { key: F, mods: [CMDCTRL], icon: find.png, label: "Find" }
+  - { key: F, mods: [CMDCTRL], icon: searchpage.png, label: "Find in page" }
   - { key: P, mods: [CMDCTRL], icon: print.png, label: "Print" }
   - { key: Z, mods: [CMDCTRL], label: "Undo" }
   - { key: Y, mods: [CMDCTRL], label: "Redo" }

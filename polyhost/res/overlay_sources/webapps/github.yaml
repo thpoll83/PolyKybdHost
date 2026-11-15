@@ -42,7 +42,7 @@ bindings:
   - { key: T, mods: [], icon: filefinder.png,  label: "File finder",    source: "ms-fluent/Document Search (MIT)" }
   - { key: W, mods: [], icon: branch.png,      label: "Switch branch / tag", source: "ms-fluent/Branch (MIT)" }
   - { key: B, mods: [], icon: blame.png,       label: "Blame view",     source: "ms-fluent/History (MIT)" }
-  - { key: Y, mods: [], icon: canonical.png,   label: "Canonical link", source: "ms-fluent/Link (MIT)" }
+  - { key: Y, mods: [], icon: canonical.png,   label: "Canonical link", source: "ms-fluent/Link Square (MIT)" }
   - { key: ".", mods: [], icon: webide.png,    label: "Open github.dev", source: "ms-fluent/Code (MIT)" }
   - { key: C, mods: [], icon: createissue.png, label: "Create issue",   source: "ms-fluent/Add Circle (MIT)" }
   - { key: O, mods: [], icon: openitem.png,    label: "Open issue",     source: "ms-fluent/Open (MIT)" }
@@ -55,7 +55,7 @@ bindings:
 
   # --- Shift ---
   - { key: "/", mods: [SHIFT], icon: shortcuts.png, label: "Show shortcuts", source: "ms-fluent/Keyboard (MIT)" }
-  - { key: ".", mods: [SHIFT], icon: webide.png,    label: "github.dev (new tab)", source: "ms-fluent/Code (MIT)" }
+  - { key: ".", mods: [SHIFT], icon: webide_tab.png, label: "github.dev (new tab)", source: "ms-fluent/Code (MIT) + 'TAB' tag, fetch_icons.py" }
 
   # --- Ctrl: the comment editor ---
   - { key: B, mods: [CMDCTRL], icon: bold.png,   label: "Bold (comment)",   source: "ms-fluent/Text Bold (MIT)" }

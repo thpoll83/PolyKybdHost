@@ -52,8 +52,8 @@ bindings:
   - { key: R, mods: [ALT, GUI], icon: record.png, label: "Record", only: [macos] }
   - { key: T, mods: [CTRL], icon: jumptime.png, label: "Jump to time", except: [macos] }
   - { key: J, mods: [GUI], icon: jumptime.png, label: "Jump to time", only: [macos] }
-  - { key: Z, mods: [GUI], icon: shuffle.png, label: "Shuffle", only: [macos] }
-  - { key: L, mods: [GUI], icon: repeatall.png, label: "Repeat playlist", only: [macos] }
+  - { key: Z, mods: [GUI], icon: shuffle.png, label: "Random", only: [macos] }
+  - { key: L, mods: [GUI], icon: repeatall_all.png, label: "Repeat playlist", only: [macos] }
   - { key: L, mods: [SHIFT, GUI], icon: abloop.png, label: "A-B loop", only: [macos] }
   - { key: EQUAL, mods: [GUI], icon: faster.png, label: "Faster", only: [macos] }
   - { key: MINUS, mods: [GUI], icon: slower.png, label: "Slower", only: [macos] }
@@ -92,7 +92,7 @@ bindings:
   - { key: "1", mods: [GUI], icon: zoomoriginal.png, label: "Zoom 1:1", only: [macos] }
   - { key: "4", mods: [ALT], icon: zoomdouble.png, label: "Zoom 2:1", except: [macos] }
   - { key: "2", mods: [GUI], icon: zoomdouble.png, label: "Zoom 2:1", only: [macos] }
-  - { key: "3", mods: [GUI], icon: fitscreen.png, label: "Fit to screen", only: [macos] }
+  - { key: "3", mods: [GUI], icon: fitscreen_max.png, label: "Fit to screen", only: [macos] }
   - { key: O, mods: [ALT], icon: scaleup.png, label: "Scale up", except: [macos] }
   - { key: O, mods: [ALT, SHIFT], icon: scaledown.png, label: "Scale down", except: [macos] }
   - { key: R, mods: [ALT], icon: croptop.png, label: "Crop top", except: [macos] }
@@ -104,8 +104,8 @@ bindings:
   - { key: C, mods: [ALT, SHIFT], icon: uncropbottom.png, label: "Uncrop bottom", except: [macos] }
   - { key: F, mods: [ALT, SHIFT], icon: uncropright.png, label: "Uncrop right", except: [macos] }
   - { key: "0", mods: [CTRL], icon: subsize.png, label: "Reset subtitle size", except: [macos] }
-  - { key: K, mods: [CTRL, SHIFT], icon: subsync.png, label: "Reset subtitle sync", except: [macos] }
-  - { key: K, mods: [SHIFT, GUI], icon: subsync.png, label: "Reset subtitle sync", only: [macos] }
+  - { key: K, mods: [CTRL, SHIFT], icon: subsync_reset.png, label: "Reset subtitle sync", except: [macos] }
+  - { key: K, mods: [SHIFT, GUI], icon: subsync_reset.png, label: "Reset subtitle sync", only: [macos] }
   - { key: E, mods: [CTRL], icon: effects.png, label: "Effects and filters", except: [macos] }
   - { key: E, mods: [GUI], icon: videoeffects.png, label: "Video effects", only: [macos] }
   - { key: E, mods: [SHIFT, GUI], icon: audioeffects.png, label: "Audio effects", only: [macos] }
@@ -130,8 +130,8 @@ bindings:
   - { key: F, mods: [], icon: fullscreen.png, label: "Full screen", except: [macos] }
   - { key: MINUS, mods: [], icon: slower.png, label: "Slower", except: [macos] }
   - { key: EQUAL, mods: [], icon: ratenormal.png, label: "Normal speed", except: [macos] }
-  - { key: RBRACKET, mods: [], icon: faster.png, label: "Faster (fine)", except: [macos] }
-  - { key: LBRACKET, mods: [], icon: slower.png, label: "Slower (fine)", except: [macos] }
+  - { key: RBRACKET, mods: [], icon: faster_fine.png, label: "Faster (fine)", except: [macos] }
+  - { key: LBRACKET, mods: [], icon: slower_fine.png, label: "Slower (fine)", except: [macos] }
   - { key: N, mods: [], icon: next.png, label: "Next", except: [macos] }
   - { key: P, mods: [], icon: previous.png, label: "Previous", except: [macos] }
   - { key: S, mods: [], icon: stop.png, label: "Stop", except: [macos] }
@@ -165,8 +165,8 @@ bindings:
   - { key: J, mods: [], icon: subdelayup.png, label: "Subtitle delay +", only: [macos] }
   - { key: G, mods: [], icon: subdelaydown.png, label: "Subtitle delay -", except: [macos] }
   - { key: H, mods: [], icon: subdelaydown.png, label: "Subtitle delay -", only: [macos] }
-  - { key: H, mods: [SHIFT], icon: syncaudio.png, label: "Sync: mark audio", except: [macos] }
-  - { key: H, mods: [SHIFT], icon: syncaudio.png, label: "Sync: mark audio", only: [macos] }
+  - { key: H, mods: [SHIFT], icon: syncaudio_mark.png, label: "Sync: mark audio", except: [macos] }
+  - { key: H, mods: [SHIFT], icon: syncaudio_mark.png, label: "Sync: mark audio", only: [macos] }
   - { key: J, mods: [SHIFT], icon: syncsub.png, label: "Sync: mark subtitle", except: [macos] }
   - { key: J, mods: [SHIFT], icon: syncsub.png, label: "Sync: mark subtitle", only: [macos] }
   - { key: K, mods: [SHIFT], icon: syncapply.png, label: "Sync: apply", except: [macos] }
@@ -182,8 +182,8 @@ bindings:
   - { key: D, mods: [], icon: deinterlace.png, label: "Deinterlace", only: [macos] }
   - { key: D, mods: [SHIFT], icon: deinterlacemode.png, label: "Deinterlace mode", except: [macos] }
   - { key: D, mods: [SHIFT], icon: deinterlacemode.png, label: "Deinterlace mode", only: [macos] }
-  - { key: I, mods: [], icon: fsinterface.png, label: "Full screen controls", except: [macos] }
-  - { key: I, mods: [], icon: fsinterface.png, label: "Full screen controls", only: [macos] }
+  - { key: I, mods: [], icon: fscontrols.png, label: "Full screen controls", except: [macos] }
+  - { key: I, mods: [], icon: fscontrols.png, label: "Full screen controls", only: [macos] }
   - { key: Z, mods: [], icon: zoom.png, label: "Zoom", except: [macos] }
   - { key: Z, mods: [], icon: zoom.png, label: "Zoom", only: [macos] }
   - { key: Z, mods: [SHIFT], icon: unzoom.png, label: "Unzoom", except: [macos] }

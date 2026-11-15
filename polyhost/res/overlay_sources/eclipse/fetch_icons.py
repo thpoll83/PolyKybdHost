@@ -38,7 +38,7 @@ from PIL import Image, ImageDraw, ImageFont
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[3]))
 
-from polyhost.res.overlay_sources import brand_marks, icon_fetch  # noqa: E402
+from polyhost.res.overlay_sources import action_variants, brand_marks, icon_fetch  # noqa: E402
 
 BOLD = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
 
@@ -271,6 +271,13 @@ def _guarded(out: Path, name: str, make) -> None:
         print(f"  {name}  <- drawn")
 
 
+# Different actions that start from one icon: each gets its own picture
+# (one icon per action, maintainer 2026-11-15). See action_variants.py.
+VARIANTS = {
+    "opentypehierarchy.png": ("combine", "typehierarchy.png", "_search.png"),
+}
+
+
 def main() -> int:
     out = HERE / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -282,6 +289,7 @@ def main() -> int:
         _guarded(out, name, lambda f, b=base, wd=word, k=badge: _worded(out / b, f, wd, k))
     brand_marks.ensure(out / "eclipse.png", "eclipseide")
     print(f"Wrote icons to {out}")
+    action_variants.make(out, VARIANTS)
     return 0
 
 

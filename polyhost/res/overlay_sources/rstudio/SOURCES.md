@@ -54,3 +54,29 @@ gives a desktop and a browser variant, the set uses the desktop key.
 - ESC: the RStudio logo from Simple Icons (`rstudioide`, CC0-1.0 artwork,
   <https://simpleicons.org>), used to name the application
   (`../brand_marks.py`).
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `pane1.png` | `_pane1.png` with the tag "1", drawn by `../action_variants.py` | same as the base icon |
+| `pane2.png` | `_pane2.png` with the tag "2", drawn by `../action_variants.py` | same as the base icon |
+| `pane3.png` | `_pane3.png` with the tag "3", drawn by `../action_variants.py` | same as the base icon |
+| `pane4.png` | `_pane4.png` with the tag "4", drawn by `../action_variants.py` | same as the base icon |
+| `pane5.png` | `_pane5.png` with the tag "5", drawn by `../action_variants.py` | same as the base icon |
+| `pane6.png` | `_pane6.png` with the tag "6", drawn by `../action_variants.py` | same as the base icon |
+| `pane7.png` | `_pane7.png` with the tag "7", drawn by `../action_variants.py` | same as the base icon |
+| `pane8.png` | `_pane8.png` with the tag "8", drawn by `../action_variants.py` | same as the base icon |
+| `pane9.png` | `_pane9.png` with the tag "9", drawn by `../action_variants.py` | same as the base icon |
+| `_pane1.png` | Fluent `Code` (base of pane1.png) | MIT |
+| `_pane2.png` | Fluent `Window Console` (base of pane2.png) | MIT |
+| `_pane3.png` | Fluent `Question Circle` (base of pane3.png) | MIT |
+| `_pane4.png` | Fluent `History` (base of pane4.png) | MIT |
+| `_pane5.png` | Fluent `Folder` (base of pane5.png) | MIT |
+| `_pane6.png` | Fluent `Data Line` (base of pane6.png) | MIT |
+| `_pane7.png` | Fluent `Box` (base of pane7.png) | MIT |
+| `_pane8.png` | Material Symbols `data_table` (base of pane8.png) | Apache-2.0 |
+| `_pane9.png` | Material Symbols `preview` (base of pane9.png) | Apache-2.0 |

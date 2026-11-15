@@ -70,8 +70,8 @@ bindings:
   - { key: F8, mods: [ALT], icon: cmdhistory.png, label: "Command history" }
   - { key: F9, mods: [ALT], icon: unpack.png, label: "Unpack files" }
   - { key: F10, mods: [ALT], icon: treedialog.png, label: "Folder tree dialog" }
-  - { key: F11, mods: [ALT], icon: breadcrumb.png, label: "Left path bar" }
-  - { key: F12, mods: [ALT], icon: breadcrumb.png, label: "Right path bar" }
+  - { key: F11, mods: [ALT], icon: pathbar_left.png, label: "Left path bar" }
+  - { key: F12, mods: [ALT], icon: pathbar_right.png, label: "Right path bar" }
   - { key: LEFT, mods: [ALT], icon: back.png, label: Back }
   - { key: RIGHT, mods: [ALT], icon: forward.png, label: Forward }
   - { key: DOWN, mods: [ALT], icon: history.png, label: "Folder history" }
@@ -83,9 +83,9 @@ bindings:
   - { key: F7, mods: [ALT, SHIFT], icon: findproc.png, label: "Find, separate process" }
   - { key: F9, mods: [ALT, SHIFT], icon: testarc.png, label: "Test archives" }
   - { key: F11, mods: [ALT, SHIFT], icon: buttonbar.png, label: "Focus button bar" }
-  - { key: F12, mods: [ALT, SHIFT], icon: buttonbar.png, label: "Focus vertical bar" }
-  - { key: DOWN, mods: [ALT, SHIFT], icon: history.png, label: "Full folder history" }
-  - { key: ENTER, mods: [ALT, SHIFT], icon: dirsizes.png, label: "Count folder sizes" }
+  - { key: F12, mods: [ALT, SHIFT], icon: buttonbar_v.png, label: "Focus vertical bar" }
+  - { key: DOWN, mods: [ALT, SHIFT], icon: history_all.png, label: "Full folder history" }
+  - { key: ENTER, mods: [ALT, SHIFT], icon: dirsizes_all.png, label: "Count folder sizes" }
 
   # --- Ctrl: F-keys ------------------------------------------------------------
   - { key: F1, mods: [CTRL], icon: brief.png, label: "Brief view" }
@@ -133,15 +133,15 @@ bindings:
   - { key: F1, mods: [CTRL, SHIFT], icon: thumbs.png, label: Thumbnails }
   - { key: F2, mods: [CTRL, SHIFT], icon: comments.png, label: "Comments view" }
   - { key: F5, mods: [CTRL, SHIFT], icon: shortcuts.png, label: "Create shortcuts" }
-  - { key: F8, mods: [CTRL, SHIFT], icon: tree.png, label: "Cycle tree view" }
+  - { key: F8, mods: [CTRL, SHIFT], icon: tree_cycle.png, label: "Cycle tree view" }
   - { key: A, mods: [CTRL, SHIFT], icon: tablist.png, label: "List open tabs" }
-  - { key: B, mods: [CTRL, SHIFT], icon: branch.png, label: "Branch view, selected" }
+  - { key: B, mods: [CTRL, SHIFT], icon: branch_sel.png, label: "Branch view, selected" }
   - { key: F, mods: [CTRL, SHIFT], icon: ftpdisconnect.png, label: "FTP disconnect" }
   - { key: M, mods: [CTRL, SHIFT], icon: ftpmode.png, label: "FTP transfer mode" }
   - { key: Q, mods: [CTRL, SHIFT], icon: quickviewwin.png, label: "Quick View window" }
   - { key: S, mods: [CTRL, SHIFT], icon: lastfilter.png, label: "Last quick filter" }
-  - { key: T, mods: [CTRL, SHIFT], icon: newtab.png, label: "New tab, background" }
-  - { key: U, mods: [CTRL, SHIFT], icon: exchange.png, label: "Swap panels and tabs" }
+  - { key: T, mods: [CTRL, SHIFT], icon: newtab_bg.png, label: "New tab, background" }
+  - { key: U, mods: [CTRL, SHIFT], icon: exchange_tabs.png, label: "Swap panels and tabs" }
   - { key: W, mods: [CTRL, SHIFT], icon: closetabs.png, label: "Close all tabs" }
   - { key: UP, mods: [CTRL, SHIFT], icon: opentabother.png, label: "Open in other panel" }
   - { key: TAB, mods: [CTRL, SHIFT], icon: prevtab.png, label: "Previous tab" }

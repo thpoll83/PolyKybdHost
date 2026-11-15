@@ -70,3 +70,13 @@ All fetched 2026-10-21, the "for the web" tab of each page:
   `percent`, `exposure_plus_1`, `unfold_less`, `unfold_more`, `hide`,
   `vertical_align_top`, `vertical_align_bottom`, `flip_to_front`,
   `flip_to_back`, `move_up`, `move_down`.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `date_fmt.png` | `date.png` with the tag "FMT", drawn by `../action_variants.py` | same as the base icon |
+| `time_fmt.png` | `time.png` with the tag "FMT", drawn by `../action_variants.py` | same as the base icon |
