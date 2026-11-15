@@ -14,26 +14,27 @@ as for Age of Empires II (`steam_app_813780`).
 
 ## Shortcut reference
 
-The keys are the Remastered Collection defaults. Tiberian Dawn and Red Alert
-share them.
+The keys are the game's own defaults, read from
+`DATA\XML\INPUTTRANSLATORCONFIGURATIONS.XML` in `Data\CONFIG.MEG` of the
+Steam release (read 2026-11-15). Its `KeyConfigurationTable PLAYER_COMMANDS`
+lists the commands the key-binding editor offers; the input contexts give each
+one's default key. Every binding names that command (`command:`), for a later
+reader of the player's own bindings. Tiberian Dawn and Red Alert share the
+keys; Q and Alt+F work in Red Alert only. A screenshot of the in-game editor
+(2026-11-15) shows the same keys.
 
-- [defkey.com: Command & Conquer Remastered Collection controls](https://defkey.com/cc-remastered-collection-shortcuts)
-  lists every bound key: groups, Tab, Space, H, W/E/R/T, A, Ctrl+A, G, S, X,
-  Q (Red Alert only), F1 to F4 and Ctrl+F1 to Ctrl+F4, Alt+Enter.
-- The Steam guide [C&C Remastered Basic Tips & Tricks](https://steamcommunity.com/sharedfiles/filedetails/?id=2142348365)
-  by Momo lists the same groups, Tab, Space, H, W/E/R/T, A, Ctrl+A, G, S and X.
-- The game's GPL source ([electronicarts/CnC_Remastered_Collection](https://github.com/electronicarts/CnC_Remastered_Collection),
-  `REDALERT/OPTIONS.CPP`) confirms X, S, G and Q (`KeyQueueMove1`).
-
-Both lists are fan-written. Neither names which tab W, E, R and T select.
-The labels follow the sidebar order (structures, infantry, vehicles, special
-weapons) and were not checked in the game.
+Alt+Enter (full screen) is not in the table: the window handles it, not a game
+command. It is kept from defkey.com's list.
 
 ## Left out
 
 - Mouse shortcuts (Ctrl+click force attack, Alt+click force move, Ctrl+Alt+click
   guard a target): they have no key.
-- Letters whose action depends on the selection or the game.
+- Letters whose action depends on the selection or the game: the build keys
+  of each sidebar tab (`COMMAND_TD_GDI_BUILD_*`, D, P, M ...).
+- Shift held (add or remove 5 units in the build queue) and the arrow keys
+  (camera scroll): modifier keys and keys that keep their legends.
+- The four empty mod command slots (`GAME_COMMAND_CNC_MOD_COMMAND_1` to 4).
 
 ## Placement
 
@@ -44,7 +45,8 @@ then draws the overlay (`copy_overlay_to_buffer()` in the firmware's
 | Keys | Area |
 |---|---|
 | Letters, Space | 40×40 at the right edge |
-| Tab, F1 to F4, Alt+Enter | 30×40 at the right edge |
+| Tab | 36×40 at the right edge |
+| F1 to F8, Alt+Enter | 30×40 at the right edge |
 | Digits (control groups) | 48×40 drawn 1:1, 5 px from the right edge (`margin: 5`) |
 | ESC | the whole 72×40 cell, without the legend |
 
@@ -111,6 +113,15 @@ shading and the same dither and outline as the units, at its exact key area.
 | `bookmark*.png` | bookmark | Font Awesome Free 6.5.2, CC BY 4.0 |
 | `graphics.png` | gem | Font Awesome Free 6.5.2, CC BY 4.0 |
 | `fullscreen.png` | expand | Font Awesome Free 6.5.2, CC BY 4.0 |
+| `sidebar.png`, `repair.png`, `sell.png`, `beacon.png` | table-columns, wrench, dollar-sign, location-dot | Font Awesome Free 6.5.2, CC BY 4.0 |
+| `sidebarup.png`, `sidebardown.png` | angles-up, angles-down | Font Awesome Free 6.5.2, CC BY 4.0 |
+| `quicksave.png`, `quickload.png` | floppy-disk, folder-open | Font Awesome Free 6.5.2, CC BY 4.0 |
+| `nextunit.png`, `prevunit.png`, `musicnext.png`, `musicprev.png` | forward-step, backward-step, forward, backward | Font Awesome Free 6.5.2, CC BY 4.0 |
+| `toselection.png`, `zoomin.png`, `zoomout.png` | video, magnifying-glass-plus, magnifying-glass-minus | Font Awesome Free 6.5.2, CC BY 4.0 |
+| `deploy.png`, `formation.png` | box-open, object-group | Font Awesome Free 6.5.2, CC BY 4.0 |
+| `teamchat.png`, `allchat.png` | comments, bullhorn | Font Awesome Free 6.5.2, CC BY 4.0 |
+| `chatteam*.png`, `chatall*.png` | comment, message, with the digit 1 to 4 | Font Awesome Free 6.5.2, CC BY 4.0 |
+| `groupadd*.png` | the group's unit with a ring mark (`dither.with_mark`) | as the unit |
 
 `bookmark<N>.png` cuts the digit out of the bookmark in DejaVu Sans Bold
 (Bitstream Vera licence), 11 px high, with a lit 1 px rim. `bookmarkset<N>.png`
@@ -121,7 +132,7 @@ adds the plus.
 | Font | Used for | Licence |
 |---|---|---|
 | [Black Ops One](https://github.com/google/fonts/tree/main/ofl/blackopsone) | the ESC mark | SIL OFL 1.1 |
-| DejaVu Sans Bold, the copy bundled with matplotlib v3.9.2 (pinned commit) | the bookmark digits | Bitstream Vera |
+| DejaVu Sans Bold, the copy bundled with matplotlib v3.9.2 (pinned commit) | the bookmark and chat digits | Bitstream Vera |
 
 ## Art from the user's game files
 
@@ -138,7 +149,7 @@ Nothing is read until the overlay is first sent.
 
 | Keys | From the game |
 |---|---|
-| 1 to 0, Ctrl+1 to Ctrl+0 | map sprites of the chosen faction, with the same plus |
+| 1 to 0, Ctrl+1 to Ctrl+0, Shift+1 to Shift+0 | map sprites of the chosen faction, with the same plus or ring |
 | W, E, R, H, Tab | building sprites |
 | S, X, G, A, Q, T | mouse cursors (only when `CCLOCAL.MIX` is present) |
 
