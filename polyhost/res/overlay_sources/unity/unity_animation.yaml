@@ -90,9 +90,9 @@ bindings:
   - { key: "DOT", mods: [], icon: frame_next.png, label: "Next frame", source: "cs: AnimationWindowShortcuts.cs" }
   - { key: "COMMA", mods: [ALT], icon: key_prev.png, label: "Previous keyframe", source: "cs: AnimationWindowShortcuts.cs" }
   - { key: "DOT", mods: [ALT], icon: key_next.png, label: "Next keyframe", source: "cs: AnimationWindowShortcuts.cs" }
-  - { key: "COMMA", mods: [SHIFT], icon: jump_start.png, label: "First keyframe", source: "cs: AnimationWindowShortcuts.cs" }
-  - { key: "DOT", mods: [SHIFT], icon: jump_end.png, label: "Last keyframe", source: "cs: AnimationWindowShortcuts.cs" }
-  - { key: "SPACE", mods: [], icon: play.png, label: "Play animation", source: "cs: AnimationWindowShortcuts.cs" }
+  - { key: "COMMA", mods: [SHIFT], icon: key_first.png, label: "First keyframe", source: "cs: AnimationWindowShortcuts.cs" }
+  - { key: "DOT", mods: [SHIFT], icon: key_last.png, label: "Last keyframe", source: "cs: AnimationWindowShortcuts.cs" }
+  - { key: "SPACE", mods: [], icon: playpreview.png, label: "Play or pause preview", source: "cs: AnimationWindowShortcuts.cs" }
   - { key: "A", mods: [], icon: frame_all.png, label: "Frame all", source: "cs: AnimationWindowShortcuts.cs" }
   - { key: "C", mods: [], icon: curves.png, label: "Curves / dopesheet", source: "cs: AnimationWindowShortcuts.cs" }
   - { key: "2", mods: [], icon: ripple.png, label: "Ripple (hold)", source: "cs: AnimationWindowShortcuts.cs" }

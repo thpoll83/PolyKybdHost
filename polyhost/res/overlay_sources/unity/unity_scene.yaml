@@ -95,8 +95,8 @@ bindings:
   - { key: "\\", mods: [], icon: snapping.png, label: "Toggle grid snapping", source: "cs: GridShortcuts.cs" }
   - { key: "\\", mods: [CMDCTRL], icon: pushgrid.png, label: "Push to grid", source: "cs: GridShortcuts.cs" }
   - { key: "\\", mods: [CMDCTRL, SHIFT], icon: aligngrid.png, label: "Align to grid", source: "cs: GridShortcuts.cs" }
-  - { key: "]", mods: [CMDCTRL], icon: gridbigger.png, label: "Increase grid size", source: "cs: GridShortcuts.cs" }
-  - { key: "[", mods: [CMDCTRL], icon: gridsmaller.png, label: "Decrease grid size", source: "cs: GridShortcuts.cs" }
+  - { key: "]", mods: [CMDCTRL], icon: gridbigger_plus.png, label: "Increase grid size", source: "cs: GridShortcuts.cs" }
+  - { key: "[", mods: [CMDCTRL], icon: gridsmaller_minus.png, label: "Decrease grid size", source: "cs: GridShortcuts.cs" }
   - { key: "/", mods: [CMDCTRL], icon: gridreset.png, label: "Reset grid to world", source: "cs: GridShortcuts.cs" }
   - { key: "/", mods: [CMDCTRL, SHIFT], icon: gridlast.png, label: "Apply last grid values", source: "cs: GridShortcuts.cs" }
   - { key: "'", mods: [CMDCTRL], icon: gridtoobject.png, label: "Grid to object position", source: "cs: GridShortcuts.cs" }

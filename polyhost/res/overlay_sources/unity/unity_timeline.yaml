@@ -88,22 +88,22 @@ bindings:
   - { key: "S", mods: [], icon: tl_split.png, label: "Split clip", source: "tl: Shortcuts.cs Timeline/Editing/Split" }
   - { key: "I", mods: [], icon: tl_trimstart.png, label: "Trim start", source: "tl: Shortcuts.cs Timeline/Editing/TrimStart" }
   - { key: "O", mods: [], icon: tl_trimend.png, label: "Trim end", source: "tl: Shortcuts.cs Timeline/Editing/TrimEnd" }
-  - { key: "SPACE", mods: [], icon: play.png, label: "Play timeline", source: "tl: Shortcuts.cs Timeline/Play" }
+  - { key: "SPACE", mods: [], icon: playpreview.png, label: "Play or pause preview", source: "tl: Shortcuts.cs Timeline/Play" }
   - { key: "COMMA", mods: [], icon: frame_prev.png, label: "Previous frame", source: "tl: Shortcuts.cs Timeline/PrevFrame" }
   - { key: "DOT", mods: [], icon: frame_next.png, label: "Next frame", source: "tl: Shortcuts.cs Timeline/NextFrame" }
   - { key: "A", mods: [], icon: frame_all.png, label: "Frame all", source: "tl: Shortcuts.cs Timeline/FrameAll" }
-  - { key: "COMMA", mods: [CMDCTRL], icon: key_prev.png, label: "Previous key", source: "tl: Shortcuts.cs Timeline/PrevKey", except: [macos] }
-  - { key: "DOT", mods: [CMDCTRL], icon: key_next.png, label: "Next key", source: "tl: Shortcuts.cs Timeline/NextKey", except: [macos] }
-  - { key: "COMMA", mods: [CMDCTRL, SHIFT], icon: key_prev.png, label: "Previous key", source: "tl: Shortcuts.cs Timeline/PrevKey (UNITY_EDITOR_OSX)", only: [macos] }
-  - { key: "DOT", mods: [CMDCTRL, SHIFT], icon: key_next.png, label: "Next key", source: "tl: Shortcuts.cs Timeline/NextKey (UNITY_EDITOR_OSX)", only: [macos] }
+  - { key: "COMMA", mods: [CMDCTRL], icon: key_prev.png, label: "Previous keyframe", source: "tl: Shortcuts.cs Timeline/PrevKey", except: [macos] }
+  - { key: "DOT", mods: [CMDCTRL], icon: key_next.png, label: "Next keyframe", source: "tl: Shortcuts.cs Timeline/NextKey", except: [macos] }
+  - { key: "COMMA", mods: [CMDCTRL, SHIFT], icon: key_prev.png, label: "Previous keyframe", source: "tl: Shortcuts.cs Timeline/PrevKey (UNITY_EDITOR_OSX)", only: [macos] }
+  - { key: "DOT", mods: [CMDCTRL, SHIFT], icon: key_next.png, label: "Next keyframe", source: "tl: Shortcuts.cs Timeline/NextKey (UNITY_EDITOR_OSX)", only: [macos] }
   - { key: "COMMA", mods: [SHIFT], icon: jump_start.png, label: "Go to start", source: "tl: Shortcuts.cs Timeline/GotoStart" }
   - { key: "DOT", mods: [SHIFT], icon: jump_end.png, label: "Go to end", source: "tl: Shortcuts.cs Timeline/GotoEnd" }
   - { key: "EQUAL", mods: [], icon: zoom_in.png, label: "Zoom in", source: "tl: Shortcuts.cs Timeline/ZoomIn" }
   - { key: "MINUS", mods: [], icon: zoom_out.png, label: "Zoom out", source: "tl: Shortcuts.cs Timeline/ZoomOut" }
-  - { key: "LEFT", mods: [], icon: fly_left.png, label: "Select left", source: "tl: Shortcuts.cs Timeline/MoveLeft" }
-  - { key: "RIGHT", mods: [], icon: fly_right.png, label: "Select right", source: "tl: Shortcuts.cs Timeline/MoveRight" }
-  - { key: "UP", mods: [], icon: fly_up.png, label: "Select up", source: "tl: Shortcuts.cs Timeline/MoveUp" }
-  - { key: "DOWN", mods: [], icon: fly_down.png, label: "Select down", source: "tl: Shortcuts.cs Timeline/MoveDown" }
+  - { key: "LEFT", mods: [], icon: tl_select_left.png, label: "Select left", source: "tl: Shortcuts.cs Timeline/MoveLeft" }
+  - { key: "RIGHT", mods: [], icon: tl_select_right.png, label: "Select right", source: "tl: Shortcuts.cs Timeline/MoveRight" }
+  - { key: "UP", mods: [], icon: tl_select_up.png, label: "Select up", source: "tl: Shortcuts.cs Timeline/MoveUp" }
+  - { key: "DOWN", mods: [], icon: tl_select_down.png, label: "Select down", source: "tl: Shortcuts.cs Timeline/MoveDown" }
   - { key: "LEFT", mods: [SHIFT], icon: tl_multileft.png, label: "Extend selection left", source: "tl: Shortcuts.cs Timeline/SelectLeft" }
   - { key: "RIGHT", mods: [SHIFT], icon: tl_multiright.png, label: "Extend selection right", source: "tl: Shortcuts.cs Timeline/SelectRight" }
   - { key: "UP", mods: [SHIFT], icon: tl_multiup.png, label: "Extend selection up", source: "tl: Shortcuts.cs Timeline/SelectUp" }
@@ -114,5 +114,5 @@ bindings:
   - { key: "M", mods: [], icon: mute.png, label: "Mute track", source: "tl: Shortcuts.cs Timeline/ToggleMute" }
   - { key: "J", mods: [], icon: tl_jog.png, label: "Jog (hold)", source: "tl: Jog.cs Timeline/Jog (ClutchShortcut)" }
   - { key: "1", mods: [], icon: tl_mix.png, label: "Mix mode (hold)", source: "tl: EditMode.cs clutchKey Alpha1; clip-overview.md" }
-  - { key: "2", mods: [], icon: ripple.png, label: "Ripple mode (hold)", source: "tl: EditMode.cs clutchKey Alpha2; clip-overview.md" }
+  - { key: "2", mods: [], icon: ripple.png, label: "Ripple (hold)", source: "tl: EditMode.cs clutchKey Alpha2; clip-overview.md" }
   - { key: "3", mods: [], icon: tl_replace.png, label: "Replace mode (hold)", source: "tl: EditMode.cs clutchKey Alpha3; clip-overview.md" }

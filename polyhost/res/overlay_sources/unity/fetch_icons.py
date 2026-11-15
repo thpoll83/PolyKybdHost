@@ -96,8 +96,6 @@ FLUENT = {
     "snapping": "ms:grid_4x4",
     "pushgrid": "ms:straighten",
     "aligngrid": "ms:grid_guides",
-    "gridbigger": "ms:zoom_out_map",
-    "gridsmaller": "ms:zoom_in_map",
     "gridreset": "ms:restart_alt",
     "gridlast": "ms:history",
     "gridtoobject": "ms:move_down",
@@ -132,7 +130,24 @@ FLUENT = {
     "tl_jog": "ms:swipe",
     "tl_mix": "ms:join",
     "tl_replace": "ms:swap_horiz",
+    # --- one icon per action (2026-11-15) ---
+    "playpreview": "ms:play_pause",
+    # parts of the composites below, not drawn on their own
+    "part_add": "Add",
+    "part_subtract": "Subtract",
+    "part_select": "Select Object",
 }
+
+# Composites (output, base, badge): dcc_glyphs.with_badge, base upper left,
+# badge lower right.
+BADGES = [
+    ("gridbigger_plus.png", "snapping.png", "part_add.png"),
+    ("gridsmaller_minus.png", "snapping.png", "part_subtract.png"),
+    ("tl_select_left.png", "fly_left.png", "part_select.png"),
+    ("tl_select_right.png", "fly_right.png", "part_select.png"),
+    ("tl_select_up.png", "fly_up.png", "part_select.png"),
+    ("tl_select_down.png", "fly_down.png", "part_select.png"),
+]
 
 # Drawn by the Blender set already: copy, so both show the same pixels.
 BORROW = {
@@ -174,6 +189,23 @@ def _label(path: Path, text: str) -> None:
     img.save(path)
 
 
+def _key_at_edge(path: Path, first: bool) -> None:
+    """A filled keyframe diamond against a bar: the bar on the left for "first
+    keyframe", on the right for "last keyframe". Black on transparent, 96 px."""
+    u, m, d = dcc_glyphs._canvas()
+    cy, r = u // 2, int(u * 0.30)
+    bar_w = int(u * 0.09)
+    if first:
+        bx = int(u * 0.12)
+        cx = bx + bar_w + int(u * 0.06) + r
+    else:
+        bx = u - int(u * 0.12) - bar_w
+        cx = bx - int(u * 0.06) - r
+    d.rectangle([bx, cy - r, bx + bar_w, cy + r], fill=255)
+    d.polygon([(cx, cy - r), (cx + r, cy), (cx, cy + r), (cx - r, cy)], fill=255)
+    dcc_glyphs._save_mask(m, path)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -181,6 +213,12 @@ def main() -> int:
     icon_fetch.borrow(BORROW, out)
     for name, text in sorted(LETTERS.items()):
         dcc_glyphs.guarded(out / name, lambda p, t=text: _label(p, t), f"drawn label {text!r}")
+    for name, base, badge in BADGES:
+        dcc_glyphs.guarded(out / name,
+                           lambda p, b=out / base, s=out / badge: dcc_glyphs.with_badge(b, s, p),
+                           f"composite ({base} + {badge})")
+    dcc_glyphs.guarded(out / "key_first.png", lambda p: _key_at_edge(p, True), "drawn bar + keyframe")
+    dcc_glyphs.guarded(out / "key_last.png", lambda p: _key_at_edge(p, False), "drawn keyframe + bar")
     brand_marks.ensure(out / "unity.png", "unity")
     print(f"Wrote icons to {out}")
     return 0

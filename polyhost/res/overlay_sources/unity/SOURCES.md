@@ -112,3 +112,27 @@ Cmd+Shift+Z on macOS (2018.4 manual).
   (<https://github.com/simple-icons/simple-icons>, artwork CC0-1.0). Trademark use
   is nominative: it marks the overlay set for that application (see
   `../brand_marks.py`).
+
+## One icon per action (2026-11-15)
+
+Maintainer's rule: two keys of the Unity sets (all five together) share an image
+only when they do the same thing. Images drawn for it by `fetch_icons.py`:
+
+- `playpreview` (Space in the Animation and Timeline windows, "Play or pause
+  preview"): Material `play_pause`. Ctrl+P enters Play mode and keeps `play`.
+- `gridbigger_plus`, `gridsmaller_minus` (Ctrl+] / Ctrl+[): `snapping` (Material
+  `grid_4x4`) with a Fluent `Add` / `Subtract` badge (`dcc_glyphs.with_badge`).
+  The Material `zoom_out_map` they used was the same picture as Frame all.
+- `key_first`, `key_last` (Animation window Shift+, / Shift+.): a filled keyframe
+  diamond against a bar, drawn in `fetch_icons.py`. Timeline's Go to start / Go
+  to end keep `jump_start` / `jump_end`.
+- `tl_select_left`, `_right`, `_up`, `_down` (Timeline arrows, move the selection):
+  the Scene view fly arrows (Fluent `Arrow Left` ...) with a Fluent `Select Object`
+  badge.
+- `part_add`, `part_subtract`, `part_select` are the badges of these composites
+  and are not drawn on their own.
+
+Kept as one image, because the keys do the same thing (labels made the same):
+Previous / Next keyframe (Animation Alt+, / Alt+. and Timeline PrevKey / NextKey),
+Ripple (hold) (key 2 in both windows), Play or pause preview (Space in both
+windows).
