@@ -104,6 +104,26 @@ Prefer machine-readable / official sources, in order:
 - The app's **documented shortcut reference** (official docs page) — `WebFetch`
   it and extract the table.
 - The app's **source repository** (menu/command tables often list accelerators).
+- ⚠️ **A game: its own data files, not a wiki or a manual.** Hotkeys are often
+  kept per LANGUAGE, so a guide's letter can be wrong on the player's install.
+  German Warcraft III quits with Alt+B where the manual says Alt+Q, and moves
+  with B where English uses M; C&C Generals' `Data\INI\CommandMap.ini` in
+  `INIZH.big` is empty, and the real one is `Data\<Language>\CommandMap.ini` in
+  `<Language>ZH.big` (2026-11-14). Sources used so far: UT2004
+  `System/DefUser.ini`; Warcraft III `Units\CommandStrings.txt`,
+  `UI\FrameDef\UI\EscMenuMainPanel.fdf` (`ControlShortcutKey`) and the
+  `ALT-<key>` in `UI\FrameDef\GlobalStrings.fdf` tooltips, inside the MPQs;
+  OpenRA `mods/common/hotkeys/*.yaml` and `mods/<mod>/hotkeys.yaml`; Generals
+  `CommandMap.ini` and the `&` letters of `generals.csf`. Ask the maintainer for
+  the files (`evaluate-game-asset-reader` → *Get real files*) and cite the file
+  in `SOURCES.md`.
+  - Give each binding a `command:` with the game's own name for it
+    (`SwitchWeapon 4`, `CmdMove`, `AttackMove`, `SELECT_TEAM1`). It costs nothing
+    now, and a key-binding reader can then move the icon to the player's key
+    (`add-game-key-bindings`).
+  - When the game binds the same command to more keys than the overlay labels
+    (UT2004's arrow keys and `,`/`.` next to WASD), list them under `undrawn:`
+    on that binding, so a remap counts them as defaults and never draws on them.
 
 Do a **coverage pass, not a sample**: enumerate the app's *whole* Ctrl row (and
 notable Shift/Alt/F-key shortcuts) up front and fill the gaps in one go — users
@@ -423,10 +443,17 @@ Don't hand-download icons. Write a tiny per-app `fetch_icons.py` next to
   draw white-on-transparent with PIL at ~4× then downscale; the *alpha is the
   shape*, so the binding renders it with `mode: alpha`. Keep the draw function in
   `fetch_icons.py` so it reproduces.
-- **Guard hand-editable assets so a re-run never clobbers them.** Any icon the
-  user may hand-edit — the program mark, custom-drawn glyphs, composites — must be
-  **skipped if it already exists**; the committed PNG is then the source of truth.
-  (Plain Fluent downloads are deterministic, so they may re-fetch freely.)
+- **Guard what a person may retouch, so a re-run never clobbers it.** Skip the
+  file **if it already exists** for: the app's or game's own logo (a frame cut from
+  its `.ico` or SVG), and any mark or glyph that an owner tuned by hand. The
+  committed PNG is then the source of truth. Do not guard an icon that the script
+  draws from code and committed inputs only: a name set in a pinned font, a number
+  or a sign added to a committed icon, a flat icon from an icon set. For these the
+  script is the source, and a guard would keep a stale PNG after a change to a
+  shared helper. (Fluent and Material Symbols icons that `icon_fetch.py` downloads
+  come from a pinned commit, so they may re-fetch freely. A script that downloads
+  from the `main` branch of an icon repository by its own URL can return a changed
+  drawing.)
   ```python
   if (out / "word.png").exists():
       print("  word.png  <- committed asset (left as-is)")

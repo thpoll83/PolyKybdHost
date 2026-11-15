@@ -1,0 +1,15 @@
+[general]
+name=PolyKybd Context Reporter
+qgisMinimumVersion=3.22
+qgisMaximumVersion=4.99
+description=Tells the local PolyKybdHost which window, map tool and edit mode QGIS is in
+about=Sends the focused QGIS window kind (main window, print layout, dialog), the map tool group, whether the current layer is in edit mode and whether Advanced Digitizing is on to PolyKybdHost on 127.0.0.1, so the PolyKybd keycaps show the shortcuts that work there. Nothing else is sent: no layer, file or project names.
+version=1.0.0
+author=PolyKybd
+email=noreply@polykybd.org
+homepage=https://github.com/thpoll83/PolyKybdHost/tree/main/qgis-plugin
+repository=https://github.com/thpoll83/PolyKybdHost
+tracker=https://github.com/thpoll83/PolyKybdHost/issues
+category=Plugins
+experimental=True
+supportsQt6=True

@@ -106,6 +106,15 @@ FLUENT = {
     "loopstart": "ms:keyboard_tab_rtl",
     "loopend": "ms:keyboard_tab",
     "endmarker": "ms:last_page",
+    # --- Session View (session.yaml) ---
+    "stopbutton": "ms:stop",
+    "insertscene": "ms:playlist_add",
+    "capturescene": "ms:photo_camera",
+    "midiclip": "ms:music_note_add",
+    "launch": "ms:play_arrow",
+    "followact": "ms:shuffle",
+    "stopclips": "ms:playlist_remove",
+    "followchain": "ms:link",
 }
 
 

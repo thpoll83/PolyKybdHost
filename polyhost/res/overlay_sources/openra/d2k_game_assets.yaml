@@ -5,6 +5,8 @@
 # vehicles, 3 of 8 for infantry. gen_mods.py puts this block in openra_d2k.yaml.
 game_assets:
   reader: westwood_d2k
+  # The player's hotkeys from OpenRA's settings.yaml (game_assets/openra_keys.py)
+  bindings: openra
   icons:
     group1: {crowd: 209}
     group2: {crowd: 461}

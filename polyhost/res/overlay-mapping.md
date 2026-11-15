@@ -136,6 +136,7 @@ sub-entry **replace** the parent instead.
 `urls-contains` matches only a URL the host attributes to the **focused** app: a
 browser's active tab, or a context report from an app on the allow-list in
 `handler/browser_url.py` (`CONTEXT_REPORTERS`: Blender, IDA, GUI Vim and Emacs, and VS Code, Cursor and Windsurf).
+DaVinci Resolve is on it too (`resolve://<page>`, `tests/handler/resolve_routing_test.py`).
 The entry's names and that list must agree; the routing test checks it. A
 terminal on `TERMINAL_APPS` takes the report of a vim or emacs running in it
 (`HOSTED_REPORTERS`), so a terminal entry can route `vim://` and `emacs://` the
@@ -158,7 +159,7 @@ GNU nano sends no report and sets no title, so it is visible only when the
 shell or the terminal puts the running command into the window title (cmd.exe,
 macOS Terminal and iTerm2, Konsole, fish, Nushell, xonsh and oh-my-zsh do by default; bash,
 PowerShell and plain zsh need the scripts in [`shell/`](shell/), which the
-tray's Updates → "Set up the terminal and editors…" or
+tray's Integrations… → Terminals or
 `polyctl shell-integration install` adds to their startup files). The
 terminal entries carry `titles-contains: &editor_titles`: the word
 `nano` selects the route and the sub-entry's `title` regex requires nano at
@@ -189,7 +190,12 @@ no title. The formats are in
 
 htop, btop, Midnight Commander, micro, Helix, less (and man, which pages
 through less), k9s and GDB have routes in the same list, built the same way
-(`overlay_sources/tui/SOURCES.md`). Midnight Commander writes
+(`overlay_sources/tui/SOURCES.md`). So do the terminal builds of three games:
+`crawl` and `crawl-console` (Dungeon Crawl Stone Soup), `cataclysm` and
+`cataclysm-launcher` (Cataclysm: Dark Days Ahead) and `nethack` and
+`nethack-console` (`tests/handler/roguelike_routing_test.py`). A path in front
+of the command (`./crawl`, `/home/me/nethack`) does not match: a folder named
+after a game would match as well. Midnight Commander writes
 `mc [user@host]:<dir>` itself. Vim and Neovim with `set title` write
 `<file> (<dir>) - VIM` and `<file> - NVIM`; those titles load the Normal-mode
 Vim set, and the plugin's mode report takes priority. The PolyKybd GDB script (`gdb-plugin/`) writes

@@ -74,7 +74,7 @@ From the IDAPython reference (<https://python.docs.hex-rays.com/namespaceida__ke
 
 ## Install
 
-The tray app copies it: *Updates → Set up the terminal and editors…*, tick
+The tray app copies it: *Integrations… → Editors*, tick
 **IDA**, or `polyctl editor-plugins install --editor ida`. It writes
 `polykybd_ida.py` and `ida-plugin.json` to `<IDAUSR>/plugins/polykybd/`:
 

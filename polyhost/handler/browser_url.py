@@ -109,6 +109,9 @@ CONTEXT_REPORTERS = {
     # IDA Pro (ida-plugin/): the names of the mapping's `ida` entry.
     "ida": "ida", "ida64": "ida", "idaq": "ida", "idaq64": "ida", "ida pro": "ida",
     "ida professional": "ida", "ida home": "ida", "ida free": "ida", "ida classroom": "ida",
+    # QGIS plugin (qgis-plugin/): exactly the names of the `qgis` mapping entry.
+    **dict.fromkeys(("qgis", "qgis3", "qgis4", "org.qgis.qgis", "qgis-bin", "qgis-ltr-bin",
+                     "qgis-dev-bin", "qgis-qt6-bin", "qgis-ltr"), "qgis"),
     # VS Code and its forks: vscode-extension/ sends <token>://<debug mode>.
     "code": "vscode", "cursor": "cursor",
     "windsurf": "windsurf", "devin": "windsurf", "devin-desktop": "windsurf",
@@ -119,6 +122,16 @@ CONTEXT_REPORTERS = {
     # Autodesk Maya (maya-plugin/): Windows maya.exe, macOS "Maya", Linux maya.bin.
     "maya": "maya",
     "maya.bin": "maya",
+    "binaryninja": "binaryninja", "binary ninja": "binaryninja",  # binaryninja-plugin/
+    # DaVinci Resolve page reporter (resolve-plugin/): Resolve.exe on Windows,
+    # resolve on Linux, "DaVinci Resolve" on macOS -- the mapping entry's names.
+    "resolve": "resolve",
+    "davinci resolve": "resolve",
+    # Ableton Live 12 (remote script in ableton-remote-script/): the names the
+    # mapping's Ableton entry is keyed on, one per edition.
+    **dict.fromkeys(("ableton live 12 suite", "ableton live 12 standard",
+                     "ableton live 12 intro", "ableton live 12 lite",
+                     "ableton live 12 trial"), "ableton"),
 }
 
 # Reporters that also run INSIDE a terminal (vim, emacs -nw). While a terminal
