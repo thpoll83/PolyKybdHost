@@ -4,7 +4,9 @@
 Glyphs: Microsoft Fluent UI System Icons (MIT), with Material Symbols
 (Apache-2.0) through `ms:` where Fluent has no match. The standard view names
 and the Sketcher constraint symbols are text in DejaVu Sans Bold; the tangent
-symbol is drawn. No program icon: the host draws the ESC mark for the app
+symbol is drawn. `BADGED` draws a glyph over a short word, for a key that
+does a different thing than another key with the same glyph (TechDraw's
+dimensions, the Assembly joints, BIM's panel and nudge keys). No program icon: the host draws the ESC mark for the app
 itself.
 
     pip install cairosvg Pillow
@@ -19,6 +21,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import dcc_glyphs  # noqa: E402
 import icon_fetch  # noqa: E402
 
 RENDER_PX = 96
@@ -72,6 +75,7 @@ FLUENT = {
     "nudgeswitch": "ms:swap_horiz",
     "nudgeextend": "ms:open_in_full",
     "nudgeshrink": "ms:close_fullscreen",
+    "nudgerotright": "ms:rotate_90_degrees_cw",
     # --- Assembly ---
     "insertcomp": "ms:add_box",
     "fixedjoint": "ms:anchor",
@@ -119,6 +123,44 @@ TEXT = {
     "gearbelt": "G/B",
 }
 
+# A glyph (an icon written above) over a word: a key whose action differs from
+# another key with the same glyph. TD = TechDraw, JNT = Assembly joint,
+# WP = working plane.
+BADGED = {
+    "fullscreen_win": ("fullscreen", "WIN"),
+    "panelbottom_all": ("panelbottom", "ALL"),
+    "dimension_td": ("dimension", "TD"),
+    "hdim_td": ("hdim", "TD"),
+    "vdim_td": ("vdim", "TD"),
+    "dimension_jnt": ("dimension", "JNT"),
+    "parallel_jnt": ("parallel", "JNT"),
+    "perpendicular_jnt": ("perpendicular", "JNT"),
+    # crop_free alone looks like F11's full-screen corners
+    "wpview_wp": ("wpview", "WP"),
+}
+GLYPH_H = 0.64   # share of the height the glyph takes; the word gets the rest
+WORD_PX = 30     # DejaVu Sans Bold size at RENDER_PX
+
+
+def _draw_badged(path: Path, glyph: Path, word: str) -> None:
+    """``glyph`` fitted into the upper part, ``word`` centred below it, black
+    on transparent like the fetched glyphs."""
+    img = Image.new("RGBA", (RENDER_PX, RENDER_PX), (0, 0, 0, 0))
+    g = Image.open(glyph).convert("RGBA")
+    g = g.crop(g.getbbox())
+    top = int(RENDER_PX * GLYPH_H)
+    scale = min(RENDER_PX / g.width, top / g.height)
+    g = g.resize((max(1, round(g.width * scale)), max(1, round(g.height * scale))), Image.LANCZOS)
+    img.alpha_composite(g, ((RENDER_PX - g.width) // 2, 0))
+    d = ImageDraw.Draw(img)
+    font = ImageFont.truetype(FONT, WORD_PX)
+    box = d.textbbox((0, 0), word, font=font)
+    if box[2] - box[0] > RENDER_PX:
+        raise ValueError(f"{path.name}: word {word!r} is too wide")
+    x = (RENDER_PX - (box[2] - box[0])) / 2 - box[0]
+    d.text((x, RENDER_PX - 1 - box[3]), word, font=font, fill=(0, 0, 0, 255))
+    img.save(path)
+
 
 def _draw_text(path: Path, text: str) -> None:
     """Black text on transparent, like the fetched glyphs, scaled so its ink
@@ -154,6 +196,11 @@ def main() -> int:
         n += 1
     _draw_tangent(out / "tangent.png")
     n += 1
+    for name, (glyph, word) in BADGED.items():
+        dcc_glyphs.guarded(out / f"{name}.png",
+                           lambda p, g=glyph, w=word: _draw_badged(p, out / f"{g}.png", w),
+                           f"{glyph}.png over '{word}'")
+        n += 1
     print(f"Wrote {n} icons to {out} ({len(TEXT)} drawn as text)")
     return 0
 

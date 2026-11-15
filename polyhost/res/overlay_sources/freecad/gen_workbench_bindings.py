@@ -40,17 +40,17 @@ FALLBACK_WORKBENCH = {
 # Keys that are not in the fallback set (sAccel / "Accel" in the 1.1.4 source).
 EXTRA = {
     "techdraw": [
-        {"key": "D", "mods": [], "icon": "dimension.png", "label": "Dimension (TechDraw)"},
+        {"key": "D", "mods": [], "icon": "dimension_td.png", "label": "Dimension (TechDraw)"},
     ],
     "bim": [
         {"key": "DEL", "mods": ["SHIFT"], "icon": "trash.png", "label": "Move to trash"},
         {"key": "9", "mods": ["CMDCTRL"], "icon": "viewsmanager.png", "label": "Views manager"},
-        {"key": "0", "mods": ["CMDCTRL"], "icon": "panelbottom.png", "label": "Toggle bottom panels"},
-        {"key": "9", "mods": [], "icon": "wpview.png", "label": "Working plane view"},
+        {"key": "0", "mods": ["CMDCTRL"], "icon": "panelbottom_all.png", "label": "Toggle bottom panels"},
+        {"key": "9", "mods": [], "icon": "wpview_wp.png", "label": "Working plane view"},
         {"key": "SLASH", "mods": ["CMDCTRL"], "icon": "nudgeswitch.png", "label": "Nudge switch"},
         {"key": "PGUP", "mods": ["CMDCTRL"], "icon": "nudgeextend.png", "label": "Nudge extend"},
         {"key": "PGDN", "mods": ["CMDCTRL"], "icon": "nudgeshrink.png", "label": "Nudge shrink"},
-        {"key": "DOT", "mods": ["CMDCTRL"], "icon": "rotright.png", "label": "Nudge rotate right"},
+        {"key": "DOT", "mods": ["CMDCTRL"], "icon": "nudgerotright.png", "label": "Nudge rotate right"},
     ],
     "assembly": [
         {"key": "I", "mods": [], "icon": "insertcomp.png", "label": "Insert component"},
@@ -59,9 +59,9 @@ EXTRA = {
         {"key": "C", "mods": [], "icon": "cylindrical.png", "label": "Cylindrical joint"},
         {"key": "S", "mods": [], "icon": "slider.png", "label": "Slider joint"},
         {"key": "B", "mods": [], "icon": "balljoint.png", "label": "Ball joint"},
-        {"key": "D", "mods": [], "icon": "dimension.png", "label": "Distance joint"},
-        {"key": "N", "mods": [], "icon": "parallel.png", "label": "Parallel joint"},
-        {"key": "M", "mods": [], "icon": "perpendicular.png", "label": "Perpendicular joint"},
+        {"key": "D", "mods": [], "icon": "dimension_jnt.png", "label": "Distance joint"},
+        {"key": "N", "mods": [], "icon": "parallel_jnt.png", "label": "Parallel joint"},
+        {"key": "M", "mods": [], "icon": "perpendicular_jnt.png", "label": "Perpendicular joint"},
         {"key": "X", "mods": [], "icon": "angle.png", "label": "Angle joint"},
         {"key": "Q", "mods": [], "icon": "rackpinion.png", "label": "Rack and pinion joint"},
         {"key": "W", "mods": [], "icon": "screwjoint.png", "label": "Screw joint"},

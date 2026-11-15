@@ -60,7 +60,7 @@ bindings:
   - {key: B, mods: [SHIFT], icon: boxsel.png, label: Box selection}
   - {key: E, mods: [SHIFT], icon: boxelemsel.png, label: Box element selection}
   - {key: F11, mods: [], icon: fullscreen.png, label: Full screen}
-  - {key: F11, mods: [ALT], icon: fullscreen.png, label: Full screen (main window)}
+  - {key: F11, mods: [ALT], icon: fullscreen_win.png, label: Full screen (main window)}
   - {key: LEFT, mods: [CMDCTRL], icon: panelleft.png, label: Toggle left panel}
   - {key: RIGHT, mods: [CMDCTRL], icon: panelright.png, label: Toggle right panel}
   - {key: UP, mods: [CMDCTRL], icon: paneltop.png, label: Toggle top panel}
@@ -72,9 +72,9 @@ bindings:
   - {key: S, mods: [SHIFT], icon: snaplock.png, label: Snap lock}
   - {key: DEL, mods: [SHIFT], icon: trash.png, label: Move to trash}
   - {key: '9', mods: [CMDCTRL], icon: viewsmanager.png, label: Views manager}
-  - {key: '0', mods: [CMDCTRL], icon: panelbottom.png, label: Toggle bottom panels}
-  - {key: '9', mods: [], icon: wpview.png, label: Working plane view}
+  - {key: '0', mods: [CMDCTRL], icon: panelbottom_all.png, label: Toggle bottom panels}
+  - {key: '9', mods: [], icon: wpview_wp.png, label: Working plane view}
   - {key: SLASH, mods: [CMDCTRL], icon: nudgeswitch.png, label: Nudge switch}
   - {key: PGUP, mods: [CMDCTRL], icon: nudgeextend.png, label: Nudge extend}
   - {key: PGDN, mods: [CMDCTRL], icon: nudgeshrink.png, label: Nudge shrink}
-  - {key: DOT, mods: [CMDCTRL], icon: rotright.png, label: Nudge rotate right}
+  - {key: DOT, mods: [CMDCTRL], icon: nudgerotright.png, label: Nudge rotate right}

@@ -95,3 +95,14 @@ F5. The set follows the source.
   (cylindrical), ∠ (angle), R+P (rack and pinion), G/B (gears/belt).
 - New, Open, Save, Save As, Print, Close, Undo, Redo, Cut, Copy, Paste, Select
   All, Delete, Zoom In and Zoom Out are drawn by the shared concept renderer.
+- Nudge rotate right (BIM, Ctrl+.): Material Symbols `rotate_90_degrees_cw`, so
+  it differs from the view's Rotate right (Shift+Right, `rotate_right`).
+- Glyph over a word (`BADGED` in `fetch_icons.py`), drawn from the glyphs above
+  and DejaVu Sans Bold, for a key whose action differs from another FreeCAD key
+  with the same glyph (one icon per action, in all the FreeCAD sets):
+  `fullscreen_win` (Alt+F11, the main window full screen; F11 is the 3D view),
+  `panelbottom_all` (BIM Ctrl+0, all bottom dock panels; Ctrl+Down is the bottom
+  overlay panel), `wpview_wp` (BIM 9, working plane view; `crop_free` alone looks
+  like F11), `dimension_td`, `hdim_td`, `vdim_td` (TechDraw dimensions; the
+  plain glyphs are the Sketcher constraints), `dimension_jnt`, `parallel_jnt`,
+  `perpendicular_jnt` (Assembly joints).
