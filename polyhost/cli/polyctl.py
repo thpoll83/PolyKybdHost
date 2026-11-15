@@ -2123,14 +2123,14 @@ def build_parser():
     # Local only, like shell-integration.
     p_ep = sub.add_parser(
         "editor-plugins",
-        help="copy the Vim/Neovim plugin, the Emacs package and the GDB script that "
-             "report the program's mode (works with the host stopped)",
+        help="copy the Vim/Neovim plugin, the Emacs package, the GDB script and the "
+             "Houdini package that report the program's mode (works with the host stopped)",
         description="Copies the plugin shipped with this installation to "
                     "~/.vim/pack/polykybd/start/polykybd (Vim), the Neovim "
                     "site/pack folder, <emacs dir>/polykybd (Emacs) or "
                     "~/.config/gdb/polykybd (GDB), <IDAUSR>/plugins/polykybd "
-                    "(IDA) or <User Library>/Remote Scripts/PolyKybd (Ableton "
-                    "Live); for Emacs and GDB also a "
+                    "(IDA), <User Library>/Remote Scripts/PolyKybd (Ableton "
+                    "Live) or <Houdini preferences>/packages (Houdini); for Emacs and GDB also a "
                     "marked block in the init file, saved first. Copies made "
                     "this way are refreshed when the app starts after an update.")
     ep_sub = p_ep.add_subparsers(dest="ep_action", required=True)
@@ -2142,7 +2142,7 @@ def build_parser():
     for p in (ep_install, ep_remove, ep_status):
         p.add_argument("--editor", action="append",
                        choices=("vim", "neovim", "emacs", "gdb", "ida", "binaryninja", "resolve",
-                                "ableton"),
+                                "ableton", "houdini"),
                        help="only this editor (repeat for more)")
     p_ep.set_defaults(func=_cmd_editor_plugins)
 

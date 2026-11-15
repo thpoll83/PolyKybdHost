@@ -3920,7 +3920,7 @@ msgstr "No se pudieron comprobar los editores: {error}"
 
 #: polyhost/gui/shell_editor_pages.py:229
 msgid "Live shows Session View or Arrangement View keys with this script. After Install, restart Live and choose PolyKybd as a Control Surface in Settings > Link, Tempo & MIDI."
-msgstr ""
+msgstr "Con este script, Live muestra las teclas de Session View o Arrangement View. Después de instalar, reinicie Live y elija PolyKybd como Control Surface en Settings > Link, Tempo & MIDI."
 
 #: polyhost/gui/shell_editor_pages.py:235
 msgid "No Vim, Neovim or Emacs was found on this computer."

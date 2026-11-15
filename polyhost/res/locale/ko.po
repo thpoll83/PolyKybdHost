@@ -3903,7 +3903,7 @@ msgstr "편집기를 확인할 수 없습니다: {error}"
 
 #: polyhost/gui/shell_editor_pages.py:229
 msgid "Live shows Session View or Arrangement View keys with this script. After Install, restart Live and choose PolyKybd as a Control Surface in Settings > Link, Tempo & MIDI."
-msgstr ""
+msgstr "이 스크립트로 Live가 Session View 또는 Arrangement View 키를 표시합니다. 설치 후 Live를 다시 시작하고 Settings > Link, Tempo & MIDI에서 PolyKybd를 Control Surface로 선택하세요."
 
 #: polyhost/gui/shell_editor_pages.py:235
 msgid "No Vim, Neovim or Emacs was found on this computer."
