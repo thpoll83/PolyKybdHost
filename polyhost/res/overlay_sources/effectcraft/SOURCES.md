@@ -87,10 +87,10 @@ the panel renames the item itself (`menus.rs:1918`), which is the same action.
 
 | File(s) | Source | Licence |
 |---|---|---|
-| 34 icons copied from `../aftereffects/icons/` (anchorpoint, position, scale, rotation, opacity, feather, effects, keyframes, select, hand, zoom, pen, shape, panbehind, gotoin, gotoout, preview, newcomp, open, save, import, compsettings, renderqueue, solid, type, undo, redo, cut, copy, paste, selectall, duplicate, splitlayer, precompose) | Microsoft Fluent UI System Icons, via the reference set; byte-identical | MIT |
+| 33 icons copied from `../aftereffects/icons/` (anchorpoint, position, scale, rotation, opacity, feather, effects, keyframes, select, hand, zoom, pen, shape, panbehind, gotoin, gotoout, preview, newcomp, open, save, import, renderqueue, solid, type, undo, redo, cut, copy, paste, selectall, duplicate, splitlayer, precompose) | Microsoft Fluent UI System Icons, via the reference set; byte-identical | MIT |
 | bare Fluent folder names in `fetch_icons.py` `FLUENT` | [Microsoft Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) | MIT |
 | `ms:` entries in `FLUENT` | [Material Symbols](https://github.com/google/material-design-icons), weight 300 | Apache-2.0 |
-| `res_*`, `ch_*`, `fp_*` badges (1/1, 1/2, 1/4, 1/n; R/G/B/A channels; FQ/AR/DR/FD/WF fast-preview modes), `keytoggle.png` (diamond + plus) | drawn in `fetch_icons.py` (Liberation Sans Bold) | GPL-3.0-or-later (this repo) |
+| `res_*`, `ch_*`, `fp_*` badges (1/1, 1/2, 1/4, 1/n; R/G/B/A channels; FQ/AR/DR/FD/WF fast-preview modes) | drawn in `fetch_icons.py` (Liberation Sans Bold) | GPL-3.0-or-later (this repo) |
 | `effectcraft.png` (ESC program mark) | EffectCraft's own app icon, `assets/app-icon/effectcraft.ico`, 48 px frame | MIT OR Apache-2.0 |
 
 Labels that name a shared concept (Save, Undo, Redo, Copy, Cut, Paste, Select
@@ -140,3 +140,25 @@ cut off the coloured tile as one solid shape, fitted into 40 x 40 (38 x 40), and
 interior pixels darker than luma 120 at that size are cut back out (eyes, mouth,
 lines). The spec places it 1:1 (`program_icon_region: [38, 40]`). The
 generator's thresholds turned the engraving into dither at keycap size.
+
+## One icon per action (2026-11-15)
+
+Two keys of one app share an image only when they do the same thing (maintainer,
+2026-11-15). Changed images:
+
+| File(s) | What | Source | Licence |
+|---|---|---|---|
+| `add_<property>` (10) | Shift+letter, add the property to the revealed ones: property glyph + ADD | drawn (composite) | GPL-3.0-or-later |
+| `key_anchorpoint`, `key_position`, `key_scale`, `key_rotation`, `key_opacity` | Alt+Shift+letter, add or remove that property's keyframe: property glyph + KEY (replaces the shared `keytoggle.png`) | drawn (composite) | GPL-3.0-or-later |
+| `dlg_position`, `dlg_rotation`, `dlg_opacity`, `dlg_feather` | Cmd+Shift+letter, the dialog that sets the value: property glyph + SET | drawn (composite) | GPL-3.0-or-later |
+| `centeranchor` | Cmd+Alt+Home, center the anchor point: anchor glyph + CTR | drawn (composite) | GPL-3.0-or-later |
+| `gotoin_word` | I, go to the layer In point: the In arrow + IN (`gotoin.png` is the Import arrow of Cmd+I) | drawn (composite) | GPL-3.0-or-later |
+| `compflowchart` | Cmd+Shift+F11, the active composition's flowchart: flowchart + COMP | drawn (composite) | GPL-3.0-or-later |
+| `zoomfittime` | Shift+;, fit the comp in the TIMELINE (`timeline.zoomFit`; Shift+/ fits the viewer): fit glyph + TIME | drawn (composite) | GPL-3.0-or-later |
+| `compsettings` | Cmd+K, Composition settings (was the Settings gear of Preferences) | Material Symbols `video_settings` | Apache-2.0 |
+| `rotationtool` | W, the Rotation tool (R reveals the Rotation property) | Material Symbols `rotate_right` | Apache-2.0 |
+
+Glyph + word composites are 1-bit at 40x40, drawn by `fetch_icons.py` with the glyph +
+word code of `../ghidra/fetch_icons.py` (Liberation Sans Bold), and placed 1:1
+(`region: [40, 40], mode: alpha`). They are GPL-3.0-or-later drawings over the glyphs
+named, which keep their own licences.

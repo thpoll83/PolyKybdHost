@@ -22,6 +22,7 @@ from assets/app-icon/ (MIT OR Apache-2.0, assets/app-icon/LICENSE.txt). Guarded.
 """
 from __future__ import annotations
 
+import importlib.util
 import sys
 import urllib.request
 from pathlib import Path
@@ -150,6 +151,24 @@ BORROWED = {
 }
 
 
+# "+ next" (Shift+key): the same flag, rating or label, then the next photo is
+# selected. Drawn as the plain glyph over the word NEXT, 1-bit at 40x40, with the
+# glyph + word code of ../ghidra/fetch_icons.py (as the Binary Ninja set does).
+NEXT = {f"{stem}next": (stem, "NEXT") for stem in (
+    "pick", "reject", "unflag", "clearrating",
+    "rate1", "rate2", "rate3", "rate4", "rate5",
+    "labelR", "labelY", "labelG", "labelB")}
+
+
+def _ghidra_helpers():
+    """`../ghidra/fetch_icons.py` as a module, for its glyph + word composites."""
+    spec = importlib.util.spec_from_file_location(
+        "ghidra_fetch_icons", Path(__file__).resolve().parent.parent / "ghidra" / "fetch_icons.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def _guarded_numbered(out: Path, base: str, chars: str, stem: str, **kw) -> None:
     if all((out / f"{stem}{c}.png").exists() for c in chars):
         print(f"  {stem}{chars[0]}..{stem}{chars[-1]}.png  <- committed asset (left as-is)")
@@ -168,6 +187,9 @@ def main() -> int:
     _guarded_numbered(out, "star", "12345", "rate", size=40 / 96, centre=(0.50, 0.55))
     _guarded_numbered(out, "keywords", "123456789", "kw", size=36 / 96, centre=(0.40, 0.58))
     _guarded_numbered(out, "labelbase", "RYGB", "label", size=48 / 96, centre=(0.50, 0.52))
+    g = _ghidra_helpers()
+    g.COMPOSITES, g.ISA = NEXT, {}
+    g.composites(out)
 
     # program mark: LightCraft's own lynx (guarded)
     mark = out / "lightcraft.png"

@@ -44,6 +44,9 @@ program_icon_anchor: bottom-right
 program_icon_region: [34, 40]   # the mark's own size: placed 1:1
 program_icon_margin: 0
 
+# The "hold Space" hint (../space_hint.py) covers the whole key and is placed 1:1.
+_space: &space { region: [72, 40], mode: alpha }
+
 bindings:
   # ============================================================= #
   # TOOLS  (no-mod; src/app.rs Tool::shortcut)                    #
@@ -67,11 +70,11 @@ bindings:
   - { key: I, mods: [], icon: eyedropper.png,    label: Eyedropper }
   - { key: C, mods: [], icon: camera.png,        label: "Camera tool" }
   - { key: H, mods: [], icon: hand.png,          label: Hand }
-  - { key: Z, mods: [], icon: zoom.png,          label: "Zoom tool" }
+  - { key: Z, mods: [], icon: zoomtool.png,          label: "Zoom tool" }
   - { key: J, mods: [], icon: objectdrawing.png, label: "Object drawing" }
   - { key: "[", mods: [], icon: brushdec.png, mode: alpha, label: "Brush size -" }
   - { key: "]", mods: [], icon: brushinc.png, mode: alpha, label: "Brush size +" }
-  - { key: SPACE, mods: [], icon: hand.png,      label: "Pan (hold)" }
+  - { key: SPACE, mods: [], icon: space_hand.png,      label: "Pan (hold)", <<: *space }
 
   # ============================================================= #
   # TIMELINE / CONTROL  (no-mod, Shift)                           #
@@ -130,7 +133,7 @@ bindings:
   - { key: EQUAL, mods: [CMDCTRL], icon: zoomin.png,  label: "Zoom in" }
   - { key: MINUS, mods: [CMDCTRL], icon: zoomout.png, label: "Zoom out" }
   - { key: "0", mods: [CMDCTRL], icon: fitall.png,    label: "Fit in window" }
-  - { key: "2", mods: [CMDCTRL], icon: fitall.png,    label: "Fit stage in window" }
+  - { key: "2", mods: [CMDCTRL], icon: fitall.png,    label: "Fit in window" }
   - { key: "1", mods: [CMDCTRL], icon: actualsize.png, label: "Zoom 100%" }
   - { key: UP, mods: [CMDCTRL],   icon: bringforward.png, label: "Bring forward" }
   - { key: DOWN, mods: [CMDCTRL], icon: sendbackward.png, label: "Send backward" }

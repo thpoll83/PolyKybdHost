@@ -23,6 +23,7 @@ badges are guarded the same way.
 """
 from __future__ import annotations
 
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -42,7 +43,7 @@ BORROW = {f"{n}.png": "aftereffects" for n in (
     "anchorpoint", "position", "scale", "rotation", "opacity", "feather",
     "effects", "keyframes", "select", "hand", "zoom", "pen", "shape",
     "panbehind", "gotoin", "gotoout", "preview", "newcomp", "open", "save",
-    "import", "compsettings", "renderqueue", "solid", "type", "undo", "redo",
+    "import", "renderqueue", "solid", "type", "undo", "redo",
     "cut", "copy", "paste", "selectall", "duplicate", "splitlayer",
     "precompose",
 )}
@@ -239,7 +240,35 @@ FLUENT = {
     "nullobject": "ms:select",
     "lookat": "ms:center_focus_weak",
     "deselectkeys": "ms:deselect",
+    # one icon per action (2026-11-15): these shared a drawing with another action
+    "compsettings": "ms:video_settings",   # was the Settings gear of Preferences
+    "rotationtool": "ms:rotate_right",     # W, the tool; R reveals the property
 }
+
+# Glyph + word, 1-bit at 40x40, drawn with ../ghidra/fetch_icons.py (as the
+# Binary Ninja set does). One property glyph per family, the word says the action:
+# ADD (Shift+letter, add to the revealed properties), KEY (Alt+Shift+letter, add or
+# remove a keyframe), SET (Cmd+Shift+letter, the dialog that sets the value).
+_PROPS = ("anchorpoint", "position", "scale", "rotation", "opacity", "effects",
+          "masks", "feather", "levels", "keyframes")
+WORDS = {f"add_{p}": (p, "ADD") for p in _PROPS}
+WORDS.update({f"key_{p}": (p, "KEY") for p in ("anchorpoint", "position", "scale", "rotation", "opacity")})
+WORDS.update({f"dlg_{p}": (p, "SET") for p in ("position", "rotation", "opacity", "feather")})
+WORDS.update({
+    "centeranchor": ("anchorpoint", "CTR"),
+    "gotoin_word": ("gotoin", "IN"),     # gotoin.png is the Import arrow of Cmd+I
+    "compflowchart": ("flowchart", "COMP"),
+    "zoomfittime": ("fit", "TIME"),      # Shift+; fits the TIMELINE; Shift+/ the viewer
+})
+
+
+def _ghidra_helpers():
+    """`../ghidra/fetch_icons.py` as a module, for its glyph + word composites."""
+    spec = importlib.util.spec_from_file_location(
+        "ghidra_fetch_icons", Path(__file__).resolve().parent.parent / "ghidra" / "fetch_icons.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 # Drawn text badges: (text, style). "plain" = bare text, "ring" = text in a
 # circle outline, "disc" = text knocked out of a filled disc, "box" = text in
@@ -300,19 +329,6 @@ def _badge(path: Path, text: str, style: str) -> None:
     im.resize((u // ss, u // ss), Image.LANCZOS).save(path)
 
 
-def _key_toggle(path: Path) -> None:
-    """Keyframe diamond with a plus inside: "add or remove keyframe"."""
-    u = 96 * 4
-    im = Image.new("RGBA", (u, u), CLEAR)
-    d = ImageDraw.Draw(im)
-    c, r, w = u // 2, int(u * 0.46), int(u * 0.075)
-    d.polygon([(c, c - r), (c + r, c), (c, c + r), (c - r, c)], outline=INK, width=w)
-    a = int(r * 0.42)
-    d.rectangle([c - a, c - w // 2, c + a, c + w // 2], fill=INK)
-    d.rectangle([c - w // 2, c - a, c + w // 2, c + a], fill=INK)
-    im.resize((96, 96), Image.LANCZOS).save(path)
-
-
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -325,17 +341,15 @@ def main() -> int:
         else:
             _badge(p, text, style)
             print(f"  {p.name}  <- drawn badge {text!r} ({style})")
-    if (out / "keytoggle.png").exists():
-        print("  keytoggle.png  <- committed asset (left as-is)")
-    else:
-        _key_toggle(out / "keytoggle.png")
-        print("  keytoggle.png  <- drawn (diamond + plus)")
+    g = _ghidra_helpers()
+    g.COMPOSITES, g.ISA = WORDS, {}
+    g.composites(out)
     program_marks.own_icon(out / "effectcraft.png", EC_ICO, frame=48,
                            credit="storytold/effectcraft assets/app-icon/effectcraft.ico (MIT OR Apache-2.0)")
     # The ESC mark: the icon's animal as one solid shape at keycap size, with its
     # darkest lines cut back out (program_marks.silhouette_mark).
     program_marks.silhouette_mark(out / "effectcraft_mark.png", out / "effectcraft.png", cut=120)
-    print(f"Wrote {len(BORROW)} borrowed + {n} fetched + {len(BADGES) + 1} drawn icons to {out}")
+    print(f"Wrote {len(BORROW)} borrowed + {n} fetched + {len(BADGES) + len(WORDS)} drawn icons to {out}")
     return 0
 
 
