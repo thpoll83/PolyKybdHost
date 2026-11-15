@@ -241,6 +241,19 @@ class RemapTest(unittest.TestCase):
                 self.assertEqual(cells(outs[2], nm)[KeyCode.KC_F3.value],
                                  self.shipped[PRIMARY][nm][KeyCode.KC_F1.value])
 
+    def test_a_file_too_large_to_read_once_is_not_parsed(self):
+        """The source never reads the file on its own: one too large for the
+        snapshot is refused before the parse."""
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "Mine.SC2Hotkeys"
+            path.write_text(profile({"IdleWorker": "F3"}), encoding="utf-8")
+            spec = build.load_spec(SPEC)
+            with mock.patch.object(keys, "find", return_value=path), \
+                 mock.patch.object(build, "MAX_KEY_FILE", 4), \
+                 mock.patch.object(keys, "bindings") as parse, self.assertLogs("PolyHost", "WARNING"):
+                self.assertEqual(build.bindings_source(spec, None, {})[0], None)
+            parse.assert_not_called()
+
     def test_an_unreadable_profile_leaves_the_defaults(self):
         with mock.patch.object(keys, "MAX_FILE", 4), self.assertLogs("PolyHost", "WARNING"):
             self.assertIsNone(self.built(PRIMARY, {"IdleWorker": "F3"}, art=False))

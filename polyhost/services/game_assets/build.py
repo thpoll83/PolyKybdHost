@@ -350,12 +350,13 @@ def player_bindings(reader, files: dict) -> dict | None:
 MAX_KEY_FILE = 16 * 1024 * 1024      # the largest bindings file read here; each source has its own limit too
 
 
-def _snapshot(path: Path) -> bytes | None:
-    """One read of a bindings file, or None for one too large (its source
-    refuses it then)."""
-    if os.path.getsize(path) > MAX_KEY_FILE:
-        return None
-    return Path(path).read_bytes()
+def _snapshot(path: Path) -> bytes:
+    """One read of a bindings file; ValueError for one larger than
+    MAX_KEY_FILE, before anything parses it."""
+    data = Path(path).read_bytes() if os.path.getsize(path) <= MAX_KEY_FILE else None
+    if data is None or len(data) > MAX_KEY_FILE:
+        raise ValueError(f"{Path(path).name} is larger than this reader opens")
+    return data
 
 
 def bindings_source(spec: dict, reader, files: dict):
@@ -379,7 +380,7 @@ def bindings_source(spec: dict, reader, files: dict):
         path = source.find()
         data = _snapshot(path) if path else None
         digest = hashlib.sha1(data).hexdigest() if data is not None else ""
-        player = source.bindings(path, data) if path else None
+        player = source.bindings(path, data) if data is not None else None
     except (OSError, ValueError, UnicodeError) as e:
         log.warning("Game art: could not read the %s key bindings (%s: %s); "
                     "the icons stay on the default keys.", name, type(e).__name__, e)
