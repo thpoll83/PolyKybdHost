@@ -51,7 +51,8 @@ class FakeView:
 
     def __init__(self):
         self.focused_document_view = "Session"
-        self.visible = {"Detail/Clip": False, "Detail/DeviceChain": False}
+        self.visible = {"Detail/Clip": False, "Detail/DeviceChain": False,
+                        "Session": True, "Arranger": True}
         self.listeners = []
 
     def is_view_visible(self, name, main_window_only=True):
@@ -74,8 +75,31 @@ class FakeView:
             cb()
 
 
-def _fake_live(view):
-    app = types.SimpleNamespace(view=view)
+class FakeClip:
+    """Clip as the LOM documents it: is_midi_clip is the opposite of is_audio_clip."""
+
+    def __init__(self, midi):
+        self.is_midi_clip = midi
+        self.is_audio_clip = not midi
+
+
+class FakeSongView:
+    """Song.View: only detail_clip (get/observe)."""
+
+    def __init__(self):
+        self.detail_clip = None
+        self.listeners = []
+
+    def add_detail_clip_listener(self, cb):
+        self.listeners.append(cb)
+
+    def remove_detail_clip_listener(self, cb):
+        self.listeners.remove(cb)
+
+
+def _fake_live(view, song_view=None):
+    song = types.SimpleNamespace(view=song_view or FakeSongView())
+    app = types.SimpleNamespace(view=view, get_document=lambda: song)
     application = types.SimpleNamespace(get_application=lambda: app)
     return types.SimpleNamespace(Application=application)
 
@@ -94,6 +118,31 @@ class ContextUrlTest(unittest.TestCase):
                          "ableton://arrangement/device")
         self.assertEqual(core.context_url("Arranger", True, True),
                          "ableton://arrangement/clip")
+
+    def test_clip_kind(self):
+        self.assertEqual(core.context_url("Arranger", True, False, "midi"),
+                         "ableton://arrangement/clip/midi")
+        self.assertEqual(core.context_url("Session", True, False, "audio"),
+                         "ableton://session/clip/audio")
+        # an unknown kind is left out; the kind needs the Clip View
+        self.assertEqual(core.context_url("Session", True, False, "video"),
+                         "ableton://session/clip")
+        self.assertEqual(core.context_url("Session", False, True, "midi"),
+                         "ableton://session/device")
+        self.assertEqual(core.context_url("Session", False, False, "midi"),
+                         "ableton://session")
+
+    def test_full_only_with_the_clip_view(self):
+        self.assertEqual(core.context_url("Arranger", True, False, "midi", main_visible=False),
+                         "ableton://arrangement/clip/midi/full")
+        self.assertEqual(core.context_url("Session", True, False, "audio", False),
+                         "ableton://session/clip/audio/full")
+        self.assertEqual(core.context_url("Session", True, False, None, False),
+                         "ableton://session/clip/full")
+        self.assertEqual(core.context_url("Session", False, True, None, False),
+                         "ableton://session/device")
+        self.assertEqual(core.context_url("Session", False, False, None, False),
+                         "ableton://session")
 
     def test_unknown_view_sends_nothing(self):
         self.assertIsNone(core.context_url(None))
@@ -259,7 +308,8 @@ class ReporterGlueTest(unittest.TestCase):
     def setUp(self):
         self.srv, self.port, self.got = _server()
         self.view = FakeView()
-        pkg, self.mod, _core = _load_package(_fake_live(self.view))
+        self.song_view = FakeSongView()
+        pkg, self.mod, _core = _load_package(_fake_live(self.view, self.song_view))
         self.clock = [100.0]
         self.c = _CInstance()
         self.r = pkg.create_instance(self.c)
@@ -293,6 +343,50 @@ class ReporterGlueTest(unittest.TestCase):
                                 "ableton://arrangement/device"])
         self.assertTrue(all(g["app"] == "ableton" and g["focused"] for g in self.got))
 
+    def test_reports_the_clip_kind_and_an_expanded_clip_view(self):
+        self.view.focused_document_view = "Arranger"
+        self.view.visible["Detail/Clip"] = True
+        self._ticks()                    # Clip View with no clip in it
+        self.song_view.detail_clip = FakeClip(midi=True)
+        self._ticks()
+        self.song_view.detail_clip = FakeClip(midi=False)
+        self._ticks()
+        self.view.visible["Arranger"] = False    # Expand Clip View
+        self._ticks()
+        self.view.focused_document_view = "Session"
+        self.view.visible["Arranger"] = True     # only the Session's visibility counts
+        self.view.visible["Session"] = False
+        self.song_view.detail_clip = FakeClip(midi=True)
+        self._ticks()
+        self.view.visible["Detail/Clip"] = False
+        self.view.visible["Detail/DeviceChain"] = True
+        self._ticks()
+        self.assertEqual([g["url"] for g in self.got], [
+            "ableton://arrangement/clip", "ableton://arrangement/clip/midi",
+            "ableton://arrangement/clip/audio", "ableton://arrangement/clip/audio/full",
+            "ableton://session/clip/midi/full", "ableton://session/device"])
+
+    def test_the_clip_kind_is_not_read_without_the_clip_view(self):
+        class Unreadable:
+            @property
+            def is_midi_clip(self):
+                raise AssertionError("read while the Clip View is hidden")
+        self.song_view.detail_clip = Unreadable()
+        self._ticks()
+        self.assertEqual(self.got[-1]["url"], "ableton://session")
+
+    def test_without_a_song_view_the_kind_is_left_out(self):
+        view = FakeView()
+        view.visible["Detail/Clip"] = True
+        live = _fake_live(view)
+        live.Application.get_application().get_document = lambda: (_ for _ in ()).throw(
+            RuntimeError("no document"))
+        pkg, _mod, _core = _load_package(live)
+        c = _CInstance()
+        r = pkg.create_instance(c)
+        self.assertEqual(r._current_url(), "ableton://session/clip")
+        self.assertTrue(any("cannot read the song view" in line for line in c.lines))
+
     def test_keepalive_and_no_resend_between(self):
         self._ticks()
         self._ticks(20)                  # 2 s: nothing new
@@ -312,9 +406,19 @@ class ReporterGlueTest(unittest.TestCase):
         kinds = sorted((k, n) for k, n, _cb in self.view.listeners)
         self.assertEqual(kinds, [("doc", None), ("vis", "Detail/Clip"),
                                  ("vis", "Detail/DeviceChain")])
+        self.assertEqual(len(self.song_view.listeners), 1)
         self._ticks()
         self.r.disconnect()
         self.assertEqual(self.view.listeners, [])
+        self.assertEqual(self.song_view.listeners, [])
+
+    def test_a_clip_change_counts_as_a_view_change(self):
+        self._ticks(32)
+        self.assertGreaterEqual(self.got[-1]["input_age"], 2.9)
+        for cb in list(self.song_view.listeners):
+            cb()
+        self._ticks(31)                  # the next keep-alive
+        self.assertLess(self.got[-1]["input_age"], 3.2)
 
     def test_disconnect_withdraws_the_view(self):
         self._ticks()

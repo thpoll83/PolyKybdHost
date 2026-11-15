@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-15 17:06+0000\n"
+"POT-Creation-Date: 2026-11-15 17:23+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -3917,7 +3917,7 @@ msgstr "Les éditeurs n'ont pas pu être vérifiés : {error}"
 
 #: polyhost/gui/shell_editor_pages.py:228
 msgid "Live shows Session View or Arrangement View keys with this script. After Install, restart Live and choose PolyKybd as a Control Surface in Settings > Link, Tempo & MIDI."
-msgstr ""
+msgstr "Avec ce script, Live affiche les touches de la Session View ou de l’Arrangement View. Après « Installer », redémarrez Live et choisissez PolyKybd comme Control Surface dans Settings > Link, Tempo & MIDI."
 
 #: polyhost/gui/shell_editor_pages.py:234
 msgid "No Vim, Neovim or Emacs was found on this computer."

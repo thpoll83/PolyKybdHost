@@ -2942,15 +2942,21 @@ fl64,fl studio 2024,fl studio 2025,fl studio 2026,osxfl:
       midi: true
 # Ableton Live 12: the Windows exe and the macOS app both carry the edition name.
 # With the PolyKybd remote script (ableton-remote-script/) Live reports
-# `ableton://session` or `ableton://arrangement` (plus `/clip` or `/device` for
-# the detail view, not routed: the keys go to the main view). Session View gets
-# its own set; Arrangement View and no report (or a stale one) keep the
-# Arrangement set. `layer: false`: a view replaces the fallback.
+# `ableton://session` or `ableton://arrangement`, plus `/device` or
+# `/clip[/midi|/audio][/full]` for the detail view. Session View gets its own
+# set; Arrangement View and no report (or a stale one) keep the Arrangement set.
+# The Clip View sets are routed only with `/full` (the main view is not
+# visible): the Live API does not say which view has the keyboard focus, and
+# while the main view is visible the main-view keys apply to the selected clip
+# that the Clip View shows. The Clip View needles come first: the first match wins.
+# `layer: false`: a view replaces the fallback.
 ableton live 12 suite,ableton live 12 standard,ableton live 12 intro,ableton live 12 lite,ableton live 12 trial:
   overlay: [ableton_template.mods.png, ableton_template.combo.mods.png, ableton_template.extra.mods.png]
   midi: true
   layer: false
   urls-contains:
+    "/clip/midi/full": { overlay: [ableton_clipmidi_template.mods.png, ableton_clipmidi_template.combo.mods.png, ableton_clipmidi_template.extra.mods.png], midi: true }
+    "/clip/audio/full": { overlay: [ableton_clipaudio_template.mods.png, ableton_clipaudio_template.combo.mods.png, ableton_clipaudio_template.extra.mods.png], midi: true }
     "ableton://session": { overlay: [ableton_session_template.mods.png, ableton_session_template.combo.mods.png, ableton_session_template.extra.mods.png], midi: true }
     "ableton://arrangement": { overlay: [ableton_template.mods.png, ableton_template.combo.mods.png, ableton_template.extra.mods.png], midi: true }
   os:
@@ -2959,6 +2965,8 @@ ableton live 12 suite,ableton live 12 standard,ableton live 12 intro,ableton liv
       midi: true
       layer: false
       urls-contains:
+        "/clip/midi/full": { overlay: [ableton_clipmidi_template_mac.mods.png, ableton_clipmidi_template_mac.combo.mods.png, ableton_clipmidi_template_mac.extra.mods.png, ableton_clipmidi_template_mac.gui.mods.png], midi: true }
+        "/clip/audio/full": { overlay: [ableton_clipaudio_template_mac.mods.png, ableton_clipaudio_template_mac.combo.mods.png, ableton_clipaudio_template_mac.extra.mods.png, ableton_clipaudio_template_mac.gui.mods.png], midi: true }
         "ableton://session": { overlay: [ableton_session_template_mac.mods.png, ableton_session_template_mac.combo.mods.png, ableton_session_template_mac.extra.mods.png, ableton_session_template_mac.gui.mods.png], midi: true }
         "ableton://arrangement": { overlay: [ableton_template_mac.mods.png, ableton_template_mac.combo.mods.png, ableton_template_mac.extra.mods.png, ableton_template_mac.gui.mods.png], midi: true }
 # REAPER: reaper.exe, REAPER.app and `reaper` on Linux. Windows and Linux use the
