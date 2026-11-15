@@ -50,7 +50,7 @@ bindings:
   - { key: F8, mods: [SHIFT], icon: gsdump.png, label: "Save GS dump (one frame)" }
   - { key: F8, mods: [CTRL, SHIFT], icon: gsdumpmulti.png, label: "Save GS dump (several frames)" }
   - { key: F9, mods: [], icon: software.png, label: "Software renderer on/off" }
-  - { key: INSERT, mods: [], icon: mipmap.png, label: "Mipmapping on/off" }
+  - { key: INSERT, mods: [], icon: mipmap.png, label: "Mipmapping on/off", region: [40, 40] }
   - { key: MINUS, mods: [CTRL], icon: zoomout.png, label: "Zoom out" }
   # DualShock 2, controller 1; drawn 1:1 at their own size
   - { key: I, mods: [], icon: triangle.png, label: "Triangle", region: [32, 32], margin: 2 }
