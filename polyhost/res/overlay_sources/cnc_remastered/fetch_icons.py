@@ -165,12 +165,23 @@ def dither_icons(out: Path, stems=None) -> None:
         canvas[size[1] - m.shape[0]:, size[0] - m.shape[1]:] = m
         _save_mask(canvas, out / f"{stem}.png")
         if stem in NUMBERED:
+            top = 16 if stem == "bookmark" else _body_top(canvas)
             for n in "1234":
-                numbered = _stamp(canvas, n)
+                numbered = _stamp(canvas, n, top=top)
                 _save_mask(numbered, out / f"{stem}{n}.png")
                 if stem == "bookmark":
                     _save_mask(wz_units._with_plus(numbered, top=True), out / f"bookmarkset{n}.png")
     print(f"  {len(stems or ICONS)} key icons dithered (+ the numbered ones)")
+
+
+def _body_top(mask, height=11) -> int:
+    """The top row for an 11 px digit centred on the body of a speech bubble:
+    the rows at least 70 % as wide as the widest, so the tail and the rounded
+    cap do not pull the digit off centre."""
+    import numpy as np
+    widths = mask.sum(axis=1)
+    rows = np.nonzero(widths >= 0.7 * widths.max())[0]
+    return int(round((rows.min() + rows.max() + 1) / 2 - height / 2))
 
 
 def groups_add(out: Path) -> None:
