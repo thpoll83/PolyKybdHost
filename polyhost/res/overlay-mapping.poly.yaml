@@ -3662,6 +3662,22 @@ cs2,steam_app_730:
 ut2004,ut2004.exe,ut2004-bin,ut2004-bin-linux-amd64,unreal tournament 2004,steam_app_13230:
   overlay: ut2004_template.mods.png
   game_assets: ut2004/ut2004.yaml
+# Endless Sky (overlay_sources/endless_sky/endless_sky.yaml). CMakeLists.txt
+# (v0.11.4) names the binary `endless-sky` on Linux and `Endless Sky` on Windows
+# and macOS; io.github.endless_sky.endless_sky is the desktop file and Flatpak
+# id. Names not checked on an install.
+endless-sky,endless sky,endless sky.exe,io.github.endless_sky.endless_sky:
+  overlay: endless_sky_template.mods.png
+# Naev (overlay_sources/naev/naev.yaml). `naev` is the meson executable target
+# (v0.13.5), `naev.exe` on Windows; org.naev.Naev is the desktop file and
+# Flatpak id. Names not checked on an install.
+naev,naev.exe,org.naev.naev:
+  overlay: naev_template.mods.png
+# Oolite (overlay_sources/oolite/oolite.yaml). `oolite` is OBJC_PROGRAM_NAME in
+# GNUmakefile (1.92.1) and the desktop file's StartupWMClass, `oolite.exe` on
+# Windows; space.oolite.Oolite is the Flatpak id. Names not checked on an install.
+oolite,oolite.exe,space.oolite.oolite:
+  overlay: [oolite_template.mods.png, oolite_template.combo.mods.png]
 # GZDoom (overlay_sources/gzdoom/gzdoom.yaml), drawn for Doom and Doom II.
 # `gzdoom` is ZDOOM_EXE_NAME in CMakeLists.txt (g4.14.2), gzdoom.exe on Windows;
 # org.zdoom.GZDoom is the Flathub app id. Names not checked on an install.
