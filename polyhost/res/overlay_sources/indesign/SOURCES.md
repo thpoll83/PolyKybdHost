@@ -52,3 +52,13 @@ act only when no text insertion point is active.
   and Print may be drawn by the shared concept renderer.
 - ESC: a generic "Id" rectangle from `../rect_mark.py`, at the size of the
   other Adobe marks. Adobe's logo is not used.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing
+(maintainer, 2026-11-15). These files give the other keys their own image.
+Files whose name starts with `_` are only parts of a composite.
+
+| file | source | licence |
+|---|---|---|
+| `addpages.png` | Material Symbols `add_to_photos` | Apache-2.0 |

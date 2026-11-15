@@ -169,11 +169,71 @@ FLUENT = {
 }
 
 
+# --- One icon per action (maintainer, 2026-11-15) ----------------------------
+# Two keys of this app share an image only when they do the same thing. The
+# glyphs below give the other keys their own image. The older files stay, because
+# other sets may copy them (icon_fetch.borrow).
+ACTION_FLUENT = {
+    "flipboard": "ms:flip_camera_android",
+    "boardup": "ms:arrow_circle_up",
+    "boarddown": "ms:arrow_circle_down",
+    "boardleft": "ms:arrow_circle_left",
+    "boardright": "ms:arrow_circle_right",
+    "sheetup": "ms:drive_folder_upload",
+    "gbrlayerprev": "ms:keyboard_double_arrow_up",
+    "gbrlayernext": "ms:keyboard_double_arrow_down",
+    "sketchlines": "ms:line_style",
+    "placesymbol": "ms:change_history",
+    "dragfree": "ms:moving",
+    "selnode": "ms:share",
+    "smdmodels": "ms:deployed_code",
+}
+# file -> (base, badge): the base reduced to the upper left, the badge in the
+# lower right (dcc_glyphs.with_badge).
+ACTION_BADGED = {
+    "editsymbol.png": ("openeditor.png", "placesymbol.png"),
+    "editfootprint.png": ("openeditor.png", "footprints.png"),
+    "libsymbol.png": ("library.png", "placesymbol.png"),
+    "libfootprint.png": ("library.png", "footprints.png"),
+}
+
+
+# The copper layer keys (PgUp F.Cu, PgDn B.Cu) show the layer name, so they do
+# not look like the 3D viewer's "view front" and "view back".
+LAYER_WORDS = {"fcu.png": "F.Cu", "bcu.png": "B.Cu"}
+BOLD = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
+
+
+def _word(path: Path, text: str) -> None:
+    """``text`` in Liberation Sans Bold, black on transparent, cropped to its ink."""
+    from PIL import Image, ImageDraw, ImageFont
+    font = ImageFont.truetype(BOLD, 96)
+    m = Image.new("L", (96 * len(text), 160), 0)
+    ImageDraw.Draw(m).text((8, 8), text, font=font, fill=255)
+    m = m.crop(m.getbbox())
+    img = Image.new("RGBA", m.size, (0, 0, 0, 0))
+    img.putalpha(m)
+    img.save(path)
+
+
+def action_icons(out: Path) -> None:
+    """Draw the ACTION_* icons; a committed composite is left as it is."""
+    from polyhost.res.overlay_sources import dcc_glyphs, icon_fetch as fetch
+    if ACTION_FLUENT:
+        fetch.fluent(ACTION_FLUENT, out)
+    for name, (base, badge) in ACTION_BADGED.items():
+        dcc_glyphs.guarded(out / name, lambda p, b=base, g=badge: dcc_glyphs.with_badge(
+            out / b, out / g, p), f"{base} + {badge}")
+    for name, text in LAYER_WORDS.items():
+        dcc_glyphs.guarded(out / name, lambda p, s=text: _word(p, s), f"word {text}")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
     n = icon_fetch.fluent(FLUENT, out)
     n += number_badge.numbered(out / "_gridbase.png", "12", out, "fastgrid")
+    action_icons(out)
     print(f"Wrote {n} icons to {out}")
     return 0
 

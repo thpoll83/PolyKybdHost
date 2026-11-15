@@ -100,8 +100,8 @@ bindings:
   - { key: D, mods: [CMDCTRL, SHIFT], icon: dupincrement.png, label: "Duplicate and increment" }
 
   # --- layers ---
-  - { key: PGUP, mods: [], icon: frontlayer.png, label: "F.Cu layer" }
-  - { key: PGDN, mods: [], icon: backlayer.png, label: "B.Cu layer" }
+  - { key: PGUP, mods: [], icon: fcu.png, label: "F.Cu layer" }
+  - { key: PGDN, mods: [], icon: bcu.png, label: "B.Cu layer" }
   - { key: EQUAL, mods: [SHIFT], icon: nextlayer.png, label: "Next layer" }
   - { key: MINUS, mods: [], icon: prevlayer.png, label: "Previous layer" }
   - { key: V, mods: [], icon: togglelayer.png, label: "Toggle layer" }
