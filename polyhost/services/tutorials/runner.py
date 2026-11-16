@@ -111,27 +111,28 @@ class TutorialRun:
         ok, info = self.keeb.tutorial_poll()
         if not ok:
             return False
-        if self._armed and info["armed"] and info["matched"] & 0x01:
-            self.next()
-            return True
+        left = self._left_needed_layer(info)
         wait = self.tutorial.steps[self.index].wait
+        if self._armed and info["armed"] and info["matched"] & 0x01:
+            # A press that leaves the layer (KC_BASE, a layer key) is the step's
+            # point. Any other press counts only while the keyboard is on the layer:
+            # the same key on the base layer is not what the step asked for.
+            if left is None or self._leaves_a_layer(wait):
+                self.next()
+                return True
         if wait.kind == "leave":
             layer = self._layer_index(wait.value)
             if layer is not None and info.get("layer") != layer:
                 self.next()
                 return True
-            return False
-        needed = self._needed_layer(self.index)
-        if needed is not None:
-            name, entry = needed
-            layer = self._layer_index(name)
-            if layer is not None and info.get("layer") != layer:
-                # The user left the layer this step is about, for example after a
-                # one-shot (OSL) key: go back to the step that enters it.
-                self.log.info("Tutorial %s step %d: the keyboard left layer %r; back to "
-                              "step %d", self.tutorial.id, self.index + 1, name, entry + 1)
-                self._show(entry)
-                return True
+        if left is not None:
+            name, entry = left
+            # The user left the layer this step is about, for example after a
+            # one-shot (OSL) key: go back to the step that enters it.
+            self.log.info("Tutorial %s step %d: the keyboard left layer %r; back to "
+                          "step %d", self.tutorial.id, self.index + 1, name, entry + 1)
+            self._show(entry)
+            return True
         return False
 
     # ---- state -------------------------------------------------------------------
@@ -219,15 +220,16 @@ class TutorialRun:
         and no step since then waited for a press of KC_BASE or a layer key, or for
         leaving a layer. The step with that press still needs L: its match is read
         first. A layer that is held (MO) or one-shot (OSL) is left on purpose, so it
-        is never needed."""
+        is never needed. A step that itself waits for a layer needs none: on the way
+        to its layer the keyboard leaves the one before."""
+        if self.tutorial.steps[index].wait.kind == "layer":
+            return None
         needed = None
         for i, step in enumerate(self.tutorial.steps[:index]):
             if (step.wait.kind == "layer" and step.guide_to_layer == step.wait.value
                     and self._entered_with_a_staying_key(step.wait.value)):
                 needed = (step.wait.value, i)
-            elif step.wait.kind == "leave" or (
-                    step.wait.kind == "press" and (step.wait.value == KC_BASE
-                                                   or layer_target(step.wait.value) is not None)):
+            elif step.wait.kind == "leave" or self._leaves_a_layer(step.wait):
                 needed = None
         return needed
 
@@ -240,6 +242,22 @@ class TutorialRun:
         cols = self.keeb.device_settings.MATRIX_COLUMNS
         per = self.keeb.device_settings.MATRIX_ROWS * cols
         return stays_on_layer(buffer[layer * per + row * cols + col])
+
+    def _left_needed_layer(self, info: dict):
+        """(name, entry step) when POLL reports the keyboard off the layer the shown
+        step needs, else None."""
+        needed = self._needed_layer(self.index)
+        if needed is None:
+            return None
+        layer = self._layer_index(needed[0])
+        if layer is None or info.get("layer") == layer:
+            return None
+        return needed
+
+    @staticmethod
+    def _leaves_a_layer(wait) -> bool:
+        return wait.kind == "press" and (wait.value == KC_BASE
+                                         or layer_target(wait.value) is not None)
 
     def _report(self, what, result):
         ok, msg = result
