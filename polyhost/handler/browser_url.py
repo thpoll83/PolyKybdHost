@@ -42,7 +42,7 @@ matching degrades to app-name + title exactly as before this feature existed.
 import threading
 import time
 
-from polyhost.handler.common import _TRAILING_YEAR, OS, mapping_key
+from polyhost.handler.common import OS, mapping_key
 from polyhost.services import browser_url_macos
 
 # Focused-app gate. `getAppName()` normalises differently per OS (Windows
@@ -100,12 +100,39 @@ DEFAULT_MAX_AGE_S = 8.0
 CONTEXT_REPORTERS = {
     "blender": "blender",
     "org.blender.blender": "blender",
+    "freecad": "freecad", "org.freecad.freecad": "freecad",     # freecad-addon/
     # Editors with a mode plugin, in their own GUI window. Windows reports
     # gvim.exe / emacs.exe, Linux the WM_CLASS, macOS the display name.
     "gvim": "vim",
     "macvim": "vim",
     "neovide": "vim",
     "emacs": "emacs",
+    # IDA Pro (ida-plugin/): the names of the mapping's `ida` entry.
+    "ida": "ida", "ida64": "ida", "idaq": "ida", "idaq64": "ida", "ida pro": "ida",
+    "ida professional": "ida", "ida home": "ida", "ida free": "ida", "ida classroom": "ida",
+    # QGIS plugin (qgis-plugin/): exactly the names of the `qgis` mapping entry.
+    **dict.fromkeys(("qgis", "qgis3", "qgis4", "org.qgis.qgis", "qgis-bin", "qgis-ltr-bin",
+                     "qgis-dev-bin", "qgis-qt6-bin", "qgis-ltr"), "qgis"),
+    # SideFX Houdini (houdini-package/): the names of the mapping's houdini
+    # entry. macOS reports "Houdini FX 22.0.368"; context_reporter_for() drops
+    # the version the way the matcher does.
+    "houdini": "houdini", "houdinifx": "houdini", "houdinicore": "houdini",
+    "happrentice": "houdini", "hindie": "houdini", "hescape": "houdini",
+    "houdini-bin": "houdini", "houdini fx": "houdini", "houdini core": "houdini",
+    "houdini apprentice": "houdini", "houdini indie": "houdini",
+    # JetBrains IDEs (jetbrains-plugin/): exactly the names of the
+    # `idea64,pycharm64,...` mapping entry (tests/handler/jetbrains_routing_test.py).
+    **dict.fromkeys((
+        "idea64", "pycharm64", "clion64", "webstorm64", "goland64", "rider64",
+        "phpstorm64", "rubymine64", "datagrip64", "rustrover64", "studio64",
+        "jetbrains_client", "idea", "pycharm", "clion", "webstorm", "goland", "rider",
+        "phpstorm", "rubymine", "datagrip", "rustrover", "jetbrains-idea",
+        "jetbrains-idea-ce", "jetbrains-pycharm", "jetbrains-pycharm-ce",
+        "jetbrains-clion", "jetbrains-webstorm", "jetbrains-goland", "jetbrains-rider",
+        "jetbrains-phpstorm", "jetbrains-rubymine", "jetbrains-datagrip",
+        "jetbrains-rustrover", "jetbrains-studio", "intellij idea", "intellij idea ce",
+        "intellij idea ultimate", "pycharm ce", "pycharm professional", "android studio",
+    ), "jetbrains"),
     "obsidian": "obsidian",       # obsidian-plugin/: obsidian://<view>[/<vim mode>]
     # VS Code and its forks: vscode-extension/ sends <token>://<debug mode>.
     "code": "vscode", "cursor": "cursor",
@@ -117,6 +144,20 @@ CONTEXT_REPORTERS = {
     # Autodesk Maya (maya-plugin/): Windows maya.exe, macOS "Maya", Linux maya.bin.
     "maya": "maya",
     "maya.bin": "maya",
+    "binaryninja": "binaryninja", "binary ninja": "binaryninja",  # binaryninja-plugin/
+    # DaVinci Resolve page reporter (resolve-plugin/): Resolve.exe on Windows,
+    # resolve on Linux, "DaVinci Resolve" on macOS -- the mapping entry's names.
+    "resolve": "resolve",
+    "davinci resolve": "resolve",
+    # Ableton Live 12 (remote script in ableton-remote-script/): the names the
+    # mapping's Ableton entry is keyed on, one per edition.
+    **dict.fromkeys(("ableton live 12 suite", "ableton live 12 standard",
+                     "ableton live 12 intro", "ableton live 12 lite",
+                     "ableton live 12 trial"), "ableton"),
+    # Godot editor 4.x (godot-plugin/): exactly the `godot` mapping entry's names.
+    "godot": "godot", "godot_v4": "godot", "godot_mono": "godot", "godot4": "godot",
+    "godot-bin": "godot", "org.godotengine.godot": "godot", "org.godotengine.editor": "godot",
+    "unity": "unity",               # Unity Editor package (unity-package/)
 }
 
 # Reporters that also run INSIDE a terminal (vim, emacs -nw). While a terminal
@@ -171,9 +212,10 @@ def _app_key(app_name):
 
 def context_reporter_for(app_name):
     """The reporter token for a focused app with a context add-on, or None.
-    A trailing release year is dropped as `mapping_key` does ("maya 2026")."""
-    key = _app_key(app_name)
-    return CONTEXT_REPORTERS.get(key) or CONTEXT_REPORTERS.get(_TRAILING_YEAR.sub("", key or ""))
+    A trailing release year or version is dropped as the mapping does ("maya 2026",
+    macOS "IDA Professional 9.1", Godot's versioned Linux download)."""
+    key = mapping_key(_app_key(app_name), CONTEXT_REPORTERS)
+    return CONTEXT_REPORTERS.get(key) if key else None
 
 
 def is_terminal_app(app_name) -> bool:

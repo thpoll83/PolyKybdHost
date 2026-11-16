@@ -1,0 +1,57 @@
+# Rocket League overlay for PolyKybd.
+#
+# Keys: the default PC bindings, from the [ProjectX.ControlPreset_X] section
+# of TAInput.ini; five player files from 2023 to 2026 agree (see SOURCES.md).
+# The game writes the player's own rebinds to an encrypted save file, not to
+# TAInput.ini, so the overlay cannot follow a rebind: a player who rebinds a
+# key still sees the default here. Each binding still names its action
+# (`command:`), as the file writes it.
+#
+# W A S D (drive, steer, pitch) stay blank: the letter legend is enough. Shift
+# (powerslide, air roll) is a modifier key and has no overlay cell; jump and
+# boost are on the mouse.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/rocketleague/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/rocketleague/rocketleague.yaml --preview /tmp/rl_preview
+app: rocket league
+match: [rocketleague, steam_app_252950]
+output: rocketleague_template
+icon_dir: icons
+fit: contain
+mode: auto
+threshold: 150
+anchor: right
+region: [40, 40]
+margin: 0
+
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Car
+  - { key: Q, command: RollLeft, icon: rollleft.png, label: "Air roll left" }
+  - { key: E, command: RollRight, icon: rollright.png, label: "Air roll right" }
+  - { key: SPACE, command: SecondaryCamera, icon: ballcam.png, label: "Ball cam" }
+  - { key: R, command: UsePickup, icon: item.png, label: "Use Rumble item" }
+  - { key: BSPC, command: ResetTraining, icon: reset.png, label: "Reset training" }
+
+  # Communication
+  - { key: "1", command: ChatPreset1, icon: quickchat1.png, label: "Quick chat 1" }
+  - { key: "2", command: ChatPreset2, icon: quickchat2.png, label: "Quick chat 2" }
+  - { key: "3", command: ChatPreset3, icon: quickchat3.png, label: "Quick chat 3" }
+  - { key: "4", command: ChatPreset4, icon: quickchat4.png, label: "Quick chat 4" }
+  - { key: T, command: Chat, icon: allchat.png, label: "All chat" }
+  - { key: Y, command: TeamChat, icon: teamchat.png, label: "Team chat" }
+  - { key: U, command: PartyChat, icon: partychat.png, label: "Party chat" }
+  - { key: F, command: PushToTalk, icon: pushtotalk.png, label: "Push to talk" }
+
+  # Menus
+  - { key: TAB, command: ToggleScoreboard, icon: scoreboard.png, label: "Scoreboard" }
+  - { key: N, command: MusicNextTrack, icon: nexttrack.png, label: "Next music track" }
+  - { key: F10, command: ToggleStatGraphs, icon: graphs.png, label: "Performance graphs", region: [34, 40] }

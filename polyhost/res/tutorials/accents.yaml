@@ -1,0 +1,47 @@
+# Accented letters on the Intl layer. docs/tutorials-plan.md has the field reference.
+id: accents
+category: languages
+title: Accented letters
+summary: Type an accented letter with Intl, and choose which accent each letter types.
+min_protocol: 32
+steps:
+  - guide_to_layer: Intl
+    say: ["Hold Intl", ""]
+    text: >-
+      Hold the ringed Intl key. Every letter that has an accented form shows it on its
+      keycap.
+    wait: {layer: Intl}
+  - point: {keycode: KC_E}
+    say: ["Keep Intl held,", "press e"]
+    text: >-
+      Keep Intl held and press e. The keyboard types the accented letter on the
+      keycap, with no dead key and no layout change.
+    wait: {press: KC_E}
+  - point: {keycode: KC_LCTL}
+    say: ["Keep Intl held,", "then tap Ctrl"]
+    text: >-
+      Keep Intl held and tap Ctrl. Ctrl turns dark on light, and the number row shows
+      the accented forms of the letter you pressed last.
+    wait: {press: KC_LCTL}
+  - point: {keycode: KC_LAT0}
+    spotlight: [{keycode: KC_LAT0}, {keycode: KC_LAT1}, {keycode: KC_LAT2},
+                {keycode: KC_LAT3}, {keycode: KC_LAT4}, {keycode: KC_LAT5},
+                {keycode: KC_LAT6}, {keycode: KC_LAT7}, {keycode: KC_LAT8},
+                {keycode: KC_LAT9}, {keycode: KC_LAT10}, {keycode: KC_LAT11},
+                {keycode: KC_LAT_PAGE_PREV}, {keycode: KC_LAT_PAGE_NEXT},
+                {keycode: KC_LCTL}]
+    say: ["Pick an accent", "on the top row"]
+    text: >-
+      Still holding Intl, press the key under the accent you want. The arrow keys at
+      the ends of the row show more forms. The letter keeps this accent, also after a
+      restart. Then release Intl and press Next.
+  - point: {keycode: KC_LAT_REMAP}
+    spotlight: []
+    say: ["Remap: give a", "key a new letter"]
+    text: >-
+      For several accents of one letter (French è, é and ê), hold Intl and tap this
+      key, press a key you seldom use, then press the letter it should type. That key
+      then has its own accent.
+  - say: ["Done", ""]
+    text: Hold Intl whenever you need an accented letter.
+    wait: {seconds: 3}

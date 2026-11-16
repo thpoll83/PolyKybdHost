@@ -163,8 +163,8 @@ Monocraft (SIL OFL 1.1, `dist/Monocraft-ttf/Monocraft.ttf` from
 IdreesInc/Monocraft at commit e498bf7), a font drawn after the game's pixel
 letters. At 9 px each digit is 5×7 pixels with no grey pixels; it is drawn at 4x
 (20×28 px), so its pixel grid stays exact. The game's own font is not used. Drop
-item is one block over a drawn down arrow; drop stack is three blocks over the
-same arrow.
+item is one block under a drawn up arrow; drop stack is three blocks over a
+down arrow.
 
 ESC shows MINECRAFT over JAVA or BEDROCK in Press Start 2P (SIL OFL 1.1,
 `ofl/pressstart2p/PressStart2P-Regular.ttf` from google/fonts at commit
@@ -209,6 +209,6 @@ Minecraft logo.
 | `paperdoll.png` | Font Awesome Free 6.5.2 `person` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `controllerhints.png` | Font Awesome Free 6.5.2 `gamepad` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `fullscreen.png` | Font Awesome Free 6.5.2 `expand` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `drop.png`, `dropstack.png` | drawn by `fetch_icons.py`: square pixel blocks over a down arrow | (this repo) | |
+| `drop.png`, `dropstack.png` | drawn by `fetch_icons.py`: square pixel blocks under an up arrow (drop) or over a down arrow (stack) | (this repo) | |
 | `slot1.png` .. `slot9.png` | drawn by `fetch_icons.py`; digits in Monocraft | Idrees Hassan | SIL OFL 1.1 |
 | `program_java.png`, `program_bedrock.png` | drawn by `fetch_icons.py` in Press Start 2P | The Press Start 2P Project Authors | SIL OFL 1.1 |

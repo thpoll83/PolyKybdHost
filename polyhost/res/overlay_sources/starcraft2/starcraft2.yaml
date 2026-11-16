@@ -36,115 +36,115 @@ bindings:
   # Control groups: digit selects, Ctrl+digit creates, Shift+digit adds the
   # selection, Alt+digit creates and takes the units out of their other groups,
   # Shift+Alt+digit adds and takes them out.
-  - { key: "1", icon: group1.png, label: "Select group 1", region: [48, 40], margin: 5 }
-  - { key: "2", icon: group2.png, label: "Select group 2", region: [48, 40], margin: 5 }
-  - { key: "3", icon: group3.png, label: "Select group 3", region: [48, 40], margin: 5 }
-  - { key: "4", icon: group4.png, label: "Select group 4", region: [48, 40], margin: 5 }
-  - { key: "5", icon: group5.png, label: "Select group 5", region: [48, 40], margin: 5 }
-  - { key: "6", icon: group6.png, label: "Select group 6", region: [48, 40], margin: 5 }
-  - { key: "7", icon: group7.png, label: "Select group 7", region: [48, 40], margin: 5 }
-  - { key: "8", icon: group8.png, label: "Select group 8", region: [48, 40], margin: 5 }
-  - { key: "9", icon: group9.png, label: "Select group 9", region: [48, 40], margin: 5 }
-  - { key: "0", icon: group0.png, label: "Select group 0", region: [48, 40], margin: 5 }
-  - { key: "1", mods: [CTRL], icon: groupnew1.png, label: "Create group 1", region: [48, 40], margin: 5 }
-  - { key: "2", mods: [CTRL], icon: groupnew2.png, label: "Create group 2", region: [48, 40], margin: 5 }
-  - { key: "3", mods: [CTRL], icon: groupnew3.png, label: "Create group 3", region: [48, 40], margin: 5 }
-  - { key: "4", mods: [CTRL], icon: groupnew4.png, label: "Create group 4", region: [48, 40], margin: 5 }
-  - { key: "5", mods: [CTRL], icon: groupnew5.png, label: "Create group 5", region: [48, 40], margin: 5 }
-  - { key: "6", mods: [CTRL], icon: groupnew6.png, label: "Create group 6", region: [48, 40], margin: 5 }
-  - { key: "7", mods: [CTRL], icon: groupnew7.png, label: "Create group 7", region: [48, 40], margin: 5 }
-  - { key: "8", mods: [CTRL], icon: groupnew8.png, label: "Create group 8", region: [48, 40], margin: 5 }
-  - { key: "9", mods: [CTRL], icon: groupnew9.png, label: "Create group 9", region: [48, 40], margin: 5 }
-  - { key: "0", mods: [CTRL], icon: groupnew0.png, label: "Create group 0", region: [48, 40], margin: 5 }
-  - { key: "1", mods: [SHIFT], icon: groupadd1.png, label: "Add to group 1", region: [48, 40], margin: 5 }
-  - { key: "2", mods: [SHIFT], icon: groupadd2.png, label: "Add to group 2", region: [48, 40], margin: 5 }
-  - { key: "3", mods: [SHIFT], icon: groupadd3.png, label: "Add to group 3", region: [48, 40], margin: 5 }
-  - { key: "4", mods: [SHIFT], icon: groupadd4.png, label: "Add to group 4", region: [48, 40], margin: 5 }
-  - { key: "5", mods: [SHIFT], icon: groupadd5.png, label: "Add to group 5", region: [48, 40], margin: 5 }
-  - { key: "6", mods: [SHIFT], icon: groupadd6.png, label: "Add to group 6", region: [48, 40], margin: 5 }
-  - { key: "7", mods: [SHIFT], icon: groupadd7.png, label: "Add to group 7", region: [48, 40], margin: 5 }
-  - { key: "8", mods: [SHIFT], icon: groupadd8.png, label: "Add to group 8", region: [48, 40], margin: 5 }
-  - { key: "9", mods: [SHIFT], icon: groupadd9.png, label: "Add to group 9", region: [48, 40], margin: 5 }
-  - { key: "0", mods: [SHIFT], icon: groupadd0.png, label: "Add to group 0", region: [48, 40], margin: 5 }
-  - { key: "1", mods: [ALT], icon: groupsteal1.png, label: "Create group 1 and steal", region: [48, 40], margin: 5 }
-  - { key: "2", mods: [ALT], icon: groupsteal2.png, label: "Create group 2 and steal", region: [48, 40], margin: 5 }
-  - { key: "3", mods: [ALT], icon: groupsteal3.png, label: "Create group 3 and steal", region: [48, 40], margin: 5 }
-  - { key: "4", mods: [ALT], icon: groupsteal4.png, label: "Create group 4 and steal", region: [48, 40], margin: 5 }
-  - { key: "5", mods: [ALT], icon: groupsteal5.png, label: "Create group 5 and steal", region: [48, 40], margin: 5 }
-  - { key: "6", mods: [ALT], icon: groupsteal6.png, label: "Create group 6 and steal", region: [48, 40], margin: 5 }
-  - { key: "7", mods: [ALT], icon: groupsteal7.png, label: "Create group 7 and steal", region: [48, 40], margin: 5 }
-  - { key: "8", mods: [ALT], icon: groupsteal8.png, label: "Create group 8 and steal", region: [48, 40], margin: 5 }
-  - { key: "9", mods: [ALT], icon: groupsteal9.png, label: "Create group 9 and steal", region: [48, 40], margin: 5 }
-  - { key: "0", mods: [ALT], icon: groupsteal0.png, label: "Create group 0 and steal", region: [48, 40], margin: 5 }
-  - { key: "1", mods: [ALT, SHIFT], icon: groupaddsteal1.png, label: "Add to group 1 and steal", region: [48, 40], margin: 5 }
-  - { key: "2", mods: [ALT, SHIFT], icon: groupaddsteal2.png, label: "Add to group 2 and steal", region: [48, 40], margin: 5 }
-  - { key: "3", mods: [ALT, SHIFT], icon: groupaddsteal3.png, label: "Add to group 3 and steal", region: [48, 40], margin: 5 }
-  - { key: "4", mods: [ALT, SHIFT], icon: groupaddsteal4.png, label: "Add to group 4 and steal", region: [48, 40], margin: 5 }
-  - { key: "5", mods: [ALT, SHIFT], icon: groupaddsteal5.png, label: "Add to group 5 and steal", region: [48, 40], margin: 5 }
-  - { key: "6", mods: [ALT, SHIFT], icon: groupaddsteal6.png, label: "Add to group 6 and steal", region: [48, 40], margin: 5 }
-  - { key: "7", mods: [ALT, SHIFT], icon: groupaddsteal7.png, label: "Add to group 7 and steal", region: [48, 40], margin: 5 }
-  - { key: "8", mods: [ALT, SHIFT], icon: groupaddsteal8.png, label: "Add to group 8 and steal", region: [48, 40], margin: 5 }
-  - { key: "9", mods: [ALT, SHIFT], icon: groupaddsteal9.png, label: "Add to group 9 and steal", region: [48, 40], margin: 5 }
-  - { key: "0", mods: [ALT, SHIFT], icon: groupaddsteal0.png, label: "Add to group 0 and steal", region: [48, 40], margin: 5 }
+  - { key: "1", command: ControlGroupRecall1, icon: group1.png, label: "Select group 1", region: [48, 40], margin: 5 }
+  - { key: "2", command: ControlGroupRecall2, icon: group2.png, label: "Select group 2", region: [48, 40], margin: 5 }
+  - { key: "3", command: ControlGroupRecall3, icon: group3.png, label: "Select group 3", region: [48, 40], margin: 5 }
+  - { key: "4", command: ControlGroupRecall4, icon: group4.png, label: "Select group 4", region: [48, 40], margin: 5 }
+  - { key: "5", command: ControlGroupRecall5, icon: group5.png, label: "Select group 5", region: [48, 40], margin: 5 }
+  - { key: "6", command: ControlGroupRecall6, icon: group6.png, label: "Select group 6", region: [48, 40], margin: 5 }
+  - { key: "7", command: ControlGroupRecall7, icon: group7.png, label: "Select group 7", region: [48, 40], margin: 5 }
+  - { key: "8", command: ControlGroupRecall8, icon: group8.png, label: "Select group 8", region: [48, 40], margin: 5 }
+  - { key: "9", command: ControlGroupRecall9, icon: group9.png, label: "Select group 9", region: [48, 40], margin: 5 }
+  - { key: "0", command: ControlGroupRecall0, icon: group0.png, label: "Select group 0", region: [48, 40], margin: 5 }
+  - { key: "1", mods: [CTRL], command: ControlGroupAssign1, icon: groupnew1.png, label: "Create group 1", region: [48, 40], margin: 5 }
+  - { key: "2", mods: [CTRL], command: ControlGroupAssign2, icon: groupnew2.png, label: "Create group 2", region: [48, 40], margin: 5 }
+  - { key: "3", mods: [CTRL], command: ControlGroupAssign3, icon: groupnew3.png, label: "Create group 3", region: [48, 40], margin: 5 }
+  - { key: "4", mods: [CTRL], command: ControlGroupAssign4, icon: groupnew4.png, label: "Create group 4", region: [48, 40], margin: 5 }
+  - { key: "5", mods: [CTRL], command: ControlGroupAssign5, icon: groupnew5.png, label: "Create group 5", region: [48, 40], margin: 5 }
+  - { key: "6", mods: [CTRL], command: ControlGroupAssign6, icon: groupnew6.png, label: "Create group 6", region: [48, 40], margin: 5 }
+  - { key: "7", mods: [CTRL], command: ControlGroupAssign7, icon: groupnew7.png, label: "Create group 7", region: [48, 40], margin: 5 }
+  - { key: "8", mods: [CTRL], command: ControlGroupAssign8, icon: groupnew8.png, label: "Create group 8", region: [48, 40], margin: 5 }
+  - { key: "9", mods: [CTRL], command: ControlGroupAssign9, icon: groupnew9.png, label: "Create group 9", region: [48, 40], margin: 5 }
+  - { key: "0", mods: [CTRL], command: ControlGroupAssign0, icon: groupnew0.png, label: "Create group 0", region: [48, 40], margin: 5 }
+  - { key: "1", mods: [SHIFT], command: ControlGroupAppend1, icon: groupadd1.png, label: "Add to group 1", region: [48, 40], margin: 5 }
+  - { key: "2", mods: [SHIFT], command: ControlGroupAppend2, icon: groupadd2.png, label: "Add to group 2", region: [48, 40], margin: 5 }
+  - { key: "3", mods: [SHIFT], command: ControlGroupAppend3, icon: groupadd3.png, label: "Add to group 3", region: [48, 40], margin: 5 }
+  - { key: "4", mods: [SHIFT], command: ControlGroupAppend4, icon: groupadd4.png, label: "Add to group 4", region: [48, 40], margin: 5 }
+  - { key: "5", mods: [SHIFT], command: ControlGroupAppend5, icon: groupadd5.png, label: "Add to group 5", region: [48, 40], margin: 5 }
+  - { key: "6", mods: [SHIFT], command: ControlGroupAppend6, icon: groupadd6.png, label: "Add to group 6", region: [48, 40], margin: 5 }
+  - { key: "7", mods: [SHIFT], command: ControlGroupAppend7, icon: groupadd7.png, label: "Add to group 7", region: [48, 40], margin: 5 }
+  - { key: "8", mods: [SHIFT], command: ControlGroupAppend8, icon: groupadd8.png, label: "Add to group 8", region: [48, 40], margin: 5 }
+  - { key: "9", mods: [SHIFT], command: ControlGroupAppend9, icon: groupadd9.png, label: "Add to group 9", region: [48, 40], margin: 5 }
+  - { key: "0", mods: [SHIFT], command: ControlGroupAppend0, icon: groupadd0.png, label: "Add to group 0", region: [48, 40], margin: 5 }
+  - { key: "1", mods: [ALT], command: ControlGroupAssignAndSteal1, icon: groupsteal1.png, label: "Create group 1 and steal", region: [48, 40], margin: 5 }
+  - { key: "2", mods: [ALT], command: ControlGroupAssignAndSteal2, icon: groupsteal2.png, label: "Create group 2 and steal", region: [48, 40], margin: 5 }
+  - { key: "3", mods: [ALT], command: ControlGroupAssignAndSteal3, icon: groupsteal3.png, label: "Create group 3 and steal", region: [48, 40], margin: 5 }
+  - { key: "4", mods: [ALT], command: ControlGroupAssignAndSteal4, icon: groupsteal4.png, label: "Create group 4 and steal", region: [48, 40], margin: 5 }
+  - { key: "5", mods: [ALT], command: ControlGroupAssignAndSteal5, icon: groupsteal5.png, label: "Create group 5 and steal", region: [48, 40], margin: 5 }
+  - { key: "6", mods: [ALT], command: ControlGroupAssignAndSteal6, icon: groupsteal6.png, label: "Create group 6 and steal", region: [48, 40], margin: 5 }
+  - { key: "7", mods: [ALT], command: ControlGroupAssignAndSteal7, icon: groupsteal7.png, label: "Create group 7 and steal", region: [48, 40], margin: 5 }
+  - { key: "8", mods: [ALT], command: ControlGroupAssignAndSteal8, icon: groupsteal8.png, label: "Create group 8 and steal", region: [48, 40], margin: 5 }
+  - { key: "9", mods: [ALT], command: ControlGroupAssignAndSteal9, icon: groupsteal9.png, label: "Create group 9 and steal", region: [48, 40], margin: 5 }
+  - { key: "0", mods: [ALT], command: ControlGroupAssignAndSteal0, icon: groupsteal0.png, label: "Create group 0 and steal", region: [48, 40], margin: 5 }
+  - { key: "1", mods: [ALT, SHIFT], command: ControlGroupAppendAndSteal1, icon: groupaddsteal1.png, label: "Add to group 1 and steal", region: [48, 40], margin: 5 }
+  - { key: "2", mods: [ALT, SHIFT], command: ControlGroupAppendAndSteal2, icon: groupaddsteal2.png, label: "Add to group 2 and steal", region: [48, 40], margin: 5 }
+  - { key: "3", mods: [ALT, SHIFT], command: ControlGroupAppendAndSteal3, icon: groupaddsteal3.png, label: "Add to group 3 and steal", region: [48, 40], margin: 5 }
+  - { key: "4", mods: [ALT, SHIFT], command: ControlGroupAppendAndSteal4, icon: groupaddsteal4.png, label: "Add to group 4 and steal", region: [48, 40], margin: 5 }
+  - { key: "5", mods: [ALT, SHIFT], command: ControlGroupAppendAndSteal5, icon: groupaddsteal5.png, label: "Add to group 5 and steal", region: [48, 40], margin: 5 }
+  - { key: "6", mods: [ALT, SHIFT], command: ControlGroupAppendAndSteal6, icon: groupaddsteal6.png, label: "Add to group 6 and steal", region: [48, 40], margin: 5 }
+  - { key: "7", mods: [ALT, SHIFT], command: ControlGroupAppendAndSteal7, icon: groupaddsteal7.png, label: "Add to group 7 and steal", region: [48, 40], margin: 5 }
+  - { key: "8", mods: [ALT, SHIFT], command: ControlGroupAppendAndSteal8, icon: groupaddsteal8.png, label: "Add to group 8 and steal", region: [48, 40], margin: 5 }
+  - { key: "9", mods: [ALT, SHIFT], command: ControlGroupAppendAndSteal9, icon: groupaddsteal9.png, label: "Add to group 9 and steal", region: [48, 40], margin: 5 }
+  - { key: "0", mods: [ALT, SHIFT], command: ControlGroupAppendAndSteal0, icon: groupaddsteal0.png, label: "Add to group 0 and steal", region: [48, 40], margin: 5 }
 
   # Selection
-  - { key: F1, icon: idleworker.png, label: "Select idle worker", region: [34, 40] }
-  - { key: F2, icon: army.png, label: "Select army", region: [34, 40] }
-  - { key: BACKSPACE, icon: bases.png, label: "Cycle bases" }
-  - { key: SPACE, icon: lastalert.png, label: "Go to last alert" }
-  - { key: TAB, icon: subgroupnext.png, label: "Next subgroup" }
-  - { key: TAB, mods: [SHIFT], icon: subgroupprev.png, label: "Previous subgroup" }
+  - { key: F1, command: IdleWorker, icon: idleworker.png, label: "Select idle worker", region: [34, 40] }
+  - { key: F2, command: ArmySelect, icon: army.png, label: "Select army", region: [34, 40] }
+  - { key: BACKSPACE, command: TownCamera, icon: bases.png, label: "Cycle bases" }
+  - { key: SPACE, command: AlertRecall, icon: lastalert.png, label: "Go to last alert" }
+  - { key: TAB, command: SubgroupNext, icon: subgroupnext.png, label: "Next subgroup" }
+  - { key: TAB, mods: [SHIFT], command: SubgroupPrev, icon: subgroupprev.png, label: "Previous subgroup" }
 
   # Camera
-  - { key: F5, icon: camera1.png, label: "Go to camera location 1", region: [34, 40] }
-  - { key: F6, icon: camera2.png, label: "Go to camera location 2", region: [34, 40] }
-  - { key: F7, icon: camera3.png, label: "Go to camera location 3", region: [34, 40] }
-  - { key: F8, icon: camera4.png, label: "Go to camera location 4", region: [34, 40] }
-  - { key: F5, mods: [CTRL], icon: cameraset1.png, label: "Save camera location 1", region: [34, 40] }
-  - { key: F6, mods: [CTRL], icon: cameraset2.png, label: "Save camera location 2", region: [34, 40] }
-  - { key: F7, mods: [CTRL], icon: cameraset3.png, label: "Save camera location 3", region: [34, 40] }
-  - { key: F8, mods: [CTRL], icon: cameraset4.png, label: "Save camera location 4", region: [34, 40] }
+  - { key: F5, command: CameraView0, icon: camera1.png, label: "Go to camera location 1", region: [34, 40] }
+  - { key: F6, command: CameraView1, icon: camera2.png, label: "Go to camera location 2", region: [34, 40] }
+  - { key: F7, command: CameraView2, icon: camera3.png, label: "Go to camera location 3", region: [34, 40] }
+  - { key: F8, command: CameraView3, icon: camera4.png, label: "Go to camera location 4", region: [34, 40] }
+  - { key: F5, mods: [CTRL], command: CameraSave0, icon: cameraset1.png, label: "Save camera location 1", region: [34, 40] }
+  - { key: F6, mods: [CTRL], command: CameraSave1, icon: cameraset2.png, label: "Save camera location 2", region: [34, 40] }
+  - { key: F7, mods: [CTRL], command: CameraSave2, icon: cameraset3.png, label: "Save camera location 3", region: [34, 40] }
+  - { key: F8, mods: [CTRL], command: CameraSave3, icon: cameraset4.png, label: "Save camera location 4", region: [34, 40] }
   - { key: PGDN, icon: zoomin.png, label: "Camera: zoom in" }
   - { key: PGUP, icon: zoomout.png, label: "Camera: zoom out" }
   - { key: END, icon: zoomtoggle.png, label: "Camera: zoom toggle" }
   - { key: HOME, icon: camdefault.png, label: "Camera: default view" }
-  - { key: INSERT, icon: rotatecw.png, label: "Camera: rotate clockwise" }
-  - { key: DEL, icon: rotateccw.png, label: "Camera: rotate counterclockwise" }
-  - { key: F, mods: [CTRL], icon: follow.png, label: "Follow unit (hold)" }
-  - { key: F, mods: [CTRL, SHIFT], icon: follow.png, label: "Follow unit" }
+  - { key: INSERT, command: CameraTurnLeft, icon: rotatecw.png, label: "Camera: rotate clockwise" }
+  - { key: DEL, command: CameraTurnRight, icon: rotateccw.png, label: "Camera: rotate counterclockwise" }
+  - { key: F, mods: [CTRL], command: CameraCenter, icon: follow.png, label: "Follow unit (hold)" }
+  - { key: F, mods: [CTRL, SHIFT], command: CameraFollow, icon: follow.png, label: "Follow unit" }
 
   # Chat
-  - { key: ENTER, icon: chat.png, label: "Chat" }
-  - { key: ENTER, mods: [SHIFT], icon: chatall.png, label: "Chat to all players" }
-  - { key: ENTER, mods: [CTRL], icon: chatallies.png, label: "Chat to allies" }
-  - { key: ENTER, mods: [CTRL, ALT], icon: chatplayer.png, label: "Chat to one player" }
-  - { key: GRAVE, icon: voice.png, label: "Voice chat" }
+  - { key: ENTER, command: ChatDefault, icon: chat.png, label: "Chat" }
+  - { key: ENTER, mods: [SHIFT], command: ChatAll, icon: chatall.png, label: "Chat to all players" }
+  - { key: ENTER, mods: [CTRL], command: ChatAllies, icon: chatallies.png, label: "Chat to allies" }
+  - { key: ENTER, mods: [CTRL, ALT], command: ChatIndividual, icon: chatplayer.png, label: "Chat to one player" }
+  - { key: GRAVE, command: PTT, icon: voice.png, label: "Voice chat" }
 
   # Health bars
   - { key: QUOTE, icon: hpall.png, label: "Show all health bars" }
-  - { key: BACKSLASH, icon: hpown.png, label: "Show own health bars" }
-  - { key: LEFT_BRACKET, icon: hpallies.png, label: "Show allied health bars" }
-  - { key: RIGHT_BRACKET, icon: hpenemies.png, label: "Show enemy health bars" }
+  - { key: BACKSLASH, command: StatusOwner, icon: hpown.png, label: "Show own health bars" }
+  - { key: LEFT_BRACKET, command: StatusAlly, icon: hpallies.png, label: "Show allied health bars" }
+  - { key: RIGHT_BRACKET, command: StatusEnemy, icon: hpenemies.png, label: "Show enemy health bars" }
 
   # Interface
-  - { key: G, mods: [ALT], icon: ping.png, label: "Ping the minimap" }
-  - { key: F, mods: [ALT], icon: alliancecolours.png, label: "Alliance colours" }
-  - { key: T, mods: [ALT], icon: terrain.png, label: "Minimap terrain on / off" }
-  - { key: F, mods: [CTRL, ALT], icon: fps.png, label: "Frame rate display" }
-  - { key: PAUSE, icon: pause.png, label: "Pause game", shared: false }
-  - { key: Q, mods: [CTRL], icon: quicksave.png, label: "Quick save" }
-  - { key: M, mods: [CTRL], icon: music.png, label: "Music on / off" }
-  - { key: S, mods: [CTRL], icon: sound.png, label: "Sound on / off" }
+  - { key: G, mods: [ALT], command: MinimapPing, icon: ping.png, label: "Ping the minimap" }
+  - { key: F, mods: [ALT], command: MinimapColors, icon: alliancecolours.png, label: "Alliance colours" }
+  - { key: T, mods: [ALT], command: MinimapTerrain, icon: terrain.png, label: "Minimap terrain on / off" }
+  - { key: F, mods: [CTRL, ALT], command: FPS, icon: fps.png, label: "Frame rate display" }
+  - { key: PAUSE, command: PauseGame, icon: pause.png, label: "Pause game", shared: false }
+  - { key: Q, mods: [CTRL], command: QuickSave, icon: quicksave.png, label: "Quick save" }
+  - { key: M, mods: [CTRL], command: Music, icon: music.png, label: "Music on / off" }
+  - { key: S, mods: [CTRL], command: Sound, icon: sound.png, label: "Sound on / off" }
   - { key: PSCR, icon: screenshot.png, label: "Screenshot" }
   - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Full screen / window" }
 
   # Menus
-  - { key: F9, icon: achievements.png, label: "Achievements" }
-  - { key: F10, icon: gamemenu.png, label: "Game menu" }
-  - { key: F11, icon: messagelog.png, label: "Message log" }
-  - { key: F12, icon: help.png, label: "Help", shared: false }
-  - { key: F11, mods: [ALT], icon: social.png, label: "Social menu" }
-  - { key: F12, mods: [CTRL], icon: resources.png, label: "Team resources" }
+  - { key: F9, command: MenuAchievements, icon: achievements.png, label: "Achievements" }
+  - { key: F10, command: MenuGame, icon: gamemenu.png, label: "Game menu" }
+  - { key: F11, command: MenuMessages, icon: messagelog.png, label: "Message log" }
+  - { key: F12, command: MenuHelp, icon: help.png, label: "Help", shared: false }
+  - { key: F11, mods: [ALT], command: MenuSocial, icon: social.png, label: "Social menu" }
+  - { key: F12, mods: [CTRL], command: TeamResources, icon: resources.png, label: "Team resources" }
 
 # Art read at runtime from the user's own StarCraft 1.16.1 files, when they are
 # on the machine (polyhost/services/game_assets, reader starcraft). It replaces
@@ -159,6 +159,9 @@ bindings:
 # Not checked against real StarCraft files.
 game_assets:
   reader: starcraft
+  # The player's hotkey profile (game_assets/sc2_keys.py) moves the icons; it
+  # works without a StarCraft install too (build.keys_only).
+  bindings: sc2
   icons:
     group1: {terran: {wireframe: 0}, protoss: {wireframe: 65}, zerg: {wireframe: 37}}
     group2: {terran: {wireframe: 32}, protoss: {wireframe: 66}, zerg: {wireframe: 38}}

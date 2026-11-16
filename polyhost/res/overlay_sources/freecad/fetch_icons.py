@@ -4,8 +4,12 @@
 Glyphs: Microsoft Fluent UI System Icons (MIT), with Material Symbols
 (Apache-2.0) through `ms:` where Fluent has no match. The standard view names
 and the Sketcher constraint symbols are text in DejaVu Sans Bold; the tangent
-symbol is drawn. No program icon: the host draws the ESC mark for the app
-itself.
+symbol is drawn. `BADGED` draws a glyph over a short word, for a key that
+does a different thing than another key with the same glyph (TechDraw's
+dimensions, the Assembly joints, BIM's panel and nudge keys). The ESC mark
+is the FreeCAD logo (Simple Icons, CC0-1.0, via brand_marks), and on each
+workbench set the logo with the workbench name (`esc_<set>.png`), as the Godot
+set does.
 
     pip install cairosvg Pillow
     python polyhost/res/overlay_sources/freecad/fetch_icons.py
@@ -19,10 +23,13 @@ from PIL import Image, ImageDraw, ImageFont
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import brand_marks  # noqa: E402
+import dcc_glyphs  # noqa: E402
 import icon_fetch  # noqa: E402
 
 RENDER_PX = 96
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+WORD_FONT = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
 
 FLUENT = {
     # --- file, edit, tools ---
@@ -65,6 +72,34 @@ FLUENT = {
     "transform": "ms:open_with",
     "snaplock": "ms:lock",
     "wireframe": "ms:grid_on",
+    # --- BIM (the per-workbench set) ---
+    "trash": "ms:delete",
+    "viewsmanager": "ms:view_list",
+    "wpview": "ms:crop_free",
+    "nudgeswitch": "ms:swap_horiz",
+    "nudgeextend": "ms:open_in_full",
+    "nudgeshrink": "ms:close_fullscreen",
+    "nudgerotright": "ms:rotate_90_degrees_cw",
+    # --- Assembly ---
+    "insertcomp": "ms:add_box",
+    "fixedjoint": "ms:anchor",
+    "revolute": "ms:autorenew",
+    "slider": "ms:swap_vert",
+    "balljoint": "ms:radio_button_checked",
+    "gears": "ms:settings",
+    "screwjoint": "ms:hardware",
+    "beltjoint": "ms:sync_alt",
+    "bom": "ms:list_alt",
+    "newassembly": "ms:deployed_code",
+    "solve": "ms:task_alt",
+    "newpart": "ms:note_add",
+    "exploded": "ms:unfold_more",
+    "simulation": "ms:animation",
+    # --- Spreadsheet ---
+    "bold": "ms:format_bold",
+    "italic": "ms:format_italic",
+    "underline": "ms:format_underlined",
+    "alias": "ms:label",
 }
 
 TEXT = {
@@ -85,7 +120,50 @@ TEXT = {
     "raddia": "⌀",
     "equal": "=",
     "symmetric": "⋈",
+    # Assembly joints Material Symbols has no glyph for
+    "cylindrical": "CYL",
+    "angle": "∠",
+    "rackpinion": "R+P",
+    "gearbelt": "G/B",
 }
+
+# A glyph (an icon written above) over a word: a key whose action differs from
+# another key with the same glyph. TD = TechDraw, JNT = Assembly joint,
+# WP = working plane.
+BADGED = {
+    "fullscreen_win": ("fullscreen", "WIN"),
+    "panelbottom_all": ("panelbottom", "ALL"),
+    "dimension_td": ("dimension", "TD"),
+    "hdim_td": ("hdim", "TD"),
+    "vdim_td": ("vdim", "TD"),
+    "dimension_jnt": ("dimension", "JNT"),
+    "parallel_jnt": ("parallel", "JNT"),
+    "perpendicular_jnt": ("perpendicular", "JNT"),
+    # crop_free alone looks like F11's full-screen corners
+    "wpview_wp": ("wpview", "WP"),
+}
+GLYPH_H = 0.64   # share of the height the glyph takes; the word gets the rest
+WORD_PX = 30     # DejaVu Sans Bold size at RENDER_PX
+
+
+def _draw_badged(path: Path, glyph: Path, word: str) -> None:
+    """``glyph`` fitted into the upper part, ``word`` centred below it, black
+    on transparent like the fetched glyphs."""
+    img = Image.new("RGBA", (RENDER_PX, RENDER_PX), (0, 0, 0, 0))
+    g = Image.open(glyph).convert("RGBA")
+    g = g.crop(g.getbbox())
+    top = int(RENDER_PX * GLYPH_H)
+    scale = min(RENDER_PX / g.width, top / g.height)
+    g = g.resize((max(1, round(g.width * scale)), max(1, round(g.height * scale))), Image.LANCZOS)
+    img.alpha_composite(g, ((RENDER_PX - g.width) // 2, 0))
+    d = ImageDraw.Draw(img)
+    font = ImageFont.truetype(FONT, WORD_PX)
+    box = d.textbbox((0, 0), word, font=font)
+    if box[2] - box[0] > RENDER_PX:
+        raise ValueError(f"{path.name}: word {word!r} is too wide")
+    x = (RENDER_PX - (box[2] - box[0])) / 2 - box[0]
+    d.text((x, RENDER_PX - 1 - box[3]), word, font=font, fill=(0, 0, 0, 255))
+    img.save(path)
 
 
 def _draw_text(path: Path, text: str) -> None:
@@ -113,6 +191,72 @@ def _draw_tangent(path: Path) -> None:
     img.save(path)
 
 
+# ESC marks: the logo alone on the fallback and global sets, the logo with the
+# workbench name on each workbench set (gen_workbench_bindings.py names them).
+ESC_WORDS = {"sketcher": "SKETCH", "assembly": "ASM", "bim": "BIM", "draft": "DRAFT",
+             "techdraw": "TECH", "spreadsheet": "SHEET"}
+ESC_W, ESC_H, ESC_LOGO = 72, 40, 32
+ESC_WORD_PX, ESC_WORD_W = 22, 34
+
+
+def esc_mark(dest: Path, word: str, logo_png: Path) -> None:
+    """`word` (Liberation Sans Bold, at most ESC_WORD_W px wide) left of the
+    logo (its alpha, ESC_LOGO px), both 1 bit (as in the Godot set)."""
+    if dest.exists():
+        print(f"  {dest.name}  <- committed asset (left as-is)")
+        return
+    logo = Image.open(logo_png).convert("RGBA").split()[3].resize((ESC_LOGO, ESC_LOGO), Image.NEAREST)
+    mask = Image.new("L", (ESC_W, ESC_H), 0)
+    mask.paste(logo.point(lambda v: 255 if v >= 128 else 0),
+               (ESC_W - ESC_LOGO, (ESC_H - ESC_LOGO) // 2))
+    px = ESC_WORD_PX
+    while px > 8:
+        l, t, r, b = ImageFont.truetype(WORD_FONT, px).getbbox(word)
+        if r - l <= ESC_WORD_W:
+            break
+        px -= 1
+    layer = Image.new("L", (r - l + 2, b - t + 2), 0)
+    ImageDraw.Draw(layer).text((1 - l, 1 - t), word, fill=255, font=ImageFont.truetype(WORD_FONT, px))
+    layer = layer.point(lambda v: 255 if v > 127 else 0)
+    layer = layer.crop(layer.getbbox())
+    mask.paste(255, (0, (ESC_H - layer.height) // 2), layer)
+    img = Image.new("RGBA", (ESC_W, ESC_H), (255, 255, 255, 0))
+    img.putalpha(mask)
+    img.save(dest)
+    print(f"  {dest.name}  <- drawn: '{word}' + {logo_png.name}")
+
+
+def clean_mark(src: Path, dest: Path, px: int = ESC_LOGO, scale: int = 8) -> None:
+    """The logo as a 1-bit bitmap of ``px`` x ``px`` (the height it gets on the
+    ESC key), with lone pixels that stick out of an edge removed, stored
+    ``scale`` times larger with hard pixel edges. Scaling the 256 px logo to
+    another height left one-pixel bumps inside the F."""
+    a = Image.open(src).convert("RGBA").split()[3].resize((px, px), Image.LANCZOS)
+    m = a.point(lambda v: 255 if v >= 128 else 0)
+    w, h = m.size
+
+    def on(x, y):
+        return 0 <= x < w and 0 <= y < h and m.getpixel((x, y)) > 0
+
+    out = m.copy()
+    for y in range(h):
+        for x in range(w):
+            if not on(x, y):
+                continue
+            left, right, up, down = on(x - 1, y), on(x + 1, y), on(x, y - 1), on(x, y + 1)
+            if not (up or down) and (left != right):      # a bump on a top or bottom edge
+                out.putpixel((x, y), 0)
+            elif not (left or right) and (up != down):    # a bump on a side edge
+                out.putpixel((x, y), 0)
+            elif not (left or right or up or down):       # a lone pixel
+                out.putpixel((x, y), 0)
+    out = out.resize((px * scale, px * scale), Image.NEAREST)
+    img = Image.new("RGBA", out.size, (255, 255, 255, 0))
+    img.putalpha(out)
+    img.save(dest)
+    print(f"  {dest.name}  <- {src.name} as a clean {px} px bitmap")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -122,6 +266,16 @@ def main() -> int:
         n += 1
     _draw_tangent(out / "tangent.png")
     n += 1
+    for name, (glyph, word) in BADGED.items():
+        dcc_glyphs.guarded(out / f"{name}.png",
+                           lambda p, g=glyph, w=word: _draw_badged(p, out / f"{g}.png", w),
+                           f"{glyph}.png over '{word}'")
+        n += 1
+    brand_marks.ensure(out / "freecad.png", "freecad")
+    dcc_glyphs.guarded(out / "freecad_mark.png",
+                       lambda p: clean_mark(out / "freecad.png", p), "clean 32 px logo")
+    for name, word in ESC_WORDS.items():
+        esc_mark(out / f"esc_{name}.png", word, out / "freecad_mark.png")
     print(f"Wrote {n} icons to {out} ({len(TEXT)} drawn as text)")
     return 0
 

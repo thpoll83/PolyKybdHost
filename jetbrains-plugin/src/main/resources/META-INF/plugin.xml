@@ -1,0 +1,32 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<idea-plugin>
+  <id>org.polykybd.context-reporter</id>
+  <name>PolyKybd Context Reporter</name>
+  <vendor url="https://www.polykybd.org">PolyKybd</vendor>
+  <description><![CDATA[
+    Tells the local PolyKybdHost which part of the IDE has focus (editor, Project,
+    Terminal, Run, Debug, Git, ...) and whether a debug session is paused, so the
+    PolyKybd keycaps show the shortcuts that apply there. Sends only those short
+    tokens, to 127.0.0.1. No file names, project names or code.
+  ]]></description>
+
+  <depends>com.intellij.modules.platform</depends>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <postStartupActivity implementation="org.polykybd.reporter.ReporterStartup"/>
+    <applicationConfigurable parentId="tools" instance="org.polykybd.reporter.ReporterConfigurable"
+                             id="org.polykybd.reporter" displayName="PolyKybd Context Reporter"/>
+  </extensions>
+
+  <applicationListeners>
+    <listener class="org.polykybd.reporter.ActivationListener"
+              topic="com.intellij.openapi.application.ApplicationActivationListener"/>
+  </applicationListeners>
+
+  <projectListeners>
+    <listener class="org.polykybd.reporter.ToolWindowListener"
+              topic="com.intellij.openapi.wm.ex.ToolWindowManagerListener"/>
+    <listener class="org.polykybd.reporter.DebuggerListener"
+              topic="com.intellij.xdebugger.XDebuggerManagerListener"/>
+  </projectListeners>
+</idea-plugin>

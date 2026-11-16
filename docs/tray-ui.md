@@ -36,6 +36,9 @@ and relative links were adjusted to suit a standalone file.
   `managed_connection_status` still blanket-disables every top-level action first, so a
   **new group parent must be re-enabled explicitly there** or its whole submenu goes
   unreachable on a disconnect (that is why Updates / Help & About / Pause are listed).
+  Help & About starts with **Tutorials…** (`gui/tutorials_dialog.py`,
+  [`tutorials-plan.md`](tutorials-plan.md)), enabled when the keyboard is connected
+  and supports key attention (protocol 32+).
   Three rows are **contextual** (built once, `setVisible` toggled): the newer-firmware
   entry (only while `safe_mode`), Install WinCompose (only while it isn't running) and,
   on Linux, the udev rule install (only while the installed rule is missing or stale).

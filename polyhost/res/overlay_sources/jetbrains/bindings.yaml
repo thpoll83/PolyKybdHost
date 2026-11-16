@@ -71,7 +71,7 @@ bindings:
   - { key: F2, mods: [CMDCTRL],        except: [linux_kde], icon: stop.png,            <<: *reclaimed, label: Stop,                source: reclaimed }
   - { key: B,  mods: [CMDCTRL, SHIFT], icon: gototypedecl.png,    <<: *reclaimed, label: "Go to type declaration", source: reclaimed }
   - { key: F,  mods: [CMDCTRL, SHIFT], icon: findinpath.png,      <<: *reclaimed, label: "Find in files",     source: reclaimed }
-  - { key: F8, mods: [CMDCTRL, SHIFT], except: [linux_kde], icon: ../../cursor/icons/breakpoint.png, <<: *reclaimed, label: "View breakpoints",  source: reclaimed }
+  - { key: F8, mods: [CMDCTRL, SHIFT], except: [linux_kde], icon: viewbreakpoints_list.png, label: "View breakpoints" }
   - { key: B,  mods: [CMDCTRL, ALT],   icon: gotoimpl.png,        <<: *reclaimed, label: "Go to implementation", source: reclaimed }
   - { key: L,  mods: [CMDCTRL, ALT],   except: [linux_kde], icon: reformat.png,        <<: *reclaimed, label: "Reformat code",     source: reclaimed }
   - { key: Y,  mods: [CMDCTRL, ALT],   icon: synchronize.png,     <<: *reclaimed, label: Synchronize,         source: reclaimed }
@@ -133,7 +133,7 @@ bindings:
   # -- tool windows: Alt+digit on Windows/Linux, Cmd+digit on macOS --
   - { key: "1", mods: [ALT], only: [windows, linux], icon: win_project.png,   label: "Project window" }
   - { key: "2", mods: [ALT], only: [windows, linux], icon: win_bookmarks.png, label: "Bookmarks window" }
-  - { key: "3", mods: [ALT], only: [windows, linux], icon: win_find.png,      label: "Find window", concept: find }
+  - { key: "3", mods: [ALT], only: [windows, linux], icon: win_find.png,      label: "Find window" }
   - { key: "4", mods: [ALT], only: [windows, linux], icon: win_run.png,       label: "Run window" }
   - { key: "5", mods: [ALT], only: [windows, linux], icon: win_debug.png,     label: "Debug window" }
   - { key: "6", mods: [ALT], only: [windows, linux], icon: win_problems.png,  label: "Problems window" }
@@ -143,7 +143,7 @@ bindings:
   - { key: "0", mods: [ALT], only: [windows, linux], icon: win_commit.png,    label: "Commit window" }
   - { key: "1", mods: [GUI], only: [macos], icon: win_project.png,   label: "Project window" }
   - { key: "2", mods: [GUI], only: [macos], icon: win_bookmarks.png, label: "Bookmarks window" }
-  - { key: "3", mods: [GUI], only: [macos], icon: win_find.png,      label: "Find window", concept: find }
+  - { key: "3", mods: [GUI], only: [macos], icon: win_find.png,      label: "Find window" }
   - { key: "4", mods: [GUI], only: [macos], icon: win_run.png,       label: "Run window" }
   - { key: "5", mods: [GUI], only: [macos], icon: win_debug.png,     label: "Debug window" }
   - { key: "6", mods: [GUI], only: [macos], icon: win_problems.png,  label: "Problems window" }
@@ -162,7 +162,7 @@ bindings:
   - { key: L,   mods: [GUI],  only: [macos],          icon: gotoline.png, label: "Go to line" }
   - { key: A,   mods: [CMDCTRL, SHIFT], icon: findaction.png, label: "Find action" }
   - { key: T,   mods: [CMDCTRL, SHIFT], icon: gototest.png,   label: "Go to test" }
-  - { key: F12, mods: [CMDCTRL],        except: [linux_kde], icon: win_structure.png, label: "File structure" }
+  - { key: F12, mods: [CMDCTRL],        except: [linux_kde], icon: filestructure.png, label: "File structure" }
   - { key: F11, mods: [],      only: [windows, linux], icon: togglebookmark.png, label: "Toggle bookmark" }
   - { key: F3,  mods: [],      only: [macos],          icon: togglebookmark.png, label: "Toggle bookmark" }
   - { key: F11, mods: [SHIFT], only: [windows, linux], icon: showbookmarks.png,  label: "Show bookmarks" }
@@ -186,11 +186,11 @@ bindings:
   - { key: W,    mods: [CTRL, SHIFT], only: [windows, linux], icon: shrinkselection.png, label: "Shrink selection" }
   - { key: UP,   mods: [ALT],         only: [macos],          icon: extendselection.png, label: "Extend selection" }
   - { key: DOWN, mods: [ALT],         only: [macos],          icon: shrinkselection.png, label: "Shrink selection" }
-  - { key: UP,   mods: [CMDCTRL, SHIFT], icon: moveup.png,   label: "Move statement up" }
-  - { key: DOWN, mods: [CMDCTRL, SHIFT], icon: movedown.png, label: "Move statement down" }
+  - { key: UP,   mods: [CMDCTRL, SHIFT], icon: movestatement_up.png,   label: "Move statement up" }
+  - { key: DOWN, mods: [CMDCTRL, SHIFT], icon: movestatement_down.png, label: "Move statement down" }
   # Move Line: GNOME unbinds it and gives Alt+Shift+Up/Down to Next/Previous Occurrence.
-  - { key: UP,   mods: [ALT, SHIFT], except: [linux_gnome], icon: moveup.png,   label: "Move line up" }
-  - { key: DOWN, mods: [ALT, SHIFT], except: [linux_gnome], icon: movedown.png, label: "Move line down" }
+  - { key: UP,   mods: [ALT, SHIFT], except: [linux_gnome], icon: moveline_up.png,   label: "Move line up" }
+  - { key: DOWN, mods: [ALT, SHIFT], except: [linux_gnome], icon: moveline_down.png, label: "Move line down" }
   - { key: ENTER, mods: [ALT],  icon: intentions.png, label: "Show context actions" }
   - { key: SPACE, mods: [CTRL], icon: completion.png, label: "Basic completion" }
   # Surround With: Ctrl+Alt+T in $default, but GNOME opens a terminal on it, so the
@@ -233,7 +233,7 @@ bindings:
   - { key: "0", mods: [ALT, SHIFT], only: [linux_gnome, linux_kde], icon: executionpoint.png, label: "Show execution point" }
 
   # -- version control --
-  - { key: K, mods: [CMDCTRL],        icon: win_commit.png, label: "Commit" }
+  - { key: K, mods: [CMDCTRL],        icon: commit.png, label: "Commit" }
   - { key: K, mods: [CMDCTRL, SHIFT], icon: push.png,       label: "Push" }
   - { key: T, mods: [CMDCTRL],        icon: update.png,     label: "Update project" }
 
@@ -258,9 +258,9 @@ bindings:
   # that KDE Plasma claims. Each one replaces a binding above that carries
   # `except: [linux_kde]`. Back/Forward and Move Line are handled inline above.
   - { key: "2", mods: [CTRL],        only: [linux_kde], icon: stop.png,            <<: *reclaimed, label: Stop,               source: reclaimed }
-  - { key: "8", mods: [CTRL, SHIFT], only: [linux_kde], icon: ../../cursor/icons/breakpoint.png, <<: *reclaimed, label: "View breakpoints", source: reclaimed }
+  - { key: "8", mods: [CTRL, SHIFT], only: [linux_kde], icon: viewbreakpoints_list.png, label: "View breakpoints" }
   - { key: L,   mods: [ALT, SHIFT],  only: [linux_kde], icon: reformat.png,        <<: *reclaimed, label: "Reformat code",    source: reclaimed }
-  - { key: "0", mods: [CTRL],        only: [linux_kde], icon: win_structure.png,     label: "File structure" }
+  - { key: "0", mods: [CTRL],        only: [linux_kde], icon: filestructure.png,     label: "File structure" }
   - { key: V,   mods: [ALT, SHIFT],  only: [linux_kde], icon: introducevariable.png, label: "Introduce variable" }
   - { key: "8", mods: [CTRL],        only: [linux_kde], icon: breakpoint.png, <<: *reclaimed, label: "Toggle breakpoint", source: "reclaimed (VS Code breakpoint, shared)" }
   - { key: "9", mods: [CTRL],        only: [linux_kde], icon: build.png,             label: "Build project" }
