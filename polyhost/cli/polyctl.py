@@ -251,11 +251,11 @@ def _cmd_editor_plugins(_client, args):
     editors = args.editor or None
     if args.ep_action == "status":
         for st in editor_plugins.status(editors):
-            line = f"{st.editor:<8}{_EDITOR_STATE_TEXT.get(st.state, st.state)}"
+            line = f"{st.editor:<13}{_EDITOR_STATE_TEXT.get(st.state, st.state)}"
             if st.target is not None:
                 line += f"  ({st.target})"
             if st.detail:
-                line += f"\n{'':<8}{st.detail}"
+                line += f"\n{'':<13}{st.detail}"
             print(line)
         port = read_setting("browser_report_port", 50164)
         token = read_setting("browser_report_token", "")
@@ -609,6 +609,60 @@ def _cmd_attention(client, args):
     times = "until cancelled" if args.count == 0 else f"{args.count} time(s)"
     print(f"key attention on row {args.row}, col {args.col}: {times}, "
           f"every {args.period_ms} ms")
+    return 0
+
+
+def _print_tutorial_state(state):
+    if not state:
+        print("no tutorial is running")
+        return
+    if state.get("finished"):
+        print(f"tutorial {state['id']}: {state['finished']}")
+        return
+    print(f"tutorial {state['id']}: step {state['step'] + 1} of {state['steps']}")
+    for line in state.get("say") or ():
+        print(f"  | {line}")
+    text = (state.get("text") or {}).get("en")
+    if text:
+        print(f"  {text}")
+    wait = state.get("wait") or {}
+    if state.get("remaining_s") is not None:
+        print(f"  ends in {state['remaining_s']} s")
+    elif state.get("auto"):
+        print(f"  ends when the keyboard reports: {wait.get('kind')} {wait.get('value')}")
+    else:
+        print(f"  ends with: polyctl tutorial next (waits for {wait.get('kind')})")
+    if state.get("ring_error"):
+        print(f"  no ring: {state['ring_error']}")
+
+
+def _cmd_tutorial(client, args):
+    """List, start, step through or stop a tutorial (services/tutorials)."""
+    cmd = args.tutorial_cmd or "list"
+    if cmd == "list":
+        info = client.call(protocol.M_TUTORIALS_LIST, {})
+        if getattr(args, "json", False):
+            print(json.dumps(info, indent=2))
+            return 0
+        protocol_version = info.get("protocol") or 0
+        for t in info.get("tutorials", []):
+            title = t["title"].get("en") or next(iter(t["title"].values()), "")
+            badge = "" if protocol_version >= t["min_protocol"] else \
+                f"  (needs firmware protocol {t['min_protocol']})"
+            print(f"  {t['category']:<10} {t['id']:<24} {title}{badge}")
+        if not info.get("tutorials"):
+            print("  (no tutorials)")
+        for e in info.get("errors", []):
+            print(f"  error: {e['path']}: {e['error']}")
+        print(f"user folder: {info.get('user_dir')}")
+        return 0
+    if cmd == "status":
+        _print_tutorial_state(client.call(protocol.M_TUTORIAL_STATE, {}))
+        return 0
+    if cmd == "start":
+        _print_tutorial_state(client.call(protocol.M_TUTORIAL_START, {"id": args.id}))
+        return 0
+    _print_tutorial_state(client.call(protocol.M_TUTORIAL_ACTION, {"action": cmd}))
     return 0
 
 
@@ -1632,6 +1686,19 @@ def build_parser():
                                   "each MIDI program shows it again")
     p_attention.set_defaults(func=_cmd_attention)
 
+    p_tutorial = sub.add_parser(
+        "tutorial", help="list, start, step through or stop a tutorial (firmware v32+)")
+    tut_sub = p_tutorial.add_subparsers(dest="tutorial_cmd")
+    p_tut_list = tut_sub.add_parser("list", help="the tutorials, and script errors")
+    p_tut_list.add_argument("--json", action="store_true")
+    tut_sub.add_parser("status", help="the running tutorial's step")
+    p_tut_start = tut_sub.add_parser("start", help="start a tutorial by its id")
+    p_tut_start.add_argument("id")
+    tut_sub.add_parser("next", help="the next step (ends the tutorial after the last)")
+    tut_sub.add_parser("back", help="the step before")
+    tut_sub.add_parser("stop", help="end the tutorial")
+    p_tutorial.set_defaults(func=_cmd_tutorial)
+
     p_tap_terms = sub.add_parser(
         "tap-terms",
         help="get or set the tap-hold timing: tapping term and Flow Tap term (firmware v29+), "
@@ -2056,12 +2123,17 @@ def build_parser():
     # Local only, like shell-integration.
     p_ep = sub.add_parser(
         "editor-plugins",
-        help="copy the Vim/Neovim plugin, the Emacs package and the GDB script that "
-             "report the program's mode (works with the host stopped)",
+        help="copy the Vim/Neovim plugin, the Emacs package, the GDB script, the "
+             "Houdini package and the JetBrains plugin that report the program's mode "
+             "(works with the host stopped)",
         description="Copies the plugin shipped with this installation to "
                     "~/.vim/pack/polykybd/start/polykybd (Vim), the Neovim "
                     "site/pack folder, <emacs dir>/polykybd (Emacs) or "
-                    "~/.config/gdb/polykybd (GDB); for Emacs and GDB also a "
+                    "~/.config/gdb/polykybd (GDB), <IDAUSR>/plugins/polykybd "
+                    "(IDA), <User Library>/Remote Scripts/PolyKybd (Ableton "
+                    "Live), <Houdini preferences>/packages (Houdini) or "
+                    "<plugins folder>/polykybd-context-reporter in every JetBrains "
+                    "IDE 2024.2 or newer (jetbrains); for Emacs and GDB also a "
                     "marked block in the init file, saved first. Copies made "
                     "this way are refreshed when the app starts after an update.")
     ep_sub = p_ep.add_subparsers(dest="ep_action", required=True)
@@ -2071,7 +2143,9 @@ def build_parser():
     ep_remove = ep_sub.add_parser("remove", help="delete this app's copies")
     ep_status = ep_sub.add_parser("status", help="show what is set up, per editor")
     for p in (ep_install, ep_remove, ep_status):
-        p.add_argument("--editor", action="append", choices=("vim", "neovim", "emacs", "gdb"),
+        p.add_argument("--editor", action="append",
+                       choices=("vim", "neovim", "emacs", "gdb", "ida", "binaryninja", "resolve",
+                                "ableton", "houdini", "jetbrains"),
                        help="only this editor (repeat for more)")
     p_ep.set_defaults(func=_cmd_editor_plugins)
 

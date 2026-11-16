@@ -105,11 +105,16 @@ def parse(text: str) -> dict:
     return out
 
 
-def bindings(path) -> dict | None:
-    """The player's hotkeys from `path` (a settings.yaml), or None without one."""
+def bindings(path, data: bytes | None = None) -> dict | None:
+    """The player's hotkeys from `path` (a settings.yaml), or None without one. `data` is the file's
+    content when the caller has read it already (``build.bindings_source``
+    hashes and parses one read)."""
     if path is None:
         return None
     path = Path(path)
-    if path.stat().st_size > MAX_SETTINGS:
+    size = path.stat().st_size if data is None else len(data)
+    if size > MAX_SETTINGS:
         raise ValueError(f"{path.name} is larger than this reader opens")
-    return parse(path.read_bytes().decode("utf-8", errors="replace"))
+    if data is None:
+        data = path.read_bytes()
+    return parse(data.decode("utf-8", errors="replace"))

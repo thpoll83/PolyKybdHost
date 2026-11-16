@@ -1,0 +1,118 @@
+# Builds the JetBrains plugin (jetbrains-plugin/) with `gradle buildPlugin`,
+# runs its unit tests, and checks that the built zip is byte-identical to the
+# one the host ships, polyhost/res/jetbrains/polykybd-context-reporter.zip.
+#
+# A host release ships no built files: users install and update from the
+# tag's source tarball (archive/refs/tags/<tag>.tar.gz, see release.yml). So
+# the plugin zip reaches an installation only as a file in the tree, which the
+# Integrations > Editors page copies into each JetBrains IDE
+# (polyhost/services/editor_plugins.py). This job keeps that file equal to
+# what the Kotlin sources build. When it fails, run `gradle shipPlugin` in
+# jetbrains-plugin/ and commit the zip, or take it from this run's artifact.
+#
+# The build is reproducible (build.gradle.kts: no file times, fixed order, no
+# Build-JVM/Build-OS manifest lines). The manifest still names the Gradle
+# version, so this job uses the same Gradle as the README.
+name: JetBrains plugin
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - jetbrains-plugin/**
+      - polyhost/res/jetbrains/**
+      - .github/workflows/jetbrains-plugin.yml
+  push:
+    branches: [main]
+    paths:
+      - jetbrains-plugin/**
+      - polyhost/res/jetbrains/**
+      - .github/workflows/jetbrains-plugin.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: gradle buildPlugin
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: jetbrains-plugin
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # Caches ~/.gradle (dependencies, and the IntelliJ IDEA Community SDK that
+      # the IntelliJ Platform Gradle Plugin downloads, about 1 GB). Writes the
+      # cache only on main, so a pull request reads it and adds nothing.
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      # The plugin's own folder for the extracted SDK files.
+      - uses: actions/cache@v4
+        with:
+          path: jetbrains-plugin/.intellijPlatform
+          key: intellij-platform-${{ runner.os }}-${{ hashFiles('jetbrains-plugin/build.gradle.kts', 'jetbrains-plugin/gradle.properties') }}
+
+      - name: Build and test
+        run: gradle --no-daemon test buildPlugin
+
+      - name: Size and checksum
+        run: |
+          zip=$(ls build/distributions/polykybd-context-reporter-*.zip)
+          size=$(stat -c %s "$zip")
+          sum=$(sha256sum "$zip" | cut -d' ' -f1)
+          echo "$zip: $size bytes, sha256 $sum"
+          unzip -l "$zip"
+          {
+            echo "Built \`$(basename "$zip")\`: $size bytes, sha256 \`$sum\`."
+            echo
+            echo "Shipped \`polyhost/res/jetbrains/polykybd-context-reporter.zip\`:" \
+                 "$(stat -c %s ../polyhost/res/jetbrains/polykybd-context-reporter.zip) bytes."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: polykybd-context-reporter
+          path: jetbrains-plugin/build/distributions/*.zip
+          if-no-files-found: ignore
+
+      - name: The shipped zip is the one these sources build
+        run: |
+          zip=$(ls build/distributions/polykybd-context-reporter-*.zip)
+          shipped=../polyhost/res/jetbrains/polykybd-context-reporter.zip
+          if cmp -s "$zip" "$shipped"; then
+            echo "$shipped is current."
+            exit 0
+          fi
+          echo "::error::$shipped is not the zip these sources build. Run 'gradle shipPlugin' in jetbrains-plugin/ and commit the zip (or take it from this run's artifact)."
+          python3 - "$zip" "$shipped" <<'EOF'
+          import hashlib, io, sys, zipfile
+
+          def entries(zf, prefix=""):
+              out = {}
+              for info in zf.infolist():
+                  data = zf.read(info)
+                  out[prefix + info.filename] = hashlib.sha256(data).hexdigest()[:16]
+                  if info.filename.endswith(".jar"):
+                      out.update(entries(zipfile.ZipFile(io.BytesIO(data)), prefix + info.filename + "!"))
+              return out
+
+          built, shipped = (entries(zipfile.ZipFile(p)) for p in sys.argv[1:3])
+          for name in sorted(set(built) | set(shipped)):
+              if built.get(name) != shipped.get(name):
+                  print(f"{name}: built {built.get(name)}, shipped {shipped.get(name)}")
+          EOF
+          exit 1

@@ -9,6 +9,10 @@ in DejaVu Sans Bold. The ESC mark is QGIS's own monochrome logo
 (`images/icons/qgis-icon-minimal-black.svg` at tag final-4_2_3), rendered at
 32x32 and reduced to 1 bit. See SOURCES.md.
 
+The drawn text glyphs, the lock composites and the ESC mark are skipped when
+their PNG exists, so a hand edit survives a re-run. To redraw one, delete its
+PNG first. The fetched and borrowed icons are written again on every run.
+
     pip install cairosvg Pillow
     python polyhost/res/overlay_sources/qgis/fetch_icons.py
 """
@@ -26,6 +30,8 @@ from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
+import space_hint  # noqa: E402
+from dcc_glyphs import guarded, with_badge  # noqa: E402
 
 RENDER_PX = 96
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
@@ -40,7 +46,9 @@ MARK_ALPHA = 128      # alpha at or above this is lit
 FLUENT = {
     # --- project, windows, panels ---
     "datasource": "ms:database",
-    "newlayout": "ms:print",
+    "newlayout": "ms:print_add",
+    "printlayout": "ms:print",
+    "zoomarea": "ms:pageview",
     "projprops": "ms:settings_applications",
     "newmap": "ms:map",
     "elevation": "ms:landscape",
@@ -98,6 +106,34 @@ FLUENT = {
     "modeler": "ms:account_tree",
     "history": "ms:history",
     "results": "ms:fact_check",
+    # --- digitizing and vertex tool (mode sets) ---
+    "removevertex": "ms:backspace",
+    "deletevertex": "ms:cancel",
+    "rangesel": "ms:linear_scale",
+    "construction": "ms:construction",
+    "cadlock": "ms:lock",
+    # --- print layout designer (mode set) ---
+    "pagesetup": "ms:aspect_ratio",
+    "grid": "ms:grid_on",
+    "snapgrid": "ms:grid_4x4",
+    "guides": "ms:border_vertical",
+    "smartguides": "ms:auto_fix_high",
+    "boxes": "ms:activity_zone",
+    "selbelow": "ms:move_down",
+    "selabove": "ms:move_up",
+    "lockitems": "ms:lock",
+    "unlockall": "ms:lock_open",
+    "raise": "ms:flip_to_front",
+    "lower": "ms:flip_to_back",
+    "tofront": "ms:vertical_align_top",
+    "toback": "ms:vertical_align_bottom",
+    "group": "ms:group_work",
+    "ungroup": "ms:workspaces",
+    "movecontent": "ms:open_with",
+    "pasteinplace": "ms:content_paste",
+    "atlaspreview": "ms:auto_stories",
+    "selectmove": "ms:arrow_selector_tool",
+    "close": "ms:close",
 }
 
 # Same action as in a sibling set: copied byte-identical.
@@ -124,7 +160,27 @@ TEXT = {
     "csvlayer": "CSV",
     "gpkglayer": "GPKG",
     "expression": "ε",
+    # Advanced Digitizing: type a value into a field, or make it relative.
+    "cadx": "X=",
+    "cady": "Y=",
+    "cadz": "Z=",
+    "cadm": "M=",
+    "cada": "∠=",
+    "cadd": "d=",
+    "cadrelx": "ΔX",
+    "cadrely": "ΔY",
+    "cadrelz": "ΔZ",
+    "cadrelm": "ΔM",
+    "cadrela": "Δ∠",
+    "cadperp": "⊥∥",
+    "cadnext": "∠+",
+    "cadprev": "∠-",
+    "zoom100": "1:1",
 }
+
+# Advanced Digitizing locks: the lock glyph with the constrained value beside it.
+LOCKS = {"cadlockx": "X", "cadlocky": "Y", "cadlockz": "Z", "cadlockm": "M",
+         "cadlocka": "∠", "cadlockd": "d"}
 
 
 def _draw_text(path: Path, text: str) -> None:
@@ -154,6 +210,90 @@ def _add_sign(path: Path, plus: bool) -> None:
     if plus:
         d.rectangle([c - w // 2, c - half, c + w // 2 - 1, c + half - 1], fill=(0, 0, 0, 255))
     img.save(path)
+
+
+def _lock_with(src: Path, dest: Path, text: str) -> None:
+    """The fetched lock glyph on the left half and `text` on the right half,
+    so each lock key names the value it locks."""
+    lock = Image.open(src).convert("RGBA").resize((RENDER_PX // 2, RENDER_PX // 2), Image.LANCZOS)
+    img = Image.new("RGBA", (RENDER_PX, RENDER_PX // 2), (0, 0, 0, 0))
+    img.alpha_composite(lock, (0, 0))
+    d = ImageDraw.Draw(img)
+    font = ImageFont.truetype(FONT, int(RENDER_PX * 0.42))
+    box = d.textbbox((0, 0), text, font=font)
+    x = RENDER_PX * 3 // 4 - (box[2] - box[0]) / 2 - box[0]
+    y = (RENDER_PX // 2 - (box[3] - box[1])) / 2 - box[1]
+    d.text((x, y), text, font=font, fill=(0, 0, 0, 255))
+    img.save(dest)
+
+
+def _vertex_step(dest: Path, forward: bool) -> None:
+    """Previous / next vertex: a vertex (filled square) on a line segment, with a
+    chevron on the side it steps to. Differs from the bare chevrons of
+    Previous / Next edited feature (`prevfeat.png`, `nextfeat.png`)."""
+    ss = 4
+    u = RENDER_PX * ss
+    m = Image.new("L", (u, u), 0)
+    d = ImageDraw.Draw(m)
+    cy, t = u // 2, int(u * 0.05)
+    sq = int(u * 0.17)
+    # chevron at the left for "previous"; mirrored at the end for "next"
+    cx0, cx1, ch = int(u * 0.04), int(u * 0.30), int(u * 0.28)
+    w = int(u * 0.09)
+    d.line([(cx1, cy - ch), (cx0, cy), (cx1, cy + ch)], fill=255, width=w, joint="curve")
+    vx = int(u * 0.66)
+    d.rectangle([int(u * 0.40), cy - t, u - 1, cy + t], fill=255)
+    d.rectangle([vx - sq, cy - sq, vx + sq, cy + sq], fill=255)
+    if forward:
+        m = m.transpose(Image.FLIP_LEFT_RIGHT)
+    a = m.resize((RENDER_PX, RENDER_PX), Image.LANCZOS)
+    img = Image.new("RGBA", (RENDER_PX, RENDER_PX), (0, 0, 0, 0))
+    img.putalpha(a)
+    img.save(dest)
+
+
+def _curve_vertex(dest: Path) -> None:
+    """Toggle curve vertex: a quarter arc (like `curve.png`) with a filled
+    square vertex on its middle, so it differs from Digitize with curve."""
+    import math
+    ss = 4
+    u = RENDER_PX * ss
+    m = Image.new("L", (u, u), 0)
+    d = ImageDraw.Draw(m)
+    cx, cy, r, w = 0.10 * u, 0.95 * u, 0.80 * u, int(u * 0.08)
+    d.arc([cx - r, cy - r, cx + r, cy + r], 270, 360, fill=255, width=w)
+    mx = cx + (r - w / 2) * math.cos(math.radians(45))
+    my = cy - (r - w / 2) * math.sin(math.radians(45))
+    h = 0.13 * u
+    d.rectangle([mx - h, my - h, mx + h, my + h], fill=255)
+    a = m.resize((RENDER_PX, RENDER_PX), Image.LANCZOS)
+    img = Image.new("RGBA", (RENDER_PX, RENDER_PX), (0, 0, 0, 0))
+    img.putalpha(a)
+    img.save(dest)
+
+
+def _rulers_frame(dest: Path) -> None:
+    """Show rulers: a page with a ruler along its top and its left edge, each
+    with tick marks. Differs from the single ruler of Measure line."""
+    ss = 4
+    u = RENDER_PX * ss
+    m = Image.new("L", (u, u), 0)
+    d = ImageDraw.Draw(m)
+    w, band = int(u * 0.06), int(u * 0.20)
+    x0, y0, x1, y1 = int(u * 0.06), int(u * 0.10), int(u * 0.94), int(u * 0.90)
+    d.rectangle([x0, y0, x1, y1], outline=255, width=w)          # page
+    d.rectangle([x0, y0, x1, y0 + band], fill=255)               # top ruler
+    d.rectangle([x0, y0, x0 + band, y1], fill=255)               # left ruler
+    t = int(u * 0.04)
+    for i in range(1, 5):                                        # ticks cut out
+        x = x0 + band + i * (x1 - x0 - band) // 5
+        d.rectangle([x - t // 2, y0 + band // 2, x + t // 2, y0 + band], fill=0)
+        y = y0 + band + i * (y1 - y0 - band) // 5
+        d.rectangle([x0 + band // 2, y - t // 2, x0 + band, y + t // 2], fill=0)
+    a = m.resize((RENDER_PX, RENDER_PX), Image.LANCZOS)
+    img = Image.new("RGBA", (RENDER_PX, RENDER_PX), (0, 0, 0, 0))
+    img.putalpha(a)
+    img.save(dest)
 
 
 def _logo_svg() -> bytes:
@@ -189,15 +329,41 @@ def main() -> int:
     _add_sign(out / "zoomintool.png", plus=True)
     _add_sign(out / "zoomouttool.png", plus=False)
     for name, text in TEXT.items():
-        _draw_text(out / f"{name}.png", text)
-        n += 1
+        guarded(out / f"{name}.png", lambda p, t=text: _draw_text(p, t),
+                f"text {text!r} in DejaVu Sans Bold")
+    for name, text in LOCKS.items():
+        guarded(out / f"{name}.png",
+                lambda p, t=text: _lock_with(out / "cadlock.png", p, t),
+                f"cadlock.png + {text!r} in DejaVu Sans Bold")
+    guarded(out / "prevvertex.png", lambda p: _vertex_step(p, forward=False),
+            "drawn: chevron + vertex on a segment (_vertex_step)")
+    guarded(out / "nextvertex.png", lambda p: _vertex_step(p, forward=True),
+            "drawn: vertex on a segment + chevron (_vertex_step)")
+    guarded(out / "space_pan.png",
+            lambda p: space_hint.draw(space_hint.glyph_from_png(out / "pan.png", 20), p),
+            "pan.png + four arrows (space_hint.py)")
+    composites = {
+        # name: (base, badge) -- dcc_glyphs.with_badge
+        "deselalllayers": ("unselectall", "togglelayer"),  # Deselect all layers
+        "snapguides": ("snap", "guides"),                  # Snap to guides (layout)
+        "atlasfirst": ("firstfeat", "atlaspreview"),       # atlas navigation (layout)
+        "atlasprev": ("prevfeat", "atlaspreview"),
+        "atlasnext": ("nextfeat", "atlaspreview"),
+        "atlaslast": ("lastfeat", "atlaspreview"),
+    }
+    for name, (base, badge) in composites.items():
+        guarded(out / f"{name}.png",
+                lambda p, b=base, g=badge: with_badge(out / f"{b}.png", out / f"{g}.png", p),
+                f"{base}.png + {badge}.png badge (dcc_glyphs.with_badge)")
+    guarded(out / "curvevertex.png", _curve_vertex, "drawn: arc + square vertex (_curve_vertex)")
+    guarded(out / "showrulers.png", _rulers_frame, "drawn: page with two rulers (_rulers_frame)")
     mark = out / "qgis.png"
     if mark.exists():
         print("  qgis.png  <- committed asset (left as-is)")
     else:
         _qgis_mark(mark)
         print(f"  qgis.png  <- QGIS {QGIS_TAG} qgis-icon-minimal-black.svg at {MARK_PX}x{MARK_PX}")
-    print(f"Wrote {n + 1} icons to {out}")
+    print(f"Fetched {n} icons to {out}")
     return 0
 
 
