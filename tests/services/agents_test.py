@@ -759,6 +759,18 @@ class ControllerTest(unittest.TestCase):
         self.assertIn(again, self.kb.cards)       # uploaded into its new slot
         self.assertEqual(self.cache.holds(("agentcard", "codex", "a")), again)
 
+    def test_an_evicted_card_given_the_SAME_slot_again_is_uploaded_again(self):
+        self.r.report("codex", "a", "working")
+        self.c.sync(self.kb)
+        first = self.kb.keys[-1][2][0]
+        self.cache.forget_slot(first)            # an app image may now be in it
+        self.kb.cards.clear()
+        allocate = self.cache.allocate_aside
+        self.cache.allocate_aside = lambda key: (allocate(key), first)[1]
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.keys[-1][2][0], first)
+        self.assertIn(first, self.kb.cards)       # not skipped on the old record
+
     def test_a_full_pool_shows_no_card_rather_than_evict_the_shown_app(self):
         from polyhost.device.overlay_cache import OverlayMRUCache
         self.cache = OverlayMRUCache(3)

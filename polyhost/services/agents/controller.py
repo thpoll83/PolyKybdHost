@@ -192,12 +192,15 @@ class AgentKeysController:
         if cache is None:
             return NO_SLOT
         slot = cache.holds(key)
-        if slot is None:
+        fresh = slot is None
+        if fresh:
             slot = cache.allocate_aside(key)
             if slot is None:
                 self._cards.pop(key, None)
                 return NO_SLOT
-        if self._cards.get(key) == (drawn, slot):
+        # A slot just allocated may be the old one after an eviction, with an app
+        # image in it since: the old record does not prove the card is still there.
+        if not fresh and self._cards.get(key) == (drawn, slot):
             return slot
         cache.mark_written(slot)     # an app image reusing it later must clear it
         ok, msg = keeb.ai_upload_card(slot, card_bytes(render()))
