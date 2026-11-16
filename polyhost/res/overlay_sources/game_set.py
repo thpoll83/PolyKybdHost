@@ -21,7 +21,10 @@ Exile 1 and 2, Overwatch 2, Genshin Impact) call this module instead:
   afterwards: no key draws it.
 - The ESC mark is `mark` in Bebas Neue (SIL OFL 1.1) at the largest size that
   fits 70 x 38 px, centred on the whole 72 x 40 cell. It is written only when
-  its PNG is missing, so a hand edit is kept. No game's logo art is used.
+  its PNG is missing, so a hand edit is kept. A game whose logo is not a
+  word draws a resembling mark in its own `fetch_icons.py` instead (Overwatch,
+  Path of Exile), with the helpers `mark_canvas` and `save_mark`. No game's
+  logo art is used.
 """
 from __future__ import annotations
 
@@ -84,15 +87,59 @@ def text_mark(path: Path, text: str) -> None:
     print(f"  {path.name}  <- {text} (Bebas Neue, {(b[3] - b[1]) // ss} px high)")
 
 
+MARK_SS = 8                # supersampling of a drawn mark
+MARK_W, MARK_H = 72, 40    # a mark covers the whole cell
+
+
+def mark_canvas():
+    """(image, draw, P) for drawing a mark at MARK_SS times the cell size.
+    ``P(x, y, ...)`` scales cell coordinates (floats allowed) to the canvas."""
+    from PIL import Image, ImageDraw
+    im = Image.new("L", (MARK_W * MARK_SS, MARK_H * MARK_SS), 0)
+
+    def P(*pts):
+        return [(x * MARK_SS, y * MARK_SS) for x, y in pts]
+    return im, ImageDraw.Draw(im), P
+
+
+def save_mark(im, path: Path) -> None:
+    """The supersampled mark reduced to the cell at 1 bit (BOX filter, grey
+    from 110 lit) and saved as an icon PNG."""
+    import numpy as np
+    from PIL import Image
+    cnc._save_mask(np.asarray(im.resize((MARK_W, MARK_H), Image.BOX)) > 110, path)
+
+
+def fit_text(draw, text: str, box, font_path, fill=255) -> None:
+    """`text` at the largest size that fits `box` (cell coordinates), centred."""
+    from PIL import ImageFont
+    x0, y0, x1, y1 = box
+    for px in range(400, 8, -2):
+        font = ImageFont.truetype(str(font_path), px)
+        b = font.getbbox(text)
+        if b[2] - b[0] <= (x1 - x0) * MARK_SS and b[3] - b[1] <= (y1 - y0) * MARK_SS:
+            break
+    w, h = b[2] - b[0], b[3] - b[1]
+    draw.text(((x0 + x1) * MARK_SS / 2 - w / 2 - b[0], (y0 + y1) * MARK_SS / 2 - h / 2 - b[1]),
+              text, font=font, fill=fill)
+
+
+def bebas() -> Path:
+    """The Bebas Neue file the text marks use (downloaded once)."""
+    return cnc._font(fac.MARK_FONT_URL)
+
+
 def build(out: Path, icons: dict, *, sizes: dict | None = None, ink: dict | None = None,
-          numbered: dict | None = None, mark: str) -> int:
-    """Fetch and draw a whole set into `out`; returns 0 for ``main()``."""
+          numbered: dict | None = None, mark: str | None) -> int:
+    """Fetch and draw a whole set into `out`; returns 0 for ``main()``.
+    With `mark` None the set draws its own ESC mark."""
     sizes, ink, numbered = sizes or {}, ink or {}, numbered or {}
     fac.render(icons, out)
     flat_icons(out, icons, sizes, ink)
     for src in numbered_icons(out, numbered):
         if src.startswith("src_"):
             (out / f"{src}.png").unlink()
-    text_mark(out / "program.png", mark)
+    if mark is not None:
+        text_mark(out / "program.png", mark)
     print(f"Wrote icons to {out}")
     return 0

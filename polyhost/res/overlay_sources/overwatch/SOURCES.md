@@ -76,10 +76,13 @@ F-key legends). The solid or wide icons (`INK` in `fetch_icons.py`) are drawn
 in a smaller box inside their area. Every icon is drawn at exactly its area by
 `game_set.py`, so the generator places it 1:1.
 
-ESC shows OW in Bebas Neue (SIL OFL 1.1, `ofl/bebasneue/BebasNeue-Regular.ttf`
-from google/fonts at commit e7db6ca), centred on the whole cell and drawn
-without the ESC legend (`program_icon_legend: false`, protocol v25). Blizzard's
-logo art is proprietary and is not used.
+ESC shows a 1-bit emblem drawn by `program()` in `fetch_icons.py` to resemble
+the Overwatch emblem: a ring whose top arc is cut off at 10:30 and 1:30, and
+two prongs near the centre that splay out into the lower ring. It is 39 px
+across, centred on the whole cell and drawn without the ESC legend
+(`program_icon_legend: false`, protocol v25). It was compared by eye with the
+game's site icon (Google's favicon service for overwatch.blizzard.com);
+Blizzard's logo art is proprietary and is not used or committed.
 
 ## Icons
 
@@ -100,4 +103,4 @@ logo art is proprietary and is not used.
 | `ultstatus.png`, `pushtotalk.png`, `mute.png` | Material Symbols `percent`, `mic`, `mic_off` | Google | Apache-2.0 |
 | `chat.png`, `scoreboard.png`, `heroselect.png` | Material Symbols `chat`, `scoreboard`, `switch_account` | Google | Apache-2.0 |
 | `screenshot.png` | Material Symbols `screenshot_monitor` | Google | Apache-2.0 |
-| `program.png` | drawn by `game_set.py` in Bebas Neue | font: Dharma Type | font: SIL OFL 1.1 |
+| `program.png` | drawn by `fetch_icons.py` (geometric shapes, no source art) | - | - |

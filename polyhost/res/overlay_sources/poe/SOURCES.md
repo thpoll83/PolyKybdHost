@@ -174,10 +174,15 @@ F-key legends). The solid or wide icons (`INK` in `fetch_icons.py`) are drawn
 in a smaller box inside their area. Every icon is drawn at exactly its area by
 `game_set.py`, so the generator places it 1:1.
 
-ESC shows POE (POE2 for Path of Exile 2) in Bebas Neue (SIL OFL 1.1, `ofl/bebasneue/BebasNeue-Regular.ttf`
-from google/fonts at commit e7db6ca), centred on the whole cell and drawn
-without the ESC legend (`program_icon_legend: false`, protocol v25). Grinding Gear Games's
-logo art is proprietary and is not used.
+ESC shows a crest drawn by `crest()` in `fetch_icons.py` to resemble the
+games' winged logos: EXILE in Bebas Neue (SIL OFL 1.1,
+`ofl/bebasneue/BebasNeue-Regular.ttf` from google/fonts at commit e7db6ca)
+between three feathers on each side, with an arch above and a point below.
+The Path of Exile 2 crest (`program2.png`) adds two horns and three fangs, as
+its logo has. Both cover the whole cell and are drawn without the ESC legend
+(`program_icon_legend: false`, protocol v25). They were compared by eye with
+the logos on the games' Steam pages; Grinding Gear Games' logo art is
+proprietary and is not used or committed.
 
 The skill slot keys show a swirl with the slot number (4 to 8 on Q W E R T,
 9 to 13 on Ctrl+Q to Ctrl+T, DejaVu Sans Bold) in the top-left corner of the
@@ -211,5 +216,5 @@ renderer, so their cells are the same bytes as every other zoom key.
 | `league.png`, `leaguepanel.png`, `map.png` | Material Symbols `auto_awesome`, `dashboard`, `map` | Google | Apache-2.0 |
 | `close.png`, `chat.png`, `zoomin.png` | Material Symbols `close`, `chat`, `zoom_in` | Google | Apache-2.0 |
 | `zoomout.png`, `performance.png`, `screenshot.png` | Material Symbols `zoom_out`, `monitoring`, `screenshot_monitor` | Google | Apache-2.0 |
-| `program.png` | drawn by `game_set.py` in Bebas Neue | font: Dharma Type | font: SIL OFL 1.1 |
-| `program2.png` | drawn by `game_set.py` in Bebas Neue | font: Dharma Type | font: SIL OFL 1.1 |
+| `program.png` | drawn by `fetch_icons.py`: shapes, and EXILE in Bebas Neue | font: Dharma Type | font: SIL OFL 1.1 |
+| `program2.png` | drawn by `fetch_icons.py`: shapes, and EXILE in Bebas Neue | font: Dharma Type | font: SIL OFL 1.1 |
