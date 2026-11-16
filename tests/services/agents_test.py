@@ -176,6 +176,22 @@ class RegistryTest(unittest.TestCase):
         self.assertEqual([a.display_headline for a in self.r.agents()],
                          ["team-core2", "agent", "review"])
 
+    def test_an_anonymous_cloud_agent_is_agent_N(self):
+        # POLYKYBD_CLOUD_ANONYMOUS: no title and no folder come from the cloud VM.
+        self.r.report("claude-code", "a", "working", machine="cloud", headline="", cwd="")
+        self.assertEqual([a.display_headline for a in self.r.agents()], ["Agent 1"])
+        self.r.report("claude-code", "b", "idle", machine="cloud", headline="", cwd="")
+        self.r.report("claude-code", "c", "idle", cwd="C:\\ws\\agent")   # local, folder "agent"
+        self.r.report("claude-code", "d", "idle", machine="cloud", headline="Fix the build")
+        self.assertEqual([a.display_headline for a in self.r.agents()],
+                         ["Agent 1", "Agent 2", "agent", "Fix the build"])
+        self.r.label("claude-code", "b", "review")            # the user's own label
+        self.assertEqual([a.display_headline for a in self.r.agents()][:2], ["Agent 1", "review"])
+
+    def test_a_local_agent_without_a_title_keeps_the_vendor_name(self):
+        self.r.report("claude-code", "a", "working")
+        self.assertEqual([a.display_headline for a in self.r.agents()], ["Claude Code"])
+
     def test_an_exited_agent_process_frees_its_key(self):
         alive = {100: True, 200: False}
         r = AgentRegistry(clock=self.clock, is_alive=lambda pid: alive.get(pid, False))
