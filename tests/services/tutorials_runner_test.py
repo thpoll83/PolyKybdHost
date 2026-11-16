@@ -3,6 +3,7 @@ import types
 import unittest
 
 from polyhost.services.tutorials.loader import parse_script
+from polyhost.services.tutorials import runner
 from polyhost.services.tutorials.runner import RING_COUNT, RING_PERIOD_MS, TutorialRun
 
 ROWS, COLS = 2, 3
@@ -125,6 +126,34 @@ class StartTest(unittest.TestCase):
         self.assertEqual(kb.calls, [])
         run.next()
         self.assertEqual(kb.calls, [("ring", 1, 2, RING_COUNT, RING_PERIOD_MS)])
+
+
+class FixedLayersTest(unittest.TestCase):
+    """Layers the keyboard does not store (Settings, Emoji, ...) come from the export."""
+
+    def setUp(self):
+        self._saved = runner.fixed_layers
+        self.addCleanup(setattr, runner, "fixed_layers", self._saved)
+
+    def _fixed(self, stored):
+        runner.fixed_layers = lambda rows, cols: (
+            {"stored": stored, "layers": [("Emoji", {(1, 0): 0x7E26, (0, 0): 0x5200})]}
+            if (rows, cols) == (ROWS, COLS) else None)
+
+    def test_a_key_on_a_fixed_layer_rings_and_its_name_is_known(self):
+        self._fixed(3)
+        run, kb = _run([{"say": "a", "point": {"keycode": "KC_EMJ_MODE"},
+                         "wait": {"layer": "Emoji"}}], _Keyboard(protocol=35))
+        run.start()
+        self.assertEqual(kb.rings()[-1][:3], ("ring", 1, 0))
+        self.assertEqual(kb.cmd49()[-1], ("arm", [(2, 3, 0)]))
+
+    def test_an_export_for_another_layer_count_is_not_used(self):
+        self._fixed(4)
+        run, kb = _run([{"say": "a", "point": {"keycode": "KC_EMJ_MODE"}}],
+                       _Keyboard(protocol=35))
+        run.start()
+        self.assertIn("no key has keycode", run.state()["ring_error"])
 
 
 class PointTest(unittest.TestCase):
@@ -324,7 +353,7 @@ class HostTutorialTest(unittest.TestCase):
         self.assertEqual(run.index, 1)
 
     def _layer_steps(self):
-        run, kb = _run([{"say": "enter", "wait": {"layer": "MIDI"}},
+        run, kb = _run([{"say": "enter", "guide_to_layer": "MIDI", "wait": {"layer": "MIDI"}},
                         {"say": "on MIDI"},
                         {"say": "leave", "wait": {"press": "KC_BASE"}},
                         {"say": "done"}], _Keyboard(protocol=35))
@@ -353,6 +382,46 @@ class HostTutorialTest(unittest.TestCase):
         self.assertEqual(run.index, 3)
         self.assertFalse(run.poll())       # after KC_BASE no step needs MIDI
         self.assertEqual(run.index, 3)
+
+    def test_a_layer_entered_without_a_guide_is_not_needed(self):
+        # The macro tutorial enters Utility with OSL on purpose: REC drops it.
+        run, kb = _run([{"say": "enter", "wait": {"layer": "MIDI"}}, {"say": "next"}],
+                       _Keyboard(protocol=35))
+        run.start()
+        kb.layer, kb.matched = 2, 0x01
+        run.poll()
+        kb.layer, kb.matched = 0, 0
+        self.assertFalse(run.poll())
+        self.assertEqual(run.index, 1)
+
+    def test_a_held_layer_is_not_needed(self):
+        # MO(1) is the last key of the path to Fn: releasing it is normal.
+        run, kb = _run([{"say": "enter", "guide_to_layer": "Fn", "wait": {"layer": "Fn"}},
+                        {"say": "next"}], _Keyboard(protocol=35))
+        run.start()
+        kb.layer, kb.matched = 1, 0x01
+        run.poll()
+        kb.layer, kb.matched = 0, 0
+        self.assertFalse(run.poll())
+        self.assertEqual(run.index, 1)
+
+    def test_a_leave_wait_ends_when_the_layer_is_off(self):
+        run, kb = _run([{"say": "pick", "wait": {"leave": "MIDI"}}, {"say": "done"}],
+                       _Keyboard(protocol=35))
+        run.start()
+        self.assertTrue(run.state()["auto"])
+        self.assertEqual(kb.cmd49()[-1], ("arm", []))
+        kb.layer = 2
+        self.assertFalse(run.poll())
+        kb.layer = 0
+        self.assertTrue(run.poll())
+        self.assertEqual(run.index, 1)
+
+    def test_a_key_wait_arms_the_key_position(self):
+        run, kb = _run([{"say": "slot", "wait": {"key": {"keycode": "KC_B"}}}],
+                       _Keyboard(protocol=35))
+        run.start()
+        self.assertEqual(kb.cmd49()[-1], ("arm", [(1, 0, 2)]))   # COND_KEY, row 0, col 2
 
     def test_a_next_step_polls_too(self):
         # The session stays alive while a step waits for Next.
