@@ -133,6 +133,7 @@ CONTEXT_REPORTERS = {
         "jetbrains-rustrover", "jetbrains-studio", "intellij idea", "intellij idea ce",
         "intellij idea ultimate", "pycharm ce", "pycharm professional", "android studio",
     ), "jetbrains"),
+    "obsidian": "obsidian",       # obsidian-plugin/: obsidian://<view>[/<vim mode>]
     # VS Code and its forks: vscode-extension/ sends <token>://<debug mode>.
     "code": "vscode", "cursor": "cursor",
     "windsurf": "windsurf", "devin": "windsurf", "devin-desktop": "windsurf",

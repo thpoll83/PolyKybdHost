@@ -135,7 +135,7 @@ sub-entry **replace** the parent instead.
 
 `urls-contains` matches only a URL the host attributes to the **focused** app: a
 browser's active tab, or a context report from an app on the allow-list in
-`handler/browser_url.py` (`CONTEXT_REPORTERS`: Blender, FreeCAD, Houdini, IDA, GUI Vim and Emacs, VS Code, Cursor and Windsurf, the JetBrains IDEs and the Unity Editor).
+`handler/browser_url.py` (`CONTEXT_REPORTERS`: Blender, FreeCAD, Houdini, IDA, GUI Vim and Emacs, VS Code, Cursor and Windsurf, the JetBrains IDEs, the Unity Editor and Obsidian).
 DaVinci Resolve is on it too (`resolve://<page>`, `tests/handler/resolve_routing_test.py`).
 The entry's names and that list must agree; the routing test checks it. A
 terminal on `TERMINAL_APPS` takes the report of a vim or emacs running in it
