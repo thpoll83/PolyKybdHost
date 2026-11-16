@@ -4,8 +4,8 @@ the front end for :mod:`polyhost.services.shell_title` and
 
 Terminals lists each shell this computer has (bash, zsh, PowerShell 7, Windows
 PowerShell 5.1) with its startup file and whether the title line is in it.
-Editors lists each editor (Vim, Neovim, Emacs, GDB, DaVinci Resolve) with the folder or init
-file its plugin goes to. The status runs on a thread because asking PowerShell
+Editors lists each editor (Vim, Neovim, Emacs, GDB, DaVinci Resolve, the JetBrains
+IDEs) with the folder or init file its plugin goes to. The status runs on a thread because asking PowerShell
 for ``$PROFILE`` starts a PowerShell process.
 """
 
@@ -67,7 +67,8 @@ def editor_label(editor):
             editor_plugins.BINARYNINJA: "Binary Ninja",
             editor_plugins.RESOLVE: "DaVinci Resolve",
             editor_plugins.ABLETON: "Ableton Live",
-            editor_plugins.HOUDINI: "Houdini"}.get(editor, editor)
+            editor_plugins.HOUDINI: "Houdini",
+            editor_plugins.JETBRAINS: "JetBrains IDEs"}.get(editor, editor)
 
 
 def editor_state_text(st):
@@ -230,6 +231,10 @@ class EditorsPage(RowsPage):
                     "Live shows Session View or Arrangement View keys with this script. "
                     "After Install, restart Live and choose PolyKybd as a Control Surface "
                     "in Settings > Link, Tempo & MIDI.")))
+                hint.setWordWrap(True)
+                self.grid.addWidget(hint, self.grid.rowCount(), 1)
+            elif st.editor == editor_plugins.JETBRAINS:
+                hint = muted(WrapLabel(_("Restart the IDE after Install.")))
                 hint.setWordWrap(True)
                 self.grid.addWidget(hint, self.grid.rowCount(), 1)
         if not self.boxes():
