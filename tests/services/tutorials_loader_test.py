@@ -22,8 +22,9 @@ class ShippedScriptsTest(unittest.TestCase):
     def test_every_shipped_script_loads(self):
         found, errors = loader.load_all()
         self.assertEqual(errors, [])
-        self.assertIn("midi-layer", found)
-        self.assertIn("brightness", found)
+        for tid in ("midi-layer", "brightness", "accents", "rgb-lighting", "emoji-search",
+                    "keyboard-language", "base-layouts", "record-macro"):
+            self.assertIn(tid, found)
         for t in found.values():
             self.assertIn(t.category, loader.CATEGORIES)
             self.assertIn("en", t.title)
@@ -34,7 +35,9 @@ class ShippedScriptsTest(unittest.TestCase):
         brightness = loader.load_all()[0]["brightness"]
         points = [s.point for s in brightness.steps if s.point]
         self.assertIn(Point("keycode", 0x7E1D), points)       # KC_DAUTO
-        self.assertIn(Point("keycode", 0x5207), points)       # TO(7)
+        self.assertIn(Point("keycode", 0x7E08), points)       # KC_BASE
+        # The Utility layer is entered with the layer guide, which takes the TO key.
+        self.assertEqual(brightness.steps[0].guide_to_layer, "Utility")
 
 
 class ParseTest(unittest.TestCase):
@@ -89,6 +92,16 @@ class ParseTest(unittest.TestCase):
                          Wait("layer", "MIDI"))
         self.assertEqual(parse_script(_step(wait={"press": "KC_ESC"})).steps[0].wait,
                          Wait("press", 0x29))
+        self.assertEqual(parse_script(_step(wait={"key": {"keycode": "KC_ESC"}})).steps[0].wait,
+                         Wait("key", Point("keycode", 0x29)))
+        self.assertEqual(parse_script(_step(wait={"leave": "Language"})).steps[0].wait,
+                         Wait("leave", "Language"))
+
+    def test_one_shot_layer_keycode(self):
+        self.assertEqual(parse_script(_step(point={"keycode": "OSL(7)"})).steps[0].point,
+                         Point("keycode", 0x5287))
+        with self.assertRaises(ScriptError):
+            parse_script(_step(point={"keycode": "OSL(32)"}))
 
     def test_refusals(self):
         bad = {
@@ -130,6 +143,25 @@ class ParseTest(unittest.TestCase):
         with self.assertRaises(ScriptError) as cm:
             parse_script(_script(steps=[{"say": "ok"}, {"wait": "nxt"}]))
         self.assertIn("steps[1].wait", str(cm.exception))
+
+
+class FixedLayersTest(unittest.TestCase):
+    """The layers the keyboard compiles in, from the shipped preview export."""
+
+    def test_split72(self):
+        fixed = loader.fixed_layers(10, 8)
+        self.assertEqual(fixed["stored"], 9)
+        self.assertEqual([name for name, _cells in fixed["layers"]],
+                         ["Settings", "Language", "Intl", "Emoji"])
+        cells = dict(fixed["layers"])
+        self.assertEqual(cells["Settings"][(5, 4)], 0x7E11)     # KC_RGB_TOG
+        self.assertEqual(cells["Emoji"][(1, 0)], 0x7E26)        # KC_EMJ_MODE
+        self.assertEqual(cells["Intl"][(4, 1)], 0x7E23)         # KC_LAT_REMAP
+        # LSLOT(0): a key with a function and no keycode the export can name.
+        self.assertEqual(cells["Language"][(1, 1)], loader.FIXED_UNRESOLVED)
+
+    def test_another_matrix_gets_none(self):
+        self.assertIsNone(loader.fixed_layers(8, 6))
 
 
 class PickTextTest(unittest.TestCase):

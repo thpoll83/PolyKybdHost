@@ -27,12 +27,14 @@ CATEGORIES = ("layers", "languages", "light", "emoji", "editor", "other")
 SOURCE_LANGUAGE = "en"
 # Key attention (cmd 47 op 0) is the oldest device feature a tutorial uses.
 BASE_PROTOCOL = 32
+# QMK's OSL(layer): keycodes.h has QK_ONE_SHOT_LAYER, parse_keycode() reads no OSL().
+OSL_BASE = 0x5280
 
 _ID = re.compile(r"[a-z0-9][a-z0-9-]*")
 _SCRIPT_KEYS = {"id", "category", "title", "summary", "min_protocol", "steps"}
 _STEP_KEYS = {"say", "text", "point", "guide_to_layer", "spotlight", "reveal", "wait"}
 _POINT_KINDS = {"keycode", "layer_key", "key"}
-_WAIT_KINDS = {"seconds", "layer", "press"}
+_WAIT_KINDS = {"seconds", "layer", "press", "key", "leave"}
 
 
 class ScriptError(ValueError):
@@ -53,8 +55,10 @@ class Point:
 class Wait:
     """How a step ends. "next": the user presses Next. "seconds": after `value`
     seconds. "layer": that layer is on. "press": a key with keycode `value` is
-    pressed. The two keyboard events need cmd 49 (protocol 35); on older firmware the
-    step ends with Next."""
+    pressed. "key": the key at Point `value` is pressed, whatever it types at that
+    moment (a picker that swallows keys still counts it). "leave": the keyboard is no
+    longer on layer `value`. The keyboard events need cmd 49 (protocol 35); on older
+    firmware the step ends with Next."""
     kind: str
     value: object = None
 
@@ -170,6 +174,45 @@ _CUSTOM = None
 LEGENDS_FILE = os.path.join(os.path.dirname(SHIPPED_DIR), "preview", "legends.json")
 
 
+BOARD_FILE = os.path.join(os.path.dirname(SHIPPED_DIR), "preview", "board.json")
+LAYERS_FILE = os.path.join(os.path.dirname(SHIPPED_DIR), "preview", "layers.json")
+# Names for the layers the keyboard compiles in and does not store, by their tag in
+# layers.h. Cmd 35 names only the stored layers.
+FIXED_LAYER_NAMES = {"SL": "Settings", "LL": "Language", "ADDLANG1": "Intl", "EMJ": "Emoji"}
+# A key on a fixed layer whose keycode the export could not resolve (LSLOT(n),
+# ESLOT(n), ...): it has a function, so a spotlight lights it, but no name matches it.
+FIXED_UNRESOLVED = 0xFFFF
+
+
+def fixed_layers(rows: int, cols: int) -> dict | None:
+    """{"stored": n, "layers": [(name, {(row, col): keycode}), ...]} for the layers
+    after the n stored ones, from the shipped preview export (board.json), or None
+    when the export has none or is for another matrix."""
+    import json
+    try:
+        with open(BOARD_FILE, encoding="utf-8") as f:
+            board = json.load(f)
+        with open(LAYERS_FILE, encoding="utf-8") as f:
+            layers = json.load(f)
+    except (OSError, ValueError):
+        return None
+    if board.get("matrix") != [rows, cols] or not board.get("fixed_layers"):
+        return None
+    stored = int(layers.get("stored") or 0)
+    tags = layers.get("tags") or {}
+    out = []
+    for idx in sorted(int(k) for k in board["fixed_layers"]):
+        if idx != stored + len(out):
+            return None          # a gap: the layer numbers would be wrong
+        cells = {}
+        for cell in board["fixed_layers"][str(idx)]:
+            kc = cell.get("keycode")
+            cells[tuple(cell["matrix"])] = FIXED_UNRESOLVED if kc is None else int(kc)
+        tag = str(tags.get(str(idx), ""))
+        out.append((FIXED_LAYER_NAMES.get(tag, tag), cells))
+    return {"stored": stored, "layers": out}
+
+
 def custom_keycodes() -> dict:
     """PolyKybd's own keycode names (KC_DAUTO, KC_BASE, ...) -> value, from the
     shipped legends.json. QMK's keycodes.h does not have them."""
@@ -197,6 +240,11 @@ def _keycode(value, where: str) -> int:
     custom = custom_keycodes().get(value.strip().upper())
     if custom is not None:
         return custom
+    m = re.fullmatch(r"OSL\((\d+)\)", value.strip(), re.IGNORECASE)
+    if m:
+        if int(m.group(1)) > 0x1F:
+            raise ScriptError(f"{where}: layer out of range")
+        return OSL_BASE + int(m.group(1))
     try:
         return parse_keycode(value)
     except ValueError as e:
@@ -229,14 +277,16 @@ def _wait(value, where: str) -> Wait:
         return Wait("next")
     if not isinstance(value, dict) or len(value) != 1 or next(iter(value)) not in _WAIT_KINDS:
         raise ScriptError(f"{where}: next, or one of {{seconds: N}}, {{layer: NAME}}, "
-                          f"{{press: KEYCODE}}")
+                          f"{{press: KEYCODE}}, {{key: {{keycode: ...}}}}, {{leave: NAME}}")
     kind, v = next(iter(value.items()))
     if kind == "seconds":
         if isinstance(v, bool) or not isinstance(v, (int, float)) or v <= 0:
             raise ScriptError(f"{where}.seconds: a number above 0")
         return Wait(kind, float(v))
-    if kind == "layer":
-        return Wait(kind, _layer_name(v, f"{where}.layer"))
+    if kind in ("layer", "leave"):
+        return Wait(kind, _layer_name(v, f"{where}.{kind}"))
+    if kind == "key":
+        return Wait(kind, _point(v, f"{where}.key"))
     return Wait(kind, _keycode(v, f"{where}.{kind}"))
 
 

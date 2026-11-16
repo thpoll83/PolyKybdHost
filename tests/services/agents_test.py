@@ -40,6 +40,58 @@ class RegistryTest(unittest.TestCase):
         slots = {a.session_id: a.slot for a in self.r.agents()}
         self.assertEqual(slots, {"a": 0, "d": 1, "c": 2})
 
+    def _slots(self):
+        return {a.session_id: a.slot for a in self.r.agents()}
+
+    def test_the_last_agent_left_moves_to_the_first_key(self):
+        for sid in "abc":
+            self.r.report("codex", sid, "working")
+        self.r.report("codex", "a", ENDED)
+        self.assertEqual(self._slots(), {"b": 1, "c": 2})     # two left: both stay
+        self.r.report("codex", "b", ENDED)
+        self.assertEqual(self._slots(), {"c": 0})             # one left: key 1
+
+    def test_a_removal_by_the_user_closes_the_gaps(self):
+        for sid, state in (("a", "idle"), ("b", "working"), ("c", "done"), ("d", "waiting")):
+            self.r.report("codex", sid, state)
+        self.r.forget_inactive()                              # a and c go
+        self.assertEqual(self._slots(), {"b": 0, "d": 1})     # order kept
+        self.r.report("codex", "e", "working")
+        self.r.forget("codex", "b")
+        self.assertEqual(self._slots(), {"d": 0, "e": 1})
+
+    def test_a_time_rule_removal_leaves_the_single_agent_on_the_first_key(self):
+        for sid in "abc":
+            self.r.report("codex", sid, "idle")
+        self.r.report("codex", "c", "working")
+        self.clock.t += 5 * 3600                              # a and b are forgotten
+        self.r.report("codex", "c", "working")                # c reported meanwhile
+        self.r.tick()
+        self.assertEqual(self._slots(), {"c": 0})
+
+    def test_a_gone_window_title_leaves_the_single_agent_on_the_first_key(self):
+        self.r.report("codex", "title:1", "working", source="title")
+        self.r.report("gemini", "title:2", "working", source="title")
+        self.r.report("qwen", "title:3", "working", source="title")
+        self.r.drop_missing_titles({"title:2", "title:3"})     # window 1 gone: two left
+        self.assertEqual(self._slots(), {"title:2": 1, "title:3": 2})
+        self.r.drop_missing_titles({"title:3"})
+        self.assertEqual(self._slots(), {"title:3": 0})
+
+    def test_a_freed_detached_key_leaves_the_single_agent_on_the_first_key(self):
+        self.r.report("claude-code", "a", "working")
+        self.r.report("claude-code", "b", "working")
+        self.r.report("claude-code", "a", None, event="detach:other")
+        self.assertTrue(self.r.forget_detached("claude-code", "a"))
+        self.assertEqual(self._slots(), {"b": 0})
+
+    def test_a_restore_closes_the_gaps(self):
+        data = {"hook_vendors": ["codex"], "agents": [
+            {"vendor": "codex", "session_id": "x", "state": "working", "slot": 9},
+            {"vendor": "codex", "session_id": "y", "state": "idle", "slot": 4}]}
+        self.assertEqual(self.r.restore(data, 0), 2)
+        self.assertEqual(self._slots(), {"y": 0, "x": 1})
+
     def test_pages(self):
         for i in range(12):
             self.r.report("claude-code", f"s{i}", "working")

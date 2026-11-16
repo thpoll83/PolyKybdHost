@@ -67,7 +67,10 @@ language and CustomKeys.txt, the Generals reader CommandMap.ini and
 Generals.csf of the installed language). A spec may also name a bindings
 source apart from its art reader (`bindings: openra`: `openra_keys.py` reads
 OpenRA's settings.yaml; `bindings: sc2`: `sc2_keys.py` reads the active
-`.SC2Hotkeys` profile, also without a StarCraft install).
+`.SC2Hotkeys` profile, also without a StarCraft install). Team Fortress 2,
+Apex Legends and Path of Exile 1 and 2 (2026-11-15) have only a bindings
+source and the `keys` reader, which reads no art (`tf2_keys.py`,
+`apex_keys.py`, `poe_keys.py`, `poe2_keys.py`).
 
 **What is left.**
 
@@ -82,6 +85,16 @@ OpenRA's settings.yaml; `bindings: sc2`: `sc2_keys.py` reads the active
   left-handed profiles are not known (a name that starts with `0_` is taken
   as built-in). The camera zoom keys, Quote, Print Screen and Alt+Enter have
   no `command:`: TheCore's Defaults.ini does not list them.
+- Rocket League: the in-game rebinds are in an encrypted save file
+  (`TAGame\SaveData*\*.save`, AES-256-ECB, object `ProfilePCSave_TA`
+  array `PCBindings`, according to DaricHughesJ/rocket-league-keybind-manager);
+  TAInput.ini holds only the defaults. Overwatch 2 keeps the bindings on
+  Blizzard's servers, and Genshin Impact in an undocumented registry value.
+  All three overlays show the default keys.
+- Apex Legends: the defaults come from player files, not from Respawn, and
+  it is not known whether the game writes a line for an unbound command
+  (`BINDINGS_COMPLETE = False`). Path of Exile: the modifier value for Alt
+  (3 or 4) is not known, so such a binding is ignored.
 - Dune II, Dune Legacy and the DOS releases of C&C and Red Alert: fixed keys
   (Dune Legacy's `Game::handleKeyInput`, sourceforge commit 591b9e16), so
   there is nothing to read.
