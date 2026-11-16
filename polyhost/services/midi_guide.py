@@ -82,8 +82,10 @@ def find_path(buffer, rows: int, cols: int, base_layer: int, target_layer: int,
     `target_layer` in a flat ``[layer][row][col]`` keymap, or None.
 
     Each step goes to a HIGHER layer: the keyboard picks the step by the highest
-    active layer, so a path through a lower layer could never advance. Ties go to
-    the first key in matrix order."""
+    active layer, so a path through a lower layer could never advance. The last
+    press into `target_layer` is a key that stays on it (TO, TG) when that layer has
+    one: an OSL leaves the target after one key, and MO, LT and LM only while held.
+    Other ties go to the first key in matrix order."""
     if buffer is None or rows <= 0 or cols <= 0:
         return None
     per_layer = rows * cols
@@ -97,21 +99,34 @@ def find_path(buffer, rows: int, cols: int, base_layer: int, target_layer: int,
         if depth >= max_steps:
             continue
         start = layer * per_layer
+        into_target = None
         for i in range(per_layer):
-            to = layer_target(buffer[start + i])
+            kc = buffer[start + i]
+            to = layer_target(kc)
             if to is None or to <= layer or to in came:
                 continue
-            came[to] = (layer, i // cols, i % cols)
             if to == target_layer:
-                path, node = [], to
-                while came[node] is not None:
-                    prev, row, col = came[node]
-                    path.append((row, col, prev))
-                    node = prev
-                return path[::-1]
+                if into_target is None or (stays_on_layer(kc)
+                                           and not stays_on_layer(into_target[0])):
+                    into_target = (kc, i)
+                continue
+            came[to] = (layer, i // cols, i % cols)
             if to < layers:      # a layer the keyboard does not store has no keys to read
                 queue.append((to, depth + 1))
+        if into_target is not None:
+            i = into_target[1]
+            path, node = [(i // cols, i % cols, layer)], layer
+            while came[node] is not None:
+                prev, row, col = came[node]
+                path.append((row, col, prev))
+                node = prev
+            return path[::-1]
     return None
+
+
+def stays_on_layer(keycode: int) -> bool:
+    """TO and TG: the keyboard stays on the layer after the key is released."""
+    return 0x5200 <= keycode <= 0x521F or 0x5260 <= keycode <= 0x527F
 
 
 class SeenPrograms:

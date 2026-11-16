@@ -21,12 +21,16 @@ import logging
 import time
 
 from polyhost.device.command_ids import HostTutorial
-from polyhost.services.midi_guide import GUIDE_COUNT, GUIDE_PERIOD_MS, find_path
+from polyhost.services.midi_guide import (GUIDE_COUNT, GUIDE_PERIOD_MS, find_path,
+                                         layer_target)
+from polyhost.services.tutorials.loader import custom_keycodes
 
 # A ring that runs out by itself, so a host that stops without a cancel does not
 # leave the keyboard ringing for ever: the MIDI guide's 12 ripples, about 30 s.
 RING_COUNT = GUIDE_COUNT
 RING_PERIOD_MS = GUIDE_PERIOD_MS
+# The firmware's custom keycode that goes back to the default layer.
+KC_BASE = custom_keycodes().get("KC_BASE", 0x7E08)
 
 
 class TutorialRun:
@@ -101,6 +105,17 @@ class TutorialRun:
         if self._armed and info["armed"] and info["matched"] & 0x01:
             self.next()
             return True
+        needed = self._needed_layer(self.index)
+        if needed is not None:
+            name, entry = needed
+            layer = self._layer_index(name)
+            if layer is not None and info.get("layer") != layer:
+                # The user left the layer this step is about, for example after a
+                # one-shot (OSL) key: go back to the step that enters it.
+                self.log.info("Tutorial %s step %d: the keyboard left layer %r; back to "
+                              "step %d", self.tutorial.id, self.index + 1, name, entry + 1)
+                self._show(entry)
+                return True
         return False
 
     # ---- state -------------------------------------------------------------------
@@ -178,6 +193,20 @@ class TutorialRun:
         conds = self._conditions(step.wait)
         ok, _msg = self._report("arm", self.keeb.tutorial_arm(conds))
         self._armed = ok and bool(conds)
+
+    def _needed_layer(self, index: int):
+        """(layer name, index of the step that entered it) for a step that is about a
+        layer, or None. A step is about layer L when an earlier step waited for L and
+        no step since then waited for a press of KC_BASE or a layer key, which leave
+        it. The step with that press still needs L: its match is read first."""
+        needed = None
+        for i, step in enumerate(self.tutorial.steps[:index]):
+            if step.wait.kind == "layer":
+                needed = (step.wait.value, i)
+            elif step.wait.kind == "press" and (step.wait.value == KC_BASE
+                                                or layer_target(step.wait.value) is not None):
+                needed = None
+        return needed
 
     def _report(self, what, result):
         ok, msg = result
