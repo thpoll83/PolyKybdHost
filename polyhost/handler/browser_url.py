@@ -152,6 +152,7 @@ CONTEXT_REPORTERS = {
     **dict.fromkeys(("ableton live 12 suite", "ableton live 12 standard",
                      "ableton live 12 intro", "ableton live 12 lite",
                      "ableton live 12 trial"), "ableton"),
+    "unity": "unity",               # Unity Editor package (unity-package/)
 }
 
 # Reporters that also run INSIDE a terminal (vim, emacs -nw). While a terminal
