@@ -14,6 +14,9 @@ terminal's keys. This module does the copy that their READMEs describe:
 - GDB: ``polykybd.py`` (``gdb-plugin/``) into ``<config>/gdb/polykybd/``, and
   a marked block in the GDB init file that sources it. The script writes GDB's
   state (prompt or running) into the terminal title.
+- IDA: ``polykybd_ida.py`` and ``ida-plugin.json`` (``ida-plugin/``) into
+  ``<IDAUSR>/plugins/polykybd/``, which IDA 8.5 and later load as a plugin
+  folder. The plugin reports which IDA view has the focus.
 - Binary Ninja: ``polykybd_mode_reporter/`` (``binaryninja-plugin/``) into
   the user plugins folder, ``<user folder>/plugins/`` (``BN_USER_DIRECTORY``,
   else ``~/.binaryninja``, ``%APPDATA%/Binary Ninja`` or
@@ -26,6 +29,13 @@ terminal's keys. This module does the copy that their READMEs describe:
   ``<User Library>/Remote Scripts/PolyKybd/`` at Live's default User Library
   (``~/Documents/Ableton`` on Windows, ``~/Music/Ableton`` on macOS). Live
   lists it under Control Surface after a restart; the user selects it there.
+- Houdini: the package (``houdini-package/``) into ``<prefs>/packages/``: the
+  package file ``polykybd.json`` and the ``polykybd/`` folder it names, in the
+  newest Houdini preferences folder (:func:`houdini_pref_dir`).
+- JetBrains IDEs: the built plugin (``polyhost/res/jetbrains/
+  polykybd-context-reporter.zip``, from ``jetbrains-plugin/``) unpacked as
+  ``polykybd-context-reporter/`` into the plugins folder of every IntelliJ
+  Platform IDE found, build 242 (2024.2) or newer (:func:`jetbrains_ides`).
 
 Each copy gets a stamp file with the SHA-256 of every file written.
 :func:`refresh_installed` runs at every start: it copies the shipped files
@@ -50,6 +60,7 @@ import subprocess
 import tempfile
 import threading
 import time
+import zipfile
 from collections import namedtuple
 from pathlib import Path
 
@@ -62,18 +73,26 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 VIM_SOURCE = REPO_ROOT / "vim-plugin"
 EMACS_SOURCE = REPO_ROOT / "emacs-package"
 GDB_SOURCE = REPO_ROOT / "gdb-plugin"
+IDA_SOURCE = REPO_ROOT / "ida-plugin"
 BINJA_SOURCE = REPO_ROOT / "binaryninja-plugin" / "polykybd_mode_reporter"
 RESOLVE_SOURCE = REPO_ROOT / "resolve-plugin"
 ABLETON_SOURCE = REPO_ROOT / "ableton-remote-script" / "PolyKybd"
+HOUDINI_SOURCE = REPO_ROOT / "houdini-package"
+# Built by `gradle shipPlugin` in jetbrains-plugin/; CI checks it is current
+# (.github/workflows/jetbrains-plugin.yml).
+JETBRAINS_SOURCE = REPO_ROOT / "polyhost" / "res" / "jetbrains" / "polykybd-context-reporter.zip"
 
 VIM = "vim"
 NEOVIM = "neovim"
 EMACS = "emacs"
 GDB = "gdb"
+IDA = "ida"
+HOUDINI = "houdini"
 ABLETON = "ableton"
 RESOLVE = "resolve"
 BINARYNINJA = "binaryninja"
-EDITORS = (VIM, NEOVIM, EMACS, GDB, BINARYNINJA, RESOLVE, ABLETON)
+JETBRAINS = "jetbrains"
+EDITORS = (VIM, NEOVIM, EMACS, GDB, IDA, BINARYNINJA, RESOLVE, ABLETON, HOUDINI, JETBRAINS)
 # The ones loaded through a marked block in an init file, beside a copy.
 INIT_EDITORS = (EMACS, GDB)
 
@@ -81,6 +100,7 @@ INIT_EDITORS = (EMACS, GDB)
 _VIM_DIRS = ("plugin", "lua", "doc")
 _EMACS_FILES = ("polykybd.el",)
 _GDB_FILES = ("polykybd.py",)
+_IDA_FILES = ("polykybd_ida.py", "ida-plugin.json")
 _BINJA_FILES = ("__init__.py", "core.py")
 _RESOLVE_FILES = ("polykybd_context_reporter.py",)
 _ABLETON_FILES = ("__init__.py", "core.py", "reporter.py")
@@ -107,7 +127,12 @@ STATE_NO_SOURCE = "no-source"      # this installation has no plugin files
 EditorStatus = namedtuple("EditorStatus", "editor state target detail")
 EditorStatus.__doc__ = """One editor's state. ``target`` is the plugin folder
 (Vim, Neovim) or the init file (Emacs), a Path or None. ``detail`` is the
-other copy's path for STATE_MANUAL and STATE_STALE, "" otherwise."""
+other copy's path for STATE_MANUAL and STATE_STALE, "" otherwise.
+
+For JETBRAINS, which has one copy per IDE, ``target`` is the folder that
+holds the IDEs' folders, ``state`` sums up the IDEs' states
+(:func:`_jetbrains_summary`) and ``detail`` names the IDE folders
+(``IntelliJIdea2025.2, PyCharm2025.2``), or the folder for STATE_MANUAL."""
 
 Result = namedtuple("Result", "editor ok changed message backup")
 Result.__doc__ = """What install()/remove() did for one editor. ``message``
@@ -315,6 +340,79 @@ def gdb_plugin_dir(home=None, env=None, system=None):
     return config / "gdb" / "polykybd"
 
 
+_HOUDINI_VERSION_RE = re.compile(r"^(\d+)\.(\d+)$")
+# The package file Houdini reads from <prefs>/packages, beside the folder it
+# names. Its key in the stamp is relative to that folder.
+HOUDINI_PACKAGE_FILE = "../polykybd.json"
+
+
+def houdini_pref_dir(home=None, env=None, system=None):
+    """The newest Houdini user preferences folder that exists, or None.
+
+    ``$HOUDINI_USER_PREF_DIR`` when set (``__HVER__`` in its last part stands
+    for the version), else ``~/houdiniX.Y`` (Linux), ``houdiniX.Y`` in
+    ``%HOME%`` when set or else in ``Documents`` (Windows), and
+    ``~/Library/Preferences/houdini/X.Y`` (macOS). Houdini creates the folder
+    at its first start."""
+    env = os.environ if env is None else env
+    system = system or platform.system()
+    custom = env.get("HOUDINI_USER_PREF_DIR")
+    if custom and "__HVER__" not in custom:
+        return Path(custom) if Path(custom).is_dir() else None
+    if custom:
+        base = Path(custom).parent
+        prefix, _sep, suffix = Path(custom).name.partition("__HVER__")
+    else:
+        h = _home(home, env, system)
+        if system == "Darwin":
+            base, prefix = h / "Library" / "Preferences" / "houdini", ""
+        elif system == "Windows" and not env.get("HOME"):
+            base, prefix = h / "Documents", "houdini"
+        else:
+            base, prefix = h, "houdini"
+        suffix = ""
+    found = []
+    try:
+        entries = list(base.iterdir()) if base.is_dir() else []
+    except OSError:
+        entries = []
+    for p in entries:
+        name = p.name
+        if not (name.startswith(prefix) and name.endswith(suffix)) or not p.is_dir():
+            continue
+        m = _HOUDINI_VERSION_RE.match(name[len(prefix):len(name) - len(suffix)])
+        if m:
+            found.append(((int(m.group(1)), int(m.group(2))), p))
+    return max(found)[1] if found else None
+
+
+def houdini_package_dir(pref_dir):
+    """The folder the package is copied to: ``<prefs>/packages/polykybd``."""
+    return Path(pref_dir) / "packages" / "polykybd"
+
+
+
+def ida_user_dir(home=None, env=None, system=None):
+    """IDA's user directory: the first entry of ``IDAUSR``, else
+    ``%APPDATA%/Hex-Rays/IDA Pro`` on Windows and ``~/.idapro`` elsewhere
+    (Hex-Rays, "Environment variables": IDAUSR)."""
+    env = os.environ if env is None else env
+    system = system or platform.system()
+    first = (env.get("IDAUSR") or "").split(";" if system == "Windows" else ":")[0]
+    if first:
+        return Path(first)
+    h = _home(home, env, system)
+    if system == "Windows":
+        appdata = env.get("APPDATA")
+        return (Path(appdata) if appdata else h / "AppData" / "Roaming") / "Hex-Rays" / "IDA Pro"
+    return h / ".idapro"
+
+
+def ida_plugin_dir(home=None, env=None, system=None):
+    """The plugin folder IDA loads ``polykybd_ida.py`` from."""
+    return ida_user_dir(home, env, system) / "plugins" / "polykybd"
+
+
 def ableton_script_dir(home=None, system=None):
     """The folder Live loads the remote script from, in Live's default User
     Library, or None where Live does not run (Linux). A User Library moved in
@@ -350,17 +448,108 @@ def binaryninja_dir(home=None, env=None, system=None):
     return binaryninja_user_dir(home, env, system) / "plugins" / "polykybd_mode_reporter"
 
 
+JETBRAINS_PLUGIN_NAME = "polykybd-context-reporter"
+# The oldest IDE build the plugin declares (jetbrains-plugin/build.gradle.kts,
+# sinceBuild = "242", IntelliJ 2024.2).
+JETBRAINS_MIN_BUILD = 242
+# <product><year>.<release>, for example IntelliJIdea2025.2 or PyCharmCE2024.3.
+_JETBRAINS_DIR_RE = re.compile(r"^([A-Za-z][A-Za-z-]*?)(20\d\d)\.(\d)$")
+# IntelliJ-based programs that are not IDEs: Gateway and the remote
+# development client run no project, so the plugin has nothing to report.
+_JETBRAINS_NOT_IDES = ("JetBrainsGateway", "JetBrainsClient")
+
+
+def _jetbrains_base(home, env, system, xdg_var, xdg_default):
+    """``<base>/JetBrains`` as IntelliJ's ``PathManager.platformPath()`` builds
+    it: ``%APPDATA%`` on Windows, ``~/Library/Application Support`` on macOS,
+    ``$<xdg_var>`` or ``~/<xdg_default>`` elsewhere."""
+    h = Path(home) if home is not None else Path.home()
+    if system == "Windows":
+        appdata = env.get("APPDATA")
+        base = Path(appdata) if appdata else h / "AppData" / "Roaming"
+    elif system == "Darwin":
+        base = h / "Library" / "Application Support"
+    else:
+        xdg = env.get(xdg_var)
+        base = Path(xdg) if xdg else h / xdg_default
+    return base / "JetBrains"
+
+
+def jetbrains_config_base(home=None, env=None, system=None):
+    """The folder that holds each IDE's configuration folder (JetBrains,
+    "Directories used by the IDE": Configuration directory)."""
+    env = os.environ if env is None else env
+    return _jetbrains_base(home, env, system or platform.system(), "XDG_CONFIG_HOME", ".config")
+
+
+def jetbrains_plugins_base(home=None, env=None, system=None):
+    """The folder that holds each IDE's plugins folder: the configuration
+    folders on Windows and macOS, ``~/.local/share/JetBrains`` on Linux."""
+    env = os.environ if env is None else env
+    return _jetbrains_base(home, env, system or platform.system(), "XDG_DATA_HOME",
+                           ".local/share")
+
+
+def jetbrains_plugins_dir(selector, home=None, env=None, system=None):
+    """The plugins folder of the IDE whose folders are named ``selector``
+    (``IntelliJIdea2025.2``): ``%APPDATA%/JetBrains/<selector>/plugins`` on
+    Windows, ``~/Library/Application Support/JetBrains/<selector>/plugins`` on
+    macOS and ``~/.local/share/JetBrains/<selector>`` on Linux (JetBrains,
+    "Directories used by the IDE": Plugins directory). An IDE started with
+    ``idea.plugins.path`` set is not followed."""
+    system = system or platform.system()
+    base = jetbrains_plugins_base(home, env, system) / selector
+    return base if system not in ("Windows", "Darwin") else base / "plugins"
+
+
+def jetbrains_build(selector):
+    """The build branch of an IDE folder name (``PyCharm2024.2`` -> 242), or
+    None when the name is not ``<product><year>.<release>``."""
+    m = _JETBRAINS_DIR_RE.match(selector)
+    if not m or m.group(1) in _JETBRAINS_NOT_IDES:
+        return None
+    return (int(m.group(2)) % 100) * 10 + int(m.group(3))
+
+
+def jetbrains_ides(home=None, env=None, system=None):
+    """``[(selector, plugin folder)]`` of each JetBrains IDE that has run here,
+    build JETBRAINS_MIN_BUILD or newer, sorted by name. An IDE writes its
+    configuration folder at its first start; its plugins folder on Linux only
+    once it has a plugin, so both are searched."""
+    env = os.environ if env is None else env
+    system = system or platform.system()
+    names = set()
+    for base in (jetbrains_config_base(home, env, system), jetbrains_plugins_base(home, env, system)):
+        try:
+            names.update(p.name for p in base.iterdir() if p.is_dir())
+        except OSError:
+            # A missing or unreadable base folder means no IDE has run there;
+            # the other base folder may still list one.
+            pass
+    out = []
+    for name in sorted(names):
+        build = jetbrains_build(name)
+        if build is not None and build >= JETBRAINS_MIN_BUILD:
+            out.append((name, jetbrains_plugins_dir(name, home, env, system) / JETBRAINS_PLUGIN_NAME))
+    return out
+
+
 def _copy_dir(editor, home, env, system):
-    """The plugin folder of a copy-only editor (Vim, Neovim, Binary Ninja)."""
+    """The plugin folder of a copy-only editor (Vim, Neovim, IDA, Binary Ninja)."""
     if editor == BINARYNINJA:
         return binaryninja_dir(home, env, system)
+    if editor == IDA:
+        return ida_plugin_dir(home, env, system)
     return vim_dir(editor, home, env, system)
 
 
-def _present(editor, which, system):
+def _present(editor, which, system, home=None, env=None):
     which = which or shutil.which
     names = {VIM: ("vim", "gvim"), NEOVIM: ("nvim",), EMACS: ("emacs", "runemacs"),
-             GDB: ("gdb", "gdb-multiarch"), BINARYNINJA: ("binaryninja",)}[editor]
+             GDB: ("gdb", "gdb-multiarch"), IDA: ("ida", "ida64"),
+             BINARYNINJA: ("binaryninja",)}[editor]
+    if editor == IDA and ida_user_dir(home, env, system).is_dir():
+        return True          # IDA is rarely on PATH; it writes its user dir at first start
     return any(which(n) for n in names)
 
 
@@ -394,12 +583,21 @@ def shipped_files(editor, source=None):
         if not all((source / name).is_file() for name in _ABLETON_FILES):
             return None
         return {name: (source / name).read_bytes() for name in _ABLETON_FILES}
+    if editor == HOUDINI:
+        return _houdini_files(source)
+    if editor == JETBRAINS:
+        return _jetbrains_files(source)
     if editor in INIT_EDITORS:
         names = _EMACS_FILES if editor == EMACS else _GDB_FILES
         source = Path(source or (EMACS_SOURCE if editor == EMACS else GDB_SOURCE))
         if not all((source / name).is_file() for name in names):
             return None
         return {name: (source / name).read_bytes() for name in names}
+    if editor == IDA:
+        source = Path(source or IDA_SOURCE)
+        if not all((source / name).is_file() for name in _IDA_FILES):
+            return None
+        return {name: (source / name).read_bytes() for name in _IDA_FILES}
     if editor == BINARYNINJA:
         source = Path(source or BINJA_SOURCE)
         if not all((source / name).is_file() for name in _BINJA_FILES):
@@ -418,6 +616,49 @@ def shipped_files(editor, source=None):
             tags = help_tags(rel[len("doc/"):], data.decode("utf-8", "replace"))
             files["doc/tags"] = files.get("doc/tags", b"") + tags
     return files
+
+
+def _houdini_files(source=None):
+    """The Houdini package: every file of ``polykybd/`` (no bytecode), and
+    the package file, keyed ``../polykybd.json`` because it sits beside the
+    folder in ``packages/``."""
+    source = Path(source or HOUDINI_SOURCE)
+    folder = source / "polykybd"
+    if not (source / "polykybd.json").is_file() or not folder.is_dir():
+        return None
+    files = {HOUDINI_PACKAGE_FILE: (source / "polykybd.json").read_bytes()}
+    for path in sorted(folder.rglob("*")):
+        if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc":
+            files[path.relative_to(folder).as_posix()] = path.read_bytes()
+    return files
+
+
+def _jetbrains_files(source=None):
+    """The files of the built plugin zip, keyed relative to its top folder
+    ``polykybd-context-reporter/`` (``lib/<name>.jar``). None when there is no
+    zip (a checkout where it was deleted) or it is not one this app reads:
+    every entry must be a plain path inside that folder."""
+    source = Path(source or JETBRAINS_SOURCE)
+    if not source.is_file():
+        return None
+    prefix = JETBRAINS_PLUGIN_NAME + "/"
+    files = {}
+    try:
+        with zipfile.ZipFile(source) as zf:
+            for info in zf.infolist():
+                name = info.filename
+                if info.is_dir():
+                    continue
+                rel = name[len(prefix):] if name.startswith(prefix) else ""
+                parts = rel.split("/")
+                if not rel or "\\" in rel or any(p in ("", ".", "..") for p in parts) or ":" in rel:
+                    log.warning("JetBrains plugin zip %s: unexpected entry %r", source, name)
+                    return None
+                files[rel] = zf.read(info)
+    except (OSError, zipfile.BadZipFile) as exc:
+        log.warning("JetBrains plugin zip %s cannot be read: %s", source, exc)
+        return None
+    return files or None
 
 
 def _sha(data):
@@ -655,19 +896,25 @@ def _other_vim_copies(editor, folder):
     return None
 
 
-def _sources(vim_source, emacs_source, gdb_source, ableton_source=None):
+def _sources(vim_source, emacs_source, gdb_source, ida_source=None, ableton_source=None,
+             houdini_source=None, jetbrains_source=None):
     return {VIM: vim_source, NEOVIM: vim_source, EMACS: emacs_source, GDB: gdb_source,
+            IDA: ida_source,
             BINARYNINJA: None,     # BINJA_SOURCE
             RESOLVE: None,
-            ABLETON: ableton_source}
+            ABLETON: ableton_source,
+            HOUDINI: houdini_source,
+            JETBRAINS: jetbrains_source}
 
 
 def status(editors=None, home=None, env=None, which=None, system=None,
-           vim_source=None, emacs_source=None, gdb_source=None, ableton_source=None):
+           vim_source=None, emacs_source=None, gdb_source=None, ida_source=None,
+           ableton_source=None, houdini_source=None, jetbrains_source=None):
     """An EditorStatus for each editor (``editors`` filters by id)."""
     env = os.environ if env is None else env
     system = system or platform.system()
-    sources = _sources(vim_source, emacs_source, gdb_source, ableton_source)
+    sources = _sources(vim_source, emacs_source, gdb_source, ida_source, ableton_source,
+                       houdini_source, jetbrains_source)
     out = []
     for editor in EDITORS:
         if editors is not None and editor not in editors:
@@ -676,8 +923,58 @@ def status(editors=None, home=None, env=None, which=None, system=None,
     return out
 
 
+# The order in which the IDEs' states sum up to one: an IDE to update or to
+# set up comes first, so default_selection() offers Install.
+_JETBRAINS_ORDER = (STATE_OUTDATED, STATE_NOT_INSTALLED, STATE_MODIFIED, STATE_MANUAL,
+                    STATE_INSTALLED)
+
+
+def _jetbrains_states(shipped, home, env, system):
+    """``[(selector, folder, state)]`` for each IDE of :func:`jetbrains_ides`."""
+    return [(sel, folder, _copy_state(folder, shipped))
+            for sel, folder in jetbrains_ides(home, env, system)]
+
+
+def _jetbrains_summary(states):
+    """One state for all IDEs: the first of _JETBRAINS_ORDER that any has."""
+    have = {st for _sel, _folder, st in states}
+    return next(st for st in _JETBRAINS_ORDER if st in have)
+
+
+def _status_jetbrains(home, env, system, source):
+    shipped = shipped_files(JETBRAINS, source)
+    base = jetbrains_plugins_base(home, env, system)
+    if shipped is None:
+        return EditorStatus(JETBRAINS, STATE_NO_SOURCE, base, str(source or JETBRAINS_SOURCE))
+    states = _jetbrains_states(shipped, home, env, system)
+    if not states:
+        return EditorStatus(JETBRAINS, STATE_NOT_PRESENT, base, "")
+    state = _jetbrains_summary(states)
+    if state == STATE_MANUAL:
+        detail = next(str(folder) for _sel, folder, st in states if st == STATE_MANUAL)
+    else:
+        detail = ", ".join(sel for sel, _folder, _st in states)
+    return EditorStatus(JETBRAINS, state, base, detail)
+
+
 def _status_one(editor, home, env, which, system, source):
+    if editor == JETBRAINS:
+        return _status_jetbrains(home, env, system, source)
     shipped = shipped_files(editor, source)
+    if editor == HOUDINI:
+        pref = houdini_pref_dir(home, env, system)
+        folder = houdini_package_dir(pref) if pref is not None else None
+        if shipped is None:
+            return EditorStatus(editor, STATE_NO_SOURCE, folder, str(source or HOUDINI_SOURCE))
+        if folder is None:
+            return EditorStatus(editor, STATE_NOT_PRESENT, None, "")
+        state, detail = _copy_state(folder, shipped), ""
+        if state == STATE_MANUAL:
+            detail = str(folder)
+        elif state == STATE_NOT_INSTALLED and (folder.parent / "polykybd.json").exists():
+            # A package file of the same name that this app did not write.
+            state, detail = STATE_MANUAL, str(folder.parent / "polykybd.json")
+        return EditorStatus(editor, state, folder, detail)
     if editor == RESOLVE:
         folder = resolve_plugin_dir(home, env, system)
         if shipped is None:
@@ -728,16 +1025,16 @@ def _status_one(editor, home, env, which, system, source):
         return EditorStatus(editor, state, folder, str(folder) if state == STATE_MANUAL else "")
     folder = _copy_dir(editor, home, env, system)
     if shipped is None:
-        default = BINJA_SOURCE if editor == BINARYNINJA else VIM_SOURCE
+        default = {BINARYNINJA: BINJA_SOURCE, IDA: IDA_SOURCE}.get(editor, VIM_SOURCE)
         return EditorStatus(editor, STATE_NO_SOURCE, folder, str(source or default))
     # Binary Ninja is rarely on PATH: its user folder shows it was run here.
-    present = _present(editor, which, system) or (
+    present = _present(editor, which, system, home, env) or (
         editor == BINARYNINJA and binaryninja_user_dir(home, env, system).is_dir())
     if not present and not folder.exists():
         return EditorStatus(editor, STATE_NOT_PRESENT, folder, "")
     state = _copy_state(folder, shipped)
     detail = str(folder) if state == STATE_MANUAL else ""
-    if state == STATE_NOT_INSTALLED and editor != BINARYNINJA:
+    if state == STATE_NOT_INSTALLED and editor not in (IDA, BINARYNINJA):
         other = _other_vim_copies(editor, folder)
         if other is not None:
             state, detail = STATE_MANUAL, str(other)
@@ -769,8 +1066,10 @@ def _install_vim(st, shipped, now):
     backup = None
     if st.state == STATE_INSTALLED:
         return Result(st.editor, True, False, MSG_ALREADY.format(path=folder), None)
-    if st.state == STATE_MODIFIED:
-        return Result(st.editor, False, False, MSG_MODIFIED.format(path=folder), None)
+    if st.state == STATE_MODIFIED or (st.editor == HOUDINI and st.state == STATE_MANUAL):
+        # A Houdini package this app did not write is the user's: never replaced.
+        return Result(st.editor, False, False,
+                      MSG_MODIFIED.format(path=st.detail or folder), None)
     try:
         if st.state == STATE_MANUAL and Path(st.detail) == folder:
             backup = _set_aside(folder, now)
@@ -875,11 +1174,43 @@ def _remove_init(st, now, home=None, env=None, system=None):
     return Result(st.editor, True, True, msg, backup)
 
 
+def _change_jetbrains(st, install, source, now=None, home=None, env=None, system=None,
+                      only_outdated=False):
+    """Install or remove the plugin in each IDE; one Result per IDE that was
+    acted on or could not be. ``only_outdated`` (the refresh at start) updates
+    this app's older copies and touches nothing else."""
+    shipped = shipped_files(JETBRAINS, source)
+    if shipped is None:
+        return [Result(JETBRAINS, False, False,
+                       MSG_NO_SOURCE.format(path=source or JETBRAINS_SOURCE), None)]
+    results = []
+    for sel, folder, state in _jetbrains_states(shipped, home, env, system):
+        one = EditorStatus(JETBRAINS, state, folder, str(folder) if state == STATE_MANUAL else "")
+        if only_outdated and state != STATE_OUTDATED:
+            continue
+        if install:
+            results.append(_install_vim(one, shipped, now))
+        elif state in (STATE_INSTALLED, STATE_OUTDATED, STATE_MODIFIED):
+            results.append(_remove_vim(one))
+    if not results and not only_outdated:
+        if install:
+            results.append(Result(JETBRAINS, False, False,
+                                  MSG_NOT_PRESENT.format(editor="JetBrains IDE"), None))
+        else:
+            results.append(Result(JETBRAINS, True, False,
+                                  MSG_NOT_INSTALLED.format(path=st.target), None))
+    return results
+
+
 def _change(st, install, sources, now=None, home=None, env=None, system=None):
+    """What install or remove did, as a Result, or for JETBRAINS a list of
+    them (one per IDE)."""
     if st.state == STATE_NOT_PRESENT:
         return Result(st.editor, False, False, MSG_NOT_PRESENT.format(editor=st.editor), None)
     if st.state == STATE_NO_SOURCE:
         return Result(st.editor, False, False, MSG_NO_SOURCE.format(path=st.detail), None)
+    if st.editor == JETBRAINS:
+        return _change_jetbrains(st, install, sources.get(JETBRAINS), now, home, env, system)
     if not install:
         if st.editor in INIT_EDITORS:
             return _remove_init(st, now, home, env, system)
@@ -893,12 +1224,15 @@ def _change(st, install, sources, now=None, home=None, env=None, system=None):
 
 
 def _apply(install, editors, statuses, home, env, which, system, vim_source, emacs_source,
-           gdb_source=None, ableton_source=None):
+           gdb_source=None, ida_source=None, ableton_source=None, houdini_source=None,
+           jetbrains_source=None):
     if statuses is None:
         statuses = status(editors, home=home, env=env, which=which, system=system,
                           vim_source=vim_source, emacs_source=emacs_source, gdb_source=gdb_source,
-                          ableton_source=ableton_source)
-    sources = _sources(vim_source, emacs_source, gdb_source, ableton_source)
+                          ida_source=ida_source, ableton_source=ableton_source,
+                          houdini_source=houdini_source, jetbrains_source=jetbrains_source)
+    sources = _sources(vim_source, emacs_source, gdb_source, ida_source, ableton_source,
+                       houdini_source, jetbrains_source)
     results = []
     for st in statuses:
         if editors is not None and st.editor not in editors:
@@ -907,31 +1241,39 @@ def _apply(install, editors, statuses, home, env, which, system, vim_source, ema
             if install and not default_selection(st):
                 continue
             if not install and st.state not in (STATE_INSTALLED, STATE_OUTDATED, STATE_STALE):
-                continue
-        results.append(_change(st, install, sources, home=home, env=env, system=system))
+                # One IDE's copy can be this app's while the summary is another state.
+                if st.editor != JETBRAINS or st.state in (STATE_NOT_PRESENT, STATE_NO_SOURCE):
+                    continue
+        r = _change(st, install, sources, home=home, env=env, system=system)
+        if isinstance(r, list):
+            results.extend(r)
+        else:
+            results.append(r)
     return results
 
 
 def install(editors=None, statuses=None, home=None, env=None, which=None,
             system=None, vim_source=None, emacs_source=None, gdb_source=None,
-            ableton_source=None):
+            ida_source=None, ableton_source=None, houdini_source=None, jetbrains_source=None):
     """Copy the plugin for each editor (the ones default_selection() picks
-    when ``editors`` is None). Returns a list of Result."""
+    when ``editors`` is None). Returns a list of Result; JETBRAINS adds one
+    per IDE."""
     return _apply(True, editors, statuses, home, env, which, system, vim_source, emacs_source,
-                  gdb_source, ableton_source)
+                  gdb_source, ida_source, ableton_source, houdini_source, jetbrains_source)
 
 
 def remove(editors=None, statuses=None, home=None, env=None, which=None,
            system=None, vim_source=None, emacs_source=None, gdb_source=None,
-           ableton_source=None):
+           ida_source=None, ableton_source=None, houdini_source=None, jetbrains_source=None):
     """Delete this app's copy and, for Emacs and GDB, the marked block."""
     return _apply(False, editors, statuses, home, env, which, system, vim_source, emacs_source,
-                  gdb_source, ableton_source)
+                  gdb_source, ida_source, ableton_source, houdini_source, jetbrains_source)
 
 
 def refresh_installed(home=None, env=None, which=None, system=None,
                       vim_source=None, emacs_source=None, gdb_source=None,
-                      ableton_source=None):
+                      ida_source=None, ableton_source=None, houdini_source=None,
+                      jetbrains_source=None):
     """Copy the shipped files again for each editor whose copy is this app's
     and older than them. Runs at every start, so an update reaches the
     editors without a visit to the dialog. Returns the editors refreshed.
@@ -940,22 +1282,31 @@ def refresh_installed(home=None, env=None, which=None, system=None,
     try:
         statuses = status(None, home=home, env=env, which=which, system=system,
                           vim_source=vim_source, emacs_source=emacs_source, gdb_source=gdb_source,
-                          ableton_source=ableton_source)
+                          ida_source=ida_source, ableton_source=ableton_source,
+                          houdini_source=houdini_source, jetbrains_source=jetbrains_source)
     except Exception:  # noqa: BLE001 - a start must not fail for this
         log.warning("Editor plugin refresh: status failed", exc_info=True)
         return refreshed
-    sources = _sources(vim_source, emacs_source, gdb_source, ableton_source)
+    sources = _sources(vim_source, emacs_source, gdb_source, ida_source, ableton_source,
+                       houdini_source, jetbrains_source)
     for st in statuses:
         if st.state != STATE_OUTDATED:
             continue
         try:
-            r = _change(st, True, sources, home=home, env=env, system=system)
+            if st.editor == JETBRAINS:
+                # Only the IDEs whose copy is older: Install sets up the others.
+                rs = _change_jetbrains(st, True, sources.get(JETBRAINS), home=home, env=env,
+                                       system=system, only_outdated=True)
+            else:
+                rs = [_change(st, True, sources, home=home, env=env, system=system)]
         except Exception:  # noqa: BLE001
             log.warning("Editor plugin refresh failed for %s", st.editor, exc_info=True)
             continue
-        if r.changed:
-            refreshed.append(st.editor)
-            log.info("Editor plugin refreshed for %s: %s", st.editor, r.message)
+        for r in rs:
+            if r.changed:
+                if st.editor not in refreshed:
+                    refreshed.append(st.editor)
+                log.info("Editor plugin refreshed for %s: %s", st.editor, r.message)
     return refreshed
 
 

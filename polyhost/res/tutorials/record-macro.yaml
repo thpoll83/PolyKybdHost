@@ -1,0 +1,42 @@
+# Recording a macro on the keyboard (REC on the Utility layer). docs/tutorials-plan.md has the field reference.
+id: record-macro
+category: other
+title: Record a macro
+summary: Record keystrokes on the keyboard into a macro key, without the host app.
+min_protocol: 32
+steps:
+  - point: {layer_key: Fn}
+    say: ["Hold Fn", ""]
+    text: Hold Fn. The keycaps change to the Fn layer.
+    wait: {layer: Fn}
+  - point: {keycode: OSL(7)}
+    say: ["Hold Fn, tap the", "ringed key twice"]
+    text: >-
+      Keep Fn held and tap the ringed key two times. The first tap opens the Utility
+      layer for one key. On that layer the same key is REC.
+    wait: {press: KC_MACRO_REC}
+  - point: {keycode: QK_MACRO_0}
+    say: ["Pick a slot:", "tap M0"]
+    text: >-
+      Every key except the 16 macro slots is now blank. Tap M0 to record into it. Hold
+      Shift for M12 to M15. The recording replaces what the slot had. Tap REC again to
+      cancel.
+    wait: {key: {keycode: QK_MACRO_0}}
+  - text: >-
+      The keyboard records now. Type a short text. The status display shows REC M0
+      and how many of the 192 bytes you used. Then press Next.
+  - point: {keycode: OSL(7)}
+    say: ["Stop: hold Fn, tap", "ringed key twice"]
+    text: >-
+      To stop, hold Fn and tap the ringed key two times, as before. The keyboard saves
+      the macro.
+    wait: {press: KC_MACRO_REC}
+  - point: {keycode: QK_MACRO_0}
+    say: ["Play it: Fn, ringed", "key, then M0"]
+    text: >-
+      To play it, hold Fn, tap the top-left key, then tap M0. In the Keymap Editor's
+      Macros tab you can give it a label for its keycap.
+    wait: {press: QK_MACRO_0}
+  - say: ["Done", ""]
+    text: Your macro is on M0.
+    wait: {seconds: 3}

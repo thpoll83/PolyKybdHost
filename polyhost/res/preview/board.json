@@ -1,5 +1,1999 @@
 {
- "fw_version": "1.13.3",
+ "fixed_layers": {
+  "10": [
+   {
+    "keycode": 32572,
+    "matrix": [
+     0,
+     0
+    ],
+    "token": "KC_LANG_PAGE_PREV"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     0,
+     1
+    ],
+    "token": "LCAT(0)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     0,
+     2
+    ],
+    "token": "LCAT(1)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     0,
+     3
+    ],
+    "token": "LCAT(2)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     0,
+     4
+    ],
+    "token": "LCAT(3)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     0,
+     5
+    ],
+    "token": "LCAT(4)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     0,
+     6
+    ],
+    "token": "LCAT(5)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     1,
+     1
+    ],
+    "token": "LSLOT(0)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     1,
+     2
+    ],
+    "token": "LSLOT(1)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     1,
+     3
+    ],
+    "token": "LSLOT(2)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     1,
+     4
+    ],
+    "token": "LSLOT(3)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     1,
+     5
+    ],
+    "token": "LSLOT(4)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     1,
+     6
+    ],
+    "token": "LSLOT(5)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     2,
+     1
+    ],
+    "token": "LSLOT(12)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     2,
+     2
+    ],
+    "token": "LSLOT(13)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     2,
+     3
+    ],
+    "token": "LSLOT(14)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     2,
+     4
+    ],
+    "token": "LSLOT(15)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     2,
+     5
+    ],
+    "token": "LSLOT(16)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     2,
+     6
+    ],
+    "token": "LSLOT(17)"
+   },
+   {
+    "keycode": 209,
+    "matrix": [
+     3,
+     7
+    ],
+    "token": "MS_BTN1"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     3,
+     1
+    ],
+    "token": "LSLOT(24)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     3,
+     2
+    ],
+    "token": "LSLOT(25)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     3,
+     3
+    ],
+    "token": "LSLOT(26)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     3,
+     4
+    ],
+    "token": "LSLOT(27)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     3,
+     5
+    ],
+    "token": "LSLOT(28)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     3,
+     6
+    ],
+    "token": "LSLOT(29)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     4,
+     7
+    ],
+    "token": "LSLOT(30)"
+   },
+   {
+    "keycode": 32264,
+    "matrix": [
+     4,
+     0
+    ],
+    "token": "KC_BASE"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     4,
+     1
+    ],
+    "token": "LMRU(0)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     4,
+     2
+    ],
+    "token": "LMRU(1)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     4,
+     3
+    ],
+    "token": "LMRU(2)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     4,
+     4
+    ],
+    "token": "LMRU(3)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     4,
+     5
+    ],
+    "token": "LMRU(4)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     4,
+     6
+    ],
+    "token": "LMRU(5)"
+   },
+   {
+    "keycode": 31794,
+    "matrix": [
+     5,
+     1
+    ],
+    "token": "QK_UNICODE_MODE_MACOS"
+   },
+   {
+    "keycode": 31798,
+    "matrix": [
+     5,
+     2
+    ],
+    "token": "QK_UNICODE_MODE_WINCOMPOSE"
+   },
+   {
+    "keycode": 31799,
+    "matrix": [
+     5,
+     3
+    ],
+    "token": "QK_UNICODE_MODE_EMACS"
+   },
+   {
+    "keycode": 31796,
+    "matrix": [
+     5,
+     4
+    ],
+    "token": "QK_UNICODE_MODE_WINDOWS"
+   },
+   {
+    "keycode": 31795,
+    "matrix": [
+     5,
+     5
+    ],
+    "token": "QK_UNICODE_MODE_LINUX"
+   },
+   {
+    "keycode": 31797,
+    "matrix": [
+     5,
+     6
+    ],
+    "token": "QK_UNICODE_MODE_BSD"
+   },
+   {
+    "keycode": 32573,
+    "matrix": [
+     5,
+     7
+    ],
+    "token": "KC_LANG_PAGE_NEXT"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     6,
+     1
+    ],
+    "token": "LSLOT(6)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     6,
+     2
+    ],
+    "token": "LSLOT(7)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     6,
+     3
+    ],
+    "token": "LSLOT(8)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     6,
+     4
+    ],
+    "token": "LSLOT(9)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     6,
+     5
+    ],
+    "token": "LSLOT(10)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     6,
+     6
+    ],
+    "token": "LSLOT(11)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     7,
+     1
+    ],
+    "token": "LSLOT(18)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     7,
+     2
+    ],
+    "token": "LSLOT(19)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     7,
+     3
+    ],
+    "token": "LSLOT(20)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     7,
+     4
+    ],
+    "token": "LSLOT(21)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     7,
+     5
+    ],
+    "token": "LSLOT(22)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     7,
+     6
+    ],
+    "token": "LSLOT(23)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     9,
+     0
+    ],
+    "token": "LSLOT(31)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     8,
+     1
+    ],
+    "token": "LSLOT(32)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     8,
+     2
+    ],
+    "token": "LSLOT(33)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     8,
+     3
+    ],
+    "token": "LSLOT(34)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     8,
+     4
+    ],
+    "token": "LSLOT(35)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     8,
+     5
+    ],
+    "token": "LSLOT(36)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     8,
+     6
+    ],
+    "token": "LSLOT(37)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     9,
+     1
+    ],
+    "token": "LMRU(6)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     9,
+     2
+    ],
+    "token": "LMRU(7)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     9,
+     3
+    ],
+    "token": "LMRU(8)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     9,
+     4
+    ],
+    "token": "LMRU(9)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     9,
+     5
+    ],
+    "token": "LMRU(10)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     9,
+     6
+    ],
+    "token": "LMRU(11)"
+   },
+   {
+    "keycode": 32575,
+    "matrix": [
+     9,
+     7
+    ],
+    "token": "KC_LANG_CLEAR"
+   }
+  ],
+  "11": [
+   {
+    "keycode": 32289,
+    "matrix": [
+     0,
+     0
+    ],
+    "token": "KC_LAT_PAGE_PREV"
+   },
+   {
+    "keycode": 32275,
+    "matrix": [
+     0,
+     1
+    ],
+    "token": "KC_LAT0"
+   },
+   {
+    "keycode": 32276,
+    "matrix": [
+     0,
+     2
+    ],
+    "token": "KC_LAT1"
+   },
+   {
+    "keycode": 32277,
+    "matrix": [
+     0,
+     3
+    ],
+    "token": "KC_LAT2"
+   },
+   {
+    "keycode": 32278,
+    "matrix": [
+     0,
+     4
+    ],
+    "token": "KC_LAT3"
+   },
+   {
+    "keycode": 32279,
+    "matrix": [
+     0,
+     5
+    ],
+    "token": "KC_LAT4"
+   },
+   {
+    "keycode": 32280,
+    "matrix": [
+     0,
+     6
+    ],
+    "token": "KC_LAT5"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     1,
+     1
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     1,
+     2
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     1,
+     3
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     1,
+     4
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     1,
+     5
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     1,
+     6
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     2,
+     1
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     2,
+     2
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     2,
+     3
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     2,
+     4
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     2,
+     5
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     2,
+     6
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     3,
+     7
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     3,
+     0
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     3,
+     1
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     3,
+     2
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     3,
+     3
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     3,
+     4
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     3,
+     5
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     3,
+     6
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     4,
+     7
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     4,
+     0
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 32291,
+    "matrix": [
+     4,
+     1
+    ],
+    "token": "KC_LAT_REMAP"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     4,
+     3
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     4,
+     4
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     4,
+     5
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     4,
+     6
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 32281,
+    "matrix": [
+     5,
+     1
+    ],
+    "token": "KC_LAT6"
+   },
+   {
+    "keycode": 32282,
+    "matrix": [
+     5,
+     2
+    ],
+    "token": "KC_LAT7"
+   },
+   {
+    "keycode": 32283,
+    "matrix": [
+     5,
+     3
+    ],
+    "token": "KC_LAT8"
+   },
+   {
+    "keycode": 32284,
+    "matrix": [
+     5,
+     4
+    ],
+    "token": "KC_LAT9"
+   },
+   {
+    "keycode": 32287,
+    "matrix": [
+     5,
+     5
+    ],
+    "token": "KC_LAT10"
+   },
+   {
+    "keycode": 32288,
+    "matrix": [
+     5,
+     6
+    ],
+    "token": "KC_LAT11"
+   },
+   {
+    "keycode": 32290,
+    "matrix": [
+     5,
+     7
+    ],
+    "token": "KC_LAT_PAGE_NEXT"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     6,
+     1
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     6,
+     2
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     6,
+     3
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     6,
+     4
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     6,
+     5
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     6,
+     6
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     8,
+     0
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     7,
+     1
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     7,
+     2
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     7,
+     3
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     7,
+     4
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     7,
+     5
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     7,
+     6
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     9,
+     0
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     8,
+     1
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     8,
+     2
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     8,
+     3
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     8,
+     4
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     8,
+     5
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     8,
+     6
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     8,
+     7
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     9,
+     1
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     9,
+     2
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     9,
+     3
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     9,
+     4
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     9,
+     5
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     9,
+     6
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     9,
+     7
+    ],
+    "token": "_______"
+   }
+  ],
+  "12": [
+   {
+    "keycode": 32493,
+    "matrix": [
+     0,
+     0
+    ],
+    "token": "KC_EMJ_PAGE_PREV"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     0,
+     1
+    ],
+    "token": "KC_EMJ_CAT(0)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     0,
+     2
+    ],
+    "token": "KC_EMJ_CAT(1)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     0,
+     3
+    ],
+    "token": "KC_EMJ_CAT(2)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     0,
+     4
+    ],
+    "token": "KC_EMJ_CAT(4)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     0,
+     5
+    ],
+    "token": "KC_EMJ_CAT(5)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     0,
+     6
+    ],
+    "token": "KC_EMJ_CAT(6)"
+   },
+   {
+    "keycode": 32294,
+    "matrix": [
+     1,
+     0
+    ],
+    "token": "KC_EMJ_MODE"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     1,
+     1
+    ],
+    "token": "ESLOT(0)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     1,
+     2
+    ],
+    "token": "ESLOT(1)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     1,
+     3
+    ],
+    "token": "ESLOT(2)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     1,
+     4
+    ],
+    "token": "ESLOT(3)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     1,
+     5
+    ],
+    "token": "ESLOT(4)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     1,
+     6
+    ],
+    "token": "ESLOT(5)"
+   },
+   {
+    "keycode": 32295,
+    "matrix": [
+     2,
+     0
+    ],
+    "token": "KC_EMJ_S_CLEAR"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     2,
+     1
+    ],
+    "token": "ESLOT(6)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     2,
+     2
+    ],
+    "token": "ESLOT(7)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     2,
+     3
+    ],
+    "token": "ESLOT(8)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     2,
+     4
+    ],
+    "token": "ESLOT(9)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     2,
+     5
+    ],
+    "token": "ESLOT(10)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     2,
+     6
+    ],
+    "token": "ESLOT(11)"
+   },
+   {
+    "keycode": 32297,
+    "matrix": [
+     3,
+     0
+    ],
+    "token": "KC_EMJ_S_SPACE"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     3,
+     1
+    ],
+    "token": "ESLOT(12)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     3,
+     2
+    ],
+    "token": "ESLOT(13)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     3,
+     3
+    ],
+    "token": "ESLOT(14)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     3,
+     4
+    ],
+    "token": "ESLOT(15)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     3,
+     5
+    ],
+    "token": "ESLOT(16)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     3,
+     6
+    ],
+    "token": "ESLOT(17)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     4,
+     7
+    ],
+    "token": "ESLOT(18)"
+   },
+   {
+    "keycode": 32264,
+    "matrix": [
+     4,
+     0
+    ],
+    "token": "KC_BASE"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     4,
+     1
+    ],
+    "token": "EMRU(0)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     4,
+     2
+    ],
+    "token": "EMRU(1)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     4,
+     3
+    ],
+    "token": "EMRU(2)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     4,
+     4
+    ],
+    "token": "EMRU(3)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     4,
+     5
+    ],
+    "token": "EMRU(4)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     4,
+     6
+    ],
+    "token": "EMRU(5)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     5,
+     1
+    ],
+    "token": "KC_EMJ_CAT(7)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     5,
+     2
+    ],
+    "token": "KC_EMJ_CAT(8)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     5,
+     3
+    ],
+    "token": "KC_EMJ_CAT(9)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     5,
+     4
+    ],
+    "token": "KC_EMJ_CAT(10)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     5,
+     5
+    ],
+    "token": "KC_EMJ_CAT(3)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     5,
+     6
+    ],
+    "token": "KC_EMJ_CAT(11)"
+   },
+   {
+    "keycode": 32494,
+    "matrix": [
+     5,
+     7
+    ],
+    "token": "KC_EMJ_PAGE_NEXT"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     6,
+     1
+    ],
+    "token": "ESLOT(19)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     6,
+     2
+    ],
+    "token": "ESLOT(20)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     6,
+     3
+    ],
+    "token": "ESLOT(21)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     6,
+     4
+    ],
+    "token": "ESLOT(22)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     6,
+     5
+    ],
+    "token": "ESLOT(23)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     6,
+     6
+    ],
+    "token": "ESLOT(24)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     7,
+     1
+    ],
+    "token": "ESLOT(25)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     7,
+     2
+    ],
+    "token": "ESLOT(26)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     7,
+     3
+    ],
+    "token": "ESLOT(27)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     7,
+     4
+    ],
+    "token": "ESLOT(28)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     7,
+     5
+    ],
+    "token": "ESLOT(29)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     7,
+     6
+    ],
+    "token": "ESLOT(30)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     9,
+     0
+    ],
+    "token": "ESLOT(31)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     8,
+     1
+    ],
+    "token": "ESLOT(32)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     8,
+     2
+    ],
+    "token": "ESLOT(33)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     8,
+     3
+    ],
+    "token": "ESLOT(34)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     8,
+     4
+    ],
+    "token": "ESLOT(35)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     8,
+     5
+    ],
+    "token": "ESLOT(36)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     8,
+     6
+    ],
+    "token": "ESLOT(37)"
+   },
+   {
+    "keycode": 32296,
+    "matrix": [
+     8,
+     7
+    ],
+    "token": "KC_EMJ_S_BKSP"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     9,
+     1
+    ],
+    "token": "EMRU(6)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     9,
+     2
+    ],
+    "token": "EMRU(7)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     9,
+     3
+    ],
+    "token": "EMRU(8)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     9,
+     4
+    ],
+    "token": "EMRU(9)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     9,
+     5
+    ],
+    "token": "EMRU(10)"
+   },
+   {
+    "keycode": null,
+    "matrix": [
+     9,
+     6
+    ],
+    "token": "EMRU(11)"
+   },
+   {
+    "keycode": 32496,
+    "matrix": [
+     9,
+     7
+    ],
+    "token": "KC_EMJ_CLEAR"
+   }
+  ],
+  "9": [
+   {
+    "keycode": 32666,
+    "matrix": [
+     1,
+     1
+    ],
+    "token": "KC_OS_SET_AUTO"
+   },
+   {
+    "keycode": 32667,
+    "matrix": [
+     1,
+     2
+    ],
+    "token": "KC_OS_SET_WINDOWS"
+   },
+   {
+    "keycode": 32668,
+    "matrix": [
+     1,
+     3
+    ],
+    "token": "KC_OS_SET_MACOS"
+   },
+   {
+    "keycode": 32669,
+    "matrix": [
+     1,
+     4
+    ],
+    "token": "KC_OS_SET_LINUX"
+   },
+   {
+    "keycode": 32670,
+    "matrix": [
+     1,
+     5
+    ],
+    "token": "KC_OS_SET_ANDROID"
+   },
+   {
+    "keycode": 32265,
+    "matrix": [
+     2,
+     1
+    ],
+    "token": "KC_L0"
+   },
+   {
+    "keycode": 32266,
+    "matrix": [
+     2,
+     2
+    ],
+    "token": "KC_L1"
+   },
+   {
+    "keycode": 32267,
+    "matrix": [
+     2,
+     3
+    ],
+    "token": "KC_L2"
+   },
+   {
+    "keycode": 32268,
+    "matrix": [
+     2,
+     4
+    ],
+    "token": "KC_L3"
+   },
+   {
+    "keycode": 32269,
+    "matrix": [
+     2,
+     5
+    ],
+    "token": "KC_L4"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     3,
+     7
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 32675,
+    "matrix": [
+     3,
+     0
+    ],
+    "token": "KC_SETTINGS_MORE"
+   },
+   {
+    "keycode": 32673,
+    "matrix": [
+     3,
+     1
+    ],
+    "token": "KC_IDLE_STYLE"
+   },
+   {
+    "keycode": 32677,
+    "matrix": [
+     3,
+     2
+    ],
+    "token": "KC_IDLE_TIMEOUT"
+   },
+   {
+    "keycode": 32674,
+    "matrix": [
+     3,
+     3
+    ],
+    "token": "KC_GLYPH_SCRIPT"
+   },
+   {
+    "keycode": 32271,
+    "matrix": [
+     3,
+     4
+    ],
+    "token": "KC_TOGMODS"
+   },
+   {
+    "keycode": 32272,
+    "matrix": [
+     3,
+     5
+    ],
+    "token": "KC_TOGTEXT"
+   },
+   {
+    "keycode": 32678,
+    "matrix": [
+     3,
+     6
+    ],
+    "token": "KC_DEMO"
+   },
+   {
+    "keycode": 32679,
+    "matrix": [
+     4,
+     7
+    ],
+    "token": "KC_DEMO_KEYS"
+   },
+   {
+    "keycode": 32264,
+    "matrix": [
+     4,
+     0
+    ],
+    "token": "KC_BASE"
+   },
+   {
+    "keycode": 30788,
+    "matrix": [
+     5,
+     1
+    ],
+    "token": "RM_PREV"
+   },
+   {
+    "keycode": 30766,
+    "matrix": [
+     5,
+     2
+    ],
+    "token": "RGB_M_SW"
+   },
+   {
+    "keycode": 30765,
+    "matrix": [
+     5,
+     3
+    ],
+    "token": "RGB_M_R"
+   },
+   {
+    "keycode": 32273,
+    "matrix": [
+     5,
+     4
+    ],
+    "token": "KC_RGB_TOG"
+   },
+   {
+    "keycode": 30763,
+    "matrix": [
+     5,
+     5
+    ],
+    "token": "RGB_M_P"
+   },
+   {
+    "keycode": 30764,
+    "matrix": [
+     5,
+     6
+    ],
+    "token": "RGB_M_B"
+   },
+   {
+    "keycode": 30787,
+    "matrix": [
+     5,
+     7
+    ],
+    "token": "RM_NEXT"
+   },
+   {
+    "keycode": 30796,
+    "matrix": [
+     6,
+     2
+    ],
+    "token": "RM_SPDD"
+   },
+   {
+    "keycode": 30795,
+    "matrix": [
+     6,
+     3
+    ],
+    "token": "RM_SPDU"
+   },
+   {
+    "keycode": 30790,
+    "matrix": [
+     6,
+     5
+    ],
+    "token": "RM_HUED"
+   },
+   {
+    "keycode": 30789,
+    "matrix": [
+     6,
+     6
+    ],
+    "token": "RM_HUEU"
+   },
+   {
+    "keycode": 1,
+    "matrix": [
+     8,
+     0
+    ],
+    "token": "_______"
+   },
+   {
+    "keycode": 30794,
+    "matrix": [
+     7,
+     2
+    ],
+    "token": "RM_VALD"
+   },
+   {
+    "keycode": 30793,
+    "matrix": [
+     7,
+     3
+    ],
+    "token": "RM_VALU"
+   },
+   {
+    "keycode": 30792,
+    "matrix": [
+     7,
+     5
+    ],
+    "token": "RM_SATD"
+   },
+   {
+    "keycode": 30791,
+    "matrix": [
+     7,
+     6
+    ],
+    "token": "RM_SATU"
+   },
+   {
+    "keycode": 31746,
+    "matrix": [
+     8,
+     2
+    ],
+    "token": "DB_TOGG"
+   },
+   {
+    "keycode": 32270,
+    "matrix": [
+     8,
+     3
+    ],
+    "token": "KC_DEADKEY"
+   },
+   {
+    "keycode": 32672,
+    "matrix": [
+     8,
+     4
+    ],
+    "token": "KC_EDEN"
+   },
+   {
+    "keycode": 31745,
+    "matrix": [
+     8,
+     5
+    ],
+    "token": "QK_RBT"
+   },
+   {
+    "keycode": 31744,
+    "matrix": [
+     8,
+     6
+    ],
+    "token": "QK_BOOT"
+   },
+   {
+    "keycode": 32264,
+    "matrix": [
+     9,
+     7
+    ],
+    "token": "KC_BASE"
+   }
+  ]
+ },
+ "fw_version": "1.13.7",
  "keys": [
   {
    "keycode": 41,
@@ -668,5 +2662,9 @@
    "token": "KC_RIGHT"
   }
  ],
- "layout": "LAYOUT_left_right_stacked"
+ "layout": "LAYOUT_left_right_stacked",
+ "matrix": [
+  10,
+  8
+ ]
 }

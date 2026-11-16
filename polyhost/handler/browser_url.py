@@ -106,9 +106,32 @@ CONTEXT_REPORTERS = {
     "macvim": "vim",
     "neovide": "vim",
     "emacs": "emacs",
+    # IDA Pro (ida-plugin/): the names of the mapping's `ida` entry.
+    "ida": "ida", "ida64": "ida", "idaq": "ida", "idaq64": "ida", "ida pro": "ida",
+    "ida professional": "ida", "ida home": "ida", "ida free": "ida", "ida classroom": "ida",
     # QGIS plugin (qgis-plugin/): exactly the names of the `qgis` mapping entry.
     **dict.fromkeys(("qgis", "qgis3", "qgis4", "org.qgis.qgis", "qgis-bin", "qgis-ltr-bin",
                      "qgis-dev-bin", "qgis-qt6-bin", "qgis-ltr"), "qgis"),
+    # SideFX Houdini (houdini-package/): the names of the mapping's houdini
+    # entry. macOS reports "Houdini FX 22.0.368"; context_reporter_for() drops
+    # the version the way the matcher does.
+    "houdini": "houdini", "houdinifx": "houdini", "houdinicore": "houdini",
+    "happrentice": "houdini", "hindie": "houdini", "hescape": "houdini",
+    "houdini-bin": "houdini", "houdini fx": "houdini", "houdini core": "houdini",
+    "houdini apprentice": "houdini", "houdini indie": "houdini",
+    # JetBrains IDEs (jetbrains-plugin/): exactly the names of the
+    # `idea64,pycharm64,...` mapping entry (tests/handler/jetbrains_routing_test.py).
+    **dict.fromkeys((
+        "idea64", "pycharm64", "clion64", "webstorm64", "goland64", "rider64",
+        "phpstorm64", "rubymine64", "datagrip64", "rustrover64", "studio64",
+        "jetbrains_client", "idea", "pycharm", "clion", "webstorm", "goland", "rider",
+        "phpstorm", "rubymine", "datagrip", "rustrover", "jetbrains-idea",
+        "jetbrains-idea-ce", "jetbrains-pycharm", "jetbrains-pycharm-ce",
+        "jetbrains-clion", "jetbrains-webstorm", "jetbrains-goland", "jetbrains-rider",
+        "jetbrains-phpstorm", "jetbrains-rubymine", "jetbrains-datagrip",
+        "jetbrains-rustrover", "jetbrains-studio", "intellij idea", "intellij idea ce",
+        "intellij idea ultimate", "pycharm ce", "pycharm professional", "android studio",
+    ), "jetbrains"),
     # VS Code and its forks: vscode-extension/ sends <token>://<debug mode>.
     "code": "vscode", "cursor": "cursor",
     "windsurf": "windsurf", "devin": "windsurf", "devin-desktop": "windsurf",
@@ -132,6 +155,7 @@ CONTEXT_REPORTERS = {
     # Godot editor 4.x (godot-plugin/): exactly the `godot` mapping entry's names.
     "godot": "godot", "godot_v4": "godot", "godot_mono": "godot", "godot4": "godot",
     "godot-bin": "godot", "org.godotengine.godot": "godot", "org.godotengine.editor": "godot",
+    "unity": "unity",               # Unity Editor package (unity-package/)
 }
 
 # Reporters that also run INSIDE a terminal (vim, emacs -nw). While a terminal
@@ -186,11 +210,10 @@ def _app_key(app_name):
 
 def context_reporter_for(app_name):
     """The reporter token for a focused app with a context add-on, or None.
-    The same version stripping as the mapping lookup, so a release year
-    ("maya 2026") or a versioned name (Godot's Linux download) reaches the
-    reporter its entry matches."""
-    key = _app_key(app_name)
-    return CONTEXT_REPORTERS.get(mapping_key(key, CONTEXT_REPORTERS))
+    A trailing release year or version is dropped as the mapping does ("maya 2026",
+    macOS "IDA Professional 9.1", Godot's versioned Linux download)."""
+    key = mapping_key(_app_key(app_name), CONTEXT_REPORTERS)
+    return CONTEXT_REPORTERS.get(key) if key else None
 
 
 def is_terminal_app(app_name) -> bool:
