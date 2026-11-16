@@ -152,6 +152,9 @@ CONTEXT_REPORTERS = {
     **dict.fromkeys(("ableton live 12 suite", "ableton live 12 standard",
                      "ableton live 12 intro", "ableton live 12 lite",
                      "ableton live 12 trial"), "ableton"),
+    # Godot editor 4.x (godot-plugin/): exactly the `godot` mapping entry's names.
+    "godot": "godot", "godot_v4": "godot", "godot_mono": "godot", "godot4": "godot",
+    "godot-bin": "godot", "org.godotengine.godot": "godot", "org.godotengine.editor": "godot",
     "unity": "unity",               # Unity Editor package (unity-package/)
 }
 
@@ -208,7 +211,7 @@ def _app_key(app_name):
 def context_reporter_for(app_name):
     """The reporter token for a focused app with a context add-on, or None.
     A trailing release year or version is dropped as the mapping does ("maya 2026",
-    macOS "IDA Professional 9.1")."""
+    macOS "IDA Professional 9.1", Godot's versioned Linux download)."""
     key = mapping_key(_app_key(app_name), CONTEXT_REPORTERS)
     return CONTEXT_REPORTERS.get(key) if key else None
 
