@@ -31,6 +31,11 @@ region: [36, 32]
 margin: 0
 mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
+program_icon: freecad.png         # the FreeCAD logo (fetch_icons.py, Simple Icons)
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
 
 bindings:
   # --- file ---

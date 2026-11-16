@@ -146,6 +146,10 @@ def main() -> int:
     for name, bindings in build(fallback).items():
         spec = {k: v for k, v in fallback.items() if k != "bindings"}
         spec["output"] = f"freecad_{name}_template"
+        if name != "global":
+            # The logo with the workbench name (fetch_icons.py ESC_WORDS).
+            spec.update(program_icon=f"esc_{name}.png", program_icon_region=[72, 40],
+                        program_icon_legend=False)
         head = yaml.safe_dump(spec, sort_keys=False, default_flow_style=None)
         text = (HEADER.format(name=name, routes=routes.get(name, f"freecad://{name}"))
                 + head + "\nbindings:\n" + "\n".join(_dump_binding(b) for b in bindings) + "\n")

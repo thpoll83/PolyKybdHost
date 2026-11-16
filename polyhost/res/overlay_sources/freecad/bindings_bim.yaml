@@ -11,6 +11,12 @@ region: [36, 32]
 margin: 0
 mode: auto
 threshold: 150
+program_icon: esc_bim.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
 
 bindings:
   - {key: N, mods: [CMDCTRL], label: New}

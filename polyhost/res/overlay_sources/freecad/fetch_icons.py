@@ -6,8 +6,10 @@ Glyphs: Microsoft Fluent UI System Icons (MIT), with Material Symbols
 and the Sketcher constraint symbols are text in DejaVu Sans Bold; the tangent
 symbol is drawn. `BADGED` draws a glyph over a short word, for a key that
 does a different thing than another key with the same glyph (TechDraw's
-dimensions, the Assembly joints, BIM's panel and nudge keys). No program icon: the host draws the ESC mark for the app
-itself.
+dimensions, the Assembly joints, BIM's panel and nudge keys). The ESC mark
+is the FreeCAD logo (Simple Icons, CC0-1.0, via brand_marks), and on each
+workbench set the logo with the workbench name (`esc_<set>.png`), as the Godot
+set does.
 
     pip install cairosvg Pillow
     python polyhost/res/overlay_sources/freecad/fetch_icons.py
@@ -21,11 +23,13 @@ from PIL import Image, ImageDraw, ImageFont
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import brand_marks  # noqa: E402
 import dcc_glyphs  # noqa: E402
 import icon_fetch  # noqa: E402
 
 RENDER_PX = 96
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+WORD_FONT = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
 
 FLUENT = {
     # --- file, edit, tools ---
@@ -187,6 +191,41 @@ def _draw_tangent(path: Path) -> None:
     img.save(path)
 
 
+# ESC marks: the logo alone on the fallback and global sets, the logo with the
+# workbench name on each workbench set (gen_workbench_bindings.py names them).
+ESC_WORDS = {"sketcher": "SKETCH", "assembly": "ASM", "bim": "BIM", "draft": "DRAFT",
+             "techdraw": "TECH", "spreadsheet": "SHEET"}
+ESC_W, ESC_H, ESC_LOGO = 72, 40, 34
+ESC_WORD_PX, ESC_WORD_W = 22, 34
+
+
+def esc_mark(dest: Path, word: str, logo_png: Path) -> None:
+    """`word` (Liberation Sans Bold, at most ESC_WORD_W px wide) left of the
+    logo (its alpha, ESC_LOGO px), both 1 bit (as in the Godot set)."""
+    if dest.exists():
+        print(f"  {dest.name}  <- committed asset (left as-is)")
+        return
+    logo = Image.open(logo_png).convert("RGBA").split()[3].resize((ESC_LOGO, ESC_LOGO), Image.LANCZOS)
+    mask = Image.new("L", (ESC_W, ESC_H), 0)
+    mask.paste(logo.point(lambda v: 255 if v >= 128 else 0),
+               (ESC_W - ESC_LOGO, (ESC_H - ESC_LOGO) // 2))
+    px = ESC_WORD_PX
+    while px > 8:
+        l, t, r, b = ImageFont.truetype(WORD_FONT, px).getbbox(word)
+        if r - l <= ESC_WORD_W:
+            break
+        px -= 1
+    layer = Image.new("L", (r - l + 2, b - t + 2), 0)
+    ImageDraw.Draw(layer).text((1 - l, 1 - t), word, fill=255, font=ImageFont.truetype(WORD_FONT, px))
+    layer = layer.point(lambda v: 255 if v > 127 else 0)
+    layer = layer.crop(layer.getbbox())
+    mask.paste(255, (0, (ESC_H - layer.height) // 2), layer)
+    img = Image.new("RGBA", (ESC_W, ESC_H), (255, 255, 255, 0))
+    img.putalpha(mask)
+    img.save(dest)
+    print(f"  {dest.name}  <- drawn: '{word}' + freecad.png")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -201,6 +240,9 @@ def main() -> int:
                            lambda p, g=glyph, w=word: _draw_badged(p, out / f"{g}.png", w),
                            f"{glyph}.png over '{word}'")
         n += 1
+    brand_marks.ensure(out / "freecad.png", "freecad")
+    for name, word in ESC_WORDS.items():
+        esc_mark(out / f"esc_{name}.png", word, out / "freecad.png")
     print(f"Wrote {n} icons to {out} ({len(TEXT)} drawn as text)")
     return 0
 

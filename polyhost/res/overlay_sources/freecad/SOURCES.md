@@ -71,7 +71,7 @@ a key does nothing. PartDesign has no default keys.
 - The macro debugger keys (F6, Shift+F6, F9, F10, F11 step into): F11 is also
   Full Screen, which the set shows.
 - Ctrl+Q (Quit). Esc (toggle navigation/edit mode): the ESC key carries the
-  program mark, which the host draws.
+  program mark (see *Icons*).
 - The BIM, Assembly, Spreadsheet and Robot keys (the per-workbench sets above
   have all but Robot's). BIM's Ctrl+arrows and Ctrl+, conflict with the global
   dock-panel and Preferences keys, which the set shows.
@@ -83,6 +83,11 @@ F5. The set follows the source.
 
 ## Icons
 
+- ESC program mark: the FreeCAD logo from Simple Icons (`freecad`, CC0-1.0,
+  <https://simpleicons.org>), fetched by `brand_marks.ensure` into `freecad.png`.
+  The fallback and global sets show the logo alone. Each workbench set shows the
+  logo with the workbench name in Liberation Sans Bold (`esc_<set>.png`:
+  SKETCH, ASM, BIM, DRAFT, TECH, SHEET), as the Godot set shows its screen name.
 - Microsoft Fluent UI System Icons, MIT,
   <https://github.com/microsoft/fluentui-system-icons>. Folder names are in
   `fetch_icons.py`.
