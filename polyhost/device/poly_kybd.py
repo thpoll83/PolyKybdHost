@@ -14,7 +14,7 @@ from polyhost.device.bit_packing import (pack_report, pairs_per_report,
                                          plan_mapping_reports)
 from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, compose_cmd_str, compose_roi_header, expectReq
 from polyhost.device.command_ids import (Cmd, Combos, HidId, IdleStyle, IdleTimeout, OsType, GlyphPlacement, TapTerms,
-                                         GlyphScript, GlyphSize)
+                                         GlyphScript, GlyphSize, HostTutorial)
 from polyhost.device.hid_helper import DisconnectedHid, HidHelper, IoMeter
 from polyhost.device.hid_fontpack import (parse_id_version_block, parse_id_state_generation,
                                           parse_id_anim_state)
@@ -172,6 +172,9 @@ KEY_ATTENTION_PERIOD_MAX_MS = 10000
 # path of layer keys to a target layer, e.g. Fn and then the MIDI key.
 KEY_GUIDE_MIN_PROTOCOL = 34
 KEY_GUIDE_MAX_STEPS = 4
+# Minimum firmware PROTOCOL_VERSION for the host tutorial (cmd 49): status text, the
+# spotlight, the reveal and key/layer conditions (services/tutorials).
+HOST_TUTORIAL_MIN_PROTOCOL = 35
 AGENT_KEY_COUNT = 10
 # Card slots: the 10 number keys, then '-' (dictation) and '+' (next waiting agent).
 AGENT_CARD_COUNT = 12
@@ -225,6 +228,7 @@ FEATURE_MIN_PROTOCOL = {
     "key_attention": KEY_ATTENTION_MIN_PROTOCOL,
     "combos": COMBOS_MIN_PROTOCOL,
     "key_guide": KEY_GUIDE_MIN_PROTOCOL,
+    "host_tutorial": HOST_TUTORIAL_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -1110,6 +1114,89 @@ class PolyKybd:
         if reply[2:3] != b'.':
             return False, f"The keyboard refused the key guide {steps} to layer {target_layer}"
         return True, "ok"
+
+    # ---- host tutorial (cmd 49, v35+) -----------------------------------------
+
+    def _host_tutorial(self, what: str, *payload: int) -> tuple[bool, bytes | str]:
+        """Send one cmd 49 report; (True, reply) on ACK, else (False, message)."""
+        if not self.supports("host_tutorial"):
+            return False, (f"Firmware protocol too old for the host tutorial "
+                           f"(need v{HOST_TUTORIAL_MIN_PROTOCOL}+). Please update the "
+                           f"PolyKybd firmware.")
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.HOST_TUTORIAL, *payload), 100, expect(Cmd.HOST_TUTORIAL))
+        if not result:
+            return False, f"The keyboard did not answer the tutorial {what} request"
+        if reply[2:3] != b'.':
+            return False, f"The keyboard refused the tutorial {what} request"
+        return True, bytes(reply)
+
+    def tutorial_info(self) -> tuple[bool, dict | str]:
+        """What this firmware's cmd 49 offers: ops, conditions, watchdog, text bytes."""
+        ok, reply = self._host_tutorial("info", HostTutorial.OP_INFO)
+        if not ok:
+            return ok, reply
+        return True, {"ops": reply[3], "max_conds": reply[4], "watchdog_s": reply[5],
+                      "text_bytes": reply[6]}
+
+    def tutorial_text(self, line0: str = "", line1: str = "") -> tuple[bool, str]:
+        """The two status-display lines (ASCII 0x20..0x7E); both empty clears them."""
+        try:
+            a, b = line0.encode("ascii"), line1.encode("ascii")
+        except UnicodeEncodeError:
+            return False, "The status display shows ASCII only"
+        if any(not 0x20 <= ch <= 0x7E for ch in a + b):
+            return False, "The status display shows ASCII 0x20..0x7E only"
+        if len(a) + len(b) > HostTutorial.TEXT_BYTES:
+            return False, (f"The two lines have {len(a) + len(b)} characters; one report "
+                           f"holds {HostTutorial.TEXT_BYTES}")
+        ok, reply = self._host_tutorial("text", HostTutorial.OP_TEXT, len(a), *a, len(b), *b)
+        return ok, "ok" if ok else reply
+
+    def tutorial_spotlight(self, keys=None) -> tuple[bool, str]:
+        """Darken every key except `keys` (a list of (row, col)). None turns the
+        spotlight off; an empty list darkens every key."""
+        ds = self.device_settings
+        mask = bytearray(HostTutorial.MASK_BYTES)
+        for row, col in keys or ():
+            if not (0 <= row < ds.MATRIX_ROWS and 0 <= col < ds.MATRIX_COLUMNS):
+                return False, f"No key at row {row}, col {col}"
+            bit = row * ds.MATRIX_COLUMNS + col
+            mask[bit // 8] |= 1 << (bit % 8)
+        flags = 0 if keys is None else HostTutorial.SPOT_FLAG_ON
+        ok, reply = self._host_tutorial("spotlight", HostTutorial.OP_SPOTLIGHT, flags, *mask)
+        return ok, "ok" if ok else reply
+
+    def tutorial_reveal(self, row: int, col: int) -> tuple[bool, str]:
+        """The reveal wave from (row, col): every dark key lights as it passes, and the
+        spotlight ends."""
+        ok, reply = self._host_tutorial("reveal", HostTutorial.OP_REVEAL, int(row), int(col))
+        return ok, "ok" if ok else reply
+
+    def tutorial_arm(self, conds) -> tuple[bool, str]:
+        """Conditions the keyboard watches, replacing the last set: a list of up to
+        HostTutorial.MAX_CONDS ``(kind, a, b)``. An empty list disarms."""
+        conds = [tuple(int(v) for v in c) for c in conds]
+        if len(conds) > HostTutorial.MAX_CONDS or any(
+                len(c) != 3 or not all(0 <= v < 256 for v in c) for c in conds):
+            return False, f"Invalid tutorial conditions: {conds}"
+        flat = [v for c in conds for v in c]
+        ok, reply = self._host_tutorial("arm", HostTutorial.OP_ARM, len(conds), *flat)
+        return ok, "ok" if ok else reply
+
+    def tutorial_poll(self) -> tuple[bool, dict | str]:
+        """The conditions matched since the last arm. Also keeps the session alive:
+        the keyboard ends it after HostTutorial.WATCHDOG_S without a cmd 49."""
+        ok, reply = self._host_tutorial("poll", HostTutorial.OP_POLL)
+        if not ok:
+            return ok, reply
+        return True, {"flags": reply[3], "armed": reply[4], "matched": reply[5],
+                      "layer": reply[6]}
+
+    def tutorial_end(self) -> tuple[bool, str]:
+        """Clear the text, the spotlight and the conditions on both halves."""
+        ok, reply = self._host_tutorial("end", HostTutorial.OP_END)
+        return ok, "ok" if ok else reply
 
     # ---- agent keys (cmd 45 / 46, v31+) ---------------------------------------
 

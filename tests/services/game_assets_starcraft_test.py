@@ -531,9 +531,14 @@ class BuildTest(unittest.TestCase):
         root = Path(cls.tmp.name)
         cls.data, cls.cache = root / "sc", root / "cache"
         make_game_files(cls.data)
+        # A developer's own StarCraft II hotkey profile would move icons: these
+        # tests check the art only (the hotkeys: game_assets_sc2_keys_test.py).
+        cls.no_keys = mock.patch("polyhost.services.game_assets.sc2_keys.find", return_value=None)
+        cls.no_keys.start()
 
     @classmethod
     def tearDownClass(cls):
+        cls.no_keys.stop()
         cls.tmp.cleanup()
 
     def test_every_race(self):
