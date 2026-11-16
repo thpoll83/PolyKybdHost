@@ -96,6 +96,8 @@ routes the URL, in this order:
 | `.../scene` | Scene view: global keys plus grid, snapping, render modes, overlays |
 | `.../animation` | Animation window: global keys plus frame, keyframe, ripple |
 | `.../timeline` | Timeline window: global keys plus split, trim, play, frame, key, zoom, track lock and mute |
+| `.../search` | Search window: global chords plus query builder, panels, refresh, provider tabs, search history (F1 to F5) |
+| `.../curves` | curve editor of an AnimationCurve field: global keys plus Frame all and Delete keys |
 | any other `unity://` | global keys (tools, File, Edit, GameObject, Window) |
 | no report | the Scene view set |
 

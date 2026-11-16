@@ -110,7 +110,7 @@ bindings:
   - { key: "DOWN", mods: [SHIFT], icon: tl_multidown.png, label: "Extend selection down", source: "tl: Shortcuts.cs Timeline/SelectDown" }
   - { key: "TAB", mods: [], icon: tl_area.png, label: "Clips / tracks", source: "tl: Shortcuts.cs Timeline/ToggleClipTrackArea" }
   - { key: "C", mods: [], icon: tl_match.png, label: "Match content", source: "tl: Shortcuts.cs Timeline/MatchContent" }
-  - { key: "L", mods: [], icon: lock_channel.png, label: "Lock track", source: "tl: Shortcuts.cs Timeline/ToggleLock" }
+  - { key: "L", mods: [], icon: tl_locktrack.png, label: "Lock track", source: "tl: Shortcuts.cs Timeline/ToggleLock" }
   - { key: "M", mods: [], icon: mute.png, label: "Mute track", source: "tl: Shortcuts.cs Timeline/ToggleMute" }
   - { key: "J", mods: [], icon: tl_jog.png, label: "Jog (hold)", source: "tl: Jog.cs Timeline/Jog (ClutchShortcut)" }
   - { key: "1", mods: [], icon: tl_mix.png, label: "Mix mode (hold)", source: "tl: EditMode.cs clutchKey Alpha1; clip-overview.md" }

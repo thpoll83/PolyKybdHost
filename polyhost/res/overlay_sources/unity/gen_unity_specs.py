@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write the five Unity Editor overlay specs from one table (reproducible).
+"""Write the seven Unity Editor overlay specs from one table (reproducible).
 
 Unity's keys depend on the focused editor window: a shortcut with a context
 (`typeof(SceneView)`, `typeof(AnimationWindow)`) works only while that window
@@ -11,11 +11,13 @@ lists, and each set is a list of those lists:
     unity_animation.yaml  global + Animation     Animation window
     unity_timeline.yaml   global + Timeline      Timeline window (com.unity.timeline)
     unity_play.yaml       play controls only     Game view in Play mode (the game gets the keys)
+    unity_search.yaml     global chords + Search Search window (its text field takes typed keys)
+    unity_curves.yaml     global + Curves        Curve editor window (an AnimationCurve field)
 
 Run it after changing a binding, then the generator on each spec:
 
     python polyhost/res/overlay_sources/unity/gen_unity_specs.py
-    for s in unity unity_scene unity_animation unity_timeline unity_play; do
+    for s in unity unity_scene unity_animation unity_timeline unity_play unity_search unity_curves; do
       python scripts/generate_app_overlays.py polyhost/res/overlay_sources/unity/$s.yaml
     done
 
@@ -187,7 +189,7 @@ TIMELINE = [
     ("DOWN", ["SHIFT"], "tl_multidown", "Extend selection down", TL + " Timeline/SelectDown"),
     ("TAB", [], "tl_area", "Clips / tracks", TL + " Timeline/ToggleClipTrackArea"),
     ("C", [], "tl_match", "Match content", TL + " Timeline/MatchContent"),
-    ("L", [], "lock_channel", "Lock track", TL + " Timeline/ToggleLock"),
+    ("L", [], "tl_locktrack", "Lock track", TL + " Timeline/ToggleLock"),
     ("M", [], "mute", "Mute track", TL + " Timeline/ToggleMute"),
     ("J", [], "tl_jog", "Jog (hold)", "tl: Jog.cs Timeline/Jog (ClutchShortcut)"),
     ("1", [], "tl_mix", "Mix mode (hold)", "tl: EditMode.cs clutchKey Alpha1; clip-overview.md"),
@@ -206,6 +208,68 @@ PLAY_KEYS = {("P", (C,)), ("P", (C, "SHIFT")), ("P", (C, "ALT")),
              ("SPACE", ("SHIFT",))} | {(str(n), (C,)) for n in range(10)} | {("C", (C, "SHIFT"))}
 PLAY = [b for b in GLOBAL if (b[0], tuple(b[1])) in PLAY_KEYS]
 
+# SearchWindow (Modules/QuickSearch). Its search field has the keyboard focus,
+# so a plain or Shift+letter key types into it: only chords and function keys.
+SW = "cs: SearchWindow.cs"
+SEARCH = [
+    ("F1", [], "srch_builder", "Toggle query builder", SW + " Search/Toggle Query Builder Mode"),
+    ("F2", [], "srch_rename", "Rename saved search", "cs: SearchQueryPanelTreeView.cs HandleKeyDown F2"),
+    ("F3", [], "srch_saved", "Saved searches panel", SW + " Search/Toggle Saved Searches Panel"),
+    ("F4", [], "srch_inspector", "Inspector panel", SW + " Search/Toggle Inspector Panel"),
+    ("F5", [], "srch_refresh", "Refresh results", SW + " Search/Refresh"),
+    ("LEFT", ["ALT"], "srch_tab_prev", "Previous provider tab", SW + " HandleKeyboardNavigation", {"except": ["macos"]}),
+    ("RIGHT", ["ALT"], "srch_tab_next", "Next provider tab", SW + " HandleKeyboardNavigation", {"except": ["macos"]}),
+    ("LEFT", [C, "ALT"], "srch_tab_prev", "Previous provider tab", SW + " HandleKeyboardNavigation (OSXEditor)", {"only": ["macos"]}),
+    ("RIGHT", [C, "ALT"], "srch_tab_next", "Next provider tab", SW + " HandleKeyboardNavigation (OSXEditor)", {"only": ["macos"]}),
+    ("UP", ["ALT"], "srch_older", "Older search", "cs: UndoManager.cs CyclePreviousSearch"),
+    ("DOWN", ["ALT"], "srch_newer", "Newer search", "cs: UndoManager.cs CyclePreviousSearch"),
+    ("Z", [C], "undo", "Undo", "cs: UndoManager.cs (search text)"),
+    ("Y", [C], "redo", "Redo", "cs: UndoManager.cs (search text)"),
+    ("SPACE", [C], "srch_toblocks", "Text to query blocks", "cs: QueryBuilder.cs HandleKeyEvent", {"except": ["macos"]}),
+    ("D", [C], "duplicate", "Duplicate", "cs: QueryBuilder.cs HandleKeyEvent (query block)"),
+    ("ENTER", ["CTRL"], "srch_newline", "New line in query", "cs: SearchField.cs IsLineBreak"),
+    ("ENTER", ["SHIFT"], "srch_newline", "New line in query", "cs: SearchField.cs IsLineBreak"),
+]
+
+# Global keys left out of the Search set: plain and Shift+letter keys (they type
+# into the field), and the commands the Search window does not handle (Find,
+# Select prefab root, Delete, Maximize with Shift+Space types a space). Undo,
+# Redo and Duplicate are the Search window's own (above).
+_SEARCH_DROP = {("F", (C,)), ("R", tuple(sorted((C, "SHIFT")))), ("DEL", ("SHIFT",)),
+                ("SPACE", ("SHIFT",))}
+_SEARCH_CHORDS = {(b[0], tuple(sorted(b[1]))) for b in SEARCH}
+
+
+def _chord(b):
+    return (b[0], tuple(sorted(b[1])))
+
+
+GLOBAL_UNDER_SEARCH = [
+    b for b in GLOBAL
+    if (C in b[1] or "ALT" in b[1])
+    and _chord(b) not in _SEARCH_DROP and _chord(b) not in _SEARCH_CHORDS
+    and not (b[0] == "Z" and b[3] == "Redo")      # Cmd+Shift+Z undoes the text (no Shift check)
+]
+
+# CurveEditorWindow (the curve editor of an AnimationCurve field). CurveEditor.cs
+# handles the Delete, FrameSelected and SelectAll commands and the Delete key;
+# Shift+Delete (Edit/Delete) sends the Delete command to the focused window.
+CE = "cs: CurveEditor.cs"
+CURVES = [
+    ("A", [], "frame_all", "Frame all", "cs: CurveEditorWindow.cs Curve Editor/Frame All"),
+    ("DEL", [], "key_delete", "Delete keys", CE + " KeyDown Delete"),
+    ("DEL", ["SHIFT"], "key_delete", "Delete keys", CE + " Delete command (SelectionCommands.cs Edit/Delete)"),
+]
+
+# Global keys that send a command to the focused window which CurveEditor.cs
+# does not handle, so they do nothing there.
+_CURVES_DROP = {("X", (C,)), ("C", (C,)), ("V", (C,)), ("D", (C,)), ("F", (C,)),
+                ("D", ("SHIFT",)), ("C", ("SHIFT",)), ("R", tuple(sorted((C, "SHIFT")))),
+                ("I", (C,)), ("F", ("SHIFT",))}
+_CURVES_CHORDS = {_chord(b) for b in CURVES}
+GLOBAL_UNDER_CURVES = [b for b in GLOBAL
+                       if _chord(b) not in _CURVES_DROP and _chord(b) not in _CURVES_CHORDS]
+
 SETS = {
     "unity": ("unity_template", [GLOBAL],
               "Global keys: any editor window without keys of its own."),
@@ -217,6 +281,10 @@ SETS = {
                        "Timeline window: global keys plus the Timeline window's."),
     "unity_play": ("unity_play_template", [PLAY],
                    "Game view in Play mode: only the Play-mode and window keys."),
+    "unity_search": ("unity_search_template", [GLOBAL_UNDER_SEARCH, SEARCH],
+                     "Search window: global chords plus the Search window's keys."),
+    "unity_curves": ("unity_curves_template", [GLOBAL_UNDER_CURVES, CURVES],
+                     "Curve editor window: global keys plus the curve editor's."),
 }
 
 HEADER = """\

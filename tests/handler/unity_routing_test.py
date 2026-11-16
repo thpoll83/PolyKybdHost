@@ -4,8 +4,9 @@ Drives `polyhost/res/overlay-mapping.poly.yaml` itself. What it pins:
 
 * every `unity://<edit|play>/<window>` the Editor package (`unity-package/`)
   can send lands on the set for that window: the Game view in Play mode on the
-  Play-mode set, the Scene view, the Animation window and the Timeline window
-  on their own sets, every other window on the global set;
+  Play-mode set, the Scene view, the Animation window, the Timeline window, the
+  Search window and the curve editor on their own sets, every other window on
+  the global set;
 * no report (or a stale one, which `current_url` turns into None) is the Scene
   view set;
 * a context REPLACES the fallback (`layer: false`), on both `os:` levels;
@@ -35,6 +36,8 @@ SCENE = "unity_scene_template.mods.png"
 ANIMATION = "unity_animation_template.mods.png"
 TIMELINE = "unity_timeline_template.mods.png"
 PLAY = "unity_play_template.mods.png"
+SEARCH = "unity_search_template.mods.png"
+CURVES = "unity_curves_template.mods.png"
 
 
 def _overlay_handler_class():
@@ -139,6 +142,10 @@ class UnityRoutingTest(unittest.TestCase):
         "unity://play/animation": ANIMATION,
         "unity://edit/timeline": TIMELINE,
         "unity://play/timeline": TIMELINE,
+        "unity://edit/search": SEARCH,
+        "unity://play/search": SEARCH,
+        "unity://edit/curves": CURVES,
+        "unity://play/curves": CURVES,
         "unity://edit/animator": GLOBAL,      # not the Animation window
         "unity://edit/hierarchy": GLOBAL,
         "unity://edit/project": GLOBAL,
@@ -168,6 +175,20 @@ class UnityRoutingTest(unittest.TestCase):
         self.assertFalse([n for n in names if "scene" in n], names)
         self.assertFalse([f for f in got["overlay"] if getattr(f, "underlay", False)])
 
+    def test_search_and_curves_keep_no_fallback_on_any_branch(self):
+        for os_name in ("windows", "linux", "macos"):
+            for url in ("unity://edit/search", "unity://play/search",
+                        "unity://edit/curves", "unity://play/curves"):
+                got = find_matching_entry("", self.entry, url, os_name)
+                names = [str(f) for f in got["overlay"]]
+                self.assertTrue(names, (url, os_name))
+                self.assertFalse([n for n in names if "scene" in n], (url, os_name, names))
+                self.assertFalse([f for f in got["overlay"] if getattr(f, "underlay", False)],
+                                 (url, os_name))
+                token = url.rsplit("/", 1)[1]
+                self.assertTrue(all(f"unity_{token}_template" in n for n in names),
+                                (url, os_name, names))
+
     def test_report_to_overlay_through_the_provider(self):
         now = [100.0]
         p = BrowserUrlProvider(clock=lambda: now[0], macos_lookup=lambda app: None)
@@ -180,6 +201,10 @@ class UnityRoutingTest(unittest.TestCase):
         self.assertEqual(self._route(p.current_url("unity")), ANIMATION)
         p.update(app="unity", url="unity://edit/timeline", focused=True, pid=4242)
         self.assertEqual(self._route(p.current_url("unity")), TIMELINE)
+        p.update(app="unity", url="unity://edit/search", focused=True, pid=4242)
+        self.assertEqual(self._route(p.current_url("unity")), SEARCH)
+        p.update(app="unity", url="unity://play/curves", focused=True, pid=4242)
+        self.assertEqual(self._route(p.current_url("unity")), CURVES)
         # The withdrawal the package sends when it is turned off or Unity quits.
         p.update(app="unity", url=None, focused=False, pid=4242)
         self.assertEqual(self._route(p.current_url("unity")), SCENE)

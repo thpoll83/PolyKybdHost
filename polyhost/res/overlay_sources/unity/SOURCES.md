@@ -1,6 +1,6 @@
 # Unity Editor overlays — sources
 
-`gen_unity_specs.py` writes the five specs from one table;
+`gen_unity_specs.py` writes the seven specs from one table;
 `scripts/generate_app_overlays.py` renders each; `fetch_icons.py` rebuilds
 `icons/`.
 
@@ -9,6 +9,8 @@
 | `unity_scene_template` | 90 | Scene view (`.../scene`), and Unity with no report |
 | `unity_animation_template` | 75 | Animation window (`.../animation`) |
 | `unity_timeline_template` | 92 | Timeline window (`.../timeline`) |
+| `unity_search_template` | 54 | Search window (`.../search`) |
+| `unity_curves_template` | 56 | curve editor of an AnimationCurve field (`.../curves`) |
 | `unity_template` | 64 | any other editor window (`unity://...`) |
 | `unity_play_template` | 15 | Game view in Play mode (`unity://play/game`) |
 
@@ -81,15 +83,14 @@ Cmd+Shift+Z on macOS (2018.4 manual).
 - The fly-mode keys W/A/S/D/Q/E: they work only while the right mouse button is
   held (`CameraFlyModeContext`), and the same letters are the tool keys.
 - Keys of windows without a set: Terrain tools (F1..F8 and brush keys, only with
-  the Terrain inspector active), the Search window (F1..F5), the Particle System
+  the Terrain inspector active), the Particle System
   and Trail Renderer inspectors, UI Builder, Version Control, multiplayer play
   mode, RenderDoc capture (Alt+C, Alt+S, only with RenderDoc loaded).
 - Timeline: Collapse Track and Expand Track have no default key. The
   Timeline keys need the Timeline package; without it the window does not
   exist.
-- The Animator window (`unity://.../animator`) and the Curves window keep the
-  global set: the Animator graph's keys are not in UnityCsReference, and the
-  Curves window has only A (Frame all).
+- The Animator window (`unity://.../animator`) keeps the global set: the
+  Animator graph's keys are not in UnityCsReference.
 - Tools/Cycle Tool Modes (G): only when the active tool has modes.
 - Rename (F2 on Windows): not found in the source or in the old tables.
 
@@ -101,7 +102,7 @@ Cmd+Shift+Z on macOS (2018.4 manual).
   <https://github.com/microsoft/fluentui-system-icons>.
 - Material Symbols (`ms:` entries), Apache-2.0,
   <https://github.com/google/material-design-icons>.
-- `lock_channel`, `mute`: copied from `../blender/icons` as well.
+- `mute`: copied from `../blender/icons` as well.
 - `frame_all`, `fit_view`, `frame_next`, `frame_prev`, `jump_start`, `jump_end`,
   `key_next`, `key_prev`, `wireframe`, `shading`, `select_invert`: copied from
   `../blender/icons` (see `../blender/SOURCES.md`), so both sets draw the same
@@ -136,3 +137,82 @@ Kept as one image, because the keys do the same thing (labels made the same):
 Previous / Next keyframe (Animation Alt+, / Alt+. and Timeline PrevKey / NextKey),
 Ripple (hold) (key 2 in both windows), Play or pause preview (Space in both
 windows).
+
+## Search window and curve editor (2026-11-16)
+
+Both from `cs` (UnityCsReference 7000.0.0a16). Each binding's `source:` names
+the file.
+
+**Search window** (`SearchWindow`, `Modules/QuickSearch/Editor/`). Its search
+field has the keyboard focus, so plain and Shift+letter keys type into it. The
+set has only chords and function keys:
+
+- `UITK/SearchWindow.cs`: F1 Toggle query builder, F3 Saved searches panel, F4
+  Inspector panel, F5 Refresh results (`[Shortcut]`, context `SearchWindow`).
+  Alt+Left / Alt+Right previous and next provider tab (`HandleKeyboardNavigation`;
+  Cmd+Alt on macOS).
+- `UITK/SearchQueryPanelTreeView.cs`: F2 renames the selected saved search.
+- `UI/UndoManager.cs`: Alt+Up / Alt+Down older and newer search
+  (`CyclePreviousSearch`), Ctrl+Z / Ctrl+Y undo and redo in the search text
+  (Cmd+Z / Cmd+Y on macOS).
+- `QueryBuilder/QueryBuilder.cs`: Ctrl+Space turns the typed text into query
+  blocks, Ctrl+D duplicates the selected block (query builder mode).
+- `UITK/SearchField.cs`: Ctrl+Enter and Shift+Enter insert a line break in the
+  query (`IsLineBreak`, text mode). This checks the Control key, also on macOS.
+- Global keys kept: those with Ctrl/Cmd or Alt. `UITK/SearchResultViewGlobalEventHandler.cs`
+  handles Select all and Invert selection.
+
+Left out of the Search set:
+
+- Plain and Shift+letter global keys (tools, visibility, Frame selected, Deselect
+  all, Select children, Key selected ...): they type into the search field.
+- Shift+Space (Maximize view): types a space. Shift+Delete: the Search window does
+  not handle the Delete command.
+- Ctrl+F (Find) and Ctrl+Shift+R (Select prefab root): commands the Search window
+  does not handle.
+- Cmd+Shift+Z (Redo on macOS): `UndoManager.cs` does not check Shift, so it undoes.
+- Ctrl+Space on macOS: Cmd+Space and Ctrl+Space are the system's Spotlight and
+  input source keys.
+- Up, Down, Page Up, Page Down, Enter, Tab (autocomplete), Escape and the Help
+  shortcuts without a default key (Help/Search Transient Window, Help/Search
+  Contextual): single keys, not chords.
+
+**Curve editor** (`CurveEditorWindow`, `Editor/Mono/Animation/CurveEditor/`), the
+window an AnimationCurve field opens:
+
+- `CurveEditorWindow.cs`: A Frame all (`[Shortcut]`, context `CurveEditorWindow`).
+- `CurveEditor.cs`: Delete (also Backspace) deletes the selected keys, and the
+  Delete, FrameSelected and SelectAll commands are handled. So Shift+Delete
+  (Edit/Delete, which sends Delete to the focused window, `SelectionCommands.cs`),
+  F (Frame selected) and Ctrl+A (Select all) work there.
+- All other global keys are kept, except the commands `CurveEditor.cs` does not
+  handle and which so do nothing there: Cut, Copy, Paste, Duplicate, Find,
+  Deselect all, Select children, Select prefab root, Invert selection, Lock view
+  to selected.
+
+Icons (`fetch_icons.py`, Fluent MIT / Material Apache-2.0 as above):
+
+- `srch_builder` Material `extension`, `srch_rename` Fluent `Rename`,
+  `srch_saved` Fluent `Bookmark Multiple`, `srch_inspector` Fluent `Panel Right`,
+  `srch_newline` Material `keyboard_return`.
+- Composites (`dcc_glyphs.with_badge`): `srch_refresh` = `find` + `refresh`,
+  `srch_older` / `srch_newer` = `find` + Fluent `Arrow Up` / `Arrow Down`,
+  `srch_tab_prev` / `srch_tab_next` = Material `tab` (`part_tab`) + Fluent
+  `Arrow Left` / `Arrow Right`, `srch_toblocks` = `srch_builder` + Fluent `Add`.
+- `key_delete` (Delete keys): copied from `../blender/icons` (see
+  `../blender/SOURCES.md`).
+
+Two icons redrawn because they looked the same as another key on the keycap:
+
+- `tl_locktrack` (Timeline L, Lock track): `lockview` (Fluent `Lock Closed`) with
+  a badge of three track lanes (`part_tracks`, drawn in `fetch_icons.py`). It used
+  the plain Blender padlock `lock_channel`, which looked the same as Lock view to
+  selected (Shift+F). `lock_channel.png` is removed.
+- `gridlast` (Scene Ctrl+Shift+/, Apply last grid values): `snapping` (Material
+  `grid_4x4`) with a `undohistory` (Fluent `History`) badge. It was Material
+  `history`, which looked the same as Undo history (Ctrl+U).
+
+Kept as one image, because the keys do the same thing: Delete keys (Delete and
+Shift+Delete in the curve editor), New line in query (Ctrl+Enter and
+Shift+Enter), Undo / Redo (the Search window's own text undo and the global
+ones).

@@ -97,7 +97,6 @@ FLUENT = {
     "pushgrid": "ms:straighten",
     "aligngrid": "ms:grid_guides",
     "gridreset": "ms:restart_alt",
-    "gridlast": "ms:history",
     "gridtoobject": "ms:move_down",
     "gridtoobjectrot": "ms:rotate_90_degrees_cw",
     "gridtohandle": "ms:pan_tool_alt",
@@ -132,7 +131,14 @@ FLUENT = {
     "tl_replace": "ms:swap_horiz",
     # --- one icon per action (2026-11-15) ---
     "playpreview": "ms:play_pause",
+    # --- Search window (2026-11-16) ---
+    "srch_builder": "ms:extension",
+    "srch_rename": "Rename",
+    "srch_saved": "Bookmark Multiple",
+    "srch_inspector": "Panel Right",
+    "srch_newline": "ms:keyboard_return",
     # parts of the composites below, not drawn on their own
+    "part_tab": "ms:tab",
     "part_add": "Add",
     "part_subtract": "Subtract",
     "part_select": "Select Object",
@@ -147,6 +153,17 @@ BADGES = [
     ("tl_select_right.png", "fly_right.png", "part_select.png"),
     ("tl_select_up.png", "fly_up.png", "part_select.png"),
     ("tl_select_down.png", "fly_down.png", "part_select.png"),
+    # one icon per action (2026-11-16): Lock track and Apply last grid values
+    # each looked the same as another key (Lock view to selected, Undo history).
+    ("tl_locktrack.png", "lockview.png", "part_tracks.png"),
+    ("gridlast.png", "snapping.png", "undohistory.png"),
+    # Search window
+    ("srch_refresh.png", "find.png", "refresh.png"),
+    ("srch_older.png", "find.png", "fly_up.png"),
+    ("srch_newer.png", "find.png", "fly_down.png"),
+    ("srch_tab_prev.png", "part_tab.png", "fly_left.png"),
+    ("srch_tab_next.png", "part_tab.png", "fly_right.png"),
+    ("srch_toblocks.png", "srch_builder.png", "part_add.png"),
 ]
 
 # Drawn by the Blender set already: copy, so both show the same pixels.
@@ -162,7 +179,7 @@ BORROW = {
     "wireframe.png": "blender",
     "shading.png": "blender",
     "select_invert.png": "blender",
-    "lock_channel.png": "blender",
+    "key_delete.png": "blender",
     "mute.png": "blender",
 }
 
@@ -206,6 +223,18 @@ def _key_at_edge(path: Path, first: bool) -> None:
     dcc_glyphs._save_mask(m, path)
 
 
+def _tracks(path: Path) -> None:
+    """Three track lanes, each with a clip at a different start: the badge of
+    Lock track. Black on transparent, 96 px."""
+    u, m, d = dcc_glyphs._canvas()
+    h, gap = int(u * 0.20), int(u * 0.14)
+    top = (u - 3 * h - 2 * gap) // 2
+    for i, x0 in enumerate((0.0, 0.30, 0.12)):
+        y = top + i * (h + gap)
+        d.rectangle([int(u * x0), y, u - 1, y + h - 1], fill=255)
+    dcc_glyphs._save_mask(m, path)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -213,6 +242,7 @@ def main() -> int:
     icon_fetch.borrow(BORROW, out)
     for name, text in sorted(LETTERS.items()):
         dcc_glyphs.guarded(out / name, lambda p, t=text: _label(p, t), f"drawn label {text!r}")
+    dcc_glyphs.guarded(out / "part_tracks.png", _tracks, "drawn track lanes")
     for name, base, badge in BADGES:
         dcc_glyphs.guarded(out / name,
                            lambda p, b=out / base, s=out / badge: dcc_glyphs.with_badge(b, s, p),
