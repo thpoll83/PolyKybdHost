@@ -43,10 +43,7 @@ NUMBERED = {f"quickchat{n}": ("src_quickchat", str(n), (28, 28)) for n in range(
 
 
 def program(path: Path) -> None:
-    """program.png: ROCKET over LEAGUE in Archivo Black. Left as it is when the PNG exists."""
-    if path.exists():
-        print(f"  {path.name}  <- committed asset (left as-is)")
-        return
+    """program.png: ROCKET over LEAGUE in Archivo Black."""
     im, d, P = game_set.mark_canvas()
     archivo = game_set.google_font(game_set.ARCHIVO_BLACK)
     game_set.fit_text(d, "ROCKET", (1, 2, 71, 19), archivo)

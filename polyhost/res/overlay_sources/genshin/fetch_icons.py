@@ -60,10 +60,7 @@ NUMBERED.update({f"burst{n}": ("burst", str(n)) for n in range(1, 5)})
 
 
 def program(path: Path) -> None:
-    """program.png: GENSHIN over IMPACT in Marcellus. Left as it is when the PNG exists."""
-    if path.exists():
-        print(f"  {path.name}  <- committed asset (left as-is)")
-        return
+    """program.png: GENSHIN over IMPACT in Marcellus."""
     im, d, P = game_set.mark_canvas()
     marcellus = game_set.google_font(game_set.MARCELLUS)
     # Marcellus is thin; a 3 px stroke (of 8 per keycap pixel) keeps every stem lit.

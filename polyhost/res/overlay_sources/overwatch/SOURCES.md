@@ -91,22 +91,33 @@ Blizzard's logo art is proprietary and is not used or committed.
 
 ## Icons
 
+Each icon is drawn at keycap size by `fetch_icons.py` from the source named here.
+
 | File | Source | Author | Licence |
 |---|---|---|---|
-| `ultimate.png` | game-icons.net `lorc/burning-meteor` | lorc | CC BY 3.0 |
-| `ability2.png` | game-icons.net `lorc/magic-palm` | lorc | CC BY 3.0 |
-| `melee.png` | game-icons.net `lorc/punch` | lorc | CC BY 3.0 |
-| `weapon1.png`, `weapon2.png` | game-icons.net `john-colburn/pistol-gun` + the number drawn by `game_set.py` (DejaVu Sans Bold) | John Colburn | CC BY 3.0 |
-| `jump.png` | game-icons.net `delapouite/jump-across` | delapouite | CC BY 3.0 |
-| `ping.png` | game-icons.net `delapouite/position-marker` | delapouite | CC BY 3.0 |
-| `comms.png` | game-icons.net `delapouite/walkie-talkie` | delapouite | CC BY 3.0 |
-| `spray.png` | game-icons.net `lorc/spray` | lorc | CC BY 3.0 |
-| `endorse.png` | game-icons.net `delapouite/thumb-up` | delapouite | CC BY 3.0 |
-| `social.png` | game-icons.net `delapouite/three-friends` | delapouite | CC BY 3.0 |
-| `highlight.png` | game-icons.net `delapouite/film-projector` | delapouite | CC BY 3.0 |
-| `forward.png`, `left.png`, `back.png` | Material Symbols `arrow_upward`, `arrow_back`, `arrow_downward` | Google | Apache-2.0 |
-| `right.png`, `reload.png`, `interact.png` | Material Symbols `arrow_forward`, `autorenew`, `touch_app` | Google | Apache-2.0 |
-| `healing.png`, `ultstatus.png`, `pushtotalk.png` | Material Symbols `medical_services`, `percent`, `mic` | Google | Apache-2.0 |
-| `mute.png`, `chat.png`, `scoreboard.png` | Material Symbols `mic_off`, `chat`, `scoreboard` | Google | Apache-2.0 |
-| `heroselect.png`, `screenshot.png` | Material Symbols `switch_account`, `screenshot_monitor` | Google | Apache-2.0 |
-| `program.png` | drawn by `fetch_icons.py` (geometric shapes, no source art) | - | - |
+| `forward.png` | Material Symbols [`arrow_upward`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:arrow_upward) | Google | Apache-2.0 |
+| `left.png` | Material Symbols [`arrow_back`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:arrow_back) | Google | Apache-2.0 |
+| `back.png` | Material Symbols [`arrow_downward`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:arrow_downward) | Google | Apache-2.0 |
+| `right.png` | Material Symbols [`arrow_forward`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:arrow_forward) | Google | Apache-2.0 |
+| `ultimate.png` | game-icons.net [`lorc/burning-meteor`](https://game-icons.net/1x1/lorc/burning-meteor.html) | Lorc | CC BY 3.0 |
+| `ability2.png` | game-icons.net [`lorc/magic-palm`](https://game-icons.net/1x1/lorc/magic-palm.html) | Lorc | CC BY 3.0 |
+| `reload.png` | Material Symbols [`autorenew`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:autorenew) | Google | Apache-2.0 |
+| `melee.png` | game-icons.net [`lorc/punch`](https://game-icons.net/1x1/lorc/punch.html) | Lorc | CC BY 3.0 |
+| `interact.png` | Material Symbols [`touch_app`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:touch_app) | Google | Apache-2.0 |
+| `weapon1.png`, `weapon2.png` | game-icons.net [`john-colburn/pistol-gun`](https://game-icons.net/1x1/john-colburn/pistol-gun.html) + the number in DejaVu Sans Bold (Bitstream Vera licence), drawn by `game_set.py` | John Colburn | CC BY 3.0 |
+| `jump.png` | game-icons.net [`delapouite/jump-across`](https://game-icons.net/1x1/delapouite/jump-across.html) | Delapouite | CC BY 3.0 |
+| `ping.png` | game-icons.net [`delapouite/position-marker`](https://game-icons.net/1x1/delapouite/position-marker.html) | Delapouite | CC BY 3.0 |
+| `comms.png` | game-icons.net [`delapouite/walkie-talkie`](https://game-icons.net/1x1/delapouite/walkie-talkie.html) | Delapouite | CC BY 3.0 |
+| `healing.png` | Material Symbols [`medical_services`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:medical_services) | Google | Apache-2.0 |
+| `ultstatus.png` | Material Symbols [`percent`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:percent) | Google | Apache-2.0 |
+| `spray.png` | game-icons.net [`lorc/spray`](https://game-icons.net/1x1/lorc/spray.html) | Lorc | CC BY 3.0 |
+| `pushtotalk.png` | Material Symbols [`mic`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:mic) | Google | Apache-2.0 |
+| `mute.png` | Material Symbols [`mic_off`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:mic_off) | Google | Apache-2.0 |
+| `chat.png` | Material Symbols [`chat`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:chat) | Google | Apache-2.0 |
+| `scoreboard.png` | Material Symbols [`scoreboard`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:scoreboard) | Google | Apache-2.0 |
+| `heroselect.png` | Material Symbols [`switch_account`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:switch_account) | Google | Apache-2.0 |
+| `endorse.png` | game-icons.net [`delapouite/thumb-up`](https://game-icons.net/1x1/delapouite/thumb-up.html) | Delapouite | CC BY 3.0 |
+| `social.png` | game-icons.net [`delapouite/three-friends`](https://game-icons.net/1x1/delapouite/three-friends.html) | Delapouite | CC BY 3.0 |
+| `highlight.png` | game-icons.net [`delapouite/film-projector`](https://game-icons.net/1x1/delapouite/film-projector.html) | Delapouite | CC BY 3.0 |
+| `screenshot.png` | Material Symbols [`screenshot_monitor`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:screenshot_monitor) | Google | Apache-2.0 |
+| `program.png` | ring and prongs, drawn by `program()` in `fetch_icons.py` from geometric shapes; no source art | - | - |

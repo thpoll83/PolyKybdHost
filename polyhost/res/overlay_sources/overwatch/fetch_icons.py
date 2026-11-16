@@ -5,7 +5,7 @@ Flat 1-bit silhouettes from game-icons.net (CC BY 3.0, credit per author in
 SOURCES.md) and Material Symbols (Apache-2.0), drawn by `game_set.py`. The ESC
 mark is drawn here to resemble the Overwatch emblem (a ring whose top arc is
 cut off, two prongs inside that splay into the lower ring); Blizzard's logo
-art is not used. It is written only when program.png is missing.
+art is not used. It is drawn from code alone, so every run redraws it.
 
     PYTHONPATH=. python polyhost/res/overlay_sources/overwatch/fetch_icons.py
 """
@@ -61,9 +61,6 @@ NUMBERED = {"weapon1": ("src_weapon", "1"), "weapon2": ("src_weapon", "2")}
 def program(path: Path) -> None:
     """program.png: the emblem, 39 px across, centred on the 72x40 cell."""
     import math
-    if path.exists():
-        print(f"  {path.name}  <- committed asset (left as-is)")
-        return
     im, d, P = game_set.mark_canvas()
     ss = game_set.MARK_SS
     cx, cy, outer, inner = 36, 20, 19.5, 14.5

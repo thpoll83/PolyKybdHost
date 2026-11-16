@@ -29,8 +29,12 @@ SOURCE_KEYS.update({c: c for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"})
 SOURCE_KEYS.update({f"F{n}": f"F{n}" for n in range(1, 13)})
 
 # `bind "key" "command"` (TF2) and `bind_US_standard "key" "command" 0` (Apex).
-# The key may be written without quotes; a backslash may be escaped as "\\".
-_BIND = re.compile(r'^\s*(bind\w*)\s+(?:"((?:\\\\|[^"])*)"|(\S+))\s+"([^"]*)"')
+# The key may be written without quotes; a backslash may be escaped as "\\"
+# (`source_token` unescapes it). Each quoted part is one `[^"]*` run, with no
+# alternation that could match the same characters two ways: a line of many
+# backslashes and no closing quote then costs linear time, not exponential
+# (CodeQL py/redos on PolyKybdHost#916).
+_BIND = re.compile(r'^\s*(bind\w*)\s+(?:"([^"]*)"|([^\s"]+))\s+"([^"]*)"')
 
 
 def source_token(name: str) -> str | None:
@@ -46,19 +50,22 @@ def parse_source_binds(text: str, directive) -> dict:
     ``bind_US_standard`` but not ``bind_held_US_standard`` for Apex). A key
     bound to several commands with ``;`` counts for each of them, so a
     player's ``+jump; exec x.cfg`` still names ``+jump``. Keys with no keycap
-    cell are left out, so a command bound only to the mouse gives no entry."""
+    cell are left out, but their command is kept: a command bound only to the
+    mouse, the keypad or a gamepad gives [], so its default key is cleared
+    even where the file is not a complete list (Apex)."""
     out: dict = {}
     for line in text.lstrip("﻿").splitlines():
         m = _BIND.match(line)
         if not m or not directive(m.group(1)):
             continue
         token = source_token(m.group(2) if m.group(2) is not None else m.group(3))
-        if token is None:
-            continue
         for part in m.group(4).split(";"):
             command = " ".join(part.split())
-            if command and token not in out.setdefault(command, []):
-                out[command].append(token)
+            if not command:
+                continue
+            keys = out.setdefault(command, [])
+            if token is not None and token not in keys:
+                keys.append(token)
     return out
 
 

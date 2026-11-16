@@ -59,10 +59,7 @@ NUMBERED = {"weapon1": ("src_weapon", "1"), "weapon2": ("src_weapon", "2")}
 
 
 def program(path: Path) -> None:
-    """program.png: APEX, and LEGENDS between two dashes under it. Left as it is when the PNG exists."""
-    if path.exists():
-        print(f"  {path.name}  <- committed asset (left as-is)")
-        return
+    """program.png: APEX, and LEGENDS between two dashes under it."""
     im, d, P = game_set.mark_canvas()
     ss = game_set.MARK_SS
     bebas = game_set.bebas()

@@ -77,10 +77,7 @@ NUMBERED = {"pda1": ("src_pda", "1"), "pda2": ("src_pda", "2"),
 
 
 def program(path: Path) -> None:
-    """program.png: TEAM over FORTRESS 2 in Anton, and the emblem. Left as it is when the PNG exists."""
-    if path.exists():
-        print(f"  {path.name}  <- committed asset (left as-is)")
-        return
+    """program.png: TEAM over FORTRESS 2 in Anton, and the emblem."""
     im, d, P = game_set.mark_canvas()
     import math
     ss = game_set.MARK_SS

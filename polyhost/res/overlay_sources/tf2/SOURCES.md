@@ -112,26 +112,48 @@ icon area, so no two actions share a picture.
 
 ## Icons
 
+Each icon is drawn at keycap size by `fetch_icons.py` from the source named here.
+
 | File | Source | Author | Licence |
 |---|---|---|---|
-| `primary.png` | game-icons.net `lorc/rocket` | lorc | CC BY 3.0 |
-| `secondary.png` | game-icons.net `john-colburn/pistol-gun` | John Colburn | CC BY 3.0 |
-| `melee.png` | game-icons.net `sbed/wrench` | sbed | CC BY 3.0 |
-| `jump.png` | game-icons.net `delapouite/jump-across` | delapouite | CC BY 3.0 |
-| `dropitem.png` | game-icons.net `delapouite/briefcase` | delapouite | CC BY 3.0 |
-| `disguise.png` | game-icons.net `lorc/domino-mask` | lorc | CC BY 3.0 |
-| `voice1.png`, `voice2.png`, `voice3.png` | game-icons.net `delapouite/walkie-talkie` + the number drawn by `game_set.py` (DejaVu Sans Bold) | delapouite | CC BY 3.0 |
-| `spray.png` | game-icons.net `lorc/spray` | lorc | CC BY 3.0 |
-| `partychat.png` | game-icons.net `delapouite/three-friends` | delapouite | CC BY 3.0 |
-| `forward.png`, `left.png`, `back.png` | Material Symbols `arrow_upward`, `arrow_back`, `arrow_downward` | Google | Apache-2.0 |
-| `right.png`, `pda1.png`, `pda2.png`, `lastweapon.png` | Material Symbols `arrow_forward`, `tablet_android`, `history` | Google | Apache-2.0 |
-| `reload.png`, `inspect.png`, `taunt.png` | Material Symbols `autorenew`, `visibility`, `celebration` | Google | Apache-2.0 |
-| `actionitem.png`, `disguiseteam.png`, `medic.png` | Material Symbols `redeem`, `swap_horiz`, `medical_services` | Google | Apache-2.0 |
-| `allchat.png`, `teamchat.png`, `voice.png` | Material Symbols `public`, `chat`, `mic` | Google | Apache-2.0 |
-| `scoreboard.png`, `changeteam.png`, `changeclass.png` | Material Symbols `scoreboard`, `flag`, `switch_account` | Google | Apache-2.0 |
-| `loadout.png`, `backpack.png`, `mapinfo.png` | Material Symbols `checkroom`, `backpack`, `map` | Google | Apache-2.0 |
-| `accept.png`, `decline.png`, `console.png` | Material Symbols `check`, `close`, `terminal` | Google | Apache-2.0 |
-| `roundinfo.png`, `contracts.png`, `screenshot.png` | Material Symbols `info`, `assignment`, `screenshot_monitor` | Google | Apache-2.0 |
-| `savereplay.png`, `report.png`, `quit.png` | Material Symbols `video_file`, `report`, `logout` | Google | Apache-2.0 |
-| `pause.png` | Material Symbols `pause` | Google | Apache-2.0 |
-| `program.png` | drawn by `fetch_icons.py` in Anton | font: Vernon Adams | font: SIL OFL 1.1 |
+| `forward.png` | Material Symbols [`arrow_upward`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:arrow_upward) | Google | Apache-2.0 |
+| `left.png` | Material Symbols [`arrow_back`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:arrow_back) | Google | Apache-2.0 |
+| `back.png` | Material Symbols [`arrow_downward`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:arrow_downward) | Google | Apache-2.0 |
+| `right.png` | Material Symbols [`arrow_forward`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:arrow_forward) | Google | Apache-2.0 |
+| `primary.png` | game-icons.net [`lorc/rocket`](https://game-icons.net/1x1/lorc/rocket.html) | Lorc | CC BY 3.0 |
+| `secondary.png` | game-icons.net [`john-colburn/pistol-gun`](https://game-icons.net/1x1/john-colburn/pistol-gun.html) | John Colburn | CC BY 3.0 |
+| `melee.png` | game-icons.net [`sbed/wrench`](https://game-icons.net/1x1/sbed/wrench.html) | Sbed | CC BY 3.0 |
+| `pda1.png`, `pda2.png` | Material Symbols [`tablet_android`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:tablet_android) + the number in DejaVu Sans Bold (Bitstream Vera licence), drawn by `game_set.py` | Google | Apache-2.0 |
+| `lastweapon.png` | Material Symbols [`history`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:history) | Google | Apache-2.0 |
+| `jump.png` | game-icons.net [`delapouite/jump-across`](https://game-icons.net/1x1/delapouite/jump-across.html) | Delapouite | CC BY 3.0 |
+| `reload.png` | Material Symbols [`autorenew`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:autorenew) | Google | Apache-2.0 |
+| `inspect.png` | Material Symbols [`visibility`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:visibility) | Google | Apache-2.0 |
+| `taunt.png` | Material Symbols [`celebration`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:celebration) | Google | Apache-2.0 |
+| `actionitem.png` | Material Symbols [`redeem`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:redeem) | Google | Apache-2.0 |
+| `dropitem.png` | game-icons.net [`delapouite/briefcase`](https://game-icons.net/1x1/delapouite/briefcase.html) | Delapouite | CC BY 3.0 |
+| `disguise.png` | game-icons.net [`lorc/domino-mask`](https://game-icons.net/1x1/lorc/domino-mask.html) | Lorc | CC BY 3.0 |
+| `disguiseteam.png` | Material Symbols [`swap_horiz`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:swap_horiz) | Google | Apache-2.0 |
+| `voice1.png`, `voice2.png`, `voice3.png` | game-icons.net [`delapouite/walkie-talkie`](https://game-icons.net/1x1/delapouite/walkie-talkie.html) + the number in DejaVu Sans Bold (Bitstream Vera licence), drawn by `game_set.py` | Delapouite | CC BY 3.0 |
+| `medic.png` | Material Symbols [`medical_services`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:medical_services) | Google | Apache-2.0 |
+| `spray.png` | game-icons.net [`lorc/spray`](https://game-icons.net/1x1/lorc/spray.html) | Lorc | CC BY 3.0 |
+| `allchat.png` | Material Symbols [`public`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:public) | Google | Apache-2.0 |
+| `teamchat.png` | Material Symbols [`chat`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:chat) | Google | Apache-2.0 |
+| `partychat.png` | game-icons.net [`delapouite/three-friends`](https://game-icons.net/1x1/delapouite/three-friends.html) | Delapouite | CC BY 3.0 |
+| `voice.png` | Material Symbols [`mic`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:mic) | Google | Apache-2.0 |
+| `scoreboard.png` | Material Symbols [`scoreboard`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:scoreboard) | Google | Apache-2.0 |
+| `changeteam.png` | Material Symbols [`flag`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:flag) | Google | Apache-2.0 |
+| `changeclass.png` | Material Symbols [`switch_account`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:switch_account) | Google | Apache-2.0 |
+| `loadout.png` | Material Symbols [`checkroom`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:checkroom) | Google | Apache-2.0 |
+| `backpack.png` | Material Symbols [`backpack`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:backpack) | Google | Apache-2.0 |
+| `mapinfo.png` | Material Symbols [`map`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:map) | Google | Apache-2.0 |
+| `accept.png` | Material Symbols [`check`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:check) | Google | Apache-2.0 |
+| `decline.png` | Material Symbols [`close`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:close) | Google | Apache-2.0 |
+| `console.png` | Material Symbols [`terminal`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:terminal) | Google | Apache-2.0 |
+| `roundinfo.png` | Material Symbols [`info`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:info) | Google | Apache-2.0 |
+| `contracts.png` | Material Symbols [`assignment`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:assignment) | Google | Apache-2.0 |
+| `screenshot.png` | Material Symbols [`screenshot_monitor`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:screenshot_monitor) | Google | Apache-2.0 |
+| `savereplay.png` | Material Symbols [`video_file`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:video_file) | Google | Apache-2.0 |
+| `report.png` | Material Symbols [`report`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:report) | Google | Apache-2.0 |
+| `quit.png` | Material Symbols [`logout`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:logout) | Google | Apache-2.0 |
+| `pause.png` | Material Symbols [`pause`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:pause) | Google | Apache-2.0 |
+| `program.png` | TEAM / FORTRESS 2 and a round emblem, drawn by `program()` in `fetch_icons.py`, in Anton ([`ofl/anton/Anton-Regular.ttf`](https://github.com/google/fonts/blob/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/anton/Anton-Regular.ttf)) | font: Vernon Adams | font: SIL OFL 1.1 |

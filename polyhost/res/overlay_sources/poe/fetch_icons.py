@@ -7,8 +7,8 @@ and Material Symbols (Apache-2.0), drawn by `game_set.py`. The skill slot
 keys get their slot number drawn in. The ESC marks are drawn here to resemble
 the games' winged crests: EXILE in Bebas Neue (SIL OFL 1.1) between two wings,
 an arch above and a point below; Path of Exile 2 adds two horns and three
-fangs. Grinding Gear Games' logo art is not used. A mark is written only when
-its PNG is missing.
+fangs. Grinding Gear Games' logo art is not used. The marks are drawn from
+code and a pinned font alone, so every run redraws them.
 
     PYTHONPATH=. python polyhost/res/overlay_sources/poe/fetch_icons.py
 """
@@ -75,9 +75,6 @@ NUMBERED.update({f"tempskill{n}": ("src_tempskill", str(n)) for n in (1, 2)})
 
 def crest(path: Path, two: bool) -> None:
     """program.png (two=False) or program2.png: the crest on the 72x40 cell."""
-    if path.exists():
-        print(f"  {path.name}  <- committed asset (left as-is)")
-        return
     im, d, P = game_set.mark_canvas()
     ss = game_set.MARK_SS
     game_set.fit_text(d, "EXILE", (17, 11, 55, 29), game_set.bebas())

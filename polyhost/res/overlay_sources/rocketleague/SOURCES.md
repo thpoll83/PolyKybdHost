@@ -87,12 +87,21 @@ logo art is proprietary and is not used or committed.
 
 ## Icons
 
+Each icon is drawn at keycap size by `fetch_icons.py` from the source named here.
+
 | File | Source | Author | Licence |
 |---|---|---|---|
-| `ballcam.png` | game-icons.net `delapouite/soccer-ball` | delapouite | CC BY 3.0 |
-| `partychat.png` | game-icons.net `delapouite/three-friends` | delapouite | CC BY 3.0 |
-| `rollleft.png`, `rollright.png`, `item.png` | Material Symbols `rotate_90_degrees_ccw`, `rotate_90_degrees_cw`, `offline_bolt` | Google | Apache-2.0 |
-| `reset.png`, `quickchat1.png`, `quickchat2.png`, `quickchat3.png`, `quickchat4.png`, `allchat.png` | Material Symbols `replay`, `sms`, `public` | Google | Apache-2.0 |
-| `teamchat.png`, `pushtotalk.png`, `scoreboard.png` | Material Symbols `chat`, `mic`, `scoreboard` | Google | Apache-2.0 |
-| `nexttrack.png`, `graphs.png` | Material Symbols `skip_next`, `monitoring` | Google | Apache-2.0 |
-| `program.png` | drawn by `fetch_icons.py` in Archivo Black | font: Hector Gatti, Omnibus-Type | font: SIL OFL 1.1 |
+| `rollleft.png` | Material Symbols [`rotate_90_degrees_ccw`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:rotate_90_degrees_ccw) | Google | Apache-2.0 |
+| `rollright.png` | Material Symbols [`rotate_90_degrees_cw`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:rotate_90_degrees_cw) | Google | Apache-2.0 |
+| `ballcam.png` | game-icons.net [`delapouite/soccer-ball`](https://game-icons.net/1x1/delapouite/soccer-ball.html) | Delapouite | CC BY 3.0 |
+| `item.png` | Material Symbols [`offline_bolt`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:offline_bolt) | Google | Apache-2.0 |
+| `reset.png` | Material Symbols [`replay`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:replay) | Google | Apache-2.0 |
+| `quickchat1.png`, `quickchat2.png`, `quickchat3.png`, `quickchat4.png` | Material Symbols [`sms`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:sms) + the number in DejaVu Sans Bold (Bitstream Vera licence), drawn by `game_set.py` | Google | Apache-2.0 |
+| `allchat.png` | Material Symbols [`public`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:public) | Google | Apache-2.0 |
+| `teamchat.png` | Material Symbols [`chat`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:chat) | Google | Apache-2.0 |
+| `partychat.png` | game-icons.net [`delapouite/three-friends`](https://game-icons.net/1x1/delapouite/three-friends.html) | Delapouite | CC BY 3.0 |
+| `pushtotalk.png` | Material Symbols [`mic`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:mic) | Google | Apache-2.0 |
+| `scoreboard.png` | Material Symbols [`scoreboard`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:scoreboard) | Google | Apache-2.0 |
+| `nexttrack.png` | Material Symbols [`skip_next`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:skip_next) | Google | Apache-2.0 |
+| `graphs.png` | Material Symbols [`monitoring`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:monitoring) | Google | Apache-2.0 |
+| `program.png` | ROCKET / LEAGUE, drawn by `program()` in `fetch_icons.py`, in Archivo Black ([`ofl/archivoblack/ArchivoBlack-Regular.ttf`](https://github.com/google/fonts/blob/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/archivoblack/ArchivoBlack-Regular.ttf)) | font: Hector Gatti, Omnibus-Type | font: SIL OFL 1.1 |

@@ -47,7 +47,7 @@ class SourceBindTest(unittest.TestCase):
         self.assertEqual(got["+jump"], ["SPACE"])                   # each command of a ; list
         self.assertEqual(got["+duck"], ["SPACE"])
         self.assertEqual(got["+forward"], ["UP"])
-        self.assertNotIn("+attack", got)                            # mouse only
+        self.assertEqual(got["+attack"], [])                        # mouse only: unbound from keys
         self.assertNotIn("x", got)
 
     def test_apex_lines(self):
@@ -61,7 +61,14 @@ class SourceBindTest(unittest.TestCase):
                               'bind_US_standard "LSHIFT" "+speed" 0\n'
                               'bind "z" "+offhand4"\n')
         self.assertEqual(got, {"+offhand1": ["Q"], "toggle_inventory": ["TAB", "I"], "+use": ["E"],
-                               "+use_long": ["E"], "exec": ["BACKSLASH"], "+ping": ["RBRACKET"]})
+                               "+use_long": ["E"], "exec": ["BACKSLASH"], "+ping": ["RBRACKET"],
+                               "+speed": []})
+
+    def test_a_line_of_backslashes_is_parsed_in_linear_time(self):
+        # 40 escaped backslashes and no closing quote: the pattern CodeQL flagged
+        # (py/redos, #916) took 21 s for 20 of them and doubled with each one.
+        hostile = 'bind "' + "\\\\" * 40 + "\n" + 'bind "' + "\\" * 100000 + "\n"
+        self.assertEqual(tf2_keys.parse(hostile + 'bind "q" "lastinv"\n'), {"lastinv": ["Q"]})
 
     def test_every_source_key_has_a_keycap_cell(self):
         from polyhost.res.overlay_layout import resolve_key
@@ -205,6 +212,14 @@ class RemapTest(unittest.TestCase):
         self.assertEqual(got[nm][KeyCode.KC_F.value], shipped[nm][KeyCode.KC_Q.value])
         self.assertEqual(got[nm][KeyCode.KC_ESCAPE.value], shipped[nm][KeyCode.KC_ESCAPE.value],
                          "ESC keeps the program mark")
+
+    def test_apex_a_command_moved_to_the_mouse_clears_its_key(self):
+        spec, template = SOURCES / "apex" / "apex.yaml", "apex_template.mods.png"
+        shipped = {m: cells(OVERLAYS / template, m) for m in self.MODS}
+        got = self.built(apex_keys, spec, template, 'bind_US_standard "MOUSE4" "+offhand1" 0\n')
+        nm = Modifier.NO_MOD
+        self.assertEqual(self.changed(shipped, got), {(nm, "KC_Q")})
+        self.assertNotIn(KeyCode.KC_Q.value, got[nm])
 
     def test_poe_ctrl_skills_move_and_missing_actions_keep_their_keys(self):
         spec, template = SOURCES / "poe" / "poe.yaml", "poe_template.mods.png"

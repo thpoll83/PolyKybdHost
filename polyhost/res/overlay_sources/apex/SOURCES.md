@@ -105,20 +105,35 @@ logo art is proprietary and is not used or committed.
 
 ## Icons
 
+Each icon is drawn at keycap size by `fetch_icons.py` from the source named here.
+
 | File | Source | Author | Licence |
 |---|---|---|---|
-| `weapon1.png`, `weapon2.png` | game-icons.net `john-colburn/pistol-gun` + the number drawn by `game_set.py` (DejaVu Sans Bold) | John Colburn | CC BY 3.0 |
-| `tactical.png` | game-icons.net `lorc/lightning-helix` | lorc | CC BY 3.0 |
-| `ultimate.png` | game-icons.net `lorc/burning-meteor` | lorc | CC BY 3.0 |
-| `grenade.png` | game-icons.net `lorc/grenade` | lorc | CC BY 3.0 |
-| `melee.png` | game-icons.net `lorc/punch` | lorc | CC BY 3.0 |
-| `jump.png` | game-icons.net `delapouite/jump-across` | delapouite | CC BY 3.0 |
-| `syringe.png` | game-icons.net `lorc/syringe` | lorc | CC BY 3.0 |
-| `forward.png`, `left.png`, `back.png` | Material Symbols `arrow_upward`, `arrow_back`, `arrow_downward` | Google | Apache-2.0 |
-| `right.png`, `holster.png`, `fireselect.png` | Material Symbols `arrow_forward`, `back_hand`, `repeat` | Google | Apache-2.0 |
-| `reload.png`, `inspect.png`, `crouch.png` | Material Symbols `autorenew`, `visibility`, `keyboard_double_arrow_down` | Google | Apache-2.0 |
-| `heal.png`, `medkit.png`, `cell.png` | Material Symbols `healing`, `medical_services`, `shield` | Google | Apache-2.0 |
-| `battery.png`, `phoenix.png`, `interact.png` | Material Symbols `battery_full`, `local_fire_department`, `touch_app` | Google | Apache-2.0 |
-| `inventory.png`, `map.png`, `pushtotalk.png` | Material Symbols `backpack`, `map`, `mic` | Google | Apache-2.0 |
-| `chat.png`, `screenshot.png` | Material Symbols `chat`, `screenshot_monitor` | Google | Apache-2.0 |
-| `program.png` | drawn by `fetch_icons.py` in Bebas Neue | font: Dharma Type | font: SIL OFL 1.1 |
+| `forward.png` | Material Symbols [`arrow_upward`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:arrow_upward) | Google | Apache-2.0 |
+| `left.png` | Material Symbols [`arrow_back`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:arrow_back) | Google | Apache-2.0 |
+| `back.png` | Material Symbols [`arrow_downward`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:arrow_downward) | Google | Apache-2.0 |
+| `right.png` | Material Symbols [`arrow_forward`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:arrow_forward) | Google | Apache-2.0 |
+| `weapon1.png`, `weapon2.png` | game-icons.net [`john-colburn/pistol-gun`](https://game-icons.net/1x1/john-colburn/pistol-gun.html) + the number in DejaVu Sans Bold (Bitstream Vera licence), drawn by `game_set.py` | John Colburn | CC BY 3.0 |
+| `holster.png` | Material Symbols [`back_hand`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:back_hand) | Google | Apache-2.0 |
+| `tactical.png` | game-icons.net [`lorc/lightning-helix`](https://game-icons.net/1x1/lorc/lightning-helix.html) | Lorc | CC BY 3.0 |
+| `ultimate.png` | game-icons.net [`lorc/burning-meteor`](https://game-icons.net/1x1/lorc/burning-meteor.html) | Lorc | CC BY 3.0 |
+| `grenade.png` | game-icons.net [`lorc/grenade`](https://game-icons.net/1x1/lorc/grenade.html) | Lorc | CC BY 3.0 |
+| `fireselect.png` | Material Symbols [`repeat`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:repeat) | Google | Apache-2.0 |
+| `reload.png` | Material Symbols [`autorenew`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:autorenew) | Google | Apache-2.0 |
+| `melee.png` | game-icons.net [`lorc/punch`](https://game-icons.net/1x1/lorc/punch.html) | Lorc | CC BY 3.0 |
+| `inspect.png` | Material Symbols [`visibility`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:visibility) | Google | Apache-2.0 |
+| `jump.png` | game-icons.net [`delapouite/jump-across`](https://game-icons.net/1x1/delapouite/jump-across.html) | Delapouite | CC BY 3.0 |
+| `crouch.png` | Material Symbols [`keyboard_double_arrow_down`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:keyboard_double_arrow_down) | Google | Apache-2.0 |
+| `heal.png` | Material Symbols [`healing`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:healing) | Google | Apache-2.0 |
+| `syringe.png` | game-icons.net [`lorc/syringe`](https://game-icons.net/1x1/lorc/syringe.html) | Lorc | CC BY 3.0 |
+| `medkit.png` | Material Symbols [`medical_services`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:medical_services) | Google | Apache-2.0 |
+| `cell.png` | Material Symbols [`shield`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:shield) | Google | Apache-2.0 |
+| `battery.png` | Material Symbols [`battery_full`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:battery_full) | Google | Apache-2.0 |
+| `phoenix.png` | Material Symbols [`local_fire_department`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:local_fire_department) | Google | Apache-2.0 |
+| `interact.png` | Material Symbols [`touch_app`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:touch_app) | Google | Apache-2.0 |
+| `inventory.png` | Material Symbols [`backpack`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:backpack) | Google | Apache-2.0 |
+| `map.png` | Material Symbols [`map`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:map) | Google | Apache-2.0 |
+| `pushtotalk.png` | Material Symbols [`mic`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:mic) | Google | Apache-2.0 |
+| `chat.png` | Material Symbols [`chat`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:chat) | Google | Apache-2.0 |
+| `screenshot.png` | Material Symbols [`screenshot_monitor`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:screenshot_monitor) | Google | Apache-2.0 |
+| `program.png` | APEX and LEGENDS between dashes, drawn by `program()` in `fetch_icons.py`, in Bebas Neue ([`ofl/bebasneue/BebasNeue-Regular.ttf`](https://github.com/google/fonts/blob/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/bebasneue/BebasNeue-Regular.ttf)) | font: Dharma Type | font: SIL OFL 1.1 |

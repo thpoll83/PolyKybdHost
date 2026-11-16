@@ -17,17 +17,17 @@ Exile 1 and 2, Overwatch 2, Genshin Impact) call this module instead:
   bottom right of its area.
 - `numbered` is ``{stem: (source stem, digit text[, box])}``: the source
   icon in `box` (default 28 x 40) at the bottom right of a 40 x 40 area,
-  with the digits in the top-left corner, as the CS2 radio wheels. A source whose stem starts with ``src_`` is deleted
-  afterwards: no key draws it.
-- The ESC mark is `mark` in Bebas Neue (SIL OFL 1.1) at the largest size that
-  fits 70 x 38 px, centred on the whole 72 x 40 cell. It is written only when
-  its PNG is missing, so a hand edit is kept. A game whose logo is not a
-  word draws a resembling mark in its own `fetch_icons.py` instead (Overwatch,
-  Path of Exile), with the helpers `mark_canvas` and `save_mark`. A game
-  whose logo is a wordmark sets the logo's words in a free font close to its
-  lettering (TF2 in Anton, Apex in Bebas Neue, Rocket League in Archivo Black,
-  Genshin in Marcellus), with `fit_text` and `google_font`. No game's
-  logo art is used.
+  with the digits in the top-left corner, as the CS2 radio wheels. A source
+  whose stem starts with ``src_`` is deleted afterwards: no key draws it.
+- The ESC mark: `mark` set in Bebas Neue (SIL OFL 1.1) at the largest size
+  that fits 70 x 38 px (`text_mark`), or, with `mark` None, a mark the set
+  draws itself. A game whose logo is not a word draws a resembling mark
+  (Overwatch, Path of Exile) with `mark_canvas` and `save_mark`. A game whose
+  logo is a wordmark sets the logo's words in a free font close to its
+  lettering (TF2 in Anton, Apex in Bebas Neue, Rocket League in Archivo
+  Black, Genshin in Marcellus) with `fit_text` and `google_font`. Every mark
+  is drawn from code and pinned fonts alone, so every run redraws it. No
+  game's logo art is used.
 """
 from __future__ import annotations
 
@@ -70,9 +70,7 @@ def numbered_icons(out: Path, numbered: dict) -> None:
 
 def text_mark(path: Path, text: str) -> None:
     """`text` in Bebas Neue at the largest size that fits 70 x 38 px, centred
-    on the whole 72 x 40 cell. Left as it is when the PNG exists."""
-    if not fac._missing(path):
-        return
+    on the whole 72 x 40 cell."""
     import numpy as np
     from PIL import Image, ImageDraw, ImageFont
     font_path = cnc._font(fac.MARK_FONT_URL)

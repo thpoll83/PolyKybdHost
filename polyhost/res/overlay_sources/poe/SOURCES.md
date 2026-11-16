@@ -194,29 +194,45 @@ renderer, so their cells are the same bytes as every other zoom key.
 
 ## Icons
 
+Each icon is drawn at keycap size by `fetch_icons.py` from the source named here.
+
 | File | Source | Author | Licence |
 |---|---|---|---|
-| `skill4.png`, `skill5.png`, `skill6.png`, `skill7.png`, `skill8.png`, `skill9.png`, `skill10.png`, `skill11.png`, `skill12.png`, `skill13.png` | game-icons.net `lorc/magic-swirl` + the number drawn by `game_set.py` (DejaVu Sans Bold) | lorc | CC BY 3.0 |
-| `flask1.png`, `flask2.png`, `flask3.png`, `flask4.png`, `flask5.png` | game-icons.net `lorc/round-bottom-flask` + the number drawn by `game_set.py` (DejaVu Sans Bold) | lorc | CC BY 3.0 |
-| `tempskill1.png`, `tempskill2.png` | game-icons.net `lorc/hourglass` + the number drawn by `game_set.py` (DejaVu Sans Bold) | lorc | CC BY 3.0 |
-| `weaponswap.png` | game-icons.net `lorc/crossed-swords` | lorc | CC BY 3.0 |
-| `dodge.png` | game-icons.net `lorc/dodging` | lorc | CC BY 3.0 |
-| `mines.png` | game-icons.net `lorc/land-mine` | lorc | CC BY 3.0 |
-| `pickup.png` | game-icons.net `lorc/hand` | lorc | CC BY 3.0 |
-| `skills.png` | game-icons.net `delapouite/spell-book` | delapouite | CC BY 3.0 |
-| `atlas.png` | game-icons.net `lorc/world` | lorc | CC BY 3.0 |
-| `social.png` | game-icons.net `delapouite/three-friends` | delapouite | CC BY 3.0 |
-| `challenges.png` | game-icons.net `delapouite/trophy-cup` | delapouite | CC BY 3.0 |
-| `pantheon.png` | game-icons.net `delapouite/greek-temple` | delapouite | CC BY 3.0 |
-| `cosmetics.png` | game-icons.net `delapouite/t-shirt` | delapouite | CC BY 3.0 |
-| `shop.png` | game-icons.net `delapouite/shop` | delapouite | CC BY 3.0 |
-| `events.png` | game-icons.net `delapouite/calendar` | delapouite | CC BY 3.0 |
-| `minions.png`, `labels.png`, `inventory.png` | Material Symbols `pets`, `label`, `backpack` | Google | Apache-2.0 |
-| `character.png`, `passives.png`, `atlaspassives.png` | Material Symbols `badge`, `hub`, `account_tree` | Google | Apache-2.0 |
-| `world.png`, `ladder.png`, `mtxstash.png` | Material Symbols `explore`, `leaderboard`, `inventory_2` | Google | Apache-2.0 |
-| `options.png`, `guidebook.png`, `market.png` | Material Symbols `settings`, `menu_book`, `currency_exchange` | Google | Apache-2.0 |
-| `league.png`, `leaguepanel.png`, `map.png` | Material Symbols `auto_awesome`, `dashboard`, `map` | Google | Apache-2.0 |
-| `close.png`, `chat.png`, `zoomin.png` | Material Symbols `close`, `chat`, `zoom_in` | Google | Apache-2.0 |
-| `zoomout.png`, `performance.png`, `screenshot.png` | Material Symbols `zoom_out`, `monitoring`, `screenshot_monitor` | Google | Apache-2.0 |
-| `program.png` | drawn by `fetch_icons.py`: shapes, and EXILE in Bebas Neue | font: Dharma Type | font: SIL OFL 1.1 |
-| `program2.png` | drawn by `fetch_icons.py`: shapes, and EXILE in Bebas Neue | font: Dharma Type | font: SIL OFL 1.1 |
+| `skill4.png`, `skill5.png`, `skill6.png`, `skill7.png`, `skill8.png`, `skill9.png`, `skill10.png`, `skill11.png`, `skill12.png`, `skill13.png` | game-icons.net [`lorc/magic-swirl`](https://game-icons.net/1x1/lorc/magic-swirl.html) + the number in DejaVu Sans Bold (Bitstream Vera licence), drawn by `game_set.py` | Lorc | CC BY 3.0 |
+| `flask1.png`, `flask2.png`, `flask3.png`, `flask4.png`, `flask5.png` | game-icons.net [`lorc/round-bottom-flask`](https://game-icons.net/1x1/lorc/round-bottom-flask.html) + the number in DejaVu Sans Bold (Bitstream Vera licence), drawn by `game_set.py` | Lorc | CC BY 3.0 |
+| `tempskill1.png`, `tempskill2.png` | game-icons.net [`lorc/hourglass`](https://game-icons.net/1x1/lorc/hourglass.html) + the number in DejaVu Sans Bold (Bitstream Vera licence), drawn by `game_set.py` | Lorc | CC BY 3.0 |
+| `weaponswap.png` | game-icons.net [`lorc/crossed-swords`](https://game-icons.net/1x1/lorc/crossed-swords.html) | Lorc | CC BY 3.0 |
+| `dodge.png` | game-icons.net [`lorc/dodging`](https://game-icons.net/1x1/lorc/dodging.html) | Lorc | CC BY 3.0 |
+| `mines.png` | game-icons.net [`lorc/land-mine`](https://game-icons.net/1x1/lorc/land-mine.html) | Lorc | CC BY 3.0 |
+| `minions.png` | Material Symbols [`pets`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:pets) | Google | Apache-2.0 |
+| `pickup.png` | game-icons.net [`lorc/hand`](https://game-icons.net/1x1/lorc/hand.html) | Lorc | CC BY 3.0 |
+| `labels.png` | Material Symbols [`label`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:label) | Google | Apache-2.0 |
+| `inventory.png` | Material Symbols [`backpack`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:backpack) | Google | Apache-2.0 |
+| `character.png` | Material Symbols [`badge`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:badge) | Google | Apache-2.0 |
+| `skills.png` | game-icons.net [`delapouite/spell-book`](https://game-icons.net/1x1/delapouite/spell-book.html) | Delapouite | CC BY 3.0 |
+| `passives.png` | Material Symbols [`hub`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:hub) | Google | Apache-2.0 |
+| `atlas.png` | game-icons.net [`lorc/world`](https://game-icons.net/1x1/lorc/world.html) | Lorc | CC BY 3.0 |
+| `atlaspassives.png` | Material Symbols [`account_tree`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:account_tree) | Google | Apache-2.0 |
+| `world.png` | Material Symbols [`explore`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:explore) | Google | Apache-2.0 |
+| `social.png` | game-icons.net [`delapouite/three-friends`](https://game-icons.net/1x1/delapouite/three-friends.html) | Delapouite | CC BY 3.0 |
+| `ladder.png` | Material Symbols [`leaderboard`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:leaderboard) | Google | Apache-2.0 |
+| `challenges.png` | game-icons.net [`delapouite/trophy-cup`](https://game-icons.net/1x1/delapouite/trophy-cup.html) | Delapouite | CC BY 3.0 |
+| `pantheon.png` | game-icons.net [`delapouite/greek-temple`](https://game-icons.net/1x1/delapouite/greek-temple.html) | Delapouite | CC BY 3.0 |
+| `cosmetics.png` | game-icons.net [`delapouite/t-shirt`](https://game-icons.net/1x1/delapouite/t-shirt.html) | Delapouite | CC BY 3.0 |
+| `mtxstash.png` | Material Symbols [`inventory_2`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:inventory_2) | Google | Apache-2.0 |
+| `shop.png` | game-icons.net [`delapouite/shop`](https://game-icons.net/1x1/delapouite/shop.html) | Delapouite | CC BY 3.0 |
+| `events.png` | game-icons.net [`delapouite/calendar`](https://game-icons.net/1x1/delapouite/calendar.html) | Delapouite | CC BY 3.0 |
+| `options.png` | Material Symbols [`settings`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:settings) | Google | Apache-2.0 |
+| `guidebook.png` | Material Symbols [`menu_book`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:menu_book) | Google | Apache-2.0 |
+| `market.png` | Material Symbols [`currency_exchange`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:currency_exchange) | Google | Apache-2.0 |
+| `league.png` | Material Symbols [`auto_awesome`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:auto_awesome) | Google | Apache-2.0 |
+| `leaguepanel.png` | Material Symbols [`dashboard`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:dashboard) | Google | Apache-2.0 |
+| `map.png` | Material Symbols [`map`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:map) | Google | Apache-2.0 |
+| `close.png` | Material Symbols [`close`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:close) | Google | Apache-2.0 |
+| `chat.png` | Material Symbols [`chat`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:chat) | Google | Apache-2.0 |
+| `zoomin.png` | Material Symbols [`zoom_in`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:zoom_in) | Google | Apache-2.0 |
+| `zoomout.png` | Material Symbols [`zoom_out`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:zoom_out) | Google | Apache-2.0 |
+| `performance.png` | Material Symbols [`monitoring`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:monitoring) | Google | Apache-2.0 |
+| `screenshot.png` | Material Symbols [`screenshot_monitor`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:screenshot_monitor) | Google | Apache-2.0 |
+| `program.png` | winged crest around EXILE, drawn by `crest()` in `fetch_icons.py`, in Bebas Neue ([`ofl/bebasneue/BebasNeue-Regular.ttf`](https://github.com/google/fonts/blob/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/bebasneue/BebasNeue-Regular.ttf)) | font: Dharma Type | font: SIL OFL 1.1 |
+| `program2.png` | the crest with horns and fangs, drawn by `crest()` in `fetch_icons.py`, in Bebas Neue ([`ofl/bebasneue/BebasNeue-Regular.ttf`](https://github.com/google/fonts/blob/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/bebasneue/BebasNeue-Regular.ttf)) | font: Dharma Type | font: SIL OFL 1.1 |

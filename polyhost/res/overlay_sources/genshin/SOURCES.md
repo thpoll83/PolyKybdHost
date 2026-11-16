@@ -100,25 +100,35 @@ with that number, so no two actions share a picture.
 
 ## Icons
 
+Each icon is drawn at keycap size by `fetch_icons.py` from the source named here.
+
 | File | Source | Author | Licence |
 |---|---|---|---|
-| `skill.png` | game-icons.net `lorc/wind-slap` | lorc | CC BY 3.0 |
-| `burst1.png`, `burst2.png`, `burst3.png`, `burst4.png` | game-icons.net `lorc/star-swirl` + the number drawn by `game_set.py` (DejaVu Sans Bold) | lorc | CC BY 3.0 |
-| `member1.png`, `member2.png`, `member3.png`, `member4.png` | game-icons.net `delapouite/person` + the number drawn by `game_set.py` (DejaVu Sans Bold) | delapouite | CC BY 3.0 |
-| `jump.png` | game-icons.net `delapouite/jump-across` | delapouite | CC BY 3.0 |
-| `gadget.png` | game-icons.net `lorc/gear-hammer` | lorc | CC BY 3.0 |
-| `navigate.png` | game-icons.net `delapouite/position-marker` | delapouite | CC BY 3.0 |
-| `bag.png` | game-icons.net `delapouite/backpack` | delapouite | CC BY 3.0 |
-| `quests.png` | game-icons.net `lorc/scroll-unfurled` | lorc | CC BY 3.0 |
-| `party.png` | game-icons.net `delapouite/three-friends` | delapouite | CC BY 3.0 |
-| `friends.png` | game-icons.net `delapouite/shaking-hands` | delapouite | CC BY 3.0 |
-| `handbook.png` | game-icons.net `lorc/book-cover` | lorc | CC BY 3.0 |
-| `coop.png` | game-icons.net `delapouite/team-upgrade` | delapouite | CC BY 3.0 |
-| `battlepass.png` | game-icons.net `delapouite/ticket` | delapouite | CC BY 3.0 |
-| `events.png` | game-icons.net `delapouite/calendar` | delapouite | CC BY 3.0 |
-| `teapot.png` | game-icons.net `delapouite/house` | delapouite | CC BY 3.0 |
-| `aim.png`, `interact.png`, `special.png` | Material Symbols `my_location`, `touch_app`, `bolt` | Google | Apache-2.0 |
-| `drop.png`, `abandon.png`, `character.png` | Material Symbols `south`, `flag`, `badge` | Google | Apache-2.0 |
-| `map.png`, `notification.png`, `tutorial.png` | Material Symbols `map`, `notifications`, `school` | Google | Apache-2.0 |
-| `chat.png`, `wheel.png`, `wish.png` | Material Symbols `chat`, `donut_large`, `auto_awesome` | Google | Apache-2.0 |
-| `program.png` | drawn by `fetch_icons.py` in Marcellus | font: Astigmatic | font: SIL OFL 1.1 |
+| `skill.png` | game-icons.net [`lorc/wind-slap`](https://game-icons.net/1x1/lorc/wind-slap.html) | Lorc | CC BY 3.0 |
+| `burst.png`, `burst1.png`, `burst2.png`, `burst3.png`, `burst4.png` | game-icons.net [`lorc/star-swirl`](https://game-icons.net/1x1/lorc/star-swirl.html) (the numbered copies + the number in DejaVu Sans Bold (Bitstream Vera licence), drawn by `game_set.py`) | Lorc | CC BY 3.0 |
+| `aim.png` | Material Symbols [`my_location`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:my_location) | Google | Apache-2.0 |
+| `member1.png`, `member2.png`, `member3.png`, `member4.png` | game-icons.net [`delapouite/person`](https://game-icons.net/1x1/delapouite/person.html) + the number in DejaVu Sans Bold (Bitstream Vera licence), drawn by `game_set.py` | Delapouite | CC BY 3.0 |
+| `jump.png` | game-icons.net [`delapouite/jump-across`](https://game-icons.net/1x1/delapouite/jump-across.html) | Delapouite | CC BY 3.0 |
+| `interact.png` | Material Symbols [`touch_app`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:touch_app) | Google | Apache-2.0 |
+| `gadget.png` | game-icons.net [`lorc/gear-hammer`](https://game-icons.net/1x1/lorc/gear-hammer.html) | Lorc | CC BY 3.0 |
+| `special.png` | Material Symbols [`bolt`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:bolt) | Google | Apache-2.0 |
+| `drop.png` | Material Symbols [`south`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:south) | Google | Apache-2.0 |
+| `navigate.png` | game-icons.net [`delapouite/position-marker`](https://game-icons.net/1x1/delapouite/position-marker.html) | Delapouite | CC BY 3.0 |
+| `abandon.png` | Material Symbols [`flag`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:flag) | Google | Apache-2.0 |
+| `bag.png` | game-icons.net [`delapouite/backpack`](https://game-icons.net/1x1/delapouite/backpack.html) | Delapouite | CC BY 3.0 |
+| `character.png` | Material Symbols [`badge`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:badge) | Google | Apache-2.0 |
+| `map.png` | Material Symbols [`map`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:map) | Google | Apache-2.0 |
+| `quests.png` | game-icons.net [`lorc/scroll-unfurled`](https://game-icons.net/1x1/lorc/scroll-unfurled.html) | Lorc | CC BY 3.0 |
+| `party.png` | game-icons.net [`delapouite/three-friends`](https://game-icons.net/1x1/delapouite/three-friends.html) | Delapouite | CC BY 3.0 |
+| `friends.png` | game-icons.net [`delapouite/shaking-hands`](https://game-icons.net/1x1/delapouite/shaking-hands.html) | Delapouite | CC BY 3.0 |
+| `notification.png` | Material Symbols [`notifications`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:notifications) | Google | Apache-2.0 |
+| `tutorial.png` | Material Symbols [`school`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:school) | Google | Apache-2.0 |
+| `chat.png` | Material Symbols [`chat`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:chat) | Google | Apache-2.0 |
+| `wheel.png` | Material Symbols [`donut_large`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:donut_large) | Google | Apache-2.0 |
+| `handbook.png` | game-icons.net [`lorc/book-cover`](https://game-icons.net/1x1/lorc/book-cover.html) | Lorc | CC BY 3.0 |
+| `coop.png` | game-icons.net [`delapouite/team-upgrade`](https://game-icons.net/1x1/delapouite/team-upgrade.html) | Delapouite | CC BY 3.0 |
+| `wish.png` | Material Symbols [`auto_awesome`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:auto_awesome) | Google | Apache-2.0 |
+| `battlepass.png` | game-icons.net [`delapouite/ticket`](https://game-icons.net/1x1/delapouite/ticket.html) | Delapouite | CC BY 3.0 |
+| `events.png` | game-icons.net [`delapouite/calendar`](https://game-icons.net/1x1/delapouite/calendar.html) | Delapouite | CC BY 3.0 |
+| `teapot.png` | game-icons.net [`delapouite/house`](https://game-icons.net/1x1/delapouite/house.html) | Delapouite | CC BY 3.0 |
+| `program.png` | GENSHIN / IMPACT with a 3 px stroke, drawn by `program()` in `fetch_icons.py`, in Marcellus ([`ofl/marcellus/Marcellus-Regular.ttf`](https://github.com/google/fonts/blob/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/marcellus/Marcellus-Regular.ttf)) | font: Astigmatic | font: SIL OFL 1.1 |
