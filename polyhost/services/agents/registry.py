@@ -3,8 +3,10 @@
 Qt-free and thread-safe: hooks report through the control socket (server threads),
 the title scanner from its own thread, the HID worker reads pages.
 
-An agent keeps its key (slot) for as long as it exists, so the user can learn
-positions. Slot N is key N % page_size on page N // page_size.
+An agent keeps its key (slot) while it runs, so the user can learn positions.
+Slot N is key N % page_size on page N // page_size. The gaps close only when nothing
+is being watched: at a restore, after the user removes agents, and when one agent
+is left (_close_gaps, _first_key_if_alone). A new agent takes the lowest free slot.
 """
 from __future__ import annotations
 
@@ -143,6 +145,7 @@ class AgentRegistry:
                 if gone is not None:
                     self.version += 1
                     _log_removed(gone, f"session ended ({event or 'end'})")
+                    self._first_key_if_alone()
                 return None
             if source == "hook":
                 self._hook_vendors.add(vendor_id)
@@ -222,6 +225,7 @@ class AgentRegistry:
                 _log_removed(agent, "removed by the user (inactive)")
             if gone:
                 self.version += 1
+                self._close_gaps()
             return gone
 
     def forget(self, vendor_id: str, session_id: str) -> bool:
@@ -231,6 +235,7 @@ class AgentRegistry:
                 return False
             self.version += 1
             _log_removed(gone, "removed by the user")
+            self._close_gaps()
             return True
 
     def forget_detached(self, vendor_id: str, session_id: str) -> bool:
@@ -244,6 +249,7 @@ class AgentRegistry:
             del self._agents[(vendor_id, session_id)]
             self.version += 1
             _log_removed(agent, "its process ended and no window was found for it")
+            self._first_key_if_alone()
             return True
 
     def mark_seen(self, vendor_id: str, session_id: str) -> None:
@@ -264,6 +270,7 @@ class AgentRegistry:
                 _log_removed(self._agents.pop(k), "its window title no longer matches")
             if gone:
                 self.version += 1
+                self._first_key_if_alone()
 
     def tick(self) -> None:
         """Time-based transitions: inferred waiting, stale, forget."""
@@ -300,6 +307,7 @@ class AgentRegistry:
                         changed = True
             if changed:
                 self.version += 1
+                self._first_key_if_alone()
 
     # ---- persistence (services/agents/store.py) -------------------------------
 
@@ -372,6 +380,7 @@ class AgentRegistry:
             if restored:
                 self.version += 1
                 log.info("Agents: restored %d from the last run", restored)
+            self._close_gaps()
         return restored
 
     # ---- readers ---------------------------------------------------------------
@@ -449,6 +458,28 @@ class AgentRegistry:
             _log_removed(self._agents.pop(k), "hooks now report this vendor")
         if gone:
             self.version += 1
+            self._first_key_if_alone()
+
+    def _close_gaps(self) -> None:
+        """Renumber the agents 0, 1, 2… in their key order, so the remaining agents
+        move down into the freed keys. Under the lock; only at moments when the user
+        is not watching a key (a restore, a removal the user asked for)."""
+        moved = False
+        for slot, agent in enumerate(sorted(self._agents.values(), key=lambda a: a.slot)):
+            if agent.slot != slot:
+                agent.slot = slot
+                moved = True
+        if moved:
+            self.version += 1
+
+    def _first_key_if_alone(self) -> None:
+        """One agent left: it takes the first key. With more, every agent keeps its
+        key, so positions the user learnt stay. Under the lock."""
+        if len(self._agents) == 1:
+            agent = next(iter(self._agents.values()))
+            if agent.slot != 0:
+                agent.slot = 0
+                self.version += 1
 
 
 def _log_removed(agent, reason: str, verb: str = "removed") -> None:

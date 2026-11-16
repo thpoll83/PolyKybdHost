@@ -273,13 +273,17 @@ def patch(shipped: Path, spec: dict, icons: dict, out: Path, player: dict | None
     return count
 
 
-def cache_name(template: str, paths: list, variant: str, reader_name: str) -> str:
+def cache_name(template: str, paths: list, variant: str, reader_name: str, digests=()) -> str:
     """A file name that changes with the game files, the variant, the shipped
-    overlay, the spec and RENDER_VERSION, so a stale copy is never reused."""
+    overlay, the spec and RENDER_VERSION, so a stale copy is never reused.
+    `digests` are content hashes of small files (a bindings source's file), for
+    an edit that keeps the size and the second."""
     h = hashlib.sha1(f"{RENDER_VERSION}:{reader_name}:{variant}".encode())
     for p in paths:
         st = os.stat(p)
         h.update(f"{Path(p).name}:{st.st_size}:{int(st.st_mtime)}".encode())
+    for d in digests:
+        h.update(f":{d}".encode())
     stem = template.removesuffix(".png").removesuffix(".mods")
     # The file kind (".combo") stays right before ".mods.png": the converter
     # picks the channel layout by it.
@@ -343,31 +347,75 @@ def player_bindings(reader, files: dict) -> dict | None:
         return None
 
 
+MAX_KEY_FILE = 16 * 1024 * 1024      # the largest bindings file read here; each source has its own limit too
+
+
+def _snapshot(path: Path) -> bytes:
+    """One read of a bindings file; ValueError for one larger than
+    MAX_KEY_FILE, before anything parses it."""
+    data = Path(path).read_bytes() if os.path.getsize(path) <= MAX_KEY_FILE else None
+    if data is None or len(data) > MAX_KEY_FILE:
+        raise ValueError(f"{Path(path).name} is larger than this reader opens")
+    return data
+
+
 def bindings_source(spec: dict, reader, files: dict):
-    """(player bindings or None, complete, files that key the cache) for a spec.
+    """(player bindings or None, complete, files that key the cache, their
+    content hashes) for a spec.
 
     A spec's ``game_assets:`` block may name a bindings source of its own
     (``bindings: openra``: the module ``<name>_keys`` here, with ``find()``,
-    ``bindings(path)`` and ``BINDINGS_COMPLETE``), for a game whose hotkeys
+    ``bindings(path, data)`` and ``BINDINGS_COMPLETE``), for a game whose hotkeys
     are kept apart from the files its reader draws from. Otherwise the
-    reader's own ``bindings(files)`` is used."""
+    reader's own ``bindings(files)`` is used.
+
+    The file is read once: the hash and the parse use the same bytes, so a
+    copy is never cached under content it was not built from, even when the
+    game saves the file during the build."""
     name = (spec.get("game_assets") or {}).get("bindings")
     if not name:
-        return player_bindings(reader, files), getattr(reader, "BINDINGS_COMPLETE", True), []
+        return player_bindings(reader, files), getattr(reader, "BINDINGS_COMPLETE", True), [], []
     source = importlib.import_module(f"polyhost.services.game_assets.{name}_keys")
     try:
         path = source.find()
-        player = source.bindings(path) if path else None
+        data = _snapshot(path) if path else None
+        digest = hashlib.sha1(data).hexdigest() if data is not None else ""
+        player = source.bindings(path, data) if data is not None else None
     except (OSError, ValueError, UnicodeError) as e:
         log.warning("Game art: could not read the %s key bindings (%s: %s); "
                     "the icons stay on the default keys.", name, type(e).__name__, e)
-        return None, source.BINDINGS_COMPLETE, []
-    return player, source.BINDINGS_COMPLETE, [path] if path else []
+        return None, source.BINDINGS_COMPLETE, [], []
+    return player, source.BINDINGS_COMPLETE, [path] if path else [], [digest] if path else []
+
+
+def keys_only(template: str, spec: dict, spec_path: Path, shipped: Path, variant: str,
+              cache_dir: Path) -> Path | None:
+    """The shipped overlay with its icons moved to the player's keys, for a
+    spec whose ``bindings:`` source is found while its art reader finds no
+    game files (StarCraft II's hotkeys without a StarCraft install); None
+    without such a source or bindings."""
+    name = (spec.get("game_assets") or {}).get("bindings")
+    if not name:
+        return None
+    player, complete, key_files, digests = bindings_source(spec, None, {})
+    if not player:
+        return None
+    remove_stale_temp(cache_dir)
+    out = Path(cache_dir) / cache_name(template, [*key_files, shipped, spec_path], variant, f"{name}-keys",
+                                       digests)
+    if out.exists():
+        return out
+    patch(shipped, spec, {}, out, player, complete)
+    log.info("Game art: the icons of %s follow the %s key bindings (no game art found).",
+             template, name)
+    return out
 
 
 def build(template: str, spec_path: Path, settings_get, cache_dir: Path, hint=None) -> Path | None:
-    """The copy of `template` drawn from the game files, built if not cached;
-    None when the reader finds no game files."""
+    """The copy of `template` drawn from the game files, built if not cached.
+    When the reader finds no game files: the shipped overlay remapped to the
+    player's keys if the spec names a bindings source that has them
+    (`keys_only`), else None."""
     spec = load_spec(spec_path)
     name = spec["game_assets"]["reader"]
     decl = READERS[name]
@@ -379,15 +427,15 @@ def build(template: str, spec_path: Path, settings_get, cache_dir: Path, hint=No
         variant = choices[0]
     folder = str(settings_get(decl.folder) or "") if decl.folder else ""
     files = reader.find(folder, hint)
+    shipped = RES / "overlays" / template
     if not files:
         log.info("Game art: %s found no files for %s in %s.", name, template,
                  searched_text(reader, folder, hint))
-        return None
+        return keys_only(template, spec, spec_path, shipped, variant, cache_dir)
     remove_stale_temp(cache_dir)
-    shipped = RES / "overlays" / template
-    player, complete, key_files = bindings_source(spec, reader, files)
-    out = Path(cache_dir) / cache_name(template, reader.fingerprint(files) + key_files + [shipped, spec_path],
-                                       variant, name)
+    player, complete, key_files, digests = bindings_source(spec, reader, files)
+    out = Path(cache_dir) / cache_name(template, [*reader.fingerprint(files), *key_files, shipped, spec_path],
+                                       variant, name, digests)
     if out.exists():
         return out
     icons = render(reader, reader.open_source(files), spec, variant)

@@ -47,6 +47,35 @@ ICONS = {
     # --- composite inputs (no binding draws them directly)
     "selectall": "Select All On",
     "camera": "ms:videocam",
+    # --- Network Editor (network.yaml)
+    "file_node": "ms:draft",
+    "cut_wires": "ms:content_cut",
+    "net_overview": "ms:picture_in_picture",
+    "color_palette": "ms:palette",
+    "shape_palette": "ms:shapes",
+    "prev_view": "ms:u_turn_left",
+    "layout_nodes": "ms:lan",
+    "align_nodes": "ms:align_horizontal_left",
+    "distribute_nodes": "ms:horizontal_distribute",
+    "network_box": "ms:select",
+    "notes_min": "ms:unfold_less",
+    "notes_restore": "ms:unfold_more",
+    "box_fit": "ms:close_fullscreen",
+    "sibling_prev": "ms:west",
+    "sibling_next": "ms:east",
+    "mark_set": "ms:bookmark_add",
+    "match_next": "ms:keyboard_double_arrow_down",
+    "match_prev": "ms:keyboard_double_arrow_up",
+    # --- Animation Editor, graph view (anim.yaml)
+    "slope_flat": "ms:trending_flat",
+    "slope_auto": "ms:auto_graph",
+    "isolate": "ms:filter_alt",
+    "isolate_revert": "ms:filter_alt_off",
+    "sel_channel": "ms:highlight_mouse_cursor",
+    "ed_table": "ms:table",
+    "graph_view": "ms:ssid_chart",
+    # --- composite inputs (network.yaml)
+    "sidebar": "ms:side_navigation",
 }
 
 # Same action as in a sibling set: a byte-identical copy.
@@ -88,6 +117,35 @@ BORROW = {
     "open.png": "cinema4d",
     "save.png": "cinema4d",
     "undo.png": "cinema4d",
+    # --- Network Editor (network.yaml)
+    "fit_view.png": "blender",        # G: show the selected nodes
+    "group_enter.png": "blender",     # Enter: go inside the node
+    "group_exit.png": "blender",      # U: go up a level
+    "mute.png": "blender",            # Q, B: bypass flag
+    "search.png": "blender",          # /, Ctrl+F: find
+    "upstream.png": "nuke",           # PgUp: select the upstream node
+    "downstream.png": "nuke",         # PgDn: select the downstream node
+    "stickynote.png": "nuke",         # Shift+P: sticky note
+    "jumpbookmark.png": "nuke",       # Shift+1..5: go to a quick mark
+    # --- Animation Editor, graph view (anim.yaml)
+    "key_delete.png": "blender",      # Del: delete the selected keys
+    "ed_dopesheet.png": "blender",    # 2: dopesheet view
+    "copy.png": "maya",               # Ctrl+C, Alt+C: copy key values
+    "paste.png": "maya",              # Ctrl+V, Alt+V: paste key values
+    "bm_prev.png": "maya",            # Ctrl+Left: previous bookmark
+    "bm_next.png": "maya",            # Ctrl+Right: next bookmark
+    # --- Python Shell and Textport (python.yaml, textport.yaml)
+    "line_start.png": "nano",         # Home, Ctrl+A: start of the line
+    "line_end.png": "nano",           # End, Ctrl+E: end of the line
+    "file_start.png": "nano",         # Textport Home: scroll to the top
+    "file_end.png": "nano",           # Textport End: scroll to the end
+    "page_up.png": "nano",            # Textport PgUp: scroll up
+    "page_down.png": "nano",          # Textport PgDn: scroll down
+    "exit.png": "nano",               # Ctrl+D: close the floating shell
+    "histprev.png": "jupyter",        # Up: previous command
+    "histnext.png": "jupyter",        # Down: next command
+    "run.png": "jupyter",             # Enter: run the command
+    "stop.png": "aicli",              # Ctrl+C: KeyboardInterrupt
 }
 
 HOUDINI_ICON_URL = "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/houdini.svg"
@@ -206,6 +264,30 @@ def _space_view(path: Path) -> None:
     space_hint.draw(np.array(m) > 127, path, gap_v=1, gap_h=1)
 
 
+DIGIT_FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+
+
+def _numbered(base: Path, digit: str, path: Path) -> None:
+    """A quick-mark key: the ``base`` glyph on the left and the mark's number
+    on the right, drawn 1-bit at the 36x32 keycap size so the generator copies
+    it 1:1. Go to (``jumpbookmark``) and Set (``mark_set``) keep their own
+    base glyph, so the two rows differ, and each key shows its number."""
+    import numpy as np
+    from PIL import ImageDraw, ImageFont
+    ink = g._fit_ink(base, 4 * 22)
+    ink = ink.resize((max(1, ink.width // 4), max(1, ink.height // 4)), Image.BOX)
+    m = Image.new("L", (_W, _H), 0)
+    m.paste(Image.fromarray(((np.asarray(ink) >= 110) * 255).astype("uint8")),
+            (0, (_H - ink.height) // 2))
+    font = ImageFont.truetype(DIGIT_FONT, 26)
+    d = ImageDraw.Draw(m)
+    left, top, right, bottom = d.textbbox((0, 0), digit, font=font)
+    d.text((_W - (right - left) - left, (_H - (bottom - top)) // 2 - top), digit,
+           font=font, fill=255)
+    m = m.point(lambda v: 255 if v >= 128 else 0)
+    _save_white(m, path)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -226,6 +308,20 @@ def main() -> int:
     g.guarded(out / "pin_camera.png",
               lambda p: g.with_badge(out / "camera.png", out / "badge_pin.png", p),
               "camera + pin badge")
+    # Network Editor: floating parameter editor and the editor's own tree view.
+    g.guarded(out / "parm_float.png",
+              lambda p: g.with_badge(out / "attributes.png", out / "tab_tearoff.png", p),
+              "attributes + tear-off badge")
+    g.guarded(out / "net_tree.png",
+              lambda p: g.with_badge(out / "objectmanager.png", out / "sidebar.png", p),
+              "objectmanager + sidebar badge")
+    for i in "12345":
+        g.guarded(out / f"mark_go{i}.png",
+                  lambda p, i=i: _numbered(out / "jumpbookmark.png", i, p),
+                  f"jumpbookmark + {i} (DejaVu Sans Bold)")
+        g.guarded(out / f"mark_set{i}.png",
+                  lambda p, i=i: _numbered(out / "mark_set.png", i, p),
+                  f"mark_set + {i} (DejaVu Sans Bold)")
     g.guarded(out / "houdini.png",
               lambda p: g.trace_mark(g.svg_icon(HOUDINI_ICON_URL), p, lit="dark"),
               "simple-icons/houdini (CC0), 32x32 trace")

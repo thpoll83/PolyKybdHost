@@ -60,9 +60,9 @@ bindings:
   - { key: C, mods: [CMDCTRL], icon: copy.png,        label: Copy,           source: "ms-fluent/Copy (MIT)" }
   - { key: V, mods: [CMDCTRL], icon: paste.png,       label: Paste,          source: "ms-fluent/Clipboard Paste (MIT)" }
   - { key: A, mods: [CMDCTRL], icon: selectall.png,   label: "Select all",   source: "ms-fluent/Select All On (MIT)" }
-  - { key: B, mods: [CMDCTRL], icon: blade.png,       label: "Blade / split clip", source: "custom/nle_glyphs", mode: alpha }
+  - { key: B, mods: [CMDCTRL], icon: blade.png,       label: "Razor", source: "custom/nle_glyphs", mode: alpha }
   - { key: G, mods: [CMDCTRL], icon: group.png,       label: Group,          source: "ms-fluent/Group (MIT)" }
-  - { key: "\\", mods: [CMDCTRL], icon: addedit.png,  label: "Add edit",     source: "ms-fluent/Split Vertical (MIT)" }
+  - { key: "\\", mods: [CMDCTRL], icon: addedit.png,  label: "Split clip",   source: "ms-fluent/Split Vertical (MIT)" }
   - { key: "=", mods: [CMDCTRL], icon: zoomin.png,    label: "Zoom in",      source: "ms-fluent/Zoom In (MIT)" }
   - { key: "-", mods: [CMDCTRL], icon: zoomout.png,   label: "Zoom out",     source: "ms-fluent/Zoom Out (MIT)" }
 

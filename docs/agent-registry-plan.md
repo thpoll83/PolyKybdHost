@@ -151,8 +151,15 @@ part of telemetry, the log bundle or the problem report (the payload allow-list 
 
 ### Slots
 
-- **An agent keeps its key for as long as it exists.** The user learns positions, so
-  agents do not move when their state changes. A new agent takes the first free slot.
+- **An agent keeps its key while it runs.** The user learns positions, so agents do not
+  move when their state changes. A new agent takes the first free slot.
+- **The gaps close only when no key is being watched** (`_close_gaps`,
+  `_first_key_if_alone` in `registry.py`). At a restore and after the user removes
+  agents (Remove Agent, Remove All Inactive, `polyctl agents forget`), the agents are
+  renumbered 1, 2, 3… in their key order. After an automatic removal (a session end, a
+  time rule, a closed process or window), only a single remaining agent moves, to key 1.
+  Before this rule, a lone agent could stay on key 0 (the tenth key) after the nine
+  before it were gone (2026-11-16).
 - A finished or `stale` entry is removed after a grace period, and its slot becomes
   free. The value is open.
 - `polyctl agents pin <id> <slot>` puts an agent on a chosen key and keeps it there.

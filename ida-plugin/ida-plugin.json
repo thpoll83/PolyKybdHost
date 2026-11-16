@@ -1,0 +1,17 @@
+{
+  "IDAMetadataDescriptorVersion": 1,
+  "plugin": {
+    "name": "polykybd-context-reporter",
+    "entryPoint": "polykybd_ida.py",
+    "version": "1.0.0",
+    "description": "Tells PolyKybdHost which IDA view has the focus",
+    "urls": {
+      "repository": "https://github.com/thpoll83/PolyKybdHost"
+    },
+    "authors": [
+      {
+        "name": "PolyKybd"
+      }
+    ]
+  }
+}
