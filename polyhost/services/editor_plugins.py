@@ -523,6 +523,8 @@ def jetbrains_ides(home=None, env=None, system=None):
         try:
             names.update(p.name for p in base.iterdir() if p.is_dir())
         except OSError:
+            # A missing or unreadable base folder means no IDE has run there;
+            # the other base folder may still list one.
             pass
     out = []
     for name in sorted(names):
