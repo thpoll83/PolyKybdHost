@@ -34,7 +34,9 @@ class ShippedScriptsTest(unittest.TestCase):
         brightness = loader.load_all()[0]["brightness"]
         points = [s.point for s in brightness.steps if s.point]
         self.assertIn(Point("keycode", 0x7E1D), points)       # KC_DAUTO
-        self.assertIn(Point("keycode", 0x5207), points)       # TO(7)
+        self.assertIn(Point("keycode", 0x7E08), points)       # KC_BASE
+        # The Utility layer is entered with the layer guide, which takes the TO key.
+        self.assertEqual(brightness.steps[0].guide_to_layer, "Utility")
 
 
 class ParseTest(unittest.TestCase):

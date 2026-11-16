@@ -113,11 +113,8 @@ title: Display brightness  # or {en: ..., de: ...}
 summary: Set a fixed brightness, step it up and down, or let it follow the light.
 min_protocol: 32
 steps:
-  - point: {layer_key: Fn}
-    say: ["Hold Fn", ""]
-    text: Hold Fn. The keycaps change to the Fn layer.
-  - point: {keycode: TO(7)}
-    say: ["Keep Fn held,", "tap the ringed key"]
+  - guide_to_layer: Utility
+    say: ["Hold Fn, then tap", "the ringed key"]
     wait: {layer: Utility}   # ends with Next until cmd 49
   - point: {keycode: KC_DAUTO}
     say: ["AUTO or MAN", ""]
@@ -131,10 +128,15 @@ Step fields:
 | `say` | one or two status-display lines, ASCII 0x20..0x7E, each at most 128 px in the 15 px status face (the loader measures it), both together at most 59 bytes | cmd 49 TEXT; else shown in the panel only |
 | `text` | longer text for the host panel | none |
 | `point` | `{keycode: ...}`, `{layer_key: NAME}` (the first key of the path to that layer) or `{key: [row, col]}`. A keycode is found in the keymap the keyboard holds, base layer first, so a user's remap is followed. Names: QMK's (`keycodes.h`), PolyKybd's own (`KC_DAUTO`, `KC_BASE`, from `res/preview/legends.json`), `MO(n)`/`TO(n)`/`TG(n)`, or a number | cmd 47 op 0 |
-| `guide_to_layer` | a layer name from cmd 35 | cmd 47 op 2 |
+| `guide_to_layer` | a layer name from cmd 35. The last key of the path is one that stays on the layer (`TO`, `TG`) when the keymap has one, not an `OSL` that leaves it after one key | cmd 47 op 2 |
 | `spotlight` | a list of keys in the `point` forms, plus `{layer: NAME}` (every key with a keycode on that layer); `[]` darkens all but the ringed key. Applies to that step only | cmd 49 SPOTLIGHT |
 | `reveal` | `{from: <point>}`: the wave from that key lights the dark keys and ends the spotlight. A reveal step keeps the spotlight of the step before | cmd 49 REVEAL |
 | `wait` | `next`, `{seconds: N}`, `{layer: NAME}`, `{press: keycode}` | `layer`/`press` need cmd 49 ARM/POLL; else they become `next` |
+
+A step after a `wait: {layer: NAME}` is about that layer, until a step that waits
+for a press of `KC_BASE` or of a layer key. When POLL reports that the keyboard left
+the layer (a one-shot key, or the user pressed another layer key), the runner goes
+back to the step that waited for it.
 
 Rules for the loader:
 

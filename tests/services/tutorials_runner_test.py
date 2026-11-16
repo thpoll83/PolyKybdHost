@@ -24,6 +24,7 @@ class _Keyboard:
         self.refuse_ring = False
         self.info_ok = True       # False: the DOOM monolith, which NACKs cmd 49
         self.matched = 0
+        self.layer = 0            # the highest active layer POLL reports
 
     # cmd 49
     def tutorial_info(self):
@@ -51,7 +52,7 @@ class _Keyboard:
         self.calls.append(("poll",))
         armed = [c for c in self.calls if c[0] == "arm"]
         return True, {"flags": 0, "armed": len(armed[-1][1]) if armed else 0,
-                      "matched": self.matched, "layer": 0}
+                      "matched": self.matched, "layer": self.layer}
 
     def tutorial_end(self):
         self.calls.append(("end",))
@@ -319,6 +320,62 @@ class HostTutorialTest(unittest.TestCase):
         self.assertTrue(run.poll())
         self.assertEqual(run.index, 1)
         kb.matched = 0x01          # a stale match from the step before: not armed now
+        self.assertFalse(run.poll())
+        self.assertEqual(run.index, 1)
+
+    def _layer_steps(self):
+        run, kb = _run([{"say": "enter", "wait": {"layer": "MIDI"}},
+                        {"say": "on MIDI"},
+                        {"say": "leave", "wait": {"press": "KC_BASE"}},
+                        {"say": "done"}], _Keyboard(protocol=35))
+        run.start()
+        kb.layer, kb.matched = 2, 0x01
+        self.assertTrue(run.poll())
+        self.assertEqual(run.index, 1)
+        return run, kb
+
+    def test_leaving_the_layer_goes_back_to_the_step_that_enters_it(self):
+        # A one-shot (OSL) entry: the layer is gone after the next key.
+        run, kb = self._layer_steps()
+        self.assertFalse(run.poll())
+        self.assertEqual(run.index, 1)
+        kb.layer = 0
+        self.assertTrue(run.poll())
+        self.assertEqual(run.index, 0)
+        self.assertEqual(kb.cmd49()[-1], ("arm", [(2, 2, 0)]))
+
+    def test_the_press_that_leaves_the_layer_is_read_first(self):
+        run, kb = self._layer_steps()
+        run.next()
+        self.assertEqual(run.index, 2)
+        kb.layer, kb.matched = 0, 0x01
+        self.assertTrue(run.poll())
+        self.assertEqual(run.index, 3)
+        self.assertFalse(run.poll())       # after KC_BASE no step needs MIDI
+        self.assertEqual(run.index, 3)
+
+    def test_a_press_on_another_layer_does_not_count(self):
+        # KC_B is on Fn and MIDI alike; pressed after leaving MIDI it is not the step.
+        run, kb = _run([{"say": "enter", "guide_to_layer": "MIDI", "wait": {"layer": "MIDI"}},
+                        {"say": "press", "wait": {"press": "KC_B"}},
+                        {"say": "done"}], _Keyboard(protocol=35))
+        run.start()
+        kb.layer, kb.matched = 2, 0x01
+        run.poll()
+        self.assertEqual(run.index, 1)
+        kb.layer, kb.matched = 0, 0x01
+        self.assertTrue(run.poll())
+        self.assertEqual(run.index, 0)
+
+    def test_a_second_layer_wait_does_not_enforce_the_first(self):
+        run, kb = _run([{"say": "midi", "guide_to_layer": "MIDI", "wait": {"layer": "MIDI"}},
+                        {"say": "fn", "wait": {"layer": "Fn"}},
+                        {"say": "done"}], _Keyboard(protocol=35))
+        run.start()
+        kb.layer, kb.matched = 2, 0x01
+        run.poll()
+        self.assertEqual(run.index, 1)
+        kb.layer, kb.matched = 0, 0          # between two presses of the way to Fn
         self.assertFalse(run.poll())
         self.assertEqual(run.index, 1)
 

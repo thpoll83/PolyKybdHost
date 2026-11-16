@@ -5,15 +5,11 @@ title: Display brightness
 summary: Set a fixed brightness, step it up and down, or let it follow the light.
 min_protocol: 32
 steps:
-  - point: {layer_key: Fn}
-    say: ["Hold Fn", ""]
-    text: Hold Fn. The keycaps change to the Fn layer.
-    wait: {layer: Fn}
-  - point: {keycode: TO(7)}
-    say: ["Keep Fn held,", "tap ringed key"]
+  - guide_to_layer: Utility
+    say: ["Hold Fn, then tap", "the ringed key"]
     text: >-
-      Keep Fn held and tap the ringed key. The keyboard changes to the Utility layer
-      and stays on it.
+      Hold Fn. The ring moves to the key to the right of F5. Keep Fn held and tap that
+      key. The keyboard changes to the Utility layer and stays on it.
     wait: {layer: Utility}
   - point: {keycode: KC_DHLF}
     spotlight: [{keycode: KC_DMIN}, {keycode: KC_D1Q}, {keycode: KC_DHLF},

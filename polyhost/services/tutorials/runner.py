@@ -21,12 +21,16 @@ import logging
 import time
 
 from polyhost.device.command_ids import HostTutorial
-from polyhost.services.midi_guide import GUIDE_COUNT, GUIDE_PERIOD_MS, find_path
+from polyhost.services.midi_guide import (GUIDE_COUNT, GUIDE_PERIOD_MS, find_path,
+                                         layer_target)
+from polyhost.services.tutorials.loader import custom_keycodes
 
 # A ring that runs out by itself, so a host that stops without a cancel does not
 # leave the keyboard ringing for ever: the MIDI guide's 12 ripples, about 30 s.
 RING_COUNT = GUIDE_COUNT
 RING_PERIOD_MS = GUIDE_PERIOD_MS
+# The firmware's custom keycode that goes back to the default layer.
+KC_BASE = custom_keycodes().get("KC_BASE", 0x7E08)
 
 
 class TutorialRun:
@@ -98,8 +102,22 @@ class TutorialRun:
         ok, info = self.keeb.tutorial_poll()
         if not ok:
             return False
+        left = self._left_needed_layer(info)
+        wait = self.tutorial.steps[self.index].wait
         if self._armed and info["armed"] and info["matched"] & 0x01:
-            self.next()
+            # A press that leaves the layer (KC_BASE, a layer key) is the step's
+            # point. Any other press counts only while the keyboard is on the layer:
+            # the same key on the base layer is not what the step asked for.
+            if left is None or self._leaves_a_layer(wait):
+                self.next()
+                return True
+        if left is not None:
+            name, entry = left
+            # The user left the layer this step is about, for example after a
+            # one-shot (OSL) key: go back to the step that enters it.
+            self.log.info("Tutorial %s step %d: the keyboard left layer %r; back to "
+                          "step %d", self.tutorial.id, self.index + 1, name, entry + 1)
+            self._show(entry)
             return True
         return False
 
@@ -178,6 +196,39 @@ class TutorialRun:
         conds = self._conditions(step.wait)
         ok, _msg = self._report("arm", self.keeb.tutorial_arm(conds))
         self._armed = ok and bool(conds)
+
+    def _needed_layer(self, index: int):
+        """(layer name, index of the step that entered it) for a step that is about a
+        layer, or None. A step is about layer L when an earlier step waited for L and
+        no step since then waited for a press of KC_BASE or a layer key, which leave
+        it. The step with that press still needs L: its match is read first. A step
+        that itself waits for a layer needs none: on the way to its layer the
+        keyboard leaves the one before."""
+        if self.tutorial.steps[index].wait.kind == "layer":
+            return None
+        needed = None
+        for i, step in enumerate(self.tutorial.steps[:index]):
+            if step.wait.kind == "layer":
+                needed = (step.wait.value, i)
+            elif self._leaves_a_layer(step.wait):
+                needed = None
+        return needed
+
+    def _left_needed_layer(self, info: dict):
+        """(name, entry step) when POLL reports the keyboard off the layer the shown
+        step needs, else None."""
+        needed = self._needed_layer(self.index)
+        if needed is None:
+            return None
+        layer = self._layer_index(needed[0])
+        if layer is None or info.get("layer") == layer:
+            return None
+        return needed
+
+    @staticmethod
+    def _leaves_a_layer(wait) -> bool:
+        return wait.kind == "press" and (wait.value == KC_BASE
+                                         or layer_target(wait.value) is not None)
 
     def _report(self, what, result):
         ok, msg = result
