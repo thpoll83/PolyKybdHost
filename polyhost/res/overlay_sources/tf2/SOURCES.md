@@ -98,10 +98,13 @@ F-key legends). The solid or wide icons (`INK` in `fetch_icons.py`) are drawn
 in a smaller box inside their area. Every icon is drawn at exactly its area by
 `game_set.py`, so the generator places it 1:1.
 
-ESC shows TF2 in Bebas Neue (SIL OFL 1.1, `ofl/bebasneue/BebasNeue-Regular.ttf`
-from google/fonts at commit e7db6ca), centred on the whole cell and drawn
-without the ESC legend (`program_icon_legend: false`, protocol v25). Valve's
-logo art is proprietary and is not used.
+ESC shows the wordmark TEAM over FORTRESS 2 in Anton, with a round emblem
+after TEAM, as the logo has an emblem between its words. It is drawn by
+`program()` in `fetch_icons.py`
+(Anton: SIL OFL 1.1, `ofl/anton/Anton-Regular.ttf` from google/fonts at commit e7db6ca). It covers
+the whole cell and is drawn without the ESC legend (`program_icon_legend:
+false`, protocol v25). It was compared by eye with the game's logo; Valve's
+logo art is proprietary and is not used or committed.
 
 Z, X and C show the walkie-talkie with the voice menu number 1, 2 or 3, and 4
 and 5 the PDA with 1 or 2 (DejaVu Sans Bold), in the top-left corner of the
@@ -131,4 +134,4 @@ icon area, so no two actions share a picture.
 | `roundinfo.png`, `contracts.png`, `screenshot.png` | Material Symbols `info`, `assignment`, `screenshot_monitor` | Google | Apache-2.0 |
 | `savereplay.png`, `report.png`, `quit.png` | Material Symbols `video_file`, `report`, `logout` | Google | Apache-2.0 |
 | `pause.png` | Material Symbols `pause` | Google | Apache-2.0 |
-| `program.png` | drawn by `game_set.py` in Bebas Neue | font: Dharma Type | font: SIL OFL 1.1 |
+| `program.png` | drawn by `fetch_icons.py` in Anton | font: Vernon Adams | font: SIL OFL 1.1 |

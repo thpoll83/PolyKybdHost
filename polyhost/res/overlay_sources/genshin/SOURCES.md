@@ -87,10 +87,13 @@ F-key legends). The solid or wide icons (`INK` in `fetch_icons.py`) are drawn
 in a smaller box inside their area. Every icon is drawn at exactly its area by
 `game_set.py`, so the generator places it 1:1.
 
-ESC shows GENSHIN in Bebas Neue (SIL OFL 1.1, `ofl/bebasneue/BebasNeue-Regular.ttf`
-from google/fonts at commit e7db6ca), centred on the whole cell and drawn
-without the ESC legend (`program_icon_legend: false`, protocol v25). HoYoverse's
-logo art is proprietary and is not used.
+ESC shows the wordmark GENSHIN over IMPACT in Marcellus, a serif close to the
+logo's lettering, thickened by a 3 px stroke (of 8 per keycap pixel) so every
+stem stays lit. It is drawn by `program()` in `fetch_icons.py`
+(Marcellus: SIL OFL 1.1, `ofl/marcellus/Marcellus-Regular.ttf` from google/fonts at commit e7db6ca). It covers
+the whole cell and is drawn without the ESC legend (`program_icon_legend:
+false`, protocol v25). It was compared by eye with the game's logo; HoYoverse's
+logo art is proprietary and is not used or committed.
 
 1 to 4 show a person with the party member number, and Alt+1 to 4 the burst
 with that number, so no two actions share a picture.
@@ -118,4 +121,4 @@ with that number, so no two actions share a picture.
 | `drop.png`, `abandon.png`, `character.png` | Material Symbols `south`, `flag`, `badge` | Google | Apache-2.0 |
 | `map.png`, `notification.png`, `tutorial.png` | Material Symbols `map`, `notifications`, `school` | Google | Apache-2.0 |
 | `chat.png`, `wheel.png`, `wish.png` | Material Symbols `chat`, `donut_large`, `auto_awesome` | Google | Apache-2.0 |
-| `program.png` | drawn by `game_set.py` in Bebas Neue | font: Dharma Type | font: SIL OFL 1.1 |
+| `program.png` | drawn by `fetch_icons.py` in Marcellus | font: Astigmatic | font: SIL OFL 1.1 |

@@ -76,10 +76,12 @@ F-key legends). The solid or wide icons (`INK` in `fetch_icons.py`) are drawn
 in a smaller box inside their area. Every icon is drawn at exactly its area by
 `game_set.py`, so the generator places it 1:1.
 
-ESC shows RL in Bebas Neue (SIL OFL 1.1, `ofl/bebasneue/BebasNeue-Regular.ttf`
-from google/fonts at commit e7db6ca), centred on the whole cell and drawn
-without the ESC legend (`program_icon_legend: false`, protocol v25). Psyonix's
-logo art is proprietary and is not used.
+ESC shows the wordmark ROCKET over LEAGUE in Archivo Black, two heavy lines
+as the logo has. It is drawn by `program()` in `fetch_icons.py`
+(Archivo Black: SIL OFL 1.1, `ofl/archivoblack/ArchivoBlack-Regular.ttf` from google/fonts at commit e7db6ca). It covers
+the whole cell and is drawn without the ESC legend (`program_icon_legend:
+false`, protocol v25). It was compared by eye with the game's logo; Psyonix's
+logo art is proprietary and is not used or committed.
 
 1 to 4 show the chat bubble with the quick chat number.
 
@@ -93,4 +95,4 @@ logo art is proprietary and is not used.
 | `reset.png`, `quickchat1.png`, `quickchat2.png`, `quickchat3.png`, `quickchat4.png`, `allchat.png` | Material Symbols `replay`, `sms`, `public` | Google | Apache-2.0 |
 | `teamchat.png`, `pushtotalk.png`, `scoreboard.png` | Material Symbols `chat`, `mic`, `scoreboard` | Google | Apache-2.0 |
 | `nexttrack.png`, `graphs.png` | Material Symbols `skip_next`, `monitoring` | Google | Apache-2.0 |
-| `program.png` | drawn by `game_set.py` in Bebas Neue | font: Dharma Type | font: SIL OFL 1.1 |
+| `program.png` | drawn by `fetch_icons.py` in Archivo Black | font: Hector Gatti, Omnibus-Type | font: SIL OFL 1.1 |

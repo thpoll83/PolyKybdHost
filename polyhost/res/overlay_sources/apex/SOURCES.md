@@ -94,10 +94,12 @@ F-key legends). The solid or wide icons (`INK` in `fetch_icons.py`) are drawn
 in a smaller box inside their area. Every icon is drawn at exactly its area by
 `game_set.py`, so the generator places it 1:1.
 
-ESC shows APEX in Bebas Neue (SIL OFL 1.1, `ofl/bebasneue/BebasNeue-Regular.ttf`
-from google/fonts at commit e7db6ca), centred on the whole cell and drawn
-without the ESC legend (`program_icon_legend: false`, protocol v25). Respawn's
-logo art is proprietary and is not used.
+ESC shows the wordmark APEX over a small LEGENDS between two dashes, as the
+logo has, in Bebas Neue. It is drawn by `program()` in `fetch_icons.py`
+(Bebas Neue: SIL OFL 1.1, `ofl/bebasneue/BebasNeue-Regular.ttf` from google/fonts at commit e7db6ca). It covers
+the whole cell and is drawn without the ESC legend (`program_icon_legend:
+false`, protocol v25). It was compared by eye with the game's logo; Respawn's
+logo art is proprietary and is not used or committed.
 
 1 and 2 show the gun with the weapon number, so the two keys differ.
 
@@ -119,4 +121,4 @@ logo art is proprietary and is not used.
 | `battery.png`, `phoenix.png`, `interact.png` | Material Symbols `battery_full`, `local_fire_department`, `touch_app` | Google | Apache-2.0 |
 | `inventory.png`, `map.png`, `pushtotalk.png` | Material Symbols `backpack`, `map`, `mic` | Google | Apache-2.0 |
 | `chat.png`, `screenshot.png` | Material Symbols `chat`, `screenshot_monitor` | Google | Apache-2.0 |
-| `program.png` | drawn by `game_set.py` in Bebas Neue | font: Dharma Type | font: SIL OFL 1.1 |
+| `program.png` | drawn by `fetch_icons.py` in Bebas Neue | font: Dharma Type | font: SIL OFL 1.1 |

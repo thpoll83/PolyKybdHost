@@ -3,8 +3,9 @@
 
 Flat 1-bit silhouettes from game-icons.net (CC BY 3.0, credit per author in
 SOURCES.md) and Material Symbols (Apache-2.0), drawn by `game_set.py`. The
-three voice menu keys get their menu number drawn in. The ESC mark is TF2 in
-Bebas Neue (SIL OFL 1.1); Valve's logo art is not used.
+voice menu and PDA keys get their number drawn in. The ESC mark sets the
+wordmark TEAM / FORTRESS 2 in Anton (SIL OFL 1.1), with a round emblem after
+TEAM as the logo has between its words; Valve's logo art is not used.
 
     PYTHONPATH=. python polyhost/res/overlay_sources/tf2/fetch_icons.py
 """
@@ -75,9 +76,38 @@ NUMBERED = {"pda1": ("src_pda", "1"), "pda2": ("src_pda", "2"),
             "voice1": ("src_voice", "1"), "voice2": ("src_voice", "2"), "voice3": ("src_voice", "3")}
 
 
+def program(path: Path) -> None:
+    """program.png: TEAM over FORTRESS 2 in Anton, and the emblem. Left as it is when the PNG exists."""
+    if path.exists():
+        print(f"  {path.name}  <- committed asset (left as-is)")
+        return
+    im, d, P = game_set.mark_canvas()
+    import math
+    ss = game_set.MARK_SS
+    anton = game_set.google_font(game_set.ANTON)
+    game_set.fit_text(d, "TEAM", (1, 1, 46, 17), anton)
+    game_set.fit_text(d, "FORTRESS 2", (1, 21, 71, 39), anton)
+    # The emblem: a disc with a ring cut out, notched at the four points.
+    cx, cy, r = 57, 9, 8
+
+    def disc(k, fill):
+        d.ellipse([(cx - r * k) * ss, (cy - r * k) * ss, (cx + r * k) * ss, (cy + r * k) * ss], fill=fill)
+    disc(1, 255)
+    disc(0.55, 0)
+    disc(0.3, 255)
+    for deg in (0, 90, 180, 270):
+        t = math.radians(deg)
+        d.line(P((cx + math.cos(t) * r * 0.35, cy + math.sin(t) * r * 0.35),
+                 (cx + math.cos(t) * (r + 0.5), cy + math.sin(t) * (r + 0.5))), fill=0, width=int(1.2 * ss))
+    game_set.save_mark(im, path)
+    print(f"  {path.name}  <- TEAM FORTRESS 2 wordmark")
+
+
 def main() -> int:
-    return game_set.build(Path(__file__).resolve().parent / "icons", ICONS, sizes=SIZES, ink=INK,
-                          numbered=NUMBERED, mark="TF2")
+    out = Path(__file__).resolve().parent / "icons"
+    game_set.build(out, ICONS, sizes=SIZES, ink=INK, numbered=NUMBERED, mark=None)
+    program(out / "program.png")
+    return 0
 
 
 if __name__ == "__main__":

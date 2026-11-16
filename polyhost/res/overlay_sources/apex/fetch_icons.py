@@ -3,7 +3,8 @@
 
 Flat 1-bit silhouettes from game-icons.net (CC BY 3.0, credit per author in
 SOURCES.md) and Material Symbols (Apache-2.0), drawn by `game_set.py`. The ESC
-mark is APEX in Bebas Neue (SIL OFL 1.1); Respawn's logo art is not used.
+mark sets the wordmark APEX over a small LEGENDS between two dashes, in Bebas
+Neue (SIL OFL 1.1); Respawn's logo art is not used.
 
     PYTHONPATH=. python polyhost/res/overlay_sources/apex/fetch_icons.py
 """
@@ -57,9 +58,27 @@ INK = {"chat": (34, 34), "medkit": (36, 36), "heal": (36, 36), "grenade": (34, 4
 NUMBERED = {"weapon1": ("src_weapon", "1"), "weapon2": ("src_weapon", "2")}
 
 
+def program(path: Path) -> None:
+    """program.png: APEX, and LEGENDS between two dashes under it. Left as it is when the PNG exists."""
+    if path.exists():
+        print(f"  {path.name}  <- committed asset (left as-is)")
+        return
+    im, d, P = game_set.mark_canvas()
+    ss = game_set.MARK_SS
+    bebas = game_set.bebas()
+    game_set.fit_text(d, "APEX", (8, 0, 64, 29), bebas)
+    game_set.fit_text(d, "LEGENDS", (20, 32, 52, 39), bebas)
+    d.line(P((8, 35.5), (17, 35.5)), fill=255, width=ss)
+    d.line(P((55, 35.5), (64, 35.5)), fill=255, width=ss)
+    game_set.save_mark(im, path)
+    print(f"  {path.name}  <- APEX LEGENDS wordmark")
+
+
 def main() -> int:
-    return game_set.build(Path(__file__).resolve().parent / "icons", ICONS, sizes=SIZES, ink=INK,
-                          numbered=NUMBERED, mark="APEX")
+    out = Path(__file__).resolve().parent / "icons"
+    game_set.build(out, ICONS, sizes=SIZES, ink=INK, numbered=NUMBERED, mark=None)
+    program(out / "program.png")
+    return 0
 
 
 if __name__ == "__main__":

@@ -23,7 +23,10 @@ Exile 1 and 2, Overwatch 2, Genshin Impact) call this module instead:
   fits 70 x 38 px, centred on the whole 72 x 40 cell. It is written only when
   its PNG is missing, so a hand edit is kept. A game whose logo is not a
   word draws a resembling mark in its own `fetch_icons.py` instead (Overwatch,
-  Path of Exile), with the helpers `mark_canvas` and `save_mark`. No game's
+  Path of Exile), with the helpers `mark_canvas` and `save_mark`. A game
+  whose logo is a wordmark sets the logo's words in a free font close to its
+  lettering (TF2 in Anton, Apex in Bebas Neue, Rocket League in Archivo Black,
+  Genshin in Marcellus), with `fit_text` and `google_font`. No game's
   logo art is used.
 """
 from __future__ import annotations
@@ -110,18 +113,39 @@ def save_mark(im, path: Path) -> None:
     cnc._save_mask(np.asarray(im.resize((MARK_W, MARK_H), Image.BOX)) > 110, path)
 
 
-def fit_text(draw, text: str, box, font_path, fill=255) -> None:
-    """`text` at the largest size that fits `box` (cell coordinates), centred."""
+def fit_text(draw, text: str, box, font_path, fill=255, align="c", variation=None, stroke=0):
+    """`text` at the largest size that fits `box` (cell coordinates): centred,
+    or flush left (``align="l"``). `variation` sets the axes of a variable
+    font (``[900]`` for the weight). `stroke` thickens thin lettering by that
+    many supersampled pixels on each side. Returns the text's left and right edge in
+    cell coordinates."""
     from PIL import ImageFont
     x0, y0, x1, y1 = box
     for px in range(400, 8, -2):
         font = ImageFont.truetype(str(font_path), px)
-        b = font.getbbox(text)
+        if variation:
+            font.set_variation_by_axes(variation)
+        b = font.getbbox(text, stroke_width=stroke)
         if b[2] - b[0] <= (x1 - x0) * MARK_SS and b[3] - b[1] <= (y1 - y0) * MARK_SS:
             break
     w, h = b[2] - b[0], b[3] - b[1]
-    draw.text(((x0 + x1) * MARK_SS / 2 - w / 2 - b[0], (y0 + y1) * MARK_SS / 2 - h / 2 - b[1]),
-              text, font=font, fill=fill)
+    x = x0 * MARK_SS - b[0] if align == "l" else (x0 + x1) * MARK_SS / 2 - w / 2 - b[0]
+    draw.text((x, (y0 + y1) * MARK_SS / 2 - h / 2 - b[1]), text, font=font, fill=fill,
+              stroke_width=stroke, stroke_fill=fill)
+    return (x + b[0]) / MARK_SS, (x + b[2]) / MARK_SS
+
+
+# Fonts from google/fonts at the commit the Bebas Neue file comes from (all
+# SIL OFL 1.1). Each is downloaded once into the temp dir.
+GOOGLE_FONTS = "https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/"
+ANTON = "ofl/anton/Anton-Regular.ttf"
+ARCHIVO_BLACK = "ofl/archivoblack/ArchivoBlack-Regular.ttf"
+MARCELLUS = "ofl/marcellus/Marcellus-Regular.ttf"
+
+
+def google_font(rel: str) -> Path:
+    """A font file of google/fonts (`rel`, e.g. ``ofl/anton/Anton-Regular.ttf``)."""
+    return cnc._font(GOOGLE_FONTS + rel)
 
 
 def bebas() -> Path:

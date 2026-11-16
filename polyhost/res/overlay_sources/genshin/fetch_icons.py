@@ -3,7 +3,8 @@
 
 Flat 1-bit silhouettes from game-icons.net (CC BY 3.0, credit per author in
 SOURCES.md) and Material Symbols (Apache-2.0), drawn by `game_set.py`. The ESC
-mark is GENSHIN in Bebas Neue (SIL OFL 1.1); HoYoverse's logo art is not used.
+mark sets the wordmark GENSHIN / IMPACT in Marcellus (SIL OFL 1.1), a serif
+close to the logo's lettering; HoYoverse's logo art is not used.
 
     PYTHONPATH=. python polyhost/res/overlay_sources/genshin/fetch_icons.py
 """
@@ -58,9 +59,25 @@ NUMBERED = {f"member{n}": ("src_member", str(n)) for n in range(1, 5)}
 NUMBERED.update({f"burst{n}": ("burst", str(n)) for n in range(1, 5)})
 
 
+def program(path: Path) -> None:
+    """program.png: GENSHIN over IMPACT in Marcellus. Left as it is when the PNG exists."""
+    if path.exists():
+        print(f"  {path.name}  <- committed asset (left as-is)")
+        return
+    im, d, P = game_set.mark_canvas()
+    marcellus = game_set.google_font(game_set.MARCELLUS)
+    # Marcellus is thin; a 3 px stroke (of 8 per keycap pixel) keeps every stem lit.
+    game_set.fit_text(d, "GENSHIN", (1, 1, 71, 21), marcellus, stroke=3)
+    game_set.fit_text(d, "IMPACT", (10, 24, 62, 39), marcellus, stroke=3)
+    game_set.save_mark(im, path)
+    print(f"  {path.name}  <- GENSHIN IMPACT wordmark")
+
+
 def main() -> int:
-    return game_set.build(Path(__file__).resolve().parent / "icons", ICONS, sizes=SIZES, ink=INK,
-                          numbered=NUMBERED, mark="GENSHIN")
+    out = Path(__file__).resolve().parent / "icons"
+    game_set.build(out, ICONS, sizes=SIZES, ink=INK, numbered=NUMBERED, mark=None)
+    program(out / "program.png")
+    return 0
 
 
 if __name__ == "__main__":
