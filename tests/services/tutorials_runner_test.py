@@ -354,6 +354,31 @@ class HostTutorialTest(unittest.TestCase):
         self.assertFalse(run.poll())       # after KC_BASE no step needs MIDI
         self.assertEqual(run.index, 3)
 
+    def test_a_press_on_another_layer_does_not_count(self):
+        # KC_B is on Fn and MIDI alike; pressed after leaving MIDI it is not the step.
+        run, kb = _run([{"say": "enter", "guide_to_layer": "MIDI", "wait": {"layer": "MIDI"}},
+                        {"say": "press", "wait": {"press": "KC_B"}},
+                        {"say": "done"}], _Keyboard(protocol=35))
+        run.start()
+        kb.layer, kb.matched = 2, 0x01
+        run.poll()
+        self.assertEqual(run.index, 1)
+        kb.layer, kb.matched = 0, 0x01
+        self.assertTrue(run.poll())
+        self.assertEqual(run.index, 0)
+
+    def test_a_second_layer_wait_does_not_enforce_the_first(self):
+        run, kb = _run([{"say": "midi", "guide_to_layer": "MIDI", "wait": {"layer": "MIDI"}},
+                        {"say": "fn", "wait": {"layer": "Fn"}},
+                        {"say": "done"}], _Keyboard(protocol=35))
+        run.start()
+        kb.layer, kb.matched = 2, 0x01
+        run.poll()
+        self.assertEqual(run.index, 1)
+        kb.layer, kb.matched = 0, 0          # between two presses of the way to Fn
+        self.assertFalse(run.poll())
+        self.assertEqual(run.index, 1)
+
     def test_a_next_step_polls_too(self):
         # The session stays alive while a step waits for Next.
         run, kb = _run([{"say": "a"}], _Keyboard(protocol=35))
