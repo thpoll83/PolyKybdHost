@@ -22,8 +22,8 @@ import time
 
 from polyhost.device.command_ids import HostTutorial
 from polyhost.services.midi_guide import (GUIDE_COUNT, GUIDE_PERIOD_MS, find_path,
-                                         layer_target)
-from polyhost.services.tutorials.loader import custom_keycodes
+                                         layer_target, stays_on_layer)
+from polyhost.services.tutorials.loader import Point, custom_keycodes, fixed_layers
 
 # A ring that runs out by itself, so a host that stops without a cancel does not
 # leave the keyboard ringing for ever: the MIDI guide's 12 ripples, about 30 s.
@@ -31,6 +31,15 @@ RING_COUNT = GUIDE_COUNT
 RING_PERIOD_MS = GUIDE_PERIOD_MS
 # The firmware's custom keycode that goes back to the default layer.
 KC_BASE = custom_keycodes().get("KC_BASE", 0x7E08)
+
+
+def _json_value(value):
+    """A wait value as JSON: a Point (a `key` wait) becomes {"kind", "value"}, with
+    a [row, col] list for a key position. The control socket encodes state()."""
+    if isinstance(value, Point):
+        v = list(value.value) if isinstance(value.value, tuple) else value.value
+        return {"kind": value.kind, "value": v}
+    return value
 
 
 class TutorialRun:
@@ -111,6 +120,11 @@ class TutorialRun:
             if left is None or self._leaves_a_layer(wait):
                 self.next()
                 return True
+        if wait.kind == "leave":
+            layer = self._layer_index(wait.value)
+            if layer is not None and info.get("layer") != layer:
+                self.next()
+                return True
         if left is not None:
             name, entry = left
             # The user left the layer this step is about, for example after a
@@ -132,9 +146,11 @@ class TutorialRun:
             "id": self.tutorial.id, "title": self.tutorial.title,
             "step": self.index, "steps": len(self.tutorial.steps),
             "say": list(step.say), "text": step.text,
-            "wait": {"kind": step.wait.kind, "value": step.wait.value},
+            "wait": {"kind": step.wait.kind, "value": _json_value(step.wait.value)},
             # Whether the step ends by itself; else the panel's Next ends it.
-            "auto": step.wait.kind == "seconds" or self._armed,
+            "auto": (step.wait.kind == "seconds" or self._armed
+                     or (step.wait.kind == "leave" and self._cmd49
+                         and self._layer_index(step.wait.value) is not None)),
             "keyboard_text": self._cmd49,
             "remaining_s": remaining,
             "ring": self._ring, "ring_error": self._ring_error,
@@ -199,20 +215,33 @@ class TutorialRun:
 
     def _needed_layer(self, index: int):
         """(layer name, index of the step that entered it) for a step that is about a
-        layer, or None. A step is about layer L when an earlier step waited for L and
-        no step since then waited for a press of KC_BASE or a layer key, which leave
-        it. The step with that press still needs L: its match is read first. A step
-        that itself waits for a layer needs none: on the way to its layer the
-        keyboard leaves the one before."""
+        layer, or None. A step is about layer L when an earlier step guided to L with
+        `guide_to_layer` and waited for it, the guide's last key stays on L (TO, TG),
+        and no step since then waited for a press of KC_BASE or a layer key, or for
+        leaving a layer. The step with that press still needs L: its match is read
+        first. A layer that is held (MO) or one-shot (OSL) is left on purpose, so it
+        is never needed. A step that itself waits for a layer needs none: on the way
+        to its layer the keyboard leaves the one before."""
         if self.tutorial.steps[index].wait.kind == "layer":
             return None
         needed = None
         for i, step in enumerate(self.tutorial.steps[:index]):
-            if step.wait.kind == "layer":
+            if (step.wait.kind == "layer" and step.guide_to_layer == step.wait.value
+                    and self._entered_with_a_staying_key(step.wait.value)):
                 needed = (step.wait.value, i)
-            elif self._leaves_a_layer(step.wait):
+            elif step.wait.kind == "leave" or self._leaves_a_layer(step.wait):
                 needed = None
         return needed
+
+    def _entered_with_a_staying_key(self, name: str) -> bool:
+        path, _target, why = self._path_to(name)
+        if why:
+            return False
+        _names, _base, buffer = self._keymap()
+        row, col, layer = path[-1]
+        cols = self.keeb.device_settings.MATRIX_COLUMNS
+        per = self.keeb.device_settings.MATRIX_ROWS * cols
+        return stays_on_layer(buffer[layer * per + row * cols + col])
 
     def _left_needed_layer(self, info: dict):
         """(name, entry step) when POLL reports the keyboard off the layer the shown
@@ -248,6 +277,12 @@ class TutorialRun:
             return [(HostTutorial.COND_LAYER, layer, 0)]
         if wait.kind == "press":
             return [(HostTutorial.COND_KEYCODE, wait.value & 0xFF, wait.value >> 8)]
+        if wait.kind == "key":
+            row, col, why = self._resolve(wait.value)
+            if why:
+                self.log.info("Tutorial %s: no key to wait for, %s", self.tutorial.id, why)
+                return []
+            return [(HostTutorial.COND_KEY, row, col)]
         return []
 
     def _keys_of(self, point) -> set:
@@ -272,7 +307,10 @@ class TutorialRun:
             self._ringing = False
 
     def _keymap(self):
-        """(layer names, base layer, keymap buffer), read once per run."""
+        """(layer names, base layer, keymap buffer), read once per run. The layers
+        the keyboard does not store (Settings, Language, Intl, Emoji) come from the
+        shipped preview export and follow the stored ones, when it is for this
+        matrix and the keyboard stores as many layers as the export says."""
         if self._buffer is None:
             ok, names = self.keeb.get_layer_names()
             self._names = list(names) if ok else []
@@ -280,7 +318,23 @@ class TutorialRun:
             self._base = base if ok else 0
             ok, buffer = self.keeb.get_dynamic_buffer()
             self._buffer = list(buffer) if ok and buffer else []
+            self._add_fixed_layers()
         return self._names, self._base, self._buffer
+
+    def _add_fixed_layers(self):
+        ds = self.keeb.device_settings
+        per = ds.MATRIX_ROWS * ds.MATRIX_COLUMNS
+        fixed = fixed_layers(ds.MATRIX_ROWS, ds.MATRIX_COLUMNS)
+        if not fixed or not per or len(self._buffer) != fixed["stored"] * per:
+            return
+        if len(self._names) != fixed["stored"]:
+            self._names = (self._names + [""] * fixed["stored"])[:fixed["stored"]]
+        for name, cells in fixed["layers"]:
+            layer = [0] * per
+            for (row, col), kc in cells.items():
+                layer[row * ds.MATRIX_COLUMNS + col] = kc
+            self._buffer.extend(layer)
+            self._names.append(name)
 
     def _layer_index(self, name: str):
         names, _base, _buffer = self._keymap()

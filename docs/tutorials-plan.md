@@ -67,7 +67,7 @@ write from the command line rings too.
 | control socket | `tutorials.list`, `tutorial.start`, `tutorial.action`, `tutorial.state` |
 | command line | `polyctl tutorial list / start ID / next / back / stop / status` |
 | tray item, dialog, step panel | Help & About → "Tutorials…" (`host.py`), `polyhost/gui/tutorials_dialog.py` |
-| shipped scripts | `polyhost/res/tutorials/midi-layer.yaml`, `brightness.yaml` |
+| shipped scripts | `polyhost/res/tutorials/*.yaml`, listed under *Shipped tutorials* below |
 
 How a run behaves:
 
@@ -127,16 +127,26 @@ Step fields:
 |---|---|---|
 | `say` | one or two status-display lines, ASCII 0x20..0x7E, each at most 128 px in the 15 px status face (the loader measures it), both together at most 59 bytes | cmd 49 TEXT; else shown in the panel only |
 | `text` | longer text for the host panel | none |
-| `point` | `{keycode: ...}`, `{layer_key: NAME}` (the first key of the path to that layer) or `{key: [row, col]}`. A keycode is found in the keymap the keyboard holds, base layer first, so a user's remap is followed. Names: QMK's (`keycodes.h`), PolyKybd's own (`KC_DAUTO`, `KC_BASE`, from `res/preview/legends.json`), `MO(n)`/`TO(n)`/`TG(n)`, or a number | cmd 47 op 0 |
+| `point` | `{keycode: ...}`, `{layer_key: NAME}` (the first key of the path to that layer) or `{key: [row, col]}`. A keycode is found in the keymap the keyboard holds, base layer first, so a user's remap is followed. Names: QMK's (`keycodes.h`), PolyKybd's own (`KC_DAUTO`, `KC_BASE`, from `res/preview/legends.json`), `MO(n)`/`TO(n)`/`TG(n)`/`OSL(n)`, or a number | cmd 47 op 0 |
 | `guide_to_layer` | a layer name from cmd 35. The last key of the path is one that stays on the layer (`TO`, `TG`) when the keymap has one, not an `OSL` that leaves it after one key | cmd 47 op 2 |
 | `spotlight` | a list of keys in the `point` forms, plus `{layer: NAME}` (every key with a keycode on that layer); `[]` darkens all but the ringed key. Applies to that step only | cmd 49 SPOTLIGHT |
 | `reveal` | `{from: <point>}`: the wave from that key lights the dark keys and ends the spotlight. A reveal step keeps the spotlight of the step before | cmd 49 REVEAL |
-| `wait` | `next`, `{seconds: N}`, `{layer: NAME}`, `{press: keycode}` | `layer`/`press` need cmd 49 ARM/POLL; else they become `next` |
+| `wait` | `next`, `{seconds: N}`, `{layer: NAME}`, `{press: keycode}`, `{key: <point>}` (that key position is pressed, whatever it types then: the macro slot picker swallows keys and reports the base layer's keycode), `{leave: NAME}` (the keyboard is no longer on that layer, read from POLL) | `layer`/`press`/`key`/`leave` need cmd 49 ARM/POLL; else they become `next` |
 
-A step after a `wait: {layer: NAME}` is about that layer, until a step that waits
-for a press of `KC_BASE` or of a layer key. When POLL reports that the keyboard left
-the layer (a one-shot key, or the user pressed another layer key), the runner goes
-back to the step that waited for it.
+A step after `guide_to_layer: NAME` with `wait: {layer: NAME}` is about that layer
+when the guide's last key stays on it (`TO`, `TG`). This lasts until a step that
+waits for a press of `KC_BASE` or of a layer key, or for `leave`. When POLL reports
+that the keyboard left the layer (the user took a one-shot key, or pressed another
+layer key), the runner goes back to the guide step. A layer that is held (`MO`) or
+entered on purpose with an `OSL` is never needed: releasing it is part of the
+tutorial.
+
+Layer names are cmd 35's for the stored layers. The layers the keyboard compiles in
+(`Settings`, `Language`, `Intl`, `Emoji` on split72) cannot be read over HID: the
+runner takes their keys from `res/preview/board.json` (`fixed_layers`, written by
+`scripts/export_preview_data.py`). It uses them only when the export's matrix is the
+keyboard's and the keyboard stores as many layers as the export says. On split42
+those steps ring nothing and say why.
 
 Rules for the loader:
 
@@ -177,14 +187,18 @@ PROTOCOL_HISTORY.md` → *v35*. What the host does with it:
 - RAM: +108 B in the pack firmware (main SRAM free 6056 → 5948 B, local gcc 13.2); not
   in the DOOM monolith.
 
-## Tutorial candidates
+## Shipped tutorials
 
 | id | steps |
 |---|---|
 | `midi-layer` | Fn, the key above right Shift (guide), spotlight on the notes |
-| `accents` | hold Intl (letters show their variation), tap Ctrl (number row is the picker), pick, type the letter. ⚠️ No spotlight: `INTL_LAYER.md` says nothing may overlay that layer |
-| `rgb-settings` | guide to the settings layer, spotlight on the RGB row (`RGB_SETTINGS_ROW.md`), one step per key |
-| `brightness` | utility layer, brightness keys, a custom value, then auto (LTR-559), then point at the status OLED brightness row |
-| `emoji-search` | emoji layer, type "grin", the result keys. Requires a flashed dictionary (`emoji_search_dict`) |
-| `layouts` | the Lang key and the region tabs, in the order of first-run chapter 4 |
-| later | shortcut hints while a modifier is held (`HINT_ICONS.md`), macro recording, combos and tap dance, glyph scripts, app overlays and the ESC mark, agent keys, the settings layer |
+| `brightness` | guide to Utility, the preset row, - and +, AUTO/MAN, back to typing |
+| `accents` | hold Intl (guide, `MO`), press e, tap Ctrl (the picker), pick an accent, the remap key. The spotlight keeps the picker row and Ctrl lit; `INTL_LAYER.md`'s "nothing may overlay this layer" is about app overlays |
+| `rgb-lighting` | guide to Settings, on/off, effects, hue and saturation, brightness and speed, back to typing |
+| `emoji-search` | guide to Emoji, the mode key, type a word (no `say`, so the status display shows the query), results, Clear/Space/Backspace, back to typing |
+| `keyboard-language` | the Lang key, the continent row, tap a language (`leave`) |
+| `base-layouts` | guide to Settings, `KC_L0`..`KC_L4`, back to typing |
+| `record-macro` | Fn, then the `OSL(Utility)` key twice (one-shot, then REC), the slot picker (`key` wait on M0), record (no `say`, so the status display shows REC), stop, play |
+
+Later: shortcut hints while a modifier is held (`HINT_ICONS.md`), combos and tap
+dance, glyph scripts, app overlays and the ESC mark, agent keys.
