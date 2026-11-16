@@ -468,13 +468,15 @@ class _FakeKeeb:
     """Records what the controller sends; events are injected by tests."""
     def __init__(self):
         self.cards, self.keys, self.events, self.newest = {}, [], [], 0
+        self.pages = []
 
     def ai_upload_card(self, slot, data):
         self.cards[slot] = data
         return True, "ok"
 
-    def ai_set_keys(self, states, esc, slots):
+    def ai_set_keys(self, states, esc, slots, page=None):
         self.keys.append((states, esc, slots))
+        self.pages.append(page)
         return True, "ok"
 
     def ai_read_events(self, last_seq):
@@ -507,6 +509,66 @@ class ControllerTest(unittest.TestCase):
         self.c._raise = lambda agent: self.c.raise_agent(agent)   # no thread in tests
         self.c._run_dictate = lambda: self.c.dictate()
         self.kb = _FakeKeeb()
+
+    def _fill(self, n, state="working"):
+        for i in range(n):
+            self.r.report("codex", f"s{i:02d}", state)
+
+    def test_sends_the_page_and_the_page_count(self):
+        self._fill(12)
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.pages[-1], (0, 2, 0))
+        self.kb.press(10)                                # Esc: next page
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.pages[-1], (1, 2, 0))
+
+    def test_leaving_ai_mode_shows_page_one_again(self):
+        self._fill(12)
+        self.c.sync(self.kb)
+        self.kb.press(10)
+        self.c.sync(self.kb)
+        self.assertEqual(self.c.page, 1)
+        self.kb.press(13)                                # AI_EVENT_LEAVE
+        self.c.sync(self.kb)
+        self.assertEqual(self.c.page, 0)
+        self.assertEqual(self.kb.pages[-1][0], 0)
+        self.assertNotEqual((self.c.last_press or {}).get("key"), 13)   # not a key press
+
+    def test_a_finish_on_another_page_increases_the_counter(self):
+        self._fill(12)
+        self.c.sync(self.kb)                             # the start: nothing counted
+        self.r.report("codex", "s11", "done")            # on page 2, page 1 is shown
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.pages[-1][2], 1)
+        self.r.report("codex", "s01", "done")            # on the shown page: the keyboard
+        self.c.sync(self.kb)                             # sees that one itself
+        self.assertEqual(self.kb.pages[-1][2], 1)
+        self.r.report("codex", "s10", "waiting")         # not a finish
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.pages[-1][2], 1)
+
+    def test_the_counter_wraps_without_returning_to_zero(self):
+        self.c._done_elsewhere = 255
+        self._fill(12)
+        self.c.sync(self.kb)
+        self.r.report("codex", "s11", "done")
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.pages[-1][2], 1)
+
+    def test_paging_back_reuses_the_cards_already_uploaded(self):
+        self._fill(12)
+        self.c.sync(self.kb)
+        uploads = len(self.kb.cards)
+        writes = []
+        real = self.kb.ai_upload_card
+        self.kb.ai_upload_card = lambda slot, data: (writes.append(slot), real(slot, data))[1]
+        self.kb.press(10)
+        self.c.sync(self.kb)                             # page 2: its two cards are new
+        self.assertEqual(len(writes), 2)
+        self.kb.press(10)
+        self.c.sync(self.kb)                             # page 1 again: nothing uploaded
+        self.assertEqual(len(writes), 2)
+        self.assertGreater(uploads, 0)
 
     def test_pushes_every_pass_cards_only_on_change(self):
         self.r.report("claude-code", "a", "working")
@@ -695,7 +757,19 @@ class ControllerTest(unittest.TestCase):
         self.c.sync(self.kb)
         again = self.kb.keys[-1][2][0]
         self.assertIn(again, self.kb.cards)       # uploaded into its new slot
-        self.assertEqual(self.cache.holds(("agentcard", 0)), again)
+        self.assertEqual(self.cache.holds(("agentcard", "codex", "a")), again)
+
+    def test_an_evicted_card_given_the_SAME_slot_again_is_uploaded_again(self):
+        self.r.report("codex", "a", "working")
+        self.c.sync(self.kb)
+        first = self.kb.keys[-1][2][0]
+        self.cache.forget_slot(first)            # an app image may now be in it
+        self.kb.cards.clear()
+        allocate = self.cache.allocate_aside
+        self.cache.allocate_aside = lambda key: (allocate(key), first)[1]
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.keys[-1][2][0], first)
+        self.assertIn(first, self.kb.cards)       # not skipped on the old record
 
     def test_a_full_pool_shows_no_card_rather_than_evict_the_shown_app(self):
         from polyhost.device.overlay_cache import OverlayMRUCache

@@ -506,8 +506,8 @@ class PolyKybdMock:
     def tutorial_end(self):
         return self._tutorial_call("tutorial_end")
 
-    def ai_set_keys(self, states, flags, slots):
-        return self._ai_call("ai_set_keys", states, flags, slots)
+    def ai_set_keys(self, states, flags, slots, page=None):
+        return self._ai_call("ai_set_keys", states, flags, slots, page)
 
     def ai_read_events(self, last_seq):
         return self._ai_call("ai_read_events", last_seq)

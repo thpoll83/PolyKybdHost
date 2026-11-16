@@ -440,6 +440,7 @@ class MockFirmware:
         self.ai_states = [0] * 10
         self.ai_slots = [0xFFFF] * 12
         self.ai_flags = 0
+        self.ai_page = (0, 0, 0)   # v36: page shown, page count, finished-elsewhere counter
         self.ai_events = []        # [(seq, key)], the newest 8
         self.ai_seq = 0
         self.ai_cards = {}         # pool slot -> bytearray(360)
@@ -669,7 +670,13 @@ class MockFirmware:
             if (any(s > 5 for s in states) or flags & ~0x0F
                     or any(s != 0xFFFF and s >= capacity for s in slots)):
                 return _reply(p[1], False)
+            # v36 page bytes, after the 35 above; a v35 keyboard ignores them, as the
+            # firmware does. A page not below its count is refused with the report.
+            page = (p[38], p[39], p[40]) if self.protocol >= 36 else (0, 0, 0)
+            if not (page[0] == 0 if page[1] == 0 else page[0] < page[1]):
+                return _reply(p[1], False)
             self.ai_states, self.ai_flags, self.ai_slots = states, flags, slots
+            self.ai_page = page
             return _reply(p[1])
         if op == 2:
             seen = p[3]
