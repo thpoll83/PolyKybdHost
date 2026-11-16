@@ -23,7 +23,7 @@ import time
 from polyhost.device.command_ids import HostTutorial
 from polyhost.services.midi_guide import (GUIDE_COUNT, GUIDE_PERIOD_MS, find_path,
                                          layer_target, stays_on_layer)
-from polyhost.services.tutorials.loader import custom_keycodes, fixed_layers
+from polyhost.services.tutorials.loader import Point, custom_keycodes, fixed_layers
 
 # A ring that runs out by itself, so a host that stops without a cancel does not
 # leave the keyboard ringing for ever: the MIDI guide's 12 ripples, about 30 s.
@@ -31,6 +31,15 @@ RING_COUNT = GUIDE_COUNT
 RING_PERIOD_MS = GUIDE_PERIOD_MS
 # The firmware's custom keycode that goes back to the default layer.
 KC_BASE = custom_keycodes().get("KC_BASE", 0x7E08)
+
+
+def _json_value(value):
+    """A wait value as JSON: a Point (a `key` wait) becomes {"kind", "value"}, with
+    a [row, col] list for a key position. The control socket encodes state()."""
+    if isinstance(value, Point):
+        v = list(value.value) if isinstance(value.value, tuple) else value.value
+        return {"kind": value.kind, "value": v}
+    return value
 
 
 class TutorialRun:
@@ -136,10 +145,11 @@ class TutorialRun:
             "id": self.tutorial.id, "title": self.tutorial.title,
             "step": self.index, "steps": len(self.tutorial.steps),
             "say": list(step.say), "text": step.text,
-            "wait": {"kind": step.wait.kind, "value": step.wait.value},
+            "wait": {"kind": step.wait.kind, "value": _json_value(step.wait.value)},
             # Whether the step ends by itself; else the panel's Next ends it.
             "auto": (step.wait.kind == "seconds" or self._armed
-                     or (step.wait.kind == "leave" and self._cmd49)),
+                     or (step.wait.kind == "leave" and self._cmd49
+                         and self._layer_index(step.wait.value) is not None)),
             "keyboard_text": self._cmd49,
             "remaining_s": remaining,
             "ring": self._ring, "ring_error": self._ring_error,

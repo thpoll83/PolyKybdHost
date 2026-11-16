@@ -1,4 +1,5 @@
 """services/tutorials/runner: which step rings what, and when it ends."""
+import json
 import types
 import unittest
 
@@ -422,6 +423,21 @@ class HostTutorialTest(unittest.TestCase):
                        _Keyboard(protocol=35))
         run.start()
         self.assertEqual(kb.cmd49()[-1], ("arm", [(1, 0, 2)]))   # COND_KEY, row 0, col 2
+
+    def test_a_key_wait_state_is_json(self):
+        run, _kb = _run([{"say": "slot", "wait": {"key": {"key": [0, 2]}}}],
+                        _Keyboard(protocol=35))
+        run.start()
+        state = json.loads(json.dumps(run.state()))
+        self.assertEqual(state["wait"], {"kind": "key",
+                                         "value": {"kind": "key", "value": [0, 2]}})
+
+    def test_a_leave_wait_on_an_unknown_layer_ends_with_next(self):
+        run, _kb = _run([{"say": "pick", "wait": {"leave": "Nowhere"}}],
+                        _Keyboard(protocol=35))
+        run.start()
+        self.assertFalse(run.state()["auto"])
+        self.assertFalse(run.poll())
 
     def test_a_next_step_polls_too(self):
         # The session stays alive while a step waits for Next.
