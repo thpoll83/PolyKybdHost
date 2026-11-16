@@ -1799,7 +1799,7 @@ idea64,pycharm64,clion64,webstorm64,goland64,rider64,phpstorm64,rubymine64,datag
         "jetbrains://git": { overlay: [jetbrains_git_template.mods.png, jetbrains_git_template.combo.mods.png] }
         "jetbrains://run": { overlay: [jetbrains_run_gnome_template.mods.png, jetbrains_run_gnome_template.combo.mods.png] }
         "jetbrains://debug": { overlay: [jetbrains_run_gnome_template.mods.png, jetbrains_run_gnome_template.combo.mods.png] }
-        "jetbrains://services": { overlay: [jetbrains_services_template.mods.png, jetbrains_services_template.combo.mods.png] }
+        "jetbrains://services": { overlay: [jetbrains_services_gnome_template.mods.png, jetbrains_services_gnome_template.combo.mods.png] }
         "jetbrains://find": { overlay: [jetbrains_find_gnome_template.mods.png, jetbrains_find_gnome_template.combo.mods.png] }
         "jetbrains://problems": { overlay: [jetbrains_problems_template.mods.png, jetbrains_problems_template.combo.mods.png] }
         "jetbrains://bookmarks": { overlay: [jetbrains_bookmarks_gnome_template.mods.png, jetbrains_bookmarks_gnome_template.combo.mods.png] }

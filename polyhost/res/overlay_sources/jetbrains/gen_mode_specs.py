@@ -147,6 +147,13 @@ def _rerun_chord(icon: str, label: str) -> list:
     ]
 
 
+# Ctrl+Alt+T on GNOME and KDE: the desktop opens a terminal before the IDE sees
+# the key (Ubuntu's gnome-settings-daemon media-keys `terminal` default, KDE
+# Konsole's global shortcut; SOURCES.md, "Ctrl+Alt+T on GNOME and KDE"). Drawn
+# in place of the keymap's action on that chord.
+DESKTOP_TERMINAL = {"key": "T", "mods": ["CTRL", "ALT"], "only": ["linux_gnome", "linux_kde"],
+                    "icon": "desktopterminal.png", "label": "Open terminal (desktop shortcut)"}
+
 # VCS keys the Commit and Git windows share.
 VCS_LABELS = {"Commit", "Push", "Update project"}
 VCS_POPUPS = [
@@ -234,9 +241,11 @@ TOOL_WINDOWS = {
         {"key": "INSERT", "mods": ["ALT"], "only": ["windows", "linux"], "icon": "newelement.png",
          "label": "New element"},
         {"key": "N", "mods": ["GUI"], "only": ["macos"], "icon": "newelement.png", "label": "New element"},
-        # ServiceView.GroupByContributor: Ctrl+Alt+T, macOS Ctrl+T.
-        {"key": "T", "mods": ["CTRL", "ALT"], "only": ["windows", "linux"], "icon": "groupbytype.png",
-         "label": "Group by type"},
+        # ServiceView.GroupByContributor: Ctrl+Alt+T, macOS Ctrl+T. GNOME and KDE
+        # open a terminal on Ctrl+Alt+T (DESKTOP_TERMINAL).
+        {"key": "T", "mods": ["CTRL", "ALT"], "only": ["windows", "linux"],
+         "except": ["linux_gnome", "linux_kde"], "icon": "groupbytype.png", "label": "Group by type"},
+        DESKTOP_TERMINAL,
         {"key": "T", "mods": ["CTRL"], "only": ["macos"], "icon": "groupbytype.png", "label": "Group by type"},
     ] + TREE),
     # Find tool window (the usage view).
@@ -247,8 +256,10 @@ TOOL_WINDOWS = {
         {"key": "BACKSPACE", "mods": ["SHIFT"], "only": ["macos"], "icon": "include.png", "label": "Include"},
         *_occurrence("nextoccurrence.png", "prevoccurrence.png", "Next occurrence", "Previous occurrence"),
         # UsageGrouping.UsageType / Directory: Ctrl+Alt+T / P, macOS Ctrl+T / P.
-        {"key": "T", "mods": ["CTRL", "ALT"], "only": ["windows", "linux"], "icon": "groupbytype.png",
-         "label": "Group by type"},
+        # GNOME and KDE open a terminal on Ctrl+Alt+T (DESKTOP_TERMINAL).
+        {"key": "T", "mods": ["CTRL", "ALT"], "only": ["windows", "linux"],
+         "except": ["linux_gnome", "linux_kde"], "icon": "groupbytype.png", "label": "Group by type"},
+        DESKTOP_TERMINAL,
         {"key": "T", "mods": ["CTRL"], "only": ["macos"], "icon": "groupbytype.png", "label": "Group by type"},
         {"key": "P", "mods": ["CTRL", "ALT"], "only": ["windows", "linux"], "icon": "groupbydirectory.png",
          "label": "Group by directory"},

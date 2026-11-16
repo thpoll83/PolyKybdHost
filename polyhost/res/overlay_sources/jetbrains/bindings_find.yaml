@@ -98,8 +98,20 @@ bindings:
   only:
   - windows
   - linux
+  except:
+  - linux_gnome
+  - linux_kde
   icon: groupbytype.png
   label: Group by type
+- key: T
+  mods:
+  - CTRL
+  - ALT
+  only:
+  - linux_gnome
+  - linux_kde
+  icon: desktopterminal.png
+  label: Open terminal (desktop shortcut)
 - key: T
   mods:
   - CTRL

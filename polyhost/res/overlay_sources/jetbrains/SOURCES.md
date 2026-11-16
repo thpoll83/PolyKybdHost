@@ -93,6 +93,7 @@ image only when they do the same thing. New images, all drawn by `fetch_icons.py
 | `copyconfig.png` | Services: Copy configuration | `copyfile.png` (Fluent `Document Copy`, MIT) + Fluent `Settings` (MIT) badge |
 | `newelement.png` | New element (Project, Bookmarks, Services) | Fluent `Add` (MIT) |
 | `changelistmove.png` | Move to another changelist | Material `move_group` (Apache-2.0) |
+| `desktopterminal.png` | GNOME, KDE: Ctrl+Alt+T opens a terminal (desktop shortcut) | `terminal.png` (Fluent `Window Console`, MIT) + Fluent `Desktop` (MIT) badge; see *Ctrl+Alt+T on GNOME and KDE* |
 | `win_find.png` | Find window (Alt+3, Cmd+3) | Fluent `Text Bullet List Square Search` (MIT); it was Fluent `Search` drawn as the shared find concept, the same picture as Find |
 
 `part_*.png` are the badges and bases of these composites and are not drawn on
@@ -109,7 +110,8 @@ Kept as one image, because the keys do the same thing (labels made the same):
 - **Rerun** (Ctrl+F5): the Find window's `UsageView.Rerun` reruns the search.
 - **Show diff** (Ctrl+D): the Project view compares the selected files with the
   same diff action.
-- **Group by type** (Ctrl+Alt+T): groups the list by type in Services and Find.
+- **Group by type** (Ctrl+Alt+T): groups the list by type in Services and Find
+  (Windows, macOS on ⌃T, and Linux desktops other than GNOME and KDE).
 - **New element** (Alt+Insert): `NewElement` in each view.
 - **Show in file manager** (Explorer, Finder or the Linux file manager).
 
@@ -184,7 +186,7 @@ stay the fallback.
 | Commit tool window | `bindings_commit.yaml` (generated) | Windows, macOS | `jetbrains://commit` |
 | Git tool window | `bindings_git.yaml` (generated) | Windows, macOS, KDE | `jetbrains://git` |
 | Run tool window, Debug window while running | `bindings_run.yaml` (generated) | Windows, macOS, GNOME, KDE | `jetbrains://run`, `jetbrains://debug` |
-| Services tool window | `bindings_services.yaml` (generated) | Windows, macOS, KDE | `jetbrains://services` |
+| Services tool window | `bindings_services.yaml` (generated) | Windows, macOS, GNOME, KDE | `jetbrains://services` |
 | Find tool window | `bindings_find.yaml` (generated) | Windows, macOS, GNOME, KDE | `jetbrains://find` |
 | Problems tool window | `bindings_problems.yaml` (generated) | Windows, macOS | `jetbrains://problems` |
 | Bookmarks tool window | `bindings_bookmarks.yaml` (generated) | Windows, macOS, GNOME | `jetbrains://bookmarks` |
@@ -288,10 +290,10 @@ fallback set; macOS converts an inherited `control` to Cmd unless
 | Services | `RunDashboard.EditConfiguration` (uses `EditSourceInNewWindow`) | Shift+F4 | same | |
 | Services | `RunDashboard.CopyConfiguration` (uses `EditorDuplicate`) | Ctrl+D | ⌘D | |
 | Services, Bookmarks | `ServiceView.AddService`, `BookmarksView.Create` (use `NewElement`) | Alt+Insert | ⌘N | |
-| Services | `ServiceView.GroupByContributor` | Ctrl+Alt+T | ⌃T | |
+| Services | `ServiceView.GroupByContributor` | Ctrl+Alt+T | ⌃T | GNOME, KDE: the desktop's terminal shortcut |
 | Find | `UsageView.Exclude` (uses `$Delete`), `UsageView.Include` | Delete, Insert | Delete, ⇧⌫ | |
 | Find | `UsageView.Rerun` (uses `Rerun`) | Ctrl+F5 | ⌘R | KDE Ctrl+5 |
-| Find | `UsageGrouping.UsageType`, `UsageGrouping.Directory` | Ctrl+Alt+T, Ctrl+Alt+P | ⌃T, ⌃P | |
+| Find | `UsageGrouping.UsageType`, `UsageGrouping.Directory` | Ctrl+Alt+T, Ctrl+Alt+P | ⌃T, ⌃P | GNOME, KDE: Ctrl+Alt+T is the desktop's terminal shortcut |
 | Find | `UsageFiltering.ReadAccess`, `WriteAccess`, `Imports` | Ctrl+R, Ctrl+W, Ctrl+I | ⌃R, ⌃W, ⌃I | |
 | Find | `ExportToTextFile` | Alt+O | ⌃O | |
 | Problems | quick fix (uses `ShowIntentionActions`) | Alt+Enter | ⌥Enter | |
@@ -306,8 +308,8 @@ Notes:
 - On macOS `ChangesView.GroupBy.Module` is also ⌃M. The Commit set labels ⌃M
   as Commit message history, the action of the message field.
 - `ServiceView.GroupByContributor` and `UsageGrouping.UsageType` are Ctrl+Alt+T
-  in the Linux keymaps too, although Ubuntu's GNOME opens a terminal on that
-  chord. The set draws what the keymap binds.
+  in the Linux keymaps too. The GNOME and KDE sets draw the desktop's terminal
+  shortcut on that chord instead (next section).
 - Not drawn: `Pause` and `XDebugger.MuteBreakpoints` have no default shortcut;
   the Problems view implements no occurrence navigator, so it has no Next/Previous
   problem key; `RerunTests` (Alt+Shift+R) only applies to test runs; the change
@@ -319,3 +321,35 @@ Notes:
 - New icons are Fluent UI System Icons (MIT), in `fetch_icons.py` under
   "tool window sets". Fetched on 2026-11-14.
 - Not checked in a running IDE. Each chord was checked against the files above.
+
+## Ctrl+Alt+T on GNOME and KDE (2026-11-16)
+
+Ubuntu's GNOME and KDE Plasma open a terminal on Ctrl+Alt+T, so the IDE never
+receives that chord there. In the `linux_gnome` and `linux_kde` sets of the Find and Services
+windows, Ctrl+Alt+T shows `desktopterminal.png`, labelled "Open terminal
+(desktop shortcut)" (`DESKTOP_TERMINAL` in `gen_mode_specs.py`). Windows, macOS
+(⌃T) and the plain `linux` set keep Group by type. No other JetBrains set draws
+Ctrl+Alt+T on Linux: Surround with is drawn on Ctrl+Alt+Shift+B there, as the
+XWin keymap binds it.
+
+The image is not `terminal.png`, because Alt+F12 (Terminal window) is a
+different action: it is the terminal glyph with a desktop badge.
+
+Sources:
+
+- **GNOME**: Ubuntu's `gnome-settings-daemon` adds the media-keys key
+  `terminal` with the default `['<Primary><Alt>t']`, and runs the
+  `org.gnome.desktop.default-applications.terminal` command on it
+  (`debian/patches/ubuntu/media-keys-restore-terminal-keyboard-shortcut-schema.patch`,
+  git.launchpad.net/ubuntu/+source/gnome-settings-daemon, branches
+  `ubuntu/noble` at 1410c1f2 and `ubuntu/devel` at ac997c54, read 2026-11-16).
+  Upstream GNOME has no such key: `data/org.gnome.settings-daemon.plugins.media-keys.gschema.xml.in`
+  in GNOME/gnome-settings-daemon has no `terminal` key in tags 40.0 to 49.0 or
+  on `master` (d3e71700). So on Fedora and other distributions that ship
+  upstream GNOME, Ctrl+Alt+T reaches the IDE and does Group by type, and the
+  GNOME set shows the wrong action there.
+- **KDE**: Konsole's `desktop/org.kde.konsole.desktop` sets
+  `X-KDE-Shortcuts=Ctrl+Alt+T`, which KDE's global shortcut service registers
+  for Konsole (invent.kde.org/utilities/konsole, `master` at 051a7117, read
+  2026-11-16).
+- Not checked on a running desktop.

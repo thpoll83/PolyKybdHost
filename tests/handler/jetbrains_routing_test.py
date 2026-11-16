@@ -100,6 +100,37 @@ class JetBrainsMappingFileTest(unittest.TestCase):
         spec.loader.exec_module(mod)
         self.assertEqual(mod.main(["--check"]), 0)
 
+    def test_ctrl_alt_t_is_the_desktop_terminal_on_gnome_and_kde(self):
+        # GNOME (Ubuntu) and KDE open a terminal on Ctrl+Alt+T, so the IDE never
+        # sees it there; every other platform keeps the keymap's Group by type.
+        import sys
+        sys.path.insert(0, str(ROOT / "scripts"))
+        try:
+            import generate_app_overlays as g
+        finally:
+            sys.path.remove(str(ROOT / "scripts"))
+        expect = {"windows": "Group by type", "linux": "Group by type",
+                  "linux_gnome": "Open terminal (desktop shortcut)",
+                  "linux_kde": "Open terminal (desktop shortcut)"}
+        for stem in ("find", "services"):
+            spec = yaml.safe_load((SOURCES / f"bindings_{stem}.yaml").read_text(encoding="utf-8"))
+            for platform, label in expect.items():
+                with self.subTest(set=stem, platform=platform):
+                    hits = [b for b in spec["bindings"]
+                            if str(b["key"]) == "T" and sorted(b["mods"]) == ["ALT", "CTRL"]
+                            and g.binding_applies(b, platform)]
+                    self.assertEqual([b["label"] for b in hits], [label])
+        # No other JetBrains set draws Ctrl+Alt+T on GNOME or KDE.
+        for path in sorted(SOURCES.glob("bindings*.yaml")):
+            if path.stem in ("bindings_find", "bindings_services"):
+                continue
+            spec = yaml.safe_load(path.read_text(encoding="utf-8"))
+            for platform in ("linux_gnome", "linux_kde"):
+                hits = [b for b in spec["bindings"]
+                        if str(b["key"]) == "T" and sorted(b.get("mods") or []) == ["ALT", "CTRL"]
+                        and g.binding_applies(b, platform)]
+                self.assertEqual(hits, [], (path.name, platform))
+
 
 class JetBrainsRoutingTest(unittest.TestCase):
 
@@ -141,11 +172,12 @@ class JetBrainsRoutingTest(unittest.TestCase):
     }
     # Which tool-window sets have artwork of their own per branch; the others
     # use the next one down (desktop -> linux -> Windows). From the keymaps:
-    # GNOME moves Next/Previous occurrence, KDE moves Ctrl+F2/F4/F5.
+    # GNOME moves Next/Previous occurrence, KDE moves Ctrl+F2/F4/F5, and both
+    # draw the desktop's terminal shortcut on Ctrl+Alt+T in Services and Find.
     OWN_SET = {
         "macos": {"commit", "git", "run", "services", "find", "problems", "bookmarks", "structure"},
         "linux": set(),
-        "linux_gnome": {"run", "find", "bookmarks"},
+        "linux_gnome": {"run", "services", "find", "bookmarks"},
         "linux_kde": {"git", "run", "services", "find"},
     }
     SUFFIX = {"macos": "_mac", "linux_gnome": "_gnome", "linux_kde": "_kde"}

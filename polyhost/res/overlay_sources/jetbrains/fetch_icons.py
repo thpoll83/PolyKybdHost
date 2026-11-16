@@ -177,6 +177,7 @@ FLUENT = {
     "part_list": "List",
     "part_lines": "Text Align Left",
     "part_settings": "Settings",
+    "part_desktop": "Desktop",
 }
 
 # Composites: (output, base, badge). The base is reduced to the upper left and
@@ -188,6 +189,8 @@ BADGES = [
     ("run_selected.png", "cell:run.png", "part_checkbox.png"),   # Services: Run selected
     ("debug_selected.png", "cell:debug.png", "part_checkbox.png"),
     ("copyconfig.png", "copyfile.png", "part_settings.png"),     # Services: Copy configuration
+    # GNOME/KDE Ctrl+Alt+T: the desktop opens a terminal (not the Terminal window)
+    ("desktopterminal.png", "terminal.png", "part_desktop.png"),
 ]
 
 # Composites: (output, base, up). The base on the right, a heavy arrow on the left.
