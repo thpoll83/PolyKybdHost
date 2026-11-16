@@ -21,6 +21,10 @@ from polyhost.services.agents.model import AgentState
 PAGER_KEY = 10
 DICTATION_KEY = 11     # '-'
 NEXT_WAITING_KEY = 12  # '+'
+# Event code beside the key indexes (firmware AI_EVENT_LEAVE, v36): AI mode ended.
+LEAVE_EVENT = 13
+_BUSY = (AgentState.WORKING, AgentState.STALE)
+_FINISHED = (AgentState.DONE, AgentState.IDLE)
 NO_SLOT = 0xFFFF
 NUMBER_KEYS = 10
 CARD_COUNT = NUMBER_KEYS + 2
@@ -59,6 +63,11 @@ class AgentKeysController:
         self.log = log or logging.getLogger("PolyHost")
         self.marks = marks or VendorMarks()
         self.page = 0
+        # Increased (1..255, never 0 again) when an agent on a page that is not shown
+        # finishes its turn; the keyboard (v36) then ripples the AI key. 0 until the
+        # first such finish, so a restarted host rings nothing.
+        self._done_elsewhere = 0
+        self._last_states = None         # agent key -> state at the last pass
         self._lock = threading.Lock()
         self._read_events = False
         self.forget_device()
@@ -69,7 +78,10 @@ class AgentKeysController:
         """The keyboard lost or never had our state (connect, reboot)."""
         with self._lock:
             self._pushed_keys = None
-            self._cards = [None] * CARD_COUNT   # (what is drawn, pool slot) per card
+            # cache key -> (what is drawn, pool slot). A number key's card is cached
+            # under its AGENT, not the key: paging back to a page reuses the cards the
+            # keyboard still holds instead of uploading every one again.
+            self._cards = {}
             self._last_seq = None          # None: take the keyboard's newest as the start
             self._last_gen = None
             self._read_events = True
@@ -113,12 +125,14 @@ class AgentKeysController:
             self._poll_events(keeb)
         self.registry.tick()
         with self._lock:
-            self.page = min(self.page, self.registry.page_count() - 1)
+            pages = self.registry.page_count()
+            self.page = min(self.page, pages - 1)
             page = self.page
         view = self.registry.page(page)
+        self._count_finished_elsewhere(view)
         cache = self.cache_for()
         states, slots = [], []
-        for i, agent in enumerate(view[:NUMBER_KEYS]):
+        for agent in view[:NUMBER_KEYS]:
             if cancel is not None and cancel.is_set():
                 return
             if agent is None:
@@ -127,13 +141,14 @@ class AgentKeysController:
                 continue
             states.append(agent.state)
             drawn = (agent.vendor, agent.state, agent.display_headline, self.marks.version)
-            slots.append(self._card(keeb, cache, i, drawn,
+            slots.append(self._card(keeb, cache, ("agentcard",) + agent.key, drawn,
                                     lambda a=agent: render_card(a.vendor, a.state,
                                                                 a.display_headline,
                                                                 self.marks)))
         waiting = len(self.registry.waiting())
-        extra = [self._card(keeb, cache, CARD_DICTATION, ("dictation",), render_dictation_card),
-                 self._card(keeb, cache, CARD_NEXT_WAITING, ("next", waiting),
+        extra = [self._card(keeb, cache, ("agentcard", CARD_DICTATION), ("dictation",),
+                            render_dictation_card),
+                 self._card(keeb, cache, ("agentcard", CARD_NEXT_WAITING), ("next", waiting),
                             lambda: render_next_waiting_card(waiting))]
         slots += extra
         extra_ok = NO_SLOT not in extra
@@ -150,7 +165,10 @@ class AgentKeysController:
         # Sent on EVERY pass, not only on a change: the keyboard clears them at USB
         # suspend (ai_reset_keys) without the host seeing a disconnect, and this is
         # what puts them back. The firmware redraws only when they differ.
-        ok, msg = keeb.ai_set_keys(list(keys[0]), keys[1], list(keys[2]))
+        # v36: the page, the page count and the finished-elsewhere counter; an older
+        # keyboard gets the v35 report (PolyKybd.ai_set_keys).
+        ok, msg = keeb.ai_set_keys(list(keys[0]), keys[1], list(keys[2]),
+                                   page=(page, pages, self._done_elsewhere))
         if ok:
             self._pushed_keys = keys         # only what the keyboard confirmed
         elif keys != self._pushed_keys:
@@ -167,28 +185,42 @@ class AgentKeysController:
         self.forget_device()
         return ok
 
-    def _card(self, keeb, cache, index, drawn, render) -> int:
-        """The pool slot of card `index` showing `drawn`, uploading it when the slot
-        is new or the picture changed; NO_SLOT when the pool has no room for it."""
+    def _card(self, keeb, cache, key, drawn, render) -> int:
+        """The pool slot of the card cached under `key` showing `drawn`, uploading it
+        when the slot is new or the picture changed; NO_SLOT when the pool has no room
+        for it."""
         if cache is None:
             return NO_SLOT
-        key = ("agentcard", index)
         slot = cache.holds(key)
         if slot is None:
             slot = cache.allocate_aside(key)
             if slot is None:
-                self._cards[index] = None
+                self._cards.pop(key, None)
                 return NO_SLOT
-        if self._cards[index] == (drawn, slot):
+        if self._cards.get(key) == (drawn, slot):
             return slot
         cache.mark_written(slot)     # an app image reusing it later must clear it
         ok, msg = keeb.ai_upload_card(slot, card_bytes(render()))
         if not ok:
-            self.log.debug("Agent card %d not uploaded: %s", index, msg)
-            self._cards[index] = None
+            self.log.debug("Agent card %s not uploaded: %s", key[1:], msg)
+            self._cards.pop(key, None)
             return NO_SLOT
-        self._cards[index] = (drawn, slot)
+        self._cards[key] = (drawn, slot)
         return slot
+
+    def _count_finished_elsewhere(self, view):
+        """Increase the finished-elsewhere counter for each agent NOT on the shown page
+        that went from working (or stale) to done or idle since the last pass. An
+        agent on the shown page needs nothing: the keyboard sees its own keys change."""
+        shown = {agent.key for agent in view if agent is not None}
+        now = {agent.key: agent.state for agent in self.registry.agents()}
+        last = self._last_states
+        self._last_states = now
+        if last is None:
+            return                      # the first pass is the start
+        for key, state in now.items():
+            if key not in shown and last.get(key) in _BUSY and state in _FINISHED:
+                self._done_elsewhere = self._done_elsewhere % 255 + 1
 
     def _poll_events(self, keeb):
         start = self._last_seq
@@ -214,6 +246,12 @@ class AgentKeysController:
                                      if agent is not None else "")}
 
     def _handle_key(self, key: int):
+        if key == LEAVE_EVENT:
+            # AI mode ended (v36): show page 1 again, so an agent never seems gone
+            # because a later page stayed selected.
+            with self._lock:
+                self.page = 0
+            return
         self._note(key, "read")
         if key == PAGER_KEY:
             self.next_page()
