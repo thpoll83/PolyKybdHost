@@ -77,6 +77,13 @@ class FindPathTest(unittest.TestCase):
         _put(buf, FL, 0, 6, TRNS)
         self.assertEqual(find_path(buf, ROWS, COLS, BASE, UL), [(2, 0, BASE), (0, 0, FL)])
 
+    def test_a_longer_path_that_stays_beats_a_shorter_one_shot(self):
+        buf = _default_split72()
+        _put(buf, BASE, 3, 3, OSL + UL)    # one press, but it leaves after one key
+        self.assertEqual(find_path(buf, ROWS, COLS, BASE, UL), [(2, 0, BASE), (0, 6, FL)])
+        _put(buf, FL, 0, 6, TRNS)          # no staying key anywhere: the shortest
+        self.assertEqual(find_path(buf, ROWS, COLS, BASE, UL), [(3, 3, BASE)])
+
     def test_a_remapped_midi_key_on_the_base_layer_is_one_step(self):
         buf = _default_split72()
         _put(buf, BASE, 3, 3, TO + ML)

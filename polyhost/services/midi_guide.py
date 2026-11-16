@@ -83,45 +83,48 @@ def find_path(buffer, rows: int, cols: int, base_layer: int, target_layer: int,
 
     Each step goes to a HIGHER layer: the keyboard picks the step by the highest
     active layer, so a path through a lower layer could never advance. The last
-    press into `target_layer` is a key that stays on it (TO, TG) when that layer has
-    one: an OSL leaves the target after one key, and MO, LT and LM only while held.
-    Other ties go to the first key in matrix order."""
+    press into `target_layer` is a key that stays on it (TO, TG) when any path within
+    `max_steps` ends on one, even a longer path: an OSL leaves the target after one
+    key, and MO, LT and LM only while held. Without one, the shortest path. Other
+    ties go to the first key in matrix order."""
     if buffer is None or rows <= 0 or cols <= 0:
         return None
     per_layer = rows * cols
     layers = len(buffer) // per_layer
     if not (0 <= base_layer < layers) or base_layer == target_layer:
         return None
+
+    def path_to(layer, i):
+        path, node = [(i // cols, i % cols, layer)], layer
+        while came[node] is not None:
+            prev, row, col = came[node]
+            path.append((row, col, prev))
+            node = prev
+        return path[::-1]
+
     came = {base_layer: None}
     queue = deque([(base_layer, 0)])
+    fallback = None          # the shortest path that ends on a key that does not stay
     while queue:
         layer, depth = queue.popleft()
         if depth >= max_steps:
             continue
         start = layer * per_layer
-        into_target = None
         for i in range(per_layer):
             kc = buffer[start + i]
             to = layer_target(kc)
             if to is None or to <= layer or to in came:
                 continue
             if to == target_layer:
-                if into_target is None or (stays_on_layer(kc)
-                                           and not stays_on_layer(into_target[0])):
-                    into_target = (kc, i)
+                if stays_on_layer(kc):
+                    return path_to(layer, i)     # breadth first: the shortest such path
+                if fallback is None:
+                    fallback = path_to(layer, i)
                 continue
             came[to] = (layer, i // cols, i % cols)
             if to < layers:      # a layer the keyboard does not store has no keys to read
                 queue.append((to, depth + 1))
-        if into_target is not None:
-            i = into_target[1]
-            path, node = [(i // cols, i % cols, layer)], layer
-            while came[node] is not None:
-                prev, row, col = came[node]
-                path.append((row, col, prev))
-                node = prev
-            return path[::-1]
-    return None
+    return fallback
 
 
 def stays_on_layer(keycode: int) -> bool:
