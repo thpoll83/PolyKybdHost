@@ -37,3 +37,29 @@ intellijPlatform {
     }
     buildSearchableOptions = false
 }
+
+// The zip is committed (polyhost/res/jetbrains/, see README "Build") and CI
+// rebuilds it and compares the bytes, so the archives must not depend on the
+// time or the machine: no file times, a fixed order, and no build-machine
+// lines (Build-JVM, Build-OS) in the jar manifest.
+tasks.withType<AbstractArchiveTask>().configureEach {
+    isPreserveFileTimestamps = false
+    isReproducibleFileOrder = true
+}
+tasks.named("generateManifest") {
+    doLast {
+        outputs.files.filter { it.isFile }.forEach { f ->
+            f.writeText(f.readLines().filterNot {
+                it.startsWith("Build-JVM:") || it.startsWith("Build-OS:")
+            }.joinToString("\n", postfix = "\n"))
+        }
+    }
+}
+
+// `gradle shipPlugin`: build the zip and copy it to where the host app ships it
+// (polyhost/res/jetbrains/polykybd-context-reporter.zip, no version in the name).
+tasks.register<Copy>("shipPlugin") {
+    from(tasks.named("buildPlugin"))
+    into(layout.projectDirectory.dir("../polyhost/res/jetbrains"))
+    rename { "polykybd-context-reporter.zip" }
+}
