@@ -67,12 +67,20 @@ class Agent:
         return (self.vendor, self.session_id)
 
     @property
+    def anonymous(self) -> bool:
+        """A cloud agent that sent no title and no folder (POLYKYBD_CLOUD_ANONYMOUS)
+        and has no label of the user's: shown as "Agent 1", "Agent 2"."""
+        return self.machine == "cloud" and not (self.label or self.headline or self.cwd)
+
+    @property
     def base_headline(self) -> str:
         """The user's label, the session title, the directory, or the vendor."""
         if self.label:
             return self.label
         if self.headline:
             return self.headline
+        if self.anonymous:
+            return "Agent"
         if self.cwd:
             # Either separator: a forwarder on another OS can report the path.
             path = self.cwd.replace("\\", "/").rstrip("/")
@@ -393,9 +401,11 @@ class AgentRegistry:
         groups: dict[str, list[Agent]] = {}
         for agent in out:
             agent.dup_number = 0
-            groups.setdefault(agent.base_headline.casefold(), []).append(agent)
+            # Its own group: a local agent in a folder named "agent" is not one of them.
+            group = "\0anonymous" if agent.anonymous else agent.base_headline.casefold()
+            groups.setdefault(group, []).append(agent)
         for same in groups.values():
-            if len(same) > 1:
+            if len(same) > 1 or same[0].anonymous:
                 for number, agent in enumerate(same, 1):
                     agent.dup_number = number
         return out
