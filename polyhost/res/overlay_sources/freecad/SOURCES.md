@@ -85,6 +85,8 @@ F5. The set follows the source.
 
 - ESC program mark: the FreeCAD logo from Simple Icons (`freecad`, CC0-1.0,
   <https://simpleicons.org>), fetched by `brand_marks.ensure` into `freecad.png`.
+  `clean_mark` turns it into a 1-bit 32 px bitmap without one-pixel edge bumps
+  (`freecad_mark.png`), which every ESC mark uses.
   The fallback and global sets show the logo alone. Each workbench set shows the
   logo with the workbench name in Liberation Sans Bold (`esc_<set>.png`:
   SKETCH, ASM, BIM, DRAFT, TECH, SHEET), as the Godot set shows its screen name.

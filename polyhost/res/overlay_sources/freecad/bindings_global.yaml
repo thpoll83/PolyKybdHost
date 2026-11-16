@@ -11,10 +11,10 @@ region: [36, 32]
 margin: 0
 mode: auto
 threshold: 150
-program_icon: freecad.png
+program_icon: freecad_mark.png
 program_icon_mode: alpha
 program_icon_anchor: right
-program_icon_region: [37, 32]
+program_icon_region: [32, 32]
 program_icon_margin: 0
 
 bindings:

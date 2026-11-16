@@ -195,7 +195,7 @@ def _draw_tangent(path: Path) -> None:
 # workbench name on each workbench set (gen_workbench_bindings.py names them).
 ESC_WORDS = {"sketcher": "SKETCH", "assembly": "ASM", "bim": "BIM", "draft": "DRAFT",
              "techdraw": "TECH", "spreadsheet": "SHEET"}
-ESC_W, ESC_H, ESC_LOGO = 72, 40, 34
+ESC_W, ESC_H, ESC_LOGO = 72, 40, 32
 ESC_WORD_PX, ESC_WORD_W = 22, 34
 
 
@@ -205,7 +205,7 @@ def esc_mark(dest: Path, word: str, logo_png: Path) -> None:
     if dest.exists():
         print(f"  {dest.name}  <- committed asset (left as-is)")
         return
-    logo = Image.open(logo_png).convert("RGBA").split()[3].resize((ESC_LOGO, ESC_LOGO), Image.LANCZOS)
+    logo = Image.open(logo_png).convert("RGBA").split()[3].resize((ESC_LOGO, ESC_LOGO), Image.NEAREST)
     mask = Image.new("L", (ESC_W, ESC_H), 0)
     mask.paste(logo.point(lambda v: 255 if v >= 128 else 0),
                (ESC_W - ESC_LOGO, (ESC_H - ESC_LOGO) // 2))
@@ -223,7 +223,38 @@ def esc_mark(dest: Path, word: str, logo_png: Path) -> None:
     img = Image.new("RGBA", (ESC_W, ESC_H), (255, 255, 255, 0))
     img.putalpha(mask)
     img.save(dest)
-    print(f"  {dest.name}  <- drawn: '{word}' + freecad.png")
+    print(f"  {dest.name}  <- drawn: '{word}' + {logo_png.name}")
+
+
+def clean_mark(src: Path, dest: Path, px: int = ESC_LOGO, scale: int = 8) -> None:
+    """The logo as a 1-bit bitmap of ``px`` x ``px`` (the height it gets on the
+    ESC key), with lone pixels that stick out of an edge removed, stored
+    ``scale`` times larger with hard pixel edges. Scaling the 256 px logo to
+    another height left one-pixel bumps inside the F."""
+    a = Image.open(src).convert("RGBA").split()[3].resize((px, px), Image.LANCZOS)
+    m = a.point(lambda v: 255 if v >= 128 else 0)
+    w, h = m.size
+
+    def on(x, y):
+        return 0 <= x < w and 0 <= y < h and m.getpixel((x, y)) > 0
+
+    out = m.copy()
+    for y in range(h):
+        for x in range(w):
+            if not on(x, y):
+                continue
+            left, right, up, down = on(x - 1, y), on(x + 1, y), on(x, y - 1), on(x, y + 1)
+            if not (up or down) and (left != right):      # a bump on a top or bottom edge
+                out.putpixel((x, y), 0)
+            elif not (left or right) and (up != down):    # a bump on a side edge
+                out.putpixel((x, y), 0)
+            elif not (left or right or up or down):       # a lone pixel
+                out.putpixel((x, y), 0)
+    out = out.resize((px * scale, px * scale), Image.NEAREST)
+    img = Image.new("RGBA", out.size, (255, 255, 255, 0))
+    img.putalpha(out)
+    img.save(dest)
+    print(f"  {dest.name}  <- {src.name} as a clean {px} px bitmap")
 
 
 def main() -> int:
@@ -241,8 +272,10 @@ def main() -> int:
                            f"{glyph}.png over '{word}'")
         n += 1
     brand_marks.ensure(out / "freecad.png", "freecad")
+    dcc_glyphs.guarded(out / "freecad_mark.png",
+                       lambda p: clean_mark(out / "freecad.png", p), "clean 32 px logo")
     for name, word in ESC_WORDS.items():
-        esc_mark(out / f"esc_{name}.png", word, out / "freecad.png")
+        esc_mark(out / f"esc_{name}.png", word, out / "freecad_mark.png")
     print(f"Wrote {n} icons to {out} ({len(TEXT)} drawn as text)")
     return 0
 
