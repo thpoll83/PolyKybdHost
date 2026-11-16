@@ -4437,3 +4437,52 @@ protools,pro tools:
     macos:
       overlay: [protools_template_mac.mods.png, protools_template_mac.combo.mods.png, protools_template_mac.extra.mods.png, protools_template_mac.gui.mods.png]
       midi: true
+# Team Fortress 2 (overlay_sources/tf2/tf2.yaml). The 64-bit client is
+# tf_win64.exe on Windows and tf_linux64 on Linux (Steam depot manifests);
+# steam_app_440 covers Proton, which is unlikely because the game has a native
+# Linux build. Names not checked on an install. The icons follow the player's
+# binds in tf/cfg/config.cfg (game_assets/tf2_keys.py).
+tf_win64,tf_linux64,steam_app_440:
+  overlay: tf2_template.mods.png
+  game_assets: tf2/tf2.yaml
+# Apex Legends (overlay_sources/apex/apex.yaml). r5apex.exe, and
+# r5apex_dx12.exe for the DirectX 12 client; steam_app_1172470 covers Proton.
+# Names not checked on an install. The icons follow the player's binds in
+# Saved Games/Respawn/Apex/local/settings.cfg (game_assets/apex_keys.py).
+r5apex,r5apex_dx12,steam_app_1172470:
+  overlay: apex_template.mods.png
+  game_assets: apex/apex.yaml
+# Rocket League (overlay_sources/rocketleague/rocketleague.yaml).
+# RocketLeague.exe; steam_app_252950 covers Proton. Names not checked on an
+# install. Default keys only: the game keeps rebinds in an encrypted save file.
+rocketleague,steam_app_252950:
+  overlay: rocketleague_template.mods.png
+# Path of Exile 1 and 2 (overlay_sources/poe/poe.yaml and poe2.yaml). Both
+# games run as PathOfExile.exe, PathOfExile_x64.exe, the Steam builds
+# PathOfExileSteam.exe / PathOfExile_x64Steam.exe and the Kakao builds
+# PathOfExile_KG.exe / PathOfExile_x64_KG.exe; the window title ("Path of
+# Exile 2") tells the second game apart. Under Proton the window class is
+# steam_app_238960 or steam_app_2694490. Names and titles not checked on an
+# install. The icons follow the player's bindings in production_Config.ini
+# (game_assets/poe_keys.py, poe2_keys.py).
+pathofexile,pathofexile_x64,pathofexilesteam,pathofexile_x64steam,pathofexile_kg,pathofexile_x64_kg,steam_app_238960:
+  overlay: poe_template.mods.png
+  game_assets: poe/poe.yaml
+  titles-match:
+    '^Path of Exile 2\b':
+      overlay: poe2_template.mods.png
+      game_assets: poe/poe2.yaml
+steam_app_2694490:
+  overlay: poe2_template.mods.png
+  game_assets: poe/poe2.yaml
+# Overwatch 2 (overlay_sources/overwatch/overwatch.yaml). Overwatch.exe in
+# _retail_; steam_app_2357570 covers Proton. Names not checked on an install.
+# Default keys only: Blizzard keeps the key bindings on its servers.
+overwatch,steam_app_2357570:
+  overlay: overwatch_template.mods.png
+# Genshin Impact (overlay_sources/genshin/genshin.yaml). GenshinImpact.exe for
+# the global client and YuanShen.exe for the Chinese one. Names not checked on
+# an install. Default keys only: the game keeps its controls in an undocumented
+# registry value.
+genshinimpact,yuanshen:
+  overlay: genshin_template.mods.png

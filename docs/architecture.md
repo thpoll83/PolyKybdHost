@@ -463,7 +463,14 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
     `bindings: openra` or `bindings: sc2`, a bindings source kept apart from the
     art reader (`build.bindings_source`). When the art reader finds no game
     files, `build.keys_only` still remaps the shipped overlay to such a
-    source's keys. `openra.py` lists the folders where OpenRA installs the
+    source's keys. The `keys` reader (`keys/`) finds no art and adds no
+    settings, so a spec with `reader: keys` always takes that path: Team
+    Fortress 2 (`tf2_keys.py`, tf/cfg/config.cfg), Apex Legends
+    (`apex_keys.py`, local/settings.cfg) and Path of Exile 1 and 2
+    (`poe_keys.py`, `poe2_keys.py`, the `[ACTION_KEYS]` of the config INI).
+    `key_files.py` has their shared parts: the Steam libraries, the Windows
+    user folders (also in Wine and Proton prefixes) and the Source engine
+    bind format. `openra.py` lists the folders where OpenRA installs the
     original game files; the Red Alert, Tiberian Dawn and Dune 2000 readers
     search them. Its
     `__init__.py` declares `READER` (module, settings, folder and variant
