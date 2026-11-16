@@ -2131,9 +2131,10 @@ def build_parser():
                     "site/pack folder, <emacs dir>/polykybd (Emacs) or "
                     "~/.config/gdb/polykybd (GDB), <IDAUSR>/plugins/polykybd "
                     "(IDA), <User Library>/Remote Scripts/PolyKybd (Ableton "
-                    "Live), <Houdini preferences>/packages (Houdini) or "
+                    "Live), <Houdini preferences>/packages (Houdini), "
                     "<plugins folder>/polykybd-context-reporter in every JetBrains "
-                    "IDE 2024.2 or newer (jetbrains); for Emacs and GDB also a "
+                    "IDE 2024.2 or newer (jetbrains) or <FreeCAD user data>/Mod/PolyKybd "
+                    "(FreeCAD); for Emacs and GDB also a "
                     "marked block in the init file, saved first. Copies made "
                     "this way are refreshed when the app starts after an update.")
     ep_sub = p_ep.add_subparsers(dest="ep_action", required=True)
@@ -2145,7 +2146,7 @@ def build_parser():
     for p in (ep_install, ep_remove, ep_status):
         p.add_argument("--editor", action="append",
                        choices=("vim", "neovim", "emacs", "gdb", "ida", "binaryninja", "resolve",
-                                "ableton", "houdini", "jetbrains"),
+                                "ableton", "houdini", "jetbrains", "freecad"),
                        help="only this editor (repeat for more)")
     p_ep.set_defaults(func=_cmd_editor_plugins)
 

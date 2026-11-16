@@ -5,7 +5,7 @@ the front end for :mod:`polyhost.services.shell_title` and
 Terminals lists each shell this computer has (bash, zsh, PowerShell 7, Windows
 PowerShell 5.1) with its startup file and whether the title line is in it.
 Editors lists each editor (Vim, Neovim, Emacs, GDB, DaVinci Resolve, the JetBrains
-IDEs) with the folder or init file its plugin goes to. The status runs on a thread because asking PowerShell
+IDEs, FreeCAD) with the folder or init file its plugin goes to. The status runs on a thread because asking PowerShell
 for ``$PROFILE`` starts a PowerShell process.
 """
 
@@ -68,7 +68,8 @@ def editor_label(editor):
             editor_plugins.RESOLVE: "DaVinci Resolve",
             editor_plugins.ABLETON: "Ableton Live",
             editor_plugins.HOUDINI: "Houdini",
-            editor_plugins.JETBRAINS: "JetBrains IDEs"}.get(editor, editor)
+            editor_plugins.JETBRAINS: "JetBrains IDEs",
+            editor_plugins.FREECAD: "FreeCAD"}.get(editor, editor)
 
 
 def editor_state_text(st):
@@ -201,6 +202,11 @@ class EditorsPage(RowsPage):
         self._remove_fn = remove_fn or editor_plugins.remove
         self._report_settings = report_settings
         self._statuses = []
+        freecad_intro = WrapLabel(_(
+            "FreeCAD shows the keys of the active workbench only with the PolyKybd "
+            "add-on. Install copies it to FreeCAD's Mod folder."))
+        freecad_intro.setWordWrap(True)
+        self.extra.addWidget(freecad_intro)
         self.settings_note = WrapLabel()
         self.settings_note.setWordWrap(True)
         self.settings_note.setTextInteractionFlags(Qt.TextSelectableByMouse)
