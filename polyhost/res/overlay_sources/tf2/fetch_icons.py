@@ -18,11 +18,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 from polyhost.res.overlay_sources import game_set  # noqa: E402
 
 ICONS = {
+    # Movement
+    "forward": "ms:arrow_upward",
+    "left": "ms:arrow_back",
+    "back": "ms:arrow_downward",
+    "right": "ms:arrow_forward",
     # Weapon slots
     "primary": "gi:lorc/rocket",
     "secondary": "gi:john-colburn/pistol-gun",
     "melee": "gi:sbed/wrench",
-    "pda": "ms:tablet_android",
+    "src_pda": "ms:tablet_android",          # only drawn with its number
     "lastweapon": "ms:history",
     # Actions
     "jump": "gi:delapouite/jump-across",
@@ -43,7 +48,7 @@ ICONS = {
     "voice": "ms:mic",
     # Menus
     "scoreboard": "ms:scoreboard",
-    "changeteam": "ms:sync_alt",
+    "changeteam": "ms:flag",
     "changeclass": "ms:switch_account",
     "loadout": "ms:checkroom",
     "backpack": "ms:backpack",
@@ -63,9 +68,11 @@ ICONS = {
 SIZES = {"roundinfo": (34, 40), "contracts": (34, 40), "screenshot": (34, 40),
          "savereplay": (34, 40), "report": (34, 40), "quit": (30, 40)}
 INK = {"teamchat": (34, 34), "allchat": (34, 34), "scoreboard": (40, 34), "medic": (36, 36),
-       "primary": (36, 36), "pda": (30, 36), "backpack": (34, 40),
+       "primary": (36, 36), "forward": (30, 34), "back": (30, 34), "left": (34, 30), "right": (34, 30),
+       "backpack": (34, 40),
        "accept": (34, 34), "decline": (30, 30), "pause": (30, 30), "dropitem": (36, 32)}
-NUMBERED = {"voice1": ("src_voice", "1"), "voice2": ("src_voice", "2"), "voice3": ("src_voice", "3")}
+NUMBERED = {"pda1": ("src_pda", "1"), "pda2": ("src_pda", "2"),
+            "voice1": ("src_voice", "1"), "voice2": ("src_voice", "2"), "voice3": ("src_voice", "3")}
 
 
 def main() -> int:

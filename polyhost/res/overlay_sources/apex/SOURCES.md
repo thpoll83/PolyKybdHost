@@ -43,6 +43,10 @@ Not checked on an install.
 
 | Key | Command | Action |
 |---|---|---|
+| W | `+forward` | Move forward |
+| A | `+moveleft` | Move left |
+| S | `+backward` | Move back |
+| D | `+moveright` | Move right |
 | 1 | `weaponSelectPrimary0` | Weapon 1 |
 | 2 | `weaponSelectPrimary1` | Weapon 2 |
 | 3 | `weaponSelectPrimary2` | Holster weapons |
@@ -74,8 +78,8 @@ icon.
 
 ## Left out
 
-- W, A, S, D (move), Shift (`+speed`, sprint), Ctrl (`+duck`): the letter
-  legend is enough for movement, and the modifier keys have no overlay cell.
+- Shift (`+speed`, sprint), Ctrl (`+duck`): the modifier keys have no
+  overlay cell.
 - The ping and attack keys: they are on the mouse.
 - F1 (`+scriptCommand1`), H (`+scriptCommand5`) and X (`+use_alt`): what
   they do was not confirmed.
@@ -95,21 +99,24 @@ from google/fonts at commit e7db6ca), centred on the whole cell and drawn
 without the ESC legend (`program_icon_legend: false`, protocol v25). Respawn's
 logo art is proprietary and is not used.
 
+1 and 2 show the gun with the weapon number, so the two keys differ.
+
 ## Icons
 
 | File | Source | Author | Licence |
 |---|---|---|---|
-| `weapon.png` | game-icons.net `john-colburn/pistol-gun` | John Colburn | CC BY 3.0 |
+| `weapon1.png`, `weapon2.png` | game-icons.net `john-colburn/pistol-gun` + the number drawn by `game_set.py` (DejaVu Sans Bold) | John Colburn | CC BY 3.0 |
 | `tactical.png` | game-icons.net `lorc/lightning-helix` | lorc | CC BY 3.0 |
 | `ultimate.png` | game-icons.net `lorc/burning-meteor` | lorc | CC BY 3.0 |
 | `grenade.png` | game-icons.net `lorc/grenade` | lorc | CC BY 3.0 |
 | `melee.png` | game-icons.net `lorc/punch` | lorc | CC BY 3.0 |
 | `jump.png` | game-icons.net `delapouite/jump-across` | delapouite | CC BY 3.0 |
 | `syringe.png` | game-icons.net `lorc/syringe` | lorc | CC BY 3.0 |
-| `holster.png`, `fireselect.png`, `reload.png` | Material Symbols `back_hand`, `repeat`, `autorenew` | Google | Apache-2.0 |
-| `inspect.png`, `crouch.png`, `heal.png` | Material Symbols `visibility`, `keyboard_double_arrow_down`, `healing` | Google | Apache-2.0 |
-| `medkit.png`, `cell.png`, `battery.png` | Material Symbols `medical_services`, `shield`, `battery_full` | Google | Apache-2.0 |
-| `phoenix.png`, `interact.png`, `inventory.png` | Material Symbols `local_fire_department`, `touch_app`, `backpack` | Google | Apache-2.0 |
-| `map.png`, `pushtotalk.png`, `chat.png` | Material Symbols `map`, `mic`, `chat` | Google | Apache-2.0 |
-| `screenshot.png` | Material Symbols `screenshot_monitor` | Google | Apache-2.0 |
+| `forward.png`, `left.png`, `back.png` | Material Symbols `arrow_upward`, `arrow_back`, `arrow_downward` | Google | Apache-2.0 |
+| `right.png`, `holster.png`, `fireselect.png` | Material Symbols `arrow_forward`, `back_hand`, `repeat` | Google | Apache-2.0 |
+| `reload.png`, `inspect.png`, `crouch.png` | Material Symbols `autorenew`, `visibility`, `keyboard_double_arrow_down` | Google | Apache-2.0 |
+| `heal.png`, `medkit.png`, `cell.png` | Material Symbols `healing`, `medical_services`, `shield` | Google | Apache-2.0 |
+| `battery.png`, `phoenix.png`, `interact.png` | Material Symbols `battery_full`, `local_fire_department`, `touch_app` | Google | Apache-2.0 |
+| `inventory.png`, `map.png`, `pushtotalk.png` | Material Symbols `backpack`, `map`, `mic` | Google | Apache-2.0 |
+| `chat.png`, `screenshot.png` | Material Symbols `chat`, `screenshot_monitor` | Google | Apache-2.0 |
 | `program.png` | drawn by `game_set.py` in Bebas Neue | font: Dharma Type | font: SIL OFL 1.1 |

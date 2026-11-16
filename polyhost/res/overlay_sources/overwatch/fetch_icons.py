@@ -19,6 +19,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 from polyhost.res.overlay_sources import game_set  # noqa: E402
 
 ICONS = {
+    # Movement
+    "forward": "ms:arrow_upward",
+    "left": "ms:arrow_back",
+    "back": "ms:arrow_downward",
+    "right": "ms:arrow_forward",
     # Abilities and weapons (the same command for every hero; what it does
     # depends on the hero)
     "ultimate": "gi:lorc/burning-meteor",
@@ -26,7 +31,7 @@ ICONS = {
     "reload": "ms:autorenew",
     "melee": "gi:lorc/punch",
     "interact": "ms:touch_app",
-    "weapon": "gi:john-colburn/pistol-gun",
+    "src_weapon": "gi:john-colburn/pistol-gun",   # only drawn with its number
     "jump": "gi:delapouite/jump-across",
     # Communication
     "ping": "gi:delapouite/position-marker",
@@ -48,7 +53,9 @@ ICONS = {
 
 SIZES = {"highlight": (34, 40)}
 INK = {"chat": (34, 34), "scoreboard": (40, 34), "healing": (36, 36),
-       "ultstatus": (34, 34), "weapon": (40, 32)}
+       "ultstatus": (34, 34),
+       "forward": (30, 34), "back": (30, 34), "left": (34, 30), "right": (34, 30)}
+NUMBERED = {"weapon1": ("src_weapon", "1"), "weapon2": ("src_weapon", "2")}
 
 
 def program(path: Path) -> None:
@@ -80,7 +87,7 @@ def program(path: Path) -> None:
 
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
-    game_set.build(out, ICONS, sizes=SIZES, ink=INK, mark=None)
+    game_set.build(out, ICONS, sizes=SIZES, ink=INK, numbered=NUMBERED, mark=None)
     program(out / "program.png")
     return 0
 

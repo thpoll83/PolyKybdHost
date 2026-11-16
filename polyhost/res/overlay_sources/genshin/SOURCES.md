@@ -92,13 +92,16 @@ from google/fonts at commit e7db6ca), centred on the whole cell and drawn
 without the ESC legend (`program_icon_legend: false`, protocol v25). HoYoverse's
 logo art is proprietary and is not used.
 
+1 to 4 show a person with the party member number, and Alt+1 to 4 the burst
+with that number, so no two actions share a picture.
+
 ## Icons
 
 | File | Source | Author | Licence |
 |---|---|---|---|
 | `skill.png` | game-icons.net `lorc/wind-slap` | lorc | CC BY 3.0 |
-| `burst.png` | game-icons.net `lorc/star-swirl` | lorc | CC BY 3.0 |
-| `member.png` | game-icons.net `delapouite/person` | delapouite | CC BY 3.0 |
+| `burst1.png`, `burst2.png`, `burst3.png`, `burst4.png` | game-icons.net `lorc/star-swirl` + the number drawn by `game_set.py` (DejaVu Sans Bold) | lorc | CC BY 3.0 |
+| `member1.png`, `member2.png`, `member3.png`, `member4.png` | game-icons.net `delapouite/person` + the number drawn by `game_set.py` (DejaVu Sans Bold) | delapouite | CC BY 3.0 |
 | `jump.png` | game-icons.net `delapouite/jump-across` | delapouite | CC BY 3.0 |
 | `gadget.png` | game-icons.net `lorc/gear-hammer` | lorc | CC BY 3.0 |
 | `navigate.png` | game-icons.net `delapouite/position-marker` | delapouite | CC BY 3.0 |

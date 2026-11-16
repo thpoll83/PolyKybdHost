@@ -50,10 +50,10 @@ bindings:
   - { key: E, mods: [CTRL], command: use_bound_skill11, icon: skill11.png, label: "Skill 11" }
   - { key: R, mods: [CTRL], command: use_bound_skill12, icon: skill12.png, label: "Skill 12" }
   - { key: T, mods: [CTRL], command: use_bound_skill13, icon: skill13.png, label: "Skill 13" }
-  - { key: 1, command: use_flask_in_slot1, icon: flask.png, label: "Life flask" }
-  - { key: 2, command: use_flask_in_slot2, icon: flask.png, label: "Mana flask" }
-  - { key: 6, command: use_temporary_skill1, icon: tempskill.png, label: "Temporary skill 1" }
-  - { key: 7, command: use_temporary_skill2, icon: tempskill.png, label: "Temporary skill 2" }
+  - { key: 1, command: use_flask_in_slot1, icon: flask1.png, label: "Life flask" }
+  - { key: 2, command: use_flask_in_slot2, icon: flask2.png, label: "Mana flask" }
+  - { key: 6, command: use_temporary_skill1, icon: tempskill1.png, label: "Temporary skill 1" }
+  - { key: 7, command: use_temporary_skill2, icon: tempskill2.png, label: "Temporary skill 2" }
   - { key: SPACE, command: use_dodge_roll, icon: dodge.png, label: "Dodge roll" }
   - { key: GRAVE, command: direct_minions, icon: minions.png, label: "Direct minions" }
 

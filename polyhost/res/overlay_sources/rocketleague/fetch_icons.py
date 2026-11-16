@@ -24,7 +24,7 @@ ICONS = {
     "item": "ms:offline_bolt",
     "reset": "ms:replay",
     # Communication
-    "quickchat": "ms:sms",
+    "src_quickchat": "ms:sms",          # only drawn with its number
     "allchat": "ms:public",
     "teamchat": "ms:chat",
     "partychat": "gi:delapouite/three-friends",
@@ -36,13 +36,14 @@ ICONS = {
 }
 
 SIZES = {"graphs": (34, 40)}
-INK = {"teamchat": (34, 34), "allchat": (34, 34), "quickchat": (34, 34), "scoreboard": (40, 34),
+INK = {"teamchat": (34, 34), "allchat": (34, 34), "scoreboard": (40, 34),
        "nexttrack": (32, 32)}
+NUMBERED = {f"quickchat{n}": ("src_quickchat", str(n), (28, 28)) for n in range(1, 5)}
 
 
 def main() -> int:
     return game_set.build(Path(__file__).resolve().parent / "icons", ICONS, sizes=SIZES, ink=INK,
-                          mark="RL")
+                          numbered=NUMBERED, mark="RL")
 
 
 if __name__ == "__main__":

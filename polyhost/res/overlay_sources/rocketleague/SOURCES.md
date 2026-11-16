@@ -81,6 +81,8 @@ from google/fonts at commit e7db6ca), centred on the whole cell and drawn
 without the ESC legend (`program_icon_legend: false`, protocol v25). Psyonix's
 logo art is proprietary and is not used.
 
+1 to 4 show the chat bubble with the quick chat number.
+
 ## Icons
 
 | File | Source | Author | Licence |
@@ -88,7 +90,7 @@ logo art is proprietary and is not used.
 | `ballcam.png` | game-icons.net `delapouite/soccer-ball` | delapouite | CC BY 3.0 |
 | `partychat.png` | game-icons.net `delapouite/three-friends` | delapouite | CC BY 3.0 |
 | `rollleft.png`, `rollright.png`, `item.png` | Material Symbols `rotate_90_degrees_ccw`, `rotate_90_degrees_cw`, `offline_bolt` | Google | Apache-2.0 |
-| `reset.png`, `quickchat.png`, `allchat.png` | Material Symbols `replay`, `sms`, `public` | Google | Apache-2.0 |
+| `reset.png`, `quickchat1.png`, `quickchat2.png`, `quickchat3.png`, `quickchat4.png`, `allchat.png` | Material Symbols `replay`, `sms`, `public` | Google | Apache-2.0 |
 | `teamchat.png`, `pushtotalk.png`, `scoreboard.png` | Material Symbols `chat`, `mic`, `scoreboard` | Google | Apache-2.0 |
 | `nexttrack.png`, `graphs.png` | Material Symbols `skip_next`, `monitoring` | Google | Apache-2.0 |
 | `program.png` | drawn by `game_set.py` in Bebas Neue | font: Dharma Type | font: SIL OFL 1.1 |

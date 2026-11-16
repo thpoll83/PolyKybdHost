@@ -5,8 +5,7 @@
 # console command its key runs (`command:`), so the icons follow the player's
 # own binds in tf/cfg/config.cfg (game_assets/tf2_keys.py).
 #
-# W A S D (move) stay blank: the letter legend is enough. Ctrl (crouch) and
-# Alt (strafe) are modifier keys and have no overlay cell. 6 to 0 (slot6 to
+# Ctrl (crouch) and Alt (strafe) are modifier keys and have no overlay cell. 6 to 0 (slot6 to
 # slot10) only pick menu entries, so they stay blank too.
 #
 # Regenerate:
@@ -42,9 +41,15 @@ bindings:
   - { key: "1", command: slot1, icon: primary.png, label: "Primary weapon" }
   - { key: "2", command: slot2, icon: secondary.png, label: "Secondary weapon" }
   - { key: "3", command: slot3, icon: melee.png, label: "Melee weapon" }
-  - { key: "4", command: slot4, icon: pda.png, label: "Slot 4 (PDA)" }
-  - { key: "5", command: slot5, icon: pda.png, label: "Slot 5 (PDA 2)" }
+  - { key: "4", command: slot4, icon: pda1.png, label: "PDA 1 (build, disguise)" }
+  - { key: "5", command: slot5, icon: pda2.png, label: "PDA 2 (destroy, watch)" }
   - { key: Q, command: lastinv, icon: lastweapon.png, label: "Last weapon" }
+
+  # Movement
+  - { key: W, command: +forward, icon: forward.png, label: "Move forward" }
+  - { key: A, command: +moveleft, icon: left.png, label: "Move left" }
+  - { key: S, command: +back, icon: back.png, label: "Move back" }
+  - { key: D, command: +moveright, icon: right.png, label: "Move right" }
 
   # Actions
   - { key: SPACE, command: +jump, icon: jump.png, label: "Jump" }

@@ -38,9 +38,13 @@ line is unbound and its icon is removed. A key bound to several commands with
 | 1 | `slot1` | Primary weapon |
 | 2 | `slot2` | Secondary weapon |
 | 3 | `slot3` | Melee weapon |
-| 4 | `slot4` | Slot 4 (PDA) |
-| 5 | `slot5` | Slot 5 (PDA 2) |
+| 4 | `slot4` | PDA 1 (build, disguise) |
+| 5 | `slot5` | PDA 2 (destroy, watch) |
 | Q | `lastinv` | Last weapon |
+| W | `+forward` | Move forward |
+| A | `+moveleft` | Move left |
+| S | `+back` | Move back |
+| D | `+moveright` | Move right |
 | Space | `+jump` | Jump |
 | R | `+reload` | Reload |
 | F | `+inspect` | Inspect weapon |
@@ -77,8 +81,7 @@ line is unbound and its icon is removed. A key bound to several commands with
 
 ## Left out
 
-- W, A, S, D (move), Ctrl (`+duck`), Alt (`+strafe`): the letter legend is
-  enough for movement, and the modifier keys have no overlay cell.
+- Ctrl (`+duck`), Alt (`+strafe`): the modifier keys have no overlay cell.
 - 6 to 9 and 0 (`slot6` to `slot10`): they only pick menu entries.
 - `'` and `/` (`+moveup`, `+movedown`: swim up and down), Page Up, Page Down,
   End and Insert (`+lookup`, `+lookdown`, `centerview`, `+klook`): keyboard
@@ -100,8 +103,9 @@ from google/fonts at commit e7db6ca), centred on the whole cell and drawn
 without the ESC legend (`program_icon_legend: false`, protocol v25). Valve's
 logo art is proprietary and is not used.
 
-Z, X and C show the walkie-talkie with the voice menu number 1, 2 or 3 (DejaVu
-Sans Bold) in the top-left corner of the icon area.
+Z, X and C show the walkie-talkie with the voice menu number 1, 2 or 3, and 4
+and 5 the PDA with 1 or 2 (DejaVu Sans Bold), in the top-left corner of the
+icon area, so no two actions share a picture.
 
 ## Icons
 
@@ -116,13 +120,15 @@ Sans Bold) in the top-left corner of the icon area.
 | `voice1.png`, `voice2.png`, `voice3.png` | game-icons.net `delapouite/walkie-talkie` + the number drawn by `game_set.py` (DejaVu Sans Bold) | delapouite | CC BY 3.0 |
 | `spray.png` | game-icons.net `lorc/spray` | lorc | CC BY 3.0 |
 | `partychat.png` | game-icons.net `delapouite/three-friends` | delapouite | CC BY 3.0 |
-| `pda.png`, `lastweapon.png`, `reload.png` | Material Symbols `tablet_android`, `history`, `autorenew` | Google | Apache-2.0 |
-| `inspect.png`, `taunt.png`, `actionitem.png` | Material Symbols `visibility`, `celebration`, `redeem` | Google | Apache-2.0 |
-| `disguiseteam.png`, `medic.png`, `allchat.png` | Material Symbols `swap_horiz`, `medical_services`, `public` | Google | Apache-2.0 |
-| `teamchat.png`, `voice.png`, `scoreboard.png` | Material Symbols `chat`, `mic`, `scoreboard` | Google | Apache-2.0 |
-| `changeteam.png`, `changeclass.png`, `loadout.png` | Material Symbols `sync_alt`, `switch_account`, `checkroom` | Google | Apache-2.0 |
-| `backpack.png`, `mapinfo.png`, `accept.png` | Material Symbols `backpack`, `map`, `check` | Google | Apache-2.0 |
-| `decline.png`, `console.png`, `roundinfo.png` | Material Symbols `close`, `terminal`, `info` | Google | Apache-2.0 |
-| `contracts.png`, `screenshot.png`, `savereplay.png` | Material Symbols `assignment`, `screenshot_monitor`, `video_file` | Google | Apache-2.0 |
-| `report.png`, `quit.png`, `pause.png` | Material Symbols `report`, `logout`, `pause` | Google | Apache-2.0 |
+| `forward.png`, `left.png`, `back.png` | Material Symbols `arrow_upward`, `arrow_back`, `arrow_downward` | Google | Apache-2.0 |
+| `right.png`, `pda1.png`, `pda2.png`, `lastweapon.png` | Material Symbols `arrow_forward`, `tablet_android`, `history` | Google | Apache-2.0 |
+| `reload.png`, `inspect.png`, `taunt.png` | Material Symbols `autorenew`, `visibility`, `celebration` | Google | Apache-2.0 |
+| `actionitem.png`, `disguiseteam.png`, `medic.png` | Material Symbols `redeem`, `swap_horiz`, `medical_services` | Google | Apache-2.0 |
+| `allchat.png`, `teamchat.png`, `voice.png` | Material Symbols `public`, `chat`, `mic` | Google | Apache-2.0 |
+| `scoreboard.png`, `changeteam.png`, `changeclass.png` | Material Symbols `scoreboard`, `flag`, `switch_account` | Google | Apache-2.0 |
+| `loadout.png`, `backpack.png`, `mapinfo.png` | Material Symbols `checkroom`, `backpack`, `map` | Google | Apache-2.0 |
+| `accept.png`, `decline.png`, `console.png` | Material Symbols `check`, `close`, `terminal` | Google | Apache-2.0 |
+| `roundinfo.png`, `contracts.png`, `screenshot.png` | Material Symbols `info`, `assignment`, `screenshot_monitor` | Google | Apache-2.0 |
+| `savereplay.png`, `report.png`, `quit.png` | Material Symbols `video_file`, `report`, `logout` | Google | Apache-2.0 |
+| `pause.png` | Material Symbols `pause` | Google | Apache-2.0 |
 | `program.png` | drawn by `game_set.py` in Bebas Neue | font: Dharma Type | font: SIL OFL 1.1 |

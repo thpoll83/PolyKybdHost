@@ -34,6 +34,10 @@ the computer. The overlay therefore always shows the defaults.
 
 | Key | Action |
 |---|---|
+| W | Move forward |
+| A | Move left |
+| S | Move back |
+| D | Move right |
 | Q | Ultimate |
 | E | Ability 2 |
 | R | Reload |
@@ -59,7 +63,6 @@ the computer. The overlay therefore always shows the defaults.
 
 ## Left out
 
-- W, A, S, D (move): the letter legend is enough.
 - Shift (ability 1), Ctrl (crouch) and Alt (perks): modifier keys, no cell.
 - Fire, secondary fire and the ping wheel: on the mouse.
 - The keys only one source lists: T (spray), O (social), F1 (hero
@@ -84,6 +87,8 @@ across, centred on the whole cell and drawn without the ESC legend
 game's site icon (Google's favicon service for overwatch.blizzard.com);
 Blizzard's logo art is proprietary and is not used or committed.
 
+1 and 2 show the gun with the weapon number, so the two keys differ.
+
 ## Icons
 
 | File | Source | Author | Licence |
@@ -91,7 +96,7 @@ Blizzard's logo art is proprietary and is not used or committed.
 | `ultimate.png` | game-icons.net `lorc/burning-meteor` | lorc | CC BY 3.0 |
 | `ability2.png` | game-icons.net `lorc/magic-palm` | lorc | CC BY 3.0 |
 | `melee.png` | game-icons.net `lorc/punch` | lorc | CC BY 3.0 |
-| `weapon.png` | game-icons.net `john-colburn/pistol-gun` | John Colburn | CC BY 3.0 |
+| `weapon1.png`, `weapon2.png` | game-icons.net `john-colburn/pistol-gun` + the number drawn by `game_set.py` (DejaVu Sans Bold) | John Colburn | CC BY 3.0 |
 | `jump.png` | game-icons.net `delapouite/jump-across` | delapouite | CC BY 3.0 |
 | `ping.png` | game-icons.net `delapouite/position-marker` | delapouite | CC BY 3.0 |
 | `comms.png` | game-icons.net `delapouite/walkie-talkie` | delapouite | CC BY 3.0 |
@@ -99,8 +104,9 @@ Blizzard's logo art is proprietary and is not used or committed.
 | `endorse.png` | game-icons.net `delapouite/thumb-up` | delapouite | CC BY 3.0 |
 | `social.png` | game-icons.net `delapouite/three-friends` | delapouite | CC BY 3.0 |
 | `highlight.png` | game-icons.net `delapouite/film-projector` | delapouite | CC BY 3.0 |
-| `reload.png`, `interact.png`, `healing.png` | Material Symbols `autorenew`, `touch_app`, `medical_services` | Google | Apache-2.0 |
-| `ultstatus.png`, `pushtotalk.png`, `mute.png` | Material Symbols `percent`, `mic`, `mic_off` | Google | Apache-2.0 |
-| `chat.png`, `scoreboard.png`, `heroselect.png` | Material Symbols `chat`, `scoreboard`, `switch_account` | Google | Apache-2.0 |
-| `screenshot.png` | Material Symbols `screenshot_monitor` | Google | Apache-2.0 |
+| `forward.png`, `left.png`, `back.png` | Material Symbols `arrow_upward`, `arrow_back`, `arrow_downward` | Google | Apache-2.0 |
+| `right.png`, `reload.png`, `interact.png` | Material Symbols `arrow_forward`, `autorenew`, `touch_app` | Google | Apache-2.0 |
+| `healing.png`, `ultstatus.png`, `pushtotalk.png` | Material Symbols `medical_services`, `percent`, `mic` | Google | Apache-2.0 |
+| `mute.png`, `chat.png`, `scoreboard.png` | Material Symbols `mic_off`, `chat`, `scoreboard` | Google | Apache-2.0 |
+| `heroselect.png`, `screenshot.png` | Material Symbols `switch_account`, `screenshot_monitor` | Google | Apache-2.0 |
 | `program.png` | drawn by `fetch_icons.py` (geometric shapes, no source art) | - | - |

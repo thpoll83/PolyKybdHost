@@ -53,13 +53,13 @@ bindings:
   - { key: E, mods: [CTRL], command: use_bound_skill11, icon: skill11.png, label: "Skill 11" }
   - { key: R, mods: [CTRL], command: use_bound_skill12, icon: skill12.png, label: "Skill 12" }
   - { key: T, mods: [CTRL], command: use_bound_skill13, icon: skill13.png, label: "Skill 13" }
-  - { key: 1, command: use_flask_in_slot1, icon: flask.png, label: "Flask 1" }
-  - { key: 2, command: use_flask_in_slot2, icon: flask.png, label: "Flask 2" }
-  - { key: 3, command: use_flask_in_slot3, icon: flask.png, label: "Flask 3" }
-  - { key: 4, command: use_flask_in_slot4, icon: flask.png, label: "Flask 4" }
-  - { key: 5, command: use_flask_in_slot5, icon: flask.png, label: "Flask 5" }
-  - { key: 6, command: use_temporary_skill1, icon: tempskill.png, label: "Temporary skill 1" }
-  - { key: 7, command: use_temporary_skill2, icon: tempskill.png, label: "Temporary skill 2" }
+  - { key: 1, command: use_flask_in_slot1, icon: flask1.png, label: "Flask 1" }
+  - { key: 2, command: use_flask_in_slot2, icon: flask2.png, label: "Flask 2" }
+  - { key: 3, command: use_flask_in_slot3, icon: flask3.png, label: "Flask 3" }
+  - { key: 4, command: use_flask_in_slot4, icon: flask4.png, label: "Flask 4" }
+  - { key: 5, command: use_flask_in_slot5, icon: flask5.png, label: "Flask 5" }
+  - { key: 6, command: use_temporary_skill1, icon: tempskill1.png, label: "Temporary skill 1" }
+  - { key: 7, command: use_temporary_skill2, icon: tempskill2.png, label: "Temporary skill 2" }
 
   # Panels
   - { key: I, command: open_inventory_panel, icon: inventory.png, label: "Inventory" }

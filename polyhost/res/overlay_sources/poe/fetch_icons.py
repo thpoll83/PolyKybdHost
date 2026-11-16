@@ -24,8 +24,8 @@ from polyhost.res.overlay_sources import game_set  # noqa: E402
 ICONS = {
     # Skills and flasks
     "src_skill": "gi:lorc/magic-swirl",        # only drawn with its slot number
-    "flask": "gi:lorc/round-bottom-flask",
-    "tempskill": "gi:lorc/hourglass",
+    "src_flask": "gi:lorc/round-bottom-flask",   # only drawn with its number
+    "src_tempskill": "gi:lorc/hourglass",
     "weaponswap": "gi:lorc/crossed-swords",
     "dodge": "gi:lorc/dodging",
     "mines": "gi:lorc/land-mine",
@@ -65,10 +65,12 @@ ICONS = {
 
 SIZES = {"performance": (34, 40), "screenshot": (34, 40)}
 INK = {"chat": (34, 34), "inventory": (34, 40), "close": (30, 30), "mtxstash": (34, 34),
-       "events": (32, 36), "character": (36, 34), "options": (34, 34), "flask": (34, 40),
-       "ladder": (36, 32)}
+       "events": (32, 36), "character": (36, 34), "options": (34, 34), "ladder": (36, 32)}
 # Skill slots 4 to 8 (Q W E R T) and 9 to 13 (Ctrl+Q to Ctrl+T).
 NUMBERED = {f"skill{n}": ("src_skill", str(n), (24, 24)) for n in range(4, 14)}
+# Flasks 1 to 5 and temporary skills 1 and 2.
+NUMBERED.update({f"flask{n}": ("src_flask", str(n)) for n in range(1, 6)})
+NUMBERED.update({f"tempskill{n}": ("src_tempskill", str(n)) for n in (1, 2)})
 
 
 def crest(path: Path, two: bool) -> None:

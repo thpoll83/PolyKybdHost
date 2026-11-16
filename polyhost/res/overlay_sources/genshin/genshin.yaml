@@ -36,14 +36,14 @@ bindings:
   - { key: E, icon: skill.png, label: "Elemental skill" }
   - { key: Q, icon: burst.png, label: "Elemental burst" }
   - { key: R, icon: aim.png, label: "Aim mode" }
-  - { key: "1", icon: member.png, label: "Party member 1" }
-  - { key: "2", icon: member.png, label: "Party member 2" }
-  - { key: "3", icon: member.png, label: "Party member 3" }
-  - { key: "4", icon: member.png, label: "Party member 4" }
-  - { key: "1", mods: [ALT], icon: burst.png, label: "Member 1: burst" }
-  - { key: "2", mods: [ALT], icon: burst.png, label: "Member 2: burst" }
-  - { key: "3", mods: [ALT], icon: burst.png, label: "Member 3: burst" }
-  - { key: "4", mods: [ALT], icon: burst.png, label: "Member 4: burst" }
+  - { key: "1", icon: member1.png, label: "Party member 1" }
+  - { key: "2", icon: member2.png, label: "Party member 2" }
+  - { key: "3", icon: member3.png, label: "Party member 3" }
+  - { key: "4", icon: member4.png, label: "Party member 4" }
+  - { key: "1", mods: [ALT], icon: burst1.png, label: "Member 1: burst" }
+  - { key: "2", mods: [ALT], icon: burst2.png, label: "Member 2: burst" }
+  - { key: "3", mods: [ALT], icon: burst3.png, label: "Member 3: burst" }
+  - { key: "4", mods: [ALT], icon: burst4.png, label: "Member 4: burst" }
   - { key: SPACE, icon: jump.png, label: "Jump" }
 
   # World

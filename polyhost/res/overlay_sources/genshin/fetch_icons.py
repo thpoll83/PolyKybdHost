@@ -21,7 +21,7 @@ ICONS = {
     "skill": "gi:lorc/wind-slap",
     "burst": "gi:lorc/star-swirl",
     "aim": "ms:my_location",
-    "member": "gi:delapouite/person",
+    "src_member": "gi:delapouite/person",   # only drawn with its number
     "jump": "gi:delapouite/jump-across",
     # World
     "interact": "ms:touch_app",
@@ -53,11 +53,14 @@ ICONS = {
 SIZES = {s: (34, 40) for s in ("handbook", "coop", "wish", "battlepass", "events", "teapot")}
 INK = {"chat": (34, 34), "character": (36, 34), "bag": (34, 40),
        "events": (32, 36)}
+# Party members 1 to 4, and Alt+1 to 4: switch to that member and cast the burst.
+NUMBERED = {f"member{n}": ("src_member", str(n)) for n in range(1, 5)}
+NUMBERED.update({f"burst{n}": ("burst", str(n)) for n in range(1, 5)})
 
 
 def main() -> int:
     return game_set.build(Path(__file__).resolve().parent / "icons", ICONS, sizes=SIZES, ink=INK,
-                          mark="GENSHIN")
+                          numbered=NUMBERED, mark="GENSHIN")
 
 
 if __name__ == "__main__":

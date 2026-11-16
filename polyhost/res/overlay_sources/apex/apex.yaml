@@ -7,8 +7,7 @@
 # binds in Saved Games/Respawn/Apex/local/settings.cfg
 # (game_assets/apex_keys.py).
 #
-# W A S D (move) stay blank: the letter legend is enough. Shift (sprint) and
-# Ctrl (crouch) are modifier keys and have no overlay cell.
+# Shift (sprint) and Ctrl (crouch) are modifier keys and have no overlay cell.
 #
 # Regenerate:
 #   PYTHONPATH=. python polyhost/res/overlay_sources/apex/fetch_icons.py
@@ -39,9 +38,15 @@ game_assets:
 
 bindings:
 
+  # Movement
+  - { key: W, command: +forward, icon: forward.png, label: "Move forward" }
+  - { key: A, command: +moveleft, icon: left.png, label: "Move left" }
+  - { key: S, command: +backward, icon: back.png, label: "Move back" }
+  - { key: D, command: +moveright, icon: right.png, label: "Move right" }
+
   # Weapons and abilities
-  - { key: "1", command: weaponSelectPrimary0, icon: weapon.png, label: "Weapon 1" }
-  - { key: "2", command: weaponSelectPrimary1, icon: weapon.png, label: "Weapon 2" }
+  - { key: "1", command: weaponSelectPrimary0, icon: weapon1.png, label: "Weapon 1" }
+  - { key: "2", command: weaponSelectPrimary1, icon: weapon2.png, label: "Weapon 2" }
   - { key: "3", command: weaponSelectPrimary2, icon: holster.png, label: "Holster weapons" }
   - { key: Q, command: +offhand1, icon: tactical.png, label: "Tactical ability" }
   - { key: Z, command: +offhand4, icon: ultimate.png, label: "Ultimate ability" }

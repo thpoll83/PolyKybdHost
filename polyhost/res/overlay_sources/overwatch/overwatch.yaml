@@ -5,8 +5,8 @@
 # Blizzard's servers, not in a local file, so the overlay cannot follow a
 # rebind: a player who rebinds a key still sees the default here.
 #
-# W A S D (move) stay blank: the letter legend is enough. Shift (ability 1),
-# Ctrl (crouch) and Alt (perks) are modifier keys and have no overlay cell.
+# Shift (ability 1), Ctrl (crouch) and Alt (perks) are modifier keys and have
+# no overlay cell.
 #
 # Regenerate:
 #   PYTHONPATH=. python polyhost/res/overlay_sources/overwatch/fetch_icons.py
@@ -31,14 +31,20 @@ program_icon_legend: false
 
 bindings:
 
+  # Movement
+  - { key: W, icon: forward.png, label: "Move forward" }
+  - { key: A, icon: left.png, label: "Move left" }
+  - { key: S, icon: back.png, label: "Move back" }
+  - { key: D, icon: right.png, label: "Move right" }
+
   # Abilities and weapons
   - { key: Q, icon: ultimate.png, label: "Ultimate" }
   - { key: E, icon: ability2.png, label: "Ability 2" }
   - { key: R, icon: reload.png, label: "Reload", shared: false }
   - { key: V, icon: melee.png, label: "Quick melee" }
   - { key: F, icon: interact.png, label: "Interact" }
-  - { key: "1", icon: weapon.png, label: "Weapon 1" }
-  - { key: "2", icon: weapon.png, label: "Weapon 2" }
+  - { key: "1", icon: weapon1.png, label: "Weapon 1" }
+  - { key: "2", icon: weapon2.png, label: "Weapon 2" }
   - { key: SPACE, icon: jump.png, label: "Jump" }
 
   # Communication

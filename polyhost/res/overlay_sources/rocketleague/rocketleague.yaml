@@ -42,10 +42,10 @@ bindings:
   - { key: BSPC, command: ResetTraining, icon: reset.png, label: "Reset training" }
 
   # Communication
-  - { key: "1", command: ChatPreset1, icon: quickchat.png, label: "Quick chat 1" }
-  - { key: "2", command: ChatPreset2, icon: quickchat.png, label: "Quick chat 2" }
-  - { key: "3", command: ChatPreset3, icon: quickchat.png, label: "Quick chat 3" }
-  - { key: "4", command: ChatPreset4, icon: quickchat.png, label: "Quick chat 4" }
+  - { key: "1", command: ChatPreset1, icon: quickchat1.png, label: "Quick chat 1" }
+  - { key: "2", command: ChatPreset2, icon: quickchat2.png, label: "Quick chat 2" }
+  - { key: "3", command: ChatPreset3, icon: quickchat3.png, label: "Quick chat 3" }
+  - { key: "4", command: ChatPreset4, icon: quickchat4.png, label: "Quick chat 4" }
   - { key: T, command: Chat, icon: allchat.png, label: "All chat" }
   - { key: Y, command: TeamChat, icon: teamchat.png, label: "Team chat" }
   - { key: U, command: PartyChat, icon: partychat.png, label: "Party chat" }

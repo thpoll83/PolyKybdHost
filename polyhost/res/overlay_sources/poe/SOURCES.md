@@ -187,6 +187,8 @@ proprietary and is not used or committed.
 The skill slot keys show a swirl with the slot number (4 to 8 on Q W E R T,
 9 to 13 on Ctrl+Q to Ctrl+T, DejaVu Sans Bold) in the top-left corner of the
 icon area; the swirl is drawn in 24x24 so a two-digit number stays clear of it.
+The flasks (1 to 5) and the temporary skills (6 and 7) carry their slot number
+the same way, so no two actions share a picture.
 Page Up and Page Down (Zoom in, Zoom out) are drawn by the shared concept
 renderer, so their cells are the same bytes as every other zoom key.
 
@@ -195,8 +197,8 @@ renderer, so their cells are the same bytes as every other zoom key.
 | File | Source | Author | Licence |
 |---|---|---|---|
 | `skill4.png`, `skill5.png`, `skill6.png`, `skill7.png`, `skill8.png`, `skill9.png`, `skill10.png`, `skill11.png`, `skill12.png`, `skill13.png` | game-icons.net `lorc/magic-swirl` + the number drawn by `game_set.py` (DejaVu Sans Bold) | lorc | CC BY 3.0 |
-| `flask.png` | game-icons.net `lorc/round-bottom-flask` | lorc | CC BY 3.0 |
-| `tempskill.png` | game-icons.net `lorc/hourglass` | lorc | CC BY 3.0 |
+| `flask1.png`, `flask2.png`, `flask3.png`, `flask4.png`, `flask5.png` | game-icons.net `lorc/round-bottom-flask` + the number drawn by `game_set.py` (DejaVu Sans Bold) | lorc | CC BY 3.0 |
+| `tempskill1.png`, `tempskill2.png` | game-icons.net `lorc/hourglass` + the number drawn by `game_set.py` (DejaVu Sans Bold) | lorc | CC BY 3.0 |
 | `weaponswap.png` | game-icons.net `lorc/crossed-swords` | lorc | CC BY 3.0 |
 | `dodge.png` | game-icons.net `lorc/dodging` | lorc | CC BY 3.0 |
 | `mines.png` | game-icons.net `lorc/land-mine` | lorc | CC BY 3.0 |

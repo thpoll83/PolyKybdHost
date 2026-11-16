@@ -17,8 +17,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 from polyhost.res.overlay_sources import game_set  # noqa: E402
 
 ICONS = {
+    # Movement
+    "forward": "ms:arrow_upward",
+    "left": "ms:arrow_back",
+    "back": "ms:arrow_downward",
+    "right": "ms:arrow_forward",
     # Weapons and abilities
-    "weapon": "gi:john-colburn/pistol-gun",
+    "src_weapon": "gi:john-colburn/pistol-gun",   # only drawn with its number
     "holster": "ms:back_hand",
     "tactical": "gi:lorc/lightning-helix",
     "ultimate": "gi:lorc/burning-meteor",
@@ -47,12 +52,14 @@ ICONS = {
 
 SIZES = {"screenshot": (34, 40)}
 INK = {"chat": (34, 34), "medkit": (36, 36), "heal": (36, 36), "grenade": (34, 40),
-       "inventory": (34, 40), "battery": (30, 40), "cell": (32, 38), "weapon": (40, 32)}
+       "inventory": (34, 40), "battery": (30, 40), "cell": (32, 38),
+       "forward": (30, 34), "back": (30, 34), "left": (34, 30), "right": (34, 30)}
+NUMBERED = {"weapon1": ("src_weapon", "1"), "weapon2": ("src_weapon", "2")}
 
 
 def main() -> int:
     return game_set.build(Path(__file__).resolve().parent / "icons", ICONS, sizes=SIZES, ink=INK,
-                          mark="APEX")
+                          numbered=NUMBERED, mark="APEX")
 
 
 if __name__ == "__main__":
