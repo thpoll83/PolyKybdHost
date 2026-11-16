@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-15 19:21+0000\n"
+"POT-Creation-Date: 2026-11-16 07:01+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pt_BR\n"
@@ -1991,7 +1991,7 @@ msgid "The change failed: {error}"
 msgstr "A alteração falhou: {error}"
 
 #: polyhost/gui/integrations_dialog.py:288
-#: polyhost/gui/shell_editor_pages.py:39 polyhost/gui/shell_editor_pages.py:75
+#: polyhost/gui/shell_editor_pages.py:39 polyhost/gui/shell_editor_pages.py:77
 msgid "Set up"
 msgstr "Configurado"
 
@@ -2005,7 +2005,7 @@ msgid "The file cannot be read: {error}"
 msgstr "Não é possível ler o arquivo: {error}"
 
 #: polyhost/gui/integrations_dialog.py:296
-#: polyhost/gui/shell_editor_pages.py:43 polyhost/gui/shell_editor_pages.py:77
+#: polyhost/gui/shell_editor_pages.py:43 polyhost/gui/shell_editor_pages.py:79
 msgid "Not set up"
 msgstr "Não configurado"
 
@@ -2049,12 +2049,12 @@ msgid "Restart the agent for the change to take effect."
 msgstr "Reinicie o agente para que a alteração tenha efeito."
 
 #: polyhost/gui/integrations_dialog.py:390
-#: polyhost/gui/shell_editor_pages.py:98
+#: polyhost/gui/shell_editor_pages.py:100
 msgid "Terminals"
 msgstr "Terminais"
 
 #: polyhost/gui/integrations_dialog.py:390
-#: polyhost/gui/shell_editor_pages.py:188
+#: polyhost/gui/shell_editor_pages.py:190
 msgid "Editors"
 msgstr "Editores"
 
@@ -3819,12 +3819,12 @@ msgstr "Preenche um novo token aleatório e o copia. Cole-o nas “Opções” d
 msgid "Shows the command without setup. Install adds only the Codex option."
 msgstr "Mostra o comando sem configuração. Instalar adiciona só a opção do Codex."
 
-#: polyhost/gui/shell_editor_pages.py:45 polyhost/gui/shell_editor_pages.py:83
+#: polyhost/gui/shell_editor_pages.py:45 polyhost/gui/shell_editor_pages.py:85
 #, python-brace-format
 msgid "Set up for another copy of the app: {path}"
 msgstr "Configurado para outra cópia do aplicativo: {path}"
 
-#: polyhost/gui/shell_editor_pages.py:47 polyhost/gui/shell_editor_pages.py:88
+#: polyhost/gui/shell_editor_pages.py:47 polyhost/gui/shell_editor_pages.py:90
 msgid "Not found"
 msgstr "Não encontrado"
 
@@ -3842,26 +3842,26 @@ msgstr "A política de execução do PowerShell ({policy}) não executa scripts 
 msgid "Shows the command without setup"
 msgstr "Mostra o comando sem configuração"
 
-#: polyhost/gui/shell_editor_pages.py:79
+#: polyhost/gui/shell_editor_pages.py:81
 msgid "Set up with older plugin files. Install copies the current ones."
 msgstr "Configurado com arquivos de plugin antigos. Instalar copia os atuais."
 
-#: polyhost/gui/shell_editor_pages.py:81
+#: polyhost/gui/shell_editor_pages.py:83
 msgid "Set up, and changed by hand since. This app leaves it alone."
 msgstr "Configurado e alterado manualmente desde então. Este aplicativo não o altera."
 
-#: polyhost/gui/shell_editor_pages.py:85
+#: polyhost/gui/shell_editor_pages.py:87
 #, python-brace-format
 msgid "The plugin is already loaded from {path}."
 msgstr "O plugin já é carregado de {path}."
 
-#: polyhost/gui/shell_editor_pages.py:87
-#: polyhost/services/editor_plugins.py:129
+#: polyhost/gui/shell_editor_pages.py:89
+#: polyhost/services/editor_plugins.py:148
 #, python-brace-format
 msgid "This installation has no plugin files ({path})."
 msgstr "Esta instalação não tem arquivos de plugin ({path})."
 
-#: polyhost/gui/shell_editor_pages.py:99
+#: polyhost/gui/shell_editor_pages.py:101
 msgid ""
 "The keyboard shows the shortcuts of a program running in a terminal (nano, for example) only when the terminal's window title names the program. bash, zsh and PowerShell do not do this without setup.\n"
 "\n"
@@ -3871,39 +3871,39 @@ msgstr ""
 "\n"
 "Instalar adiciona uma linha ao arquivo de inicialização de cada shell selecionado, entre dois comentários de marcação, e antes salva uma cópia do arquivo ao lado dele. Remover apaga essas linhas. A alteração vale para as janelas de terminal abertas depois. Para mudar a opção do Codex, selecione os shells e pressione Instalar de novo."
 
-#: polyhost/gui/shell_editor_pages.py:113
+#: polyhost/gui/shell_editor_pages.py:115
 msgid "Also show Codex in the title (wraps the codex command)"
 msgstr "Mostrar também o Codex no título (envolve o comando codex)"
 
-#: polyhost/gui/shell_editor_pages.py:115
+#: polyhost/gui/shell_editor_pages.py:117
 msgid "Codex replaces the terminal title with the thread and project name, so the keyboard cannot tell that it is running. With this option the codex command starts Codex with a title that begins with \"codex\". A codex alias or function of your own, and a title set in Codex's config.toml, are kept."
 msgstr "O Codex substitui o título do terminal pelo nome da conversa e do projeto, então o teclado não sabe que ele está em execução. Com esta opção, o comando codex inicia o Codex com um título que começa com \"codex\". Um alias ou uma função codex seus, e um título definido no config.toml do Codex, são mantidos."
 
-#: polyhost/gui/shell_editor_pages.py:127
+#: polyhost/gui/shell_editor_pages.py:129
 #, python-brace-format
 msgid "The shells could not be checked: {error}"
 msgstr "Não foi possível verificar os shells: {error}"
 
-#: polyhost/gui/shell_editor_pages.py:144
+#: polyhost/gui/shell_editor_pages.py:146
 #, python-brace-format
 msgid "{shell}: shows the command without setup."
 msgstr "{shell}: mostra o comando sem configuração."
 
-#: polyhost/gui/shell_editor_pages.py:156
+#: polyhost/gui/shell_editor_pages.py:158
 msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "Nenhum bash, zsh ou PowerShell foi encontrado neste computador."
 
-#: polyhost/gui/shell_editor_pages.py:173
-#: polyhost/gui/shell_editor_pages.py:262
+#: polyhost/gui/shell_editor_pages.py:175
+#: polyhost/gui/shell_editor_pages.py:268
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "Cópia do arquivo anterior: {path}"
 
-#: polyhost/gui/shell_editor_pages.py:175
+#: polyhost/gui/shell_editor_pages.py:177
 msgid "Open a new terminal window for the change to take effect."
 msgstr "Abra uma nova janela de terminal para que a alteração tenha efeito."
 
-#: polyhost/gui/shell_editor_pages.py:189
+#: polyhost/gui/shell_editor_pages.py:191
 msgid ""
 "Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin. GDB shows whether the program runs or waits at the prompt only with it.\n"
 "\n"
@@ -3913,30 +3913,34 @@ msgstr ""
 "\n"
 "Instalar copia o plugin desta instalação para o local de onde o programa o carrega. Para o Emacs e o GDB, também adiciona ao arquivo init linhas que carregam o plugin, entre dois comentários de marcação, e antes salva uma cópia do arquivo. Quando este aplicativo é atualizado, ele copia os novos arquivos do plugin na próxima inicialização. Reinicie o programa para que a alteração tenha efeito."
 
-#: polyhost/gui/shell_editor_pages.py:210
+#: polyhost/gui/shell_editor_pages.py:212
 #, python-brace-format
 msgid "The editors could not be checked: {error}"
 msgstr "Não foi possível verificar os editores: {error}"
 
-#: polyhost/gui/shell_editor_pages.py:229
+#: polyhost/gui/shell_editor_pages.py:231
 msgid "Live shows Session View or Arrangement View keys with this script. After Install, restart Live and choose PolyKybd as a Control Surface in Settings > Link, Tempo & MIDI."
 msgstr "Com este script, o Live mostra as teclas da Session View ou da Arrangement View. Após instalar, reinicie o Live e escolha PolyKybd como Control Surface em Settings > Link, Tempo & MIDI."
 
-#: polyhost/gui/shell_editor_pages.py:235
+#: polyhost/gui/shell_editor_pages.py:237
+msgid "Restart the IDE after Install."
+msgstr "Reinicie o IDE depois de \"Instalar\"."
+
+#: polyhost/gui/shell_editor_pages.py:241
 msgid "No Vim, Neovim or Emacs was found on this computer."
 msgstr "Nenhum Vim, Neovim ou Emacs foi encontrado neste computador."
 
-#: polyhost/gui/shell_editor_pages.py:241
+#: polyhost/gui/shell_editor_pages.py:247
 #, python-brace-format
 msgid "This app listens on port {port} and requires a token. The plugins use port 50164 and no token: set g:polykybd_port and g:polykybd_token in Vim, or polykybd-port and polykybd-token in Emacs, to the same values."
 msgstr "Este aplicativo escuta na porta {port} e exige um token. Os plugins usam a porta 50164 e nenhum token: defina g:polykybd_port e g:polykybd_token no Vim, ou polykybd-port e polykybd-token no Emacs, com os mesmos valores."
 
-#: polyhost/gui/shell_editor_pages.py:246
+#: polyhost/gui/shell_editor_pages.py:252
 #, python-brace-format
 msgid "This app listens on port {port}. The plugins use port 50164: set g:polykybd_port in Vim, or polykybd-port in Emacs, to the same value."
 msgstr "Este aplicativo escuta na porta {port}. Os plugins usam a porta 50164: defina g:polykybd_port no Vim, ou polykybd-port no Emacs, com o mesmo valor."
 
-#: polyhost/gui/shell_editor_pages.py:264
+#: polyhost/gui/shell_editor_pages.py:270
 msgid "Restart the editor for the change to take effect."
 msgstr "Reinicie o editor para que a alteração tenha efeito."
 
@@ -5167,42 +5171,42 @@ msgstr ""
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "O instalador do WinCompose foi iniciado. Quando ele terminar e o WinCompose estiver em execução, o PolyKybd passará a usá-lo automaticamente."
 
-#: polyhost/services/editor_plugins.py:123
+#: polyhost/services/editor_plugins.py:142
 #, python-brace-format
 msgid "Copied the plugin to {path}."
 msgstr "O plugin foi copiado para {path}."
 
-#: polyhost/services/editor_plugins.py:124
+#: polyhost/services/editor_plugins.py:143
 #, python-brace-format
 msgid "Replaced the plugin in {path} with the one from this installation."
 msgstr "O plugin em {path} foi substituído pelo desta instalação."
 
-#: polyhost/services/editor_plugins.py:126
+#: polyhost/services/editor_plugins.py:145
 #, python-brace-format
 msgid "Removed the plugin from {path}."
 msgstr "O plugin foi removido de {path}."
 
-#: polyhost/services/editor_plugins.py:128
+#: polyhost/services/editor_plugins.py:147
 #, python-brace-format
 msgid "{editor} was not found on this computer."
 msgstr "{editor} não foi encontrado neste computador."
 
-#: polyhost/services/editor_plugins.py:130
+#: polyhost/services/editor_plugins.py:149
 #, python-brace-format
 msgid "{path} was changed by hand. Remove or update it by hand."
 msgstr "{path} foi alterado manualmente. Remova-o ou atualize-o manualmente."
 
-#: polyhost/services/editor_plugins.py:133
+#: polyhost/services/editor_plugins.py:152
 #, python-brace-format
 msgid "Copied the plugin to {path} and added the lines that load it to {init}."
 msgstr "O plugin foi copiado para {path} e as linhas que o carregam foram adicionadas a {init}."
 
-#: polyhost/services/editor_plugins.py:134
+#: polyhost/services/editor_plugins.py:153
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}."
 msgstr "As linhas que carregam o plugin foram removidas de {init}."
 
-#: polyhost/services/editor_plugins.py:135
+#: polyhost/services/editor_plugins.py:154
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}, and the plugin from {path}."
 msgstr "As linhas que carregam o plugin foram removidas de {init}, e o plugin, de {path}."
@@ -5431,7 +5435,7 @@ msgstr "A linha foi adicionada a {path}."
 msgid "Replaced the line in {path} with one for this installation."
 msgstr "A linha em {path} foi substituída por uma desta instalação."
 
-#: polyhost/services/editor_plugins.py:125 polyhost/services/shell_title.py:109
+#: polyhost/services/editor_plugins.py:144 polyhost/services/shell_title.py:109
 #, python-brace-format
 msgid "Already set up in {path}."
 msgstr "Já configurado em {path}."
@@ -5451,7 +5455,7 @@ msgstr "Título do Codex desativado em {path}."
 msgid "Removed the line from {path}."
 msgstr "A linha foi removida de {path}."
 
-#: polyhost/services/editor_plugins.py:127 polyhost/services/shell_title.py:113
+#: polyhost/services/editor_plugins.py:146 polyhost/services/shell_title.py:113
 #, python-brace-format
 msgid "Nothing to remove in {path}."
 msgstr "Nada a remover em {path}."
@@ -5471,12 +5475,12 @@ msgstr "{shell} não informou o caminho do perfil: {error}"
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts. Run 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' in PowerShell first."
 msgstr "A política de execução do PowerShell ({policy}) não executa scripts de perfil. Execute primeiro 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' no PowerShell."
 
-#: polyhost/services/editor_plugins.py:131 polyhost/services/shell_title.py:118
+#: polyhost/services/editor_plugins.py:150 polyhost/services/shell_title.py:118
 #, python-brace-format
 msgid "{path} has a start marker without an end marker. Remove the block by hand."
 msgstr "{path} tem um marcador de início sem marcador de fim. Remova o bloco manualmente."
 
-#: polyhost/services/editor_plugins.py:132 polyhost/services/shell_title.py:119
+#: polyhost/services/editor_plugins.py:151 polyhost/services/shell_title.py:119
 #, python-brace-format
 msgid "Could not change {path}: {error}"
 msgstr "Não foi possível alterar {path}: {error}"

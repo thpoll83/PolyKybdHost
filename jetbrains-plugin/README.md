@@ -62,20 +62,48 @@ Sources: `polyhost/res/overlay_sources/jetbrains/` (`bindings_*.yaml`,
 
 ## Install
 
+From PolyKybdHost: *Integrations… → Editors → JetBrains IDEs → Install*, or
+`polyctl editor-plugins install --editor jetbrains`. It unpacks the plugin
+shipped with the app (`polyhost/res/jetbrains/polykybd-context-reporter.zip`)
+as `polykybd-context-reporter/` into the plugins folder of every JetBrains IDE
+that has run on this computer, version 2024.2 (build 242) or newer:
+
+| OS | plugins folder |
+|---|---|
+| Windows | `%APPDATA%\JetBrains\<product><version>\plugins` |
+| macOS | `~/Library/Application Support/JetBrains/<product><version>/plugins` |
+| Linux | `~/.local/share/JetBrains/<product><version>` (`$XDG_DATA_HOME` when set) |
+
+These are the folders of JetBrains' "Directories used by the IDE" page. Restart
+the IDE after Install. When the app is updated with a newer plugin, it copies
+the new files at its next start; a copy changed by hand is left alone. *Remove*
+deletes the copies the app made. Not covered: an IDE started with
+`idea.plugins.path` set, Android Studio (its folders are under `Google`, not
+`JetBrains`), JetBrains Gateway and the remote development client.
+
+By hand: *Settings → Plugins →* gear icon *→ Install Plugin from Disk…* → pick
+the zip. The plugin is not on the JetBrains Marketplace.
+
+## Build
+
 ```bash
 cd jetbrains-plugin
 gradle buildPlugin        # -> build/distributions/polykybd-context-reporter-1.0.0.zip
+gradle shipPlugin         # also copies it to ../polyhost/res/jetbrains/polykybd-context-reporter.zip
 ```
-
-Then in the IDE: *Settings → Plugins →* gear icon *→ Install Plugin from Disk…*
-→ pick the zip. The plugin is not on the JetBrains Marketplace, and the host's
-"Set up the terminal and editors…" dialog does not install it: an IDE loads a
-plugin only through its own plugin manager.
 
 Building needs JDK 17 or newer and Gradle 8.13 or newer. The first build
 downloads the IntelliJ IDEA Community SDK (about 1 GB) through the IntelliJ
 Platform Gradle Plugin 2.x. `gradle test` runs the unit tests of `ReportCore.kt`
 and `Sender.kt`, which need no IDE.
+
+The zip in `polyhost/res/jetbrains/` is committed, because a host release ships
+the tag's source tree and nothing built. The build is reproducible (no file
+times, a fixed order, no build-machine lines in the jar manifest), so
+`.github/workflows/jetbrains-plugin.yml` rebuilds it with JDK 21 and Gradle
+8.14.3 and fails when the committed zip differs. After a change to the plugin,
+run `gradle shipPlugin` and commit the zip with it. The manifest names the
+Gradle version, so build with Gradle 8.14.3.
 
 ## Settings
 
