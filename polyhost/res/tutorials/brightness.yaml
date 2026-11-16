@@ -1,0 +1,45 @@
+# Display brightness on the Utility layer. docs/tutorials-plan.md has the field reference.
+id: brightness
+category: light
+title: Display brightness
+summary: Set a fixed brightness, step it up and down, or let it follow the light.
+min_protocol: 32
+steps:
+  - point: {layer_key: Fn}
+    say: ["Hold Fn", ""]
+    text: Hold Fn. The keycaps change to the Fn layer.
+    wait: {layer: Fn}
+  - point: {keycode: TO(7)}
+    say: ["Keep Fn held,", "tap ringed key"]
+    text: >-
+      Keep Fn held and tap the ringed key. The keyboard changes to the Utility layer
+      and stays on it.
+    wait: {layer: Utility}
+  - point: {keycode: KC_DHLF}
+    spotlight: [{keycode: KC_DMIN}, {keycode: KC_D1Q}, {keycode: KC_DHLF},
+                {keycode: KC_D3Q}, {keycode: KC_DMAX}]
+    say: ["Min 1/4 1/2", "3/4 Max"]
+    text: >-
+      This row sets a fixed brightness for the keycaps and the status display: Min,
+      1/4, 1/2, 3/4 and Max. Tap one.
+  - point: {keycode: KC_DBRI}
+    spotlight: [{keycode: KC_DDIM}, {keycode: KC_DBRI}]
+    say: ["- and + change", "it one step"]
+    text: The keys below the row make the displays one step dimmer or brighter.
+  - point: {keycode: KC_DAUTO}
+    spotlight: []
+    say: ["AUTO or MAN", ""]
+    text: >-
+      This key changes between automatic and manual brightness. AUTO follows the
+      light sensor and the host's daylight setting. MAN keeps the value you set.
+      Press it now.
+    wait: {press: KC_DAUTO}
+  - point: {keycode: KC_BASE}
+    spotlight: []
+    say: ["This key goes", "back to typing"]
+    text: The lower-left corner key leaves the Utility layer. Press it now.
+    wait: {press: KC_BASE}
+  - reveal: {from: {keycode: KC_BASE}}
+    say: ["Done", ""]
+    text: You are back on your typing layer.
+    wait: {seconds: 3}

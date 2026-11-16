@@ -477,6 +477,35 @@ class PolyKybdMock:
         self._wire.protocol_version = self.protocol_version
         return self._wire.key_guide(steps, target_layer, count, period_ms)
 
+    # ---- host tutorial (cmd 49, v35): through the wire mock, like key attention ----
+    def _tutorial_call(self, name, *args):
+        self._log_call(name, *args)
+        if (refusal := self._too_old("host_tutorial")):
+            return False, refusal
+        self._wire.protocol_version = self.protocol_version
+        return getattr(self._wire, name)(*args)
+
+    def tutorial_info(self):
+        return self._tutorial_call("tutorial_info")
+
+    def tutorial_text(self, line0="", line1=""):
+        return self._tutorial_call("tutorial_text", line0, line1)
+
+    def tutorial_spotlight(self, keys=None):
+        return self._tutorial_call("tutorial_spotlight", keys)
+
+    def tutorial_reveal(self, row, col):
+        return self._tutorial_call("tutorial_reveal", row, col)
+
+    def tutorial_arm(self, conds):
+        return self._tutorial_call("tutorial_arm", conds)
+
+    def tutorial_poll(self):
+        return self._tutorial_call("tutorial_poll")
+
+    def tutorial_end(self):
+        return self._tutorial_call("tutorial_end")
+
     def ai_set_keys(self, states, flags, slots):
         return self._ai_call("ai_set_keys", states, flags, slots)
 
