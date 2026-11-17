@@ -149,9 +149,12 @@ class AgentKeysController:
             # The state icon is on every page, so a state change uploads the
             # page shown again. A long title has pages; every key shows the same
             # page index at the same time, each page cached in its own slot.
-            layout = self._layout(agent)
+            # Read once: a mark fetched while the layout is built must not record
+            # the new version for the old picture (the card would never redraw).
+            version = self.marks.version
+            layout = self._layout(agent, version)
             index = int(self._clock() // TEXT_PAGE_S) % layout.page_count
-            drawn = (agent.vendor, agent.display_headline, self.marks.version,
+            drawn = (agent.vendor, agent.display_headline, version,
                      agent.state, index)
             slots.append(self._card(keeb, cache, ("agentcard",) + agent.key + (index,), drawn,
                                     lambda lay=layout, i=index: render_page(lay, i)))
@@ -195,10 +198,10 @@ class AgentKeysController:
         self.forget_device()
         return ok
 
-    def _layout(self, agent):
+    def _layout(self, agent, version):
         """The card layout of an agent, measured once per title, mark version and
         state."""
-        key = (agent.vendor, agent.display_headline, self.marks.version, agent.state)
+        key = (agent.vendor, agent.display_headline, version, agent.state)
         layout = self._layouts.get(key)
         if layout is None:
             if len(self._layouts) > 64:

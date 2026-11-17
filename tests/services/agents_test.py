@@ -587,6 +587,23 @@ class CardTest(unittest.TestCase):
         self.assertEqual(len(gap), 1)                          # stem, gap, dot
         self.assertTrue(q[gap[0] + 1].any())
 
+    def test_a_break_carried_to_the_next_page_keeps_its_separator(self):
+        from polyhost.services.agents.card import state_icon
+        title = "a-" * 40                                     # no space anywhere
+        pages = paginate(title, icon=state_icon(AgentState.WAITING))
+        lines = [line for page in pages for line in page]
+        self.assertGreater(len(pages), 1)
+        self.assertFalse(any(" " in line for line in lines))
+        self.assertEqual("".join(lines), title)
+
+    def test_the_cut_last_line_fits_beside_the_state_icon(self):
+        from polyhost.services.agents.card import ICON, ICON_CLEAR, state_icon
+        pages = paginate("firmware " * 40, icon=state_icon(AgentState.WAITING))
+        self.assertEqual(len(pages), card_mod.MAX_PAGES)
+        last = pages[-1][-1]
+        self.assertTrue(last.endswith((".", "\u2026")))
+        self.assertLessEqual(card_mod._ink_width(last), 72 - 1 - ICON - ICON_CLEAR)
+
     def test_no_logo_yet_shows_the_short_name(self):
         layout = card_layout("claude-code", "polykybd-docs", None)
         self.assertIsNotNone(layout.mark)
@@ -907,7 +924,7 @@ class ControllerTest(unittest.TestCase):
         self.r.report("codex", "a", "working",
                       headline="Fix the HID reconnect after resume on Windows")
         self.r.report("codex", "b", "working", headline="short")
-        long_pages = self.c._layout(self.r.agents()[0]).page_count
+        long_pages = self.c._layout(self.r.agents()[0], self.c.marks.version).page_count
         self.assertGreater(long_pages, 1)
         seen = []
         for _ in range(2 * long_pages):
@@ -934,6 +951,22 @@ class ControllerTest(unittest.TestCase):
         self.c.sync(self.kb)
         self.assertEqual(len(self.kb.cards), 1)
         self.assertEqual(self.kb.keys[-1][0][0], AgentState.IDLE)
+
+    def test_a_mark_fetched_while_the_layout_is_built_redraws_the_card(self):
+        class Racing:
+            version = 0
+
+            def get(self, vid, box=24):
+                if Racing.version == 0:
+                    Racing.version = 1        # the fetch finishes during the layout
+                return None                   # this layout uses the short name
+        self.c.marks = Racing()
+        self.r.report("codex", "a", "working", headline="Fix the build")
+        self.c.sync(self.kb)
+        self.kb.cards.clear()
+        self.c.sync(self.kb)
+        # Drawn with version 0, so version 1 draws it again.
+        self.assertEqual(len(self.kb.cards), 1)
 
     def test_a_full_pool_shows_no_card_rather_than_evict_the_shown_app(self):
         from polyhost.device.overlay_cache import OverlayMRUCache

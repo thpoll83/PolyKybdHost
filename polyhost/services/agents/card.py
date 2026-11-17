@@ -163,18 +163,19 @@ def _beside(mask) -> int:
 def paginate(text: str, mask=None, icon=None, size: int = FONT_SIZE) -> list[list[str]]:
     """The pages of a card: lists of at most LINES lines. Each line is as wide as
     _spans allows: the vendor mark narrows lines on page 1 only, the state icon on
-    every page."""
-    first = flow(text, [r - l for l, r in _spans(mask, icon)] + [TEXT_W], size)
-    pages = [first[:LINES]]
-    rest = " ".join(line for line in first[LINES:] if line)
-    later = [r - l for l, r in _spans(None, icon)] + [TEXT_W]
-    while rest:
-        more = flow(rest, later, size)
-        pages.append(more[:LINES])
-        rest = " ".join(line for line in more[LINES:] if line)
+    every page. One flow over all pages, cut every LINES lines: a break after '-'
+    or inside a long word stays as it is on the next page."""
+    first = [r - l for l, r in _spans(mask, icon)]
+    later = [r - l for l, r in _spans(None, icon)]
+    # Enough lines for any title: each line holds at least one character.
+    widths = first + later * (len(text or "") // LINES + 2)
+    lines = flow(text, widths, size)
+    pages = [lines[i:i + LINES] for i in range(0, max(1, len(lines)), LINES)]
     if len(pages) > MAX_PAGES:
         pages = pages[:MAX_PAGES]
-        pages[-1][-1] = fit_text(pages[-1][-1] + "\u2026", TEXT_W, size)
+        last = len(pages[-1]) - 1
+        # Its own line's width: the state icon can make it shorter than TEXT_W.
+        pages[-1][last] = fit_text(pages[-1][last] + "\u2026", later[last], size)
     return pages
 
 
