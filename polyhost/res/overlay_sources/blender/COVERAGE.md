@@ -18,6 +18,18 @@ Generated from Blender v5.2.2 (d13f752e3b9c) by `gen_blender_bindings.py`.
 | `uv` | 131 | 36 | 1 |
 | `dopesheet` | 106 | 34 | 1 |
 | `graph` | 115 | 34 | 1 |
+| `sequencer` | 137 | 36 | 1 |
+| `outliner` | 123 | 24 | 1 |
+| `text` | 100 | 45 | 0 |
+| `clip` | 109 | 30 | 1 |
+| `nla` | 99 | 31 | 1 |
+| `edit_curve` | 126 | 37 | 1 |
+| `edit_text` | 102 | 42 | 0 |
+| `gp_edit` | 146 | 46 | 1 |
+| `gp_draw` | 107 | 33 | 1 |
+| `gp_sculpt` | 115 | 34 | 1 |
+| `gp_weight` | 107 | 32 | 1 |
+| `gp_vertex` | 113 | 33 | 1 |
 
 ## Bound but not drawn
 
@@ -79,5 +91,45 @@ macOS are omitted from this list; they mirror the Ctrl row.
 - `KC_ENTER` Screen: `file.execute` (skip)
 
 ### `graph`
+
+- `KC_ENTER` Screen: `file.execute` (skip)
+
+### `sequencer`
+
+- `KC_ENTER` Screen: `file.execute` (skip)
+
+### `outliner`
+
+- `KC_ENTER` Screen: `file.execute` (skip)
+
+### `clip`
+
+- `KC_ENTER` Screen: `file.execute` (skip)
+
+### `nla`
+
+- `KC_ENTER` Screen: `file.execute` (skip)
+
+### `edit_curve`
+
+- `KC_ENTER` Screen: `file.execute` (skip)
+
+### `gp_edit`
+
+- `KC_ENTER` Screen: `file.execute` (skip)
+
+### `gp_draw`
+
+- `KC_ENTER` Screen: `file.execute` (skip)
+
+### `gp_sculpt`
+
+- `KC_ENTER` Screen: `file.execute` (skip)
+
+### `gp_weight`
+
+- `KC_ENTER` Screen: `file.execute` (skip)
+
+### `gp_vertex`
 
 - `KC_ENTER` Screen: `file.execute` (skip)
