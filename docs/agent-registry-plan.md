@@ -81,20 +81,26 @@ ESC (the pager) does not end AI mode in either case.
 
 ```
 ┌────────────────────────────────────┐
-│ [vendor mark 24×24]   [state mark] │   rows 0..25
-│                                    │
-│ polykybd-docs                      │   rows 28..39: headline, one line
+│ [vendor ] Fix the                  │   line 1  rows  0..12
+│ [ mark  ] HID                      │   line 2  rows 13..25
+│ after                     [state]  │   line 3  rows 26..39
 └────────────────────────────────────┘
 ```
 
-- Vendor mark: the ESC program mark for that vendor's app (`services/app_icons.py`,
-  Simple Icons), scaled to the left part of the card. A vendor with no mark gets its
-  name in text.
-- State mark: the same set for every vendor (see the state table). The state is also
-  on the LED, but the mark covers split42 (no RGB matrix) and colour blindness.
-- Headline: one line in the smallest resident face, cut to what fits in 72 px. Source
-  order: a label the user set (`polyctl agents label`), the topic from the terminal
-  title (Claude Code writes `✳ <topic>`), the session's working directory name.
+- Vendor mark: whole, up to 24 px, top left, from `services/app_icons.py` (Simple
+  Icons) or a shipped mark (`res/icons/agents/`). The text starts 1 px to its right.
+  When the title's first word does not fit beside it, a square mark is drawn at 20,
+  16 or 12 px; a wordmark (wider than 1.5 times its height) is never scaled, and the
+  first word starts below it. A vendor with no mark yet gets its short name.
+- State icon: 12 px, bottom right, on every page, with 1 px kept free left of and
+  above it, so only line 3 is shorter (58 px). The icons are the 16 px card icons, scaled
+  (see the state table). A state change uploads the page shown again.
+- Headline: three lines of 14 px text, breaking at spaces and after `-`. Only a word
+  wider than the key is split between letters. A longer title is split into pages of
+  three lines (at most 4), without the mark after the first; the key switches to the
+  next page every 3 s. Source order: a label the user set (`polyctl agents label`),
+  the topic from the terminal title (Claude Code writes `✳ <topic>`), the session's
+  working directory name.
 
 The host renders the card as an image (Python, the same path as other overlays) and
 uploads it. The firmware draws no text and no layout for it. Measure every card
@@ -107,7 +113,7 @@ layout with `tools/oled_preview.py`: 0 pixels outside 72×40.
 | `working` | a turn is running | amber, breathing | turning arrows |
 | `waiting` | the agent waits for the user: a permission prompt or a question | red, blinking | `!` |
 | `done` | a turn finished and the user has not looked since | green, steady | check |
-| `idle` | finished and seen, or no turn yet | dim green, then off | none |
+| `idle` | finished and seen, or no turn yet | dim green, then off | moon |
 | `stale` | no event for a long time, the process may be gone | dim white | `?` |
 | (empty) | no agent on this key | RGB effect unchanged | normal legend |
 
@@ -120,8 +126,8 @@ layout with `tools/oled_preview.py`: 0 pixels outside 72×40.
   counter in cmd 45 op 1, and the AI key ripples three times (v36). An agent on the
   shown page rings its own key (firmware 1.13.6). A page change rings nothing: the
   firmware takes the new page's states as the start.
-- Cards are cached per agent, not per key, so paging back to a page reuses the cards
-  the keyboard still holds.
+- Cards are cached per agent and text page, not per key, so paging back to a page
+  reuses the cards the keyboard still holds.
 
 ## The registry (host)
 
@@ -293,7 +299,7 @@ firmware bump commit exists: #276 lost 17 to #278 in the same way.
 ## Host
 
 - `services/agents/registry.py`, `services/agents/adapters/*.py`: Qt-free, unit-tested.
-- `services/agents/card.py`: renders a card (vendor mark, state mark, headline) to a
+- `services/agents/card.py`: renders a card (vendor mark, state icon, headline pages) to a
   72×40 1-bit image. Golden tests against rendered cards.
 - `PolyCore`: owns the registry; pushes op 1 when a shown key changes; uploads cards
   for the shown page; reads op 2 on the console line or a `G` change; acts on presses

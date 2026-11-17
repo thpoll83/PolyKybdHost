@@ -13,12 +13,16 @@ from __future__ import annotations
 
 import logging
 import threading
+import time
 
-from polyhost.services.agents.card import (VendorMarks, card_bytes, render_card,
+from polyhost.services.agents.card import (VendorMarks, card_bytes, card_layout, render_page,
                                            render_dictation_card, render_next_waiting_card)
 from polyhost.services.agents.model import AgentState
 
 PAGER_KEY = 10
+# A title longer than one card (card.paginate) switches to its next page this often.
+# The controller runs about once a second, so a page shows 3 to 4 s.
+TEXT_PAGE_S = 3.0
 DICTATION_KEY = 11     # '-'
 NEXT_WAITING_KEY = 12  # '+'
 # Event code beside the key indexes (firmware AI_EVENT_LEAVE, v36): AI mode ended.
@@ -40,7 +44,7 @@ FLAG_EXTRA_CARDS = 0x08
 
 class AgentKeysController:
     def __init__(self, registry, cache_for, raise_agent=None, log=None, marks=None,
-                 dictate=None):
+                 dictate=None, clock=time.monotonic):
         """`cache_for()` returns the keyboard's overlay MRU cache (it is replaced at
         every connect). The cards take pool slots from it as "aside" entries, so no
         slot is reserved: a program switch evicts a card before any app image, and
@@ -62,6 +66,8 @@ class AgentKeysController:
         self.last_press = None
         self.log = log or logging.getLogger("PolyHost")
         self.marks = marks or VendorMarks()
+        self._clock = clock
+        self._layouts = {}               # (vendor, title, marks version) -> CardLayout
         self.page = 0
         # Increased (1..255, never 0 again) when an agent on a page that is not shown
         # finishes its turn; the keyboard (v36) then ripples the AI key. 0 until the
@@ -140,11 +146,18 @@ class AgentKeysController:
                 slots.append(NO_SLOT)
                 continue
             states.append(agent.state)
-            drawn = (agent.vendor, agent.state, agent.display_headline, self.marks.version)
-            slots.append(self._card(keeb, cache, ("agentcard",) + agent.key, drawn,
-                                    lambda a=agent: render_card(a.vendor, a.state,
-                                                                a.display_headline,
-                                                                self.marks)))
+            # The state icon is on every page, so a state change uploads the
+            # page shown again. A long title has pages; every key shows the same
+            # page index at the same time, each page cached in its own slot.
+            # Read once: a mark fetched while the layout is built must not record
+            # the new version for the old picture (the card would never redraw).
+            version = self.marks.version
+            layout = self._layout(agent, version)
+            index = int(self._clock() // TEXT_PAGE_S) % layout.page_count
+            drawn = (agent.vendor, agent.display_headline, version,
+                     agent.state, index)
+            slots.append(self._card(keeb, cache, ("agentcard",) + agent.key + (index,), drawn,
+                                    lambda lay=layout, i=index: render_page(lay, i)))
         waiting = len(self.registry.waiting())
         extra = [self._card(keeb, cache, ("agentcard", CARD_DICTATION), ("dictation",),
                             render_dictation_card),
@@ -184,6 +197,18 @@ class AgentKeysController:
             self.log.debug("Agent keys not cleared: %s", msg)
         self.forget_device()
         return ok
+
+    def _layout(self, agent, version):
+        """The card layout of an agent, measured once per title, mark version and
+        state."""
+        key = (agent.vendor, agent.display_headline, version, agent.state)
+        layout = self._layouts.get(key)
+        if layout is None:
+            if len(self._layouts) > 64:
+                self._layouts.clear()
+            layout = self._layouts[key] = card_layout(agent.vendor, agent.display_headline,
+                                                      self.marks, agent.state)
+        return layout
 
     def _card(self, keeb, cache, key, drawn, render) -> int:
         """The pool slot of the card cached under `key` showing `drawn`, uploading it
@@ -243,7 +268,6 @@ class AgentKeysController:
             self._handle_key(key)
 
     def _note(self, key, result, agent=None):
-        import time
         self.last_press = {"at": time.time(), "key": key, "result": result,
                            "agent": (f"{agent.vendor} {agent.display_headline}"
                                      if agent is not None else "")}

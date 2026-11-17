@@ -5,8 +5,10 @@ import unittest
 import unittest.mock as mock
 
 from polyhost.services.agents import hooks, registry as reg_mod
-from polyhost.services.agents.card import (card_bytes, fit_text, render_card,
-                                           render_dictation_card, render_next_waiting_card)
+from polyhost.services.agents import card as card_mod
+from polyhost.services.agents.card import (card_bytes, card_layout, fit_text, flow, paginate,
+                                           render_card, render_dictation_card,
+                                           render_next_waiting_card, render_page)
 from polyhost.services.agents import dictation
 from polyhost.services.agents.controller import (DICTATION_KEY, NEXT_WAITING_KEY, NO_SLOT,
                                                  PAGER_KEY, AgentKeysController)
@@ -439,7 +441,7 @@ class TitleTest(unittest.TestCase):
 
 class CardTest(unittest.TestCase):
     def test_card_is_360_bytes_and_inside_the_panel(self):
-        img = render_card("claude-code", AgentState.WAITING, "polykybd-docs", marks=None)
+        img = render_card("claude-code", "polykybd-docs", marks=None)
         self.assertEqual(img.shape, (40, 72))
         self.assertTrue(img.any())
         self.assertEqual(len(card_bytes(img)), 360)
@@ -461,23 +463,151 @@ class CardTest(unittest.TestCase):
         self.assertLessEqual(_measure(fit_text("polykybd-docs"))[2], 70)
 
     def test_shipped_agent_marks_load_without_network(self):
-        from polyhost.services.agents.card import MARK_SHOWN, VendorMarks
+        from polyhost.services.agents.card import MARK_BOX, VendorMarks
         marks = VendorMarks()
-        for vid in ("aider", "opencode", "qwen", "antigravity"):
-            mask = marks._load(vid, allow_network=False)
+        for vid in ("aider", "opencode", "qwen", "antigravity", "kimi", "grok"):
+            mask = marks._load(vid, MARK_BOX, allow_network=False)
             self.assertIsNotNone(mask, vid)
-            self.assertLessEqual(mask.shape[0], MARK_SHOWN)
+            self.assertLessEqual(mask.shape[0], MARK_BOX)
             self.assertTrue(mask.any())
+        # A square mark is drawn smaller when asked; it never grows.
+        self.assertLessEqual(marks._load("qwen", 12, allow_network=False).shape[0], 12)
+        self.assertEqual(marks._load("aider", 12, allow_network=False).shape[0], 12)
 
-    def test_wrap_text_breaks_between_words_into_two_lines(self):
-        from polyhost.services.agents.card import _measure, wrap_text
-        self.assertEqual(wrap_text("agent 2"), ["agent 2"])
-        self.assertEqual(wrap_text("polykybd-docs"), ["polykybd-", "docs"])
-        lines = wrap_text("Investigate the HIL failure in the split link soak")
-        self.assertEqual(len(lines), 2)
-        self.assertEqual(lines[0], "Investigate")
-        self.assertTrue(lines[1].endswith("."))
-        self.assertTrue(all(_measure(line)[2] <= 70 for line in lines))
+    def test_flow_breaks_at_spaces_and_after_hyphens(self):
+        self.assertEqual(flow("polykybd-docs", [70]), ["polykybd-", "docs"])
+        self.assertEqual(flow("Fix the HID reconnect", [46, 46, 70]),
+                         ["Fix the", "HID", "reconnect"])
+        # A word too wide beside the mark moves down to the first full-width line.
+        self.assertEqual(flow("Fix reconnect", [46, 46, 70]), ["Fix", "", "reconnect"])
+        # Only a word wider than the key is split between letters.
+        lines = flow("Supercalifragilistic", [70])
+        self.assertGreater(len(lines), 1)
+        self.assertEqual("".join(lines), "Supercalifragilistic")
+        self.assertTrue(all(card_mod._ink_width(line) <= 70 for line in lines))
+
+    def test_pages_hold_three_lines_and_lose_no_word(self):
+        title = "Investigate the HIL failure in the split link soak on Windows"
+        pages = paginate(title)
+        self.assertGreater(len(pages), 1)
+        self.assertTrue(all(len(p) <= card_mod.LINES for p in pages))
+        self.assertEqual(" ".join(w for p in pages for w in p if w).split(), title.split())
+        self.assertEqual(paginate("Agent 1"), [["Agent 1"]])
+
+    def test_pages_stop_at_the_limit_with_a_mark(self):
+        pages = paginate("word " * 60)
+        self.assertEqual(len(pages), card_mod.MAX_PAGES)
+        self.assertTrue(pages[-1][-1].endswith((".", "\u2026")))
+
+    def test_the_mark_shrinks_until_the_first_word_fits_beside_it(self):
+        import numpy as np
+
+        class Marks:
+            def get(self, vid, box=24):
+                return np.ones((box, box), dtype=bool)        # a square mark
+        self.assertEqual(card_layout("x", "Fix the HID", Marks()).mark.shape, (24, 24))
+        # "firmware" (54 px) does not fit beside 24 px (46 px left); 16 px leaves 54.
+        small = card_layout("x", "firmware update", Marks()).mark
+        self.assertEqual(small.shape, (16, 16))
+        # "Investigate" (69 px) fits beside no size: the smallest is used.
+        self.assertEqual(card_layout("x", "Investigate", Marks()).mark.shape, (12, 12))
+
+    def test_a_wordmark_is_never_shrunk(self):
+        import numpy as np
+
+        class Marks:
+            def get(self, vid, box=24):
+                rows = min(13, box)                           # aider's wordmark, scalable
+                return np.ones((rows, round(29 * rows / 13)), dtype=bool)
+        layout = card_layout("aider", "refactor the overlay cache", Marks())
+        self.assertEqual(layout.mark.shape, (13, 29))
+        # 13 rows sit beside line 1 only: "refactor" does not fit there and starts
+        # line 2, which is full width.
+        self.assertEqual(layout.pages[0][:2], ["", "refactor"])
+
+    def test_text_starts_right_of_the_mark_and_later_pages_have_none(self):
+        import numpy as np
+
+        class Marks:
+            def get(self, vid, box=24):
+                return np.ones((box, box), dtype=bool)
+        layout = card_layout("x", "Fix the HID reconnect after resume on Windows", Marks())
+        self.assertGreater(layout.page_count, 1)
+        first = render_page(layout, 0)
+        self.assertTrue(first[:24, :24].all())                # the mark, top left
+        self.assertFalse(first[:24, 24].any())                # the 1 px gap
+        self.assertTrue(first[:24, 25:].any())                # text right of it
+        self.assertFalse(render_page(layout, 1)[:24, :24].all())        # no mark on page 2
+
+    def test_the_state_icon_is_in_the_corner_with_a_cleared_margin(self):
+        from polyhost.services.agents.card import ICON, ICON_CLEAR, _spans, state_icon
+        import numpy as np
+        self.assertIsNone(state_icon(AgentState.EMPTY))
+        states = (AgentState.WORKING, AgentState.WAITING, AgentState.DONE,
+                  AgentState.IDLE, AgentState.STALE)
+        icons = [state_icon(st) for st in states]
+        self.assertTrue(all(i is not None and i.shape == (ICON, ICON) and i.any()
+                            for i in icons))
+        self.assertEqual(len({i.tobytes() for i in icons}), len(states))   # all differ
+        icon = icons[1]
+        right = 72 - ICON - ICON_CLEAR
+        # Only line 3 (rows 26..39) meets the icon (rows 28..39) and its margin.
+        self.assertEqual(_spans(None, icon), [(1, 71), (1, 71), (1, right)])
+        # "comments" (66 px) fits a full line, not line 3 beside the icon; on
+        # every page.
+        self.assertEqual(paginate("Windows Windows comments", icon=icon),
+                         [["Windows", "Windows", ""], ["comments"]])
+        self.assertEqual(paginate("Windows Windows comments"),
+                         [["Windows", "Windows", "comments"]])
+        self.assertEqual(paginate("Windows Windows Windows Windows Windows comments",
+                                  icon=icon)[1][2], "")
+        # The icon leaves line 1 alone: the vendor mark keeps its size.
+
+        class Square:
+            def get(self, vid, box=24):
+                return np.ones((box, box), dtype=bool)
+        self.assertEqual(card_layout("x", "firmware", Square()).mark.shape, (16, 16))
+        self.assertEqual(card_layout("x", "firmware", Square(), AgentState.DONE).mark.shape,
+                         (16, 16))
+        # Drawn bottom right on every page; nothing else in its margin.
+        layout = card_layout("x", "Fix the HID reconnect after resume on Windows", None,
+                             AgentState.WAITING)
+        self.assertGreater(layout.page_count, 1)
+        for page in range(layout.page_count):
+            img = render_page(layout, page)
+            self.assertTrue((img[40 - ICON:, 72 - ICON:] == icon).all(), page)
+            self.assertFalse(img[40 - ICON - ICON_CLEAR:, right:72 - ICON].any(), page)
+            self.assertFalse(img[40 - ICON - ICON_CLEAR:40 - ICON, 72 - ICON:].any(), page)
+
+    def test_the_12_px_question_mark_keeps_its_dot(self):
+        from polyhost.services.agents.card import state_icon
+        q = state_icon(AgentState.STALE)[2:10, 2:10]          # inside the ring
+        rows = [r for r in range(q.shape[0]) if q[r].any()]
+        gap = [r for r in range(rows[0], rows[-1]) if not q[r].any()]
+        self.assertEqual(len(gap), 1)                          # stem, gap, dot
+        self.assertTrue(q[gap[0] + 1].any())
+
+    def test_a_break_carried_to_the_next_page_keeps_its_separator(self):
+        from polyhost.services.agents.card import state_icon
+        title = "a-" * 40                                     # no space anywhere
+        pages = paginate(title, icon=state_icon(AgentState.WAITING))
+        lines = [line for page in pages for line in page]
+        self.assertGreater(len(pages), 1)
+        self.assertFalse(any(" " in line for line in lines))
+        self.assertEqual("".join(lines), title)
+
+    def test_the_cut_last_line_fits_beside_the_state_icon(self):
+        from polyhost.services.agents.card import ICON, ICON_CLEAR, state_icon
+        pages = paginate("firmware " * 40, icon=state_icon(AgentState.WAITING))
+        self.assertEqual(len(pages), card_mod.MAX_PAGES)
+        last = pages[-1][-1]
+        self.assertTrue(last.endswith((".", "\u2026")))
+        self.assertLessEqual(card_mod._ink_width(last), 72 - 1 - ICON - ICON_CLEAR)
+
+    def test_no_logo_yet_shows_the_short_name(self):
+        layout = card_layout("claude-code", "polykybd-docs", None)
+        self.assertIsNotNone(layout.mark)
+        self.assertLessEqual(layout.mark.shape[0], 13)
 
 
 class _FakeKeeb:
@@ -507,7 +637,7 @@ class _FakeKeeb:
 class _NoMarks:
     version = 0
 
-    def get(self, vid):
+    def get(self, vid, box=24):
         return None
 
 
@@ -605,7 +735,7 @@ class ControllerTest(unittest.TestCase):
         self.assertEqual(self.kb.cards, {})
         self.r.report("claude-code", "a", "waiting")
         self.c.sync(self.kb)
-        # The card shows the state, and '+' shows the waiting count.
+        # The card gets the '!' state mark, and '+' shows the waiting count.
         self.assertEqual(sorted(self.kb.cards), [0, 2])
         self.assertEqual(self.kb.keys[-1][1], 0x08 | 0x04)
 
@@ -773,7 +903,7 @@ class ControllerTest(unittest.TestCase):
         self.c.sync(self.kb)
         again = self.kb.keys[-1][2][0]
         self.assertIn(again, self.kb.cards)       # uploaded into its new slot
-        self.assertEqual(self.cache.holds(("agentcard", "codex", "a")), again)
+        self.assertEqual(self.cache.holds(("agentcard", "codex", "a", 0)), again)
 
     def test_an_evicted_card_given_the_SAME_slot_again_is_uploaded_again(self):
         self.r.report("codex", "a", "working")
@@ -786,6 +916,57 @@ class ControllerTest(unittest.TestCase):
         self.c.sync(self.kb)
         self.assertEqual(self.kb.keys[-1][2][0], first)
         self.assertIn(first, self.kb.cards)       # not skipped on the old record
+
+    def test_a_long_title_switches_pages_each_uploaded_once(self):
+        from polyhost.services.agents.controller import TEXT_PAGE_S
+        now = [0.0]
+        self.c._clock = lambda: now[0]
+        self.r.report("codex", "a", "working",
+                      headline="Fix the HID reconnect after resume on Windows")
+        self.r.report("codex", "b", "working", headline="short")
+        long_pages = self.c._layout(self.r.agents()[0], self.c.marks.version).page_count
+        self.assertGreater(long_pages, 1)
+        seen = []
+        for _ in range(2 * long_pages):
+            self.c.sync(self.kb)
+            seen.append(tuple(self.kb.keys[-1][2][:2]))
+            now[0] += TEXT_PAGE_S
+        long_slots = [a for a, _ in seen]
+        self.assertEqual(len(set(long_slots)), long_pages)       # each page its slot
+        self.assertEqual(long_slots[:long_pages], long_slots[long_pages:])   # in turn
+        self.assertEqual(len({b for _, b in seen}), 1)          # one page: it stays
+        # Each page uploaded once, plus the short card, '-' and '+'.
+        self.assertEqual(len(self.kb.cards), long_pages + 1 + 2)
+        self.kb.cards.clear()
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.cards, {})                     # pages are reused
+
+    def test_a_state_change_uploads_the_page_shown(self):
+        self.r.report("codex", "a", "working", headline="Fix the build")
+        self.c.sync(self.kb)
+        self.kb.cards.clear()
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.cards, {})              # nothing changed
+        self.r.report("codex", "a", "idle")              # the icon changes
+        self.c.sync(self.kb)
+        self.assertEqual(len(self.kb.cards), 1)
+        self.assertEqual(self.kb.keys[-1][0][0], AgentState.IDLE)
+
+    def test_a_mark_fetched_while_the_layout_is_built_redraws_the_card(self):
+        class Racing:
+            version = 0
+
+            def get(self, vid, box=24):
+                if Racing.version == 0:
+                    Racing.version = 1        # the fetch finishes during the layout
+                return None                   # this layout uses the short name
+        self.c.marks = Racing()
+        self.r.report("codex", "a", "working", headline="Fix the build")
+        self.c.sync(self.kb)
+        self.kb.cards.clear()
+        self.c.sync(self.kb)
+        # Drawn with version 0, so version 1 draws it again.
+        self.assertEqual(len(self.kb.cards), 1)
 
     def test_a_full_pool_shows_no_card_rather_than_evict_the_shown_app(self):
         from polyhost.device.overlay_cache import OverlayMRUCache
