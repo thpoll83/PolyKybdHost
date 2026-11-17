@@ -180,6 +180,12 @@ still cloud sessions.
   key then shows the folder name (`user` for a cloud session). Nothing else of
   the prompts or the conversation leaves the VM. `polyctl agents label` names a
   key by hand.
+- `POLYKYBD_CLOUD_ANONYMOUS=1` in the cloud environment sends no title, no prompt
+  words and no folder name, not even encrypted, for a company policy that forbids
+  it. The hook does not read the transcript. Only the state and the session URL
+  are sent. The keys show "Agent 1", "Agent 2" in key order (host 1.27.8 or newer;
+  an older host shows "Claude Code"). A label set with `polyctl agents label`
+  stays on the host.
 - With the PolyKybd browser extension 1.1.0 or newer (`browser-extension/`), a
   key press first switches the browser to the tab with the session's exact page,
   also a background tab or one in another window, and then brings that window to

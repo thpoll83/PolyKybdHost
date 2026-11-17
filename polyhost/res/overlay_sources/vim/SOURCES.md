@@ -123,7 +123,7 @@ renders are in `icons/src/`; `fetch_icons.py` scales them to 1 bit.
 | `icons/src/` file | Source | Used for |
 |---|---|---|
 | `copy.png` | Fluent `Copy` | yank (`copy.png`, `yank_lines.png`) |
-| `paste.png` | Fluent `Clipboard Paste` | put, insert register (`paste.png`, `put_after.png`, `put_before.png`) |
+| `paste.png` | Fluent `Clipboard Paste` | put, insert register (`paste.png`, `put_after.png`, `put_before.png`, `put_keep.png`, `paste_reg.png`) |
 | `undo.png`, `redo.png` | Fluent `Arrow Undo`, `Arrow Redo` | undo, redo, Replace mode restore |
 | `eraser.png` | Fluent `Eraser` | delete (`delete.png`, `delete_eol.png`, `delete_lines.png`) |
 | `edit.png` | Fluent `Edit` | change (`change*.png`, `repeat_change.png`) |
@@ -135,7 +135,7 @@ renders are in `icons/src/`; `fetch_icons.py` scales them to 1 bit.
 | `book_q.png` | Fluent `Book Question Mark` | `K` |
 | `split.png` | Fluent `Split Vertical` | CTRL-W |
 | `pause.png` | Fluent `Pause` | CTRL-Z |
-| `indent_inc.png`, `indent_dec.png` | Fluent `Text Indent Increase`, `Text Indent Decrease` | `>` `<`, Insert CTRL-T CTRL-D |
+| `indent_inc.png`, `indent_dec.png` | Fluent `Text Indent Increase`, `Text Indent Decrease` | `>` `<`, Insert CTRL-T CTRL-D (`indent_line_inc.png`, `indent_line_dec.png`: with the line mark) |
 | `align_left.png` | Fluent `Text Align Left` | `=` |
 | `clip_letter.png` | Fluent `Clipboard Letter` | `"` (register) |
 | `help.png` | Fluent `Question Circle` | F1 |
@@ -144,7 +144,7 @@ renders are in `icons/src/`; `fetch_icons.py` scales them to 1 bit.
 | `list.png` | Fluent `Text Bullet List` | command-line CTRL-D |
 | `window.png` | Fluent `Window` | command-line CTRL-F |
 | `sync.png` | Fluent `Arrow Sync` | CTRL-L |
-| `top.png`, `bottom.png` | Material `vertical_align_top`, `vertical_align_bottom` | first and last line |
+| `top.png`, `bottom.png` | Material `vertical_align_top`, `vertical_align_bottom` | first and last line (`goto_line.png`: with the word "line N") |
 | `backspace.png` | Material `backspace` | `X`, CTRL-H, and mirrored for `x` and Delete |
 
 ### Drawn glyphs

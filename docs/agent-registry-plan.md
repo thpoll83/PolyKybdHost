@@ -54,9 +54,11 @@ one agent. This plan drives a row of keys for many agents. Parts of them are reu
    - pressing a number key brings that agent's window to the front, and the board
      leaves AI mode;
    - ESC becomes the pager when there are more than 10 agents. Each press shows the
-     next page of 10. The LEDs follow the page.
-3. **The page stays selected after AI mode ends.** The number row LEDs keep showing
-   the page last chosen, until the user picks another page or that page empties.
+     next page of 10, and from protocol v36 ESC shows the page as "Next 1/2". The LEDs
+     follow the page.
+3. **Page 1 again when AI mode ends** (protocol v36). The firmware records event 13
+   (`AI_EVENT_LEAVE`) and the host shows page 1. Before v36 the page stayed selected,
+   and after one Esc press the agents on page 1 seemed gone (2026-11-16).
 
 ### Hold or tap
 
@@ -113,7 +115,13 @@ layout with `tools/oled_preview.py`: 0 pixels outside 72×40.
   its window (the host sees the focus change).
 - Only `waiting` blinks, as in #276.
 - When a page that is not shown has an agent in `waiting`, the ESC LED blinks red in
-  AI mode. Outside AI mode ESC is not touched (open question: show it there too).
+  AI mode. Outside AI mode the ripple runs from the AI key every 4 s (v36, split72).
+- When an agent on a page that is not shown finishes its turn, the host increases a
+  counter in cmd 45 op 1, and the AI key ripples three times (v36). An agent on the
+  shown page rings its own key (firmware 1.13.6). A page change rings nothing: the
+  firmware takes the new page's states as the start.
+- Cards are cached per agent, not per key, so paging back to a page reuses the cards
+  the keyboard still holds.
 
 ## The registry (host)
 
@@ -151,8 +159,15 @@ part of telemetry, the log bundle or the problem report (the payload allow-list 
 
 ### Slots
 
-- **An agent keeps its key for as long as it exists.** The user learns positions, so
-  agents do not move when their state changes. A new agent takes the first free slot.
+- **An agent keeps its key while it runs.** The user learns positions, so agents do not
+  move when their state changes. A new agent takes the first free slot.
+- **The gaps close only when no key is being watched** (`_close_gaps`,
+  `_first_key_if_alone` in `registry.py`). At a restore and after the user removes
+  agents (Remove Agent, Remove All Inactive, `polyctl agents forget`), the agents are
+  renumbered 1, 2, 3… in their key order. After an automatic removal (a session end, a
+  time rule, a closed process or window), only a single remaining agent moves, to key 1.
+  Before this rule, a lone agent could stay on key 0 (the tenth key) after the nine
+  before it were gone (2026-11-16).
 - A finished or `stale` entry is removed after a grace period, and its slot becomes
   free. The value is open.
 - `polyctl agents pin <id> <slot>` puts an agent on a chosen key and keeps it there.
