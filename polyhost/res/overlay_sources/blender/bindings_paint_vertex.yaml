@@ -26,12 +26,12 @@ bindings:
 - key: '1'
   mods: []
   label: Face mask
-  icon: sel_face.png
+  icon: face_mask.png
   source: 'Vertex Paint: wm.context_toggle(data_path=vertex_paint_object.data.use_paint_mask)'
 - key: '2'
   mods: []
   label: Vertex mask
-  icon: sel_vert.png
+  icon: gp_point_mask.png
   source: 'Vertex Paint: wm.context_toggle(data_path=vertex_paint_object.data.use_paint_mask_vertex)'
 - key: B
   mods: []
@@ -172,7 +172,7 @@ bindings:
 - key: W
   mods: []
   label: Select tool
-  icon: select_box.png
+  icon: select_tool.png
   source: '3D View: wm.tool_set_by_id(cycle=True,name=builtin.select_box)'
 - key: X
   mods: []
@@ -229,7 +229,7 @@ bindings:
   mods:
   - ALT
   label: Fallback tool pie
-  icon: tools.png
+  icon: tool_pie.png
   source: 'Window: wm.toolbar_fallback_pie'
 - key: Z
   mods:
@@ -437,7 +437,7 @@ bindings:
   mods:
   - CTRL
   label: Frame all (quad)
-  icon: frame_all.png
+  icon: frame_all_quad.png
   source: '3D View: view3d.view_all(center=False,use_all_regions=True)'
 - key: KC_LEFT
   mods:
@@ -508,7 +508,7 @@ bindings:
 - key: X
   mods:
   - CTRL
-  label: Set vertex colors
+  label: Fill color
   icon: fill_color.png
   source: 'Vertex Paint: paint.vertex_color_set'
 - key: Z
@@ -603,7 +603,7 @@ bindings:
   - CTRL
   - SHIFT
   label: Sample merged
-  icon: eyedropper.png
+  icon: sample_merged.png
   source: 'Vertex Paint: paint.sample_color(merged=True)'
 - key: Z
   mods:
@@ -677,7 +677,7 @@ bindings:
   mods:
   - GUI
   label: Frame all (quad)
-  icon: frame_all.png
+  icon: frame_all_quad.png
   source: '3D View: view3d.view_all(center=False,use_all_regions=True)'
   only:
   - macos
@@ -758,7 +758,7 @@ bindings:
 - key: X
   mods:
   - GUI
-  label: Set vertex colors
+  label: Fill color
   icon: fill_color.png
   source: 'Vertex Paint: paint.vertex_color_set'
   only:
@@ -863,7 +863,7 @@ bindings:
   - SHIFT
   - GUI
   label: Sample merged
-  icon: eyedropper.png
+  icon: sample_merged.png
   source: 'Vertex Paint: paint.sample_color(merged=True)'
   only:
   - macos

@@ -202,7 +202,7 @@ bindings:
 - key: W
   mods: []
   label: Select tool
-  icon: select_box.png
+  icon: select_tool.png
   source: '3D View: wm.tool_set_by_id(cycle=True,name=builtin.select_box)'
 - key: X
   mods: []
@@ -289,7 +289,7 @@ bindings:
   mods:
   - ALT
   label: Fallback tool pie
-  icon: tools.png
+  icon: tool_pie.png
   source: 'Window: wm.toolbar_fallback_pie'
 - key: Z
   mods:
@@ -433,7 +433,7 @@ bindings:
   mods:
   - SHIFT
   label: Extend to parent
-  icon: hier_parent.png
+  icon: parent_add.png
   source: 'Object Mode: object.select_hierarchy(direction=PARENT,extend=True)'
 - key: KC_RIGHT
   mods:
@@ -445,7 +445,7 @@ bindings:
   mods:
   - SHIFT
   label: Extend to child
-  icon: hier_child.png
+  icon: child_add.png
   source: 'Object Mode: object.select_hierarchy(direction=CHILD,extend=True)'
 - key: KC_SPACE
   mods:
@@ -511,37 +511,37 @@ bindings:
   mods:
   - CTRL
   label: Subdiv 0
-  icon: subdiv.png
+  icon: subdiv_0.png
   source: 'Object Mode: object.subdivision_set(ensure_modifier=True,level=0,relative=False)'
 - key: '1'
   mods:
   - CTRL
   label: Subdiv 1
-  icon: subdiv.png
+  icon: subdiv_1.png
   source: 'Object Mode: object.subdivision_set(ensure_modifier=True,level=1,relative=False)'
 - key: '2'
   mods:
   - CTRL
   label: Subdiv 2
-  icon: subdiv.png
+  icon: subdiv_2.png
   source: 'Object Mode: object.subdivision_set(ensure_modifier=True,level=2,relative=False)'
 - key: '3'
   mods:
   - CTRL
   label: Subdiv 3
-  icon: subdiv.png
+  icon: subdiv_3.png
   source: 'Object Mode: object.subdivision_set(ensure_modifier=True,level=3,relative=False)'
 - key: '4'
   mods:
   - CTRL
   label: Subdiv 4
-  icon: subdiv.png
+  icon: subdiv_4.png
   source: 'Object Mode: object.subdivision_set(ensure_modifier=True,level=4,relative=False)'
 - key: '5'
   mods:
   - CTRL
   label: Subdiv 5
-  icon: subdiv.png
+  icon: subdiv_5.png
   source: 'Object Mode: object.subdivision_set(ensure_modifier=True,level=5,relative=False)'
 - key: A
   mods:
@@ -629,7 +629,7 @@ bindings:
   mods:
   - CTRL
   label: Frame all (quad)
-  icon: frame_all.png
+  icon: frame_all_quad.png
   source: '3D View: view3d.view_all(center=False,use_all_regions=True)'
 - key: KC_LEFT
   mods:
@@ -725,7 +725,7 @@ bindings:
   - SHIFT
   - ALT
   label: Remove from active
-  icon: collection_remove.png
+  icon: collection_remove_active.png
   source: 'Object Mode: collection.objects_remove_active'
 - key: Z
   mods:
@@ -841,7 +841,7 @@ bindings:
   mods:
   - GUI
   label: Subdiv 0
-  icon: subdiv.png
+  icon: subdiv_0.png
   source: 'Object Mode: object.subdivision_set(ensure_modifier=True,level=0,relative=False)'
   only:
   - macos
@@ -849,7 +849,7 @@ bindings:
   mods:
   - GUI
   label: Subdiv 1
-  icon: subdiv.png
+  icon: subdiv_1.png
   source: 'Object Mode: object.subdivision_set(ensure_modifier=True,level=1,relative=False)'
   only:
   - macos
@@ -857,7 +857,7 @@ bindings:
   mods:
   - GUI
   label: Subdiv 2
-  icon: subdiv.png
+  icon: subdiv_2.png
   source: 'Object Mode: object.subdivision_set(ensure_modifier=True,level=2,relative=False)'
   only:
   - macos
@@ -865,7 +865,7 @@ bindings:
   mods:
   - GUI
   label: Subdiv 3
-  icon: subdiv.png
+  icon: subdiv_3.png
   source: 'Object Mode: object.subdivision_set(ensure_modifier=True,level=3,relative=False)'
   only:
   - macos
@@ -873,7 +873,7 @@ bindings:
   mods:
   - GUI
   label: Subdiv 4
-  icon: subdiv.png
+  icon: subdiv_4.png
   source: 'Object Mode: object.subdivision_set(ensure_modifier=True,level=4,relative=False)'
   only:
   - macos
@@ -881,7 +881,7 @@ bindings:
   mods:
   - GUI
   label: Subdiv 5
-  icon: subdiv.png
+  icon: subdiv_5.png
   source: 'Object Mode: object.subdivision_set(ensure_modifier=True,level=5,relative=False)'
   only:
   - macos
@@ -975,7 +975,7 @@ bindings:
   mods:
   - GUI
   label: Frame all (quad)
-  icon: frame_all.png
+  icon: frame_all_quad.png
   source: '3D View: view3d.view_all(center=False,use_all_regions=True)'
   only:
   - macos

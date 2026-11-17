@@ -134,7 +134,7 @@ bindings:
 - key: J
   mods: []
   label: Make links
-  icon: link.png
+  icon: link_sockets.png
   source: 'Node Editor: node.link_make(replace=False)'
 - key: KC_APPLICATION
   mods: []
@@ -203,7 +203,7 @@ bindings:
 - key: P
   mods: []
   label: Separate group
-  icon: separate.png
+  icon: separate_group.png
   source: 'Node Editor: node.group_separate'
 - key: Q
   mods: []
@@ -233,7 +233,7 @@ bindings:
 - key: W
   mods: []
   label: Select tool
-  icon: select_box.png
+  icon: select_tool.png
   source: 'Node Editor: wm.tool_set_by_id(cycle=True,name=builtin.select_box)'
 - key: X
   mods: []
@@ -242,7 +242,7 @@ bindings:
 - key: Z
   mods: []
   label: Render changed
-  icon: render.png
+  icon: render_changed.png
   source: 'Node Editor: node.render_changed'
 - key: A
   mods:
@@ -266,7 +266,7 @@ bindings:
   mods:
   - ALT
   label: Fit backdrop
-  icon: frame_all.png
+  icon: fit_backdrop.png
   source: 'Node Editor: node.backimage_fit'
 - key: P
   mods:
@@ -284,7 +284,7 @@ bindings:
   mods:
   - ALT
   label: Fallback tool pie
-  icon: tools.png
+  icon: tool_pie.png
   source: 'Window: wm.toolbar_fallback_pie'
 - key: A
   mods:
@@ -404,7 +404,7 @@ bindings:
   mods:
   - SHIFT
   label: Prev same type
-  icon: same_prev.png
+  icon: same_type_prev.png
   source: 'Node Editor: node.select_same_type_step(prev=True)'
 - key: KC_RIGHT
   mods:
@@ -416,7 +416,7 @@ bindings:
   mods:
   - SHIFT
   label: Next same type
-  icon: same_next.png
+  icon: same_type_next.png
   source: 'Node Editor: node.select_same_type_step(prev=False)'
 - key: KC_SPACE
   mods:
@@ -511,7 +511,7 @@ bindings:
   mods:
   - CTRL
   label: Find node
-  icon: search.png
+  icon: find_node.png
   source: 'Node Editor: node.find_node'
 - key: F11
   mods:
@@ -552,8 +552,8 @@ bindings:
 - key: J
   mods:
   - CTRL
-  label: Join in frame
-  icon: frame_node.png
+  label: Merge group inputs
+  icon: merge_inputs.png
   source: 'Node Editor: node.join_nodes'
 - key: KC_COMMA
   mods:
@@ -697,7 +697,7 @@ bindings:
   - CTRL
   - SHIFT
   label: Duplicate + inputs
-  icon: duplicate_linked.png
+  icon: duplicate_inputs.png
   source: 'Node Editor: node.duplicate_move_keep_inputs'
 - key: G
   mods:
@@ -822,7 +822,7 @@ bindings:
   mods:
   - GUI
   label: Find node
-  icon: search.png
+  icon: find_node.png
   source: 'Node Editor: node.find_node'
   only:
   - macos
@@ -869,8 +869,8 @@ bindings:
 - key: J
   mods:
   - GUI
-  label: Join in frame
-  icon: frame_node.png
+  label: Merge group inputs
+  icon: merge_inputs.png
   source: 'Node Editor: node.join_nodes'
   only:
   - macos
@@ -1028,7 +1028,7 @@ bindings:
   - SHIFT
   - GUI
   label: Duplicate + inputs
-  icon: duplicate_linked.png
+  icon: duplicate_inputs.png
   source: 'Node Editor: node.duplicate_move_keep_inputs'
   only:
   - macos

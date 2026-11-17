@@ -113,7 +113,7 @@ lower keymap's action that would never run. Everything left out is listed in
 - **Mirrored in `fetch_icons.py`**: `del_forward.png` is Material's
   `backspace` flipped (delete the word after the cursor), as `play_reverse.png`
   is `play` flipped.
-- **Worded variants, drawn in `fetch_icons.py`** (`WORDED`, 135 files): a base
+- **Worded variants, drawn in `fetch_icons.py`** (`WORDED`, 222 files): a base
   glyph from `icons/` (or a letter in Liberation Sans Bold) over a short bold
   word in Liberation Sans Bold 11 px, drawn 1-bit white on transparent at the
   region size (36x32), so they are placed 1:1. They follow the rule "one icon
@@ -121,11 +121,16 @@ lower keymap's action that would never run. Everything left out is listed in
   image only when they do the same thing. A variant (`ALL`, `FINE`, `SEL` for
   "select to", `HARD`, a slot number 1..10, ...) or the same glyph used for
   another target (`STRIP`, `TRK`, `LYR`, `LINE`, ...) gets its own image.
-  Only the sets added from the mode audit use them so far; the older sets on
-  main still share some images between different actions (`tools.png` for
-  Toolbar and Fallback tool pie, `frame_all.png` for Frame all and Frame all
-  (quad), ...), and a later pass covers those. `multicam.png` and
-  `word_prev.png` are now only inputs of these composites.
+  Every Blender set follows it since the 2026-11-17 pass (`PIE` for the
+  fallback tool pie, `QUAD` for Frame all (quad), `ADD` / `EXP` / `+EXP` /
+  `MENU` for the select-mode variants, `0`..`5` for Subdiv, `5`..`9` for the
+  render slots, ...). Keys that do the same thing in two editors have the same
+  label (`Local view` in the 3D View and the Graph Editor, `UV unwrap`, `Move
+  to collection`, `Fill color`). One pair keeps two labels for one action:
+  Grease Pencil's "Point mask" and the mesh paint modes' "Vertex mask" (the
+  selection mask on points / vertices) share `gp_point_mask.png`, with the
+  names Blender uses in each mode. `multicam.png` and `word_prev.png` are now
+  only inputs of these composites.
 - **Borrowed byte-identical** from sibling apps, so the icon library stores them
   once: `brushdec.png` / `brushinc.png` (photoshop, drawn) and `swapcolors.png`
   (gimp, drawn).

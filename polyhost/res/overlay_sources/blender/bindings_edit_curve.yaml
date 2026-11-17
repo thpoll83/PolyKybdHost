@@ -157,7 +157,7 @@ bindings:
 - key: L
   mods: []
   label: Select linked (cursor)
-  icon: select_linked.png
+  icon: linked_pick.png
   source: 'Curve: curve.select_linked_pick(deselect=False)'
 - key: N
   mods: []
@@ -202,7 +202,7 @@ bindings:
 - key: W
   mods: []
   label: Select tool
-  icon: select_box.png
+  icon: select_tool.png
   source: '3D View: wm.tool_set_by_id(cycle=True,name=builtin.select_box)'
 - key: X
   mods: []
@@ -282,7 +282,7 @@ bindings:
   mods:
   - ALT
   label: Fallback tool pie
-  icon: tools.png
+  icon: tool_pie.png
   source: 'Window: wm.toolbar_fallback_pie'
 - key: Z
   mods:
@@ -432,7 +432,7 @@ bindings:
   mods:
   - SHIFT
   label: Deselect linked
-  icon: deselect.png
+  icon: deselect_linked.png
   source: 'Curve: curve.select_linked_pick(deselect=True)'
 - key: N
   mods:
@@ -538,7 +538,7 @@ bindings:
   mods:
   - CTRL
   label: Frame all (quad)
-  icon: frame_all.png
+  icon: frame_all_quad.png
   source: '3D View: view3d.view_all(center=False,use_all_regions=True)'
 - key: KC_LEFT
   mods:
@@ -607,7 +607,7 @@ bindings:
   mods:
   - CTRL
   label: Vertex parent
-  icon: parent.png
+  icon: vertex_parent.png
   source: 'Curve: object.vertex_parent_set'
 - key: Q
   mods:
@@ -810,7 +810,7 @@ bindings:
   mods:
   - GUI
   label: Frame all (quad)
-  icon: frame_all.png
+  icon: frame_all_quad.png
   source: '3D View: view3d.view_all(center=False,use_all_regions=True)'
   only:
   - macos
@@ -879,7 +879,7 @@ bindings:
   mods:
   - GUI
   label: Vertex parent
-  icon: parent.png
+  icon: vertex_parent.png
   source: 'Curve: object.vertex_parent_set'
   only:
   - macos
