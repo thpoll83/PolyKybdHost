@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-17 10:41+0000\n"
+"POT-Creation-Date: 2026-11-17 11:07+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -668,7 +668,7 @@ msgid "Setup script"
 msgstr "Script de configuration"
 
 #: polyhost/gui/cloud_sessions_dialog.py:80
-#: polyhost/gui/forwarder_pairing.py:26 polyhost/gui/shell_editor_pages.py:378
+#: polyhost/gui/forwarder_pairing.py:26 polyhost/gui/shell_editor_pages.py:379
 msgid "Copy"
 msgstr "Copier"
 
@@ -1991,7 +1991,7 @@ msgid "The change failed: {error}"
 msgstr "La modification a échoué : {error}"
 
 #: polyhost/gui/integrations_dialog.py:290
-#: polyhost/gui/shell_editor_pages.py:46 polyhost/gui/shell_editor_pages.py:152
+#: polyhost/gui/shell_editor_pages.py:46 polyhost/gui/shell_editor_pages.py:153
 msgid "Set up"
 msgstr "Configuré"
 
@@ -2005,7 +2005,7 @@ msgid "The file cannot be read: {error}"
 msgstr "Le fichier ne peut pas être lu : {error}"
 
 #: polyhost/gui/integrations_dialog.py:298
-#: polyhost/gui/shell_editor_pages.py:50 polyhost/gui/shell_editor_pages.py:154
+#: polyhost/gui/shell_editor_pages.py:50 polyhost/gui/shell_editor_pages.py:155
 msgid "Not set up"
 msgstr "Non configuré"
 
@@ -2049,13 +2049,13 @@ msgid "Restart the agent for the change to take effect."
 msgstr "Redémarrez l'agent pour que la modification prenne effet."
 
 #: polyhost/gui/integrations_dialog.py:392
-#: polyhost/gui/shell_editor_pages.py:179
+#: polyhost/gui/shell_editor_pages.py:180
 msgid "Terminals"
 msgstr "Terminaux"
 
 #: polyhost/gui/integrations_dialog.py:392
-#: polyhost/gui/shell_editor_pages.py:269
-#: polyhost/gui/shell_editor_pages.py:289
+#: polyhost/gui/shell_editor_pages.py:270
+#: polyhost/gui/shell_editor_pages.py:290
 msgid "Editors"
 msgstr "Éditeurs"
 
@@ -3820,12 +3820,12 @@ msgstr "Remplit un nouveau jeton aléatoire et le copie. Collez-le dans les « O
 msgid "Shows the command without setup. Install adds only the Codex option."
 msgstr "Affiche la commande sans configuration. Installer n'ajoute que l'option Codex."
 
-#: polyhost/gui/shell_editor_pages.py:52 polyhost/gui/shell_editor_pages.py:160
+#: polyhost/gui/shell_editor_pages.py:52 polyhost/gui/shell_editor_pages.py:161
 #, python-brace-format
 msgid "Set up for another copy of the app: {path}"
 msgstr "Configuré pour une autre copie de l'application : {path}"
 
-#: polyhost/gui/shell_editor_pages.py:54 polyhost/gui/shell_editor_pages.py:169
+#: polyhost/gui/shell_editor_pages.py:54 polyhost/gui/shell_editor_pages.py:170
 msgid "Not found"
 msgstr "Introuvable"
 
@@ -3852,78 +3852,78 @@ msgid "Restart the IDE after Install."
 msgstr "Redémarrez l'IDE après « Installer »."
 
 #: polyhost/gui/shell_editor_pages.py:103
-msgid "After Install, restart Blender and enable PolyKybd Context Reporter in Edit > Preferences > Add-ons. Install copies it for each Blender version found."
-msgstr "Après l’installation, redémarrez Blender et activez PolyKybd Context Reporter dans Edit > Preferences > Add-ons. « Installer » le copie pour chaque version de Blender trouvée."
+msgid "After Install, restart Blender (or use Refresh Local in the menu of Edit > Preferences > Add-ons) and enable PolyKybd Context Reporter in Edit > Preferences > Add-ons. Install copies it for each Blender version found."
+msgstr "Après l’installation, redémarrez Blender (ou utilisez Refresh Local dans le menu de Edit > Preferences > Add-ons) et activez PolyKybd Context Reporter dans Edit > Preferences > Add-ons. « Installer » le copie pour chaque version de Blender trouvée."
 
-#: polyhost/gui/shell_editor_pages.py:107
+#: polyhost/gui/shell_editor_pages.py:108
 msgid "After Install, restart Maya and tick Loaded and Auto load for polykybd_mode_reporter.py in Windows > Settings/Preferences > Plug-in Manager. Install copies it for each Maya version found."
 msgstr "Après l’installation, redémarrez Maya et cochez Loaded et Auto load pour polykybd_mode_reporter.py dans Windows > Settings/Preferences > Plug-in Manager. « Installer » le copie pour chaque version de Maya trouvée."
 
-#: polyhost/gui/shell_editor_pages.py:111
+#: polyhost/gui/shell_editor_pages.py:112
 msgid "After Install, restart QGIS and enable PolyKybd Context Reporter in Plugins > Manage and Install Plugins > Installed. Install copies it to each QGIS profile."
 msgstr "Après l’installation, redémarrez QGIS et activez PolyKybd Context Reporter dans Plugins > Manage and Install Plugins > Installed. « Installer » le copie dans chaque profil QGIS."
 
-#: polyhost/gui/shell_editor_pages.py:115
+#: polyhost/gui/shell_editor_pages.py:116
 msgid "After Install, restart Bitwig Studio and add the controller in Settings > Controllers > Add Controller: vendor PolyKybd, model Context Reporter."
 msgstr "Après l’installation, redémarrez Bitwig Studio et ajoutez le contrôleur dans Settings > Controllers > Add Controller : fabricant PolyKybd, modèle Context Reporter."
 
-#: polyhost/gui/shell_editor_pages.py:118
+#: polyhost/gui/shell_editor_pages.py:119
 #, python-brace-format
 msgid "Install runs the program's command line tool. Restart {app} afterwards. For Remote SSH, WSL and container windows, also install {path} in the remote window: Extensions view > ... > Install from VSIX."
 msgstr "« Installer » lance l’outil en ligne de commande du programme. Redémarrez ensuite {app}. Pour les fenêtres Remote SSH, WSL et conteneur, installez aussi {path} dans la fenêtre distante : Extensions view > ... > Install from VSIX."
 
-#: polyhost/gui/shell_editor_pages.py:123
+#: polyhost/gui/shell_editor_pages.py:124
 msgid "This app cannot know which Python environment runs JupyterLab, so it does not install the extension. Run this command with that environment's Python (JupyterLab Desktop: Settings > Server > Python environment), then restart JupyterLab:"
 msgstr "Cette application ne peut pas savoir quel environnement Python exécute JupyterLab, elle n’installe donc pas l’extension. Exécutez cette commande avec le Python de cet environnement (JupyterLab Desktop : Settings > Server > Python environment), puis redémarrez JupyterLab :"
 
-#: polyhost/gui/shell_editor_pages.py:128
+#: polyhost/gui/shell_editor_pages.py:129
 msgid "The plugin is installed per project. Install asks for the project folder (the one with project.godot) if none was chosen. Then tick PolyKybd Reporter in Project > Project Settings > Plugins."
 msgstr "Le plugin s’installe par projet. « Installer » demande le dossier du projet (celui qui contient project.godot) si aucun n’a été choisi. Cochez ensuite PolyKybd Reporter dans Project > Project Settings > Plugins."
 
-#: polyhost/gui/shell_editor_pages.py:132
+#: polyhost/gui/shell_editor_pages.py:133
 msgid "The package is installed per project. Install asks for the project folder (the one with Packages/manifest.json) if none was chosen, and copies the package into its Packages folder. Unity loads it when it next has focus."
 msgstr "Le paquet s’installe par projet. « Installer » demande le dossier du projet (celui qui contient Packages/manifest.json) si aucun n’a été choisi, et copie le paquet dans son dossier Packages. Unity le charge la prochaine fois qu’il a le focus."
 
-#: polyhost/gui/shell_editor_pages.py:136
+#: polyhost/gui/shell_editor_pages.py:137
 msgid "The plugin is installed per vault. Install asks for the vault folder (the one with .obsidian) if none was chosen. Then turn on PolyKybd Mode Reporter in Settings > Community plugins (Restricted mode must be off)."
 msgstr "Le plugin s’installe par coffre. « Installer » demande le dossier du coffre (celui qui contient .obsidian) si aucun n’a été choisi. Activez ensuite PolyKybd Mode Reporter dans Settings > Community plugins (Restricted mode doit être désactivé)."
 
-#: polyhost/gui/shell_editor_pages.py:145
+#: polyhost/gui/shell_editor_pages.py:146
 msgid "Add a vault…"
 msgstr "Ajouter un coffre…"
 
-#: polyhost/gui/shell_editor_pages.py:146
+#: polyhost/gui/shell_editor_pages.py:147
 msgid "Add a project folder…"
 msgstr "Ajouter un dossier de projet…"
 
-#: polyhost/gui/shell_editor_pages.py:156
+#: polyhost/gui/shell_editor_pages.py:157
 msgid "Set up with older plugin files. Install copies the current ones."
 msgstr "Configuré avec d'anciens fichiers de plugin. Installer copie les fichiers actuels."
 
-#: polyhost/gui/shell_editor_pages.py:158
+#: polyhost/gui/shell_editor_pages.py:159
 msgid "Set up, and changed by hand since. This app leaves it alone."
 msgstr "Configuré, puis modifié à la main depuis. Cette application n'y touche pas."
 
-#: polyhost/gui/shell_editor_pages.py:162
+#: polyhost/gui/shell_editor_pages.py:163
 #, python-brace-format
 msgid "The plugin is already loaded from {path}."
 msgstr "Le plugin est déjà chargé depuis {path}."
 
-#: polyhost/gui/shell_editor_pages.py:164
+#: polyhost/gui/shell_editor_pages.py:165
 #: polyhost/services/editor_plugins.py:214
 #, python-brace-format
 msgid "This installation has no plugin files ({path})."
 msgstr "Cette installation ne contient aucun fichier de plugin ({path})."
 
-#: polyhost/gui/shell_editor_pages.py:166
+#: polyhost/gui/shell_editor_pages.py:167
 msgid "No project folder chosen yet."
 msgstr "Aucun dossier de projet choisi pour l’instant."
 
-#: polyhost/gui/shell_editor_pages.py:168
+#: polyhost/gui/shell_editor_pages.py:169
 msgid "Installed with a command, see below."
 msgstr "S’installe avec une commande, voir ci-dessous."
 
-#: polyhost/gui/shell_editor_pages.py:180
+#: polyhost/gui/shell_editor_pages.py:181
 msgid ""
 "The keyboard shows the shortcuts of a program running in a terminal (nano, for example) only when the terminal's window title names the program. bash, zsh and PowerShell do not do this without setup.\n"
 "\n"
@@ -3933,39 +3933,39 @@ msgstr ""
 "\n"
 "Installer ajoute une ligne au fichier de démarrage de chaque shell sélectionné, entre deux commentaires de marquage, après avoir enregistré une copie du fichier à côté. Supprimer efface ces lignes. La modification s'applique aux fenêtres de terminal ouvertes ensuite. Pour modifier l'option Codex, sélectionnez les shells et appuyez de nouveau sur Installer."
 
-#: polyhost/gui/shell_editor_pages.py:194
+#: polyhost/gui/shell_editor_pages.py:195
 msgid "Also show Codex in the title (wraps the codex command)"
 msgstr "Afficher aussi Codex dans le titre (enveloppe la commande codex)"
 
-#: polyhost/gui/shell_editor_pages.py:196
+#: polyhost/gui/shell_editor_pages.py:197
 msgid "Codex replaces the terminal title with the thread and project name, so the keyboard cannot tell that it is running. With this option the codex command starts Codex with a title that begins with \"codex\". A codex alias or function of your own, and a title set in Codex's config.toml, are kept."
 msgstr "Codex remplace le titre du terminal par le nom du fil et du projet, si bien que le clavier ne sait pas qu'il est lancé. Avec cette option, la commande codex lance Codex avec un titre qui commence par « codex ». Un alias ou une fonction codex à vous, ainsi qu'un titre défini dans le config.toml de Codex, sont conservés."
 
-#: polyhost/gui/shell_editor_pages.py:208
+#: polyhost/gui/shell_editor_pages.py:209
 #, python-brace-format
 msgid "The shells could not be checked: {error}"
 msgstr "Les shells n'ont pas pu être vérifiés : {error}"
 
-#: polyhost/gui/shell_editor_pages.py:225
+#: polyhost/gui/shell_editor_pages.py:226
 #, python-brace-format
 msgid "{shell}: shows the command without setup."
 msgstr "{shell} : affiche la commande sans configuration."
 
-#: polyhost/gui/shell_editor_pages.py:237
+#: polyhost/gui/shell_editor_pages.py:238
 msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "Aucun bash, zsh ou PowerShell n'a été trouvé sur cet ordinateur."
 
-#: polyhost/gui/shell_editor_pages.py:254
-#: polyhost/gui/shell_editor_pages.py:447
+#: polyhost/gui/shell_editor_pages.py:255
+#: polyhost/gui/shell_editor_pages.py:448
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "Copie du fichier précédent : {path}"
 
-#: polyhost/gui/shell_editor_pages.py:256
+#: polyhost/gui/shell_editor_pages.py:257
 msgid "Open a new terminal window for the change to take effect."
 msgstr "Ouvrez une nouvelle fenêtre de terminal pour que la modification prenne effet."
 
-#: polyhost/gui/shell_editor_pages.py:270
+#: polyhost/gui/shell_editor_pages.py:271
 msgid ""
 "Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin. GDB shows whether the program runs or waits at the prompt only with it.\n"
 "\n"
@@ -3975,49 +3975,49 @@ msgstr ""
 "\n"
 "Installer copie le plugin de cette installation à l'endroit où le programme le charge. Pour Emacs et GDB, il ajoute aussi au fichier d'initialisation des lignes qui chargent le plugin, entre deux commentaires de marquage, après avoir enregistré une copie du fichier. Quand cette application est mise à jour, elle copie les nouveaux fichiers du plugin à son prochain démarrage. Redémarrez le programme pour que la modification prenne effet."
 
-#: polyhost/gui/shell_editor_pages.py:291
+#: polyhost/gui/shell_editor_pages.py:292
 msgid "FreeCAD shows the keys of the active workbench only with the PolyKybd add-on. Install copies it to FreeCAD's Mod folder."
 msgstr "FreeCAD n'affiche les touches de l'atelier actif qu'avec l'extension PolyKybd. Installer la copie dans le dossier Mod de FreeCAD."
 
-#: polyhost/gui/shell_editor_pages.py:303
+#: polyhost/gui/shell_editor_pages.py:304
 #, python-brace-format
 msgid "The editors could not be checked: {error}"
 msgstr "Les éditeurs n'ont pas pu être vérifiés : {error}"
 
-#: polyhost/gui/shell_editor_pages.py:344
+#: polyhost/gui/shell_editor_pages.py:345
 msgid "No Vim, Neovim or Emacs was found on this computer."
 msgstr "Ni Vim, ni Neovim, ni Emacs n'a été trouvé sur cet ordinateur."
 
-#: polyhost/gui/shell_editor_pages.py:350
+#: polyhost/gui/shell_editor_pages.py:351
 #, python-brace-format
 msgid "This app listens on port {port} and requires a token. The plugins use port 50164 and no token: set g:polykybd_port and g:polykybd_token in Vim, or polykybd-port and polykybd-token in Emacs, to the same values."
 msgstr "Cette application écoute sur le port {port} et exige un jeton. Les plugins utilisent le port 50164 et aucun jeton : définissez g:polykybd_port et g:polykybd_token dans Vim, ou polykybd-port et polykybd-token dans Emacs, sur les mêmes valeurs."
 
-#: polyhost/gui/shell_editor_pages.py:355
+#: polyhost/gui/shell_editor_pages.py:356
 #, python-brace-format
 msgid "This app listens on port {port}. The plugins use port 50164: set g:polykybd_port in Vim, or polykybd-port in Emacs, to the same value."
 msgstr "Cette application écoute sur le port {port}. Les plugins utilisent le port 50164 : définissez g:polykybd_port dans Vim, ou polykybd-port dans Emacs, sur la même valeur."
 
-#: polyhost/gui/shell_editor_pages.py:387
+#: polyhost/gui/shell_editor_pages.py:388
 msgid "Copied"
 msgstr "Copié"
 
-#: polyhost/gui/shell_editor_pages.py:390
+#: polyhost/gui/shell_editor_pages.py:391
 msgid "Choose the Obsidian vault folder"
 msgstr "Choisir le dossier du coffre Obsidian"
 
-#: polyhost/gui/shell_editor_pages.py:391
+#: polyhost/gui/shell_editor_pages.py:392
 #, python-brace-format
 msgid "Choose the {program} project folder"
 msgstr "Choisir le dossier du projet {program}"
 
-#: polyhost/gui/shell_editor_pages.py:401
+#: polyhost/gui/shell_editor_pages.py:402
 #: polyhost/services/editor_plugins.py:222
 #, python-brace-format
 msgid "{path} is not a {editor} project folder: it has no {marker}."
 msgstr "{path} n’est pas un dossier de projet {editor} : {marker} est absent."
 
-#: polyhost/gui/shell_editor_pages.py:449
+#: polyhost/gui/shell_editor_pages.py:450
 msgid "Restart the editor for the change to take effect."
 msgstr "Redémarrez l'éditeur pour que la modification prenne effet."
 

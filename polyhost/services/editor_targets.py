@@ -146,7 +146,7 @@ def maya_targets(home=None, env=None, system=None):
     """``[(version, module folder)]`` for each Maya version, 2022 or newer,
     that has run for this user. The module goes to
     ``<MAYA_APP_DIR>/<version>/modules/polykybd`` with its ``polykybd.mod``
-    beside it: ``<MAYA_APP_DIR>/<version>/modules`` is on the default
+    beside it, which names the folder as ``./polykybd``: ``<MAYA_APP_DIR>/<version>/modules`` is on the default
     ``MAYA_MODULE_PATH`` of every OS (Maya help, "File path variables")."""
     base = maya_app_dir(home, env, system)
     out = []
@@ -468,14 +468,18 @@ class State:
                     with os.fdopen(fd, "w", encoding="utf-8") as fh:
                         json.dump(self.data, fh, indent=1, sort_keys=True)
                     os.replace(tmp, self.path)
-                except BaseException:
+                except (OSError, TypeError, ValueError):
+                    # os.replace or the write failed (OSError), or the data
+                    # was not JSON (TypeError, ValueError): delete the
+                    # temporary file, then let the caller see the error.
                     try:
                         os.unlink(tmp)
-                    except OSError:
+                    except FileNotFoundError:
+                        # os.replace may already have moved it.
                         pass
                     raise
             return True
-        except OSError:
+        except (OSError, TypeError, ValueError):
             return False
 
     def add_project(self, editor, folder):

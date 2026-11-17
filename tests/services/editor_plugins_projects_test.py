@@ -31,6 +31,20 @@ class TestState(unittest.TestCase):
             path.write_text("{not json", encoding="utf-8")
             self.assertEqual(et.State(path).projects("godot"), [])
 
+    def test_a_failed_write_keeps_the_file_and_leaves_no_temporary_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "editor_plugins.json"
+            s = et.State(path)
+            s.add_project("godot", "/p/game")
+            before = path.read_bytes()
+
+            def bad(data):
+                data["cli"]["vscode"] = object()      # not JSON
+            self.assertFalse(s.update(bad))
+            self.assertEqual(path.read_bytes(), before)
+            self.assertEqual(sorted(p.name for p in Path(tmp).iterdir()),
+                             ["editor_plugins.json", "editor_plugins.json.lock"])
+
     def test_in_memory_for_a_test_home(self):
         s = et.State(None)
         s.add_project("unity", "/u")

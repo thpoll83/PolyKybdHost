@@ -68,8 +68,11 @@ and the Snap's), `~/Library/Application Support/Blender/4.2` (macOS),
 `%APPDATA%\Blender Foundation\Blender\4.2` (Windows), or
 `$BLENDER_USER_RESOURCES` when that is set (Blender manual, "Blender's
 Directory Layout"). A copy installed by hand is left alone. Then restart
-Blender and enable *PolyKybd Context Reporter* in *Edit → Preferences →
-Add-ons*. ⚠️ The copy into the extension repository was not tested in Blender:
+Blender, or use *Refresh Local* in the menu of *Edit → Preferences → Add-ons*
+(it scans extensions and legacy add-ons for changes, like a restart), and
+enable *PolyKybd Context Reporter* there. The copied folder has
+`blender_manifest.toml` at its top, which a package in a local repository
+needs. ⚠️ The copy into the extension repository was not tested in Blender:
 if the add-on is not listed after a restart, install the zip from disk as
 below.
 

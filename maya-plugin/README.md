@@ -86,7 +86,12 @@ version, 2022 or newer, that has a folder in the user's Maya folder
 (`MAYA_APP_DIR`: `~/maya` on Linux, `~/Documents/maya` on Windows,
 `~/Library/Preferences/Autodesk/maya` on macOS), the host copies the plug-in to
 `<MAYA_APP_DIR>/<version>/modules/polykybd/plug-ins/` and writes
-`<MAYA_APP_DIR>/<version>/modules/polykybd.mod`, which names that folder.
+`<MAYA_APP_DIR>/<version>/modules/polykybd.mod`, which names that folder
+relative to itself (`+ PolyKybdModeReporter 1.0.0 ./polykybd`). Maya reads a
+module path "either as an absolute path or as a path relative to the location
+of the .mod file being read" (Maya SDK, "Maya module paths, folders and
+versions"), so the line holds no home path, which can have a space. ⚠️ Not yet
+loaded in a real Maya.
 `<MAYA_APP_DIR>/<version>/modules` is on Maya's default `MAYA_MODULE_PATH`
 (Maya help, "File path variables"). A `polykybd.mod` that the host did not
 write (the module install below) is left alone. Then restart Maya and tick

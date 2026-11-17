@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-17 10:41+0000\n"
+"POT-Creation-Date: 2026-11-17 11:07+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: vi\n"
@@ -667,7 +667,7 @@ msgid "Setup script"
 msgstr "Tập lệnh thiết lập"
 
 #: polyhost/gui/cloud_sessions_dialog.py:80
-#: polyhost/gui/forwarder_pairing.py:26 polyhost/gui/shell_editor_pages.py:378
+#: polyhost/gui/forwarder_pairing.py:26 polyhost/gui/shell_editor_pages.py:379
 msgid "Copy"
 msgstr "Sao chép"
 
@@ -1984,7 +1984,7 @@ msgid "The change failed: {error}"
 msgstr "Thay đổi không thành công: {error}"
 
 #: polyhost/gui/integrations_dialog.py:290
-#: polyhost/gui/shell_editor_pages.py:46 polyhost/gui/shell_editor_pages.py:152
+#: polyhost/gui/shell_editor_pages.py:46 polyhost/gui/shell_editor_pages.py:153
 msgid "Set up"
 msgstr "Đã thiết lập"
 
@@ -1998,7 +1998,7 @@ msgid "The file cannot be read: {error}"
 msgstr "Không thể đọc tệp: {error}"
 
 #: polyhost/gui/integrations_dialog.py:298
-#: polyhost/gui/shell_editor_pages.py:50 polyhost/gui/shell_editor_pages.py:154
+#: polyhost/gui/shell_editor_pages.py:50 polyhost/gui/shell_editor_pages.py:155
 msgid "Not set up"
 msgstr "Chưa thiết lập"
 
@@ -2042,13 +2042,13 @@ msgid "Restart the agent for the change to take effect."
 msgstr "Hãy khởi động lại tác tử để thay đổi có hiệu lực."
 
 #: polyhost/gui/integrations_dialog.py:392
-#: polyhost/gui/shell_editor_pages.py:179
+#: polyhost/gui/shell_editor_pages.py:180
 msgid "Terminals"
 msgstr "Terminal"
 
 #: polyhost/gui/integrations_dialog.py:392
-#: polyhost/gui/shell_editor_pages.py:269
-#: polyhost/gui/shell_editor_pages.py:289
+#: polyhost/gui/shell_editor_pages.py:270
+#: polyhost/gui/shell_editor_pages.py:290
 msgid "Editors"
 msgstr "Trình soạn thảo"
 
@@ -3803,12 +3803,12 @@ msgstr "Điền một token ngẫu nhiên mới và sao chép nó. Dán token v�
 msgid "Shows the command without setup. Install adds only the Codex option."
 msgstr "Hiển thị lệnh mà không cần thiết lập. Cài đặt chỉ thêm tùy chọn Codex."
 
-#: polyhost/gui/shell_editor_pages.py:52 polyhost/gui/shell_editor_pages.py:160
+#: polyhost/gui/shell_editor_pages.py:52 polyhost/gui/shell_editor_pages.py:161
 #, python-brace-format
 msgid "Set up for another copy of the app: {path}"
 msgstr "Đã thiết lập cho một bản sao khác của ứng dụng: {path}"
 
-#: polyhost/gui/shell_editor_pages.py:54 polyhost/gui/shell_editor_pages.py:169
+#: polyhost/gui/shell_editor_pages.py:54 polyhost/gui/shell_editor_pages.py:170
 msgid "Not found"
 msgstr "Không tìm thấy"
 
@@ -3835,78 +3835,78 @@ msgid "Restart the IDE after Install."
 msgstr "Hãy khởi động lại IDE sau khi Cài đặt."
 
 #: polyhost/gui/shell_editor_pages.py:103
-msgid "After Install, restart Blender and enable PolyKybd Context Reporter in Edit > Preferences > Add-ons. Install copies it for each Blender version found."
-msgstr "Sau khi cài đặt, hãy khởi động lại Blender và bật PolyKybd Context Reporter trong Edit > Preferences > Add-ons. \"Cài đặt\" sao chép nó cho mỗi phiên bản Blender tìm thấy."
+msgid "After Install, restart Blender (or use Refresh Local in the menu of Edit > Preferences > Add-ons) and enable PolyKybd Context Reporter in Edit > Preferences > Add-ons. Install copies it for each Blender version found."
+msgstr "Sau khi cài đặt, hãy khởi động lại Blender (hoặc dùng Refresh Local trong menu của Edit > Preferences > Add-ons) và bật PolyKybd Context Reporter trong Edit > Preferences > Add-ons. \"Cài đặt\" sao chép nó cho mỗi phiên bản Blender tìm thấy."
 
-#: polyhost/gui/shell_editor_pages.py:107
+#: polyhost/gui/shell_editor_pages.py:108
 msgid "After Install, restart Maya and tick Loaded and Auto load for polykybd_mode_reporter.py in Windows > Settings/Preferences > Plug-in Manager. Install copies it for each Maya version found."
 msgstr "Sau khi cài đặt, hãy khởi động lại Maya và đánh dấu Loaded và Auto load cho polykybd_mode_reporter.py trong Windows > Settings/Preferences > Plug-in Manager. \"Cài đặt\" sao chép nó cho mỗi phiên bản Maya tìm thấy."
 
-#: polyhost/gui/shell_editor_pages.py:111
+#: polyhost/gui/shell_editor_pages.py:112
 msgid "After Install, restart QGIS and enable PolyKybd Context Reporter in Plugins > Manage and Install Plugins > Installed. Install copies it to each QGIS profile."
 msgstr "Sau khi cài đặt, hãy khởi động lại QGIS và bật PolyKybd Context Reporter trong Plugins > Manage and Install Plugins > Installed. \"Cài đặt\" sao chép nó vào mỗi hồ sơ QGIS."
 
-#: polyhost/gui/shell_editor_pages.py:115
+#: polyhost/gui/shell_editor_pages.py:116
 msgid "After Install, restart Bitwig Studio and add the controller in Settings > Controllers > Add Controller: vendor PolyKybd, model Context Reporter."
 msgstr "Sau khi cài đặt, hãy khởi động lại Bitwig Studio và thêm bộ điều khiển trong Settings > Controllers > Add Controller: nhà cung cấp PolyKybd, mẫu Context Reporter."
 
-#: polyhost/gui/shell_editor_pages.py:118
+#: polyhost/gui/shell_editor_pages.py:119
 #, python-brace-format
 msgid "Install runs the program's command line tool. Restart {app} afterwards. For Remote SSH, WSL and container windows, also install {path} in the remote window: Extensions view > ... > Install from VSIX."
 msgstr "\"Cài đặt\" chạy công cụ dòng lệnh của chương trình. Sau đó hãy khởi động lại {app}. Với cửa sổ Remote SSH, WSL và container, hãy cài thêm {path} trong cửa sổ từ xa: Extensions view > ... > Install from VSIX."
 
-#: polyhost/gui/shell_editor_pages.py:123
+#: polyhost/gui/shell_editor_pages.py:124
 msgid "This app cannot know which Python environment runs JupyterLab, so it does not install the extension. Run this command with that environment's Python (JupyterLab Desktop: Settings > Server > Python environment), then restart JupyterLab:"
 msgstr "Ứng dụng này không thể biết môi trường Python nào chạy JupyterLab, nên không cài đặt tiện ích mở rộng. Hãy chạy lệnh này bằng Python của môi trường đó (JupyterLab Desktop: Settings > Server > Python environment), rồi khởi động lại JupyterLab:"
 
-#: polyhost/gui/shell_editor_pages.py:128
+#: polyhost/gui/shell_editor_pages.py:129
 msgid "The plugin is installed per project. Install asks for the project folder (the one with project.godot) if none was chosen. Then tick PolyKybd Reporter in Project > Project Settings > Plugins."
 msgstr "Plugin được cài theo từng dự án. \"Cài đặt\" sẽ hỏi thư mục dự án (thư mục có project.godot) nếu chưa chọn. Sau đó đánh dấu PolyKybd Reporter trong Project > Project Settings > Plugins."
 
-#: polyhost/gui/shell_editor_pages.py:132
+#: polyhost/gui/shell_editor_pages.py:133
 msgid "The package is installed per project. Install asks for the project folder (the one with Packages/manifest.json) if none was chosen, and copies the package into its Packages folder. Unity loads it when it next has focus."
 msgstr "Gói được cài theo từng dự án. \"Cài đặt\" sẽ hỏi thư mục dự án (thư mục có Packages/manifest.json) nếu chưa chọn, và sao chép gói vào thư mục Packages của nó. Unity tải gói vào lần tiếp theo nó có tiêu điểm."
 
-#: polyhost/gui/shell_editor_pages.py:136
+#: polyhost/gui/shell_editor_pages.py:137
 msgid "The plugin is installed per vault. Install asks for the vault folder (the one with .obsidian) if none was chosen. Then turn on PolyKybd Mode Reporter in Settings > Community plugins (Restricted mode must be off)."
 msgstr "Plugin được cài theo từng kho (vault). \"Cài đặt\" sẽ hỏi thư mục kho (thư mục có .obsidian) nếu chưa chọn. Sau đó bật PolyKybd Mode Reporter trong Settings > Community plugins (Restricted mode phải tắt)."
 
-#: polyhost/gui/shell_editor_pages.py:145
+#: polyhost/gui/shell_editor_pages.py:146
 msgid "Add a vault…"
 msgstr "Thêm kho…"
 
-#: polyhost/gui/shell_editor_pages.py:146
+#: polyhost/gui/shell_editor_pages.py:147
 msgid "Add a project folder…"
 msgstr "Thêm thư mục dự án…"
 
-#: polyhost/gui/shell_editor_pages.py:156
+#: polyhost/gui/shell_editor_pages.py:157
 msgid "Set up with older plugin files. Install copies the current ones."
 msgstr "Đã thiết lập với các tệp plugin cũ hơn. Cài đặt sẽ sao chép các tệp hiện tại."
 
-#: polyhost/gui/shell_editor_pages.py:158
+#: polyhost/gui/shell_editor_pages.py:159
 msgid "Set up, and changed by hand since. This app leaves it alone."
 msgstr "Đã thiết lập, nhưng sau đó đã bị thay đổi bằng tay. Ứng dụng này để nguyên."
 
-#: polyhost/gui/shell_editor_pages.py:162
+#: polyhost/gui/shell_editor_pages.py:163
 #, python-brace-format
 msgid "The plugin is already loaded from {path}."
 msgstr "Plugin đã được nạp từ {path}."
 
-#: polyhost/gui/shell_editor_pages.py:164
+#: polyhost/gui/shell_editor_pages.py:165
 #: polyhost/services/editor_plugins.py:214
 #, python-brace-format
 msgid "This installation has no plugin files ({path})."
 msgstr "Bản cài đặt này không có tệp plugin ({path})."
 
-#: polyhost/gui/shell_editor_pages.py:166
+#: polyhost/gui/shell_editor_pages.py:167
 msgid "No project folder chosen yet."
 msgstr "Chưa chọn thư mục dự án."
 
-#: polyhost/gui/shell_editor_pages.py:168
+#: polyhost/gui/shell_editor_pages.py:169
 msgid "Installed with a command, see below."
 msgstr "Cài bằng một lệnh, xem bên dưới."
 
-#: polyhost/gui/shell_editor_pages.py:180
+#: polyhost/gui/shell_editor_pages.py:181
 msgid ""
 "The keyboard shows the shortcuts of a program running in a terminal (nano, for example) only when the terminal's window title names the program. bash, zsh and PowerShell do not do this without setup.\n"
 "\n"
@@ -3916,39 +3916,39 @@ msgstr ""
 "\n"
 "Cài đặt thêm một dòng vào tệp khởi động của mỗi shell được chọn, giữa hai chú thích đánh dấu, và trước đó lưu một bản sao của tệp bên cạnh. Xóa sẽ xóa các dòng đó. Thay đổi áp dụng cho các cửa sổ terminal mở sau đó. Để đổi tùy chọn Codex, hãy chọn các shell rồi nhấn Cài đặt lại."
 
-#: polyhost/gui/shell_editor_pages.py:194
+#: polyhost/gui/shell_editor_pages.py:195
 msgid "Also show Codex in the title (wraps the codex command)"
 msgstr "Hiển thị cả Codex trong tiêu đề (bọc lệnh codex)"
 
-#: polyhost/gui/shell_editor_pages.py:196
+#: polyhost/gui/shell_editor_pages.py:197
 msgid "Codex replaces the terminal title with the thread and project name, so the keyboard cannot tell that it is running. With this option the codex command starts Codex with a title that begins with \"codex\". A codex alias or function of your own, and a title set in Codex's config.toml, are kept."
 msgstr "Codex thay tiêu đề terminal bằng tên luồng và tên dự án, nên bàn phím không biết Codex đang chạy. Với tùy chọn này, lệnh codex khởi động Codex với tiêu đề bắt đầu bằng \"codex\". Alias hoặc hàm codex của riêng bạn, và tiêu đề đặt trong config.toml của Codex, vẫn được giữ nguyên."
 
-#: polyhost/gui/shell_editor_pages.py:208
+#: polyhost/gui/shell_editor_pages.py:209
 #, python-brace-format
 msgid "The shells could not be checked: {error}"
 msgstr "Không thể kiểm tra các shell: {error}"
 
-#: polyhost/gui/shell_editor_pages.py:225
+#: polyhost/gui/shell_editor_pages.py:226
 #, python-brace-format
 msgid "{shell}: shows the command without setup."
 msgstr "{shell}: hiển thị lệnh mà không cần thiết lập."
 
-#: polyhost/gui/shell_editor_pages.py:237
+#: polyhost/gui/shell_editor_pages.py:238
 msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "Không tìm thấy bash, zsh hay PowerShell trên máy tính này."
 
-#: polyhost/gui/shell_editor_pages.py:254
-#: polyhost/gui/shell_editor_pages.py:447
+#: polyhost/gui/shell_editor_pages.py:255
+#: polyhost/gui/shell_editor_pages.py:448
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "Bản sao của tệp trước đó: {path}"
 
-#: polyhost/gui/shell_editor_pages.py:256
+#: polyhost/gui/shell_editor_pages.py:257
 msgid "Open a new terminal window for the change to take effect."
 msgstr "Hãy mở một cửa sổ terminal mới để thay đổi có hiệu lực."
 
-#: polyhost/gui/shell_editor_pages.py:270
+#: polyhost/gui/shell_editor_pages.py:271
 msgid ""
 "Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin. GDB shows whether the program runs or waits at the prompt only with it.\n"
 "\n"
@@ -3958,49 +3958,49 @@ msgstr ""
 "\n"
 "Cài đặt sao chép plugin từ bản cài đặt này vào nơi chương trình nạp nó. Với Emacs và GDB, thao tác này còn thêm các dòng nạp plugin vào tệp init, giữa hai chú thích đánh dấu, và trước đó lưu một bản sao của tệp. Khi ứng dụng này được cập nhật, nó sẽ sao chép các tệp plugin mới ở lần khởi động tiếp theo. Hãy khởi động lại chương trình để thay đổi có hiệu lực."
 
-#: polyhost/gui/shell_editor_pages.py:291
+#: polyhost/gui/shell_editor_pages.py:292
 msgid "FreeCAD shows the keys of the active workbench only with the PolyKybd add-on. Install copies it to FreeCAD's Mod folder."
 msgstr "FreeCAD chỉ hiển thị các phím của workbench đang hoạt động khi có tiện ích bổ sung PolyKybd. Cài đặt sao chép tiện ích này vào thư mục Mod của FreeCAD."
 
-#: polyhost/gui/shell_editor_pages.py:303
+#: polyhost/gui/shell_editor_pages.py:304
 #, python-brace-format
 msgid "The editors could not be checked: {error}"
 msgstr "Không thể kiểm tra các trình soạn thảo: {error}"
 
-#: polyhost/gui/shell_editor_pages.py:344
+#: polyhost/gui/shell_editor_pages.py:345
 msgid "No Vim, Neovim or Emacs was found on this computer."
 msgstr "Không tìm thấy Vim, Neovim hay Emacs trên máy tính này."
 
-#: polyhost/gui/shell_editor_pages.py:350
+#: polyhost/gui/shell_editor_pages.py:351
 #, python-brace-format
 msgid "This app listens on port {port} and requires a token. The plugins use port 50164 and no token: set g:polykybd_port and g:polykybd_token in Vim, or polykybd-port and polykybd-token in Emacs, to the same values."
 msgstr "Ứng dụng này lắng nghe trên cổng {port} và yêu cầu token. Các plugin dùng cổng 50164 và không dùng token: hãy đặt g:polykybd_port và g:polykybd_token trong Vim, hoặc polykybd-port và polykybd-token trong Emacs, thành cùng các giá trị đó."
 
-#: polyhost/gui/shell_editor_pages.py:355
+#: polyhost/gui/shell_editor_pages.py:356
 #, python-brace-format
 msgid "This app listens on port {port}. The plugins use port 50164: set g:polykybd_port in Vim, or polykybd-port in Emacs, to the same value."
 msgstr "Ứng dụng này lắng nghe trên cổng {port}. Các plugin dùng cổng 50164: hãy đặt g:polykybd_port trong Vim, hoặc polykybd-port trong Emacs, thành cùng giá trị đó."
 
-#: polyhost/gui/shell_editor_pages.py:387
+#: polyhost/gui/shell_editor_pages.py:388
 msgid "Copied"
 msgstr "Đã sao chép"
 
-#: polyhost/gui/shell_editor_pages.py:390
+#: polyhost/gui/shell_editor_pages.py:391
 msgid "Choose the Obsidian vault folder"
 msgstr "Chọn thư mục kho Obsidian"
 
-#: polyhost/gui/shell_editor_pages.py:391
+#: polyhost/gui/shell_editor_pages.py:392
 #, python-brace-format
 msgid "Choose the {program} project folder"
 msgstr "Chọn thư mục dự án {program}"
 
-#: polyhost/gui/shell_editor_pages.py:401
+#: polyhost/gui/shell_editor_pages.py:402
 #: polyhost/services/editor_plugins.py:222
 #, python-brace-format
 msgid "{path} is not a {editor} project folder: it has no {marker}."
 msgstr "{path} không phải là thư mục dự án {editor}: không có {marker}."
 
-#: polyhost/gui/shell_editor_pages.py:449
+#: polyhost/gui/shell_editor_pages.py:450
 msgid "Restart the editor for the change to take effect."
 msgstr "Hãy khởi động lại trình soạn thảo để thay đổi có hiệu lực."
 

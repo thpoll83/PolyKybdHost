@@ -1252,8 +1252,8 @@ def _tree_files(folder):
 def new_shipped_files(editor, source=None, folder=None):
     """``{relative path: bytes}`` to copy for a COPY_EDITORS or
     PROJECT_EDITORS editor, or None when this installation has no plugin
-    files. For MAYA the module file names ``folder``, the folder it is
-    copied to."""
+    files. ``folder`` (the folder it is copied to) is not used: every copy
+    is the same."""
     source = Path(source or _NEW_SOURCES[editor])
     if editor == BITWIG:
         return {et.BITWIG_FILE: source.read_bytes()} if source.is_file() else None
@@ -1261,10 +1261,14 @@ def new_shipped_files(editor, source=None, folder=None):
         plugin, mod = source / _MAYA_PLUGIN, source / "polykybd.mod"
         if not (plugin.is_file() and mod.is_file()):
             return None
-        # The module file names an absolute folder: a relative one is
-        # documented, but was reported not to work in Maya 2018.
-        where = Path(folder).as_posix() if folder is not None else "PATH_TO_THIS_FOLDER"
-        text = mod.read_text(encoding="utf-8").replace("PATH_TO_THIS_FOLDER", where)
+        # The module path is relative to the .mod file, which sits beside the
+        # module folder ("The location can be specified either as an absolute
+        # path or as a path relative to the location of the .mod file being
+        # read", Maya SDK, "Maya module paths, folders and versions"). So the
+        # line never holds the user's home path, which can have a space, and
+        # Maya documents no quoting for one.
+        text = mod.read_text(encoding="utf-8").replace("PATH_TO_THIS_FOLDER",
+                                                       "./" + et.MAYA_MODULE_DIR)
         return {_MAYA_PLUGIN: plugin.read_bytes(), MAYA_MOD_FILE: text.encode("utf-8")}
     if not all((source / name).is_file() for name in _REQUIRED[editor]):
         return None
@@ -1402,7 +1406,9 @@ def _remove_target(editor, folder, state):
                 try:
                     (folder / (rel + ".uid")).unlink()
                 except FileNotFoundError:
-                    pass
+                    # Godot before 4.4, or a script it has not opened yet,
+                    # has no .uid file: nothing to delete.
+                    continue
         if editor != BITWIG:
             for cache in sorted(folder.rglob("__pycache__")):
                 shutil.rmtree(cache, ignore_errors=True)

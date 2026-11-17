@@ -100,7 +100,8 @@ def editor_hint(st):
     if e == editor_plugins.JETBRAINS:
         return _("Restart the IDE after Install.")
     if e == editor_plugins.BLENDER:
-        return _("After Install, restart Blender and enable PolyKybd Context Reporter in "
+        return _("After Install, restart Blender (or use Refresh Local in the menu of "
+                 "Edit > Preferences > Add-ons) and enable PolyKybd Context Reporter in "
                  "Edit > Preferences > Add-ons. Install copies it for each Blender version "
                  "found.")
     if e == editor_plugins.MAYA:

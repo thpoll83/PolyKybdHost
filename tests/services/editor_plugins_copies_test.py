@@ -140,7 +140,8 @@ class TestBlender(Fixture):
         ep.install([ep.BLENDER], **self.kw(system="Windows"))
         self.assertTrue((base / "4.2/extensions/user_default/polykybd_context_reporter/core.py").is_file())
         base = self.make_versions("4.4", base=self.home / "Library/Application Support/Blender")
-        self.assertEqual(self.status(ep.BLENDER, system="Darwin").state, ep.STATE_NOT_INSTALLED)
+        st = self.status(ep.BLENDER, system="Darwin")
+        self.assertEqual((st.state, st.target, st.detail), (ep.STATE_NOT_INSTALLED, base, "4.4"))
 
     def test_user_resources_variable(self):
         custom = self.home / "portable"
@@ -231,8 +232,9 @@ class TestMaya(Fixture):
         self.assertEqual(len(results), 2, results)
         folder = app / "2026" / "modules" / "polykybd"
         self.assertEqual((folder / "plug-ins/polykybd_mode_reporter.py").read_text(), "plugin v1")
+        # Relative to the .mod file: no home path (it can have a space).
         self.assertEqual((folder.parent / "polykybd.mod").read_text(),
-                         f"+ PolyKybdModeReporter 1.0.0 {folder.as_posix()}\n")
+                         "+ PolyKybdModeReporter 1.0.0 ./polykybd\n")
         self.assertFalse((folder / "README.md").exists())
         self.assertFalse((app / "2020" / "modules").exists())
         self.assertEqual(self.status(ep.MAYA).state, ep.STATE_INSTALLED)
