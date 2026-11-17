@@ -115,6 +115,20 @@ translations (`translate-ui-catalogs`).
   found X labelled "select all"; the game binds X to Scatter and Q to select
   all. Fix the spec and regenerate the overlay, then check that the stock
   files move nothing.
+- ⚠️ **Keep a command whose only keys have no keycap cell, as `[]`.** A parser
+  that skips the whole line when the key has no cell (a mouse button, the
+  keypad, a gamepad button) leaves the command out. With `BINDINGS_COMPLETE =
+  False` that means "unknown", so the icon stays on a key the player no longer
+  uses: an Apex tactical moved to MOUSE4 kept its Q icon (CodeRabbit on #916).
+  Record the command, and append a key only when it has a token
+  (`key_files.parse_source_binds`).
+- ⚠️ **Parse a quoted field with one `[^"]*` run, never an alternation whose
+  branches overlap.** `"((?:\\\\|[^"])*)"` lets a backslash match both
+  branches, so a line of backslashes with no closing quote backtracks
+  exponentially: 21 s for 20 escaped backslashes. CodeQL flagged it as
+  `py/redos` (high) and failed the check on #916 (HOST-7 in
+  `polykybd-ctnd/docs/SECURITY_AUDIT.md`). Unescape after the match, and keep a
+  test with a hostile line that hangs on the old pattern.
 - **Never draw on ESC**: `remap` drops it as a target; keep it that way.
 - **Point `find()` at the developer's machine in tests only through a mock**: a
   developer's own settings file would otherwise move icons in unrelated tests
