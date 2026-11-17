@@ -551,32 +551,33 @@ class CardTest(unittest.TestCase):
         self.assertEqual(len({i.tobytes() for i in icons}), len(states))   # all differ
         icon = icons[1]
         right = 72 - ICON - ICON_CLEAR
-        # Only line 1 meets the icon and its margin.
-        self.assertEqual(_spans(None, icon), [(1, right), (1, 71), (1, 71)])
-        # "comments" (66 px) fits a full line, not line 1 beside the icon; on
+        # Only line 3 (rows 26..39) meets the icon (rows 28..39) and its margin.
+        self.assertEqual(_spans(None, icon), [(1, 71), (1, 71), (1, right)])
+        # "comments" (66 px) fits a full line, not line 3 beside the icon; on
         # every page.
-        self.assertEqual(paginate("comments", icon=icon), [["", "comments"]])
-        self.assertEqual(paginate("comments"), [["comments"]])
-        self.assertEqual(paginate("Windows Windows Windows Windows comments",
-                                  icon=icon)[1][0], "")
-        # The vendor mark shrinks until the first word fits between it and the
-        # icon: "firmware" (54 px) fits beside 16 px alone, with the icon at no size.
+        self.assertEqual(paginate("Windows Windows comments", icon=icon),
+                         [["Windows", "Windows", ""], ["comments"]])
+        self.assertEqual(paginate("Windows Windows comments"),
+                         [["Windows", "Windows", "comments"]])
+        self.assertEqual(paginate("Windows Windows Windows Windows Windows comments",
+                                  icon=icon)[1][2], "")
+        # The icon leaves line 1 alone: the vendor mark keeps its size.
 
         class Square:
             def get(self, vid, box=24):
                 return np.ones((box, box), dtype=bool)
         self.assertEqual(card_layout("x", "firmware", Square()).mark.shape, (16, 16))
         self.assertEqual(card_layout("x", "firmware", Square(), AgentState.DONE).mark.shape,
-                         (12, 12))
-        # Drawn top right on every page; nothing else in its margin.
+                         (16, 16))
+        # Drawn bottom right on every page; nothing else in its margin.
         layout = card_layout("x", "Fix the HID reconnect after resume on Windows", None,
                              AgentState.WAITING)
         self.assertGreater(layout.page_count, 1)
         for page in range(layout.page_count):
             img = render_page(layout, page)
-            self.assertTrue((img[:ICON, 72 - ICON:] == icon).all(), page)
-            self.assertFalse(img[:ICON + ICON_CLEAR, right:72 - ICON].any(), page)
-            self.assertFalse(img[ICON:ICON + ICON_CLEAR, 72 - ICON:].any(), page)
+            self.assertTrue((img[40 - ICON:, 72 - ICON:] == icon).all(), page)
+            self.assertFalse(img[40 - ICON - ICON_CLEAR:, right:72 - ICON].any(), page)
+            self.assertFalse(img[40 - ICON - ICON_CLEAR:40 - ICON, 72 - ICON:].any(), page)
 
     def test_no_logo_yet_shows_the_short_name(self):
         layout = card_layout("claude-code", "polykybd-docs", None)
@@ -898,21 +899,22 @@ class ControllerTest(unittest.TestCase):
         self.r.report("codex", "a", "working",
                       headline="Fix the HID reconnect after resume on Windows")
         self.r.report("codex", "b", "working", headline="short")
+        long_pages = self.c._layout(self.r.agents()[0]).page_count
+        self.assertGreater(long_pages, 1)
         seen = []
-        for _ in range(4):
+        for _ in range(2 * long_pages):
             self.c.sync(self.kb)
             seen.append(tuple(self.kb.keys[-1][2][:2]))
             now[0] += TEXT_PAGE_S
         long_slots = [a for a, _ in seen]
-        self.assertEqual(long_slots[0], long_slots[2])          # two pages, alternating
-        self.assertNotEqual(long_slots[0], long_slots[1])
+        self.assertEqual(len(set(long_slots)), long_pages)       # each page its slot
+        self.assertEqual(long_slots[:long_pages], long_slots[long_pages:])   # in turn
         self.assertEqual(len({b for _, b in seen}), 1)          # one page: it stays
-        self.assertEqual(len(self.kb.cards), 3 + 2)             # 3 agent pages + '-', '+'
-        uploads = len(self.kb.cards)
+        # Each page uploaded once, plus the short card, '-' and '+'.
+        self.assertEqual(len(self.kb.cards), long_pages + 1 + 2)
         self.kb.cards.clear()
         self.c.sync(self.kb)
         self.assertEqual(self.kb.cards, {})                     # pages are reused
-        self.assertEqual(uploads, 5)
 
     def test_a_state_change_uploads_the_page_shown(self):
         self.r.report("codex", "a", "working", headline="Fix the build")

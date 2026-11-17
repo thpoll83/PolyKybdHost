@@ -8,10 +8,10 @@
 
 The vendor mark is drawn whole at up to 24 px, top left, with the text 1 px to
 its right; lines below the mark use the full width. Three lines of 14 px text
-(card experiments, 2026-11-17). The state icon (12 px) is in the top right corner
-on every page, with a cleared margin of ICON_CLEAR px; only line 1 meets it, and
-ends before that margin. When the first word does not fit between the vendor mark and
-the state icon, a square mark is drawn smaller (24, 20, 16 or 12 px) until it does.
+(card experiments, 2026-11-17). The state icon (12 px) is in the bottom right
+corner on every page, with a cleared margin of ICON_CLEAR px; only line 3 meets it,
+and ends before that margin. When the first word does not fit beside the vendor
+mark, a square mark is drawn smaller (24, 20, 16 or 12 px) until it does.
 
 A title that does not fit one card is split into pages of three lines, without
 the mark after the first; the controller switches the key between them
@@ -42,8 +42,8 @@ FONT_SIZE = 14
 LINE_PITCH = 13        # three lines in 40 rows; a descender may touch the cap below
 LINES = 3
 TEXT_W = PANEL_W - 2   # a full-width line: 1 px margin each side
-ICON = 12              # the state icon, top right: it touches line 1 only
-ICON_CLEAR = 1         # px kept free left of and below the state icon
+ICON = 12              # the state icon, bottom right: it touches line 3 only
+ICON_CLEAR = 1         # px kept free left of and above the state icon
 WORDMARK_RATIO = 1.5   # wider than this times its height: a wordmark, never scaled
 MAX_PAGES = 4          # a longer title ends with '.' on the last page
 _FONTS = {}
@@ -139,15 +139,15 @@ def flow(text: str, widths, size: int = FONT_SIZE, full: int = TEXT_W) -> list[s
 
 def _spans(mark, icon) -> list[tuple[int, int]]:
     """(left, right) x of each text line (right exclusive): a line whose rows meet
-    the vendor mark starts MARK_GAP right of it, a line that meets the state icon
-    or its cleared margin ends before them."""
+    the vendor mark (top left) starts MARK_GAP right of it, a line that meets the
+    state icon (bottom right) or its cleared margin ends before them."""
     spans = []
     for k in range(LINES):
         top = k * LINE_PITCH
         left, right = 1, PANEL_W - 1
         if mark is not None and top < mark.shape[0]:
             left = mark.shape[1] + MARK_GAP
-        if icon is not None and top < icon.shape[0] + ICON_CLEAR:
+        if icon is not None and top + LINE_PITCH > PANEL_H - icon.shape[0] - ICON_CLEAR:
             right = PANEL_W - icon.shape[1] - ICON_CLEAR
         spans.append((left, right))
     return spans
@@ -332,8 +332,7 @@ class CardLayout:
 def card_layout(vendor_id: str, headline: str, marks: VendorMarks | None = None,
                 state=None) -> CardLayout:
     """The mark size and pages for one agent. The largest mark in MARK_SIZES that
-    leaves room for the title's first word between it and the state icon; the
-    smallest when none does."""
+    leaves room beside it for the title's first word; the smallest when none does."""
     tokens = _tokens(headline)
     icon = state_icon(state)
     first = tokens[0][0] if tokens else ""
@@ -380,7 +379,8 @@ def render_page(layout: CardLayout, page: int = 0):
     if mark is not None:
         _paste(canvas, np.asarray(mark, dtype=bool), 0, 0)
     if layout.icon is not None:
-        _paste(canvas, layout.icon, PANEL_W - layout.icon.shape[1], 0)
+        _paste(canvas, layout.icon, PANEL_W - layout.icon.shape[1],
+               PANEL_H - layout.icon.shape[0])
     return canvas
 
 
