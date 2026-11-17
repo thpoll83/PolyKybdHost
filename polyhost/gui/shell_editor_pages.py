@@ -420,12 +420,13 @@ class EditorsPage(RowsPage):
     def before_apply(self, install):
         projects, self._pending_projects = self._pending_projects, {}
         if install:
-            # A ticked per-project row with no project yet: ask for one now,
-            # on the GUI thread.
+            # A per-project row of this Install with no project yet: ask for
+            # one now, on the GUI thread. Only the rows this Install acts on
+            # (a row's own button acts on that row alone).
             for st in self._statuses:
                 if (st.editor in editor_plugins.PROJECT_EDITORS
                         and st.state == editor_plugins.STATE_NO_PROJECT
-                        and st.editor not in projects and st.editor in self.selected()):
+                        and st.editor not in projects and st.editor in self.apply_keys):
                     folder = self.ask_project(st.editor)
                     if folder is not None:
                         projects[st.editor] = [folder]

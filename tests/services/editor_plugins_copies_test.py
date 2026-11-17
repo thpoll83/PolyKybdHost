@@ -196,6 +196,25 @@ class TestBlender(Fixture):
                          .read_text(), "core v2")
         self.assertFalse((base / "4.5" / "extensions").exists())
 
+    def test_a_missing_file_does_not_hide_a_changed_one(self):
+        base = self.make_versions("4.2")
+        ep.install([ep.BLENDER], **self.kw())
+        copy = base / "4.2/extensions/user_default/polykybd_context_reporter"
+        # Stamp order is sorted: __init__.py, blender_manifest.toml, core.py.
+        (copy / "__init__.py").unlink()
+        (copy / "core.py").write_text("changed by hand")
+        self.assertEqual(self.status(ep.BLENDER).state, ep.STATE_MODIFIED)
+        (self.blender_src / "core.py").write_text("core v2")
+        self.assertEqual(ep.refresh_installed(**self.kw()), [])
+        self.assertEqual((copy / "core.py").read_text(), "changed by hand")
+
+    def test_the_stamp_is_written_through_a_rename(self):
+        base = self.make_versions("4.2")
+        ep.install([ep.BLENDER], **self.kw())
+        copy = base / "4.2/extensions/user_default/polykybd_context_reporter"
+        self.assertEqual(sorted(p.name for p in copy.iterdir()),
+                         [".polykybd-host.json", "__init__.py", "blender_manifest.toml", "core.py"])
+
     def test_remove_deletes_the_bytecode_too(self):
         base = self.make_versions("4.2")
         ep.install([ep.BLENDER], **self.kw())

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-17 11:07+0000\n"
+"POT-Creation-Date: 2026-11-17 11:45+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -553,7 +553,7 @@ msgid "<b>Failed:</b> {reason}"
 msgstr "<b>Error:</b> {reason}"
 
 #: polyhost/gui/browser_extension_page.py:37
-#: polyhost/gui/integrations_dialog.py:393
+#: polyhost/gui/integrations_dialog.py:396
 msgid "Browser"
 msgstr "Navegador"
 
@@ -1966,56 +1966,56 @@ msgstr "Idioma"
 msgid "The new language is used after a restart. Restart now?"
 msgstr "El nuevo idioma se usará tras reiniciar. ¿Reiniciar ahora?"
 
-#: polyhost/gui/integrations_dialog.py:96
+#: polyhost/gui/integrations_dialog.py:97
 msgid "Checking…"
 msgstr "Comprobando…"
 
-#: polyhost/gui/integrations_dialog.py:110
+#: polyhost/gui/integrations_dialog.py:111
 msgid "Install"
 msgstr "Instalar"
 
-#: polyhost/gui/integrations_dialog.py:111
+#: polyhost/gui/integrations_dialog.py:112
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:149
 msgid "Remove"
 msgstr "Quitar"
 
-#: polyhost/gui/integrations_dialog.py:132
+#: polyhost/gui/integrations_dialog.py:133
 #, python-brace-format
 msgid "The check failed: {error}"
 msgstr "La comprobación falló: {error}"
 
-#: polyhost/gui/integrations_dialog.py:259
-#: polyhost/gui/integrations_dialog.py:377
+#: polyhost/gui/integrations_dialog.py:262
+#: polyhost/gui/integrations_dialog.py:380
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "El cambio falló: {error}"
 
-#: polyhost/gui/integrations_dialog.py:290
+#: polyhost/gui/integrations_dialog.py:293
 #: polyhost/gui/shell_editor_pages.py:46 polyhost/gui/shell_editor_pages.py:153
 msgid "Set up"
 msgstr "Configurado"
 
-#: polyhost/gui/integrations_dialog.py:292
+#: polyhost/gui/integrations_dialog.py:295
 msgid "Set up for another copy of the app, or an older version. Install updates it."
 msgstr "Configurado para otra copia de la aplicación o para una versión anterior. «Instalar» lo actualiza."
 
-#: polyhost/gui/integrations_dialog.py:297
+#: polyhost/gui/integrations_dialog.py:300
 #, python-brace-format
 msgid "The file cannot be read: {error}"
 msgstr "No se puede leer el archivo: {error}"
 
-#: polyhost/gui/integrations_dialog.py:298
+#: polyhost/gui/integrations_dialog.py:301
 #: polyhost/gui/shell_editor_pages.py:50 polyhost/gui/shell_editor_pages.py:155
 msgid "Not set up"
 msgstr "Sin configurar"
 
-#: polyhost/gui/integrations_dialog.py:317
-#: polyhost/gui/integrations_dialog.py:351
-#: polyhost/gui/integrations_dialog.py:392 polyhost/gui/settings_dialog.py:102
+#: polyhost/gui/integrations_dialog.py:320
+#: polyhost/gui/integrations_dialog.py:354
+#: polyhost/gui/integrations_dialog.py:395 polyhost/gui/settings_dialog.py:102
 msgid "AI agents"
 msgstr "Agentes de IA"
 
-#: polyhost/gui/integrations_dialog.py:318
+#: polyhost/gui/integrations_dialog.py:321
 msgid ""
 "An agent's key shows whether the agent works, waits for you or is finished only when the agent runs the PolyKybd hook.\n"
 "\n"
@@ -2025,45 +2025,45 @@ msgstr ""
 "\n"
 "«Instalar» añade los hooks al archivo de configuración del agente. Sus propios hooks y ajustes se conservan y se guarda una copia de cada archivo como <file>.polykybd.bak. «Quitar» retira solo los hooks de PolyKybd. Reinicie el agente para que el cambio surta efecto."
 
-#: polyhost/gui/integrations_dialog.py:365
+#: polyhost/gui/integrations_dialog.py:368
 msgid "Nothing to change."
 msgstr "No hay nada que cambiar."
 
-#: polyhost/gui/integrations_dialog.py:367
+#: polyhost/gui/integrations_dialog.py:370
 #, python-brace-format
 msgid "Write the PolyKybd hooks into {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
 msgstr "¿Escribir los hooks de PolyKybd en {files}? Sus propios hooks se conservan y se guarda una copia de cada archivo como <file>.polykybd.bak."
 
-#: polyhost/gui/integrations_dialog.py:370
+#: polyhost/gui/integrations_dialog.py:373
 #, python-brace-format
 msgid "Remove the PolyKybd hooks from {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
 msgstr "¿Quitar los hooks de PolyKybd de {files}? Sus propios hooks se conservan y se guarda una copia de cada archivo como <file>.polykybd.bak."
 
-#: polyhost/gui/integrations_dialog.py:380
+#: polyhost/gui/integrations_dialog.py:383
 #, python-brace-format
 msgid "Changed: {path}"
 msgstr "Cambiado: {path}"
 
-#: polyhost/gui/integrations_dialog.py:385
+#: polyhost/gui/integrations_dialog.py:388
 msgid "Restart the agent for the change to take effect."
 msgstr "Reinicie el agente para que el cambio surta efecto."
 
-#: polyhost/gui/integrations_dialog.py:392
+#: polyhost/gui/integrations_dialog.py:395
 #: polyhost/gui/shell_editor_pages.py:180
 msgid "Terminals"
 msgstr "Terminales"
 
-#: polyhost/gui/integrations_dialog.py:392
+#: polyhost/gui/integrations_dialog.py:395
 #: polyhost/gui/shell_editor_pages.py:270
 #: polyhost/gui/shell_editor_pages.py:290
 msgid "Editors"
 msgstr "Editores"
 
-#: polyhost/gui/integrations_dialog.py:404
+#: polyhost/gui/integrations_dialog.py:407
 msgid "Integrations"
 msgstr "Integraciones"
 
-#: polyhost/gui/integrations_dialog.py:459
+#: polyhost/gui/integrations_dialog.py:462
 msgid "Changes apply to the program after it restarts."
 msgstr "Los cambios se aplican al programa después de que se reinicie."
 
@@ -3956,7 +3956,7 @@ msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "No se encontró bash, zsh ni PowerShell en este equipo."
 
 #: polyhost/gui/shell_editor_pages.py:255
-#: polyhost/gui/shell_editor_pages.py:448
+#: polyhost/gui/shell_editor_pages.py:449
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "Copia del archivo anterior: {path}"
@@ -4017,7 +4017,7 @@ msgstr "Elegir la carpeta del proyecto de {program}"
 msgid "{path} is not a {editor} project folder: it has no {marker}."
 msgstr "{path} no es una carpeta de proyecto de {editor}: no tiene {marker}."
 
-#: polyhost/gui/shell_editor_pages.py:450
+#: polyhost/gui/shell_editor_pages.py:451
 msgid "Restart the editor for the change to take effect."
 msgstr "Reinicie el editor para que el cambio surta efecto."
 
@@ -5319,6 +5319,11 @@ msgid "{editor} has the extension {extension} from another source. It is left al
 msgstr "{editor} tiene la extensión {extension} de otra fuente. Se deja como está."
 
 #: polyhost/services/editor_plugins.py:228
+#, python-brace-format
+msgid "The change was made, but {path} could not be written, so this app does not remember it."
+msgstr "El cambio se hizo, pero no se pudo escribir {path}, así que esta aplicación no lo recuerda."
+
+#: polyhost/services/editor_plugins.py:230
 #, python-brace-format
 msgid "Run this command in the Python environment that runs JupyterLab: {command}"
 msgstr "Ejecute este comando en el entorno de Python que ejecuta JupyterLab: {command}"

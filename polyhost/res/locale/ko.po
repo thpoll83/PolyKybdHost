@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-17 11:07+0000\n"
+"POT-Creation-Date: 2026-11-17 11:45+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -552,7 +552,7 @@ msgid "<b>Failed:</b> {reason}"
 msgstr "<b>실패:</b> {reason}"
 
 #: polyhost/gui/browser_extension_page.py:37
-#: polyhost/gui/integrations_dialog.py:393
+#: polyhost/gui/integrations_dialog.py:396
 msgid "Browser"
 msgstr "브라우저"
 
@@ -1959,56 +1959,56 @@ msgstr "언어"
 msgid "The new language is used after a restart. Restart now?"
 msgstr "새 언어는 다시 시작한 후에 사용됩니다. 지금 다시 시작하시겠습니까?"
 
-#: polyhost/gui/integrations_dialog.py:96
+#: polyhost/gui/integrations_dialog.py:97
 msgid "Checking…"
 msgstr "확인하는 중…"
 
-#: polyhost/gui/integrations_dialog.py:110
+#: polyhost/gui/integrations_dialog.py:111
 msgid "Install"
 msgstr "설치"
 
-#: polyhost/gui/integrations_dialog.py:111
+#: polyhost/gui/integrations_dialog.py:112
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:149
 msgid "Remove"
 msgstr "제거"
 
-#: polyhost/gui/integrations_dialog.py:132
+#: polyhost/gui/integrations_dialog.py:133
 #, python-brace-format
 msgid "The check failed: {error}"
 msgstr "확인하지 못했습니다: {error}"
 
-#: polyhost/gui/integrations_dialog.py:259
-#: polyhost/gui/integrations_dialog.py:377
+#: polyhost/gui/integrations_dialog.py:262
+#: polyhost/gui/integrations_dialog.py:380
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "변경하지 못했습니다: {error}"
 
-#: polyhost/gui/integrations_dialog.py:290
+#: polyhost/gui/integrations_dialog.py:293
 #: polyhost/gui/shell_editor_pages.py:46 polyhost/gui/shell_editor_pages.py:153
 msgid "Set up"
 msgstr "설정됨"
 
-#: polyhost/gui/integrations_dialog.py:292
+#: polyhost/gui/integrations_dialog.py:295
 msgid "Set up for another copy of the app, or an older version. Install updates it."
 msgstr "앱의 다른 사본 또는 이전 버전에 대해 설정되어 있습니다. 설치하면 업데이트됩니다."
 
-#: polyhost/gui/integrations_dialog.py:297
+#: polyhost/gui/integrations_dialog.py:300
 #, python-brace-format
 msgid "The file cannot be read: {error}"
 msgstr "파일을 읽을 수 없습니다: {error}"
 
-#: polyhost/gui/integrations_dialog.py:298
+#: polyhost/gui/integrations_dialog.py:301
 #: polyhost/gui/shell_editor_pages.py:50 polyhost/gui/shell_editor_pages.py:155
 msgid "Not set up"
 msgstr "설정 안 됨"
 
-#: polyhost/gui/integrations_dialog.py:317
-#: polyhost/gui/integrations_dialog.py:351
-#: polyhost/gui/integrations_dialog.py:392 polyhost/gui/settings_dialog.py:102
+#: polyhost/gui/integrations_dialog.py:320
+#: polyhost/gui/integrations_dialog.py:354
+#: polyhost/gui/integrations_dialog.py:395 polyhost/gui/settings_dialog.py:102
 msgid "AI agents"
 msgstr "AI 에이전트"
 
-#: polyhost/gui/integrations_dialog.py:318
+#: polyhost/gui/integrations_dialog.py:321
 msgid ""
 "An agent's key shows whether the agent works, waits for you or is finished only when the agent runs the PolyKybd hook.\n"
 "\n"
@@ -2018,45 +2018,45 @@ msgstr ""
 "\n"
 "설치는 에이전트의 설정 파일에 훅을 추가합니다. 사용자의 훅과 설정은 유지되며, 각 파일의 사본이 <file>.polykybd.bak으로 저장됩니다. 제거는 PolyKybd 훅만 제거합니다. 변경 사항을 적용하려면 에이전트를 다시 시작하십시오."
 
-#: polyhost/gui/integrations_dialog.py:365
+#: polyhost/gui/integrations_dialog.py:368
 msgid "Nothing to change."
 msgstr "변경할 것이 없습니다."
 
-#: polyhost/gui/integrations_dialog.py:367
+#: polyhost/gui/integrations_dialog.py:370
 #, python-brace-format
 msgid "Write the PolyKybd hooks into {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
 msgstr "PolyKybd 훅을 {files}에 작성하시겠습니까? 사용자의 훅은 유지되며, 각 파일의 사본이 <file>.polykybd.bak으로 저장됩니다."
 
-#: polyhost/gui/integrations_dialog.py:370
+#: polyhost/gui/integrations_dialog.py:373
 #, python-brace-format
 msgid "Remove the PolyKybd hooks from {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
 msgstr "{files}에서 PolyKybd 훅을 제거하시겠습니까? 사용자의 훅은 유지되며, 각 파일의 사본이 <file>.polykybd.bak으로 저장됩니다."
 
-#: polyhost/gui/integrations_dialog.py:380
+#: polyhost/gui/integrations_dialog.py:383
 #, python-brace-format
 msgid "Changed: {path}"
 msgstr "변경됨: {path}"
 
-#: polyhost/gui/integrations_dialog.py:385
+#: polyhost/gui/integrations_dialog.py:388
 msgid "Restart the agent for the change to take effect."
 msgstr "변경 사항을 적용하려면 에이전트를 다시 시작하십시오."
 
-#: polyhost/gui/integrations_dialog.py:392
+#: polyhost/gui/integrations_dialog.py:395
 #: polyhost/gui/shell_editor_pages.py:180
 msgid "Terminals"
 msgstr "터미널"
 
-#: polyhost/gui/integrations_dialog.py:392
+#: polyhost/gui/integrations_dialog.py:395
 #: polyhost/gui/shell_editor_pages.py:270
 #: polyhost/gui/shell_editor_pages.py:290
 msgid "Editors"
 msgstr "편집기"
 
-#: polyhost/gui/integrations_dialog.py:404
+#: polyhost/gui/integrations_dialog.py:407
 msgid "Integrations"
 msgstr "통합"
 
-#: polyhost/gui/integrations_dialog.py:459
+#: polyhost/gui/integrations_dialog.py:462
 msgid "Changes apply to the program after it restarts."
 msgstr "변경 사항은 프로그램을 다시 시작한 후 적용됩니다."
 
@@ -3939,7 +3939,7 @@ msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "이 컴퓨터에서 bash, zsh, PowerShell을 찾지 못했습니다."
 
 #: polyhost/gui/shell_editor_pages.py:255
-#: polyhost/gui/shell_editor_pages.py:448
+#: polyhost/gui/shell_editor_pages.py:449
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "이전 파일의 사본: {path}"
@@ -4000,7 +4000,7 @@ msgstr "{program} 프로젝트 폴더 선택"
 msgid "{path} is not a {editor} project folder: it has no {marker}."
 msgstr "{path}은(는) {editor} 프로젝트 폴더가 아닙니다: {marker}이(가) 없습니다."
 
-#: polyhost/gui/shell_editor_pages.py:450
+#: polyhost/gui/shell_editor_pages.py:451
 msgid "Restart the editor for the change to take effect."
 msgstr "변경 사항을 적용하려면 편집기를 다시 시작하십시오."
 
@@ -5295,6 +5295,11 @@ msgid "{editor} has the extension {extension} from another source. It is left al
 msgstr "{editor}에 다른 출처의 확장 {extension}이(가) 있습니다. 그대로 둡니다."
 
 #: polyhost/services/editor_plugins.py:228
+#, python-brace-format
+msgid "The change was made, but {path} could not be written, so this app does not remember it."
+msgstr "변경은 완료되었지만 {path}에 쓸 수 없어 이 앱이 이를 기억하지 않습니다."
+
+#: polyhost/services/editor_plugins.py:230
 #, python-brace-format
 msgid "Run this command in the Python environment that runs JupyterLab: {command}"
 msgstr "JupyterLab을 실행하는 Python 환경에서 이 명령을 실행하세요: {command}"

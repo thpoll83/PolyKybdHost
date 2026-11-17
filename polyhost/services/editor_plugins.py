@@ -225,6 +225,8 @@ MSG_CLI_INSTALLED = M_("Installed the extension with {command}.")
 MSG_CLI_REMOVED = M_("Removed the extension with {command}.")
 MSG_CLI_FAILED = M_("{command} failed: {error}")
 MSG_CLI_NOT_OURS = M_("{editor} has the extension {extension} from another source. It is left alone.")
+MSG_STATE_NOT_SAVED = M_("The change was made, but {path} could not be written, so this app "
+                         "does not remember it.")
 MSG_RUN_COMMAND = M_("Run this command in the Python environment that runs JupyterLab: {command}")
 
 
@@ -791,14 +793,61 @@ def _sha(data):
     return hashlib.sha256(data).hexdigest()
 
 
+# The only stamp entries outside the stamped folder: a package or module file
+# beside the folder, for the folder name and parent folder name given.
+# (entry, folder name, parent folder name)
+_SIDECARS = (("../polykybd.json", "polykybd", "packages"),     # HOUDINI_PACKAGE_FILE
+             ("../polykybd.mod", "polykybd", "modules"))       # MAYA_MOD_FILE
+
+
+def stamp_path_ok(folder, rel):
+    """Whether ``rel`` is a file of the copy in ``folder`` that this app may
+    read, write or delete: a plain relative path ("a/b.py": no absolute path,
+    drive, backslash, "." or ".." part) that, with every symbolic link
+    followed, stays inside ``folder``. A Houdini or Maya sidecar file
+    (_SIDECARS) may be beside the folder instead.
+
+    A stamp is a file in the folder, and a per-project folder (Godot, Unity,
+    Obsidian) is in a project the user may have downloaded: its entries are
+    not trusted."""
+    if not isinstance(rel, str) or not rel:
+        return False
+    folder = Path(folder)
+    base, target = folder, None
+    for entry, name, parent in _SIDECARS:
+        if rel == entry and folder.name == name and folder.parent.name == parent:
+            base, target = folder.parent, folder.parent / entry[3:]
+    if target is None:
+        if "\\" in rel or ":" in rel or rel.startswith("/"):
+            return False
+        if any(part in ("", ".", "..") for part in rel.split("/")):
+            return False
+        target = folder / rel
+    try:
+        real_base, real = base.resolve(), target.resolve()
+    except (OSError, ValueError, RuntimeError):
+        return False
+    return real != real_base and real_base in real.parents
+
+
 def read_stamp(folder, stamp_name=STAMP_NAME):
-    """The stamp's ``{relative path: sha256}``, or None when there is none."""
+    """The stamp's ``{relative path: sha256}``, or None when there is none,
+    it cannot be read, or an entry is not a path :func:`stamp_path_ok`
+    accepts (then the copy is not this app's, and nothing is touched)."""
     try:
         data = json.loads((Path(folder) / stamp_name).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
     files = data.get("files") if isinstance(data, dict) else None
-    return files if isinstance(files, dict) else None
+    if not isinstance(files, dict):
+        return None
+    for rel, digest in files.items():
+        if not isinstance(digest, str) or not stamp_path_ok(folder, rel):
+            log.warning("Editor plugin: %s lists %r, which is outside the folder or not a "
+                        "plain file name; the copy is left alone.",
+                        Path(folder) / stamp_name, rel)
+            return None
+    return files
 
 
 def _copy_state(folder, shipped, stamp_name=STAMP_NAME, shared=False):
@@ -811,19 +860,27 @@ def _copy_state(folder, shipped, stamp_name=STAMP_NAME, shared=False):
     file beside the plugin's)."""
     folder = Path(folder)
     stamp = read_stamp(folder, stamp_name)
+    if stamp is None and (folder / stamp_name).exists():
+        # A stamp that cannot be read or names files outside the folder.
+        return STATE_MANUAL
     if stamp is None:
         if shared:
             return (STATE_MANUAL if any((folder / rel).exists() for rel in shipped)
                     else STATE_NOT_INSTALLED)
         return STATE_MANUAL if folder.is_dir() and any(folder.iterdir()) else STATE_NOT_INSTALLED
+    missing = False
     for rel, digest in stamp.items():
+        # Every file is checked: a missing one must not hide a later file
+        # that was changed by hand, which an update would then overwrite.
         try:
             if _sha((folder / rel).read_bytes()) != digest:
                 return STATE_MODIFIED
         except FileNotFoundError:
-            return STATE_OUTDATED
+            missing = True
         except OSError:
             return STATE_MODIFIED
+    if missing:
+        return STATE_OUTDATED
     want = {rel: _sha(data) for rel, data in shipped.items()}
     return STATE_INSTALLED if want == stamp else STATE_OUTDATED
 
@@ -834,6 +891,9 @@ def _write_copy(folder, shipped, old_stamp=None, stamp_name=STAMP_NAME):
     new copy has not are deleted."""
     folder = Path(folder)
     folder.mkdir(parents=True, exist_ok=True)
+    for rel in list(shipped) + list(old_stamp or {}):
+        if not stamp_path_ok(folder, rel):
+            raise OSError(f"{rel!r} is outside {folder}")
     for rel, data in shipped.items():
         dest = folder / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -855,7 +915,19 @@ def _write_copy(folder, shipped, old_stamp=None, stamp_name=STAMP_NAME):
             except OSError:
                 pass
     stamp = {"files": {rel: _sha(data) for rel, data in shipped.items()}}
-    (folder / stamp_name).write_text(json.dumps(stamp, indent=1, sort_keys=True), encoding="utf-8")
+    # Through a temporary file and a rename: a status check running at the
+    # same time never reads half a stamp (which would make the copy manual).
+    fd, tmp = tempfile.mkstemp(dir=folder, prefix=".polykybd-stamp-")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(json.dumps(stamp, indent=1, sort_keys=True))
+        os.replace(tmp, folder / stamp_name)
+    except OSError:
+        try:
+            os.unlink(tmp)
+        except FileNotFoundError:
+            pass     # os.replace may have moved it already
+        raise
 
 
 def _delete_copy(folder, stamp_name=STAMP_NAME, keep_folder=False):
@@ -1336,8 +1408,22 @@ def _other_copy(editor, folder):
     return None
 
 
-def _target_state(editor, folder, shipped):
-    """(state, detail) of one copy of a MULTI_EDITORS editor."""
+def _inside_project(folder, project):
+    """The plugin folder, with every symbolic link followed, is inside the
+    project folder: a project can hold a link (``addons`` -> ``~``) that
+    would send the copy and its removal elsewhere."""
+    try:
+        return Path(project).resolve() in Path(folder).resolve().parents
+    except (OSError, RuntimeError):
+        return False
+
+
+def _target_state(editor, folder, shipped, project=None):
+    """(state, detail) of one copy of a MULTI_EDITORS editor. ``project`` is
+    the project folder of a PROJECT_EDITORS copy."""
+    if project is not None and not _inside_project(folder, project):
+        log.warning("Editor plugin: %s leads out of the project %s; left alone.", folder, project)
+        return STATE_MANUAL, str(folder)
     state = _copy_state(folder, shipped, _stamp_name(editor), shared=True)
     if state == STATE_MANUAL:
         return state, str(folder)
@@ -1353,7 +1439,8 @@ def _multi_states(editor, targets, source):
     out = []
     for label, folder in targets:
         shipped = new_shipped_files(editor, source, folder)
-        state, detail = _target_state(editor, folder, shipped)
+        project = label if editor in PROJECT_EDITORS else None
+        state, detail = _target_state(editor, folder, shipped, project)
         out.append((label, folder, state, detail, shipped))
     return out
 
@@ -1447,15 +1534,16 @@ def _change_multi(editor, install, source, home=None, env=None, system=None, sta
             continue
         if install:
             r = _install_target(editor, folder, st, detail, shipped)
-            if editor in PROJECT_EDITORS and r.ok:
-                state.add_project(editor, label)
+            if editor in PROJECT_EDITORS and r.ok and not state.add_project(editor, label):
+                r = Result(editor, False, r.changed, MSG_STATE_NOT_SAVED.format(path=state.path), None)
             results.append(r)
         elif st in (STATE_INSTALLED, STATE_OUTDATED, STATE_MODIFIED):
             r = _remove_target(editor, folder, st)
-            if editor in PROJECT_EDITORS and r.ok:
-                state.forget_project(editor, label)
+            if editor in PROJECT_EDITORS and r.ok and not state.forget_project(editor, label):
+                r = Result(editor, False, r.changed, MSG_STATE_NOT_SAVED.format(path=state.path), None)
             results.append(r)
         elif editor in PROJECT_EDITORS and st == STATE_NOT_INSTALLED:
+            # A stale entry; if it cannot be forgotten now, the next pass tries again.
             state.forget_project(editor, label)
     if not results and not only_outdated:
         if install:
@@ -1482,6 +1570,13 @@ def vsix_digest(path):
     return h.hexdigest()
 
 
+def vsix_version(path):
+    """The ``version`` of the ``.vsix``'s ``extension/package.json``: what
+    ``--list-extensions --show-versions`` shows once it is installed."""
+    with zipfile.ZipFile(path) as zf:
+        return str(json.loads(zf.read("extension/package.json")).get("version", ""))
+
+
 def _run_cli(argv, timeout):
     """(exit code, stdout, stderr) of the editor's command line program."""
     kwargs = {}
@@ -1499,7 +1594,10 @@ def _run_cli(argv, timeout):
 
 def _status_cli(editor, which, home, env, system, source, state, run):
     vsix = Path(source or VSCODE_SOURCE)
-    if not vsix.is_file():
+    try:
+        vsix_digest(vsix)
+        vsix_version(vsix)
+    except (OSError, KeyError, ValueError, zipfile.BadZipFile):
         return EditorStatus(editor, STATE_NO_SOURCE, None, str(vsix))
     cli = et.vscode_cli(editor, which, home, env, system)
     if cli is None:
@@ -1515,7 +1613,9 @@ def _status_cli(editor, which, home, env, system, source, state, run):
     if version is None:
         return EditorStatus(editor, STATE_NOT_INSTALLED, cli, "")
     recorded = state.cli_digest(editor)
-    if recorded is None:
+    if recorded is None or version != state.cli_version(editor):
+        # Not installed by this app, or replaced since (the Marketplace or
+        # Open VSX installs another version under the same id): left alone.
         return EditorStatus(editor, STATE_MANUAL, cli, f"{et.VSCODE_EXTENSION_ID}@{version}")
     state_ = STATE_INSTALLED if recorded == vsix_digest(vsix) else STATE_OUTDATED
     return EditorStatus(editor, state_, cli, "")
@@ -1547,8 +1647,11 @@ def _change_cli(st, install, source, state, run):
     if code != 0:
         error = err.strip().splitlines()[-1] if err.strip() else f"exit code {code}"
         return Result(editor, False, False, MSG_CLI_FAILED.format(command=shown, error=error), None)
-    state.set_cli(editor, vsix_digest(vsix) if install else None)
     log.info("Editor plugin: %s", shown)
+    recorded = (state.set_cli(editor, vsix_digest(vsix), vsix_version(vsix)) if install
+                else state.set_cli(editor, None))
+    if not recorded:
+        return Result(editor, False, True, MSG_STATE_NOT_SAVED.format(path=state.path), None)
     return Result(editor, True, True,
                   (MSG_CLI_INSTALLED if install else MSG_CLI_REMOVED).format(command=shown), None)
 

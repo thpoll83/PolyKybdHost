@@ -388,6 +388,20 @@ class EditorsPageTest(_PageTestBase):
         self.settle(page)
         self.assertEqual(calls, [("install", [ep.GODOT], {ep.GODOT: [str(game)]})])
 
+    def test_a_project_button_asks_only_for_its_own_editor(self):
+        game = self.tmp_project("project.godot")
+        page, calls = self.make_new([ep.EditorStatus(ep.GODOT, ep.STATE_NO_PROJECT, None, ""),
+                                     ep.EditorStatus(ep.UNITY, ep.STATE_NO_PROJECT, None, "")])
+        page.boxes()[ep.UNITY].setChecked(True)
+        asked, warned = [], []
+        page.choose_folder = lambda editor: asked.append(editor) or str(game)
+        page.warn = warned.append       # never a modal box in a test
+        page.project_buttons[ep.GODOT].click()
+        self.settle(page)
+        self.assertEqual(asked, [ep.GODOT])
+        self.assertEqual(calls, [("install", [ep.GODOT], {ep.GODOT: [str(game)]})])
+        self.assertEqual(warned, [])
+
     def test_install_asks_for_a_project_and_refuses_a_wrong_folder(self):
         wrong = self.tmp_project("README.md")
         page, calls = self.make_new([ep.EditorStatus(ep.UNITY, ep.STATE_NO_PROJECT, None, ""),

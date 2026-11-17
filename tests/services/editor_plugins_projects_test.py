@@ -21,10 +21,11 @@ class TestState(unittest.TestCase):
             s = et.State(path)
             self.assertTrue(s.add_project("godot", "/p/game"))
             s.add_project("godot", "/p/game")
-            s.set_cli("vscode", "abc")
+            s.set_cli("vscode", "abc", "1.0.0")
             again = et.State(path)
             self.assertEqual(again.projects("godot"), [str(Path("/p/game"))])
-            self.assertEqual(again.cli_digest("vscode"), "abc")
+            self.assertEqual((again.cli_digest("vscode"), again.cli_version("vscode")),
+                             ("abc", "1.0.0"))
             again.forget_project("godot", "/p/game")
             again.set_cli("vscode", None)
             self.assertEqual(et.State(path).data, {"projects": {"godot": []}, "cli": {}})
@@ -167,6 +168,111 @@ class TestGodot(ProjectFixture):
         self.assertFalse((a / "addons" / "polykybd_reporter").exists())
         self.assertTrue((b / "addons" / "polykybd_reporter").exists())
         self.assertEqual(et.State(self.state_file).projects(ep.GODOT), [str(b)])
+
+
+class TestCraftedStamps(ProjectFixture):
+    """A downloaded project can hold a stamp of its own: no entry of it may
+    make Install, Remove or the refresh touch a file outside the plugin
+    folder."""
+
+    def godot_copy(self):
+        game = self.project(ep.GODOT, "game")
+        ep.install([ep.GODOT], projects={ep.GODOT: [str(game)]}, **self.kw())
+        return game, game / "addons" / "polykybd_reporter"
+
+    def craft(self, plugin, entries):
+        stamp = json.loads((plugin / ep.STAMP_NAME).read_text())
+        stamp["files"].update(entries)
+        (plugin / ep.STAMP_NAME).write_text(json.dumps(stamp))
+
+    def assert_untouched(self, plugin, *outside):
+        self.assertEqual(self.status(ep.GODOT).state, ep.STATE_MANUAL)
+        (self.godot_src / "plugin.gd").write_text("gd v2")     # an update
+        for r in (ep.install([ep.GODOT], **self.kw())
+                  + ep.remove([ep.GODOT], **self.kw())):
+            self.assertFalse(r.changed, r)
+        self.assertEqual(ep.refresh_installed(**self.kw()), [])
+        self.assertEqual((plugin / "plugin.gd").read_text(), "gd v1")
+        for path in outside:
+            self.assertTrue(path.exists(), path)
+
+    def test_a_parent_folder_entry(self):
+        game, plugin = self.godot_copy()
+        # A missing file first makes the copy read "outdated" without the
+        # check, and the update would then delete the second entry.
+        self.craft(plugin, {"gone.gd": "0" * 64, "../../project.godot": "0" * 64})
+        self.assert_untouched(plugin, game / "project.godot")
+
+    def test_an_absolute_entry(self):
+        game, plugin = self.godot_copy()
+        victim = self.tmp / "victim.txt"
+        victim.write_text("keep")
+        self.craft(plugin, {str(victim): "0" * 64})
+        self.assert_untouched(plugin, victim)
+
+    def test_backslash_and_drive_entries(self):
+        for bad in ("..\\..\\project.godot", "C:/x", "a//b", "./a"):
+            self.assertFalse(ep.stamp_path_ok(self.tmp, bad), bad)
+        self.assertTrue(ep.stamp_path_ok(self.tmp, "a/b.gd"))
+
+    def test_a_link_out_of_the_folder(self):
+        game, plugin = self.godot_copy()
+        victim = self.tmp / "victim.txt"
+        victim.write_text("keep")
+        (plugin / "link.gd").symlink_to(victim)
+        self.craft(plugin, {"link.gd": "0" * 64})
+        self.assert_untouched(plugin, victim)
+
+    def test_a_linked_addons_folder(self):
+        game = self.project(ep.GODOT, "game")
+        elsewhere = self.tmp / "elsewhere"
+        (elsewhere / "polykybd_reporter").mkdir(parents=True)
+        (game / "addons").symlink_to(elsewhere)
+        st = ep.status([ep.GODOT], **self.kw())[0]
+        r = ep.install([ep.GODOT], projects={ep.GODOT: [str(game)]}, **self.kw())
+        self.assertFalse(r[0].ok, r)
+        self.assertEqual(list((elsewhere / "polykybd_reporter").iterdir()), [])
+        self.assertIn(st.state, (ep.STATE_NO_PROJECT, ep.STATE_NOT_PRESENT))
+
+    def test_the_sidecars_of_houdini_and_maya_are_the_only_exceptions(self):
+        houdini = self.tmp / "prefs" / "packages" / "polykybd"
+        maya = self.tmp / "maya" / "2025" / "modules" / "polykybd"
+        other = self.tmp / "game" / "addons" / "polykybd"
+        self.assertTrue(ep.stamp_path_ok(houdini, "../polykybd.json"))
+        self.assertTrue(ep.stamp_path_ok(maya, "../polykybd.mod"))
+        self.assertFalse(ep.stamp_path_ok(houdini, "../polykybd.mod"))
+        self.assertFalse(ep.stamp_path_ok(other, "../polykybd.json"))
+
+    def test_an_existing_editor_vim_is_protected_too(self):
+        home = self.home
+        victim = home / ".vimrc"
+        victim.write_text("keep")
+        kw = dict(home=home, env={}, which=lambda n: "/usr/bin/vim" if n == "vim" else None,
+                  system="Linux")
+        ep.install([ep.VIM], **kw)
+        plugin = home / ".vim/pack/polykybd/start/polykybd"
+        stamp = json.loads((plugin / ep.STAMP_NAME).read_text())
+        stamp["files"]["../../../../../.vimrc"] = "0" * 64
+        (plugin / ep.STAMP_NAME).write_text(json.dumps(stamp))
+        self.assertEqual(ep.status([ep.VIM], **kw)[0].state, ep.STATE_MANUAL)
+        ep.remove([ep.VIM], **kw)
+        ep.refresh_installed(**kw)
+        self.assertEqual(victim.read_text(), "keep")
+        self.assertTrue((plugin / "plugin" / "polykybd.vim").exists())
+
+
+class TestStateNotSaved(ProjectFixture):
+
+    def test_a_project_that_cannot_be_remembered_is_reported(self):
+        game = self.project(ep.GODOT, "game")
+        blocker = self.tmp / "blocker"
+        blocker.write_text("")
+        kw = self.kw()
+        kw["state_file"] = blocker / "state.json"
+        r = ep.install([ep.GODOT], projects={ep.GODOT: [str(game)]}, **kw)
+        self.assertFalse(r[0].ok)
+        self.assertTrue(r[0].changed)
+        self.assertIn("could not be written", r[0].message)
 
 
 class TestUnity(ProjectFixture):

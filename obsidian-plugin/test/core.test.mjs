@@ -106,3 +106,24 @@ test("the sender delivers the latest report and survives failures", async () => 
     assert.equal(logs.length, 1);
     assert.match(logs[0], /ECONNREFUSED/);
 });
+
+test("a withdrawal to the old port is not replaced by a report to the new port", async () => {
+    const got = [];
+    let release;
+    const gate = new Promise((r) => { release = r; });
+    let first = true;
+    const s = new Sender(async (url, body) => {
+        if (first) { first = false; await gate; }
+        got.push([url, JSON.parse(body).url]);
+    });
+    const p1 = s.submit(50164, payload("a"));                   // in flight
+    s.submit(50164, payload(null, { focused: false }));         // the port changes
+    s.submit(50165, payload("b"));
+    s.submit(50165, payload("c"));                              // replaces "b"
+    release();
+    await p1;
+    await s.pump();
+    assert.deepEqual(got, [["http://127.0.0.1:50164/report", "a"],
+                           ["http://127.0.0.1:50164/report", null],
+                           ["http://127.0.0.1:50165/report", "c"]]);
+});

@@ -422,7 +422,9 @@ def default_state_file():
 
 
 class State:
-    """``{"projects": {editor: [folder]}, "cli": {editor: digest}}``.
+    """``{"projects": {editor: [folder]}, "cli": {editor: {"digest": d,
+    "version": v}}}``: the content digest and the version of the ``.vsix``
+    this app installed with that editor's command line program.
 
     ``path`` None keeps it in memory only (a test's home)."""
 
@@ -443,13 +445,17 @@ class State:
         cli = data.get("cli") if isinstance(data.get("cli"), dict) else {}
         return {"projects": {k: [str(p) for p in v if isinstance(p, str)]
                              for k, v in projects.items() if isinstance(v, list)},
-                "cli": {k: v for k, v in cli.items() if isinstance(v, str)}}
+                "cli": {k: v for k, v in cli.items()
+                        if isinstance(v, dict) and isinstance(v.get("digest"), str)}}
 
     def projects(self, editor):
         return list(self.data["projects"].get(editor, []))
 
     def cli_digest(self, editor):
-        return self.data["cli"].get(editor)
+        return (self.data["cli"].get(editor) or {}).get("digest")
+
+    def cli_version(self, editor):
+        return (self.data["cli"].get(editor) or {}).get("version")
 
     def update(self, change):
         """Apply ``change(data)`` to the file's current content under a lock,
@@ -499,10 +505,10 @@ class State:
             data["projects"][editor] = [p for p in lst if p != folder]
         return self.update(change)
 
-    def set_cli(self, editor, digest):
+    def set_cli(self, editor, digest, version=None):
         def change(data):
             if digest is None:
                 data["cli"].pop(editor, None)
             else:
-                data["cli"][editor] = digest
+                data["cli"][editor] = {"digest": digest, "version": version}
         return self.update(change)

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-17 11:07+0000\n"
+"POT-Creation-Date: 2026-11-17 11:45+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hant_TW\n"
@@ -552,7 +552,7 @@ msgid "<b>Failed:</b> {reason}"
 msgstr "<b>失敗：</b>{reason}"
 
 #: polyhost/gui/browser_extension_page.py:37
-#: polyhost/gui/integrations_dialog.py:393
+#: polyhost/gui/integrations_dialog.py:396
 msgid "Browser"
 msgstr "瀏覽器"
 
@@ -1959,56 +1959,56 @@ msgstr "語言"
 msgid "The new language is used after a restart. Restart now?"
 msgstr "新語言會在重新啟動後使用。要立即重新啟動嗎？"
 
-#: polyhost/gui/integrations_dialog.py:96
+#: polyhost/gui/integrations_dialog.py:97
 msgid "Checking…"
 msgstr "正在檢查…"
 
-#: polyhost/gui/integrations_dialog.py:110
+#: polyhost/gui/integrations_dialog.py:111
 msgid "Install"
 msgstr "安裝"
 
-#: polyhost/gui/integrations_dialog.py:111
+#: polyhost/gui/integrations_dialog.py:112
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:149
 msgid "Remove"
 msgstr "移除"
 
-#: polyhost/gui/integrations_dialog.py:132
+#: polyhost/gui/integrations_dialog.py:133
 #, python-brace-format
 msgid "The check failed: {error}"
 msgstr "檢查失敗：{error}"
 
-#: polyhost/gui/integrations_dialog.py:259
-#: polyhost/gui/integrations_dialog.py:377
+#: polyhost/gui/integrations_dialog.py:262
+#: polyhost/gui/integrations_dialog.py:380
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "變更失敗：{error}"
 
-#: polyhost/gui/integrations_dialog.py:290
+#: polyhost/gui/integrations_dialog.py:293
 #: polyhost/gui/shell_editor_pages.py:46 polyhost/gui/shell_editor_pages.py:153
 msgid "Set up"
 msgstr "已設定"
 
-#: polyhost/gui/integrations_dialog.py:292
+#: polyhost/gui/integrations_dialog.py:295
 msgid "Set up for another copy of the app, or an older version. Install updates it."
 msgstr "已為本應用程式的另一個副本或舊版本設定。「安裝」會更新它。"
 
-#: polyhost/gui/integrations_dialog.py:297
+#: polyhost/gui/integrations_dialog.py:300
 #, python-brace-format
 msgid "The file cannot be read: {error}"
 msgstr "無法讀取該檔案：{error}"
 
-#: polyhost/gui/integrations_dialog.py:298
+#: polyhost/gui/integrations_dialog.py:301
 #: polyhost/gui/shell_editor_pages.py:50 polyhost/gui/shell_editor_pages.py:155
 msgid "Not set up"
 msgstr "未設定"
 
-#: polyhost/gui/integrations_dialog.py:317
-#: polyhost/gui/integrations_dialog.py:351
-#: polyhost/gui/integrations_dialog.py:392 polyhost/gui/settings_dialog.py:102
+#: polyhost/gui/integrations_dialog.py:320
+#: polyhost/gui/integrations_dialog.py:354
+#: polyhost/gui/integrations_dialog.py:395 polyhost/gui/settings_dialog.py:102
 msgid "AI agents"
 msgstr "AI 代理程式"
 
-#: polyhost/gui/integrations_dialog.py:318
+#: polyhost/gui/integrations_dialog.py:321
 msgid ""
 "An agent's key shows whether the agent works, waits for you or is finished only when the agent runs the PolyKybd hook.\n"
 "\n"
@@ -2018,45 +2018,45 @@ msgstr ""
 "\n"
 "「安裝」會將掛鉤加入代理程式的設定檔。您自己的掛鉤和設定會保留，且每個檔案的副本會儲存為 <file>.polykybd.bak。「移除」只會移除 PolyKybd 掛鉤。請重新啟動代理程式，讓變更生效。"
 
-#: polyhost/gui/integrations_dialog.py:365
+#: polyhost/gui/integrations_dialog.py:368
 msgid "Nothing to change."
 msgstr "沒有需要變更的內容。"
 
-#: polyhost/gui/integrations_dialog.py:367
+#: polyhost/gui/integrations_dialog.py:370
 #, python-brace-format
 msgid "Write the PolyKybd hooks into {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
 msgstr "要將 PolyKybd 掛鉤寫入 {files} 嗎？您自己的掛鉤會保留，且每個檔案的副本會儲存為 <file>.polykybd.bak。"
 
-#: polyhost/gui/integrations_dialog.py:370
+#: polyhost/gui/integrations_dialog.py:373
 #, python-brace-format
 msgid "Remove the PolyKybd hooks from {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
 msgstr "要從 {files} 移除 PolyKybd 掛鉤嗎？您自己的掛鉤會保留，且每個檔案的副本會儲存為 <file>.polykybd.bak。"
 
-#: polyhost/gui/integrations_dialog.py:380
+#: polyhost/gui/integrations_dialog.py:383
 #, python-brace-format
 msgid "Changed: {path}"
 msgstr "已變更：{path}"
 
-#: polyhost/gui/integrations_dialog.py:385
+#: polyhost/gui/integrations_dialog.py:388
 msgid "Restart the agent for the change to take effect."
 msgstr "請重新啟動代理程式，讓變更生效。"
 
-#: polyhost/gui/integrations_dialog.py:392
+#: polyhost/gui/integrations_dialog.py:395
 #: polyhost/gui/shell_editor_pages.py:180
 msgid "Terminals"
 msgstr "終端機"
 
-#: polyhost/gui/integrations_dialog.py:392
+#: polyhost/gui/integrations_dialog.py:395
 #: polyhost/gui/shell_editor_pages.py:270
 #: polyhost/gui/shell_editor_pages.py:290
 msgid "Editors"
 msgstr "編輯器"
 
-#: polyhost/gui/integrations_dialog.py:404
+#: polyhost/gui/integrations_dialog.py:407
 msgid "Integrations"
 msgstr "整合"
 
-#: polyhost/gui/integrations_dialog.py:459
+#: polyhost/gui/integrations_dialog.py:462
 msgid "Changes apply to the program after it restarts."
 msgstr "變更會在程式重新啟動後套用。"
 
@@ -3939,7 +3939,7 @@ msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "在這台電腦上找不到 bash、zsh 或 PowerShell。"
 
 #: polyhost/gui/shell_editor_pages.py:255
-#: polyhost/gui/shell_editor_pages.py:448
+#: polyhost/gui/shell_editor_pages.py:449
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "原檔案的副本：{path}"
@@ -4000,7 +4000,7 @@ msgstr "選擇 {program} 專案資料夾"
 msgid "{path} is not a {editor} project folder: it has no {marker}."
 msgstr "{path} 不是 {editor} 專案資料夾：缺少 {marker}。"
 
-#: polyhost/gui/shell_editor_pages.py:450
+#: polyhost/gui/shell_editor_pages.py:451
 msgid "Restart the editor for the change to take effect."
 msgstr "請重新啟動編輯器，讓變更生效。"
 
@@ -5295,6 +5295,11 @@ msgid "{editor} has the extension {extension} from another source. It is left al
 msgstr "{editor} 已有來自其他來源的擴充功能 {extension}。不會變更它。"
 
 #: polyhost/services/editor_plugins.py:228
+#, python-brace-format
+msgid "The change was made, but {path} could not be written, so this app does not remember it."
+msgstr "變更已完成，但無法寫入 {path}，因此本應用程式不會記住它。"
+
+#: polyhost/services/editor_plugins.py:230
 #, python-brace-format
 msgid "Run this command in the Python environment that runs JupyterLab: {command}"
 msgstr "請在執行 JupyterLab 的 Python 環境中執行此命令：{command}"

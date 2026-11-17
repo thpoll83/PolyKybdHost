@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-17 11:07+0000\n"
+"POT-Creation-Date: 2026-11-17 11:45+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -552,7 +552,7 @@ msgid "<b>Failed:</b> {reason}"
 msgstr "<b>失敗:</b> {reason}"
 
 #: polyhost/gui/browser_extension_page.py:37
-#: polyhost/gui/integrations_dialog.py:393
+#: polyhost/gui/integrations_dialog.py:396
 msgid "Browser"
 msgstr "ブラウザー"
 
@@ -1959,56 +1959,56 @@ msgstr "言語"
 msgid "The new language is used after a restart. Restart now?"
 msgstr "新しい言語は再起動後に使用されます。今すぐ再起動しますか?"
 
-#: polyhost/gui/integrations_dialog.py:96
+#: polyhost/gui/integrations_dialog.py:97
 msgid "Checking…"
 msgstr "確認しています…"
 
-#: polyhost/gui/integrations_dialog.py:110
+#: polyhost/gui/integrations_dialog.py:111
 msgid "Install"
 msgstr "インストール"
 
-#: polyhost/gui/integrations_dialog.py:111
+#: polyhost/gui/integrations_dialog.py:112
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:149
 msgid "Remove"
 msgstr "削除"
 
-#: polyhost/gui/integrations_dialog.py:132
+#: polyhost/gui/integrations_dialog.py:133
 #, python-brace-format
 msgid "The check failed: {error}"
 msgstr "確認に失敗しました: {error}"
 
-#: polyhost/gui/integrations_dialog.py:259
-#: polyhost/gui/integrations_dialog.py:377
+#: polyhost/gui/integrations_dialog.py:262
+#: polyhost/gui/integrations_dialog.py:380
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "変更に失敗しました: {error}"
 
-#: polyhost/gui/integrations_dialog.py:290
+#: polyhost/gui/integrations_dialog.py:293
 #: polyhost/gui/shell_editor_pages.py:46 polyhost/gui/shell_editor_pages.py:153
 msgid "Set up"
 msgstr "設定済み"
 
-#: polyhost/gui/integrations_dialog.py:292
+#: polyhost/gui/integrations_dialog.py:295
 msgid "Set up for another copy of the app, or an older version. Install updates it."
 msgstr "アプリの別のコピー用、または古いバージョンで設定されています。「インストール」で更新します。"
 
-#: polyhost/gui/integrations_dialog.py:297
+#: polyhost/gui/integrations_dialog.py:300
 #, python-brace-format
 msgid "The file cannot be read: {error}"
 msgstr "ファイルを読み込めません: {error}"
 
-#: polyhost/gui/integrations_dialog.py:298
+#: polyhost/gui/integrations_dialog.py:301
 #: polyhost/gui/shell_editor_pages.py:50 polyhost/gui/shell_editor_pages.py:155
 msgid "Not set up"
 msgstr "未設定"
 
-#: polyhost/gui/integrations_dialog.py:317
-#: polyhost/gui/integrations_dialog.py:351
-#: polyhost/gui/integrations_dialog.py:392 polyhost/gui/settings_dialog.py:102
+#: polyhost/gui/integrations_dialog.py:320
+#: polyhost/gui/integrations_dialog.py:354
+#: polyhost/gui/integrations_dialog.py:395 polyhost/gui/settings_dialog.py:102
 msgid "AI agents"
 msgstr "AI エージェント"
 
-#: polyhost/gui/integrations_dialog.py:318
+#: polyhost/gui/integrations_dialog.py:321
 msgid ""
 "An agent's key shows whether the agent works, waits for you or is finished only when the agent runs the PolyKybd hook.\n"
 "\n"
@@ -2018,45 +2018,45 @@ msgstr ""
 "\n"
 "「インストール」はエージェントの設定ファイルにフックを追加します。ご自身のフックと設定は保持され、各ファイルのコピーが <file>.polykybd.bak として保存されます。「削除」は PolyKybd のフックだけを取り除きます。変更を有効にするには、エージェントを再起動してください。"
 
-#: polyhost/gui/integrations_dialog.py:365
+#: polyhost/gui/integrations_dialog.py:368
 msgid "Nothing to change."
 msgstr "変更するものはありません。"
 
-#: polyhost/gui/integrations_dialog.py:367
+#: polyhost/gui/integrations_dialog.py:370
 #, python-brace-format
 msgid "Write the PolyKybd hooks into {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
 msgstr "PolyKybd のフックを {files} に書き込みますか? ご自身のフックは保持され、各ファイルのコピーが <file>.polykybd.bak として保存されます。"
 
-#: polyhost/gui/integrations_dialog.py:370
+#: polyhost/gui/integrations_dialog.py:373
 #, python-brace-format
 msgid "Remove the PolyKybd hooks from {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
 msgstr "{files} から PolyKybd のフックを削除しますか? ご自身のフックは保持され、各ファイルのコピーが <file>.polykybd.bak として保存されます。"
 
-#: polyhost/gui/integrations_dialog.py:380
+#: polyhost/gui/integrations_dialog.py:383
 #, python-brace-format
 msgid "Changed: {path}"
 msgstr "変更しました: {path}"
 
-#: polyhost/gui/integrations_dialog.py:385
+#: polyhost/gui/integrations_dialog.py:388
 msgid "Restart the agent for the change to take effect."
 msgstr "変更を有効にするには、エージェントを再起動してください。"
 
-#: polyhost/gui/integrations_dialog.py:392
+#: polyhost/gui/integrations_dialog.py:395
 #: polyhost/gui/shell_editor_pages.py:180
 msgid "Terminals"
 msgstr "ターミナル"
 
-#: polyhost/gui/integrations_dialog.py:392
+#: polyhost/gui/integrations_dialog.py:395
 #: polyhost/gui/shell_editor_pages.py:270
 #: polyhost/gui/shell_editor_pages.py:290
 msgid "Editors"
 msgstr "エディター"
 
-#: polyhost/gui/integrations_dialog.py:404
+#: polyhost/gui/integrations_dialog.py:407
 msgid "Integrations"
 msgstr "連携"
 
-#: polyhost/gui/integrations_dialog.py:459
+#: polyhost/gui/integrations_dialog.py:462
 msgid "Changes apply to the program after it restarts."
 msgstr "変更はプログラムの再起動後に反映されます。"
 
@@ -3939,7 +3939,7 @@ msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "このコンピューターには bash、zsh、PowerShell のいずれも見つかりませんでした。"
 
 #: polyhost/gui/shell_editor_pages.py:255
-#: polyhost/gui/shell_editor_pages.py:448
+#: polyhost/gui/shell_editor_pages.py:449
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "変更前のファイルのコピー: {path}"
@@ -4000,7 +4000,7 @@ msgstr "{program} のプロジェクトフォルダーを選択"
 msgid "{path} is not a {editor} project folder: it has no {marker}."
 msgstr "{path} は {editor} のプロジェクトフォルダーではありません: {marker} がありません。"
 
-#: polyhost/gui/shell_editor_pages.py:450
+#: polyhost/gui/shell_editor_pages.py:451
 msgid "Restart the editor for the change to take effect."
 msgstr "変更を有効にするには、エディターを再起動してください。"
 
@@ -5295,6 +5295,11 @@ msgid "{editor} has the extension {extension} from another source. It is left al
 msgstr "{editor} には別の提供元からの拡張機能 {extension} があります。そのままにします。"
 
 #: polyhost/services/editor_plugins.py:228
+#, python-brace-format
+msgid "The change was made, but {path} could not be written, so this app does not remember it."
+msgstr "変更は行われましたが、{path} に書き込めなかったため、このアプリはそれを記憶していません。"
+
+#: polyhost/services/editor_plugins.py:230
 #, python-brace-format
 msgid "Run this command in the Python environment that runs JupyterLab: {command}"
 msgstr "JupyterLab を実行している Python 環境でこのコマンドを実行してください: {command}"

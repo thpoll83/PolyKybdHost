@@ -89,17 +89,27 @@ function payload(url, opts = {}) {
 function reportUrl(port) {
   return `http://127.0.0.1:${port}/report`;
 }
+function isWithdrawal(body) {
+  try {
+    const o = JSON.parse(body);
+    return o.url === null && o.focused === false;
+  } catch {
+    return false;
+  }
+}
 var Sender = class {
   constructor(post, log = () => {
   }) {
-    this.pending = null;
+    this.pending = [];
     this.busy = false;
     this.seen = /* @__PURE__ */ new Set();
     this.post = post;
     this.log = log;
   }
   submit(port, body) {
-    this.pending = [reportUrl(port), body];
+    const url = reportUrl(port);
+    this.pending = this.pending.filter(([u, , withdrawal]) => withdrawal && u !== url);
+    this.pending.push([url, body, isWithdrawal(body)]);
     return this.pump();
   }
   /** Resolves once nothing is pending or in flight (for tests and unload). */
@@ -107,9 +117,8 @@ var Sender = class {
     if (this.busy) return;
     this.busy = true;
     try {
-      while (this.pending) {
-        const [url, body] = this.pending;
-        this.pending = null;
+      while (this.pending.length > 0) {
+        const [url, body] = this.pending.shift();
         try {
           await this.post(url, body);
         } catch (e) {

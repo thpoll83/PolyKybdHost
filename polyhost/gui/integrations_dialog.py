@@ -73,6 +73,7 @@ class RowsPage(QWidget):
         self._boxes = {}
         self._removable = set()
         self._thread = None
+        self.apply_keys = []
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(12)
@@ -237,6 +238,8 @@ class RowsPage(QWidget):
             keys = [k for k in keys if k in self._removable]
         if not keys or self.busy():
             return
+        # The rows this Install or Remove acts on, for before_apply().
+        self.apply_keys = keys
         self.before_apply(install)
         if self.APPLY_ON_THREAD:
             self._checking.show()

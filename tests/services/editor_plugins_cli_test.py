@@ -108,7 +108,7 @@ class CliFixture(unittest.TestCase):
         self.home = self.tmp / "home"
         self.home.mkdir()
         self.vsix = self.tmp / "polykybd-mode-reporter.vsix"
-        make_vsix(self.vsix, {"extension/package.json": "v1"})
+        make_vsix(self.vsix, {"extension/package.json": '{"version": "1.0.0"}'})
         self.state_file = self.tmp / "state.json"
         self.cli = FakeCli()
         self.which = lambda n: "/usr/bin/code" if n == "code" else None
@@ -141,7 +141,8 @@ class TestVsCode(CliFixture):
         self.assertIn("code --install-extension polykybd-mode-reporter.vsix", r[0].message)
         self.assertEqual(self.status().state, ep.STATE_INSTALLED)
         # An update of the app ships a rebuilt extension.
-        make_vsix(self.vsix, {"extension/package.json": "v2"})
+        make_vsix(self.vsix, {"extension/package.json": '{"version": "1.0.0"}',
+                              "extension/out/extension.js": "rebuilt"})
         self.assertEqual(self.status().state, ep.STATE_OUTDATED)
         self.cli.calls.clear()
         self.assertEqual(ep.refresh_installed(**self.kw()), [ep.VSCODE])
@@ -161,6 +162,32 @@ class TestVsCode(CliFixture):
             r = fn([ep.VSCODE], **self.kw())
             self.assertFalse(r[0].ok, r)
         self.assertEqual(self.cli.calls, [["--list-extensions", "--show-versions"]] * 3)
+
+    def test_a_marketplace_replacement_is_left_alone(self):
+        r = ep.install([ep.VSCODE], **self.kw())
+        self.assertTrue(r[0].ok and r[0].changed, r)
+        self.assertEqual(et.State(self.state_file).cli_version(ep.VSCODE), "1.0.0")
+        # The user installs 1.2.0 from the Marketplace over this app's copy.
+        self.cli.installed[EXT] = "1.2.0"
+        st = self.status()
+        self.assertEqual((st.state, st.detail), (ep.STATE_MANUAL, f"{EXT}@1.2.0"))
+        # An update of the app ships another .vsix: the refresh must not
+        # overwrite the replacement, and Remove must not uninstall it.
+        make_vsix(self.vsix, {"extension/package.json": '{"version": "1.0.0"}',
+                              "extension/out/extension.js": "rebuilt"})
+        self.cli.calls.clear()
+        self.assertEqual(ep.refresh_installed(**self.kw()), [])
+        self.assertFalse(ep.remove([ep.VSCODE], **self.kw())[0].ok)
+        self.assertEqual([c[0] for c in self.cli.calls], ["--list-extensions"] * 2)
+        self.assertEqual(self.cli.installed[EXT], "1.2.0")
+
+    def test_a_state_file_that_cannot_be_written_is_reported(self):
+        blocker = self.tmp / "blocker"
+        blocker.write_text("")
+        r = ep.install([ep.VSCODE], **self.kw(state_file=blocker / "state.json"))
+        self.assertTrue(r[0].changed)
+        self.assertFalse(r[0].ok)
+        self.assertIn("could not be written", r[0].message)
 
     def test_a_failing_cli(self):
         r = ep.install([ep.VSCODE], **self.kw())
