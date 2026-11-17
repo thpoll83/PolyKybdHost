@@ -1,0 +1,46 @@
+# RGB lighting on the Settings layer (split72). docs/tutorials-plan.md has the field reference.
+id: rgb-lighting
+category: light
+title: RGB lighting
+summary: Turn the key lighting on or off, pick an effect, and set colour, brightness and speed.
+min_protocol: 32
+steps:
+  - guide_to_layer: Settings
+    say: ["Hold Fn, then tap", "the ringed key"]
+    text: >-
+      Hold Fn. The ring moves to the key that opens the Settings layer. Keep Fn held
+      and tap that key. The keyboard changes to the Settings layer and stays on it.
+    wait: {layer: Settings}
+  - point: {keycode: KC_RGB_TOG}
+    spotlight: []
+    say: ["On / off", ""]
+    text: >-
+      The lighting controls are on the right half. This key turns the lighting on and
+      off. The status display shows RGB Off while it is off. Try it.
+  - point: {keycode: RM_NEXT}
+    spotlight: [{keycode: RM_PREV}, {keycode: RGB_M_P}, {keycode: RGB_M_B},
+                {keycode: RGB_M_R}, {keycode: RGB_M_SW}]
+    say: ["Prev / next effect", ""]
+    text: >-
+      The two outer keys step through the 41 effects. The four keys between them go
+      straight to plain, breathing, rainbow and swirl.
+  - point: {keycode: RM_HUEU}
+    spotlight: [{keycode: RM_HUED}, {keycode: RM_SATD}, {keycode: RM_SATU}]
+    say: ["Hue - +", "Saturation - +"]
+    text: >-
+      Hue changes the colour. Saturation goes from pale to full colour.
+  - point: {keycode: RM_VALU}
+    spotlight: [{keycode: RM_VALD}, {keycode: RM_SPDD}, {keycode: RM_SPDU}]
+    say: ["Brightness - +", "Speed - +"]
+    text: >-
+      Brightness dims or brightens the LEDs. Speed sets how fast an animated effect
+      runs. The keyboard keeps your settings after a restart.
+  - point: {keycode: KC_BASE}
+    spotlight: []
+    say: ["This key goes", "back to typing"]
+    text: The lower-left corner key leaves the Settings layer. Press it now.
+    wait: {press: KC_BASE}
+  - reveal: {from: {keycode: KC_BASE}}
+    say: ["Done", ""]
+    text: You are back on your typing layer.
+    wait: {seconds: 3}

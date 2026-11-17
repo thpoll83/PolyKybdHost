@@ -47,6 +47,15 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     keep.google.com:
       url: '^https?://keep\.google\.com([/?#]|$)'
       overlay: [googlekeep_template.mods.png, googlekeep_template.combo.mods.png]
+    # Jupyter mode reports (jupyterlab-extension/): while the browser is focused,
+    # a focused JupyterLab page's jupyter:// report replaces the tab URL.
+    # The url gate keeps a web address that only contains the text off the set.
+    "jupyter://notebook/command": { url: '^jupyter://', overlay: [jupyter_command_template.mods.png, jupyter_command_template.combo.mods.png] }
+    "jupyter://notebook/edit": { url: '^jupyter://', overlay: [jupyter_edit_template.mods.png, jupyter_edit_template.combo.mods.png] }
+    "jupyter://editor": { url: '^jupyter://', overlay: [jupyter_editor_template.mods.png, jupyter_editor_template.combo.mods.png] }
+    "jupyter://console": { url: '^jupyter://', overlay: [jupyter_console_template.mods.png, jupyter_console_template.combo.mods.png] }
+    "jupyter://terminal": { url: '^jupyter://', overlay: [jupyter_terminal_template.mods.png, jupyter_terminal_template.combo.mods.png] }
+    "jupyter://": { url: '^jupyter://', overlay: [jupyter_global_template.mods.png, jupyter_global_template.combo.mods.png] }
     # Jupyter (sources: overlay_sources/jupyter/): a local server or a
     # JupyterHub. The url gate needs /lab, /notebooks or /tree right after the
     # host (or /user/<name>), so github.com/<o>/<r>/tree/... does not match;
@@ -457,6 +466,13 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         keep.google.com:
           url: '^https?://keep\.google\.com([/?#]|$)'
           overlay: [googlekeep_template_mac.mods.png, googlekeep_template_mac.combo.mods.png, googlekeep_template_mac.extra.mods.png]
+        # Jupyter mode reports (jupyterlab-extension/), as above.
+        "jupyter://notebook/command": { url: '^jupyter://', overlay: [jupyter_command_template_mac.mods.png, jupyter_command_template_mac.combo.mods.png, jupyter_command_template_mac.extra.mods.png] }
+        "jupyter://notebook/edit": { url: '^jupyter://', overlay: [jupyter_edit_template_mac.mods.png, jupyter_edit_template_mac.combo.mods.png, jupyter_edit_template_mac.extra.mods.png] }
+        "jupyter://editor": { url: '^jupyter://', overlay: [jupyter_editor_template_mac.mods.png, jupyter_editor_template_mac.combo.mods.png, jupyter_editor_template_mac.extra.mods.png] }
+        "jupyter://console": { url: '^jupyter://', overlay: [jupyter_console_template_mac.mods.png, jupyter_console_template_mac.combo.mods.png, jupyter_console_template_mac.extra.mods.png] }
+        "jupyter://terminal": { url: '^jupyter://', overlay: [jupyter_terminal_template_mac.mods.png, jupyter_terminal_template_mac.combo.mods.png, jupyter_terminal_template_mac.extra.mods.png] }
+        "jupyter://": { url: '^jupyter://', overlay: [jupyter_global_template_mac.mods.png, jupyter_global_template_mac.combo.mods.png, jupyter_global_template_mac.extra.mods.png] }
         # Jupyter (sources: overlay_sources/jupyter/): a local server or a
         # JupyterHub. The url gate needs /lab, /notebooks or /tree right after the
         # host (or /user/<name>), so github.com/<o>/<r>/tree/... does not match;
@@ -1427,6 +1443,11 @@ code:
   # a route REPLACES the list below, which is the fallback with every debug key
   # (vscode_debug_fallback) while no fresh report arrives. The names are exactly
   # CONTEXT_REPORTERS' "vscode" names (tests/handler/vscode_routing_test.py).
+  # While a diff editor is the active tab the reporter adds `/diff`
+  # (vscode://debug/stopped/diff, ...), and the route adds the diff set
+  # (overlay_sources/vscode/diff.yaml) after the mode's debug set. `urls-contains`
+  # takes the FIRST needle found in the URL, so the three `/diff` routes come
+  # before the three plain ones, which are also substrings of them.
   # macOS runs the Cmd-resolved set: VS Code registers most of its chords as
   # KeyMod.CtrlCmd, so the artwork moves from Ctrl to Cmd. Generated from the
   # SAME bindings file via the CMDCTRL token -- the two sets cannot drift.
@@ -1437,6 +1458,9 @@ code:
   title: .* Visual Studio Code
   layer: false
   urls-contains:
+    "vscode://debug/stopped/diff": { overlay: [vscode_template.mods.png, vscode_template.combo.mods.png, vscode_debug_stopped.mods.png, vscode_debug_stopped.combo.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
+    "vscode://debug/running/diff": { overlay: [vscode_template.mods.png, vscode_template.combo.mods.png, vscode_debug_running.mods.png, vscode_debug_running.combo.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
+    "vscode://edit/diff": { overlay: [vscode_template.mods.png, vscode_template.combo.mods.png, vscode_debug_edit.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
     "vscode://debug/stopped": { overlay: [vscode_template.mods.png, vscode_template.combo.mods.png, vscode_debug_stopped.mods.png, vscode_debug_stopped.combo.mods.png] }
     "vscode://debug/running": { overlay: [vscode_template.mods.png, vscode_template.combo.mods.png, vscode_debug_running.mods.png, vscode_debug_running.combo.mods.png] }
     "vscode://edit": { overlay: [vscode_template.mods.png, vscode_template.combo.mods.png, vscode_debug_edit.mods.png] }
@@ -1452,6 +1476,9 @@ code:
       # titles can be checked.
       layer: false
       urls-contains:
+        "vscode://debug/stopped/diff": { overlay: [vscode_mac_template.mods.png, vscode_mac_template.combo.mods.png, vscode_mac_template.extra.mods.png, vscode_debug_stopped_mac.mods.png, vscode_debug_stopped_mac.extra.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
+        "vscode://debug/running/diff": { overlay: [vscode_mac_template.mods.png, vscode_mac_template.combo.mods.png, vscode_mac_template.extra.mods.png, vscode_debug_running_mac.mods.png, vscode_debug_running_mac.extra.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
+        "vscode://edit/diff": { overlay: [vscode_mac_template.mods.png, vscode_mac_template.combo.mods.png, vscode_mac_template.extra.mods.png, vscode_debug_edit_mac.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
         "vscode://debug/stopped": { overlay: [vscode_mac_template.mods.png, vscode_mac_template.combo.mods.png, vscode_mac_template.extra.mods.png, vscode_debug_stopped_mac.mods.png, vscode_debug_stopped_mac.extra.mods.png] }
         "vscode://debug/running": { overlay: [vscode_mac_template.mods.png, vscode_mac_template.combo.mods.png, vscode_mac_template.extra.mods.png, vscode_debug_running_mac.mods.png, vscode_debug_running_mac.extra.mods.png] }
         "vscode://edit": { overlay: [vscode_mac_template.mods.png, vscode_mac_template.combo.mods.png, vscode_mac_template.extra.mods.png, vscode_debug_edit_mac.mods.png] }
@@ -1464,6 +1491,9 @@ code:
       title: .* Visual Studio Code
       layer: false
       urls-contains:
+        "vscode://debug/stopped/diff": { overlay: [vscode_linux_template.mods.png, vscode_linux_template.combo.mods.png, vscode_debug_stopped.mods.png, vscode_debug_stopped.combo.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
+        "vscode://debug/running/diff": { overlay: [vscode_linux_template.mods.png, vscode_linux_template.combo.mods.png, vscode_debug_running.mods.png, vscode_debug_running.combo.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
+        "vscode://edit/diff": { overlay: [vscode_linux_template.mods.png, vscode_linux_template.combo.mods.png, vscode_debug_edit.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
         "vscode://debug/stopped": { overlay: [vscode_linux_template.mods.png, vscode_linux_template.combo.mods.png, vscode_debug_stopped.mods.png, vscode_debug_stopped.combo.mods.png] }
         "vscode://debug/running": { overlay: [vscode_linux_template.mods.png, vscode_linux_template.combo.mods.png, vscode_debug_running.mods.png, vscode_debug_running.combo.mods.png] }
         "vscode://edit": { overlay: [vscode_linux_template.mods.png, vscode_linux_template.combo.mods.png, vscode_debug_edit.mods.png] }
@@ -1635,20 +1665,64 @@ ghidra-ghidra,ghidra:
 # macOS reports the bundle name, e.g. "IDA Professional 9.1" or "IDA Pro 9.0";
 # the matcher drops the trailing version. One set serves every edition (Pro,
 # Home, Free, Classroom). None of these names were checked on an install.
+# The IDA plugin (ida-plugin/) reports the focused widget as `ida://<view>`;
+# the names here are exactly CONTEXT_REPORTERS' "ida" names
+# (tests/handler/ida_routing_test.py). Pseudocode, the disassembly (text,
+# graph), the hex view, Local Types (`ida://types`), the list windows
+# (`ida://list`) and every other window each get a set
+# (overlay_sources/ida/gen_views.py). `layer: false`: a view's set replaces
+# ida_template, which stays the fallback when no report arrives.
 ida,ida64,idaq,idaq64,ida pro,ida professional,ida home,ida free,ida classroom:
   overlay: [ida_template.mods.png, ida_template.combo.mods.png]
+  layer: false
+  urls-contains:
+    "ida://pseudocode": { overlay: [ida_pseudocode_template.mods.png, ida_pseudocode_template.combo.mods.png] }
+    "ida://disasm": { overlay: [ida_disasm_template.mods.png, ida_disasm_template.combo.mods.png] }
+    "ida://hex": { overlay: [ida_hex_template.mods.png, ida_hex_template.combo.mods.png] }
+    "ida://types": { overlay: [ida_types_template.mods.png, ida_types_template.combo.mods.png] }
+    "ida://list": { overlay: [ida_list_template.mods.png, ida_list_template.combo.mods.png] }
+    "ida://": { overlay: [ida_global_template.mods.png, ida_global_template.combo.mods.png] }
   os:
     macos:
       overlay: [ida_template_mac.mods.png, ida_template_mac.combo.mods.png, ida_template_mac.extra.mods.png]
+      layer: false
+      urls-contains:
+        "ida://pseudocode": { overlay: [ida_pseudocode_template_mac.mods.png, ida_pseudocode_template_mac.combo.mods.png, ida_pseudocode_template_mac.extra.mods.png] }
+        "ida://disasm": { overlay: [ida_disasm_template_mac.mods.png, ida_disasm_template_mac.combo.mods.png, ida_disasm_template_mac.extra.mods.png] }
+        "ida://hex": { overlay: [ida_hex_template_mac.mods.png, ida_hex_template_mac.combo.mods.png, ida_hex_template_mac.extra.mods.png] }
+        "ida://types": { overlay: [ida_types_template_mac.mods.png, ida_types_template_mac.combo.mods.png, ida_types_template_mac.extra.mods.png] }
+        "ida://list": { overlay: [ida_list_template_mac.mods.png, ida_list_template_mac.combo.mods.png, ida_list_template_mac.extra.mods.png] }
+        "ida://": { overlay: [ida_global_template_mac.mods.png, ida_global_template_mac.combo.mods.png, ida_global_template_mac.extra.mods.png] }
 # Binary Ninja (overlay_sources/binaryninja/). Windows `binaryninja.exe` and the
 # Linux binary `binaryninja` (unverified on an install); macOS "Binary Ninja"
 # (the app bundle name).
+# The mode reporter (binaryninja-plugin/) sends binaryninja://<view>[/<il>] for
+# the focused pane, and binaryninja://console / binaryninja://xrefs while the
+# scripting console or the cross-references pane has the keyboard focus.
+# Linear view drops the graph zoom keys; Hex view leaves the keys that type
+# text blank; the console and the cross-references pane draw only their own
+# keys and the command palette. Graph view, the other views and no report
+# (plugin not installed, or a stale report) keep the main set. `layer: false`:
+# a view's set replaces the main one instead of drawing over it. Longer needles
+# first.
 binaryninja,binary ninja:
   overlay: [binaryninja_template.mods.png, binaryninja_template.combo.mods.png]
+  layer: false
+  urls-contains:
+    "binaryninja://console": { overlay: [binaryninja_console_template.mods.png, binaryninja_console_template.combo.mods.png] }
+    "binaryninja://linear": { overlay: [binaryninja_linear_template.mods.png, binaryninja_linear_template.combo.mods.png] }
+    "binaryninja://xrefs": { overlay: [binaryninja_xrefs_template.mods.png, binaryninja_xrefs_template.combo.mods.png] }
+    "binaryninja://hex": { overlay: [binaryninja_hex_template.mods.png, binaryninja_hex_template.combo.mods.png] }
   os:
     macos:
       overlay: [binaryninja_template_mac.mods.png, binaryninja_template_mac.combo.mods.png,
                 binaryninja_template_mac.extra.mods.png]
+      layer: false
+      urls-contains:
+        "binaryninja://console": { overlay: [binaryninja_console_template_mac.mods.png, binaryninja_console_template_mac.combo.mods.png, binaryninja_console_template_mac.extra.mods.png] }
+        "binaryninja://linear": { overlay: [binaryninja_linear_template_mac.mods.png, binaryninja_linear_template_mac.combo.mods.png, binaryninja_linear_template_mac.extra.mods.png] }
+        "binaryninja://xrefs": { overlay: [binaryninja_xrefs_template_mac.mods.png, binaryninja_xrefs_template_mac.combo.mods.png, binaryninja_xrefs_template_mac.extra.mods.png] }
+        "binaryninja://hex": { overlay: [binaryninja_hex_template_mac.mods.png, binaryninja_hex_template_mac.combo.mods.png, binaryninja_hex_template_mac.extra.mods.png] }
 # Minecraft: Bedrock Edition (overlay_sources/minecraft/minecraft_bedrock.yaml).
 # Windows reports `Minecraft.Windows.exe`, cut at the first dot to `minecraft`;
 # the window title is "Minecraft" ("Minecraft Preview" for the preview build).
@@ -1680,23 +1754,104 @@ minecraft:
 "minecraft*":
   title: '^Minecraft\*? \d'
   overlay: [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
-# Windows reports the executable (idea64.exe -> idea64), Linux the launcher or
-# WM_CLASS (idea / jetbrains-idea), macOS the display name ("IntelliJ IDEA").
+# JetBrains IDEs. Windows reports the executable (idea64.exe -> idea64), Linux
+# the launcher or WM_CLASS (idea / jetbrains-idea), macOS the display name
+# ("IntelliJ IDEA"). The names are also the host's CONTEXT_REPORTERS list
+# (handler/browser_url.py): the PolyKybd plugin (jetbrains-plugin/) reports
+# `jetbrains://<window>[/running|/paused]`. Routes, first match wins: the
+# Terminal tool window, then a paused debug session (the debugger set), then
+# the Project tool window, then the Commit, Git, Run (also the Debug window
+# while the session runs), Services, Find, Problems, Bookmarks and Structure
+# tool windows, each with its own set, then any other report (the editor set:
+# the fallback set without the keys that only work while paused). With no plugin, or a stale
+# report, the full set below applies. `layer: false` makes a route replace the
+# fallback. Sources: overlay_sources/jetbrains/ (bindings_*.yaml, SOURCES.md).
 idea64,pycharm64,clion64,webstorm64,goland64,rider64,phpstorm64,rubymine64,datagrip64,rustrover64,studio64,jetbrains_client,idea,pycharm,clion,webstorm,goland,rider,phpstorm,rubymine,datagrip,rustrover,jetbrains-idea,jetbrains-idea-ce,jetbrains-pycharm,jetbrains-pycharm-ce,jetbrains-clion,jetbrains-webstorm,jetbrains-goland,jetbrains-rider,jetbrains-phpstorm,jetbrains-rubymine,jetbrains-datagrip,jetbrains-rustrover,jetbrains-studio,intellij idea,intellij idea ce,intellij idea ultimate,pycharm ce,pycharm professional,android studio:
   overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png, jetbrains_template.extra.mods.png]
+  layer: false
+  urls-contains:
+    "jetbrains://terminal": { overlay: [jetbrains_terminal_template.mods.png, jetbrains_terminal_template.combo.mods.png] }
+    "/paused": { overlay: [jetbrains_debug_template.mods.png, jetbrains_debug_template.combo.mods.png, jetbrains_debug_template.extra.mods.png] }
+    "jetbrains://project": { overlay: [jetbrains_project_template.mods.png, jetbrains_project_template.combo.mods.png, jetbrains_project_template.extra.mods.png] }
+    "jetbrains://commit": { overlay: [jetbrains_commit_template.mods.png, jetbrains_commit_template.combo.mods.png] }
+    "jetbrains://git": { overlay: [jetbrains_git_template.mods.png, jetbrains_git_template.combo.mods.png] }
+    "jetbrains://run": { overlay: [jetbrains_run_template.mods.png, jetbrains_run_template.combo.mods.png] }
+    "jetbrains://debug": { overlay: [jetbrains_run_template.mods.png, jetbrains_run_template.combo.mods.png] }
+    "jetbrains://services": { overlay: [jetbrains_services_template.mods.png, jetbrains_services_template.combo.mods.png] }
+    "jetbrains://find": { overlay: [jetbrains_find_template.mods.png, jetbrains_find_template.combo.mods.png] }
+    "jetbrains://problems": { overlay: [jetbrains_problems_template.mods.png, jetbrains_problems_template.combo.mods.png] }
+    "jetbrains://bookmarks": { overlay: [jetbrains_bookmarks_template.mods.png, jetbrains_bookmarks_template.combo.mods.png] }
+    "jetbrains://structure": { overlay: [jetbrains_structure_template.mods.png, jetbrains_structure_template.combo.mods.png] }
+    "jetbrains://": { overlay: [jetbrains_editor_template.mods.png, jetbrains_editor_template.combo.mods.png, jetbrains_editor_template.extra.mods.png] }
   os:
     macos:
-      overlay: [jetbrains_mac_template.mods.png, jetbrains_mac_template.combo.mods.png,
-                jetbrains_mac_template.extra.mods.png, jetbrains_mac_template.gui.mods.png]
+      overlay: [jetbrains_mac_template.mods.png, jetbrains_mac_template.combo.mods.png, jetbrains_mac_template.extra.mods.png, jetbrains_mac_template.gui.mods.png]
+      layer: false
+      urls-contains:
+        "jetbrains://terminal": { overlay: [jetbrains_terminal_mac_template.mods.png, jetbrains_terminal_mac_template.combo.mods.png, jetbrains_terminal_mac_template.extra.mods.png] }
+        "/paused": { overlay: [jetbrains_debug_mac_template.mods.png, jetbrains_debug_mac_template.combo.mods.png, jetbrains_debug_mac_template.extra.mods.png, jetbrains_debug_mac_template.gui.mods.png] }
+        "jetbrains://project": { overlay: [jetbrains_project_mac_template.mods.png, jetbrains_project_mac_template.combo.mods.png, jetbrains_project_mac_template.extra.mods.png, jetbrains_project_mac_template.gui.mods.png] }
+        "jetbrains://commit": { overlay: [jetbrains_commit_mac_template.mods.png, jetbrains_commit_mac_template.combo.mods.png, jetbrains_commit_mac_template.extra.mods.png] }
+        "jetbrains://git": { overlay: [jetbrains_git_mac_template.mods.png, jetbrains_git_mac_template.combo.mods.png, jetbrains_git_mac_template.extra.mods.png] }
+        "jetbrains://run": { overlay: [jetbrains_run_mac_template.mods.png, jetbrains_run_mac_template.combo.mods.png, jetbrains_run_mac_template.extra.mods.png] }
+        "jetbrains://debug": { overlay: [jetbrains_run_mac_template.mods.png, jetbrains_run_mac_template.combo.mods.png, jetbrains_run_mac_template.extra.mods.png] }
+        "jetbrains://services": { overlay: [jetbrains_services_mac_template.mods.png, jetbrains_services_mac_template.combo.mods.png, jetbrains_services_mac_template.extra.mods.png] }
+        "jetbrains://find": { overlay: [jetbrains_find_mac_template.mods.png, jetbrains_find_mac_template.combo.mods.png, jetbrains_find_mac_template.extra.mods.png] }
+        "jetbrains://problems": { overlay: [jetbrains_problems_mac_template.mods.png, jetbrains_problems_mac_template.combo.mods.png, jetbrains_problems_mac_template.extra.mods.png] }
+        "jetbrains://bookmarks": { overlay: [jetbrains_bookmarks_mac_template.mods.png, jetbrains_bookmarks_mac_template.combo.mods.png, jetbrains_bookmarks_mac_template.extra.mods.png] }
+        "jetbrains://structure": { overlay: [jetbrains_structure_mac_template.mods.png, jetbrains_structure_mac_template.combo.mods.png, jetbrains_structure_mac_template.extra.mods.png] }
+        "jetbrains://": { overlay: [jetbrains_editor_mac_template.mods.png, jetbrains_editor_mac_template.combo.mods.png, jetbrains_editor_mac_template.extra.mods.png, jetbrains_editor_mac_template.gui.mods.png] }
     linux:
-      overlay: [jetbrains_linux_template.mods.png, jetbrains_linux_template.combo.mods.png,
-                jetbrains_linux_template.extra.mods.png]
+      overlay: [jetbrains_linux_template.mods.png, jetbrains_linux_template.combo.mods.png, jetbrains_linux_template.extra.mods.png]
+      layer: false
+      urls-contains:
+        "jetbrains://terminal": { overlay: [jetbrains_terminal_linux_template.mods.png, jetbrains_terminal_linux_template.combo.mods.png] }
+        "/paused": { overlay: [jetbrains_debug_linux_template.mods.png, jetbrains_debug_linux_template.combo.mods.png, jetbrains_debug_linux_template.extra.mods.png] }
+        "jetbrains://project": { overlay: [jetbrains_project_linux_template.mods.png, jetbrains_project_linux_template.combo.mods.png, jetbrains_project_linux_template.extra.mods.png] }
+        "jetbrains://commit": { overlay: [jetbrains_commit_template.mods.png, jetbrains_commit_template.combo.mods.png] }
+        "jetbrains://git": { overlay: [jetbrains_git_template.mods.png, jetbrains_git_template.combo.mods.png] }
+        "jetbrains://run": { overlay: [jetbrains_run_template.mods.png, jetbrains_run_template.combo.mods.png] }
+        "jetbrains://debug": { overlay: [jetbrains_run_template.mods.png, jetbrains_run_template.combo.mods.png] }
+        "jetbrains://services": { overlay: [jetbrains_services_template.mods.png, jetbrains_services_template.combo.mods.png] }
+        "jetbrains://find": { overlay: [jetbrains_find_template.mods.png, jetbrains_find_template.combo.mods.png] }
+        "jetbrains://problems": { overlay: [jetbrains_problems_template.mods.png, jetbrains_problems_template.combo.mods.png] }
+        "jetbrains://bookmarks": { overlay: [jetbrains_bookmarks_template.mods.png, jetbrains_bookmarks_template.combo.mods.png] }
+        "jetbrains://structure": { overlay: [jetbrains_structure_template.mods.png, jetbrains_structure_template.combo.mods.png] }
+        "jetbrains://": { overlay: [jetbrains_editor_linux_template.mods.png, jetbrains_editor_linux_template.combo.mods.png, jetbrains_editor_linux_template.extra.mods.png] }
     linux_gnome:
-      overlay: [jetbrains_gnome_template.mods.png, jetbrains_gnome_template.combo.mods.png,
-                jetbrains_gnome_template.extra.mods.png]
+      overlay: [jetbrains_gnome_template.mods.png, jetbrains_gnome_template.combo.mods.png, jetbrains_gnome_template.extra.mods.png]
+      layer: false
+      urls-contains:
+        "jetbrains://terminal": { overlay: [jetbrains_terminal_linux_template.mods.png, jetbrains_terminal_linux_template.combo.mods.png] }
+        "/paused": { overlay: [jetbrains_debug_gnome_template.mods.png, jetbrains_debug_gnome_template.combo.mods.png, jetbrains_debug_gnome_template.extra.mods.png] }
+        "jetbrains://project": { overlay: [jetbrains_project_linux_template.mods.png, jetbrains_project_linux_template.combo.mods.png, jetbrains_project_linux_template.extra.mods.png] }
+        "jetbrains://commit": { overlay: [jetbrains_commit_template.mods.png, jetbrains_commit_template.combo.mods.png] }
+        "jetbrains://git": { overlay: [jetbrains_git_template.mods.png, jetbrains_git_template.combo.mods.png] }
+        "jetbrains://run": { overlay: [jetbrains_run_gnome_template.mods.png, jetbrains_run_gnome_template.combo.mods.png] }
+        "jetbrains://debug": { overlay: [jetbrains_run_gnome_template.mods.png, jetbrains_run_gnome_template.combo.mods.png] }
+        "jetbrains://services": { overlay: [jetbrains_services_gnome_template.mods.png, jetbrains_services_gnome_template.combo.mods.png] }
+        "jetbrains://find": { overlay: [jetbrains_find_gnome_template.mods.png, jetbrains_find_gnome_template.combo.mods.png] }
+        "jetbrains://problems": { overlay: [jetbrains_problems_template.mods.png, jetbrains_problems_template.combo.mods.png] }
+        "jetbrains://bookmarks": { overlay: [jetbrains_bookmarks_gnome_template.mods.png, jetbrains_bookmarks_gnome_template.combo.mods.png] }
+        "jetbrains://structure": { overlay: [jetbrains_structure_template.mods.png, jetbrains_structure_template.combo.mods.png] }
+        "jetbrains://": { overlay: [jetbrains_editor_gnome_template.mods.png, jetbrains_editor_gnome_template.combo.mods.png, jetbrains_editor_gnome_template.extra.mods.png] }
     linux_kde:
-      overlay: [jetbrains_kde_template.mods.png, jetbrains_kde_template.combo.mods.png,
-                jetbrains_kde_template.extra.mods.png]
+      overlay: [jetbrains_kde_template.mods.png, jetbrains_kde_template.combo.mods.png, jetbrains_kde_template.extra.mods.png]
+      layer: false
+      urls-contains:
+        "jetbrains://terminal": { overlay: [jetbrains_terminal_kde_template.mods.png, jetbrains_terminal_kde_template.combo.mods.png] }
+        "/paused": { overlay: [jetbrains_debug_kde_template.mods.png, jetbrains_debug_kde_template.combo.mods.png, jetbrains_debug_kde_template.extra.mods.png] }
+        "jetbrains://project": { overlay: [jetbrains_project_linux_template.mods.png, jetbrains_project_linux_template.combo.mods.png, jetbrains_project_linux_template.extra.mods.png] }
+        "jetbrains://commit": { overlay: [jetbrains_commit_template.mods.png, jetbrains_commit_template.combo.mods.png] }
+        "jetbrains://git": { overlay: [jetbrains_git_kde_template.mods.png, jetbrains_git_kde_template.combo.mods.png] }
+        "jetbrains://run": { overlay: [jetbrains_run_kde_template.mods.png, jetbrains_run_kde_template.combo.mods.png] }
+        "jetbrains://debug": { overlay: [jetbrains_run_kde_template.mods.png, jetbrains_run_kde_template.combo.mods.png] }
+        "jetbrains://services": { overlay: [jetbrains_services_kde_template.mods.png, jetbrains_services_kde_template.combo.mods.png] }
+        "jetbrains://find": { overlay: [jetbrains_find_kde_template.mods.png, jetbrains_find_kde_template.combo.mods.png] }
+        "jetbrains://problems": { overlay: [jetbrains_problems_template.mods.png, jetbrains_problems_template.combo.mods.png] }
+        "jetbrains://bookmarks": { overlay: [jetbrains_bookmarks_template.mods.png, jetbrains_bookmarks_template.combo.mods.png] }
+        "jetbrains://structure": { overlay: [jetbrains_structure_template.mods.png, jetbrains_structure_template.combo.mods.png] }
+        "jetbrains://": { overlay: [jetbrains_editor_kde_template.mods.png, jetbrains_editor_kde_template.combo.mods.png, jetbrains_editor_kde_template.extra.mods.png] }
 # Eclipse IDE (sources: overlay_sources/eclipse/), the Default key scheme. Linux
 # has its own set because GTK moves Redo to Ctrl+Shift+Z and Occurrences in
 # File to Ctrl+Alt+U. Windows reports eclipse.exe -> `eclipse`, Linux the
@@ -1798,6 +1953,24 @@ windowsterminal,wt:
     # modes come before `emacs://`. org-mode lists the global set FIRST and its
     # own after it (a later file takes priority per key); Dired's set is
     # complete on its own.
+    # Evil states (`emacs://<major-mode>/<state>`) come first: evil's state
+    # maps take priority over the major mode's keys, so in Org or Dired normal
+    # state h j k l d x are evil's. Each set is the Vim set of that mode
+    # without the keys evil binds differently (overlay_sources/emacs/evil.yaml).
+    # The needle only selects the route; `url` requires the state at the end of
+    # an emacs:// report, so `vim://normal` (matched above) and a major mode
+    # such as `visual-basic-mode` never match. Emacs state, operator state and
+    # no evil fall through to the major-mode routes below.
+    # Org in normal state: the Org set first and evil's normal set on top, so
+    # Org's keys that evil leaves free (Shift+Tab, Alt/Ctrl/Shift+Enter, the
+    # Alt and Shift arrows, the element keys) show, and a key both bind (Tab:
+    # evil's newer jump) shows evil's, which is the one Emacs runs.
+    "org-mode/normal": { url: '^emacs://org-mode/normal$', overlay: [emacs_org_template.mods.png, emacs_org_template.combo.mods.png, emacs_evil_normal_template.mods.png] }
+    "/normal": { url: '^emacs://[^/]+/normal$', overlay: emacs_evil_normal_template.mods.png }
+    "/visual": { url: '^emacs://[^/]+/visual$', overlay: emacs_evil_visual_template.mods.png }
+    "/insert": { url: '^emacs://[^/]+/insert$', overlay: emacs_evil_insert_template.mods.png }
+    "/replace": { url: '^emacs://[^/]+/replace$', overlay: emacs_evil_replace_template.mods.png }
+    "/motion": { url: '^emacs://[^/]+/motion$', overlay: emacs_evil_motion_template.mods.png }
     "emacs://org-mode":
       overlay: [emacs_template.mods.png, emacs_template.combo.mods.png, emacs_template.extra.mods.png, emacs_org_template.mods.png, emacs_org_template.combo.mods.png]
     "emacs://dired-mode":
@@ -2498,6 +2671,37 @@ blender,org.blender.blender:
         "blender://VERTEX_GREASE_PENCIL/VIEW_3D": { overlay: [blender_gp_vertex_template_mac.mods.png, blender_gp_vertex_template_mac.combo.mods.png, blender_gp_vertex_template_mac.extra.mods.png] }
         "/VIEW_3D": { overlay: [blender_common_template_mac.mods.png, blender_common_template_mac.combo.mods.png, blender_common_template_mac.extra.mods.png] }
         "blender://": { overlay: [blender_global_template_mac.mods.png, blender_global_template_mac.combo.mods.png, blender_global_template_mac.extra.mods.png] }
+# Unity Editor (sources: overlay_sources/unity/, gen_unity_specs.py). Unity.exe on
+# Windows, WM_CLASS Unity on Linux, Unity.app on macOS: all report `unity`; not
+# checked on an install. The Editor package (unity-package/) reports
+# `unity://<edit|play>/<window>`; routes are tried in order: the Game view in Play
+# mode gets only the Play-mode keys, the Scene view, the Animation window, the
+# Timeline window, the Search window and the curve editor their own sets, any
+# other window the global set. `layer: false` makes a route replace the fallback.
+# Without the package (or with a stale report) the Scene view set applies.
+unity:
+  overlay: [unity_scene_template.mods.png, unity_scene_template.combo.mods.png]
+  layer: false
+  urls-contains:
+    "unity://play/game": { overlay: [unity_play_template.mods.png, unity_play_template.combo.mods.png] }
+    "/scene": { overlay: [unity_scene_template.mods.png, unity_scene_template.combo.mods.png] }
+    "/animation": { overlay: [unity_animation_template.mods.png, unity_animation_template.combo.mods.png] }
+    "/timeline": { overlay: [unity_timeline_template.mods.png, unity_timeline_template.combo.mods.png] }
+    "/search": { overlay: [unity_search_template.mods.png, unity_search_template.combo.mods.png] }
+    "/curves": { overlay: [unity_curves_template.mods.png, unity_curves_template.combo.mods.png] }
+    "unity://": { overlay: [unity_template.mods.png, unity_template.combo.mods.png] }
+  os:
+    macos:
+      overlay: [unity_scene_template_mac.mods.png, unity_scene_template_mac.combo.mods.png, unity_scene_template_mac.extra.mods.png]
+      layer: false
+      urls-contains:
+        "unity://play/game": { overlay: [unity_play_template_mac.mods.png, unity_play_template_mac.combo.mods.png, unity_play_template_mac.extra.mods.png] }
+        "/scene": { overlay: [unity_scene_template_mac.mods.png, unity_scene_template_mac.combo.mods.png, unity_scene_template_mac.extra.mods.png] }
+        "/animation": { overlay: [unity_animation_template_mac.mods.png, unity_animation_template_mac.combo.mods.png, unity_animation_template_mac.extra.mods.png] }
+        "/timeline": { overlay: [unity_timeline_template_mac.mods.png, unity_timeline_template_mac.combo.mods.png, unity_timeline_template_mac.extra.mods.png] }
+        "/search": { overlay: [unity_search_template_mac.mods.png, unity_search_template_mac.combo.mods.png, unity_search_template_mac.extra.mods.png] }
+        "/curves": { overlay: [unity_curves_template_mac.mods.png, unity_curves_template_mac.combo.mods.png, unity_curves_template_mac.extra.mods.png] }
+        "unity://": { overlay: [unity_template_mac.mods.png, unity_template_mac.combo.mods.png, unity_template_mac.extra.mods.png] }
 # Microsoft Teams (sources: overlay_sources/teams/). The desktop app is
 # `ms-teams.exe` (new Teams) or `Teams.exe` (classic) on Windows, and on macOS
 # "Microsoft Teams" (new), earlier "Microsoft Teams (work or school)" and
@@ -2511,11 +2715,35 @@ ms-teams,teams,microsoft teams,msteams,microsoft teams (work or school),microsof
       overlay: [teams_template_mac.mods.png, teams_template_mac.combo.mods.png, teams_template_mac.extra.mods.png, teams_template_mac.gui.mods.png]
 teams-for-linux:
   overlay: [teams_web_template.mods.png, teams_web_template.combo.mods.png, teams_web_template.extra.mods.png]
+# DaVinci Resolve (sources: overlay_sources/resolve/). One set per page, routed on
+# the `resolve://<page>` pseudo-URL the page reporter (resolve-plugin/) sends;
+# the per-page specs are generated from pages.yaml (gen_pages.py). `layer: false`
+# makes a page's set replace the fallback instead of drawing it dimmed underneath.
+# Without the reporter (or with a stale report) the fallback set applies. The
+# names are exactly the "resolve" entries of browser_url.CONTEXT_REPORTERS.
 resolve,davinci resolve:
   overlay: [resolve_template.mods.png, resolve_template.combo.mods.png]
+  layer: false
+  urls-contains:
+    "resolve://media": { overlay: [resolve_media_template.mods.png, resolve_media_template.combo.mods.png] }
+    "resolve://cut": { overlay: [resolve_cut_template.mods.png, resolve_cut_template.combo.mods.png] }
+    "resolve://edit": { overlay: [resolve_edit_template.mods.png, resolve_edit_template.combo.mods.png] }
+    "resolve://fusion": { overlay: [resolve_fusion_template.mods.png, resolve_fusion_template.combo.mods.png] }
+    "resolve://color": { overlay: [resolve_color_template.mods.png, resolve_color_template.combo.mods.png] }
+    "resolve://fairlight": { overlay: [resolve_fairlight_template.mods.png, resolve_fairlight_template.combo.mods.png] }
+    "resolve://deliver": { overlay: [resolve_deliver_template.mods.png, resolve_deliver_template.combo.mods.png] }
   os:
     macos:
       overlay: [resolve_template_mac.mods.png, resolve_template_mac.combo.mods.png, resolve_template_mac.extra.mods.png]
+      layer: false
+      urls-contains:
+        "resolve://media": { overlay: [resolve_media_template_mac.mods.png, resolve_media_template_mac.combo.mods.png, resolve_media_template_mac.extra.mods.png] }
+        "resolve://cut": { overlay: [resolve_cut_template_mac.mods.png, resolve_cut_template_mac.combo.mods.png, resolve_cut_template_mac.extra.mods.png] }
+        "resolve://edit": { overlay: [resolve_edit_template_mac.mods.png, resolve_edit_template_mac.combo.mods.png, resolve_edit_template_mac.extra.mods.png] }
+        "resolve://fusion": { overlay: [resolve_fusion_template_mac.mods.png, resolve_fusion_template_mac.combo.mods.png, resolve_fusion_template_mac.extra.mods.png] }
+        "resolve://color": { overlay: [resolve_color_template_mac.mods.png, resolve_color_template_mac.combo.mods.png, resolve_color_template_mac.extra.mods.png] }
+        "resolve://fairlight": { overlay: [resolve_fairlight_template_mac.mods.png, resolve_fairlight_template_mac.combo.mods.png, resolve_fairlight_template_mac.extra.mods.png] }
+        "resolve://deliver": { overlay: [resolve_deliver_template_mac.mods.png, resolve_deliver_template_mac.combo.mods.png, resolve_deliver_template_mac.extra.mods.png] }
 # CapCut desktop (sources: overlay_sources/capcut/). The process is CapCut.exe on
 # Windows and CapCut.app on macOS; there is no Linux build. macOS gets the Cmd set.
 capcut:
@@ -2562,11 +2790,34 @@ obs,obs64,obs studio,com.obsproject.studio:
       overlay: [obs_template_mac.mods.png, obs_template_mac.combo.mods.png, obs_template_mac.extra.mods.png]
     linux:
       overlay: [obs_template_linux.mods.png, obs_template_linux.combo.mods.png]
+# Obsidian (sources: overlay_sources/obsidian/). The plugin (obsidian-plugin/)
+# reports obsidian://<view>[/vim-<mode>]: source, live (the editor), reading,
+# canvas, graph, other. The editor keeps the main set; the Vim Normal and
+# Visual layers are drawn over it (later file wins per key). Insert and
+# Replace mode, and the editor with no report, show the main set. `layer:
+# false`: a view replaces the main set instead of drawing it dimmed underneath.
+# The name is exactly CONTEXT_REPORTERS' "obsidian" (obsidian_routing_test.py).
 obsidian:
   overlay: [obsidian_template.mods.png, obsidian_template.combo.mods.png]
+  layer: false
+  urls-contains:
+    "/vim-normal": { overlay: [obsidian_template.mods.png, obsidian_template.combo.mods.png, obsidian_vim_normal_template.mods.png] }
+    "/vim-visual": { overlay: [obsidian_template.mods.png, obsidian_template.combo.mods.png, obsidian_vim_visual_template.mods.png] }
+    "obsidian://reading": { overlay: [obsidian_reading_template.mods.png, obsidian_reading_template.combo.mods.png] }
+    "obsidian://canvas": { overlay: [obsidian_canvas_template.mods.png, obsidian_canvas_template.combo.mods.png] }
+    "obsidian://graph": { overlay: [obsidian_graph_template.mods.png, obsidian_graph_template.combo.mods.png] }
+    "obsidian://other": { overlay: [obsidian_global_template.mods.png, obsidian_global_template.combo.mods.png] }
   os:
     macos:
       overlay: [obsidian_template_mac.mods.png, obsidian_template_mac.combo.mods.png, obsidian_template_mac.extra.mods.png]
+      layer: false
+      urls-contains:
+        "/vim-normal": { overlay: [obsidian_template_mac.mods.png, obsidian_template_mac.combo.mods.png, obsidian_template_mac.extra.mods.png, obsidian_vim_normal_template.mods.png] }
+        "/vim-visual": { overlay: [obsidian_template_mac.mods.png, obsidian_template_mac.combo.mods.png, obsidian_template_mac.extra.mods.png, obsidian_vim_visual_template.mods.png] }
+        "obsidian://reading": { overlay: [obsidian_reading_template_mac.mods.png, obsidian_reading_template_mac.combo.mods.png, obsidian_reading_template_mac.extra.mods.png] }
+        "obsidian://canvas": { overlay: [obsidian_canvas_template_mac.mods.png, obsidian_canvas_template_mac.combo.mods.png, obsidian_canvas_template_mac.extra.mods.png] }
+        "obsidian://graph": { overlay: [obsidian_graph_template_mac.mods.png, obsidian_graph_template_mac.combo.mods.png, obsidian_graph_template_mac.extra.mods.png] }
+        "obsidian://other": { overlay: [obsidian_global_template_mac.mods.png, obsidian_global_template_mac.combo.mods.png, obsidian_global_template_mac.extra.mods.png] }
 # Joplin desktop (sources: overlay_sources/joplin/). Joplin.exe on Windows,
 # Joplin on macOS (electron-builder productName), joplin (AppImage and .deb
 # executableName) or the Flatpak app id net.cozic.joplin_desktop on Linux.
@@ -2845,6 +3096,9 @@ cursor:
   overlay: [cursor_template.mods.png, cursor_template.combo.mods.png, vscode_debug_fallback.mods.png]
   layer: false
   urls-contains:
+    "cursor://debug/stopped/diff": { overlay: [cursor_template.mods.png, cursor_template.combo.mods.png, vscode_debug_stopped.mods.png, vscode_debug_stopped.combo.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
+    "cursor://debug/running/diff": { overlay: [cursor_template.mods.png, cursor_template.combo.mods.png, vscode_debug_running.mods.png, vscode_debug_running.combo.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
+    "cursor://edit/diff": { overlay: [cursor_template.mods.png, cursor_template.combo.mods.png, vscode_debug_edit.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
     "cursor://debug/stopped": { overlay: [cursor_template.mods.png, cursor_template.combo.mods.png, vscode_debug_stopped.mods.png, vscode_debug_stopped.combo.mods.png] }
     "cursor://debug/running": { overlay: [cursor_template.mods.png, cursor_template.combo.mods.png, vscode_debug_running.mods.png, vscode_debug_running.combo.mods.png] }
     "cursor://edit": { overlay: [cursor_template.mods.png, cursor_template.combo.mods.png, vscode_debug_edit.mods.png] }
@@ -2853,6 +3107,9 @@ cursor:
       overlay: [cursor_mac_template.mods.png, cursor_mac_template.combo.mods.png, cursor_mac_template.extra.mods.png, vscode_debug_fallback.mods.png]
       layer: false
       urls-contains:
+        "cursor://debug/stopped/diff": { overlay: [cursor_mac_template.mods.png, cursor_mac_template.combo.mods.png, cursor_mac_template.extra.mods.png, vscode_debug_stopped_mac.mods.png, vscode_debug_stopped_mac.extra.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
+        "cursor://debug/running/diff": { overlay: [cursor_mac_template.mods.png, cursor_mac_template.combo.mods.png, cursor_mac_template.extra.mods.png, vscode_debug_running_mac.mods.png, vscode_debug_running_mac.extra.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
+        "cursor://edit/diff": { overlay: [cursor_mac_template.mods.png, cursor_mac_template.combo.mods.png, cursor_mac_template.extra.mods.png, vscode_debug_edit_mac.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
         "cursor://debug/stopped": { overlay: [cursor_mac_template.mods.png, cursor_mac_template.combo.mods.png, cursor_mac_template.extra.mods.png, vscode_debug_stopped_mac.mods.png, vscode_debug_stopped_mac.extra.mods.png] }
         "cursor://debug/running": { overlay: [cursor_mac_template.mods.png, cursor_mac_template.combo.mods.png, cursor_mac_template.extra.mods.png, vscode_debug_running_mac.mods.png, vscode_debug_running_mac.extra.mods.png] }
         "cursor://edit": { overlay: [cursor_mac_template.mods.png, cursor_mac_template.combo.mods.png, cursor_mac_template.extra.mods.png, vscode_debug_edit_mac.mods.png] }
@@ -2860,6 +3117,9 @@ cursor:
       overlay: [cursor_linux_template.mods.png, cursor_linux_template.combo.mods.png, vscode_debug_fallback.mods.png]
       layer: false
       urls-contains:
+        "cursor://debug/stopped/diff": { overlay: [cursor_linux_template.mods.png, cursor_linux_template.combo.mods.png, vscode_debug_stopped.mods.png, vscode_debug_stopped.combo.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
+        "cursor://debug/running/diff": { overlay: [cursor_linux_template.mods.png, cursor_linux_template.combo.mods.png, vscode_debug_running.mods.png, vscode_debug_running.combo.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
+        "cursor://edit/diff": { overlay: [cursor_linux_template.mods.png, cursor_linux_template.combo.mods.png, vscode_debug_edit.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
         "cursor://debug/stopped": { overlay: [cursor_linux_template.mods.png, cursor_linux_template.combo.mods.png, vscode_debug_stopped.mods.png, vscode_debug_stopped.combo.mods.png] }
         "cursor://debug/running": { overlay: [cursor_linux_template.mods.png, cursor_linux_template.combo.mods.png, vscode_debug_running.mods.png, vscode_debug_running.combo.mods.png] }
         "cursor://edit": { overlay: [cursor_linux_template.mods.png, cursor_linux_template.combo.mods.png, vscode_debug_edit.mods.png] }
@@ -2869,6 +3129,9 @@ windsurf,devin,devin-desktop:
   overlay: [windsurf_template.mods.png, windsurf_template.combo.mods.png, vscode_debug_fallback.mods.png]
   layer: false
   urls-contains:
+    "windsurf://debug/stopped/diff": { overlay: [windsurf_template.mods.png, windsurf_template.combo.mods.png, vscode_debug_stopped.mods.png, vscode_debug_stopped.combo.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
+    "windsurf://debug/running/diff": { overlay: [windsurf_template.mods.png, windsurf_template.combo.mods.png, vscode_debug_running.mods.png, vscode_debug_running.combo.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
+    "windsurf://edit/diff": { overlay: [windsurf_template.mods.png, windsurf_template.combo.mods.png, vscode_debug_edit.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
     "windsurf://debug/stopped": { overlay: [windsurf_template.mods.png, windsurf_template.combo.mods.png, vscode_debug_stopped.mods.png, vscode_debug_stopped.combo.mods.png] }
     "windsurf://debug/running": { overlay: [windsurf_template.mods.png, windsurf_template.combo.mods.png, vscode_debug_running.mods.png, vscode_debug_running.combo.mods.png] }
     "windsurf://edit": { overlay: [windsurf_template.mods.png, windsurf_template.combo.mods.png, vscode_debug_edit.mods.png] }
@@ -2877,6 +3140,9 @@ windsurf,devin,devin-desktop:
       overlay: [windsurf_mac_template.mods.png, windsurf_mac_template.combo.mods.png, windsurf_mac_template.extra.mods.png, vscode_debug_fallback.mods.png]
       layer: false
       urls-contains:
+        "windsurf://debug/stopped/diff": { overlay: [windsurf_mac_template.mods.png, windsurf_mac_template.combo.mods.png, windsurf_mac_template.extra.mods.png, vscode_debug_stopped_mac.mods.png, vscode_debug_stopped_mac.extra.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
+        "windsurf://debug/running/diff": { overlay: [windsurf_mac_template.mods.png, windsurf_mac_template.combo.mods.png, windsurf_mac_template.extra.mods.png, vscode_debug_running_mac.mods.png, vscode_debug_running_mac.extra.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
+        "windsurf://edit/diff": { overlay: [windsurf_mac_template.mods.png, windsurf_mac_template.combo.mods.png, windsurf_mac_template.extra.mods.png, vscode_debug_edit_mac.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
         "windsurf://debug/stopped": { overlay: [windsurf_mac_template.mods.png, windsurf_mac_template.combo.mods.png, windsurf_mac_template.extra.mods.png, vscode_debug_stopped_mac.mods.png, vscode_debug_stopped_mac.extra.mods.png] }
         "windsurf://debug/running": { overlay: [windsurf_mac_template.mods.png, windsurf_mac_template.combo.mods.png, windsurf_mac_template.extra.mods.png, vscode_debug_running_mac.mods.png, vscode_debug_running_mac.extra.mods.png] }
         "windsurf://edit": { overlay: [windsurf_mac_template.mods.png, windsurf_mac_template.combo.mods.png, windsurf_mac_template.extra.mods.png, vscode_debug_edit_mac.mods.png] }
@@ -2884,6 +3150,9 @@ windsurf,devin,devin-desktop:
       overlay: [windsurf_linux_template.mods.png, windsurf_linux_template.combo.mods.png, vscode_debug_fallback.mods.png]
       layer: false
       urls-contains:
+        "windsurf://debug/stopped/diff": { overlay: [windsurf_linux_template.mods.png, windsurf_linux_template.combo.mods.png, vscode_debug_stopped.mods.png, vscode_debug_stopped.combo.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
+        "windsurf://debug/running/diff": { overlay: [windsurf_linux_template.mods.png, windsurf_linux_template.combo.mods.png, vscode_debug_running.mods.png, vscode_debug_running.combo.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
+        "windsurf://edit/diff": { overlay: [windsurf_linux_template.mods.png, windsurf_linux_template.combo.mods.png, vscode_debug_edit.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
         "windsurf://debug/stopped": { overlay: [windsurf_linux_template.mods.png, windsurf_linux_template.combo.mods.png, vscode_debug_stopped.mods.png, vscode_debug_stopped.combo.mods.png] }
         "windsurf://debug/running": { overlay: [windsurf_linux_template.mods.png, windsurf_linux_template.combo.mods.png, vscode_debug_running.mods.png, vscode_debug_running.combo.mods.png] }
         "windsurf://edit": { overlay: [windsurf_linux_template.mods.png, windsurf_linux_template.combo.mods.png, vscode_debug_edit.mods.png] }
@@ -2922,13 +3191,26 @@ fl64,fl studio 2024,fl studio 2025,fl studio 2026,osxfl:
       overlay: [flstudio_template_mac.mods.png, flstudio_template_mac.combo.mods.png, flstudio_template_mac.extra.mods.png]
       midi: true
 # Ableton Live 12: the Windows exe and the macOS app both carry the edition name.
+# With the PolyKybd remote script (ableton-remote-script/) Live reports
+# `ableton://session` or `ableton://arrangement` (plus `/clip` or `/device` for
+# the detail view, not routed: the keys go to the main view). Session View gets
+# its own set; Arrangement View and no report (or a stale one) keep the
+# Arrangement set. `layer: false`: a view replaces the fallback.
 ableton live 12 suite,ableton live 12 standard,ableton live 12 intro,ableton live 12 lite,ableton live 12 trial:
   overlay: [ableton_template.mods.png, ableton_template.combo.mods.png, ableton_template.extra.mods.png]
   midi: true
+  layer: false
+  urls-contains:
+    "ableton://session": { overlay: [ableton_session_template.mods.png, ableton_session_template.combo.mods.png, ableton_session_template.extra.mods.png], midi: true }
+    "ableton://arrangement": { overlay: [ableton_template.mods.png, ableton_template.combo.mods.png, ableton_template.extra.mods.png], midi: true }
   os:
     macos:
       overlay: [ableton_template_mac.mods.png, ableton_template_mac.combo.mods.png, ableton_template_mac.extra.mods.png, ableton_template_mac.gui.mods.png]
       midi: true
+      layer: false
+      urls-contains:
+        "ableton://session": { overlay: [ableton_session_template_mac.mods.png, ableton_session_template_mac.combo.mods.png, ableton_session_template_mac.extra.mods.png, ableton_session_template_mac.gui.mods.png], midi: true }
+        "ableton://arrangement": { overlay: [ableton_template_mac.mods.png, ableton_template_mac.combo.mods.png, ableton_template_mac.extra.mods.png, ableton_template_mac.gui.mods.png], midi: true }
 # REAPER: reaper.exe, REAPER.app and `reaper` on Linux. Windows and Linux use the
 # same default keys.
 reaper:
@@ -3076,14 +3358,45 @@ openscad,openscad-nightly,org.openscad.openscad:
       overlay: [openscad_template_linux.mods.png, openscad_template_linux.combo.mods.png]
 # FreeCAD: `freecad` (measured, 1.1.4 AppImage, class FreeCAD); org.freecad.FreeCAD
 # is the Flatpak app id. Linux has its own set: Redo and Close differ from
-# Windows.
+# Windows. The FreeCAD add-on (freecad-addon/) reports the active workbench as
+# `freecad://<workbench>`; a workbench with its own default keys gets its own set
+# (overlay_sources/freecad/gen_workbench_bindings.py), every other one the global
+# set. `layer: false` makes that set replace the fallback. Without the add-on (or
+# with a stale report) the fallback set, which has the keys of every workbench, applies.
 freecad,org.freecad.freecad:
   overlay: [freecad_template.mods.png, freecad_template.combo.mods.png]
+  layer: false
+  urls-contains:
+    "freecad://sketcher": { overlay: [freecad_sketcher_template.mods.png, freecad_sketcher_template.combo.mods.png] }
+    "freecad://draft": { overlay: [freecad_draft_template.mods.png, freecad_draft_template.combo.mods.png] }
+    "freecad://bim": { overlay: [freecad_bim_template.mods.png, freecad_bim_template.combo.mods.png] }
+    "freecad://techdraw": { overlay: [freecad_techdraw_template.mods.png, freecad_techdraw_template.combo.mods.png] }
+    "freecad://assembly": { overlay: [freecad_assembly_template.mods.png, freecad_assembly_template.combo.mods.png] }
+    "freecad://spreadsheet": { overlay: [freecad_spreadsheet_template.mods.png, freecad_spreadsheet_template.combo.mods.png] }
+    "freecad://": { overlay: [freecad_global_template.mods.png, freecad_global_template.combo.mods.png] }
   os:
     macos:
       overlay: [freecad_template_mac.mods.png, freecad_template_mac.combo.mods.png, freecad_template_mac.extra.mods.png]
+      layer: false
+      urls-contains:
+        "freecad://sketcher": { overlay: [freecad_sketcher_template_mac.mods.png, freecad_sketcher_template_mac.combo.mods.png, freecad_sketcher_template_mac.extra.mods.png] }
+        "freecad://draft": { overlay: [freecad_draft_template_mac.mods.png, freecad_draft_template_mac.combo.mods.png, freecad_draft_template_mac.extra.mods.png] }
+        "freecad://bim": { overlay: [freecad_bim_template_mac.mods.png, freecad_bim_template_mac.combo.mods.png, freecad_bim_template_mac.extra.mods.png] }
+        "freecad://techdraw": { overlay: [freecad_techdraw_template_mac.mods.png, freecad_techdraw_template_mac.combo.mods.png, freecad_techdraw_template_mac.extra.mods.png] }
+        "freecad://assembly": { overlay: [freecad_assembly_template_mac.mods.png, freecad_assembly_template_mac.combo.mods.png, freecad_assembly_template_mac.extra.mods.png] }
+        "freecad://spreadsheet": { overlay: [freecad_spreadsheet_template_mac.mods.png, freecad_spreadsheet_template_mac.combo.mods.png, freecad_spreadsheet_template_mac.extra.mods.png] }
+        "freecad://": { overlay: [freecad_global_template_mac.mods.png, freecad_global_template_mac.combo.mods.png, freecad_global_template_mac.extra.mods.png] }
     linux:
       overlay: [freecad_template_linux.mods.png, freecad_template_linux.combo.mods.png]
+      layer: false
+      urls-contains:
+        "freecad://sketcher": { overlay: [freecad_sketcher_template_linux.mods.png, freecad_sketcher_template_linux.combo.mods.png] }
+        "freecad://draft": { overlay: [freecad_draft_template_linux.mods.png, freecad_draft_template_linux.combo.mods.png] }
+        "freecad://bim": { overlay: [freecad_bim_template_linux.mods.png, freecad_bim_template_linux.combo.mods.png] }
+        "freecad://techdraw": { overlay: [freecad_techdraw_template_linux.mods.png, freecad_techdraw_template_linux.combo.mods.png] }
+        "freecad://assembly": { overlay: [freecad_assembly_template_linux.mods.png, freecad_assembly_template_linux.combo.mods.png] }
+        "freecad://spreadsheet": { overlay: [freecad_spreadsheet_template_linux.mods.png, freecad_spreadsheet_template_linux.combo.mods.png] }
+        "freecad://": { overlay: [freecad_global_template_linux.mods.png, freecad_global_template_linux.combo.mods.png] }
 # 3D-print slicers (sources: overlay_sources/slicers/, one key table for the
 # three apps). Names from each project's build files: the Windows executable
 # and Linux binary (`prusa-slicer`, `bambu-studio`, `orca-slicer`, also the
@@ -3452,12 +3765,32 @@ sumatrapdf:
 okular,org.kde.okular:
   overlay: [okular_template.mods.png, okular_template.combo.mods.png]
 # JupyterLab Desktop (sources: overlay_sources/jupyter/); Jupyter in a browser
-# is under the browser entries. Names not checked on an install.
+# is under the browser entries. Names not checked on an install; they are
+# exactly CONTEXT_REPORTERS' "jupyter" names (tests/handler/jupyter_routing_test.py).
+# The jupyterlab-extension/ reporter sends jupyter://<activity>[/<mode>]; each
+# route is one mode's set. `layer: false`: a mode replaces the all-modes set,
+# which stays the fallback while no report arrives.
 jupyterlab,jupyterlab-desktop,jupyterlab desktop:
   overlay: [jupyter_template.mods.png, jupyter_template.combo.mods.png]
+  layer: false
+  urls-contains:
+    "jupyter://notebook/command": { overlay: [jupyter_command_template.mods.png, jupyter_command_template.combo.mods.png] }
+    "jupyter://notebook/edit": { overlay: [jupyter_edit_template.mods.png, jupyter_edit_template.combo.mods.png] }
+    "jupyter://editor": { overlay: [jupyter_editor_template.mods.png, jupyter_editor_template.combo.mods.png] }
+    "jupyter://console": { overlay: [jupyter_console_template.mods.png, jupyter_console_template.combo.mods.png] }
+    "jupyter://terminal": { overlay: [jupyter_terminal_template.mods.png, jupyter_terminal_template.combo.mods.png] }
+    "jupyter://": { overlay: [jupyter_global_template.mods.png, jupyter_global_template.combo.mods.png] }
   os:
     macos:
       overlay: [jupyter_template_mac.mods.png, jupyter_template_mac.combo.mods.png, jupyter_template_mac.extra.mods.png]
+      layer: false
+      urls-contains:
+        "jupyter://notebook/command": { overlay: [jupyter_command_template_mac.mods.png, jupyter_command_template_mac.combo.mods.png, jupyter_command_template_mac.extra.mods.png] }
+        "jupyter://notebook/edit": { overlay: [jupyter_edit_template_mac.mods.png, jupyter_edit_template_mac.combo.mods.png, jupyter_edit_template_mac.extra.mods.png] }
+        "jupyter://editor": { overlay: [jupyter_editor_template_mac.mods.png, jupyter_editor_template_mac.combo.mods.png, jupyter_editor_template_mac.extra.mods.png] }
+        "jupyter://console": { overlay: [jupyter_console_template_mac.mods.png, jupyter_console_template_mac.combo.mods.png, jupyter_console_template_mac.extra.mods.png] }
+        "jupyter://terminal": { overlay: [jupyter_terminal_template_mac.mods.png, jupyter_terminal_template_mac.combo.mods.png, jupyter_terminal_template_mac.extra.mods.png] }
+        "jupyter://": { overlay: [jupyter_global_template_mac.mods.png, jupyter_global_template_mac.combo.mods.png, jupyter_global_template_mac.extra.mods.png] }
 # RStudio (sources: overlay_sources/rstudio/). Process and WM_CLASS `rstudio` on
 # Linux (measured, 2026.10.0).
 rstudio:
@@ -3523,7 +3856,9 @@ war3,war3.exe,warcraft iii,warcraft iii.exe,frozen throne,frozen throne.exe:
 # the WM_CLASS keeps the `.exe`. `starcraft ii` is the launcher's name and the
 # assumed macOS name. None of the names was checked on an install.
 # Control groups, F1 and Backspace are redrawn from the user's own StarCraft
-# 1.16.1 files when they are on the machine (game_assets reader `starcraft`).
+# 1.16.1 files when they are on the machine (game_assets reader `starcraft`),
+# and the icons follow the player's active StarCraft II hotkey profile
+# (`bindings: sc2`), with or without those files.
 sc2_x64,sc2,sc2_x64.exe,sc2.exe,starcraft ii:
   overlay: [starcraft2_template.mods.png, starcraft2_template.combo.mods.png]
   game_assets: starcraft2/starcraft2.yaml
@@ -3666,10 +4001,12 @@ stratagus,stratagus.exe,wargus,wargus.exe:
 # may use too, so the window title gates the entry: "Command and Conquer
 # Generals" (the original) and "Command & Conquer (TM) Generals Zero Hour",
 # both seen in a log of the Steam release (2026-11-14). Not checked under Wine
-# or on the EA app release.
+# or on the EA app release. The icons follow the hotkeys of the installed
+# language and of a loose CommandMap.ini (game_assets reader `generals`).
 game:
   overlay: generals_template.mods.png
   title: '^Command (and|&) Conquer.*Generals'
+  game_assets: generals/generals.yaml
 # Command & Conquer Remastered Collection, Steam app 1213210
 # (overlay_sources/cnc_remastered/cnc_remastered.yaml). ClientG.exe on Windows,
 # steam_app_1213210 under Proton. Names not checked on an install.
@@ -4277,24 +4614,69 @@ mathcadprime:
 # macOS apps "Houdini FX <version>", "Houdini Core ...", "Houdini Apprentice
 # ...", "Houdini Indie ..." (the trailing dotted version is dropped by the
 # matcher). Not checked on an install.
+# With the Houdini package (houdini-package/) installed, Houdini reports the
+# pane under the mouse pointer as `houdini://<pane>[/<network type>]`; a
+# Network Editor loads the Network Editor set (network.yaml), an Animation
+# Editor the graph view set (anim.yaml), and the Python Shell and Textport a set
+# with only their line-editing keys (python.yaml, textport.yaml; one file for
+# every OS). `layer: false` makes a pane set replace the Scene View set instead
+# of drawing it dimmed underneath; with no report, or for any other pane, the
+# Scene View set stays.
 houdini,houdinifx,houdinicore,happrentice,hindie,hescape,houdini-bin,houdini fx,houdini core,houdini apprentice,houdini indie:
   overlay: [houdini_template.mods.png, houdini_template.combo.mods.png]
+  layer: false
+  urls-contains:
+    "houdini://network": { overlay: [houdini_network_template.mods.png, houdini_network_template.combo.mods.png] }
+    "houdini://anim": { overlay: [houdini_anim_template.mods.png, houdini_anim_template.combo.mods.png] }
+    "houdini://python": { overlay: [houdini_python_template.mods.png] }
+    "houdini://textport": { overlay: [houdini_textport_template.mods.png] }
   os:
     macos:
       overlay: [houdini_template_mac.mods.png, houdini_template_mac.combo.mods.png]
+      layer: false
+      urls-contains:
+        "houdini://network": { overlay: [houdini_network_template_mac.mods.png, houdini_network_template_mac.combo.mods.png, houdini_network_template_mac.extra.mods.png] }
+        "houdini://anim": { overlay: [houdini_anim_template_mac.mods.png, houdini_anim_template_mac.combo.mods.png] }
+        "houdini://python": { overlay: [houdini_python_template.mods.png] }
+        "houdini://textport": { overlay: [houdini_textport_template.mods.png] }
 # QGIS Desktop (overlay_sources/qgis/). Windows (OSGeo4W and the standalone
 # installer): qgis-bin.exe, qgis-ltr-bin.exe, qgis-dev-bin.exe, qgis-qt6-bin.exe.
 # Linux: the process `qgis` (X11), the WM_CLASS class QGIS4 / QGIS3 (the GNOME and
 # KDE reporters) and the Wayland app id org.qgis.qgis, which is also the Flatpak
 # id. macOS: the app "QGIS" (CFBundleName), installed as QGIS.app or
-# QGIS-LTR.app. Not checked on an install.
+# QGIS-LTR.app. Not checked on an install. The QGIS plugin (qgis-plugin/) reports
+# qgis://map/<tool>[/cad][/edit] and qgis://layout; the digitizing, vertex and
+# print layout sets are routed on it (overlay_sources/qgis/gen_mode_specs.py,
+# layout.yaml). `layer: false`: a mode set replaces the main set, and the main
+# set stays the fallback without the plugin and for every other tool or window.
 qgis,qgis3,qgis4,org.qgis.qgis,qgis-bin,qgis-ltr-bin,qgis-dev-bin,qgis-qt6-bin,qgis-ltr:
   overlay: [qgis_template.mods.png, qgis_template.combo.mods.png, qgis_template.extra.mods.png]
+  layer: false
+  urls-contains:
+    "qgis://map/digitize/cad": { overlay: [qgis_digitize_cad_template.mods.png, qgis_digitize_cad_template.combo.mods.png, qgis_digitize_cad_template.extra.mods.png] }
+    "qgis://map/vertex/cad": { overlay: [qgis_vertex_cad_template.mods.png, qgis_vertex_cad_template.combo.mods.png, qgis_vertex_cad_template.extra.mods.png] }
+    "qgis://map/digitize": { overlay: [qgis_digitize_template.mods.png, qgis_digitize_template.combo.mods.png, qgis_digitize_template.extra.mods.png] }
+    "qgis://map/vertex": { overlay: [qgis_vertex_template.mods.png, qgis_vertex_template.combo.mods.png, qgis_vertex_template.extra.mods.png] }
+    "qgis://layout": { overlay: [qgis_layout_template.mods.png, qgis_layout_template.combo.mods.png] }
   os:
     macos:
       overlay: [qgis_template_mac.mods.png, qgis_template_mac.combo.mods.png, qgis_template_mac.extra.mods.png, qgis_template_mac.gui.mods.png]
+      layer: false
+      urls-contains:
+        "qgis://map/digitize/cad": { overlay: [qgis_digitize_cad_template_mac.mods.png, qgis_digitize_cad_template_mac.combo.mods.png, qgis_digitize_cad_template_mac.extra.mods.png, qgis_digitize_cad_template_mac.gui.mods.png] }
+        "qgis://map/vertex/cad": { overlay: [qgis_vertex_cad_template_mac.mods.png, qgis_vertex_cad_template_mac.combo.mods.png, qgis_vertex_cad_template_mac.extra.mods.png, qgis_vertex_cad_template_mac.gui.mods.png] }
+        "qgis://map/digitize": { overlay: [qgis_digitize_template_mac.mods.png, qgis_digitize_template_mac.combo.mods.png, qgis_digitize_template_mac.extra.mods.png, qgis_digitize_template_mac.gui.mods.png] }
+        "qgis://map/vertex": { overlay: [qgis_vertex_template_mac.mods.png, qgis_vertex_template_mac.combo.mods.png, qgis_vertex_template_mac.extra.mods.png, qgis_vertex_template_mac.gui.mods.png] }
+        "qgis://layout": { overlay: [qgis_layout_template_mac.mods.png, qgis_layout_template_mac.combo.mods.png, qgis_layout_template_mac.extra.mods.png] }
     linux:
       overlay: [qgis_template_linux.mods.png, qgis_template_linux.combo.mods.png, qgis_template_linux.extra.mods.png]
+      layer: false
+      urls-contains:
+        "qgis://map/digitize/cad": { overlay: [qgis_digitize_cad_template_linux.mods.png, qgis_digitize_cad_template_linux.combo.mods.png, qgis_digitize_cad_template_linux.extra.mods.png] }
+        "qgis://map/vertex/cad": { overlay: [qgis_vertex_cad_template_linux.mods.png, qgis_vertex_cad_template_linux.combo.mods.png, qgis_vertex_cad_template_linux.extra.mods.png] }
+        "qgis://map/digitize": { overlay: [qgis_digitize_template_linux.mods.png, qgis_digitize_template_linux.combo.mods.png, qgis_digitize_template_linux.extra.mods.png] }
+        "qgis://map/vertex": { overlay: [qgis_vertex_template_linux.mods.png, qgis_vertex_template_linux.combo.mods.png, qgis_vertex_template_linux.extra.mods.png] }
+        "qgis://layout": { overlay: [qgis_layout_template.mods.png, qgis_layout_template.combo.mods.png] }
 # Autodesk Maya, scene and viewport keys (overlay_sources/maya/). Windows maya.exe
 # and the macOS app "Maya" (a trailing release year such as "Maya 2026" is
 # dropped by the matcher); on Linux the process is maya.bin. macOS takes the set
@@ -4333,3 +4715,82 @@ protools,pro tools:
     macos:
       overlay: [protools_template_mac.mods.png, protools_template_mac.combo.mods.png, protools_template_mac.extra.mods.png, protools_template_mac.gui.mods.png]
       midi: true
+# Godot editor 4.x (sources: overlay_sources/godot/). One set per main screen,
+# routed on the godot://<screen> pseudo-URL the PolyKybd Reporter plugin
+# (godot-plugin/) reports: 2d, 3d, script, game; assetlib and other get the
+# fallback. Each screen's set is drawn on top of the fallback set (a later file
+# takes priority per key). `layer: false` makes a screen's sets replace the
+# fallback instead of drawing it dimmed underneath. Without the plugin the
+# fallback set applies. Names: Windows cuts the official
+# Godot_v4.x.y-stable_win64.exe at its first dot (godot_v4), a source build or
+# the Steam build is godot; the Linux download Godot_v4.x.y-stable_linux.x86_64
+# is matched as godot (common.mapping_key drops the version and build), the
+# Flatpak runs godot-bin, Wayland reports the app id; macOS shows "Godot".
+# Exactly CONTEXT_REPORTERS' "godot" names (tests/handler/godot_routing_test.py).
+# None of the names was checked on an install.
+godot,godot_v4,godot_mono,godot4,godot-bin,org.godotengine.godot,org.godotengine.editor:
+  overlay: [godot_template.mods.png, godot_template.combo.mods.png, godot_template.extra.mods.png]
+  layer: false
+  urls-contains:
+    "godot://2d": { overlay: [godot_template.mods.png, godot_template.combo.mods.png, godot_template.extra.mods.png, godot_2d_template.mods.png, godot_2d_template.combo.mods.png] }
+    "godot://3d": { overlay: [godot_template.mods.png, godot_template.combo.mods.png, godot_template.extra.mods.png, godot_3d_template.mods.png, godot_3d_template.combo.mods.png] }
+    "godot://script": { overlay: [godot_template.mods.png, godot_template.combo.mods.png, godot_template.extra.mods.png, godot_script_template.mods.png, godot_script_template.combo.mods.png] }
+    "godot://game": { overlay: [godot_template.mods.png, godot_template.combo.mods.png, godot_template.extra.mods.png, godot_game_template.mods.png] }
+  os:
+    macos:
+      overlay: [godot_template_mac.mods.png, godot_template_mac.combo.mods.png, godot_template_mac.extra.mods.png, godot_template_mac.gui.mods.png]
+      layer: false
+      urls-contains:
+        "godot://2d": { overlay: [godot_template_mac.mods.png, godot_template_mac.combo.mods.png, godot_template_mac.extra.mods.png, godot_template_mac.gui.mods.png, godot_2d_template_mac.mods.png, godot_2d_template_mac.combo.mods.png, godot_2d_template_mac.extra.mods.png] }
+        "godot://3d": { overlay: [godot_template_mac.mods.png, godot_template_mac.combo.mods.png, godot_template_mac.extra.mods.png, godot_template_mac.gui.mods.png, godot_3d_template_mac.mods.png, godot_3d_template_mac.combo.mods.png, godot_3d_template_mac.extra.mods.png] }
+        "godot://script": { overlay: [godot_template_mac.mods.png, godot_template_mac.combo.mods.png, godot_template_mac.extra.mods.png, godot_template_mac.gui.mods.png, godot_script_template_mac.mods.png, godot_script_template_mac.combo.mods.png, godot_script_template_mac.extra.mods.png, godot_script_template_mac.gui.mods.png] }
+        "godot://game": { overlay: [godot_template_mac.mods.png, godot_template_mac.combo.mods.png, godot_template_mac.extra.mods.png, godot_template_mac.gui.mods.png, godot_game_template_mac.mods.png, godot_game_template_mac.extra.mods.png] }
+# Team Fortress 2 (overlay_sources/tf2/tf2.yaml). The 64-bit client is
+# tf_win64.exe on Windows and tf_linux64 on Linux (Steam depot manifests);
+# steam_app_440 covers Proton, which is unlikely because the game has a native
+# Linux build. Names not checked on an install. The icons follow the player's
+# binds in tf/cfg/config.cfg (game_assets/tf2_keys.py).
+tf_win64,tf_linux64,steam_app_440:
+  overlay: tf2_template.mods.png
+  game_assets: tf2/tf2.yaml
+# Apex Legends (overlay_sources/apex/apex.yaml). r5apex.exe, and
+# r5apex_dx12.exe for the DirectX 12 client; steam_app_1172470 covers Proton.
+# Names not checked on an install. The icons follow the player's binds in
+# Saved Games/Respawn/Apex/local/settings.cfg (game_assets/apex_keys.py).
+r5apex,r5apex_dx12,steam_app_1172470:
+  overlay: apex_template.mods.png
+  game_assets: apex/apex.yaml
+# Rocket League (overlay_sources/rocketleague/rocketleague.yaml).
+# RocketLeague.exe; steam_app_252950 covers Proton. Names not checked on an
+# install. Default keys only: the game keeps rebinds in an encrypted save file.
+rocketleague,steam_app_252950:
+  overlay: rocketleague_template.mods.png
+# Path of Exile 1 and 2 (overlay_sources/poe/poe.yaml and poe2.yaml). Both
+# games run as PathOfExile.exe, PathOfExile_x64.exe, the Steam builds
+# PathOfExileSteam.exe / PathOfExile_x64Steam.exe and the Kakao builds
+# PathOfExile_KG.exe / PathOfExile_x64_KG.exe; the window title ("Path of
+# Exile 2") tells the second game apart. Under Proton the window class is
+# steam_app_238960 or steam_app_2694490. Names and titles not checked on an
+# install. The icons follow the player's bindings in production_Config.ini
+# (game_assets/poe_keys.py, poe2_keys.py).
+pathofexile,pathofexile_x64,pathofexilesteam,pathofexile_x64steam,pathofexile_kg,pathofexile_x64_kg,steam_app_238960:
+  overlay: poe_template.mods.png
+  game_assets: poe/poe.yaml
+  titles-match:
+    '^Path of Exile 2\b':
+      overlay: poe2_template.mods.png
+      game_assets: poe/poe2.yaml
+steam_app_2694490:
+  overlay: poe2_template.mods.png
+  game_assets: poe/poe2.yaml
+# Overwatch 2 (overlay_sources/overwatch/overwatch.yaml). Overwatch.exe in
+# _retail_; steam_app_2357570 covers Proton. Names not checked on an install.
+# Default keys only: Blizzard keeps the key bindings on its servers.
+overwatch,steam_app_2357570:
+  overlay: overwatch_template.mods.png
+# Genshin Impact (overlay_sources/genshin/genshin.yaml). GenshinImpact.exe for
+# the global client and YuanShen.exe for the Chinese one. Names not checked on
+# an install. Default keys only: the game keeps its controls in an undocumented
+# registry value.
+genshinimpact,yuanshen:
+  overlay: genshin_template.mods.png
