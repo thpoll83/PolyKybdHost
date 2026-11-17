@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-17 09:25+0000\n"
+"POT-Creation-Date: 2026-11-17 11:49+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans_CN\n"
@@ -552,7 +552,7 @@ msgid "<b>Failed:</b> {reason}"
 msgstr "<b>失败：</b>{reason}"
 
 #: polyhost/gui/browser_extension_page.py:37
-#: polyhost/gui/integrations_dialog.py:391
+#: polyhost/gui/integrations_dialog.py:396
 msgid "Browser"
 msgstr "浏览器"
 
@@ -667,7 +667,7 @@ msgid "Setup script"
 msgstr "设置脚本"
 
 #: polyhost/gui/cloud_sessions_dialog.py:80
-#: polyhost/gui/forwarder_pairing.py:26
+#: polyhost/gui/forwarder_pairing.py:26 polyhost/gui/shell_editor_pages.py:379
 msgid "Copy"
 msgstr "复制"
 
@@ -1959,56 +1959,56 @@ msgstr "语言"
 msgid "The new language is used after a restart. Restart now?"
 msgstr "新语言将在重新启动后生效。立即重新启动吗？"
 
-#: polyhost/gui/integrations_dialog.py:96
+#: polyhost/gui/integrations_dialog.py:97
 msgid "Checking…"
 msgstr "正在检查…"
 
-#: polyhost/gui/integrations_dialog.py:110
+#: polyhost/gui/integrations_dialog.py:111
 msgid "Install"
 msgstr "安装"
 
-#: polyhost/gui/integrations_dialog.py:111
+#: polyhost/gui/integrations_dialog.py:112
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:149
 msgid "Remove"
 msgstr "移除"
 
-#: polyhost/gui/integrations_dialog.py:132
+#: polyhost/gui/integrations_dialog.py:133
 #, python-brace-format
 msgid "The check failed: {error}"
 msgstr "检查失败：{error}"
 
-#: polyhost/gui/integrations_dialog.py:257
-#: polyhost/gui/integrations_dialog.py:375
+#: polyhost/gui/integrations_dialog.py:262
+#: polyhost/gui/integrations_dialog.py:380
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "更改失败：{error}"
 
-#: polyhost/gui/integrations_dialog.py:288
-#: polyhost/gui/shell_editor_pages.py:39 polyhost/gui/shell_editor_pages.py:78
+#: polyhost/gui/integrations_dialog.py:293
+#: polyhost/gui/shell_editor_pages.py:46 polyhost/gui/shell_editor_pages.py:153
 msgid "Set up"
 msgstr "已设置"
 
-#: polyhost/gui/integrations_dialog.py:290
+#: polyhost/gui/integrations_dialog.py:295
 msgid "Set up for another copy of the app, or an older version. Install updates it."
 msgstr "已为本应用的另一个副本或旧版本设置。“安装”会更新它。"
 
-#: polyhost/gui/integrations_dialog.py:295
+#: polyhost/gui/integrations_dialog.py:300
 #, python-brace-format
 msgid "The file cannot be read: {error}"
 msgstr "无法读取该文件：{error}"
 
-#: polyhost/gui/integrations_dialog.py:296
-#: polyhost/gui/shell_editor_pages.py:43 polyhost/gui/shell_editor_pages.py:80
+#: polyhost/gui/integrations_dialog.py:301
+#: polyhost/gui/shell_editor_pages.py:50 polyhost/gui/shell_editor_pages.py:155
 msgid "Not set up"
 msgstr "未设置"
 
-#: polyhost/gui/integrations_dialog.py:315
-#: polyhost/gui/integrations_dialog.py:349
-#: polyhost/gui/integrations_dialog.py:390 polyhost/gui/settings_dialog.py:102
+#: polyhost/gui/integrations_dialog.py:320
+#: polyhost/gui/integrations_dialog.py:354
+#: polyhost/gui/integrations_dialog.py:395 polyhost/gui/settings_dialog.py:102
 msgid "AI agents"
 msgstr "AI 智能体"
 
-#: polyhost/gui/integrations_dialog.py:316
+#: polyhost/gui/integrations_dialog.py:321
 msgid ""
 "An agent's key shows whether the agent works, waits for you or is finished only when the agent runs the PolyKybd hook.\n"
 "\n"
@@ -2018,44 +2018,45 @@ msgstr ""
 "\n"
 "“安装”会将钩子添加到智能体的设置文件中。您自己的钩子和设置会保留，并且每个文件的副本会保存为 <file>.polykybd.bak。“移除”只会移除 PolyKybd 钩子。请重新启动智能体，使更改生效。"
 
-#: polyhost/gui/integrations_dialog.py:363
+#: polyhost/gui/integrations_dialog.py:368
 msgid "Nothing to change."
 msgstr "没有需要更改的内容。"
 
-#: polyhost/gui/integrations_dialog.py:365
+#: polyhost/gui/integrations_dialog.py:370
 #, python-brace-format
 msgid "Write the PolyKybd hooks into {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
 msgstr "将 PolyKybd 钩子写入 {files} 吗？您自己的钩子会保留，并且每个文件的副本会保存为 <file>.polykybd.bak。"
 
-#: polyhost/gui/integrations_dialog.py:368
+#: polyhost/gui/integrations_dialog.py:373
 #, python-brace-format
 msgid "Remove the PolyKybd hooks from {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
 msgstr "从 {files} 中移除 PolyKybd 钩子吗？您自己的钩子会保留，并且每个文件的副本会保存为 <file>.polykybd.bak。"
 
-#: polyhost/gui/integrations_dialog.py:378
+#: polyhost/gui/integrations_dialog.py:383
 #, python-brace-format
 msgid "Changed: {path}"
 msgstr "已更改：{path}"
 
-#: polyhost/gui/integrations_dialog.py:383
+#: polyhost/gui/integrations_dialog.py:388
 msgid "Restart the agent for the change to take effect."
 msgstr "请重新启动智能体，使更改生效。"
 
-#: polyhost/gui/integrations_dialog.py:390
-#: polyhost/gui/shell_editor_pages.py:101
+#: polyhost/gui/integrations_dialog.py:395
+#: polyhost/gui/shell_editor_pages.py:180
 msgid "Terminals"
 msgstr "终端"
 
-#: polyhost/gui/integrations_dialog.py:390
-#: polyhost/gui/shell_editor_pages.py:191
+#: polyhost/gui/integrations_dialog.py:395
+#: polyhost/gui/shell_editor_pages.py:270
+#: polyhost/gui/shell_editor_pages.py:290
 msgid "Editors"
 msgstr "编辑器"
 
-#: polyhost/gui/integrations_dialog.py:402
+#: polyhost/gui/integrations_dialog.py:407
 msgid "Integrations"
 msgstr "集成"
 
-#: polyhost/gui/integrations_dialog.py:457
+#: polyhost/gui/integrations_dialog.py:462
 msgid "Changes apply to the program after it restarts."
 msgstr "更改将在程序重新启动后生效。"
 
@@ -3798,53 +3799,114 @@ msgstr "生成"
 msgid "Fills in a new random token and copies it. Paste it into the browser extension's Options and save both."
 msgstr "填入一个新的随机令牌并复制。请将其粘贴到浏览器扩展的选项中，然后两边都保存。"
 
-#: polyhost/gui/shell_editor_pages.py:41
+#: polyhost/gui/shell_editor_pages.py:48
 msgid "Shows the command without setup. Install adds only the Codex option."
 msgstr "无需设置即可显示命令。“安装”只添加 Codex 选项。"
 
-#: polyhost/gui/shell_editor_pages.py:45 polyhost/gui/shell_editor_pages.py:86
+#: polyhost/gui/shell_editor_pages.py:52 polyhost/gui/shell_editor_pages.py:161
 #, python-brace-format
 msgid "Set up for another copy of the app: {path}"
 msgstr "已为本应用的另一个副本设置：{path}"
 
-#: polyhost/gui/shell_editor_pages.py:47 polyhost/gui/shell_editor_pages.py:91
+#: polyhost/gui/shell_editor_pages.py:54 polyhost/gui/shell_editor_pages.py:170
 msgid "Not found"
 msgstr "未找到"
 
-#: polyhost/gui/shell_editor_pages.py:49
+#: polyhost/gui/shell_editor_pages.py:56
 #, python-brace-format
 msgid "The profile path is unknown: {error}"
 msgstr "配置文件路径未知：{error}"
 
-#: polyhost/gui/shell_editor_pages.py:51
+#: polyhost/gui/shell_editor_pages.py:58
 #, python-brace-format
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts."
 msgstr "PowerShell 的执行策略（{policy}）不会运行配置文件脚本。"
 
-#: polyhost/gui/shell_editor_pages.py:53
+#: polyhost/gui/shell_editor_pages.py:60
 msgid "Shows the command without setup"
 msgstr "无需设置即可显示命令"
 
-#: polyhost/gui/shell_editor_pages.py:82
+#: polyhost/gui/shell_editor_pages.py:97
+msgid "Live shows Session View or Arrangement View keys with this script. After Install, restart Live and choose PolyKybd as a Control Surface in Settings > Link, Tempo & MIDI."
+msgstr "使用此脚本，Live 会显示 Session View 或 Arrangement View 的按键。安装后，请重启 Live，并在 Settings > Link, Tempo & MIDI 中选择 PolyKybd 作为 Control Surface。"
+
+#: polyhost/gui/shell_editor_pages.py:101
+msgid "Restart the IDE after Install."
+msgstr "安装后请重新启动 IDE。"
+
+#: polyhost/gui/shell_editor_pages.py:103
+msgid "After Install, restart Blender (or use Refresh Local in the menu of Edit > Preferences > Add-ons) and enable PolyKybd Context Reporter in Edit > Preferences > Add-ons. Install copies it for each Blender version found."
+msgstr "安装后，请重启 Blender（或在 Edit > Preferences > Add-ons 的菜单中使用 Refresh Local），并在 Edit > Preferences > Add-ons 中启用 PolyKybd Context Reporter。“安装”会为找到的每个 Blender 版本复制一份。"
+
+#: polyhost/gui/shell_editor_pages.py:108
+msgid "After Install, restart Maya and tick Loaded and Auto load for polykybd_mode_reporter.py in Windows > Settings/Preferences > Plug-in Manager. Install copies it for each Maya version found."
+msgstr "安装后，请重启 Maya，并在 Windows > Settings/Preferences > Plug-in Manager 中为 polykybd_mode_reporter.py 勾选 Loaded 和 Auto load。“安装”会为找到的每个 Maya 版本复制一份。"
+
+#: polyhost/gui/shell_editor_pages.py:112
+msgid "After Install, restart QGIS and enable PolyKybd Context Reporter in Plugins > Manage and Install Plugins > Installed. Install copies it to each QGIS profile."
+msgstr "安装后，请重启 QGIS，并在 Plugins > Manage and Install Plugins > Installed 中启用 PolyKybd Context Reporter。“安装”会复制到每个 QGIS 配置文件。"
+
+#: polyhost/gui/shell_editor_pages.py:116
+msgid "After Install, restart Bitwig Studio and add the controller in Settings > Controllers > Add Controller: vendor PolyKybd, model Context Reporter."
+msgstr "安装后，请重启 Bitwig Studio，并在 Settings > Controllers > Add Controller 中添加控制器：厂商 PolyKybd，型号 Context Reporter。"
+
+#: polyhost/gui/shell_editor_pages.py:119
+#, python-brace-format
+msgid "Install runs the program's command line tool. Restart {app} afterwards. For Remote SSH, WSL and container windows, also install {path} in the remote window: Extensions view > ... > Install from VSIX."
+msgstr "“安装”会运行该程序的命令行工具。之后请重启 {app}。对于 Remote SSH、WSL 和容器窗口，还需在远程窗口中安装 {path}：Extensions view > ... > Install from VSIX。"
+
+#: polyhost/gui/shell_editor_pages.py:124
+msgid "This app cannot know which Python environment runs JupyterLab, so it does not install the extension. Run this command with that environment's Python (JupyterLab Desktop: Settings > Server > Python environment), then restart JupyterLab:"
+msgstr "本应用无法知道哪个 Python 环境运行 JupyterLab，因此不安装该扩展。请用该环境的 Python 运行此命令（JupyterLab Desktop：Settings > Server > Python environment），然后重启 JupyterLab："
+
+#: polyhost/gui/shell_editor_pages.py:129
+msgid "The plugin is installed per project. Install asks for the project folder (the one with project.godot) if none was chosen. Then tick PolyKybd Reporter in Project > Project Settings > Plugins."
+msgstr "该插件按项目安装。如果尚未选择项目文件夹，“安装”会询问项目文件夹（包含 project.godot 的那个）。然后在 Project > Project Settings > Plugins 中勾选 PolyKybd Reporter。"
+
+#: polyhost/gui/shell_editor_pages.py:133
+msgid "The package is installed per project. Install asks for the project folder (the one with Packages/manifest.json) if none was chosen, and copies the package into its Packages folder. Unity loads it when it next has focus."
+msgstr "该包按项目安装。如果尚未选择项目文件夹，“安装”会询问项目文件夹（包含 Packages/manifest.json 的那个），并将包复制到其 Packages 文件夹。Unity 会在下次获得焦点时加载它。"
+
+#: polyhost/gui/shell_editor_pages.py:137
+msgid "The plugin is installed per vault. Install asks for the vault folder (the one with .obsidian) if none was chosen. Then turn on PolyKybd Mode Reporter in Settings > Community plugins (Restricted mode must be off)."
+msgstr "该插件按仓库安装。如果尚未选择仓库文件夹，“安装”会询问仓库文件夹（包含 .obsidian 的那个）。然后在 Settings > Community plugins 中开启 PolyKybd Mode Reporter（必须关闭 Restricted mode）。"
+
+#: polyhost/gui/shell_editor_pages.py:146
+msgid "Add a vault…"
+msgstr "添加仓库…"
+
+#: polyhost/gui/shell_editor_pages.py:147
+msgid "Add a project folder…"
+msgstr "添加项目文件夹…"
+
+#: polyhost/gui/shell_editor_pages.py:157
 msgid "Set up with older plugin files. Install copies the current ones."
 msgstr "已使用旧版插件文件设置。“安装”会复制当前的文件。"
 
-#: polyhost/gui/shell_editor_pages.py:84
+#: polyhost/gui/shell_editor_pages.py:159
 msgid "Set up, and changed by hand since. This app leaves it alone."
 msgstr "已设置，但之后被手动更改过。本应用不会改动它。"
 
-#: polyhost/gui/shell_editor_pages.py:88
+#: polyhost/gui/shell_editor_pages.py:163
 #, python-brace-format
 msgid "The plugin is already loaded from {path}."
 msgstr "插件已从 {path} 加载。"
 
-#: polyhost/gui/shell_editor_pages.py:90
-#: polyhost/services/editor_plugins.py:154
+#: polyhost/gui/shell_editor_pages.py:165
+#: polyhost/services/editor_plugins.py:214
 #, python-brace-format
 msgid "This installation has no plugin files ({path})."
 msgstr "此安装中没有插件文件（{path}）。"
 
-#: polyhost/gui/shell_editor_pages.py:102
+#: polyhost/gui/shell_editor_pages.py:167
+msgid "No project folder chosen yet."
+msgstr "尚未选择项目文件夹。"
+
+#: polyhost/gui/shell_editor_pages.py:169
+msgid "Installed with a command, see below."
+msgstr "通过命令安装，见下方。"
+
+#: polyhost/gui/shell_editor_pages.py:181
 msgid ""
 "The keyboard shows the shortcuts of a program running in a terminal (nano, for example) only when the terminal's window title names the program. bash, zsh and PowerShell do not do this without setup.\n"
 "\n"
@@ -3854,39 +3916,39 @@ msgstr ""
 "\n"
 "“安装”会在每个所选 shell 的启动文件中，于两条标记注释之间添加一行，并先在旁边保存该文件的副本。“移除”会删除这些行。更改对之后打开的终端窗口生效。要更改 Codex 选项，请选择 shell 并再次按“安装”。"
 
-#: polyhost/gui/shell_editor_pages.py:116
+#: polyhost/gui/shell_editor_pages.py:195
 msgid "Also show Codex in the title (wraps the codex command)"
 msgstr "标题中也显示 Codex（包装 codex 命令）"
 
-#: polyhost/gui/shell_editor_pages.py:118
+#: polyhost/gui/shell_editor_pages.py:197
 msgid "Codex replaces the terminal title with the thread and project name, so the keyboard cannot tell that it is running. With this option the codex command starts Codex with a title that begins with \"codex\". A codex alias or function of your own, and a title set in Codex's config.toml, are kept."
 msgstr "Codex 会用会话和项目名称替换终端标题，因此键盘无法得知它正在运行。启用此选项后，codex 命令启动 Codex 时标题以 \"codex\" 开头。你自己的 codex 别名或函数，以及在 Codex 的 config.toml 中设置的标题，都会保留。"
 
-#: polyhost/gui/shell_editor_pages.py:130
+#: polyhost/gui/shell_editor_pages.py:209
 #, python-brace-format
 msgid "The shells could not be checked: {error}"
 msgstr "无法检查 shell：{error}"
 
-#: polyhost/gui/shell_editor_pages.py:147
+#: polyhost/gui/shell_editor_pages.py:226
 #, python-brace-format
 msgid "{shell}: shows the command without setup."
 msgstr "{shell}：无需设置即可显示命令。"
 
-#: polyhost/gui/shell_editor_pages.py:159
+#: polyhost/gui/shell_editor_pages.py:238
 msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "在这台电脑上未找到 bash、zsh 或 PowerShell。"
 
-#: polyhost/gui/shell_editor_pages.py:176
-#: polyhost/gui/shell_editor_pages.py:274
+#: polyhost/gui/shell_editor_pages.py:255
+#: polyhost/gui/shell_editor_pages.py:449
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "原文件的副本：{path}"
 
-#: polyhost/gui/shell_editor_pages.py:178
+#: polyhost/gui/shell_editor_pages.py:257
 msgid "Open a new terminal window for the change to take effect."
 msgstr "请打开新的终端窗口，使更改生效。"
 
-#: polyhost/gui/shell_editor_pages.py:192
+#: polyhost/gui/shell_editor_pages.py:271
 msgid ""
 "Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin. GDB shows whether the program runs or waits at the prompt only with it.\n"
 "\n"
@@ -3896,38 +3958,49 @@ msgstr ""
 "\n"
 "“安装”会将此安装中的插件复制到程序加载插件的位置。对于 Emacs 和 GDB，它还会在 init 文件中，于两条标记注释之间添加加载该插件的行，并先保存该文件的副本。本应用更新后，会在下次启动时复制新的插件文件。请重新启动程序，使更改生效。"
 
-#: polyhost/gui/shell_editor_pages.py:206
+#: polyhost/gui/shell_editor_pages.py:292
 msgid "FreeCAD shows the keys of the active workbench only with the PolyKybd add-on. Install copies it to FreeCAD's Mod folder."
 msgstr "只有安装了 PolyKybd 附加组件，FreeCAD 才会显示当前工作台的按键。“安装”会将其复制到 FreeCAD 的 Mod 文件夹。"
 
-#: polyhost/gui/shell_editor_pages.py:218
+#: polyhost/gui/shell_editor_pages.py:304
 #, python-brace-format
 msgid "The editors could not be checked: {error}"
 msgstr "无法检查编辑器：{error}"
 
-#: polyhost/gui/shell_editor_pages.py:237
-msgid "Live shows Session View or Arrangement View keys with this script. After Install, restart Live and choose PolyKybd as a Control Surface in Settings > Link, Tempo & MIDI."
-msgstr "使用此脚本，Live 会显示 Session View 或 Arrangement View 的按键。安装后，请重启 Live，并在 Settings > Link, Tempo & MIDI 中选择 PolyKybd 作为 Control Surface。"
-
-#: polyhost/gui/shell_editor_pages.py:243
-msgid "Restart the IDE after Install."
-msgstr "安装后请重新启动 IDE。"
-
-#: polyhost/gui/shell_editor_pages.py:247
+#: polyhost/gui/shell_editor_pages.py:345
 msgid "No Vim, Neovim or Emacs was found on this computer."
 msgstr "在这台电脑上未找到 Vim、Neovim 或 Emacs。"
 
-#: polyhost/gui/shell_editor_pages.py:253
+#: polyhost/gui/shell_editor_pages.py:351
 #, python-brace-format
 msgid "This app listens on port {port} and requires a token. The plugins use port 50164 and no token: set g:polykybd_port and g:polykybd_token in Vim, or polykybd-port and polykybd-token in Emacs, to the same values."
 msgstr "本应用在端口 {port} 上监听，并且需要令牌。插件使用端口 50164，且不使用令牌：请将 Vim 中的 g:polykybd_port 和 g:polykybd_token，或 Emacs 中的 polykybd-port 和 polykybd-token 设置为相同的值。"
 
-#: polyhost/gui/shell_editor_pages.py:258
+#: polyhost/gui/shell_editor_pages.py:356
 #, python-brace-format
 msgid "This app listens on port {port}. The plugins use port 50164: set g:polykybd_port in Vim, or polykybd-port in Emacs, to the same value."
 msgstr "本应用在端口 {port} 上监听。插件使用端口 50164：请将 Vim 中的 g:polykybd_port，或 Emacs 中的 polykybd-port 设置为相同的值。"
 
-#: polyhost/gui/shell_editor_pages.py:276
+#: polyhost/gui/shell_editor_pages.py:388
+msgid "Copied"
+msgstr "已复制"
+
+#: polyhost/gui/shell_editor_pages.py:391
+msgid "Choose the Obsidian vault folder"
+msgstr "选择 Obsidian 仓库文件夹"
+
+#: polyhost/gui/shell_editor_pages.py:392
+#, python-brace-format
+msgid "Choose the {program} project folder"
+msgstr "选择 {program} 项目文件夹"
+
+#: polyhost/gui/shell_editor_pages.py:402
+#: polyhost/services/editor_plugins.py:222
+#, python-brace-format
+msgid "{path} is not a {editor} project folder: it has no {marker}."
+msgstr "{path} 不是 {editor} 项目文件夹：缺少 {marker}。"
+
+#: polyhost/gui/shell_editor_pages.py:451
 msgid "Restart the editor for the change to take effect."
 msgstr "请重新启动编辑器，使更改生效。"
 
@@ -5151,45 +5224,90 @@ msgstr ""
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "WinCompose 安装程序已启动。安装完成并运行 WinCompose 后，PolyKybd 会自动切换到它。"
 
-#: polyhost/services/editor_plugins.py:148
+#: polyhost/services/editor_plugins.py:208
 #, python-brace-format
 msgid "Copied the plugin to {path}."
 msgstr "已将插件复制到 {path}。"
 
-#: polyhost/services/editor_plugins.py:149
+#: polyhost/services/editor_plugins.py:209
 #, python-brace-format
 msgid "Replaced the plugin in {path} with the one from this installation."
 msgstr "已将 {path} 中的插件替换为此安装中的插件。"
 
-#: polyhost/services/editor_plugins.py:151
+#: polyhost/services/editor_plugins.py:211
 #, python-brace-format
 msgid "Removed the plugin from {path}."
 msgstr "已从 {path} 中移除插件。"
 
-#: polyhost/services/editor_plugins.py:153
+#: polyhost/services/editor_plugins.py:213
 #, python-brace-format
 msgid "{editor} was not found on this computer."
 msgstr "在这台电脑上未找到 {editor}。"
 
-#: polyhost/services/editor_plugins.py:155
+#: polyhost/services/editor_plugins.py:215
 #, python-brace-format
 msgid "{path} was changed by hand. Remove or update it by hand."
 msgstr "{path} 已被手动更改。请手动移除或更新它。"
 
-#: polyhost/services/editor_plugins.py:158
+#: polyhost/services/editor_plugins.py:218
 #, python-brace-format
 msgid "Copied the plugin to {path} and added the lines that load it to {init}."
 msgstr "已将插件复制到 {path}，并将加载它的行添加到 {init}。"
 
-#: polyhost/services/editor_plugins.py:159
+#: polyhost/services/editor_plugins.py:219
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}."
 msgstr "已从 {init} 中移除加载插件的行。"
 
-#: polyhost/services/editor_plugins.py:160
+#: polyhost/services/editor_plugins.py:220
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}, and the plugin from {path}."
 msgstr "已从 {init} 中移除加载插件的行，并从 {path} 中移除插件。"
+
+#: polyhost/services/editor_plugins.py:221
+#, python-brace-format
+msgid "{path} has a copy of the plugin that this app did not write. It is left alone."
+msgstr "{path} 中有一份不是本应用写入的插件副本。不会更改它。"
+
+#: polyhost/services/editor_plugins.py:223
+#, python-brace-format
+msgid "No {editor} project folder was chosen."
+msgstr "未选择 {editor} 项目文件夹。"
+
+#: polyhost/services/editor_plugins.py:224
+#, python-brace-format
+msgid "Installed the extension with {command}."
+msgstr "已使用 {command} 安装扩展。"
+
+#: polyhost/services/editor_plugins.py:225
+#, python-brace-format
+msgid "Removed the extension with {command}."
+msgstr "已使用 {command} 移除扩展。"
+
+#: polyhost/services/editor_plugins.py:226
+#, python-brace-format
+msgid "{command} failed: {error}"
+msgstr "{command} 失败：{error}"
+
+#: polyhost/services/editor_plugins.py:227
+#, python-brace-format
+msgid "{editor} has the extension {extension} from another source. It is left alone."
+msgstr "{editor} 已有来自其他来源的扩展 {extension}。不会更改它。"
+
+#: polyhost/services/editor_plugins.py:228
+#, python-brace-format
+msgid "The change was made, but {path} could not be written, so this app does not remember it."
+msgstr "更改已完成，但无法写入 {path}，因此本应用不会记住它。"
+
+#: polyhost/services/editor_plugins.py:231
+#, python-brace-format
+msgid "The plugin is installed, but {path} could not be written, so this app does not remember this folder."
+msgstr "插件已安装，但无法写入 {path}，因此本应用不会记住此文件夹。"
+
+#: polyhost/services/editor_plugins.py:233
+#, python-brace-format
+msgid "Run this command in the Python environment that runs JupyterLab: {command}"
+msgstr "请在运行 JupyterLab 的 Python 环境中运行此命令：{command}"
 
 #: polyhost/services/fw_keymap_changes.py:18
 msgid "The Hyper key on the QWERTY, Stag, Colemak DH and Workman layouts becomes the AI key."
@@ -5415,7 +5533,7 @@ msgstr "已将该行添加到 {path}。"
 msgid "Replaced the line in {path} with one for this installation."
 msgstr "已将 {path} 中的行替换为本安装的行。"
 
-#: polyhost/services/editor_plugins.py:150 polyhost/services/shell_title.py:109
+#: polyhost/services/editor_plugins.py:210 polyhost/services/shell_title.py:109
 #, python-brace-format
 msgid "Already set up in {path}."
 msgstr "{path} 中已设置。"
@@ -5435,7 +5553,7 @@ msgstr "已在 {path} 中关闭 Codex 标题。"
 msgid "Removed the line from {path}."
 msgstr "已从 {path} 中移除该行。"
 
-#: polyhost/services/editor_plugins.py:152 polyhost/services/shell_title.py:113
+#: polyhost/services/editor_plugins.py:212 polyhost/services/shell_title.py:113
 #, python-brace-format
 msgid "Nothing to remove in {path}."
 msgstr "{path} 中没有可移除的内容。"
@@ -5455,12 +5573,12 @@ msgstr "{shell} 未报告其配置文件路径：{error}"
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts. Run 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' in PowerShell first."
 msgstr "PowerShell 的执行策略（{policy}）不会运行配置文件脚本。请先在 PowerShell 中运行 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned'。"
 
-#: polyhost/services/editor_plugins.py:156 polyhost/services/shell_title.py:118
+#: polyhost/services/editor_plugins.py:216 polyhost/services/shell_title.py:118
 #, python-brace-format
 msgid "{path} has a start marker without an end marker. Remove the block by hand."
 msgstr "{path} 中有开始标记但没有结束标记。请手动删除该块。"
 
-#: polyhost/services/editor_plugins.py:157 polyhost/services/shell_title.py:119
+#: polyhost/services/editor_plugins.py:217 polyhost/services/shell_title.py:119
 #, python-brace-format
 msgid "Could not change {path}: {error}"
 msgstr "无法更改 {path}：{error}"

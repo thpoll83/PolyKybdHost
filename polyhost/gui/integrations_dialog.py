@@ -73,6 +73,7 @@ class RowsPage(QWidget):
         self._boxes = {}
         self._removable = set()
         self._thread = None
+        self.apply_keys = []
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(12)
@@ -229,12 +230,16 @@ class RowsPage(QWidget):
         self.remove_button.setEnabled(
             any(k in self._removable for k in chosen) and not busy)
 
-    def _apply(self, install):
-        keys = self.selected()
+    def _apply(self, install, keys=None):
+        """Install or remove the ticked rows, or only ``keys`` (a row's own
+        button)."""
+        keys = self.selected() if keys is None else list(keys)
         if not install:
             keys = [k for k in keys if k in self._removable]
         if not keys or self.busy():
             return
+        # The rows this Install or Remove acts on, for before_apply().
+        self.apply_keys = keys
         self.before_apply(install)
         if self.APPLY_ON_THREAD:
             self._checking.show()
