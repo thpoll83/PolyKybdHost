@@ -116,6 +116,29 @@ class PolyctlTest(unittest.TestCase):
                                           {protocol.M_AGENTS_CLOUD_DISCONNECT: "deleted"})
         self.assertEqual(json.loads(out), {"disconnected": True, "relay": "deleted"})
 
+    def test_agents_cloud_join_code_join_and_leave(self):
+        rc, out, err, _server = run_main(["agents", "cloud", "join-code"],
+                                         {protocol.M_AGENTS_CLOUD_JOIN_CODE: "pkj1.CODE"})
+        self.assertEqual(rc, 0)
+        self.assertEqual(out, "pkj1.CODE\n")           # only the code on stdout: pipeable
+        self.assertIn("like a password", err)
+        rc, out, _err, server = run_main(["agents", "cloud", "join", "pkj1.CODE", "--replace"],
+                                         {protocol.M_AGENTS_CLOUD_JOIN: {"configured": True}})
+        self.assertEqual(rc, 0)
+        self.assertIn((protocol.M_AGENTS_CLOUD_JOIN, {"code": "pkj1.CODE", "replace": True}),
+                      server.received)
+        self.assertIn("joined", out)
+        # Without the argument the code comes from stdin (not the shell history).
+        with mock.patch("sys.stdin", io.StringIO("pkj1.PIPED\n")):
+            rc, _out, _err, server = run_main(["agents", "cloud", "join"],
+                                              {protocol.M_AGENTS_CLOUD_JOIN: {}})
+        self.assertIn((protocol.M_AGENTS_CLOUD_JOIN, {"code": "pkj1.PIPED", "replace": False}),
+                      server.received)
+        rc, out, _err, _server = run_main(["agents", "cloud", "leave"],
+                                          {protocol.M_AGENTS_CLOUD_LEAVE: "left the channel"})
+        self.assertEqual(rc, 0)
+        self.assertIn("left the channel on this computer; the channel stays", out)
+
     def test_agents_forget_inactive(self):
         rc, out, _err, server = run_main(["agents", "forget", "--inactive"],
                                          {protocol.M_AGENTS_FORGET_INACTIVE: 3})

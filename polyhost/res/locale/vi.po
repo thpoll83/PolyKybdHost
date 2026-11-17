@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-17 12:15+0000\n"
+"POT-Creation-Date: 2026-11-17 13:07+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: vi\n"
@@ -609,7 +609,7 @@ msgid "Open {page} (Edge: edge://extensions), turn on Developer mode, click \"Lo
 msgstr "Mở {page} (Edge: edge://extensions), bật “Chế độ dành cho nhà phát triển”, nhấp “Tải tiện ích đã giải nén” và chọn thư mục. Trong phần Tùy chọn của tiện ích, cổng phải là {port}, giống với “Cổng nhận” trong cài đặt của ứng dụng này. Sau khi cập nhật ứng dụng này, hãy nhấp “Tải lại” trên thẻ của tiện ích."
 
 #: polyhost/gui/browser_extension_page.py:123
-#: polyhost/gui/cloud_sessions_dialog.py:206
+#: polyhost/gui/cloud_sessions_dialog.py:234
 #: polyhost/gui/crash_alert_dialog.py:208 polyhost/gui/error_dialog.py:74
 #: polyhost/gui/problem_alert_dialog.py:108
 msgid "Copied to the clipboard."
@@ -633,99 +633,155 @@ msgstr "Chưa sao chép: {msg}"
 msgid "Copied version {version}. Now load the folder in the browser (step 2)."
 msgstr "Đã sao chép phiên bản {version}. Giờ hãy tải thư mục trong trình duyệt (bước 2)."
 
-#: polyhost/gui/cloud_sessions_dialog.py:38
+#: polyhost/gui/cloud_sessions_dialog.py:39
 msgid "Connect Cloud Sessions"
 msgstr "Kết nối phiên đám mây"
 
-#: polyhost/gui/cloud_sessions_dialog.py:48
-#: polyhost/gui/cloud_sessions_dialog.py:118
+#: polyhost/gui/cloud_sessions_dialog.py:49
+#: polyhost/gui/cloud_sessions_dialog.py:140
 msgid "Reading the state…"
 msgstr "Đang đọc trạng thái…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:49
+#: polyhost/gui/cloud_sessions_dialog.py:50
 msgid "Shows Claude Code sessions that run in the cloud (claude.ai/code, also when the desktop app shows them) on the agent keys. A key press brings the session's browser window or the Claude app to the front. The session's state goes through the PolyKybd relay, encrypted with a key that only this computer and your cloud environment have."
 msgstr "Hiển thị các phiên Claude Code chạy trên đám mây (claude.ai/code, kể cả khi ứng dụng máy tính hiển thị chúng) trên các phím tác tử. Nhấn phím sẽ đưa cửa sổ trình duyệt của phiên hoặc ứng dụng Claude lên phía trước. Trạng thái của phiên đi qua máy chủ chuyển tiếp PolyKybd, được mã hóa bằng một khóa mà chỉ máy tính này và môi trường đám mây của bạn có."
 
-#: polyhost/gui/cloud_sessions_dialog.py:58
+#: polyhost/gui/cloud_sessions_dialog.py:59
 msgid "Cloud environment settings"
 msgstr "Cài đặt môi trường đám mây"
 
-#: polyhost/gui/cloud_sessions_dialog.py:60
+#: polyhost/gui/cloud_sessions_dialog.py:61
 msgid "In claude.ai, open the cloud environment's settings and enter these. Use a personal environment: everyone who uses an environment can read its variables."
 msgstr "Trong claude.ai, mở phần cài đặt của môi trường đám mây và nhập các mục sau. Hãy dùng môi trường cá nhân: mọi người dùng một môi trường đều có thể đọc các biến của nó."
 
-#: polyhost/gui/cloud_sessions_dialog.py:74
+#: polyhost/gui/cloud_sessions_dialog.py:75
 msgid "Environment variable"
 msgstr "Biến môi trường"
 
-#: polyhost/gui/cloud_sessions_dialog.py:75
+#: polyhost/gui/cloud_sessions_dialog.py:76
 msgid "Allowed host (when network access is Limited)"
 msgstr "Máy chủ được phép (khi quyền truy cập mạng là Limited)"
 
-#: polyhost/gui/cloud_sessions_dialog.py:76
+#: polyhost/gui/cloud_sessions_dialog.py:77
 msgid "Setup script"
 msgstr "Tập lệnh thiết lập"
 
-#: polyhost/gui/cloud_sessions_dialog.py:80
+#: polyhost/gui/cloud_sessions_dialog.py:81
 #: polyhost/gui/forwarder_pairing.py:26 polyhost/gui/shell_editor_pages.py:379
 msgid "Copy"
 msgstr "Sao chép"
 
-#: polyhost/gui/cloud_sessions_dialog.py:89
+#: polyhost/gui/cloud_sessions_dialog.py:90
 msgid "Each new cloud session of that environment then shows on a number key."
 msgstr "Sau đó, mỗi phiên đám mây mới của môi trường đó sẽ hiển thị trên một phím số."
 
-#: polyhost/gui/cloud_sessions_dialog.py:97
+#: polyhost/gui/cloud_sessions_dialog.py:96
+msgid "Other computers"
+msgstr "Máy tính khác"
+
+#: polyhost/gui/cloud_sessions_dialog.py:98
+msgid "To show these cloud sessions on another computer too, copy the join code and paste it there under \"Join with a Code\". Treat the code like a password: it reads and writes this channel."
+msgstr "Để hiển thị các phiên đám mây này trên cả một máy tính khác, hãy sao chép mã tham gia và dán vào mục “Tham gia bằng mã” trên máy tính đó. Hãy giữ mã này như mật khẩu: mã này cho phép đọc và ghi kênh này."
+
+#: polyhost/gui/cloud_sessions_dialog.py:101
+msgid "Copy Join Code"
+msgstr "Sao chép mã tham gia"
+
+#: polyhost/gui/cloud_sessions_dialog.py:112
 msgid "Connect"
 msgstr "Kết nối"
 
-#: polyhost/gui/cloud_sessions_dialog.py:98
-msgid "Disconnect…"
-msgstr "Ngắt kết nối…"
+#: polyhost/gui/cloud_sessions_dialog.py:113
+msgid "Join with a Code…"
+msgstr "Tham gia bằng mã…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:165
+#: polyhost/gui/cloud_sessions_dialog.py:114
+msgid "Disconnect This Computer…"
+msgstr "Ngắt kết nối máy tính này…"
+
+#: polyhost/gui/cloud_sessions_dialog.py:115
+msgid "Delete Channel…"
+msgstr "Xóa kênh…"
+
+#: polyhost/gui/cloud_sessions_dialog.py:187
 #, python-brace-format
 msgid "The state could not be read: {msg}"
 msgstr "Không thể đọc trạng thái: {msg}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:185
-msgid "Not connected. \"Connect\" creates a channel on the relay for this computer."
-msgstr "Chưa kết nối. “Kết nối” sẽ tạo một kênh trên máy chủ chuyển tiếp cho máy tính này."
+#: polyhost/gui/cloud_sessions_dialog.py:210
+msgid "Not connected. \"Connect\" creates a channel on the relay for this computer; \"Join with a Code\" uses the channel of another computer."
+msgstr "Chưa kết nối. “Kết nối” tạo một kênh trên máy chủ chuyển tiếp cho máy tính này; “Tham gia bằng mã” dùng kênh của một máy tính khác."
 
-#: polyhost/gui/cloud_sessions_dialog.py:191
+#: polyhost/gui/cloud_sessions_dialog.py:217
 msgid "The agent keys are off: turn on \"Show on the Number Row\" in the AI Agents menu."
 msgstr "Các phím tác tử đang tắt: hãy bật “Hiển thị trên hàng số” trong menu Tác tử AI."
 
-#: polyhost/gui/cloud_sessions_dialog.py:194
+#: polyhost/gui/cloud_sessions_dialog.py:220
 msgid "Connected to the relay."
 msgstr "Đã kết nối với máy chủ chuyển tiếp."
 
-#: polyhost/gui/cloud_sessions_dialog.py:196
-#, python-brace-format
-msgid "The relay cannot be reached; trying again: {error}"
-msgstr "Không thể truy cập máy chủ chuyển tiếp; đang thử lại: {error}"
-
-#: polyhost/gui/cloud_sessions_dialog.py:199
-msgid "Connecting to the relay…"
-msgstr "Đang kết nối với máy chủ chuyển tiếp…"
-
-#: polyhost/gui/cloud_sessions_dialog.py:211
-msgid "Creating a channel on the relay…"
-msgstr "Đang tạo kênh trên máy chủ chuyển tiếp…"
-
-#: polyhost/gui/cloud_sessions_dialog.py:221
+#: polyhost/gui/cloud_sessions_dialog.py:222
+#: polyhost/gui/cloud_sessions_dialog.py:249
 #, python-brace-format
 msgid "Could not connect: {msg}"
 msgstr "Không thể kết nối: {msg}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:227
-#: polyhost/gui/cloud_sessions_dialog.py:239
-msgid "Disconnect Cloud Sessions"
-msgstr "Ngắt kết nối phiên đám mây"
+#: polyhost/gui/cloud_sessions_dialog.py:224
+#, python-brace-format
+msgid "The relay cannot be reached; trying again: {error}"
+msgstr "Không thể truy cập máy chủ chuyển tiếp; đang thử lại: {error}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:228
-msgid "Delete the channel on the relay? The cloud sessions leave the agent keys, and the hooks in your cloud environment stop reaching this computer. Remove the environment variable there too."
-msgstr "Xóa kênh trên máy chủ chuyển tiếp? Các phiên đám mây sẽ rời khỏi các phím tác tử, và các hook trong môi trường đám mây của bạn sẽ không còn tới được máy tính này. Hãy xóa cả biến môi trường ở đó."
+#: polyhost/gui/cloud_sessions_dialog.py:227
+msgid "Connecting to the relay…"
+msgstr "Đang kết nối với máy chủ chuyển tiếp…"
+
+#: polyhost/gui/cloud_sessions_dialog.py:239
+msgid "Creating a channel on the relay…"
+msgstr "Đang tạo kênh trên máy chủ chuyển tiếp…"
+
+#: polyhost/gui/cloud_sessions_dialog.py:259
+#, python-brace-format
+msgid "No join code: {msg}"
+msgstr "Không có mã tham gia: {msg}"
+
+#: polyhost/gui/cloud_sessions_dialog.py:262
+msgid "Join code copied to the clipboard. Treat it like a password."
+msgstr "Đã sao chép mã tham gia vào bộ nhớ tạm. Hãy giữ mã này như mật khẩu."
+
+#: polyhost/gui/cloud_sessions_dialog.py:268
+msgid "Join with a Code"
+msgstr "Tham gia bằng mã"
+
+#: polyhost/gui/cloud_sessions_dialog.py:269
+msgid "Paste the join code from the other computer's \"Connect Cloud Sessions\" window:"
+msgstr "Dán mã tham gia từ cửa sổ “Kết nối phiên đám mây” của máy tính kia:"
+
+#: polyhost/gui/cloud_sessions_dialog.py:275
+msgid "Checking the code with the relay…"
+msgstr "Đang kiểm tra mã với máy chủ chuyển tiếp…"
+
+#: polyhost/gui/cloud_sessions_dialog.py:285
+#, python-brace-format
+msgid "Could not join: {msg}"
+msgstr "Không thể tham gia: {msg}"
+
+#: polyhost/gui/cloud_sessions_dialog.py:291
+#: polyhost/gui/cloud_sessions_dialog.py:303
+msgid "Disconnect This Computer"
+msgstr "Ngắt kết nối máy tính này"
+
+#: polyhost/gui/cloud_sessions_dialog.py:292
+msgid "Stop showing the cloud sessions on this computer? The channel stays on the relay: other computers that joined it and your cloud environment keep working. To show them here again, join with the code of another computer."
+msgstr "Dừng hiển thị các phiên đám mây trên máy tính này? Kênh vẫn còn trên máy chủ chuyển tiếp: các máy tính khác đã tham gia kênh và môi trường đám mây của bạn vẫn tiếp tục hoạt động. Để hiển thị lại tại đây, hãy tham gia bằng mã của một máy tính khác."
+
+#: polyhost/gui/cloud_sessions_dialog.py:309
+#: polyhost/gui/cloud_sessions_dialog.py:323
+msgid "Delete Channel"
+msgstr "Xóa kênh"
+
+#: polyhost/gui/cloud_sessions_dialog.py:310
+msgid "Delete the channel on the relay? The cloud sessions leave the agent keys on every computer that uses this channel, and the hooks in your cloud environment stop reaching them. Remove the environment variable there too."
+msgstr "Xóa kênh trên máy chủ chuyển tiếp? Các phiên đám mây sẽ rời khỏi các phím tác tử trên mọi máy tính dùng kênh này, và các hook trong môi trường đám mây của bạn sẽ không còn tới được chúng. Hãy xóa cả biến môi trường ở đó."
 
 #: polyhost/gui/cmd_menu.py:143 polyhost/gui/settings_dialog.py:83
 msgid "Brightness"

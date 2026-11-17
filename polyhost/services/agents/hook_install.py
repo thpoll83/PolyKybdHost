@@ -330,6 +330,65 @@ def _contains_ours(text: str) -> bool:
     return HOOK_MARK in text or '"agents", "hook"' in text
 
 
+def _strings(value):
+    """Every string inside a JSON value."""
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for v in value.values():
+            yield from _strings(v)
+    elif isinstance(value, list):
+        for v in value:
+            yield from _strings(v)
+
+
+def _arg_after(argv: list[str], flag: str):
+    try:
+        return argv[argv.index(flag) + 1]
+    except (ValueError, IndexError):
+        return None
+
+
+def pinned_target(vendor: str, home: str | None = None) -> dict | None:
+    """{"host", "authkey_file"} when the installed hooks were written with
+    `--host` (a keyboard on another computer), else None: they then follow the
+    forwarder on this computer, or report to this computer's host."""
+    import re
+    import shlex
+    try:
+        text = _read(config_path(vendor, home))
+    except OSError:
+        return None
+    argvs = []
+    # Codex's notify line and the OpenCode plugin: the argv as a JSON-style array.
+    for array in re.findall(r"\[([^\[\]]*agents[^\[\]]*)\]", text):
+        try:
+            argv = json.loads("[" + array + "]")
+        except ValueError:
+            continue
+        if isinstance(argv, list) and all(isinstance(a, str) for a in argv):
+            argvs.append(argv)
+    # The other agents: a shell command in a JSON string.
+    try:
+        data = json.loads(text)
+    except ValueError:
+        data = None
+    for command in _strings(data):
+        if not _contains_ours(command):
+            continue
+        try:
+            argvs.append(shlex.split(command.lstrip("& ")))
+        except ValueError:
+            continue
+    for argv in argvs:
+        if not ("agents" in argv and "hook" in argv):
+            continue
+        host = _arg_after(argv, "--host")
+        if host:
+            return {"host": host, "authkey_file": _arg_after(argv, "--authkey-file")}
+    return None
+
+
 def status(vendor: str, home: str | None = None,
            argv: list[str] | None = None) -> HookStatus:
     """The state of one vendor's hooks, read from its config file. Never raises

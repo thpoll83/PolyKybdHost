@@ -149,26 +149,49 @@ def stale_16():
     return _stamp(ring, _QUESTION_16, 5, 4)
 
 
-# The 12 px card icon's '?': scaling stale_16() down lost the dot (2026-11-17).
+# The 12 px card icons are a filled disc with the glyph cut out (2026-11-17): a
+# ring left the glyph 6 px of room, the filled disc gives it 8. The glyphs have
+# 2 px strokes; scaled from 16 or 19 px the '?' lost its dot and the check was
+# 1 px wide.
 _QUESTION_12 = [
-    "###",
-    "..#",
-    ".##",
-    ".#.",
-    "...",
-    ".#.",
+    ".####.",
+    "##..##",
+    "....##",
+    "...##.",
+    "..##..",
+    "......",
+    "..##..",
+    "..##..",
+]
+
+_CHECK_12 = [
+    "......##",
+    ".....##.",
+    "##..##..",
+    "##.##...",
+    ".###....",
+    "..#.....",
 ]
 
 
-def stale_12():
-    """A ring (outer radius 6, about 1.6 px wide) with '?', drawn at 12 px."""
+def _disc_12():
+    """The 12 px card icons' disc: radius 6 around the centre of the 12 x 12 box."""
     import numpy as np
-    ring = np.zeros((12, 12), dtype=bool)
+    disc = np.zeros((12, 12), dtype=bool)
     for y in range(12):
         for x in range(12):
-            d = (x + 0.5 - 6.0) ** 2 + (y + 0.5 - 6.0) ** 2
-            ring[y, x] = 4.4 ** 2 < d <= 6.0 ** 2
-    return _stamp(ring, _QUESTION_12, 4, 3)
+            disc[y, x] = (x + 0.5 - 6.0) ** 2 + (y + 0.5 - 6.0) ** 2 <= 6.0 ** 2
+    return disc
+
+
+def stale_12():
+    """The disc with a '?' cut out; the dot is 2 x 2."""
+    return _stamp(_disc_12(), _QUESTION_12, 3, 2, value=False)
+
+
+def done_12():
+    """The disc with a 2 px check mark cut out."""
+    return _stamp(_disc_12(), _CHECK_12, 2, 3, value=False)
 
 
 def idle_16():
@@ -258,3 +281,42 @@ def right_arrow(width=13):
     for i in range(5):
         mask[4 - i: 5 + i, width - 1 - i] = True
     return mask
+
+
+def cloud(w: int, h: int):
+    """A filled cloud silhouette, w x h: three bumps on a flat base, drawn at 4x
+    and scaled down (Lanczos, then a threshold)."""
+    import numpy as np
+    from PIL import Image, ImageDraw
+    big_w, big_h = w * 4, h * 4
+    img = Image.new("L", (big_w, big_h), 0)
+    draw = ImageDraw.Draw(img)
+    draw.ellipse((0, big_h * 0.45, big_w * 0.45, big_h), fill=255)                 # left
+    draw.ellipse((big_w * 0.2, big_h * 0.12, big_w * 0.68, big_h * 0.9), fill=255)  # top
+    draw.ellipse((big_w * 0.52, big_h * 0.35, big_w, big_h), fill=255)             # right
+    draw.rectangle((big_w * 0.18, big_h * 0.7, big_w * 0.84, big_h), fill=255)     # base
+    return np.array(img.resize((w, h), Image.LANCZOS)) > 110
+
+
+def grow(mask, px: int = 1):
+    """`mask` with every pixel within `px` (8-neighbourhood) set."""
+    import numpy as np
+    out = np.asarray(mask, dtype=bool)
+    for _ in range(px):
+        big = np.pad(out, 1)
+        acc = big.copy()
+        for dy in (-1, 0, 1):
+            for dx in (-1, 0, 1):
+                acc |= np.roll(np.roll(big, dy, 0), dx, 1)
+        out = acc[1:-1, 1:-1]
+    return out
+
+
+def outline(mask, px: int = 1):
+    """The `px` px wide inner edge of `mask`."""
+    import numpy as np
+    # Padded first: outside the array counts as outside the shape, so a side that
+    # touches the edge (the cloud's flat base) gets its line too.
+    padded = np.pad(np.asarray(mask, dtype=bool), px)
+    inner = ~grow(~padded, px)
+    return (padded & ~inner)[px:-px, px:-px]

@@ -155,7 +155,7 @@ class AgentKeysController:
             layout = self._layout(agent, version)
             index = int(self._clock() // TEXT_PAGE_S) % layout.page_count
             drawn = (agent.vendor, agent.display_headline, version,
-                     agent.state, index)
+                     agent.state, agent.machine == "cloud", index)
             slots.append(self._card(keeb, cache, ("agentcard",) + agent.key + (index,), drawn,
                                     lambda lay=layout, i=index: render_page(lay, i)))
         waiting = len(self.registry.waiting())
@@ -201,13 +201,14 @@ class AgentKeysController:
     def _layout(self, agent, version):
         """The card layout of an agent, measured once per title, mark version and
         state."""
-        key = (agent.vendor, agent.display_headline, version, agent.state)
+        cloud = agent.machine == "cloud"
+        key = (agent.vendor, agent.display_headline, version, agent.state, cloud)
         layout = self._layouts.get(key)
         if layout is None:
             if len(self._layouts) > 64:
                 self._layouts.clear()
             layout = self._layouts[key] = card_layout(agent.vendor, agent.display_headline,
-                                                      self.marks, agent.state)
+                                                      self.marks, agent.state, cloud)
         return layout
 
     def _card(self, keeb, cache, key, drawn, render) -> int:
