@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-17 09:25+0000\n"
+"POT-Creation-Date: 2026-11-17 11:22+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hant_TW\n"
@@ -609,7 +609,7 @@ msgid "Open {page} (Edge: edge://extensions), turn on Developer mode, click \"Lo
 msgstr "開啟 {page}（Edge：edge://extensions），開啟「開發人員模式」，按一下「載入未封裝項目」並選擇該資料夾。在擴充功能的選項中，連接埠必須為 {port}，與此應用程式設定中的「接收連接埠」相同。此應用程式更新後，請在擴充功能的卡片上按一下「重新載入」。"
 
 #: polyhost/gui/browser_extension_page.py:123
-#: polyhost/gui/cloud_sessions_dialog.py:206
+#: polyhost/gui/cloud_sessions_dialog.py:232
 #: polyhost/gui/crash_alert_dialog.py:208 polyhost/gui/error_dialog.py:74
 #: polyhost/gui/problem_alert_dialog.py:108
 msgid "Copied to the clipboard."
@@ -633,99 +633,154 @@ msgstr "未複製：{msg}"
 msgid "Copied version {version}. Now load the folder in the browser (step 2)."
 msgstr "已複製版本 {version}。現在請在瀏覽器中載入該資料夾（步驟 2）。"
 
-#: polyhost/gui/cloud_sessions_dialog.py:38
+#: polyhost/gui/cloud_sessions_dialog.py:39
 msgid "Connect Cloud Sessions"
 msgstr "連線雲端工作階段"
 
-#: polyhost/gui/cloud_sessions_dialog.py:48
-#: polyhost/gui/cloud_sessions_dialog.py:118
+#: polyhost/gui/cloud_sessions_dialog.py:49
+#: polyhost/gui/cloud_sessions_dialog.py:140
 msgid "Reading the state…"
 msgstr "正在讀取狀態…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:49
+#: polyhost/gui/cloud_sessions_dialog.py:50
 msgid "Shows Claude Code sessions that run in the cloud (claude.ai/code, also when the desktop app shows them) on the agent keys. A key press brings the session's browser window or the Claude app to the front. The session's state goes through the PolyKybd relay, encrypted with a key that only this computer and your cloud environment have."
 msgstr "在代理程式按鍵上顯示在雲端執行的 Claude Code 工作階段（claude.ai/code，桌面應用程式顯示的工作階段也包括在內）。按下按鍵會將該工作階段的瀏覽器視窗或 Claude 應用程式切換到前景。工作階段的狀態經由 PolyKybd 轉送伺服器傳輸，並以只有這台電腦和您的雲端環境才有的金鑰加密。"
 
-#: polyhost/gui/cloud_sessions_dialog.py:58
+#: polyhost/gui/cloud_sessions_dialog.py:59
 msgid "Cloud environment settings"
 msgstr "雲端環境設定"
 
-#: polyhost/gui/cloud_sessions_dialog.py:60
+#: polyhost/gui/cloud_sessions_dialog.py:61
 msgid "In claude.ai, open the cloud environment's settings and enter these. Use a personal environment: everyone who uses an environment can read its variables."
 msgstr "在 claude.ai 中開啟雲端環境的設定，並輸入以下內容。請使用個人環境：使用某個環境的每個人都可以讀取其變數。"
 
-#: polyhost/gui/cloud_sessions_dialog.py:74
+#: polyhost/gui/cloud_sessions_dialog.py:75
 msgid "Environment variable"
 msgstr "環境變數"
 
-#: polyhost/gui/cloud_sessions_dialog.py:75
+#: polyhost/gui/cloud_sessions_dialog.py:76
 msgid "Allowed host (when network access is Limited)"
 msgstr "允許的主機（網路存取為 Limited 時）"
 
-#: polyhost/gui/cloud_sessions_dialog.py:76
+#: polyhost/gui/cloud_sessions_dialog.py:77
 msgid "Setup script"
 msgstr "設定指令碼"
 
-#: polyhost/gui/cloud_sessions_dialog.py:80
+#: polyhost/gui/cloud_sessions_dialog.py:81
 #: polyhost/gui/forwarder_pairing.py:26
 msgid "Copy"
 msgstr "複製"
 
-#: polyhost/gui/cloud_sessions_dialog.py:89
+#: polyhost/gui/cloud_sessions_dialog.py:90
 msgid "Each new cloud session of that environment then shows on a number key."
 msgstr "之後，該環境的每個新雲端工作階段都會顯示在一個數字鍵上。"
 
-#: polyhost/gui/cloud_sessions_dialog.py:97
+#: polyhost/gui/cloud_sessions_dialog.py:96
+msgid "Other computers"
+msgstr "其他電腦"
+
+#: polyhost/gui/cloud_sessions_dialog.py:98
+msgid "To show these cloud sessions on another computer too, copy the join code and paste it there under \"Join with a Code\". Treat the code like a password: it reads and writes this channel."
+msgstr "若要在另一台電腦上也顯示這些雲端工作階段，請複製加入碼，並貼到那台電腦的「使用代碼加入」中。請像對待密碼一樣對待此代碼：它可以讀寫此通道。"
+
+#: polyhost/gui/cloud_sessions_dialog.py:101
+msgid "Copy Join Code"
+msgstr "複製加入碼"
+
+#: polyhost/gui/cloud_sessions_dialog.py:112
 msgid "Connect"
 msgstr "連線"
 
-#: polyhost/gui/cloud_sessions_dialog.py:98
-msgid "Disconnect…"
-msgstr "中斷連線…"
+#: polyhost/gui/cloud_sessions_dialog.py:113
+msgid "Join with a Code…"
+msgstr "使用代碼加入…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:165
+#: polyhost/gui/cloud_sessions_dialog.py:114
+msgid "Disconnect This Computer…"
+msgstr "中斷這台電腦的連線…"
+
+#: polyhost/gui/cloud_sessions_dialog.py:115
+msgid "Delete Channel…"
+msgstr "刪除通道…"
+
+#: polyhost/gui/cloud_sessions_dialog.py:187
 #, python-brace-format
 msgid "The state could not be read: {msg}"
 msgstr "無法讀取狀態：{msg}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:185
-msgid "Not connected. \"Connect\" creates a channel on the relay for this computer."
-msgstr "未連線。「連線」會在轉送伺服器上為這台電腦建立一個通道。"
+#: polyhost/gui/cloud_sessions_dialog.py:210
+msgid "Not connected. \"Connect\" creates a channel on the relay for this computer; \"Join with a Code\" uses the channel of another computer."
+msgstr "未連線。「連線」會在轉送伺服器上為這台電腦建立通道；「使用代碼加入」則使用另一台電腦的通道。"
 
-#: polyhost/gui/cloud_sessions_dialog.py:191
+#: polyhost/gui/cloud_sessions_dialog.py:217
 msgid "The agent keys are off: turn on \"Show on the Number Row\" in the AI Agents menu."
 msgstr "代理程式按鍵已關閉：請在 AI 代理程式選單中開啟「在數字列上顯示」。"
 
-#: polyhost/gui/cloud_sessions_dialog.py:194
+#: polyhost/gui/cloud_sessions_dialog.py:220
 msgid "Connected to the relay."
 msgstr "已連線到轉送伺服器。"
 
-#: polyhost/gui/cloud_sessions_dialog.py:196
+#: polyhost/gui/cloud_sessions_dialog.py:222
 #, python-brace-format
 msgid "The relay cannot be reached; trying again: {error}"
 msgstr "無法連到轉送伺服器，正在重試：{error}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:199
+#: polyhost/gui/cloud_sessions_dialog.py:225
 msgid "Connecting to the relay…"
 msgstr "正在連線到轉送伺服器…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:211
+#: polyhost/gui/cloud_sessions_dialog.py:237
 msgid "Creating a channel on the relay…"
 msgstr "正在轉送伺服器上建立通道…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:221
+#: polyhost/gui/cloud_sessions_dialog.py:247
 #, python-brace-format
 msgid "Could not connect: {msg}"
 msgstr "無法連線：{msg}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:227
-#: polyhost/gui/cloud_sessions_dialog.py:239
-msgid "Disconnect Cloud Sessions"
-msgstr "中斷雲端工作階段連線"
+#: polyhost/gui/cloud_sessions_dialog.py:257
+#, python-brace-format
+msgid "No join code: {msg}"
+msgstr "沒有加入碼：{msg}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:228
-msgid "Delete the channel on the relay? The cloud sessions leave the agent keys, and the hooks in your cloud environment stop reaching this computer. Remove the environment variable there too."
-msgstr "要刪除轉送伺服器上的通道嗎？雲端工作階段將從代理程式按鍵上移除，雲端環境中的掛鉤將無法再連到這台電腦。請同時在雲端環境中刪除該環境變數。"
+#: polyhost/gui/cloud_sessions_dialog.py:260
+msgid "Join code copied to the clipboard. Treat it like a password."
+msgstr "加入碼已複製到剪貼簿。請像對待密碼一樣對待它。"
+
+#: polyhost/gui/cloud_sessions_dialog.py:266
+msgid "Join with a Code"
+msgstr "使用代碼加入"
+
+#: polyhost/gui/cloud_sessions_dialog.py:267
+msgid "Paste the join code from the other computer's \"Connect Cloud Sessions\" window:"
+msgstr "貼上另一台電腦「連線雲端工作階段」視窗中的加入碼："
+
+#: polyhost/gui/cloud_sessions_dialog.py:273
+msgid "Checking the code with the relay…"
+msgstr "正在透過轉送伺服器檢查代碼…"
+
+#: polyhost/gui/cloud_sessions_dialog.py:283
+#, python-brace-format
+msgid "Could not join: {msg}"
+msgstr "無法加入：{msg}"
+
+#: polyhost/gui/cloud_sessions_dialog.py:289
+#: polyhost/gui/cloud_sessions_dialog.py:301
+msgid "Disconnect This Computer"
+msgstr "中斷這台電腦的連線"
+
+#: polyhost/gui/cloud_sessions_dialog.py:290
+msgid "Stop showing the cloud sessions on this computer? The channel stays on the relay: other computers that joined it and your cloud environment keep working. To show them here again, join with the code of another computer."
+msgstr "要停止在這台電腦上顯示雲端工作階段嗎？通道仍會保留在轉送伺服器上：已加入此通道的其他電腦和您的雲端環境會繼續運作。若要在這裡再次顯示，請使用另一台電腦的代碼加入。"
+
+#: polyhost/gui/cloud_sessions_dialog.py:307
+#: polyhost/gui/cloud_sessions_dialog.py:319
+msgid "Delete Channel"
+msgstr "刪除通道"
+
+#: polyhost/gui/cloud_sessions_dialog.py:308
+msgid "Delete the channel on the relay? The cloud sessions leave the agent keys on every computer that uses this channel, and the hooks in your cloud environment stop reaching them. Remove the environment variable there too."
+msgstr "要刪除轉送伺服器上的通道嗎？在使用此通道的每台電腦上，雲端工作階段都會從代理程式按鍵上移除，您雲端環境中的掛鉤也將無法再連到它們。請一併移除雲端環境中的環境變數。"
 
 #: polyhost/gui/cmd_menu.py:143 polyhost/gui/settings_dialog.py:78
 msgid "Brightness"

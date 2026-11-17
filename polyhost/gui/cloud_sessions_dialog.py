@@ -3,17 +3,18 @@ on the agent keys, through the relay (services/agents/cloud_relay.py).
 
 Built from the ui_kit parts (docs/tray-ui.md): a headline with the connection
 state and the explanation in grey, one card with what the user enters in the
-claude.ai cloud environment's settings (each with a Copy button), a status line
-and one button row with icons. Every core call runs off the GUI thread
+claude.ai cloud environment's settings (each with a Copy button), one card with
+the join code for another computer (cloud_relay.join_code), a status line and one
+button row with icons. Every core call runs off the GUI thread
 (`call_async(fn, done)`, the tray's _core_click): connect and disconnect go over
 the network, and in client mode every call is an RPC to the daemon.
 """
 from __future__ import annotations
 
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import (QApplication, QDialog, QDialogButtonBox, QGridLayout, QLabel,
-                             QLineEdit, QMessageBox, QPlainTextEdit, QPushButton,
-                             QVBoxLayout)
+from PyQt5.QtWidgets import (QApplication, QDialog, QDialogButtonBox, QGridLayout,
+                             QInputDialog, QLabel, QLineEdit, QMessageBox, QPlainTextEdit,
+                             QPushButton, QVBoxLayout)
 
 from polyhost.gui import message_box
 from polyhost.gui.ui_kit import (CARD_STYLE, Headline, StatusLabel, WrapLabel, card,
@@ -89,20 +90,41 @@ class CloudSessionsDialog(QDialog):
             "Each new cloud session of that environment then shows on a number key."))))
         layout.addWidget(self.setup_card)
 
+        # Another computer shows the same sessions: it joins this channel with the
+        # code. The relay sends each report to every computer on the channel.
+        self.join_card, join_lay = card(self)
+        join_lay.addWidget(self._heading(_("Other computers")))
+        join_lay.addWidget(muted(WrapLabel(_(
+            "To show these cloud sessions on another computer too, copy the join code and "
+            "paste it there under \"Join with a Code\". Treat the code like a password: it "
+            "reads and writes this channel."))))
+        self.join_code_button = set_button_icon(QPushButton(_("Copy Join Code")), "copy")
+        # noinspection PyUnresolvedReferences
+        self.join_code_button.clicked.connect(self._copy_join_code)
+        join_lay.addWidget(self.join_code_button, 0, Qt.AlignLeft)
+        layout.addWidget(self.join_card)
+
         self.status = StatusLabel("", self)
         layout.addWidget(self.status)
         layout.addStretch(1)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Close)
         self.connect_button = set_button_icon(QPushButton(_("Connect")), "start")
-        self.disconnect_button = set_button_icon(QPushButton(_("Disconnect…")), "delete")
-        buttons.addButton(self.connect_button, QDialogButtonBox.ActionRole)
-        buttons.addButton(self.disconnect_button, QDialogButtonBox.ActionRole)
+        self.join_button = set_button_icon(QPushButton(_("Join with a Code…")), "edit")
+        self.leave_button = set_button_icon(QPushButton(_("Disconnect This Computer…")), "stop")
+        self.disconnect_button = set_button_icon(QPushButton(_("Delete Channel…")), "delete")
+        for button in (self.connect_button, self.join_button, self.leave_button,
+                       self.disconnect_button):
+            buttons.addButton(button, QDialogButtonBox.ActionRole)
         style_button_box(buttons)
         # noinspection PyUnresolvedReferences
         buttons.rejected.connect(self.close)
         # noinspection PyUnresolvedReferences
         self.connect_button.clicked.connect(self._connect)
+        # noinspection PyUnresolvedReferences
+        self.join_button.clicked.connect(self._join)
+        # noinspection PyUnresolvedReferences
+        self.leave_button.clicked.connect(self._leave)
         # noinspection PyUnresolvedReferences
         self.disconnect_button.clicked.connect(self._disconnect)
         layout.addWidget(buttons)
@@ -173,17 +195,21 @@ class CloudSessionsDialog(QDialog):
         self.host.setText(setup.get("host", "") if configured else "")
         self.script.setPlainText(setup.get("script", "") if configured else "")
         self.setup_card.setVisible(configured)
-        self.connect_button.setVisible(not configured)
-        self.connect_button.setEnabled(True)
-        self.disconnect_button.setVisible(configured)
-        self.disconnect_button.setEnabled(True)
+        self.join_card.setVisible(configured)
+        for button in (self.connect_button, self.join_button):
+            button.setVisible(not configured)
+            button.setEnabled(True)
+        for button in (self.leave_button, self.disconnect_button, self.join_code_button):
+            button.setVisible(configured)
+            button.setEnabled(True)
         # The setup card appears after the state arrives: grow to fit it, and
         # again once its text has wrapped (ui_kit.fit_height).
         self.adjustSize()
         QTimer.singleShot(0, lambda: fit_height(self))
         if not configured:
             self._set_state(_("Not connected. \"Connect\" creates a channel on the relay "
-                              "for this computer."))
+                              "for this computer; \"Join with a Code\" uses the channel of "
+                              "another computer."))
             return
         state = (info.get("connection") or {}).get("state", "stopped")
         error = (info.get("connection") or {}).get("error", "")
@@ -222,12 +248,66 @@ class CloudSessionsDialog(QDialog):
         self._error = None
         self.call_async(self.core.agents_cloud_connect, done)
 
+    def _copy_join_code(self):
+        self.join_code_button.setEnabled(False)
+
+        def done(ok, code):
+            self.join_code_button.setEnabled(True)
+            if not ok:
+                self.status.setText(_f("No join code: {msg}", msg=code))
+                return
+            QApplication.clipboard().setText(str(code))
+            self.status.setText(_("Join code copied to the clipboard. Treat it like a "
+                                  "password."))
+        self.call_async(self.core.agents_cloud_join_code, done)
+
+    def _join(self):
+        code, accepted = QInputDialog.getText(
+            self, _("Join with a Code"),
+            _("Paste the join code from the other computer's \"Connect Cloud Sessions\" "
+              "window:"))
+        if not accepted or not code.strip():
+            return
+        self._busy = True
+        self.join_button.setEnabled(False)
+        self._set_state(_("Checking the code with the relay…"))
+
+        def done(ok, info):
+            self._busy = False
+            if ok:
+                self._error = None
+                self._show_result(ok, info)
+                return
+            self._error = str(info) if info else ""
+            self._show({})
+            self._set_state(_f("Could not join: {msg}", msg=self._error), "error")
+        self._error = None
+        self.call_async(lambda: self.core.agents_cloud_join(code.strip()), done)
+
+    def _leave(self):
+        answer = message_box.question(
+            self, _("Disconnect This Computer"),
+            _("Stop showing the cloud sessions on this computer? The channel stays on the "
+              "relay: other computers that joined it and your cloud environment keep "
+              "working. To show them here again, join with the code of another computer."))
+        if answer != QMessageBox.Yes:
+            return
+        self._busy = True
+        self.leave_button.setEnabled(False)
+
+        def done(ok, msg):
+            self._busy = False
+            if not ok:
+                message_box.warning(self, _("Disconnect This Computer"), str(msg))
+            self._refresh()
+        self.call_async(self.core.agents_cloud_leave, done)
+
     def _disconnect(self):
         answer = message_box.question(
-            self, _("Disconnect Cloud Sessions"),
-            _("Delete the channel on the relay? The cloud sessions leave the agent keys, "
-              "and the hooks in your cloud environment stop reaching this computer. "
-              "Remove the environment variable there too."))
+            self, _("Delete Channel"),
+            _("Delete the channel on the relay? The cloud sessions leave the agent keys on "
+              "every computer that uses this channel, and the hooks in your cloud "
+              "environment stop reaching them. Remove the environment variable there too."))
         if answer != QMessageBox.Yes:
             return
         self._busy = True
@@ -236,6 +316,6 @@ class CloudSessionsDialog(QDialog):
         def done(ok, msg):
             self._busy = False
             if not ok:
-                message_box.warning(self, _("Disconnect Cloud Sessions"), str(msg))
+                message_box.warning(self, _("Delete Channel"), str(msg))
             self._refresh()
         self.call_async(self.core.agents_cloud_disconnect, done)

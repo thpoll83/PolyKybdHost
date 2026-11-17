@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-17 09:25+0000\n"
+"POT-Creation-Date: 2026-11-17 11:22+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fa\n"
@@ -609,7 +609,7 @@ msgid "Open {page} (Edge: edge://extensions), turn on Developer mode, click \"Lo
 msgstr "{page} را باز کنید (در Edge: edge://extensions)، \"Developer mode\" را روشن کنید، روی \"Load unpacked\" کلیک کنید و پوشه را انتخاب کنید. در گزینه‌های افزونه، درگاه باید {port} باشد، همان «درگاه گیرنده» در تنظیمات این برنامه. پس از به‌روزرسانی این برنامه، روی کارت افزونه \"Reload\" را بزنید."
 
 #: polyhost/gui/browser_extension_page.py:123
-#: polyhost/gui/cloud_sessions_dialog.py:206
+#: polyhost/gui/cloud_sessions_dialog.py:232
 #: polyhost/gui/crash_alert_dialog.py:208 polyhost/gui/error_dialog.py:74
 #: polyhost/gui/problem_alert_dialog.py:108
 msgid "Copied to the clipboard."
@@ -633,99 +633,154 @@ msgstr "کپی نشد: {msg}"
 msgid "Copied version {version}. Now load the folder in the browser (step 2)."
 msgstr "نسخهٔ {version} کپی شد. اکنون پوشه را در مرورگر بارگذاری کنید (مرحلهٔ 2)."
 
-#: polyhost/gui/cloud_sessions_dialog.py:38
+#: polyhost/gui/cloud_sessions_dialog.py:39
 msgid "Connect Cloud Sessions"
 msgstr "اتصال نشست‌های ابری"
 
-#: polyhost/gui/cloud_sessions_dialog.py:48
-#: polyhost/gui/cloud_sessions_dialog.py:118
+#: polyhost/gui/cloud_sessions_dialog.py:49
+#: polyhost/gui/cloud_sessions_dialog.py:140
 msgid "Reading the state…"
 msgstr "در حال خواندن وضعیت…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:49
+#: polyhost/gui/cloud_sessions_dialog.py:50
 msgid "Shows Claude Code sessions that run in the cloud (claude.ai/code, also when the desktop app shows them) on the agent keys. A key press brings the session's browser window or the Claude app to the front. The session's state goes through the PolyKybd relay, encrypted with a key that only this computer and your cloud environment have."
 msgstr "نشست‌های Claude Code را که در ابر اجرا می‌شوند (claude.ai/code، همچنین وقتی برنامهٔ دسکتاپ آن‌ها را نشان می‌دهد) روی کلیدهای عامل نشان می‌دهد. فشردن کلید پنجرهٔ مرورگر نشست یا برنامهٔ Claude را به پیش‌زمینه می‌آورد. وضعیت نشست از راه رلهٔ PolyKybd منتقل می‌شود و با کلیدی رمزگذاری می‌شود که فقط این رایانه و محیط ابری شما آن را دارند."
 
-#: polyhost/gui/cloud_sessions_dialog.py:58
+#: polyhost/gui/cloud_sessions_dialog.py:59
 msgid "Cloud environment settings"
 msgstr "تنظیمات محیط ابری"
 
-#: polyhost/gui/cloud_sessions_dialog.py:60
+#: polyhost/gui/cloud_sessions_dialog.py:61
 msgid "In claude.ai, open the cloud environment's settings and enter these. Use a personal environment: everyone who uses an environment can read its variables."
 msgstr "در claude.ai، تنظیمات محیط ابری را باز کنید و این مقادیر را وارد کنید. از یک محیط شخصی استفاده کنید: هر کسی که از یک محیط استفاده می‌کند می‌تواند متغیرهای آن را بخواند."
 
-#: polyhost/gui/cloud_sessions_dialog.py:74
+#: polyhost/gui/cloud_sessions_dialog.py:75
 msgid "Environment variable"
 msgstr "متغیر محیطی"
 
-#: polyhost/gui/cloud_sessions_dialog.py:75
+#: polyhost/gui/cloud_sessions_dialog.py:76
 msgid "Allowed host (when network access is Limited)"
 msgstr "میزبان مجاز (وقتی دسترسی شبکه Limited است)"
 
-#: polyhost/gui/cloud_sessions_dialog.py:76
+#: polyhost/gui/cloud_sessions_dialog.py:77
 msgid "Setup script"
 msgstr "اسکریپت راه‌اندازی"
 
-#: polyhost/gui/cloud_sessions_dialog.py:80
+#: polyhost/gui/cloud_sessions_dialog.py:81
 #: polyhost/gui/forwarder_pairing.py:26
 msgid "Copy"
 msgstr "کپی"
 
-#: polyhost/gui/cloud_sessions_dialog.py:89
+#: polyhost/gui/cloud_sessions_dialog.py:90
 msgid "Each new cloud session of that environment then shows on a number key."
 msgstr "پس از آن هر نشست ابری جدید آن محیط روی یک کلید عددی نمایش داده می‌شود."
 
-#: polyhost/gui/cloud_sessions_dialog.py:97
+#: polyhost/gui/cloud_sessions_dialog.py:96
+msgid "Other computers"
+msgstr "رایانه‌های دیگر"
+
+#: polyhost/gui/cloud_sessions_dialog.py:98
+msgid "To show these cloud sessions on another computer too, copy the join code and paste it there under \"Join with a Code\". Treat the code like a password: it reads and writes this channel."
+msgstr "برای نمایش این نشست‌های ابری روی رایانهٔ دیگری هم، کد پیوستن را کپی کنید و آن را در آنجا در «پیوستن با کد» جای‌گذاری کنید. این کد را مانند گذرواژه نگه دارید: این کد این کانال را می‌خواند و در آن می‌نویسد."
+
+#: polyhost/gui/cloud_sessions_dialog.py:101
+msgid "Copy Join Code"
+msgstr "کپی کد پیوستن"
+
+#: polyhost/gui/cloud_sessions_dialog.py:112
 msgid "Connect"
 msgstr "اتصال"
 
-#: polyhost/gui/cloud_sessions_dialog.py:98
-msgid "Disconnect…"
-msgstr "قطع اتصال…"
+#: polyhost/gui/cloud_sessions_dialog.py:113
+msgid "Join with a Code…"
+msgstr "پیوستن با کد…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:165
+#: polyhost/gui/cloud_sessions_dialog.py:114
+msgid "Disconnect This Computer…"
+msgstr "قطع اتصال این رایانه…"
+
+#: polyhost/gui/cloud_sessions_dialog.py:115
+msgid "Delete Channel…"
+msgstr "حذف کانال…"
+
+#: polyhost/gui/cloud_sessions_dialog.py:187
 #, python-brace-format
 msgid "The state could not be read: {msg}"
 msgstr "وضعیت خوانده نشد: {msg}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:185
-msgid "Not connected. \"Connect\" creates a channel on the relay for this computer."
-msgstr "وصل نیست. «اتصال» یک کانال روی رله برای این رایانه می‌سازد."
+#: polyhost/gui/cloud_sessions_dialog.py:210
+msgid "Not connected. \"Connect\" creates a channel on the relay for this computer; \"Join with a Code\" uses the channel of another computer."
+msgstr "متصل نیست. «اتصال» برای این رایانه یک کانال روی رله می‌سازد؛ «پیوستن با کد» از کانال رایانهٔ دیگری استفاده می‌کند."
 
-#: polyhost/gui/cloud_sessions_dialog.py:191
+#: polyhost/gui/cloud_sessions_dialog.py:217
 msgid "The agent keys are off: turn on \"Show on the Number Row\" in the AI Agents menu."
 msgstr "کلیدهای عامل خاموش هستند: «نمایش روی ردیف اعداد» را در منوی عامل‌های هوش مصنوعی روشن کنید."
 
-#: polyhost/gui/cloud_sessions_dialog.py:194
+#: polyhost/gui/cloud_sessions_dialog.py:220
 msgid "Connected to the relay."
 msgstr "به رله وصل است."
 
-#: polyhost/gui/cloud_sessions_dialog.py:196
+#: polyhost/gui/cloud_sessions_dialog.py:222
 #, python-brace-format
 msgid "The relay cannot be reached; trying again: {error}"
 msgstr "دسترسی به رله ممکن نیست؛ تلاش دوباره: {error}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:199
+#: polyhost/gui/cloud_sessions_dialog.py:225
 msgid "Connecting to the relay…"
 msgstr "در حال اتصال به رله…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:211
+#: polyhost/gui/cloud_sessions_dialog.py:237
 msgid "Creating a channel on the relay…"
 msgstr "در حال ساخت کانال روی رله…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:221
+#: polyhost/gui/cloud_sessions_dialog.py:247
 #, python-brace-format
 msgid "Could not connect: {msg}"
 msgstr "اتصال برقرار نشد: {msg}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:227
-#: polyhost/gui/cloud_sessions_dialog.py:239
-msgid "Disconnect Cloud Sessions"
-msgstr "قطع اتصال نشست‌های ابری"
+#: polyhost/gui/cloud_sessions_dialog.py:257
+#, python-brace-format
+msgid "No join code: {msg}"
+msgstr "کد پیوستن وجود ندارد: {msg}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:228
-msgid "Delete the channel on the relay? The cloud sessions leave the agent keys, and the hooks in your cloud environment stop reaching this computer. Remove the environment variable there too."
-msgstr "کانال روی رله حذف شود؟ نشست‌های ابری از کلیدهای عامل برداشته می‌شوند و هوک‌های محیط ابری شما دیگر به این رایانه نمی‌رسند. متغیر محیطی را در آنجا هم حذف کنید."
+#: polyhost/gui/cloud_sessions_dialog.py:260
+msgid "Join code copied to the clipboard. Treat it like a password."
+msgstr "کد پیوستن در کلیپ‌بورد کپی شد. آن را مانند گذرواژه نگه دارید."
+
+#: polyhost/gui/cloud_sessions_dialog.py:266
+msgid "Join with a Code"
+msgstr "پیوستن با کد"
+
+#: polyhost/gui/cloud_sessions_dialog.py:267
+msgid "Paste the join code from the other computer's \"Connect Cloud Sessions\" window:"
+msgstr "کد پیوستن را از پنجرهٔ «اتصال نشست‌های ابری» در رایانهٔ دیگر جای‌گذاری کنید:"
+
+#: polyhost/gui/cloud_sessions_dialog.py:273
+msgid "Checking the code with the relay…"
+msgstr "در حال بررسی کد با رله…"
+
+#: polyhost/gui/cloud_sessions_dialog.py:283
+#, python-brace-format
+msgid "Could not join: {msg}"
+msgstr "پیوستن ممکن نشد: {msg}"
+
+#: polyhost/gui/cloud_sessions_dialog.py:289
+#: polyhost/gui/cloud_sessions_dialog.py:301
+msgid "Disconnect This Computer"
+msgstr "قطع اتصال این رایانه"
+
+#: polyhost/gui/cloud_sessions_dialog.py:290
+msgid "Stop showing the cloud sessions on this computer? The channel stays on the relay: other computers that joined it and your cloud environment keep working. To show them here again, join with the code of another computer."
+msgstr "نمایش نشست‌های ابری روی این رایانه متوقف شود؟ کانال روی رله می‌ماند: رایانه‌های دیگری که به آن پیوسته‌اند و محیط ابری شما به کار خود ادامه می‌دهند. برای نمایش دوبارهٔ آن‌ها در اینجا، با کد رایانهٔ دیگری بپیوندید."
+
+#: polyhost/gui/cloud_sessions_dialog.py:307
+#: polyhost/gui/cloud_sessions_dialog.py:319
+msgid "Delete Channel"
+msgstr "حذف کانال"
+
+#: polyhost/gui/cloud_sessions_dialog.py:308
+msgid "Delete the channel on the relay? The cloud sessions leave the agent keys on every computer that uses this channel, and the hooks in your cloud environment stop reaching them. Remove the environment variable there too."
+msgstr "کانال روی رله حذف شود؟ نشست‌های ابری از کلیدهای عامل در همهٔ رایانه‌هایی که از این کانال استفاده می‌کنند برداشته می‌شوند و هوک‌های محیط ابری شما دیگر به آن‌ها نمی‌رسند. متغیر محیطی را در آنجا هم حذف کنید."
 
 #: polyhost/gui/cmd_menu.py:143 polyhost/gui/settings_dialog.py:78
 msgid "Brightness"

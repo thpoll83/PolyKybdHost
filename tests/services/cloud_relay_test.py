@@ -107,6 +107,52 @@ class ChannelFileTest(unittest.TestCase):
         self.assertEqual(seen[0][1]["token"], channel["read_token"])
 
 
+class JoinCodeTest(unittest.TestCase):
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.dir.cleanup)
+        self.path = os.path.join(self.dir.name, "cloud_relay.json")
+        self.channel = ch.new_channel()
+        self.channel["url"] = "https://relay.example"
+
+    def test_the_code_carries_the_whole_channel(self):
+        code = cr.join_code(self.channel)
+        self.assertTrue(code.startswith(cr.JOIN_PREFIX))
+        self.assertLess(len(code), cr.JOIN_CODE_MAX_CHARS)
+        self.assertEqual(cr.parse_join_code(code), self.channel)
+        # Pasted across a line break, with spaces around it.
+        self.assertEqual(cr.parse_join_code("  " + code[:90] + "\n " + code[90:] + "\n"),
+                         self.channel)
+
+    def test_a_wrong_code_is_refused_without_echoing_it(self):
+        code = cr.join_code(self.channel)
+        http_channel = dict(self.channel, url="http://relay.example")
+        for bad in ("", "hello", cr.JOIN_PREFIX + "!!!", code[:-12],
+                    cr.join_code(http_channel), code + "x" * cr.JOIN_CODE_MAX_CHARS):
+            with self.assertRaises(ValueError) as caught:
+                cr.parse_join_code(bad)
+            self.assertNotIn(self.channel["read_token"][:16], str(caught.exception))
+
+    def test_join_checks_the_channel_on_the_relay_and_saves_it(self):
+        seen = []
+
+        def http(url, method, rel, token=None, body=None):
+            seen.append((url, method, rel, token))
+            return 200, {"entries": []}
+        channel = cr.join_channel(self.path, cr.join_code(self.channel), http=http)
+        self.assertEqual(seen, [("https://relay.example", "GET",
+                                 f"/v1/c/{self.channel['channel']}/state",
+                                 self.channel["read_token"])])
+        self.assertEqual(cr.load_channel(self.path), channel)
+
+    def test_a_deleted_channel_is_not_saved(self):
+        for status in (401, 404, 500):
+            with self.assertRaises(cr.RelayError):
+                cr.join_channel(self.path, cr.join_code(self.channel),
+                                http=lambda *a, **k: (status, {}))
+            self.assertFalse(os.path.exists(self.path))
+
+
 class SinkTest(unittest.TestCase):
     def setUp(self):
         self.key = os.urandom(32)

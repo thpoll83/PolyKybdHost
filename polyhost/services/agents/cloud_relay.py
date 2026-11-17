@@ -8,6 +8,10 @@ Worker (`agent-relay/`). This module is the other end:
 - `create_channel()` makes a channel on the relay and keeps its secrets in
   `cloud_relay.json` in the config folder. The relay gets only the hashes of the
   two tokens. `setup_text()` is what the user copies into the cloud environment.
+- `join_code()` is the channel's secrets as one string, so another computer can
+  join the same channel (`join_channel()`): the relay sends every report to each
+  connected host (up to 4 per channel). Anyone with the code can read the
+  channel's sessions and write to it, so it is handled like a password.
 - `RelayClient` keeps a WebSocket open to the channel. The relay sends a snapshot
   of the channel's sessions, then each report. Every report is decrypted with the
   channel's key (cloud_hook.open_sealed) and goes into the agent registry as a
@@ -123,6 +127,69 @@ def remove_channel_file(path: str) -> None:
         os.remove(path)
     except FileNotFoundError:
         pass    # already gone: the goal of this call
+
+
+# ---- the join code: the same channel on another computer --------------------------
+
+JOIN_PREFIX = "pkj1."
+JOIN_CODE_MAX_CHARS = 1024     # a code is about 330 characters
+
+
+def join_code(channel: dict) -> str:
+    """The channel's secrets as one string: the relay URL, the channel, both tokens
+    and the key, so the other computer can also show the cloud environment's
+    settings. No network I/O."""
+    fields = (channel["url"], channel["channel"], channel["read_token"],
+              channel["write_token"], base64.urlsafe_b64encode(channel["key"]).decode().rstrip("="))
+    return JOIN_PREFIX + base64.urlsafe_b64encode("|".join(fields).encode()).decode().rstrip("=")
+
+
+def parse_join_code(text: str) -> dict:
+    """{url, channel, read_token, write_token, key} from join_code()'s string, with
+    the same checks as the channel file. Raises ValueError, without the code in
+    the message."""
+    text = "".join(str(text or "").split())     # a pasted code can wrap or carry spaces
+    if not text.startswith(JOIN_PREFIX) or len(text) > JOIN_CODE_MAX_CHARS:
+        raise ValueError("this is not a PolyKybd join code")
+    body = text[len(JOIN_PREFIX):]
+    try:
+        parts = base64.urlsafe_b64decode(body + "=" * (-len(body) % 4)).decode().split("|")
+        url, channel, read_token, write_token, key = parts
+        key = base64.urlsafe_b64decode(key + "=" * (-len(key) % 4))
+    except (ValueError, UnicodeDecodeError) as e:
+        raise ValueError("the join code is damaged; copy it again") from e
+    out = {"url": url.rstrip("/"), "channel": channel, "read_token": read_token,
+           "write_token": write_token, "key": key}
+    try:
+        cloud_hook.parse_config(setup_config(out))
+    except ValueError as e:
+        raise ValueError(f"the join code is damaged; copy it again ({e})") from None
+    if not cloud_hook._is_hex(read_token, 64):
+        raise ValueError("the join code is damaged; copy it again")
+    return out
+
+
+def check_channel(channel: dict, http=None) -> None:
+    """Ask the relay whether the channel exists and the read token is right.
+    Raises RelayError otherwise."""
+    http = http or http_call
+    status, answer = http(channel["url"], "GET", f"/v1/c/{channel['channel']}/state",
+                          token=channel["read_token"])
+    if status == 200:
+        return
+    if status in (401, 403, 404):
+        raise RelayError("the relay does not know this channel: it was deleted, or the "
+                         "join code is from another channel")
+    raise RelayError(f"the relay answered {status}: {answer.get('error') or 'no reason given'}")
+
+
+def join_channel(path: str, code: str, http=None) -> dict:
+    """Join the channel of `code`: check it on the relay, then save it to `path`.
+    Raises ValueError (not a code) or RelayError."""
+    channel = parse_join_code(code)
+    check_channel(channel, http)
+    save_channel(path, channel)
+    return channel
 
 
 def setup_config(channel: dict) -> str:

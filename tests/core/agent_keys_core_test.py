@@ -111,6 +111,66 @@ class AgentKeysCoreTest(unittest.TestCase):
         self.assertEqual([a.session_id for a in core.agents.agents()], ["local"])
         self.assertIsNone(core._cloud_relay)
 
+    def test_a_second_computer_joins_with_the_code_and_leaves_alone(self):
+        import os
+        import tempfile
+        from polyhost.server import protocol
+        from polyhost.services.agents import cloud_relay
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        paths = {"now": os.path.join(tmp.name, "a.json")}
+        calls = []
+        known = set()
+
+        def http(url, method, rel, token=None, body=None):
+            calls.append((method, rel))
+            if method == "POST":
+                known.add(body["channel"])
+                return 201, {"ok": True}
+            channel = rel.split("/")[3]
+            return (200, {"entries": []}) if channel in known else (404, {"error": "no"})
+        for p in (mock.patch.object(protocol, "cloud_relay_path", lambda: paths["now"]),
+                  mock.patch.object(cloud_relay, "http_call", http),
+                  mock.patch.object(cloud_relay.RelayClient, "start", lambda client: None)):
+            p.start()
+            self.addCleanup(p.stop)
+        first = self._core(31)
+        self.assertFalse(first.agents_cloud_join_code()[0])        # no channel yet
+        first.agents_cloud_connect()
+        ok, code = first.agents_cloud_join_code()
+        self.assertTrue(ok)
+        self.assertTrue(code.startswith(cloud_relay.JOIN_PREFIX))
+
+        paths["now"] = os.path.join(tmp.name, "b.json")             # the other computer
+        second = self._core(31)
+        self.assertEqual(second.agents_cloud_join("not a code")[0], False)
+        ok, status = second.agents_cloud_join(code)
+        self.assertTrue(ok, status)
+        self.assertEqual(calls[-1][0], "GET")                       # checked on the relay
+        self.assertEqual(status["setup"]["config"], first.agents_cloud_status()["setup"]["config"])
+        self.assertIsNotNone(second._cloud_relay)
+
+        # Leaving keeps the channel: no request, the first computer's file stays.
+        second.agents.report("claude-code", "c" * 32, "working", machine="cloud")
+        before = len(calls)
+        ok, result = second.agents_cloud_leave()
+        self.assertTrue(ok)
+        self.assertEqual(result, "left the channel")
+        self.assertEqual(len(calls), before)
+        self.assertFalse(os.path.exists(paths["now"]))
+        self.assertTrue(os.path.exists(os.path.join(tmp.name, "a.json")))
+        self.assertEqual(second.agents.agents(), [])
+        self.assertIsNone(second._cloud_relay)
+
+        # A computer with a channel of its own joins another only with replace.
+        second.agents_cloud_connect()
+        ok, reason = second.agents_cloud_join(code)
+        self.assertFalse(ok)
+        self.assertIn("leave it first", reason)
+        self.assertTrue(second.agents_cloud_join(code, replace=True)[0])
+        self.assertEqual(cloud_relay.load_channel(paths["now"])["channel"],
+                         cloud_relay.parse_join_code(code)["channel"])
+
     def test_removing_a_cloud_agent_removes_it_on_the_relay(self):
         from polyhost.services.agents import cloud_relay
         deleted = []

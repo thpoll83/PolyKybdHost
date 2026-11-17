@@ -2774,6 +2774,59 @@ class PolyCore(Observable):
             self._apply_cloud_relay()
         return True, self.agents_cloud_status()
 
+    def agents_cloud_join_code(self):
+        """The channel's join code, for another computer (cloud_relay.join_code).
+        A secret like the channel file. No network I/O. (ok, code or reason)."""
+        from polyhost.services.agents import cloud_relay
+        channel = cloud_relay.load_channel(self._cloud_relay_path())
+        if channel is None:
+            return False, "no cloud channel on this computer: connect first"
+        return True, cloud_relay.join_code(channel)
+
+    def agents_cloud_join(self, code: str, replace: bool = False):
+        """Join the channel of another computer's join code. Network I/O (one
+        request to check the channel): never on the HID worker. With a different
+        channel here, only when `replace`. (ok, status or reason)."""
+        from polyhost.services.agents import cloud_relay
+        path = self._cloud_relay_path()
+        try:
+            joined = cloud_relay.parse_join_code(code)
+        except ValueError as e:
+            return False, str(e)
+        with self._cloud_channel_lock:
+            current = cloud_relay.load_channel(path)
+            if current is not None and current["channel"] != joined["channel"] and not replace:
+                return False, ("this computer has its own cloud channel: leave it first "
+                               "(Disconnect This Computer), or replace it")
+            try:
+                cloud_relay.join_channel(path, code)
+            except (ValueError, cloud_relay.RelayError, OSError) as e:
+                return False, str(e)
+            if current is not None and current["channel"] != joined["channel"]:
+                self._stop_cloud_relay()
+                cloud_relay.RelaySink(self.agents, b"").forget_all()
+            self._apply_cloud_relay()
+        self.log.info("Cloud relay: joined a channel from a join code")
+        return True, self.agents_cloud_status()
+
+    def agents_cloud_leave(self):
+        """Disconnect only this computer: remove the channel file here and the cloud
+        agents, and keep the channel on the relay for the other computers and the
+        cloud environment. No network I/O. (ok, what happened)."""
+        from polyhost.services.agents import cloud_relay
+        path = self._cloud_relay_path()
+        with self._cloud_channel_lock:
+            had = cloud_relay.load_channel(path) is not None
+            self._stop_cloud_relay()
+            try:
+                cloud_relay.remove_channel_file(path)
+            except OSError as e:
+                return False, f"could not remove {path}: {e}"
+            self._apply_cloud_relay()
+            cloud_relay.RelaySink(self.agents, b"").forget_all()
+        self.log.info("Cloud relay: this computer left the channel")
+        return True, "left the channel" if had else "no channel"
+
     def agents_cloud_disconnect(self):
         """Delete the channel on the relay and here, and remove the cloud agents.
         The cloud environment's hooks then fail quietly. (ok, what happened)."""

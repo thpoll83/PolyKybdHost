@@ -92,6 +92,11 @@ def _first(payload: dict, fields) -> str:
     return ""
 
 
+def event_name(payload: dict, event: str = "") -> str:
+    """The event as the agent named it (for the hook log), or ""."""
+    return str(event or _first(payload, _EVENT_FIELDS) or "")
+
+
 def interpret(payload: dict, event: str = "") -> dict | None:
     """{"session_id", "state", "event", "cwd"} for a hook payload, or None when the
     payload names no session or an event that changes nothing.

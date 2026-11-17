@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-17 09:25+0000\n"
+"POT-Creation-Date: 2026-11-17 11:22+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -610,7 +610,7 @@ msgid "Open {page} (Edge: edge://extensions), turn on Developer mode, click \"Lo
 msgstr "{page} öffnen (Edge: edge://extensions), „Entwicklermodus“ einschalten, auf „Entpackte Erweiterung laden“ klicken und den Ordner wählen. In den „Optionen“ der Erweiterung muss der Port {port} sein, derselbe wie „Empfänger-Port“ in den Einstellungen dieser App. Nach einem Update dieser App auf der Karte der Erweiterung auf „Neu laden“ klicken."
 
 #: polyhost/gui/browser_extension_page.py:123
-#: polyhost/gui/cloud_sessions_dialog.py:206
+#: polyhost/gui/cloud_sessions_dialog.py:232
 #: polyhost/gui/crash_alert_dialog.py:208 polyhost/gui/error_dialog.py:74
 #: polyhost/gui/problem_alert_dialog.py:108
 msgid "Copied to the clipboard."
@@ -634,99 +634,154 @@ msgstr "Nicht kopiert: {msg}"
 msgid "Copied version {version}. Now load the folder in the browser (step 2)."
 msgstr "Version {version} kopiert. Jetzt den Ordner im Browser laden (Schritt 2)."
 
-#: polyhost/gui/cloud_sessions_dialog.py:38
+#: polyhost/gui/cloud_sessions_dialog.py:39
 msgid "Connect Cloud Sessions"
 msgstr "Cloud-Sitzungen verbinden"
 
-#: polyhost/gui/cloud_sessions_dialog.py:48
-#: polyhost/gui/cloud_sessions_dialog.py:118
+#: polyhost/gui/cloud_sessions_dialog.py:49
+#: polyhost/gui/cloud_sessions_dialog.py:140
 msgid "Reading the state…"
 msgstr "Zustand wird gelesen…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:49
+#: polyhost/gui/cloud_sessions_dialog.py:50
 msgid "Shows Claude Code sessions that run in the cloud (claude.ai/code, also when the desktop app shows them) on the agent keys. A key press brings the session's browser window or the Claude app to the front. The session's state goes through the PolyKybd relay, encrypted with a key that only this computer and your cloud environment have."
 msgstr "Zeigt Sitzungen von Claude Code, die in der Cloud laufen (claude.ai/code, auch wenn die Desktop-App sie anzeigt), auf den Agent-Tasten an. Ein Tastendruck holt das Browserfenster der Sitzung oder die Claude-App in den Vordergrund. Der Zustand der Sitzung läuft über das PolyKybd-Relay, verschlüsselt mit einem Schlüssel, den nur dieser Rechner und die eigene Cloud-Umgebung haben."
 
-#: polyhost/gui/cloud_sessions_dialog.py:58
+#: polyhost/gui/cloud_sessions_dialog.py:59
 msgid "Cloud environment settings"
 msgstr "Einstellungen der Cloud-Umgebung"
 
-#: polyhost/gui/cloud_sessions_dialog.py:60
+#: polyhost/gui/cloud_sessions_dialog.py:61
 msgid "In claude.ai, open the cloud environment's settings and enter these. Use a personal environment: everyone who uses an environment can read its variables."
 msgstr "In claude.ai die Einstellungen der Cloud-Umgebung öffnen und diese Werte eintragen. Eine persönliche Umgebung verwenden: Alle, die eine Umgebung nutzen, können ihre Variablen lesen."
 
-#: polyhost/gui/cloud_sessions_dialog.py:74
+#: polyhost/gui/cloud_sessions_dialog.py:75
 msgid "Environment variable"
 msgstr "Umgebungsvariable"
 
-#: polyhost/gui/cloud_sessions_dialog.py:75
+#: polyhost/gui/cloud_sessions_dialog.py:76
 msgid "Allowed host (when network access is Limited)"
 msgstr "Erlaubter Host (wenn der Netzwerkzugriff Limited ist)"
 
-#: polyhost/gui/cloud_sessions_dialog.py:76
+#: polyhost/gui/cloud_sessions_dialog.py:77
 msgid "Setup script"
 msgstr "Setup-Skript"
 
-#: polyhost/gui/cloud_sessions_dialog.py:80
+#: polyhost/gui/cloud_sessions_dialog.py:81
 #: polyhost/gui/forwarder_pairing.py:26
 msgid "Copy"
 msgstr "Kopieren"
 
-#: polyhost/gui/cloud_sessions_dialog.py:89
+#: polyhost/gui/cloud_sessions_dialog.py:90
 msgid "Each new cloud session of that environment then shows on a number key."
 msgstr "Jede neue Cloud-Sitzung dieser Umgebung erscheint dann auf einer Zahlentaste."
 
-#: polyhost/gui/cloud_sessions_dialog.py:97
+#: polyhost/gui/cloud_sessions_dialog.py:96
+msgid "Other computers"
+msgstr "Andere Rechner"
+
+#: polyhost/gui/cloud_sessions_dialog.py:98
+msgid "To show these cloud sessions on another computer too, copy the join code and paste it there under \"Join with a Code\". Treat the code like a password: it reads and writes this channel."
+msgstr "Um diese Cloud-Sitzungen auch auf einem anderen Rechner anzuzeigen, den Beitrittscode kopieren und dort unter „Mit Code beitreten“ einfügen. Den Code wie ein Passwort behandeln: Er liest und schreibt diesen Kanal."
+
+#: polyhost/gui/cloud_sessions_dialog.py:101
+msgid "Copy Join Code"
+msgstr "Beitrittscode kopieren"
+
+#: polyhost/gui/cloud_sessions_dialog.py:112
 msgid "Connect"
 msgstr "Verbinden"
 
-#: polyhost/gui/cloud_sessions_dialog.py:98
-msgid "Disconnect…"
-msgstr "Trennen…"
+#: polyhost/gui/cloud_sessions_dialog.py:113
+msgid "Join with a Code…"
+msgstr "Mit Code beitreten…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:165
+#: polyhost/gui/cloud_sessions_dialog.py:114
+msgid "Disconnect This Computer…"
+msgstr "Diesen Rechner trennen…"
+
+#: polyhost/gui/cloud_sessions_dialog.py:115
+msgid "Delete Channel…"
+msgstr "Kanal löschen…"
+
+#: polyhost/gui/cloud_sessions_dialog.py:187
 #, python-brace-format
 msgid "The state could not be read: {msg}"
 msgstr "Der Zustand konnte nicht gelesen werden: {msg}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:185
-msgid "Not connected. \"Connect\" creates a channel on the relay for this computer."
-msgstr "Nicht verbunden. „Verbinden“ legt auf dem Relay einen Kanal für diesen Rechner an."
+#: polyhost/gui/cloud_sessions_dialog.py:210
+msgid "Not connected. \"Connect\" creates a channel on the relay for this computer; \"Join with a Code\" uses the channel of another computer."
+msgstr "Nicht verbunden. „Verbinden“ legt auf dem Relay einen Kanal für diesen Rechner an; „Mit Code beitreten“ verwendet den Kanal eines anderen Rechners."
 
-#: polyhost/gui/cloud_sessions_dialog.py:191
+#: polyhost/gui/cloud_sessions_dialog.py:217
 msgid "The agent keys are off: turn on \"Show on the Number Row\" in the AI Agents menu."
 msgstr "Die Agent-Tasten sind aus: Im Menü KI-Agenten „Auf der Zahlenreihe anzeigen“ einschalten."
 
-#: polyhost/gui/cloud_sessions_dialog.py:194
+#: polyhost/gui/cloud_sessions_dialog.py:220
 msgid "Connected to the relay."
 msgstr "Mit dem Relay verbunden."
 
-#: polyhost/gui/cloud_sessions_dialog.py:196
+#: polyhost/gui/cloud_sessions_dialog.py:222
 #, python-brace-format
 msgid "The relay cannot be reached; trying again: {error}"
 msgstr "Das Relay ist nicht erreichbar; neuer Versuch: {error}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:199
+#: polyhost/gui/cloud_sessions_dialog.py:225
 msgid "Connecting to the relay…"
 msgstr "Verbindung zum Relay wird hergestellt…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:211
+#: polyhost/gui/cloud_sessions_dialog.py:237
 msgid "Creating a channel on the relay…"
 msgstr "Kanal auf dem Relay wird angelegt…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:221
+#: polyhost/gui/cloud_sessions_dialog.py:247
 #, python-brace-format
 msgid "Could not connect: {msg}"
 msgstr "Verbindung fehlgeschlagen: {msg}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:227
-#: polyhost/gui/cloud_sessions_dialog.py:239
-msgid "Disconnect Cloud Sessions"
-msgstr "Cloud-Sitzungen trennen"
+#: polyhost/gui/cloud_sessions_dialog.py:257
+#, python-brace-format
+msgid "No join code: {msg}"
+msgstr "Kein Beitrittscode: {msg}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:228
-msgid "Delete the channel on the relay? The cloud sessions leave the agent keys, and the hooks in your cloud environment stop reaching this computer. Remove the environment variable there too."
-msgstr "Den Kanal auf dem Relay löschen? Die Cloud-Sitzungen verschwinden von den Agent-Tasten, und die Hooks in der Cloud-Umgebung erreichen diesen Rechner nicht mehr. Die Umgebungsvariable dort ebenfalls entfernen."
+#: polyhost/gui/cloud_sessions_dialog.py:260
+msgid "Join code copied to the clipboard. Treat it like a password."
+msgstr "Beitrittscode in die Zwischenablage kopiert. Den Code wie ein Passwort behandeln."
+
+#: polyhost/gui/cloud_sessions_dialog.py:266
+msgid "Join with a Code"
+msgstr "Mit Code beitreten"
+
+#: polyhost/gui/cloud_sessions_dialog.py:267
+msgid "Paste the join code from the other computer's \"Connect Cloud Sessions\" window:"
+msgstr "Den Beitrittscode aus dem Fenster „Cloud-Sitzungen verbinden“ des anderen Rechners einfügen:"
+
+#: polyhost/gui/cloud_sessions_dialog.py:273
+msgid "Checking the code with the relay…"
+msgstr "Code wird beim Relay geprüft…"
+
+#: polyhost/gui/cloud_sessions_dialog.py:283
+#, python-brace-format
+msgid "Could not join: {msg}"
+msgstr "Beitritt nicht möglich: {msg}"
+
+#: polyhost/gui/cloud_sessions_dialog.py:289
+#: polyhost/gui/cloud_sessions_dialog.py:301
+msgid "Disconnect This Computer"
+msgstr "Diesen Rechner trennen"
+
+#: polyhost/gui/cloud_sessions_dialog.py:290
+msgid "Stop showing the cloud sessions on this computer? The channel stays on the relay: other computers that joined it and your cloud environment keep working. To show them here again, join with the code of another computer."
+msgstr "Die Cloud-Sitzungen auf diesem Rechner nicht mehr anzeigen? Der Kanal bleibt auf dem Relay: Andere Rechner, die ihm beigetreten sind, und die eigene Cloud-Umgebung arbeiten weiter. Um sie hier wieder anzuzeigen, mit dem Code eines anderen Rechners beitreten."
+
+#: polyhost/gui/cloud_sessions_dialog.py:307
+#: polyhost/gui/cloud_sessions_dialog.py:319
+msgid "Delete Channel"
+msgstr "Kanal löschen"
+
+#: polyhost/gui/cloud_sessions_dialog.py:308
+msgid "Delete the channel on the relay? The cloud sessions leave the agent keys on every computer that uses this channel, and the hooks in your cloud environment stop reaching them. Remove the environment variable there too."
+msgstr "Den Kanal auf dem Relay löschen? Die Cloud-Sitzungen verschwinden von den Agent-Tasten auf jedem Rechner, der diesen Kanal verwendet, und die Hooks in der eigenen Cloud-Umgebung erreichen sie nicht mehr. Die Umgebungsvariable dort ebenfalls entfernen."
 
 #: polyhost/gui/cmd_menu.py:143 polyhost/gui/settings_dialog.py:78
 msgid "Brightness"

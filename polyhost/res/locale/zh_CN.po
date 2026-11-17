@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-17 09:25+0000\n"
+"POT-Creation-Date: 2026-11-17 11:22+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans_CN\n"
@@ -609,7 +609,7 @@ msgid "Open {page} (Edge: edge://extensions), turn on Developer mode, click \"Lo
 msgstr "打开 {page}（Edge：edge://extensions），打开“开发者模式”，点击“加载已解压的扩展程序”并选择该文件夹。在扩展的选项中，端口必须为 {port}，与此应用设置中的“接收端口”相同。此应用更新后，请点击扩展卡片上的“重新加载”。"
 
 #: polyhost/gui/browser_extension_page.py:123
-#: polyhost/gui/cloud_sessions_dialog.py:206
+#: polyhost/gui/cloud_sessions_dialog.py:232
 #: polyhost/gui/crash_alert_dialog.py:208 polyhost/gui/error_dialog.py:74
 #: polyhost/gui/problem_alert_dialog.py:108
 msgid "Copied to the clipboard."
@@ -633,99 +633,154 @@ msgstr "未复制：{msg}"
 msgid "Copied version {version}. Now load the folder in the browser (step 2)."
 msgstr "已复制版本 {version}。现在请在浏览器中加载该文件夹（第 2 步）。"
 
-#: polyhost/gui/cloud_sessions_dialog.py:38
+#: polyhost/gui/cloud_sessions_dialog.py:39
 msgid "Connect Cloud Sessions"
 msgstr "连接云端会话"
 
-#: polyhost/gui/cloud_sessions_dialog.py:48
-#: polyhost/gui/cloud_sessions_dialog.py:118
+#: polyhost/gui/cloud_sessions_dialog.py:49
+#: polyhost/gui/cloud_sessions_dialog.py:140
 msgid "Reading the state…"
 msgstr "正在读取状态…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:49
+#: polyhost/gui/cloud_sessions_dialog.py:50
 msgid "Shows Claude Code sessions that run in the cloud (claude.ai/code, also when the desktop app shows them) on the agent keys. A key press brings the session's browser window or the Claude app to the front. The session's state goes through the PolyKybd relay, encrypted with a key that only this computer and your cloud environment have."
 msgstr "在智能体键上显示在云端运行的 Claude Code 会话（claude.ai/code，桌面应用显示的会话也包括在内）。按下按键会将该会话的浏览器窗口或 Claude 应用切换到前台。会话状态经由 PolyKybd 中继传输，并使用只有本电脑和您的云环境才有的密钥加密。"
 
-#: polyhost/gui/cloud_sessions_dialog.py:58
+#: polyhost/gui/cloud_sessions_dialog.py:59
 msgid "Cloud environment settings"
 msgstr "云环境设置"
 
-#: polyhost/gui/cloud_sessions_dialog.py:60
+#: polyhost/gui/cloud_sessions_dialog.py:61
 msgid "In claude.ai, open the cloud environment's settings and enter these. Use a personal environment: everyone who uses an environment can read its variables."
 msgstr "在 claude.ai 中打开云环境的设置，并输入以下内容。请使用个人环境：使用某个环境的每个人都可以读取其变量。"
 
-#: polyhost/gui/cloud_sessions_dialog.py:74
+#: polyhost/gui/cloud_sessions_dialog.py:75
 msgid "Environment variable"
 msgstr "环境变量"
 
-#: polyhost/gui/cloud_sessions_dialog.py:75
+#: polyhost/gui/cloud_sessions_dialog.py:76
 msgid "Allowed host (when network access is Limited)"
 msgstr "允许的主机（网络访问为 Limited 时）"
 
-#: polyhost/gui/cloud_sessions_dialog.py:76
+#: polyhost/gui/cloud_sessions_dialog.py:77
 msgid "Setup script"
 msgstr "设置脚本"
 
-#: polyhost/gui/cloud_sessions_dialog.py:80
+#: polyhost/gui/cloud_sessions_dialog.py:81
 #: polyhost/gui/forwarder_pairing.py:26
 msgid "Copy"
 msgstr "复制"
 
-#: polyhost/gui/cloud_sessions_dialog.py:89
+#: polyhost/gui/cloud_sessions_dialog.py:90
 msgid "Each new cloud session of that environment then shows on a number key."
 msgstr "之后，该环境的每个新云端会话都会显示在一个数字键上。"
 
-#: polyhost/gui/cloud_sessions_dialog.py:97
+#: polyhost/gui/cloud_sessions_dialog.py:96
+msgid "Other computers"
+msgstr "其他电脑"
+
+#: polyhost/gui/cloud_sessions_dialog.py:98
+msgid "To show these cloud sessions on another computer too, copy the join code and paste it there under \"Join with a Code\". Treat the code like a password: it reads and writes this channel."
+msgstr "若要在另一台电脑上也显示这些云端会话，请复制加入码，并粘贴到那台电脑的“使用代码加入”中。请像对待密码一样对待此代码：它可以读写此通道。"
+
+#: polyhost/gui/cloud_sessions_dialog.py:101
+msgid "Copy Join Code"
+msgstr "复制加入码"
+
+#: polyhost/gui/cloud_sessions_dialog.py:112
 msgid "Connect"
 msgstr "连接"
 
-#: polyhost/gui/cloud_sessions_dialog.py:98
-msgid "Disconnect…"
-msgstr "断开…"
+#: polyhost/gui/cloud_sessions_dialog.py:113
+msgid "Join with a Code…"
+msgstr "使用代码加入…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:165
+#: polyhost/gui/cloud_sessions_dialog.py:114
+msgid "Disconnect This Computer…"
+msgstr "断开此电脑…"
+
+#: polyhost/gui/cloud_sessions_dialog.py:115
+msgid "Delete Channel…"
+msgstr "删除通道…"
+
+#: polyhost/gui/cloud_sessions_dialog.py:187
 #, python-brace-format
 msgid "The state could not be read: {msg}"
 msgstr "无法读取状态：{msg}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:185
-msgid "Not connected. \"Connect\" creates a channel on the relay for this computer."
-msgstr "未连接。“连接”会在中继上为本电脑创建一个通道。"
+#: polyhost/gui/cloud_sessions_dialog.py:210
+msgid "Not connected. \"Connect\" creates a channel on the relay for this computer; \"Join with a Code\" uses the channel of another computer."
+msgstr "未连接。“连接”会在中继上为此电脑创建一个通道；“使用代码加入”则使用另一台电脑的通道。"
 
-#: polyhost/gui/cloud_sessions_dialog.py:191
+#: polyhost/gui/cloud_sessions_dialog.py:217
 msgid "The agent keys are off: turn on \"Show on the Number Row\" in the AI Agents menu."
 msgstr "智能体键已关闭：请在 AI 智能体菜单中打开“在数字行上显示”。"
 
-#: polyhost/gui/cloud_sessions_dialog.py:194
+#: polyhost/gui/cloud_sessions_dialog.py:220
 msgid "Connected to the relay."
 msgstr "已连接到中继。"
 
-#: polyhost/gui/cloud_sessions_dialog.py:196
+#: polyhost/gui/cloud_sessions_dialog.py:222
 #, python-brace-format
 msgid "The relay cannot be reached; trying again: {error}"
 msgstr "无法访问中继，正在重试：{error}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:199
+#: polyhost/gui/cloud_sessions_dialog.py:225
 msgid "Connecting to the relay…"
 msgstr "正在连接到中继…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:211
+#: polyhost/gui/cloud_sessions_dialog.py:237
 msgid "Creating a channel on the relay…"
 msgstr "正在中继上创建通道…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:221
+#: polyhost/gui/cloud_sessions_dialog.py:247
 #, python-brace-format
 msgid "Could not connect: {msg}"
 msgstr "无法连接：{msg}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:227
-#: polyhost/gui/cloud_sessions_dialog.py:239
-msgid "Disconnect Cloud Sessions"
-msgstr "断开云端会话"
+#: polyhost/gui/cloud_sessions_dialog.py:257
+#, python-brace-format
+msgid "No join code: {msg}"
+msgstr "没有加入码：{msg}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:228
-msgid "Delete the channel on the relay? The cloud sessions leave the agent keys, and the hooks in your cloud environment stop reaching this computer. Remove the environment variable there too."
-msgstr "删除中继上的通道？云端会话将从智能体键上移除，云环境中的钩子将无法再到达本电脑。请同时在云环境中删除该环境变量。"
+#: polyhost/gui/cloud_sessions_dialog.py:260
+msgid "Join code copied to the clipboard. Treat it like a password."
+msgstr "加入码已复制到剪贴板。请像对待密码一样对待它。"
+
+#: polyhost/gui/cloud_sessions_dialog.py:266
+msgid "Join with a Code"
+msgstr "使用代码加入"
+
+#: polyhost/gui/cloud_sessions_dialog.py:267
+msgid "Paste the join code from the other computer's \"Connect Cloud Sessions\" window:"
+msgstr "粘贴另一台电脑的“连接云端会话”窗口中的加入码："
+
+#: polyhost/gui/cloud_sessions_dialog.py:273
+msgid "Checking the code with the relay…"
+msgstr "正在通过中继检查代码…"
+
+#: polyhost/gui/cloud_sessions_dialog.py:283
+#, python-brace-format
+msgid "Could not join: {msg}"
+msgstr "无法加入：{msg}"
+
+#: polyhost/gui/cloud_sessions_dialog.py:289
+#: polyhost/gui/cloud_sessions_dialog.py:301
+msgid "Disconnect This Computer"
+msgstr "断开此电脑"
+
+#: polyhost/gui/cloud_sessions_dialog.py:290
+msgid "Stop showing the cloud sessions on this computer? The channel stays on the relay: other computers that joined it and your cloud environment keep working. To show them here again, join with the code of another computer."
+msgstr "要停止在此电脑上显示云端会话吗？通道仍保留在中继上：已加入此通道的其他电脑和您的云环境将继续工作。若要在此处重新显示，请使用另一台电脑的代码加入。"
+
+#: polyhost/gui/cloud_sessions_dialog.py:307
+#: polyhost/gui/cloud_sessions_dialog.py:319
+msgid "Delete Channel"
+msgstr "删除通道"
+
+#: polyhost/gui/cloud_sessions_dialog.py:308
+msgid "Delete the channel on the relay? The cloud sessions leave the agent keys on every computer that uses this channel, and the hooks in your cloud environment stop reaching them. Remove the environment variable there too."
+msgstr "要删除中继上的通道吗？在使用此通道的每台电脑上，云端会话都会从智能体键上移除，您云环境中的钩子也将无法再到达它们。请同时删除云环境中的环境变量。"
 
 #: polyhost/gui/cmd_menu.py:143 polyhost/gui/settings_dialog.py:78
 msgid "Brightness"
