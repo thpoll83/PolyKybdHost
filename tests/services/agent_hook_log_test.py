@@ -1,5 +1,6 @@
 """services/agents/hook_log.py and `polyctl agents hooks check`."""
 import argparse
+import contextlib
 import io
 import os
 import tempfile
@@ -42,6 +43,25 @@ class HookLogTest(unittest.TestCase):
         self.assertTrue(os.path.exists(self.path + ".1"))
         self.assertLess(os.path.getsize(self.path), 400)
         self.assertEqual(hook_log.tail(1, path=self.path)[0].split()[3], "e5")
+
+    def test_without_the_lock_the_line_is_written_but_not_rotated(self):
+        # Two unlocked writers could both rotate: the second would move the
+        # first one's nearly empty file over `.1`.
+        @contextlib.contextmanager
+        def no_lock(path):
+            yield False
+        with mock.patch.object(hook_log, "MAX_BYTES", 200), \
+                mock.patch.object(hook_log, "_locked", no_lock):
+            for i in range(6):
+                hook_log.write("codex", f"e{i}", "done", "s", "local", "ok", 1, path=self.path)
+        self.assertFalse(os.path.exists(self.path + ".1"))
+        self.assertEqual(len(hook_log.tail(10, path=self.path)), 6)
+
+    def test_an_unopenable_lock_file_yields_false(self):
+        with hook_log._locked(os.path.join(self.dir.name, "missing", "x.log")) as locked:
+            self.assertFalse(locked)
+        with hook_log._locked(self.path) as locked:
+            self.assertTrue(locked)
 
     def test_writing_never_raises(self):
         hook_log.write("codex", "e", "done", "s", "local", "ok", 1, path=self.dir.name)  # a folder

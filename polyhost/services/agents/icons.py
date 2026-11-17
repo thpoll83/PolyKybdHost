@@ -149,47 +149,49 @@ def stale_16():
     return _stamp(ring, _QUESTION_16, 5, 4)
 
 
-# The 12 px card icon's '?': scaling stale_16() down lost the dot (2026-11-17).
+# The 12 px card icons are a filled disc with the glyph cut out (2026-11-17): a
+# ring left the glyph 6 px of room, the filled disc gives it 8. The glyphs have
+# 2 px strokes; scaled from 16 or 19 px the '?' lost its dot and the check was
+# 1 px wide.
 _QUESTION_12 = [
-    "###.",
-    "..#.",
-    ".##.",
-    ".#..",
-    "....",
-    ".##.",
-    ".##.",
-]
-
-# The 12 px card icon's check mark, 2 px strokes: scaled from the 19 px done()
-# it was 1 px wide (2026-11-17).
-_CHECK_12 = [
+    ".####.",
+    "##..##",
     "....##",
     "...##.",
-    "##.##.",
-    "####..",
-    ".##...",
+    "..##..",
+    "......",
+    "..##..",
+    "..##..",
+]
+
+_CHECK_12 = [
+    "......##",
+    ".....##.",
+    "##..##..",
+    "##.##...",
+    ".###....",
+    "..#.....",
 ]
 
 
-def _ring_12():
-    """The 12 px card icons' ring: outer radius 6, about 1.6 px wide."""
+def _disc_12():
+    """The 12 px card icons' disc: radius 6 around the centre of the 12 x 12 box."""
     import numpy as np
-    ring = np.zeros((12, 12), dtype=bool)
+    disc = np.zeros((12, 12), dtype=bool)
     for y in range(12):
         for x in range(12):
-            d = (x + 0.5 - 6.0) ** 2 + (y + 0.5 - 6.0) ** 2
-            ring[y, x] = 4.4 ** 2 < d <= 6.0 ** 2
-    return ring
+            disc[y, x] = (x + 0.5 - 6.0) ** 2 + (y + 0.5 - 6.0) ** 2 <= 6.0 ** 2
+    return disc
 
 
 def stale_12():
-    """The ring with '?', drawn at 12 px; the dot is 2 x 2."""
-    return _stamp(_ring_12(), _QUESTION_12, 4, 3)
+    """The disc with a '?' cut out; the dot is 2 x 2."""
+    return _stamp(_disc_12(), _QUESTION_12, 3, 2, value=False)
 
 
 def done_12():
-    """The ring with a 2 px check mark, drawn at 12 px."""
-    return _stamp(_ring_12(), _CHECK_12, 3, 4)   # 1 px from the ring on each side
+    """The disc with a 2 px check mark cut out."""
+    return _stamp(_disc_12(), _CHECK_12, 2, 3, value=False)
 
 
 def idle_16():

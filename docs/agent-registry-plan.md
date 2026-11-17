@@ -97,8 +97,9 @@ ESC (the pager) does not end AI mode in either case.
   mark is no wider and 8 px taller.
 - State icon: 12 px, bottom right, on every page, with 1 px kept free left of and
   above it, so only line 3 is shorter (58 px). Working, waiting and idle are the
-  16 px card icons, scaled; done (2 px check) and stale (2 x 2 dot) are drawn at
-  12 px. A state change uploads the page shown again.
+  16 px card icons, scaled. Done and stale are drawn at 12 px: a filled disc with a
+  check (2 px strokes) or a `?` (2 x 2 dot) cut out of it. A state change uploads
+  the page shown again.
 - Headline: three lines of 14 px text, breaking at spaces and after `-`. Only a word
   wider than the key is split between letters. A longer title is split into pages of
   three lines (at most 4), without the mark after the first; the key switches to the

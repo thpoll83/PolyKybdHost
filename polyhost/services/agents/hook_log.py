@@ -52,12 +52,13 @@ def format_line(vendor, event, state, session, target, result, ms, now=None) -> 
 def _locked(path: str):
     """Hold `<path>.lock` across processes (hooks run in parallel): two hooks that
     both see a full log would otherwise both rotate it, and the second would move
-    the first one's new, nearly empty file over `.1`. Without a lock (it cannot be
-    opened or taken) the write goes on unlocked."""
+    the first one's new, nearly empty file over `.1`. Yields whether the lock is
+    held: without it (it cannot be opened or taken) the line is still appended,
+    but the log is not rotated."""
     try:
         fh = open(path + ".lock", "a+b")
     except OSError:
-        yield
+        yield False
         return
     with fh:
         locked = False
@@ -71,9 +72,9 @@ def _locked(path: str):
                 fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
             locked = True
         except OSError:
-            pass    # not locked: a rare lost rotation beats a lost line
+            pass    # not locked: append, but leave the rotation to a locked writer
         try:
-            yield
+            yield locked
         finally:
             if locked and sys.platform == "win32":
                 try:
@@ -89,9 +90,9 @@ def write(vendor, event, state, session, target, result, ms, path=None) -> None:
     try:
         path = path or default_path()
         line = format_line(vendor, event, state, session, target, result, ms)
-        with _locked(path):
+        with _locked(path) as locked:
             try:
-                if os.path.getsize(path) > MAX_BYTES:
+                if locked and os.path.getsize(path) > MAX_BYTES:
                     os.replace(path, path + ".1")
             except OSError:
                 pass    # no file yet

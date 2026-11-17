@@ -393,6 +393,28 @@ class ClientTest(unittest.TestCase):
         client.stop()
         self.assertEqual(client.status()["state"], "stopped")
 
+    def test_a_late_404_after_a_replacement_keeps_the_new_channels_agents(self):
+        # stop() waits only join_s; an old client whose handshake answers 404 after
+        # that must not remove the cloud agents of the client that replaced it.
+        registry = AgentRegistry()
+        entered, release = threading.Event(), threading.Event()
+
+        def connect(*a):
+            entered.set()
+            release.wait(5)
+            raise cr.ChannelGone("the channel was deleted on the relay")
+        old = cr.RelayClient(_channel(), registry, connect=connect)
+        old.start()
+        self.assertTrue(entered.wait(5))
+        thread = old._thread
+        old.stop(join_s=0.01)                       # gives up before the 404
+        registry.report("claude-code", "c" * 32, "working", machine="cloud")   # the new channel
+        release.set()
+        thread.join(5)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual([a.session_id for a in registry.agents()], ["c" * 32])
+        self.assertEqual(old.status()["state"], "stopped")
+
     def test_a_404_handshake_is_a_deleted_channel(self):
         a, b = socket.socketpair()
         self.addCleanup(a.close)

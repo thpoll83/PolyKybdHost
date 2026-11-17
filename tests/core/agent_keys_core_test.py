@@ -140,6 +140,7 @@ class AgentKeysCoreTest(unittest.TestCase):
         ok, code = first.agents_cloud_join_code()
         self.assertTrue(ok)
         self.assertTrue(code.startswith(cloud_relay.JOIN_PREFIX))
+        first_config = first.agents_cloud_status()["setup"]["config"]   # before the switch
 
         paths["now"] = os.path.join(tmp.name, "b.json")             # the other computer
         second = self._core(31)
@@ -147,7 +148,7 @@ class AgentKeysCoreTest(unittest.TestCase):
         ok, status = second.agents_cloud_join(code)
         self.assertTrue(ok, status)
         self.assertEqual(calls[-1][0], "GET")                       # checked on the relay
-        self.assertEqual(status["setup"]["config"], first.agents_cloud_status()["setup"]["config"])
+        self.assertEqual(status["setup"]["config"], first_config)
         self.assertIsNotNone(second._cloud_relay)
 
         # Leaving keeps the channel: no request, the first computer's file stays.

@@ -833,7 +833,7 @@ def _cmd_agents_hooks_check(args) -> int:
     from polyhost.services.agents import hook_install, hook_log
     source = "--host" if args.host else "the forwarder running on this computer"
     default = _probe_hook_target(_agent_hook_target(args), source)
-    print(f"Hooks report to {default[0]}: "
+    print(f"Hooks without --host report to {default[0]}: "
           + ("answers" if default[1] else f"NOT REACHED ({default[2]})"))
     probes = {None: default}
     failed = False

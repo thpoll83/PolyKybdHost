@@ -581,33 +581,38 @@ class CardTest(unittest.TestCase):
             self.assertFalse(img[40 - ICON - ICON_CLEAR:, right:72 - ICON].any(), page)
             self.assertFalse(img[40 - ICON - ICON_CLEAR:40 - ICON, 72 - ICON:].any(), page)
 
-    def test_the_12_px_check_has_2_px_strokes_clear_of_the_ring(self):
+    @staticmethod
+    def _cut_out(state):
+        """The glyph cut out of a 12 px disc icon, after checking that the disc
+        keeps at least 1 px around every cut pixel."""
         from polyhost.services.agents import icons
         from polyhost.services.agents.card import state_icon
-        done = state_icon(AgentState.DONE)
-        self.assertEqual(done.shape, (12, 12))
-        check = done & ~icons._ring_12()
-        rows = [r for r in range(12) if check[r].any()]
-        self.assertGreaterEqual(len(rows), 5)
-        # Every row of the stroke is at least 2 px wide, and a 1 px gap separates
-        # it from the ring on both sides.
-        for r in rows:
-            cols = check[r].nonzero()[0]
-            ring = icons._ring_12()[r].nonzero()[0]
-            self.assertGreaterEqual(len(cols), 2, r)
-            self.assertGreater(cols.min() - ring[ring < 6].max(), 1, r)
-            self.assertGreater(ring[ring >= 6].min() - cols.max(), 1, r)
+        icon = state_icon(state)
+        disc = icons._disc_12()
+        assert icon.shape == (12, 12) and not (icon & ~disc).any()
+        cut = disc & ~icon
+        for y, x in zip(*cut.nonzero()):
+            assert disc[y - 1:y + 2, x - 1:x + 2].all(), (state, y, x)
+        return cut
 
-    def test_the_12_px_question_mark_keeps_its_dot(self):
-        from polyhost.services.agents.card import state_icon
-        from polyhost.services.agents import icons
-        q = state_icon(AgentState.STALE) & ~icons._ring_12()   # the '?' alone
+    def test_the_12_px_check_is_cut_out_of_the_disc_with_2_px_strokes(self):
+        check = self._cut_out(AgentState.DONE)
+        rows = [r for r in range(12) if check[r].any()]
+        self.assertGreaterEqual(len(rows), 6)
+        for r in rows[:-1]:                                 # all but the tip
+            self.assertGreaterEqual(len(check[r].nonzero()[0]), 2, r)
+        cols = check.any(axis=0).nonzero()[0]
+        self.assertGreaterEqual(cols.max() - cols.min() + 1, 8)   # 8 px wide
+
+    def test_the_12_px_question_mark_is_cut_out_and_keeps_its_dot(self):
+        q = self._cut_out(AgentState.STALE)
         rows = [r for r in range(12) if q[r].any()]
         gap = [r for r in range(rows[0], rows[-1]) if not q[r].any()]
         self.assertEqual(len(gap), 1)                          # stem, gap, dot
         dot = q[gap[0] + 1:]
         self.assertEqual(int(dot.sum()), 4)                    # a 2 x 2 dot
         self.assertEqual(sum(1 for r in dot if r.any()), 2)
+        self.assertGreaterEqual(rows[-1] - rows[0] + 1, 8)     # 8 px tall
 
     def test_a_break_carried_to_the_next_page_keeps_its_separator(self):
         from polyhost.services.agents.card import state_icon

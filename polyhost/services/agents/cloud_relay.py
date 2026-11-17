@@ -655,7 +655,12 @@ class RelayClient:
                 # keys here too, and retrying would only cost relay requests. The
                 # file stays; the user leaves the channel or joins another.
                 self.last_error = str(e)
-                self.sink.forget_all()
+                # Under the lock, and only while not stopped: a client that was
+                # replaced (stop() sets the flag, then waits for the lock) must not
+                # remove the cloud agents of the channel that replaced it.
+                with self._lock:
+                    if not self._stop.is_set():
+                        self.sink.forget_all()
                 self._log.info("Cloud relay: %s; not reconnecting", e)
                 break
             except (RelayError, ConnectionError, OSError, ValueError) as e:
