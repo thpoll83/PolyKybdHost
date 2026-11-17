@@ -96,7 +96,7 @@ class HooksCheckTest(unittest.TestCase):
         with self.statuses(**{"claude-code": hook_install.STATE_INSTALLED,
                               "codex": hook_install.STATE_OUTDATED}), \
                 mock.patch.object(polyctl, "_agent_hook_target", lambda args: None), \
-                mock.patch.object(polyctl, "connect", lambda: mock.Mock()):
+                mock.patch.object(polyctl, "connect", mock.Mock):
             code, out = self.run_check()
         self.assertEqual(code, 0)
         self.assertIn("this computer's host: answers", out)
