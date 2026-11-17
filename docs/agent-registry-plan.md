@@ -113,7 +113,7 @@ layout with `tools/oled_preview.py`: 0 pixels outside 72×40.
 | `working` | a turn is running | amber, breathing | turning arrows |
 | `waiting` | the agent waits for the user: a permission prompt or a question | red, blinking | `!` |
 | `done` | a turn finished and the user has not looked since | green, steady | check |
-| `idle` | finished and seen, or no turn yet | dim green, then off | none |
+| `idle` | finished and seen, or no turn yet | dim green, then off | moon |
 | `stale` | no event for a long time, the process may be gone | dim white | `?` |
 | (empty) | no agent on this key | RGB effect unchanged | normal legend |
 
