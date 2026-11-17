@@ -11,19 +11,16 @@ GUI thread. docs/tutorials-plan.md.
 from PyQt5.QtCore import Qt, QUrl
 from PyQt5.QtGui import QDesktopServices, QFont
 from PyQt5.QtWidgets import (QDialog, QFrame, QHBoxLayout, QLabel, QListWidget,
-                             QListWidgetItem, QPushButton, QScrollArea, QVBoxLayout,
+                             QPushButton, QScrollArea, QVBoxLayout,
                              QWidget)
 
+from polyhost.gui import section_colors, section_style
 from polyhost.gui.ui_kit import CARD_STYLE, WrapLabel, card, muted
 from polyhost.i18n import _, _f, _nf, current_language
 from polyhost.services.tutorials.loader import CATEGORIES, pick_text
 
 _NAV_STYLE = """
 QListWidget#tutorialsNav { background: transparent; border: none; outline: none; }
-QListWidget#tutorialsNav::item { padding: 7px 10px; border-radius: 6px; margin: 1px 0px; }
-QListWidget#tutorialsNav::item:selected {
-    background: palette(highlight); color: palette(highlighted-text);
-}
 QLabel#tutorialTitle { font-weight: 600; }
 QLabel#tutorialOled {
     background: black; color: white; border-radius: 4px; padding: 6px 10px;
@@ -66,6 +63,8 @@ class TutorialsDialog(QDialog):
         self.nav = QListWidget()
         self.nav.setObjectName("tutorialsNav")
         self.nav.setFixedWidth(200)
+        # Coloured entries and sections, as in Settings (gui/section_style.py).
+        section_style.style_nav(self.nav)
         self.nav.currentRowChanged.connect(self._show_category)
         body.addWidget(self.nav)
         self.scroll = QScrollArea()
@@ -107,8 +106,10 @@ class TutorialsDialog(QDialog):
         self._categories = [c for c in CATEGORIES
                             if any(t["category"] == c for t in info.get("tutorials", []))]
         self.nav.clear()
-        for c in self._categories:
-            self.nav.addItem(QListWidgetItem(category_label(c)))
+        dark = section_style.dialog_is_dark(self)
+        self._colors = [section_colors.slot_color(i, dark) for i in range(len(self._categories))]
+        for c, color in zip(self._categories, self._colors):
+            section_style.add_nav_item(self.nav, category_label(c), color)
         errors = info.get("errors") or []
         if errors:
             lines = [f"{e['path']}: {e['error']}" for e in errors]
@@ -126,11 +127,14 @@ class TutorialsDialog(QDialog):
         category = self._categories[row]
         protocol = self.info.get("protocol") or 0
         page = QWidget()
-        lay = QVBoxLayout(page)
+        outer = QVBoxLayout(page)
+        section = section_style.ColorSection(category_label(category), self._colors[row])
+        lay = section.body_layout
         for t in self.info.get("tutorials", []):
             if t["category"] == category:
                 lay.addWidget(self._card(t, protocol))
         lay.addStretch(1)
+        outer.addWidget(section, 1)
         self.scroll.setWidget(page)
 
     def _card(self, t, protocol):

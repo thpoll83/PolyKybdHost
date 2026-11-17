@@ -141,6 +141,25 @@ class TrayRefreshDoesNotWaitTest(unittest.TestCase):
         self.assertEqual(len(reported), 1)          # the refusal is reported
         host._keyboard_settings_message.close()
 
+    def test_brightness_tiles_send_a_level_or_automatic(self):
+        # The keyboard does not report its brightness: the row is a choice to
+        # send. Automatic re-engages the daylight drive; a tile sends its level.
+        from polyhost.gui import keyboard_settings as kbd
+        host, PolyHost = self._host(threading.Event())
+        calls = []
+        host.core.set_brightness = lambda v: calls.append(("level", v)) or (True, "ok")
+        host.core.refresh_daylight_brightness = lambda: calls.append(("auto",)) or (True, "queued")
+        PolyHost._send_keyboard_changes(host, {kbd.BRIGHTNESS: 25})
+        PolyHost._send_keyboard_changes(host, {kbd.BRIGHTNESS: kbd.BRIGHTNESS_AUTO})
+        self.assertTrue(host._menu_fetch.wait_idle())
+        self.assertEqual(calls, [("level", 25), ("auto",)])
+        # Offered whenever the keyboard answered any read, with no tile ticked.
+        values, failed = kbd.values_from_reads({"idle_style": (True, 1)})
+        self.assertIn(kbd.BRIGHTNESS, values)
+        self.assertIsNone(values[kbd.BRIGHTNESS])
+        values, failed = kbd.values_from_reads({"idle_style": (False, "not connected")})
+        self.assertNotIn(kbd.BRIGHTNESS, values)
+
     def test_keyboard_rows_fill_after_the_answer(self):
         from polyhost.gui import keyboard_settings as kbd
         from polyhost.gui.settings_dialog import SettingsDialog

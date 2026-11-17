@@ -9,27 +9,29 @@ and relative links were adjusted to suit a standalone file.
   (`gui/menu_fetch.py`, `MenuFetcher`). Split the refresh into the core call, passed
   to `self._menu_fetch.fetch(key, fn, apply)`, and an `apply(result)` that touches
   the Qt objects. In client mode the call is an RPC with no timeout, so a stalled
-  daemon used to freeze the whole tray when a device submenu (Updates, Brightness)
-  opened. The menu keeps its last
+  daemon used to freeze the whole tray when a device submenu (Updates) opened. The menu keeps its last
   state until the answer arrives; one call per key is in flight at a time. Tests
   that read the result call `self._menu_fetch.wait_idle()` first
   (`tests/gui/menu_fetch_test.py`).
 - **A menu CLICK sends its core call off the GUI thread too**, through
   `self._menu_fetch.call(fn, apply)`: `PolyHost._core_click(fn, done)` in `host.py`,
   `_report_async` / `_read_async` in `gui/cmd_menu.py`. Clicks run one at a time in
-  click order on one thread, so two quick Brightness clicks reach the keyboard in
+  click order on one thread, so two quick clicks reach the keyboard in
   that order; `done(ok, msg)` runs on the GUI thread. Still on the GUI thread: the
   settings dialog's settings.yaml read and write, the status rendering, and the in-process
   firmware flash dialog, which owns the device for its whole run.
 - **The tray menu is TWO-TIER: a normal menu of ~9 rows, plus a Developer submenu
   that only ever ADDS.** The old menu had 16 top-level entries, one of which ("All
   PolyKybd Commands") held 15 more — mostly diagnostics, one click from a normal
-  user. Now: status · Pause · [Language] · Brightness · AI Agents · Configure Keymap ·
+  user. Now: status · Pause · [Language] · AI Agents · Configure Keymap ·
   Tutorials… · Updates · Maintenance · Integrations… · Settings… · Help & About · Quit,
   with **Developer** slotted in before Integrations when developer mode is on.
   The settings that are rarely changed and stored on the keyboard (idle display and
   idle timeout, keycap script and its placement, keycap size, tap-hold timing) are in
-  **Settings → Keyboard**, not the menu (`gui/keyboard_settings.py`). The dialog reads
+  **Settings → Keyboard**, and the keycap brightness (Automatic or a level) in
+  **Settings → Brightness**, not the menu (`gui/keyboard_settings.py`). The keyboard
+  does not report its brightness, so that row is a choice to send: no tile is
+  ticked when the dialog opens, and Automatic calls `refresh_daylight_brightness`. The dialog reads
   them off the GUI thread when it opens (`read_all`, one `MenuFetcher` key); the rows
   stay disabled until the answer arrives, and a row the firmware does not have stays
   disabled with a tooltip. OK sends only the changed values, through `_core_click`,
@@ -39,7 +41,7 @@ and relative links were adjusted to suit a standalone file.
   with no keyboard (`add_always_enabled_maintenance_action`). The invariant is
   that turning developer mode on **does not rearrange anything** (asserted by
   `tests/gui/host_client_test.py` `test_developer_mode_only_adds_a_submenu`), so muscle
-  memory survives the toggle. `CommandsSubMenu` (`gui/cmd_menu.py`) builds Brightness +
+  memory survives the toggle. `CommandsSubMenu` (`gui/cmd_menu.py`) builds
   Maintenance + the Developer submenus and gates them off **explicit action lists**
   (`_device_actions` follow `connected`, `_fw_actions` follow `fw_enabled`) — it can no
   longer walk one menu's actions, since they live under different parents. ⚠️
@@ -60,7 +62,7 @@ and relative links were adjusted to suit a standalone file.
   other Maintenance rows are gated by their own lists. In-process mode keeps plain
   Quit at the top level.
   The language menu is built lazily and inserts itself at `self._lang_anchor`
-  (Brightness), not at index 1.
+  (AI Agents), not at index 1.
 
 - ⚠️ **A tray balloon reaches NOBODY on macOS as we ship today, and nothing said
   so.** `QSystemTrayIcon.showMessage` is Qt's Cocoa backend calling
@@ -107,17 +109,15 @@ and relative links were adjusted to suit a standalone file.
   `GET_ID` version block vs the shipped `bundles.json`, no device I/O on either side of
   the RPC), so the Updates row relabels itself on `aboutToShow` — *"Keyboard fonts: up
   to date"* (disabled) or *"Update keyboard fonts (N)…"* with the stale bundle ids in
-  its tooltip — instead of hiding the answer behind a status dialog. Same idea in
-  Brightness: *"Back to automatic"* renames itself to *"Clear manual override"* when
-  `brightness_set_daylight_dependent` is off, because that is what it would actually do.
+  its tooltip — instead of hiding the answer behind a status dialog.
   Keep such refreshes to reads that are genuinely free; an `aboutToShow` that touches
   the device would stall the menu.
 
-- **"Back to automatic" exists because the firmware's auto mode is a ONE-WAY DOOR from
-  the host's side.** Any manual `set_brightness` drops the keyboard out of auto mode
-  (its own LTR-559 sensor then backs off too) and nothing re-engages it until the host
-  deliberately re-asserts — so the tray's brightness presets used to strand the keyboard
-  in manual until a replug. The entry calls `PolyCore.refresh_daylight_brightness()`
+- **Settings → Brightness → Keycap brightness has an "Automatic" tile because the
+  firmware's auto mode is a ONE-WAY DOOR from the host's side.** Any manual
+  `set_brightness` drops the keyboard out of auto mode (its own LTR-559 sensor then
+  backs off too) and nothing re-engages it until the host deliberately re-asserts — so
+  the old tray presets stranded the keyboard in manual until a replug. The tile calls `PolyCore.refresh_daylight_brightness()`
   (daylight on → `VOLATILE|AUTO_ON` + the current value; off → `AUTO_OFF`, i.e. back to
   the keyboard's stored manual level), which is now `M_DAYLIGHT_REFRESH` + a `RemoteCore`
   mirror + `polyctl brightness --auto`. It returns `(True, "queued")` like every other
@@ -422,15 +422,12 @@ and relative links were adjusted to suit a standalone file.
   `test_the_long_step_text_does_not_overlap_its_button` pins it. An offscreen
   test screen is 800×600, and `show()` caps a window at two thirds of it.
 
-- **Brightness is a tile grid where Qt draws the tray menu** (`gui/menu_tiles.py`, previews in `gui/keycap_tiles.py`):
-  Windows, and Linux without a StatusNotifier host. A KDE or AppIndicator tray
-  menu is exported over DBusMenu, which drops a widget, and macOS embeds it
-  unreliably (QTBUG-63578), so both keep the text rows. ⚠️ A tile is bound to the
-  menu's QAction and the action is REMOVED from the menu, not hidden: Qt disables
-  a hidden action, and a disabled action ignores `trigger()`.
-  `POLYHOST_MENU_TILES=1|0` forces the choice. Updates, Maintenance and Help & About
-  stay standard text submenus: their entries are actions with long labels, not
-  previews, and icon tiles there were tried and removed.
+- **The tray menu has no picture tiles.** The choices drawn as keycap pictures
+  (brightness, idle animation, keycap script, keycap size) are in Settings, as
+  `TileChoice` rows (`gui/keyboard_settings.py`, pictures from `gui/keycap_tiles.py`,
+  captions wrapped by `gui/menu_tiles.py`). A QWidget inside a tray menu shows only
+  where Qt draws the menu itself: a KDE or AppIndicator menu is exported over
+  DBusMenu, which drops widgets, and macOS embeds them unreliably (QTBUG-63578).
 
 - **Buttons, fields, combo and spin boxes have rounded corners from one style
   sheet**, `theme.control_style(theme)`, set by `apply_theme()`. A sheet that

@@ -86,3 +86,14 @@ def title_ink(hexcolor):
     The light theme's darker colours take white, the dark theme's lighter ones
     near-black."""
     return max(("#ffffff", "#1e1e1e"), key=lambda ink: contrast(ink, hexcolor))
+
+
+def slot_color(index, dark):
+    """The colour of the ``index``-th sidebar entry of a dialog whose entries
+    take the slots in sidebar order (Integrations, Tutorials). Neighbours keep
+    the validated distances. Past the last slot the colour is neutral."""
+    if 0 <= index < len(SLOTS):
+        _name, light_hex, dark_hex = SLOTS[index]
+    else:
+        _name, light_hex, dark_hex = NEUTRAL
+    return dark_hex if dark else light_hex

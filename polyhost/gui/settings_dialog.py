@@ -4,17 +4,17 @@ import re
 import string
 
 from PyQt5.QtCore import QRectF, QSize, Qt
-from PyQt5.QtGui import (QColor, QCursor, QFont, QFontMetrics, QGuiApplication, QPainter,
-                         QPalette, QPen)
+from PyQt5.QtGui import QColor, QCursor, QGuiApplication, QPainter, QPalette, QPen
 from PyQt5.QtWidgets import (
     QAbstractScrollArea, QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog, QFrame,
-    QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem, QPushButton, QScrollArea, QSpinBox,
-    QStyle, QStyledItemDelegate, QToolButton, QVBoxLayout, QWidget,
+    QHBoxLayout, QLabel, QLineEdit, QListWidget, QPushButton, QScrollArea, QSpinBox,
+    QToolButton, QVBoxLayout, QWidget,
 )
 
 from polyhost import i18n
 from polyhost.gui import keyboard_settings as kbd
-from polyhost.gui import section_colors
+from polyhost.gui import section_colors, section_style
+from polyhost.gui.section_style import ColorSection
 from polyhost.gui.theme import is_dark
 from polyhost.gui.ui_kit import set_button_icon, style_button_box, px
 from polyhost.i18n import _, _f, N_
@@ -81,7 +81,7 @@ SECTIONS = (
         (N_("Installed games"), ("game_*",)),
     )),
     ("brightness", N_("Brightness"), (
-        (None, ("brightness_set_daylight_dependent",
+        (None, (kbd.BRIGHTNESS, "brightness_set_daylight_dependent",
                 "brightness_allow_online_location_lookup",
                 "brightness_allow_online_irradiance_request")),
         (N_("Daylight curve"), ("irradiance_min", "irradiance_max",
@@ -122,6 +122,7 @@ OTHER_SECTION = ("other", N_("Other"))
 
 SETTING_LABELS = {
     "unicode_send_composition_mode": N_("Send Unicode input mode"),
+    kbd.BRIGHTNESS: N_("Keycap brightness"),
     kbd.IDLE_STYLE: N_("Idle animation"),
     kbd.IDLE_TIMEOUT: N_("Idle After"),
     kbd.GLYPH_SCRIPT: N_("Keycap Script"),
@@ -189,6 +190,11 @@ SETTING_LABELS = {
 # editor. tests/gui/settings_dialog_test.py fails on a DEFAULT_SETTINGS key
 # missing here, so a new setting cannot ship without one.
 SETTING_DESCRIPTIONS = {
+    kbd.BRIGHTNESS: N_(
+        "Sets the brightness of the keycaps when you click OK. A level stays until you "
+        "choose Automatic, which follows the daylight when Follow daylight is on, and "
+        "otherwise returns to the keyboard's own stored level. The keyboard does not "
+        "report its level, so no picture is selected when this dialog opens."),
     kbd.IDLE_STYLE: N_(
         "What the keycaps show when you have not typed for a while. It protects the "
         "displays from burn-in."),
@@ -650,51 +656,6 @@ QListWidget#settingsNav {
 """
 
 
-class _NavDelegate(QStyledItemDelegate):
-    """A sidebar entry: a stripe in its section's colour, and a tint of that
-    colour when it is selected (stronger) or under the mouse (weaker). The text
-    stays in the palette's text colour; the selected entry is bold."""
-
-    PAD_X, PAD_Y, STRIPE = 14, 7, 4
-
-    def _text_rect(self, rect):
-        return rect.adjusted(px(self.PAD_X), px(self.PAD_Y), -px(6), -px(self.PAD_Y))
-
-    def paint(self, painter, option, index):
-        color = QColor(index.data(Qt.UserRole) or option.palette.highlight().color())
-        selected = bool(option.state & QStyle.State_Selected)
-        hover = bool(option.state & QStyle.State_MouseOver)
-        rect = option.rect.adjusted(0, px(1), 0, -px(1))
-        painter.save()
-        painter.setRenderHint(QPainter.Antialiasing)
-        painter.setPen(Qt.NoPen)
-        if selected or hover:
-            fill = QColor(color)
-            fill.setAlpha(section_colors.TINT_ALPHA if selected else section_colors.HOVER_ALPHA)
-            painter.setBrush(fill)
-            painter.drawRoundedRect(QRectF(rect), px(6), px(6))
-        painter.setBrush(color)
-        painter.drawRoundedRect(QRectF(rect.left() + px(3), rect.top() + px(6), px(self.STRIPE),
-                                       rect.height() - px(12)), px(2), px(2))
-        font = QFont(option.font)
-        font.setBold(selected)
-        painter.setFont(font)
-        painter.setPen(option.palette.color(QPalette.Text))
-        painter.drawText(self._text_rect(rect), Qt.AlignVCenter | Qt.TextWordWrap,
-                         index.data(Qt.DisplayRole) or "")
-        painter.restore()
-
-    def sizeHint(self, option, index):
-        font = QFont(option.font)
-        font.setBold(True)     # measure the widest form, so selecting never re-wraps
-        view = self.parent()
-        width = (view.viewport().width() if view is not None else px(SIDEBAR_WIDTH)) \
-            - px(self.PAD_X) - px(6)
-        text = QFontMetrics(font).boundingRect(0, 0, max(width, 10), 10_000, Qt.TextWordWrap,
-                                               index.data(Qt.DisplayRole) or "")
-        return QSize(width, text.height() + 2 * px(self.PAD_Y) + px(2))
-
-
 class _SearchField(QLineEdit):
     """The search field. Enter does nothing, rather than pressing OK."""
 
@@ -825,43 +786,15 @@ class _Group(QWidget):
         return bool(shown)
 
 
-class _Section(QFrame):
-    """A section in its colour (gui/section_colors.py): a light tint of the colour
-    behind its groups, and its title on a band of the full colour. The selected
-    sidebar entry has the same tint."""
+class _Section(ColorSection):
+    """A Settings section: a ColorSection (gui/section_style.py) holding a note
+    and the groups of rows."""
 
     def __init__(self, section_id, title, color=None, parent=None):
-        super().__init__(parent)
+        super().__init__(_(title), color, parent)
         self.section_id = section_id
-        self.title = _(title)
-        self.color = color
         self.groups = []
-        self.setObjectName("settingsSection")
-        radius = px(10)
-        if color:
-            self.setStyleSheet(
-                f"QFrame#settingsSection {{ border: none; "
-                f"border-radius: {radius}px; background: {section_colors.tint(color)}; }}"
-                f"QLabel#settingsSectionTitle {{ background: {color}; "
-                f"color: {section_colors.title_ink(color)}; "
-                f"border-top-left-radius: {radius}px; "
-                f"border-top-right-radius: {radius}px; "
-                f"padding: {px(6)}px {px(14)}px; }}")
-        outer = QVBoxLayout(self)
-        # The band spans the section's full width, from its top edge.
-        outer.setContentsMargins(0, 0, 0, 0)
-        outer.setSpacing(0)
-        head = QLabel(self.title)
-        head.setObjectName("settingsSectionTitle")
-        if not color:
-            head.setContentsMargins(px(14), px(6), px(14), 0)
-        outer.addWidget(head)
-        body = QWidget()
-        body.setAttribute(Qt.WA_TranslucentBackground)
-        outer.addWidget(body)
-        self._lay = QVBoxLayout(body)
-        self._lay.setContentsMargins(px(12), px(12), px(12), px(12))
-        self._lay.setSpacing(14)
+        self._lay = self.body_layout
         self.note = QLabel()
         self.note.setWordWrap(True)
         self.note.setObjectName("settingsRowNote")
@@ -963,8 +896,7 @@ class SettingsDialog(QDialog):
         self.nav.setFrameShape(QFrame.NoFrame)
         self.nav.setWordWrap(True)
         self.nav.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.nav.setItemDelegate(_NavDelegate(self.nav))
-        self.nav.setMouseTracking(True)
+        section_style.style_nav(self.nav)
         self.nav.currentRowChanged.connect(self._nav_selected)
         side_lay.addWidget(self.nav, 1)
         body.addWidget(side)
@@ -1003,9 +935,7 @@ class SettingsDialog(QDialog):
                 section.set_note(_("Reading the settings stored on the keyboard\u2026"))
             col_lay.addWidget(section)
             self._sections.append(section)
-            item = QListWidgetItem(section.title)
-            item.setData(Qt.UserRole, section.color)
-            self.nav.addItem(item)
+            section_style.add_nav_item(self.nav, section.title, section.color)
         self._no_match = QLabel(_("No setting matches the search."))
         self._no_match.setAlignment(Qt.AlignCenter)
         self._no_match.hide()
@@ -1077,6 +1007,8 @@ class SettingsDialog(QDialog):
 
     @staticmethod
     def _keyboard_editor(key):
+        if key == kbd.BRIGHTNESS:
+            return kbd.make_brightness_editor()
         if key == kbd.IDLE_STYLE:
             return kbd.make_idle_style_editor()
         if key == kbd.GLYPH_SCRIPT:
@@ -1212,19 +1144,31 @@ class SettingsDialog(QDialog):
             return
         section = self._sections[row]
         if section.isVisible():
-            # A few pixels above the section, so its coloured frame shows.
-            self.scroll.verticalScrollBar().setValue(section.parentWidget().mapTo(
-                self.scroll.widget(), section.pos()).y() - px(8))
+            # A few pixels above the section, so its colour band shows. The
+            # jump keeps the entry the user clicked: a short section would
+            # otherwise hand the selection to the one below it (_sync_nav).
+            self._syncing_nav = True
+            try:
+                self.scroll.verticalScrollBar().setValue(section.parentWidget().mapTo(
+                    self.scroll.widget(), section.pos()).y() - px(8))
+            finally:
+                self._syncing_nav = False
 
     def _sync_nav(self, value):
-        """Select the section at the top of the view as the page scrolls."""
+        """Select the section the reader is in as the page scrolls. A section
+        counts once its top is in the upper third of the view, so the sidebar
+        moves on while the next section's title band comes into view, not
+        only when it reaches the top edge."""
+        if self._syncing_nav:
+            return
         current = 0
         holder = self.scroll.widget()
+        reach = value + max(px(40), self.scroll.viewport().height() // 3)
         for i, section in enumerate(self._sections):
             if not section.isVisible():
                 continue
             top = section.parentWidget().mapTo(holder, section.pos()).y()
-            if top <= value + 40:
+            if top <= reach:
                 current = i
         bar = self.scroll.verticalScrollBar()
         if value >= bar.maximum() and bar.maximum() > 0:
