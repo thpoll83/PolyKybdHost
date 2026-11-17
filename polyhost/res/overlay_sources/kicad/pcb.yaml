@@ -93,7 +93,7 @@ bindings:
   - { key: E, mods: [SHIFT], icon: routeother.png, label: "Route selected from other end" }
   - { key: F, mods: [SHIFT], icon: autoroute.png, label: "Autoroute selected" }
   - { key: D, mods: [], icon: drag45.png, label: "Drag 45 degrees" }
-  - { key: G, mods: [], icon: drag.png, label: "Drag free angle" }
+  - { key: G, mods: [], icon: dragfree.png, label: "Drag free angle" }
   - { key: W, mods: [], icon: nextwidth.png, label: "Next track width" }
   - { key: W, mods: [SHIFT], icon: prevwidth.png, label: "Previous track width" }
   - { key: QUOTE, mods: [], icon: viainc.png, label: "Increase via size" }
@@ -134,8 +134,8 @@ bindings:
   - { key: L, mods: [], label: Lock }
   - { key: T, mods: [CMDCTRL], icon: array.png, label: "Create array" }
   - { key: D, mods: [CMDCTRL, SHIFT], icon: dupincrement.png, label: "Duplicate and increment" }
-  - { key: E, mods: [CMDCTRL], icon: openeditor.png, label: "Open in Footprint Editor" }
-  - { key: E, mods: [CMDCTRL, SHIFT], icon: library.png, label: "Edit library footprint" }
+  - { key: E, mods: [CMDCTRL], icon: editfootprint.png, label: "Open in Footprint Editor" }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: libfootprint.png, label: "Edit library footprint" }
 
   # --- select and highlight ---
   - { key: U, mods: [], icon: expandconn.png, label: "Select connection" }
@@ -146,8 +146,8 @@ bindings:
   - { key: GRAVE, mods: [ALT], icon: togglehl.png, label: "Toggle net highlight" }
 
   # --- layers ---
-  - { key: PGUP, mods: [], icon: frontlayer.png, label: "F.Cu layer" }
-  - { key: PGDN, mods: [], icon: backlayer.png, label: "B.Cu layer" }
+  - { key: PGUP, mods: [], icon: fcu.png, label: "F.Cu layer" }
+  - { key: PGDN, mods: [], icon: bcu.png, label: "B.Cu layer" }
   - { key: EQUAL, mods: [SHIFT], icon: nextlayer.png, label: "Next layer" }
   - { key: MINUS, mods: [], icon: prevlayer.png, label: "Previous layer" }
   - { key: V, mods: [], icon: togglelayer.png, label: "Toggle layer" }

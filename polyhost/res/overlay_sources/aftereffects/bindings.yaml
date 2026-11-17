@@ -49,13 +49,13 @@ bindings:
   - { key: V, mods: [], icon: select.png,    label: "Selection tool",  source: "ms-fluent/Cursor (MIT)" }
   - { key: H, mods: [], icon: hand.png,      label: "Hand tool",       source: "ms-fluent/Hand Right (MIT)" }
   - { key: Z, mods: [], icon: zoom.png,      label: "Zoom tool",       source: "ms-fluent/Zoom In (MIT)" }
-  - { key: W, mods: [], icon: rotation.png,  label: "Rotation tool",   source: "ms-fluent/Arrow Rotate Clockwise (MIT)" }
+  - { key: W, mods: [], icon: rotationtool.png,  label: "Rotation tool",   source: "material-symbols/rotate_right (Apache-2.0)" }
   - { key: G, mods: [], icon: pen.png,       label: "Pen tool",        source: "ms-fluent/Pen (MIT)" }
   - { key: Q, mods: [], icon: shape.png,     label: "Shape / mask tool", source: "ms-fluent/Shapes (MIT)" }
   - { key: Y, mods: [], icon: panbehind.png, label: "Pan behind tool", source: "ms-fluent/Drag (MIT)" }
 
   # --- timeline (no modifier) ---
-  - { key: I, mods: [], icon: gotoin.png,  label: "Go to layer In",  source: "ms-fluent/Arrow Import (MIT)" }
+  - { key: I, mods: [], icon: gotolayerin.png,  label: "Go to layer In",  source: "ms-fluent/Arrow Previous (MIT)" }
   - { key: O, mods: [], icon: gotoout.png, label: "Go to layer Out", source: "ms-fluent/Arrow Export (MIT)" }
   - { key: SPACE, mods: [], icon: preview.png, label: Preview,       source: "ms-fluent/Play (MIT)" }
 

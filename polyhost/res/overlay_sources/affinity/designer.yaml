@@ -73,10 +73,10 @@ bindings:
   - { key: V, mods: [ALT, SHIFT, GUI], icon: pasteplain.png, label: "Paste without format", only: [macos] }
   - { key: I, mods: [CTRL, SHIFT], icon: invertsel.png, label: "Invert pixel selection", except: [macos] }
   - { key: I, mods: [SHIFT, GUI], icon: invertsel.png, label: "Invert pixel selection", only: [macos] }
-  - { key: RBRACKET, mods: [CTRL, ALT], icon: selectnext.png, label: "Select next", except: [macos] }
-  - { key: RBRACKET, mods: [ALT, GUI], icon: selectnext.png, label: "Select next", only: [macos] }
-  - { key: LBRACKET, mods: [CTRL, ALT], icon: selectprev.png, label: "Select previous", except: [macos] }
-  - { key: LBRACKET, mods: [ALT, GUI], icon: selectprev.png, label: "Select previous", only: [macos] }
+  - { key: RBRACKET, mods: [CTRL, ALT], icon: selnext.png, label: "Select next", except: [macos] }
+  - { key: RBRACKET, mods: [ALT, GUI], icon: selnext.png, label: "Select next", only: [macos] }
+  - { key: LBRACKET, mods: [CTRL, ALT], icon: selprev.png, label: "Select previous", except: [macos] }
+  - { key: LBRACKET, mods: [ALT, GUI], icon: selprev.png, label: "Select previous", only: [macos] }
   - { key: UP, mods: [CTRL], icon: selectparent.png, label: "Select parent", except: [macos] }
   - { key: UP, mods: [GUI], icon: selectparent.png, label: "Select parent", only: [macos] }
   - { key: G, mods: [CTRL], icon: group.png, label: "Group", except: [macos] }

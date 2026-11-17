@@ -72,3 +72,13 @@ missing, so a hand-edited mark is never redrawn.
 ## Not checked on an install
 
 - The process name `Origin64.exe` (mapping name `origin64`).
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing
+(maintainer, 2026-11-15). These files give the other keys their own image.
+Files whose name starts with `_` are only parts of a composite.
+
+| file | source | licence |
+|---|---|---|
+| `winswitcher.png` | Fluent `Window Multiple` | MIT |

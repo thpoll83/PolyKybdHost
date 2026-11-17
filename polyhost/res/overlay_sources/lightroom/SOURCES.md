@@ -70,3 +70,18 @@ Lightroom gives several keys a different meaning per module. The set shows:
   renderer.
 - ESC: a generic "Lr" rectangle from `../rect_mark.py`, at the size of the
   other Adobe marks. Adobe's logo is not used.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing
+(maintainer, 2026-11-15). These files give the other keys their own image.
+Files whose name starts with `_` are only parts of a composite.
+
+| file | source | licence |
+|---|---|---|
+| `impromptu.png` | Fluent `Slide Play` | MIT |
+| `_modules.png` | Material Symbols `grid_view` | Apache-2.0 |
+| `printmodule.png` | `print.png` with `_modules.png` as a badge at the lower right (`../dcc_glyphs.py` `with_badge`) | same as the two parts |
+| `picknext.png` | `pick.png` over a heavy arrow (`../dcc_glyphs.py` `with_arrow`) | same as the base |
+| `rejectnext.png` | `reject.png` over a heavy arrow (`../dcc_glyphs.py` `with_arrow`) | same as the base |
+| `unflagnext.png` | `unflag.png` over a heavy arrow (`../dcc_glyphs.py` `with_arrow`) | same as the base |

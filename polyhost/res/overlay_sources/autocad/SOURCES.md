@@ -67,3 +67,15 @@ Shift+F1..F5 are the same on both.
 
 Help, Select all, Copy, Cut, Paste, New, Open, Save, Save as, Quit, Undo, Redo,
 Find and Zoom in/out are drawn by the shared concept renderer.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing
+(maintainer, 2026-11-15). These files give the other keys their own image.
+Files whose name starts with `_` are only parts of a composite.
+
+| file | source | licence |
+|---|---|---|
+| `textwindow.png` | Material Symbols `article` | Apache-2.0 |
+| `fullscreen.png` | Material Symbols `open_in_full` | Apache-2.0 |
+| `toolpalettes.png` | Material Symbols `dashboard` | Apache-2.0 |
