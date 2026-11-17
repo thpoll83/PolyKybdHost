@@ -47,7 +47,7 @@ class AgentKeysCoreTest(unittest.TestCase):
         self._pass(core)
         self.assertEqual(fw.ai_states[0], AgentState.WAITING)
         cache = core.device_mgr.primary.cache
-        card = cache.holds(("agentcard", "claude-code", "s1"))   # cached per agent
+        card = cache.holds(("agentcard", "claude-code", "s1", 0))   # per agent and page
         self.assertEqual(fw.ai_slots[0], card)
         self.assertEqual(len(fw.ai_cards[card]), 360)
         self.assertTrue(any(fw.ai_cards[card]))

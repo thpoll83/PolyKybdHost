@@ -1,15 +1,22 @@
 """Render an agent card: the 72x40 1-bit image a number key shows in AI mode.
 
     +------------------------------------+
-    | [lower part of mark]  [state icon] |   rows 0..15
-    |  headline, up to two lines,        |
-    |  centred                           |   rows 15..39
+    | [vendor ] title, first words       |   line 1  rows  0..12
+    | [ mark  ] more words               |   line 2  rows 13..25
+    | the title goes on, full width      |   line 3  rows 26..39
     +------------------------------------+
 
-Only the lower 16 rows of the 26 px vendor mark show, cut by the top edge, so the
-headline gets two lines in size 11 (card experiments, 2026-11-10: variant L for
-the mark and the font, M for the 16 px state icon). No state word: the icon says
-it. Text is Pillow's bundled sans font (Aileron) drawn without anti-aliasing.
+The vendor mark is drawn whole at up to 24 px, top left, with the text 1 px to
+its right; lines below the mark use the full width. Three lines of 14 px text
+(card experiments, 2026-11-17). No state icon: the key's light shows the state
+(ai_rgb_paint in the firmware). When the first word does not fit beside the
+mark, the mark is drawn smaller (24, 20, 16 or 12 px) until it does.
+
+A title that does not fit one card is split into pages of three lines, without
+the mark after the first; the controller switches the key between them
+(TEXT_PAGE_S). Text breaks at spaces and after '-'; only a word wider than the
+key is split between letters. Text is Pillow's bundled sans font (Aileron)
+drawn without anti-aliasing.
 
 The result is 360 bytes, the same packing as OverlayData.all_bytes (np.packbits,
 row-major, MSB first), uploaded with cmd 46 straight into a pool slot.
@@ -18,19 +25,24 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import threading
+from dataclasses import dataclass
 
-from polyhost.services.agents.model import AgentState, vendor
+from polyhost.services.agents.model import vendor
 
 log = logging.getLogger("PolyHost")
 
 PANEL_W, PANEL_H = 72, 40
-MARK_BOX = 26          # the mark is rendered at this size; its lower part shows
-MARK_SHOWN = 16        # rows of the mark shown at the top edge, as tall as the icon
-ICON = 16              # state icon height and width
-FONT_SIZE = 11
-LINE_PITCH = 12
-TEXT_TOP = 15          # first of two lines; one line is centred in rows 15..39
+MARK_BOX = 24          # the largest mark, px (its larger side)
+MARK_SIZES = (24, 20, 16, 12)   # tried in this order until the first word fits
+MARK_GAP = 1           # px between the mark and the text beside it
+FONT_SIZE = 14
+LINE_PITCH = 13        # three lines in 40 rows; a descender may touch the cap below
+LINES = 3
+TEXT_W = PANEL_W - 2   # a full-width line: 1 px margin each side
+WORDMARK_RATIO = 1.5   # wider than this times its height: a wordmark, never scaled
+MAX_PAGES = 4          # a longer title ends with '.' on the last page
 _FONTS = {}
 
 
@@ -68,7 +80,7 @@ def _text_centred(draw, text, y, size=FONT_SIZE):
     draw.text(((PANEL_W - (box[2] - box[0])) // 2 - box[0], y), text, font=_font(size), fill=1)
 
 
-def fit_text(text: str, width: int = PANEL_W - 2, size: int = FONT_SIZE) -> str:
+def fit_text(text: str, width: int = TEXT_W, size: int = FONT_SIZE) -> str:
     """Cut `text` to what fits `width` pixels in the card font, with a trailing '.'."""
     text = " ".join((text or "").split())
     if _measure(text, size)[2] <= width:
@@ -78,26 +90,72 @@ def fit_text(text: str, width: int = PANEL_W - 2, size: int = FONT_SIZE) -> str:
     return text.rstrip() + "."
 
 
-def wrap_text(text: str, max_lines: int = 2, width: int = PANEL_W - 2,
-              size: int = FONT_SIZE) -> list[str]:
-    """`text` in at most `max_lines` lines of `width` pixels. Lines break after a
-    space, '-', '_', '/' or '.', never inside a word; the last line is cut with a
-    trailing '.' when the rest does not fit."""
-    import re
+def _ink_width(text: str, size: int = FONT_SIZE) -> int:
+    box = _measure(text, size)
+    return box[2] - box[0]
+
+
+def _tokens(text: str) -> list[tuple[str, bool]]:
+    """(token, a space follows) pairs: words, split after each '-'."""
     text = " ".join((text or "").split())
-    tokens = [t for t in re.findall(r"[^ \-_/.]*[\-_/.]?(?: |$)?", text) if t]
-    lines, cur = [], ""
-    for tok in tokens:
-        if not cur or _measure((cur + tok).strip(), size)[2] <= width:
-            cur += tok
-        else:
-            lines.append(cur.strip())
-            cur = tok
-    if cur.strip():
-        lines.append(cur.strip())
-    if len(lines) > max_lines:
-        lines = lines[:max_lines - 1] + [" ".join(lines[max_lines - 1:])]
-    return [fit_text(line, width, size) for line in lines]
+    return [(m.group(1), bool(m.group(2))) for m in re.finditer(r"([^ \-]+-?|-)( ?)", text)]
+
+
+def flow(text: str, widths, size: int = FONT_SIZE, full: int = TEXT_W) -> list[str]:
+    """`text` in lines; line k is `widths[k]` px wide (the last width repeats).
+    Lines break at spaces and after '-'. A token that does not fit a narrower line
+    moves down to the first line wide enough (the line it leaves stays empty);
+    only a token wider than `full` is split between letters."""
+    lines, cur, space = [], "", False
+
+    def width():
+        return widths[min(len(lines), len(widths) - 1)]
+
+    for tok, space_after in _tokens(text):
+        cand = cur + (" " if cur and space else "") + tok
+        space = space_after
+        if _ink_width(cand, size) <= width():
+            cur = cand
+            continue
+        if cur:
+            lines.append(cur)
+            cur = ""
+        while _ink_width(tok, size) > width() and _ink_width(tok, size) <= full:
+            lines.append("")
+        while _ink_width(tok, size) > width():
+            n = len(tok)
+            while n > 1 and _ink_width(tok[:n], size) > width():
+                n -= 1
+            lines.append(tok[:n])
+            tok = tok[n:]
+        cur = tok
+    if cur:
+        lines.append(cur)
+    return lines
+
+
+def _beside(mask) -> int:
+    """How many text lines sit right of a mark this tall."""
+    if mask is None:
+        return 0
+    return min(LINES, -(-mask.shape[0] // LINE_PITCH))   # 1..13 rows: 1, 14..26: 2
+
+
+def paginate(text: str, mask=None, size: int = FONT_SIZE) -> list[list[str]]:
+    """The pages of a card: lists of at most LINES lines. On page 1 the first
+    _beside(mask) lines are narrowed by the mark; later pages are full width."""
+    beside = _beside(mask)
+    narrow = TEXT_W + 1 - (mask.shape[1] + MARK_GAP) if beside else TEXT_W
+    first = flow(text, [narrow] * beside + [TEXT_W], size)
+    pages = [first[:LINES]]
+    rest = " ".join(line for line in first[LINES:] if line)
+    if rest:
+        more = flow(rest, [TEXT_W], size)
+        pages += [more[i:i + LINES] for i in range(0, len(more), LINES)]
+    if len(pages) > MAX_PAGES:
+        pages = pages[:MAX_PAGES]
+        pages[-1][-1] = fit_text(pages[-1][-1] + "\u2026", TEXT_W, size)
+    return pages
 
 
 # A vendor slug "agent:<name>" is a finished card mark shipped as
@@ -108,20 +166,34 @@ AGENT_MARK_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)))), "res", "icons", "agents")
 
 
-def _shipped_mark(name: str):
+def _crop(mask):
+    rows, cols = mask.any(1).nonzero()[0], mask.any(0).nonzero()[0]
+    if not len(rows):
+        return None
+    return mask[rows[0]:rows[-1] + 1, cols[0]:cols[-1] + 1]
+
+
+def _shipped_mark(name: str, box: int):
+    """A shipped mark, at most `box` rows tall: drawn for the card at up to 24 px,
+    scaled down only for a smaller mark (the first word does not fit beside it)."""
     try:
         import numpy as np
         from PIL import Image
         with Image.open(os.path.join(AGENT_MARK_DIR, name + ".png")) as img:
-            mask = np.array(img.convert("L")) > 127
+            img = img.convert("L")
+            if img.height > box:
+                img = img.resize((max(1, round(img.width * box / img.height)), box),
+                                 Image.LANCZOS)
+            mask = np.array(img) > 110
     except Exception as e:  # noqa: BLE001 - cosmetic: fall back to the next slug
         log.debug("Agent mark %s: %s", name, e)
         return None
-    return mask[-MARK_SHOWN:] if mask.any() else None
+    return _crop(mask)
 
 
 class VendorMarks:
-    """Vendor marks as 1-bit masks, from app_icons' cache or shipped marks.
+    """Vendor marks as 1-bit masks, from app_icons' cache or shipped marks, one per
+    (vendor, size).
 
     ⚠️ Never fetches on the caller's thread: the card is rendered on the HID
     worker, and a download there would stall the keyboard. A missing mark is
@@ -129,27 +201,27 @@ class VendorMarks:
     increments, so the controller redraws the card."""
 
     def __init__(self):
-        self._masks: dict[str, object] = {}
+        self._masks: dict[tuple, object] = {}
         self._fetching: set[str] = set()
         self._lock = threading.Lock()
         self.version = 0
 
-    def get(self, vid: str):
+    def get(self, vid: str, box: int = MARK_BOX):
         with self._lock:
-            if vid in self._masks:
-                return self._masks[vid]
-        mask = self._load(vid, allow_network=False)
+            if (vid, box) in self._masks:
+                return self._masks[(vid, box)]
+        mask = self._load(vid, box, allow_network=False)
         if mask is None:
             self._fetch_later(vid)
             return None
         with self._lock:
-            self._masks[vid] = mask
+            self._masks[(vid, box)] = mask
         return mask
 
-    def _load(self, vid, allow_network):
+    def _load(self, vid, box, allow_network):
         for slug in vendor(vid).slugs:
             if slug.startswith(AGENT_MARK_PREFIX):
-                mask = _shipped_mark(slug[len(AGENT_MARK_PREFIX):])
+                mask = _shipped_mark(slug[len(AGENT_MARK_PREFIX):], box)
                 if mask is not None:
                     return mask
         try:
@@ -163,18 +235,9 @@ class VendorMarks:
                 path = app_icons.fetch_icon(slug, allow_network=allow_network)
                 if not path:
                     continue
-                mask = app_icons.render_overlay(path, box=MARK_BOX)
+                mask = app_icons.render_overlay(path, box=box)
                 if mask is not None:
-                    # render_overlay centres the mark in the full 40-row panel; keep
-                    # its ink box, then only the lower half: the card shows that
-                    # half at the top edge.
-                    mask = mask[:, PANEL_W - MARK_BOX:]
-                    rows = mask.any(1).nonzero()[0]
-                    cols = mask.any(0).nonzero()[0]
-                    if not len(rows):
-                        return None
-                    mask = mask[rows[0]:rows[-1] + 1, cols[0]:cols[-1] + 1]
-                    return mask[max(0, mask.shape[0] - MARK_SHOWN):]
+                    return _crop(mask)
             except Exception as e:  # noqa: BLE001 - cosmetic
                 log.debug("Agent mark %s for %s failed: %s", slug, vid, e)
         return None
@@ -192,30 +255,13 @@ class VendorMarks:
             self._fetching.add(vid)
 
         def run():
-            mask = self._load(vid, allow_network=True)
-            if mask is not None:
+            # Fetched once into app_icons' cache; get() renders each size from it.
+            if self._load(vid, MARK_BOX, allow_network=True) is not None:
                 with self._lock:
-                    self._masks[vid] = mask
+                    for key in [k for k in self._masks if k[0] == vid]:
+                        del self._masks[key]
                     self.version += 1
         threading.Thread(target=run, name=f"agent-mark-{vid}", daemon=True).start()
-
-
-_STATE_ICONS = {}
-
-
-def _state_icon(state):
-    """The ICON x ICON mask for a state (services/agents/icons.py), or None."""
-    from polyhost.services.agents import icons
-    if not _STATE_ICONS:
-        # The check mark and '!' read best scaled from 19 px; '?' and the moon
-        # are drawn at 16 px (compared on full cards, 2026-11-11).
-        _STATE_ICONS.update({k: icons.scaled(v, ICON) for k, v in {
-            AgentState.WAITING: icons.waiting(), AgentState.DONE: icons.done()}.items()})
-        _STATE_ICONS[AgentState.STALE] = icons.stale_16()
-        _STATE_ICONS[AgentState.IDLE] = icons.idle_16()
-        # Drawn at 16 px: scaled from 19 px its ring was 1 px wide.
-        _STATE_ICONS[AgentState.WORKING] = icons.working_16()
-    return _STATE_ICONS.get(state)
 
 
 def _paste(canvas, mask, x, y):
@@ -225,28 +271,81 @@ def _paste(canvas, mask, x, y):
     canvas[y:y + h, x:x + w] |= mask[:h, :w]
 
 
-def render_card(vendor_id: str, state: AgentState, headline: str, marks: VendorMarks | None = None):
-    """A (40, 72) bool array for one agent card."""
+def _text_mark(text: str):
+    """The vendor's short name as a mark, while its logo is not fetched yet."""
     import numpy as np
     from PIL import Image
     img = Image.new("1", (PANEL_W, PANEL_H), 0)
+    _draw(img).text((0, 0), text, font=_font(10), fill=1)
+    return _crop(np.array(img, dtype=bool))
+
+
+@dataclass
+class CardLayout:
+    """What an agent card shows: the mark (or None) and the pages of text."""
+    mark: object
+    pages: list
+
+    @property
+    def page_count(self) -> int:
+        return len(self.pages)
+
+
+def card_layout(vendor_id: str, headline: str, marks: VendorMarks | None = None) -> CardLayout:
+    """The mark size and pages for one agent. The largest mark in MARK_SIZES that
+    leaves room beside it for the title's first word; the smallest when none does."""
+    tokens = _tokens(headline)
+    first = tokens[0][0] if tokens else ""
+    mark = None
+    for box in MARK_SIZES:
+        mark = marks.get(vendor_id, box) if marks is not None else None
+        if mark is None:
+            mark = _text_mark(vendor(vendor_id).short[:3])
+        if (mark is None or _ink_width(first) <= TEXT_W + 1 - (mark.shape[1] + MARK_GAP)
+                or mark.shape[1] > WORDMARK_RATIO * mark.shape[0]):
+            # A wordmark (aider, opencode, the short-name text) is not scaled: it
+            # stops reading. The first word then starts below it.
+            break
+    return CardLayout(mark, paginate(headline, mark))
+
+
+def render_page(layout: CardLayout, page: int = 0):
+    """A (40, 72) bool array: one page of an agent card. The text block (and the
+    mark, on page 1) is centred vertically when it is shorter than the panel."""
+    import numpy as np
+    from PIL import Image
+    lines = layout.pages[page % layout.page_count] if layout.pages else []
+    mark = layout.mark if page % max(1, layout.page_count) == 0 else None
+    beside = _beside(mark)
+    cap = _measure("H")[1]
+    text_h = (len(lines) - 1) * LINE_PITCH + (_measure("Hg")[3] - cap) if lines else 0
+    block = max(text_h, mark.shape[0] if mark is not None else 0)
+    top = max(0, (PANEL_H - block) // 2)
+    img = Image.new("1", (PANEL_W, PANEL_H), 0)
     draw = _draw(img)
-    mask = marks.get(vendor_id) if marks is not None else None
-    if mask is None:
-        draw.text((6, 1), vendor(vendor_id).short[:3], font=_font(10), fill=1)
-    lines = wrap_text(headline)
-    y = TEXT_TOP if len(lines) > 1 else TEXT_TOP + LINE_PITCH // 2
+    # A title that fits beside the mark is centred on the mark, not on its top.
+    shift = (block - text_h) // 2 if mark is not None and len(lines) <= beside else 0
     for k, line in enumerate(lines):
-        _text_centred(draw, line, y + k * LINE_PITCH, FONT_SIZE)
+        if not line:
+            continue
+        box = _measure(line)
+        if k < beside:
+            left = mark.shape[1] + MARK_GAP
+            x = left - box[0]
+        else:
+            x = (PANEL_W - (box[2] - box[0])) // 2 - box[0]
+        draw.text((x, top + shift + k * LINE_PITCH - cap), line, font=_font(FONT_SIZE), fill=1)
     canvas = np.array(img, dtype=bool)
-    if mask is not None:
-        mask = np.asarray(mask, dtype=bool)
-        # Bottom-aligned with the state icon, whatever the mark's height.
-        _paste(canvas, mask, 6, max(0, MARK_SHOWN - mask.shape[0]))
-    icon = _state_icon(state)
-    if icon is not None:
-        _paste(canvas, icon, PANEL_W - icon.shape[1] - 4, 0)
+    if mark is not None:
+        rows = beside * LINE_PITCH - 1
+        _paste(canvas, np.asarray(mark, dtype=bool), 0,
+               top + max(0, (min(rows, block) - mark.shape[0]) // 2))
     return canvas
+
+
+def render_card(vendor_id: str, headline: str, marks: VendorMarks | None = None, page: int = 0):
+    """A (40, 72) bool array for one page of one agent card."""
+    return render_page(card_layout(vendor_id, headline, marks), page)
 
 
 MIC_SCALE = 1.7
