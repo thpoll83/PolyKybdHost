@@ -5,6 +5,7 @@ The command line program is a fake ``run``; nothing starts a real editor.
 """
 import io
 import json
+import re
 import shutil
 import tempfile
 import unittest
@@ -184,6 +185,21 @@ class TestVsCode(CliFixture):
             self.assertIn("extension.vsixmanifest", names)
             shipped, source = json.loads(pkg), json.loads((REPO / folder / "package.json").read_text())
             self.assertEqual((shipped["name"], shipped["version"]), (source["name"], source["version"]))
+
+    def test_the_shipped_vsix_has_the_current_readme(self):
+        # vsce packs README.md as extension/readme.md: a README change without
+        # a rebuild made built-plugins.yml fail (PR #962). The compiled
+        # out/*.js are compared only by that CI job, which has Node and tsc.
+        for vsix, folder in ((ep.VSCODE_SOURCE, "vscode-extension"),
+                             (ep.VSCODE_REMOTE_SOURCE, "vscode-extension/remote")):
+            with zipfile.ZipFile(vsix) as zf:
+                readme = zf.read("extension/readme.md").decode("utf-8")
+            source = (REPO / folder / "README.md").read_text(encoding="utf-8")
+            # vsce rewrites a relative link target to a github.com URL.
+            def text(md):
+                return re.sub(r"\]\([^)]*\)", "]()", md)
+            self.assertEqual(text(readme), text(source),
+                             f"{vsix.name} is older than {folder}/README.md: run build.sh")
 
 
 class TestJupyterLab(CliFixture):
