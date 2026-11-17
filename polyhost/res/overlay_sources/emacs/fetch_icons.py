@@ -57,7 +57,6 @@ FLUENT = {
     "dabbrev": "ms:auto_fix_high",
     "wordcount": "Text Word Count",
     "cyclespace": "ms:space_bar",
-    "indentation": "ms:format_indent_increase",
     "tabstop": "ms:keyboard_tab",
     "windowline": "ms:vertical_align_top",
     "menubar_text": "ms:menu_open",
@@ -200,6 +199,21 @@ def _glyph(d, name, top_png=None):  # noqa: C901 - one branch per glyph, on purp
         _arrow(d, 20, 18, 20, 0)
     elif name == "down":
         _arrow(d, 20, 0, 20, 18)
+    elif name in ("dragup", "dragdown"):
+        # Move the text itself (Org M-up / M-S-up): a filled row with the
+        # arrow beside it. A bare arrow moves the cursor.
+        _bar(d, 4, 6, 24, 13)
+        if name == "dragup":
+            _arrow(d, 32, 18, 32, 0)
+        else:
+            _arrow(d, 32, 0, 32, 18)
+    elif name == "firstchar":
+        # back-to-indentation: dots for the indent, a bar at the first
+        # character and an arrow to it.
+        for x in (2, 6):
+            _bar(d, x, cy, x + 2, cy + 2)
+        _bar(d, 10, 1, 13, 18)
+        _arrow(d, 37, cy, 15, cy)
     elif name == "barleft":
         _bar(d, 5, 1, 8, 18)
         _arrow(d, 35, cy, 10, cy)
@@ -338,6 +352,8 @@ COMPOSITES = {
     "isearch_fwd": ("search", ""), "isearch_back": ("searchback", ""),
     "re_search_fwd": ("search", "REGX"), "re_search_back": ("searchback", "REGX"),
     "re_replace": ("png:queryreplace", "REGX"),
+    "indentation": ("firstchar", "INDT"),
+    "newline_comment": ("png:newline_indent", "CMNT"),
     # misc
     "universal": ("text:×4", "ARG"),
     "complete": ("png:dabbrev", "SYM"), "dabbrev_list": ("png:dabbrev", "LIST"),
@@ -350,8 +366,10 @@ COMPOSITES = {
     "org_heading": ("plus", "HEAD"), "org_heading_after": ("plusafter", "HEAD"),
     "org_todo_new": ("plus", "TODO"), "org_todo_after": ("plusafter", "TODO"),
     "org_promote_tree": ("png:promote", "TREE"), "org_demote_tree": ("png:demote", "TREE"),
-    "org_tree_up": ("up", "TREE"), "org_tree_down": ("down", "TREE"),
-    "org_line_up": ("up", "LINE"), "org_line_down": ("down", "LINE"),
+    # Org moves the subtree or line itself: the drag glyph, not the cursor
+    # arrows of line_next / dired_tree_up.
+    "org_tree_up": ("dragup", "TREE"), "org_tree_down": ("dragdown", "TREE"),
+    "org_line_up": ("dragup", "LINE"), "org_line_down": ("dragdown", "LINE"),
     "org_todo_prev": ("left", "TODO"), "org_todo_next": ("right", "TODO"),
     "org_prio_up": ("up", "PRIO"), "org_prio_down": ("down", "PRIO"),
     "org_set_prev": ("left", "SET"), "org_set_next": ("right", "SET"),
@@ -364,6 +382,7 @@ COMPOSITES = {
     "dired_tree_up": ("up", "TREE"), "dired_tree_down": ("down", "TREE"),
     "dired_marked_prev": ("up", "MARK"), "dired_marked_next": ("down", "MARK"),
     "dired_copyname": ("png:_copy", "NAME"),
+    "dired_grep_marked": ("png:grep", "MARK"), "dired_replace_marked": ("png:queryreplace", "MARK"),
     "dired_flag_autosave": ("png:_flag", "AUTO"), "dired_flag_backup": ("png:_flag", "BAK"),
     "dired_hardlink": ("png:_link", "HARD"), "dired_symlink": ("png:_link", "SYM"),
     "dired_relsymlink": ("png:_link", "REL"),
