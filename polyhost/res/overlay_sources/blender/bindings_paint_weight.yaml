@@ -26,17 +26,17 @@ bindings:
 - key: '1'
   mods: []
   label: Face mask
-  icon: sel_face.png
+  icon: face_mask.png
   source: 'Weight Paint: wm.context_toggle(data_path=weight_paint_object.data.use_paint_mask)'
 - key: '2'
   mods: []
   label: Vertex mask
-  icon: sel_vert.png
+  icon: gp_point_mask.png
   source: 'Weight Paint: wm.context_toggle(data_path=weight_paint_object.data.use_paint_mask_vertex)'
 - key: '3'
   mods: []
   label: Bone selection
-  icon: bbone.png
+  icon: bone_select_mask.png
   source: 'Weight Paint: wm.context_toggle(data_path=weight_paint_object.data.use_paint_bone_selection)'
 - key: B
   mods: []
@@ -182,7 +182,7 @@ bindings:
 - key: W
   mods: []
   label: Select tool
-  icon: select_box.png
+  icon: select_tool.png
   source: '3D View: wm.tool_set_by_id(cycle=True,name=builtin.select_box)'
 - key: Z
   mods: []
@@ -223,7 +223,7 @@ bindings:
   mods:
   - ALT
   label: Fallback tool pie
-  icon: tools.png
+  icon: tool_pie.png
   source: 'Window: wm.toolbar_fallback_pie'
 - key: Z
   mods:
@@ -373,7 +373,7 @@ bindings:
   mods:
   - SHIFT
   label: Sample weight
-  icon: eyedropper.png
+  icon: sample_weight.png
   source: 'Weight Paint: paint.weight_sample'
 - key: Z
   mods:
@@ -437,7 +437,7 @@ bindings:
   mods:
   - CTRL
   label: Frame all (quad)
-  icon: frame_all.png
+  icon: frame_all_quad.png
   source: '3D View: view3d.view_all(center=False,use_all_regions=True)'
 - key: KC_LEFT
   mods:
@@ -509,7 +509,7 @@ bindings:
   mods:
   - CTRL
   label: Set weight
-  icon: weight.png
+  icon: weight_set.png
   source: 'Weight Paint: paint.weight_set'
 - key: Z
   mods:
@@ -610,7 +610,7 @@ bindings:
   - CTRL
   - SHIFT
   label: Sample group
-  icon: vgroup.png
+  icon: sample_group.png
   source: 'Weight Paint: paint.weight_sample_group'
 - key: Z
   mods:
@@ -684,7 +684,7 @@ bindings:
   mods:
   - GUI
   label: Frame all (quad)
-  icon: frame_all.png
+  icon: frame_all_quad.png
   source: '3D View: view3d.view_all(center=False,use_all_regions=True)'
   only:
   - macos
@@ -766,7 +766,7 @@ bindings:
   mods:
   - GUI
   label: Set weight
-  icon: weight.png
+  icon: weight_set.png
   source: 'Weight Paint: paint.weight_set'
   only:
   - macos
@@ -870,7 +870,7 @@ bindings:
   - SHIFT
   - GUI
   label: Sample group
-  icon: vgroup.png
+  icon: sample_group.png
   source: 'Weight Paint: paint.weight_sample_group'
   only:
   - macos
