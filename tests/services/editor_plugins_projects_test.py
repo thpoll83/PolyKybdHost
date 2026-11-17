@@ -261,6 +261,42 @@ class TestCraftedStamps(ProjectFixture):
         self.assertTrue((plugin / "plugin" / "polykybd.vim").exists())
 
 
+    def test_an_explicit_vim_install_moves_only_the_manual_folder_aside(self):
+        home = self.home
+        x = home / ".vim" / "pack" / "polykybd" / "x"       # ../../x from the copy
+        x.parent.mkdir(parents=True)
+        x.write_text("keep")
+        victim = home / ".vimrc"
+        victim.write_text("keep")
+        kw = dict(home=home, env={}, which=lambda n: "/usr/bin/vim" if n == "vim" else None,
+                  system="Linux")
+        ep.install([ep.VIM], **kw)
+        plugin = home / ".vim/pack/polykybd/start/polykybd"
+        stamp = json.loads((plugin / ep.STAMP_NAME).read_text())
+        stamp["files"].update({"../../x": "0" * 64, str(victim): "0" * 64})
+        crafted = json.dumps(stamp)
+        (plugin / ep.STAMP_NAME).write_text(crafted)
+        pack = home / ".vim" / "pack" / "polykybd"
+
+        def outside():
+            return {p: p.read_bytes() for p in home.rglob("*")
+                    if p.is_file() and pack not in p.parents}
+        before = outside()
+        st = ep.status([ep.VIM], **kw)[0]
+        self.assertEqual((st.state, st.detail), (ep.STATE_MANUAL, str(plugin)))
+        r = ep.install([ep.VIM], **kw)
+        self.assertTrue(r[0].ok and r[0].changed, r)
+        # The whole folder was moved beside start/, with its crafted stamp...
+        self.assertEqual(r[0].backup.parent, pack)
+        self.assertEqual((r[0].backup / ep.STAMP_NAME).read_text(), crafted)
+        # ...no stamp path was followed, and the new copy is this app's.
+        self.assertEqual(x.read_text(), "keep")
+        self.assertEqual(outside(), before)
+        self.assertEqual(sorted(p.name for p in pack.iterdir()),
+                         sorted(["start", "x", r[0].backup.name]))
+        self.assertEqual(ep.status([ep.VIM], **kw)[0].state, ep.STATE_INSTALLED)
+
+
 class TestStateNotSaved(ProjectFixture):
 
     def test_a_project_that_cannot_be_remembered_is_reported(self):
@@ -273,6 +309,19 @@ class TestStateNotSaved(ProjectFixture):
         self.assertFalse(r[0].ok)
         self.assertTrue(r[0].changed)
         self.assertIn("could not be written", r[0].message)
+
+    def test_an_installed_plugin_whose_folder_cannot_be_remembered(self):
+        game = self.project(ep.GODOT, "game")
+        r = ep.install([ep.GODOT], projects={ep.GODOT: [str(game)]}, **self.kw())
+        self.assertTrue(r[0].ok and r[0].changed, r)
+        blocker = self.tmp / "blocker"
+        blocker.write_text("")
+        kw = self.kw()
+        kw["state_file"] = blocker / "state.json"
+        r = ep.install([ep.GODOT], projects={ep.GODOT: [str(game)]}, **kw)
+        self.assertEqual((r[0].ok, r[0].changed), (False, False), r)
+        self.assertNotIn("The change was made", r[0].message)
+        self.assertIn("does not remember this folder", r[0].message)
 
 
 class TestUnity(ProjectFixture):

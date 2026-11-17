@@ -227,6 +227,9 @@ MSG_CLI_FAILED = M_("{command} failed: {error}")
 MSG_CLI_NOT_OURS = M_("{editor} has the extension {extension} from another source. It is left alone.")
 MSG_STATE_NOT_SAVED = M_("The change was made, but {path} could not be written, so this app "
                          "does not remember it.")
+# The plugin was already there (nothing changed), only the folder is not remembered.
+MSG_PROJECT_NOT_SAVED = M_("The plugin is installed, but {path} could not be written, so this "
+                           "app does not remember this folder.")
 MSG_RUN_COMMAND = M_("Run this command in the Python environment that runs JupyterLab: {command}")
 
 
@@ -1535,7 +1538,8 @@ def _change_multi(editor, install, source, home=None, env=None, system=None, sta
         if install:
             r = _install_target(editor, folder, st, detail, shipped)
             if editor in PROJECT_EDITORS and r.ok and not state.add_project(editor, label):
-                r = Result(editor, False, r.changed, MSG_STATE_NOT_SAVED.format(path=state.path), None)
+                msg = MSG_STATE_NOT_SAVED if r.changed else MSG_PROJECT_NOT_SAVED
+                r = Result(editor, False, r.changed, msg.format(path=state.path), None)
             results.append(r)
         elif st in (STATE_INSTALLED, STATE_OUTDATED, STATE_MODIFIED):
             r = _remove_target(editor, folder, st)

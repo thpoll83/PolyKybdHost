@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-17 11:45+0000\n"
+"POT-Creation-Date: 2026-11-17 11:49+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -5347,7 +5347,12 @@ msgstr "{editor} ma rozszerzenie {extension} z innego źródła. Pozostaje bez z
 msgid "The change was made, but {path} could not be written, so this app does not remember it."
 msgstr "Zmiana została wprowadzona, ale nie udało się zapisać {path}, więc ta aplikacja jej nie zapamięta."
 
-#: polyhost/services/editor_plugins.py:230
+#: polyhost/services/editor_plugins.py:231
+#, python-brace-format
+msgid "The plugin is installed, but {path} could not be written, so this app does not remember this folder."
+msgstr "Wtyczka jest zainstalowana, ale nie udało się zapisać {path}, więc ta aplikacja nie zapamięta tego folderu."
+
+#: polyhost/services/editor_plugins.py:233
 #, python-brace-format
 msgid "Run this command in the Python environment that runs JupyterLab: {command}"
 msgstr "Uruchom to polecenie w środowisku Pythona, które uruchamia JupyterLab: {command}"

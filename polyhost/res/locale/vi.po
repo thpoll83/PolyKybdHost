@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-17 11:45+0000\n"
+"POT-Creation-Date: 2026-11-17 11:49+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: vi\n"
@@ -5299,7 +5299,12 @@ msgstr "{editor} có tiện ích mở rộng {extension} từ nguồn khác. Nó
 msgid "The change was made, but {path} could not be written, so this app does not remember it."
 msgstr "Thay đổi đã được thực hiện, nhưng không ghi được {path}, nên ứng dụng này không ghi nhớ nó."
 
-#: polyhost/services/editor_plugins.py:230
+#: polyhost/services/editor_plugins.py:231
+#, python-brace-format
+msgid "The plugin is installed, but {path} could not be written, so this app does not remember this folder."
+msgstr "Plugin đã được cài, nhưng không ghi được {path}, nên ứng dụng này không ghi nhớ thư mục này."
+
+#: polyhost/services/editor_plugins.py:233
 #, python-brace-format
 msgid "Run this command in the Python environment that runs JupyterLab: {command}"
 msgstr "Hãy chạy lệnh này trong môi trường Python chạy JupyterLab: {command}"

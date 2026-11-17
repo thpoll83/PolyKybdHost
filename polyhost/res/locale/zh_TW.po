@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-17 11:45+0000\n"
+"POT-Creation-Date: 2026-11-17 11:49+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hant_TW\n"
@@ -5299,7 +5299,12 @@ msgstr "{editor} 已有來自其他來源的擴充功能 {extension}。不會變
 msgid "The change was made, but {path} could not be written, so this app does not remember it."
 msgstr "變更已完成，但無法寫入 {path}，因此本應用程式不會記住它。"
 
-#: polyhost/services/editor_plugins.py:230
+#: polyhost/services/editor_plugins.py:231
+#, python-brace-format
+msgid "The plugin is installed, but {path} could not be written, so this app does not remember this folder."
+msgstr "外掛程式已安裝，但無法寫入 {path}，因此本應用程式不會記住此資料夾。"
+
+#: polyhost/services/editor_plugins.py:233
 #, python-brace-format
 msgid "Run this command in the Python environment that runs JupyterLab: {command}"
 msgstr "請在執行 JupyterLab 的 Python 環境中執行此命令：{command}"
