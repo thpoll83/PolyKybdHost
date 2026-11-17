@@ -216,7 +216,9 @@ still cloud sessions.
   relay for the other computers and the cloud environment.
 - Delete Channel (`polyctl agents cloud disconnect`) deletes the channel on the
   relay and the local file, and removes the cloud sessions from the keys on every
-  computer that uses it. Remove the environment variable in claude.ai too: the
+  computer that uses it: the relay closes their connections with code 4001 (a new
+  connection gets 404), and they remove the cloud sessions and stop reconnecting.
+  The dialog says when the relay did not confirm the delete. Remove the environment variable in claude.ai too: the
   hooks there then fail without a message.
 - A cloud session deleted in claude.ai sends no last report, so its key stays.
   Remove it with tray > AI Agents > Remove Agent (see *Removing agents*). For a
@@ -321,7 +323,8 @@ connect.
 ## Check that it works
 
 `polyctl agents hooks check` shows where the hooks report to and whether that host
-answers (the same connection and key a hook uses, without sending a report),
+answers within 4 s (the same connection and key a hook uses, without sending a
+report; hooks installed with `--host` are checked at that host),
 whether each agent's hooks are installed, and the last three runs of each from the
 hook log. `polyctl agents hooks check claude-code` shows one agent. It exits 1 when
 the host does not answer or a hook file is broken.

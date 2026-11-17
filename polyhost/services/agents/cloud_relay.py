@@ -67,6 +67,7 @@ PONG_TIMEOUT_S = 30
 RECONNECT_MIN_S = 5
 RECONNECT_MAX_S = 300
 HTTP_TIMEOUT_S = 15
+CLOSE_CHANNEL_DELETED = 4001   # agent-relay/src/index.js: ws.close(4001, "channel deleted")
 MAX_MESSAGE_BYTES = 1 << 20     # a snapshot of 64 sessions is about 25 KB
 
 log = logging.getLogger(__name__)
@@ -74,6 +75,11 @@ log = logging.getLogger(__name__)
 
 class RelayError(Exception):
     pass
+
+
+class ChannelGone(RelayError):
+    """The relay deleted the channel (another computer's Delete Channel): close
+    code 4001 on the open connection, 404 on a new one."""
 
 
 # ---- the channel and its file ---------------------------------------------------
@@ -464,6 +470,8 @@ class WebSocket:
             raise RelayError(f"the relay cannot be reached: {e}") from e
         if status != 101:
             sock.close()
+            if status == 404:
+                raise ChannelGone("the channel was deleted on the relay")
             raise RelayError(f"the relay refused the connection ({status})")
         ws = cls(sock)
         ws._buf = rest
@@ -539,6 +547,9 @@ class WebSocket:
             while True:
                 fin, op, payload = self._frame()
                 if op == 0x8:
+                    code = int.from_bytes(payload[:2], "big") if len(payload) >= 2 else 0
+                    if code == CLOSE_CHANNEL_DELETED:
+                        raise ChannelGone("the channel was deleted on the relay")
                     raise ConnectionError("the relay closed the connection")
                 if op == 0x9:
                     self._send(0xA, payload)
@@ -639,6 +650,14 @@ class RelayClient:
             started = time.monotonic()
             try:
                 self._session()
+            except ChannelGone as e:
+                # Deleted by another computer on the channel: its sessions leave the
+                # keys here too, and retrying would only cost relay requests. The
+                # file stays; the user leaves the channel or joins another.
+                self.last_error = str(e)
+                self.sink.forget_all()
+                self._log.info("Cloud relay: %s; not reconnecting", e)
+                break
             except (RelayError, ConnectionError, OSError, ValueError) as e:
                 self.last_error = str(e)
             if self._stop.is_set():
@@ -652,7 +671,7 @@ class RelayClient:
             if self._stop.wait(delay):
                 break
             delay = min(RECONNECT_MAX_S, delay * 2)
-        self.state = "stopped"
+        self.state = "deleted" if self.last_error and not self._stop.is_set() else "stopped"
 
     def _session(self) -> None:
         ch = self.channel

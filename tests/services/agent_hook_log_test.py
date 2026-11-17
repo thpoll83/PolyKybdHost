@@ -54,6 +54,31 @@ class HookLogTest(unittest.TestCase):
         self.assertEqual(os.path.basename(protocol.agent_hook_log_path()), hook_log.FILE_NAME)
 
 
+class PinnedTargetTest(unittest.TestCase):
+    def test_every_vendor_reads_back_the_host_it_was_installed_with(self):
+        home = tempfile.mkdtemp()
+        plain = tempfile.mkdtemp()
+        for vendor in hook_install.VENDORS:
+            hook_install.apply(hook_install.plan(
+                vendor, home=home, extra_args=["--host", "desk top",
+                                               "--authkey-file", "/k/a b.key"]))
+            hook_install.apply(hook_install.plan(vendor, home=plain))
+            self.assertEqual(hook_install.pinned_target(vendor, home),
+                             {"host": "desk top", "authkey_file": "/k/a b.key"}, vendor)
+            self.assertIsNone(hook_install.pinned_target(vendor, plain), vendor)
+        self.assertIsNone(hook_install.pinned_target("codex", tempfile.mkdtemp()))
+
+
+class EventNameTest(unittest.TestCase):
+    def test_nested_and_given_event_names(self):
+        from polyhost.services.agents.hooks import event_name
+        self.assertEqual(event_name({"properties": {"hook_event_name": "Stop"}}), "Stop")
+        self.assertEqual(event_name({"type": "session.idle",
+                                     "properties": {"type": "x"}}), "session.idle")
+        self.assertEqual(event_name({"hook_event_name": "Stop"}, "agentStop"), "agentStop")
+        self.assertEqual(event_name("not a dict"), "")
+
+
 class HooksCheckTest(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.TemporaryDirectory()
@@ -124,6 +149,52 @@ class HooksCheckTest(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("desk:50163 (the forwarder running on this computer): NOT REACHED", out)
         self.assertIn("codex: hooks not-installed", out)   # a named vendor is always shown
+
+    def test_a_host_that_never_answers_is_reported_in_time(self):
+        import threading
+        import time
+        from polyhost.cli import polyctl
+        hang = threading.Event()
+        self.addCleanup(hang.set)
+        with self.statuses(**{"claude-code": hook_install.STATE_INSTALLED}), \
+                mock.patch.object(polyctl, "_agent_hook_target", lambda args: None), \
+                mock.patch.object(polyctl, "connect", lambda: hang.wait(30)), \
+                mock.patch.object(polyctl, "HOOK_PROBE_DEADLINE_S", 0.2):
+            start = time.monotonic()
+            code, out = self.run_check()
+        self.assertLess(time.monotonic() - start, 2.0)
+        self.assertEqual(code, 1)
+        self.assertIn("NOT REACHED (no answer within 0.2 s)", out)
+
+    def test_hooks_installed_with_host_are_probed_there(self):
+        from polyhost.cli import polyctl
+        from polyhost.server import window_report_client
+        seen = []
+
+        def connect_report(host, port=None, authkey=None, timeout=3.0):
+            seen.append(host)
+            return mock.Mock()
+        pins = {"codex": {"host": "keyboard.example", "authkey_file": None}}
+        with self.statuses(**{"claude-code": hook_install.STATE_INSTALLED,
+                              "codex": hook_install.STATE_INSTALLED}), \
+                mock.patch.object(hook_install, "pinned_target",
+                                  lambda vendor, home=None: pins.get(vendor)), \
+                mock.patch.object(polyctl, "_agent_hook_target", lambda args: None), \
+                mock.patch.object(polyctl, "connect", mock.Mock(side_effect=FileNotFoundError())), \
+                mock.patch.object(window_report_client, "connect", connect_report):
+            code, out = self.run_check()
+        self.assertEqual(seen, ["keyboard.example"])
+        self.assertIn("Reports to keyboard.example (--host in its hooks): answers", out)
+        self.assertEqual(code, 1)            # claude-code reports here, where no host runs
+        # Only the pinned agent: this computer's host does not count.
+        with self.statuses(**{"codex": hook_install.STATE_INSTALLED}), \
+                mock.patch.object(hook_install, "pinned_target",
+                                  lambda vendor, home=None: pins.get(vendor)), \
+                mock.patch.object(polyctl, "_agent_hook_target", lambda args: None), \
+                mock.patch.object(polyctl, "connect", mock.Mock(side_effect=FileNotFoundError())), \
+                mock.patch.object(window_report_client, "connect", connect_report):
+            code, _out = self.run_check(vendor="codex")
+        self.assertEqual(code, 0)
 
     def test_install_without_a_vendor_asks_for_one(self):
         from polyhost.cli import polyctl

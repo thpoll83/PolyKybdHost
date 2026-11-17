@@ -780,56 +780,96 @@ def _cmd_agents_cloud(client, args):
     return 0
 
 
+# `agents hooks check` gives a probe this long: a host that accepts the
+# connection and never answers would otherwise hold the command (the hook itself
+# is bounded by AGENT_HOOK_DEADLINE_S).
+HOOK_PROBE_DEADLINE_S = 4.0
+
+
 def _probe_hook_target(target, source="") -> tuple[str, bool, str]:
     """(where, reachable, detail) for the host a hook reports to: the same connect
-    and authentication a hook does, without sending a report."""
-    if not target:
+    and authentication a hook does, without sending a report. Bounded by
+    HOOK_PROBE_DEADLINE_S."""
+    import threading
+    if target:
+        where = f"{target['host']}:{target['port']}" if target.get("port") else str(target["host"])
+        where += f" ({source})" if source else ""
+    else:
+        where = "this computer's host"
+    answer = {}
+
+    def probe():
         try:
-            connect().close()
+            if not target:
+                connect().close()
+            else:
+                from polyhost.server.window_report_client import connect as connect_report
+                authkey = None
+                if target.get("authkey_file"):
+                    with open(target["authkey_file"], "rb") as fh:
+                        authkey = fh.read().strip()
+                connect_report(target["host"], port=target.get("port"), authkey=authkey,
+                               timeout=2.0).close()
+            answer["ok"] = True
         except (FileNotFoundError, ConnectionRefusedError) as e:
-            return "this computer's host", False, f"{type(e).__name__}: PolyHost is not running here"
+            answer["detail"] = (f"{type(e).__name__}: PolyHost is not running here"
+                                if not target else f"{type(e).__name__}: {e}")
         except Exception as e:  # noqa: BLE001 - every failure is the answer
-            return "this computer's host", False, f"{type(e).__name__}: {e}"
-        return "this computer's host", True, ""
-    from polyhost.server.window_report_client import connect as connect_report
-    where = f"{target['host']}:{target['port']}" if target.get("port") else str(target["host"])
-    where += f" ({source})" if source else ""
-    try:
-        authkey = None
-        if target.get("authkey_file"):
-            with open(target["authkey_file"], "rb") as fh:
-                authkey = fh.read().strip()
-        connect_report(target["host"], port=target.get("port"), authkey=authkey,
-                       timeout=2.0).close()
-    except Exception as e:  # noqa: BLE001 - every failure is the answer
-        return where, False, f"{type(e).__name__}: {e}"
-    return where, True, ""
+            answer["detail"] = f"{type(e).__name__}: {e}"
+    worker = threading.Thread(target=probe, name="hooks-check", daemon=True)
+    worker.start()
+    worker.join(HOOK_PROBE_DEADLINE_S)
+    if worker.is_alive():
+        return where, False, f"no answer within {HOOK_PROBE_DEADLINE_S:g} s"
+    return where, bool(answer.get("ok")), answer.get("detail", "")
 
 
 def _cmd_agents_hooks_check(args) -> int:
     """`polyctl agents hooks check [vendor]`: is each agent's hook installed, does
     the host it reports to answer, and the last lines of the hook log. 0 when the
-    host answers and no installed hook is broken."""
+    hosts answer and no installed hook is broken. Hooks installed with `--host`
+    are probed at that host; the others at `--host` given here, the forwarder's
+    target, or this computer's host."""
     from polyhost.services.agents import hook_install, hook_log
     source = "--host" if args.host else "the forwarder running on this computer"
-    where, reachable, detail = _probe_hook_target(_agent_hook_target(args), source)
-    print(f"Hooks report to {where}: " + ("answers" if reachable else f"NOT REACHED ({detail})"))
-    failed = not reachable
+    default = _probe_hook_target(_agent_hook_target(args), source)
+    print(f"Hooks report to {default[0]}: "
+          + ("answers" if default[1] else f"NOT REACHED ({default[2]})"))
+    probes = {None: default}
+    failed = False
+    used_default = False
+    listed = 0
     vendors = [args.vendor] if args.vendor else list(hook_install.VENDORS)
     for vendor in vendors:
         status = hook_install.status(vendor)
         lines = hook_log.tail(3, vendor)
         if not args.vendor and status.state == hook_install.STATE_NOT_INSTALLED and not lines:
             continue    # an agent this computer does not use
+        listed += 1
         failed |= status.state in (hook_install.STATE_ERROR, hook_install.STATE_CONFLICT)
         print(f"\n{vendor}: hooks {status.state} ({status.path})"
               + (f": {status.detail}" if status.detail else ""))
+        pinned = None if args.host else hook_install.pinned_target(vendor)
+        key = (pinned["host"], pinned.get("authkey_file")) if pinned else None
+        if key not in probes:
+            probes[key] = _probe_hook_target(pinned, "--host in its hooks")
+        where, reachable, detail = probes[key]
+        if pinned:
+            print(f"  Reports to {where}: " + ("answers" if reachable
+                                               else f"NOT REACHED ({detail})"))
+            failed |= not reachable
+        else:
+            used_default = True
         if status.state == hook_install.STATE_OUTDATED:
             print("  Reinstall: polyctl agents hooks install " + vendor)
         print("  Last hook runs:" if lines else "  No hook run logged yet.")
         for line in lines:
             print("    " + line)
     print(f"\nHook log: {hook_log.default_path()}")
+    # The default target counts when an agent reports there, or when no agent is
+    # listed (nothing installed yet: that host must still answer).
+    if used_default or not listed:
+        failed |= not default[1]
     return 1 if failed else 0
 
 

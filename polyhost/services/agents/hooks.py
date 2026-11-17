@@ -92,9 +92,20 @@ def _first(payload: dict, fields) -> str:
     return ""
 
 
+def _flatten(payload: dict) -> dict:
+    """OpenCode plugin events carry their fields one level down, in "properties";
+    a top-level field takes priority."""
+    properties = payload.get("properties")
+    if isinstance(properties, dict):
+        return {**properties, **{k: v for k, v in payload.items() if k != "properties"}}
+    return payload
+
+
 def event_name(payload: dict, event: str = "") -> str:
     """The event as the agent named it (for the hook log), or ""."""
-    return str(event or _first(payload, _EVENT_FIELDS) or "")
+    if event or not isinstance(payload, dict):
+        return str(event or "")
+    return str(_first(_flatten(payload), _EVENT_FIELDS) or "")
 
 
 def interpret(payload: dict, event: str = "") -> dict | None:
@@ -107,10 +118,7 @@ def interpret(payload: dict, event: str = "") -> dict | None:
     for one, so such an agent gets one key per folder."""
     if not isinstance(payload, dict):
         return None
-    properties = payload.get("properties")
-    if isinstance(properties, dict):
-        # OpenCode plugin events carry their fields one level down.
-        payload = {**properties, **{k: v for k, v in payload.items() if k != "properties"}}
+    payload = _flatten(payload)
     session = _first(payload, _SESSION_FIELDS)
     if not session:
         cwd = _first(payload, _CWD_FIELDS)

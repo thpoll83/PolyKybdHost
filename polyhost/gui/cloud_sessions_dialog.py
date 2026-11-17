@@ -218,6 +218,8 @@ class CloudSessionsDialog(QDialog):
                               "the AI Agents menu."), "warning")
         elif state == "connected":
             self._set_state(_("Connected to the relay."))
+        elif state == "deleted":
+            self._set_state(_f("Could not connect: {msg}", msg=error), "error")
         elif state == "retrying":
             self._set_state(_f("The relay cannot be reached; trying again: {error}",
                                error=error), "warning")
@@ -315,7 +317,9 @@ class CloudSessionsDialog(QDialog):
 
         def done(ok, msg):
             self._busy = False
-            if not ok:
+            # ok with another answer than "deleted": the file here is gone, but the
+            # relay did not confirm (unreachable, or an error), so say what it said.
+            if not ok or str(msg) not in ("deleted", "no channel"):
                 message_box.warning(self, _("Delete Channel"), str(msg))
             self._refresh()
         self.call_async(self.core.agents_cloud_disconnect, done)

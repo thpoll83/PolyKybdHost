@@ -176,6 +176,34 @@ class CloudSessionsDialogTest(unittest.TestCase):
         self.assertTrue(self.core.left)
         self.assertTrue(self.visible(self.dialog.join_button))
 
+    def test_delete_channel_says_when_the_relay_did_not_confirm(self):
+        from unittest import mock
+        from PyQt5.QtWidgets import QMessageBox
+        from polyhost.gui import cloud_sessions_dialog as mod
+        self.core.configured = True
+        self.run_pending()
+        for answer, warned in (("deleted", False), ("the relay cannot be reached: x", True),
+                               ("relay answered 500", True)):
+            self.core.agents_cloud_disconnect = lambda a=answer: (True, a)
+            with mock.patch.object(mod.message_box, "question", return_value=QMessageBox.Yes), \
+                    mock.patch.object(mod.message_box, "warning") as warning:
+                self.dialog._disconnect()
+                self.run_pending()
+            self.assertEqual(warning.called, warned, answer)
+            if warned:
+                self.assertEqual(warning.call_args[0][2], answer)
+
+    def test_a_channel_deleted_elsewhere_is_shown(self):
+        self.core.configured = True
+        self.core.state = "deleted"
+        status = self.core.agents_cloud_status
+        self.core.agents_cloud_status = lambda: dict(status(), connection={
+            "state": "deleted", "error": "the channel was deleted on the relay"})
+        self.run_pending()
+        self.dialog._refresh()
+        self.run_pending()
+        self.assertIn("the channel was deleted on the relay", self.title())
+
     def test_the_timer_runs_only_while_shown(self):
         self.assertFalse(self.dialog._refresh_timer.isActive())
         self.dialog.show()

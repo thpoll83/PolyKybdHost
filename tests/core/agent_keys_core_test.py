@@ -171,6 +171,21 @@ class AgentKeysCoreTest(unittest.TestCase):
         self.assertEqual(cloud_relay.load_channel(paths["now"])["channel"],
                          cloud_relay.parse_join_code(code)["channel"])
 
+        # The same channel id on another relay is another channel.
+        moved = dict(cloud_relay.parse_join_code(code), url="https://other.example")
+        known.add(moved["channel"])
+        ok, reason = second.agents_cloud_join(cloud_relay.join_code(moved))
+        self.assertFalse(ok)
+        self.assertIn("leave it first", reason)
+
+        # Leaving keeps the connection when the file cannot be removed.
+        with mock.patch.object(cloud_relay, "remove_channel_file",
+                               mock.Mock(side_effect=PermissionError("locked"))):
+            ok, reason = second.agents_cloud_leave()
+        self.assertFalse(ok)
+        self.assertIn("locked", reason)
+        self.assertIsNotNone(second._cloud_relay)
+
     def test_removing_a_cloud_agent_removes_it_on_the_relay(self):
         from polyhost.services.agents import cloud_relay
         deleted = []

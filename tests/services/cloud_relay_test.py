@@ -298,6 +298,12 @@ class WebSocketTest(unittest.TestCase):
             self.ws.recv(1)
 
 
+    def test_close_4001_says_the_channel_was_deleted(self):
+        self.b.sendall(self.frame(0x8, (4001).to_bytes(2, "big") + b"channel deleted"))
+        with self.assertRaises(cr.ChannelGone):
+            self.ws.recv(1)
+
+
 class FakeWs:
     def __init__(self, messages):
         self.messages = list(messages)
@@ -362,6 +368,42 @@ class ClientTest(unittest.TestCase):
             client.stop()
         self.assertGreaterEqual(len(attempts), 2)
         self.assertIn("403", client.status()["error"])
+
+
+    def test_a_deleted_channel_clears_the_cloud_agents_and_stops(self):
+        registry = AgentRegistry()
+        registry.report("claude-code", "c" * 32, "working", machine="cloud")
+        registry.report("claude-code", "local", "working")
+        attempts = []
+
+        def connect(*a):
+            attempts.append(a)
+            raise cr.ChannelGone("the channel was deleted on the relay")
+        client = cr.RelayClient(_channel(), registry, connect=connect)
+        with mock.patch.object(cr, "RECONNECT_MIN_S", 0.01):
+            client.start()
+            deadline = time.monotonic() + 5
+            while client.status()["state"] != "deleted" and time.monotonic() < deadline:
+                time.sleep(0.01)
+            time.sleep(0.05)                        # no further attempt follows
+        self.assertEqual(len(attempts), 1)
+        self.assertEqual(client.status()["state"], "deleted")
+        self.assertIn("deleted", client.status()["error"])
+        self.assertEqual([a.session_id for a in registry.agents()], ["local"])
+        client.stop()
+        self.assertEqual(client.status()["state"], "stopped")
+
+    def test_a_404_handshake_is_a_deleted_channel(self):
+        a, b = socket.socketpair()
+        self.addCleanup(a.close)
+        self.addCleanup(b.close)
+        with mock.patch.object(cr.socket, "create_connection", lambda *x, **k: a), \
+                mock.patch.object(cr, "_proxy_for", lambda host: None), \
+                mock.patch.object(cr, "ssl_context") as ctx, \
+                mock.patch.object(cr.WebSocket, "_read_head", lambda sock: (404, b"")):
+            ctx.return_value.wrap_socket = lambda raw, server_hostname=None: raw
+            with self.assertRaises(cr.ChannelGone):
+                cr.WebSocket.connect("https://relay.example", "/v1/c/x/ws", "t")
 
 
 class KeyPressTest(unittest.TestCase):

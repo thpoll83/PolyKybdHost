@@ -13,11 +13,14 @@ state, the first 8 characters of the session id and the target only.
 
 The file is in the config folder, next to the host's own files: a hook runs in the
 agent's working folder, where the host's relative log names do not point. It is
-moved to `<name>.1` when it passes MAX_BYTES. Writing never raises.
+moved to `<name>.1` when it passes MAX_BYTES, under `<name>.lock`. Writing never
+raises.
 """
 from __future__ import annotations
 
+import contextlib
 import os
+import sys
 import time
 
 FILE_NAME = "agent_hooks.log"
@@ -45,18 +48,55 @@ def format_line(vendor, event, state, session, target, result, ms, now=None) -> 
             f"{_clean(result, 200)} ({int(ms)} ms)")
 
 
+@contextlib.contextmanager
+def _locked(path: str):
+    """Hold `<path>.lock` across processes (hooks run in parallel): two hooks that
+    both see a full log would otherwise both rotate it, and the second would move
+    the first one's new, nearly empty file over `.1`. Without a lock (it cannot be
+    opened or taken) the write goes on unlocked."""
+    try:
+        fh = open(path + ".lock", "a+b")
+    except OSError:
+        yield
+        return
+    with fh:
+        locked = False
+        try:
+            if sys.platform == "win32":
+                import msvcrt
+                fh.seek(0)
+                msvcrt.locking(fh.fileno(), msvcrt.LK_LOCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
+            locked = True
+        except OSError:
+            pass    # not locked: a rare lost rotation beats a lost line
+        try:
+            yield
+        finally:
+            if locked and sys.platform == "win32":
+                try:
+                    fh.seek(0)
+                    msvcrt.locking(fh.fileno(), msvcrt.LK_UNLCK, 1)
+                except OSError:
+                    pass    # closing the file below releases it too
+            # POSIX: the flock ends when the file closes.
+
+
 def write(vendor, event, state, session, target, result, ms, path=None) -> None:
     """Append one line. Never raises: the hook goes on without its log."""
     try:
         path = path or default_path()
-        try:
-            if os.path.getsize(path) > MAX_BYTES:
-                os.replace(path, path + ".1")
-        except OSError:
-            pass    # no file yet, or another hook moved it first
         line = format_line(vendor, event, state, session, target, result, ms)
-        with open(path, "a", encoding="utf-8") as fh:
-            fh.write(line + "\n")
+        with _locked(path):
+            try:
+                if os.path.getsize(path) > MAX_BYTES:
+                    os.replace(path, path + ".1")
+            except OSError:
+                pass    # no file yet
+            with open(path, "a", encoding="utf-8") as fh:
+                fh.write(line + "\n")
     except Exception:  # noqa: BLE001 - see the docstring
         pass
 

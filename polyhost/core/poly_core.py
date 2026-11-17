@@ -2795,14 +2795,18 @@ class PolyCore(Observable):
             return False, str(e)
         with self._cloud_channel_lock:
             current = cloud_relay.load_channel(path)
-            if current is not None and current["channel"] != joined["channel"] and not replace:
+            # The same channel means the same relay too: a code for this channel ID
+            # on another relay replaces the configuration like any other channel.
+            other = current is not None and (current["url"], current["channel"]) != (
+                joined["url"], joined["channel"])
+            if other and not replace:
                 return False, ("this computer has its own cloud channel: leave it first "
                                "(Disconnect This Computer), or replace it")
             try:
                 cloud_relay.join_channel(path, code)
             except (ValueError, cloud_relay.RelayError, OSError) as e:
                 return False, str(e)
-            if current is not None and current["channel"] != joined["channel"]:
+            if other:
                 self._stop_cloud_relay()
                 cloud_relay.RelaySink(self.agents, b"").forget_all()
             self._apply_cloud_relay()
@@ -2821,6 +2825,7 @@ class PolyCore(Observable):
             try:
                 cloud_relay.remove_channel_file(path)
             except OSError as e:
+                self._apply_cloud_relay()     # the file stays: so does the connection
                 return False, f"could not remove {path}: {e}"
             self._apply_cloud_relay()
             cloud_relay.RelaySink(self.agents, b"").forget_all()
