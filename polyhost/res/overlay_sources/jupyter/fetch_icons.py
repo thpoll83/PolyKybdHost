@@ -4,7 +4,8 @@
 Glyphs are Microsoft Fluent UI System Icons (MIT), with Material Symbols
 (Apache-2.0) where Fluent has none (`ms:` entries). The sidebar panel keys are
 numbered glyphs from `../number_badge.py`. The ESC mark is the Jupyter logo from
-Simple Icons (CC0 artwork; nominative use, see `../brand_marks.py`).
+Simple Icons (CC0 artwork; nominative use, see `../brand_marks.py`), redrawn
+as a clean 1-bit 32 px bitmap by `clean_mark` (`jupyter_mark.png`).
 
     pip install cairosvg
     python polyhost/res/overlay_sources/jupyter/fetch_icons.py
@@ -89,6 +90,48 @@ FLUENT = {
 }
 
 
+def clean_mark(src: Path, dest: Path) -> None:
+    """The Jupyter logo as a 1-bit bitmap of 32 x 32 px, the height it gets on
+    the ESC key, stored 8x with hard pixel edges. Scaled straight from the
+    256 px logo, the arc ends left loose pixels and the three moons came out
+    as uneven blobs. So: the right half of each arc is taken from the scaled
+    logo and mirrored (the logo is symmetric), pixels with at most one
+    neighbour are removed, and the moons are drawn as round dots at their
+    places (4, 3 and 5 px)."""
+    from PIL import Image, ImageDraw
+    w = h = 32
+    a = Image.open(src).convert("RGBA").split()[3].resize((w, h), Image.LANCZOS)
+    a = a.point(lambda v: 255 if v >= 96 else 0)
+    m = Image.new("L", (w, h), 0)
+    for y in list(range(3, 10)) + list(range(20, 28)):   # upper arc, lower arc
+        for x in range(w // 2, w):
+            if y <= 3 and x >= 23:                        # the top-right moon
+                continue
+            if a.getpixel((x, y)):
+                m.putpixel((x, y), 255)
+                m.putpixel((w - 1 - x, y), 255)
+
+    def on(img, x, y):
+        return 0 <= x < w and 0 <= y < h and img.getpixel((x, y)) > 0
+
+    for _ in range(2):
+        c = m.copy()
+        for y in range(h):
+            for x in range(w):
+                if on(m, x, y) and sum(on(m, x + dx, y + dy) for dx in (-1, 0, 1)
+                                       for dy in (-1, 0, 1) if dx or dy) <= 1:
+                    c.putpixel((x, y), 0)
+        m = c
+    d = ImageDraw.Draw(m)
+    d.ellipse([24, 0, 27, 3], fill=255)    # top-right moon
+    d.ellipse([3, 3, 5, 5], fill=255)      # top-left moon
+    d.ellipse([4, 27, 8, 31], fill=255)    # bottom-left moon
+    big = m.resize((w * 8, h * 8), Image.NEAREST)
+    img = Image.new("RGBA", big.size, (255, 255, 255, 0))
+    img.putalpha(big)
+    img.save(dest)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -111,6 +154,8 @@ def main() -> int:
             lambda p: with_badge(out / "run.png", out / "_arrowdown.png", p),
             "run + _arrowdown badge (dcc_glyphs.with_badge)")
     brand_marks.ensure(out / "jupyter.png", "jupyter")
+    guarded(out / "jupyter_mark.png", lambda p: clean_mark(out / "jupyter.png", p),
+            "jupyter.png as a clean 32 px bitmap (clean_mark)")
     print(f"Wrote icons to {out}")
     return 0
 

@@ -173,4 +173,6 @@ The schema binds three keys twice, by focus:
   renderer.
 - ESC: the Jupyter logo from Simple Icons (`jupyter`, CC0-1.0 artwork,
   <https://simpleicons.org>), used to name the application
-  (`../brand_marks.py`).
+  (`../brand_marks.py`). `clean_mark` in `fetch_icons.py` redraws it as a 1-bit
+  32 px bitmap (`jupyter_mark.png`): the arcs mirrored from their right half,
+  loose pixels removed, and the three moons drawn as round dots.

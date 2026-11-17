@@ -22,10 +22,10 @@ margin: 0
 mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
-program_icon: jupyter.png
+program_icon: jupyter_mark.png    # the logo, 1 bit at 32 px (fetch_icons.py)
 program_icon_mode: alpha
 program_icon_anchor: right
-program_icon_region: [37, 32]
+program_icon_region: [32, 32]
 program_icon_margin: 0
 
 bindings:
