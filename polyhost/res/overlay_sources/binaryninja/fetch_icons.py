@@ -56,9 +56,18 @@ BORROWED.update({f"{n}.png": "ida" for n in (
     "make_str", "op_char", "op_sign", "op_not", "op_enum", "pseudo_toggle",
     "view_types", "plugins", "breakpoint", "run", "run_to_cursor",
     "stepinto", "stepover", "stepout",
+    # Graph view W (zoom to fit) and Z (zoom to 100 % at the cursor)
+    "fitwindow", "zoom100",
     # glyphs used only inside the composites below
     "g_quote",
 )})
+# Console and cross-references pane sets.
+BORROWED.update({
+    "autocomplete.png": "sublime",     # console Tab: complete
+    "selectall.png": "powerpoint",     # xrefs Ctrl+A: select all
+    "filter.png": "wireshark",         # xrefs Ctrl+F: filter
+    "g_search.png": "ghidra",          # glyph inside hist_search
+})
 
 FLUENT = {
     "zoomin": "Zoom In",
@@ -98,6 +107,17 @@ COMPOSITES = {
     "stepout_back": ("stepout", "BACK"),
     "run_back_here": ("rewind", "HERE"),
     "ttd_time": ("goto", "TIME"),
+    "hex_ascii_col": ("text:Aa", "COL"),   # Hex view: Tab, hex <-> ASCII column
+    # scripting console
+    "hist_prev": ("up", "HIST"),
+    "hist_next": ("down", "HIST"),
+    "hist_search": ("g_search", "HIST"),
+    "run_multi": ("run", "EXEC"),
+    "multi_line": ("text:+", "LINE"),
+    # cross-references pane: select without navigating
+    "xref_sel_prev": ("up", "SEL"),
+    "xref_sel_next": ("down", "SEL"),
+    "xref_goto": ("goto", "REF"),          # xrefs Enter: go to the selected reference
 }
 # Ctrl+1..0 go to bookmark N; Ctrl+Alt+1..0 set bookmark N (0 is bookmark 10).
 for _n in range(1, 11):

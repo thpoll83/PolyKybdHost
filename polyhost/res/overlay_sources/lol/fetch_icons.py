@@ -4,7 +4,7 @@
 The key icons are flat 1-bit silhouettes, as in the Factorio and Age of Empires
 II sets: game shapes from game-icons.net (CC BY 3.0, credit per author in
 SOURCES.md) and interface shapes from Material Symbols (Apache-2.0). The item
-slots and the ally numbers are drawn here. The ESC mark is LEAGUE set in Bebas
+slots, the ally and ability numbers and the scoreboard switch are drawn here. The ESC mark is LEAGUE set in Bebas
 Neue (SIL OFL 1.1); Riot's logo art is not used.
 
     pip install cairosvg numpy pillow
@@ -26,7 +26,6 @@ from polyhost.res.overlay_sources.factorio import fetch_icons as fac  # noqa: E4
 
 ICONS = {
     # Abilities and items
-    "levelup": "ms:upgrade",
     "trinket": "gi:lorc/lantern-flame",
     "recall": "ms:home",
     "champonly": "gi:sbed/targeted",
@@ -68,6 +67,9 @@ ICONS = {
     "shopsearch": "ms:search",
     "shoptabs": "ms:tab",
 }
+
+# Ctrl+Q..R (level up ability 1..4): this glyph with the number (level_ups()).
+LEVELUP = "ms:upgrade"
 
 # Key area of each icon, from lol.yaml; the default is 40 x 40.
 SIZES = {"self": (34, 40), "screenshot": (30, 40), "mouselock": (34, 40)}
@@ -139,6 +141,44 @@ def allies(out: Path) -> None:
         print(f"  ally{n}.png  <- ms:person + {n}")
 
 
+def level_ups(out: Path) -> None:
+    """levelup<n>.png (Ctrl+Q..R: level up ability 1..4), 40x40: the level-up
+    glyph on the left with the ability number beside it."""
+    import numpy as np
+    font = None
+    for n in "1234":
+        path = out / f"levelup{n}.png"
+        if not fac._missing(path):
+            continue
+        font = font or fac._bold(16)
+        g = fac._glyph_mask(LEVELUP, (24, 34))
+        m = np.zeros((40, 40), bool)
+        m[40 - g.shape[0]:, 0:g.shape[1]] = g
+        m |= fac._text_mask(n, font, (40, 40), (33, 27))
+        cnc._save_mask(m, path)
+        print(f"  levelup{n}.png  <- {LEVELUP} + {n}")
+
+
+def scoreboard_toggle(out: Path) -> None:
+    """scoreboardtoggle.png (O, scoreboard on / off), 40x40: the scoreboard in
+    a 30x30 box at the top left and a switch at the bottom right, 3 px clear of
+    it. Tab (hold the scoreboard) keeps the plain scoreboard."""
+    import numpy as np
+    path = out / "scoreboardtoggle.png"
+    if not fac._missing(path):
+        return
+    board = fac._glyph_mask(ICONS["scoreboard"], (30, 30))
+    sw = fac._glyph_mask("ms:toggle_on", (22, 13))
+    m = np.zeros((40, 40), bool)
+    m[0:board.shape[0], 0:board.shape[1]] = board
+    box = np.zeros((40, 40), bool)
+    box[40 - 13 - 3:, 40 - 22 - 3:] = True
+    m &= ~box
+    m[40 - sw.shape[0]:, 40 - sw.shape[1]:] |= sw
+    cnc._save_mask(m, path)
+    print(f"  scoreboardtoggle.png  <- {ICONS['scoreboard']} + ms:toggle_on")
+
+
 def program(out: Path) -> None:
     """program.png: LEAGUE in Bebas Neue at the largest size that fits
     70 x 38 px, centred on the whole 72x40 cell."""
@@ -168,6 +208,8 @@ def main() -> int:
     flat_icons(out)
     item_slots(out)
     allies(out)
+    level_ups(out)
+    scoreboard_toggle(out)
     program(out)
     print(f"Wrote icons to {out}")
     return 0

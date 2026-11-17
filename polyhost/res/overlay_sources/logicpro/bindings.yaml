@@ -36,6 +36,8 @@ program_icon_region: [40, 40]   # the mark's own size: placed 1:1
 program_icon_margin: 0
 
 _m: &m { only: [macos] }
+# A 40x40 composite (glyph + word, drawn 1-bit by fetch_icons.py) is placed 1:1.
+_mw: &mw { only: [macos], region: [40, 40], mode: alpha }
 
 bindings:
   # --- File ---
@@ -66,7 +68,7 @@ bindings:
   - { key: A, mods: [GUI], <<: *m, label: "Select all" }
   - { key: D, mods: [SHIFT], icon: deselect.png, <<: *m, label: "Deselect all" }
   - { key: I, mods: [SHIFT], icon: invert.png, <<: *m, label: "Invert selection" }
-  - { key: R, mods: [GUI], icon: repeat.png, <<: *m, label: "Repeat regions" }
+  - { key: R, mods: [GUI], icon: repeatev.png, <<: *mw, label: "Repeat regions" }
   - { key: T, mods: [GUI], icon: split.png, <<: *m, label: "Split at playhead" }
   - { key: T, mods: [GUI, ALT], icon: splitsel.png, <<: *m, label: "Split at locators" }
   - { key: J, mods: [GUI], icon: glue.png, <<: *m, label: Join }
@@ -98,7 +100,7 @@ bindings:
   - { key: D, mods: [GUI], icon: trackdup.png, <<: *m, label: "New track, duplicate settings" }
   - { key: BACKSPACE, mods: [GUI], icon: removetrack.png, <<: *m, label: "Delete track" }
   - { key: D, mods: [GUI, SHIFT], icon: stack.png, <<: *m, label: "Create track stack" }
-  - { key: ENTER, mods: [SHIFT], icon: rename.png, <<: *m, label: "Rename track" }
+  - { key: ENTER, mods: [SHIFT], icon: renametrack.png, <<: *mw, label: "Rename track" }
   - { key: UP, mods: [], icon: prevtrack.png, <<: *m, label: "Select previous track" }
   - { key: DOWN, mods: [], icon: nexttrack.png, <<: *m, label: "Select next track" }
   - { key: LEFT, mods: [], icon: prevclip.png, <<: *m, label: "Select previous region" }
@@ -154,16 +156,16 @@ bindings:
   - { key: "8", mods: [GUI], icon: projaudio.png, <<: *m, label: "Project Audio" }
   - { key: "9", mods: [GUI], icon: transform.png, <<: *m, label: Transform }
   - { key: "0", mods: [GUI], icon: environment.png, <<: *m, label: Environment }
-  - { key: X, mods: [], icon: mixer.png, <<: *m, label: "Mixer pane" }
+  - { key: X, mods: [], icon: mixerpane.png, <<: *mw, label: "Mixer pane" }
   - { key: Y, mods: [], icon: smartcontrols.png, <<: *m, label: "Smart Controls" }
   - { key: E, mods: [], icon: lowerzone.png, <<: *m, label: "Editor pane" }
-  - { key: P, mods: [], icon: pianoroll.png, <<: *m, label: "Piano Roll pane" }
-  - { key: N, mods: [], icon: scoreeditor.png, <<: *m, label: "Score Editor pane" }
-  - { key: W, mods: [], icon: audioeditor.png, <<: *m, label: "Audio File Editor pane" }
+  - { key: P, mods: [], icon: pianorollpane.png, <<: *mw, label: "Piano Roll pane" }
+  - { key: N, mods: [], icon: scorepane.png, <<: *mw, label: "Score Editor pane" }
+  - { key: W, mods: [], icon: audioeditorpane.png, <<: *mw, label: "Audio File Editor pane" }
   - { key: B, mods: [], icon: browser.png, <<: *m, label: Browser }
   - { key: F, mods: [GUI], icon: search.png, <<: *m, label: "Search in Browser" }
   - { key: O, mods: [], icon: library.png, <<: *m, label: "Project files" }
-  - { key: D, mods: [], icon: listeditors.png, <<: *m, label: "List editors" }
+  - { key: D, mods: [], icon: listeditors.png, <<: *mw, label: "List editors" }
   - { key: H, mods: [], icon: hideview.png, <<: *m, label: "Hide view" }
   - { key: L, mods: [], icon: liveloops.png, <<: *m, label: "Live Loops/Tracks" }
   - { key: V, mods: [], icon: plugins.png, <<: *m, label: "Plug-in windows" }

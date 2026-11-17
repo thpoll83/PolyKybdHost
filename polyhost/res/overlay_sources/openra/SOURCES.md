@@ -123,6 +123,7 @@ OpenRA repository, compatible with this host's GPL-3.0-or-later.
 | `harvesters.png` | Font Awesome Free 6.5.2 `truck` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `toselection.png` | Font Awesome Free 6.5.2 `crosshairs` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `cycleproduction.png` | Font Awesome Free 6.5.2 `industry` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `selectproduction.png` | Font Awesome Free 6.5.2 `building-circle-check` (solid): Tab, select the production building (E, the buildings tab, keeps `tabstructures.png`) | Fonticons, Inc. | CC BY 4.0 |
 | `sell.png` | Font Awesome Free 6.5.2 `dollar-sign` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `repair.png` | Font Awesome Free 6.5.2 `wrench` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `beacon.png` | Font Awesome Free 6.5.2 `location-dot` (solid) | Fonticons, Inc. | CC BY 4.0 |
@@ -159,7 +160,7 @@ with that overlay's units (`cnc_game_assets.yaml`, which `gen_mods.py` puts in
 | Keys | From the game |
 |---|---|
 | 1 to 0 with no modifier, Ctrl, Shift, Alt and Ctrl+Shift | map sprites of the chosen faction, with the same marks as above |
-| Tab, H, Space, N | construction yard, radar dome (Red Alert) or communications center (Tiberian Dawn), harvester |
+| E, H, Space, N | construction yard, radar dome (Red Alert) or communications center (Tiberian Dawn), harvester |
 | S, D, Ctrl+X | mouse cursors |
 
 | Group | Allies | Soviets |

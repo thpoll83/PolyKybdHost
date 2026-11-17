@@ -75,6 +75,12 @@ SIGN = 13           # size of the plus or minus
 SIGN_BAR = 3        # its stroke width
 SIGN_SEAM = 3       # unlit pixels between the sign and the sun
 
+# Right Ctrl (item labels on / off): the item labels icon at the top left and
+# a switch at the bottom right, so it differs from the held Left Alt.
+TOGGLE = "fa:toggle-on"
+TOGGLE_BOX = (22, 13)       # the switch's box at the bottom right
+TOGGLE_SEAM = 3             # unlit pixels between the switch and the labels icon
+
 # The ESC mark is set in New Rocker (SIL OFL 1.1).
 FONT_URL = ("https://raw.githubusercontent.com/google/fonts/"
             "e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/newrocker/NewRocker-Regular.ttf")
@@ -126,6 +132,19 @@ def gamma_icons(out: Path) -> None:
         mask = (sun & ~program_mark.dilate(ring, SIGN_SEAM)) | p
         cnc._save_mask(mask, out / f"{stem}.png")
     print(f"  gammaup.png, gammadown.png  <- {SUN} + a plus or a minus")
+
+
+def toggle_icon(out: Path) -> None:
+    """highlighttoggle.png (Right Ctrl): the item labels icon in a 30x30 box at
+    the top left, the switch at the bottom right, TOGGLE_SEAM px clear of it."""
+    import numpy as np
+    tags = np.zeros((40, 40), bool)
+    tags[:30, :30] = _fit("_highlight", out, (30, 30), (30, 30))
+    sw = _fit("_toggle", out, (40, 40), TOGGLE_BOX)
+    box = np.zeros((40, 40), bool)
+    box[40 - TOGGLE_BOX[1]:, 40 - TOGGLE_BOX[0]:] = True
+    cnc._save_mask((tags & ~program_mark.dilate(box, TOGGLE_SEAM)) | sw, out / "highlighttoggle.png")
+    print(f"  highlighttoggle.png  <- {ICONS['highlight']} + {TOGGLE}")
 
 
 def _load_mask(path: Path):
@@ -222,11 +241,13 @@ def program(out: Path) -> None:
 
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
-    cnc.render({**ICONS, "_sun": SUN}, out)
+    cnc.render({**ICONS, "_sun": SUN, "_highlight": ICONS["highlight"], "_toggle": TOGGLE}, out)
+    toggle_icon(out)
     flat_icons(out)
     numbered_icons(out)
     gamma_icons(out)
-    (out / "_sun.png").unlink()
+    for stem in ("_sun", "_highlight", "_toggle"):
+        (out / f"{stem}.png").unlink()
     program(out)
     print(f"Wrote icons to {out}")
     return 0

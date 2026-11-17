@@ -19,6 +19,7 @@ a hand edit survives a re-run. To redraw one, delete its PNG first.
 """
 from __future__ import annotations
 
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -548,6 +549,30 @@ def _text_size(lines_all: list[list[str]], frac_w: float, frac_h: float) -> int:
     return size
 
 
+# name -> (glyph, word): a glyph with a short word under it, 1-bit at 40x40,
+# drawn with the Ghidra set's code (``../ghidra/fetch_icons.py``). It tells
+# apart two keys whose actions share a glyph (one icon per action).
+WORDS = {
+    "onlineplay": ("online", "PLAY"),
+    "renamesel": ("rename", "SEL"),
+    "vzoomin_audio": ("vzoomin", "AUD"),
+    "vzoomout_audio": ("vzoomout", "AUD"),
+    "vzoomin_midi": ("vzoomin", "MIDI"),
+    "vzoomout_midi": ("vzoomout", "MIDI"),
+}
+
+
+def word_composites(out: Path, words: dict[str, tuple[str, str]]) -> None:
+    """Draw ``words`` with ``composites()`` from ``../ghidra/fetch_icons.py``."""
+    spec = importlib.util.spec_from_file_location(
+        "ghidra_fetch_icons", Path(__file__).resolve().parent.parent / "ghidra" / "fetch_icons.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    mod.COMPOSITES = words
+    mod.ISA = {}
+    mod.composites(out)
+
+
 PROTOOLS_ICON_URL = ("https://raw.githubusercontent.com/simple-icons/simple-icons/"
                      "develop/icons/protools.svg")
 
@@ -603,6 +628,8 @@ def main() -> int:
     if not all(p(f"zoom{d}").exists() for d in "12345"):
         number_badge.numbered(p("zoomer"), "12345", out, "zoom",
                               size=0.30, centre=(0.40, 0.40))
+
+    word_composites(out, WORDS)
 
     g.guarded(out / "protools.png",
               lambda q: g.trace_mark(g.svg_icon(PROTOOLS_ICON_URL), q, luma=160, lit="dark"),

@@ -1,0 +1,29 @@
+# Qwerty, Colemak and the other base layouts on the Settings layer. docs/tutorials-plan.md has the field reference.
+id: base-layouts
+category: languages
+title: Qwerty, Colemak and other layouts
+summary: Change where the letters are, between Qwerty, Qwerty Stag!, Colemak DH, Neo and Workman.
+min_protocol: 32
+steps:
+  - guide_to_layer: Settings
+    say: ["Hold Fn, then tap", "the ringed key"]
+    text: >-
+      Hold Fn. The ring moves to the key that opens the Settings layer. Keep Fn held
+      and tap that key. The keyboard changes to the Settings layer and stays on it.
+    wait: {layer: Settings}
+  - point: {keycode: KC_L0}
+    spotlight: [{keycode: KC_L1}, {keycode: KC_L2}, {keycode: KC_L3}, {keycode: KC_L4}]
+    say: ["Pick a layout", ""]
+    text: >-
+      These five keys choose the letter layout: Qwerty, Qwerty Stag!, Colemak DH, Neo
+      and Workman. The keycaps follow at once. The keyboard language stays the same.
+      Tap one, then press Next.
+  - point: {keycode: KC_BASE}
+    spotlight: []
+    say: ["This key goes", "back to typing"]
+    text: The lower-left corner key leaves the Settings layer. Press it now.
+    wait: {press: KC_BASE}
+  - reveal: {from: {keycode: KC_BASE}}
+    say: ["Done", ""]
+    text: You are back on your typing layer, with the layout you picked.
+    wait: {seconds: 3}

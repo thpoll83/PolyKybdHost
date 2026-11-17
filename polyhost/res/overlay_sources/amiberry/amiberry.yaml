@@ -3,7 +3,9 @@
 # Keys are Amiberry's defaults (BlitterStudio/amiberry, master, read
 # 2026-11-06): F12 opens the GUI and Pause is the Action Replay key when the
 # open_gui and action_replay options are empty (src/osdep/amiberry.cpp), and
-# Page Up is the freeze button in the key table of src/osdep/keyboard.cpp.
+# Page Up is the freeze button in the key table of src/osdep/keyboard.cpp. Both
+# keys press the same freeze button (AKS_FREEZEBUTTON and
+# INPUTEVENT_SPC_FREEZEBUTTON in src/osdep/keyboard.cpp), so both show freeze.png.
 # Quit, full screen, minimize and screenshot have no default key. Not drawn:
 # the End+key shortcuts, because End is not a modifier the keyboard can show.
 #
@@ -30,5 +32,5 @@ program_icon_margin: 0
 
 bindings:
   - { key: F12, mods: [], icon: gui.png, label: "Settings" }
-  - { key: PAUSE, mods: [], icon: freeze.png, label: "Action Replay" }
-  - { key: PGUP, mods: [], icon: freeze.png, label: "Cartridge freeze" }
+  - { key: PAUSE, mods: [], icon: freeze.png, label: "Cartridge freeze (Action Replay)" }
+  - { key: PGUP, mods: [], icon: freeze.png, label: "Cartridge freeze (Action Replay)" }

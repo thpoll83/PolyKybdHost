@@ -5,7 +5,8 @@ import unittest
 from polyhost.device.command_ids import Cmd
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.mock_firmware import MockFirmware, MockHidHelper
-from polyhost.device.poly_kybd import AGENT_KEYS_MIN_PROTOCOL, PolyKybd
+from polyhost.device.poly_kybd import (AGENT_KEYS_MIN_PROTOCOL, AGENT_PAGES_MIN_PROTOCOL,
+                                       PolyKybd)
 
 
 class _Settings:
@@ -103,6 +104,35 @@ class AgentKeysTest(unittest.TestCase):
         self.assertEqual(len(payload), 1 + 10 + 1 + 24)
         self.assertEqual(Cmd.AI.value, 45)
         self.assertEqual(Cmd.AI_CARD.value, 46)
+
+
+    def test_page_bytes_follow_the_35_from_v36(self):
+        kb, fw = _keyboard(AGENT_PAGES_MIN_PROTOCOL)
+        sent = []
+        real = kb.hid.send_and_read_validate
+        kb.hid.send_and_read_validate = lambda msg, *a, **k: (sent.append(bytes(msg)), real(msg, *a, **k))[1]
+        ok, _ = kb.ai_set_keys([1] + [0] * 9, 0x03, [0xFFFF] * 12, page=(1, 2, 7))
+        self.assertTrue(ok)
+        # report id, cmd, op, 10 states, flags, 24 slot bytes, then page, count, counter
+        self.assertEqual(sent[0][2 + 36:2 + 39], bytes([1, 2, 7]))
+        self.assertEqual(fw.ai_page, (1, 2, 7))
+
+    def test_an_older_keyboard_gets_the_v35_report(self):
+        # The gate is on the page bytes, not on the command: below v36 the keys still
+        # go out, without them.
+        kb, fw = _keyboard(AGENT_PAGES_MIN_PROTOCOL - 1)
+        ok, _ = kb.ai_set_keys([2] + [0] * 9, 0x02, [0xFFFF] * 12, page=(1, 2, 7))
+        self.assertTrue(ok)
+        self.assertEqual(fw.ai_states[0], 2)
+        self.assertEqual(fw.ai_page, (0, 0, 0))
+        self.assertEqual(fw.refused, [])
+
+    def test_a_page_not_below_its_count_is_refused(self):
+        kb, fw = _keyboard(AGENT_PAGES_MIN_PROTOCOL)
+        for bad in ((2, 2, 0), (1, 0, 0), (0, 256, 0), (0, 1, 256)):
+            ok, msg = kb.ai_set_keys([0] * 10, 0, [0xFFFF] * 12, page=bad)
+            self.assertFalse(ok, bad)
+        self.assertEqual(fw.ai_page, (0, 0, 0))             # nothing reached the keyboard
 
 
 if __name__ == "__main__":

@@ -30,6 +30,9 @@ margin: 0
 mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
+# A 40x40 composite (glyph + word, drawn 1-bit by fetch_icons.py) is placed 1:1.
+_word: &word { region: [40, 40], mode: alpha }
+
 bindings:
   # --- file and export (any window) ---
   - { key: O, mods: [CMDCTRL], label: Open }
@@ -38,7 +41,7 @@ bindings:
   - { key: N, mods: [CMDCTRL], icon: savenew.png, label: "Save new version" }
   - { key: R, mods: [CMDCTRL], icon: exportwav.png, label: "Export wave" }
   - { key: R, mods: [CMDCTRL, SHIFT], icon: exportmp3.png, label: "Export mp3" }
-  - { key: M, mods: [CMDCTRL, SHIFT], icon: exportmidi.png, label: "Export MIDI" }
+  - { key: M, mods: [CMDCTRL, SHIFT], icon: exportmidi.png, label: "Export MIDI", <<: *word }
   - { key: Z, mods: [CMDCTRL], label: Undo }
   - { key: Z, mods: [CMDCTRL, ALT], icon: undosteps.png, label: "Undo step by step" }
 
@@ -81,7 +84,7 @@ bindings:
   - { key: T, mods: [], icon: mutetool.png, label: "Mute tool" }
   - { key: C, mods: [], icon: slice.png, label: "Slice tool" }
   - { key: E, mods: [], icon: select.png, label: "Select tool" }
-  - { key: Z, mods: [], icon: zoomtool.png, label: "Zoom tool" }
+  - { key: Z, mods: [], icon: zoomtool.png, label: "Zoom tool", <<: *word }
   - { key: Y, mods: [], icon: playtool.png, label: "Playback tool" }
 
   # --- Playlist and Piano roll: edit ---

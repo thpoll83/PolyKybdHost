@@ -74,5 +74,5 @@ bindings:
   - { key: F2, icon: voteno.png, label: "Vote no", region: [34, 40] }
   - { key: F3, icon: teamvoteyes.png, label: "Team vote yes", region: [34, 40] }
   - { key: F4, icon: teamvoteno.png, label: "Team vote no", region: [34, 40] }
-  - { key: F11, icon: screenshot.png, label: "Screenshot (JPEG)", region: [30, 40] }
-  - { key: F11, mods: [SHIFT], icon: screenshot.png, label: "Screenshot (PNG)", region: [30, 40] }
+  - { key: F11, icon: screenshotjpeg.png, label: "Screenshot (JPEG)", region: [30, 40] }
+  - { key: F11, mods: [SHIFT], icon: screenshotpng.png, label: "Screenshot (PNG)", region: [30, 40] }

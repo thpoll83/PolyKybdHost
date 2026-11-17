@@ -28,6 +28,9 @@ margin: 0
 mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
+# A 40x40 composite (glyph + word, drawn 1-bit by fetch_icons.py) is placed 1:1.
+_word: &word { region: [40, 40], mode: alpha }
+
 bindings:
   # --- transport ---
   - { key: SPACE, mods: [], icon: playstop.png, label: "Play/stop" }
@@ -112,8 +115,8 @@ bindings:
   - { key: N, mods: [SHIFT], icon: normalizeall.png, label: "Normalize to loudest" }
   - { key: "0", mods: [SHIFT], icon: pitchup.png, label: "Pitch up 1 semitone" }
   - { key: "9", mods: [SHIFT], icon: pitchdown.png, label: "Pitch down 1 semitone" }
-  - { key: "8", mods: [SHIFT], icon: ../../musescore/icons/marcato.png, label: "Pitch up 1 cent" }
-  - { key: "7", mods: [SHIFT], icon: centdown.png, label: "Pitch down 1 cent" }
+  - { key: "8", mods: [SHIFT], icon: centup.png, label: "Pitch up 1 cent", <<: *word }
+  - { key: "7", mods: [SHIFT], icon: centdown.png, label: "Pitch down 1 cent", <<: *word }
   - { key: "6", mods: [SHIFT], icon: rateup.png, label: "Rate up 1 semitone" }
   - { key: "5", mods: [SHIFT], icon: ratedown.png, label: "Rate down 1 semitone" }
   - { key: "4", mods: [SHIFT], icon: rateup10.png, label: "Rate up 10 cents" }

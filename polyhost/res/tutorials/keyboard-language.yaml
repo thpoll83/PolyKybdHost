@@ -1,0 +1,31 @@
+# Changing the keyboard language on the Language layer. docs/tutorials-plan.md has the field reference.
+id: keyboard-language
+category: languages
+title: Keyboard language
+summary: Change the language of the keycaps and of your computer's keyboard input together.
+min_protocol: 32
+steps:
+  - point: {keycode: KC_LANG}
+    say: ["Tap the", "ringed key"]
+    text: >-
+      Tap the ringed Lang key. The keycaps change to the language picker: each key
+      shows a flag and a code such as de-DE.
+    wait: {layer: Language}
+  - point: {keycode: KC_LANG_PAGE_NEXT}
+    spotlight: [{layer: Language}]
+    say: ["Top row:", "continents"]
+    text: >-
+      The top row picks a continent. When a continent has more languages than keys,
+      the arrow keys at the ends show the next page. A frame marks the language in use.
+      The bottom row has the languages you picked last.
+  - spotlight: [{layer: Language}]
+    say: ["Tap a language", ""]
+    text: >-
+      Tap a language. The keyboard redraws every keycap for it and tells your computer
+      to change its input language, so what you type matches the keycaps.
+    wait: {leave: Language}
+  - say: ["Done", ""]
+    text: >-
+      The keyboard keeps the language after a restart. Tap Lang again whenever you
+      want another one.
+    wait: {seconds: 4}

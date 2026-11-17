@@ -44,6 +44,10 @@ TITLE_MAX_CHARS = 60
 # characters at most, cut at a word. POLYKYBD_CLOUD_PROMPT_TITLE=0 turns it off.
 PROMPT_TITLE_CHARS = 40
 PROMPT_TITLE_ENV = "POLYKYBD_CLOUD_PROMPT_TITLE"
+# POLYKYBD_CLOUD_ANONYMOUS=1: no title, no prompt words and no folder name leave
+# the VM, not even encrypted (for a company policy that forbids it). The hook does
+# not read the transcript. The host shows such an agent as "Agent 1", "Agent 2".
+ANONYMOUS_ENV = "POLYKYBD_CLOUD_ANONYMOUS"
 POST_TIMEOUT_S = 3.0
 # Cloudflare refuses Python's default User-Agent ("Python-urllib/3.x") on
 # workers.dev with 403 "error code: 1010", so every request names itself.
@@ -258,6 +262,10 @@ def session_url(session_id: str) -> str:
     return ""
 
 
+def anonymous(environ=os.environ) -> bool:
+    return environ.get(ANONYMOUS_ENV, "0").strip() not in ("", "0")
+
+
 def build_report(payload: dict, environ=os.environ):
     """(session_id, report dict) for one hook event, or None when it reports
     nothing."""
@@ -267,6 +275,9 @@ def build_report(payload: dict, environ=os.environ):
     session_id = environ.get("CLAUDE_CODE_REMOTE_SESSION_ID") or str(payload.get("session_id") or "")
     if not session_id:
         return None
+    if anonymous(environ):
+        return session_id, {"state": state, "title": "", "url": session_url(session_id),
+                            "cwd": ""}
     title = transcript_title(payload.get("transcript_path"))
     if not title and environ.get(PROMPT_TITLE_ENV, "1") != "0":
         # The FIRST prompt, so the label stays put: the transcript's head first.
@@ -348,7 +359,7 @@ def run_hook(stdin_text: str, environ=os.environ, poster=post) -> bool:
     slot = session_slot(config["key"], session_id)
     with _session_lock(slot):
         previous = last_sent(slot)
-        if not report["title"] and previous:
+        if not report["title"] and previous and not anonymous(environ):
             # The title record can fall out of the transcript tail this hook reads;
             # that is not a rename, so keep the title already shown.
             report["title"] = previous.get("title") or ""

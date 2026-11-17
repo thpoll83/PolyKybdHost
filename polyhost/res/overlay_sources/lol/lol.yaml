@@ -38,10 +38,10 @@ program_icon_legend: false
 bindings:
 
   # Abilities: level up (the same on every champion)
-  - { key: Q, mods: [CTRL], icon: levelup.png, label: "Level up ability 1" }
-  - { key: W, mods: [CTRL], icon: levelup.png, label: "Level up ability 2" }
-  - { key: E, mods: [CTRL], icon: levelup.png, label: "Level up ability 3" }
-  - { key: R, mods: [CTRL], icon: levelup.png, label: "Level up ability 4" }
+  - { key: Q, mods: [CTRL], icon: levelup1.png, label: "Level up ability 1" }
+  - { key: W, mods: [CTRL], icon: levelup2.png, label: "Level up ability 2" }
+  - { key: E, mods: [CTRL], icon: levelup3.png, label: "Level up ability 3" }
+  - { key: R, mods: [CTRL], icon: levelup4.png, label: "Level up ability 4" }
 
   # Items: 1 2 3 are the top row of the inventory, 5 6 7 the bottom row
   - { key: "1", icon: item1.png, label: "Item slot 1" }
@@ -95,7 +95,7 @@ bindings:
 
   # Menus
   - { key: TAB, icon: scoreboard.png, label: "Scoreboard (hold)" }
-  - { key: O, icon: scoreboard.png, label: "Scoreboard (toggle)" }
+  - { key: O, icon: scoreboardtoggle.png, label: "Scoreboard (toggle)" }
   - { key: '\', icon: menu.png, label: "System menu" }
   - { key: C, icon: stats.png, label: "Advanced player stats" }
   - { key: C, mods: [CTRL], icon: basicstats.png, label: "Toggle basic player stats" }
