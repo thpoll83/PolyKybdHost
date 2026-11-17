@@ -37,11 +37,11 @@ bindings:
   - { key: E, icon: gm_archive.png, label: "Archive" }
   - { key: M, icon: gm_mute.png, label: "Mute conversation" }
   - { key: R, icon: gm_reply.png, label: "Reply" }
-  - { key: R, mods: [SHIFT], icon: gm_newwindow.png, label: "Reply in new window" }
+  - { key: R, mods: [SHIFT], icon: gm_replywin.png, label: "Reply in new window" }
   - { key: A, icon: gm_replyall.png, label: "Reply all" }
-  - { key: A, mods: [SHIFT], icon: gm_newwindow.png, label: "Reply all in new window" }
+  - { key: A, mods: [SHIFT], icon: gm_replyallwin.png, label: "Reply all in new window" }
   - { key: F, icon: gm_forward.png, label: "Forward" }
-  - { key: F, mods: [SHIFT], icon: gm_newwindow.png, label: "Forward in new window" }
+  - { key: F, mods: [SHIFT], icon: gm_forwardwin.png, label: "Forward in new window" }
   - { key: N, mods: [SHIFT], icon: gm_update.png, label: "Update conversation", concept: reload }
   - { key: LBRACKET, icon: gm_archprev.png, label: "Archive, previous" }
   - { key: RBRACKET, icon: gm_archnext.png, label: "Archive, next" }

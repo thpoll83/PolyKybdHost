@@ -50,7 +50,7 @@ ROWS = [
     ("killwordnext", "Delete next word", "A+D", "C+W"),
     ("killwordprev", "Delete previous word", "A+W", None),
     ("copyembed", "Copy block embed", "CS+E", "MS+E"),
-    ("pasteoneblock", "Paste as one block", "CS+V", "MS+V"),
+    ("pasteoneblock_1", "Paste as one block", "CS+V", "MS+V"),
     ("ytstamp", "Insert YouTube timestamp", "CS+Y", "MS+Y"),
     ("comment", "Add comment", "C+Space", "C+Space"),
     ("zoomblock", "Zoom into block", "A+Right", "M+."),

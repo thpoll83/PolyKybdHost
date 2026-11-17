@@ -117,3 +117,12 @@ from Office.
   Icons does not carry it (`wpsoffice`, `wps` and `kingsoft` all return 404).
   The files are committed, and `fetch_icons.py` does not overwrite them. Delete
   a file to draw it again.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `gotocell.png` | Fluent `Location` (Sheets Go to; was Arrow Down, the Fill down glyph) | MIT |

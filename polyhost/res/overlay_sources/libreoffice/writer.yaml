@@ -69,14 +69,14 @@ bindings:
   - { key: "3", mods: [CMDCTRL], icon: heading3.png, label: "Heading 3", source: "ms-fluent/Text Header 3 (MIT)" }
 
   # --- Shift ---
-  - { key: F5,  mods: [SHIFT], icon: lastpos.png,       label: "Last edit position", source: "ms-fluent/Arrow Undo (MIT)" }
+  - { key: F5,  mods: [SHIFT], icon: lastpos.png,       label: "Last edit position", source: "ms-fluent/History (MIT)" }
   - { key: F11, mods: [SHIFT], icon: createstyle.png,   label: "Create style",  source: "ms-fluent/Star Emphasis (MIT)" }
   - { key: F12, mods: [SHIFT], icon: unorderedlist.png, label: "Unordered list", source: "ms-fluent/Text Bullet List (MIT)" }
 
   # --- Ctrl+Shift ---
   - { key: P, mods: [CMDCTRL, SHIFT], icon: superscript.png,  label: Superscript,     source: "ms-fluent/Text Superscript (MIT)" }
   - { key: B, mods: [CMDCTRL, SHIFT], icon: subscript.png,    label: Subscript,       source: "ms-fluent/Text Subscript (MIT)" }
-  - { key: V, mods: [CMDCTRL, SHIFT], icon: pastespecial.png, label: "Paste special", source: "ms-fluent/Clipboard Paste (MIT)" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: pastespecial.png, label: "Paste special", source: "ms-fluent/Clipboard Settings (MIT)" }
   - { key: F11, mods: [CMDCTRL, SHIFT], icon: updatestyle.png, label: "Update style", concept: reload, source: "ms-fluent/Arrow Sync (MIT)" }
 
   # --- standard editing (shared Fluent concepts) ---

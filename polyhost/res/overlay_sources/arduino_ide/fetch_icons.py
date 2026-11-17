@@ -30,7 +30,7 @@ from PIL import Image, ImageDraw
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from polyhost.res.overlay_sources import (  # noqa: E402
-    brand_marks, editor_glyphs, icon_fetch)
+    action_variants, brand_marks, editor_glyphs, icon_fetch)
 
 FLUENT = {
     # --- sketch / file (Arduino's own commands) ---
@@ -149,6 +149,13 @@ def arrow_icon(dest: Path, spec: str, up: bool) -> None:
     img.save(dest)
 
 
+# Different actions that start from one icon: each gets its own picture
+# (one icon per action, maintainer 2026-11-15). See action_variants.py.
+VARIANTS = {
+    "changeall.png": ("combine", "selectall.png", "rename.png"),
+}
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -165,6 +172,7 @@ def main() -> int:
         n += 1
     brand_marks.ensure(out / "arduino.png", "arduino")
     print(f"Wrote {n} icons (+ program mark) to {out}")
+    action_variants.make(out, VARIANTS)
     return 0
 
 

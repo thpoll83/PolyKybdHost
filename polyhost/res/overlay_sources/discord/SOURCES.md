@@ -80,3 +80,21 @@ Not added / why: Save / Open / New / Print / Find / Close / Zoom / Reload / Redo
 Discord's hotkey articles (support.discord.com, still 403 from this session) do
 not list them as defaults. (Ctrl+R reloads the client in practice, but that is
 undocumented.)
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `channel_prev.png` | `channel.png` with a up triangle at the top right, drawn by `../action_variants.py` | same as the base icon |
+| `channel_next.png` | `channel.png` with a down triangle at the top right, drawn by `../action_variants.py` | same as the base icon |
+| `scroll_up.png` | `scrollchat.png` with a up triangle at the top right, drawn by `../action_variants.py` | same as the base icon |
+| `scroll_down.png` | `scrollchat.png` with a down triangle at the top right, drawn by `../action_variants.py` | same as the base icon |
+| `server_prev.png` | `server.png` with a up triangle at the top right, drawn by `../action_variants.py` | same as the base icon |
+| `server_next.png` | `server.png` with a down triangle at the top right, drawn by `../action_variants.py` | same as the base icon |
+| `unread_prev.png` | `unread.png` with a up triangle at the top right, drawn by `../action_variants.py` | same as the base icon |
+| `unread_next.png` | `unread.png` with a down triangle at the top right, drawn by `../action_variants.py` | same as the base icon |
+| `mention_prev.png` | `mention.png` with a up triangle at the top right, drawn by `../action_variants.py` | same as the base icon |
+| `mention_next.png` | `mention.png` with a down triangle at the top right, drawn by `../action_variants.py` | same as the base icon |

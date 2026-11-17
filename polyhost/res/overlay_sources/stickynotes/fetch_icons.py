@@ -27,6 +27,7 @@ from PIL import Image
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
+import action_variants  # noqa: E402
 
 # filename -> Fluent folder name. Every one probed against
 # raw.githubusercontent.com before being listed: there is no "Note Multiple",
@@ -37,12 +38,9 @@ FLUENT = {
     "closenote":  "Document Dismiss",
     "delnote":    "Delete",
     "noteslist":  "Apps List",
-    # ⚠️ Cycling FORWARD and BACKWARD share one glyph family rather than one
-    # glyph: "Arrow Repeat All" reads as a cycle, and the direction is carried
-    # by the modifier on the keycap (Ctrl+Tab vs Ctrl+Shift+Tab), which the
-    # firmware draws on separate layers anyway.
+    # Cycling FORWARD uses "Arrow Repeat All"; BACKWARD is the same glyph
+    # mirrored (VARIANTS below), so the two directions look different.
     "cyclefwd":   "Arrow Repeat All",
-    "cycleback":  "Arrow Repeat All",
     # --- editing (shared with the notepad/notepadpp overlays) -------------
     "selectall":  "Select All On",
     "copy":       "Copy",
@@ -100,12 +98,20 @@ def _forward_delete(out: Path) -> None:
     print("  delword.png  <- delwordback.png mirrored (forward delete)")
 
 
+# Different actions that start from one icon: each gets its own picture
+# (one icon per action, maintainer 2026-11-15). See action_variants.py.
+VARIANTS = {
+    "cycleback.png": ("mirror", "cyclefwd.png"),
+}
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
     count = icon_fetch.fluent(FLUENT, out)
     _forward_delete(out)
     print(f"Wrote {count + 1} icons to {out}")
+    action_variants.make(out, VARIANTS)
     return 0
 
 

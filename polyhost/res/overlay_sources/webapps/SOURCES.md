@@ -556,3 +556,18 @@ titled "Photopea - <topic>".
 | Set | Keys (Windows/Linux, macOS) |
 |---|---|
 | `photopea_template` | 69, 65 |
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `webide_tab.png` | `webide.png` with the tag "TAB", drawn by `../action_variants.py` | same as the base icon |
+| `gm_replywin.png` | `gm_reply.png` with `gm_newwindow.png` at the lower right, drawn by `../action_variants.py` | same as the base icon |
+| `gm_replyallwin.png` | `gm_replyall.png` with `gm_newwindow.png` at the lower right, drawn by `../action_variants.py` | same as the base icon |
+| `gm_forwardwin.png` | `gm_forward.png` with `gm_newwindow.png` at the lower right, drawn by `../action_variants.py` | same as the base icon |
+| `pasteplain.png` | Fluent `Clipboard Letter` (Paste as plain text (Docs, draw.io, Excalidraw); was the Paste glyph) | MIT |
+| `canonical.png` | Fluent `Link Square` (GitHub canonical link, Notion copy page URL; was the Link glyph) | MIT |
+| `searchpage.png` | Fluent `Document Search` (Find / search in page or view (Drive, Notion, Linear)) | MIT |
