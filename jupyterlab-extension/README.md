@@ -85,6 +85,12 @@ From the Jupyter server to `http://127.0.0.1:<port>/report`:
 
 ## Install
 
+PolyKybdHost's *Integrations…* → *Editors* page shows a JupyterLab row with
+the command below and a Copy button (`polyctl editor-plugins status --editor
+jupyterlab` prints it). It does not run it: the host cannot know which Python
+environment runs JupyterLab (a venv, conda, JupyterLab Desktop's bundled
+environment), and a `pip install` into the wrong one does nothing.
+
 Into the Python environment that runs the Jupyter server:
 
 ```bash

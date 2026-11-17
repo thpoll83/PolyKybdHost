@@ -75,15 +75,27 @@ state as well, so a missed signal costs at most 0.2 s.
 
 ## Install
 
+**From PolyKybdHost**: tray → *Integrations…* → *Editors* → tick *QGIS* →
+Install. Or `polyctl editor-plugins install --editor qgis`. The host copies
+the `polykybd_context_reporter/` folder into `python/plugins/` of every QGIS
+user profile (QGIS user manual, "User profiles"):
+`~/.local/share/QGIS/QGIS3/profiles/<profile>/` on Linux (and the Flatpak's),
+`%APPDATA%\QGIS\QGIS3\profiles\<profile>\` on Windows,
+`~/Library/Application Support/QGIS/QGIS3/profiles/<profile>/` on macOS. A copy
+installed from the zip is left alone. QGIS loads only plugins enabled in its
+plugin manager, so then restart QGIS and tick *PolyKybd Context Reporter* in
+*Plugins → Manage and Install Plugins… → Installed*. The host copies the plugin
+again after a host update.
+
+**By hand**:
+
 ```bash
 ./build.sh          # -> dist/polykybd_context_reporter-<version>.zip
 ```
 
 In QGIS: *Plugins → Manage and Install Plugins… → Install from ZIP* → pick the
-zip → *Install Plugin*. QGIS loads only plugins enabled in its plugin manager,
-so the tray's "Set up the terminal and editors…" dialog does not install this
-one; the plugin manager is the install path. The plugin is not on the official
-QGIS plugin repository.
+zip → *Install Plugin*. The plugin is not on the official QGIS plugin
+repository.
 
 ## Settings
 
