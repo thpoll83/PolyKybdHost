@@ -81,9 +81,9 @@ ESC (the pager) does not end AI mode in either case.
 
 ```
 ┌────────────────────────────────────┐
-│ [vendor ] Fix            [state]   │   line 1  rows  0..12
-│ [ mark  ] the HID                  │   line 2  rows 13..25
-│ reconnect                          │   line 3  rows 26..39
+│ [vendor ] Fix the                  │   line 1  rows  0..12
+│ [ mark  ] HID                      │   line 2  rows 13..25
+│ after                     [state]  │   line 3  rows 26..39
 └────────────────────────────────────┘
 ```
 
@@ -92,8 +92,8 @@ ESC (the pager) does not end AI mode in either case.
   When the title's first word does not fit beside it, a square mark is drawn at 20,
   16 or 12 px; a wordmark (wider than 1.5 times its height) is never scaled, and the
   first word starts below it. A vendor with no mark yet gets its short name.
-- State icon: 12 px, top right, on every page, with 1 px kept free left of and
-  below it, so only line 1 is shorter. The icons are the 16 px card icons, scaled
+- State icon: 12 px, bottom right, on every page, with 1 px kept free left of and
+  above it, so only line 3 is shorter (58 px). The icons are the 16 px card icons, scaled
   (see the state table). A state change uploads the page shown again.
 - Headline: three lines of 14 px text, breaking at spaces and after `-`. Only a word
   wider than the key is split between letters. A longer title is split into pages of
