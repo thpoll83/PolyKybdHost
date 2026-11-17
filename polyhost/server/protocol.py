@@ -93,6 +93,9 @@ M_AGENTS_RAISE = "agents.raise"    # {"vendor","session_id"} -> "raising"
 M_AGENTS_CLOUD_STATUS = "agents.cloud.status"          # {} -> {"configured", "connection", "setup"?}
 M_AGENTS_CLOUD_CONNECT = "agents.cloud.connect"        # {} -> status (creates a channel if none)
 M_AGENTS_CLOUD_DISCONNECT = "agents.cloud.disconnect"  # {} -> what happened on the relay
+M_AGENTS_CLOUD_JOIN_CODE = "agents.cloud.join_code"    # {} -> the channel's join code (a secret)
+M_AGENTS_CLOUD_JOIN = "agents.cloud.join"              # {code, replace?} -> status
+M_AGENTS_CLOUD_LEAVE = "agents.cloud.leave"            # {} -> this computer only; the channel stays
 M_GLYPH_SCRIPT_SET = "glyph.script.set"  # {"value": 0|1|...} -> (ok, payload)  (0=standard, 1=tengwar)
 M_GLYPH_SCRIPT_GET = "glyph.script.get"  # {} -> (ok, value)
 # Keycap legend SIZE (firmware protocol v13+). A closed range, unlike the script
@@ -271,6 +274,11 @@ def authkey_path() -> str:
 def agents_store_path() -> str:
     """The agent registry of the last run (services/agents/store.py)."""
     return os.path.join(_config_dir(), "agents.json")
+
+
+def agent_hook_log_path() -> str:
+    """One line for each agent hook run (services/agents/hook_log.py)."""
+    return os.path.join(_config_dir(), "agent_hooks.log")
 
 
 def cloud_relay_path() -> str:

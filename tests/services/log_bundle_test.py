@@ -374,6 +374,30 @@ class CrashLogSourceTest(unittest.TestCase):
         labels = [s.label for s in lb.LOG_SOURCES]
         self.assertIn("crash", labels)
 
+    def test_the_agent_hook_log_is_collected_from_the_config_folder(self):
+        # The hook log is in the config folder, not the log folder: without a
+        # log_dir it is found there, with one it is found in that folder.
+        from polyhost.server import protocol
+        from polyhost.services.agents import hook_log
+        source = next(s for s in lb.LOG_SOURCES if s.label == "agent-hooks")
+        self.assertEqual(source.filename, hook_log.FILE_NAME)
+        self.assertTrue(source.sliced)
+        with tempfile.TemporaryDirectory() as logs, tempfile.TemporaryDirectory() as config:
+            hook = os.path.join(config, hook_log.FILE_NAME)
+            hook_log.write("codex", "Stop", "done", "s", "local", "ok", 1, path=hook)
+            with open(hook + ".1", "w", encoding="utf-8") as fh:
+                fh.write("older\n")
+            with mock.patch.object(lb, "default_log_dir", lambda: Path(logs)), \
+                    mock.patch.object(protocol, "agent_hook_log_path", lambda: hook):
+                chain = lb.discover().get("agent-hooks")
+                self.assertEqual([p.name for p in chain],
+                                 [hook_log.FILE_NAME + ".1", hook_log.FILE_NAME])
+                self.assertEqual(lb.viewer_files()["Agent Hook Log"], hook)
+                lb.clear_logs()
+                self.assertEqual(os.path.getsize(hook), 0)
+                self.assertFalse(os.path.exists(hook + ".1"))
+            self.assertNotIn("agent-hooks", lb.discover(logs))     # an explicit log_dir
+
     def test_the_filename_comes_from_the_writer(self):
         """A literal here could drift from the file crash_log actually opens."""
         from polyhost.util import crash_log

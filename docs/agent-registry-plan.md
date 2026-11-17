@@ -87,14 +87,19 @@ ESC (the pager) does not end AI mode in either case.
 └────────────────────────────────────┘
 ```
 
-- Vendor mark: whole, up to 24 px, top left, from `services/app_icons.py` (Simple
-  Icons) or a shipped mark (`res/icons/agents/`). The text starts 1 px to its right.
-  When the title's first word does not fit beside it, a square mark is drawn at 20,
-  16 or 12 px; a wordmark (wider than 1.5 times its height) is never scaled, and the
-  first word starts below it. A vendor with no mark yet gets its short name.
+- Vendor mark: the lower 16 rows of the logo at 26 px, cut by the top edge, top
+  left, from `services/app_icons.py` (Simple Icons) or a shipped mark
+  (`res/icons/agents/`, already cut). The text starts 1 px to its right. No mark is
+  scaled: a first word that does not fit beside it starts below it. A vendor with
+  no mark yet gets its short name.
+- Cloud session (machine `cloud`): a 1 px cloud outline drawn over the logo's lower
+  half, right-aligned with it, with its inside cleared first (`card.with_cloud`). The
+  mark is no wider and 8 px taller.
 - State icon: 12 px, bottom right, on every page, with 1 px kept free left of and
-  above it, so only line 3 is shorter (58 px). The icons are the 16 px card icons, scaled
-  (see the state table). A state change uploads the page shown again.
+  above it, so only line 3 is shorter (58 px). Working, waiting and idle are the
+  16 px card icons, scaled. Done and stale are drawn at 12 px: a filled disc with a
+  check (2 px strokes) or a `?` (2 x 2 dot) cut out of it. A state change uploads
+  the page shown again.
 - Headline: three lines of 14 px text, breaking at spaces and after `-`. Only a word
   wider than the key is split between letters. A longer title is split into pages of
   three lines (at most 4), without the mark after the first; the key switches to the

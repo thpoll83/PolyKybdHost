@@ -729,8 +729,36 @@ def _cmd_agents(client, args):
     return 2
 
 
+def _read_join_code(args) -> str:
+    """The join code: the argument, else stdin (a pipe), else typed without echo,
+    so it does not land in the shell history."""
+    if args.code:
+        return args.code
+    if not sys.stdin.isatty():
+        return sys.stdin.read()
+    import getpass
+    return getpass.getpass("Join code (from the other computer): ")
+
+
 def _cmd_agents_cloud(client, args):
-    """`polyctl agents cloud [status|connect|disconnect]`."""
+    """`polyctl agents cloud [status|connect|join-code|join|leave|disconnect]`."""
+    if args.cloud_cmd == "join-code":
+        code = client.call(protocol.M_AGENTS_CLOUD_JOIN_CODE, {})
+        print("Treat this code like a password: it reads and writes this channel's "
+              "cloud sessions. On the other computer: polyctl agents cloud join",
+              file=sys.stderr)
+        print(code)
+        return 0
+    if args.cloud_cmd == "join":
+        client.call(protocol.M_AGENTS_CLOUD_JOIN, {"code": _read_join_code(args).strip(),
+                                                   "replace": bool(args.replace)})
+        print("cloud sessions: joined the channel")
+        return 0
+    if args.cloud_cmd == "leave":
+        result = client.call(protocol.M_AGENTS_CLOUD_LEAVE, {})
+        print(f"cloud sessions: {result} on this computer; the channel stays on the relay "
+              "for the other computers")
+        return 0
     if args.cloud_cmd == "disconnect":
         result = client.call(protocol.M_AGENTS_CLOUD_DISCONNECT, {})
         if args.json:
@@ -763,12 +791,111 @@ def _cmd_agents_cloud(client, args):
     return 0
 
 
+# `agents hooks check` gives a probe this long: a host that accepts the
+# connection and never answers would otherwise hold the command (the hook itself
+# is bounded by AGENT_HOOK_DEADLINE_S).
+HOOK_PROBE_DEADLINE_S = 4.0
+
+
+def _probe_hook_target(target, source="") -> tuple[str, bool, str]:
+    """(where, reachable, detail) for the host a hook reports to: the same connect
+    and authentication a hook does, without sending a report. Bounded by
+    HOOK_PROBE_DEADLINE_S."""
+    import threading
+    if target:
+        where = f"{target['host']}:{target['port']}" if target.get("port") else str(target["host"])
+        where += f" ({source})" if source else ""
+    else:
+        where = "this computer's host"
+    answer = {}
+
+    def probe():
+        try:
+            if not target:
+                connect().close()
+            else:
+                from polyhost.server.window_report_client import connect as connect_report
+                authkey = None
+                if target.get("authkey_file"):
+                    with open(target["authkey_file"], "rb") as fh:
+                        authkey = fh.read().strip()
+                connect_report(target["host"], port=target.get("port"), authkey=authkey,
+                               timeout=2.0).close()
+            answer["ok"] = True
+        except (FileNotFoundError, ConnectionRefusedError) as e:
+            answer["detail"] = (f"{type(e).__name__}: PolyHost is not running here"
+                                if not target else f"{type(e).__name__}: {e}")
+        except Exception as e:  # noqa: BLE001 - every failure is the answer
+            answer["detail"] = f"{type(e).__name__}: {e}"
+    worker = threading.Thread(target=probe, name="hooks-check", daemon=True)
+    worker.start()
+    worker.join(HOOK_PROBE_DEADLINE_S)
+    if worker.is_alive():
+        return where, False, f"no answer within {HOOK_PROBE_DEADLINE_S:g} s"
+    return where, bool(answer.get("ok")), answer.get("detail", "")
+
+
+def _cmd_agents_hooks_check(args) -> int:
+    """`polyctl agents hooks check [vendor]`: is each agent's hook installed, does
+    the host it reports to answer, and the last lines of the hook log. 0 when the
+    hosts answer and no installed hook is broken. Hooks installed with `--host`
+    are probed at that host; the others at `--host` given here, the forwarder's
+    target, or this computer's host."""
+    from polyhost.services.agents import hook_install, hook_log
+    source = "--host" if args.host else "the forwarder running on this computer"
+    default = _probe_hook_target(_agent_hook_target(args), source)
+    print(f"Hooks without --host report to {default[0]}: "
+          + ("answers" if default[1] else f"NOT REACHED ({default[2]})"))
+    probes = {None: default}
+    failed = False
+    used_default = False
+    listed = 0
+    vendors = [args.vendor] if args.vendor else list(hook_install.VENDORS)
+    for vendor in vendors:
+        status = hook_install.status(vendor)
+        lines = hook_log.tail(3, vendor)
+        if not args.vendor and status.state == hook_install.STATE_NOT_INSTALLED and not lines:
+            continue    # an agent this computer does not use
+        listed += 1
+        failed |= status.state in (hook_install.STATE_ERROR, hook_install.STATE_CONFLICT)
+        print(f"\n{vendor}: hooks {status.state} ({status.path})"
+              + (f": {status.detail}" if status.detail else ""))
+        pinned = None if args.host else hook_install.pinned_target(vendor)
+        key = (pinned["host"], pinned.get("authkey_file")) if pinned else None
+        if key not in probes:
+            probes[key] = _probe_hook_target(pinned, "--host in its hooks")
+        where, reachable, detail = probes[key]
+        if pinned:
+            print(f"  Reports to {where}: " + ("answers" if reachable
+                                               else f"NOT REACHED ({detail})"))
+            failed |= not reachable
+        else:
+            used_default = True
+        if status.state == hook_install.STATE_OUTDATED:
+            print("  Reinstall: polyctl agents hooks install " + vendor)
+        print("  Last hook runs:" if lines else "  No hook run logged yet.")
+        for line in lines:
+            print("    " + line)
+    print(f"\nHook log: {hook_log.default_path()}")
+    # The default target counts when an agent reports there, or when no agent is
+    # listed (nothing installed yet: that host must still answer).
+    if used_default or not listed:
+        failed |= not default[1]
+    return 1 if failed else 0
+
+
 def _cmd_agents_hooks(_client, args):
     """`polyctl agents hooks install|uninstall <vendor>`: edit the agent's own config.
-    Local: needs no running host. Shows the diff and asks before writing."""
+    Local: needs no running host. Shows the diff and asks before writing.
+    `polyctl agents hooks check [vendor]`: see _cmd_agents_hooks_check."""
     import difflib
     import os
     from polyhost.services.agents import hook_install
+    if args.hooks_cmd == "check":
+        return _cmd_agents_hooks_check(args)
+    if not args.vendor:
+        print("polyctl: give the agent: " + ", ".join(hook_install.VENDORS), file=sys.stderr)
+        return 2
     extra = []
     if args.host:
         extra += ["--host", args.host]
@@ -839,24 +966,40 @@ def _agents_hook_main(args) -> int:
     can block or steer the agent, and a keyboard light is not worth that.
     ⚠️ Bounded: a host that accepts the connection and never answers would hold
     the agent. The report runs on a daemon thread, which cannot keep the process
-    alive, and is abandoned after AGENT_HOOK_DEADLINE_S."""
+    alive, and is abandoned after AGENT_HOOK_DEADLINE_S.
+    Each run writes one line to the hook log (services/agents/hook_log.py), here on
+    the main thread, so an abandoned report is logged too, with how far it got."""
     import threading
-    worker = threading.Thread(target=_agents_hook_report, args=(args,),
+    from polyhost.services.agents import hook_log
+    progress = {"stage": "start", "result": "", "event": getattr(args, "event", None) or "",
+                "state": "", "session": "", "target": "local"}
+    started = time.monotonic()
+    worker = threading.Thread(target=_agents_hook_report, args=(args, progress),
                               name="agents-hook", daemon=True)
     worker.start()
     worker.join(AGENT_HOOK_DEADLINE_S)
+    result = (f"timeout in {progress['stage']}" if worker.is_alive()
+              else progress["result"] or "ok")
+    hook_log.write(getattr(args, "vendor", ""), progress["event"], progress["state"], progress["session"],
+                   progress["target"], result, (time.monotonic() - started) * 1000)
     return 0
 
 
-def _agents_hook_report(args) -> None:
-    """The report itself (see _agents_hook_main). Never raises."""
+def _agents_hook_report(args, progress=None) -> None:
+    """The report itself (see _agents_hook_main). Never raises. `progress` gets the
+    fields of the hook log line, and the stage the report is in."""
+    progress = progress if progress is not None else {}
     try:
         import os
-        from polyhost.services.agents.hooks import interpret, transcript_title
+        from polyhost.services.agents.hooks import event_name, interpret, transcript_title
+        progress["stage"] = "read"
         payload = _read_hook_payload(args)
+        progress["event"] = event_name(payload, args.event or "")
         report = interpret(payload, event=args.event or "")
         if report is None:
+            progress["result"] = "ignored (no state for this event)"
             return
+        progress["session"] = str(report.get("session_id") or "")
         from polyhost.services.agents.procs import agent_pid
         # The agent's own process, past the shell that runs this hook: the host
         # removes the key when it exits (a closed terminal sends no SessionEnd).
@@ -866,11 +1009,13 @@ def _agents_hook_report(args) -> None:
         state = report.get("state")
         if hasattr(state, "name"):
             report["state"] = state.name.lower()
+        progress["state"] = str(report.get("state") or "")
         # The session's own title (Claude Code), so two sessions in one folder are
         # told apart. Only the title is sent, never the transcript.
         title = transcript_title(payload.get("transcript_path"))
         if title:
             report["headline"] = title
+        progress["stage"] = "target"
         target = _agent_hook_target(args)
         if target:
             # This machine runs a forwarder, the keyboard is on another: send the
@@ -878,25 +1023,32 @@ def _agents_hook_report(args) -> None:
             # this machine (the forwarder uses the same name, socket.gethostname).
             import socket
             from polyhost.server.window_report_client import connect as connect_report
+            progress["target"] = (f"{target['host']}:{target['port']}" if target.get("port")
+                                  else str(target["host"]))
             authkey = None
             if target.get("authkey_file"):
+                progress["stage"] = "authkey"
                 with open(target["authkey_file"], "rb") as fh:
                     authkey = fh.read().strip()
             report["machine"] = target.get("machine") or socket.gethostname()
+            progress["stage"] = "connect"
             remote = connect_report(target["host"], port=target.get("port"),
                                     authkey=authkey, timeout=2.0)
             try:
+                progress["stage"] = "report"
                 remote.call(protocol.M_AGENTS_REPORT, report)
             finally:
                 remote.close()
             return
+        progress["stage"] = "connect"
         client = connect()
         try:
+            progress["stage"] = "report"
             client.call(protocol.M_AGENTS_REPORT, report)
         finally:
             client.close()
-    except Exception:  # noqa: BLE001 - see the docstring
-        pass
+    except Exception as e:  # noqa: BLE001 - see the docstring
+        progress["result"] = f"failed in {progress.get('stage', '?')}: {type(e).__name__}: {e}"
     return
 
 
@@ -1806,17 +1958,27 @@ def build_parser():
         "cloud", help="Claude Code cloud sessions (claude.ai/code) on the keys, through "
                       "the PolyKybd relay")
     p_ac.add_argument("cloud_cmd", nargs="?", default="status",
-                      choices=("status", "connect", "disconnect"),
+                      choices=("status", "connect", "join-code", "join", "leave", "disconnect"),
                       help="status (default): what to enter in the cloud environment; "
-                           "connect: create the relay channel; disconnect: delete it")
+                           "connect: create the relay channel; join-code: print the code "
+                           "that lets another computer show the same sessions; join [CODE]: "
+                           "use another computer's channel (the code from stdin or a prompt "
+                           "when not given); leave: disconnect this computer only; "
+                           "disconnect: delete the channel on the relay, for every computer")
+    p_ac.add_argument("code", nargs="?", default=None, help="join: the join code")
+    p_ac.add_argument("--replace", action="store_true",
+                      help="join: replace this computer's own channel")
     p_ac.add_argument("--json", action="store_true")
     p_agents.set_defaults(func=_cmd_agents)
     p_ahs = agents_sub.add_parser(
         "hooks", help="write or remove the PolyKybd hooks in an agent's own config "
-                      "(claude-code, codex, copilot, gemini, qwen, opencode); shows the diff first")
-    p_ahs.add_argument("hooks_cmd", choices=("install", "uninstall"))
-    p_ahs.add_argument("vendor", choices=("claude-code", "codex", "copilot", "gemini", "qwen",
-                                          "opencode"))
+                      "(claude-code, codex, copilot, gemini, qwen, opencode); shows the diff "
+                      "first. check: is each hook installed, does its host answer, and the "
+                      "last lines of the hook log")
+    p_ahs.add_argument("hooks_cmd", choices=("install", "uninstall", "check"))
+    p_ahs.add_argument("vendor", nargs="?", default=None,
+                       choices=("claude-code", "codex", "copilot", "gemini", "qwen",
+                                "opencode"))
     p_ahs.add_argument("--dry-run", action="store_true", help="only show the diff")
     p_ahs.add_argument("--yes", action="store_true", help="write without asking")
     p_ahs.add_argument("--host", default=None,
