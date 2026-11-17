@@ -347,8 +347,13 @@ class SectionLayoutTest(unittest.TestCase):
 
 
 class SectionColorTest(unittest.TestCase):
-    """Each section's frame and sidebar stripe share one colour
+    """Each section's band, tint, sidebar stripe and switches share one colour
     (gui/section_colors.py)."""
+
+    @classmethod
+    def setUpClass(cls):
+        from PyQt5.QtWidgets import QApplication
+        cls.app = QApplication.instance() or QApplication([])
 
     def test_every_section_but_developer_has_its_own_hue(self):
         from polyhost.gui import section_colors
@@ -368,24 +373,28 @@ class SectionColorTest(unittest.TestCase):
                  if sid in section_colors.SECTION_SLOTS]
         self.assertEqual(slots, names[:len(slots)])
 
-    def test_three_to_one_against_the_window_in_both_themes(self):
-        from polyhost.gui import section_colors
+    def test_contrast_against_the_window_in_both_themes(self):
+        # 3:1 for every slot, except the listed exceptions (light-mode yellow,
+        # which turns olive when darker); the band title stays readable on all.
+        from polyhost.gui import section_colors as sc
+        for name, light, dark in sc.SLOTS + (sc.NEUTRAL,):
+            for theme, color, window in (("light", light, "#f0f0f0"), ("dark", dark, "#505050")):
+                with self.subTest(name=name, theme=theme):
+                    floor = sc.MIN_CONTRAST_EXCEPTIONS.get((name, theme), sc.MIN_CONTRAST)
+                    self.assertGreaterEqual(sc.contrast(color, window), floor)
+                    self.assertGreaterEqual(sc.contrast(sc.title_ink(color), color), 4.0)
 
-        def lum(hexcolor):
-            out = []
-            for i in (1, 3, 5):
-                c = int(hexcolor[i:i + 2], 16) / 255
-                out.append(c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4)
-            return 0.2126 * out[0] + 0.7152 * out[1] + 0.0722 * out[2]
-
-        def ratio(a, b):
-            hi, lo = sorted((lum(a), lum(b)), reverse=True)
-            return (hi + 0.05) / (lo + 0.05)
-
-        for name, light, dark in section_colors.SLOTS + (section_colors.NEUTRAL,):
-            with self.subTest(name=name):
-                self.assertGreaterEqual(ratio(light, "#f0f0f0"), 3.0)
-                self.assertGreaterEqual(ratio(dark, "#505050"), 3.0)
+    def test_switches_take_their_section_colour(self):
+        from PyQt5.QtGui import QColor
+        from polyhost.gui import section_colors as sc
+        from polyhost.gui.settings_dialog import SettingsDialog, ToggleSwitch, is_dark
+        from polyhost.settings import DEFAULT_SETTINGS
+        dlg = SettingsDialog()
+        dlg.setup(dict(DEFAULT_SETTINGS))
+        switch = dlg.edit_widgets["brightness_set_daylight_dependent"]
+        self.assertIsInstance(switch, ToggleSwitch)
+        self.assertEqual(switch.accent, QColor(sc.section_color("brightness", is_dark(dlg.palette()))))
+        dlg.close()
 
 
 class SearchMatchTest(unittest.TestCase):
