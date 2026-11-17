@@ -115,9 +115,12 @@ class EmacsMappingFileTest(unittest.TestCase):
         routes = _emacs_routes(self.raw[GUI_KEY])
         self.assertEqual(routes[-1], "emacs://")
         self.assertEqual(set(routes[:-1]), {"emacs://org-mode", "emacs://dired-mode",
+                                            "org-mode/normal",
                                             *(f"/{st}" for st in EVIL_STATES)})
-        # The evil states come before every major-mode route.
-        self.assertEqual(routes[:len(EVIL_STATES)], [f"/{st}" for st in EVIL_STATES])
+        # Org's normal state first (its needle also contains "/normal"), then
+        # the evil states, then every major-mode route.
+        self.assertEqual(routes[:1 + len(EVIL_STATES)],
+                         ["org-mode/normal", *(f"/{st}" for st in EVIL_STATES)])
 
     def test_every_named_file_exists(self):
         files = set()
@@ -194,6 +197,8 @@ class EmacsRoutingTest(unittest.TestCase):
             for mode in ("fundamental-mode", "org-mode", "dired-mode", "emacs-lisp-mode",
                          "visual-basic-mode"):
                 for state in EVIL_STATES:
+                    if (mode, state) == ("org-mode", "normal"):
+                        continue        # test_org_normal_draws_evil_on_top_of_org
                     url = f"emacs://{mode}/{state}"
                     self.assertEqual(self._route("emacs", url, os_name=os_name),
                                      [_evil(state)], (url, os_name))
@@ -207,6 +212,18 @@ class EmacsRoutingTest(unittest.TestCase):
                          _files(self.mapping["emacs"]["urls-contains"]["emacs://org-mode"]))
         self.assertEqual(self._route("emacs", "vim://normal"), ["vim_normal_template.mods.png"])
         self.assertEqual(self._route("kitty", "vim://insert"), ["vim_insert_template.mods.png"])
+
+    def test_org_normal_draws_evil_on_top_of_org(self):
+        # Evil's normal-state keys take priority over Org's keymap, so evil's
+        # set is drawn last (a later file takes priority per key) and Org's
+        # keys show only where evil binds nothing.
+        want = [ORG, "emacs_org_template.combo.mods.png", _evil("normal")]
+        for app in ("emacs", "kitty"):
+            for os_name in ("linux", "windows", "macos"):
+                self.assertEqual(self._route(app, "emacs://org-mode/normal", os_name=os_name),
+                                 want, (app, os_name))
+        # Only Org: another mode in normal state keeps the plain evil set.
+        self.assertEqual(self._route("emacs", "emacs://text-mode/normal"), [_evil("normal")])
 
     def test_terminal_with_an_evil_report_takes_the_evil_set(self):
         for app in ("kitty", "alacritty", "windowsterminal", "iterm2"):

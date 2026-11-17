@@ -26,8 +26,10 @@ done
 
 [evil](https://github.com/emacs-evil/evil) emulates Vim. Its state keymaps take
 priority over the major mode's keys, so an evil state route comes before the
-major-mode routes in the mapping: Org or Dired in normal state shows the evil
-normal set. Each set is the Vim set of the same mode (`../vim/`) without the
+major-mode routes in the mapping: Dired in normal state shows the evil normal
+set. Org in normal state shows the Org set with the evil normal set drawn on
+top, so Org's keys that evil leaves free (Shift+Tab, Alt/Ctrl/Shift+Enter, the
+Alt and Shift arrows) show, and a key both bind (Tab) shows evil's. Each set is the Vim set of the same mode (`../vim/`) without the
 keys that evil's default keymaps bind differently, so a key never shows Vim's
 action where evil does something else. The icons are the Vim files; ESC shows
 the state word (NOR, VIS, INS, REP, MOT) beside the Emacs logo.
