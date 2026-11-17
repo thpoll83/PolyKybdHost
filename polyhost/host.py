@@ -10,13 +10,11 @@ import threading
 import time
 
 from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (
     QApplication,
     QSystemTrayIcon,
     QMenu,
     QAction,
-    QActionGroup,
     QDialog,
     QMessageBox,
     QProgressDialog, )
@@ -27,7 +25,6 @@ from polyhost.i18n import _, _f, _nf, N_, translate_message
 from polyhost.core.events import FLASH_KIND_DOOMPACK, FLASH_KIND_DOOMWAD, FLASH_KIND_FONTPACK
 from polyhost.core.window_timing import NEW_WINDOW_ACCEPT_TIME_MSEC
 from polyhost.device import bulk_pipe
-from polyhost.device.command_ids import IdleStyle, IdleTimeout, GlyphPlacement, GlyphScript, GlyphSize
 from polyhost.device.split_link import is_split_link_failure
 from polyhost.gui.file_dialogs import get_open_file_name
 from polyhost.gui.get_icon import get_icon
@@ -43,49 +40,7 @@ from polyhost.gui.update_dialog import confirm_update
 from polyhost.gui.tray_notify import (balloons_are_delivered, updates_menu_title,
                                       updates_tooltip)
 
-# Tray labels for the Glyph Script submenu. Generic names (no franchise
-# branding — trademark caveat on the fictional scripts); the fonts themselves
-# are OK to embed. Keys cover every GlyphScript. The submenu is built in THIS
-# dict's order, not the enum's: the enum values are on the wire and in the
-# keyboard's EEPROM, so they are append-only, but related scripts belong
-# together in the menu (the two Commodore 64 faces, 7 and 11).
-GLYPH_SCRIPT_LABELS = {
-    GlyphScript.STANDARD: N_("Standard (normal legends)"),
-    GlyphScript.TENGWAR:  N_("Tengwar (fantasy)"),
-    GlyphScript.RUNES:    N_("Elder Futhark runes"),
-    GlyphScript.AUREBESH: N_("Aurebesh (sci-fi)"),
-    GlyphScript.SGA:      N_("Standard Galactic"),
-    GlyphScript.CIRTH:    N_("Cirth / Angerthas"),
-    GlyphScript.IBMVGA:   N_("IBM VGA / CP437"),
-    GlyphScript.C64:      N_("Commodore 64 (screen)"),
-    GlyphScript.C64KEYS:  N_("Commodore 64 (keycap)"),
-    GlyphScript.AMIGA:    N_("Amiga Topaz"),
-    GlyphScript.APL:      N_("APL"),
-    GlyphScript.BRAILLE:  N_("Braille"),
-}
-
-# Keys cover every GlyphSize so the menu builds from the enum. Worded as what the
-# user sees on the keycap, not as the internal enum name.
-# Shorter captions for the script tiles (gui/menu_tiles.py), where the menu
-# entry's description in brackets does not fit under a keycap.
-GLYPH_SCRIPT_TILE_LABELS = {
-    GlyphScript.STANDARD: N_("Standard"),
-    GlyphScript.TENGWAR:  N_("Tengwar"),
-    GlyphScript.RUNES:    N_("Runes"),
-    GlyphScript.AUREBESH: N_("Aurebesh"),
-    GlyphScript.CIRTH:    N_("Cirth"),
-    GlyphScript.IBMVGA:   N_("IBM VGA"),
-    GlyphScript.C64:      N_("C64 screen"),
-    GlyphScript.C64KEYS:  N_("C64 keycap"),
-    GlyphScript.AMIGA:    N_("Amiga Topaz"),
-}
-
-GLYPH_SIZE_LABELS = {
-    GlyphSize.SMALL:  N_("Small (standard)"),
-    GlyphSize.MEDIUM: N_("Medium"),
-    GlyphSize.LARGE:  N_("Large"),
-}
-from polyhost.gui import keycap_tiles, menu_tiles
+from polyhost.gui import keyboard_settings
 from polyhost.gui.ui_kit import px
 from polyhost.gui.icon_state_manager import IconStateManager
 from polyhost.gui.qt_crash import install_qt_message_handler
@@ -93,7 +48,7 @@ from polyhost.gui.tray_wait import TrayVisibilityWaiter
 from polyhost.gui.log_viewer import LogViewerDialog
 from polyhost.gui.layout_dialog.kb_layout_dialog import KbLayoutDialog
 from polyhost.gui.settings_dialog import SettingsDialog
-from polyhost.gui.cmd_menu import CommandsSubMenu, _get_open_file_explicit
+from polyhost.gui.cmd_menu import CommandsSubMenu
 from polyhost.gui.menu_fetch import MenuFetcher, ok_value
 from polyhost.input.linux_gnome_helper import LinuxGnomeInputHelper
 from polyhost.input.linux_kde_helper import LinuxPlasmaHelper
@@ -476,7 +431,6 @@ class PolyHost(QApplication):
         self.report_problem_dialog = None
         self.crash_alert_dialog = None
         self.boot_loop_dialog = None
-        self.tap_terms_dialog = None
         self.problem_alert_dialog = None
         self._client_problem_handler = None
         if self.client_mode:
@@ -575,167 +529,6 @@ class PolyHost(QApplication):
         # rather than wherever the menu happened to end.
         self._lang_anchor = self.brightness_menu.menuAction()
 
-        # Idle display style (firmware v4+). Device-coupled: it drives the device
-        # through core.get/set_idle_style (worker run_sync in-process, RPC in
-        # client mode), so it works in both modes; managed_connection_status greys
-        # the whole submenu out while disconnected or on too-old firmware.
-        self.idle_style_menu = self.menu.addMenu(get_icon("bedtime.svg"), _("Idle Display"))
-        idle_group = QActionGroup(self)
-        idle_group.setExclusive(True)
-        self.idle_pulse_action = QAction(_("Pulse (legacy)"), parent=self, checkable=True)
-        self.idle_pulse_action.setData(IdleStyle.PULSE.value)
-        self.idle_jitter_action = QAction(_("Jitter (move legend)"), parent=self, checkable=True)
-        self.idle_jitter_action.setData(IdleStyle.JITTER.value)
-        # Attract-demo screensaver: needs doom-enabled firmware — an unsupported
-        # keyboard NACKs the set, surfaced by change_idle_style's error path.
-        self.idle_iddqd_action = QAction(_("IDDQD (attract demo)"), parent=self, checkable=True)
-        self.idle_iddqd_action.setData(IdleStyle.IDDQD.value)
-        # Eden screensaver: loops the boot animation (split72 only; a no-op that
-        # behaves like Pulse on split42).
-        self.idle_eden_action = QAction(_("Eden"), parent=self, checkable=True)
-        self.idle_eden_action.setData(IdleStyle.EDEN.value)
-        for act in (self.idle_pulse_action, self.idle_jitter_action, self.idle_iddqd_action,
-                    self.idle_eden_action):
-            idle_group.addAction(act)
-            # noinspection PyUnresolvedReferences
-            act.triggered.connect(self.change_idle_style)
-            self.idle_style_menu.addAction(act)
-        # noinspection PyUnresolvedReferences
-        self.idle_style_menu.aboutToShow.connect(self.refresh_idle_style_menu)
-        idle_actions = (self.idle_pulse_action, self.idle_jitter_action, self.idle_iddqd_action,
-                        self.idle_eden_action)
-        menu_tiles.add_tiles_on_first_show(
-            self.idle_style_menu, idle_actions,
-            lambda: [keycap_tiles.to_icon(keycap_tiles.idle_panel(a.data())) for a in idle_actions],
-            4, keycap_tiles.tile_size(),
-            labels=[_("Pulse"), _("Jitter"), "IDDQD", _("Eden")])
-
-        # Idle TIMEOUT (firmware v18+): how long before the style above engages.
-        # NESTED inside "Idle Display" rather than added as a twelfth top-level row:
-        # the tray's normal tier is a deliberately short list whose exact shape
-        # tests/gui/host_client_test.py pins, and "which idle animation" and "how
-        # long until it starts" are the same question asked twice. It carries its
-        # OWN protocol gate below, because a keyboard can support the styles (v4+)
-        # and not the timeout (v18+), in which case this one submenu greys out and
-        # the styles above it keep working.
-        self.idle_style_menu.addSeparator()
-        self.idle_timeout_menu = self.idle_style_menu.addMenu(_("Idle After"))
-        idle_timeout_group = QActionGroup(self)
-        idle_timeout_group.setExclusive(True)
-        self.idle_timeout_actions = []
-        for preset in IdleTimeout:
-            act = QAction(IdleTimeout.label_for(preset.value, preset.seconds, tr=_),
-                          parent=self, checkable=True)
-            act.setData(preset.value)
-            idle_timeout_group.addAction(act)
-            # noinspection PyUnresolvedReferences
-            act.triggered.connect(self.change_idle_timeout)
-            self.idle_timeout_menu.addAction(act)
-            self.idle_timeout_actions.append(act)
-        # noinspection PyUnresolvedReferences
-        self.idle_timeout_menu.aboutToShow.connect(self.refresh_idle_timeout_menu)
-
-        # Glyph-script override (firmware v9+). Same device-coupled pattern as the
-        # idle style. Named "Keycap Script" in the menu: "glyph script" is our
-        # internal vocabulary, what the user sees is the letters on their keycaps.
-        # "Standard" restores the normal language legends; the others override the
-        # letter/digit legends with an alternative script (from the fantasy bundle).
-        self.glyph_script_menu = self.menu.addMenu(get_icon("text_fields.svg"), _("Keycap Script"))
-        glyph_group = QActionGroup(self)
-        glyph_group.setExclusive(True)
-        # One radio entry per GlyphScript, in GLYPH_SCRIPT_LABELS order (see the
-        # note there); a test pins that the dict covers every enum value.
-        self.glyph_actions = {}
-        for script in GLYPH_SCRIPT_LABELS:
-            act = QAction(_(GLYPH_SCRIPT_LABELS[script]), parent=self, checkable=True)
-            act.setData(script.value)
-            glyph_group.addAction(act)
-            # noinspection PyUnresolvedReferences
-            act.triggered.connect(self.change_glyph_script)
-            self.glyph_script_menu.addAction(act)
-            self.glyph_actions[script.value] = act
-            if script is GlyphScript.STANDARD:
-                self.glyph_script_menu.addSeparator()
-        # Where the script's letters and digits sit (firmware v26+): centred, the
-        # original, or in the top-left corner, which leaves the right of the keycap
-        # to an overlay icon. Enabled on each show from the keyboard's answer, so
-        # older firmware greys the pair out instead of failing on a click.
-        self.glyph_script_menu.addSeparator()
-        place_group = QActionGroup(self)
-        place_group.setExclusive(True)
-        self.glyph_place_actions = {}
-        for place, label in ((GlyphPlacement.CENTRE, _("Centred on the keycap")),
-                             (GlyphPlacement.TOP_LEFT, _("In the top-left corner"))):
-            act = QAction(label, parent=self, checkable=True)
-            act.setData(place.value)
-            place_group.addAction(act)
-            # noinspection PyUnresolvedReferences
-            act.triggered.connect(self.change_glyph_placement)
-            self.glyph_script_menu.addAction(act)
-            self.glyph_place_actions[place.value] = act
-        # Each entry previews its own script (icon + a bigger sample on hover),
-        # drawn from the shipped fantasy bundle — built on the first show, not
-        # here, so a user who never opens the submenu pays nothing at startup.
-        self.glyph_script_menu.setToolTipsVisible(True)
-        self._glyph_previews_built = False
-        # noinspection PyUnresolvedReferences
-        self.glyph_script_menu.aboutToShow.connect(self.refresh_glyph_script_menu)
-        script_actions = list(self.glyph_actions.values())
-        menu_tiles.add_tiles_on_first_show(
-            self.glyph_script_menu, script_actions,
-            lambda: [keycap_tiles.to_icon(keycap_tiles.script_panel(a.data())) for a in script_actions],
-            4, keycap_tiles.tile_size(),
-            labels=[_(GLYPH_SCRIPT_TILE_LABELS.get(GlyphScript(a.data()), GLYPH_SCRIPT_LABELS[GlyphScript(a.data())]))
-                    for a in script_actions])
-
-        # Keycap legend size (firmware v13+). Same device-coupled radio pattern.
-        # It sizes a key's MAIN legend only — the shift/AltGr previews stay put —
-        # and the bigger faces are latin, from the `latinbig` font-pack bundle; a
-        # keycap they do not cover keeps drawing at the small size.
-        self.glyph_size_menu = self.menu.addMenu(get_icon("format_size.svg"), _("Keycap Size"))
-        size_group = QActionGroup(self)
-        size_group.setExclusive(True)
-        self.glyph_size_actions = {}
-        for size in GlyphSize:
-            act = QAction(_(GLYPH_SIZE_LABELS[size]), parent=self, checkable=True)
-            act.setData(size.value)
-            size_group.addAction(act)
-            # noinspection PyUnresolvedReferences
-            act.triggered.connect(self.change_glyph_size)
-            self.glyph_size_menu.addAction(act)
-            self.glyph_size_actions[size.value] = act
-        # noinspection PyUnresolvedReferences
-        self.glyph_size_menu.aboutToShow.connect(self.refresh_glyph_size_menu)
-        size_actions = list(self.glyph_size_actions.values())
-        menu_tiles.add_tiles_on_first_show(
-            self.glyph_size_menu, size_actions,
-            lambda: [keycap_tiles.to_icon(p) for p in
-                     keycap_tiles.size_panels([a.data() for a in size_actions])],
-            3, keycap_tiles.tile_size(),
-            labels=[_("Small"), _("Medium"), _("Large")])
-
-        # Emoji search dictionary (font-pack slot 9, services/emojidict.py): which
-        # language the emoji layer's keyword search uses. A plain settings write;
-        # PolyCore.note_settings_changed() flashes the choice. The entries come
-        # from the daemon's emoji_search_status() and are built on the first show.
-        # It sits at the end of the keyboard's "Selected Language" menu, which is
-        # built once the keyboard answers (see the language-menu builder).
-        self.emoji_dict_menu = QMenu(_("Emoji Search Language"), self.menu)
-        self.emoji_dict_menu.menuAction().setIcon(get_icon("translate.svg"))
-        # The own-file entry's tooltip carries its path, or why it cannot be used.
-        self.emoji_dict_menu.setToolTipsVisible(True)
-        self.emoji_dict_group = QActionGroup(self)
-        self.emoji_dict_group.setExclusive(True)
-        self.emoji_dict_actions = {}
-        # noinspection PyUnresolvedReferences
-        self.emoji_dict_menu.aboutToShow.connect(self.refresh_emoji_dict_menu)
-        # Tapping term and Flow Tap term (firmware v29+), stored on the keyboard.
-        # Goes through core.get/set_tap_terms, so it works in client mode too.
-        self.tap_terms_action = QAction(get_icon("timer.svg"), _("Tap-Hold Timing…"), parent=self)
-        # noinspection PyUnresolvedReferences
-        self.tap_terms_action.triggered.connect(self.open_tap_terms_dialog)
-        self.menu.addAction(self.tap_terms_action)
-
         # AI agents on the number row (services/agents, firmware v31+ for the keys).
         # The registry is host state, so the submenu works with no keyboard: the
         # switch, the agent list (a click raises the agent's window) and the hook
@@ -756,13 +549,14 @@ class PolyHost(QApplication):
         self.menu.addAction(self.layout_editor)
 
         # Tutorials (gui/tutorials_dialog.py): YAML scripts that point at keys with
-        # the focus ring (cmd 47, v32+). Core calls go through _core_click. It is in
-        # Help & About, not the top level, which host_client_test keeps short.
-        self.tutorials_action = QAction(get_icon("help.svg"), _("Tutorials…"), parent=self)
+        # the focus ring (cmd 47, v32+). Core calls go through _core_click. At the
+        # top level, so a new user finds them.
+        self.tutorials_action = QAction(get_icon("school.svg"), _("Tutorials…"), parent=self)
         # noinspection PyUnresolvedReferences
         self.tutorials_action.triggered.connect(self.open_tutorials)
         self.tutorials_dialog = None
         self.tutorial_panel = None
+        self.menu.addAction(self.tutorials_action)
 
         self.menu.addSeparator()
 
@@ -942,19 +736,21 @@ class PolyHost(QApplication):
 
         # --- Help & About: the read-only, always-available corner --------------
         self.help_menu = self.menu.addMenu(get_icon("help.svg"), _("Help && About"))
-        self.help_menu.addAction(self.tutorials_action)
         self.help_menu.addAction(self.about)
         self.help_menu.addAction(self.report_problem_action)
         self.help_menu.addAction(self.log_dialog)
         self.help_menu.addAction(self.collect_logs_action)
-        self.help_menu.addAction(self.crash_record_action)
         # settings.yaml + overlay-mapping.poly.yaml live in a platformdirs path
         # nobody can guess; editing a mapping meant reading it out of About first.
         self.open_config_action = QAction(get_icon("file_open.svg"),
                                           _("Open config folder"), parent=self)
         # noinspection PyUnresolvedReferences
         self.open_config_action.triggered.connect(self._open_config_folder)
-        self.help_menu.addAction(self.open_config_action)
+        # Maintenance, not Help & About: Help is help, About, a report and the
+        # logs. Open config folder works with no keyboard, so it keeps the
+        # Maintenance parent enabled; the crash record has its own gate.
+        self.cmdMenu.add_always_enabled_maintenance_action(
+            self.crash_record_action, self.open_config_action)
 
         if self.exit_with_daemon is not None:
             # Client mode has two quit rows. The GUI-only one was misclicked for
@@ -1151,9 +947,6 @@ class PolyHost(QApplication):
         if theme != getattr(self, "_theme", None):
             self.log.info("Switched to the %s theme.", theme)
             self._theme = theme
-            self._glyph_previews_built = False
-            for act in self.glyph_actions.values():
-                act.setIcon(QIcon())
 
     @property
     def _update_progress(self):
@@ -1333,22 +1126,8 @@ class PolyHost(QApplication):
         # above just disabled its parent action on a mismatch). Both modes.
         self.cmdMenu.update_enabled(enabled, fw_enabled)
         self.firmware_update_action.setEnabled(fw_enabled)
-        # Feature submenus gate on the DEVICE's protocol, not just connectivity:
-        # a protocol-mismatched keyboard now connects, so disable the submenus
-        # whose firmware support is missing instead of letting them error on click
-        # (the blanket loop above already set them to `enabled`).
-        self.idle_style_menu.menuAction().setEnabled(enabled and self.supports("idle_style"))
-        # Nested inside the one above, so the blanket top-level loop never touches it
-        # and its own (later) protocol gate is the only thing that decides.
-        self.idle_timeout_menu.menuAction().setEnabled(enabled and self.supports("idle_timeout"))
-        self.glyph_script_menu.menuAction().setEnabled(enabled and self.supports("glyph_script"))
-        self.glyph_size_menu.menuAction().setEnabled(enabled and self.supports("glyph_size"))
-        # No protocol gate: whether the keyboard has the dictionary slot is read
-        # from its version block when the submenu opens (refresh_emoji_dict_menu).
-        self.emoji_dict_menu.menuAction().setEnabled(enabled)
         # Host state and the user's own hook files: usable with no keyboard.
         self.agents_menu.menuAction().setEnabled(True)
-        self.tap_terms_action.setEnabled(enabled and self.supports("tap_terms"))
         self.tutorials_action.setEnabled(enabled and self.supports("key_attention"))
         # The Developer parent stays enabled UNCONDITIONALLY: several of its
         # entries are offline tools (the font-pack inspector inspects the shipped
@@ -1766,10 +1545,6 @@ class PolyHost(QApplication):
                     item = sub.addAction(text, self.change_keeb_language)
                     item.setData(lang)
                     item.setIcon(self.unicode_cache.get_icon_for(home_country(lang)))
-            # clear() above leaves this submenu alive: its menu action belongs
-            # to the submenu, not to the language menu.
-            self.keeb_lang_menu.addSeparator()
-            self.keeb_lang_menu.addMenu(self.emoji_dict_menu)
         else:
             self.log.warning("Enumerating PolyKybd languages failed")
 
@@ -1779,7 +1554,7 @@ class PolyHost(QApplication):
             return
         for region_action in self.keeb_lang_menu.actions():
             sub = region_action.menu()
-            if sub is not None and sub is not self.emoji_dict_menu:
+            if sub is not None:
                 yield from sub.actions()
 
     def update_ui_on_lang_change(self, new_lang):
@@ -1834,8 +1609,18 @@ class PolyHost(QApplication):
         # be shared when co-located, but the daemon holds the live copy).
         current = self.core.settings_list() if self.client_mode else self.poly_settings.get_all()
         dlg.setup(current, self.developer_mode,
-                  flag_source=None if self.dev_source == "setting" else self.dev_source)
-        if dlg.exec_() == QDialog.Accepted:
+                  flag_source=None if self.dev_source == "setting" else self.dev_source,
+                  keyboard=True)
+        # Settings > Keyboard shows values stored on the keyboard. Read them off
+        # the GUI thread; the answer goes to the dialog that is open when it
+        # arrives (a stalled read from an earlier dialog fills this one).
+        self._settings_dlg = dlg
+        self._menu_fetch.fetch("keyboard_settings", lambda: keyboard_settings.read_all(self.core),
+                               self._apply_keyboard_reads)
+        accepted = dlg.exec_() == QDialog.Accepted
+        self._settings_dlg = None
+        if accepted:
+            self._send_keyboard_changes(dlg.keyboard_changes())
             updated = dlg.get_updated_settings()
             saved = True
             if self.client_mode:
@@ -1874,6 +1659,52 @@ class PolyHost(QApplication):
             elif current.get("ui_language") != new_language:
                 i18n_qt.offer_language_restart(new_language, self._restart_for_language)
         dlg.close()
+
+    def _apply_keyboard_reads(self, reads):
+        dlg = getattr(self, "_settings_dlg", None)
+        if dlg is not None:
+            dlg.set_keyboard_reads(reads)
+
+    def _send_keyboard_changes(self, changes):
+        """Send the Settings > Keyboard changes, one core call each, in order
+        (the tap-hold values in one call). A refusal is reported like the tray
+        menus did."""
+        kbd = keyboard_settings
+        calls = [(kbd.IDLE_STYLE, "set_idle_style", _("Idle Display")),
+                 (kbd.IDLE_TIMEOUT, "set_idle_timeout", _("Idle After")),
+                 (kbd.GLYPH_SCRIPT, "set_glyph_script", _("Keycap Script")),
+                 (kbd.GLYPH_PLACEMENT, "set_glyph_placement", _("Script placement")),
+                 (kbd.GLYPH_SIZE, "set_glyph_size", _("Keycap Size"))]
+        failed = []
+
+        def done_for(key, label):
+            def done(ok, msg):
+                if ok:
+                    self.log.info("Keyboard setting %s set to %s.", key, changes[key]
+                                  if key in changes else "the new tap-hold values")
+                else:
+                    self.report_device_result("Error", f"Could not set {key}: {msg}")
+                    failed.append(label)
+                    if len(failed) == 1:
+                        # open(), not exec_(): this runs from a click callback.
+                        box = message_box.MessageBox(
+                            QMessageBox.Warning, _("PolyKybd Settings"),
+                            _f("The keyboard did not accept this setting: {setting}",
+                               setting=label))
+                        box.setAttribute(Qt.WA_DeleteOnClose)
+                        box.open()
+                        self._keyboard_settings_message = box
+            return done
+
+        for key, method, label in calls:
+            if key in changes:
+                value = changes[key]
+                self._core_click(lambda m=method, v=value: getattr(self.core, m)(v),
+                                 done_for(key, label))
+        tap = kbd.tap_terms_call(changes)
+        if tap is not None:
+            self._core_click(lambda: self.core.set_tap_terms(*tap),
+                             done_for(kbd.TAPPING_TERM, _("Tap-Hold Timing")))
 
     def _restart_for_language(self):
         """Restart the tray (main_app re-execs once the loop unwinds). In
@@ -2066,61 +1897,6 @@ class PolyHost(QApplication):
         rebuild while PowerShell is being asked would destroy a running thread."""
         from polyhost.gui.integrations_dialog import open_integrations
         open_integrations(self, category=category)
-
-    def open_tap_terms_dialog(self):
-        """Tray > Tap-Hold Timing…: read the terms off the GUI thread, then show the
-        dialog. Modeless, so no nested event loop runs inside the fetch callback;
-        OK sends the change through _core_click like every other tray setting."""
-        from polyhost.gui.tap_terms_dialog import TapTermsDialog
-
-        def show(result):
-            ok, terms = ok_value(result)
-            if not ok:
-                self.report_device_result("Error", f"Could not read the tap-hold timing: {terms}")
-                self._show_tap_terms_message(
-                    _("Could not read the tap-hold timing from the keyboard."))
-                return
-            if self.tap_terms_dialog is not None:
-                self.tap_terms_dialog.close()
-            dlg = TapTermsDialog(terms)
-            # noinspection PyUnresolvedReferences
-            dlg.accepted.connect(lambda: self._apply_tap_terms(dlg, terms))
-            self.tap_terms_dialog = dlg
-            dlg.show()
-            bring_to_front(dlg)
-
-        self._menu_fetch.fetch("tap_terms", lambda: self.core.get_tap_terms(), show)
-
-    def _apply_tap_terms(self, dlg, terms):
-        tapping, flow_tap = dlg.values()
-        auto_shift, auto_shift_ms = dlg.auto_shift_values()
-        # Send only what changed: an unchanged Auto Shift value stays None, so a
-        # v29 keyboard (no Auto Shift) gets the v29 report.
-        if auto_shift == terms.get("auto_shift"):
-            auto_shift = None
-        if auto_shift_ms == terms.get("auto_shift_ms"):
-            auto_shift_ms = None
-        if tapping == terms.get("tapping_term") and flow_tap in (None, terms.get("flow_tap_term")) \
-                and auto_shift is None and auto_shift_ms is None:
-            return
-
-        def done(ok, msg):
-            if ok:
-                self.log.info("Tap terms set: tapping %s ms, flow tap %s ms, auto shift %s / %s ms.",
-                              tapping, flow_tap, auto_shift, auto_shift_ms)
-            else:
-                self.report_device_result("Error", f"Could not set the tap-hold timing: {msg}")
-                self._show_tap_terms_message(_("The keyboard did not accept the tap-hold timing."))
-
-        self._core_click(lambda: self.core.set_tap_terms(tapping, flow_tap,
-                                                         auto_shift, auto_shift_ms), done)
-
-    def _show_tap_terms_message(self, text):
-        # open(), not exec_(): this runs from a menu-fetch callback.
-        box = message_box.MessageBox(QMessageBox.Warning, _("Tap-Hold Timing"), text)
-        box.setAttribute(Qt.WA_DeleteOnClose)
-        box.open()
-        self._tap_terms_message = box
 
     def open_fontpack_inspector(self):
         from polyhost.gui.fontpack_inspector_dialog import FontPackInspectorDialog
@@ -2408,47 +2184,6 @@ class PolyHost(QApplication):
             self.keeb_lang_menu.setTitle(_f("Could not set {language}: {error}",
                                             language=lang, error=msg))
 
-    def refresh_idle_style_menu(self):
-        # Read the current style straight from the device (core marshals the HID
-        # round-trip onto the worker in-process, or over RPC in client mode) and
-        # tick the matching item. On failure (old firmware / disconnected) leave
-        # both unchecked rather than guessing.
-        self._menu_fetch.fetch("idle_style", self.core.get_idle_style, self._apply_idle_style)
-
-    def _apply_idle_style(self, result):
-        ok, value = ok_value(result)
-        self.idle_pulse_action.setChecked(bool(ok) and value == IdleStyle.PULSE.value)
-        self.idle_jitter_action.setChecked(bool(ok) and value == IdleStyle.JITTER.value)
-        self.idle_iddqd_action.setChecked(bool(ok) and value == IdleStyle.IDDQD.value)
-        self.idle_eden_action.setChecked(bool(ok) and value == IdleStyle.EDEN.value)
-
-    def change_idle_style(self):
-        value = self.sender().data()
-
-        def done(ok, msg):
-            if ok:
-                self.log.info("Idle anti-burn-in style set to %s.", IdleStyle(value).name.lower())
-            else:
-                # Firmware too old (needs v4+) or device busy — log and re-sync the
-                # checkmark to the device's actual style so the menu doesn't lie.
-                self.report_device_result("Error", f"Could not set idle style: {msg}")
-                self.refresh_idle_style_menu()
-
-        self._core_click(lambda: self.core.set_idle_style(value), done)
-
-    def refresh_idle_timeout_menu(self):
-        # Same shape as refresh_idle_style_menu: read the device, tick the match,
-        # and on failure leave everything unchecked rather than guessing.
-        self._menu_fetch.fetch("idle_timeout", self.core.get_idle_timeout,
-                               self._apply_idle_timeout)
-
-    def _apply_idle_timeout(self, result):
-        ok, value = ok_value(result)
-        # (preset, seconds) in-process; JSON turns it into a list over RPC.
-        preset = value[0] if ok and value else None
-        for act in self.idle_timeout_actions:
-            act.setChecked(bool(ok) and act.data() == preset)
-
     def refresh_agents_menu(self):
         self._menu_fetch.fetch("agents", self.core.agents_list, self._apply_agents_menu)
 
@@ -2629,203 +2364,6 @@ class PolyHost(QApplication):
             if not ok:
                 self.log.info("Could not raise the agent: %s", msg)
         self._core_click(lambda: self.core.agents_raise(vendor_id, session_id), done)
-
-    def change_idle_timeout(self):
-        value = self.sender().data()
-
-        def done(ok, msg):
-            if ok:
-                self.log.info("Idle timeout set to %s.", IdleTimeout(value).label)
-            else:
-                # Firmware too old (needs v18+) or device busy — log and re-sync the
-                # checkmark to the device's actual value so the menu doesn't lie.
-                self.report_device_result("Error", f"Could not set idle timeout: {msg}")
-                self.refresh_idle_timeout_menu()
-
-        self._core_click(lambda: self.core.set_idle_timeout(value), done)
-
-    def _build_glyph_script_previews(self):
-        # Give each entry a preview of its own script, rendered from the shipped
-        # fantasy bundle (STANDARD previews the normal Latin face) — the icon is
-        # two glyphs, which is all a 16 px menu icon can carry, and the tooltip a
-        # longer sample. Built once, on the first show; a bundle that is missing
-        # or unreadable just leaves the menu as it was.
-        if self._glyph_previews_built:
-            return
-        self._glyph_previews_built = True
-        try:
-            from polyhost.gui.glyph_script_icon import glyph_script_icon, glyph_script_tooltip
-            for value, act in self.glyph_actions.items():
-                icon = glyph_script_icon(value)
-                if icon is not None:
-                    act.setIcon(icon)
-                tip = glyph_script_tooltip(value)
-                if tip:
-                    act.setToolTip(tip)
-        except Exception as e:  # noqa: BLE001 - a preview must never cost the menu
-            self.log.debug("No glyph-script previews: %s", e)
-
-    def refresh_glyph_script_menu(self):
-        self._build_glyph_script_previews()
-        # Read the active glyph script from the device and tick the matching entry;
-        # on failure (old firmware / disconnected) leave all unchecked.
-        self._menu_fetch.fetch("glyph_script", self.core.get_glyph_script,
-                               self._apply_glyph_script)
-        self.refresh_glyph_placement_actions()
-
-    def _apply_glyph_script(self, result):
-        ok, value = ok_value(result)
-        for sval, act in self.glyph_actions.items():
-            act.setChecked(bool(ok) and value == sval)
-
-    def refresh_glyph_placement_actions(self):
-        # A keyboard below v26 answers False: grey the pair out rather than offer a
-        # choice the firmware would ignore.
-        self._menu_fetch.fetch("glyph_placement", self.core.get_glyph_placement,
-                               self._apply_glyph_placement)
-
-    def _apply_glyph_placement(self, result):
-        ok, value = ok_value(result)
-        for pval, act in self.glyph_place_actions.items():
-            act.setEnabled(bool(ok))
-            act.setChecked(bool(ok) and value == pval)
-
-    def change_glyph_placement(self):
-        value = self.sender().data()
-
-        def done(ok, msg):
-            if ok:
-                self.log.info("Glyph-script placement set to %s.", GlyphPlacement(value).name.lower())
-            else:
-                self.report_device_result("Error", f"Could not set the keycap script placement: {msg}")
-                self.refresh_glyph_placement_actions()
-
-        self._core_click(lambda: self.core.set_glyph_placement(value), done)
-
-    def change_glyph_script(self):
-        value = self.sender().data()
-
-        def done(ok, msg):
-            if ok:
-                self.log.info("Glyph script set to %s.", GlyphScript(value).name.lower())
-            else:
-                # Firmware too old (needs v9+) or device busy — log and re-sync the
-                # checkmark to the device's actual script so the menu doesn't lie.
-                self.report_device_result("Error", f"Could not set glyph script: {msg}")
-                self.refresh_glyph_script_menu()
-
-        self._core_click(lambda: self.core.set_glyph_script(value), done)
-
-    def refresh_emoji_dict_menu(self):
-        """Build the dictionary entries once, then tick the selected one. On a
-        keyboard without the dictionary slot (firmware before font-pack layout v4)
-        the entries are shown but greyed out, with the reason as the first row."""
-        self._menu_fetch.fetch("emoji_dict", self.core.emoji_search_status,
-                               self._apply_emoji_dict)
-
-    def _apply_emoji_dict(self, result):
-        ok, st = ok_value(result)
-        if not ok or not isinstance(st, dict) or not st.get("shipped"):
-            self.emoji_dict_menu.clear()
-            self.emoji_dict_actions = {}
-            info = self.emoji_dict_menu.addAction(_("No emoji search dictionaries shipped"))
-            info.setEnabled(False)
-            return
-        if not self.emoji_dict_actions:
-            self.emoji_dict_menu.clear()
-            self.emoji_dict_info = self.emoji_dict_menu.addAction(
-                _("Needs newer keyboard firmware"))
-            self.emoji_dict_info.setEnabled(False)
-            for d in st["dictionaries"]:
-                act = QAction(d["label"], parent=self, checkable=True)
-                act.setData(d["id"])
-                self.emoji_dict_group.addAction(act)
-                # noinspection PyUnresolvedReferences
-                act.triggered.connect(self.change_emoji_dict)
-                self.emoji_dict_menu.addAction(act)
-                self.emoji_dict_actions[d["id"]] = act
-            # A hand-built dictionary (emoji_dict.py build <id> --user). Choosing
-            # the file in use again flashes it again, for an edited rebuild.
-            self.emoji_dict_menu.addSeparator()
-            self.emoji_dict_file_action = QAction(parent=self, checkable=True)
-            self.emoji_dict_group.addAction(self.emoji_dict_file_action)
-            # noinspection PyUnresolvedReferences
-            self.emoji_dict_file_action.triggered.connect(self.choose_emoji_dict_file)
-            self.emoji_dict_menu.addAction(self.emoji_dict_file_action)
-        supported = bool(st.get("supported"))
-        user_file = st.get("file") or ""
-        self.emoji_dict_info.setVisible(not supported)
-        for did, act in self.emoji_dict_actions.items():
-            act.setEnabled(supported)
-            act.setChecked(not user_file and did == st.get("selected"))
-        fa = self.emoji_dict_file_action
-        fa.setEnabled(supported)
-        fa.setChecked(bool(user_file))
-        if not user_file:
-            fa.setText(_("Own dictionary file..."))
-        elif st.get("file_error"):
-            fa.setText(_f("Own dictionary (cannot be used): {name}", name=os.path.basename(user_file)))
-        else:
-            fa.setText(_f("Own dictionary: {name}", name=os.path.basename(user_file)))
-        fa.setToolTip(st.get("file_error") or user_file)
-
-    def change_emoji_dict(self):
-        dict_id = self.sender().data()
-
-        def done(ok, msg):
-            if ok:
-                self.log.info("Emoji search dictionary set to %s; the keyboard gets it unless "
-                              "it already holds it.", dict_id)
-            else:
-                self.report_device_result("Error", f"Could not set the emoji search language: {msg}")
-                self.refresh_emoji_dict_menu()
-
-        self._core_click(lambda: self.core.emoji_search_choose(dict_id=dict_id), done)
-
-    def choose_emoji_dict_file(self):
-        path = _get_open_file_explicit(_("Choose an emoji search dictionary"),
-                                       _("Emoji search dictionary (*.plyd)"))
-        if not path:
-            # Re-tick from the setting: a cancelled dialog leaves the file entry checked.
-            self.refresh_emoji_dict_menu()
-            return
-
-        def done(ok, msg):
-            if ok:
-                self.log.info("Emoji search dictionary file %s; flashing it.", path)
-            else:
-                self.report_device_result("Error", f"Could not use the emoji search dictionary: {msg}")
-                # The user just picked the file, so say why it was refused (the
-                # core's reason is English, like every core message).
-                _msgbox(QMessageBox.Warning, _("Emoji search dictionary"),
-                        _f("This file cannot be used: {reason}", reason=msg))
-            self.refresh_emoji_dict_menu()
-
-        self._core_click(lambda: self.core.emoji_search_choose(path=path), done)
-
-    def refresh_glyph_size_menu(self):
-        # Read the active legend size from the device and tick the matching entry;
-        # on failure (old firmware / disconnected) leave all unchecked.
-        self._menu_fetch.fetch("glyph_size", self.core.get_glyph_size, self._apply_glyph_size)
-
-    def _apply_glyph_size(self, result):
-        ok, value = ok_value(result)
-        for sval, act in self.glyph_size_actions.items():
-            act.setChecked(bool(ok) and value == sval)
-
-    def change_glyph_size(self):
-        value = self.sender().data()
-
-        def done(ok, msg):
-            if ok:
-                self.log.info("Keycap legend size set to %s.", GlyphSize(value).name.lower())
-            else:
-                # Firmware too old (needs v13+) or device busy — log and re-sync the
-                # checkmark to the device's actual size so the menu doesn't lie.
-                self.report_device_result("Error", f"Could not set keycap size: {msg}")
-                self.refresh_glyph_size_menu()
-
-        self._core_click(lambda: self.core.set_glyph_size(value), done)
 
     def read_overlay_mapping_file(self, file):
         if not file:

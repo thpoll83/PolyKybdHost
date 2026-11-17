@@ -4,20 +4,25 @@ import re
 import string
 
 from PyQt5.QtCore import QRectF, QSize, Qt
-from PyQt5.QtGui import QColor, QCursor, QGuiApplication, QPainter, QPalette, QPen
+from PyQt5.QtGui import (QColor, QCursor, QFont, QFontMetrics, QGuiApplication, QPainter,
+                         QPalette, QPen)
 from PyQt5.QtWidgets import (
     QAbstractScrollArea, QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog, QFrame,
     QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem, QPushButton, QScrollArea, QSpinBox,
-    QToolButton, QVBoxLayout, QWidget,
+    QStyle, QStyledItemDelegate, QToolButton, QVBoxLayout, QWidget,
 )
 
 from polyhost import i18n
+from polyhost.gui import keyboard_settings as kbd
+from polyhost.gui import section_colors
+from polyhost.gui.theme import is_dark
 from polyhost.gui.ui_kit import set_button_icon, style_button_box, px
 from polyhost.i18n import _, _f, N_
 from polyhost.services.game_assets import readers as game_asset_readers
 from polyhost.services.os_theme import THEME_AUTO, THEME_DARK, THEME_LIGHT
 from polyhost.services.problem_scan import LEVEL_ERRORS, LEVEL_ERRORS_AND_WARNINGS
 from polyhost.settings import DEFAULT_SETTINGS
+from polyhost.device.command_ids import TapTerms
 
 
 def language_choices():
@@ -82,8 +87,13 @@ SECTIONS = (
         (N_("Daylight curve"), ("irradiance_min", "irradiance_max",
                                 "irradiance_prescaler", "brightness_gamma")),
     )),
-    ("keyboard", N_("Keyboard data"), (
-        (None, ("unicode_send_composition_mode",)),
+    # The kbd_ rows are stored on the keyboard (gui/keyboard_settings.py); the
+    # dialog reads them when it opens and sends a change on OK.
+    ("keyboard", N_("Keyboard"), (
+        (N_("Idle display"), (kbd.IDLE_STYLE, kbd.IDLE_TIMEOUT)),
+        (N_("Keycaps"), (kbd.GLYPH_SCRIPT, kbd.GLYPH_PLACEMENT, kbd.GLYPH_SIZE)),
+        (N_("Tap-Hold Timing"), kbd.TAP_KEYS),
+        (N_("Unicode input"), ("unicode_send_composition_mode",)),
         (N_("Font packs"), ("fontpack_auto_flash", "fontpack_path")),
         (N_("Emoji search"), ("emoji_search_dict", "emoji_search_dict_file")),
     )),
@@ -112,6 +122,15 @@ OTHER_SECTION = ("other", N_("Other"))
 
 SETTING_LABELS = {
     "unicode_send_composition_mode": N_("Send Unicode input mode"),
+    kbd.IDLE_STYLE: N_("Idle animation"),
+    kbd.IDLE_TIMEOUT: N_("Idle After"),
+    kbd.GLYPH_SCRIPT: N_("Keycap Script"),
+    kbd.GLYPH_PLACEMENT: N_("Script placement"),
+    kbd.GLYPH_SIZE: N_("Keycap Size"),
+    kbd.TAPPING_TERM: N_("Tapping term"),
+    kbd.FLOW_TAP_TERM: N_("Flow Tap term"),
+    kbd.AUTO_SHIFT: N_("Auto Shift"),
+    kbd.AUTO_SHIFT_MS: N_("Auto Shift timeout"),
     "brightness_set_daylight_dependent": N_("Follow daylight"),
     "brightness_allow_online_irradiance_request": N_("Online sunlight data"),
     "brightness_allow_online_location_lookup": N_("Online location lookup"),
@@ -170,6 +189,29 @@ SETTING_LABELS = {
 # editor. tests/gui/settings_dialog_test.py fails on a DEFAULT_SETTINGS key
 # missing here, so a new setting cannot ship without one.
 SETTING_DESCRIPTIONS = {
+    kbd.IDLE_STYLE: N_(
+        "What the keycaps show when you have not typed for a while. It protects the "
+        "displays from burn-in."),
+    kbd.IDLE_TIMEOUT: N_("How long the keyboard waits before the idle display starts."),
+    kbd.GLYPH_SCRIPT: N_(
+        "Draws the letters and digits on the keycaps in another script. Standard shows "
+        "the normal legends of your language."),
+    kbd.GLYPH_PLACEMENT: N_(
+        "Where the script's letters sit on the keycap. The top-left corner leaves room "
+        "for an app icon."),
+    kbd.GLYPH_SIZE: N_(
+        "The size of the main legend. The larger sizes cover Latin letters."),
+    kbd.TAPPING_TERM: N_(
+        "A key with a tap and a hold action types its tap action when you release it "
+        "before this time, and acts as its hold action when you hold it longer."),
+    kbd.FLOW_TAP_TERM: N_(
+        "A tap-hold key pressed within this time after the previous key always types its "
+        "tap action, so fast typing does not trigger a modifier. 0 turns Flow Tap off."),
+    kbd.AUTO_SHIFT: N_(
+        "With Auto Shift on, holding a letter, digit or symbol key longer than the "
+        "Auto Shift timeout types its shifted character."),
+    kbd.AUTO_SHIFT_MS: N_("How long you hold a key before Auto Shift types its shifted "
+                          "character."),
     "agents_enabled": N_(
         "Shows the state of AI coding agents on the number row and, while the AI key "
         "is pressed, one card per agent. Needs keyboard firmware with protocol 31. "
@@ -605,16 +647,52 @@ QListWidget#settingsNav {
     border: none;
     outline: none;
 }
-QListWidget#settingsNav::item {
-    padding: 7px 10px;
-    border-radius: 6px;
-    margin: 1px 0px;
-}
-QListWidget#settingsNav::item:selected {
-    background: palette(highlight);
-    color: palette(highlighted-text);
-}
 """
+
+
+class _NavDelegate(QStyledItemDelegate):
+    """A sidebar entry: a stripe in its section's colour, and a tint of that
+    colour when it is selected (stronger) or under the mouse (weaker). The text
+    stays in the palette's text colour; the selected entry is bold."""
+
+    PAD_X, PAD_Y, STRIPE = 14, 7, 4
+
+    def _text_rect(self, rect):
+        return rect.adjusted(px(self.PAD_X), px(self.PAD_Y), -px(6), -px(self.PAD_Y))
+
+    def paint(self, painter, option, index):
+        color = QColor(index.data(Qt.UserRole) or option.palette.highlight().color())
+        selected = bool(option.state & QStyle.State_Selected)
+        hover = bool(option.state & QStyle.State_MouseOver)
+        rect = option.rect.adjusted(0, px(1), 0, -px(1))
+        painter.save()
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setPen(Qt.NoPen)
+        if selected or hover:
+            fill = QColor(color)
+            fill.setAlpha(80 if selected else 35)
+            painter.setBrush(fill)
+            painter.drawRoundedRect(QRectF(rect), px(6), px(6))
+        painter.setBrush(color)
+        painter.drawRoundedRect(QRectF(rect.left() + px(3), rect.top() + px(6), px(self.STRIPE),
+                                       rect.height() - px(12)), px(2), px(2))
+        font = QFont(option.font)
+        font.setBold(selected)
+        painter.setFont(font)
+        painter.setPen(option.palette.color(QPalette.Text))
+        painter.drawText(self._text_rect(rect), Qt.AlignVCenter | Qt.TextWordWrap,
+                         index.data(Qt.DisplayRole) or "")
+        painter.restore()
+
+    def sizeHint(self, option, index):
+        font = QFont(option.font)
+        font.setBold(True)     # measure the widest form, so selecting never re-wraps
+        view = self.parent()
+        width = (view.viewport().width() if view is not None else px(SIDEBAR_WIDTH)) \
+            - px(self.PAD_X) - px(6)
+        text = QFontMetrics(font).boundingRect(0, 0, max(width, 10), 10_000, Qt.TextWordWrap,
+                                               index.data(Qt.DisplayRole) or "")
+        return QSize(width, text.height() + 2 * px(self.PAD_Y) + px(2))
 
 
 class _SearchField(QLineEdit):
@@ -674,7 +752,7 @@ class _SettingRow(QWidget):
         outer = QVBoxLayout(self)
         outer.setContentsMargins(14, 10, 14, 10)
         outer.setSpacing(6)
-        if isinstance(editor, QLineEdit):
+        if isinstance(editor, QLineEdit) or editor.property("wideEditor"):
             outer.addLayout(text_col)
             field = QWidget()
             field_row = QHBoxLayout(field)
@@ -747,14 +825,22 @@ class _Group(QWidget):
         return bool(shown)
 
 
-class _Section(QWidget):
-    def __init__(self, section_id, title, parent=None):
+class _Section(QFrame):
+    """A section: a frame in its colour (gui/section_colors.py) around its title
+    and groups."""
+
+    def __init__(self, section_id, title, color=None, parent=None):
         super().__init__(parent)
         self.section_id = section_id
         self.title = _(title)
+        self.color = color
         self.groups = []
+        self.setObjectName("settingsSection")
+        if color:
+            self.setStyleSheet(f"QFrame#settingsSection {{ border: 2px solid {color}; "
+                               f"border-radius: {px(10)}px; }}")
         self._lay = QVBoxLayout(self)
-        self._lay.setContentsMargins(0, 0, 0, 0)
+        self._lay.setContentsMargins(px(14), px(10), px(14), px(14))
         self._lay.setSpacing(14)
         head = QLabel(self.title)
         head.setObjectName("settingsSectionTitle")
@@ -790,6 +876,11 @@ class SettingsDialog(QDialog):
         self._syncing_nav = False
         self._developer_mode = False
         self._flag_source = None
+        # Settings > Keyboard: the editors of the values stored on the keyboard,
+        # by pseudo key, and the values read from it (gui/keyboard_settings.py).
+        self.keyboard_widgets = {}
+        self._keyboard_read = {}
+        self._keyboard_section = None
 
     def sizeHint(self):
         return MIN_DIALOG_SIZE
@@ -806,12 +897,15 @@ class SettingsDialog(QDialog):
         self.setMinimumSize(minimum)
         self.resize(initial_dialog_size(available, minimum))
 
-    def setup(self, settings_dict, developer_mode=False, flag_source=None):
+    def setup(self, settings_dict, developer_mode=False, flag_source=None, keyboard=False):
         """Build the dialog for `settings_dict`.
 
         `developer_mode` is whether this run is in developer mode. `flag_source`
         names the command-line flag ("--dev") that decided developer mode and the
-        log detail for this run, or None when the settings did.
+        log detail for this run, or None when the settings did. `keyboard` adds
+        the rows of the settings stored on the keyboard (the tray app; the
+        forwarder has no keyboard). They stay disabled until
+        :meth:`set_keyboard_reads` gives them the keyboard's values.
         """
         self._all_settings = dict(settings_dict)
         self._developer_mode = bool(developer_mode)
@@ -821,7 +915,11 @@ class SettingsDialog(QDialog):
         # opened it (the P for the tray app, the F for the forwarder). Pinning
         # pcolor.png put the tray app's mark on the forwarder's Settings window.
         self.setStyleSheet(_STYLE)
-        layout = layout_sections(settings_dict)
+        keys = list(settings_dict)
+        dark = is_dark(self.palette())
+        if keyboard:
+            keys += list(kbd.KEYS)
+        layout = layout_sections(keys)
 
         main = QVBoxLayout(self)
         main.setContentsMargins(0, 0, 0, 0)
@@ -848,6 +946,8 @@ class SettingsDialog(QDialog):
         self.nav.setFrameShape(QFrame.NoFrame)
         self.nav.setWordWrap(True)
         self.nav.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.nav.setItemDelegate(_NavDelegate(self.nav))
+        self.nav.setMouseTracking(True)
         self.nav.currentRowChanged.connect(self._nav_selected)
         side_lay.addWidget(self.nav, 1)
         body.addWidget(side)
@@ -871,15 +971,24 @@ class SettingsDialog(QDialog):
         holder_lay.addWidget(column, 1)
 
         for section_id, title, groups in layout:
-            section = _Section(section_id, title)
+            section = _Section(section_id, title,
+                               section_colors.section_color(section_id, dark))
             for subheading, keys in groups:
                 group = _Group(subheading)
                 for full_key in keys:
-                    group.add_row(self._make_row(full_key, settings_dict[full_key]))
+                    if full_key in kbd.KEYS:
+                        group.add_row(self._make_keyboard_row(full_key))
+                    else:
+                        group.add_row(self._make_row(full_key, settings_dict[full_key]))
                 section.add_group(group)
+            if section_id == "keyboard" and keyboard:
+                self._keyboard_section = section
+                section.set_note(_("Reading the settings stored on the keyboard\u2026"))
             col_lay.addWidget(section)
             self._sections.append(section)
-            self.nav.addItem(QListWidgetItem(section.title))
+            item = QListWidgetItem(section.title)
+            item.setData(Qt.UserRole, section.color)
+            self.nav.addItem(item)
         self._no_match = QLabel(_("No setting matches the search."))
         self._no_match.setAlignment(Qt.AlignCenter)
         self._no_match.hide()
@@ -936,6 +1045,121 @@ class SettingsDialog(QDialog):
         self._rows[full_key] = row
         return row
 
+    def _make_keyboard_row(self, key):
+        """A row for a value stored on the keyboard. Disabled until read."""
+        editor = self._keyboard_editor(key)
+        editor.setAccessibleName(setting_label(key))
+        tooltip = setting_tooltip(key)
+        if tooltip and not isinstance(editor, kbd.TileChoice):
+            editor.setToolTip(tooltip)
+        editor.setEnabled(False)
+        self.keyboard_widgets[key] = editor
+        row = _SettingRow(key, editor)
+        self._rows[key] = row
+        return row
+
+    @staticmethod
+    def _keyboard_editor(key):
+        if key == kbd.IDLE_STYLE:
+            return kbd.make_idle_style_editor()
+        if key == kbd.GLYPH_SCRIPT:
+            return kbd.make_glyph_script_editor()
+        if key == kbd.GLYPH_SIZE:
+            return kbd.make_glyph_size_editor()
+        if key in (kbd.IDLE_TIMEOUT, kbd.GLYPH_PLACEMENT):
+            combo = SettingComboBox()
+            choices = (kbd.idle_timeout_choices() if key == kbd.IDLE_TIMEOUT
+                       else kbd.glyph_placement_choices())
+            for value, label in choices:
+                combo.addItem(label, value)
+            return combo
+        if key == kbd.AUTO_SHIFT:
+            return ToggleSwitch()
+        spin = SettingSpinBox()
+        lo, hi = {kbd.TAPPING_TERM: (TapTerms.TAPPING_MIN_MS, TapTerms.TAPPING_MAX_MS),
+                  kbd.FLOW_TAP_TERM: (TapTerms.FLOW_TAP_MIN_MS, TapTerms.FLOW_TAP_MAX_MS),
+                  kbd.AUTO_SHIFT_MS: (TapTerms.AUTO_SHIFT_MIN_MS,
+                                      TapTerms.AUTO_SHIFT_MAX_MS)}[key]
+        spin.setRange(lo, hi)
+        spin.setSingleStep(TapTerms.STEP_MS)
+        # TRANSLATORS: unit after a number of milliseconds in a spin box.
+        spin.setSuffix(_(" ms"))
+        if key == kbd.FLOW_TAP_TERM:
+            # TRANSLATORS: shown in the Flow Tap spin box when its value is 0.
+            spin.setSpecialValueText(_("Off"))
+        # The step applies to the arrows only; snap a typed value when editing
+        # ends, so what the user sees is what is sent.
+        spin.editingFinished.connect(lambda b=spin: b.setValue(kbd.snap_ms(b.value())))
+        return spin
+
+    @staticmethod
+    def _keyboard_value(editor):
+        if isinstance(editor, kbd.TileChoice):
+            return editor.value()
+        if isinstance(editor, QComboBox):
+            return editor.currentData()
+        if isinstance(editor, QCheckBox):
+            return editor.isChecked()
+        return kbd.snap_ms(editor.value())
+
+    def set_keyboard_reads(self, reads):
+        """Fill the keyboard rows from :func:`keyboard_settings.read_all`'s answer
+        (or the exception it raised) and enable the ones that were read."""
+        if not self.keyboard_widgets:
+            return
+        if isinstance(reads, Exception):
+            reads = {}
+        values, failed = kbd.values_from_reads(reads or {})
+        self._keyboard_read = dict(values)
+        for key, editor in self.keyboard_widgets.items():
+            if key in values:
+                value = values[key]
+                if isinstance(editor, kbd.TileChoice):
+                    editor.set_value(value)
+                elif isinstance(editor, QComboBox):
+                    index = editor.findData(value)
+                    if index < 0:
+                        # A preset this host does not know: show it, keep it.
+                        editor.addItem(str(value), value)
+                        index = editor.count() - 1
+                    editor.setCurrentIndex(index)
+                elif isinstance(editor, QCheckBox):
+                    editor.setChecked(bool(value))
+                else:
+                    editor.setValue(int(value))
+                editor.setEnabled(True)
+            else:
+                editor.setEnabled(False)
+                editor.setToolTip(_("This keyboard's firmware does not have this setting.")
+                                  if key not in failed else
+                                  _("Could not read this setting from the keyboard."))
+        auto = self.keyboard_widgets.get(kbd.AUTO_SHIFT)
+        auto_ms = self.keyboard_widgets.get(kbd.AUTO_SHIFT_MS)
+        if auto is not None and auto_ms is not None and kbd.AUTO_SHIFT in values:
+            auto_ms.setEnabled(auto.isChecked())
+            auto.toggled.connect(auto_ms.setEnabled)
+        if self._keyboard_section is not None:
+            if not values:
+                note = _("Connect the keyboard to change the settings stored on it.")
+            elif failed:
+                note = _("Some settings could not be read from the keyboard. Update the "
+                         "keyboard firmware to change them here.")
+            else:
+                note = ""
+            self._keyboard_section.set_note(note)
+
+    def keyboard_changes(self):
+        """{pseudo key: new value} for each keyboard row the user changed."""
+        out = {}
+        for key, before in self._keyboard_read.items():
+            editor = self.keyboard_widgets.get(key)
+            if editor is None:
+                continue
+            value = self._keyboard_value(editor)
+            if value is not None and value != before:
+                out[key] = value
+        return out
+
     def _developer_settings_shown(self):
         """Whether the dialog shows every developer setting: the switch is on,
         or a flag put this run in developer mode."""
@@ -971,8 +1195,9 @@ class SettingsDialog(QDialog):
             return
         section = self._sections[row]
         if section.isVisible():
+            # A few pixels above the section, so its coloured frame shows.
             self.scroll.verticalScrollBar().setValue(section.parentWidget().mapTo(
-                self.scroll.widget(), section.pos()).y())
+                self.scroll.widget(), section.pos()).y() - px(8))
 
     def _sync_nav(self, value):
         """Select the section at the top of the view as the page scrolls."""

@@ -66,7 +66,7 @@ write from the command line rings too.
 | core methods, `tutorial` event, 0.5 s periodic | `PolyCore.tutorials_list`, `tutorial_start`, `tutorial_action`, `tutorial_state` |
 | control socket | `tutorials.list`, `tutorial.start`, `tutorial.action`, `tutorial.state` |
 | command line | `polyctl tutorial list / start ID / next / back / stop / status` |
-| tray item, dialog, step panel | Help & About → "Tutorials…" (`host.py`), `polyhost/gui/tutorials_dialog.py` |
+| tray item, dialog, step panel | top-level "Tutorials…" (`host.py`), `polyhost/gui/tutorials_dialog.py` |
 | shipped scripts | `polyhost/res/tutorials/*.yaml`, listed under *Shipped tutorials* below |
 
 How a run behaves:
