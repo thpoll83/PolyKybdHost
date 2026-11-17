@@ -270,10 +270,9 @@ def _render(developer, out_dir, log):
         for _ in range(60):
             app.processEvents()
             time.sleep(0.02)
-        # The two self-labelling rows normally update on aboutToShow, which a
+        # The self-labelling font row normally updates on aboutToShow, which a
         # grab() does not trigger.
         app._refresh_fontpack_action()
-        app.cmdMenu._refresh_auto_brightness_action()
 
         suffix = "-developer" if developer else ""
         if not developer:

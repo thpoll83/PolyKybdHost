@@ -140,16 +140,6 @@ entry counts. A rule separated from those numbers cannot be re-derived.
     the other way), and `delete` `#F19E39`; both adopted the palette colour
     their meaning already had. Every colour in the set now sits between 2.20:1
     and 3.22:1 on both grounds, and `IconContrastTest` holds a 2.0 floor.
-    - ⚠️ **A ramp cannot be expressed in LIGHTNESS — that is what made the old
-      one unfixable rather than merely wrong.** The four brightness entries were
-      shades of one yellow (a paler `#F9DB78` for 1%), and a pale tint is the
-      worst case of all on a light ground. The ramp is across the palette now:
-      grey off, **amber** at 1%, gold at 50/100% (the Material glyphs carry the
-      rest — fewer rays, outline vs filled), and **green** for "back to
-      automatic", which is the palette's enabled/ok rather than a brightness
-      level. So amber means caution *and* the dim end, and green means ok *and*
-      automatic; the alternative was two more one-off colours, and the set only
-      just stopped having those.
   - **Judge a candidate glyph by rendering and measuring it, not by its name.**
     Rasterise to a fixed canvas (`cairosvg` + PIL) and compare **ink coverage**
     and **glyph bounding height** against the set (baseline ≈19% ink, ≈34px tall

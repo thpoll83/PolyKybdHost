@@ -19,10 +19,11 @@ import difflib
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QCursor, QGuiApplication, QPalette
 from PyQt5.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QFrame, QGridLayout,
-                             QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QMessageBox,
+                             QHBoxLayout, QLabel, QListWidget, QMessageBox,
                              QPushButton, QScrollArea, QSizePolicy, QStackedWidget,
                              QVBoxLayout, QWidget)
 
+from polyhost.gui import section_colors, section_style
 from polyhost.gui.settings_dialog import (_STYLE as SETTINGS_STYLE, MIN_DIALOG_SIZE,
                                           SIDEBAR_WIDTH, initial_dialog_size,
                                           minimum_dialog_size)
@@ -434,13 +435,25 @@ class IntegrationsDialog(QDialog):
         self.nav.setFrameShape(QFrame.NoFrame)
         self.nav.setWordWrap(True)
         self.nav.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        section_style.style_nav(self.nav)
         side_lay.addWidget(self.nav, 1)
         body.addWidget(side)
 
         self.stack = QStackedWidget()
-        for category in self.categories:
+        dark = section_style.dialog_is_dark(self)
+        for index, category in enumerate(self.categories):
             page = factories[category]()
             self.pages[category] = page
+            # The page sits in a coloured section like a Settings section
+            # (gui/section_style.py). The section's band shows the page's own
+            # title, so the page's heading is hidden.
+            color = section_colors.slot_color(index, dark)
+            heading = page.findChild(QLabel, "settingsSectionTitle")
+            title = heading.text() if heading is not None else category_title(category)
+            if heading is not None:
+                heading.hide()
+            section = section_style.ColorSection(title, color)
+            section.body_layout.addWidget(page)
             # Each page scrolls on its own: a long result list or a small
             # screen must not push the Install button out of reach.
             scroll = QScrollArea()
@@ -449,10 +462,10 @@ class IntegrationsDialog(QDialog):
             holder = QWidget()
             holder_lay = QVBoxLayout(holder)
             holder_lay.setContentsMargins(16, 14, 16, 16)
-            holder_lay.addWidget(page)
+            holder_lay.addWidget(section)
             scroll.setWidget(holder)
             self.stack.addWidget(scroll)
-            self.nav.addItem(QListWidgetItem(category_title(category)))
+            section_style.add_nav_item(self.nav, category_title(category), color)
         # noinspection PyUnresolvedReferences
         self.nav.currentRowChanged.connect(self.stack.setCurrentIndex)
         body.addWidget(self.stack, 1)

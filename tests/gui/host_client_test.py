@@ -64,7 +64,7 @@ class TestPolyHostModes(unittest.TestCase):
         top = _grab(proc.stdout, "TOPLEVEL")
         self.assertEqual(
             top.split("|"),
-            ["Waiting for PolyKybd...", "Pause", "Brightness", "AI Agents",
+            ["Waiting for PolyKybd...", "Pause", "AI Agents",
              "Configure Keymap", "Tutorials…",
              "Updates", "Maintenance",
              "Integrations\u2026", "Settings...", "Help && About", "Quit"])

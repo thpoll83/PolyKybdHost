@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-17 13:07+0000\n"
+"POT-Creation-Date: 2026-11-17 15:08+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans_CN\n"
@@ -502,13 +502,13 @@ msgstr "PolyKybd — 启动循环测试"
 msgid "Reboots:"
 msgstr "重启次数："
 
-#: polyhost/gui/boot_loop_dialog.py:79 polyhost/gui/tutorials_dialog.py:154
+#: polyhost/gui/boot_loop_dialog.py:79 polyhost/gui/tutorials_dialog.py:158
 msgid "Start"
 msgstr "开始"
 
 #: polyhost/gui/boot_loop_dialog.py:84
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:491
-#: polyhost/gui/tutorials_dialog.py:217
+#: polyhost/gui/tutorials_dialog.py:221
 msgid "Stop"
 msgstr "停止"
 
@@ -522,7 +522,7 @@ msgstr "复制到剪贴板"
 #: polyhost/gui/fontpack_inspector_dialog.py:1000
 #: polyhost/gui/hid_fw_up_dialog.py:487 polyhost/gui/log_viewer.py:263
 #: polyhost/gui/mru_inspector_dialog.py:102
-#: polyhost/gui/split_link_dialog.py:96 polyhost/gui/tutorials_dialog.py:90
+#: polyhost/gui/split_link_dialog.py:96 polyhost/gui/tutorials_dialog.py:89
 msgid "Close"
 msgstr "关闭"
 
@@ -552,7 +552,7 @@ msgid "<b>Failed:</b> {reason}"
 msgstr "<b>失败：</b>{reason}"
 
 #: polyhost/gui/browser_extension_page.py:37
-#: polyhost/gui/integrations_dialog.py:396
+#: polyhost/gui/integrations_dialog.py:397
 msgid "Browser"
 msgstr "浏览器"
 
@@ -756,352 +756,323 @@ msgstr "使用代码加入"
 msgid "Paste the join code from the other computer's \"Connect Cloud Sessions\" window:"
 msgstr "粘贴另一台电脑的“连接云端会话”窗口中的加入码："
 
-#: polyhost/gui/cloud_sessions_dialog.py:275
+#: polyhost/gui/cloud_sessions_dialog.py:276
 msgid "Checking the code with the relay…"
 msgstr "正在通过中继检查代码…"
 
-#: polyhost/gui/cloud_sessions_dialog.py:285
+#: polyhost/gui/cloud_sessions_dialog.py:286
 #, python-brace-format
 msgid "Could not join: {msg}"
 msgstr "无法加入：{msg}"
 
-#: polyhost/gui/cloud_sessions_dialog.py:291
-#: polyhost/gui/cloud_sessions_dialog.py:303
+#: polyhost/gui/cloud_sessions_dialog.py:292
+#: polyhost/gui/cloud_sessions_dialog.py:304
 msgid "Disconnect This Computer"
 msgstr "断开此电脑"
 
-#: polyhost/gui/cloud_sessions_dialog.py:292
+#: polyhost/gui/cloud_sessions_dialog.py:293
 msgid "Stop showing the cloud sessions on this computer? The channel stays on the relay: other computers that joined it and your cloud environment keep working. To show them here again, join with the code of another computer."
 msgstr "要停止在此电脑上显示云端会话吗？通道仍保留在中继上：已加入此通道的其他电脑和您的云环境将继续工作。若要在此处重新显示，请使用另一台电脑的代码加入。"
 
-#: polyhost/gui/cloud_sessions_dialog.py:309
-#: polyhost/gui/cloud_sessions_dialog.py:323
+#: polyhost/gui/cloud_sessions_dialog.py:310
+#: polyhost/gui/cloud_sessions_dialog.py:324
 msgid "Delete Channel"
 msgstr "删除通道"
 
-#: polyhost/gui/cloud_sessions_dialog.py:310
+#: polyhost/gui/cloud_sessions_dialog.py:311
 msgid "Delete the channel on the relay? The cloud sessions leave the agent keys on every computer that uses this channel, and the hooks in your cloud environment stop reaching them. Remove the environment variable there too."
 msgstr "要删除中继上的通道吗？在使用此通道的每台电脑上，云端会话都会从智能体键上移除，您云环境中的钩子也将无法再到达它们。请同时删除云环境中的环境变量。"
 
-#: polyhost/gui/cmd_menu.py:143 polyhost/gui/settings_dialog.py:83
-msgid "Brightness"
-msgstr "亮度"
-
-#. TRANSLATORS: shown in the Flow Tap spin box when its value is 0.
-#: polyhost/gui/cmd_menu.py:145 polyhost/gui/settings_dialog.py:1106
-msgid "Off"
-msgstr "关"
-
-#: polyhost/gui/cmd_menu.py:160 polyhost/gui/cmd_menu.py:188
-msgid "Back to automatic"
-msgstr "恢复自动"
-
-#: polyhost/gui/cmd_menu.py:185
-msgid "Re-apply the host's automatic brightness."
-msgstr "重新应用主机端的自动亮度。"
-
-#: polyhost/gui/cmd_menu.py:189
-msgid "Re-engage automatic (daylight) brightness — the manual preset above is dropped."
-msgstr "重新启用自动（日光）亮度 — 上方的手动预设将被取消。"
-
-#: polyhost/gui/cmd_menu.py:192
-msgid "Clear manual override"
-msgstr "清除手动设置"
-
-#: polyhost/gui/cmd_menu.py:193
-msgid "Daylight-dependent brightness is off in Settings, so this only returns the keyboard to its own stored brightness."
-msgstr "“设置”中已关闭随日光调节亮度，因此此操作只会让键盘恢复其自身保存的亮度。"
-
-#: polyhost/gui/cmd_menu.py:208
+#: polyhost/gui/cmd_menu.py:143
 msgid "Maintenance"
 msgstr "维护"
 
-#: polyhost/gui/cmd_menu.py:211 polyhost/gui/cmd_menu.py:361
-#: polyhost/gui/cmd_menu.py:393
+#: polyhost/gui/cmd_menu.py:146 polyhost/gui/cmd_menu.py:296
+#: polyhost/gui/cmd_menu.py:328
 msgid "Fix Left/Right Side"
 msgstr "修正左/右半边"
 
-#: polyhost/gui/cmd_menu.py:213
+#: polyhost/gui/cmd_menu.py:148
 msgid "Connected half is LEFT (other is RIGHT)"
 msgstr "已连接的半边为左侧（另一半为右侧）"
 
-#: polyhost/gui/cmd_menu.py:216
+#: polyhost/gui/cmd_menu.py:151
 msgid "Connected half is RIGHT (other is LEFT)"
 msgstr "已连接的半边为右侧（另一半为左侧）"
 
-#: polyhost/gui/cmd_menu.py:220
+#: polyhost/gui/cmd_menu.py:155
 msgid "Mark connected half as a Rev.2 board (2023)…"
 msgstr "将已连接的半边标记为 Rev.2 电路板（2023）…"
 
-#: polyhost/gui/cmd_menu.py:222
+#: polyhost/gui/cmd_menu.py:157
 msgid "Remove the Rev.2 mark from the connected half…"
 msgstr "移除已连接半边的 Rev.2 标记…"
 
-#: polyhost/gui/cmd_menu.py:229
+#: polyhost/gui/cmd_menu.py:164
 msgid "Reset overlays"
 msgstr "重置叠加图标"
 
-#: polyhost/gui/cmd_menu.py:231
+#: polyhost/gui/cmd_menu.py:166
 msgid "Reset keymap to default…"
 msgstr "将键位映射重置为默认值…"
 
-#: polyhost/gui/cmd_menu.py:237
+#: polyhost/gui/cmd_menu.py:172
 msgid "Flash firmware file (.bin)…"
 msgstr "刷写固件文件（.bin）…"
 
-#: polyhost/gui/cmd_menu.py:240
+#: polyhost/gui/cmd_menu.py:175
 msgid "Activate bootloader…"
 msgstr "进入引导加载程序…"
 
-#: polyhost/gui/cmd_menu.py:261
+#: polyhost/gui/cmd_menu.py:196
 msgid "Overlays"
 msgstr "叠加图标"
 
-#: polyhost/gui/cmd_menu.py:262
+#: polyhost/gui/cmd_menu.py:197
 msgid "Enable shortcut overlays"
 msgstr "启用快捷键叠加图标"
 
-#: polyhost/gui/cmd_menu.py:264
+#: polyhost/gui/cmd_menu.py:199
 msgid "Disable shortcut overlays"
 msgstr "禁用快捷键叠加图标"
 
-#: polyhost/gui/cmd_menu.py:267
+#: polyhost/gui/cmd_menu.py:202
 msgid "Reset overlay buffers"
 msgstr "重置叠加图标缓冲区"
 
-#: polyhost/gui/cmd_menu.py:269
+#: polyhost/gui/cmd_menu.py:204
 msgid "Reset overlay mapping"
 msgstr "重置叠加图标映射"
 
-#: polyhost/gui/cmd_menu.py:271
+#: polyhost/gui/cmd_menu.py:206
 msgid "Clear overlay usage"
 msgstr "清除叠加图标使用记录"
 
-#: polyhost/gui/cmd_menu.py:273
+#: polyhost/gui/cmd_menu.py:208
 msgid "Set all overlay mapping"
 msgstr "设置全部叠加图标映射"
 
-#: polyhost/gui/cmd_menu.py:277
+#: polyhost/gui/cmd_menu.py:212
 msgid "Idle"
 msgstr "空闲"
 
-#: polyhost/gui/cmd_menu.py:278
+#: polyhost/gui/cmd_menu.py:213
 msgid "Start idle now"
 msgstr "立即进入空闲"
 
-#: polyhost/gui/cmd_menu.py:280
+#: polyhost/gui/cmd_menu.py:215
 msgid "Stop idle"
 msgstr "停止空闲"
 
-#: polyhost/gui/cmd_menu.py:284 polyhost/gui/cmd_menu.py:516
-#: polyhost/gui/cmd_menu.py:521 polyhost/gui/cmd_menu.py:531
-#: polyhost/gui/cmd_menu.py:535
+#: polyhost/gui/cmd_menu.py:219 polyhost/gui/cmd_menu.py:446
+#: polyhost/gui/cmd_menu.py:451 polyhost/gui/cmd_menu.py:461
+#: polyhost/gui/cmd_menu.py:465
 msgid "Keymap"
 msgstr "键位映射"
 
-#: polyhost/gui/cmd_menu.py:285
+#: polyhost/gui/cmd_menu.py:220
 msgid "Layer count"
 msgstr "层数"
 
-#: polyhost/gui/cmd_menu.py:287
+#: polyhost/gui/cmd_menu.py:222
 msgid "Default layer"
 msgstr "默认层"
 
-#: polyhost/gui/cmd_menu.py:289
+#: polyhost/gui/cmd_menu.py:224
 msgid "Dump keymap buffer to the log"
 msgstr "将键位映射缓冲区转储到日志"
 
-#: polyhost/gui/cmd_menu.py:293 polyhost/gui/cmd_menu.py:544
-#: polyhost/gui/cmd_menu.py:547 polyhost/gui/cmd_menu.py:558
+#: polyhost/gui/cmd_menu.py:228 polyhost/gui/cmd_menu.py:474
+#: polyhost/gui/cmd_menu.py:477 polyhost/gui/cmd_menu.py:488
 msgid "Font Pack"
 msgstr "字体包"
 
-#: polyhost/gui/cmd_menu.py:294
+#: polyhost/gui/cmd_menu.py:229
 msgid "Per-bundle status…"
 msgstr "各分包状态…"
 
-#: polyhost/gui/cmd_menu.py:296
+#: polyhost/gui/cmd_menu.py:231
 msgid "Sync (flash missing/updated bundles)"
 msgstr "同步（刷写缺失/已更新的分包）"
 
-#: polyhost/gui/cmd_menu.py:298
+#: polyhost/gui/cmd_menu.py:233
 msgid "Re-flash ALL bundles (force)…"
 msgstr "重新刷写所有分包（强制）…"
 
-#: polyhost/gui/cmd_menu.py:300
+#: polyhost/gui/cmd_menu.py:235
 msgid "Wipe (empty all bundles)"
 msgstr "清空（清空所有分包）"
 
-#: polyhost/gui/cmd_menu.py:306
+#: polyhost/gui/cmd_menu.py:241
 msgid "Firmware"
 msgstr "固件"
 
-#: polyhost/gui/cmd_menu.py:307
+#: polyhost/gui/cmd_menu.py:242
 msgid "Flash only (.bin, stage)…"
 msgstr "仅刷写（.bin，暂存）…"
 
-#: polyhost/gui/cmd_menu.py:310
+#: polyhost/gui/cmd_menu.py:245
 msgid "Apply staged firmware…"
 msgstr "应用已暂存的固件…"
 
-#: polyhost/gui/cmd_menu.py:315
+#: polyhost/gui/cmd_menu.py:250
 msgid "Boot-loop test…"
 msgstr "启动循环测试…"
 
-#: polyhost/gui/cmd_menu.py:321
+#: polyhost/gui/cmd_menu.py:256
 msgid "Run command file (.poly.cmd)…"
 msgstr "运行命令文件（.poly.cmd）…"
 
-#: polyhost/gui/cmd_menu.py:348
+#: polyhost/gui/cmd_menu.py:283
 msgid "<b>Set the half the USB cable is plugged into as the LEFT side?</b><br><br>The other half becomes the RIGHT side. Both halves save the new handedness and reboot onto it (about 10 s, no replug needed).<br><br>Make sure the USB cable is plugged into the half you want to be the <b>LEFT</b> side, then continue."
 msgstr "<b>将插着 USB 线的半边设为左侧吗？</b><br><br>另一半将成为右侧。两个半边都会保存新的左右手设置并按其重启（约 10 秒，无需重新插拔）。<br><br>请确认 USB 线插在您想设为<b>左侧</b>的半边上，然后继续。"
 
-#: polyhost/gui/cmd_menu.py:355
+#: polyhost/gui/cmd_menu.py:290
 msgid "<b>Set the half the USB cable is plugged into as the RIGHT side?</b><br><br>The other half becomes the LEFT side. Both halves save the new handedness and reboot onto it (about 10 s, no replug needed).<br><br>Make sure the USB cable is plugged into the half you want to be the <b>RIGHT</b> side, then continue."
 msgstr "<b>将插着 USB 线的半边设为右侧吗？</b><br><br>另一半将成为左侧。两个半边都会保存新的左右手设置并按其重启（约 10 秒，无需重新插拔）。<br><br>请确认 USB 线插在您想设为<b>右侧</b>的半边上，然后继续。"
 
-#: polyhost/gui/cmd_menu.py:380
+#: polyhost/gui/cmd_menu.py:315
 msgid "<b>Mark the half the USB cable is plugged into as a Rev.2 board?</b><br><br>Rev.2 boards (left \"Rev 2 04/2023\", right \"Rev.2 03/2023\") pass USB power over the split cable, so both halves start as the main half and do not connect. With the mark, the half connected to the computer becomes the main half.<br><br>Plug in only this half, without the split cable, and mark each half on its own. The half saves the mark and its side, then restarts.<br><br>Which side is this half?"
 msgstr "<b>将插着 USB 线的半边标记为 Rev.2 电路板吗？</b><br><br>Rev.2 电路板（左 \"Rev 2 04/2023\"，右 \"Rev.2 03/2023\"）会通过分体连接线传递 USB 供电，因此两个半边都会作为主半边启动，无法相互连接。标记后，连接电脑的半边成为主半边。<br><br>请只插入这一个半边，不要接分体连接线，并逐个标记每个半边。该半边会保存标记和左右设置，然后重启。<br><br>这个半边是哪一侧？"
 
-#: polyhost/gui/cmd_menu.py:390
+#: polyhost/gui/cmd_menu.py:325
 msgid "<b>Remove the Rev.2 mark from the half the USB cable is plugged into?</b><br><br>The half saves its side, then restarts.<br><br>Which side is this half?"
 msgstr "<b>移除插着 USB 线的半边的 Rev.2 标记吗？</b><br><br>该半边会保存左右设置，然后重启。<br><br>这个半边是哪一侧？"
 
-#: polyhost/gui/cmd_menu.py:395
+#: polyhost/gui/cmd_menu.py:330
 #: polyhost/gui/layout_dialog/keycode_composer.py:90
 msgid "Left"
 msgstr "左"
 
-#: polyhost/gui/cmd_menu.py:396
+#: polyhost/gui/cmd_menu.py:331
 #: polyhost/gui/layout_dialog/keycode_composer.py:91
 msgid "Right"
 msgstr "右"
 
-#: polyhost/gui/cmd_menu.py:397 polyhost/gui/fontpack_extend_dialog.py:242
+#: polyhost/gui/cmd_menu.py:332 polyhost/gui/fontpack_extend_dialog.py:242
 #: polyhost/gui/fontpack_extend_dialog.py:815
 #: polyhost/gui/hid_fw_up_dialog.py:208 polyhost/gui/log_viewer.py:309
 #: polyhost/host.py:146
 msgid "Cancel"
 msgstr "取消"
 
-#: polyhost/gui/cmd_menu.py:422
+#: polyhost/gui/cmd_menu.py:357
 msgid "<b>Reset the keyboard's keymap to its firmware default?</b><br><br>Every key you remapped goes back to the layout the firmware ships with. This cannot be undone.<br><br><b>All your macros are deleted too.</b><br><br>Continue?"
 msgstr "<b>将键盘的键位映射重置为固件默认值吗？</b><br><br>您重新映射过的所有按键都将恢复为固件自带的布局。此操作无法撤销。<br><br><b>所有宏也会被删除。</b><br><br>是否继续？"
 
-#: polyhost/gui/cmd_menu.py:428
+#: polyhost/gui/cmd_menu.py:363
 msgid "Reset Keymap"
 msgstr "重置键位映射"
 
-#: polyhost/gui/cmd_menu.py:482
+#: polyhost/gui/cmd_menu.py:412
 msgid "Re-flash Font Pack"
 msgstr "重新刷写字体包"
 
-#: polyhost/gui/cmd_menu.py:483
+#: polyhost/gui/cmd_menu.py:413
 msgid "<b>Re-flash every font-pack bundle?</b><br><br>Every shipped bundle is sent again even if the keyboard already reports it as up to date — use this when a glyph renders wrong or a previous flash was reported as failed. Takes about a minute; typing keeps working throughout.<br><br>Continue?"
 msgstr "<b>重新刷写所有字体包分包吗？</b><br><br>即使键盘报告已是最新，也会重新发送随附的每个分包 — 当某个字形显示错误或上次刷写报告失败时使用此功能。大约需要一分钟；期间可以正常打字。<br><br>是否继续？"
 
-#: polyhost/gui/cmd_menu.py:499
+#: polyhost/gui/cmd_menu.py:429
 msgid "<b>Wipe the external-flash font pack?</b><br><br>Every font-pack bundle slot is emptied — the keyboard renders only its built-in (resident) fonts until the pack is flashed again. The bundles shipped with this host are re-flashed automatically on the next connect (or via Font Pack → Sync).<br><br>Continue?"
 msgstr "<b>清空外部闪存中的字体包吗？</b><br><br>所有字体包分包槽位都将被清空 — 在重新刷写字体包之前，键盘只能显示其内置（常驻）字体。本主机端随附的分包会在下次连接时自动重新刷写（或通过“字体包 → 同步”）。<br><br>是否继续？"
 
-#: polyhost/gui/cmd_menu.py:506
+#: polyhost/gui/cmd_menu.py:436
 msgid "Wipe Font Pack"
 msgstr "清空字体包"
 
-#: polyhost/gui/cmd_menu.py:516
+#: polyhost/gui/cmd_menu.py:446
 #, python-brace-format
 msgid "Layers: {count}"
 msgstr "层数：{count}"
 
-#: polyhost/gui/cmd_menu.py:517
+#: polyhost/gui/cmd_menu.py:447
 #, python-brace-format
 msgid "Could not read the layer count: {error}"
 msgstr "无法读取层数：{error}"
 
-#: polyhost/gui/cmd_menu.py:521
+#: polyhost/gui/cmd_menu.py:451
 #, python-brace-format
 msgid "Default layer: {layer}"
 msgstr "默认层：{layer}"
 
-#: polyhost/gui/cmd_menu.py:522
+#: polyhost/gui/cmd_menu.py:452
 #, python-brace-format
 msgid "Could not read the default layer: {error}"
 msgstr "无法读取默认层：{error}"
 
-#: polyhost/gui/cmd_menu.py:531
+#: polyhost/gui/cmd_menu.py:461
 #, python-brace-format
 msgid "Could not read the keymap buffer: {error}"
 msgstr "无法读取键位映射缓冲区：{error}"
 
-#: polyhost/gui/cmd_menu.py:535
+#: polyhost/gui/cmd_menu.py:465
 #, python-brace-format
 msgid "Keymap buffer ({size} bytes) written to the log."
 msgstr "键位映射缓冲区（{size} 字节）已写入日志。"
 
-#: polyhost/gui/cmd_menu.py:544
+#: polyhost/gui/cmd_menu.py:474
 #, python-brace-format
 msgid "Could not read the font-pack status: {error}"
 msgstr "无法读取字体包状态：{error}"
 
-#: polyhost/gui/cmd_menu.py:547
+#: polyhost/gui/cmd_menu.py:477
 msgid "This host ships no font-pack bundles."
 msgstr "本主机端未附带任何字体包分包。"
 
 #. TRANSLATORS: CRC check result in the bundle header ("crc ok")
 #. TRANSLATORS: CRC check result ("crc ok")
-#: polyhost/gui/cmd_menu.py:556 polyhost/gui/fontpack_inspector_dialog.py:202
+#: polyhost/gui/cmd_menu.py:486 polyhost/gui/fontpack_inspector_dialog.py:202
 #: polyhost/gui/fontpack_inspector_dialog.py:785
 msgid "ok"
 msgstr "正常"
 
 #. TRANSLATORS: font-pack bundle state in a status table
-#: polyhost/gui/cmd_menu.py:556 polyhost/host.py:2240
+#: polyhost/gui/cmd_menu.py:486 polyhost/host.py:2247
 msgid "stale"
 msgstr "过时"
 
-#: polyhost/gui/cmd_menu.py:559
+#: polyhost/gui/cmd_menu.py:489
 msgid "bundle"
 msgstr "分包"
 
-#: polyhost/gui/cmd_menu.py:560
+#: polyhost/gui/cmd_menu.py:490
 msgid "device"
 msgstr "设备"
 
-#: polyhost/gui/cmd_menu.py:561
+#: polyhost/gui/cmd_menu.py:491
 msgid "shipped"
 msgstr "随附"
 
-#: polyhost/gui/cmd_menu.py:567
+#: polyhost/gui/cmd_menu.py:497
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "PolyKybd 命令（*.poly.cmd）"
 
-#: polyhost/gui/cmd_menu.py:567 polyhost/host.py:2372
+#: polyhost/gui/cmd_menu.py:497 polyhost/host.py:2379
 msgid "Open file"
 msgstr "打开文件"
 
-#: polyhost/gui/cmd_menu.py:597 polyhost/gui/cmd_menu.py:722
+#: polyhost/gui/cmd_menu.py:527 polyhost/gui/cmd_menu.py:652
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:181
 msgid "Not Connected"
 msgstr "未连接"
 
-#: polyhost/gui/cmd_menu.py:598 polyhost/gui/cmd_menu.py:723
+#: polyhost/gui/cmd_menu.py:528 polyhost/gui/cmd_menu.py:653
 msgid "PolyKybd is not connected. Please connect the keyboard and try again."
 msgstr "PolyKybd 未连接。请连接键盘后重试。"
 
-#: polyhost/gui/cmd_menu.py:601
+#: polyhost/gui/cmd_menu.py:531
 msgid "Select Firmware Binary"
 msgstr "选择固件二进制文件"
 
-#: polyhost/gui/cmd_menu.py:601
+#: polyhost/gui/cmd_menu.py:531
 msgid "Firmware binary (*.bin)"
 msgstr "固件二进制文件（*.bin）"
 
-#: polyhost/gui/cmd_menu.py:612
+#: polyhost/gui/cmd_menu.py:542
 msgid "File Error"
 msgstr "文件错误"
 
-#: polyhost/gui/cmd_menu.py:613
+#: polyhost/gui/cmd_menu.py:543
 #, python-brace-format
 msgid ""
 "Could not read firmware file:\n"
@@ -1110,65 +1081,65 @@ msgstr ""
 "无法读取固件文件：\n"
 "{error}"
 
-#: polyhost/gui/cmd_menu.py:618
+#: polyhost/gui/cmd_menu.py:548
 msgid "Invalid Firmware File"
 msgstr "无效的固件文件"
 
-#: polyhost/gui/cmd_menu.py:623
+#: polyhost/gui/cmd_menu.py:553
 msgid "Wrong Keyboard"
 msgstr "键盘型号不符"
 
-#: polyhost/gui/cmd_menu.py:633
+#: polyhost/gui/cmd_menu.py:563
 msgid "Unsigned Firmware"
 msgstr "未签名的固件"
 
-#: polyhost/gui/cmd_menu.py:639
+#: polyhost/gui/cmd_menu.py:569
 msgid "Flash + Apply Firmware"
 msgstr "刷写并应用固件"
 
-#: polyhost/gui/cmd_menu.py:641
+#: polyhost/gui/cmd_menu.py:571
 msgid "This will transfer the new firmware to the keyboard, verify it (CRC32), then <b>activate it</b> — both halves reboot onto the new firmware automatically (no replug needed)."
 msgstr "此操作将把新固件传输到键盘，进行校验（CRC32），然后<b>激活它</b> — 两个半边都会自动重启并运行新固件（无需重新插拔）。"
 
-#: polyhost/gui/cmd_menu.py:646
+#: polyhost/gui/cmd_menu.py:576
 msgid "Flash Firmware"
 msgstr "刷写固件"
 
-#: polyhost/gui/cmd_menu.py:648
+#: polyhost/gui/cmd_menu.py:578
 msgid "This will transfer and stage the new firmware on the keyboard, then verify it (CRC32). The image is stored but <b>not activated yet</b> — the keyboard keeps running its current firmware until you apply it separately."
 msgstr "此操作将把新固件传输并暂存到键盘上，然后进行校验（CRC32）。固件映像会被保存，但<b>尚未激活</b> — 在您另行应用之前，键盘会继续运行当前固件。"
 
-#: polyhost/gui/cmd_menu.py:666
+#: polyhost/gui/cmd_menu.py:596
 #, python-brace-format
 msgid "Current keyboard firmware: <b>{version}</b> ({size_kb} KB)"
 msgstr "当前键盘固件：<b>{version}</b>（{size_kb} KB）"
 
-#: polyhost/gui/cmd_menu.py:669
+#: polyhost/gui/cmd_menu.py:599
 msgid "Could not query current firmware version."
 msgstr "无法查询当前固件版本。"
 
-#: polyhost/gui/cmd_menu.py:670
+#: polyhost/gui/cmd_menu.py:600
 #, python-brace-format
 msgid "Selected file:<br>{path}"
 msgstr "所选文件：<br>{path}"
 
-#: polyhost/gui/cmd_menu.py:671
+#: polyhost/gui/cmd_menu.py:601
 msgid "Continue?"
 msgstr "是否继续？"
 
-#: polyhost/gui/cmd_menu.py:700
+#: polyhost/gui/cmd_menu.py:630
 msgid "<b>Apply the staged firmware?</b><br><br>Both keyboard halves will install the previously-staged image and reboot onto the new firmware automatically (no replug needed).<br><br>If this firmware was not built with in-app apply enabled, the keyboard safely reports apply unavailable and leaves the staged image untouched.<br><br>Continue?"
 msgstr "<b>应用已暂存的固件吗？</b><br><br>两个键盘半边都将安装之前暂存的映像，并自动重启运行新固件（无需重新插拔）。<br><br>如果该固件在构建时未启用应用内安装，键盘会安全地报告无法应用，并保留暂存的映像不变。<br><br>是否继续？"
 
-#: polyhost/gui/cmd_menu.py:709
+#: polyhost/gui/cmd_menu.py:639
 msgid "Apply Staged Firmware"
 msgstr "应用已暂存的固件"
 
-#: polyhost/gui/cmd_menu.py:734
+#: polyhost/gui/cmd_menu.py:664
 msgid "Firmware Applied"
 msgstr "固件已应用"
 
-#: polyhost/gui/cmd_menu.py:736
+#: polyhost/gui/cmd_menu.py:666
 msgid "Apply Failed"
 msgstr "应用失败"
 
@@ -1285,7 +1256,7 @@ msgid "pick one from Source fonts below, or Browse…"
 msgstr "从下方的源字体中选择一个，或点击“浏览…”"
 
 #: polyhost/gui/fontpack_extend_dialog.py:120
-#: polyhost/gui/settings_dialog.py:1256 polyhost/gui/settings_dialog.py:1257
+#: polyhost/gui/settings_dialog.py:1200 polyhost/gui/settings_dialog.py:1201
 msgid "Browse…"
 msgstr "浏览…"
 
@@ -1971,8 +1942,8 @@ msgstr "请输入键盘所在的电脑上“与转发器配对…”（托盘菜
 msgid "That is not a pairing code: it has 64 letters and digits (a to f, 0 to 9), in groups of 8."
 msgstr "这不是配对代码：配对代码由 64 个字母和数字（a 到 f，0 到 9）组成，每 8 个一组。"
 
-#: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:2983
-#: polyhost/host.py:3024 polyhost/host.py:3056
+#: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:2990
+#: polyhost/host.py:3031 polyhost/host.py:3063
 msgid "Firmware Update"
 msgstr "固件更新"
 
@@ -2007,7 +1978,7 @@ msgstr "正在应用 — 正在激活已暂存的固件…"
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "正在取消 — 等待当前数据块完成…"
 
-#: polyhost/gui/i18n_qt.py:89 polyhost/gui/settings_dialog.py:151
+#: polyhost/gui/i18n_qt.py:89 polyhost/gui/settings_dialog.py:152
 msgid "Language"
 msgstr "语言"
 
@@ -2015,56 +1986,56 @@ msgstr "语言"
 msgid "The new language is used after a restart. Restart now?"
 msgstr "新语言将在重新启动后生效。立即重新启动吗？"
 
-#: polyhost/gui/integrations_dialog.py:97
+#: polyhost/gui/integrations_dialog.py:98
 msgid "Checking…"
 msgstr "正在检查…"
 
-#: polyhost/gui/integrations_dialog.py:111
+#: polyhost/gui/integrations_dialog.py:112
 msgid "Install"
 msgstr "安装"
 
-#: polyhost/gui/integrations_dialog.py:112
+#: polyhost/gui/integrations_dialog.py:113
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:149
 msgid "Remove"
 msgstr "移除"
 
-#: polyhost/gui/integrations_dialog.py:133
+#: polyhost/gui/integrations_dialog.py:134
 #, python-brace-format
 msgid "The check failed: {error}"
 msgstr "检查失败：{error}"
 
-#: polyhost/gui/integrations_dialog.py:262
-#: polyhost/gui/integrations_dialog.py:380
+#: polyhost/gui/integrations_dialog.py:263
+#: polyhost/gui/integrations_dialog.py:381
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "更改失败：{error}"
 
-#: polyhost/gui/integrations_dialog.py:293
+#: polyhost/gui/integrations_dialog.py:294
 #: polyhost/gui/shell_editor_pages.py:46 polyhost/gui/shell_editor_pages.py:153
 msgid "Set up"
 msgstr "已设置"
 
-#: polyhost/gui/integrations_dialog.py:295
+#: polyhost/gui/integrations_dialog.py:296
 msgid "Set up for another copy of the app, or an older version. Install updates it."
 msgstr "已为本应用的另一个副本或旧版本设置。“安装”会更新它。"
 
-#: polyhost/gui/integrations_dialog.py:300
+#: polyhost/gui/integrations_dialog.py:301
 #, python-brace-format
 msgid "The file cannot be read: {error}"
 msgstr "无法读取该文件：{error}"
 
-#: polyhost/gui/integrations_dialog.py:301
+#: polyhost/gui/integrations_dialog.py:302
 #: polyhost/gui/shell_editor_pages.py:50 polyhost/gui/shell_editor_pages.py:155
 msgid "Not set up"
 msgstr "未设置"
 
-#: polyhost/gui/integrations_dialog.py:320
-#: polyhost/gui/integrations_dialog.py:354
-#: polyhost/gui/integrations_dialog.py:395 polyhost/gui/settings_dialog.py:112
+#: polyhost/gui/integrations_dialog.py:321
+#: polyhost/gui/integrations_dialog.py:355
+#: polyhost/gui/integrations_dialog.py:396 polyhost/gui/settings_dialog.py:112
 msgid "AI agents"
 msgstr "AI 智能体"
 
-#: polyhost/gui/integrations_dialog.py:321
+#: polyhost/gui/integrations_dialog.py:322
 msgid ""
 "An agent's key shows whether the agent works, waits for you or is finished only when the agent runs the PolyKybd hook.\n"
 "\n"
@@ -2074,45 +2045,45 @@ msgstr ""
 "\n"
 "“安装”会将钩子添加到智能体的设置文件中。您自己的钩子和设置会保留，并且每个文件的副本会保存为 <file>.polykybd.bak。“移除”只会移除 PolyKybd 钩子。请重新启动智能体，使更改生效。"
 
-#: polyhost/gui/integrations_dialog.py:368
+#: polyhost/gui/integrations_dialog.py:369
 msgid "Nothing to change."
 msgstr "没有需要更改的内容。"
 
-#: polyhost/gui/integrations_dialog.py:370
+#: polyhost/gui/integrations_dialog.py:371
 #, python-brace-format
 msgid "Write the PolyKybd hooks into {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
 msgstr "将 PolyKybd 钩子写入 {files} 吗？您自己的钩子会保留，并且每个文件的副本会保存为 <file>.polykybd.bak。"
 
-#: polyhost/gui/integrations_dialog.py:373
+#: polyhost/gui/integrations_dialog.py:374
 #, python-brace-format
 msgid "Remove the PolyKybd hooks from {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
 msgstr "从 {files} 中移除 PolyKybd 钩子吗？您自己的钩子会保留，并且每个文件的副本会保存为 <file>.polykybd.bak。"
 
-#: polyhost/gui/integrations_dialog.py:383
+#: polyhost/gui/integrations_dialog.py:384
 #, python-brace-format
 msgid "Changed: {path}"
 msgstr "已更改：{path}"
 
-#: polyhost/gui/integrations_dialog.py:388
+#: polyhost/gui/integrations_dialog.py:389
 msgid "Restart the agent for the change to take effect."
 msgstr "请重新启动智能体，使更改生效。"
 
-#: polyhost/gui/integrations_dialog.py:395
+#: polyhost/gui/integrations_dialog.py:396
 #: polyhost/gui/shell_editor_pages.py:180
 msgid "Terminals"
 msgstr "终端"
 
-#: polyhost/gui/integrations_dialog.py:395
+#: polyhost/gui/integrations_dialog.py:396
 #: polyhost/gui/shell_editor_pages.py:270
 #: polyhost/gui/shell_editor_pages.py:290
 msgid "Editors"
 msgstr "编辑器"
 
-#: polyhost/gui/integrations_dialog.py:407
+#: polyhost/gui/integrations_dialog.py:408
 msgid "Integrations"
 msgstr "集成"
 
-#: polyhost/gui/integrations_dialog.py:462
+#: polyhost/gui/integrations_dialog.py:475
 msgid "Changes apply to the program after it restarts."
 msgstr "更改将在程序重新启动后生效。"
 
@@ -2202,11 +2173,11 @@ msgstr "C64 键帽"
 msgid "Small (standard)"
 msgstr "小（标准）"
 
-#: polyhost/gui/keyboard_settings.py:61 polyhost/gui/keyboard_settings.py:256
+#: polyhost/gui/keyboard_settings.py:61 polyhost/gui/keyboard_settings.py:280
 msgid "Medium"
 msgstr "中"
 
-#: polyhost/gui/keyboard_settings.py:62 polyhost/gui/keyboard_settings.py:257
+#: polyhost/gui/keyboard_settings.py:62 polyhost/gui/keyboard_settings.py:281
 msgid "Large"
 msgstr "大"
 
@@ -2222,15 +2193,24 @@ msgstr "抖动"
 msgid "Eden"
 msgstr "Eden"
 
-#: polyhost/gui/keyboard_settings.py:256
+#. TRANSLATORS: shown in the Flow Tap spin box when its value is 0.
+#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1038
+msgid "Off"
+msgstr "关"
+
+#: polyhost/gui/keyboard_settings.py:268 polyhost/gui/settings_dialog.py:54
+msgid "Automatic"
+msgstr "自动"
+
+#: polyhost/gui/keyboard_settings.py:280
 msgid "Small"
 msgstr "小"
 
-#: polyhost/gui/keyboard_settings.py:268
+#: polyhost/gui/keyboard_settings.py:292
 msgid "Centred on the keycap"
 msgstr "键帽居中"
 
-#: polyhost/gui/keyboard_settings.py:269
+#: polyhost/gui/keyboard_settings.py:293
 msgid "In the top-left corner"
 msgstr "左上角"
 
@@ -2506,7 +2486,7 @@ msgstr "无预览数据（随附或检出副本中均无）"
 msgid "the shipped language table is missing"
 msgstr "随附的语言表缺失"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:595 polyhost/host.py:2999
+#: polyhost/gui/layout_dialog/keycap_preview.py:595 polyhost/host.py:3006
 msgid "unknown"
 msgstr "未知"
 
@@ -3085,8 +3065,8 @@ msgstr "搜索 (Ctrl+F)"
 msgid "Previous"
 msgstr "上一个"
 
-#: polyhost/gui/log_viewer.py:191 polyhost/gui/tutorials_dialog.py:214
-#: polyhost/gui/tutorials_dialog.py:250
+#: polyhost/gui/log_viewer.py:191 polyhost/gui/tutorials_dialog.py:218
+#: polyhost/gui/tutorials_dialog.py:254
 msgid "Next"
 msgstr "下一个"
 
@@ -3159,7 +3139,7 @@ msgstr "无匹配项"
 msgid "{index} of {total}"
 msgstr "第 {index} 个，共 {total} 个"
 
-#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1922
+#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1929
 msgid "Mock keyboard"
 msgstr "模拟键盘"
 
@@ -3411,10 +3391,6 @@ msgid "Automatic ({language})"
 msgstr "自动（{language}）"
 
 #: polyhost/gui/settings_dialog.py:54
-msgid "Automatic"
-msgstr "自动"
-
-#: polyhost/gui/settings_dialog.py:54
 msgid "Light"
 msgstr "浅色"
 
@@ -3462,11 +3438,15 @@ msgstr "游戏"
 msgid "Installed games"
 msgstr "已安装的游戏"
 
+#: polyhost/gui/settings_dialog.py:83
+msgid "Brightness"
+msgstr "亮度"
+
 #: polyhost/gui/settings_dialog.py:87
 msgid "Daylight curve"
 msgstr "日光曲线"
 
-#: polyhost/gui/settings_dialog.py:92 polyhost/host.py:2032
+#: polyhost/gui/settings_dialog.py:92 polyhost/host.py:2039
 msgid "Keyboard"
 msgstr "键盘"
 
@@ -3478,7 +3458,7 @@ msgstr "空闲显示"
 msgid "Keycaps"
 msgstr "键帽"
 
-#: polyhost/gui/settings_dialog.py:95 polyhost/host.py:1707
+#: polyhost/gui/settings_dialog.py:95 polyhost/host.py:1714
 msgid "Tap-Hold Timing"
 msgstr "点按/按住时间"
 
@@ -3526,11 +3506,11 @@ msgstr "问题检测"
 msgid "Logs"
 msgstr "日志"
 
-#: polyhost/gui/settings_dialog.py:117 polyhost/host.py:697
+#: polyhost/gui/settings_dialog.py:117 polyhost/host.py:695
 msgid "Developer"
 msgstr "开发者"
 
-#: polyhost/gui/settings_dialog.py:121 polyhost/gui/tutorials_dialog.py:41
+#: polyhost/gui/settings_dialog.py:121 polyhost/gui/tutorials_dialog.py:38
 #: polyhost/services/lang_regions.py:148
 msgid "Other"
 msgstr "其他"
@@ -3539,508 +3519,516 @@ msgstr "其他"
 msgid "Send Unicode input mode"
 msgstr "发送 Unicode 输入模式"
 
-#: polyhost/gui/settings_dialog.py:125
+#: polyhost/gui/settings_dialog.py:125 polyhost/host.py:1710
+msgid "Keycap brightness"
+msgstr "键帽亮度"
+
+#: polyhost/gui/settings_dialog.py:126
 msgid "Idle animation"
 msgstr "空闲动画"
 
-#: polyhost/gui/settings_dialog.py:126 polyhost/host.py:1674
+#: polyhost/gui/settings_dialog.py:127 polyhost/host.py:1672
 msgid "Idle After"
 msgstr "空闲等待时间"
 
-#: polyhost/gui/settings_dialog.py:127 polyhost/host.py:1675
+#: polyhost/gui/settings_dialog.py:128 polyhost/host.py:1673
 msgid "Keycap Script"
 msgstr "键帽文字"
 
-#: polyhost/gui/settings_dialog.py:128 polyhost/host.py:1676
+#: polyhost/gui/settings_dialog.py:129 polyhost/host.py:1674
 msgid "Script placement"
 msgstr "文字位置"
 
-#: polyhost/gui/settings_dialog.py:129 polyhost/host.py:1677
+#: polyhost/gui/settings_dialog.py:130 polyhost/host.py:1675
 msgid "Keycap Size"
 msgstr "键帽字号"
 
 #: polyhost/gui/layout_dialog/combo_tab.py:372
-#: polyhost/gui/settings_dialog.py:130
+#: polyhost/gui/settings_dialog.py:131
 msgid "Tapping term"
 msgstr "点按时间"
 
-#: polyhost/gui/settings_dialog.py:131
+#: polyhost/gui/settings_dialog.py:132
 msgid "Flow Tap term"
 msgstr "Flow Tap 时间"
 
-#: polyhost/gui/settings_dialog.py:132
+#: polyhost/gui/settings_dialog.py:133
 msgid "Auto Shift"
 msgstr "Auto Shift"
 
-#: polyhost/gui/settings_dialog.py:133
+#: polyhost/gui/settings_dialog.py:134
 msgid "Auto Shift timeout"
 msgstr "Auto Shift 时间"
 
-#: polyhost/gui/settings_dialog.py:134
+#: polyhost/gui/settings_dialog.py:135
 msgid "Follow daylight"
 msgstr "随日光调节"
 
-#: polyhost/gui/settings_dialog.py:135
+#: polyhost/gui/settings_dialog.py:136
 msgid "Online sunlight data"
 msgstr "在线辐照度数据"
 
-#: polyhost/gui/settings_dialog.py:136
+#: polyhost/gui/settings_dialog.py:137
 msgid "Online location lookup"
 msgstr "在线查询位置"
 
-#: polyhost/gui/settings_dialog.py:137
+#: polyhost/gui/settings_dialog.py:138
 msgid "Sunlight at dimmest"
 msgstr "最暗时的辐照度"
 
-#: polyhost/gui/settings_dialog.py:138
+#: polyhost/gui/settings_dialog.py:139
 msgid "Sunlight at brightest"
 msgstr "最亮时的辐照度"
 
-#: polyhost/gui/settings_dialog.py:139
+#: polyhost/gui/settings_dialog.py:140
 msgid "Sunlight scale"
 msgstr "辐照度缩放"
 
-#: polyhost/gui/settings_dialog.py:140
+#: polyhost/gui/settings_dialog.py:141
 msgid "Curve gamma"
 msgstr "曲线伽马"
 
-#: polyhost/gui/settings_dialog.py:141
+#: polyhost/gui/settings_dialog.py:142
 msgid "Generic icons"
 msgstr "通用图标"
 
-#: polyhost/gui/settings_dialog.py:142
+#: polyhost/gui/settings_dialog.py:143
 msgid "Add the Escape mark"
 msgstr "添加 Esc 标志"
 
-#: polyhost/gui/settings_dialog.py:143
+#: polyhost/gui/settings_dialog.py:144
 msgid "Add shortcut icons"
 msgstr "添加快捷键图标"
 
-#: polyhost/gui/settings_dialog.py:144
+#: polyhost/gui/settings_dialog.py:145
 msgid "Shortcut icons"
 msgstr "快捷键图标"
 
-#: polyhost/gui/settings_dialog.py:145
+#: polyhost/gui/settings_dialog.py:146
 msgid "Download missing icons"
 msgstr "下载缺失的图标"
 
-#: polyhost/gui/settings_dialog.py:146
+#: polyhost/gui/settings_dialog.py:147
 msgid "Turn on accessibility"
 msgstr "打开辅助功能"
 
-#: polyhost/gui/settings_dialog.py:147
+#: polyhost/gui/settings_dialog.py:148
 msgid "Messages before a pause"
 msgstr "暂停前的消息数"
 
-#: polyhost/gui/settings_dialog.py:148
+#: polyhost/gui/settings_dialog.py:149
 msgid "Pause length (s)"
 msgstr "暂停时长（秒）"
 
-#: polyhost/gui/settings_dialog.py:149
+#: polyhost/gui/settings_dialog.py:150
 msgid "ID requests before reconnect"
 msgstr "重新连接前的 ID 请求次数"
 
-#: polyhost/gui/settings_dialog.py:150
+#: polyhost/gui/settings_dialog.py:151
 msgid "Theme"
 msgstr "主题"
 
-#: polyhost/gui/settings_dialog.py:152
+#: polyhost/gui/settings_dialog.py:153
 msgid "Developer mode"
 msgstr "开发者模式"
 
-#: polyhost/gui/settings_dialog.py:153
+#: polyhost/gui/settings_dialog.py:154
 msgid "Log detail"
 msgstr "日志详细程度"
 
-#: polyhost/gui/settings_dialog.py:154
+#: polyhost/gui/settings_dialog.py:155
 msgid "Add a simulated keyboard"
 msgstr "添加模拟键盘"
 
-#: polyhost/gui/settings_dialog.py:155
+#: polyhost/gui/settings_dialog.py:156
 msgid "Simulated keyboard only"
 msgstr "仅使用模拟键盘"
 
-#: polyhost/gui/settings_dialog.py:156
+#: polyhost/gui/settings_dialog.py:157
 msgid "Simulated protocol version"
 msgstr "模拟协议版本"
 
-#: polyhost/gui/settings_dialog.py:157
+#: polyhost/gui/settings_dialog.py:158
 msgid "Track windows without a keyboard"
 msgstr "无键盘时也跟踪窗口"
 
-#: polyhost/gui/settings_dialog.py:158
+#: polyhost/gui/settings_dialog.py:159
 msgid "Native Windows language switch"
 msgstr "Windows 原生语言切换"
 
-#: polyhost/gui/settings_dialog.py:159
+#: polyhost/gui/settings_dialog.py:160
 msgid "Legacy plaintext relay"
 msgstr "旧版明文中继"
 
-#: polyhost/gui/settings_dialog.py:160
+#: polyhost/gui/settings_dialog.py:161
 msgid "Force the HID link"
 msgstr "强制使用 HID 链路"
 
-#: polyhost/gui/settings_dialog.py:161
+#: polyhost/gui/settings_dialog.py:162
 msgid "Background service"
 msgstr "后台服务"
 
-#: polyhost/gui/settings_dialog.py:162
+#: polyhost/gui/settings_dialog.py:163
 msgid "Accept forwarders"
 msgstr "接受转发器"
 
-#: polyhost/gui/settings_dialog.py:163
+#: polyhost/gui/settings_dialog.py:164
 msgid "Update on connect"
 msgstr "连接时更新"
 
-#: polyhost/gui/settings_dialog.py:164
+#: polyhost/gui/settings_dialog.py:165
 msgid "Search language"
 msgstr "搜索语言"
 
-#: polyhost/gui/settings_dialog.py:165
+#: polyhost/gui/settings_dialog.py:166
 msgid "Own dictionary file"
 msgstr "自定义词典文件"
 
-#: polyhost/gui/settings_dialog.py:166
+#: polyhost/gui/settings_dialog.py:167
 msgid "Font pack file"
 msgstr "字体包文件"
 
-#: polyhost/gui/settings_dialog.py:167
+#: polyhost/gui/settings_dialog.py:168
 msgid "Match websites"
 msgstr "匹配网站"
 
-#: polyhost/gui/settings_dialog.py:168
+#: polyhost/gui/settings_dialog.py:169
 msgid "Receive browser reports"
 msgstr "接收浏览器报告"
 
-#: polyhost/gui/settings_dialog.py:169
+#: polyhost/gui/settings_dialog.py:170
 msgid "Receiver port"
 msgstr "接收端口"
 
-#: polyhost/gui/settings_dialog.py:170
+#: polyhost/gui/settings_dialog.py:171
 msgid "Receiver token"
 msgstr "接收令牌"
 
-#: polyhost/gui/settings_dialog.py:171
+#: polyhost/gui/settings_dialog.py:172
 msgid "Send usage report"
 msgstr "发送使用情况报告"
 
-#: polyhost/gui/settings_dialog.py:172
+#: polyhost/gui/settings_dialog.py:173
 msgid "Report address"
 msgstr "报告地址"
 
-#: polyhost/gui/settings_dialog.py:173
+#: polyhost/gui/settings_dialog.py:174
 msgid "Installation ID"
 msgstr "安装 ID"
 
-#: polyhost/gui/settings_dialog.py:174
+#: polyhost/gui/settings_dialog.py:175
 msgid "Watch the keyboard console"
 msgstr "监视键盘控制台"
 
-#: polyhost/gui/settings_dialog.py:175
+#: polyhost/gui/settings_dialog.py:176
 msgid "Watch this app's log"
 msgstr "监视此应用的日志"
 
-#: polyhost/gui/settings_dialog.py:176
+#: polyhost/gui/settings_dialog.py:177
 msgid "What counts as a problem"
 msgstr "问题判定级别"
 
-#: polyhost/gui/settings_dialog.py:177
+#: polyhost/gui/settings_dialog.py:178
 msgid "Art from installed games"
 msgstr "来自已安装游戏的图像"
 
-#: polyhost/gui/settings_dialog.py:178
+#: polyhost/gui/settings_dialog.py:179
 msgid "Show on the number row"
 msgstr "在数字行上显示"
 
-#: polyhost/gui/settings_dialog.py:179
+#: polyhost/gui/settings_dialog.py:180
 msgid "Find by window title"
 msgstr "按窗口标题查找"
 
-#: polyhost/gui/settings_dialog.py:180
+#: polyhost/gui/settings_dialog.py:181
 msgid "Dictation shortcut"
 msgstr "听写快捷键"
 
-#: polyhost/gui/settings_dialog.py:181
+#: polyhost/gui/settings_dialog.py:182
 msgid "Agents from other computers"
 msgstr "来自其他电脑的智能体"
 
-#: polyhost/gui/settings_dialog.py:182
+#: polyhost/gui/settings_dialog.py:183
 msgid "Raise agent windows on this computer"
 msgstr "在此电脑上将智能体窗口置于前台"
 
-#: polyhost/gui/settings_dialog.py:183
+#: polyhost/gui/settings_dialog.py:184
 msgid "Stale after (minutes)"
 msgstr "多久后视为无响应（分钟）"
 
-#: polyhost/gui/settings_dialog.py:184
+#: polyhost/gui/settings_dialog.py:185
 msgid "Remove idle agents after (minutes)"
 msgstr "多久后移除空闲智能体（分钟）"
 
-#: polyhost/gui/settings_dialog.py:193
+#: polyhost/gui/settings_dialog.py:194
+msgid "Sets the brightness of the keycaps when you click OK. A level stays until you choose Automatic, which follows the daylight when Follow daylight is on, and otherwise returns to the keyboard's own stored level. The keyboard does not report its level, so no picture is selected when this dialog opens."
+msgstr "点击“确定”时设置键帽的亮度。所选亮度会一直保持，直到您选择“自动”。“自动”在开启“随日光调节”时随日光变化，否则恢复为键盘自身保存的亮度。键盘不会报告其当前亮度，因此打开此对话框时不会选中任何图片。"
+
+#: polyhost/gui/settings_dialog.py:199
 msgid "What the keycaps show when you have not typed for a while. It protects the displays from burn-in."
 msgstr "一段时间未打字时键帽上显示的内容。可防止显示屏烧屏。"
 
-#: polyhost/gui/settings_dialog.py:195
+#: polyhost/gui/settings_dialog.py:201
 msgid "How long the keyboard waits before the idle display starts."
 msgstr "键盘在开始空闲显示之前等待的时间。"
 
-#: polyhost/gui/settings_dialog.py:197
+#: polyhost/gui/settings_dialog.py:203
 msgid "Draws the letters and digits on the keycaps in another script. Standard shows the normal legends of your language."
 msgstr "用另一种文字在键帽上绘制字母和数字。“标准”显示您所用语言的正常键面字符。"
 
-#: polyhost/gui/settings_dialog.py:200
+#: polyhost/gui/settings_dialog.py:206
 msgid "Where the script's letters sit on the keycap. The top-left corner leaves room for an app icon."
 msgstr "文字的字母在键帽上的位置。左上角会为应用图标留出空间。"
 
-#: polyhost/gui/settings_dialog.py:203
+#: polyhost/gui/settings_dialog.py:209
 msgid "The size of the main legend. The larger sizes cover Latin letters."
 msgstr "主键面字符的大小。较大的尺寸可覆盖拉丁字母。"
 
-#: polyhost/gui/settings_dialog.py:205
+#: polyhost/gui/settings_dialog.py:211
 msgid "A key with a tap and a hold action types its tap action when you release it before this time, and acts as its hold action when you hold it longer."
 msgstr "带有点按和按住动作的按键：在此时间之前松开时输入点按动作，按住更久时则作为按住动作。"
 
-#: polyhost/gui/settings_dialog.py:208
+#: polyhost/gui/settings_dialog.py:214
 msgid "A tap-hold key pressed within this time after the previous key always types its tap action, so fast typing does not trigger a modifier. 0 turns Flow Tap off."
 msgstr "在上一个按键之后此时间内按下的点按/按住键总是输入点按动作，因此快速打字不会触发修饰键。0 表示关闭 Flow Tap。"
 
-#: polyhost/gui/settings_dialog.py:211
+#: polyhost/gui/settings_dialog.py:217
 msgid "With Auto Shift on, holding a letter, digit or symbol key longer than the Auto Shift timeout types its shifted character."
 msgstr "开启 Auto Shift 后，按住字母、数字或符号键超过 Auto Shift 时间，会输入其 Shift 字符。"
 
-#: polyhost/gui/settings_dialog.py:213
+#: polyhost/gui/settings_dialog.py:219
 msgid "How long you hold a key before Auto Shift types its shifted character."
 msgstr "按住按键多久后 Auto Shift 输入其 Shift 字符。"
 
-#: polyhost/gui/settings_dialog.py:216
+#: polyhost/gui/settings_dialog.py:222
 msgid "Shows the state of AI coding agents on the number row and, while the AI key is pressed, one card per agent. Needs keyboard firmware with protocol 31. Takes effect at the next keyboard connect."
 msgstr "在数字行上显示 AI 编程智能体的状态，并在按住 AI 键时为每个智能体显示一张卡片。需要协议 31 的键盘固件。下次连接键盘时生效。"
 
-#: polyhost/gui/settings_dialog.py:220
+#: polyhost/gui/settings_dialog.py:226
 msgid "Also finds agents that run in a terminal from the window title, without a hook. Not on macOS."
 msgstr "也通过窗口标题查找在终端中运行的智能体，无需钩子。不适用于 macOS。"
 
-#: polyhost/gui/settings_dialog.py:223
+#: polyhost/gui/settings_dialog.py:229
 msgid "Also shows agents that run on a computer with the forwarder. A key press brings forward the remote-desktop viewer that shows that computer (NoMachine, Remote Desktop, VNC). They report over the network endpoint for forwarders, which must be on too. Off: only this computer's agents."
 msgstr "也显示在装有转发器的电脑上运行的智能体。按下按键会将显示该电脑的远程桌面查看器（NoMachine、远程桌面、VNC）置于前台。它们通过供转发器使用的网络端点报告，该端点也必须打开。关：仅显示此电脑的智能体。"
 
-#: polyhost/gui/settings_dialog.py:228
+#: polyhost/gui/settings_dialog.py:234
 msgid "On a computer with the forwarder: a key press on one of this computer's agents also brings the agent's own window forward here. Off: only the viewer on the keyboard's computer comes forward."
 msgstr "在装有转发器的电脑上：按下此电脑某个智能体的按键时，也会在这里将该智能体自己的窗口置于前台。关：仅将键盘所在电脑上的查看器置于前台。"
 
-#: polyhost/gui/settings_dialog.py:232
+#: polyhost/gui/settings_dialog.py:238
 msgid "A working agent that reports nothing for this many minutes shows as stale (dim white). 0: never."
 msgstr "工作中的智能体在这么多分钟内没有任何报告时，显示为无响应（暗白色）。0：从不。"
 
-#: polyhost/gui/settings_dialog.py:235
+#: polyhost/gui/settings_dialog.py:241
 msgid "An idle or stale agent that reports nothing for this many minutes is removed and frees its key. An agent whose process ends is removed at once. 0: never."
 msgstr "空闲或无响应的智能体在这么多分钟内没有任何报告时，会被移除并释放其按键。进程结束的智能体会立即移除。0：从不。"
 
-#: polyhost/gui/settings_dialog.py:238
+#: polyhost/gui/settings_dialog.py:244
 msgid "The shortcut the minus key sends in AI mode to start dictation, for example <cmd>+h or <ctrl>+<alt>+d. Empty: Win+H on Windows, nothing on macOS and Linux."
 msgstr "AI 模式下减号键为开始听写而发送的快捷键，例如 <cmd>+h 或 <ctrl>+<alt>+d。留空：Windows 上为 Win+H，macOS 和 Linux 上不发送任何内容。"
 
-#: polyhost/gui/settings_dialog.py:242
+#: polyhost/gui/settings_dialog.py:248
 msgid "Tells the keyboard how this computer takes Unicode input (for example WinCompose), on connect and whenever it changes. Off: the keyboard keeps the mode it has stored."
 msgstr "在连接时以及每次变化时，告诉键盘这台计算机如何接收 Unicode 输入（例如 WinCompose）。关闭时：键盘保持其已存储的模式。"
 
-#: polyhost/gui/settings_dialog.py:246
+#: polyhost/gui/settings_dialog.py:252
 msgid "Sets the keycap brightness from the daylight at your location, every ten minutes."
 msgstr "根据你所在位置的日光，每十分钟设置一次键帽亮度。"
 
-#: polyhost/gui/settings_dialog.py:249
+#: polyhost/gui/settings_dialog.py:255
 msgid "Asks open-meteo.com for this hour's sunlight at your location, including clouds. Off: the host computes a cloudless-sky value from the location and time."
 msgstr "向 open-meteo.com 查询你所在位置当前小时的辐照度（包括云量）。关闭时：主机根据位置和时间计算晴空下的值。"
 
-#: polyhost/gui/settings_dialog.py:253
+#: polyhost/gui/settings_dialog.py:259
 msgid "Looks up your approximate location from your IP address (ip-api.com), once per run. Off: the brightness follows the hour of the day."
 msgstr "根据你的 IP 地址查询大致位置（ip-api.com），每次运行查询一次。关闭时：亮度随一天中的时间变化。"
 
-#: polyhost/gui/settings_dialog.py:255
+#: polyhost/gui/settings_dialog.py:261
 msgid "The sunlight value that gives the dimmest brightness level."
 msgstr "对应最暗亮度级别的辐照度值。"
 
-#: polyhost/gui/settings_dialog.py:257
+#: polyhost/gui/settings_dialog.py:263
 msgid "The sunlight value that gives the brightest level. Lower it to reach full brightness on a cloudy day."
 msgstr "对应最亮级别的辐照度值。调低此值可在阴天达到最高亮度。"
 
-#: polyhost/gui/settings_dialog.py:259
+#: polyhost/gui/settings_dialog.py:265
 msgid "Multiplies the sunlight value before the dimmest and brightest values apply."
 msgstr "在应用最暗值和最亮值之前，与辐照度值相乘的系数。"
 
-#: polyhost/gui/settings_dialog.py:261
+#: polyhost/gui/settings_dialog.py:267
 msgid "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, below 1 brighter. The dimmest and brightest levels do not change."
 msgstr "调整日光曲线的形状。大于 1 时一天中间时段变暗，小于 1 时变亮。最暗和最亮级别不变。"
 
-#: polyhost/gui/settings_dialog.py:264
+#: polyhost/gui/settings_dialog.py:270
 msgid "Icons for apps without their own overlay: the app's mark on Escape and an icon for each of its shortcuts. Off: nothing generic is drawn for any app."
 msgstr "为没有专属叠加图标的应用提供图标：在 Esc 键上显示应用标志，并为它的每个快捷键显示一个图标。关闭时：不会为任何应用绘制通用图标。"
 
-#: polyhost/gui/settings_dialog.py:267
+#: polyhost/gui/settings_dialog.py:273
 msgid "An app with its own overlay also gets its mark on Escape, when the overlay leaves Escape blank."
 msgstr "有专属叠加图标的应用，如果叠加图标未占用 Esc 键，也会在 Esc 键上显示其应用标志。"
 
-#: polyhost/gui/settings_dialog.py:270
+#: polyhost/gui/settings_dialog.py:276
 msgid "An app with its own overlay is also read for its shortcuts, with icons on the keys the overlay leaves blank. Reading a large app, such as a browser with a long page, can take minutes."
 msgstr "有专属叠加图标的应用也会被读取快捷键，并在叠加图标未占用的键上显示图标。读取大型应用（例如打开了长页面的浏览器）可能需要几分钟。"
 
-#: polyhost/gui/settings_dialog.py:274
+#: polyhost/gui/settings_dialog.py:280
 msgid "Reads the focused app's shortcuts to draw an icon for each. Off: no app is read and no shortcut icons are drawn. To remove every generic icon, the Escape mark included, turn off Generic icons."
 msgstr "读取当前焦点应用的快捷键，为每个快捷键绘制图标。关闭时：不读取任何应用，也不绘制快捷键图标。要移除所有通用图标（包括 Esc 标志），请关闭“通用图标”。"
 
-#: polyhost/gui/settings_dialog.py:278
+#: polyhost/gui/settings_dialog.py:284
 msgid "Downloads icons that are missing. Off: icons already downloaded keep working, new ones are skipped."
 msgstr "下载缺少的图标。关闭时：已下载的图标继续可用，新图标将被跳过。"
 
-#: polyhost/gui/settings_dialog.py:281
+#: polyhost/gui/settings_dialog.py:287
 msgid "Linux only. Turns on the desktop's accessibility switch so Qt and KDE apps publish their shortcuts. Off: only apps that publish them anyway (GTK) are read."
 msgstr "仅限 Linux。打开桌面的辅助功能开关，使 Qt 和 KDE 应用公开它们的快捷键。关闭时：只读取本来就会公开快捷键的应用（GTK）。"
 
-#: polyhost/gui/settings_dialog.py:285
+#: polyhost/gui/settings_dialog.py:291
 msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
 msgstr "USB 传输：在短暂暂停之前发送的图像消息数量，使键盘能持续响应输入。仅在报告问题时被要求修改的情况下才更改。"
 
-#: polyhost/gui/settings_dialog.py:289
+#: polyhost/gui/settings_dialog.py:295
 msgid "USB transport: the length of that pause, in seconds. Change it only when asked to while reporting a problem."
 msgstr "USB 传输：该暂停的时长，以秒为单位。仅在报告问题时被要求修改的情况下才更改。"
 
-#: polyhost/gui/settings_dialog.py:292
+#: polyhost/gui/settings_dialog.py:298
 msgid "How many times the host asks the keyboard for its ID before it reopens the USB connection."
 msgstr "主机在重新打开 USB 连接之前向键盘查询其 ID 的次数。"
 
-#: polyhost/gui/settings_dialog.py:295
+#: polyhost/gui/settings_dialog.py:301
 msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
 msgstr "托盘菜单和对话框的外观。“自动”跟随桌面的浅色或深色设置。"
 
-#: polyhost/gui/settings_dialog.py:298
+#: polyhost/gui/settings_dialog.py:304
 msgid "The language of the menus and dialogs. Applies when the tray app restarts."
 msgstr "菜单和对话框的语言。在托盘应用重新启动后生效。"
 
-#: polyhost/gui/settings_dialog.py:300
+#: polyhost/gui/settings_dialog.py:306
 msgid "Shows the developer settings in this dialog, and the Developer submenu in the tray menu after a restart."
 msgstr "在此对话框中显示开发者设置；重新启动后，还会在托盘菜单中显示“开发者”子菜单。"
 
-#: polyhost/gui/settings_dialog.py:303
+#: polyhost/gui/settings_dialog.py:309
 msgid "How much the app writes to its log. Debug and Detailed help when you report a problem, and make the log grow faster. Applies after a restart."
 msgstr "应用写入日志的详细程度。“调试”和“详细”有助于报告问题，但会使日志增长更快。重新启动后生效。"
 
-#: polyhost/gui/settings_dialog.py:305
+#: polyhost/gui/settings_dialog.py:311
 msgid "Adds a simulated keyboard next to the real one."
 msgstr "在真实键盘之外添加一个模拟键盘。"
 
-#: polyhost/gui/settings_dialog.py:307
+#: polyhost/gui/settings_dialog.py:313
 msgid "Uses a simulated keyboard instead of a real one, so the app runs without hardware."
 msgstr "使用模拟键盘代替真实键盘，使应用无需硬件即可运行。"
 
-#: polyhost/gui/settings_dialog.py:310
+#: polyhost/gui/settings_dialog.py:316
 msgid "The protocol version the simulated keyboard reports. 0 uses the newest version this host knows."
 msgstr "模拟键盘报告的协议版本。0 表示使用此主机所知的最新版本。"
 
-#: polyhost/gui/settings_dialog.py:313
+#: polyhost/gui/settings_dialog.py:319
 msgid "Tracks the active window even when no keyboard is connected."
 msgstr "即使没有连接键盘，也跟踪活动窗口。"
 
-#: polyhost/gui/settings_dialog.py:315
+#: polyhost/gui/settings_dialog.py:321
 msgid "Windows only, experimental. Switches the input language with Win32 calls instead of the standard method, and falls back to it on a failure."
 msgstr "仅限 Windows，实验性功能。使用 Win32 调用而不是标准方法切换输入语言，失败时回退到标准方法。"
 
-#: polyhost/gui/settings_dialog.py:318
+#: polyhost/gui/settings_dialog.py:324
 msgid "Uses the USB HID channel only, as if the keyboard had no fast link: firmware updates go over HID. For testing the HID path by hand."
 msgstr "仅使用 USB HID 通道，如同键盘没有高速链路：固件更新通过 HID 传输。用于手动测试 HID 路径。"
 
-#: polyhost/gui/settings_dialog.py:321
+#: polyhost/gui/settings_dialog.py:327
 msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
 msgstr "通过未加密、未经身份验证的 TCP（端口 50162）在所有网络接口上接收来自旧版转发器的窗口报告。仅在使用旧版转发器时才打开。"
 
-#: polyhost/gui/settings_dialog.py:325
+#: polyhost/gui/settings_dialog.py:331
 msgid "Runs the keyboard connection in a background process that the tray app connects to, so the connection stays up when the tray app restarts."
 msgstr "在后台进程中运行键盘连接，托盘应用连接到该进程，这样托盘应用重新启动时连接也会保持。"
 
-#: polyhost/gui/settings_dialog.py:328
+#: polyhost/gui/settings_dialog.py:334
 msgid "Accepts window reports from a forwarder on another computer. Opens a network port. Applies after a restart."
 msgstr "接收来自另一台计算机上转发器的窗口报告。会打开一个网络端口。重新启动后生效。"
 
-#: polyhost/gui/settings_dialog.py:331
+#: polyhost/gui/settings_dialog.py:337
 msgid "The language the keyboard's emoji layer searches in. The keyboard gets the dictionary right away when you change this, and when it connects if Update on connect is on. Own dictionary file, when set, is used instead."
 msgstr "键盘表情符号层进行搜索所用的语言。更改此项后键盘立即获得词典；如果开启了“连接时更新”，连接时也会获得。设置了“自定义词典文件”时，改用该文件。"
 
-#: polyhost/gui/settings_dialog.py:335
+#: polyhost/gui/settings_dialog.py:341
 msgid "A dictionary you built yourself (.plyd), used instead of Search language. Empty: the shipped dictionary is used. Choose it in the tray to flash it right away."
 msgstr "你自己构建的词典（.plyd），用来代替“搜索语言”。留空：使用随附的词典。在托盘中选择即可立即写入。"
 
-#: polyhost/gui/settings_dialog.py:339
+#: polyhost/gui/settings_dialog.py:345
 msgid "Flashes missing or outdated font-pack bundles when the keyboard connects."
 msgstr "键盘连接时刷写缺少或过时的字体包分包。"
 
-#: polyhost/gui/settings_dialog.py:341
+#: polyhost/gui/settings_dialog.py:347
 msgid "A .plyf file to flash instead of the font pack that ships with the app. Empty uses the shipped pack."
 msgstr "用于代替应用自带字体包进行刷写的 .plyf 文件。留空则使用自带的字体包。"
 
-#: polyhost/gui/settings_dialog.py:344
+#: polyhost/gui/settings_dialog.py:350
 msgid "Matches overlays to the website in the focused browser tab. Off: browser overlays match on the window title only."
 msgstr "根据当前焦点浏览器标签页中的网站匹配叠加图标。关闭时：浏览器叠加图标仅按窗口标题匹配。"
 
-#: polyhost/gui/settings_dialog.py:347
+#: polyhost/gui/settings_dialog.py:353
 msgid "Runs the receiver the browser extension reports to. It listens on 127.0.0.1 only."
 msgstr "运行浏览器扩展向其报告的接收器。它只在 127.0.0.1 上监听。"
 
-#: polyhost/gui/settings_dialog.py:350
+#: polyhost/gui/settings_dialog.py:356
 msgid "The receiver's port. It must match the Host port in the browser extension."
 msgstr "接收器的端口。必须与浏览器扩展中的 Host port 一致。"
 
-#: polyhost/gui/settings_dialog.py:352
+#: polyhost/gui/settings_dialog.py:358
 msgid "A shared secret. When set, the browser extension must send the same token."
 msgstr "共享密钥。设置后，浏览器扩展必须发送相同的令牌。"
 
-#: polyhost/gui/settings_dialog.py:354
+#: polyhost/gui/settings_dialog.py:360
 msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
 msgstr "每天发送一份匿名使用情况报告：版本、操作系统和少量计数器。绝不包含窗口标题或应用名称。"
 
-#: polyhost/gui/settings_dialog.py:356
+#: polyhost/gui/settings_dialog.py:362
 msgid "Where the usage report goes. Empty sends nothing."
 msgstr "使用情况报告的发送地址。留空则不发送任何内容。"
 
-#: polyhost/gui/settings_dialog.py:358
+#: polyhost/gui/settings_dialog.py:364
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
 msgstr "此安装的随机 ID，在发送第一份报告时创建。删除后将被计为新的安装。"
 
-#: polyhost/gui/settings_dialog.py:361
+#: polyhost/gui/settings_dialog.py:367
 msgid "Watches the keyboard's console for known failure messages and offers to report a problem."
 msgstr "监视键盘控制台中的已知故障消息，并提供报告问题的选项。"
 
-#: polyhost/gui/settings_dialog.py:363
+#: polyhost/gui/settings_dialog.py:369
 msgid "Watches this app's own log for known failure messages."
 msgstr "监视此应用自身日志中的已知故障消息。"
 
-#: polyhost/gui/settings_dialog.py:364
+#: polyhost/gui/settings_dialog.py:370
 msgid "What counts as a problem: errors only, or errors and warnings."
 msgstr "哪些情况算作问题：仅错误，或错误和警告。"
 
-#: polyhost/gui/settings_dialog.py:366
+#: polyhost/gui/settings_dialog.py:372
 msgid "Draws some game overlays from the game's own files when the game is installed on this computer. The images stay on this computer. Off: the shipped overlays are used."
 msgstr "当游戏安装在这台电脑上时，从游戏自身的文件绘制部分游戏叠加层。图像留在这台电脑上。关闭：使用自带的叠加层。"
 
-#: polyhost/gui/settings_dialog.py:888 polyhost/host.py:1691
+#: polyhost/gui/settings_dialog.py:821 polyhost/host.py:1689
 msgid "PolyKybd Settings"
 msgstr "PolyKybd 设置"
 
-#: polyhost/gui/settings_dialog.py:957
+#: polyhost/gui/settings_dialog.py:890
 msgid "Search settings"
 msgstr "搜索设置"
 
-#: polyhost/gui/settings_dialog.py:1003
+#: polyhost/gui/settings_dialog.py:935
 msgid "Reading the settings stored on the keyboard…"
 msgstr "正在读取键盘中存储的设置…"
 
-#: polyhost/gui/settings_dialog.py:1009
+#: polyhost/gui/settings_dialog.py:939
 msgid "No setting matches the search."
 msgstr "没有与搜索匹配的设置。"
 
-#: polyhost/gui/settings_dialog.py:1024
+#: polyhost/gui/settings_dialog.py:954
 msgid "Some settings might need a restart to take effect."
 msgstr "某些设置可能需要重新启动才能生效。"
 
-#: polyhost/gui/settings_dialog.py:1059
+#: polyhost/gui/settings_dialog.py:989
 #, python-brace-format
 msgid "Set by {flag} for this run. This setting applies when the app starts without it."
 msgstr "本次运行由 {flag} 设置。应用不带此参数启动时，使用此设置。"
@@ -4049,35 +4037,35 @@ msgstr "本次运行由 {flag} 设置。应用不带此参数启动时，使用�
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
 #: polyhost/gui/layout_dialog/combo_tab.py:371
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
-#: polyhost/gui/settings_dialog.py:1103
+#: polyhost/gui/settings_dialog.py:1035
 msgid " ms"
 msgstr " ms"
 
-#: polyhost/gui/settings_dialog.py:1150
+#: polyhost/gui/settings_dialog.py:1082
 msgid "This keyboard's firmware does not have this setting."
 msgstr "此键盘的固件没有此设置。"
 
-#: polyhost/gui/settings_dialog.py:1152
+#: polyhost/gui/settings_dialog.py:1084
 msgid "Could not read this setting from the keyboard."
 msgstr "无法从键盘读取此设置。"
 
-#: polyhost/gui/settings_dialog.py:1160
+#: polyhost/gui/settings_dialog.py:1092
 msgid "Connect the keyboard to change the settings stored on it."
 msgstr "请连接键盘以更改其中存储的设置。"
 
-#: polyhost/gui/settings_dialog.py:1162
+#: polyhost/gui/settings_dialog.py:1094
 msgid "Some settings could not be read from the keyboard. Update the keyboard firmware to change them here."
 msgstr "部分设置无法从键盘读取。请更新键盘固件以在此处更改它们。"
 
-#: polyhost/gui/settings_dialog.py:1206
+#: polyhost/gui/settings_dialog.py:1138
 msgid "These developer settings are not at their default, so they stay in effect while developer mode is off."
 msgstr "这些开发者设置不是默认值，因此在关闭开发者模式时仍然有效。"
 
-#: polyhost/gui/settings_dialog.py:1264
+#: polyhost/gui/settings_dialog.py:1208
 msgid "Generate"
 msgstr "生成"
 
-#: polyhost/gui/settings_dialog.py:1265
+#: polyhost/gui/settings_dialog.py:1209
 msgid "Fills in a new random token and copies it. Paste it into the browser extension's Options and save both."
 msgstr "填入一个新的随机令牌并复制。请将其粘贴到浏览器扩展的选项中，然后两边都保存。"
 
@@ -4340,105 +4328,105 @@ msgid "{prefix} — firmware v{fw_version} available"
 msgstr "{prefix} — 有可用更新：固件 v{fw_version}"
 
 #: polyhost/forwarder.py:278 polyhost/gui/tray_notify.py:81
-#: polyhost/host.py:564
+#: polyhost/host.py:562
 msgid "Updates"
 msgstr "更新"
 
-#: polyhost/gui/tutorials_dialog.py:36
+#: polyhost/gui/tutorials_dialog.py:33
 msgid "Layers"
 msgstr "层"
 
-#: polyhost/gui/tutorials_dialog.py:37
+#: polyhost/gui/tutorials_dialog.py:34
 msgid "Languages and accents"
 msgstr "语言和重音符号"
 
-#: polyhost/gui/tutorials_dialog.py:38
+#: polyhost/gui/tutorials_dialog.py:35
 msgid "Light and displays"
 msgstr "灯光和显示屏"
 
-#: polyhost/gui/tutorials_dialog.py:39
+#: polyhost/gui/tutorials_dialog.py:36
 msgid "Emoji"
 msgstr "表情符号"
 
-#: polyhost/gui/tutorials_dialog.py:40
+#: polyhost/gui/tutorials_dialog.py:37
 msgid "Layout editor"
 msgstr "布局编辑器"
 
-#: polyhost/gui/tutorials_dialog.py:60
+#: polyhost/gui/tutorials_dialog.py:57
 msgid "PolyKybd Tutorials"
 msgstr "PolyKybd 教程"
 
-#: polyhost/gui/tutorials_dialog.py:79
+#: polyhost/gui/tutorials_dialog.py:78
 msgid "Reading the tutorials..."
 msgstr "正在读取教程..."
 
-#: polyhost/gui/tutorials_dialog.py:83
+#: polyhost/gui/tutorials_dialog.py:82
 msgid "Open tutorials folder"
 msgstr "打开教程文件夹"
 
-#: polyhost/gui/tutorials_dialog.py:85
+#: polyhost/gui/tutorials_dialog.py:84
 msgid "Put your own tutorial scripts (.yaml) in this folder."
 msgstr "请将您自己的教程脚本 (.yaml) 放在此文件夹中。"
 
-#: polyhost/gui/tutorials_dialog.py:103
+#: polyhost/gui/tutorials_dialog.py:102
 #, python-brace-format
 msgid "Cannot read the tutorials: {error}"
 msgstr "无法读取教程：{error}"
 
-#: polyhost/gui/tutorials_dialog.py:115
+#: polyhost/gui/tutorials_dialog.py:116
 #, python-brace-format
 msgid "A tutorial script has an error:"
 msgid_plural "{n} tutorial scripts have errors:"
 msgstr[0] "教程脚本存在错误（{n} 个）："
 
-#: polyhost/gui/tutorials_dialog.py:144
+#: polyhost/gui/tutorials_dialog.py:148
 #, python-brace-format
 msgid "{n} step"
 msgid_plural "{n} steps"
 msgstr[0] "{n} 步"
 
-#: polyhost/gui/tutorials_dialog.py:146
+#: polyhost/gui/tutorials_dialog.py:150
 msgid "your script"
 msgstr "您的脚本"
 
-#: polyhost/gui/tutorials_dialog.py:149
+#: polyhost/gui/tutorials_dialog.py:153
 #, python-brace-format
 msgid "needs firmware protocol {protocol}"
 msgstr "需要固件协议 {protocol}"
 
-#: polyhost/gui/tutorials_dialog.py:164
+#: polyhost/gui/tutorials_dialog.py:168
 msgid "Starting..."
 msgstr "正在开始..."
 
-#: polyhost/gui/tutorials_dialog.py:168
+#: polyhost/gui/tutorials_dialog.py:172
 #, python-brace-format
 msgid "Cannot start the tutorial: {error}"
 msgstr "无法开始教程：{error}"
 
-#: polyhost/gui/tutorials_dialog.py:204
+#: polyhost/gui/tutorials_dialog.py:208
 msgid "What the keyboard's status display will show"
 msgstr "键盘状态面板将显示的内容"
 
-#: polyhost/gui/tutorials_dialog.py:212
+#: polyhost/gui/tutorials_dialog.py:216
 msgid "Back"
 msgstr "上一步"
 
-#: polyhost/gui/tutorials_dialog.py:235
+#: polyhost/gui/tutorials_dialog.py:239
 #, python-brace-format
 msgid "Step {step} of {steps}"
 msgstr "第 {step} 步，共 {steps} 步"
 
-#: polyhost/gui/tutorials_dialog.py:242
+#: polyhost/gui/tutorials_dialog.py:246
 #, python-brace-format
 msgid "The next step starts in {seconds} s."
 msgstr "下一步将在 {seconds} s 后开始。"
 
-#: polyhost/gui/tutorials_dialog.py:245
+#: polyhost/gui/tutorials_dialog.py:249
 #, python-brace-format
 msgid "The keyboard cannot point at the key: {reason}"
 msgstr "键盘无法指向该按键：{reason}"
 
-#: polyhost/gui/tutorials_dialog.py:250
+#: polyhost/gui/tutorials_dialog.py:254
 msgid "Finish"
 msgstr "完成"
 
@@ -4513,11 +4501,11 @@ msgstr "键盘引擎包已是最新。"
 msgid "Engine pack update failed: {error}"
 msgstr "引擎包更新失败：{error}"
 
-#: polyhost/host.py:384 polyhost/host.py:1392
+#: polyhost/host.py:384 polyhost/host.py:1390
 msgid "Waiting for PolyKybd..."
 msgstr "正在等待 PolyKybd..."
 
-#: polyhost/host.py:385 polyhost/host.py:1239
+#: polyhost/host.py:385 polyhost/host.py:1237
 msgid "Press to pause connection"
 msgstr "点击暂停连接"
 
@@ -4567,7 +4555,7 @@ msgstr "检查字体包..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
 #: polyhost/forwarder.py:266 polyhost/forwarder.py:416 polyhost/host.py:477
-#: polyhost/host.py:1241
+#: polyhost/host.py:1239
 msgid "Pause"
 msgstr "暂停"
 
@@ -4579,102 +4567,102 @@ msgstr "固件比此应用更新 — 安全模式…"
 msgid "Choose how to handle a keyboard whose firmware is newer than this host app."
 msgstr "选择如何处理固件比此主机端应用更新的键盘。"
 
-#: polyhost/host.py:538
+#: polyhost/host.py:531
 msgid "AI Agents"
 msgstr "AI 智能体"
 
-#: polyhost/host.py:546
+#: polyhost/host.py:544
 msgid "Configure Keymap"
 msgstr "配置键位映射"
 
-#: polyhost/host.py:554
+#: polyhost/host.py:552
 msgid "Tutorials…"
 msgstr "教程…"
 
-#: polyhost/host.py:566
+#: polyhost/host.py:564
 msgid "Check for host update..."
 msgstr "检查主机端更新..."
 
-#: polyhost/host.py:605 polyhost/host.py:2461 polyhost/host.py:2996
-#: polyhost/host.py:3174
+#: polyhost/host.py:603 polyhost/host.py:2468 polyhost/host.py:3003
+#: polyhost/host.py:3181
 msgid "Check for firmware update…"
 msgstr "检查固件更新…"
 
-#: polyhost/host.py:614
+#: polyhost/host.py:612
 msgid "Keyboard fonts"
 msgstr "键盘字体"
 
-#: polyhost/host.py:649
+#: polyhost/host.py:647
 msgid "Install WinCompose…"
 msgstr "安装 WinCompose…"
 
-#: polyhost/host.py:671
+#: polyhost/host.py:669
 msgid "Allow access to the keyboard (udev rule)…"
 msgstr "允许访问键盘（udev 规则）…"
 
-#: polyhost/host.py:699
+#: polyhost/host.py:697
 msgid "Change System Input Language"
 msgstr "更改系统输入语言"
 
-#: polyhost/host.py:705
+#: polyhost/host.py:703
 msgid "Inspect MRU Cache..."
 msgstr "检查 MRU 缓存..."
 
-#: polyhost/host.py:711
+#: polyhost/host.py:709
 msgid "Mock Keyboard..."
 msgstr "模拟键盘..."
 
-#: polyhost/host.py:719
+#: polyhost/host.py:717
 msgid "Refresh unicode input mode"
 msgstr "刷新 Unicode 输入模式"
 
-#: polyhost/host.py:723
+#: polyhost/host.py:721
 msgid "Save MRU cache now"
 msgstr "立即保存 MRU 缓存"
 
-#: polyhost/forwarder.py:351 polyhost/host.py:738
+#: polyhost/forwarder.py:351 polyhost/host.py:736
 msgid "Help && About"
 msgstr "帮助 && 关于"
 
-#: polyhost/forwarder.py:347 polyhost/host.py:746
+#: polyhost/forwarder.py:347 polyhost/host.py:744
 msgid "Open config folder"
 msgstr "打开配置文件夹"
 
-#: polyhost/host.py:759
+#: polyhost/host.py:757
 msgid "Only quit GUI"
 msgstr "仅退出界面"
 
-#: polyhost/host.py:869
+#: polyhost/host.py:867
 msgid "System language query not supported for this platform."
 msgstr "此平台不支持查询系统语言。"
 
-#: polyhost/host.py:1064
+#: polyhost/host.py:1062
 #, python-brace-format
 msgid "Retry keyboard fonts ({n} failed)…"
 msgid_plural "Retry keyboard fonts ({n} failed)…"
 msgstr[0] "重试键盘字体（{n} 个失败）…"
 
-#: polyhost/host.py:1066
+#: polyhost/host.py:1064
 #, python-brace-format
 msgid "Re-flash the font bundles whose last attempt failed: {bundles}"
 msgstr "重新刷写上次尝试失败的字体分包：{bundles}"
 
-#: polyhost/host.py:1072
+#: polyhost/host.py:1070
 #, python-brace-format
 msgid "Update keyboard fonts ({n})…"
 msgid_plural "Update keyboard fonts ({n})…"
 msgstr[0] "更新键盘字体（{n} 个）…"
 
-#: polyhost/host.py:1074
+#: polyhost/host.py:1072
 #, python-brace-format
 msgid "Flash the font bundles the keyboard is missing, behind on, or failed to take: {bundles}"
 msgstr "刷写键盘缺失、版本落后或未能成功写入的字体分包：{bundles}"
 
-#: polyhost/host.py:1079
+#: polyhost/host.py:1077
 msgid "Keyboard fonts: up to date"
 msgstr "键盘字体：已是最新"
 
-#: polyhost/host.py:1080
+#: polyhost/host.py:1078
 msgid ""
 "Every shipped font bundle is already on the keyboard.\n"
 "Developer → Font Pack → Re-flash all bundles forces a re-send if the keycaps still render wrong."
@@ -4682,93 +4670,93 @@ msgstr ""
 "所有随附的字体分包都已在键盘上。\n"
 "如果键帽仍显示错误，可通过“开发者 → 字体包 → 重新刷写所有分包”强制重新发送。"
 
-#: polyhost/forwarder.py:846 polyhost/host.py:1116
+#: polyhost/forwarder.py:846 polyhost/host.py:1114
 msgid "Config folder"
 msgstr "配置文件夹"
 
 #. TRANSLATORS: {rate} is like "0.6 MB/s"; the fast USB link's measured speed.
-#: polyhost/host.py:1208
+#: polyhost/host.py:1206
 #, python-brace-format
 msgid "{rate} link"
 msgstr "{rate} 链路"
 
 #. TRANSLATORS: {kbps} is the HID channel's ceiling in KB/s (64).
-#: polyhost/host.py:1210
+#: polyhost/host.py:1208
 #, python-brace-format
 msgid "HID link, up to {kbps} KB/s"
 msgstr "HID 链路，最高 {kbps} KB/s"
 
 #. TRANSLATORS: tray tooltip line; {link} is "0.6 MB/s link" or "HID link, up
 #. to 64 KB/s".
-#: polyhost/host.py:1217
+#: polyhost/host.py:1215
 #, python-brace-format
 msgid "Connected: {link}"
 msgstr "已连接：{link}"
 
 #. TRANSLATORS: status row while paused; clicking it reconnects (verb).
-#: polyhost/host.py:1233
+#: polyhost/host.py:1231
 msgid "Reconnect"
 msgstr "重新连接"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:416 polyhost/host.py:1236
+#: polyhost/forwarder.py:416 polyhost/host.py:1234
 msgid "Resume"
 msgstr "继续"
 
-#: polyhost/host.py:1319 polyhost/host.py:1384
+#: polyhost/host.py:1317 polyhost/host.py:1382
 #, python-brace-format
 msgid "Could not change OS language {language}."
 msgstr "无法更改操作系统语言 {language}。"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.bin)" unchanged.
-#: polyhost/host.py:1408
+#: polyhost/host.py:1406
 msgid "Firmware image (*.bin)"
 msgstr "固件映像（*.bin）"
 
-#: polyhost/host.py:1409
+#: polyhost/host.py:1407
 msgid "Select firmware .bin"
 msgstr "选择固件 .bin"
 
-#: polyhost/host.py:1460
+#: polyhost/host.py:1458
 msgid "Firmware apply failed"
 msgstr "固件应用失败"
 
-#: polyhost/host.py:1461
+#: polyhost/host.py:1459
 msgid "Firmware flash failed"
 msgstr "固件刷写失败"
 
-#: polyhost/host.py:1509 polyhost/host.py:1562
+#: polyhost/host.py:1507 polyhost/host.py:1560
 #, python-brace-format
 msgid "Selected Language: {language} {country}"
 msgstr "所选语言：{language} {country}"
 
-#: polyhost/host.py:1655
+#: polyhost/host.py:1653
 msgid "PolyHost settings"
 msgstr "PolyHost 设置"
 
-#: polyhost/host.py:1656
+#: polyhost/host.py:1654
 msgid "The settings are applied, but they could not be saved to the settings file. Another program may be holding it open. Change a setting again later to retry, or see the log."
 msgstr "设置已应用，但无法保存到设置文件。可能有其他程序正在占用该文件。请稍后再次更改设置以重试，或查看日志。"
 
-#: polyhost/host.py:1673
+#: polyhost/host.py:1671
 msgid "Idle Display"
 msgstr "空闲显示"
 
-#: polyhost/host.py:1692
+#: polyhost/host.py:1690
 #, python-brace-format
 msgid "The keyboard did not accept this setting: {setting}"
 msgstr "键盘未接受此设置：{setting}"
 
-#: polyhost/host.py:1804
+#: polyhost/host.py:1811
 #, python-brace-format
 msgid "{side}: unreadable record {record}"
 msgstr "{side}：无法读取的记录 {record}"
 
-#: polyhost/host.py:1807
+#: polyhost/host.py:1814
 msgid "Neither keyboard half holds a crash record."
 msgstr "两个键盘半边均没有崩溃记录。"
 
-#: polyhost/host.py:1809
+#: polyhost/host.py:1816
 #, python-brace-format
 msgid ""
 "Could not read the crash record.\n"
@@ -4779,115 +4767,115 @@ msgstr ""
 "\n"
 "{errors}"
 
-#: polyhost/host.py:1811
+#: polyhost/host.py:1818
 msgid "Keyboard crash record"
 msgstr "键盘崩溃记录"
 
-#: polyhost/host.py:1820
+#: polyhost/host.py:1827
 #, python-brace-format
 msgid "Copied to the clipboard. Not read: {errors}"
 msgstr "已复制到剪贴板。未读取：{errors}"
 
-#: polyhost/host.py:1912
+#: polyhost/host.py:1919
 msgid "MRU Cache"
 msgstr "MRU 缓存"
 
-#: polyhost/host.py:1912
+#: polyhost/host.py:1919
 msgid "MRU cache is not active (device not connected or MRU mode disabled)."
 msgstr "MRU 缓存未激活（设备未连接或 MRU 模式已禁用）。"
 
-#: polyhost/host.py:1964
+#: polyhost/host.py:1971
 msgid "daemon client"
 msgstr "守护进程客户端"
 
-#: polyhost/host.py:1964
+#: polyhost/host.py:1971
 msgid "standalone"
 msgstr "独立运行"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:923 polyhost/host.py:2022
+#: polyhost/forwarder.py:923 polyhost/host.py:2029
 msgid "paused"
 msgstr "已暂停"
 
-#: polyhost/host.py:2024
+#: polyhost/host.py:2031
 msgid "connected"
 msgstr "已连接"
 
-#: polyhost/host.py:2025
+#: polyhost/host.py:2032
 msgid "present — not connected (protocol/version)"
 msgstr "已检测到 — 未连接（协议/版本）"
 
-#: polyhost/host.py:2033
+#: polyhost/host.py:2040
 msgid "No keyboard connected."
 msgstr "未连接键盘。"
 
-#: polyhost/host.py:2037
+#: polyhost/host.py:2044
 msgid "⚠ mismatch"
 msgstr "⚠ 不匹配"
 
-#: polyhost/host.py:2039
+#: polyhost/host.py:2046
 #, python-brace-format
 msgid "{n} languages loaded"
 msgid_plural "{n} languages loaded"
 msgstr[0] "已加载 {n} 种语言"
 
-#: polyhost/host.py:2042
+#: polyhost/host.py:2049
 #, python-brace-format
 msgid "<b>Connected keyboard:</b> {name} {state}"
 msgstr "<b>已连接的键盘：</b>{name} {state}"
 
-#: polyhost/host.py:2044
+#: polyhost/host.py:2051
 #, python-brace-format
 msgid "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
 msgstr "<b>固件：</b>{firmware} &nbsp;·&nbsp; 协议 {protocol}"
 
-#: polyhost/host.py:2046
+#: polyhost/host.py:2053
 #, python-brace-format
 msgid "<b>Hardware:</b> {hardware}"
 msgstr "<b>硬件：</b>{hardware}"
 
-#: polyhost/host.py:2047
+#: polyhost/host.py:2054
 #, python-brace-format
 msgid "<b>Language:</b> {language}"
 msgstr "<b>语言：</b>{language}"
 
-#: polyhost/host.py:2050
+#: polyhost/host.py:2057
 #, python-brace-format
 msgid "<b>Link:</b> {link}"
 msgstr "<b>链路：</b>{link}"
 
-#: polyhost/host.py:2057
+#: polyhost/host.py:2064
 #, python-brace-format
 msgid "<b>Uptime:</b> {uptime}"
 msgstr "<b>运行时间：</b>{uptime}"
 
-#: polyhost/host.py:2059
+#: polyhost/host.py:2066
 #, python-brace-format
 msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>叠加图标映射：</b>{n} 个应用"
 
-#: polyhost/forwarder.py:940 polyhost/host.py:2061
+#: polyhost/forwarder.py:940 polyhost/host.py:2068
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>配置：</b>{path}"
 
-#: polyhost/forwarder.py:941 polyhost/host.py:2062
+#: polyhost/forwarder.py:941 polyhost/host.py:2069
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>日志：</b>{path}"
 
-#: polyhost/forwarder.py:959 polyhost/host.py:2116
+#: polyhost/forwarder.py:959 polyhost/host.py:2123
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "HID 协议 P{protocol}"
 
-#: polyhost/host.py:2121
+#: polyhost/host.py:2128
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
 msgstr "适用于 PolyKybd 分体键盘（每个键帽都带 OLED 显示屏）的主机端软件 — 跟踪活动窗口，并将叠加图标、语言和键位映射更新推送到键盘。"
 
-#: polyhost/host.py:2147
+#: polyhost/host.py:2154
 #, python-brace-format
 msgid ""
 "Changing input language to '{language}' failed with:\n"
@@ -4896,124 +4884,124 @@ msgstr ""
 "将输入语言更改为“{language}”失败：\n"
 "“{error}”"
 
-#: polyhost/host.py:2167 polyhost/host.py:2184
+#: polyhost/host.py:2174 polyhost/host.py:2191
 #, python-brace-format
 msgid "Could not set {language}: {error}"
 msgstr "无法设置 {language}：{error}"
 
-#: polyhost/host.py:2198
+#: polyhost/host.py:2205
 msgid "Show on the Number Row"
 msgstr "在数字行上显示"
 
-#: polyhost/host.py:2207
+#: polyhost/host.py:2214
 msgid "Remove Agent"
 msgstr "移除智能体"
 
-#: polyhost/host.py:2212
+#: polyhost/host.py:2219
 msgid "Set Up Hooks…"
 msgstr "设置钩子…"
 
-#: polyhost/host.py:2217
+#: polyhost/host.py:2224
 msgid "Pair a Forwarder…"
 msgstr "与转发器配对…"
 
-#: polyhost/host.py:2221
+#: polyhost/host.py:2228
 msgid "Connect Cloud Sessions…"
 msgstr "连接云端会话…"
 
-#: polyhost/host.py:2236
+#: polyhost/host.py:2243
 msgid "No agents reported"
 msgstr "没有智能体报告"
 
-#: polyhost/host.py:2239
+#: polyhost/host.py:2246
 msgid "working"
 msgstr "工作中"
 
-#: polyhost/host.py:2239
+#: polyhost/host.py:2246
 msgid "waiting"
 msgstr "等待中"
 
-#: polyhost/host.py:2239
+#: polyhost/host.py:2246
 msgid "done"
 msgstr "已完成"
 
-#: polyhost/host.py:2240
+#: polyhost/host.py:2247
 msgid "idle"
 msgstr "空闲"
 
-#: polyhost/host.py:2243
+#: polyhost/host.py:2250
 #, python-brace-format
 msgid "Key {key}: {name}, {state}, {title}"
 msgstr "按键 {key}：{name}，{state}，{title}"
 
-#: polyhost/host.py:2248
+#: polyhost/host.py:2255
 #, python-brace-format
 msgid "Page {page}, {text}"
 msgstr "第 {page} 页，{text}"
 
-#: polyhost/host.py:2271
+#: polyhost/host.py:2278
 msgid "Remove All Inactive"
 msgstr "移除所有非活动项"
 
-#: polyhost/host.py:2333
+#: polyhost/host.py:2340
 msgid "Open Cloud Session"
 msgstr "打开云端会话"
 
-#: polyhost/host.py:2334
+#: polyhost/host.py:2341
 #, python-brace-format
 msgid "No browser tab or Claude app window shows the cloud session \"{title}\". Open it in the browser?"
 msgstr "没有浏览器标签页或 Claude 应用窗口显示云端会话“{title}”。要在浏览器中打开吗？"
 
-#: polyhost/host.py:2341
+#: polyhost/host.py:2348
 msgid "Open in Browser"
 msgstr "在浏览器中打开"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-#: polyhost/host.py:2371
+#: polyhost/host.py:2378
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "PolyKybd 叠加图标映射（*.poly.yaml）"
 
-#: polyhost/host.py:2459 polyhost/host.py:2955 polyhost/host.py:3103
+#: polyhost/host.py:2466 polyhost/host.py:2962 polyhost/host.py:3110
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "将固件更新到 v{version}…"
 
 #: polyhost/forwarder.py:998 polyhost/forwarder.py:1009
-#: polyhost/forwarder.py:1015 polyhost/host.py:2479 polyhost/host.py:2600
-#: polyhost/host.py:2604
+#: polyhost/forwarder.py:1015 polyhost/host.py:2486 polyhost/host.py:2607
+#: polyhost/host.py:2611
 msgid "Check for updates..."
 msgstr "检查更新..."
 
-#: polyhost/host.py:2547
+#: polyhost/host.py:2554
 #, python-brace-format
 msgid "Update to v{version} available"
 msgstr "有可用更新：v{version}"
 
 #: polyhost/forwarder.py:1011 polyhost/forwarder.py:1017
-#: polyhost/forwarder.py:1028 polyhost/host.py:2558 polyhost/host.py:2598
-#: polyhost/host.py:2605 polyhost/host.py:2628
+#: polyhost/forwarder.py:1028 polyhost/host.py:2565 polyhost/host.py:2605
+#: polyhost/host.py:2612 polyhost/host.py:2635
 msgid "PolyKybdHost Update"
 msgstr "PolyKybdHost 更新"
 
-#: polyhost/host.py:2559
+#: polyhost/host.py:2566
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "版本 {version} 已可用。点击托盘图标进行更新。"
 
-#: polyhost/forwarder.py:985 polyhost/host.py:2584
+#: polyhost/forwarder.py:985 polyhost/host.py:2591
 msgid "Checking for updates..."
 msgstr "正在检查更新..."
 
-#: polyhost/host.py:2597
+#: polyhost/host.py:2604
 msgid "No updates available"
 msgstr "没有可用的更新"
 
-#: polyhost/forwarder.py:1012 polyhost/host.py:2599
+#: polyhost/forwarder.py:1012 polyhost/host.py:2606
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "您正在运行最新版本（v{version}）。"
 
-#: polyhost/forwarder.py:1018 polyhost/host.py:2606
+#: polyhost/forwarder.py:1018 polyhost/host.py:2613
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -5028,69 +5016,69 @@ msgstr ""
 "\n"
 "使用 --dev 1 运行以查看详细信息。"
 
-#: polyhost/host.py:2611 polyhost/host.py:3028
+#: polyhost/host.py:2618 polyhost/host.py:3035
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "发布日期：{date}"
 
-#: polyhost/forwarder.py:999 polyhost/host.py:2612
+#: polyhost/forwarder.py:999 polyhost/host.py:2619
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "版本 {version} 已可用。"
 
-#: polyhost/forwarder.py:1000 polyhost/host.py:2613
+#: polyhost/forwarder.py:1000 polyhost/host.py:2620
 msgid "Update PolyKybdHost"
 msgstr "更新 PolyKybdHost"
 
-#: polyhost/host.py:2617
+#: polyhost/host.py:2624
 msgid "Download, install, and restart now?"
 msgstr "立即下载、安装并重新启动吗？"
 
-#: polyhost/forwarder.py:1027 polyhost/host.py:2628
+#: polyhost/forwarder.py:1027 polyhost/host.py:2635
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "正在下载 v{version}…"
 
-#: polyhost/forwarder.py:1068 polyhost/host.py:2753
+#: polyhost/forwarder.py:1068 polyhost/host.py:2760
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "无法启动更新中继程序；更新未完成。详细信息请查看日志。"
 
-#: polyhost/forwarder.py:1080 polyhost/host.py:2768
+#: polyhost/forwarder.py:1080 polyhost/host.py:2775
 msgid "Update failed"
 msgstr "更新失败"
 
-#: polyhost/forwarder.py:1080 polyhost/host.py:2768
+#: polyhost/forwarder.py:1080 polyhost/host.py:2775
 msgid "The update did not finish."
 msgstr "更新未完成。"
 
-#: polyhost/host.py:2915
+#: polyhost/host.py:2922
 #, python-brace-format
 msgid "{n} keyboard font bundle is out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
 msgid_plural "{n} keyboard font bundles are out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
 msgstr[0] "{n} 个键盘字体包已过期，且自动刷写已关闭。请使用 更新 → 更新键盘字体。"
 
-#: polyhost/host.py:2966
+#: polyhost/host.py:2973
 msgid "PolyKybd Firmware Update"
 msgstr "PolyKybd 固件更新"
 
-#: polyhost/host.py:2967
+#: polyhost/host.py:2974
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "新固件 v{version} 已可用。点击托盘图标进行更新。"
 
-#: polyhost/host.py:2984 polyhost/host.py:3025
+#: polyhost/host.py:2991 polyhost/host.py:3032
 msgid "The keyboard must be connected to update the firmware."
 msgstr "必须连接键盘才能更新固件。"
 
-#: polyhost/host.py:2990
+#: polyhost/host.py:2997
 msgid "Checking for firmware update…"
 msgstr "正在检查固件更新…"
 
-#: polyhost/host.py:3004 polyhost/host.py:3014 polyhost/host.py:3017
+#: polyhost/host.py:3011 polyhost/host.py:3021 polyhost/host.py:3024
 msgid "PolyKybd Firmware"
 msgstr "PolyKybd 固件"
 
-#: polyhost/host.py:3005
+#: polyhost/host.py:3012
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -5101,63 +5089,63 @@ msgstr ""
 "\n"
 "您的键盘当前为 v{current}。这通常表示发布版本构建失败 — 修复后，发布页面上会提供固件文件。"
 
-#: polyhost/host.py:3015
+#: polyhost/host.py:3022
 msgid "No firmware release could be found."
 msgstr "找不到固件发行版本。"
 
-#: polyhost/host.py:3018
+#: polyhost/host.py:3025
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "您正在运行最新固件（v{version}）。"
 
-#: polyhost/host.py:3030
+#: polyhost/host.py:3037
 #, python-brace-format
 msgid "Installed: v{version}"
 msgstr "已安装：v{version}"
 
-#: polyhost/host.py:3031
+#: polyhost/host.py:3038
 msgid "Installed: unknown (the keyboard did not report its version)"
 msgstr "已安装：未知（键盘未报告其版本）"
 
-#: polyhost/host.py:3032
+#: polyhost/host.py:3039
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "固件 {version} 已可用。"
 
-#: polyhost/host.py:3034
+#: polyhost/host.py:3041
 msgid "Both halves update over HID and reboot automatically."
 msgstr "两个半边都通过 HID 更新并自动重启。"
 
-#: polyhost/host.py:3037
+#: polyhost/host.py:3044
 msgid "This update changes your stored keymap once:"
 msgstr "此更新会对已保存的键位映射进行一次性更改："
 
-#: polyhost/host.py:3039
+#: polyhost/host.py:3046
 msgid "Keys you remapped and your macros stay as they are."
 msgstr "你重新映射过的按键和你的宏保持不变。"
 
-#: polyhost/host.py:3040
+#: polyhost/host.py:3047
 msgid "Update PolyKybd Firmware"
 msgstr "更新 PolyKybd 固件"
 
-#: polyhost/host.py:3044
+#: polyhost/host.py:3051
 msgid "Download and flash now?"
 msgstr "立即下载并刷写吗？"
 
-#: polyhost/host.py:3055
+#: polyhost/host.py:3062
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "正在下载固件 v{version}…"
 
-#: polyhost/host.py:3077 polyhost/host.py:3378
+#: polyhost/host.py:3084 polyhost/host.py:3385
 msgid "Cancelling…"
 msgstr "正在取消…"
 
-#: polyhost/host.py:3114
+#: polyhost/host.py:3121
 msgid "Firmware Update Failed"
 msgstr "固件更新失败"
 
-#: polyhost/host.py:3115
+#: polyhost/host.py:3122
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -5168,11 +5156,11 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3221 polyhost/host.py:3263 polyhost/host.py:3271
+#: polyhost/host.py:3228 polyhost/host.py:3270 polyhost/host.py:3278
 msgid "Allow access to the keyboard"
 msgstr "允许访问键盘"
 
-#: polyhost/host.py:3222
+#: polyhost/host.py:3229
 msgid ""
 "On Linux a udev rule lets this app open the keyboard without root: its HID interface, and its serial port for faster firmware and font-pack updates. The rule file is /etc/udev/rules.d/99-hid.rules.\n"
 "\n"
@@ -5182,7 +5170,7 @@ msgstr ""
 "\n"
 "系统会要求您输入密码（PolicyKit）。之后，请拔下键盘并重新插入。"
 
-#: polyhost/host.py:3264
+#: polyhost/host.py:3271
 msgid ""
 "The udev rule is installed.\n"
 "\n"
@@ -5192,11 +5180,11 @@ msgstr ""
 "\n"
 "请拔下键盘并重新插入，新的权限才会生效。"
 
-#: polyhost/host.py:3272
+#: polyhost/host.py:3279
 msgid "The udev rule was not installed."
 msgstr "udev 规则未能安装。"
 
-#: polyhost/host.py:3273
+#: polyhost/host.py:3280
 #, python-brace-format
 msgid ""
 "{error}\n"
@@ -5209,12 +5197,12 @@ msgstr ""
 "您也可以在终端中运行以下命令：\n"
 "{commands}"
 
-#: polyhost/host.py:3342 polyhost/host.py:3356 polyhost/host.py:3402
-#: polyhost/host.py:3411 polyhost/host.py:3417
+#: polyhost/host.py:3349 polyhost/host.py:3363 polyhost/host.py:3409
+#: polyhost/host.py:3418 polyhost/host.py:3424
 msgid "Install WinCompose"
 msgstr "安装 WinCompose"
 
-#: polyhost/host.py:3343
+#: polyhost/host.py:3350
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -5224,11 +5212,11 @@ msgstr ""
 "\n"
 "将从 GitHub 下载 PolyKybd 版本的 WinCompose 并启动其安装程序（Windows 会要求您确认）。"
 
-#: polyhost/host.py:3356
+#: polyhost/host.py:3363
 msgid "Looking for the latest WinCompose release…"
 msgstr "正在查找最新的 WinCompose 版本…"
 
-#: polyhost/host.py:3403
+#: polyhost/host.py:3410
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -5238,7 +5226,7 @@ msgstr ""
 "\n"
 "将在浏览器中打开发布页面 — 请从那里下载并运行安装程序。"
 
-#: polyhost/host.py:3412
+#: polyhost/host.py:3419
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -5249,7 +5237,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3418
+#: polyhost/host.py:3425
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -5266,7 +5254,7 @@ msgstr ""
 "它已保存到：\n"
 "{path}"
 
-#: polyhost/host.py:3426
+#: polyhost/host.py:3433
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "WinCompose 安装程序已启动。安装完成并运行 WinCompose 后，PolyKybd 会自动切换到它。"
 

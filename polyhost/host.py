@@ -521,13 +521,6 @@ class PolyHost(QApplication):
         threading.Thread(target=browser_extension.update_if_outdated,
                          name="browser-extension-update", daemon=True).start()
 
-        # Brightness: promoted out of the old "All PolyKybd Commands" list — it is
-        # the most-used device control and sat three levels deep.
-        self.brightness_menu = self.cmdMenu.build_brightness_menu(self.menu)
-        # The language menu is built lazily (see add_supported_lang) and inserts
-        # itself before this anchor, so it lands at the top of the device group
-        # rather than wherever the menu happened to end.
-        self._lang_anchor = self.brightness_menu.menuAction()
 
         # AI agents on the number row (services/agents, firmware v31+ for the keys).
         # The registry is host state, so the submenu works with no keyboard: the
@@ -536,6 +529,11 @@ class PolyHost(QApplication):
         # core.agents_list() (off the GUI thread) updates only the switch and the
         # agent rows, so Set Up Hooks is there before the answer arrives.
         self.agents_menu = self.menu.addMenu(get_icon("terminal.svg"), _("AI Agents"))
+        # The language menu is built lazily (see add_supported_lang) and inserts
+        # itself before this anchor, so it lands at the top of the device group
+        # rather than wherever the menu happened to end. Brightness, the row it
+        # used to sit above, is in Settings > Brightness now.
+        self._lang_anchor = self.agents_menu.menuAction()
         self._build_agents_menu()
         # noinspection PyUnresolvedReferences
         self.agents_menu.aboutToShow.connect(self.refresh_agents_menu)
@@ -1510,7 +1508,7 @@ class PolyHost(QApplication):
                        language=current_lang[:2], country=self.lang_flag_text(current_lang))
             if self.keeb_lang_menu is None:
                 # Place the language menu at the head of the device group (just
-                # above Brightness) instead of appending it last. It is created
+                # above AI Agents) instead of appending it last. It is created
                 # lazily once the firmware answers, by which point the rest of the
                 # menu already exists, so insert at the anchor rather than add.
                 self.keeb_lang_menu = QMenu(title)
@@ -1701,6 +1699,15 @@ class PolyHost(QApplication):
                 value = changes[key]
                 self._core_click(lambda m=method, v=value: getattr(self.core, m)(v),
                                  done_for(key, label))
+        if kbd.BRIGHTNESS in changes:
+            level = changes[kbd.BRIGHTNESS]
+            # Automatic re-engages the daylight drive in the daemon, which owns
+            # the device and the setting (or clears the manual level when
+            # Follow daylight is off); a preset is a manual level.
+            call = ((lambda: self.core.refresh_daylight_brightness())
+                    if level == kbd.BRIGHTNESS_AUTO else
+                    (lambda: self.core.set_brightness(level)))
+            self._core_click(call, done_for(kbd.BRIGHTNESS, _("Keycap brightness")))
         tap = kbd.tap_terms_call(changes)
         if tap is not None:
             self._core_click(lambda: self.core.set_tap_terms(*tap),

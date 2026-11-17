@@ -69,6 +69,14 @@ IDLE_STYLE_LABELS = {
     IdleStyle.EDEN:   N_("Eden"),
 }
 
+# The keycap brightness: a choice to SEND, not a value read back. The keyboard
+# does not report its level, so no tile is ticked when the dialog opens. AUTO
+# hands the level back to the keyboard and the host's daylight value.
+BRIGHTNESS = "kbd_brightness"
+BRIGHTNESS_AUTO = -1
+# (value, caption): the firmware's 0..50 scale, as the tray's presets had it.
+BRIGHTNESS_PRESETS = ((0, N_("Off")), (2, "1%"), (25, "50%"), (50, "100%"))
+
 # The pseudo keys, in the order the dialog shows them.
 IDLE_STYLE = "kbd_idle_style"
 IDLE_TIMEOUT = "kbd_idle_timeout"
@@ -79,7 +87,7 @@ TAPPING_TERM = "kbd_tapping_term"
 FLOW_TAP_TERM = "kbd_flow_tap_term"
 AUTO_SHIFT = "kbd_auto_shift"
 AUTO_SHIFT_MS = "kbd_auto_shift_ms"
-KEYS = (IDLE_STYLE, IDLE_TIMEOUT, GLYPH_SCRIPT, GLYPH_PLACEMENT, GLYPH_SIZE,
+KEYS = (BRIGHTNESS, IDLE_STYLE, IDLE_TIMEOUT, GLYPH_SCRIPT, GLYPH_PLACEMENT, GLYPH_SIZE,
         TAPPING_TERM, FLOW_TAP_TERM, AUTO_SHIFT, AUTO_SHIFT_MS)
 TAP_KEYS = (TAPPING_TERM, FLOW_TAP_TERM, AUTO_SHIFT, AUTO_SHIFT_MS)
 
@@ -114,6 +122,12 @@ def values_from_reads(reads):
     for each that failed. A key whose firmware has no such setting (Flow Tap,
     Auto Shift) is in neither: its row stays disabled with its own reason."""
     values, failed = {}, {}
+    # Brightness has no read: offer it whenever the keyboard answered at all.
+    answered = any(_ok_value(r)[0] for r in reads.values()) if reads else False
+    if answered:
+        values[BRIGHTNESS] = None
+    else:
+        failed[BRIGHTNESS] = "not connected"
 
     def put(key, ok, value):
         if ok:
@@ -246,6 +260,16 @@ def make_glyph_script_editor():
         full = _(GLYPH_SCRIPT_LABELS[script])
         short = _(GLYPH_SCRIPT_TILE_LABELS.get(script, GLYPH_SCRIPT_LABELS[script]))
         choices.append((script.value, short, full if full != short else None, icon))
+    return TileChoice(choices, keycap_tiles.tile_size())
+
+
+def make_brightness_editor():
+    from polyhost.gui import keycap_tiles
+    choices = [(BRIGHTNESS_AUTO, _("Automatic"), None,
+                keycap_tiles.to_icon(keycap_tiles.auto_brightness_panel()))]
+    for value, caption in BRIGHTNESS_PRESETS:
+        choices.append((value, _(caption), None,
+                        keycap_tiles.to_icon(keycap_tiles.brightness_panel(value))))
     return TileChoice(choices, keycap_tiles.tile_size())
 
 
