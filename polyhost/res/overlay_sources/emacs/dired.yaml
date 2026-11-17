@@ -71,8 +71,8 @@ bindings:
   - { key: R, mods: [SHIFT], icon: rename.png, label: "Rename / move" }
   - { key: D, mods: [SHIFT], icon: deletenow.png, label: "Delete marked" }
   - { key: Z, mods: [SHIFT], icon: compress.png, label: "Compress / uncompress" }
-  - { key: A, mods: [SHIFT], icon: grep.png, label: "Search marked files" }
-  - { key: Q, mods: [SHIFT], icon: queryreplace.png, label: "Replace in marked files" }
+  - { key: A, mods: [SHIFT], icon: dired_grep_marked.png, region: [40, 32], label: "Search marked files" }
+  - { key: Q, mods: [SHIFT], icon: dired_replace_marked.png, region: [40, 32], label: "Replace in marked files" }
   - { key: B, mods: [SHIFT], icon: bytecompile.png, label: "Byte-compile" }
   - { key: L, mods: [SHIFT], icon: load.png, label: "Load (Lisp)" }
   - { key: G, mods: [SHIFT], icon: chgrp.png, label: "Change group" }
