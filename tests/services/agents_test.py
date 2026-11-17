@@ -463,16 +463,13 @@ class CardTest(unittest.TestCase):
         self.assertLessEqual(_measure(fit_text("polykybd-docs"))[2], 70)
 
     def test_shipped_agent_marks_load_without_network(self):
-        from polyhost.services.agents.card import MARK_BOX, VendorMarks
+        from polyhost.services.agents.card import MARK_SHOWN, VendorMarks
         marks = VendorMarks()
         for vid in ("aider", "opencode", "qwen", "antigravity", "kimi", "grok"):
-            mask = marks._load(vid, MARK_BOX, allow_network=False)
+            mask = marks._load(vid, allow_network=False)
             self.assertIsNotNone(mask, vid)
-            self.assertLessEqual(mask.shape[0], MARK_BOX)
+            self.assertLessEqual(mask.shape[0], MARK_SHOWN)
             self.assertTrue(mask.any())
-        # A square mark is drawn smaller when asked; it never grows.
-        self.assertLessEqual(marks._load("qwen", 12, allow_network=False).shape[0], 12)
-        self.assertEqual(marks._load("aider", 12, allow_network=False).shape[0], 12)
 
     def test_flow_breaks_at_spaces_and_after_hyphens(self):
         self.assertEqual(flow("polykybd-docs", [70]), ["polykybd-", "docs"])
@@ -499,45 +496,51 @@ class CardTest(unittest.TestCase):
         self.assertEqual(len(pages), card_mod.MAX_PAGES)
         self.assertTrue(pages[-1][-1].endswith((".", "\u2026")))
 
-    def test_the_mark_shrinks_until_the_first_word_fits_beside_it(self):
+    def test_no_mark_is_scaled_and_a_cloud_session_gets_the_cloud(self):
         import numpy as np
 
         class Marks:
-            def get(self, vid, box=24):
-                return np.ones((box, box), dtype=bool)        # a square mark
-        self.assertEqual(card_layout("x", "Fix the HID", Marks()).mark.shape, (24, 24))
-        # "firmware" (54 px) does not fit beside 24 px (46 px left); 16 px leaves 54.
-        small = card_layout("x", "firmware update", Marks()).mark
-        self.assertEqual(small.shape, (16, 16))
-        # "Investigate" (69 px) fits beside no size: the smallest is used.
-        self.assertEqual(card_layout("x", "Investigate", Marks()).mark.shape, (12, 12))
+            def get(self, vid):
+                return np.ones((16, 26), dtype=bool)            # a half-cut logo
+        local = card_layout("x", "Investigate", Marks())
+        self.assertEqual(local.mark.shape, (16, 26))
+        # "Investigate" (69 px) fits beside no mark: it starts below it, on line 3.
+        self.assertEqual(local.pages[0], ["", "", "Investigate"])
+        cloud = card_layout("x", "Investigate", Marks(), cloud=True)
+        self.assertEqual(cloud.mark.shape[1], 26)               # no wider than the logo
+        self.assertGreater(cloud.mark.shape[0], 16)             # the cloud reaches below it
+        self.assertTrue(cloud.mark[16:].any())
+        self.assertFalse(cloud.mark[:16].all())                 # its inside cleared on the logo
+        self.assertTrue((cloud.mark[:8] == local.mark[:8]).all())   # the logo's top unchanged
 
-    def test_a_wordmark_is_never_shrunk(self):
+    def test_a_wordmark_keeps_its_size_with_the_cloud_too(self):
         import numpy as np
 
         class Marks:
-            def get(self, vid, box=24):
-                rows = min(13, box)                           # aider's wordmark, scalable
-                return np.ones((rows, round(29 * rows / 13)), dtype=bool)
+            def get(self, vid):
+                return np.ones((13, 29), dtype=bool)            # aider's wordmark
         layout = card_layout("aider", "refactor the overlay cache", Marks())
         self.assertEqual(layout.mark.shape, (13, 29))
         # 13 rows sit beside line 1 only: "refactor" does not fit there and starts
         # line 2, which is full width.
         self.assertEqual(layout.pages[0][:2], ["", "refactor"])
+        cloud = card_layout("aider", "refactor", Marks(), cloud=True).mark
+        self.assertEqual(cloud.shape[1], 29)
+        self.assertTrue(cloud[:6, :29].all())                   # the wordmark's top unchanged
 
     def test_text_starts_right_of_the_mark_and_later_pages_have_none(self):
         import numpy as np
 
         class Marks:
-            def get(self, vid, box=24):
-                return np.ones((box, box), dtype=bool)
+            def get(self, vid):
+                return np.ones((16, 20), dtype=bool)
         layout = card_layout("x", "Fix the HID reconnect after resume on Windows", Marks())
         self.assertGreater(layout.page_count, 1)
         first = render_page(layout, 0)
-        self.assertTrue(first[:24, :24].all())                # the mark, top left
-        self.assertFalse(first[:24, 24].any())                # the 1 px gap
-        self.assertTrue(first[:24, 25:].any())                # text right of it
-        self.assertFalse(render_page(layout, 1)[:24, :24].all())        # no mark on page 2
+        self.assertTrue(first[:16, :20].all())                # the mark, top left
+        self.assertFalse(first[:16, 20].any())                # the 1 px gap
+        self.assertTrue(first[:16, 21:].any())                # text right of it
+        self.assertFalse(render_page(layout, 1)[:16, :20].all())        # no mark on page 2
 
     def test_the_state_icon_is_in_the_corner_with_a_cleared_margin(self):
         from polyhost.services.agents.card import ICON, ICON_CLEAR, _spans, state_icon
@@ -561,14 +564,13 @@ class CardTest(unittest.TestCase):
                          [["Windows", "Windows", "comments"]])
         self.assertEqual(paginate("Windows Windows Windows Windows Windows comments",
                                   icon=icon)[1][2], "")
-        # The icon leaves line 1 alone: the vendor mark keeps its size.
+        # The icon leaves line 1 alone.
 
-        class Square:
-            def get(self, vid, box=24):
-                return np.ones((box, box), dtype=bool)
-        self.assertEqual(card_layout("x", "firmware", Square()).mark.shape, (16, 16))
-        self.assertEqual(card_layout("x", "firmware", Square(), AgentState.DONE).mark.shape,
-                         (16, 16))
+        class Mark:
+            def get(self, vid):
+                return np.ones((16, 16), dtype=bool)
+        self.assertEqual(card_layout("x", "firmware", Mark()).pages,
+                         card_layout("x", "firmware", Mark(), AgentState.DONE).pages)
         # Drawn bottom right on every page; nothing else in its margin.
         layout = card_layout("x", "Fix the HID reconnect after resume on Windows", None,
                              AgentState.WAITING)
@@ -579,13 +581,33 @@ class CardTest(unittest.TestCase):
             self.assertFalse(img[40 - ICON - ICON_CLEAR:, right:72 - ICON].any(), page)
             self.assertFalse(img[40 - ICON - ICON_CLEAR:40 - ICON, 72 - ICON:].any(), page)
 
+    def test_the_12_px_check_has_2_px_strokes_clear_of_the_ring(self):
+        from polyhost.services.agents import icons
+        from polyhost.services.agents.card import state_icon
+        done = state_icon(AgentState.DONE)
+        self.assertEqual(done.shape, (12, 12))
+        check = done & ~icons._ring_12()
+        rows = [r for r in range(12) if check[r].any()]
+        self.assertGreaterEqual(len(rows), 5)
+        # Every row of the stroke is at least 2 px wide, and a 1 px gap separates
+        # it from the ring on both sides.
+        for r in rows:
+            cols = check[r].nonzero()[0]
+            ring = icons._ring_12()[r].nonzero()[0]
+            self.assertGreaterEqual(len(cols), 2, r)
+            self.assertGreater(cols.min() - ring[ring < 6].max(), 1, r)
+            self.assertGreater(ring[ring >= 6].min() - cols.max(), 1, r)
+
     def test_the_12_px_question_mark_keeps_its_dot(self):
         from polyhost.services.agents.card import state_icon
-        q = state_icon(AgentState.STALE)[2:10, 2:10]          # inside the ring
-        rows = [r for r in range(q.shape[0]) if q[r].any()]
+        from polyhost.services.agents import icons
+        q = state_icon(AgentState.STALE) & ~icons._ring_12()   # the '?' alone
+        rows = [r for r in range(12) if q[r].any()]
         gap = [r for r in range(rows[0], rows[-1]) if not q[r].any()]
         self.assertEqual(len(gap), 1)                          # stem, gap, dot
-        self.assertTrue(q[gap[0] + 1].any())
+        dot = q[gap[0] + 1:]
+        self.assertEqual(int(dot.sum()), 4)                    # a 2 x 2 dot
+        self.assertEqual(sum(1 for r in dot if r.any()), 2)
 
     def test_a_break_carried_to_the_next_page_keeps_its_separator(self):
         from polyhost.services.agents.card import state_icon
@@ -956,7 +978,7 @@ class ControllerTest(unittest.TestCase):
         class Racing:
             version = 0
 
-            def get(self, vid, box=24):
+            def get(self, vid):
                 if Racing.version == 0:
                     Racing.version = 1        # the fetch finishes during the layout
                 return None                   # this layout uses the short name
@@ -967,6 +989,17 @@ class ControllerTest(unittest.TestCase):
         self.c.sync(self.kb)
         # Drawn with version 0, so version 1 draws it again.
         self.assertEqual(len(self.kb.cards), 1)
+
+    def test_a_cloud_session_gets_the_cloud_on_its_card(self):
+        self.r.report("codex", "remote", "working", headline="Fix the build", machine="cloud")
+        self.c.sync(self.kb)
+        sent = self.kb.cards[self.kb.keys[-1][2][0]]
+
+        def drawn(cloud):
+            return card_bytes(render_page(card_layout("codex", "Fix the build", self.c.marks,
+                                                      AgentState.WORKING, cloud), 0))
+        self.assertEqual(sent, drawn(True))
+        self.assertNotEqual(sent, drawn(False))
 
     def test_a_full_pool_shows_no_card_rather_than_evict_the_shown_app(self):
         from polyhost.device.overlay_cache import OverlayMRUCache

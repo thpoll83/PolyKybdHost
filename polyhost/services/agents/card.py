@@ -6,12 +6,13 @@
     | the title goes on, full width      |   line 3  rows 26..39
     +------------------------------------+
 
-The vendor mark is drawn whole at up to 24 px, top left, with the text 1 px to
-its right; lines below the mark use the full width. Three lines of 14 px text
+The vendor mark is the lower 16 rows of the logo at 26 px, cut by the top edge
+(2026-11-10), top left, with the text 1 px to its right; lines below the mark use
+the full width. A cloud session's mark has a cloud outline drawn over the logo's
+lower right (with_cloud). Marks are never scaled. Three lines of 14 px text
 (card experiments, 2026-11-17). The state icon (12 px) is in the bottom right
 corner on every page, with a cleared margin of ICON_CLEAR px; only line 3 meets it,
-and ends before that margin. When the first word does not fit beside the vendor
-mark, a square mark is drawn smaller (24, 20, 16 or 12 px) until it does.
+and ends before that margin.
 
 A title that does not fit one card is split into pages of three lines, without
 the mark after the first; the controller switches the key between them
@@ -35,8 +36,8 @@ from polyhost.services.agents.model import AgentState, vendor
 log = logging.getLogger("PolyHost")
 
 PANEL_W, PANEL_H = 72, 40
-MARK_BOX = 24          # the largest mark, px (its larger side)
-MARK_SIZES = (24, 20, 16, 12)   # tried in this order until the first word fits
+MARK_BOX = 26          # a logo is rendered at this size; its lower part shows
+MARK_SHOWN = 16        # rows of the logo shown at the top edge
 MARK_GAP = 1           # px between the mark and the text beside it
 FONT_SIZE = 14
 LINE_PITCH = 13        # three lines in 40 rows; a descender may touch the cap below
@@ -44,7 +45,6 @@ LINES = 3
 TEXT_W = PANEL_W - 2   # a full-width line: 1 px margin each side
 ICON = 12              # the state icon, bottom right: it touches line 3 only
 ICON_CLEAR = 1         # px kept free left of and above the state icon
-WORDMARK_RATIO = 1.5   # wider than this times its height: a wordmark, never scaled
 MAX_PAGES = 4          # a longer title ends with '.' on the last page
 _FONTS = {}
 
@@ -194,27 +194,22 @@ def _crop(mask):
     return mask[rows[0]:rows[-1] + 1, cols[0]:cols[-1] + 1]
 
 
-def _shipped_mark(name: str, box: int):
-    """A shipped mark, at most `box` rows tall: drawn for the card at up to 24 px,
-    scaled down only for a smaller mark (the first word does not fit beside it)."""
+def _shipped_mark(name: str):
+    """A shipped mark (res/icons/agents/), as it is: drawn for the card, at most
+    MARK_SHOWN rows tall."""
     try:
         import numpy as np
         from PIL import Image
         with Image.open(os.path.join(AGENT_MARK_DIR, name + ".png")) as img:
-            img = img.convert("L")
-            if img.height > box:
-                img = img.resize((max(1, round(img.width * box / img.height)), box),
-                                 Image.LANCZOS)
-            mask = np.array(img) > 110
+            mask = np.array(img.convert("L")) > 127
     except Exception as e:  # noqa: BLE001 - cosmetic: fall back to the next slug
         log.debug("Agent mark %s: %s", name, e)
         return None
-    return _crop(mask)
+    return _crop(mask[-MARK_SHOWN:]) if mask.any() else None
 
 
 class VendorMarks:
-    """Vendor marks as 1-bit masks, from app_icons' cache or shipped marks, one per
-    (vendor, size).
+    """Vendor marks as 1-bit masks, from app_icons' cache or shipped marks.
 
     ⚠️ Never fetches on the caller's thread: the card is rendered on the HID
     worker, and a download there would stall the keyboard. A missing mark is
@@ -222,27 +217,27 @@ class VendorMarks:
     increments, so the controller redraws the card."""
 
     def __init__(self):
-        self._masks: dict[tuple, object] = {}
+        self._masks: dict[str, object] = {}
         self._fetching: set[str] = set()
         self._lock = threading.Lock()
         self.version = 0
 
-    def get(self, vid: str, box: int = MARK_BOX):
+    def get(self, vid: str):
         with self._lock:
-            if (vid, box) in self._masks:
-                return self._masks[(vid, box)]
-        mask = self._load(vid, box, allow_network=False)
+            if vid in self._masks:
+                return self._masks[vid]
+        mask = self._load(vid, allow_network=False)
         if mask is None:
             self._fetch_later(vid)
             return None
         with self._lock:
-            self._masks[(vid, box)] = mask
+            self._masks[vid] = mask
         return mask
 
-    def _load(self, vid, box, allow_network):
+    def _load(self, vid, allow_network):
         for slug in vendor(vid).slugs:
             if slug.startswith(AGENT_MARK_PREFIX):
-                mask = _shipped_mark(slug[len(AGENT_MARK_PREFIX):], box)
+                mask = _shipped_mark(slug[len(AGENT_MARK_PREFIX):])
                 if mask is not None:
                     return mask
         try:
@@ -256,9 +251,12 @@ class VendorMarks:
                 path = app_icons.fetch_icon(slug, allow_network=allow_network)
                 if not path:
                     continue
-                mask = app_icons.render_overlay(path, box=box)
+                mask = app_icons.render_overlay(path, box=MARK_BOX)
                 if mask is not None:
-                    return _crop(mask)
+                    # render_overlay centres the logo in the full 40-row panel; keep
+                    # its ink box, then only its lower MARK_SHOWN rows.
+                    mask = _crop(mask[:, PANEL_W - MARK_BOX:])
+                    return None if mask is None else mask[-MARK_SHOWN:]
             except Exception as e:  # noqa: BLE001 - cosmetic
                 log.debug("Agent mark %s for %s failed: %s", slug, vid, e)
         return None
@@ -276,11 +274,10 @@ class VendorMarks:
             self._fetching.add(vid)
 
         def run():
-            # Fetched once into app_icons' cache; get() renders each size from it.
-            if self._load(vid, MARK_BOX, allow_network=True) is not None:
+            mask = self._load(vid, allow_network=True)
+            if mask is not None:
                 with self._lock:
-                    for key in [k for k in self._masks if k[0] == vid]:
-                        del self._masks[key]
+                    self._masks[vid] = mask
                     self.version += 1
         threading.Thread(target=run, name=f"agent-mark-{vid}", daemon=True).start()
 
@@ -290,6 +287,35 @@ def _paste(canvas, mask, x, y):
     h = min(mask.shape[0], canvas.shape[0] - y)
     w = min(mask.shape[1], canvas.shape[1] - x)
     canvas[y:y + h, x:x + w] |= mask[:h, :w]
+
+
+# Cloud sessions: a cloud outline drawn over the lower right of the agent's logo
+# (card experiments, 2026-11-17). The logo keeps its size; the cloud is sized from
+# CLOUD_BOX and reaches below and right of it.
+CLOUD_BOX = 24              # the cloud's size is given as parts of this
+CLOUD_W, CLOUD_H = 0.92, 0.62   # the cloud's size, as parts of CLOUD_BOX
+CLOUD_OVERLAP_X = 1.0       # the cloud ends with the logo: the mark is no wider
+CLOUD_OVERLAP_Y = 0.45      # and of its height
+
+
+def with_cloud(logo, box: int = CLOUD_BOX):
+    """`logo` with a 1 px cloud outline drawn in front of its lower right corner. The
+    cloud's inside and a 1 px border are cleared first, so the outline reads over
+    the logo. A wordmark gets the same cloud at its right end."""
+    import numpy as np
+    from polyhost.services.agents import icons
+    logo = np.asarray(logo, dtype=bool)
+    cw, ch = max(8, round(box * CLOUD_W)), max(6, round(box * CLOUD_H))
+    shape = icons.cloud(cw, ch)
+    x = max(0, logo.shape[1] - round(cw * CLOUD_OVERLAP_X))
+    y = max(0, logo.shape[0] - round(ch * CLOUD_OVERLAP_Y))
+    out = np.zeros((max(logo.shape[0], y + ch), max(logo.shape[1], x + cw)), dtype=bool)
+    out[:logo.shape[0], :logo.shape[1]] = logo
+    region = np.zeros_like(out)
+    region[y:y + ch, x:x + cw] = shape
+    out &= ~icons.grow(region)
+    out[y:y + ch, x:x + cw] |= icons.outline(shape, 1)
+    return out
 
 
 def _text_mark(text: str):
@@ -308,14 +334,16 @@ def state_icon(state):
     """The ICON x ICON mask for a state (services/agents/icons.py), or None."""
     from polyhost.services.agents import icons
     if not _STATE_ICONS:
-        # The icons of the 16 px card corner (2026-11-11), scaled to ICON: the
-        # check mark and '!' from their 19 px drawing, the rest from 16 px. The
-        # '?' is drawn at 12 px: scaled, it lost its dot.
+        # The icons of the 16 px card corner (2026-11-11), scaled to ICON: '!'
+        # from its 19 px drawing, the rest from 16 px.
         _STATE_ICONS.update({k: icons.scaled(v, ICON) for k, v in {
-            AgentState.WAITING: icons.waiting(), AgentState.DONE: icons.done(),
+            AgentState.WAITING: icons.waiting(),
             AgentState.IDLE: icons.idle_16(), AgentState.WORKING: icons.working_16()}.items()})
+        # Drawn at 12 px: scaled, the '?' lost its dot and the check was 1 px wide.
         _STATE_ICONS[AgentState.STALE] = (icons.stale_12() if ICON == 12
                                           else icons.scaled(icons.stale_16(), ICON))
+        _STATE_ICONS[AgentState.DONE] = (icons.done_12() if ICON == 12
+                                         else icons.scaled(icons.done(), ICON))
     return _STATE_ICONS.get(state)
 
 
@@ -333,23 +361,15 @@ class CardLayout:
 
 
 def card_layout(vendor_id: str, headline: str, marks: VendorMarks | None = None,
-                state=None) -> CardLayout:
-    """The mark size and pages for one agent. The largest mark in MARK_SIZES that
-    leaves room beside it for the title's first word; the smallest when none does."""
-    tokens = _tokens(headline)
+                state=None, cloud: bool = False) -> CardLayout:
+    """The mark and pages for one agent. `cloud`: a cloud session, whose mark has
+    the cloud over the logo (with_cloud). No mark is scaled: a first word that
+    does not fit beside the mark starts below it."""
+    logo = marks.get(vendor_id) if marks is not None else None
+    if logo is None:
+        logo = _text_mark(vendor(vendor_id).short[:3])
+    mark = with_cloud(logo) if cloud and logo is not None else logo
     icon = state_icon(state)
-    first = tokens[0][0] if tokens else ""
-    mark = None
-    for box in MARK_SIZES:
-        mark = marks.get(vendor_id, box) if marks is not None else None
-        if mark is None:
-            mark = _text_mark(vendor(vendor_id).short[:3])
-        left, right = _spans(mark, icon)[0]
-        if (mark is None or _ink_width(first) <= right - left
-                or mark.shape[1] > WORDMARK_RATIO * mark.shape[0]):
-            # A wordmark (aider, opencode, the short-name text) is not scaled: it
-            # stops reading. The first word then starts below it.
-            break
     return CardLayout(mark, paginate(headline, mark, icon), icon)
 
 
@@ -388,9 +408,9 @@ def render_page(layout: CardLayout, page: int = 0):
 
 
 def render_card(vendor_id: str, headline: str, marks: VendorMarks | None = None, page: int = 0,
-                state=None):
+                state=None, cloud: bool = False):
     """A (40, 72) bool array for one page of one agent card."""
-    return render_page(card_layout(vendor_id, headline, marks, state), page)
+    return render_page(card_layout(vendor_id, headline, marks, state, cloud), page)
 
 
 MIC_SCALE = 1.7
