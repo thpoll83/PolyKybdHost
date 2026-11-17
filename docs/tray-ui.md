@@ -307,9 +307,11 @@ and relative links were adjusted to suit a standalone file.
     none of the shipped files is "not set up", so a settings file the program
     keeps beside the plugin (Obsidian's `data.json`) does not make it `manual`.
     VS Code, Cursor, Windsurf: `code --install-extension <vsix> --force`; the
-    content digest and the version of the `.vsix` it installed are recorded, so an
-    extension from the Marketplace (another version under the same id) reads `manual` and the refresh at start runs `code` only where
-    this app installed it. Godot, Unity, Obsidian: `no-project` until a project or
+    content digest and the version of the `.vsix` it installed are recorded. An
+    installed extension with another version (a Marketplace or Open VSX copy, for
+    example) reads `manual` and is left alone; a store copy with the same version
+    counts as this app's (the refresh may install the same build over it, Remove
+    uninstalls it). The refresh at start runs `code` only where this app installed it. Godot, Unity, Obsidian: `no-project` until a project or
     vault folder is chosen (a row button, or Install asks); the folders are
     remembered in `editor_plugins.json` in the config folder. JupyterLab: the row
     cannot be ticked; it shows the `pip install` command with a Copy button

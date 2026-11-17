@@ -158,7 +158,10 @@ program, `code --install-extension polyhost/res/vscode/polykybd-mode-reporter.vs
 --force` (`cursor`, `windsurf`), found on PATH or in the editor's standard
 install folder, and reads the state with `--list-extensions --show-versions`.
 It installs again after a host update that changed the `.vsix`, but only where
-it installed it; an extension from the Marketplace or Open VSX is left alone.
+it installed it. It records the version it installed: an installed extension
+with another version (from the Marketplace or Open VSX, for example) is left
+alone. A store copy with the same version counts as this app's: the refresh
+may install the same build again over it, and Remove uninstalls it.
 The remote part is not installed by the host: in a remote window, use *Install
 from VSIX…* with `polyhost/res/vscode/polykybd-mode-reporter-remote.vsix`.
 Restart the editor afterwards.
