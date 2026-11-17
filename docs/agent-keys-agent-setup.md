@@ -335,7 +335,8 @@ state, the first 8 characters of the session id, the target, and how it ended,
 with the time it took. No prompt text, title or file content. A report that does
 not finish in 4 s is logged as `timeout in <stage>`: `connect` means the host or
 the forwarder's target cannot be reached (for example from a container), `report`
-means it accepted the connection and did not answer.
+means it accepted the connection and did not answer. The log is in the log bundle
+(**Collect logs…**, `polyctl logs bundle`) and in the log viewer.
 
 1. Run `polyctl agents list`. It shows `agent keys: on; keyboard active`.
 2. Send one prompt in the agent. `polyctl agents list` now shows the session with

@@ -267,7 +267,8 @@ class CloudSessionsDialog(QDialog):
         code, accepted = QInputDialog.getText(
             self, _("Join with a Code"),
             _("Paste the join code from the other computer's \"Connect Cloud Sessions\" "
-              "window:"))
+              "window:"),
+            QLineEdit.Password)     # the code is a secret, like a password
         if not accepted or not code.strip():
             return
         self._busy = True

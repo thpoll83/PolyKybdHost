@@ -130,10 +130,11 @@ class CloudSessionsDialogTest(unittest.TestCase):
         from polyhost.gui import cloud_sessions_dialog as mod
         self.run_pending()
         with mock.patch.object(mod.QInputDialog, "getText",
-                               return_value=("  pkj1.PASTED \n", True)):
+                               return_value=("  pkj1.PASTED \n", True)) as get_text:
             self.dialog._join()
         self.run_pending()
         self.assertEqual(self.core.joined, "pkj1.PASTED")
+        self.assertEqual(get_text.call_args.args[3], mod.QLineEdit.Password)   # not shown
         self.assertTrue(self.visible(self.dialog.setup_card))
 
     def test_a_join_error_stays_and_a_cancel_does_nothing(self):

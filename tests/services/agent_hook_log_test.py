@@ -75,9 +75,14 @@ class HookLogTest(unittest.TestCase):
 
 
 class PinnedTargetTest(unittest.TestCase):
+    def _folder(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        return tmp.name
+
     def test_every_vendor_reads_back_the_host_it_was_installed_with(self):
-        home = tempfile.mkdtemp()
-        plain = tempfile.mkdtemp()
+        home = self._folder()
+        plain = self._folder()
         for vendor in hook_install.VENDORS:
             hook_install.apply(hook_install.plan(
                 vendor, home=home, extra_args=["--host", "desk top",
@@ -86,7 +91,7 @@ class PinnedTargetTest(unittest.TestCase):
             self.assertEqual(hook_install.pinned_target(vendor, home),
                              {"host": "desk top", "authkey_file": "/k/a b.key"}, vendor)
             self.assertIsNone(hook_install.pinned_target(vendor, plain), vendor)
-        self.assertIsNone(hook_install.pinned_target("codex", tempfile.mkdtemp()))
+        self.assertIsNone(hook_install.pinned_target("codex", self._folder()))
 
 
 class EventNameTest(unittest.TestCase):

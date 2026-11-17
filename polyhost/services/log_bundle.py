@@ -33,6 +33,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import NamedTuple
 
+from polyhost.services.agents import hook_log
 from polyhost.util import crash_log
 
 
@@ -52,6 +53,10 @@ class LogSource(NamedTuple):
     filename: str
     sliced: bool = True
     title: str = ""      # tab name in the GUI log viewers; see viewer_files()
+    # "config": the file is in the config folder, not the log folder (the agent
+    # hook log: a hook runs in the agent's working folder). An explicit
+    # `log_dir` (tests, `polyctl logs bundle --dir`) still holds every source.
+    folder: str = ""
 
 
 LOG_SOURCES: tuple[LogSource, ...] = (
@@ -68,7 +73,19 @@ LOG_SOURCES: tuple[LogSource, ...] = (
     # carrying it whole costs nothing. The filename comes from crash_log so the
     # writer and the collector cannot disagree about it.
     LogSource("crash", crash_log.CRASH_LOG, sliced=False, title="Crash Log"),
+    # The agent hook log has the same "[date time,ms]" line start, and moves to
+    # `.1` like a RotatingFileHandler (services/agents/hook_log.py).
+    LogSource("agent-hooks", hook_log.FILE_NAME, title="Agent Hook Log", folder="config"),
 )
+
+
+def _source_dir(source: LogSource, d: Path, explicit: bool) -> Path:
+    """The folder of one source: `d`, or the config folder for a "config"
+    source when no `log_dir` was given."""
+    if source.folder == "config" and not explicit:
+        from polyhost.server import protocol
+        return Path(protocol.agent_hook_log_path()).parent
+    return d
 
 # Derived from the declaration above — never hand-maintained.
 _SLICED: dict[str, bool] = {s.label: s.sliced for s in LOG_SOURCES}
@@ -219,7 +236,7 @@ def clear_logs(log_dir: Path | str | None = None) -> ClearResult:
     result = ClearResult()
     cleared_crash = False
     for source in LOG_SOURCES:
-        for path in _rotation_chain(d, source.filename):
+        for path in _rotation_chain(_source_dir(source, d, bool(log_dir)), source.filename):
             # lstat, not stat: a symlink in the log directory must not lead the
             # truncate below to empty a file outside it. Only a regular file
             # is cleared. (A swap between this check and the truncate is not
@@ -275,7 +292,7 @@ def viewer_files(always: tuple[str, ...] = (),
     for source in LOG_SOURCES:
         if not source.title:
             continue
-        path = d / source.filename
+        path = _source_dir(source, d, bool(log_dir)) / source.filename
         if source.label in always or path.exists():
             # ⚠️ ABSOLUTE, not the bare name. LogViewerDialog opens this value
             # directly, so a bare name resolves against the process cwd while
@@ -292,7 +309,7 @@ def discover(log_dir: Path | str | None = None) -> dict[str, list[Path]]:
     d = Path(log_dir) if log_dir else default_log_dir()
     found = {}
     for source in LOG_SOURCES:
-        chain = _rotation_chain(d, source.filename)
+        chain = _rotation_chain(_source_dir(source, d, bool(log_dir)), source.filename)
         if chain:
             found[source.label] = chain
     return found
