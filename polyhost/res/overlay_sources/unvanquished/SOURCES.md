@@ -140,7 +140,8 @@ URL. The game-icons.net URL is also in `SOURCES` of
 | `centerview.png`, `activate.png`, `bottactic.png` | Material Symbols `center_focus_strong`, `touch_app`, `smart_toy` | Google | Apache-2.0 |
 | `chat.png`, `teamchat.png`, `adminchat.png` | Material Symbols `public`, `chat`, `shield_person` | Google | Apache-2.0 |
 | `follow.png`, `followprev.png`, `follownext.png` | Material Symbols `videocam`, `skip_previous`, `skip_next` | Google | Apache-2.0 |
-| `pause.png`, `console.png`, `scoreboard.png`, `screenshot.png` | Material Symbols `pause`, `terminal`, `scoreboard`, `screenshot_monitor` | Google | Apache-2.0 |
+| `pause.png`, `console.png`, `scoreboard.png` | Material Symbols `pause`, `terminal`, `scoreboard` | Google | Apache-2.0 |
+| `screenshotjpeg.png`, `screenshotpng.png` | Material Symbols `screenshot_monitor` + JPG or PNG drawn by `fetch_icons.py` (DejaVu Sans Bold) | Google | Apache-2.0 |
 | `voteyes.png`, `voteno.png` | Material Symbols `thumb_up`, `thumb_down` | Google | Apache-2.0 |
 | `teamvoteyes.png`, `teamvoteno.png` | Material Symbols `thumb_up`, `thumb_down` + a T drawn by `fetch_icons.py` (DejaVu Sans Bold) | Google | Apache-2.0 |
 | `program.png` | drawn by `fetch_icons.py` in Bebas Neue | font: Dharma Type | font: SIL OFL 1.1 |

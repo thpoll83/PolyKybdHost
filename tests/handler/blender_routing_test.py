@@ -13,7 +13,14 @@ Drives `polyhost/res/overlay-mapping.poly.yaml` itself. What it pins:
 * the entry's names are exactly the host's context-reporter allow-list, so a
   name added to one and not the other cannot leave Blender with reports nobody
   reads, or a mapping nobody feeds;
-* every file it names exists.
+* every file it names exists;
+* the modes added from the mode audit (Video Sequencer, Outliner, Text Editor,
+  Movie Clip Editor, NLA, Edit Curve / Surface, Edit Text, the five Grease
+  Pencil modes) each get their own set on every `os:` branch, and a mode whose
+  token merely STARTS like one of them (EDIT_CURVES) still falls to `common`;
+* in the two text-input contexts no letter, digit or punctuation key draws an
+  action, plain or with Shift: those keys type text there;
+* no route shows more images than the overlay pool holds.
 """
 
 import unittest
@@ -112,14 +119,72 @@ class BlenderRoutingTest(unittest.TestCase):
             "blender://EDIT_MESH/IMAGE_EDITOR/UV": "blender_uv_template.mods.png",
             "blender://OBJECT/DOPESHEET_EDITOR/TIMELINE": "blender_dopesheet_template.mods.png",
             "blender://POSE/GRAPH_EDITOR/FCURVES": "blender_graph_template.mods.png",
-            # a 3D View mode without its own set -> the 3D View common set
-            "blender://EDIT_CURVE/VIEW_3D": "blender_common_template.mods.png",
+            # a 3D View mode without its own set -> the 3D View common set.
+            # EDIT_CURVES starts like EDIT_CURVE: the needle's "/" keeps it out.
+            "blender://EDIT_CURVES/VIEW_3D": "blender_common_template.mods.png",
+            "blender://EDIT_METABALL/VIEW_3D": "blender_common_template.mods.png",
             # an editor without its own set -> window-level keys only
-            "blender://OBJECT/TEXT_EDITOR": "blender_global_template.mods.png",
+            "blender://OBJECT/PROPERTIES": "blender_global_template.mods.png",
             "blender://OBJECT/IMAGE_EDITOR/VIEW": "blender_global_template.mods.png",
         }
         for url, want in cases.items():
             self.assertEqual(self._route(url), want, url)
+
+    # Added from the mode audit: report -> set stem.
+    AUDIT_MODES = {
+        "blender://OBJECT/SEQUENCE_EDITOR": "blender_sequencer_template",
+        "blender://OBJECT/OUTLINER": "blender_outliner_template",
+        "blender://OBJECT/TEXT_EDITOR": "blender_text_template",
+        "blender://EDIT_MESH/TEXT_EDITOR": "blender_text_template",
+        "blender://OBJECT/CLIP_EDITOR": "blender_clip_template",
+        "blender://POSE/NLA_EDITOR": "blender_nla_template",
+        "blender://EDIT_CURVE/VIEW_3D": "blender_edit_curve_template",
+        "blender://EDIT_SURFACE/VIEW_3D": "blender_edit_curve_template",
+        "blender://EDIT_TEXT/VIEW_3D": "blender_edit_text_template",
+        "blender://EDIT_GREASE_PENCIL/VIEW_3D": "blender_gp_edit_template",
+        "blender://PAINT_GREASE_PENCIL/VIEW_3D": "blender_gp_draw_template",
+        "blender://SCULPT_GREASE_PENCIL/VIEW_3D": "blender_gp_sculpt_template",
+        "blender://WEIGHT_GREASE_PENCIL/VIEW_3D": "blender_gp_weight_template",
+        "blender://VERTEX_GREASE_PENCIL/VIEW_3D": "blender_gp_vertex_template",
+        # an editor wins over the mode it is in
+        "blender://EDIT_TEXT/OUTLINER": "blender_outliner_template",
+        "blender://PAINT_GREASE_PENCIL/DOPESHEET_EDITOR/DOPESHEET": "blender_dopesheet_template",
+    }
+
+    def test_each_audit_mode_gets_its_set_on_every_os(self):
+        for os_name, suffix in (("windows", ""), ("linux", ""), ("macos", "_mac")):
+            for url, stem in self.AUDIT_MODES.items():
+                self.assertEqual(self._route(url, os_name), f"{stem}{suffix}.mods.png",
+                                 (url, os_name))
+
+    def test_no_report_still_keeps_the_fallback(self):
+        for os_name, suffix in (("windows", ""), ("linux", ""), ("macos", "_mac")):
+            self.assertEqual(self._route(None, os_name),
+                             f"blender_common_template{suffix}.mods.png", os_name)
+
+    def test_no_route_shows_more_images_than_the_pool_holds(self):
+        # Counted from the PNGs: every lit cell of every file a route loads, on
+        # every modifier layer. A distinct-image count can only be lower.
+        from polyhost.device.device_settings import OVERLAY_POOL_CAPACITY, DeviceSettings
+        from polyhost.device.im_converter import ImageConverter
+
+        def cells(files):
+            n = 0
+            for f in files:
+                conv = ImageConverter(DeviceSettings())
+                self.assertTrue(conv.open(str(RES / "overlays" / str(f))), f)
+                for mod in list(conv.image):
+                    n += len(conv.extract_overlays(mod) or {})
+            return n
+
+        largest = 0
+        for os_name in ("linux", "macos"):
+            for url in list(self.AUDIT_MODES) + [None]:
+                got = find_matching_entry("Blender", self.entry, url, os_name)
+                n = cells(got["overlay"])
+                self.assertLessEqual(n, OVERLAY_POOL_CAPACITY, (url, os_name))
+                largest = max(largest, n)
+        self.assertGreater(largest, 100, "counted suspiciously few cells")
 
     def test_no_report_is_the_common_fallback(self):
         self.assertEqual(self._route(None), "blender_common_template.mods.png")
@@ -135,6 +200,30 @@ class BlenderRoutingTest(unittest.TestCase):
         self.assertEqual(self._route("blender://SCULPT/VIEW_3D", "macos"),
                          "blender_sculpt_template_mac.mods.png")
         self.assertEqual(self._route(None, "macos"), "blender_common_template_mac.mods.png")
+
+
+class BlenderTextInputSetsTest(unittest.TestCase):
+    """The Text Editor and Edit Text sets draw nothing on a key that types."""
+
+    SOURCES = RES / "overlay_sources" / "blender"
+    TYPED = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") | {
+        "KC_GRAVE", "KC_QUOTE", "KC_SEMICOLON", "KC_LEFT_BRACKET", "KC_RIGHT_BRACKET",
+        "KC_BACKSLASH", "KC_SLASH", "KC_DOT", "KC_COMMA", "KC_EQUAL", "KC_MINUS", "KC_SPACE"}
+
+    def test_no_typed_key_shows_an_action(self):
+        for ctx in ("text", "edit_text"):
+            spec = yaml.safe_load((self.SOURCES / f"bindings_{ctx}.yaml").read_text(encoding="utf-8"))
+            self.assertGreater(len(spec["bindings"]), 50, ctx)
+            wrong = [(b["key"], b["mods"], b["label"]) for b in spec["bindings"]
+                     if b["key"] in self.TYPED and set(b["mods"]) <= {"SHIFT"}]
+            self.assertEqual(wrong, [], ctx)
+
+    def test_the_keys_that_still_act_are_drawn(self):
+        spec = yaml.safe_load((self.SOURCES / "bindings_text.yaml").read_text(encoding="utf-8"))
+        drawn = {(b["key"], tuple(b["mods"])): b["label"] for b in spec["bindings"]}
+        self.assertEqual(drawn[("KC_ENTER", ())], "Line break")
+        self.assertEqual(drawn[("P", ("ALT",))], "Run script")
+        self.assertEqual(drawn[("KC_SLASH", ("CTRL",))], "Comment")
 
 
 if __name__ == "__main__":

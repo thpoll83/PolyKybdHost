@@ -81,8 +81,9 @@ on every layout. `Any+` in the profile means "with any modifier".
 
 The profile binds Shift+key to the same order for 21 order keys (A, D, E, F, G,
 H, J, K, L, ;, M, O, P, R, S, T, U, W, Y, [ and ]); with Shift the order is
-added to the queue. The Shift layer shows the same icon on those keys, so the
-keys do not go blank while Shift is held. As a spectator the digits 1 to 9 show
+added to the queue. The Shift layer shows the order icon smaller, at the top
+left, with the queue mark (three bullets and bars, drawn by `fetch_icons.py`)
+in the corner, so a queued order looks different from the immediate one. As a spectator the digits 1 to 9 show
 a team (`specteam`); the player meaning is drawn.
 
 ## Left out
@@ -223,6 +224,7 @@ URL; the same URLs are in `SOURCES` of `cnc_remastered/fetch_icons.py`.
 | `mute.png` | Font Awesome Free 6.5.2 `volume-xmark` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `forcestart.png` | Font Awesome Free 6.5.2 `flag-checkered` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `commanderadd.png` | Font Awesome Free 6.5.2 `user-astronaut` (solid) with a plus, composed by `fetch_icons.py` | Fonticons, Inc. | CC BY 4.0 |
+| `<order>_queued.png` (21 files, one per Shift order key) | The order icon's source (rows above) with the queue mark, composed by `fetch_icons.py` (the mark is drawn, no source) | as the order icon | as the order icon |
 | `volumeup.png`, `volumedown.png` | Font Awesome Free 6.5.2 `volume-low` (solid) with a plus or a minus | Fonticons, Inc. | CC BY 4.0 |
 | `speedup.png`, `slowdown.png` | Font Awesome Free 6.5.2 `forward` (solid) with a plus or a minus | Fonticons, Inc. | CC BY 4.0 |
 | `spacingup.png`, `spacingdown.png` | Font Awesome Free 6.5.2 `arrows-left-right` (solid) with a plus or a minus | Fonticons, Inc. | CC BY 4.0 |

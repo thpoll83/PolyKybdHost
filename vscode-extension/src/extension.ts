@@ -12,17 +12,25 @@
  *   `debug.onDidTerminateDebugSession`;
  * - `debug.registerDebugAdapterTrackerFactory('*', ...)`: the Debug Adapter
  *   Protocol messages, to tell a running program from a stopped one;
- * - `window.state.focused`, `window.onDidChangeWindowState`.
+ * - `window.state.focused`, `window.onDidChangeWindowState`;
+ * - `window.tabGroups.activeTabGroup.activeTab.input instanceof
+ *   TabInputTextDiff`, `tabGroups.onDidChangeTabs` / `onDidChangeTabGroups`:
+ *   whether a diff editor is the active editor tab;
+ * - `commands.registerCommand(BRIDGE_STATE_COMMAND)`: the debug state the
+ *   workspace part (remote/) reads in a remote extension host.
  */
 import * as http from "http";
 import * as vscode from "vscode";
 
 import {
-  activeMode, appToken, HTTP_TIMEOUT_MS, InputClock, KEEPALIVE_MS, modeUrl, payload,
-  ReportQueue, SendPolicy, SessionState, settleWithin, validPort,
+  activeMode, appToken, BRIDGE_STATE_COMMAND, BRIDGE_SYNC_COMMAND, HTTP_TIMEOUT_MS, InputClock,
+  isTextDiff, KEEPALIVE_MS, modeUrl, payload, RemoteStates, ReportQueue, SendPolicy, SessionState,
+  settleWithin, validPort,
 } from "./core";
 
 const sessions = new Map<string, SessionState>();
+// States sent by the workspace part from a remote extension host.
+const remote = new RemoteStates();
 const policy = new SendPolicy();
 let app = "vscode";
 const clock = new InputClock(Date.now());
@@ -74,11 +82,19 @@ function note(msg: string): void {
   output?.appendLine(`Report not delivered: ${msg}`);
 }
 
-/** The URL to report, or null when the active session has no tracker. */
+/** Whether the active editor tab is a text diff editor. */
+function diffInFront(): boolean {
+  const input = vscode.window.tabGroups?.activeTabGroup?.activeTab?.input;
+  return isTextDiff(input, vscode.TabInputTextDiff);
+}
+
+/** The URL to report, or null when the active session has no tracker here
+ *  and no state from the workspace part. */
 function currentUrl(): string | null {
   const active = vscode.debug.activeDebugSession;
-  const mode = activeMode(active !== undefined, active ? sessions.get(active.id) : undefined);
-  return mode ? modeUrl(app, mode) : null;
+  const mode = activeMode(active !== undefined, active ? sessions.get(active.id) : undefined,
+                          remote.get(active?.id));
+  return mode ? modeUrl(app, mode, diffInFront()) : null;
 }
 
 function tick(force = false): void {
@@ -128,7 +144,14 @@ export function activate(context: vscode.ExtensionContext): void {
       },
     }),
     vscode.debug.onDidChangeActiveDebugSession(() => tick()),
-    vscode.debug.onDidTerminateDebugSession((s) => { sessions.delete(s.id); tick(); }),
+    vscode.debug.onDidTerminateDebugSession((s) => { sessions.delete(s.id); remote.forget(s.id); tick(); }),
+    // The workspace part (remote/) in a remote extension host calls this with
+    // { v, session, state, seq } on every change of a session's state.
+    vscode.commands.registerCommand(BRIDGE_STATE_COMMAND, (msg: unknown) => {
+      if (remote.apply(msg)) tick();
+    }),
+    vscode.window.tabGroups.onDidChangeTabs(() => tick()),
+    vscode.window.tabGroups.onDidChangeTabGroups(() => tick()),
     vscode.window.onDidChangeWindowState((s) => {
       if (s.focused) clock.focus(Date.now());
       tick();
@@ -150,6 +173,12 @@ export function activate(context: vscode.ExtensionContext): void {
   timer = setInterval(() => tick(), KEEPALIVE_MS / 3);
   context.subscriptions.push({ dispose: () => { if (timer) clearInterval(timer); } });
   tick(true);
+  // Sessions that started in a remote extension host before this part ran.
+  // Fails when the workspace part is not installed or not active there: then
+  // there is nothing to ask for.
+  if (vscode.env.remoteName) {
+    Promise.resolve(vscode.commands.executeCommand(BRIDGE_SYNC_COMMAND)).catch(() => undefined);
+  }
 }
 
 /** Returns a promise, so the extension host waits for the last report (the

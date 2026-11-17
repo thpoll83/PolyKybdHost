@@ -41,7 +41,7 @@ bindings:
   - { key: A, mods: [CTRL], icon: aliases.png, label: "Resource aliases" }
   - { key: E, mods: [CTRL], icon: header.png, label: "Toggle header" }
   - { key: G, mods: [CTRL], icon: crumbs.png, label: "Toggle crumbs" }
-  - { key: P, mods: [CTRL], icon: save.png, label: "Save context config" }
+  - { key: P, mods: [CTRL], icon: save_context.png, label: "Save context config" }
   - { key: C, mods: [CTRL], icon: exit.png, label: "Quit" }
   # --- Resource list (view/table.go bindKeys): "/" Filter Mode, Ctrl-S Save
   # (table to file), Space Mark, Ctrl-Space Mark Range, Ctrl-\ Marks Clear,
@@ -49,7 +49,7 @@ bindings:
   - { key: "/", icon: search.png, label: "Filter", concept: find }
   - { key: S, mods: [CTRL], icon: save.png, label: "Save table to file" }
   - { key: SPACE, icon: checklist.png, label: "Mark row" }
-  - { key: SPACE, mods: [CTRL], icon: checklist.png, label: "Mark range" }
+  - { key: SPACE, mods: [CTRL], icon: mark_range.png, label: "Mark range" }
   - { key: "\\", mods: [CTRL], icon: clear.png, label: "Clear marks" }
   - { key: Z, mods: [CTRL], icon: warnings.png, label: "Toggle faults only" }
   - { key: W, mods: [CTRL], icon: viewmode.png, label: "Toggle wide columns" }
@@ -63,10 +63,10 @@ bindings:
   - { key: E, icon: editor.png, label: "Edit resource" }
   - { key: D, mods: [CTRL], icon: delete.png, label: "Delete" }
   - { key: C, icon: copy.png, label: "Copy name" }
-  - { key: N, icon: copy.png, label: "Copy namespace" }
+  - { key: N, icon: copy_namespace.png, label: "Copy namespace" }
   - { key: R, mods: [CTRL], icon: reload.png, label: "Refresh" }
-  - { key: "0", icon: namespace.png, label: "All namespaces" }
-  - { key: "1", icon: namespace.png, label: "Favourite namespace 1" }
+  - { key: "0", icon: namespace_all.png, label: "All namespaces" }
+  - { key: "1", icon: namespace_fav1.png, label: "Favourite namespace 1" }
   # --- Pods view (pod.go): bindDangerousKeys Ctrl-K Kill, "s" Shell,
   # "a" Attach, "t" Transfer, "z" Sanitize (only when not read-only);
   # bindKeys "o" Show Node. Extenders: "l" Logs, "p" Logs Previous
@@ -74,7 +74,7 @@ bindings:
   # (pf_extender.go), Shift-J Jump Owner (owner_extender.go), "i" Set Image
   # (image_extender.go, not read-only).
   - { key: L, icon: logs.png, label: "Logs" }
-  - { key: P, icon: logs.png, label: "Previous logs" }
+  - { key: P, icon: logs_previous.png, label: "Previous logs" }
   - { key: S, icon: terminal.png, label: "Shell into container" }
   - { key: A, icon: attachpod.png, label: "Attach" }
   - { key: K, mods: [CTRL], icon: stop.png, label: "Kill pod" }
@@ -82,7 +82,7 @@ bindings:
   - { key: Z, icon: sanitize.png, label: "Sanitize" }
   - { key: O, icon: node.png, label: "Show node" }
   - { key: J, mods: [SHIFT], icon: owner.png, label: "Jump to owner" }
-  - { key: F, icon: portforward.png, label: "Show port-forwards" }
+  - { key: F, icon: portforward_list.png, label: "Show port-forwards" }
   - { key: F, mods: [SHIFT], icon: portforward.png, label: "Port-forward" }
   - { key: I, icon: image.png, label: "Set image" }
   # --- Pods view sort keys (pod.go bindKeys, resourceSorters; table.go bindKeys):
@@ -90,16 +90,16 @@ bindings:
   # Shift-I IP, Shift-O Node, Shift-C CPU, Shift-M MEM, Shift-X %CPU/R,
   # Shift-Z %MEM/R, Ctrl-X %CPU/L, Ctrl-Q %MEM/L. Ctrl-Q is also the app-level
   # "Clear Filter" but only while the filter prompt is active.
-  - { key: N, mods: [SHIFT], icon: sort.png, label: "Sort by name" }
-  - { key: A, mods: [SHIFT], icon: sort.png, label: "Sort by age" }
-  - { key: R, mods: [SHIFT], icon: sort.png, label: "Sort by ready" }
-  - { key: T, mods: [SHIFT], icon: sort.png, label: "Sort by restarts" }
-  - { key: S, mods: [SHIFT], icon: sort.png, label: "Sort by status" }
-  - { key: I, mods: [SHIFT], icon: sort.png, label: "Sort by IP" }
-  - { key: O, mods: [SHIFT], icon: sort.png, label: "Sort by node" }
-  - { key: C, mods: [SHIFT], icon: sort.png, label: "Sort by CPU" }
-  - { key: M, mods: [SHIFT], icon: sort.png, label: "Sort by memory" }
-  - { key: X, mods: [SHIFT], icon: sort.png, label: "Sort by CPU/request" }
-  - { key: Z, mods: [SHIFT], icon: sort.png, label: "Sort by MEM/request" }
-  - { key: X, mods: [CTRL], icon: sort.png, label: "Sort by CPU/limit" }
-  - { key: Q, mods: [CTRL], icon: sort.png, label: "Sort by MEM/limit" }
+  - { key: N, mods: [SHIFT], icon: k9s_sort_name.png, label: "Sort by name" }
+  - { key: A, mods: [SHIFT], icon: k9s_sort_age.png, label: "Sort by age" }
+  - { key: R, mods: [SHIFT], icon: k9s_sort_ready.png, label: "Sort by ready" }
+  - { key: T, mods: [SHIFT], icon: k9s_sort_restarts.png, label: "Sort by restarts" }
+  - { key: S, mods: [SHIFT], icon: k9s_sort_status.png, label: "Sort by status" }
+  - { key: I, mods: [SHIFT], icon: k9s_sort_ip.png, label: "Sort by IP" }
+  - { key: O, mods: [SHIFT], icon: k9s_sort_node.png, label: "Sort by node" }
+  - { key: C, mods: [SHIFT], icon: k9s_sort_cpu.png, label: "Sort by CPU" }
+  - { key: M, mods: [SHIFT], icon: k9s_sort_mem.png, label: "Sort by memory" }
+  - { key: X, mods: [SHIFT], icon: k9s_sort_cpu_req.png, label: "Sort by CPU/request" }
+  - { key: Z, mods: [SHIFT], icon: k9s_sort_mem_req.png, label: "Sort by MEM/request" }
+  - { key: X, mods: [CTRL], icon: k9s_sort_cpu_lim.png, label: "Sort by CPU/limit" }
+  - { key: Q, mods: [CTRL], icon: k9s_sort_mem_lim.png, label: "Sort by MEM/limit" }

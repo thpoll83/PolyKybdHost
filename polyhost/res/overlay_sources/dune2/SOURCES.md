@@ -70,7 +70,8 @@ with the settings picked in the icon picker (`rasterize.yaml`, rendered by
 | `screenshot.png` | Font Awesome Free 6.5.2 `camera` (solid), the OpenRA set's source | Fonticons, Inc. | CC BY 4.0 |
 | `fullscreen.png` | Font Awesome Free 6.5.2 `expand` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `clock.png` | Font Awesome Free 6.5.2 `clock` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `skip.png`, `skip10.png`, `skip30.png`, `skip120.png` | Font Awesome Free 6.5.2 `forward-fast` (solid); one file per key | Fonticons, Inc. | CC BY 4.0 |
+| `skip.png` | Font Awesome Free 6.5.2 `forward-fast` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `skip10.png`, `skip30.png`, `skip120.png` | Font Awesome Free 6.5.2 `forward-fast` (solid) over the time skipped (10s, 30s, 2m) in DejaVu Sans Bold (the copy bundled with matplotlib v3.9.2, as in `../zeroad/`), composed by `fetch_icons.py` | Fonticons, Inc.; the text Bitstream | CC BY 4.0; the text Bitstream Vera |
 | `sound.png` | Font Awesome Free 6.5.2 `volume-high` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `music.png` | Font Awesome Free 6.5.2 `music` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `fps.png` | Font Awesome Free 6.5.2 `gauge-high` (solid) | Fonticons, Inc. | CC BY 4.0 |

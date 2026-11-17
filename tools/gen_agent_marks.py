@@ -1,7 +1,9 @@
 """Write the agent-card marks for vendors that Simple Icons and MDI do not carry
 (polyhost/res/icons/agents/<vendor>.png), from the ESC marks the AI CLI overlays
 already use (res/overlay_sources/aicli/icons/). Each output is a finished 1-bit
-mask, at most 16 rows tall: the card shows it as it is (services/agents/card.py).
+mask, at most 24 rows tall, drawn whole: the card shows it as it is beside the
+title, and scales a square one down only when the title's first word does not fit
+beside it (services/agents/card.py).
 
     python tools/gen_agent_marks.py
 """
@@ -14,8 +16,8 @@ from PIL import Image
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "polyhost", "res", "overlay_sources", "aicli", "icons")
 OUT = os.path.join(ROOT, "polyhost", "res", "icons", "agents")
-ROWS = 16      # card.MARK_SHOWN
-BOX = 26       # card.MARK_BOX
+ROWS = 24      # card.MARK_BOX: the tallest mark
+BOX = 24       # card.MARK_BOX
 
 
 def _ink(name):
@@ -29,14 +31,14 @@ def _crop(m):
 
 
 def _brand(name):
-    """A Simple Icons mark (CC0, 256 px in the aicli icons) at the cards' 26 px,
-    its lower 16 rows."""
+    """A Simple Icons mark (CC0, 256 px in the aicli icons), whole, at the cards'
+    24 px."""
     ink = _crop(_ink(name) > 0.02).astype(float) * 255
     img = Image.fromarray(ink.astype(np.uint8))
     s = BOX / max(img.size)
     img = img.resize((round(img.width * s), round(img.height * s)), Image.LANCZOS)
     m = np.array(img) >= 110
-    return _crop(m)[-ROWS:]
+    return _crop(m)
 
 
 def qwen():
@@ -47,21 +49,16 @@ def kimi():
     return _brand("kimi.png")
 
 
-def _halve(m):
-    """A drawn mark with 2 px lines at half size: the lines stay 1 px."""
-    h, w = (m.shape[0] // 2) * 2, (m.shape[1] // 2) * 2
-    return m[:h, :w].reshape(h // 2, 2, w // 2, 2).any(axis=(1, 3))
-
-
 def grok():
     """The ESC mark (a circle and a slash, drawn from the grok binary's braille
-    art) at half size."""
-    return _crop(_halve(_crop(_ink("grok.png") > 0.5)))
+    art), whole: 24 rows."""
+    return _crop(_ink("grok.png") > 0.5)
 
 
 def opencode():
-    """The ESC mark's lower 16 rows: the 'code' wordmark."""
-    return _crop(_crop(_ink("opencode.png") > 0.5)[-ROWS:])
+    """The ESC mark's lower 16 rows: the 'code' wordmark. The whole mark (30 rows,
+    'open' over 'code') is taller than a card mark."""
+    return _crop(_crop(_ink("opencode.png") > 0.5)[-16:])
 
 
 # Aider's logo is "aider" in the Glass TTY VT220 font, which draws every dot row
@@ -90,8 +87,7 @@ def aider():
 
 def antigravity():
     """Google's Material Symbols 'antigravity' (Apache 2.0), vendored in
-    res/icons/agents/src/. The whole arch at 16 px: its lower rows alone read
-    as two legs."""
+    res/icons/agents/src/. The whole arch at 24 px."""
     sys.path.insert(0, ROOT)
     from polyhost.services import app_icons
     m = app_icons.render_overlay(os.path.join(OUT, "src", "antigravity.svg"), box=ROWS)

@@ -60,13 +60,13 @@ bindings:
   - { key: I,     mods: [CMDCTRL, SHIFT], icon: model.png,      label: "Model menu" }
   - { key: E,     mods: [CMDCTRL, SHIFT], icon: effort.png,     label: "Effort selector" }
   # --- both platforms (both app lists) ---
-  - { key: K,     mods: [CMDCTRL],        icon: search.png,     label: "Search or start a session", concept: find }
+  - { key: K,     mods: [CMDCTRL],        icon: search_new.png,     label: "Search or start a session"}
   - { key: K,     mods: [CMDCTRL, SHIFT], icon: search.png,     label: "Search", concept: find }
   - { key: Q,     mods: [CTRL],           icon: recents.png,    label: "Switch between recents" }
   - { key: B,     mods: [CMDCTRL],        icon: sidebar.png,    label: "Toggle sidebar" }
   - { key: ",",   mods: [CMDCTRL],        icon: settings.png,   label: Settings }
-  - { key: RIGHT, mods: [CMDCTRL, ALT],   icon: next.png,       label: "Next sidebar tab" }
-  - { key: LEFT,  mods: [CMDCTRL, ALT],   icon: prev.png,       label: "Previous sidebar tab" }
+  - { key: RIGHT, mods: [CMDCTRL, ALT],   icon: sidebar_next.png,       label: "Next sidebar tab" }
+  - { key: LEFT,  mods: [CMDCTRL, ALT],   icon: sidebar_prev.png,       label: "Previous sidebar tab" }
   - { key: U,     mods: [CMDCTRL],        icon: attach.png,     label: "Add files or photos" }
   - { key: D,     mods: [CMDCTRL],        icon: dictation.png,  label: "Toggle dictation" }
   - { key: "1",   mods: [CMDCTRL], icon: tab1.png, mode: luma, label: "Jump to session 1", source: "ms-fluent/Tab (MIT) + digit" }
@@ -83,7 +83,7 @@ bindings:
   - { key: ".",   mods: [CTRL, SHIFT],    except: [macos], icon: model.png,    label: "Model menu" }
   # --- macOS only: the macOS list ---
   - { key: N,     mods: [GUI, SHIFT],  only: [macos], icon: newsettings.png, label: "New session with current settings" }
-  - { key: T,     mods: [GUI, SHIFT],  only: [macos], icon: reopen.png,      label: "Reopen closed session" }
+  - { key: T,     mods: [GUI, SHIFT],  only: [macos], icon: reopen_session.png,      label: "Reopen closed session" }
   - { key: DOWN,  mods: [ALT],         only: [macos], icon: next.png,        label: "Next session" }
   - { key: UP,    mods: [ALT],         only: [macos], icon: prev.png,        label: "Previous session" }
   - { key: "\\",  mods: [GUI, CTRL],   only: [macos], icon: splitright.png,  label: "New session on the right" }
@@ -101,7 +101,7 @@ bindings:
   - { key: O,     mods: [GUI, ALT],    only: [macos], icon: fork.png,        label: "Fork session" }
   - { key: Y,     mods: [GUI, SHIFT],  only: [macos], icon: filelist.png,    label: "Toggle file list" }
   - { key: P,     mods: [GUI],         only: [macos], icon: findfile.png,    label: "Go to file" }
-  - { key: P,     mods: [GUI, SHIFT],  only: [macos], icon: browser.png,     label: "Toggle preview" }
+  - { key: P,     mods: [GUI, SHIFT],  only: [macos], icon: browser_preview.png,     label: "Toggle preview" }
   - { key: X,     mods: [GUI, SHIFT],  only: [macos], icon: annotate.png,    label: "Annotate page in preview" }
   - { key: R,     mods: [GUI],         only: [macos], icon: reload.png,      label: "Reload page in preview" }
   - { key: F,     mods: [GUI, SHIFT],  only: [macos], icon: files.png,       label: "Toggle Files" }

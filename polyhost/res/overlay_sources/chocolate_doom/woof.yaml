@@ -36,8 +36,8 @@ bindings:
   # Movement
   - { key: W, icon: forward.png, label: "Move forward" }
   - { key: S, icon: back.png, label: "Move backward" }
-  - { key: UP, icon: forward.png, label: "Move forward (second key)" }
-  - { key: DOWN, icon: back.png, label: "Move backward (second key)" }
+  - { key: UP, icon: forward.png, label: "Move forward" }
+  - { key: DOWN, icon: back.png, label: "Move backward" }
   - { key: LEFT, icon: turnleft.png, label: "Turn left" }
   - { key: RIGHT, icon: turnright.png, label: "Turn right" }
   - { key: A, icon: strafeleft.png, label: "Strafe left" }

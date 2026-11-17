@@ -41,6 +41,8 @@ BORROW = {
     **{n: "soundcraft" for n in ("trackdup.png", "follow.png", "trimstart.png")},
     **{n: "cubase" for n in (
         "removetrack.png", "playsel.png", "lowerzone.png", "color.png")},
+    # Rename track: rename + TRK (one icon per action; Rename regions keeps rename).
+    **{n: "logicpro" for n in ("renametrack.png",)},
 }
 
 FLUENT = {

@@ -12,6 +12,7 @@ the host draws the ESC mark for the app itself.
 """
 from __future__ import annotations
 
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -77,7 +78,6 @@ FLUENT = {
     "insertmeasure": "ms:add_column_left",
     "insertmeasures": "ms:view_week",
     "timedelete": "ms:backspace",
-    "measurerest": "ms:horizontal_rule",
     "systembreak": "ms:keyboard_return",
     "pagebreak": "ms:insert_page_break",
     "systemlock": "Lock Closed",
@@ -112,8 +112,6 @@ FLUENT = {
     # --- navigation ---
     "octup": "ms:keyboard_double_arrow_up",
     "octdown": "ms:keyboard_double_arrow_down",
-    "diaup": "ms:expand_less",
-    "diadown": "ms:expand_more",
     "pitchup": "ms:arrow_upward_alt",
     "pitchdown": "ms:arrow_downward_alt",
     "staffup": "ms:vertical_align_top",
@@ -163,10 +161,50 @@ def _draw_text(path: Path, text: str) -> None:
     img.save(path)
 
 
+# name -> (glyph, word): a glyph with a short word under it, 1-bit at 40x40,
+# drawn with the Ghidra set's code. Diatonic up/down move by a scale STEP; a
+# plain chevron drew the same pixels as Marcato (one icon per action).
+WORDS = {
+    "diaup": ("up", "STEP"),
+    "diadown": ("down", "STEP"),
+}
+
+
+def word_composites(out: Path, words: dict[str, tuple[str, str]]) -> None:
+    """Draw ``words`` with ``composites()`` from ``../ghidra/fetch_icons.py``."""
+    spec = importlib.util.spec_from_file_location(
+        "ghidra_fetch_icons", Path(__file__).resolve().parent.parent / "ghidra" / "fetch_icons.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    mod.COMPOSITES = words
+    mod.ISA = {}
+    mod.composites(out)
+
+
+def _draw_measure_rest(path: Path) -> None:
+    """A whole (full measure) rest: a filled block hanging from a staff line,
+    black on transparent. Material's horizontal_rule drew the same pixels as
+    the Tenuto line."""
+    img = Image.new("RGBA", (RENDER_PX, RENDER_PX), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    u = RENDER_PX
+    d.rectangle([int(u * 0.06), int(u * 0.30), int(u * 0.94), int(u * 0.37)], fill=(0, 0, 0, 255))
+    d.rectangle([int(u * 0.28), int(u * 0.37), int(u * 0.72), int(u * 0.64)], fill=(0, 0, 0, 255))
+    img.save(path)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
     n = icon_fetch.fluent(FLUENT, out)
+    word_composites(out, WORDS)
+    n += len(WORDS)
+    if (out / "measurerest.png").exists():
+        print("  measurerest.png  <- committed asset (left as-is)")
+    else:
+        _draw_measure_rest(out / "measurerest.png")
+        print("  measurerest.png  <- drawn whole rest")
+    n += 1
     for name, text in TEXT.items():
         _draw_text(out / f"{name}.png", text)
         n += 1

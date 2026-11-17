@@ -35,6 +35,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import icon_fetch  # noqa: E402
 import program_marks  # noqa: E402
 import number_badge  # noqa: E402
+import dcc_glyphs  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+from polyhost.res.overlay_sources.tui import variant_glyphs  # noqa: E402
 
 RENDER_PX = 96
 
@@ -51,8 +55,6 @@ MS_ICONS = {
     "closepane":    "Dismiss Square",
     "tab":          "Tab",
     "tabdropdown":  "Chevron Down",
-    "nexttab":      "Arrow Right",
-    "prevtab":      "Arrow Left",
     # panes
     "splitdown":    "Split Horizontal",     # a box divided top/bottom
     "splitright":   "Split Vertical",       # two boxes side by side
@@ -90,6 +92,21 @@ MS_ICONS = {
 
 
 
+# One image per action (maintainer, 2026-11-15): next/previous TAB and focus
+# pane left/right, profile 1..9 and switch to tab 1..8, the last tab and scroll
+# to bottom, the four resize directions. Drawn 1-bit at the 40x36 region by
+# `../tui/variant_glyphs.py`: (function, base icon, argument).
+VARIANTS = {
+    "tab_next.png": ("arrowed", "tab.png", "right"),
+    "tab_prev.png": ("arrowed", "tab.png", "left"),
+    "tab_last.png": ("worded", "tab.png", "last"),
+    "prevpane.png": ("arrowed", "splitright.png", "left"),
+    **{f"newtab_p{d}.png": ("side_word", "newtab.png", d) for d in "123456789"},
+    **{f"resizepane_{d}.png": ("badged", "resizepane.png", d)
+       for d in ("up", "down", "left", "right")},
+}
+
+
 TERMINAL_ICO = ("https://raw.githubusercontent.com/microsoft/terminal/main/"
                  "res/terminal.ico")
 
@@ -104,6 +121,11 @@ def main() -> int:
     # rounded box and reads as nothing at 40 px, so the NUMBER goes inside it --
     # see number_badge for why that is one shared implementation.
     number_badge.numbered(out / "tab.png", "12345678", out, "tab")
+    for name, (fn, base, arg) in VARIANTS.items():
+        dcc_glyphs.guarded(
+            out / name,
+            lambda p, f=getattr(variant_glyphs, fn), b=out / base, a=arg: f(b, a, p),
+            f"variant_glyphs.{fn}({base}, {arg})")
 
     program_marks.own_icon(out / "progmark.png", TERMINAL_ICO, 48,
                            credit="microsoft/terminal res/terminal.ico")

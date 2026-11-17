@@ -44,8 +44,8 @@ bindings:
   # fixed.cycle_collaboration_mode
   - { key: TAB, mods: [SHIFT], icon: permission.png, label: "Collaboration mode" }
   # fixed.previous_agent / fixed.next_agent
-  - { key: LEFT, mods: [ALT], icon: prev.png, label: "Previous agent" }
-  - { key: RIGHT, mods: [ALT], icon: next.png, label: "Next agent" }
+  - { key: LEFT, mods: [ALT], icon: agent_prev.png, label: "Previous agent" }
+  - { key: RIGHT, mods: [ALT], icon: agent_next.png, label: "Next agent" }
   # Ctrl+Z is reserved for suspend (validate_conflicts, keymap.rs).
   - { key: Z, mods: [CTRL], icon: suspend.png, label: "Suspend" }
 
@@ -73,7 +73,7 @@ bindings:
   - { key: "]", mods: [CTRL], icon: skip.png, label: "Skip question" }
 
   # --- composer: ComposerKeymap defaults ---
-  - { key: R, mods: [CTRL], icon: search.png, label: "History search", concept: find }
+  - { key: R, mods: [CTRL], icon: history_search.png, label: "History search"}
   - { key: S, mods: [CTRL], icon: next.png, label: "Next history match" }
   - { key: TAB, icon: queue.png, label: "Queue message" }
   # toggle_shortcuts: "?" is Shift+/

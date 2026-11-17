@@ -80,6 +80,17 @@ FLUENT = {
     "notify": "Alert",
 }
 
+# Glyph-above-word composites (`../emacs/fetch_icons.py`, `composite()`),
+# 40x32, 1-bit: stem -> (glyph, word). Drawn after BORROWED's icons exist.
+COMPOSITES = {
+    "half_down": ("down", "HALF"),                    # OpenCode Ctrl+Alt+D
+    "model_next": ("png:model", "NEXT"),              # OpenCode F2
+    "model_prev": ("png:model", "PREV"),              # OpenCode Shift+F2
+    "agent_next": ("png:assistant", "NEXT"),          # OpenCode Tab, Codex Alt+Right
+    "agent_prev": ("png:assistant", "PREV"),          # OpenCode Shift+Tab, Codex Alt+Left
+    "history_search": ("png:search", "HIST"),         # Codex Ctrl+R
+}
+
 # The CLIs' own marks from Simple Icons (CC0 artwork, `../brand_marks.py`).
 BRAND = {"gemini.png": "googlegemini", "qwen.png": "qwen", "kimi.png": "kimi",
          "mistral.png": "mistralai"}
@@ -246,6 +257,10 @@ def main() -> int:
     for fname, letters in LETTERS.items():
         rect_mark.ensure(out / fname, letters)
     n += icon_fetch.borrow(BORROWED, out)
+    # One image per action within an app (maintainer, 2026-11-15): a glyph
+    # above a word, as half_up.png.
+    for stem, (glyph, word) in COMPOSITES.items():
+        emacs.composite(out / f"{stem}.png", glyph, word, out)
     print(f"Wrote {n} icons (+ {len(BRAND) + len(LETTERS) + 1} program marks) to {out}")
     return 0
 

@@ -23,7 +23,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
-import brand_marks, icon_fetch, rect_mark  # noqa: E402
+import brand_marks, dcc_glyphs, icon_fetch, rect_mark  # noqa: E402
+from polyhost.res.overlay_sources.tui import variant_glyphs  # noqa: E402
 from PIL import Image, ImageDraw, ImageFont  # noqa: E402
 from polyhost.res.overlay_sources.emacs import fetch_icons as emacs  # noqa: E402
 
@@ -58,7 +59,6 @@ FLUENT = {
     "version": "Number Symbol Square",
     "tree": "Text Bullet List Tree",
     "collapse": "Arrow Minimize",
-    "shrink": "Arrow Minimize Vertical",
     "expand_all": "Arrow Expand",
     "jump": "Flash",
     "insert": "Text Edit Style",
@@ -94,7 +94,6 @@ FLUENT = {
     "box_net": "ms:lan",
     "box_proc": "ms:list_alt",
     "preset": "Layout Column Two",
-    "preset_prev": "Layout Column Two Split Left",
     "timer_up": "ms:more_time",
     "timer_down": "Timer Off",
     "percore": "Grid Dots",
@@ -227,6 +226,11 @@ FLUENT = {
     "node": "Server",
     "owner": "ms:arrow_upward",
     "portforward": "ms:settings_ethernet",
+    # --- bases of the variant glyphs only (VARIANTS) ---
+    "_pin": "Pin",
+    "findfile": "Document Search",
+    "showhidden": "Eye Off",
+    "narrow": "Full Screen Minimize",     # mc Narrow panel, beside expand.png (Widen)
 }
 
 BRAND = {"htop.png": "htop", "helix.png": "helix", "micro.png": "microeditor"}
@@ -339,6 +343,92 @@ def tui_key(out: Path) -> None:
     im.save(dest)
 
 
+# Variants: two keys of one app share an image only when they do the same
+# thing (maintainer, 2026-11-15). Each entry is drawn by `variant_glyphs` from
+# icons already in this folder: (function, base icon, word / badge / arrow
+# [, the upper fraction of the base to keep]).
+VARIANTS = {
+    # btop: the next and previous preset (two Fluent layout glyphs that differed
+    # by one short line at 40 px)
+    "preset_next.png": ("arrowed", "preset.png", "right"),
+    "preset_back.png": ("arrowed", "preset.png", "left"),
+    # Helix
+    "wordnext_big.png": ("worded", "wordnext.png", "WORD"),
+    "wordprev_big.png": ("worded", "wordprev.png", "WORD"),
+    "wordend_big.png": ("worded", "wordend.png", "WORD"),
+    "goto_menu.png": ("worded", "leader.png", "goto"),
+    "viewmode_sticky.png": ("badged", "viewmode.png", "_pin.png"),
+    "node_start.png": ("worded", "parentstart.png", "node"),
+    "node_end.png": ("worded", "parentend.png", "node"),
+    "join_space.png": ("worded", "join.png", "space"),
+    "paste_after.png": ("arrowed", "paste.png", "right"),
+    "paste_before.png": ("arrowed", "paste.png", "left"),
+    "history_earlier.png": ("arrowed", "history.png", "left"),
+    "history_later.png": ("arrowed", "history.png", "right"),
+    "rotate_back_text.png": ("worded", "rotate_back.png", "text"),
+    "rotate_fwd_text.png": ("worded", "rotate_fwd.png", "text"),
+    # htop
+    "tag_children.png": ("badged", "tag.png", "tree.png"),
+    # k9s
+    "save_context.png": ("badged", "save.png", "settings.png"),
+    "mark_range.png": ("worded", "checklist.png", "range"),
+    "copy_namespace.png": ("badged", "copy.png", "namespace.png"),
+    "namespace_all.png": ("worded", "namespace.png", "all"),
+    "namespace_fav1.png": ("side_word", "namespace.png", "1"),
+    "logs_previous.png": ("badged", "logs.png", "history.png"),
+    "portforward_list.png": ("badged", "portforward.png", "listing.png"),
+    **{f"k9s_sort_{k}.png": ("worded", "sort.png", w) for k, w in (
+        ("name", "NAME"), ("age", "AGE"), ("ready", "READY"), ("restarts", "RESTART"),
+        ("status", "STATUS"), ("ip", "IP"), ("node", "NODE"), ("cpu", "CPU"),
+        ("mem", "MEM"), ("cpu_req", "CPU/R"), ("mem_req", "MEM/R"),
+        ("cpu_lim", "CPU/L"), ("mem_lim", "MEM/L"))},
+    # less
+    "page_down_eof.png": ("worded", "page_down.png", "EOF"),
+    "follow_match.png": ("badged", "follow.png", "search.png"),
+    "reload_drop.png": ("badged", "reload.png", "clear.png"),
+    # the nano icons are a glyph over a word: keep the glyph, change the word
+    "find_next_any.png": ("worded", "find_next.png", "ANY", 0.45),
+    "find_prev_any.png": ("worded", "find_prev.png", "ANY", 0.45),
+    "bracket_close.png": ("arrowed", "bracket.png", "right"),
+    "bracket_open.png": ("arrowed", "bracket.png", "left"),
+    "mark_top.png": ("worded", "mark.png", "TOP", 0.6),
+    "mark_bottom.png": ("worded", "mark.png", "BOTTOM", 0.6),
+    "option_show.png": ("badged", "option.png", "details.png"),
+    # micro
+    "find_literal.png": ("worded", "find.png", "abc"),
+    # Midnight Commander
+    "copy_single.png": ("worded", "copy.png", "single"),
+    "move_single.png": ("worded", "move.png", "single"),
+    "delete_single.png": ("worded", "delete.png", "single"),
+    "menu_last.png": ("worded", "menu.png", "last"),
+    "exit_now.png": ("worded", "exit.png", "now"),
+    "history_dir.png": ("badged", "history.png", "namespace.png"),
+    "history_edit.png": ("badged", "history.png", "fileinfo.png"),
+}
+
+
+# Glyph-above-word composites (`../emacs/fetch_icons.py`, `composite()`), as
+# the file manager sets draw their jump list keys: Helix Tab / Ctrl+O. The
+# plain next/previous arrows looked the same as "Next sibling" (`>|`).
+COMPOSITES = {
+    "jump_fwd": ("right", "JUMP"),
+    "jump_back": ("left", "JUMP"),
+}
+
+
+def variants(out: Path, table: dict = VARIANTS, size=(40, 36)) -> int:
+    """Draw each VARIANTS entry once; a committed PNG is left as it is."""
+    for name, (fn, base, arg, *top) in table.items():
+        draw = getattr(variant_glyphs, fn)
+        if fn == "badged" and arg.endswith(".png"):
+            arg = out / arg
+        kw = {"top": top[0]} if top else {}
+        dcc_glyphs.guarded(out / name,
+                           lambda p, d=draw, b=out / base, a=arg, k=kw: d(b, a, p, size, **k),
+                           f"variant_glyphs.{fn}({base}, {arg.name if isinstance(arg, Path) else arg})")
+    return len(table)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(exist_ok=True)
@@ -352,6 +442,9 @@ def main() -> int:
     gdb_mark(out / "gdb.png")
     # GDB's Ctrl+X leader of the TUI window keys: a two-pane window over "TUI".
     tui_key(out)
+    n += variants(out)
+    for stem, (glyph, word) in COMPOSITES.items():
+        emacs.composite(out / f"{stem}.png", glyph, word, out)
     print(f"Wrote {n} icons (+ {len(BRAND) + len(LETTERS) + 1} program marks) to {out}")
     return 0
 
