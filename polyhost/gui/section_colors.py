@@ -1,7 +1,7 @@
 """The colours of the Settings dialog's sections.
 
-Each section has one colour: the frame around the section and the stripe of its
-entry in the sidebar, so the sidebar entry and its section read as one thing.
+Each section has one colour: the band behind its title, a light tint of it
+behind the section, and the stripe of its entry in the sidebar, so the sidebar entry and its section read as one thing.
 The colour is decoration only: the sidebar entry and the section title carry the
 name, and all text stays in the palette's text colours.
 

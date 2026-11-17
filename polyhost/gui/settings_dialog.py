@@ -826,9 +826,9 @@ class _Group(QWidget):
 
 
 class _Section(QFrame):
-    """A section in its colour (gui/section_colors.py): a frame and a light tint
-    of the colour around its groups, and its title on a band of the full colour.
-    The selected sidebar entry has the same tint."""
+    """A section in its colour (gui/section_colors.py): a light tint of the colour
+    behind its groups, and its title on a band of the full colour. The selected
+    sidebar entry has the same tint."""
 
     def __init__(self, section_id, title, color=None, parent=None):
         super().__init__(parent)
@@ -840,16 +840,16 @@ class _Section(QFrame):
         radius = px(10)
         if color:
             self.setStyleSheet(
-                f"QFrame#settingsSection {{ border: 2px solid {color}; "
+                f"QFrame#settingsSection {{ border: none; "
                 f"border-radius: {radius}px; background: {section_colors.tint(color)}; }}"
                 f"QLabel#settingsSectionTitle {{ background: {color}; "
                 f"color: {section_colors.title_ink(color)}; "
-                f"border-top-left-radius: {radius - 2}px; "
-                f"border-top-right-radius: {radius - 2}px; "
+                f"border-top-left-radius: {radius}px; "
+                f"border-top-right-radius: {radius}px; "
                 f"padding: {px(6)}px {px(14)}px; }}")
         outer = QVBoxLayout(self)
-        # The band reaches the frame on three sides; 2 px is the border.
-        outer.setContentsMargins(2, 2, 2, 2)
+        # The band spans the section's full width, from its top edge.
+        outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(0)
         head = QLabel(self.title)
         head.setObjectName("settingsSectionTitle")
