@@ -1,0 +1,91 @@
+# Team Fortress 2 overlay for PolyKybd.
+#
+# Keys: the default bindings Valve ships in tf/cfg/config_default.cfg
+# (SteamDatabase/GameTracking-TF2). See SOURCES.md. Each binding names the
+# console command its key runs (`command:`), so the icons follow the player's
+# own binds in tf/cfg/config.cfg (game_assets/tf2_keys.py).
+#
+# Ctrl (crouch) and Alt (strafe) are modifier keys and have no overlay cell. 6 to 0 (slot6 to
+# slot10) only pick menu entries, so they stay blank too.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/tf2/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/tf2/tf2.yaml --preview /tmp/tf2_preview
+app: team fortress 2
+match: [tf_win64, tf_linux64, steam_app_440]
+output: tf2_template
+icon_dir: icons
+fit: contain
+mode: auto
+threshold: 150
+anchor: right
+region: [40, 40]
+margin: 0
+
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+# The player's own binds move the icons (game_assets/tf2_keys.py).
+game_assets:
+  reader: keys
+  bindings: tf2
+  icons: {}
+
+bindings:
+
+  # Weapon slots
+  - { key: "1", command: slot1, icon: primary.png, label: "Primary weapon" }
+  - { key: "2", command: slot2, icon: secondary.png, label: "Secondary weapon" }
+  - { key: "3", command: slot3, icon: melee.png, label: "Melee weapon" }
+  - { key: "4", command: slot4, icon: pda1.png, label: "PDA 1 (build, disguise)" }
+  - { key: "5", command: slot5, icon: pda2.png, label: "PDA 2 (destroy, watch)" }
+  - { key: Q, command: lastinv, icon: lastweapon.png, label: "Last weapon" }
+
+  # Movement
+  - { key: W, command: +forward, icon: forward.png, label: "Move forward" }
+  - { key: A, command: +moveleft, icon: left.png, label: "Move left" }
+  - { key: S, command: +back, icon: back.png, label: "Move back" }
+  - { key: D, command: +moveright, icon: right.png, label: "Move right" }
+
+  # Actions
+  - { key: SPACE, command: +jump, icon: jump.png, label: "Jump" }
+  - { key: R, command: +reload, icon: reload.png, label: "Reload", shared: false }
+  - { key: F, command: +inspect, icon: inspect.png, label: "Inspect weapon" }
+  - { key: G, command: +taunt, icon: taunt.png, label: "Taunt" }
+  - { key: H, command: +use_action_slot_item, icon: actionitem.png, label: "Action item" }
+  - { key: L, command: dropitem, icon: dropitem.png, label: "Drop intelligence" }
+  - { key: B, command: lastdisguise, icon: disguise.png, label: "Last disguise" }
+  - { key: MINUS, command: disguiseteam, icon: disguiseteam.png, label: "Disguise team" }
+
+  # Communication
+  - { key: Z, command: voice_menu_1, icon: voice1.png, label: "Voice menu 1" }
+  - { key: X, command: voice_menu_2, icon: voice2.png, label: "Voice menu 2" }
+  - { key: C, command: voice_menu_3, icon: voice3.png, label: "Voice menu 3" }
+  - { key: E, command: "voicemenu 0 0", icon: medic.png, label: "Call for Medic" }
+  - { key: T, command: impulse 201, icon: spray.png, label: "Spray" }
+  - { key: Y, command: say, icon: allchat.png, label: "All chat" }
+  - { key: U, command: say_team, icon: teamchat.png, label: "Team chat" }
+  - { key: P, command: say_party, icon: partychat.png, label: "Party chat" }
+  - { key: V, command: +voicerecord, icon: voice.png, label: "Voice chat" }
+
+  # Menus
+  - { key: TAB, command: +showscores, icon: scoreboard.png, label: "Scoreboard" }
+  - { key: DOT, command: changeteam, icon: changeteam.png, label: "Change team" }
+  - { key: COMMA, command: changeclass, icon: changeclass.png, label: "Change class" }
+  - { key: M, command: open_charinfo_direct, icon: loadout.png, label: "Loadout" }
+  - { key: N, command: open_charinfo_backpack, icon: backpack.png, label: "Backpack" }
+  - { key: I, command: showmapinfo, icon: mapinfo.png, label: "Map info" }
+  - { key: J, command: cl_trigger_first_notification, icon: accept.png, label: "Accept notification" }
+  - { key: K, command: cl_decline_first_notification, icon: decline.png, label: "Decline notification" }
+  - { key: GRAVE, command: toggleconsole, icon: console.png, label: "Console" }
+  - { key: F1, command: +showroundinfo, icon: roundinfo.png, label: "Round info", region: [34, 40] }
+  - { key: F2, command: show_quest_log, icon: contracts.png, label: "Contracts", region: [34, 40] }
+  - { key: F5, command: screenshot, icon: screenshot.png, label: "Screenshot", region: [34, 40] }
+  - { key: F6, command: save_replay, icon: savereplay.png, label: "Save replay", region: [34, 40] }
+  - { key: F7, command: abuse_report_queue, icon: report.png, label: "Report player", region: [34, 40] }
+  - { key: F10, command: quit prompt, icon: quit.png, label: "Quit", region: [30, 40] }
+  - { key: PAUSE, command: pause, icon: pause.png, label: "Pause" }

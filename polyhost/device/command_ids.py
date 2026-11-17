@@ -118,6 +118,11 @@ class Cmd(Enum):
     # (writes the flash sector, copies to the other half; reply [3] bit 0 = it did).
     # Records and limits: Combos below. Firmware poly_combos.c / base/combo_store.h.
     COMBOS = 48
+    # Host tutorial (protocol v35+): data[2] op, see HostTutorial below. Two status
+    # lines, a spotlight that darkens every key outside a mask, the reveal wave,
+    # conditions the master watches (key, layer, keycode), polled by the host, and a
+    # 10 s watchdog. Firmware base/host_tutorial_plan.h.
+    HOST_TUTORIAL = 49
 
 
 
@@ -408,3 +413,26 @@ class GlyphSize(Enum):
     SMALL = 0    # the original 27 px face, and the default
     MEDIUM = 1   # 33 px em
     LARGE = 2    # 39 px em
+
+
+class HostTutorial:
+    """Cmd 49's wire constants (firmware base/host_tutorial_plan.h)."""
+    OP_INFO = 0
+    OP_TEXT = 1
+    OP_SPOTLIGHT = 2
+    OP_REVEAL = 3
+    OP_ARM = 4
+    OP_POLL = 5
+    OP_END = 6
+    # TEXT: a length byte per line and both lines after the op byte, in one report.
+    TEXT_BYTES = 59
+    SPOT_FLAG_ON = 0x01
+    MASK_BYTES = 10
+    MAX_CONDS = 4
+    COND_KEY = 1        # (row, col) pressed
+    COND_LAYER = 2      # layer on
+    COND_KEYCODE = 3    # a key with this keycode pressed
+    POLL_TEXT = 0x01
+    POLL_SPOT = 0x02
+    POLL_ARMED = 0x04
+    WATCHDOG_S = 10

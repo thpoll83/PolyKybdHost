@@ -38,12 +38,12 @@ bindings:
   - { key: S, icon: back.png, label: "Move backward" }
   - { key: A, icon: strafeleft.png, label: "Strafe left" }
   - { key: D, icon: straferight.png, label: "Strafe right" }
-  - { key: UP, icon: forward.png, label: "Move forward (second key)" }
-  - { key: DOWN, icon: back.png, label: "Move backward (second key)" }
+  - { key: UP, icon: forward.png, label: "Move forward" }
+  - { key: DOWN, icon: back.png, label: "Move backward" }
   - { key: LEFT, icon: turnleft.png, label: "Turn left" }
   - { key: RIGHT, icon: turnright.png, label: "Turn right" }
-  - { key: COMMA, icon: strafeleft.png, label: "Strafe left (second key)" }
-  - { key: DOT, icon: straferight.png, label: "Strafe right (second key)" }
+  - { key: COMMA, icon: strafeleft.png, label: "Strafe left" }
+  - { key: DOT, icon: straferight.png, label: "Strafe right" }
   - { key: SPACE, icon: jump.png, label: "Jump" }
   - { key: E, icon: swimup.png, label: "Swim up" }
   - { key: C, icon: swimdown.png, label: "Swim down" }

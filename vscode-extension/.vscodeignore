@@ -7,3 +7,5 @@ build.sh
 **/*.map
 .gitignore
 package-lock.json
+remote/**
+out/remote.js

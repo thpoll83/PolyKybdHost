@@ -4,8 +4,8 @@
 The key icons are flat 1-bit silhouettes from Font Awesome Free (CC BY 4.0) and
 game-icons.net (CC BY 3.0), as in the Warcraft III set. The hotbar slots 1 to 9
 are a square slot with the digit in Monocraft (SIL OFL 1.1), a font drawn after
-the game's pixel letters; the game's own font is not used. Drop item and
-drop stack are one block or three blocks over a drawn down arrow. The ESC marks
+the game's pixel letters; the game's own font is not used. Drop item is one
+block under a drawn up arrow; drop stack is three blocks over a down arrow. The ESC marks
 are MINECRAFT over JAVA or BEDROCK, set in Press Start 2P; the game's logo art
 is not used. SOURCES.md credits each icon.
 
@@ -201,9 +201,9 @@ def _pixel_block(n: int, ring: int):
 
 
 def drop_icons(out: Path) -> None:
-    """drop.png (Q) and dropstack.png (Ctrl+Q), 40x40: one block, or three
-    blocks (one on top of two), over a solid down arrow, all centred on one
-    vertical axis. Drawn cell by cell on a 20 x 20 grid and doubled, so they
+    """drop.png (Q) and dropstack.png (Ctrl+Q), 40x40: one block under a solid
+    up arrow (the item thrown out), or three blocks (one on top of two) over a
+    down arrow, all centred on one vertical axis. Drawn cell by cell on a 20 x 20 grid and doubled, so they
     have the same BLOCK px squares as the other icons."""
     import numpy as np
     n = 40 // BLOCK
@@ -221,8 +221,10 @@ def drop_icons(out: Path) -> None:
             _paste(canvas, block, n // 2 - 4, 7)
             _paste(canvas, block, n // 2 + 4, 7)
         _paste(canvas, arrow, n // 2, n - arrow.shape[0])
+        if stem == "drop":
+            canvas = canvas[::-1, ::-1]     # turned 180 degrees: the arrow above the block, pointing up
         cnc._save_mask(np.kron(canvas, np.ones((BLOCK, BLOCK), bool)), out / f"{stem}.png")
-        print(f"  {stem}.png  <- {'one block' if stem == 'drop' else 'three blocks'} over a down arrow")
+        print(f"  {stem}.png  <- {'one block under an up arrow' if stem == 'drop' else 'three blocks over a down arrow'}")
 
 
 def _text(font, s: str, sx: int = 1, sy: int = 1, px: int = FONT_PX):

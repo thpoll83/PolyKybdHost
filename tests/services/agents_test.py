@@ -40,6 +40,58 @@ class RegistryTest(unittest.TestCase):
         slots = {a.session_id: a.slot for a in self.r.agents()}
         self.assertEqual(slots, {"a": 0, "d": 1, "c": 2})
 
+    def _slots(self):
+        return {a.session_id: a.slot for a in self.r.agents()}
+
+    def test_the_last_agent_left_moves_to_the_first_key(self):
+        for sid in "abc":
+            self.r.report("codex", sid, "working")
+        self.r.report("codex", "a", ENDED)
+        self.assertEqual(self._slots(), {"b": 1, "c": 2})     # two left: both stay
+        self.r.report("codex", "b", ENDED)
+        self.assertEqual(self._slots(), {"c": 0})             # one left: key 1
+
+    def test_a_removal_by_the_user_closes_the_gaps(self):
+        for sid, state in (("a", "idle"), ("b", "working"), ("c", "done"), ("d", "waiting")):
+            self.r.report("codex", sid, state)
+        self.r.forget_inactive()                              # a and c go
+        self.assertEqual(self._slots(), {"b": 0, "d": 1})     # order kept
+        self.r.report("codex", "e", "working")
+        self.r.forget("codex", "b")
+        self.assertEqual(self._slots(), {"d": 0, "e": 1})
+
+    def test_a_time_rule_removal_leaves_the_single_agent_on_the_first_key(self):
+        for sid in "abc":
+            self.r.report("codex", sid, "idle")
+        self.r.report("codex", "c", "working")
+        self.clock.t += 5 * 3600                              # a and b are forgotten
+        self.r.report("codex", "c", "working")                # c reported meanwhile
+        self.r.tick()
+        self.assertEqual(self._slots(), {"c": 0})
+
+    def test_a_gone_window_title_leaves_the_single_agent_on_the_first_key(self):
+        self.r.report("codex", "title:1", "working", source="title")
+        self.r.report("gemini", "title:2", "working", source="title")
+        self.r.report("qwen", "title:3", "working", source="title")
+        self.r.drop_missing_titles({"title:2", "title:3"})     # window 1 gone: two left
+        self.assertEqual(self._slots(), {"title:2": 1, "title:3": 2})
+        self.r.drop_missing_titles({"title:3"})
+        self.assertEqual(self._slots(), {"title:3": 0})
+
+    def test_a_freed_detached_key_leaves_the_single_agent_on_the_first_key(self):
+        self.r.report("claude-code", "a", "working")
+        self.r.report("claude-code", "b", "working")
+        self.r.report("claude-code", "a", None, event="detach:other")
+        self.assertTrue(self.r.forget_detached("claude-code", "a"))
+        self.assertEqual(self._slots(), {"b": 0})
+
+    def test_a_restore_closes_the_gaps(self):
+        data = {"hook_vendors": ["codex"], "agents": [
+            {"vendor": "codex", "session_id": "x", "state": "working", "slot": 9},
+            {"vendor": "codex", "session_id": "y", "state": "idle", "slot": 4}]}
+        self.assertEqual(self.r.restore(data, 0), 2)
+        self.assertEqual(self._slots(), {"y": 0, "x": 1})
+
     def test_pages(self):
         for i in range(12):
             self.r.report("claude-code", f"s{i}", "working")
@@ -123,6 +175,22 @@ class RegistryTest(unittest.TestCase):
         self.r.label("claude-code", "c", "review")
         self.assertEqual([a.display_headline for a in self.r.agents()],
                          ["team-core2", "agent", "review"])
+
+    def test_an_anonymous_cloud_agent_is_agent_N(self):
+        # POLYKYBD_CLOUD_ANONYMOUS: no title and no folder come from the cloud VM.
+        self.r.report("claude-code", "a", "working", machine="cloud", headline="", cwd="")
+        self.assertEqual([a.display_headline for a in self.r.agents()], ["Agent 1"])
+        self.r.report("claude-code", "b", "idle", machine="cloud", headline="", cwd="")
+        self.r.report("claude-code", "c", "idle", cwd="C:\\ws\\agent")   # local, folder "agent"
+        self.r.report("claude-code", "d", "idle", machine="cloud", headline="Fix the build")
+        self.assertEqual([a.display_headline for a in self.r.agents()],
+                         ["Agent 1", "Agent 2", "agent", "Fix the build"])
+        self.r.label("claude-code", "b", "review")            # the user's own label
+        self.assertEqual([a.display_headline for a in self.r.agents()][:2], ["Agent 1", "review"])
+
+    def test_a_local_agent_without_a_title_keeps_the_vendor_name(self):
+        self.r.report("claude-code", "a", "working")
+        self.assertEqual([a.display_headline for a in self.r.agents()], ["Claude Code"])
 
     def test_an_exited_agent_process_frees_its_key(self):
         alive = {100: True, 200: False}
@@ -416,13 +484,15 @@ class _FakeKeeb:
     """Records what the controller sends; events are injected by tests."""
     def __init__(self):
         self.cards, self.keys, self.events, self.newest = {}, [], [], 0
+        self.pages = []
 
     def ai_upload_card(self, slot, data):
         self.cards[slot] = data
         return True, "ok"
 
-    def ai_set_keys(self, states, esc, slots):
+    def ai_set_keys(self, states, esc, slots, page=None):
         self.keys.append((states, esc, slots))
+        self.pages.append(page)
         return True, "ok"
 
     def ai_read_events(self, last_seq):
@@ -455,6 +525,66 @@ class ControllerTest(unittest.TestCase):
         self.c._raise = lambda agent: self.c.raise_agent(agent)   # no thread in tests
         self.c._run_dictate = lambda: self.c.dictate()
         self.kb = _FakeKeeb()
+
+    def _fill(self, n, state="working"):
+        for i in range(n):
+            self.r.report("codex", f"s{i:02d}", state)
+
+    def test_sends_the_page_and_the_page_count(self):
+        self._fill(12)
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.pages[-1], (0, 2, 0))
+        self.kb.press(10)                                # Esc: next page
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.pages[-1], (1, 2, 0))
+
+    def test_leaving_ai_mode_shows_page_one_again(self):
+        self._fill(12)
+        self.c.sync(self.kb)
+        self.kb.press(10)
+        self.c.sync(self.kb)
+        self.assertEqual(self.c.page, 1)
+        self.kb.press(13)                                # AI_EVENT_LEAVE
+        self.c.sync(self.kb)
+        self.assertEqual(self.c.page, 0)
+        self.assertEqual(self.kb.pages[-1][0], 0)
+        self.assertNotEqual((self.c.last_press or {}).get("key"), 13)   # not a key press
+
+    def test_a_finish_on_another_page_increases_the_counter(self):
+        self._fill(12)
+        self.c.sync(self.kb)                             # the start: nothing counted
+        self.r.report("codex", "s11", "done")            # on page 2, page 1 is shown
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.pages[-1][2], 1)
+        self.r.report("codex", "s01", "done")            # on the shown page: the keyboard
+        self.c.sync(self.kb)                             # sees that one itself
+        self.assertEqual(self.kb.pages[-1][2], 1)
+        self.r.report("codex", "s10", "waiting")         # not a finish
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.pages[-1][2], 1)
+
+    def test_the_counter_wraps_without_returning_to_zero(self):
+        self.c._done_elsewhere = 255
+        self._fill(12)
+        self.c.sync(self.kb)
+        self.r.report("codex", "s11", "done")
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.pages[-1][2], 1)
+
+    def test_paging_back_reuses_the_cards_already_uploaded(self):
+        self._fill(12)
+        self.c.sync(self.kb)
+        uploads = len(self.kb.cards)
+        writes = []
+        real = self.kb.ai_upload_card
+        self.kb.ai_upload_card = lambda slot, data: (writes.append(slot), real(slot, data))[1]
+        self.kb.press(10)
+        self.c.sync(self.kb)                             # page 2: its two cards are new
+        self.assertEqual(len(writes), 2)
+        self.kb.press(10)
+        self.c.sync(self.kb)                             # page 1 again: nothing uploaded
+        self.assertEqual(len(writes), 2)
+        self.assertGreater(uploads, 0)
 
     def test_pushes_every_pass_cards_only_on_change(self):
         self.r.report("claude-code", "a", "working")
@@ -643,7 +773,19 @@ class ControllerTest(unittest.TestCase):
         self.c.sync(self.kb)
         again = self.kb.keys[-1][2][0]
         self.assertIn(again, self.kb.cards)       # uploaded into its new slot
-        self.assertEqual(self.cache.holds(("agentcard", 0)), again)
+        self.assertEqual(self.cache.holds(("agentcard", "codex", "a")), again)
+
+    def test_an_evicted_card_given_the_SAME_slot_again_is_uploaded_again(self):
+        self.r.report("codex", "a", "working")
+        self.c.sync(self.kb)
+        first = self.kb.keys[-1][2][0]
+        self.cache.forget_slot(first)            # an app image may now be in it
+        self.kb.cards.clear()
+        allocate = self.cache.allocate_aside
+        self.cache.allocate_aside = lambda key: (allocate(key), first)[1]
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.keys[-1][2][0], first)
+        self.assertIn(first, self.kb.cards)       # not skipped on the old record
 
     def test_a_full_pool_shows_no_card_rather_than_evict_the_shown_app(self):
         from polyhost.device.overlay_cache import OverlayMRUCache
