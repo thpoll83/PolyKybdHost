@@ -64,9 +64,8 @@ class TestPolyHostModes(unittest.TestCase):
         top = _grab(proc.stdout, "TOPLEVEL")
         self.assertEqual(
             top.split("|"),
-            ["Waiting for PolyKybd...", "Pause", "Brightness", "Idle Display",
-             "Keycap Script", "Keycap Size", "Tap-Hold Timing…", "AI Agents",
-             "Configure Keymap",
+            ["Waiting for PolyKybd...", "Pause", "Brightness", "AI Agents",
+             "Configure Keymap", "Tutorials…",
              "Updates", "Maintenance",
              "Integrations\u2026", "Settings...", "Help && About", "Quit"])
         # The flat command dump is gone, and so is the demo overlay sender.
@@ -230,7 +229,7 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertIn("STATUS_TEXT PolyKybd Split72", proc.stdout)
         self.assertIn("FW 0.8.0", proc.stdout)
         self.assertIn("LANG_MENU_BUILT True", proc.stdout)
-        self.assertIn("EMOJI_IN_LANG_MENU True", proc.stdout)
+        self.assertIn("LANG_MENU_ONLY_REGIONS True", proc.stdout)
         self.assertIn("LAYOUT_OK layers=9", proc.stdout)
         self.assertIn("DAEMON_QUIT_ACTION present", proc.stdout)
         top = _grab(proc.stdout, "CLIENT_TOPLEVEL").split("|")
@@ -250,7 +249,8 @@ class TestPolyHostModes(unittest.TestCase):
         # Genuinely current: the row answers the question and disables itself.
         self.assertIn("FONT_ROW_CURRENT Keyboard fonts: up to date", proc.stdout)
         self.assertIn("TAP_DIALOG True (200, 150)", proc.stdout)
-        self.assertIn("TAP_SET (260, 150)", proc.stdout)
+        # Only the changed value is sent; None keeps the Flow Tap term.
+        self.assertIn("TAP_SET (260, None)", proc.stdout)
 
 
 # ---------------------------------------------------------------------------
@@ -679,9 +679,10 @@ def _smoke_client():
                 time.sleep(0.02)
             print("STATUS_TEXT", app.status.text())
             print("LANG_MENU_BUILT", app.keeb_lang_menu is not None)
-            # The emoji search language is the last entry of the language menu.
-            print("EMOJI_IN_LANG_MENU", app.keeb_lang_menu is not None and
-                  app.keeb_lang_menu.actions()[-1].menu() is app.emoji_dict_menu)
+            # The language menu lists only regions of languages; the emoji
+            # search language is in Settings > Keyboard.
+            print("LANG_MENU_ONLY_REGIONS", app.keeb_lang_menu is not None and all(
+                a.menu() is not None for a in app.keeb_lang_menu.actions()))
             # Layout editor over RPC (keymap_* via the daemon) — must construct.
             app.open_layout_editor()
             app.processEvents()
@@ -754,17 +755,24 @@ def _smoke_client():
             app._refresh_fontpack_action()
             app._menu_fetch.wait_idle()
             print("FONT_ROW_CURRENT", app.fontpack_update_action.text())
-            # Tap-Hold Timing: the read and the write both cross the RPC off the
-            # GUI thread (MenuFetcher); the dialog opens when the read returns.
-            app.open_tap_terms_dialog()
+            # Settings > Keyboard: the read and the write both cross the RPC off
+            # the GUI thread (MenuFetcher); the rows fill when the read returns.
+            from polyhost.gui import keyboard_settings as kbd
+            from polyhost.gui.settings_dialog import SettingsDialog
+            dlg = SettingsDialog()
+            dlg.setup({"ui_theme": "auto"}, keyboard=True)
+            app._settings_dlg = dlg
+            app._menu_fetch.fetch("keyboard_settings", lambda: kbd.read_all(app.core),
+                                  app._apply_keyboard_reads)
             app._menu_fetch.wait_idle()
-            dlg = app.tap_terms_dialog
-            print("TAP_DIALOG", dlg is not None and dlg.isVisible(),
-                  dlg.values() if dlg is not None else None)
-            dlg.tapping.setValue(260)
-            dlg.accept()
+            tapping = dlg.keyboard_widgets[kbd.TAPPING_TERM]
+            flow = dlg.keyboard_widgets[kbd.FLOW_TAP_TERM]
+            print("TAP_DIALOG", tapping.isEnabled(), (tapping.value(), flow.value()))
+            tapping.setValue(260)
+            app._send_keyboard_changes(dlg.keyboard_changes())
             app._menu_fetch.wait_idle()
             print("TAP_SET", core.tap_set)
+            dlg.close()
             app.quit_app()
         print("SERVER_RUNNING", srv._running)
     finally:

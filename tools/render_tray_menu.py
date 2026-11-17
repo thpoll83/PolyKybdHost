@@ -112,6 +112,14 @@ class _FakeCore:
     def get_glyph_size(self):
         return (True, 0)          # Small
 
+    def get_idle_timeout(self):
+        return (True, (2, 300))   # the third preset
+
+    def get_tap_terms(self):
+        return (True, {"tapping_term": 200, "flow_tap_term": 150,
+                       "flow_tap_available": True, "auto_shift_available": True,
+                       "auto_shift": False, "auto_shift_ms": 180})
+
     def agents_list(self):
         """Four sample agents from the real registry, so the AI Agents submenu
         shows its list rather than "No agents reported"."""
@@ -204,6 +212,29 @@ def _render_forwarder(out_dir, log, host="192.168.1.100"):
     return written
 
 
+def _render_keyboard_settings(app, out_dir, log):
+    """Settings > Keyboard, filled from the fake core: the rows the tray menu's
+    Idle Display, Keycap Script, Keycap Size and Tap-Hold Timing used to be."""
+    from polyhost.gui import keyboard_settings
+    from polyhost.gui.settings_dialog import SettingsDialog
+    from PyQt5.QtWidgets import QApplication
+    from polyhost.settings import DEFAULT_SETTINGS
+    dlg = SettingsDialog()
+    dlg.setup(dict(DEFAULT_SETTINGS), keyboard=True)
+    dlg.set_keyboard_reads(keyboard_settings.read_all(app.core))
+    dlg.resize(900, 1500)
+    dlg.show()
+    for i in range(dlg.nav.count()):
+        if dlg.nav.item(i).text() == dlg._keyboard_section.title:
+            dlg.nav.setCurrentRow(i)
+    QApplication.processEvents()
+    path = os.path.join(out_dir, "settings-keyboard.png")
+    dlg.grab().save(path)
+    log(f"wrote {path}")
+    dlg.close()
+    return path
+
+
 def _render(developer, out_dir, log):
     from polyhost.server import protocol
     from polyhost.server.control_server import ControlServer
@@ -243,11 +274,10 @@ def _render(developer, out_dir, log):
         # grab() does not trigger.
         app._refresh_fontpack_action()
         app.cmdMenu._refresh_auto_brightness_action()
-        # Same reason: the Keycap Script previews are built on first show.
-        app._build_glyph_script_previews()
-        app.refresh_glyph_placement_actions()
 
         suffix = "-developer" if developer else ""
+        if not developer:
+            written.append(_render_keyboard_settings(app, out_dir, log))
         path = os.path.join(out_dir, f"tray-menu{suffix}.png")
         _grab(app.menu, path, log)
         written.append(path)

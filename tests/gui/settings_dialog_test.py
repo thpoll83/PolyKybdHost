@@ -147,9 +147,18 @@ class DescriptionTest(unittest.TestCase):
         self.assertEqual(set(DEFAULT_SETTINGS) - set(SETTING_DESCRIPTIONS), set())
 
     def test_no_description_for_a_setting_that_does_not_exist(self):
+        # The kbd_ keys are stored on the keyboard, not in settings.yaml.
+        from polyhost.gui import keyboard_settings
         from polyhost.gui.settings_dialog import SETTING_DESCRIPTIONS
         from polyhost.settings import DEFAULT_SETTINGS
-        self.assertEqual(set(SETTING_DESCRIPTIONS) - set(DEFAULT_SETTINGS), set())
+        self.assertEqual(set(SETTING_DESCRIPTIONS) - set(DEFAULT_SETTINGS)
+                         - set(keyboard_settings.KEYS), set())
+
+    def test_every_keyboard_row_has_a_label_and_a_description(self):
+        from polyhost.gui import keyboard_settings
+        from polyhost.gui.settings_dialog import SETTING_DESCRIPTIONS, SETTING_LABELS
+        self.assertEqual(set(keyboard_settings.KEYS) - set(SETTING_LABELS), set())
+        self.assertEqual(set(keyboard_settings.KEYS) - set(SETTING_DESCRIPTIONS), set())
 
     def test_the_tooltip_is_escaped_rich_text(self):
         from unittest import mock
@@ -335,6 +344,48 @@ class SectionLayoutTest(unittest.TestCase):
         for text in strings:
             with self.subTest(text=text):
                 self.assertIn(f'msgid "{text}"', pot)
+
+
+class SectionColorTest(unittest.TestCase):
+    """Each section's frame and sidebar stripe share one colour
+    (gui/section_colors.py)."""
+
+    def test_every_section_but_developer_has_its_own_hue(self):
+        from polyhost.gui import section_colors
+        from polyhost.gui.settings_dialog import SECTIONS
+        ids = [sid for sid, _t, _g in SECTIONS if sid != "developer"]
+        slots = [section_colors.SECTION_SLOTS.get(sid) for sid in ids]
+        self.assertNotIn(None, slots)
+        self.assertEqual(len(set(slots)), len(slots))      # no two share a hue
+
+    def test_sections_take_the_slots_in_sidebar_order(self):
+        # The hue order was validated for neighbours (CVD distance); a section
+        # moved in the sidebar must take the slot of its new place.
+        from polyhost.gui import section_colors
+        from polyhost.gui.settings_dialog import SECTIONS
+        names = [n for n, _l, _d in section_colors.SLOTS]
+        slots = [section_colors.SECTION_SLOTS[sid] for sid, _t, _g in SECTIONS
+                 if sid in section_colors.SECTION_SLOTS]
+        self.assertEqual(slots, names[:len(slots)])
+
+    def test_three_to_one_against_the_window_in_both_themes(self):
+        from polyhost.gui import section_colors
+
+        def lum(hexcolor):
+            out = []
+            for i in (1, 3, 5):
+                c = int(hexcolor[i:i + 2], 16) / 255
+                out.append(c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4)
+            return 0.2126 * out[0] + 0.7152 * out[1] + 0.0722 * out[2]
+
+        def ratio(a, b):
+            hi, lo = sorted((lum(a), lum(b)), reverse=True)
+            return (hi + 0.05) / (lo + 0.05)
+
+        for name, light, dark in section_colors.SLOTS + (section_colors.NEUTRAL,):
+            with self.subTest(name=name):
+                self.assertGreaterEqual(ratio(light, "#f0f0f0"), 3.0)
+                self.assertGreaterEqual(ratio(dark, "#505050"), 3.0)
 
 
 class SearchMatchTest(unittest.TestCase):

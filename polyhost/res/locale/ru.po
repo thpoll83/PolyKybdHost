@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-17 11:49+0000\n"
+"POT-Creation-Date: 2026-11-17 12:15+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -729,12 +729,12 @@ msgstr "Отключить облачные сеансы"
 msgid "Delete the channel on the relay? The cloud sessions leave the agent keys, and the hooks in your cloud environment stop reaching this computer. Remove the environment variable there too."
 msgstr "Удалить канал на ретрансляторе? Облачные сеансы исчезнут с клавиш агентов, и хуки в вашей облачной среде больше не будут доходить до этого компьютера. Удалите там также переменную среды."
 
-#: polyhost/gui/cmd_menu.py:143 polyhost/gui/settings_dialog.py:78
+#: polyhost/gui/cmd_menu.py:143 polyhost/gui/settings_dialog.py:83
 msgid "Brightness"
 msgstr "Яркость"
 
 #. TRANSLATORS: shown in the Flow Tap spin box when its value is 0.
-#: polyhost/gui/cmd_menu.py:145 polyhost/gui/tap_terms_dialog.py:50
+#: polyhost/gui/cmd_menu.py:145 polyhost/gui/settings_dialog.py:1106
 msgid "Off"
 msgstr "Выкл."
 
@@ -762,8 +762,8 @@ msgstr "Яркость по дневному свету отключена в н
 msgid "Maintenance"
 msgstr "Обслуживание"
 
-#: polyhost/gui/cmd_menu.py:211 polyhost/gui/cmd_menu.py:360
-#: polyhost/gui/cmd_menu.py:392
+#: polyhost/gui/cmd_menu.py:211 polyhost/gui/cmd_menu.py:361
+#: polyhost/gui/cmd_menu.py:393
 msgid "Fix Left/Right Side"
 msgstr "Исправить левую/правую половину"
 
@@ -799,255 +799,255 @@ msgstr "Прошить файл микропрограммы (.bin)…"
 msgid "Activate bootloader…"
 msgstr "Активировать загрузчик…"
 
-#: polyhost/gui/cmd_menu.py:260
+#: polyhost/gui/cmd_menu.py:261
 msgid "Overlays"
 msgstr "Оверлеи"
 
-#: polyhost/gui/cmd_menu.py:261
+#: polyhost/gui/cmd_menu.py:262
 msgid "Enable shortcut overlays"
 msgstr "Включить оверлеи сочетаний клавиш"
 
-#: polyhost/gui/cmd_menu.py:263
+#: polyhost/gui/cmd_menu.py:264
 msgid "Disable shortcut overlays"
 msgstr "Отключить оверлеи сочетаний клавиш"
 
-#: polyhost/gui/cmd_menu.py:266
+#: polyhost/gui/cmd_menu.py:267
 msgid "Reset overlay buffers"
 msgstr "Сбросить буферы оверлеев"
 
-#: polyhost/gui/cmd_menu.py:268
+#: polyhost/gui/cmd_menu.py:269
 msgid "Reset overlay mapping"
 msgstr "Сбросить сопоставление оверлеев"
 
-#: polyhost/gui/cmd_menu.py:270
+#: polyhost/gui/cmd_menu.py:271
 msgid "Clear overlay usage"
 msgstr "Очистить статистику использования оверлеев"
 
-#: polyhost/gui/cmd_menu.py:272
+#: polyhost/gui/cmd_menu.py:273
 msgid "Set all overlay mapping"
 msgstr "Задать сопоставление всех оверлеев"
 
-#: polyhost/gui/cmd_menu.py:276
+#: polyhost/gui/cmd_menu.py:277
 msgid "Idle"
 msgstr "Режим простоя"
 
-#: polyhost/gui/cmd_menu.py:277
+#: polyhost/gui/cmd_menu.py:278
 msgid "Start idle now"
 msgstr "Включить режим простоя сейчас"
 
-#: polyhost/gui/cmd_menu.py:279
+#: polyhost/gui/cmd_menu.py:280
 msgid "Stop idle"
 msgstr "Выйти из режима простоя"
 
-#: polyhost/gui/cmd_menu.py:283 polyhost/gui/cmd_menu.py:515
-#: polyhost/gui/cmd_menu.py:520 polyhost/gui/cmd_menu.py:530
-#: polyhost/gui/cmd_menu.py:534
+#: polyhost/gui/cmd_menu.py:284 polyhost/gui/cmd_menu.py:516
+#: polyhost/gui/cmd_menu.py:521 polyhost/gui/cmd_menu.py:531
+#: polyhost/gui/cmd_menu.py:535
 msgid "Keymap"
 msgstr "Раскладка клавиш"
 
-#: polyhost/gui/cmd_menu.py:284
+#: polyhost/gui/cmd_menu.py:285
 msgid "Layer count"
 msgstr "Число слоёв"
 
-#: polyhost/gui/cmd_menu.py:286
+#: polyhost/gui/cmd_menu.py:287
 msgid "Default layer"
 msgstr "Слой по умолчанию"
 
-#: polyhost/gui/cmd_menu.py:288
+#: polyhost/gui/cmd_menu.py:289
 msgid "Dump keymap buffer to the log"
 msgstr "Вывести буфер раскладки клавиш в журнал"
 
-#: polyhost/gui/cmd_menu.py:292 polyhost/gui/cmd_menu.py:543
-#: polyhost/gui/cmd_menu.py:546 polyhost/gui/cmd_menu.py:557
+#: polyhost/gui/cmd_menu.py:293 polyhost/gui/cmd_menu.py:544
+#: polyhost/gui/cmd_menu.py:547 polyhost/gui/cmd_menu.py:558
 msgid "Font Pack"
 msgstr "Пакет шрифтов"
 
-#: polyhost/gui/cmd_menu.py:293
+#: polyhost/gui/cmd_menu.py:294
 msgid "Per-bundle status…"
 msgstr "Состояние наборов…"
 
-#: polyhost/gui/cmd_menu.py:295
+#: polyhost/gui/cmd_menu.py:296
 msgid "Sync (flash missing/updated bundles)"
 msgstr "Синхронизировать (прошить отсутствующие/обновлённые наборы)"
 
-#: polyhost/gui/cmd_menu.py:297
+#: polyhost/gui/cmd_menu.py:298
 msgid "Re-flash ALL bundles (force)…"
 msgstr "Прошить заново ВСЕ наборы (принудительно)…"
 
-#: polyhost/gui/cmd_menu.py:299
+#: polyhost/gui/cmd_menu.py:300
 msgid "Wipe (empty all bundles)"
 msgstr "Стереть (очистить все наборы)"
 
-#: polyhost/gui/cmd_menu.py:305
+#: polyhost/gui/cmd_menu.py:306
 msgid "Firmware"
 msgstr "Микропрограмма"
 
-#: polyhost/gui/cmd_menu.py:306
+#: polyhost/gui/cmd_menu.py:307
 msgid "Flash only (.bin, stage)…"
 msgstr "Только прошить (.bin, подготовить)…"
 
-#: polyhost/gui/cmd_menu.py:309
+#: polyhost/gui/cmd_menu.py:310
 msgid "Apply staged firmware…"
 msgstr "Применить подготовленную микропрограмму…"
 
-#: polyhost/gui/cmd_menu.py:314
+#: polyhost/gui/cmd_menu.py:315
 msgid "Boot-loop test…"
 msgstr "Тест циклической перезагрузки…"
 
-#: polyhost/gui/cmd_menu.py:320
+#: polyhost/gui/cmd_menu.py:321
 msgid "Run command file (.poly.cmd)…"
 msgstr "Выполнить командный файл (.poly.cmd)…"
 
-#: polyhost/gui/cmd_menu.py:347
+#: polyhost/gui/cmd_menu.py:348
 msgid "<b>Set the half the USB cable is plugged into as the LEFT side?</b><br><br>The other half becomes the RIGHT side. Both halves save the new handedness and reboot onto it (about 10 s, no replug needed).<br><br>Make sure the USB cable is plugged into the half you want to be the <b>LEFT</b> side, then continue."
 msgstr "<b>Сделать половину, к которой подключён USB-кабель, ЛЕВОЙ?</b><br><br>Другая половина станет ПРАВОЙ. Обе половины сохранят новую сторону и перезагрузятся с ней (около 10 с, переподключать не нужно).<br><br>Убедитесь, что USB-кабель подключён к половине, которая должна стать <b>ЛЕВОЙ</b>, затем продолжите."
 
-#: polyhost/gui/cmd_menu.py:354
+#: polyhost/gui/cmd_menu.py:355
 msgid "<b>Set the half the USB cable is plugged into as the RIGHT side?</b><br><br>The other half becomes the LEFT side. Both halves save the new handedness and reboot onto it (about 10 s, no replug needed).<br><br>Make sure the USB cable is plugged into the half you want to be the <b>RIGHT</b> side, then continue."
 msgstr "<b>Сделать половину, к которой подключён USB-кабель, ПРАВОЙ?</b><br><br>Другая половина станет ЛЕВОЙ. Обе половины сохранят новую сторону и перезагрузятся с ней (около 10 с, переподключать не нужно).<br><br>Убедитесь, что USB-кабель подключён к половине, которая должна стать <b>ПРАВОЙ</b>, затем продолжите."
 
-#: polyhost/gui/cmd_menu.py:379
+#: polyhost/gui/cmd_menu.py:380
 msgid "<b>Mark the half the USB cable is plugged into as a Rev.2 board?</b><br><br>Rev.2 boards (left \"Rev 2 04/2023\", right \"Rev.2 03/2023\") pass USB power over the split cable, so both halves start as the main half and do not connect. With the mark, the half connected to the computer becomes the main half.<br><br>Plug in only this half, without the split cable, and mark each half on its own. The half saves the mark and its side, then restarts.<br><br>Which side is this half?"
 msgstr "<b>Отметить половину, к которой подключён USB-кабель, как плату Rev.2?</b><br><br>Платы Rev.2 (левая \"Rev 2 04/2023\", правая \"Rev.2 03/2023\") передают питание USB по соединительному кабелю, поэтому обе половины запускаются как основная и не соединяются. С отметкой основной становится половина, подключённая к компьютеру.<br><br>Подключите только эту половину, без соединительного кабеля, и отметьте каждую половину отдельно. Половина сохранит отметку и свою сторону, затем перезагрузится.<br><br>Какая это сторона?"
 
-#: polyhost/gui/cmd_menu.py:389
+#: polyhost/gui/cmd_menu.py:390
 msgid "<b>Remove the Rev.2 mark from the half the USB cable is plugged into?</b><br><br>The half saves its side, then restarts.<br><br>Which side is this half?"
 msgstr "<b>Снять отметку Rev.2 с половины, к которой подключён USB-кабель?</b><br><br>Половина сохранит свою сторону, затем перезагрузится.<br><br>Какая это сторона?"
 
-#: polyhost/gui/cmd_menu.py:394
+#: polyhost/gui/cmd_menu.py:395
 #: polyhost/gui/layout_dialog/keycode_composer.py:90
 msgid "Left"
 msgstr "Левый"
 
-#: polyhost/gui/cmd_menu.py:395
+#: polyhost/gui/cmd_menu.py:396
 #: polyhost/gui/layout_dialog/keycode_composer.py:91
 msgid "Right"
 msgstr "Правый"
 
-#: polyhost/gui/cmd_menu.py:396 polyhost/gui/fontpack_extend_dialog.py:242
+#: polyhost/gui/cmd_menu.py:397 polyhost/gui/fontpack_extend_dialog.py:242
 #: polyhost/gui/fontpack_extend_dialog.py:815
 #: polyhost/gui/hid_fw_up_dialog.py:208 polyhost/gui/log_viewer.py:309
-#: polyhost/host.py:191
+#: polyhost/host.py:146
 msgid "Cancel"
 msgstr "Отмена"
 
-#: polyhost/gui/cmd_menu.py:421
+#: polyhost/gui/cmd_menu.py:422
 msgid "<b>Reset the keyboard's keymap to its firmware default?</b><br><br>Every key you remapped goes back to the layout the firmware ships with. This cannot be undone.<br><br><b>All your macros are deleted too.</b><br><br>Continue?"
 msgstr "<b>Сбросить раскладку клавиш клавиатуры к значениям микропрограммы по умолчанию?</b><br><br>Все переназначенные клавиши вернутся к раскладке, поставляемой с микропрограммой. Это действие нельзя отменить.<br><br><b>Все макросы также будут удалены.</b><br><br>Продолжить?"
 
-#: polyhost/gui/cmd_menu.py:427
+#: polyhost/gui/cmd_menu.py:428
 msgid "Reset Keymap"
 msgstr "Сброс раскладки клавиш"
 
-#: polyhost/gui/cmd_menu.py:481
+#: polyhost/gui/cmd_menu.py:482
 msgid "Re-flash Font Pack"
 msgstr "Повторная прошивка пакета шрифтов"
 
-#: polyhost/gui/cmd_menu.py:482
+#: polyhost/gui/cmd_menu.py:483
 msgid "<b>Re-flash every font-pack bundle?</b><br><br>Every shipped bundle is sent again even if the keyboard already reports it as up to date — use this when a glyph renders wrong or a previous flash was reported as failed. Takes about a minute; typing keeps working throughout.<br><br>Continue?"
 msgstr "<b>Прошить заново все наборы пакета шрифтов?</b><br><br>Каждый поставляемый набор будет отправлен снова, даже если клавиатура сообщает, что он актуален, — используйте это, если глиф отображается неправильно или предыдущая прошивка завершилась с ошибкой. Занимает около минуты; печатать при этом можно.<br><br>Продолжить?"
 
-#: polyhost/gui/cmd_menu.py:498
+#: polyhost/gui/cmd_menu.py:499
 msgid "<b>Wipe the external-flash font pack?</b><br><br>Every font-pack bundle slot is emptied — the keyboard renders only its built-in (resident) fonts until the pack is flashed again. The bundles shipped with this host are re-flashed automatically on the next connect (or via Font Pack → Sync).<br><br>Continue?"
 msgstr "<b>Стереть пакет шрифтов во внешней флеш-памяти?</b><br><br>Все слоты наборов пакета шрифтов будут очищены — клавиатура будет показывать только встроенные (резидентные) шрифты, пока пакет не будет прошит снова. Наборы, поставляемые с этим хостом, будут автоматически прошиты при следующем подключении (или через «Пакет шрифтов → Синхронизировать»).<br><br>Продолжить?"
 
-#: polyhost/gui/cmd_menu.py:505
+#: polyhost/gui/cmd_menu.py:506
 msgid "Wipe Font Pack"
 msgstr "Стереть пакет шрифтов"
 
-#: polyhost/gui/cmd_menu.py:515
+#: polyhost/gui/cmd_menu.py:516
 #, python-brace-format
 msgid "Layers: {count}"
 msgstr "Слоёв: {count}"
 
-#: polyhost/gui/cmd_menu.py:516
+#: polyhost/gui/cmd_menu.py:517
 #, python-brace-format
 msgid "Could not read the layer count: {error}"
 msgstr "Не удалось прочитать число слоёв: {error}"
 
-#: polyhost/gui/cmd_menu.py:520
+#: polyhost/gui/cmd_menu.py:521
 #, python-brace-format
 msgid "Default layer: {layer}"
 msgstr "Слой по умолчанию: {layer}"
 
-#: polyhost/gui/cmd_menu.py:521
+#: polyhost/gui/cmd_menu.py:522
 #, python-brace-format
 msgid "Could not read the default layer: {error}"
 msgstr "Не удалось прочитать слой по умолчанию: {error}"
 
-#: polyhost/gui/cmd_menu.py:530
+#: polyhost/gui/cmd_menu.py:531
 #, python-brace-format
 msgid "Could not read the keymap buffer: {error}"
 msgstr "Не удалось прочитать буфер раскладки клавиш: {error}"
 
-#: polyhost/gui/cmd_menu.py:534
+#: polyhost/gui/cmd_menu.py:535
 #, python-brace-format
 msgid "Keymap buffer ({size} bytes) written to the log."
 msgstr "Буфер раскладки клавиш ({size} байт) записан в журнал."
 
-#: polyhost/gui/cmd_menu.py:543
+#: polyhost/gui/cmd_menu.py:544
 #, python-brace-format
 msgid "Could not read the font-pack status: {error}"
 msgstr "Не удалось прочитать состояние пакета шрифтов: {error}"
 
-#: polyhost/gui/cmd_menu.py:546
+#: polyhost/gui/cmd_menu.py:547
 msgid "This host ships no font-pack bundles."
 msgstr "С этим хостом не поставляются наборы пакета шрифтов."
 
 #. TRANSLATORS: CRC check result in the bundle header ("crc ok")
 #. TRANSLATORS: CRC check result ("crc ok")
-#: polyhost/gui/cmd_menu.py:555 polyhost/gui/fontpack_inspector_dialog.py:202
+#: polyhost/gui/cmd_menu.py:556 polyhost/gui/fontpack_inspector_dialog.py:202
 #: polyhost/gui/fontpack_inspector_dialog.py:785
 msgid "ok"
 msgstr "ок"
 
 #. TRANSLATORS: font-pack bundle state in a status table
-#: polyhost/gui/cmd_menu.py:555 polyhost/host.py:2505
+#: polyhost/gui/cmd_menu.py:556 polyhost/host.py:2240
 msgid "stale"
 msgstr "устарел"
 
-#: polyhost/gui/cmd_menu.py:558
+#: polyhost/gui/cmd_menu.py:559
 msgid "bundle"
 msgstr "набор"
 
-#: polyhost/gui/cmd_menu.py:559
+#: polyhost/gui/cmd_menu.py:560
 msgid "device"
 msgstr "устройство"
 
-#: polyhost/gui/cmd_menu.py:560
+#: polyhost/gui/cmd_menu.py:561
 msgid "shipped"
 msgstr "в поставке"
 
-#: polyhost/gui/cmd_menu.py:566
+#: polyhost/gui/cmd_menu.py:567
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "Команды PolyKybd (*.poly.cmd)"
 
-#: polyhost/gui/cmd_menu.py:566 polyhost/host.py:2834
+#: polyhost/gui/cmd_menu.py:567 polyhost/host.py:2372
 msgid "Open file"
 msgstr "Открыть файл"
 
-#: polyhost/gui/cmd_menu.py:596 polyhost/gui/cmd_menu.py:721
+#: polyhost/gui/cmd_menu.py:597 polyhost/gui/cmd_menu.py:722
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:181
 msgid "Not Connected"
 msgstr "Не подключено"
 
-#: polyhost/gui/cmd_menu.py:597 polyhost/gui/cmd_menu.py:722
+#: polyhost/gui/cmd_menu.py:598 polyhost/gui/cmd_menu.py:723
 msgid "PolyKybd is not connected. Please connect the keyboard and try again."
 msgstr "PolyKybd не подключена. Подключите клавиатуру и повторите попытку."
 
-#: polyhost/gui/cmd_menu.py:600
+#: polyhost/gui/cmd_menu.py:601
 msgid "Select Firmware Binary"
 msgstr "Выбор файла микропрограммы"
 
-#: polyhost/gui/cmd_menu.py:600
+#: polyhost/gui/cmd_menu.py:601
 msgid "Firmware binary (*.bin)"
 msgstr "Файл микропрограммы (*.bin)"
 
-#: polyhost/gui/cmd_menu.py:611
+#: polyhost/gui/cmd_menu.py:612
 msgid "File Error"
 msgstr "Ошибка файла"
 
-#: polyhost/gui/cmd_menu.py:612
+#: polyhost/gui/cmd_menu.py:613
 #, python-brace-format
 msgid ""
 "Could not read firmware file:\n"
@@ -1056,65 +1056,65 @@ msgstr ""
 "Не удалось прочитать файл микропрограммы:\n"
 "{error}"
 
-#: polyhost/gui/cmd_menu.py:617
+#: polyhost/gui/cmd_menu.py:618
 msgid "Invalid Firmware File"
 msgstr "Недопустимый файл микропрограммы"
 
-#: polyhost/gui/cmd_menu.py:622
+#: polyhost/gui/cmd_menu.py:623
 msgid "Wrong Keyboard"
 msgstr "Не та клавиатура"
 
-#: polyhost/gui/cmd_menu.py:632
+#: polyhost/gui/cmd_menu.py:633
 msgid "Unsigned Firmware"
 msgstr "Неподписанная микропрограмма"
 
-#: polyhost/gui/cmd_menu.py:638
+#: polyhost/gui/cmd_menu.py:639
 msgid "Flash + Apply Firmware"
 msgstr "Прошить и применить микропрограмму"
 
-#: polyhost/gui/cmd_menu.py:640
+#: polyhost/gui/cmd_menu.py:641
 msgid "This will transfer the new firmware to the keyboard, verify it (CRC32), then <b>activate it</b> — both halves reboot onto the new firmware automatically (no replug needed)."
 msgstr "Новая микропрограмма будет передана на клавиатуру, проверена (CRC32), а затем <b>активирована</b> — обе половины автоматически перезагрузятся с новой микропрограммой (переподключать не нужно)."
 
-#: polyhost/gui/cmd_menu.py:645
+#: polyhost/gui/cmd_menu.py:646
 msgid "Flash Firmware"
 msgstr "Прошивка микропрограммы"
 
-#: polyhost/gui/cmd_menu.py:647
+#: polyhost/gui/cmd_menu.py:648
 msgid "This will transfer and stage the new firmware on the keyboard, then verify it (CRC32). The image is stored but <b>not activated yet</b> — the keyboard keeps running its current firmware until you apply it separately."
 msgstr "Новая микропрограмма будет передана на клавиатуру и подготовлена, а затем проверена (CRC32). Образ сохраняется, но <b>пока не активируется</b> — клавиатура продолжит работать на текущей микропрограмме, пока вы не примените новую отдельно."
 
-#: polyhost/gui/cmd_menu.py:665
+#: polyhost/gui/cmd_menu.py:666
 #, python-brace-format
 msgid "Current keyboard firmware: <b>{version}</b> ({size_kb} KB)"
 msgstr "Текущая микропрограмма клавиатуры: <b>{version}</b> ({size_kb} KB)"
 
-#: polyhost/gui/cmd_menu.py:668
+#: polyhost/gui/cmd_menu.py:669
 msgid "Could not query current firmware version."
 msgstr "Не удалось запросить версию текущей микропрограммы."
 
-#: polyhost/gui/cmd_menu.py:669
+#: polyhost/gui/cmd_menu.py:670
 #, python-brace-format
 msgid "Selected file:<br>{path}"
 msgstr "Выбранный файл:<br>{path}"
 
-#: polyhost/gui/cmd_menu.py:670
+#: polyhost/gui/cmd_menu.py:671
 msgid "Continue?"
 msgstr "Продолжить?"
 
-#: polyhost/gui/cmd_menu.py:699
+#: polyhost/gui/cmd_menu.py:700
 msgid "<b>Apply the staged firmware?</b><br><br>Both keyboard halves will install the previously-staged image and reboot onto the new firmware automatically (no replug needed).<br><br>If this firmware was not built with in-app apply enabled, the keyboard safely reports apply unavailable and leaves the staged image untouched.<br><br>Continue?"
 msgstr "<b>Применить подготовленную микропрограмму?</b><br><br>Обе половины клавиатуры установят ранее подготовленный образ и автоматически перезагрузятся с новой микропрограммой (переподключать не нужно).<br><br>Если эта микропрограмма собрана без поддержки применения из приложения, клавиатура безопасно сообщит, что применение недоступно, и оставит подготовленный образ нетронутым.<br><br>Продолжить?"
 
-#: polyhost/gui/cmd_menu.py:708
+#: polyhost/gui/cmd_menu.py:709
 msgid "Apply Staged Firmware"
 msgstr "Применение подготовленной микропрограммы"
 
-#: polyhost/gui/cmd_menu.py:733
+#: polyhost/gui/cmd_menu.py:734
 msgid "Firmware Applied"
 msgstr "Микропрограмма применена"
 
-#: polyhost/gui/cmd_menu.py:735
+#: polyhost/gui/cmd_menu.py:736
 msgid "Apply Failed"
 msgstr "Ошибка применения"
 
@@ -1235,7 +1235,7 @@ msgid "pick one from Source fonts below, or Browse…"
 msgstr "выберите шрифт в списке исходных шрифтов ниже или нажмите «Обзор…»"
 
 #: polyhost/gui/fontpack_extend_dialog.py:120
-#: polyhost/gui/settings_dialog.py:1014 polyhost/gui/settings_dialog.py:1015
+#: polyhost/gui/settings_dialog.py:1256 polyhost/gui/settings_dialog.py:1257
 msgid "Browse…"
 msgstr "Обзор…"
 
@@ -1388,7 +1388,7 @@ msgid "Re-render the preview automatically when an option changes"
 msgstr "Автоматически перерисовывать предпросмотр при изменении параметра"
 
 #: polyhost/gui/fontpack_extend_dialog.py:213
-#: polyhost/gui/settings_dialog.py:54
+#: polyhost/gui/settings_dialog.py:59
 msgid "Normal"
 msgstr "Обычный"
 
@@ -1929,8 +1929,8 @@ msgstr "Введите код, который показывает «Связа�
 msgid "That is not a pairing code: it has 64 letters and digits (a to f, 0 to 9), in groups of 8."
 msgstr "Это не код связывания: он состоит из 64 букв и цифр (от a до f, от 0 до 9), разбитых на группы по 8."
 
-#: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:3445
-#: polyhost/host.py:3486 polyhost/host.py:3518
+#: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:2983
+#: polyhost/host.py:3024 polyhost/host.py:3056
 msgid "Firmware Update"
 msgstr "Обновление микропрограммы"
 
@@ -1965,7 +1965,7 @@ msgstr "Применение — активация подготовленной
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "Отмена — ожидание завершения текущего блока…"
 
-#: polyhost/gui/i18n_qt.py:89 polyhost/gui/settings_dialog.py:132
+#: polyhost/gui/i18n_qt.py:89 polyhost/gui/settings_dialog.py:151
 msgid "Language"
 msgstr "Язык"
 
@@ -2018,7 +2018,7 @@ msgstr "Не настроено"
 
 #: polyhost/gui/integrations_dialog.py:320
 #: polyhost/gui/integrations_dialog.py:354
-#: polyhost/gui/integrations_dialog.py:395 polyhost/gui/settings_dialog.py:102
+#: polyhost/gui/integrations_dialog.py:395 polyhost/gui/settings_dialog.py:112
 msgid "AI agents"
 msgstr "ИИ-агенты"
 
@@ -2073,6 +2073,124 @@ msgstr "Интеграции"
 #: polyhost/gui/integrations_dialog.py:462
 msgid "Changes apply to the program after it restarts."
 msgstr "Изменения вступят в силу в программе после её перезапуска."
+
+#: polyhost/gui/keyboard_settings.py:30
+msgid "Standard (normal legends)"
+msgstr "Стандартное (обычные надписи)"
+
+#: polyhost/gui/keyboard_settings.py:31
+msgid "Tengwar (fantasy)"
+msgstr "Тенгвар (фэнтези)"
+
+#: polyhost/gui/keyboard_settings.py:32
+msgid "Elder Futhark runes"
+msgstr "Руны Старшего футарка"
+
+#: polyhost/gui/keyboard_settings.py:33
+msgid "Aurebesh (sci-fi)"
+msgstr "Ауребеш (научная фантастика)"
+
+#: polyhost/gui/keyboard_settings.py:34
+msgid "Standard Galactic"
+msgstr "Стандартный галактический"
+
+#: polyhost/gui/keyboard_settings.py:35
+msgid "Cirth / Angerthas"
+msgstr "Кирт / Ангертас"
+
+#: polyhost/gui/keyboard_settings.py:36
+msgid "IBM VGA / CP437"
+msgstr "IBM VGA / CP437"
+
+#: polyhost/gui/keyboard_settings.py:37
+msgid "Commodore 64 (screen)"
+msgstr "Commodore 64 (экран)"
+
+#: polyhost/gui/keyboard_settings.py:38
+msgid "Commodore 64 (keycap)"
+msgstr "Commodore 64 (клавиша)"
+
+#: polyhost/gui/keyboard_settings.py:39 polyhost/gui/keyboard_settings.py:55
+msgid "Amiga Topaz"
+msgstr "Amiga Topaz"
+
+#: polyhost/gui/keyboard_settings.py:40
+msgid "APL"
+msgstr "APL"
+
+#: polyhost/gui/keyboard_settings.py:41
+msgid "Braille"
+msgstr "Шрифт Брайля"
+
+#: polyhost/gui/keyboard_settings.py:47
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:252
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:262
+msgid "Standard"
+msgstr "Стандартные"
+
+#: polyhost/gui/keyboard_settings.py:48
+msgid "Tengwar"
+msgstr "Тенгвар"
+
+#: polyhost/gui/keyboard_settings.py:49
+msgid "Runes"
+msgstr "Руны"
+
+#: polyhost/gui/keyboard_settings.py:50
+msgid "Aurebesh"
+msgstr "Ауребеш"
+
+#: polyhost/gui/keyboard_settings.py:51
+msgid "Cirth"
+msgstr "Кирт"
+
+#: polyhost/gui/keyboard_settings.py:52
+msgid "IBM VGA"
+msgstr "IBM VGA"
+
+#: polyhost/gui/keyboard_settings.py:53
+msgid "C64 screen"
+msgstr "C64 экран"
+
+#: polyhost/gui/keyboard_settings.py:54
+msgid "C64 keycap"
+msgstr "C64 клавиша"
+
+#: polyhost/gui/keyboard_settings.py:60
+msgid "Small (standard)"
+msgstr "Маленький (стандартный)"
+
+#: polyhost/gui/keyboard_settings.py:61 polyhost/gui/keyboard_settings.py:256
+msgid "Medium"
+msgstr "Средний"
+
+#: polyhost/gui/keyboard_settings.py:62 polyhost/gui/keyboard_settings.py:257
+msgid "Large"
+msgstr "Крупный"
+
+#: polyhost/gui/keyboard_settings.py:66
+msgid "Pulse"
+msgstr "Пульсация"
+
+#: polyhost/gui/keyboard_settings.py:67
+msgid "Jitter"
+msgstr "Дрожание"
+
+#: polyhost/gui/keyboard_settings.py:69
+msgid "Eden"
+msgstr "Eden"
+
+#: polyhost/gui/keyboard_settings.py:256
+msgid "Small"
+msgstr "Маленький"
+
+#: polyhost/gui/keyboard_settings.py:268
+msgid "Centred on the keycap"
+msgstr "По центру клавиши"
+
+#: polyhost/gui/keyboard_settings.py:269
+msgid "In the top-left corner"
+msgstr "В левом верхнем углу"
 
 #: polyhost/gui/layout_dialog/combo_tab.py:101
 msgid "Save"
@@ -2192,10 +2310,6 @@ msgstr "\"Нажатие\" дважды"
 #: polyhost/gui/layout_dialog/combo_tab.py:363
 msgid "Tap, then hold Tap"
 msgstr "\"Нажатие\", затем удержание \"Нажатие\""
-
-#: polyhost/gui/layout_dialog/combo_tab.py:372
-msgid "Tapping term"
-msgstr "Время нажатия"
 
 #: polyhost/gui/layout_dialog/combo_tab.py:373
 msgid "Decide after"
@@ -2350,7 +2464,7 @@ msgstr "нет данных для предпросмотра (ни в пост�
 msgid "the shipped language table is missing"
 msgstr "отсутствует поставляемая таблица языков"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:595 polyhost/host.py:3461
+#: polyhost/gui/layout_dialog/keycap_preview.py:595 polyhost/host.py:2999
 msgid "unknown"
 msgstr "неизвестно"
 
@@ -2820,11 +2934,6 @@ msgstr "Quantum"
 msgid "Additional"
 msgstr "Дополнительные"
 
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:252
-#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:262 polyhost/host.py:72
-msgid "Standard"
-msgstr "Стандартные"
-
 #: polyhost/gui/log_bundle_dialog.py:31
 msgid "Last 5 minutes"
 msgstr "Последние 5 минут"
@@ -3024,7 +3133,7 @@ msgstr "Нет совпадений"
 msgid "{index} of {total}"
 msgstr "{index} из {total}"
 
-#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:2146
+#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1922
 msgid "Mock keyboard"
 msgstr "Имитация клавиатуры"
 
@@ -3274,562 +3383,679 @@ msgstr "<b>Приложите файл журнала</b> (кнопка слев
 msgid "Press Submit. (No log file was produced — see above.)"
 msgstr "Нажмите «Submit». (Файл журнала не создан — см. выше.)"
 
-#: polyhost/gui/settings_dialog.py:32
+#: polyhost/gui/settings_dialog.py:37
 #, python-brace-format
 msgid "Automatic ({language})"
 msgstr "Автоматически ({language})"
 
-#: polyhost/gui/settings_dialog.py:49
+#: polyhost/gui/settings_dialog.py:54
 msgid "Automatic"
 msgstr "Автоматически"
 
-#: polyhost/gui/settings_dialog.py:49
+#: polyhost/gui/settings_dialog.py:54
 msgid "Light"
 msgstr "Светлая"
 
-#: polyhost/gui/settings_dialog.py:49
+#: polyhost/gui/settings_dialog.py:54
 msgid "Dark"
 msgstr "Тёмная"
 
-#: polyhost/gui/settings_dialog.py:52
+#: polyhost/gui/settings_dialog.py:57
 msgid "Errors"
 msgstr "Ошибки"
 
-#: polyhost/gui/settings_dialog.py:53
+#: polyhost/gui/settings_dialog.py:58
 msgid "Errors and warnings"
 msgstr "Ошибки и предупреждения"
 
-#: polyhost/gui/settings_dialog.py:54
+#: polyhost/gui/settings_dialog.py:59
 msgid "Debug"
 msgstr "Отладка"
 
-#: polyhost/gui/settings_dialog.py:55
+#: polyhost/gui/settings_dialog.py:60
 msgid "Detailed"
 msgstr "Подробно"
 
-#: polyhost/gui/settings_dialog.py:64
+#: polyhost/gui/settings_dialog.py:69
 msgid "General"
 msgstr "Общие"
 
-#: polyhost/gui/settings_dialog.py:67
+#: polyhost/gui/settings_dialog.py:72
 msgid "Keycap icons"
 msgstr "Значки на клавишах"
 
-#: polyhost/gui/settings_dialog.py:70
+#: polyhost/gui/settings_dialog.py:75
 msgid "Apps with their own overlay"
 msgstr "Приложения с собственным оверлеем"
 
-#: polyhost/gui/settings_dialog.py:72
+#: polyhost/gui/settings_dialog.py:77
 msgid "Linux"
 msgstr "Linux"
 
-#: polyhost/gui/settings_dialog.py:74
+#: polyhost/gui/settings_dialog.py:79
 msgid "Games"
 msgstr "Игры"
 
-#: polyhost/gui/settings_dialog.py:76
+#: polyhost/gui/settings_dialog.py:81
 msgid "Installed games"
 msgstr "Установленные игры"
 
-#: polyhost/gui/settings_dialog.py:82
+#: polyhost/gui/settings_dialog.py:87
 msgid "Daylight curve"
 msgstr "Кривая дневного света"
 
-#: polyhost/gui/settings_dialog.py:85
-msgid "Keyboard data"
-msgstr "Данные клавиатуры"
+#: polyhost/gui/settings_dialog.py:92 polyhost/host.py:2032
+msgid "Keyboard"
+msgstr "Клавиатура"
 
-#: polyhost/gui/settings_dialog.py:87
+#: polyhost/gui/settings_dialog.py:93
+msgid "Idle display"
+msgstr "Экран простоя"
+
+#: polyhost/gui/settings_dialog.py:94
+msgid "Keycaps"
+msgstr "Клавиши"
+
+#: polyhost/gui/settings_dialog.py:95 polyhost/host.py:1707
+msgid "Tap-Hold Timing"
+msgstr "Время нажатия и удержания"
+
+#: polyhost/gui/settings_dialog.py:96
+msgid "Unicode input"
+msgstr "Ввод Юникода"
+
+#: polyhost/gui/settings_dialog.py:97
 msgid "Font packs"
 msgstr "Пакеты шрифтов"
 
-#: polyhost/gui/settings_dialog.py:88
+#: polyhost/gui/settings_dialog.py:98
 msgid "Emoji search"
 msgstr "Поиск эмодзи"
 
-#: polyhost/gui/settings_dialog.py:90
+#: polyhost/gui/settings_dialog.py:100
 msgid "Connections"
 msgstr "Подключения"
 
-#: polyhost/gui/settings_dialog.py:91
+#: polyhost/gui/settings_dialog.py:101
 msgid "Browser extension"
 msgstr "Расширение браузера"
 
-#: polyhost/gui/settings_dialog.py:93
+#: polyhost/gui/settings_dialog.py:103
 msgid "Forwarders"
 msgstr "Модули пересылки"
 
-#: polyhost/gui/settings_dialog.py:94
+#: polyhost/gui/settings_dialog.py:104
 msgid "USB transport"
 msgstr "USB-передача"
 
-#: polyhost/gui/settings_dialog.py:97
+#: polyhost/gui/settings_dialog.py:107
 msgid "Privacy and diagnostics"
 msgstr "Конфиденциальность и диагностика"
 
-#: polyhost/gui/settings_dialog.py:98
+#: polyhost/gui/settings_dialog.py:108
 msgid "Usage report"
 msgstr "Отчёт об использовании"
 
-#: polyhost/gui/settings_dialog.py:99
+#: polyhost/gui/settings_dialog.py:109
 msgid "Problem detection"
 msgstr "Обнаружение проблем"
 
-#: polyhost/gui/settings_dialog.py:100
+#: polyhost/gui/settings_dialog.py:110
 msgid "Logs"
 msgstr "Журналы"
 
-#: polyhost/gui/settings_dialog.py:107 polyhost/host.py:903
+#: polyhost/gui/settings_dialog.py:117 polyhost/host.py:697
 msgid "Developer"
 msgstr "Разработчик"
 
-#: polyhost/gui/settings_dialog.py:111 polyhost/gui/tutorials_dialog.py:41
+#: polyhost/gui/settings_dialog.py:121 polyhost/gui/tutorials_dialog.py:41
 #: polyhost/services/lang_regions.py:148
 msgid "Other"
 msgstr "Другие"
 
-#: polyhost/gui/settings_dialog.py:114
+#: polyhost/gui/settings_dialog.py:124
 msgid "Send Unicode input mode"
 msgstr "Отправлять режим ввода Юникода"
 
-#: polyhost/gui/settings_dialog.py:115
+#: polyhost/gui/settings_dialog.py:125
+msgid "Idle animation"
+msgstr "Анимация простоя"
+
+#: polyhost/gui/settings_dialog.py:126 polyhost/host.py:1674
+msgid "Idle After"
+msgstr "Простой через"
+
+#: polyhost/gui/settings_dialog.py:127 polyhost/host.py:1675
+msgid "Keycap Script"
+msgstr "Начертание на клавишах"
+
+#: polyhost/gui/settings_dialog.py:128 polyhost/host.py:1676
+msgid "Script placement"
+msgstr "Положение начертания"
+
+#: polyhost/gui/settings_dialog.py:129 polyhost/host.py:1677
+msgid "Keycap Size"
+msgstr "Размер надписей на клавишах"
+
+#: polyhost/gui/layout_dialog/combo_tab.py:372
+#: polyhost/gui/settings_dialog.py:130
+msgid "Tapping term"
+msgstr "Время нажатия"
+
+#: polyhost/gui/settings_dialog.py:131
+msgid "Flow Tap term"
+msgstr "Время Flow Tap"
+
+#: polyhost/gui/settings_dialog.py:132
+msgid "Auto Shift"
+msgstr "Auto Shift"
+
+#: polyhost/gui/settings_dialog.py:133
+msgid "Auto Shift timeout"
+msgstr "Задержка Auto Shift"
+
+#: polyhost/gui/settings_dialog.py:134
 msgid "Follow daylight"
 msgstr "Следовать дневному свету"
 
-#: polyhost/gui/settings_dialog.py:116
+#: polyhost/gui/settings_dialog.py:135
 msgid "Online sunlight data"
 msgstr "Данные о солнечном свете онлайн"
 
-#: polyhost/gui/settings_dialog.py:117
+#: polyhost/gui/settings_dialog.py:136
 msgid "Online location lookup"
 msgstr "Определение местоположения онлайн"
 
-#: polyhost/gui/settings_dialog.py:118
+#: polyhost/gui/settings_dialog.py:137
 msgid "Sunlight at dimmest"
 msgstr "Солнечный свет при минимуме"
 
-#: polyhost/gui/settings_dialog.py:119
+#: polyhost/gui/settings_dialog.py:138
 msgid "Sunlight at brightest"
 msgstr "Солнечный свет при максимуме"
 
-#: polyhost/gui/settings_dialog.py:120
+#: polyhost/gui/settings_dialog.py:139
 msgid "Sunlight scale"
 msgstr "Масштаб солнечного света"
 
-#: polyhost/gui/settings_dialog.py:121
+#: polyhost/gui/settings_dialog.py:140
 msgid "Curve gamma"
 msgstr "Гамма кривой"
 
-#: polyhost/gui/settings_dialog.py:122
+#: polyhost/gui/settings_dialog.py:141
 msgid "Generic icons"
 msgstr "Универсальные значки"
 
-#: polyhost/gui/settings_dialog.py:123
+#: polyhost/gui/settings_dialog.py:142
 msgid "Add the Escape mark"
 msgstr "Добавлять логотип на Escape"
 
-#: polyhost/gui/settings_dialog.py:124
+#: polyhost/gui/settings_dialog.py:143
 msgid "Add shortcut icons"
 msgstr "Добавлять значки сочетаний"
 
-#: polyhost/gui/settings_dialog.py:125
+#: polyhost/gui/settings_dialog.py:144
 msgid "Shortcut icons"
 msgstr "Значки сочетаний клавиш"
 
-#: polyhost/gui/settings_dialog.py:126
+#: polyhost/gui/settings_dialog.py:145
 msgid "Download missing icons"
 msgstr "Загружать недостающие значки"
 
-#: polyhost/gui/settings_dialog.py:127
+#: polyhost/gui/settings_dialog.py:146
 msgid "Turn on accessibility"
 msgstr "Включить специальные возможности"
 
-#: polyhost/gui/settings_dialog.py:128
+#: polyhost/gui/settings_dialog.py:147
 msgid "Messages before a pause"
 msgstr "Сообщений до паузы"
 
-#: polyhost/gui/settings_dialog.py:129
+#: polyhost/gui/settings_dialog.py:148
 msgid "Pause length (s)"
 msgstr "Длительность паузы (с)"
 
-#: polyhost/gui/settings_dialog.py:130
+#: polyhost/gui/settings_dialog.py:149
 msgid "ID requests before reconnect"
 msgstr "Запросов ID до переподключения"
 
-#: polyhost/gui/settings_dialog.py:131
+#: polyhost/gui/settings_dialog.py:150
 msgid "Theme"
 msgstr "Тема"
 
-#: polyhost/gui/settings_dialog.py:133
+#: polyhost/gui/settings_dialog.py:152
 msgid "Developer mode"
 msgstr "Режим разработчика"
 
-#: polyhost/gui/settings_dialog.py:134
+#: polyhost/gui/settings_dialog.py:153
 msgid "Log detail"
 msgstr "Подробность журнала"
 
-#: polyhost/gui/settings_dialog.py:135
+#: polyhost/gui/settings_dialog.py:154
 msgid "Add a simulated keyboard"
 msgstr "Добавить имитацию клавиатуры"
 
-#: polyhost/gui/settings_dialog.py:136
+#: polyhost/gui/settings_dialog.py:155
 msgid "Simulated keyboard only"
 msgstr "Только имитация клавиатуры"
 
-#: polyhost/gui/settings_dialog.py:137
+#: polyhost/gui/settings_dialog.py:156
 msgid "Simulated protocol version"
 msgstr "Версия протокола имитации"
 
-#: polyhost/gui/settings_dialog.py:138
+#: polyhost/gui/settings_dialog.py:157
 msgid "Track windows without a keyboard"
 msgstr "Отслеживать окна без клавиатуры"
 
-#: polyhost/gui/settings_dialog.py:139
+#: polyhost/gui/settings_dialog.py:158
 msgid "Native Windows language switch"
 msgstr "Нативная смена языка Windows"
 
-#: polyhost/gui/settings_dialog.py:140
+#: polyhost/gui/settings_dialog.py:159
 msgid "Legacy plaintext relay"
 msgstr "Устаревший незашифрованный ретранслятор"
 
-#: polyhost/gui/settings_dialog.py:141
+#: polyhost/gui/settings_dialog.py:160
 msgid "Force the HID link"
 msgstr "Принудительно использовать HID"
 
-#: polyhost/gui/settings_dialog.py:142
+#: polyhost/gui/settings_dialog.py:161
 msgid "Background service"
 msgstr "Фоновая служба"
 
-#: polyhost/gui/settings_dialog.py:143
+#: polyhost/gui/settings_dialog.py:162
 msgid "Accept forwarders"
 msgstr "Принимать модули пересылки"
 
-#: polyhost/gui/settings_dialog.py:144
+#: polyhost/gui/settings_dialog.py:163
 msgid "Update on connect"
 msgstr "Обновлять при подключении"
 
-#: polyhost/gui/settings_dialog.py:145
+#: polyhost/gui/settings_dialog.py:164
 msgid "Search language"
 msgstr "Язык поиска"
 
-#: polyhost/gui/settings_dialog.py:146
+#: polyhost/gui/settings_dialog.py:165
 msgid "Own dictionary file"
 msgstr "Собственный файл словаря"
 
-#: polyhost/gui/settings_dialog.py:147
+#: polyhost/gui/settings_dialog.py:166
 msgid "Font pack file"
 msgstr "Файл пакета шрифтов"
 
-#: polyhost/gui/settings_dialog.py:148
+#: polyhost/gui/settings_dialog.py:167
 msgid "Match websites"
 msgstr "Сопоставлять веб-сайты"
 
-#: polyhost/gui/settings_dialog.py:149
+#: polyhost/gui/settings_dialog.py:168
 msgid "Receive browser reports"
 msgstr "Принимать отчёты браузера"
 
-#: polyhost/gui/settings_dialog.py:150
+#: polyhost/gui/settings_dialog.py:169
 msgid "Receiver port"
 msgstr "Порт приёмника"
 
-#: polyhost/gui/settings_dialog.py:151
+#: polyhost/gui/settings_dialog.py:170
 msgid "Receiver token"
 msgstr "Токен приёмника"
 
-#: polyhost/gui/settings_dialog.py:152
+#: polyhost/gui/settings_dialog.py:171
 msgid "Send usage report"
 msgstr "Отправлять отчёт об использовании"
 
-#: polyhost/gui/settings_dialog.py:153
+#: polyhost/gui/settings_dialog.py:172
 msgid "Report address"
 msgstr "Адрес отчёта"
 
-#: polyhost/gui/settings_dialog.py:154
+#: polyhost/gui/settings_dialog.py:173
 msgid "Installation ID"
 msgstr "ID установки"
 
-#: polyhost/gui/settings_dialog.py:155
+#: polyhost/gui/settings_dialog.py:174
 msgid "Watch the keyboard console"
 msgstr "Следить за консолью клавиатуры"
 
-#: polyhost/gui/settings_dialog.py:156
+#: polyhost/gui/settings_dialog.py:175
 msgid "Watch this app's log"
 msgstr "Следить за журналом приложения"
 
-#: polyhost/gui/settings_dialog.py:157
+#: polyhost/gui/settings_dialog.py:176
 msgid "What counts as a problem"
 msgstr "Что считается проблемой"
 
-#: polyhost/gui/settings_dialog.py:158
+#: polyhost/gui/settings_dialog.py:177
 msgid "Art from installed games"
 msgstr "Графика из установленных игр"
 
-#: polyhost/gui/settings_dialog.py:159
+#: polyhost/gui/settings_dialog.py:178
 msgid "Show on the number row"
 msgstr "Показывать на цифровом ряду"
 
-#: polyhost/gui/settings_dialog.py:160
+#: polyhost/gui/settings_dialog.py:179
 msgid "Find by window title"
 msgstr "Искать по заголовку окна"
 
-#: polyhost/gui/settings_dialog.py:161
+#: polyhost/gui/settings_dialog.py:180
 msgid "Dictation shortcut"
 msgstr "Сочетание клавиш для диктовки"
 
-#: polyhost/gui/settings_dialog.py:162
+#: polyhost/gui/settings_dialog.py:181
 msgid "Agents from other computers"
 msgstr "Агенты с других компьютеров"
 
-#: polyhost/gui/settings_dialog.py:163
+#: polyhost/gui/settings_dialog.py:182
 msgid "Raise agent windows on this computer"
 msgstr "Выводить окна агентов на этом компьютере"
 
-#: polyhost/gui/settings_dialog.py:164
+#: polyhost/gui/settings_dialog.py:183
 msgid "Stale after (minutes)"
 msgstr "Неактуален через (минуты)"
 
-#: polyhost/gui/settings_dialog.py:165
+#: polyhost/gui/settings_dialog.py:184
 msgid "Remove idle agents after (minutes)"
 msgstr "Удалять неактивных агентов через (минуты)"
 
-#: polyhost/gui/settings_dialog.py:174
+#: polyhost/gui/settings_dialog.py:193
+msgid "What the keycaps show when you have not typed for a while. It protects the displays from burn-in."
+msgstr "Что показывают клавиши, когда вы некоторое время не печатаете. Это защищает дисплеи от выгорания."
+
+#: polyhost/gui/settings_dialog.py:195
+msgid "How long the keyboard waits before the idle display starts."
+msgstr "Сколько клавиатура ждёт, прежде чем включить экран простоя."
+
+#: polyhost/gui/settings_dialog.py:197
+msgid "Draws the letters and digits on the keycaps in another script. Standard shows the normal legends of your language."
+msgstr "Рисует буквы и цифры на клавишах другим начертанием. «Стандартное» показывает обычные надписи вашего языка."
+
+#: polyhost/gui/settings_dialog.py:200
+msgid "Where the script's letters sit on the keycap. The top-left corner leaves room for an app icon."
+msgstr "Где на клавише находятся буквы начертания. Левый верхний угол оставляет место для значка приложения."
+
+#: polyhost/gui/settings_dialog.py:203
+msgid "The size of the main legend. The larger sizes cover Latin letters."
+msgstr "Размер основной надписи. Крупные размеры охватывают латинские буквы."
+
+#: polyhost/gui/settings_dialog.py:205
+msgid "A key with a tap and a hold action types its tap action when you release it before this time, and acts as its hold action when you hold it longer."
+msgstr "Клавиша с действиями по нажатию и удержанию выполняет действие нажатия, если отпустить её раньше этого времени, и действие удержания, если держать её дольше."
+
+#: polyhost/gui/settings_dialog.py:208
+msgid "A tap-hold key pressed within this time after the previous key always types its tap action, so fast typing does not trigger a modifier. 0 turns Flow Tap off."
+msgstr "Клавиша нажатия/удержания, нажатая в течение этого времени после предыдущей клавиши, всегда выполняет действие нажатия, поэтому быстрый набор не включает модификатор. 0 отключает Flow Tap."
+
+#: polyhost/gui/settings_dialog.py:211
+msgid "With Auto Shift on, holding a letter, digit or symbol key longer than the Auto Shift timeout types its shifted character."
+msgstr "Если Auto Shift включён, удержание клавиши буквы, цифры или символа дольше времени Auto Shift вводит её символ с Shift."
+
+#: polyhost/gui/settings_dialog.py:213
+msgid "How long you hold a key before Auto Shift types its shifted character."
+msgstr "Сколько нужно удерживать клавишу, прежде чем Auto Shift напечатает символ с Shift."
+
+#: polyhost/gui/settings_dialog.py:216
 msgid "Shows the state of AI coding agents on the number row and, while the AI key is pressed, one card per agent. Needs keyboard firmware with protocol 31. Takes effect at the next keyboard connect."
 msgstr "Показывает состояние ИИ-агентов для программирования на цифровом ряду, а при нажатой клавише AI — по одной карточке на агента. Требуется микропрограмма клавиатуры с протоколом 31. Вступает в силу при следующем подключении клавиатуры."
 
-#: polyhost/gui/settings_dialog.py:178
+#: polyhost/gui/settings_dialog.py:220
 msgid "Also finds agents that run in a terminal from the window title, without a hook. Not on macOS."
 msgstr "Также находит агентов, запущенных в терминале, по заголовку окна, без хука. Не работает в macOS."
 
-#: polyhost/gui/settings_dialog.py:181
+#: polyhost/gui/settings_dialog.py:223
 msgid "Also shows agents that run on a computer with the forwarder. A key press brings forward the remote-desktop viewer that shows that computer (NoMachine, Remote Desktop, VNC). They report over the network endpoint for forwarders, which must be on too. Off: only this computer's agents."
 msgstr "Также показывает агентов, запущенных на компьютере с модулем пересылки. Нажатие клавиши выводит на передний план окно удалённого доступа, которое показывает этот компьютер (NoMachine, Удалённый рабочий стол, VNC). Они передают сведения через сетевой порт для модулей пересылки, который тоже должен быть включён. Выкл.: только агенты этого компьютера."
 
-#: polyhost/gui/settings_dialog.py:186
+#: polyhost/gui/settings_dialog.py:228
 msgid "On a computer with the forwarder: a key press on one of this computer's agents also brings the agent's own window forward here. Off: only the viewer on the keyboard's computer comes forward."
 msgstr "На компьютере с модулем пересылки: нажатие клавиши одного из агентов этого компьютера также выводит здесь на передний план окно самого агента. Выкл.: на передний план выходит только окно удалённого доступа на компьютере клавиатуры."
 
-#: polyhost/gui/settings_dialog.py:190
+#: polyhost/gui/settings_dialog.py:232
 msgid "A working agent that reports nothing for this many minutes shows as stale (dim white). 0: never."
 msgstr "Работающий агент, который ничего не сообщает столько минут, отображается как неактуальный (тусклый белый). 0: никогда."
 
-#: polyhost/gui/settings_dialog.py:193
+#: polyhost/gui/settings_dialog.py:235
 msgid "An idle or stale agent that reports nothing for this many minutes is removed and frees its key. An agent whose process ends is removed at once. 0: never."
 msgstr "Простаивающий или неактуальный агент, который ничего не сообщает столько минут, удаляется и освобождает свою клавишу. Агент, процесс которого завершился, удаляется сразу. 0: никогда."
 
-#: polyhost/gui/settings_dialog.py:196
+#: polyhost/gui/settings_dialog.py:238
 msgid "The shortcut the minus key sends in AI mode to start dictation, for example <cmd>+h or <ctrl>+<alt>+d. Empty: Win+H on Windows, nothing on macOS and Linux."
 msgstr "Сочетание клавиш, которое клавиша «минус» отправляет в режиме AI для запуска диктовки, например <cmd>+h или <ctrl>+<alt>+d. Пусто: Win+H в Windows, ничего в macOS и Linux."
 
-#: polyhost/gui/settings_dialog.py:200
+#: polyhost/gui/settings_dialog.py:242
 msgid "Tells the keyboard how this computer takes Unicode input (for example WinCompose), on connect and whenever it changes. Off: the keyboard keeps the mode it has stored."
 msgstr "Сообщает клавиатуре, как этот компьютер принимает ввод Юникода (например, через WinCompose), при подключении и при каждом изменении. Выкл.: клавиатура сохраняет режим, записанный в ней."
 
-#: polyhost/gui/settings_dialog.py:204
+#: polyhost/gui/settings_dialog.py:246
 msgid "Sets the keycap brightness from the daylight at your location, every ten minutes."
 msgstr "Устанавливает яркость клавиш по дневному свету в вашем местоположении, каждые десять минут."
 
-#: polyhost/gui/settings_dialog.py:207
+#: polyhost/gui/settings_dialog.py:249
 msgid "Asks open-meteo.com for this hour's sunlight at your location, including clouds. Off: the host computes a cloudless-sky value from the location and time."
 msgstr "Запрашивает у open-meteo.com солнечный свет в вашем местоположении для текущего часа с учётом облачности. Выкл.: хост вычисляет значение для безоблачного неба по местоположению и времени."
 
-#: polyhost/gui/settings_dialog.py:211
+#: polyhost/gui/settings_dialog.py:253
 msgid "Looks up your approximate location from your IP address (ip-api.com), once per run. Off: the brightness follows the hour of the day."
 msgstr "Определяет ваше примерное местоположение по IP-адресу (ip-api.com), один раз за запуск. Выкл.: яркость следует времени суток."
 
-#: polyhost/gui/settings_dialog.py:213
+#: polyhost/gui/settings_dialog.py:255
 msgid "The sunlight value that gives the dimmest brightness level."
 msgstr "Значение солнечного света, при котором яркость минимальна."
 
-#: polyhost/gui/settings_dialog.py:215
+#: polyhost/gui/settings_dialog.py:257
 msgid "The sunlight value that gives the brightest level. Lower it to reach full brightness on a cloudy day."
 msgstr "Значение солнечного света, при котором яркость максимальна. Уменьшите его, чтобы достигать полной яркости в пасмурный день."
 
-#: polyhost/gui/settings_dialog.py:217
+#: polyhost/gui/settings_dialog.py:259
 msgid "Multiplies the sunlight value before the dimmest and brightest values apply."
 msgstr "Умножает значение солнечного света до применения минимального и максимального значений."
 
-#: polyhost/gui/settings_dialog.py:219
+#: polyhost/gui/settings_dialog.py:261
 msgid "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, below 1 brighter. The dimmest and brightest levels do not change."
 msgstr "Задаёт форму кривой дневного света. Больше 1 — середина дня темнее, меньше 1 — ярче. Минимальный и максимальный уровни не меняются."
 
-#: polyhost/gui/settings_dialog.py:222
+#: polyhost/gui/settings_dialog.py:264
 msgid "Icons for apps without their own overlay: the app's mark on Escape and an icon for each of its shortcuts. Off: nothing generic is drawn for any app."
 msgstr "Значки для приложений без собственного оверлея: логотип приложения на Escape и значок для каждого его сочетания клавиш. Выкл.: универсальные значки не рисуются ни для одного приложения."
 
-#: polyhost/gui/settings_dialog.py:225
+#: polyhost/gui/settings_dialog.py:267
 msgid "An app with its own overlay also gets its mark on Escape, when the overlay leaves Escape blank."
 msgstr "Приложение с собственным оверлеем тоже получает свой логотип на Escape, если оверлей оставляет Escape пустой."
 
-#: polyhost/gui/settings_dialog.py:228
+#: polyhost/gui/settings_dialog.py:270
 msgid "An app with its own overlay is also read for its shortcuts, with icons on the keys the overlay leaves blank. Reading a large app, such as a browser with a long page, can take minutes."
 msgstr "У приложения с собственным оверлеем тоже считываются сочетания клавиш, и значки появляются на клавишах, которые оверлей оставляет пустыми. Считывание большого приложения, например браузера с длинной страницей, может занять несколько минут."
 
-#: polyhost/gui/settings_dialog.py:232
+#: polyhost/gui/settings_dialog.py:274
 msgid "Reads the focused app's shortcuts to draw an icon for each. Off: no app is read and no shortcut icons are drawn. To remove every generic icon, the Escape mark included, turn off Generic icons."
 msgstr "Считывает сочетания клавиш активного приложения, чтобы нарисовать значок для каждого. Выкл.: приложения не считываются, значки сочетаний не рисуются. Чтобы убрать все универсальные значки, включая логотип на Escape, отключите «Универсальные значки»."
 
-#: polyhost/gui/settings_dialog.py:236
+#: polyhost/gui/settings_dialog.py:278
 msgid "Downloads icons that are missing. Off: icons already downloaded keep working, new ones are skipped."
 msgstr "Загружает недостающие значки. Выкл.: уже загруженные значки продолжают работать, новые пропускаются."
 
-#: polyhost/gui/settings_dialog.py:239
+#: polyhost/gui/settings_dialog.py:281
 msgid "Linux only. Turns on the desktop's accessibility switch so Qt and KDE apps publish their shortcuts. Off: only apps that publish them anyway (GTK) are read."
 msgstr "Только Linux. Включает переключатель специальных возможностей рабочего стола, чтобы приложения Qt и KDE публиковали свои сочетания клавиш. Выкл.: считываются только приложения, которые публикуют их в любом случае (GTK)."
 
-#: polyhost/gui/settings_dialog.py:243
+#: polyhost/gui/settings_dialog.py:285
 msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
 msgstr "Передача по USB: сколько сообщений с изображениями отправляется перед короткой паузой, чтобы клавиатура продолжала реагировать на ввод. Меняйте это значение, только если вас попросят об этом при сообщении о проблеме."
 
-#: polyhost/gui/settings_dialog.py:247
+#: polyhost/gui/settings_dialog.py:289
 msgid "USB transport: the length of that pause, in seconds. Change it only when asked to while reporting a problem."
 msgstr "Передача по USB: длительность этой паузы в секундах. Меняйте это значение, только если вас попросят об этом при сообщении о проблеме."
 
-#: polyhost/gui/settings_dialog.py:250
+#: polyhost/gui/settings_dialog.py:292
 msgid "How many times the host asks the keyboard for its ID before it reopens the USB connection."
 msgstr "Сколько раз хост запрашивает у клавиатуры её ID, прежде чем заново открыть USB-подключение."
 
-#: polyhost/gui/settings_dialog.py:253
+#: polyhost/gui/settings_dialog.py:295
 msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
 msgstr "Внешний вид меню в трее и диалоговых окон. «Автоматически» следует светлой или тёмной теме рабочего стола."
 
-#: polyhost/gui/settings_dialog.py:256
+#: polyhost/gui/settings_dialog.py:298
 msgid "The language of the menus and dialogs. Applies when the tray app restarts."
 msgstr "Язык меню и диалоговых окон. Применяется после перезапуска приложения в трее."
 
-#: polyhost/gui/settings_dialog.py:258
+#: polyhost/gui/settings_dialog.py:300
 msgid "Shows the developer settings in this dialog, and the Developer submenu in the tray menu after a restart."
 msgstr "Показывает настройки разработчика в этом окне, а после перезапуска — подменю «Разработчик» в меню трея."
 
-#: polyhost/gui/settings_dialog.py:261
+#: polyhost/gui/settings_dialog.py:303
 msgid "How much the app writes to its log. Debug and Detailed help when you report a problem, and make the log grow faster. Applies after a restart."
 msgstr "Насколько подробно приложение пишет в журнал. Уровни «Отладка» и «Подробно» помогают при сообщении о проблеме, но журнал растёт быстрее. Применяется после перезапуска."
 
-#: polyhost/gui/settings_dialog.py:263
+#: polyhost/gui/settings_dialog.py:305
 msgid "Adds a simulated keyboard next to the real one."
 msgstr "Добавляет имитацию клавиатуры рядом с настоящей."
 
-#: polyhost/gui/settings_dialog.py:265
+#: polyhost/gui/settings_dialog.py:307
 msgid "Uses a simulated keyboard instead of a real one, so the app runs without hardware."
 msgstr "Использует имитацию клавиатуры вместо настоящей, чтобы приложение работало без оборудования."
 
-#: polyhost/gui/settings_dialog.py:268
+#: polyhost/gui/settings_dialog.py:310
 msgid "The protocol version the simulated keyboard reports. 0 uses the newest version this host knows."
 msgstr "Версия протокола, которую сообщает имитация клавиатуры. 0 — новейшая версия, известная этому хосту."
 
-#: polyhost/gui/settings_dialog.py:271
+#: polyhost/gui/settings_dialog.py:313
 msgid "Tracks the active window even when no keyboard is connected."
 msgstr "Отслеживает активное окно, даже когда клавиатура не подключена."
 
-#: polyhost/gui/settings_dialog.py:273
+#: polyhost/gui/settings_dialog.py:315
 msgid "Windows only, experimental. Switches the input language with Win32 calls instead of the standard method, and falls back to it on a failure."
 msgstr "Только Windows, экспериментально. Переключает язык ввода вызовами Win32 вместо стандартного способа, а при ошибке возвращается к нему."
 
-#: polyhost/gui/settings_dialog.py:276
+#: polyhost/gui/settings_dialog.py:318
 msgid "Uses the USB HID channel only, as if the keyboard had no fast link: firmware updates go over HID. For testing the HID path by hand."
 msgstr "Использует только канал USB HID, как будто у клавиатуры нет быстрого канала: обновления прошивки идут по HID. Для ручной проверки пути HID."
 
-#: polyhost/gui/settings_dialog.py:279
+#: polyhost/gui/settings_dialog.py:321
 msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
 msgstr "Принимает сведения об окнах от старых модулей пересылки по незашифрованному TCP без проверки подлинности (порт 50162) на всех сетевых интерфейсах. Включайте только для старого модуля пересылки."
 
-#: polyhost/gui/settings_dialog.py:283
+#: polyhost/gui/settings_dialog.py:325
 msgid "Runs the keyboard connection in a background process that the tray app connects to, so the connection stays up when the tray app restarts."
 msgstr "Выполняет подключение к клавиатуре в фоновом процессе, к которому подключается приложение в трее, чтобы подключение сохранялось при перезапуске приложения в трее."
 
-#: polyhost/gui/settings_dialog.py:286
+#: polyhost/gui/settings_dialog.py:328
 msgid "Accepts window reports from a forwarder on another computer. Opens a network port. Applies after a restart."
 msgstr "Принимает сведения об окнах от модуля пересылки на другом компьютере. Открывает сетевой порт. Применяется после перезапуска."
 
-#: polyhost/gui/settings_dialog.py:289
+#: polyhost/gui/settings_dialog.py:331
 msgid "The language the keyboard's emoji layer searches in. The keyboard gets the dictionary right away when you change this, and when it connects if Update on connect is on. Own dictionary file, when set, is used instead."
 msgstr "Язык, на котором ищет слой эмодзи клавиатуры. Клавиатура получает словарь сразу после изменения этого параметра, а также при подключении, если включено «Обновлять при подключении». «Собственный файл словаря», если задан, используется вместо него."
 
-#: polyhost/gui/settings_dialog.py:293
+#: polyhost/gui/settings_dialog.py:335
 msgid "A dictionary you built yourself (.plyd), used instead of Search language. Empty: the shipped dictionary is used. Choose it in the tray to flash it right away."
 msgstr "Словарь, собранный вами (.plyd), который используется вместо параметра «Язык поиска». Пусто: используется поставляемый словарь. Выберите его в трее, чтобы сразу записать."
 
-#: polyhost/gui/settings_dialog.py:297
+#: polyhost/gui/settings_dialog.py:339
 msgid "Flashes missing or outdated font-pack bundles when the keyboard connects."
 msgstr "Прошивает отсутствующие или устаревшие наборы пакета шрифтов при подключении клавиатуры."
 
-#: polyhost/gui/settings_dialog.py:299
+#: polyhost/gui/settings_dialog.py:341
 msgid "A .plyf file to flash instead of the font pack that ships with the app. Empty uses the shipped pack."
 msgstr "Файл .plyf для прошивки вместо пакета шрифтов, поставляемого с приложением. Пусто — используется поставляемый пакет."
 
-#: polyhost/gui/settings_dialog.py:302
+#: polyhost/gui/settings_dialog.py:344
 msgid "Matches overlays to the website in the focused browser tab. Off: browser overlays match on the window title only."
 msgstr "Сопоставляет оверлеи с сайтом в активной вкладке браузера. Выкл.: оверлеи браузера сопоставляются только по заголовку окна."
 
-#: polyhost/gui/settings_dialog.py:305
+#: polyhost/gui/settings_dialog.py:347
 msgid "Runs the receiver the browser extension reports to. It listens on 127.0.0.1 only."
 msgstr "Запускает приёмник, которому отправляет сведения расширение браузера. Он слушает только 127.0.0.1."
 
-#: polyhost/gui/settings_dialog.py:308
+#: polyhost/gui/settings_dialog.py:350
 msgid "The receiver's port. It must match the Host port in the browser extension."
 msgstr "Порт приёмника. Он должен совпадать с полем «Host port» в расширении браузера."
 
-#: polyhost/gui/settings_dialog.py:310
+#: polyhost/gui/settings_dialog.py:352
 msgid "A shared secret. When set, the browser extension must send the same token."
 msgstr "Общий секрет. Если он задан, расширение браузера должно отправлять тот же токен."
 
-#: polyhost/gui/settings_dialog.py:312
+#: polyhost/gui/settings_dialog.py:354
 msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
 msgstr "Отправляет один анонимный отчёт об использовании в день: версии, операционная система и несколько счётчиков. Никогда — заголовки окон или названия приложений."
 
-#: polyhost/gui/settings_dialog.py:314
+#: polyhost/gui/settings_dialog.py:356
 msgid "Where the usage report goes. Empty sends nothing."
 msgstr "Куда отправляется отчёт об использовании. Пусто — ничего не отправляется."
 
-#: polyhost/gui/settings_dialog.py:316
+#: polyhost/gui/settings_dialog.py:358
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
 msgstr "Случайный ID этой установки, созданный вместе с первым отчётом. Удалите его, чтобы считаться новой установкой."
 
-#: polyhost/gui/settings_dialog.py:319
+#: polyhost/gui/settings_dialog.py:361
 msgid "Watches the keyboard's console for known failure messages and offers to report a problem."
 msgstr "Следит за консолью клавиатуры на предмет известных сообщений о сбоях и предлагает сообщить о проблеме."
 
-#: polyhost/gui/settings_dialog.py:321
+#: polyhost/gui/settings_dialog.py:363
 msgid "Watches this app's own log for known failure messages."
 msgstr "Следит за собственным журналом этого приложения на предмет известных сообщений о сбоях."
 
-#: polyhost/gui/settings_dialog.py:322
+#: polyhost/gui/settings_dialog.py:364
 msgid "What counts as a problem: errors only, or errors and warnings."
 msgstr "Что считается проблемой: только ошибки или ошибки и предупреждения."
 
-#: polyhost/gui/settings_dialog.py:324
+#: polyhost/gui/settings_dialog.py:366
 msgid "Draws some game overlays from the game's own files when the game is installed on this computer. The images stay on this computer. Off: the shipped overlays are used."
 msgstr "Рисует некоторые игровые оверлеи из файлов самой игры, если игра установлена на этом компьютере. Изображения остаются на этом компьютере. Выкл.: используются поставляемые оверлеи."
 
-#: polyhost/gui/settings_dialog.py:785
+#: polyhost/gui/settings_dialog.py:888 polyhost/host.py:1691
 msgid "PolyKybd Settings"
 msgstr "Настройки PolyKybd"
 
-#: polyhost/gui/settings_dialog.py:842
+#: polyhost/gui/settings_dialog.py:957
 msgid "Search settings"
 msgstr "Поиск настроек"
 
-#: polyhost/gui/settings_dialog.py:883
+#: polyhost/gui/settings_dialog.py:1003
+msgid "Reading the settings stored on the keyboard…"
+msgstr "Чтение настроек, сохранённых на клавиатуре…"
+
+#: polyhost/gui/settings_dialog.py:1009
 msgid "No setting matches the search."
 msgstr "Ни одна настройка не соответствует запросу."
 
-#: polyhost/gui/settings_dialog.py:898
+#: polyhost/gui/settings_dialog.py:1024
 msgid "Some settings might need a restart to take effect."
 msgstr "Некоторые настройки могут вступить в силу только после перезапуска."
 
-#: polyhost/gui/settings_dialog.py:933
+#: polyhost/gui/settings_dialog.py:1059
 #, python-brace-format
 msgid "Set by {flag} for this run. This setting applies when the app starts without it."
 msgstr "Задано через {flag} для этого запуска. Эта настройка действует, когда приложение запускается без него."
 
-#: polyhost/gui/settings_dialog.py:965
+#. TRANSLATORS: unit after a number of milliseconds in a spin box.
+#. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
+#: polyhost/gui/layout_dialog/combo_tab.py:371
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
+#: polyhost/gui/settings_dialog.py:1103
+msgid " ms"
+msgstr " мс"
+
+#: polyhost/gui/settings_dialog.py:1150
+msgid "This keyboard's firmware does not have this setting."
+msgstr "Микропрограмма этой клавиатуры не поддерживает эту настройку."
+
+#: polyhost/gui/settings_dialog.py:1152
+msgid "Could not read this setting from the keyboard."
+msgstr "Не удалось прочитать эту настройку с клавиатуры."
+
+#: polyhost/gui/settings_dialog.py:1160
+msgid "Connect the keyboard to change the settings stored on it."
+msgstr "Подключите клавиатуру, чтобы изменить сохранённые на ней настройки."
+
+#: polyhost/gui/settings_dialog.py:1162
+msgid "Some settings could not be read from the keyboard. Update the keyboard firmware to change them here."
+msgstr "Некоторые настройки не удалось прочитать с клавиатуры. Обновите микропрограмму клавиатуры, чтобы изменять их здесь."
+
+#: polyhost/gui/settings_dialog.py:1206
 msgid "These developer settings are not at their default, so they stay in effect while developer mode is off."
 msgstr "Эти настройки разработчика отличаются от значений по умолчанию, поэтому они действуют и при выключенном режиме разработчика."
 
-#: polyhost/gui/settings_dialog.py:1022
+#: polyhost/gui/settings_dialog.py:1264
 msgid "Generate"
 msgstr "Создать"
 
-#: polyhost/gui/settings_dialog.py:1023
+#: polyhost/gui/settings_dialog.py:1265
 msgid "Fills in a new random token and copies it. Paste it into the browser extension's Options and save both."
 msgstr "Подставляет новый случайный токен и копирует его. Вставьте его в параметры («Options») расширения браузера и сохраните в обоих местах."
 
@@ -4076,52 +4302,6 @@ msgstr "Загрузить снова"
 msgid "The download failed ({error}). You can get the .uf2 from <a href=\"{url}\">the release page</a> instead."
 msgstr "Не удалось загрузить ({error}). Файл .uf2 можно получить на <a href=\"{url}\">странице выпуска</a>."
 
-#: polyhost/gui/tap_terms_dialog.py:18
-msgid "A key with a tap and a hold action types its tap action when you release it before the tapping term, and acts as its hold action when you hold it longer.<br><br>A tap-hold key pressed within the Flow Tap term after the previous key always types its tap action, so fast typing does not trigger a modifier. 0 turns Flow Tap off.<br><br>The keyboard stores both values."
-msgstr "Клавиша с действием нажатия и удержания отправляет действие нажатия, если отпустить её до истечения времени нажатия, и работает как действие удержания, если держать её дольше.<br><br>Клавиша нажатия-удержания, нажатая в пределах времени Flow Tap после предыдущей клавиши, всегда отправляет действие нажатия, чтобы быстрый набор не включал модификатор. 0 отключает Flow Tap.<br><br>Клавиатура сохраняет оба значения."
-
-#: polyhost/gui/tap_terms_dialog.py:26
-msgid "With Auto Shift on, holding a letter, digit or symbol key longer than the Auto Shift timeout types its shifted character."
-msgstr "Если Auto Shift включён, удержание клавиши буквы, цифры или символа дольше времени Auto Shift вводит её символ с Shift."
-
-#: polyhost/gui/tap_terms_dialog.py:34 polyhost/host.py:2120
-msgid "Tap-Hold Timing"
-msgstr "Время нажатия и удержания"
-
-#. TRANSLATORS: unit after a number of milliseconds in a spin box.
-#. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
-#: polyhost/gui/layout_dialog/combo_tab.py:371
-#: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
-#: polyhost/gui/tap_terms_dialog.py:42 polyhost/gui/tap_terms_dialog.py:48
-#: polyhost/gui/tap_terms_dialog.py:63
-msgid " ms"
-msgstr " мс"
-
-#: polyhost/gui/tap_terms_dialog.py:54
-msgid "This keyboard's firmware has no Flow Tap."
-msgstr "В прошивке этой клавиатуры нет Flow Tap."
-
-#. TRANSLATORS: check box that turns the keyboard's Auto Shift on.
-#: polyhost/gui/tap_terms_dialog.py:58
-msgid "Auto Shift"
-msgstr "Auto Shift"
-
-#: polyhost/gui/tap_terms_dialog.py:68
-msgid "This keyboard's firmware has no Auto Shift. Update the firmware."
-msgstr "В прошивке этой клавиатуры нет Auto Shift. Обновите прошивку."
-
-#: polyhost/gui/tap_terms_dialog.py:82
-msgid "Tapping term:"
-msgstr "Время нажатия:"
-
-#: polyhost/gui/tap_terms_dialog.py:83
-msgid "Flow Tap term:"
-msgstr "Время Flow Tap:"
-
-#: polyhost/gui/tap_terms_dialog.py:104
-msgid "Auto Shift timeout:"
-msgstr "Время Auto Shift:"
-
 #: polyhost/gui/tray_notify.py:62
 #, python-brace-format
 msgid "{prefix} — host v{host_version}, firmware v{fw_version} available"
@@ -4138,7 +4318,7 @@ msgid "{prefix} — firmware v{fw_version} available"
 msgstr "{prefix} — доступна микропрограмма v{fw_version}"
 
 #: polyhost/forwarder.py:278 polyhost/gui/tray_notify.py:81
-#: polyhost/host.py:770
+#: polyhost/host.py:564
 msgid "Updates"
 msgstr "Обновления"
 
@@ -4261,344 +4441,196 @@ msgstr "Полные примечания к выпуску на GitHub"
 msgid "Restarting to complete update…"
 msgstr "Перезапуск для завершения обновления…"
 
-#: polyhost/host.py:53
-msgid "Standard (normal legends)"
-msgstr "Стандартное (обычные надписи)"
-
-#: polyhost/host.py:54
-msgid "Tengwar (fantasy)"
-msgstr "Тенгвар (фэнтези)"
-
-#: polyhost/host.py:55
-msgid "Elder Futhark runes"
-msgstr "Руны Старшего футарка"
-
-#: polyhost/host.py:56
-msgid "Aurebesh (sci-fi)"
-msgstr "Ауребеш (научная фантастика)"
-
-#: polyhost/host.py:57
-msgid "Standard Galactic"
-msgstr "Стандартный галактический"
-
-#: polyhost/host.py:58
-msgid "Cirth / Angerthas"
-msgstr "Кирт / Ангертас"
-
-#: polyhost/host.py:59
-msgid "IBM VGA / CP437"
-msgstr "IBM VGA / CP437"
-
-#: polyhost/host.py:60
-msgid "Commodore 64 (screen)"
-msgstr "Commodore 64 (экран)"
-
-#: polyhost/host.py:61
-msgid "Commodore 64 (keycap)"
-msgstr "Commodore 64 (клавиша)"
-
-#: polyhost/host.py:62 polyhost/host.py:80
-msgid "Amiga Topaz"
-msgstr "Amiga Topaz"
-
-#: polyhost/host.py:63
-msgid "APL"
-msgstr "APL"
-
-#: polyhost/host.py:64
-msgid "Braille"
-msgstr "Шрифт Брайля"
-
-#: polyhost/host.py:73
-msgid "Tengwar"
-msgstr "Тенгвар"
-
-#: polyhost/host.py:74
-msgid "Runes"
-msgstr "Руны"
-
-#: polyhost/host.py:75
-msgid "Aurebesh"
-msgstr "Ауребеш"
-
-#: polyhost/host.py:76
-msgid "Cirth"
-msgstr "Кирт"
-
-#: polyhost/host.py:77
-msgid "IBM VGA"
-msgstr "IBM VGA"
-
-#: polyhost/host.py:78
-msgid "C64 screen"
-msgstr "C64 экран"
-
-#: polyhost/host.py:79
-msgid "C64 keycap"
-msgstr "C64 клавиша"
-
-#: polyhost/host.py:84
-msgid "Small (standard)"
-msgstr "Маленький (стандартный)"
-
-#: polyhost/host.py:85 polyhost/host.py:715
-msgid "Medium"
-msgstr "Средний"
-
-#: polyhost/host.py:86 polyhost/host.py:715
-msgid "Large"
-msgstr "Крупный"
-
-#: polyhost/host.py:217
+#: polyhost/host.py:172
 msgid "Updating keyboard font pack — please wait, do not unplug…"
 msgstr "Обновление пакета шрифтов на клавиатуре — подождите, не отключайте…"
 
-#: polyhost/host.py:218
+#: polyhost/host.py:173
 #, python-brace-format
 msgid "PolyKybd — updating font pack ({percent}%)"
 msgstr "PolyKybd — обновление пакета шрифтов ({percent}%)"
 
-#: polyhost/host.py:219
+#: polyhost/host.py:174
 msgid "Keyboard font pack is up to date."
 msgstr "Пакет шрифтов на клавиатуре актуален."
 
-#: polyhost/host.py:220
+#: polyhost/host.py:175
 #, python-brace-format
 msgid "Font pack update failed: {error}"
 msgstr "Ошибка обновления пакета шрифтов: {error}"
 
-#: polyhost/host.py:223
+#: polyhost/host.py:178
 msgid "Updating keyboard game data — please wait, do not unplug…"
 msgstr "Обновление игровых данных на клавиатуре — подождите, не отключайте…"
 
-#: polyhost/host.py:224
+#: polyhost/host.py:179
 #, python-brace-format
 msgid "PolyKybd — updating game data ({percent}%)"
 msgstr "PolyKybd — обновление игровых данных ({percent}%)"
 
-#: polyhost/host.py:225
+#: polyhost/host.py:180
 msgid "Keyboard game data is up to date."
 msgstr "Игровые данные на клавиатуре актуальны."
 
-#: polyhost/host.py:226
+#: polyhost/host.py:181
 #, python-brace-format
 msgid "Game data update failed: {error}"
 msgstr "Ошибка обновления игровых данных: {error}"
 
-#: polyhost/host.py:229
+#: polyhost/host.py:184
 msgid "Updating keyboard engine pack — please wait, do not unplug…"
 msgstr "Обновление пакета движка на клавиатуре — подождите, не отключайте…"
 
-#: polyhost/host.py:230
+#: polyhost/host.py:185
 #, python-brace-format
 msgid "PolyKybd — updating engine pack ({percent}%)"
 msgstr "PolyKybd — обновление пакета движка ({percent}%)"
 
-#: polyhost/host.py:231
+#: polyhost/host.py:186
 msgid "Keyboard engine pack is up to date."
 msgstr "Пакет движка на клавиатуре актуален."
 
-#: polyhost/host.py:232
+#: polyhost/host.py:187
 #, python-brace-format
 msgid "Engine pack update failed: {error}"
 msgstr "Ошибка обновления пакета движка: {error}"
 
-#: polyhost/host.py:429 polyhost/host.py:1613
+#: polyhost/host.py:384 polyhost/host.py:1392
 msgid "Waiting for PolyKybd..."
 msgstr "Ожидание PolyKybd..."
 
-#: polyhost/host.py:430 polyhost/host.py:1460
+#: polyhost/host.py:385 polyhost/host.py:1239
 msgid "Press to pause connection"
 msgstr "Нажмите, чтобы приостановить подключение"
 
-#: polyhost/forwarder.py:358 polyhost/host.py:433
+#: polyhost/forwarder.py:358 polyhost/host.py:388
 msgid "Quit"
 msgstr "Выход"
 
-#: polyhost/host.py:442
+#: polyhost/host.py:397
 msgid "Quit && stop background daemon"
 msgstr "Выход && остановка фоновой службы"
 
-#: polyhost/forwarder.py:325 polyhost/host.py:447
+#: polyhost/forwarder.py:325 polyhost/host.py:402
 msgid "About"
 msgstr "О программе"
 
-#: polyhost/forwarder.py:308 polyhost/host.py:455
+#: polyhost/forwarder.py:308 polyhost/host.py:410
 msgid "Integrations…"
 msgstr "Интеграции…"
 
-#: polyhost/forwarder.py:314 polyhost/host.py:460
+#: polyhost/forwarder.py:314 polyhost/host.py:415
 msgid "Settings..."
 msgstr "Настройки..."
 
-#: polyhost/forwarder.py:329 polyhost/host.py:464
+#: polyhost/forwarder.py:329 polyhost/host.py:419
 msgid "Log file..."
 msgstr "Файл журнала..."
 
-#: polyhost/forwarder.py:335 polyhost/host.py:473
+#: polyhost/forwarder.py:335 polyhost/host.py:428
 msgid "Report a Problem..."
 msgstr "Сообщить о проблеме..."
 
-#: polyhost/forwarder.py:341 polyhost/host.py:493
+#: polyhost/forwarder.py:341 polyhost/host.py:447
 msgid "Collect logs..."
 msgstr "Собрать журналы..."
 
-#: polyhost/host.py:502
+#: polyhost/host.py:456
 msgid "Read keyboard crash record"
 msgstr "Прочитать запись о сбое клавиатуры"
 
-#: polyhost/host.py:504
+#: polyhost/host.py:458
 msgid "Read the keyboard's last crash record from both halves and copy it to the clipboard."
 msgstr "Прочитать последнюю запись о сбое с обеих половин клавиатуры и скопировать её в буфер обмена."
 
-#: polyhost/host.py:509
+#: polyhost/host.py:463
 msgid "Inspect Font Packs..."
 msgstr "Инспектор пакетов шрифтов..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
-#: polyhost/forwarder.py:266 polyhost/forwarder.py:416 polyhost/host.py:523
-#: polyhost/host.py:1462
+#: polyhost/forwarder.py:266 polyhost/forwarder.py:416 polyhost/host.py:477
+#: polyhost/host.py:1241
 msgid "Pause"
 msgstr "Приостановить"
 
-#: polyhost/host.py:533
+#: polyhost/host.py:487
 msgid "Firmware newer than this app — safe mode…"
 msgstr "Микропрограмма новее приложения — безопасный режим…"
 
-#: polyhost/host.py:535
+#: polyhost/host.py:489
 msgid "Choose how to handle a keyboard whose firmware is newer than this host app."
 msgstr "Выбрать, как обращаться с клавиатурой, микропрограмма которой новее этого приложения."
 
-#: polyhost/host.py:582
-msgid "Idle Display"
-msgstr "Экран простоя"
-
-#: polyhost/host.py:585
-msgid "Pulse (legacy)"
-msgstr "Пульсация (устаревший)"
-
-#: polyhost/host.py:587
-msgid "Jitter (move legend)"
-msgstr "Дрожание (сдвиг надписи)"
-
-#: polyhost/host.py:591
-msgid "IDDQD (attract demo)"
-msgstr "IDDQD (демо-заставка)"
-
-#: polyhost/host.py:595 polyhost/host.py:611
-msgid "Eden"
-msgstr "Eden"
-
-#: polyhost/host.py:611
-msgid "Pulse"
-msgstr "Пульсация"
-
-#: polyhost/host.py:611
-msgid "Jitter"
-msgstr "Дрожание"
-
-#: polyhost/host.py:622
-msgid "Idle After"
-msgstr "Простой через"
-
-#: polyhost/host.py:643
-msgid "Keycap Script"
-msgstr "Начертание на клавишах"
-
-#: polyhost/host.py:667
-msgid "Centred on the keycap"
-msgstr "По центру клавиши"
-
-#: polyhost/host.py:668
-msgid "In the top-left corner"
-msgstr "В левом верхнем углу"
-
-#: polyhost/host.py:695
-msgid "Keycap Size"
-msgstr "Размер надписей на клавишах"
-
-#: polyhost/host.py:715
-msgid "Small"
-msgstr "Маленький"
-
-#: polyhost/host.py:723
-msgid "Emoji Search Language"
-msgstr "Язык поиска эмодзи"
-
-#: polyhost/host.py:734
-msgid "Tap-Hold Timing…"
-msgstr "Время нажатия и удержания…"
-
-#: polyhost/host.py:745
+#: polyhost/host.py:538
 msgid "AI Agents"
 msgstr "ИИ-агенты"
 
-#: polyhost/host.py:753
+#: polyhost/host.py:546
 msgid "Configure Keymap"
 msgstr "Настроить раскладку клавиш"
 
-#: polyhost/host.py:761
+#: polyhost/host.py:554
 msgid "Tutorials…"
 msgstr "Обучение…"
 
-#: polyhost/host.py:772
+#: polyhost/host.py:566
 msgid "Check for host update..."
 msgstr "Проверить обновление хоста..."
 
-#: polyhost/host.py:811 polyhost/host.py:2923 polyhost/host.py:3458
-#: polyhost/host.py:3636
+#: polyhost/host.py:605 polyhost/host.py:2461 polyhost/host.py:2996
+#: polyhost/host.py:3174
 msgid "Check for firmware update…"
 msgstr "Проверить обновление микропрограммы…"
 
-#: polyhost/host.py:820
+#: polyhost/host.py:614
 msgid "Keyboard fonts"
 msgstr "Шрифты клавиатуры"
 
-#: polyhost/host.py:855
+#: polyhost/host.py:649
 msgid "Install WinCompose…"
 msgstr "Установить WinCompose…"
 
-#: polyhost/host.py:877
+#: polyhost/host.py:671
 msgid "Allow access to the keyboard (udev rule)…"
 msgstr "Разрешить доступ к клавиатуре (правило udev)…"
 
-#: polyhost/host.py:905
+#: polyhost/host.py:699
 msgid "Change System Input Language"
 msgstr "Изменить язык ввода системы"
 
-#: polyhost/host.py:911
+#: polyhost/host.py:705
 msgid "Inspect MRU Cache..."
 msgstr "Инспектор MRU-кэша..."
 
-#: polyhost/host.py:917
+#: polyhost/host.py:711
 msgid "Mock Keyboard..."
 msgstr "Имитация клавиатуры..."
 
-#: polyhost/host.py:925
+#: polyhost/host.py:719
 msgid "Refresh unicode input mode"
 msgstr "Обновить режим ввода Юникода"
 
-#: polyhost/host.py:929
+#: polyhost/host.py:723
 msgid "Save MRU cache now"
 msgstr "Сохранить MRU-кэш сейчас"
 
-#: polyhost/forwarder.py:351 polyhost/host.py:944
+#: polyhost/forwarder.py:351 polyhost/host.py:738
 msgid "Help && About"
 msgstr "Справка && о программе"
 
-#: polyhost/forwarder.py:347 polyhost/host.py:954
+#: polyhost/forwarder.py:347 polyhost/host.py:746
 msgid "Open config folder"
 msgstr "Открыть папку конфигурации"
 
-#: polyhost/host.py:963
+#: polyhost/host.py:759
 msgid "Only quit GUI"
 msgstr "Выйти только из интерфейса"
 
-#: polyhost/host.py:1073
+#: polyhost/host.py:869
 msgid "System language query not supported for this platform."
 msgstr "Запрос языка системы не поддерживается на этой платформе."
 
-#: polyhost/host.py:1271
+#: polyhost/host.py:1064
 #, python-brace-format
 msgid "Retry keyboard fonts ({n} failed)…"
 msgid_plural "Retry keyboard fonts ({n} failed)…"
@@ -4606,12 +4638,12 @@ msgstr[0] "Повторить установку шрифтов клавиату
 msgstr[1] "Повторить установку шрифтов клавиатуры ({n} сбоя)…"
 msgstr[2] "Повторить установку шрифтов клавиатуры ({n} сбоев)…"
 
-#: polyhost/host.py:1273
+#: polyhost/host.py:1066
 #, python-brace-format
 msgid "Re-flash the font bundles whose last attempt failed: {bundles}"
 msgstr "Прошить заново наборы шрифтов, последняя попытка для которых не удалась: {bundles}"
 
-#: polyhost/host.py:1279
+#: polyhost/host.py:1072
 #, python-brace-format
 msgid "Update keyboard fonts ({n})…"
 msgid_plural "Update keyboard fonts ({n})…"
@@ -4619,16 +4651,16 @@ msgstr[0] "Обновить шрифты клавиатуры ({n} набор)�
 msgstr[1] "Обновить шрифты клавиатуры ({n} набора)…"
 msgstr[2] "Обновить шрифты клавиатуры ({n} наборов)…"
 
-#: polyhost/host.py:1281
+#: polyhost/host.py:1074
 #, python-brace-format
 msgid "Flash the font bundles the keyboard is missing, behind on, or failed to take: {bundles}"
 msgstr "Прошить наборы шрифтов, которых нет на клавиатуре, которые устарели или не установились: {bundles}"
 
-#: polyhost/host.py:1286
+#: polyhost/host.py:1079
 msgid "Keyboard fonts: up to date"
 msgstr "Шрифты клавиатуры: актуальны"
 
-#: polyhost/host.py:1287
+#: polyhost/host.py:1080
 msgid ""
 "Every shipped font bundle is already on the keyboard.\n"
 "Developer → Font Pack → Re-flash all bundles forces a re-send if the keycaps still render wrong."
@@ -4636,84 +4668,93 @@ msgstr ""
 "Все поставляемые наборы шрифтов уже есть на клавиатуре.\n"
 "«Разработчик → Пакет шрифтов → Прошить заново ВСЕ наборы» принудительно отправит их снова, если клавиши всё ещё отображаются неправильно."
 
-#: polyhost/forwarder.py:846 polyhost/host.py:1323
+#: polyhost/forwarder.py:846 polyhost/host.py:1116
 msgid "Config folder"
 msgstr "Папка конфигурации"
 
 #. TRANSLATORS: {rate} is like "0.6 MB/s"; the fast USB link's measured speed.
-#: polyhost/host.py:1429
+#: polyhost/host.py:1208
 #, python-brace-format
 msgid "{rate} link"
 msgstr "канал {rate}"
 
 #. TRANSLATORS: {kbps} is the HID channel's ceiling in KB/s (64).
-#: polyhost/host.py:1431
+#: polyhost/host.py:1210
 #, python-brace-format
 msgid "HID link, up to {kbps} KB/s"
 msgstr "канал HID, до {kbps} КБ/с"
 
 #. TRANSLATORS: tray tooltip line; {link} is "0.6 MB/s link" or "HID link, up
 #. to 64 KB/s".
-#: polyhost/host.py:1438
+#: polyhost/host.py:1217
 #, python-brace-format
 msgid "Connected: {link}"
 msgstr "Подключено: {link}"
 
 #. TRANSLATORS: status row while paused; clicking it reconnects (verb).
-#: polyhost/host.py:1454
+#: polyhost/host.py:1233
 msgid "Reconnect"
 msgstr "Переподключить"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:416 polyhost/host.py:1457
+#: polyhost/forwarder.py:416 polyhost/host.py:1236
 msgid "Resume"
 msgstr "Возобновить"
 
-#: polyhost/host.py:1540 polyhost/host.py:1605
+#: polyhost/host.py:1319 polyhost/host.py:1384
 #, python-brace-format
 msgid "Could not change OS language {language}."
 msgstr "Не удалось сменить язык ОС на {language}."
 
 #. TRANSLATORS: file-dialog filter; keep "(*.bin)" unchanged.
-#: polyhost/host.py:1629
+#: polyhost/host.py:1408
 msgid "Firmware image (*.bin)"
 msgstr "Образ микропрограммы (*.bin)"
 
-#: polyhost/host.py:1630
+#: polyhost/host.py:1409
 msgid "Select firmware .bin"
 msgstr "Выбор файла микропрограммы .bin"
 
-#: polyhost/host.py:1681
+#: polyhost/host.py:1460
 msgid "Firmware apply failed"
 msgstr "Ошибка применения микропрограммы"
 
-#: polyhost/host.py:1682
+#: polyhost/host.py:1461
 msgid "Firmware flash failed"
 msgstr "Ошибка прошивки микропрограммы"
 
-#: polyhost/host.py:1730 polyhost/host.py:1787
+#: polyhost/host.py:1509 polyhost/host.py:1562
 #, python-brace-format
 msgid "Selected Language: {language} {country}"
 msgstr "Выбранный язык: {language} {country}"
 
-#: polyhost/host.py:1870
+#: polyhost/host.py:1655
 msgid "PolyHost settings"
 msgstr "Настройки PolyHost"
 
-#: polyhost/host.py:1871
+#: polyhost/host.py:1656
 msgid "The settings are applied, but they could not be saved to the settings file. Another program may be holding it open. Change a setting again later to retry, or see the log."
 msgstr "Настройки применены, но их не удалось сохранить в файл настроек. Возможно, файл открыт другой программой. Чтобы повторить попытку, позже снова измените любую настройку, или посмотрите журнал."
 
-#: polyhost/host.py:1973
+#: polyhost/host.py:1673
+msgid "Idle Display"
+msgstr "Экран простоя"
+
+#: polyhost/host.py:1692
+#, python-brace-format
+msgid "The keyboard did not accept this setting: {setting}"
+msgstr "Клавиатура не приняла эту настройку: {setting}"
+
+#: polyhost/host.py:1804
 #, python-brace-format
 msgid "{side}: unreadable record {record}"
 msgstr "{side}: нечитаемая запись {record}"
 
-#: polyhost/host.py:1976
+#: polyhost/host.py:1807
 msgid "Neither keyboard half holds a crash record."
 msgstr "Ни на одной половине клавиатуры нет записи о сбое."
 
-#: polyhost/host.py:1978
+#: polyhost/host.py:1809
 #, python-brace-format
 msgid ""
 "Could not read the crash record.\n"
@@ -4724,66 +4765,54 @@ msgstr ""
 "\n"
 "{errors}"
 
-#: polyhost/host.py:1980
+#: polyhost/host.py:1811
 msgid "Keyboard crash record"
 msgstr "Запись о сбое клавиатуры"
 
-#: polyhost/host.py:1989
+#: polyhost/host.py:1820
 #, python-brace-format
 msgid "Copied to the clipboard. Not read: {errors}"
 msgstr "Скопировано в буфер обмена. Не прочитано: {errors}"
 
-#: polyhost/host.py:2081
-msgid "Could not read the tap-hold timing from the keyboard."
-msgstr "Не удалось прочитать время нажатия и удержания с клавиатуры."
-
-#: polyhost/host.py:2113
-msgid "The keyboard did not accept the tap-hold timing."
-msgstr "Клавиатура не приняла время нажатия и удержания."
-
-#: polyhost/host.py:2136
+#: polyhost/host.py:1912
 msgid "MRU Cache"
 msgstr "MRU-кэш"
 
-#: polyhost/host.py:2136
+#: polyhost/host.py:1912
 msgid "MRU cache is not active (device not connected or MRU mode disabled)."
 msgstr "MRU-кэш не активен (устройство не подключено или режим MRU отключён)."
 
-#: polyhost/host.py:2188
+#: polyhost/host.py:1964
 msgid "daemon client"
 msgstr "клиент фоновой службы"
 
-#: polyhost/host.py:2188
+#: polyhost/host.py:1964
 msgid "standalone"
 msgstr "автономно"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:923 polyhost/host.py:2246
+#: polyhost/forwarder.py:923 polyhost/host.py:2022
 msgid "paused"
 msgstr "приостановлено"
 
-#: polyhost/host.py:2248
+#: polyhost/host.py:2024
 msgid "connected"
 msgstr "подключена"
 
-#: polyhost/host.py:2249
+#: polyhost/host.py:2025
 msgid "present — not connected (protocol/version)"
 msgstr "обнаружена — не подключена (протокол/версия)"
 
-#: polyhost/host.py:2256
-msgid "Keyboard"
-msgstr "Клавиатура"
-
-#: polyhost/host.py:2257
+#: polyhost/host.py:2033
 msgid "No keyboard connected."
 msgstr "Клавиатура не подключена."
 
-#: polyhost/host.py:2261
+#: polyhost/host.py:2037
 msgid "⚠ mismatch"
 msgstr "⚠ несовпадение"
 
-#: polyhost/host.py:2263
+#: polyhost/host.py:2039
 #, python-brace-format
 msgid "{n} languages loaded"
 msgid_plural "{n} languages loaded"
@@ -4791,37 +4820,37 @@ msgstr[0] "Загружен {n} язык"
 msgstr[1] "Загружено {n} языка"
 msgstr[2] "Загружено {n} языков"
 
-#: polyhost/host.py:2266
+#: polyhost/host.py:2042
 #, python-brace-format
 msgid "<b>Connected keyboard:</b> {name} {state}"
 msgstr "<b>Подключённая клавиатура:</b> {name} {state}"
 
-#: polyhost/host.py:2268
+#: polyhost/host.py:2044
 #, python-brace-format
 msgid "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
 msgstr "<b>Микропрограмма:</b> {firmware} &nbsp;·&nbsp; протокол {protocol}"
 
-#: polyhost/host.py:2270
+#: polyhost/host.py:2046
 #, python-brace-format
 msgid "<b>Hardware:</b> {hardware}"
 msgstr "<b>Оборудование:</b> {hardware}"
 
-#: polyhost/host.py:2271
+#: polyhost/host.py:2047
 #, python-brace-format
 msgid "<b>Language:</b> {language}"
 msgstr "<b>Язык:</b> {language}"
 
-#: polyhost/host.py:2274
+#: polyhost/host.py:2050
 #, python-brace-format
 msgid "<b>Link:</b> {link}"
 msgstr "<b>Канал:</b> {link}"
 
-#: polyhost/host.py:2281
+#: polyhost/host.py:2057
 #, python-brace-format
 msgid "<b>Uptime:</b> {uptime}"
 msgstr "<b>Время работы:</b> {uptime}"
 
-#: polyhost/host.py:2283
+#: polyhost/host.py:2059
 #, python-brace-format
 msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
@@ -4829,26 +4858,26 @@ msgstr[0] "<b>Сопоставления оверлеев:</b> {n} прилож�
 msgstr[1] "<b>Сопоставления оверлеев:</b> {n} приложения"
 msgstr[2] "<b>Сопоставления оверлеев:</b> {n} приложений"
 
-#: polyhost/forwarder.py:940 polyhost/host.py:2285
+#: polyhost/forwarder.py:940 polyhost/host.py:2061
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>Конфигурация:</b> {path}"
 
-#: polyhost/forwarder.py:941 polyhost/host.py:2286
+#: polyhost/forwarder.py:941 polyhost/host.py:2062
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>Журналы:</b> {path}"
 
-#: polyhost/forwarder.py:959 polyhost/host.py:2340
+#: polyhost/forwarder.py:959 polyhost/host.py:2116
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "Протокол HID P{protocol}"
 
-#: polyhost/host.py:2345
+#: polyhost/host.py:2121
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
 msgstr "Программа-хост для раздельной клавиатуры PolyKybd с OLED-дисплеем в каждой клавише — отслеживает активное окно и отправляет на клавиатуру оверлеи, язык и изменения раскладки клавиш."
 
-#: polyhost/host.py:2371
+#: polyhost/host.py:2147
 #, python-brace-format
 msgid ""
 "Changing input language to '{language}' failed with:\n"
@@ -4857,163 +4886,124 @@ msgstr ""
 "Не удалось сменить язык ввода на «{language}»:\n"
 "\"{error}\""
 
-#: polyhost/host.py:2391 polyhost/host.py:2408
+#: polyhost/host.py:2167 polyhost/host.py:2184
 #, python-brace-format
 msgid "Could not set {language}: {error}"
 msgstr "Не удалось установить {language}: {error}"
 
-#: polyhost/host.py:2463
+#: polyhost/host.py:2198
 msgid "Show on the Number Row"
 msgstr "Показывать на цифровом ряду"
 
-#: polyhost/host.py:2472
+#: polyhost/host.py:2207
 msgid "Remove Agent"
 msgstr "Удалить агента"
 
-#: polyhost/host.py:2477
+#: polyhost/host.py:2212
 msgid "Set Up Hooks…"
 msgstr "Настроить хуки…"
 
-#: polyhost/host.py:2482
+#: polyhost/host.py:2217
 msgid "Pair a Forwarder…"
 msgstr "Связать модуль пересылки…"
 
-#: polyhost/host.py:2486
+#: polyhost/host.py:2221
 msgid "Connect Cloud Sessions…"
 msgstr "Подключить облачные сеансы…"
 
-#: polyhost/host.py:2501
+#: polyhost/host.py:2236
 msgid "No agents reported"
 msgstr "Нет сведений от агентов"
 
-#: polyhost/host.py:2504
+#: polyhost/host.py:2239
 msgid "working"
 msgstr "работает"
 
-#: polyhost/host.py:2504
+#: polyhost/host.py:2239
 msgid "waiting"
 msgstr "ожидает"
 
-#: polyhost/host.py:2504
+#: polyhost/host.py:2239
 msgid "done"
 msgstr "завершено"
 
-#: polyhost/host.py:2505
+#: polyhost/host.py:2240
 msgid "idle"
 msgstr "простаивает"
 
-#: polyhost/host.py:2508
+#: polyhost/host.py:2243
 #, python-brace-format
 msgid "Key {key}: {name}, {state}, {title}"
 msgstr "Клавиша {key}: {name}, {state}, {title}"
 
-#: polyhost/host.py:2513
+#: polyhost/host.py:2248
 #, python-brace-format
 msgid "Page {page}, {text}"
 msgstr "Страница {page}, {text}"
 
-#: polyhost/host.py:2536
+#: polyhost/host.py:2271
 msgid "Remove All Inactive"
 msgstr "Удалить все неактивные"
 
-#: polyhost/host.py:2598
+#: polyhost/host.py:2333
 msgid "Open Cloud Session"
 msgstr "Открыть облачный сеанс"
 
-#: polyhost/host.py:2599
+#: polyhost/host.py:2334
 #, python-brace-format
 msgid "No browser tab or Claude app window shows the cloud session \"{title}\". Open it in the browser?"
 msgstr "Ни одна вкладка браузера и ни одно окно приложения Claude не показывает облачный сеанс «{title}». Открыть его в браузере?"
 
-#: polyhost/host.py:2606
+#: polyhost/host.py:2341
 msgid "Open in Browser"
 msgstr "Открыть в браузере"
 
-#: polyhost/host.py:2731
-msgid "No emoji search dictionaries shipped"
-msgstr "Словари для поиска эмодзи не входят в комплект"
-
-#: polyhost/host.py:2737
-msgid "Needs newer keyboard firmware"
-msgstr "Требуется более новая прошивка клавиатуры"
-
-#: polyhost/host.py:2765
-msgid "Own dictionary file..."
-msgstr "Собственный файл словаря..."
-
-#: polyhost/host.py:2767
-#, python-brace-format
-msgid "Own dictionary (cannot be used): {name}"
-msgstr "Собственный словарь (нельзя использовать): {name}"
-
-#: polyhost/host.py:2769
-#, python-brace-format
-msgid "Own dictionary: {name}"
-msgstr "Собственный словарь: {name}"
-
-#: polyhost/host.py:2786
-msgid "Choose an emoji search dictionary"
-msgstr "Выберите словарь поиска эмодзи"
-
-#: polyhost/host.py:2787
-msgid "Emoji search dictionary (*.plyd)"
-msgstr "Словарь поиска эмодзи (*.plyd)"
-
-#: polyhost/host.py:2800
-msgid "Emoji search dictionary"
-msgstr "Словарь поиска эмодзи"
-
-#: polyhost/host.py:2801
-#, python-brace-format
-msgid "This file cannot be used: {reason}"
-msgstr "Этот файл нельзя использовать: {reason}"
-
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-#: polyhost/host.py:2833
+#: polyhost/host.py:2371
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "Сопоставление оверлеев PolyKybd (*.poly.yaml)"
 
-#: polyhost/host.py:2921 polyhost/host.py:3417 polyhost/host.py:3565
+#: polyhost/host.py:2459 polyhost/host.py:2955 polyhost/host.py:3103
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "Обновить микропрограмму до v{version}…"
 
 #: polyhost/forwarder.py:998 polyhost/forwarder.py:1009
-#: polyhost/forwarder.py:1015 polyhost/host.py:2941 polyhost/host.py:3062
-#: polyhost/host.py:3066
+#: polyhost/forwarder.py:1015 polyhost/host.py:2479 polyhost/host.py:2600
+#: polyhost/host.py:2604
 msgid "Check for updates..."
 msgstr "Проверить обновления..."
 
-#: polyhost/host.py:3009
+#: polyhost/host.py:2547
 #, python-brace-format
 msgid "Update to v{version} available"
 msgstr "Доступно обновление до v{version}"
 
 #: polyhost/forwarder.py:1011 polyhost/forwarder.py:1017
-#: polyhost/forwarder.py:1028 polyhost/host.py:3020 polyhost/host.py:3060
-#: polyhost/host.py:3067 polyhost/host.py:3090
+#: polyhost/forwarder.py:1028 polyhost/host.py:2558 polyhost/host.py:2598
+#: polyhost/host.py:2605 polyhost/host.py:2628
 msgid "PolyKybdHost Update"
 msgstr "Обновление PolyKybdHost"
 
-#: polyhost/host.py:3021
+#: polyhost/host.py:2559
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "Доступна версия {version}. Щёлкните значок в трее, чтобы обновить."
 
-#: polyhost/forwarder.py:985 polyhost/host.py:3046
+#: polyhost/forwarder.py:985 polyhost/host.py:2584
 msgid "Checking for updates..."
 msgstr "Проверка обновлений..."
 
-#: polyhost/host.py:3059
+#: polyhost/host.py:2597
 msgid "No updates available"
 msgstr "Обновлений нет"
 
-#: polyhost/forwarder.py:1012 polyhost/host.py:3061
+#: polyhost/forwarder.py:1012 polyhost/host.py:2599
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "У вас последняя версия (v{version})."
 
-#: polyhost/forwarder.py:1018 polyhost/host.py:3068
+#: polyhost/forwarder.py:1018 polyhost/host.py:2606
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -5028,42 +5018,42 @@ msgstr ""
 "\n"
 "Для подробностей запустите с параметром --dev 1."
 
-#: polyhost/host.py:3073 polyhost/host.py:3490
+#: polyhost/host.py:2611 polyhost/host.py:3028
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "Дата выпуска: {date}"
 
-#: polyhost/forwarder.py:999 polyhost/host.py:3074
+#: polyhost/forwarder.py:999 polyhost/host.py:2612
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "Доступна версия {version}."
 
-#: polyhost/forwarder.py:1000 polyhost/host.py:3075
+#: polyhost/forwarder.py:1000 polyhost/host.py:2613
 msgid "Update PolyKybdHost"
 msgstr "Обновить PolyKybdHost"
 
-#: polyhost/host.py:3079
+#: polyhost/host.py:2617
 msgid "Download, install, and restart now?"
 msgstr "Загрузить, установить и перезапустить сейчас?"
 
-#: polyhost/forwarder.py:1027 polyhost/host.py:3090
+#: polyhost/forwarder.py:1027 polyhost/host.py:2628
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "Загрузка v{version}…"
 
-#: polyhost/forwarder.py:1068 polyhost/host.py:3215
+#: polyhost/forwarder.py:1068 polyhost/host.py:2753
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "Не удалось запустить ретранслятор обновления; обновление не завершено. Подробности см. в журнале."
 
-#: polyhost/forwarder.py:1080 polyhost/host.py:3230
+#: polyhost/forwarder.py:1080 polyhost/host.py:2768
 msgid "Update failed"
 msgstr "Ошибка обновления"
 
-#: polyhost/forwarder.py:1080 polyhost/host.py:3230
+#: polyhost/forwarder.py:1080 polyhost/host.py:2768
 msgid "The update did not finish."
 msgstr "Обновление не завершено."
 
-#: polyhost/host.py:3377
+#: polyhost/host.py:2915
 #, python-brace-format
 msgid "{n} keyboard font bundle is out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
 msgid_plural "{n} keyboard font bundles are out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
@@ -5071,28 +5061,28 @@ msgstr[0] "{n} набор шрифтов клавиатуры устарел, а
 msgstr[1] "{n} набора шрифтов клавиатуры устарели, а автопрошивка выключена. Используйте Обновления → Обновить шрифты клавиатуры."
 msgstr[2] "{n} наборов шрифтов клавиатуры устарели, а автопрошивка выключена. Используйте Обновления → Обновить шрифты клавиатуры."
 
-#: polyhost/host.py:3428
+#: polyhost/host.py:2966
 msgid "PolyKybd Firmware Update"
 msgstr "Обновление микропрограммы PolyKybd"
 
-#: polyhost/host.py:3429
+#: polyhost/host.py:2967
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "Доступна новая микропрограмма v{version}. Щёлкните значок в трее, чтобы обновить."
 
-#: polyhost/host.py:3446 polyhost/host.py:3487
+#: polyhost/host.py:2984 polyhost/host.py:3025
 msgid "The keyboard must be connected to update the firmware."
 msgstr "Для обновления микропрограммы клавиатура должна быть подключена."
 
-#: polyhost/host.py:3452
+#: polyhost/host.py:2990
 msgid "Checking for firmware update…"
 msgstr "Проверка обновления микропрограммы…"
 
-#: polyhost/host.py:3466 polyhost/host.py:3476 polyhost/host.py:3479
+#: polyhost/host.py:3004 polyhost/host.py:3014 polyhost/host.py:3017
 msgid "PolyKybd Firmware"
 msgstr "Микропрограмма PolyKybd"
 
-#: polyhost/host.py:3467
+#: polyhost/host.py:3005
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -5103,63 +5093,63 @@ msgstr ""
 "\n"
 "На вашей клавиатуре v{current}. Обычно это означает, что сборка выпуска завершилась с ошибкой — файл микропрограммы появится на странице выпуска, когда это исправят."
 
-#: polyhost/host.py:3477
+#: polyhost/host.py:3015
 msgid "No firmware release could be found."
 msgstr "Выпуск микропрограммы не найден."
 
-#: polyhost/host.py:3480
+#: polyhost/host.py:3018
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "У вас последняя микропрограмма (v{version})."
 
-#: polyhost/host.py:3492
+#: polyhost/host.py:3030
 #, python-brace-format
 msgid "Installed: v{version}"
 msgstr "Установлено: v{version}"
 
-#: polyhost/host.py:3493
+#: polyhost/host.py:3031
 msgid "Installed: unknown (the keyboard did not report its version)"
 msgstr "Установлено: неизвестно (клавиатура не сообщила свою версию)"
 
-#: polyhost/host.py:3494
+#: polyhost/host.py:3032
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "Доступна микропрограмма {version}."
 
-#: polyhost/host.py:3496
+#: polyhost/host.py:3034
 msgid "Both halves update over HID and reboot automatically."
 msgstr "Обе половины обновляются по HID и перезагружаются автоматически."
 
-#: polyhost/host.py:3499
+#: polyhost/host.py:3037
 msgid "This update changes your stored keymap once:"
 msgstr "Это обновление однократно изменяет сохранённую раскладку клавиш:"
 
-#: polyhost/host.py:3501
+#: polyhost/host.py:3039
 msgid "Keys you remapped and your macros stay as they are."
 msgstr "Переназначенные вами клавиши и ваши макросы остаются без изменений."
 
-#: polyhost/host.py:3502
+#: polyhost/host.py:3040
 msgid "Update PolyKybd Firmware"
 msgstr "Обновить микропрограмму PolyKybd"
 
-#: polyhost/host.py:3506
+#: polyhost/host.py:3044
 msgid "Download and flash now?"
 msgstr "Загрузить и прошить сейчас?"
 
-#: polyhost/host.py:3517
+#: polyhost/host.py:3055
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "Загрузка микропрограммы v{version}…"
 
-#: polyhost/host.py:3539 polyhost/host.py:3840
+#: polyhost/host.py:3077 polyhost/host.py:3378
 msgid "Cancelling…"
 msgstr "Отмена…"
 
-#: polyhost/host.py:3576
+#: polyhost/host.py:3114
 msgid "Firmware Update Failed"
 msgstr "Ошибка обновления микропрограммы"
 
-#: polyhost/host.py:3577
+#: polyhost/host.py:3115
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -5170,11 +5160,11 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3683 polyhost/host.py:3725 polyhost/host.py:3733
+#: polyhost/host.py:3221 polyhost/host.py:3263 polyhost/host.py:3271
 msgid "Allow access to the keyboard"
 msgstr "Разрешить доступ к клавиатуре"
 
-#: polyhost/host.py:3684
+#: polyhost/host.py:3222
 msgid ""
 "On Linux a udev rule lets this app open the keyboard without root: its HID interface, and its serial port for faster firmware and font-pack updates. The rule file is /etc/udev/rules.d/99-hid.rules.\n"
 "\n"
@@ -5184,7 +5174,7 @@ msgstr ""
 "\n"
 "Система запросит ваш пароль (PolicyKit). После этого отключите клавиатуру и подключите её снова."
 
-#: polyhost/host.py:3726
+#: polyhost/host.py:3264
 msgid ""
 "The udev rule is installed.\n"
 "\n"
@@ -5194,11 +5184,11 @@ msgstr ""
 "\n"
 "Отключите клавиатуру и подключите её снова, чтобы новые разрешения вступили в силу."
 
-#: polyhost/host.py:3734
+#: polyhost/host.py:3272
 msgid "The udev rule was not installed."
 msgstr "Правило udev не было установлено."
 
-#: polyhost/host.py:3735
+#: polyhost/host.py:3273
 #, python-brace-format
 msgid ""
 "{error}\n"
@@ -5211,12 +5201,12 @@ msgstr ""
 "Вы также можете выполнить эти команды в терминале:\n"
 "{commands}"
 
-#: polyhost/host.py:3804 polyhost/host.py:3818 polyhost/host.py:3864
-#: polyhost/host.py:3873 polyhost/host.py:3879
+#: polyhost/host.py:3342 polyhost/host.py:3356 polyhost/host.py:3402
+#: polyhost/host.py:3411 polyhost/host.py:3417
 msgid "Install WinCompose"
 msgstr "Установка WinCompose"
 
-#: polyhost/host.py:3805
+#: polyhost/host.py:3343
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -5226,11 +5216,11 @@ msgstr ""
 "\n"
 "Сборка WinCompose для PolyKybd будет загружена с GitHub, после чего запустится её установщик (Windows попросит подтверждение)."
 
-#: polyhost/host.py:3818
+#: polyhost/host.py:3356
 msgid "Looking for the latest WinCompose release…"
 msgstr "Поиск последнего выпуска WinCompose…"
 
-#: polyhost/host.py:3865
+#: polyhost/host.py:3403
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -5240,7 +5230,7 @@ msgstr ""
 "\n"
 "В браузере откроется страница выпусков — загрузите и запустите установщик оттуда."
 
-#: polyhost/host.py:3874
+#: polyhost/host.py:3412
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -5251,7 +5241,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3880
+#: polyhost/host.py:3418
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -5268,7 +5258,7 @@ msgstr ""
 "Он сохранён в:\n"
 "{path}"
 
-#: polyhost/host.py:3888
+#: polyhost/host.py:3426
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Установщик WinCompose запущен. Когда он завершит работу и WinCompose запустится, PolyKybd автоматически переключится на него."
 
