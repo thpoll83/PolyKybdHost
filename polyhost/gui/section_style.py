@@ -133,3 +133,55 @@ class ColorSection(QFrame):
     def set_title(self, title):
         self.title = title
         self.head.setText(title)
+
+
+def accent_checkbox(box, color):
+    """A checkbox whose box is filled with ``color`` while it is checked, with the
+    tick in the matching ink (Fusion draws the box in Base and the tick in Text).
+    Unchecked, it keeps the palette's look."""
+    if not color:
+        return
+    base_pal = QPalette(box.palette())
+
+    def paint(checked):
+        pal = QPalette(base_pal)
+        if checked:
+            for group in (QPalette.Active, QPalette.Inactive):
+                pal.setColor(group, QPalette.Base, QColor(color))
+                pal.setColor(group, QPalette.Text, QColor(section_colors.title_ink(color)))
+        box.setPalette(pal)
+    paint(box.isChecked())
+    # noinspection PyUnresolvedReferences
+    box.toggled.connect(paint)
+
+
+def accent_button_style(color):
+    """The style sheet of a main action button in ``color`` (Install, Start)."""
+    ink = section_colors.title_ink(color)
+    return (f"QPushButton {{ background: {color}; color: {ink}; border: 1px solid {color}; "
+            f"border-radius: {px(6)}px; padding: {px(4)}px {px(14)}px; font-weight: 600; }}"
+            f"QPushButton:hover {{ border: 2px solid {ink}; }}"
+            f"QPushButton:disabled {{ background: {section_colors.tint(color)}; "
+            f"color: palette(mid); border: 1px solid {section_colors.tint(color)}; }}")
+
+
+def mark_accent_button(button):
+    """Mark ``button`` as its section's main action; ColorSection.adopt colours it."""
+    button.setProperty("sectionAccent", True)
+    return button
+
+
+def adopt(widget, color):
+    """Colour the controls under ``widget`` with ``color``: checkboxes (not the
+    Settings switches, which take the colour themselves) and the buttons marked
+    with :func:`mark_accent_button`."""
+    if not color:
+        return
+    from PyQt5.QtWidgets import QCheckBox, QPushButton
+    for box in widget.findChildren(QCheckBox):
+        if type(box) is QCheckBox and not box.property("sectionAccentDone"):
+            box.setProperty("sectionAccentDone", True)
+            accent_checkbox(box, color)
+    for button in widget.findChildren(QPushButton):
+        if button.property("sectionAccent"):
+            button.setStyleSheet(accent_button_style(color))

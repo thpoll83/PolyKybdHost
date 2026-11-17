@@ -134,6 +134,7 @@ class TutorialsDialog(QDialog):
             if t["category"] == category:
                 lay.addWidget(self._card(t, protocol))
         lay.addStretch(1)
+        section_style.adopt(section, self._colors[row])
         outer.addWidget(section, 1)
         self.scroll.setWidget(page)
 
@@ -155,7 +156,7 @@ class TutorialsDialog(QDialog):
         info = WrapLabel(note)
         muted(info)
         row.addWidget(info, 1)
-        start = QPushButton(_("Start"))
+        start = section_style.mark_accent_button(QPushButton(_("Start")))
         start.setEnabled(ready)
         start.clicked.connect(lambda _checked=False, tid=t["id"]: self._start(tid))
         row.addWidget(start)

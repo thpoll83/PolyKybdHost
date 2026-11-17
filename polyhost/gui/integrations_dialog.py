@@ -109,7 +109,11 @@ class RowsPage(QWidget):
 
         row = QHBoxLayout()
         row.addStretch(1)
-        self.install_button = set_button_icon(QPushButton(_("Install")), "install")
+        self.install_button = section_style.mark_accent_button(
+            set_button_icon(QPushButton(_("Install")), "install"))
+        # The section colour (gui/section_style.py), set by the dialog; rows
+        # added later (the status arrives on a thread) take it in add_row.
+        self.accent_color = None
         self.remove_button = set_button_icon(QPushButton(_("Remove")), "delete")
         # noinspection PyUnresolvedReferences
         self.install_button.clicked.connect(lambda: self._apply(True))
@@ -150,6 +154,8 @@ class RowsPage(QWidget):
         """One program: its checkbox, the file that changes, the state below."""
         row = self.grid.rowCount() if self._boxes else 0
         box = QCheckBox(label)
+        section_style.accent_checkbox(box, self.accent_color)
+        box.setProperty("sectionAccentDone", True)
         box.setChecked(checked)
         box.setEnabled(enabled)
         # noinspection PyUnresolvedReferences
@@ -454,6 +460,8 @@ class IntegrationsDialog(QDialog):
                 heading.hide()
             section = section_style.ColorSection(title, color)
             section.body_layout.addWidget(page)
+            page.accent_color = color
+            section_style.adopt(page, color)
             # Each page scrolls on its own: a long result list or a small
             # screen must not push the Install button out of reach.
             scroll = QScrollArea()

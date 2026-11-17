@@ -12,8 +12,9 @@ the only way to tell sections apart. The sidebar entry and the band name each on
 There are two sets of the same hues. Light mode uses darker colours, dark mode
 lighter ones, so each has at least 3:1 contrast against the window colour of its
 theme (#f0f0f0 light, #505050 dark, gui/theme.py). The one exception is yellow in
-light mode: 2.2:1, because a darker yellow turns olive. The title text on its band
-is near-black at 6.5:1, and the stripe stays visible.
+light mode: 2.0:1, the floor the tray icon colours use, because a darker yellow
+turns olive. The title text on its band
+is near-black at 7.2:1, and the stripe stays visible.
 
 A section added after the eighth takes the neutral grey, or shares a hue; a new
 hue needs the scheme checked again in both themes.
@@ -23,7 +24,7 @@ hue needs the scheme checked again in both themes.
 SLOTS = (
     ("red",    "#d15c56", "#ee857e"),
     ("orange", "#cb6620", "#e88e59"),
-    ("yellow", "#be9f00", "#edcc48"),   # 2.2:1 in light mode, see above
+    ("yellow", "#c5aa00", "#efd551"),   # 2.0:1 in light mode, see above
     ("green",  "#25984d", "#5cb572"),
     ("teal",   "#17959b", "#0eb4bb"),
     ("blue",   "#2f8adc", "#60aaf3"),
@@ -33,7 +34,7 @@ SLOTS = (
 
 # The lowest contrast a slot may have against its theme's window colour.
 MIN_CONTRAST = 3.0
-MIN_CONTRAST_EXCEPTIONS = {("yellow", "light"): 2.2}
+MIN_CONTRAST_EXCEPTIONS = {("yellow", "light"): 2.0}
 
 # Developer and Other: settings most users never open, so no hue of their own.
 NEUTRAL = ("grey", "#6b7280", "#c0c4cc")
