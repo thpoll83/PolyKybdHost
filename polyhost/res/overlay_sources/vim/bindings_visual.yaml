@@ -422,17 +422,17 @@ bindings:
   source: :help CTRL-]
 - key: D
   icon: delete.png
-  label: Delete selection
+  label: Delete
   shared: false
   source: :help v_d
 - key: X
   icon: delete.png
-  label: Delete selection
+  label: Delete
   shared: false
   source: :help v_x
 - key: DELETE
   icon: delete.png
-  label: Delete selection
+  label: Delete
   shared: false
   source: :help v_x
 - key: D
@@ -451,7 +451,7 @@ bindings:
   source: :help v_X
 - key: Y
   icon: copy.png
-  label: Yank selection
+  label: Yank
   shared: false
   source: :help v_y
 - key: Y
@@ -463,12 +463,12 @@ bindings:
   source: :help v_Y
 - key: C
   icon: change.png
-  label: Change selection
+  label: Change
   shared: false
   source: :help v_c
 - key: S
   icon: change.png
-  label: Change selection
+  label: Change
   shared: false
   source: :help v_s
 - key: C
@@ -558,7 +558,7 @@ bindings:
   source: :help v_O
 - key: R
   icon: replace_char.png
-  label: Replace every character
+  label: Replace character
   shared: false
   source: :help v_r
 - key: P
@@ -569,21 +569,21 @@ bindings:
 - key: P
   mods:
   - SHIFT
-  icon: paste.png
+  icon: put_keep.png
   label: Put over selection, keep register
   shared: false
   source: :help v_P
 - key: I
   mods:
   - SHIFT
-  icon: insert_bol.png
+  icon: insert_block.png
   label: Insert before block
   shared: false
   source: :help v_b_I
 - key: A
   mods:
   - SHIFT
-  icon: append_eol.png
+  icon: append_block.png
   label: Append after block
   shared: false
   source: :help v_b_A
@@ -591,53 +591,53 @@ bindings:
   mods:
   - SHIFT
   icon: cmdline.png
-  label: Command line on selection
+  label: Command line
   shared: false
   source: ':help v_:'
 - key: V
   icon: visual_char.png
-  label: Visual mode (or stop)
+  label: Visual mode
   shared: false
   source: :help v_v
 - key: V
   mods:
   - SHIFT
   icon: visual_line.png
-  label: Visual line mode (or stop)
+  label: Visual line mode
   shared: false
   source: :help v_V
 - key: V
   mods:
   - CTRL
   icon: visual_block.png
-  label: Visual block mode (or stop)
+  label: Visual block mode
   shared: false
   source: :help v_CTRL-V
 - key: K
   mods:
   - SHIFT
   icon: book_q.png
-  label: Look up selection
+  label: Look up keyword
   shared: false
   source: :help v_K
 - key: A
   mods:
   - CTRL
   icon: increment.png
-  label: Add 1 to numbers
+  label: Add 1 to number
   shared: false
   source: :help v_CTRL-A
 - key: X
   mods:
   - CTRL
   icon: decrement.png
-  label: Subtract 1 from numbers
+  label: Subtract 1 from number
   shared: false
   source: :help v_CTRL-X
 - key: C
   mods:
   - CTRL
   icon: esc.png
-  label: Stop Visual mode
+  label: Back to Normal mode
   shared: false
   source: :help v_CTRL-C

@@ -58,7 +58,7 @@ SPEC = {
     "anchor": "right",
     "region": [40, 40],
     "margin": 0,
-    "mode": "alpha",
+    "mode": "auto",
     # ESC: icons/esc_<mode>.png, the mode word beside Vim's logo, drawn 1:1
     # over the whole cell without the ESC legend (fetch_icons.py, esc_mark()).
     "program_icon_mode": "alpha",
@@ -114,6 +114,9 @@ def write(mode: str, keys: dict) -> Path:
                 bindings=bindings_for(keys, mode))
     path = HERE / f"bindings_{mode}.yaml"
     body = yaml.safe_dump(spec, sort_keys=False, allow_unicode=True, width=200)
+    # The note every overlay spec carries on its `mode` line (added by #688).
+    body = body.replace("\nmode: auto\n", "\nmode: auto     # one rule per icon file: see "
+                        "HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py\n", 1)
     path.write_text(HEADER.format(mode=mode) + body, encoding="utf-8")
     return path
 

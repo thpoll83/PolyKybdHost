@@ -32,7 +32,7 @@ bindings:
   mods:
   - CTRL
   icon: del_line_before.png
-  label: Delete entered text in line
+  label: Delete to start of line
   shared: false
   source: :help i_CTRL-U
 - key: H
@@ -45,14 +45,14 @@ bindings:
 - key: T
   mods:
   - CTRL
-  icon: indent_inc.png
+  icon: indent_line_inc.png
   label: Indent line
   shared: false
   source: :help i_CTRL-T
 - key: D
   mods:
   - CTRL
-  icon: indent_dec.png
+  icon: indent_line_dec.png
   label: Unindent line
   shared: false
   source: :help i_CTRL-D
@@ -73,7 +73,7 @@ bindings:
 - key: R
   mods:
   - CTRL
-  icon: paste.png
+  icon: paste_reg.png
   label: Insert register
   shared: false
   source: :help i_CTRL-R
