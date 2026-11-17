@@ -44,7 +44,10 @@ BORROWED = {
     **{f"{n}.png": "vectorcraft" for n in (
         "select", "directselect", "freetransform", "width", "pen", "type",
         "pencil", "paintbrush", "blobbrush", "eraser", "rectangle", "ellipse",
-        "line", "eyedropper", "hand", "zoom", "new", "open", "save", "saveas",
+        "line", "eyedropper", "hand", "new", "open", "save", "saveas",
+        # one icon per action (2026-11-15): the zoom TOOL (zoom-in glyph + cursor
+        # badge) and the "hold Space" hand (../space_hint.py), drawn there
+        "zoomtool", "space_hand",
         "undo", "redo", "cut", "copy", "paste", "pasteinplace", "selectall",
         "deselect", "clear", "bringforward", "sendbackward", "tofront", "toback",
         "zoomin", "zoomout", "fitall", "actualsize", "place", "snaptopoint",

@@ -102,3 +102,12 @@ the ovals are cut out. It is drawn at the keycap size, so the generator copies
 it 1:1. No AGPL file from the Logseq repo is copied; the mark is used only to
 name the app this overlay is for, with no endorsement implied. `fetch_icons.py`
 leaves a committed `logseq.png` as it is.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `pasteoneblock_1.png` | `paste.png` with the tag "1", drawn by `../action_variants.py` | same as the base icon |

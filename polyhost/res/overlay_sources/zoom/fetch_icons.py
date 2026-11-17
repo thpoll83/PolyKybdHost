@@ -35,6 +35,7 @@ from PIL import Image
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch, number_badge  # noqa: E402
+import action_variants  # noqa: E402
 
 RECLAIMED = {"zoom.png"}
 
@@ -140,6 +141,13 @@ FLUENT = {
 }
 
 
+# Different actions that start from one icon: each gets its own picture
+# (one icon per action, maintainer 2026-11-15). See action_variants.py.
+VARIANTS = {
+    "speakergallery.png": ("combine", "speakerview.png", "galleryview.png"),
+}
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
@@ -154,6 +162,7 @@ def main() -> int:
         print(f"  {name}  <- committed asset (left as-is)" if f.exists()
               else f"  !! {name} MISSING -- restore it from git, it is not fetchable")
     print(f"Wrote {n} icons to {out}")
+    action_variants.make(out, VARIANTS)
     return 0
 
 

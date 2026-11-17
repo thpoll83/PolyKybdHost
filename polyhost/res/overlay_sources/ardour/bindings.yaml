@@ -37,6 +37,9 @@ program_icon_anchor: right
 program_icon_region: [37, 32]
 program_icon_margin: 0
 
+# A 40x40 composite (glyph + word, drawn 1-bit by fetch_icons.py) is placed 1:1.
+_word: &word { region: [40, 40], mode: alpha }
+
 bindings:
   - { key: EQUAL, mods: [], label: "Zoom in" }  # Editing/temporal-zoom-in
   - { key: MINUS, mods: [], label: "Zoom out" }  # Editing/temporal-zoom-out
@@ -172,8 +175,8 @@ bindings:
   - { key: M, mods: [CTRL], icon: mixer.png, label: "Mixer window", only: [macos] }  # Common/show-mixer
   - { key: R, mods: [ALT], icon: recorder.png, label: "Recorder page", except: [macos] }  # Common/show-recorder
   - { key: R, mods: [CTRL], icon: recorder.png, label: "Recorder page", only: [macos] }  # Common/show-recorder
-  - { key: C, mods: [ALT], icon: liveloops.png, label: "Cue page", except: [macos] }  # Common/show-trigger
-  - { key: C, mods: [CTRL], icon: liveloops.png, label: "Cue page", only: [macos] }  # Common/show-trigger
+  - { key: C, mods: [ALT], icon: cuepage.png, label: "Cue page", except: [macos] }  # Common/show-trigger
+  - { key: C, mods: [CTRL], icon: cuepage.png, label: "Cue page", only: [macos] }  # Common/show-trigger
   - { key: L, mods: [ALT], icon: memlocs.png, label: "Locations window", except: [macos] }  # Window/toggle-locations
   - { key: L, mods: [CTRL], icon: memlocs.png, label: "Locations window", only: [macos] }  # Window/toggle-locations
   - { key: A, mods: [ALT, SHIFT], icon: routing.png, label: "Audio connections", except: [macos] }  # Window/toggle-audio-connection-manager
@@ -191,7 +194,7 @@ bindings:
   - { key: F, mods: [GUI, CTRL], icon: fullscreen.png, label: "Maximise editor", only: [macos] }  # Common/ToggleMaximalEditor
   - { key: F, mods: [CMDCTRL], icon: follow.png, label: "Follow playhead" }  # EditorEditing/toggle-follow-playhead
   - { key: F, mods: [SHIFT], icon: stationary.png, label: "Stationary playhead" }  # EditorEditing/toggle-stationary-playhead
-  - { key: A, mods: [], icon: solo.png, label: "Solo selection" }  # Transport/solo-selection
+  - { key: A, mods: [], icon: solosel.png, label: "Solo selection", <<: *word }  # Transport/solo-selection
   - { key: S, mods: [ALT], icon: solo.png, label: "Solo track", except: [macos] }  # Editor/track-solo-toggle
   - { key: S, mods: [CTRL], icon: solo.png, label: "Solo track", only: [macos] }  # Editor/track-solo-toggle
   - { key: B, mods: [SHIFT], icon: arm.png, label: "Track record enable" }  # Editor/track-record-enable-toggle

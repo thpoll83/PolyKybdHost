@@ -64,7 +64,7 @@ ICONS = {
     "read": "fa:scroll",
     "shout": "fa:bullhorn",
     "attack": "mdi:sword-cross",
-    "wield": "mdi:sword",
+    "wield": "gi:delapouite/sword-brandish",   # a hand on the hilt; mdi:sword is attack_nw
     "look": "fa:eye",
     "cast": "fa:wand-sparkles",
     "repeat": "fa:rotate-right",

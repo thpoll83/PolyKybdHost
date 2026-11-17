@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
-from polyhost.res.overlay_sources import brand_marks, icon_fetch  # noqa: E402
+from polyhost.res.overlay_sources import action_variants, brand_marks, icon_fetch  # noqa: E402
 
 FLUENT = {
     # --- general ---
@@ -26,7 +26,7 @@ FLUENT = {
     "tabteams": "People Team",
     "tabcontacts": "Contact Card",
     "tabcalling": "Call",
-    "tabmeetings": "Video",
+    "tabmeetings": "Calendar Video",
     "tabinsights": "Data Pie",
     "tabvoicemail": "ms:voicemail",
     "tabwhiteboards": "Whiteboard",
@@ -50,7 +50,6 @@ FLUENT = {
     "mentionsme": "ms:alternate_email",
     "mentionsall": "ms:groups",
     "flagged": "Flag",
-    "spacemessages": "Chat",
     "spacecontent": "Folder",
     "peopletab": "People",
     "linkstab": "Link Multiple",
@@ -155,12 +154,20 @@ FLUENT = {
 }
 
 
+# Different actions that start from one icon: each gets its own picture
+# (one icon per action, maintainer 2026-11-15). See action_variants.py.
+VARIANTS = {
+    "spacemessages_tab.png": ("tag", "chat.png", "TAB"),
+}
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
     icon_fetch.fluent(FLUENT, out)
     brand_marks.ensure(out / "webex.png", "webex")
     print(f"Wrote icons to {out}")
+    action_variants.make(out, VARIANTS)
     return 0
 
 

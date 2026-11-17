@@ -159,6 +159,7 @@ lit from grey 90 of 255.
 | `chat.png` | game-icons.net `delapouite/chat-bubble` | delapouite | CC BY 3.0 |
 | `technology.png` | game-icons.net `lorc/round-bottom-flask` | lorc | CC BY 3.0 |
 | `logistics.png` | game-icons.net `delapouite/cardboard-box-closed` | delapouite | CC BY 3.0 |
+| `logisticsrequests.png` | Material Symbols `move_to_inbox` (Alt+L, personal logistics requests on / off) | Google | Apache-2.0 |
 | `crafting.png` | game-icons.net `lorc/gear-hammer` | lorc | CC BY 3.0 |
 | `artillery.png` | game-icons.net `lorc/cannon` | lorc | CC BY 3.0 |
 | `newdecon.png` | game-icons.net `lorc/wrecking-ball` | lorc | CC BY 3.0 |

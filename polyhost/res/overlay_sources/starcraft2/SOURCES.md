@@ -133,6 +133,7 @@ height. The game's logo art is not used.
 | `rotatecw.png` | Font Awesome Free 6.5.2 `rotate-right` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `rotateccw.png` | Font Awesome Free 6.5.2 `rotate-left` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `follow.png` | Font Awesome Free 6.5.2 `crosshairs` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `followtoggle.png` | Font Awesome Free 6.5.2 `crosshairs` and `toggle-on` (solid), composed by `fetch_icons.py` (Ctrl+Shift+F follows until pressed again; Ctrl+F, while held, keeps `follow.png`) | Fonticons, Inc. | CC BY 4.0 |
 | `chat.png` | game-icons.net `delapouite/chat-bubble` | delapouite | CC BY 3.0 |
 | `chatall.png` | game-icons.net `delapouite/megaphone` | delapouite | CC BY 3.0 |
 | `chatallies.png` | game-icons.net `lorc/conversation` | lorc | CC BY 3.0 |

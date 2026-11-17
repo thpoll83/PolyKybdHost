@@ -39,6 +39,23 @@ FLUENT = {
     "rightsidebar": "Panel Right",
     "back": "Arrow Left",
     "forward": "Arrow Right",
+    # Per-view sets (gen_obsidian_modes.py): canvas and graph view keys.
+    "zoomfit": "Zoom Fit",
+    "zoomselection": "Select Object",
+    "zoomin": "Zoom In",
+    "zoomout": "Zoom Out",
+    "removecard": "Delete",
+    # Graph view: the arrow keys move the graph (a chevron), Shift moves it
+    # faster (a double chevron). The arrows of back/forward stay with
+    # Navigate back/forward, a different action.
+    "panleft": "ms:keyboard_arrow_left",
+    "panright": "ms:keyboard_arrow_right",
+    "panup": "ms:keyboard_arrow_up",
+    "pandown": "ms:keyboard_arrow_down",
+    "fastleft": "ms:keyboard_double_arrow_left",
+    "fastright": "ms:keyboard_double_arrow_right",
+    "fastup": "ms:keyboard_double_arrow_up",
+    "fastdown": "ms:keyboard_double_arrow_down",
 }
 
 

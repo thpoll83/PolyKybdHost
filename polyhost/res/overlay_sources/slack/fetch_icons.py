@@ -26,6 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import action_variants  # noqa: E402
 import icon_fetch  # noqa: E402
 
 RECLAIMED = {
@@ -56,6 +57,15 @@ FLUENT = {
     "forward": "Arrow Right",
 }
 
+# Different actions that start from one icon: each gets its own picture
+# (one icon per action, maintainer 2026-11-15). See action_variants.py.
+VARIANTS = {
+    "channel_prev.png": ("arrow", "channel.png", "up"),
+    "channel_next.png": ("arrow", "channel.png", "down"),
+    "unreads_prev.png": ("arrow", "unreads.png", "up"),
+    "unreads_next.png": ("arrow", "unreads.png", "down"),
+}
+
 
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
@@ -65,6 +75,7 @@ def main() -> int:
         f = out / name
         print(f"  {name}  <- committed asset (left as-is)" if f.exists()
               else f"  !! {name} MISSING -- restore it from git, it is not fetchable")
+    action_variants.make(out, VARIANTS)
     print(f"Wrote {n} icons to {out}")
     return 0
 

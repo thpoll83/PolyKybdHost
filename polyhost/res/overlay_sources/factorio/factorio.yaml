@@ -118,7 +118,7 @@ bindings:
   - { key: Y, mods: [ALT], icon: discharge.png, label: "Discharge defense remote" }
   - { key: A, mods: [ALT], icon: spidertron.png, label: "Spidertron remote" }
   - { key: E, mods: [ALT], icon: exoskeleton.png, label: "Toggle exoskeleton" }
-  - { key: L, mods: [ALT], icon: logistics.png, label: "Toggle personal logistics requests" }
+  - { key: L, mods: [ALT], icon: logisticsrequests.png, label: "Toggle personal logistics requests" }
   - { key: F, mods: [ALT], icon: roboport.png, label: "Toggle personal roboport" }
 
   # Miscellaneous and debug

@@ -23,6 +23,7 @@ from polyhost.res.overlay_sources.aoe2 import program_mark  # noqa: E402
 from polyhost.res.overlay_sources.cnc_remastered import fetch_icons as cnc  # noqa: E402
 from polyhost.res.overlay_sources.cnc_remastered import wz_units  # noqa: E402
 from polyhost.res.overlay_sources.openra import fetch_icons as ora  # noqa: E402
+from polyhost.res.overlay_sources.zeroad import fetch_icons as zeroad  # noqa: E402
 
 ORA_ICONS = Path(__file__).resolve().parents[1] / "openra" / "icons"
 
@@ -58,9 +59,13 @@ ICONS = {
     "prevunit": "fa:backward-step",
 }
 
-# F4..F6 skip 10 s, 30 s, 2 min: one picture, a file each, so each key can
-# have its own recipe.
-SKIPS = ("skip10", "skip30", "skip120")
+# F4..F6 skip 10 s, 30 s, 2 min: the skip picture over the time it skips, a
+# file each (skip_icons()), so each key has its own image and its own recipe.
+SKIPS = {"skip10": "10s", "skip30": "30s", "skip120": "2m"}
+SKIP_SIZE = (30, 40)        # the key area of F4..F6 (dune_legacy.yaml)
+SKIP_PICTURE_H = 20         # the skip picture's height at the top of the area
+SKIP_TEXT_H = 13            # the time's largest height at the bottom
+SKIP_GAP = 4                # unlit rows between the picture and the time
 RASTERIZE = Path(__file__).resolve().parent / "rasterize.yaml"
 ZOOM_LEVELS = "123"                             # F1..F3 in Dune Legacy: zoom level 1..3
 
@@ -93,6 +98,35 @@ def _enclosed(mask):
         if (grown == outside).all():
             return ~mask & ~outside
         outside = grown
+
+
+def skip_icons(out: Path) -> None:
+    """skip10/30/120.png (F4..F6): the skip picture dithered like the other
+    icons in the top SKIP_PICTURE_H rows of a SKIP_SIZE area, and the time it
+    skips (DejaVu Sans Bold) at the bottom right. Reads _skip.png, the plain
+    render of ICONS["skip"]."""
+    import numpy as np
+    from PIL import Image
+    w, h = SKIP_SIZE
+    alpha = Image.open(out / "_skip.png").convert("RGBA").getchannel("A")
+    alpha = alpha.crop(alpha.getbbox())
+    scale = 320 / max(alpha.size)
+    alpha = alpha.resize((round(alpha.width * scale), round(alpha.height * scale)), Image.LANCZOS)
+    mask = np.asarray(alpha) > 127
+    pic = wz_units.keycap(cnc.relief(mask, seed=len("skip")), mask, size=(w, SKIP_PICTURE_H),
+                          mirror=False)
+    # One text height for the three keys: the largest at which every time fits.
+    th = next(t for t in range(SKIP_TEXT_H, 5, -1)
+              if all(zeroad._digit(x, t).shape[1] <= w for x in SKIPS.values()))
+    for stem, text in SKIPS.items():
+        canvas = np.zeros((h, w), bool)
+        top = h - th - SKIP_GAP - pic.shape[0]
+        canvas[top:top + pic.shape[0], w - pic.shape[1]:] = pic
+        g = zeroad._digit(text, th)
+        canvas[h - g.shape[0]:, w - g.shape[1]:] = g
+        cnc._save_mask(canvas, out / f"{stem}.png")
+    (out / "_skip.png").unlink()
+    print(f"  {', '.join(SKIPS)}.png  <- {ICONS['skip']} + {', '.join(SKIPS.values())}")
 
 
 def zoom_levels(out: Path) -> None:
@@ -168,10 +202,9 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
     for stem in SHARED:
         shutil.copy(ORA_ICONS / f"{stem}.png", out / f"{stem}.png")
-    cnc.render(ICONS, out)
+    cnc.render({**ICONS, "_skip": ICONS["skip"]}, out)
     dither_icons(out)
-    for stem in SKIPS:
-        shutil.copy(out / "skip.png", out / f"{stem}.png")
+    skip_icons(out)
     zoom_levels(out)
     rasterize(out)
     programs(out)

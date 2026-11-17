@@ -1,0 +1,67 @@
+{
+  "name": "polykybd-jupyterlab-context-reporter",
+  "version": "1.0.0",
+  "description": "Reports the JupyterLab activity and notebook mode (command or edit) to PolyKybdHost, so the keyboard shows the keys that apply.",
+  "keywords": [
+    "jupyter",
+    "jupyterlab",
+    "jupyterlab-extension",
+    "polykybd"
+  ],
+  "homepage": "https://github.com/thpoll83/PolyKybdHost/tree/main/jupyterlab-extension",
+  "author": {
+    "name": "PolyKybd"
+  },
+  "license": "GPL-3.0-or-later",
+  "files": [
+    "lib/**/*.{d.ts,js}",
+    "schema/*.json",
+    "style/*.{css,js}"
+  ],
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "style": "style/index.css",
+  "styleModule": "style/index.js",
+  "sideEffects": [
+    "style/*.css",
+    "style/index.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thpoll83/PolyKybdHost.git"
+  },
+  "scripts": {
+    "build": "tsc --sourceMap false && jupyter labextension build .",
+    "build:lib": "tsc --sourceMap false",
+    "test": "tsc -p tsconfig.test.json && node --test test/context.test.js"
+  },
+  "dependencies": {
+    "@jupyterlab/application": "^4.0.0",
+    "@jupyterlab/console": "^4.0.0",
+    "@jupyterlab/fileeditor": "^4.0.0",
+    "@jupyterlab/notebook": "^4.0.0",
+    "@jupyterlab/services": "^7.0.0",
+    "@jupyterlab/settingregistry": "^4.0.0",
+    "@jupyterlab/terminal": "^4.0.0",
+    "@lumino/widgets": "^2.0.0"
+  },
+  "devDependencies": {
+    "@jupyterlab/builder": "^4.0.0",
+    "typescript": "~5.5.4"
+  },
+  "jupyterlab": {
+    "extension": true,
+    "outputDir": "polykybd_jupyterlab/labextension",
+    "schemaDir": "schema",
+    "discovery": {
+      "server": {
+        "managers": [
+          "pip"
+        ],
+        "base": {
+          "name": "polykybd_jupyterlab"
+        }
+      }
+    }
+  }
+}

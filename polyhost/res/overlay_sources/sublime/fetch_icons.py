@@ -23,12 +23,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import editor_glyphs  # noqa: E402
 import brand_marks, icon_fetch  # noqa: E402
+import action_variants  # noqa: E402
 
 FLUENT = {
     # navigation -- Sublime's "Goto Anything" family
     "gotoanything": "Document Search",
     "commandpalette": "Apps List Detail",
-    "gotosymbol": "Code",
+    "gotosymbol": "Symbols",
     "gotoline": "Text Number Format",
     "gotoword": "Text Word Count",
     # find / replace
@@ -47,10 +48,9 @@ FLUENT = {
     "swapup": "Arrow Sort Up",
     "swapdown": "Arrow Sort Down",
     "matchbracket": "Braces",
-    "selectbrackets": "Braces",
     "autocomplete": "Text Grammar Wand",
-    "insertafter": "Arrow Enter",
-    "insertbefore": "Arrow Enter",
+    "insertafter": "Text Add Space After",
+    "insertbefore": "Text Add Space Before",
     "pasteindent": "Clipboard Paste",
     "softundo": "Arrow Undo",
     "redo": "Arrow Redo",
@@ -62,6 +62,7 @@ FLUENT = {
     "fold": "Text Collapse",
     "unfold": "Text Expand",
     "bookmark": "Bookmark",
+    "bookmark_toggle": "Bookmark Add",
     "wraptag": "Code",
     # macOS-only actions (see ../sublime_mac/bindings.yaml -- it shares this folder)
     "cycletableft": "Chevron Left",
@@ -76,6 +77,15 @@ DRAWN = ["multicursor", "cursorabove", "cursorbelow", "selectline"]
 BORROWED = {"deleteline.png": "jetbrains"}
 
 
+# Different actions that start from one icon: each gets its own picture
+# (one icon per action, maintainer 2026-11-15). See action_variants.py.
+VARIANTS = {
+    "selectbrackets_sel.png": ("tag", "matchbracket.png", "SEL"),
+    "closetag.png": ("tag", "wraptag.png", "END"),
+    "bookmark_next.png": ("arrow", "bookmark.png", "down"),
+}
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
@@ -84,6 +94,7 @@ def main() -> int:
     # Sublime's mark is monochrome and CC0 via Simple Icons — use the real one.
     brand_marks.ensure(out / "sublime.png", "sublimetext")
     print(f"Wrote {n} icons (+ program mark) to {out}")
+    action_variants.make(out, VARIANTS)
     return 0
 
 

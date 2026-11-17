@@ -119,6 +119,7 @@ PARTS = {
     "_down": "Arrow Down",
     "_left": "Arrow Left",
     "_right": "Arrow Right",
+    "_orient": "ms:explore",
 }
 
 # file stem -> (glyph, word under it)
@@ -133,6 +134,8 @@ COMPOSITES = {
     "view_right": ("_cube", "RGHT"),
     "view_default": ("_cube", "DEF"),
     "view_plate": ("_cube", "PLAT"),
+    # Orca Shift+Q orients every object on the plate; Q (orient.png) the selection
+    "orient_plate": ("_orient", "PLAT"),
     # painting gizmos
     "paint_supports": ("_brush", "SUP"),
     "paint_seam": ("_brush", "SEAM"),

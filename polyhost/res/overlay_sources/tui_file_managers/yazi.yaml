@@ -85,7 +85,7 @@ bindings:
   - { key: T, mods: [], icon: tab_group.png, label: "Tab..." }               # tt tr
 
   # --- Shift ------------------------------------------------------------------
-  - { key: Q, mods: [SHIFT], icon: quit.png, label: "Quit, no cwd file" }
+  - { key: Q, mods: [SHIFT], icon: quit_nocd.png, label: "Quit, no cwd file" }
   - { key: G, mods: [SHIFT], icon: last.png, region: [40, 32], label: "Last file" }
   - { key: H, mods: [SHIFT], icon: back.png, label: "Back" }
   - { key: L, mods: [SHIFT], icon: forward.png, label: "Forward" }

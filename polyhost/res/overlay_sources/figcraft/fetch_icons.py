@@ -18,6 +18,7 @@ guarded: a committed file is left as-is.
 from __future__ import annotations
 
 import io
+import sys
 import urllib.request
 from pathlib import Path
 
@@ -56,7 +57,6 @@ FLUENT = {
     "nextregion": "Arrow Circle Right",
     "prevregion": "Arrow Circle Left",
     "selarea": "ms:select",
-    "opacity": "ms:opacity",
     "zoomtool": "Zoom In",
     "zoomtoolout": "Zoom Out",
     "section": "Board",
@@ -201,17 +201,73 @@ _DERIVED = {
 }
 
 
+# Same action as a sibling ArtCraft set -> the same drawing (byte-identical copy):
+# the "hold Space" hand (VectorCraft) and the 1..0 opacity keys (PhotoCraft: the
+# same ms:opacity glyph over the percentage).
+FROM_CRAFT = {"space_hand.png": "vectorcraft"}
+FROM_CRAFT.update({f"opacity{k}.png": "photocraft" for k in "1234567890"})
+WORDS = {
+    "copyprops": ("copy", "PROP"),     # Cmd+Alt+C, Copy properties
+    "pasteprops": ("paste", "PROP"),   # Cmd+Alt+V, Paste properties
+    # Z / Alt+Z held: the zoom tool while the key is down. The bare glyphs are the
+    # same drawings as the Zoom in / Zoom out concepts of Shift+= / Shift+-.
+    "zoomtoolhold": ("zoomtool", "HOLD"),
+    "zoomtoolouthold": ("zoomtoolout", "HOLD"),
+}
+SPACE_HAND = None
+BADGED = {}
+
+
+# ------------------------------------------------- one icon per action (2026-11-15)
+# Two keys share an image only when they do the same thing (maintainer, 2026-11-15).
+# The variants below are drawn from glyphs this set already has:
+# * WORDS: the glyph over a short word, 1-bit at 40x40, with the glyph + word code
+#   of ../ghidra/fetch_icons.py (as the Binary Ninja set does); placed 1:1.
+# * SPACE_HAND: the hand with an arrow on each side, the "hold Space" pan hint of
+#   ../space_hint.py; placed 1:1 on the whole 72x40 key.
+# * BADGED: dcc_glyphs.with_badge, the glyph at the upper left, a second one at
+#   the lower right.
+# All are guarded: a committed PNG is left as it is.
+def _ghidra_helpers():
+    """`../ghidra/fetch_icons.py` as a module, for its glyph + word composites."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "ghidra_fetch_icons", Path(__file__).resolve().parent.parent / "ghidra" / "fetch_icons.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _variants(out: Path) -> None:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+    from polyhost.res.overlay_sources import dcc_glyphs, space_hint
+    g = _ghidra_helpers()
+    g.COMPOSITES, g.ISA = WORDS, {}
+    g.composites(out)
+    if SPACE_HAND:
+        dcc_glyphs.guarded(
+            out / "space_hand.png",
+            lambda q: space_hint.draw(space_hint.glyph_from_png(out / SPACE_HAND, 20), q),
+            f"drawn: {SPACE_HAND} + four arrows (space_hint.py)")
+    for name, (base, badge) in BADGED.items():
+        dcc_glyphs.guarded(out / name,
+                           lambda q, b=base, k=badge: dcc_glyphs.with_badge(out / b, out / k, q),
+                           f"composite ({base} + {badge} badge)")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
     icon_fetch.borrow({f"{n}.png": "figma" for n in FROM_FIGMA}, out)
     icon_fetch.fluent(FLUENT, out)
+    icon_fetch.borrow(FROM_CRAFT, out)
     for fname, fn in _DERIVED.items():
         if (out / fname).exists():
             print(f"  {fname}  <- committed asset (left as-is)")
         else:
             fn(out / fname)
             print(f"  {fname}  <- derived")
+    _variants(out)
     print(f"Wrote icons to {out}")
     return 0
 

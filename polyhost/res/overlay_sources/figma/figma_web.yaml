@@ -12,7 +12,7 @@ region:
 - 36
 - 32
 margin: 0
-mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+mode: auto
 threshold: 150
 program_icon: figma.png
 program_icon_mode: alpha
@@ -220,9 +220,9 @@ bindings:
   mods:
   - CMDCTRL
   - SHIFT
-  icon: pasteover.png
+  icon: pasteoversel.png
   label: Paste over
-  source: ms-fluent/Clipboard Paste (MIT)
+  source: ms-fluent/Clipboard Arrow Right (MIT)
 - key: K
   mods:
   - CMDCTRL
@@ -284,16 +284,16 @@ bindings:
   mods:
   - CMDCTRL
   - ALT
-  icon: copy.png
+  icon: copyprops.png
   label: Copy properties
-  source: ms-fluent/Copy (MIT)
+  source: ms-fluent/Copy (MIT) + material-symbols/tune (Apache-2.0), dcc_glyphs.with_badge
 - key: V
   mods:
   - CMDCTRL
   - ALT
-  icon: paste.png
+  icon: pasteprops.png
   label: Paste properties
-  source: ms-fluent/Clipboard Paste (MIT)
+  source: ms-fluent/Clipboard Paste (MIT) + material-symbols/tune (Apache-2.0), dcc_glyphs.with_badge
 - key: M
   mods:
   - CTRL
@@ -325,17 +325,17 @@ bindings:
 - key: /
   mods:
   - CMDCTRL
-  icon: find.png
+  icon: menusearch.png
   label: Search
-  source: ms-fluent/Search (MIT)
+  source: material-symbols/manage_search (Apache-2.0)
 - key: ''''
   mods:
   - CTRL
   except:
   - macos
-  icon: grid.png
+  icon: pixelgrid.png
   label: Pixel grid
-  source: ms-fluent/Grid (MIT)
+  source: material-symbols/grid_4x4 (Apache-2.0)
 - key: ']'
   mods:
   - CMDCTRL

@@ -18,6 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
+import action_variants  # noqa: E402
 
 BORROWED = {f"tab{d}.png": "winscp" for d in "123456789"}
 
@@ -84,6 +85,17 @@ FLUENT = {
 }
 
 
+# Different actions that start from one icon: each gets its own picture
+# (one icon per action, maintainer 2026-11-15). See action_variants.py.
+VARIANTS = {
+    "closetab_quit.png": ("combine", "close.png", "quit.png"),
+    "highlight_pdf.png": ("tag", "highlight.png", "PDF"),
+    "underline_pdf.png": ("tag", "underline.png", "PDF"),
+    "recenttab_fwd.png": ("arrow", "recenttab.png", "right"),
+    "recenttab_back.png": ("arrow", "recenttab.png", "left"),
+}
+
+
 def main() -> int:
     here = Path(__file__).resolve().parent
     out = here / "icons"
@@ -93,6 +105,7 @@ def main() -> int:
         print(f"  {name}  <- ../{app}/icons/{name}")
     icon_fetch.fluent(FLUENT, out)
     print(f"Wrote icons to {out}")
+    action_variants.make(out, VARIANTS)
     return 0
 
 

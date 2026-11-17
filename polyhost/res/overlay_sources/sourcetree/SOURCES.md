@@ -67,3 +67,12 @@ sources were used instead:
 - ESC: the Sourcetree mark from Simple Icons (CC0-1.0 artwork,
   <https://simpleicons.org>), used to name the application
   (`../brand_marks.py`).
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `sidebar_mac.png` | Fluent `Panel Left Text` (macOS Sidebar, told apart from the Windows bookmarks sidebar) | MIT |

@@ -49,7 +49,7 @@ bindings:
   - { key: T, mods: [], icon: type.png,            label: "Type",            source: "ms-fluent/Text T (MIT)" }
   - { key: G, mods: [], icon: gradient.png, mode: alpha, label: "Gradient / Paint bucket", source: "custom (drawn: diagonal gradient swatch)" }
   - { key: I, mods: [], icon: eyedropper.png,      label: "Eyedropper",      source: "ms-fluent/Eyedropper (MIT)" }
-  - { key: Z, mods: [], icon: zoom.png,            label: "Zoom",            source: "ms-fluent/Zoom In (MIT)" }
+  - { key: Z, mods: [], icon: zoomtool.png,            label: "Zoom",            source: "ms-fluent/Search (MIT)" }
   - { key: H, mods: [], icon: hand.png,            label: "Hand",            source: "ms-fluent/Hand Right (MIT)" }
   - { key: P, mods: [], icon: pen.png,             label: "Pen",             source: "ms-fluent/Pen (MIT)" }
   - { key: U, mods: [], icon: shape.png,           label: "Shape",           source: "ms-fluent/Shapes (MIT)" }
@@ -77,7 +77,7 @@ bindings:
   - { key: V, mods: [CMDCTRL], icon: paste.png,  label: "Paste",  source: "ms-fluent/Clipboard Paste (MIT)" }
   - { key: A, mods: [CMDCTRL], icon: selectall.png, label: "Select all", source: "ms-fluent/Select All On (MIT)" }
   - { key: D, mods: [CMDCTRL], icon: deselect.png,  label: "Deselect",   source: "ms-fluent/Select All Off (MIT)" }
-  - { key: T, mods: [CMDCTRL], icon: freetransform.png, label: "Free transform", source: "ms-fluent/Resize (MIT)" }
+  - { key: T, mods: [CMDCTRL], icon: freetransform.png, label: "Free transform", source: "material-symbols/transform (Apache-2.0)" }
   # --- layer ---
   - { key: J, mods: [CMDCTRL], icon: duplayer.png,  label: "Duplicate layer", source: "ms-fluent/Layer (MIT)" }
   - { key: E, mods: [CMDCTRL], icon: mergedown.png, label: "Merge down",      source: "ms-fluent/Layer Diagonal (MIT)" }
@@ -102,7 +102,7 @@ bindings:
   - { key: N, mods: [CMDCTRL, SHIFT], icon: newlayer.png,   label: "New layer",        source: "ms-fluent/Add Square (MIT)" }
   - { key: I, mods: [CMDCTRL, SHIFT], icon: invertsel.png,  label: "Inverse selection", source: "ms-fluent/Arrow Swap (MIT)" }
   - { key: U, mods: [CMDCTRL, SHIFT], icon: desaturate.png, label: "Desaturate",       source: "ms-fluent/Color Line (MIT)" }
-  - { key: E, mods: [CMDCTRL, SHIFT], icon: mergedown.png,  label: "Merge visible",    source: "ms-fluent/Layer Diagonal (MIT)" }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: mergevisible.png,  label: "Merge visible",    source: "ms-fluent/Layer Diagonal + Eye (MIT), dcc_glyphs.with_badge" }
   - { key: Z, mods: [CMDCTRL, SHIFT], icon: redo.png,       label: "Redo / Step fwd",  source: "ms-fluent/Arrow Redo (MIT)" }
   - { key: C, mods: [CMDCTRL, SHIFT], icon: copymerged.png, label: "Copy merged",      source: "ms-fluent/Copy Select (MIT)" }
 
@@ -113,16 +113,16 @@ bindings:
   - { key: "[", mods: [SHIFT], icon: hardnessdec.png, mode: alpha, label: "Brush hardness -", source: "custom (drawn: soft dashed ring)" }
   - { key: "]", mods: [SHIFT], icon: hardnessinc.png, mode: alpha, label: "Brush hardness +", source: "custom (drawn: hard solid ring)" }
   - { key: F6, mods: [SHIFT], icon: feather.png, label: "Feather selection", source: "ms-fluent/Blur (MIT)" }
-  - { key: BACKSPACE, mods: [SHIFT], icon: fill.png, label: "Fill dialog", source: "ms-fluent/Paint Bucket (MIT)" }
+  - { key: BACKSPACE, mods: [SHIFT], icon: fill.png, label: "Fill", source: "ms-fluent/Paint Bucket (MIT)" }
 
   # ============================================================= #
   # no-mod / Alt / Ctrl+Alt  (coverage audit 2026-06)            #
   # ============================================================= #
   - { key: "[", mods: [], icon: brushdec.png, mode: alpha, label: "Brush size -", source: "custom (drawn: small dot)" }
   - { key: "]", mods: [], icon: brushinc.png, mode: alpha, label: "Brush size +", source: "custom (drawn: large dot)" }
-  - { key: F, mods: [], icon: screenmode.png, label: "Screen mode", source: "ms-fluent/Full Screen Maximize (MIT)" }
+  - { key: F, mods: [], icon: screenmodes.png, label: "Screen mode", source: "ms-fluent/Desktop (MIT)" }
   - { key: BACKSPACE, mods: [ALT], icon: fillfg.png, mode: alpha, label: "Fill FG color", source: "custom (drawn: solid square)" }
   - { key: BACKSPACE, mods: [CMDCTRL], icon: fillbg.png, mode: alpha, label: "Fill BG color", source: "custom (drawn: framed square)" }
-  - { key: Z, mods: [CMDCTRL, ALT], icon: stepback.png, label: "Step backward", source: "ms-fluent/History (MIT)" }
+  - { key: Z, mods: [CMDCTRL, ALT], icon: stepbackward.png, label: "Step backward", source: "ms-fluent/Arrow Step Back (MIT)" }
   - { key: "1", mods: [CMDCTRL], icon: zoom1to1.png, label: "Zoom 100%", source: "ms-fluent/Ratio One To One (MIT)" }
-  - { key: J, mods: [CMDCTRL, SHIFT], icon: newlayer.png, label: "New layer via cut", source: "ms-fluent/Add Square (MIT)" }
+  - { key: J, mods: [CMDCTRL, SHIFT], icon: newlayercut.png, label: "New layer via cut", source: "ms-fluent/Add Square + Cut (MIT), dcc_glyphs.with_badge" }

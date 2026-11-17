@@ -37,8 +37,8 @@ bindings:
   - { key: DOWN, mods: [ALT],            icon: nextchat.png, label: "Next chat" }
   - { key: TAB,  mods: [CTRL, SHIFT],    icon: prevchat.png, label: "Previous chat" }
   - { key: TAB,  mods: [CTRL],           icon: nextchat.png, label: "Next chat" }
-  - { key: UP,   mods: [ALT, SHIFT],     icon: unread.png,   label: "Previous unread chat" }
-  - { key: DOWN, mods: [ALT, SHIFT],     icon: unread.png,   label: "Next unread chat" }
+  - { key: UP,   mods: [ALT, SHIFT],     icon: unread_prev.png,   label: "Previous unread chat" }
+  - { key: DOWN, mods: [ALT, SHIFT],     icon: unread_next.png,   label: "Next unread chat" }
   - { key: "1",  mods: [CMDCTRL],        icon: chat1.png,    label: "Chat 1" }
   - { key: "2",  mods: [CMDCTRL],        icon: chat2.png,    label: "Chat 2" }
   - { key: "3",  mods: [CMDCTRL],        icon: chat3.png,    label: "Chat 3" }

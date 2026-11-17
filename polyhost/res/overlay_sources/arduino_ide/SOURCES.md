@@ -253,3 +253,12 @@ the VS Code, Sublime, JetBrains or Zed set, the same glyph is used.
 The arrow icons are drawn at 40×40 and bound with `region: [40, 40]`. The
 generator scales the whole image into the region, so an image of that size is
 placed 1:1.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `changeall.png` | `selectall.png` with `rename.png` at the lower right, drawn by `../action_variants.py` | same as the base icon |

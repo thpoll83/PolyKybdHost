@@ -62,7 +62,7 @@ bindings:
   - { key: "=", mods: [CMDCTRL, SHIFT], icon: tofront.png,      label: "Bring to front", source: "ms-fluent/Position Forward (MIT)" }
   - { key: G, mods: [CMDCTRL, SHIFT], icon: group.png,          label: Group,            source: "ms-fluent/Group (MIT)" }
   - { key: K, mods: [CMDCTRL, SHIFT], icon: combine.png,        label: "Combine objects", source: "ms-fluent/Layer (MIT)" }
-  - { key: V, mods: [CMDCTRL, SHIFT], icon: pastespecial.png,   label: "Paste special",  source: "ms-fluent/Clipboard Paste (MIT)" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: pastespecial.png,   label: "Paste special",  source: "ms-fluent/Clipboard Settings (MIT)" }
 
   # --- Ctrl+Alt+Shift (the `extra` layer) ---
   - { key: A, mods: [CMDCTRL, ALT, SHIFT], icon: ungroup.png, label: Ungroup, source: "ms-fluent/Group Dismiss (MIT)" }

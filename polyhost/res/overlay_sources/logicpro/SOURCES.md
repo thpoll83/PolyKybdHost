@@ -56,6 +56,7 @@ and Right select the previous/next region).
 
 ## Icons
 
+- One icon per action (maintainer rule, 2026-11-15): `repeatev.png` (Repeat regions) is copied from `../cubase` (duplicate + ×N, the same action as Cubase's Repeat), so it differs from Cycle mode's loop. The glyph + word composites in `WORDS` (`renametrack` rename + TRK; `mixerpane`, `pianorollpane`, `scorepane`, `audioeditorpane` and `listeditors`, the editor glyph + PANE) are drawn 1-bit at 40x40 by `../ghidra/fetch_icons.py`'s `composites()` from the named glyph (licence as that glyph) and a word in Liberation Sans Bold (SIL OFL 1.1). The plain editor glyphs stay on Cmd+2..7, which open the editor as a window.
 - Material Symbols, Apache-2.0, <https://fonts.google.com/icons>: every `ms:`
   entry in `fetch_icons.py`.
 - Byte-identical copies of the icons another DAW set draws for the same

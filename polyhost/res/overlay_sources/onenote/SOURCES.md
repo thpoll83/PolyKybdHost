@@ -65,3 +65,16 @@ collapse), Cmd+Ctrl+G / Ctrl+Shift+G (focus moves), and the arrow navigation.
 - `level1..9.png`: Fluent `Square` with a digit, from `../number_badge.py`.
 - `onenote.png` (ESC): drawn in `fetch_icons.py`, the Office-family mark with an
   "N". No Microsoft artwork.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `nextresult_find.png` | `find.png` with a down triangle at the top right, drawn by `../action_variants.py` | same as the base icon |
+| `prevresult_find.png` | `find.png` with a up triangle at the top right, drawn by `../action_variants.py` | same as the base icon |
+| `pageout_pg.png` | `outdent.png` with the tag "PG", drawn by `../action_variants.py` | same as the base icon |
+| `pagein_pg.png` | `indent.png` with the tag "PG", drawn by `../action_variants.py` | same as the base icon |
+| `fullscreen.png` | Fluent `Arrow Maximize` (Full screen (macOS), told apart from F11 full page view) | MIT |

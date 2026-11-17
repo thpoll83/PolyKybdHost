@@ -61,7 +61,7 @@ ROWS = [
     ("mentionsme", "Mentions to me", "AS+H", "M+7", None, None),
     ("mentionsall", "Mentions to all", "AS+G", "M+8", None, None),
     ("flagged", "Flagged", "AS+F", "M+9", None, None),
-    ("spacemessages", "Messages tab", None, "CM+M", None, None),
+    ("spacemessages_tab", "Messages tab", None, "CM+M", None, None),
     ("spacecontent", "Content tab", None, "CM+C", None, None),
     ("peopletab", "People tab", None, "ASM+P", None, None),
     ("linkstab", "Links tab", None, "SM+L", None, None),

@@ -41,6 +41,9 @@ What is resolved, and how:
   lists poll-gated special cases first and the general operator last
   (`asset.catalog_undo` then `ed.undo` on Ctrl+Z; `view3d.view_center_camera`
   then `view3d.view_all` on Home).
+* **Text input.** A keymap with a TEXTINPUT item (Text Editor, Edit Text)
+  claims every printable key, plain and with Shift, for typing. Those cells stay
+  EMPTY, so a letter never shows a 3D View or window action it does not run.
 * **A binding with a "don't care" modifier (`-1`, or `any`)** shadows every
   combination of that modifier and is drawn on the plain one.
 * **macOS**: Blender's own `Blender.py` keyconfig runs
@@ -108,6 +111,41 @@ STACKS = {
                   "Dope Sheet, incl. Timeline / Action / Shape Key editors"),
     "graph": (["View2D", "Animation", "Frames", "Graph Editor", "Graph Editor Generic"] + WINDOW,
               "Graph Editor (F-Curves, Drivers)"),
+    # Added from the mode audit (2026-11). Same sources: each editor's
+    # `*_main_region_init()` and its region type's `keymapflag`.
+    # Sequencer: VIEW2D | ANIMATION | FRAMES, then `Video Sequence Editor` and
+    # `Sequencer` (space_sequencer.cc). The Preview region uses the `Preview`
+    # keymap; the add-on does not say which region is under the mouse, so this
+    # set describes the strip timeline.
+    "sequencer": (["View2D", "Animation", "Frames", "Video Sequence Editor", "Sequencer"] + WINDOW,
+                  "Video Sequencer, strip timeline"),
+    "outliner": (["View2D", "Outliner"] + WINDOW, "Outliner"),
+    # Text Editor: no default keymaps on the main region. `Text` ends with a
+    # TEXTINPUT item, so every printable key types text (see `resolve`).
+    "text": (["Text Generic", "Text"] + WINDOW, "Text Editor"),
+    # Movie Clip Editor: FRAMES, then `Clip`, `Clip Editor` (space_clip.cc).
+    # `Mask Editing` is first in the region, but its keymap poll needs the
+    # clip's Mask mode; the default Tracking mode skips it.
+    "clip": (["Frames", "Clip", "Clip Editor"] + WINDOW, "Movie Clip Editor, Tracking mode"),
+    "nla": (["View2D", "Animation", "Frames", "NLA Editor", "NLA Generic"] + WINDOW,
+            "Nonlinear Animation editor"),
+    # The 3D View modes below, in `view3d_main_region_init()` order. `Curve`
+    # polls Edit Curve and Edit Surface alike. `Font` ends with a TEXTINPUT
+    # item. `Grease Pencil Selection` is polled in Edit, Sculpt and Vertex
+    # Paint (grease_pencil_selection_poll); `Grease Pencil Brush Stroke` in
+    # Draw mode with a brush tool (the default Draw tool).
+    "edit_curve": (["Curve"] + VIEW3D_TAIL, "3D View, Edit Mode (curve, surface)"),
+    "edit_text": (["Font"] + VIEW3D_TAIL, "3D View, Edit Mode (text object)"),
+    "gp_edit": (["Grease Pencil Selection", "Grease Pencil Edit Mode"] + VIEW3D_TAIL,
+                "3D View, Grease Pencil Edit Mode"),
+    "gp_draw": (["Grease Pencil Draw Mode", "Grease Pencil Brush Stroke"] + VIEW3D_TAIL,
+                "3D View, Grease Pencil Draw Mode"),
+    "gp_sculpt": (["Grease Pencil Selection", "Grease Pencil Sculpt Mode"] + VIEW3D_TAIL,
+                  "3D View, Grease Pencil Sculpt Mode"),
+    "gp_weight": (["Grease Pencil Weight Paint"] + VIEW3D_TAIL,
+                  "3D View, Grease Pencil Weight Paint"),
+    "gp_vertex": (["Grease Pencil Selection", "Grease Pencil Vertex Paint"] + VIEW3D_TAIL,
+                  "3D View, Grease Pencil Vertex Paint"),
 }
 
 # The contexts whose INTERSECTION is the `common` overlay: the 3D View modes.
@@ -125,6 +163,11 @@ ROUTES = [
     ("EDIT_MESH/IMAGE_EDITOR/UV", "uv"),
     ("/DOPESHEET_EDITOR", "dopesheet"),
     ("/GRAPH_EDITOR", "graph"),
+    ("/SEQUENCE_EDITOR", "sequencer"),
+    ("/OUTLINER", "outliner"),
+    ("/TEXT_EDITOR", "text"),
+    ("/CLIP_EDITOR", "clip"),
+    ("/NLA_EDITOR", "nla"),
     ("blender://OBJECT/VIEW_3D", "object"),
     ("blender://EDIT_MESH/VIEW_3D", "edit_mesh"),
     ("blender://SCULPT/VIEW_3D", "sculpt"),
@@ -133,6 +176,14 @@ ROUTES = [
     ("blender://PAINT_WEIGHT/VIEW_3D", "paint_weight"),
     ("blender://PAINT_VERTEX/VIEW_3D", "paint_vertex"),
     ("blender://PAINT_TEXTURE/VIEW_3D", "paint_texture"),
+    ("blender://EDIT_CURVE/VIEW_3D", "edit_curve"),
+    ("blender://EDIT_SURFACE/VIEW_3D", "edit_curve"),
+    ("blender://EDIT_TEXT/VIEW_3D", "edit_text"),
+    ("blender://EDIT_GREASE_PENCIL/VIEW_3D", "gp_edit"),
+    ("blender://PAINT_GREASE_PENCIL/VIEW_3D", "gp_draw"),
+    ("blender://SCULPT_GREASE_PENCIL/VIEW_3D", "gp_sculpt"),
+    ("blender://WEIGHT_GREASE_PENCIL/VIEW_3D", "gp_weight"),
+    ("blender://VERTEX_GREASE_PENCIL/VIEW_3D", "gp_vertex"),
     ("/VIEW_3D", "common"),
     ("blender://", "global"),
 ]
@@ -154,6 +205,15 @@ _KEYS = {**{c: c for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"},
 # Blender modifier name -> generator modifier token, in the order we emit them.
 _MODS = (("ctrl", "CTRL"), ("shift", "SHIFT"), ("alt", "ALT"), ("oskey", "GUI"))
 _VALUES = ("PRESS", "CLICK")
+# The keys that type a character. A TEXTINPUT item matches a key press that
+# carries text (`wm_eventmatch`, wm_event_system.cc); Blender clears the text of
+# a Ctrl combination (an ASCII control character), and Alt / Cmd combinations
+# carry none on the default layouts. So TEXTINPUT claims these keys with no
+# modifier and with Shift, and draws nothing on them.
+_TEXT_KEYS = tuple(c for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ") + tuple(str(i) for i in range(10)) + (
+    "KC_GRAVE", "KC_QUOTE", "KC_SEMICOLON", "KC_LEFT_BRACKET", "KC_RIGHT_BRACKET",
+    "KC_BACKSLASH", "KC_SLASH", "KC_DOT", "KC_COMMA", "KC_EQUAL", "KC_MINUS", "KC_SPACE")
+_TEXT_STATES = ((0, 0, 0, 0), (0, 1, 0, 0))
 
 
 def keyconfig_pref_defaults(src: Path) -> dict:
@@ -277,7 +337,11 @@ def resolve(keymaps: dict, stack: list[str]) -> dict:
     for km in stack:
         local: dict = {}
         local_drawn: dict = {}
+        text_input = None
         for op, ev, props in keymaps[km]:
+            if ev.get("type") == "TEXTINPUT":
+                text_input = text_input or (km, action_key(op, props))
+                continue
             key = _KEYS.get(ev.get("type"))
             if key is None or ev.get("value") not in _VALUES or ev.get("key_modifier"):
                 continue
@@ -286,6 +350,12 @@ def resolve(keymaps: dict, stack: list[str]) -> dict:
             for st in states:
                 local[(key, st)] = act          # last item in one keymap wins
             local_drawn[(key, draw_state)] = act
+        if text_input:
+            # A typed character goes to the TEXTINPUT item unless an explicit
+            # item of the same keymap binds that chord. It is never drawn.
+            for key in _TEXT_KEYS:
+                for st in _TEXT_STATES:
+                    local.setdefault((key, st), text_input)
         for chord, act in local.items():
             if chord not in claimed:
                 claimed[chord] = act
@@ -399,7 +469,11 @@ def write_spec(ctx, desc, stack, bindings, tag, commit) -> str:
     }
     head = HEADER.format(tag=tag, commit=commit, ctx=ctx, desc=desc,
                          stack=" > ".join(stack))
-    return head + yaml.safe_dump(spec, sort_keys=False, width=120, allow_unicode=True)
+    body = yaml.safe_dump(spec, sort_keys=False, width=120, allow_unicode=True)
+    # The note every overlay spec carries on its `mode` line (added by #688).
+    body = body.replace("\nmode: auto\n", "\nmode: auto     # one rule per icon file: see "
+                        "HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py\n", 1)
+    return head + body
 
 
 def _files(ctx: str, out_dir: Path, suffix: str = "") -> list[str]:

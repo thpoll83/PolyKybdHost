@@ -33,7 +33,7 @@ program_icon_margin: 0
 
 bindings:
   - { key: K, mods: [CMDCTRL], icon: commandpalette.png, label: "Command menu" }
-  - { key: F, mods: [CMDCTRL], icon: search.png, label: "Search in view", shared: false }
+  - { key: F, mods: [CMDCTRL], icon: searchpage.png, label: "Search in view", shared: false }
   - { key: B, mods: [CMDCTRL], icon: lin_layout.png, label: "Board or list layout" }
   - { key: I, mods: [CMDCTRL], icon: sidebar.png, label: "Details sidebar" }
   - { key: I, mods: [CMDCTRL, SHIFT], icon: lin_insights.png, label: "Insights" }

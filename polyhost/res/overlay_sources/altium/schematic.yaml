@@ -42,7 +42,7 @@ bindings:
   - { key: F5, icon: netcolor.png, label: "Net color override" }
   - { key: F9, icon: simulate.png, label: "Run simulation" }
   - { key: F11, icon: properties.png, label: "Properties panel" }
-  - { key: F12, icon: filterpanel.png, label: "SCH Filter panel" }
+  - { key: F12, icon: filterpanel.png, label: "Filter panel" }
   - { key: G, icon: gridnext.png, label: "Next snap grid" }
   - { key: PGUP, label: "Zoom in" }
   - { key: PGDN, label: "Zoom out" }
@@ -97,7 +97,7 @@ bindings:
   - { key: SPACE, mods: [SHIFT], icon: rotcw.png, label: "Rotate clockwise" }
   - { key: F4, mods: [SHIFT], icon: tiledocs.png, label: "Tile documents" }
   - { key: F5, mods: [SHIFT], icon: focuspanel.png, label: "Focus panel or document" }
-  - { key: F12, mods: [SHIFT], icon: listpanel.png, label: "SCH List panel" }
+  - { key: F12, mods: [SHIFT], icon: listpanel.png, label: "List panel" }
 
   # ============================================================= Alt =========
   - { key: F5, mods: [ALT], icon: maximize.png, label: "Maximize editor" }

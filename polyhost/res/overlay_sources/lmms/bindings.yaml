@@ -76,10 +76,10 @@ bindings:
 
   # --- Windows, LMMS 1.2 (F keys) ---
   - { key: F5, mods: [], icon: mainwin.png, label: "Song Editor" }
-  - { key: F6, mods: [], icon: stepseq.png, label: "Beat+Bassline Editor" }
+  - { key: F6, mods: [], icon: stepseq.png, label: "Pattern Editor" }  # 1.2 calls it Beat+Bassline Editor
   - { key: F7, mods: [], icon: pianoroll.png, label: "Piano Roll" }
   - { key: F8, mods: [], icon: automation.png, label: "Automation Editor" }
-  - { key: F9, mods: [], icon: mixer.png, label: "FX Mixer" }
+  - { key: F9, mods: [], icon: mixer.png, label: Mixer }  # 1.2 calls it FX Mixer
   - { key: F10, mods: [], icon: notepad.png, label: "Project notes" }
 
   # --- Windows, LMMS 1.3 development builds (Ctrl/Cmd+digit) ---

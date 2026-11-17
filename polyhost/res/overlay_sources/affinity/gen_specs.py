@@ -69,8 +69,8 @@ ROWS = [
     ("copymerged", "Copy merged", "CS+C", "SM+C", "p"),
     ("invertsel", "Invert pixel selection", "CS+I", "SM+I", "dp"),
     ("selectlayers", "Select all layers", "CA+A", "AM+A", "p"),
-    ("selectnext", "Select next", "CA+]", "AM+]", "du"),
-    ("selectprev", "Select previous", "CA+[", "AM+[", "du"),
+    ("selnext", "Select next", "CA+]", "AM+]", "du"),
+    ("selprev", "Select previous", "CA+[", "AM+[", "du"),
     ("selectparent", "Select parent", "C+Up", "M+Up", "du"),
     # --- arrange and layers ---
     ("group", "Group", "C+G", "M+G", ALL),

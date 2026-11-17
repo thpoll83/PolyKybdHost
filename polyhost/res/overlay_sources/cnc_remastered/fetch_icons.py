@@ -58,6 +58,28 @@ ICONS = {
     # Display
     "graphics": "fa:gem",
     "fullscreen": "fa:expand",
+    # The rest of the game's default keys (INPUTTRANSLATORCONFIGURATIONS.XML)
+    "sidebar": "fa:table-columns",
+    "repair": "fa:wrench",
+    "sell": "fa:dollar-sign",
+    "beacon": "fa:location-dot",
+    "sidebarup": "fa:angles-up",
+    "sidebardown": "fa:angles-down",
+    "quicksave": "fa:floppy-disk",
+    "quickload": "fa:folder-open",
+    "nextunit": "fa:forward-step",
+    "prevunit": "fa:backward-step",
+    "toselection": "fa:video",
+    "zoomin": "fa:magnifying-glass-plus",
+    "zoomout": "fa:magnifying-glass-minus",
+    "deploy": "fa:box-open",
+    "formation": "fa:object-group",
+    "teamchat": "fa:comments",
+    "allchat": "fa:bullhorn",
+    "chatteam": "fa:comment",
+    "chatall": "fa:message",
+    "musicnext": "fa:forward",
+    "musicprev": "fa:backward",
 }
 
 # Control groups 1..0 are Warzone 2100 units rendered by wz_units.py.
@@ -80,7 +102,10 @@ def render(mapping: dict[str, str], out_dir: Path, render_px: int = 256) -> None
 
 # Key area of each icon, from cnc_remastered.yaml; the default is 40 x 40.
 SIZES = {"lastevent": (36, 40), "bookmark": (30, 40), "fullscreen": (30, 40),
-         "tabinfantry": (48, 40), "tabvehicles": (48, 40)}
+         "tabinfantry": (48, 40), "tabvehicles": (48, 40),
+         "chatteam": (30, 40), "chatall": (30, 40)}
+NUMBERED = {"bookmark", "chatteam", "chatall"}   # stamped 1..4 for F1..F4 / F5..F8
+MARK = 13                          # size of a group's modifier mark, px (as in the Generals set)
 MIRROR = {"tabinfantry"}           # the barracks' flag pole on the right, facing like the units
 
 
@@ -120,12 +145,13 @@ def _save_mask(mask, path: Path) -> None:
     Image.fromarray(rgba, "RGBA").save(path)
 
 
-def dither_icons(out: Path) -> None:
-    """Every key icon in the style of the units: relief, dither, lit outline,
-    drawn at exactly its key area so the generator places it 1:1."""
+def dither_icons(out: Path, stems=None) -> None:
+    """Every key icon (or only `stems`) in the style of the units: relief,
+    dither, lit outline, drawn at exactly its key area so the generator places
+    it 1:1."""
     import numpy as np
     from PIL import Image
-    for stem in ICONS:
+    for stem in stems or ICONS:
         size = SIZES.get(stem, (40, 40))
         # Re-render the glyph large so the relief has room for its slope.
         big = Image.open(out / f"{stem}.png").convert("RGBA").getchannel("A")
@@ -138,12 +164,37 @@ def dither_icons(out: Path) -> None:
         canvas = np.zeros((size[1], size[0]), bool)
         canvas[size[1] - m.shape[0]:, size[0] - m.shape[1]:] = m
         _save_mask(canvas, out / f"{stem}.png")
-        if stem == "bookmark":
+        if stem in NUMBERED:
+            top = 16 if stem == "bookmark" else _body_top(canvas)
             for n in "1234":
-                numbered = _stamp(canvas, n)
-                _save_mask(numbered, out / f"bookmark{n}.png")
-                _save_mask(wz_units._with_plus(numbered, top=True), out / f"bookmarkset{n}.png")
-    print(f"  {len(ICONS)} key icons dithered (+ bookmark1..4, bookmarkset1..4)")
+                numbered = _stamp(canvas, n, top=top)
+                _save_mask(numbered, out / f"{stem}{n}.png")
+                if stem == "bookmark":
+                    _save_mask(wz_units._with_plus(numbered, top=True), out / f"bookmarkset{n}.png")
+    print(f"  {len(stems or ICONS)} key icons dithered (+ the numbered ones)")
+
+
+def _body_top(mask, height=11) -> int:
+    """The top row for an 11 px digit centred on the body of a speech bubble:
+    the rows at least 70 % as wide as the widest, so the tail and the rounded
+    cap do not pull the digit off centre."""
+    import numpy as np
+    widths = mask.sum(axis=1)
+    rows = np.nonzero(widths >= 0.7 * widths.max())[0]
+    return int(round((rows.min() + rows.max() + 1) / 2 - height / 2))
+
+
+def groups_add(out: Path) -> None:
+    """groupadd<N> (Shift+digit: add the group to the selection): the group's
+    unit with a ring mark, as in the Generals and StarCraft II sets."""
+    import numpy as np
+    from PIL import Image
+
+    from polyhost.services.game_assets import dither
+    for d in "1234567890":
+        g = np.asarray(Image.open(out / f"group{d}.png").convert("RGBA").getchannel("A")) > 127
+        _save_mask(dither.with_mark(g, "ring", MARK), out / f"groupadd{d}.png")
+    print("  groupadd0..9")
 
 
 # DejaVu Sans Bold (Bitstream Vera licence), from matplotlib v3.9.2's bundled copy.
@@ -263,6 +314,7 @@ def main() -> int:
         aoe2.trim(out, stem)
     dither_icons(out)
     wz_units.main(out)
+    groups_add(out)
     program(out)
     print(f"Wrote icons to {out}")
     return 0

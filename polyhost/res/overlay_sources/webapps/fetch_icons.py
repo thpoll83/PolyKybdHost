@@ -31,6 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import brand_marks, doc_mark, geo_marks, icon_fetch  # noqa: E402
 import rect_mark  # noqa: E402
 import material_symbols as ms  # noqa: E402
+import action_variants  # noqa: E402
 
 FLUENT = {
     # --- shared: navigation & chrome ---
@@ -58,9 +59,10 @@ FLUENT = {
     "cut": "Cut",
     "copy": "Copy",
     "paste": "Clipboard Paste",
-    "pasteplain": "Clipboard Paste",
+    "pasteplain": "Clipboard Letter",
     "selectall": "Select All On",
     "find": "Search",
+    "searchpage": "Document Search",
     "findreplace": "Arrow Swap",
     "findfiles": "Document Search",
     "bold": "Text Bold",
@@ -100,7 +102,7 @@ FLUENT = {
     "filefinder": "Document Search",
     "branch": "Branch",
     "blame": "History",
-    "canonical": "Link",
+    "canonical": "Link Square",
     "webide": "Code",
     "createissue": "Add Circle",
     "openitem": "Open",
@@ -593,6 +595,16 @@ MATERIAL = {"numberlist": "format_list_numbered", "whitespace": "space_bar",
             "bringfront": "flip_to_front", "sendback": "flip_to_back"}
 
 
+# Different actions that start from one icon: each gets its own picture
+# (one icon per action, maintainer 2026-11-15). See action_variants.py.
+VARIANTS = {
+    "webide_tab.png": ("tag", "webide.png", "TAB"),
+    "gm_replywin.png": ("combine", "gm_reply.png", "gm_newwindow.png"),
+    "gm_replyallwin.png": ("combine", "gm_replyall.png", "gm_newwindow.png"),
+    "gm_forwardwin.png": ("combine", "gm_forward.png", "gm_newwindow.png"),
+}
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
@@ -633,6 +645,7 @@ def main() -> int:
         _canva_mark(out / CANVA_MARK)
         print(f"  {CANVA_MARK}  <- Canva app icon, 1-bit tile with the C cut out")
     print(f"Wrote {n} icons (+ {len(BRAND)+len(DIAGRAM_ETC_BRAND)+len(DOC)+len(SHADED)+len(GEO)+1} program marks) to {out}")
+    action_variants.make(out, VARIANTS)
     return 0
 
 

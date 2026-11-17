@@ -236,3 +236,15 @@ Deliberately NOT added:
 
 - **Zoom**: no Ctrl chord documented (Impress uses bare +/- in Normal view).
 - **Reload**: no default chord.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `absref_tag.png` | `formatcells.png` with the tag "$", drawn by `../action_variants.py` | same as the base icon |
+| `selectallcells_tag.png` | `formatcells.png` with the tag "ALL", drawn by `../action_variants.py` | same as the base icon |
+| `pastespecial.png` | Fluent `Clipboard Settings` (Paste special; was the Paste glyph) | MIT |
+| `lastpos.png` | Fluent `History` (Last edit position; was the Undo glyph) | MIT |

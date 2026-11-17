@@ -70,7 +70,7 @@ bindings:
   - { key: R, mods: [CTRL, ALT], icon: refreshremote.png, label: "Refresh remote status", only: [macos] }
   - { key: C, mods: [GUI, ALT], icon: commitselected.png, label: "Commit selected", only: [macos] }
   - { key: C, mods: [GUI, ALT, SHIFT], icon: commitall.png, label: "Commit all", only: [macos] }
-  - { key: U, mods: [GUI, ALT], icon: checkout.png, label: "Checkout / update to", only: [macos] }
+  - { key: U, mods: [GUI, ALT], icon: checkout.png, label: "Checkout", only: [macos] }
   - { key: U, mods: [GUI, SHIFT], icon: update.png, label: "Update (Mercurial)", only: [macos] }
   - { key: T, mods: [GUI, CTRL], icon: shell.png, label: "Open in terminal", only: [macos] }
   - { key: BSPC, mods: [GUI], icon: remove.png, label: "Remove file", only: [macos] }
@@ -84,7 +84,7 @@ bindings:
   - { key: W, mods: [GUI, CTRL], icon: commandhistory.png, label: "Command history", only: [macos] }
   - { key: "0", mods: [GUI], icon: repolist.png, label: "Repository browser", only: [macos] }
   - { key: H, mods: [GUI, SHIFT], icon: remotehosted.png, label: "Remote repositories", only: [macos] }
-  - { key: K, mods: [GUI, SHIFT], icon: sidebar.png, label: "Sidebar", only: [macos] }
+  - { key: K, mods: [GUI, SHIFT], icon: sidebar_mac.png, label: "Sidebar", only: [macos] }
   - { key: J, mods: [GUI, SHIFT], icon: filter.png, label: "Filter in sidebar", only: [macos] }
   - { key: F, mods: [GUI, CTRL], icon: fullscreen.png, label: "Full screen", only: [macos] }
   # commit message editor (Markdown), macOS only

@@ -82,3 +82,18 @@ G and F the audio delay, J and H the subtitle delay, and Shift+L the loop.
 - ESC: the VLC cone from Simple Icons (CC0-1.0 artwork,
   <https://simpleicons.org>), used to name the application
   (`../brand_marks.py`).
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `repeatall_all.png` | `repeatall.png` with the tag "ALL", drawn by `../action_variants.py` | same as the base icon |
+| `fitscreen_max.png` | `fitscreen.png` with the tag "MAX", drawn by `../action_variants.py` | same as the base icon |
+| `subsync_reset.png` | `subtrack.png` with the tag "0", drawn by `../action_variants.py` | same as the base icon |
+| `faster_fine.png` | `faster.png` with the tag "FINE", drawn by `../action_variants.py` | same as the base icon |
+| `slower_fine.png` | `slower.png` with the tag "FINE", drawn by `../action_variants.py` | same as the base icon |
+| `syncaudio_mark.png` | `audioeffects.png` with `syncapply.png` at the lower right, drawn by `../action_variants.py` | same as the base icon |
+| `fscontrols.png` | `fsinterface.png` with `playpause.png` at the lower right, drawn by `../action_variants.py` | same as the base icon |

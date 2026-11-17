@@ -74,5 +74,5 @@ bindings:
   # --- view and application ---
   - { key: F11, mods: [], icon: fullscreen.png, label: "Fullscreen interface" }
   - { key: COMMA, mods: [CMDCTRL], icon: settings.png, label: "Settings", only: [macos] }
-  - { key: Q, mods: [CMDCTRL], icon: quit.png, label: "Quit OBS", only: [macos] }
-  - { key: Q, mods: [CTRL], icon: quit.png, label: "Exit", only: [linux] }
+  - { key: Q, mods: [CMDCTRL], icon: quit.png, label: "Quit", only: [macos] }
+  - { key: Q, mods: [CTRL], icon: quit.png, label: "Quit", only: [linux] }

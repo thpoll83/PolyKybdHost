@@ -36,7 +36,7 @@ program_icon_margin: 0
 bindings:
   # --- Ctrl (R channel of the primary file) ---
   - { key: P, mods: [CTRL], icon: gotoanything.png, label: "Goto Anything",  source: "ms-fluent/Document Search (MIT)" }
-  - { key: R, mods: [CTRL], icon: gotosymbol.png,   label: "Goto symbol",    source: "ms-fluent/Code (MIT)" }
+  - { key: R, mods: [CTRL], icon: gotosymbol.png,   label: "Goto symbol",    source: "ms-fluent/Symbols (MIT)" }
   - { key: G, mods: [CTRL], icon: gotoline.png,     label: "Goto line",      source: "ms-fluent/Text Number Format (MIT)" }
   - { key: ";", mods: [CTRL], icon: gotoword.png,   label: "Goto word",      source: "ms-fluent/Text Word Count (MIT)" }
   - { key: D, mods: [CTRL], icon: multicursor.png,  label: "Select next occurrence", source: "custom/editor_glyphs", mode: alpha }
@@ -53,7 +53,7 @@ bindings:
   - { key: Y, mods: [CTRL], icon: redo.png,         label: Redo,             source: "ms-fluent/Arrow Redo (MIT)" }
   - { key: U, mods: [CTRL], icon: softundo.png,     label: "Soft undo",      source: "ms-fluent/Arrow Undo (MIT)" }
   - { key: SPACE, mods: [CTRL], icon: autocomplete.png, label: Autocomplete, source: "ms-fluent/Text Grammar Wand (MIT)" }
-  - { key: ENTER, mods: [CTRL], icon: insertafter.png,  label: "Insert line after", source: "ms-fluent/Arrow Enter (MIT)" }
+  - { key: ENTER, mods: [CTRL], icon: insertafter.png,  label: "Insert line after", source: "ms-fluent/Text Add Space After (MIT)" }
 
   # --- Ctrl+Shift (R channel of the combo file) ---
   - { key: P, mods: [CTRL, SHIFT], icon: commandpalette.png, label: "Command palette", source: "ms-fluent/Apps List Detail (MIT)" }
@@ -66,12 +66,12 @@ bindings:
   - { key: F, mods: [CTRL, SHIFT], icon: findinfiles.png, label: "Find in files",   source: "ms-fluent/Folder Open (MIT)" }
   - { key: T, mods: [CTRL, SHIFT], icon: reopentab.png,   label: "Reopen closed tab", source: "ms-fluent/Tab Desktop (MIT)" }
   - { key: V, mods: [CTRL, SHIFT], icon: pasteindent.png, label: "Paste and indent", source: "ms-fluent/Clipboard Paste (MIT)" }
-  - { key: M, mods: [CTRL, SHIFT], icon: selectbrackets.png, label: "Select inside brackets", source: "ms-fluent/Braces (MIT)" }
+  - { key: M, mods: [CTRL, SHIFT], icon: selectbrackets_sel.png, label: "Select inside brackets", source: "ms-fluent/Braces (MIT) + 'SEL' tag, fetch_icons.py" }
   - { key: "[", mods: [CTRL, SHIFT], icon: fold.png,      label: Fold,              source: "ms-fluent/Text Collapse (MIT)" }
   - { key: "]", mods: [CTRL, SHIFT], icon: unfold.png,    label: Unfold,            source: "ms-fluent/Text Expand (MIT)" }
   - { key: UP,   mods: [CTRL, SHIFT], icon: swapup.png,   label: "Swap line up",    source: "ms-fluent/Arrow Sort Up (MIT)" }
   - { key: DOWN, mods: [CTRL, SHIFT], icon: swapdown.png, label: "Swap line down",  source: "ms-fluent/Arrow Sort Down (MIT)" }
-  - { key: ENTER, mods: [CTRL, SHIFT], icon: insertbefore.png, label: "Insert line before", source: "ms-fluent/Arrow Enter (MIT)" }
+  - { key: ENTER, mods: [CTRL, SHIFT], icon: insertbefore.png, label: "Insert line before", source: "ms-fluent/Text Add Space Before (MIT)" }
 
   # --- Ctrl+Alt (G channel of the combo file): multiple cursors ---
   # Default (Linux).sublime-keymap binds these to Alt+Shift+Up/Down instead
@@ -83,13 +83,13 @@ bindings:
 
   # --- Alt (G channel of the primary file) ---
   - { key: F3, mods: [ALT], icon: selectalloccur.png, label: "Select all occurrences", source: "ms-fluent/Select All On (MIT)" }
-  - { key: ".", mods: [ALT], icon: wraptag.png,       label: "Close HTML tag",         source: "ms-fluent/Code (MIT)" }
+  - { key: ".", mods: [ALT], icon: closetag.png,      label: "Close HTML tag",         source: "ms-fluent/Code (MIT) + 'END' tag, fetch_icons.py" }
 
   # --- Alt+Shift (B channel of the combo file) ---
   - { key: W, mods: [ALT, SHIFT], icon: wraptag.png, label: "Wrap selection in tag", source: "ms-fluent/Code (MIT)" }
 
   # --- bookmarks (no modifier) ---
-  - { key: F2, mods: [], icon: bookmark.png, label: "Next bookmark", source: "ms-fluent/Bookmark (MIT)" }
+  - { key: F2, mods: [], icon: bookmark_next.png, label: "Next bookmark", source: "ms-fluent/Bookmark (MIT) + down arrow, fetch_icons.py" }
 
   # --- standard editing (shared Fluent concepts) ---
   # Default (Windows).sublime-keymap / Default (Linux).sublime-keymap. Ctrl+X

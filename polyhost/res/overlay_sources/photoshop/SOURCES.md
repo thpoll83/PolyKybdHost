@@ -201,3 +201,19 @@ already drawn.
 
 - **Ctrl+Y is NOT Redo** in Photoshop — it is Proof Colors — so no Ctrl+Y cell.
 - **Find / Find next / Replace**: Photoshop has no document find with a default chord.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing
+(maintainer, 2026-11-15). These files give the other keys their own image.
+Files whose name starts with `_` are only parts of a composite.
+
+| file | source | licence |
+|---|---|---|
+| `zoomtool.png` | Fluent `Search` | MIT |
+| `stepbackward.png` | Fluent `Arrow Step Back` | MIT |
+| `screenmodes.png` | Fluent `Desktop` | MIT |
+| `_eye.png` | Fluent `Eye` | MIT |
+| `_cut.png` | Fluent `Cut` | MIT |
+| `mergevisible.png` | `mergedown.png` with `_eye.png` as a badge at the lower right (`../dcc_glyphs.py` `with_badge`) | same as the two parts |
+| `newlayercut.png` | `newlayer.png` with `_cut.png` as a badge at the lower right (`../dcc_glyphs.py` `with_badge`) | same as the two parts |

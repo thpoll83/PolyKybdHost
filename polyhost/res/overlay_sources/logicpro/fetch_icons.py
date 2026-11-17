@@ -13,6 +13,7 @@ by `program_marks.pictogram_mark()`.
 """
 from __future__ import annotations
 
+import importlib.util
 import shutil
 import sys
 from pathlib import Path
@@ -33,7 +34,7 @@ BORROW = {
         "fullscreen.png", "zoomsel.png", "search.png")},
     **{n: "reaper" for n in (
         "import.png", "bounce.png", "projsettings.png", "history.png",
-        "inspaste.png", "repeat.png", "splitsel.png", "glue.png", "snap.png",
+        "inspaste.png", "splitsel.png", "glue.png", "snap.png",
         "nudgeleft.png", "nudgeright.png", "pitchup.png", "pitchdown.png",
         "inserttrack.png", "prevtrack.png", "nexttrack.png", "mute.png",
         "rewind.png", "fastforward.png", "tostart.png", "toend.png",
@@ -50,7 +51,8 @@ BORROW = {
         "newmarker.png", "follow.png")},
     **{n: "cubase" for n in (
         "removetrack.png", "playsel.png", "locsel.png", "punchin.png",
-        "lowerzone.png", "color.png")},
+        "lowerzone.png", "color.png",
+        "repeatev.png")},   # Repeat (regions): duplicate + xN
     **{n: "garageband" for n in (
         "loopregion.png", "clearsolo.png", "countin.png", "smartcontrols.png",
         "library.png")},
@@ -72,7 +74,6 @@ FLUENT = {
     "projaudio": "ms:perm_media",
     "transform": "ms:transform",
     "environment": "ms:hub",
-    "listeditors": "ms:list",
     "hideview": "ms:hide_source",
     "liveloops": "ms:grid_view",
     "keycommands": "ms:keyboard_command_key",
@@ -89,12 +90,37 @@ RENAMED = {
     "plugins.png": ("flstudio", "pluginpicker.png"),
 }
 
+# name -> (glyph, word): a glyph with a short word under it, 1-bit at 40x40,
+# drawn with the Ghidra set's code. The pane keys (X, P, N, W, D) show an
+# editor in the main window; Cmd+2..7 open it as a window (one icon per action).
+WORDS = {
+    "renametrack": ("rename", "TRK"),
+    "mixerpane": ("mixer", "PANE"),
+    "pianorollpane": ("pianoroll", "PANE"),
+    "scorepane": ("scoreeditor", "PANE"),
+    "audioeditorpane": ("audioeditor", "PANE"),
+    "listeditors": ("eventlist", "PANE"),
+}
+
+
+def word_composites(out: Path, words: dict[str, tuple[str, str]]) -> None:
+    """Draw ``words`` with ``composites()`` from ``../ghidra/fetch_icons.py``."""
+    spec = importlib.util.spec_from_file_location(
+        "ghidra_fetch_icons", Path(__file__).resolve().parent.parent / "ghidra" / "fetch_icons.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    mod.COMPOSITES = words
+    mod.ISA = {}
+    mod.composites(out)
+
 
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
     n = icon_fetch.fluent(FLUENT, out)
     n += icon_fetch.borrow(BORROW, out)
+    word_composites(out, WORDS)
+    n += len(WORDS)
     here = out.parent.parent
     for name, (app, src) in RENAMED.items():
         shutil.copyfile(here / app / "icons" / src, out / name)

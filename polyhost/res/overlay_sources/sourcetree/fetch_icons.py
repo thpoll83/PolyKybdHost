@@ -43,6 +43,7 @@ FLUENT = {
     "blame": "Person Search",
     "flownext": "ms:account_tree",
     "sidebar": "Panel Left",
+    "sidebar_mac": "Panel Left Text",
     "repodetails": "Info",
     "commandhistory": "ms:receipt_long",
     "remotehosted": "Cloud",

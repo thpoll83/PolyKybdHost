@@ -38,6 +38,11 @@ program_icon_anchor: bottom-right
 program_icon_region: [46, 40]
 program_icon_margin: 0
 
+# A 40x40 composite (glyph + word, fetch_icons.py WORDS) is placed 1:1.
+_word: &word { region: [40, 40], mode: alpha }
+# The "hold Space" hint (../space_hint.py) covers the whole key and is placed 1:1.
+_space: &space { region: [72, 40], mode: alpha }
+
 bindings:
   # --- tools and canvas keys (no modifier) ---
   - { key: V, mods: [], icon: move.png,       label: Move }
@@ -58,7 +63,7 @@ bindings:
   - { key: HOME, mods: [], icon: prevframe.png, label: "Previous frame" }
   - { key: PGUP, mods: [], icon: prevpage.png, label: "Previous page" }
   - { key: PGDN, mods: [], icon: nextpage.png, label: "Next page" }
-  - { key: Z, mods: [], icon: zoomtool.png,   label: "Zoom tool (hold)" }
+  - { key: Z, mods: [], icon: zoomtoolhold.png,   label: "Zoom tool (hold)", <<: *word }
   - { key: "/", mods: [], icon: cursorchat.png, label: "Cursor chat" }
   - { key: "\\", mods: [], icon: selparent.png, label: "Select parent" }
   - { key: "-", mods: [], label: "Zoom out" }
@@ -66,16 +71,16 @@ bindings:
   - { key: F2, mods: [], icon: rename.png,    label: Rename }
   - { key: F6, mods: [], icon: nextregion.png, label: "Next region" }
   - { key: F8, mods: [], icon: selarea.png,   label: "Select area" }
-  - { key: "1", mods: [], icon: opacity.png, label: "Opacity 10%" }
-  - { key: "2", mods: [], icon: opacity.png, label: "Opacity 20%" }
-  - { key: "3", mods: [], icon: opacity.png, label: "Opacity 30%" }
-  - { key: "4", mods: [], icon: opacity.png, label: "Opacity 40%" }
-  - { key: "5", mods: [], icon: opacity.png, label: "Opacity 50%" }
-  - { key: "6", mods: [], icon: opacity.png, label: "Opacity 60%" }
-  - { key: "7", mods: [], icon: opacity.png, label: "Opacity 70%" }
-  - { key: "8", mods: [], icon: opacity.png, label: "Opacity 80%" }
-  - { key: "9", mods: [], icon: opacity.png, label: "Opacity 90%" }
-  - { key: "0", mods: [], icon: opacity.png, label: "Opacity 100%" }
+  - { key: "1", mods: [], icon: opacity1.png, label: "Opacity 10%", <<: *word }
+  - { key: "2", mods: [], icon: opacity2.png, label: "Opacity 20%", <<: *word }
+  - { key: "3", mods: [], icon: opacity3.png, label: "Opacity 30%", <<: *word }
+  - { key: "4", mods: [], icon: opacity4.png, label: "Opacity 40%", <<: *word }
+  - { key: "5", mods: [], icon: opacity5.png, label: "Opacity 50%", <<: *word }
+  - { key: "6", mods: [], icon: opacity6.png, label: "Opacity 60%", <<: *word }
+  - { key: "7", mods: [], icon: opacity7.png, label: "Opacity 70%", <<: *word }
+  - { key: "8", mods: [], icon: opacity8.png, label: "Opacity 80%", <<: *word }
+  - { key: "9", mods: [], icon: opacity9.png, label: "Opacity 90%", <<: *word }
+  - { key: "0", mods: [], icon: opacity0.png, label: "Opacity 100%", <<: *word }
 
   # --- Shift ---
   - { key: S, mods: [SHIFT], icon: section.png,      label: Section }
@@ -121,7 +126,7 @@ bindings:
   - { key: W, mods: [ALT], icon: aligntop.png,      label: "Align top" }
   - { key: V, mods: [ALT], icon: alignvcenter.png,  label: "Align v-center" }
   - { key: S, mods: [ALT], icon: alignbottom.png,   label: "Align bottom" }
-  - { key: Z, mods: [ALT], icon: zoomtoolout.png,   label: "Zoom tool out (hold)" }
+  - { key: Z, mods: [ALT], icon: zoomtoolouthold.png,   label: "Zoom tool out (hold)", <<: *word }
 
   # --- Alt+Shift ---
   - { key: F, mods: [ALT, SHIFT], icon: flatten.png,       label: Flatten }
@@ -202,8 +207,8 @@ bindings:
   - { key: O, mods: [CMDCTRL, ALT], icon: outlinestroke.png, label: "Outline stroke" }
   - { key: A, mods: [CMDCTRL, ALT], icon: selmatching.png, label: "Select matching" }
   - { key: G, mods: [CMDCTRL, ALT], icon: frameselection.png, mode: alpha, label: "Frame sel" }
-  - { key: C, mods: [CMDCTRL, ALT], icon: copy.png,        label: "Copy properties" }
-  - { key: V, mods: [CMDCTRL, ALT], icon: paste.png,       label: "Paste properties" }
+  - { key: C, mods: [CMDCTRL, ALT], icon: copyprops.png,        label: "Copy properties", <<: *word }
+  - { key: V, mods: [CMDCTRL, ALT], icon: pasteprops.png,       label: "Paste properties", <<: *word }
   - { key: K, mods: [CMDCTRL, ALT], icon: component.png,   label: Component }
   - { key: B, mods: [CMDCTRL, ALT], icon: detach.png,      label: "Detach instance" }
 
@@ -248,7 +253,7 @@ bindings:
   - { key: BACKSPACE, mods: [], label: Delete }
   - { key: BACKSPACE, mods: [SHIFT], icon: deleteheal.png, label: "Delete and heal" }
   - { key: BACKSPACE, mods: [CMDCTRL], icon: ungroup.png, label: Ungroup }
-  - { key: SPACE, mods: [], icon: hand.png, label: "Pan (hold)" }
+  - { key: SPACE, mods: [], icon: space_hand.png, label: "Pan (hold)", <<: *space }
   - { key: SPACE, mods: [SHIFT], icon: preview.png, label: "Preview in canvas" }
   - { key: SPACE, mods: [CTRL], only: [windows, linux], icon: selarea.png, label: "Select area" }
   - { key: SPACE, mods: [ALT], only: [macos], icon: selarea.png, label: "Select area" }
