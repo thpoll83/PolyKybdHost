@@ -97,7 +97,8 @@ empty top-right corner of the ray for F5 to F8 (quick spells 1 to 4). The digit
 is DejaVu Sans Bold, as for the 0 A.D. camera pins. F9 to F12 show the default quick messages: a raised hand
 (help), a footprint (follow me), a present (something for you) and a skull (now
 you die). F and G show a sun with a plus or a minus (`gamma_icons()`). Left Alt
-and Right Ctrl both show the item labels icon.
+(hold) shows the item labels icon; Right Ctrl (on / off) shows it smaller with
+a switch at the bottom right (`toggle_icon()`).
 
 ESC shows "Devilution" over a large "X" in New Rocker (SIL OFL 1.1,
 `ofl/newrocker/NewRocker-Regular.ttf` from google/fonts at commit e7db6ca),
@@ -133,6 +134,7 @@ Licence texts for the icon and font licences named in this file:
 | `mapzoomout.png` | Font Awesome Free 6.5.2 `magnifying-glass-minus` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `gammaup.png`, `gammadown.png` | Font Awesome Free 6.5.2 `sun` (solid), with a plus or a minus drawn by `fetch_icons.py` | Fonticons, Inc. | CC BY 4.0 |
 | `highlight.png` | Font Awesome Free 6.5.2 `tags` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `highlighttoggle.png` | Font Awesome Free 6.5.2 `tags` and `toggle-on` (solid), composed by `fetch_icons.py` | Fonticons, Inc. | CC BY 4.0 |
 | `fullscreen.png` | Font Awesome Free 6.5.2 `expand` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `screenshot.png` | Font Awesome Free 6.5.2 `camera` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `pause.png` | Font Awesome Free 6.5.2 `pause` (solid) | Fonticons, Inc. | CC BY 4.0 |

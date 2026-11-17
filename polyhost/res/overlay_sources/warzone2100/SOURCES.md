@@ -33,7 +33,7 @@ reticule screens on F1 to F6, not through letter keys.
 | F9, F10, F11 | Toggle damage bars, take a screenshot, toggle formation speed limiting |
 | F12 | View the location of the previous message; with Shift: toggle the sensor display |
 | 1 to 0 | Select group; Ctrl assigns the group, Shift adds the selection to it, Alt selects commander N |
-| Backspace, Space | Snap the view to north, toggle the tracking camera |
+| Backspace, Space | Snap the view to north (the same function as Ctrl+Up: `kf_FaceNorth()` calls `kf_SeekNorth()` in `src/keybind.cpp`), toggle the tracking camera |
 | Ctrl+Up/Down/Left/Right | View north, south, east, west (Left is east and Right is west in the table) |
 | Ctrl+`-`, Ctrl+`=`, Ctrl+Backspace | Decrease, increase and reset the game speed |
 | `-`, `=` | Zoom the radar out and in (only with the mouse over the radar) |
@@ -92,7 +92,8 @@ outweigh the outline icons.
   sensor, rail gun tank, howitzer, rocket array, helicopter). The game does not
   tie a group to a unit type; the pictures only tell the digits apart. Ctrl
   adds a plus, Shift a plus in a ring, as in Warcraft III. Alt+digit (select
-  commander N) shows the command turret tank, as F6.
+  commander N) shows the command turret tank, as F6, with N in the top-right
+  corner (DejaVu Sans Bold, `commanders()`).
 - The Alt selections ("without group") add a struck-through ring in the
   bottom-right corner to the Shift or Ctrl icon of the same units.
 - `-` and `=` (radar zoom) are the `lorc/radar-sweep` radar with a minus or a plus.
@@ -201,6 +202,7 @@ Picked in the icon picker (`pictures.yaml`, `rasterize.yaml`):
 | `group9.png`, `groupnew9.png`, `groupadd9.png` | Warzone 2100 unit: Rocket array (`group9`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
 | `group0.png`, `groupnew0.png`, `groupadd0.png` | Warzone 2100 unit: Scavenger helicopter (`group0`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
 | `commander.png` | Warzone 2100 unit: Command turret (`commander`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
+| `commander1.png` … `commander0.png` | `commander.png` with the commander number in DejaVu Sans Bold, drawn by `fetch_icons.py` | Warzone 2100 developers; the digits Bitstream | GPL-2.0-or-later; the digits Bitstream Vera licence |
 | `holdfire.png` | Warzone 2100 interface image `image_ord_holdfireup.png`, dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
 | `returnfire.png` | Warzone 2100 interface image `image_ord_retfireup.png`, dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
 | `fireatwill.png` | Warzone 2100 interface image `image_ord_fatwillup.png`, dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |

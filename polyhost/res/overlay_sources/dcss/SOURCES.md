@@ -260,7 +260,7 @@ Material Design Icons are from <https://pictogrammers.com/library/mdi/>
 | `read.png` | Font Awesome Free 6.5.2 `scroll` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `shout.png` | Font Awesome Free 6.5.2 `bullhorn` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `attack.png` | Material Design Icons `sword-cross` | Pictogrammers | Apache-2.0 |
-| `wield.png` | Material Design Icons `sword` | Pictogrammers | Apache-2.0 |
+| `wield.png` | game-icons.net `delapouite/sword-brandish` (a hand on the hilt, so it differs from `attack_nw.png`) | delapouite | CC BY 3.0 |
 | `look.png` | Font Awesome Free 6.5.2 `eye` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `cast.png` | Font Awesome Free 6.5.2 `wand-sparkles` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `repeat.png` | Font Awesome Free 6.5.2 `rotate-right` (solid) | Fonticons, Inc. | CC BY 4.0 |

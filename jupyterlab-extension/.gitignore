@@ -1,0 +1,8 @@
+node_modules/
+lib/
+build-test/
+*.tsbuildinfo
+.yarn/
+yarn.lock
+dist/
+package-lock.json

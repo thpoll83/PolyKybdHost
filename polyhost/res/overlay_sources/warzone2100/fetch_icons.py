@@ -27,6 +27,7 @@ from polyhost.res.overlay_sources.aoe2 import fetch_icons as aoe2  # noqa: E402
 from polyhost.res.overlay_sources.aoe2 import program_mark  # noqa: E402
 from polyhost.res.overlay_sources.cnc_remastered import fetch_icons as cnc  # noqa: E402
 from polyhost.res.overlay_sources.warcraft3 import fetch_icons as wc3  # noqa: E402
+from polyhost.res.overlay_sources.zeroad import fetch_icons as zeroad  # noqa: E402
 
 ICONS = {
     # Reticule screens (F1 to F6)
@@ -405,6 +406,20 @@ def program(out: Path) -> None:
     print(f"  program.png  <- WARZONE (cap {lines[0][3]} px) over 2100 (cap {lines[1][3]} px), Orbitron Black")
 
 
+def commanders(out: Path) -> None:
+    """commander<N>.png (Alt+N: select commander N), 48 x 40: commander.png,
+    the command turret picked for Alt+digit (pictures.yaml), with N lit in the
+    empty top-right corner and SEAM px of the picture cleared around it."""
+    import numpy as np
+    base = _load_mask(out / "commander.png")
+    for d in "1234567890":
+        g = zeroad._digit(d, MARK)
+        t = np.zeros_like(base)
+        t[0:g.shape[0], base.shape[1] - g.shape[1] - 1:base.shape[1] - 1] = g
+        cnc._save_mask((base & ~program_mark.dilate(t, SEAM)) | t, out / f"commander{d}.png")
+    print("  commander1..0.png  <- commander.png + the commander number")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     cnc.render({**ICONS, "_radar": ICONS["radar"]}, out)
@@ -417,6 +432,7 @@ def main() -> int:
     pictures(out)
     marked(out)
     groups(out)
+    commanders(out)
     program(out)
     print(f"Wrote icons to {out}")
     return 0
