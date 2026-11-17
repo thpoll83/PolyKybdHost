@@ -87,3 +87,26 @@ the dragon's **silhouette** (every pixel farther than 60 RGB units from the
 - Linux: `with_app_id("ai.storyteller.vectorcraft")` (`apps/vectorcraft/src/main.rs:599`),
   `StartupWMClass=ai.storyteller.vectorcraft` in the `.desktop` file; the binary is
   `vectorcraft`. Both keys are listed.
+
+## One icon per action (2026-11-15)
+
+Two keys of one app share an image only when they do the same thing (maintainer,
+2026-11-15). Changed images:
+
+| File(s) | What | Source | Licence |
+|---|---|---|---|
+| `zoomtool` | Z, the Zoom tool: zoom-in glyph with a Fluent `Cursor` badge (`dcc_glyphs.with_badge`); Cmd+= zooms in one step | drawn over Fluent | MIT |
+| `zoomhold`, `zoomouthold` | Cmd+Space and Cmd+Alt+Space held: glyph + HOLD | drawn (composite) | GPL-3.0-or-later |
+| `space_hand` | Space held: the hand with an arrow on each side (`../space_hint.py`), placed 1:1 on the whole key | drawn (composite) | GPL-3.0-or-later |
+| `pastefront`, `pasteback` | Cmd+F / Cmd+B, Paste in front / back: clipboard with the up / down arrow badge (`_badge`); they drew the Nudge up / down arrows before | drawn over Fluent | MIT |
+| `tooldialog` | Enter, the active tool's dialog (Move... only with a selection tool; Cmd+Shift+M is always Move...) | Fluent `Options` | MIT |
+| `cursor` | badge glyph only | Fluent `Cursor` | MIT |
+
+Glyph + word composites are 1-bit at 40x40, drawn by `fetch_icons.py` with the glyph +
+word code of `../ghidra/fetch_icons.py` (Liberation Sans Bold), and placed 1:1
+(`region: [40, 40], mode: alpha`). They are GPL-3.0-or-later drawings over the glyphs
+named, which keep their own licences.
+
+`forward.png` and `backward.png` (the Illustrator copies) are no longer used and were
+removed. Cmd+, on macOS opens the same settings as Cmd+K, so both keys are labelled
+Preferences and share the image.

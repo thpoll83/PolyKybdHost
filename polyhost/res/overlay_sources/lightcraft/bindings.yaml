@@ -39,6 +39,9 @@ program_icon_anchor: bottom-right
 program_icon_region: [33, 40]   # the mark's own size: placed 1:1
 program_icon_margin: 0
 
+# A 40x40 composite (glyph + word, fetch_icons.py NEXT) is placed 1:1.
+_word: &word { region: [40, 40], mode: alpha }
+
 bindings:
   # ============================================================= #
   # no modifier                                                   #
@@ -48,8 +51,8 @@ bindings:
   - { key: D, mods: [], icon: detail.png,            label: "Detail view" }
   - { key: N, mods: [], icon: survey.png,            label: "Survey" }
   - { key: "/", mods: [], icon: filmstrip.png,       label: "Filmstrip" }
-  - { key: F6, mods: [], icon: filmstrip.png,        label: "Filmstrip (F6)" }
-  - { key: F7, mods: [], icon: leftpanel.png,        label: "My Photos panel (F7)" }
+  - { key: F6, mods: [], icon: filmstrip.png,        label: "Filmstrip" }
+  - { key: F7, mods: [], icon: leftpanel.png,        label: "My Photos panel" }
   - { key: Y, mods: [], icon: beforeafter.png,       label: "Before / After" }
   - { key: "\\", mods: [], icon: showoriginal.png,   label: "Show original" }
   - { key: Z, mods: [], icon: zoomtoggle.png,        label: "Toggle zoom" }
@@ -94,9 +97,9 @@ bindings:
   - { key: UP,    mods: [], icon: up.png,            label: "Photo above" }
   - { key: DOWN,  mods: [], icon: down.png,          label: "Photo below" }
   - { key: DELETE, mods: [], icon: delete.png,       label: "Delete photo" }
-  - { key: BACKSPACE, mods: [], icon: delete.png,    label: "Delete photo (Backspace)" }
+  - { key: BACKSPACE, mods: [], icon: delete.png,    label: "Delete photo" }
   - { key: ENTER, mods: [], icon: done.png,          label: "Done (tool)" }
-  - { key: SPACE, mods: [], icon: zoomtoggle.png,    label: "Toggle zoom (Space)" }
+  - { key: SPACE, mods: [], icon: zoomtoggle.png,    label: "Toggle zoom" }
 
   # ============================================================= #
   # SHIFT                                                         #
@@ -117,19 +120,19 @@ bindings:
   - { key: "[", mods: [SHIFT], icon: hardnessdec.png, mode: alpha, label: "Brush feather -" }
   - { key: "]", mods: [SHIFT], icon: hardnessinc.png, mode: alpha, label: "Brush feather +" }
   # culling + advance to the next photo
-  - { key: X, mods: [SHIFT], icon: reject.png,       label: "Reject + next" }
-  - { key: Z, mods: [SHIFT], icon: pick.png,         label: "Pick + next" }
-  - { key: U, mods: [SHIFT], icon: unflag.png,       label: "Unflag + next" }
-  - { key: "0", mods: [SHIFT], icon: clearrating.png, label: "Clear rating + next" }
-  - { key: "1", mods: [SHIFT], icon: rate1.png,      label: "Rate 1 + next" }
-  - { key: "2", mods: [SHIFT], icon: rate2.png,      label: "Rate 2 + next" }
-  - { key: "3", mods: [SHIFT], icon: rate3.png,      label: "Rate 3 + next" }
-  - { key: "4", mods: [SHIFT], icon: rate4.png,      label: "Rate 4 + next" }
-  - { key: "5", mods: [SHIFT], icon: rate5.png,      label: "Rate 5 + next" }
-  - { key: "6", mods: [SHIFT], icon: labelR.png,     label: "Red label + next" }
-  - { key: "7", mods: [SHIFT], icon: labelY.png,     label: "Yellow label + next" }
-  - { key: "8", mods: [SHIFT], icon: labelG.png,     label: "Green label + next" }
-  - { key: "9", mods: [SHIFT], icon: labelB.png,     label: "Blue label + next" }
+  - { key: X, mods: [SHIFT], icon: rejectnext.png,       label: "Reject + next", <<: *word }
+  - { key: Z, mods: [SHIFT], icon: picknext.png,         label: "Pick + next", <<: *word }
+  - { key: U, mods: [SHIFT], icon: unflagnext.png,       label: "Unflag + next", <<: *word }
+  - { key: "0", mods: [SHIFT], icon: clearratingnext.png, label: "Clear rating + next", <<: *word }
+  - { key: "1", mods: [SHIFT], icon: rate1next.png,      label: "Rate 1 + next", <<: *word }
+  - { key: "2", mods: [SHIFT], icon: rate2next.png,      label: "Rate 2 + next", <<: *word }
+  - { key: "3", mods: [SHIFT], icon: rate3next.png,      label: "Rate 3 + next", <<: *word }
+  - { key: "4", mods: [SHIFT], icon: rate4next.png,      label: "Rate 4 + next", <<: *word }
+  - { key: "5", mods: [SHIFT], icon: rate5next.png,      label: "Rate 5 + next", <<: *word }
+  - { key: "6", mods: [SHIFT], icon: labelRnext.png,     label: "Red label + next", <<: *word }
+  - { key: "7", mods: [SHIFT], icon: labelYnext.png,     label: "Yellow label + next", <<: *word }
+  - { key: "8", mods: [SHIFT], icon: labelGnext.png,     label: "Green label + next", <<: *word }
+  - { key: "9", mods: [SHIFT], icon: labelBnext.png,     label: "Blue label + next", <<: *word }
 
   # ============================================================= #
   # ALT / ALT+SHIFT                                               #
@@ -151,11 +154,11 @@ bindings:
   # ============================================================= #
   - { key: Z, mods: [CMDCTRL], icon: undo.png,         label: "Undo" }
   - { key: A, mods: [CMDCTRL], icon: selectall.png,    label: "Select all" }
-  - { key: D, mods: [CMDCTRL], icon: deselect.png,     label: "Deselect all (D)" }
+  - { key: D, mods: [CMDCTRL], icon: deselect.png,     label: "Deselect all" }
   - { key: N, mods: [CMDCTRL], icon: newalbum.png,     label: "New album" }
   - { key: F, mods: [CMDCTRL], icon: find.png,         label: "Find" }
   - { key: I, mods: [CMDCTRL], icon: infooverlay.png,  label: "Cycle info overlay" }
-  - { key: E, mods: [CMDCTRL], icon: exportprevious.png, label: "Export with previous (E)" }
+  - { key: E, mods: [CMDCTRL], icon: exportprevious.png, label: "Export with previous" }
   - { key: R, mods: [CMDCTRL], icon: showinfinder.png, label: "Show in folder" }
   - { key: Q, mods: [CMDCTRL], icon: quit.png,         label: "Quit LightCraft" }
   - { key: ",", mods: [CMDCTRL], icon: settings.png,   label: "Settings" }

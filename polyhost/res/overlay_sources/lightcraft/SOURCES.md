@@ -95,3 +95,19 @@ cut off the coloured tile as one solid shape, fitted into 40 x 40 (33 x 40), and
 interior pixels darker than luma 120 at that size are cut back out (eyes, mouth,
 lines). The spec places it 1:1 (`program_icon_region: [33, 40]`). The
 generator's thresholds turned the engraving into dither at keycap size.
+
+## One icon per action (2026-11-15)
+
+Two keys of one app share an image only when they do the same thing (maintainer,
+2026-11-15). The Shift "+ next" keys flag, rate or label the photo and then select the
+next one, so each draws its own image: the plain glyph over the word NEXT
+(`picknext`, `rejectnext`, `unflagnext`, `clearratingnext`, `rate1next`..`rate5next`,
+`labelRnext`, `labelYnext`, `labelGnext`, `labelBnext`). Glyph + word composites are 1-bit at 40x40, drawn by `fetch_icons.py` with the glyph +
+word code of `../ghidra/fetch_icons.py` (Liberation Sans Bold), and placed 1:1
+(`region: [40, 40], mode: alpha`). They are GPL-3.0-or-later drawings over the glyphs
+named, which keep their own licences.
+
+The aliases from `shortcuts.rs` ALIASES do the same thing as their main key and keep
+its image; their labels no longer carry the key name: F6 Filmstrip, F7 My Photos
+panel, Space Toggle zoom, Backspace Delete photo, Cmd+D Deselect all, Cmd+E Export
+with previous.

@@ -76,7 +76,7 @@ remapped: the macOS application menu (`src/menus.rs:23-38`) lists Settings
 |---|---|---|
 | Most glyphs (the `FLUENT` map in `fetch_icons.py` without an `ms:` prefix) | [Microsoft Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) | MIT |
 | `bone, inkbottle, objectdrawing, onion, selectallframes, cutframes, copyframes, pasteframes, convertsymbol, shapehint, alignleft, alignhcenter, alignright, aligntop, alignvcenter, alignbottom, aligntostage, publishsettings, nextpanel, prevpanel, editsymbol` | [Material Symbols](https://fonts.google.com/icons) (`ms:`, weight 300) | Apache-2.0 |
-| `select, directselect, freetransform, width, pen, type, pencil, paintbrush, blobbrush, eraser, rectangle, ellipse, line, eyedropper, hand, zoom, new, open, save, saveas, undo, redo, cut, copy, paste, pasteinplace, selectall, deselect, clear, bringforward, sendbackward, tofront, toback, zoomin, zoomout, fitall, actualsize, place, snaptopoint, prefs, quit` | byte-identical copies of `../vectorcraft/icons/` (see `../vectorcraft/SOURCES.md`) | as listed there (MIT, ISC, Apache-2.0, GPL-3.0-or-later drawn) |
+| `select, directselect, freetransform, width, pen, type, pencil, paintbrush, blobbrush, eraser, rectangle, ellipse, line, eyedropper, hand, zoomtool, space_hand, new, open, save, saveas, undo, redo, cut, copy, paste, pasteinplace, selectall, deselect, clear, bringforward, sendbackward, tofront, toback, zoomin, zoomout, fitall, actualsize, place, snaptopoint, prefs, quit` | byte-identical copies of `../vectorcraft/icons/` (see `../vectorcraft/SOURCES.md`) | as listed there (MIT, ISC, Apache-2.0, GPL-3.0-or-later drawn) |
 | `brushdec, brushinc, fill` | byte-identical copies of `../photocraft/icons/` | as listed there |
 | `prevframe, nextframe` | byte-identical copies of `../effectcraft/icons/` (Fluent) | MIT |
 | `rtz, goend, play` | byte-identical copies of `../soundcraft/icons/` (Fluent) | MIT |
@@ -115,3 +115,12 @@ cut off the coloured tile as one solid shape, fitted into 40 x 40 (34 x 40), and
 interior pixels darker than luma 120 at that size are cut back out (eyes, mouth,
 lines). The spec places it 1:1 (`program_icon_region: [34, 40]`). The
 generator's thresholds turned the engraving into dither at keycap size.
+
+## One icon per action (2026-11-15)
+
+Two keys of one app share an image only when they do the same thing (maintainer,
+2026-11-15). Z (the Zoom tool) draws `zoomtool` (zoom-in glyph +
+Fluent `Cursor` badge; Cmd+= zooms in one step) and Space held draws `space_hand` (the
+hand with four arrows, `../space_hint.py`), both copied from `../vectorcraft/icons/`.
+Cmd+0 and Cmd+2 both run `view.fit` (`src/stage.rs:223`, `src/app.rs:491,2461`), so both
+are labelled Fit in window and share the image.

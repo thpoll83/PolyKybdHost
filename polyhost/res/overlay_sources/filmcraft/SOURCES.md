@@ -85,18 +85,13 @@ The application-wide binding is drawn, except:
 
 ### Icon reuse that is deliberate
 
-- Program and Source monitor zoom (Cmd+Shift+0/1 vs Cmd+Alt+Shift+0/1) share the fit /
-  1:1 glyphs; the modifier says which monitor.
-- Shift+Up/Down (edit point on any track) reuse the Up/Down edit-point glyphs; Shift+Home/End
-  (selected clip start/end) reuse Home/End.
-- Cmd+Left/Right and Cmd+Shift+Left/Right (nudge clip one / five frames) share Fluent
-  `Arrow Move`; the four slip chords share the slip glyph.
+None since 2026-11-15: see *One icon per action* below.
 
 ## Icons
 
 | File(s) | Source | License |
 |---|---|---|
-| `select trackselect rippleedit rolledit ratestretch blade slip slide pen hand zoom markin markout rev stop fwd play zoomin zoomout zoomfit newsequence newproject open save saveas import export undo redo cut copy paste selectall group ungroup link addedit speed rippledelete panelproject panelsource paneltimeline panelprogram paneleffectctl panelaudio paneleffects` | byte-identical copies of `../premiere/icons/` (Fluent MIT + `../nle_glyphs.py`) | MIT / GPL-3.0-or-later |
+| `select trackselect rippleedit rolledit ratestretch blade slip slide pen hand markin markout rev stop fwd play zoomin zoomout zoomfit newsequence newproject open save saveas import export undo redo cut copy paste selectall group ungroup link addedit speed rippledelete panelsource paneltimeline panelprogram paneleffectctl panelaudio paneleffects` | byte-identical copies of `../premiere/icons/` (Fluent MIT + `../nle_glyphs.py`) | MIT / GPL-3.0-or-later |
 | `marker insert` | copies of `../resolve/icons/` (Fluent `Flag`, `Arrow Between Down`) | MIT |
 | `overwrite snap trim` | drawn, `../nle_glyphs.py` | GPL-3.0-or-later |
 | every other plain glyph | [Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) or `ms:` [Material Symbols](https://fonts.google.com/icons), names in `fetch_icons.py` `FLUENT` | MIT / Apache-2.0 |
@@ -145,3 +140,26 @@ cut off the coloured tile as one solid shape, fitted into 40 x 40 (35 x 40), and
 interior pixels darker than luma 120 at that size are cut back out (eyes, mouth,
 lines). The spec places it 1:1 (`program_icon_region: [35, 40]`). The
 generator's thresholds turned the engraving into dither at keycap size.
+
+## One icon per action (2026-11-15)
+
+Two keys of one app share an image only when they do the same thing (maintainer,
+2026-11-15). Changed images:
+
+| File(s) | What | Source | Licence |
+|---|---|---|---|
+| `sourcefit`, `source100` | Cmd+Alt+Shift+0/1, Source monitor zoom: the Program glyph + SRC | drawn (composite) | GPL-3.0-or-later |
+| `prevedit_all`, `nextedit_all` | Shift+Up/Down, edit point on any track: glyph + ALL | drawn (composite) | GPL-3.0-or-later |
+| `clipstart`, `clipend` | Shift+Home/End, selected clip start / end: glyph + CLIP | drawn (composite) | GPL-3.0-or-later |
+| `nudgeleft1`, `nudgeright1`, `nudgeup1`, `nudgedown1` | Cmd+Left/Right, Alt+Up/Down, nudge the clip selection one frame: arrow + 1 | drawn (composite) | GPL-3.0-or-later |
+| `nudgeleft5`, `nudgeright5`, `nudgeup5`, `nudgedown5` | Cmd+Shift+arrows, nudge by five: arrow + 5 | drawn (composite) | GPL-3.0-or-later |
+| `slipleft`, `slipright`, `slipleft5`, `slipright5` | Cmd+Alt(+Shift)+Left/Right, slip by one / five: slip glyph + `-1` `+1` `-5` `+5` (Y keeps the plain slip tool) | drawn (composite) | GPL-3.0-or-later |
+| `zoomtool` | Z, the Zoom tool: zoom-in glyph with a Fluent `Cursor` badge (`dcc_glyphs.with_badge`); = zooms in one step | drawn over Fluent | MIT |
+| `nudgeleft`, `nudgeright` | bases of the left / right nudges (both keys drew `nudgeleft`, Fluent `Arrow Move`, before) | Material Symbols `west`, `east` | Apache-2.0 |
+| `panelproject` | Shift+1, Project panel (the premiere copy was the Open project folder of Cmd+O) | Fluent `Folder` | MIT |
+| `cursor` | badge glyph only | Fluent `Cursor` | MIT |
+
+Glyph + word composites are 1-bit at 40x40, drawn by `fetch_icons.py` with the glyph +
+word code of `../ghidra/fetch_icons.py` (Liberation Sans Bold), and placed 1:1
+(`region: [40, 40], mode: alpha`). They are GPL-3.0-or-later drawings over the glyphs
+named, which keep their own licences.

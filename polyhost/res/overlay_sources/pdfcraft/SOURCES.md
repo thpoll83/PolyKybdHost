@@ -109,3 +109,11 @@ cut off the coloured tile as one solid shape, fitted into 40 x 40 (39 x 40), and
 interior pixels darker than luma 120 at that size are cut back out (eyes, mouth,
 lines). The spec places it 1:1 (`program_icon_region: [39, 40]`). The
 generator's thresholds turned the engraving into dither at keycap size.
+
+## One icon per action (2026-11-15)
+
+Two keys of one app share an image only when they do the same thing (maintainer,
+2026-11-15). Space held (the hand tool while the key is down)
+draws `space_hand`, the hand with an arrow on each side (`../space_hint.py`), copied
+byte-identically from `../vectorcraft/icons/` (same Fluent `Hand Right`, MIT). H keeps
+the plain hand.
