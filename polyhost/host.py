@@ -755,6 +755,15 @@ class PolyHost(QApplication):
         self.layout_editor.triggered.connect(self.open_layout_editor)
         self.menu.addAction(self.layout_editor)
 
+        # Tutorials (gui/tutorials_dialog.py): YAML scripts that point at keys with
+        # the focus ring (cmd 47, v32+). Core calls go through _core_click. It is in
+        # Help & About, not the top level, which host_client_test keeps short.
+        self.tutorials_action = QAction(get_icon("help.svg"), _("Tutorials…"), parent=self)
+        # noinspection PyUnresolvedReferences
+        self.tutorials_action.triggered.connect(self.open_tutorials)
+        self.tutorials_dialog = None
+        self.tutorial_panel = None
+
         self.menu.addSeparator()
 
         # --- Updates: every "get something newer" path in one place -------------
@@ -933,6 +942,7 @@ class PolyHost(QApplication):
 
         # --- Help & About: the read-only, always-available corner --------------
         self.help_menu = self.menu.addMenu(get_icon("help.svg"), _("Help && About"))
+        self.help_menu.addAction(self.tutorials_action)
         self.help_menu.addAction(self.about)
         self.help_menu.addAction(self.report_problem_action)
         self.help_menu.addAction(self.log_dialog)
@@ -1339,6 +1349,7 @@ class PolyHost(QApplication):
         # Host state and the user's own hook files: usable with no keyboard.
         self.agents_menu.menuAction().setEnabled(True)
         self.tap_terms_action.setEnabled(enabled and self.supports("tap_terms"))
+        self.tutorials_action.setEnabled(enabled and self.supports("key_attention"))
         # The Developer parent stays enabled UNCONDITIONALLY: several of its
         # entries are offline tools (the font-pack inspector inspects the shipped
         # bundles with no device at all, the mock-bitmap dump writes files), and a
@@ -1788,6 +1799,34 @@ class PolyHost(QApplication):
         # (worker run_sync) and in client mode (RPC) alike.
         self.layout_dialog = KbLayoutDialog(self.core, self.device_settings)
         self.layout_dialog.showMaximized()      # the board wants the whole screen
+
+    def open_tutorials(self):
+        from polyhost.gui.tutorials_dialog import TutorialsDialog
+        if self.tutorials_dialog is not None and self.tutorials_dialog.isVisible():
+            self.tutorials_dialog.raise_()
+            self.tutorials_dialog.activateWindow()
+            return
+        self.tutorials_dialog = TutorialsDialog(self.core, self._core_click,
+                                                self._show_tutorial_panel)
+        self.tutorials_dialog.show()
+        self.tutorials_dialog.load()
+
+    def _show_tutorial_panel(self, state):
+        """Open (or reuse) the step panel for a started tutorial."""
+        from polyhost.gui.tutorials_dialog import TutorialPanel
+        if self.tutorial_panel is None:
+            self.tutorial_panel = TutorialPanel(self.core, self._core_click)
+        self.tutorial_panel.update_state(state)
+        if state and not state.get("finished"):
+            self.tutorial_panel.show()
+            self.tutorial_panel.raise_()
+
+    def _on_tutorial_event(self, state):
+        """The core's "tutorial" event: a step changed, by a click, a timer or
+        polyctl. A tutorial started from polyctl opens the panel too."""
+        if self.tutorial_panel is None and (not state or state.get("finished")):
+            return
+        self._show_tutorial_panel(state)
 
     def open_settings(self):
         dlg = SettingsDialog()
@@ -3955,6 +3994,8 @@ class PolyHost(QApplication):
                     self.boot_loop_dialog.feed_progress(result)
                 else:
                     self.boot_loop_dialog.feed_done(result)
+        elif name == "tutorial":
+            self._on_tutorial_event(result)
         elif name == "problem_detected":
             self._on_problem_detected(result)
         elif name == "agent_open_request":

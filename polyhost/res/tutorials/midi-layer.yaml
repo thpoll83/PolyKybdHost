@@ -1,0 +1,39 @@
+# The MIDI layer. docs/tutorials-plan.md has the field reference.
+id: midi-layer
+category: layers
+title: The MIDI layer
+summary: Play notes from the keyboard in a music program or a browser with Web MIDI.
+min_protocol: 32
+steps:
+  - guide_to_layer: MIDI
+    say: ["Hold Fn, then tap", "the ringed key"]
+    text: >-
+      Hold Fn. The ring moves to the key above the right Shift. Keep Fn held and tap
+      that key. The keyboard changes to the MIDI layer and stays on it.
+    wait: {layer: MIDI}
+  - point: {keycode: MI_C}
+    spotlight: [{layer: MIDI}]
+    say: ["The home row", "plays C4 to F5"]
+    text: >-
+      The home row plays the white keys from C4 to F5. The row above it has the black
+      keys. Keys with no note are blank, where a piano has no black key.
+  - point: {keycode: MI_OCTD}
+    spotlight: [{layer: MIDI}]
+    say: ["Octave - / +,", "then velocity - / +"]
+    text: >-
+      The ringed key and the key to its right move one octave down and up. The next
+      two keys lower and raise the velocity.
+  - point: {keycode: MI_AOFF}
+    spotlight: [{layer: MIDI}]
+    say: ["Esc stops", "every note"]
+    text: Esc sends All Notes Off. Use it when a note does not stop. Press it now.
+    wait: {press: MI_AOFF}
+  - point: {keycode: KC_BASE}
+    spotlight: [{layer: MIDI}]
+    say: ["This key goes", "back to typing"]
+    text: The lower-left corner key leaves the MIDI layer. Press it now.
+    wait: {press: KC_BASE}
+  - reveal: {from: {keycode: KC_BASE}}
+    say: ["Done", ""]
+    text: You are back on your typing layer.
+    wait: {seconds: 3}

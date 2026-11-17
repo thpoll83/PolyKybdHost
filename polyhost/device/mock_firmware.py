@@ -130,6 +130,7 @@ CMD_MIN_PROTOCOL: dict[int, int] = {
     Cmd.AI_CARD.value: 31,
     Cmd.KEY_ATTENTION.value: 32,
     Cmd.COMBOS.value: 33,
+    Cmd.HOST_TUTORIAL.value: 35,
     fw.CMD_FW_UP_BEGIN: 0,
     fw.CMD_FW_UP_CHUNK: 0,
     fw.CMD_FW_UP_COMMIT: 0,
@@ -439,11 +440,30 @@ class MockFirmware:
         self.ai_states = [0] * 10
         self.ai_slots = [0xFFFF] * 12
         self.ai_flags = 0
+        self.ai_page = (0, 0, 0)   # v36: page shown, page count, finished-elsewhere counter
         self.ai_events = []        # [(seq, key)], the newest 8
         self.ai_seq = 0
         self.ai_cards = {}         # pool slot -> bytearray(360)
         self.key_attention = None  # cmd 47: (row, col, count, period ms)
         self.key_guide = None      # cmd 47 op 2: (steps, target, count, period ms)
+        # cmd 49, the host tutorial: what the halves show and what the master watches.
+        self.tutorial_text = ("", "")
+        self.tutorial_spotlight = None   # None = off, else the set of (row, col) left lit
+        self.tutorial_reveal = None      # (row, col) of the last reveal
+        self.tutorial_conds = []         # [(kind, a, b)]
+        self.tutorial_matched = 0
+
+    def tutorial_press(self, row: int, col: int, keycode: int) -> None:
+        """Test hook: a key press the master's process_record would see."""
+        for i, (kind, a, b) in enumerate(self.tutorial_conds):
+            if (kind == 1 and (a, b) == (row, col)) or (kind == 3 and a | b << 8 == keycode):
+                self.tutorial_matched |= 1 << i
+
+    def tutorial_layers(self, layers_on: int) -> None:
+        """Test hook: the layer state (layer_state | default_layer_state)."""
+        for i, (kind, a, _b) in enumerate(self.tutorial_conds):
+            if kind == 2 and layers_on & (1 << a):
+                self.tutorial_matched |= 1 << i
 
     def reboot(self) -> None:
         """A reset: RAM state goes, flash (bundles, staged image) stays."""
@@ -650,7 +670,13 @@ class MockFirmware:
             if (any(s > 5 for s in states) or flags & ~0x0F
                     or any(s != 0xFFFF and s >= capacity for s in slots)):
                 return _reply(p[1], False)
+            # v36 page bytes, after the 35 above; a v35 keyboard ignores them, as the
+            # firmware does. A page not below its count is refused with the report.
+            page = (p[38], p[39], p[40]) if self.protocol >= 36 else (0, 0, 0)
+            if not (page[0] == 0 if page[1] == 0 else page[0] < page[1]):
+                return _reply(p[1], False)
             self.ai_states, self.ai_flags, self.ai_slots = states, flags, slots
+            self.ai_page = page
             return _reply(p[1])
         if op == 2:
             seen = p[3]
@@ -703,6 +729,58 @@ class MockFirmware:
         self.key_guide = (steps, target, count, period * 100)
         self.key_attention = None
         return _reply(p[1])
+
+    def _host_tutorial(self, p):
+        """cmd 49 (v35): the same refusals as base/host_tutorial_plan.c."""
+        rows, cols = self.settings.MATRIX_ROWS, self.settings.MATRIX_COLUMNS
+        op = p[2]
+        if op == 0:     # INFO
+            return _reply(p[1], body=bytes([0x7F, 4, 10, 59]))
+        if op == 1:     # TEXT
+            pos, lines = 3, []
+            for _ in range(2):
+                if pos >= 64:
+                    return _reply(p[1], False)
+                n = p[pos]
+                pos += 1
+                if pos + n > 64 or any(not 0x20 <= ch <= 0x7E for ch in p[pos:pos + n]):
+                    return _reply(p[1], False)
+                lines.append(bytes(p[pos:pos + n]).decode("ascii"))
+                pos += n
+            self.tutorial_text = tuple(lines)
+            return _reply(p[1])
+        if op == 2:     # SPOTLIGHT
+            flags, mask = p[3], p[4:14]
+            bits = [b for b in range(80) if mask[b // 8] & (1 << (b % 8))]
+            if flags & ~1 or any(b >= rows * cols for b in bits):
+                return _reply(p[1], False)
+            self.tutorial_spotlight = {divmod(b, cols) for b in bits} if flags & 1 else None
+            return _reply(p[1])
+        if op == 3:     # REVEAL
+            if p[3] >= rows or p[4] >= cols:
+                return _reply(p[1], False)
+            self.tutorial_reveal = (p[3], p[4])
+            return _reply(p[1])
+        if op == 4:     # ARM
+            n = p[3]
+            conds = [tuple(p[4 + 3 * i:7 + 3 * i]) for i in range(n)] if n <= 4 else None
+            if conds is None or any(
+                    (k == 1 and (a >= rows or b >= cols)) or (k == 2 and (a >= 13 or b))
+                    or k not in (1, 2, 3) for k, a, b in conds):
+                return _reply(p[1], False)
+            self.tutorial_conds, self.tutorial_matched = conds, 0
+            return _reply(p[1])
+        if op == 5:     # POLL
+            flags = (1 if any(self.tutorial_text) else 0) | \
+                    (2 if self.tutorial_spotlight is not None else 0) | \
+                    (4 if self.tutorial_conds else 0)
+            return _reply(p[1], body=bytes([flags, len(self.tutorial_conds),
+                                            self.tutorial_matched, 0]))
+        if op == 6:     # END
+            self.tutorial_text, self.tutorial_spotlight = ("", ""), None
+            self.tutorial_conds, self.tutorial_matched = [], 0
+            return _reply(p[1])
+        return _reply(p[1], False)
 
     def _combos(self, p):
         """cmd 48: runtime combos / tap dance, firmware poly_combos.c. Set changes the
@@ -1221,6 +1299,7 @@ class MockFirmware:
         Cmd.AI_CARD.value: _ai_card,
         Cmd.KEY_ATTENTION.value: _key_attention,
         Cmd.COMBOS.value: _combos,
+        Cmd.HOST_TUTORIAL.value: _host_tutorial,
         Cmd.GET_DEFAULT_LAYER.value: _default_layer,
         Cmd.ENTER_BOOTLOADER.value: _bootloader,
         Cmd.REBOOT.value: _reboot,

@@ -5,7 +5,7 @@ category's page on the right. Each page installs and removes its own parts:
 
 - AI agents: the hooks in each agent's config file (services/agents/hook_install.py)
 - Terminals: the title line in each shell's startup file (services/shell_title.py)
-- Editors: the Vim, Neovim, Emacs and GDB plugins (services/editor_plugins.py)
+- Editors: the Vim, Neovim, Emacs and GDB plugins and the FreeCAD add-on (services/editor_plugins.py)
 - Browser: the browser extension folder (services/browser_extension.py)
 
 All of it is a local file change on the computer the app runs on. It needs no
