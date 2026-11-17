@@ -273,8 +273,10 @@ class TutorialRun:
                      None)
         if first is None:
             return None
-        if not (self._cmd49 and self.keeb.supports("tutorial_emoji_mode")):
+        if not self.keeb.supports("tutorial_emoji_mode"):
             return "The keyboard cannot set the emoji layer's mode (firmware protocol 37)."
+        if not self._cmd49:
+            return "The keyboard did not answer the tutorial info request (cmd 49)."
         ok, msg = self.keeb.tutorial_emoji_mode(first)
         if ok:
             return None

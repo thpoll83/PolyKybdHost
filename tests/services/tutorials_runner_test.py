@@ -494,6 +494,16 @@ class HostTutorialTest(unittest.TestCase):
         self.assertNotIn(("text", "Search mode", ""), kb.calls)
         self.assertEqual(kb.cmd49()[-1], ("end",))
 
+    def test_an_unanswered_info_names_cmd_49_not_the_protocol(self):
+        # Protocol 37 firmware whose cmd 49 INFO failed: the message names that.
+        kb = _Keyboard(protocol=37)
+        kb.info_ok = False
+        run, _kb = _run([{"say": "Search mode", "emoji_mode": "search"}], kb)
+        ok, msg = run.start()
+        self.assertFalse(ok)
+        self.assertIn("cmd 49", msg)
+        self.assertNotIn("protocol 37", msg)
+
     def test_a_next_step_polls_too(self):
         # The session stays alive while a step waits for Next.
         run, kb = _run([{"say": "a"}], _Keyboard(protocol=35))
