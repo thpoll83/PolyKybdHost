@@ -175,4 +175,5 @@ The schema binds three keys twice, by focus:
   <https://simpleicons.org>), used to name the application
   (`../brand_marks.py`). `esc_mark` in `fetch_icons.py` redraws it for the whole
   72 x 40 ESC cell (`esc_jupyter.png`): the word "jupyter" in DejaVu Sans Bold
-  12 px between the two arcs, and the three moons as round dots.
+  12 px across a 38 px circle whose top and bottom form the two arcs, and the
+  three moons as round dots.

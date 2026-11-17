@@ -94,19 +94,25 @@ FLUENT = {
 def esc_mark(dest: Path) -> None:
     """The Jupyter logo for the whole ESC cell (72 x 40 px, 1 bit): the word
     "jupyter" in DejaVu Sans Bold 12 px between the two arcs, and the three
-    moons as round dots (4, 3 and 5 px). The arcs are crescents (one ellipse
-    minus another) kept out of the text rows. Scaled from the 256 px logo, the
+    moons as round dots (4, 3 and 5 px). The arcs are the top and bottom of
+    one 38 px circle: each is the circle minus the same circle moved 5 px
+    down (top arc) or up (bottom arc), and both stop two rows short of the
+    word, which runs across the circle as in the logo. Scaled from the 256 px logo, the
     arcs left loose pixels and the moons came out as uneven blobs, and the
     word could not be read."""
     from PIL import Image, ImageChops, ImageDraw, ImageFont
     w, h = 72, 40
 
-    def crescent(outer, inner):
+    def disc(box):
         a = Image.new("L", (w, h), 0)
-        ImageDraw.Draw(a).ellipse(outer, fill=255)
-        b = Image.new("L", (w, h), 0)
-        ImageDraw.Draw(b).ellipse(inner, fill=255)
-        return ImageChops.subtract(a, b)
+        ImageDraw.Draw(a).ellipse(box, fill=255)
+        return a
+
+    cx, cy, r, shift = w / 2 - 0.5, h / 2 - 0.5, 19, 5
+    circle = [cx - r, cy - r, cx + r, cy + r]
+
+    def moved(dy):
+        return [circle[0], circle[1] + dy, circle[2], circle[3] + dy]
 
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 12)
     left, top, right, bottom = font.getbbox("jupyter")
@@ -116,14 +122,14 @@ def esc_mark(dest: Path) -> None:
     word = word.crop(word.getbbox())
     x, y = (w - word.width) // 2, (h - word.height) // 2
     m = Image.new("L", (w, h), 0)
-    m.paste(255, (0, 0), crescent([9, 2, 62, 30], [7, 5, 64, 40]))    # upper arc
-    m.paste(255, (0, 0), crescent([9, 10, 62, 38], [7, 0, 64, 35]))   # lower arc
+    m.paste(255, (0, 0), ImageChops.subtract(disc(circle), disc(moved(shift))))    # top arc
+    m.paste(255, (0, 0), ImageChops.subtract(disc(circle), disc(moved(-shift))))   # bottom arc
     d = ImageDraw.Draw(m)
     d.rectangle([0, y - 2, w, y + word.height + 1], fill=0)          # arcs out of the text rows
     m.paste(255, (x, y), word)
-    d.ellipse([59, 0, 62, 3], fill=255)     # top-right moon
-    d.ellipse([6, 3, 8, 5], fill=255)       # top-left moon
-    d.ellipse([6, 33, 10, 37], fill=255)    # bottom-left moon
+    d.ellipse([50, 0, 53, 3], fill=255)     # top-right moon
+    d.ellipse([17, 4, 19, 6], fill=255)     # top-left moon
+    d.ellipse([16, 33, 20, 37], fill=255)   # bottom-left moon
     img = Image.new("RGBA", (w, h), (255, 255, 255, 0))
     img.putalpha(m)
     img.save(dest)
