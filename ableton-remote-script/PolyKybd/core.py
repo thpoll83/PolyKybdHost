@@ -9,13 +9,15 @@ script drives from Live's ~100 ms `update_display()` tick. `__init__.py` and
 What is sent, and nothing else::
 
     POST http://127.0.0.1:<port>/report      Content-Type: application/json
-    {"app": "ableton", "url": "ableton://session/clip", "focused": true,
+    {"app": "ableton", "url": "ableton://session/clip/midi", "focused": true,
      "pid": 4242, "input_age": 0.4, "token": "<only if one is configured>"}
 
 The URL names the main view (`session` or `arrangement`, from
 `Application.View.focused_document_view`) and, when the detail view is open,
-which one it shows (`clip` or `device`). No set name, track, clip or device
-name. Keep it that way: the host routes on these tokens alone.
+which one it shows (`clip` or `device`). For the Clip View it adds the kind
+of clip (`midi` or `audio`, from `Song.View.detail_clip`), and `full` when the
+main view is not visible (the Clip View fills the window). No set name, track,
+clip or device name. Keep it that way: the host routes on these tokens alone.
 
 Why no thread: Live's main thread is also its UI thread, and Live's embedded
 Python is known to stall when a script starts threads (AbletonOSC, which
@@ -48,18 +50,29 @@ SETTINGS_FILE = "settings.json"
 _MAIN_VIEWS = {"Session": "session", "Arranger": "arrangement"}
 
 
-def context_url(document_view, clip_visible=False, device_visible=False):
-    """`ableton://<session|arrangement>[/clip|/device]`, or None for a view
-    name this script does not know.
+_CLIP_KINDS = ("midi", "audio")
 
-    Live shows one detail view at a time (Clip or Device), so at most one of
-    the two flags is set; if both are, `clip` is reported."""
+
+def context_url(document_view, clip_visible=False, device_visible=False,
+                clip_kind=None, main_visible=True):
+    """`ableton://<session|arrangement>[/clip[/midi|/audio][/full]|/device]`,
+    or None for a view name this script does not know.
+
+    Live shows the Clip View above the Device View when both are open; the
+    Clip View is reported then. `clip_kind` is `midi` or `audio` (anything
+    else is left out). `/full` means the main view itself is not visible, so
+    the keyboard focus cannot be in it: Live's "Expand Clip View"
+    (Ctrl+Alt+E). It is added only to the Clip View."""
     main = _MAIN_VIEWS.get(str(document_view or ""))
     if main is None:
         return None
     url = f"ableton://{main}"
     if clip_visible:
         url += "/clip"
+        if clip_kind in _CLIP_KINDS:
+            url += f"/{clip_kind}"
+        if not main_visible:
+            url += "/full"
     elif device_visible:
         url += "/device"
     return url

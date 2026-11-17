@@ -4,6 +4,10 @@ Drives `polyhost/res/overlay-mapping.poly.yaml` itself. What it pins:
 
 * `ableton://session[/clip|/device]` (the remote script in
   `ableton-remote-script/`) gets the Session View set;
+* `ableton://<view>/clip/midi/full` and `.../clip/audio/full` (the Clip View
+  fills the window) get the MIDI Note Editor and Sample Editor sets, from
+  either view; without `/full` the Clip View keeps the main view's set,
+  because the Live API does not say which view has the keyboard focus;
 * `ableton://arrangement[...]` and no report (or a stale one, which
   `current_url` turns into None) get the Arrangement set, the old fallback;
 * a view REPLACES the fallback (`layer: false`);
@@ -48,7 +52,7 @@ class AbletonMappingFileTest(unittest.TestCase):
                 for child in (e.get(sub) or {}).values():
                     yield from walk(child)
         files = list(walk(self.raw[KEY]))
-        self.assertGreaterEqual(len(files), 21)
+        self.assertGreaterEqual(len(files), 35)
         missing = [f for f in files if not (RES / "overlays" / f).is_file()]
         self.assertEqual(missing, [])
 
@@ -80,6 +84,42 @@ class AbletonRoutingTest(unittest.TestCase):
         for url, want in cases.items():
             self.assertEqual(_first(self._match(url)), want, url)
 
+    def test_an_expanded_clip_view_gets_the_editor_set(self):
+        cases = {
+            "ableton://arrangement/clip/midi/full": "ableton_clipmidi_template.mods.png",
+            "ableton://session/clip/midi/full": "ableton_clipmidi_template.mods.png",
+            "ableton://arrangement/clip/audio/full": "ableton_clipaudio_template.mods.png",
+            "ableton://session/clip/audio/full": "ableton_clipaudio_template.mods.png",
+        }
+        for url, want in cases.items():
+            self.assertEqual(_first(self._match(url)), want, url)
+            self.assertEqual(_first(self._match(url, "macos")),
+                             want.replace("_template.", "_template_mac."), url)
+
+    def test_a_clip_view_under_the_main_view_keeps_the_main_set(self):
+        cases = {
+            "ableton://session/clip/midi": "ableton_session_template.mods.png",
+            "ableton://session/clip/audio": "ableton_session_template.mods.png",
+            "ableton://arrangement/clip/midi": "ableton_template.mods.png",
+            "ableton://arrangement/clip/audio": "ableton_template.mods.png",
+            # the main view is hidden but the clip kind is unknown
+            "ableton://session/clip/full": "ableton_session_template.mods.png",
+            "ableton://arrangement/clip/full": "ableton_template.mods.png",
+        }
+        for url, want in cases.items():
+            self.assertEqual(_first(self._match(url)), want, url)
+            self.assertEqual(_first(self._match(url, "macos")),
+                             want.replace("_template.", "_template_mac."), url)
+
+    def test_an_editor_set_replaces_the_fallback(self):
+        for url in ("ableton://arrangement/clip/midi/full", "ableton://session/clip/audio/full"):
+            for os_name in ("windows", "macos"):
+                got = self._match(url, os_name)
+                names = [str(f) for f in got["overlay"]]
+                self.assertTrue(all(n.startswith(("ableton_clipmidi", "ableton_clipaudio"))
+                                    for n in names), names)
+                self.assertFalse([f for f in got["overlay"] if getattr(f, "underlay", False)])
+
     def test_no_report_is_the_arrangement_fallback(self):
         self.assertEqual(_first(self._match(None)), "ableton_template.mods.png")
 
@@ -98,7 +138,9 @@ class AbletonRoutingTest(unittest.TestCase):
 
     def test_every_view_stays_a_midi_program(self):
         for os_name in ("windows", "macos"):
-            for url in (None, "ableton://session", "ableton://arrangement/device"):
+            for url in (None, "ableton://session", "ableton://arrangement/device",
+                        "ableton://arrangement/clip/midi/full",
+                        "ableton://session/clip/audio/full"):
                 self.assertTrue(is_midi_entry(self._match(url, os_name),
                                               "Ableton Live 12 Suite"), (os_name, url))
 
