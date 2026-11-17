@@ -40,6 +40,25 @@ terminal's keys. This module does the copy that their READMEs describe:
   ``Mod`` folder (:func:`freecad_mod_dir`). FreeCAD loads every folder there
   at start; the add-on reports the active workbench.
 
+The programs added after these (:mod:`polyhost.services.editor_targets` has
+their folders) work in three ways:
+
+- A copy per version or profile, like JetBrains: Blender (``blender-addon/``,
+  the ``user_default`` extension repository from 4.2, ``scripts/addons``
+  before), Maya (``maya-plugin/``, a module in ``<MAYA_APP_DIR>/<version>/
+  modules``), QGIS (``qgis-plugin/``, ``python/plugins`` of each profile) and
+  Bitwig Studio (the built ``.bwextension`` in the Extensions folder).
+- Through the editor's own command line program: VS Code, Cursor and
+  Windsurf (``code --install-extension`` with the ``.vsix`` in
+  ``polyhost/res/vscode/``, built from ``vscode-extension/``).
+- Per project: Godot (``addons/``), Unity (an embedded package in
+  ``Packages/``) and Obsidian (``.obsidian/plugins/``). The project folders
+  the user chose are remembered (:class:`editor_targets.State`).
+
+JupyterLab is a Python package for the environment that runs JupyterLab,
+which this app cannot know: it gets the ``pip`` command to run
+(STATE_COMMAND), not an install.
+
 Each copy gets a stamp file with the SHA-256 of every file written.
 :func:`refresh_installed` runs at every start: it copies the shipped files
 again where a stamp exists and the shipped files changed (an update). A copy
@@ -68,6 +87,7 @@ from collections import namedtuple
 from pathlib import Path
 
 from polyhost.i18n import M_
+from polyhost.services import editor_targets as et
 from polyhost.services.shell_title import _backup, _Text, _write
 
 log = logging.getLogger(__name__)
@@ -85,6 +105,18 @@ HOUDINI_SOURCE = REPO_ROOT / "houdini-package"
 # (.github/workflows/jetbrains-plugin.yml).
 JETBRAINS_SOURCE = REPO_ROOT / "polyhost" / "res" / "jetbrains" / "polykybd-context-reporter.zip"
 FREECAD_SOURCE = REPO_ROOT / "freecad-addon" / "PolyKybd"
+BLENDER_SOURCE = REPO_ROOT / "blender-addon" / et.BLENDER_PACKAGE
+MAYA_SOURCE = REPO_ROOT / "maya-plugin"
+QGIS_SOURCE = REPO_ROOT / "qgis-plugin" / et.QGIS_PACKAGE
+BITWIG_SOURCE = REPO_ROOT / "bitwig-extension" / et.BITWIG_FILE
+# Built by vscode-extension/build.sh and obsidian-plugin/build.sh; CI checks
+# they are current (.github/workflows/built-plugins.yml).
+VSCODE_SOURCE = REPO_ROOT / "polyhost" / "res" / "vscode" / "polykybd-mode-reporter.vsix"
+VSCODE_REMOTE_SOURCE = REPO_ROOT / "polyhost" / "res" / "vscode" / "polykybd-mode-reporter-remote.vsix"
+OBSIDIAN_SOURCE = REPO_ROOT / "polyhost" / "res" / "obsidian" / "polykybd-mode-reporter"
+JUPYTERLAB_SOURCE = REPO_ROOT / "jupyterlab-extension"
+GODOT_SOURCE = REPO_ROOT / "godot-plugin" / "addons" / "polykybd_reporter"
+UNITY_SOURCE = REPO_ROOT / "unity-package"
 
 VIM = "vim"
 NEOVIM = "neovim"
@@ -97,7 +129,33 @@ RESOLVE = "resolve"
 BINARYNINJA = "binaryninja"
 JETBRAINS = "jetbrains"
 FREECAD = "freecad"
-EDITORS = (VIM, NEOVIM, EMACS, GDB, IDA, BINARYNINJA, RESOLVE, ABLETON, HOUDINI, JETBRAINS, FREECAD)
+BLENDER = "blender"
+MAYA = "maya"
+QGIS = "qgis"
+BITWIG = "bitwig"
+VSCODE = "vscode"
+CURSOR = "cursor"
+WINDSURF = "windsurf"
+JUPYTERLAB = "jupyterlab"
+GODOT = "godot"
+UNITY = "unity"
+OBSIDIAN = "obsidian"
+EDITORS = (VIM, NEOVIM, EMACS, GDB, IDA, BINARYNINJA, RESOLVE, ABLETON, HOUDINI, JETBRAINS, FREECAD,
+           BLENDER, MAYA, QGIS, BITWIG, VSCODE, CURSOR, WINDSURF, JUPYTERLAB, GODOT, UNITY,
+           OBSIDIAN)
+# One copy per version or profile found (like JETBRAINS, see _change_multi).
+COPY_EDITORS = (BLENDER, MAYA, QGIS, BITWIG)
+# One copy per project folder the user chose.
+PROJECT_EDITORS = (GODOT, UNITY, OBSIDIAN)
+MULTI_EDITORS = COPY_EDITORS + PROJECT_EDITORS
+# Installed with the editor's command line program.
+CLI_EDITORS = (VSCODE, CURSOR, WINDSURF)
+# The editors added with editor_targets; their sources come in ``sources``.
+NEW_EDITORS = MULTI_EDITORS + CLI_EDITORS + (JUPYTERLAB,)
+_NEW_SOURCES = {BLENDER: BLENDER_SOURCE, MAYA: MAYA_SOURCE, QGIS: QGIS_SOURCE,
+                BITWIG: BITWIG_SOURCE, VSCODE: VSCODE_SOURCE, CURSOR: VSCODE_SOURCE,
+                WINDSURF: VSCODE_SOURCE, JUPYTERLAB: JUPYTERLAB_SOURCE, GODOT: GODOT_SOURCE,
+                UNITY: UNITY_SOURCE, OBSIDIAN: OBSIDIAN_SOURCE}
 # The ones loaded through a marked block in an init file, beside a copy.
 INIT_EDITORS = (EMACS, GDB)
 
@@ -129,6 +187,8 @@ STATE_STALE = "stale"              # the init block loads another folder
 STATE_MANUAL = "manual"            # loaded from somewhere this app did not write
 STATE_NOT_PRESENT = "not-present"
 STATE_NO_SOURCE = "no-source"      # this installation has no plugin files
+STATE_NO_PROJECT = "no-project"    # a per-project plugin, no project folder chosen yet
+STATE_COMMAND = "command"          # installed with a command the user runs (``detail``)
 
 EditorStatus = namedtuple("EditorStatus", "editor state target detail")
 EditorStatus.__doc__ = """One editor's state. ``target`` is the plugin folder
@@ -158,6 +218,14 @@ MSG_WRITE_FAILED = M_("Could not change {path}: {error}")
 MSG_EMACS_INSTALLED = M_("Copied the plugin to {path} and added the lines that load it to {init}.")
 MSG_EMACS_REMOVED = M_("Removed the lines that load the plugin from {init}.")
 MSG_EMACS_REMOVED_ALL = M_("Removed the lines that load the plugin from {init}, and the plugin from {path}.")
+MSG_NOT_OURS = M_("{path} has a copy of the plugin that this app did not write. It is left alone.")
+MSG_NOT_A_PROJECT = M_("{path} is not a {editor} project folder: it has no {marker}.")
+MSG_NO_PROJECT = M_("No {editor} project folder was chosen.")
+MSG_CLI_INSTALLED = M_("Installed the extension with {command}.")
+MSG_CLI_REMOVED = M_("Removed the extension with {command}.")
+MSG_CLI_FAILED = M_("{command} failed: {error}")
+MSG_CLI_NOT_OURS = M_("{editor} has the extension {extension} from another source. It is left alone.")
+MSG_RUN_COMMAND = M_("Run this command in the Python environment that runs JupyterLab: {command}")
 
 
 # --- where the editors look -----------------------------------------------
@@ -723,22 +791,30 @@ def _sha(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def read_stamp(folder):
+def read_stamp(folder, stamp_name=STAMP_NAME):
     """The stamp's ``{relative path: sha256}``, or None when there is none."""
     try:
-        data = json.loads((Path(folder) / STAMP_NAME).read_text(encoding="utf-8"))
+        data = json.loads((Path(folder) / stamp_name).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
     files = data.get("files") if isinstance(data, dict) else None
     return files if isinstance(files, dict) else None
 
 
-def _copy_state(folder, shipped):
+def _copy_state(folder, shipped, stamp_name=STAMP_NAME, shared=False):
     """STATE_INSTALLED, STATE_OUTDATED, STATE_MODIFIED or STATE_MANUAL for a
-    folder that exists, STATE_NOT_INSTALLED for one that does not."""
+    folder that exists, STATE_NOT_INSTALLED for one that does not.
+
+    ``shared``: without a stamp, the copy is STATE_MANUAL only when one of
+    the shipped files is there, not for any file in the folder (a folder the
+    program shares with other plugins, or where it keeps its own settings
+    file beside the plugin's)."""
     folder = Path(folder)
-    stamp = read_stamp(folder)
+    stamp = read_stamp(folder, stamp_name)
     if stamp is None:
+        if shared:
+            return (STATE_MANUAL if any((folder / rel).exists() for rel in shipped)
+                    else STATE_NOT_INSTALLED)
         return STATE_MANUAL if folder.is_dir() and any(folder.iterdir()) else STATE_NOT_INSTALLED
     for rel, digest in stamp.items():
         try:
@@ -752,7 +828,7 @@ def _copy_state(folder, shipped):
     return STATE_INSTALLED if want == stamp else STATE_OUTDATED
 
 
-def _write_copy(folder, shipped, old_stamp=None):
+def _write_copy(folder, shipped, old_stamp=None, stamp_name=STAMP_NAME):
     """Write ``shipped`` into ``folder``, each file through a temporary file
     and a rename, and the stamp last. Files an older stamp listed and the
     new copy has not are deleted."""
@@ -779,19 +855,23 @@ def _write_copy(folder, shipped, old_stamp=None):
             except OSError:
                 pass
     stamp = {"files": {rel: _sha(data) for rel, data in shipped.items()}}
-    (folder / STAMP_NAME).write_text(json.dumps(stamp, indent=1, sort_keys=True), encoding="utf-8")
+    (folder / stamp_name).write_text(json.dumps(stamp, indent=1, sort_keys=True), encoding="utf-8")
 
 
-def _delete_copy(folder):
+def _delete_copy(folder, stamp_name=STAMP_NAME, keep_folder=False):
     """Delete this app's copy: the stamped files, the stamp, then every
-    folder that is left empty, up to the ``pack`` folder."""
+    folder that is left empty, up to the ``pack`` folder. ``keep_folder``
+    keeps ``folder`` itself and its other subfolders (a folder the program
+    shares with other plugins)."""
     folder = Path(folder)
-    for rel in read_stamp(folder) or {}:
+    for rel in read_stamp(folder, stamp_name) or {}:
         try:
             (folder / rel).unlink()
         except FileNotFoundError:
             pass
-    (folder / STAMP_NAME).unlink()
+    (folder / stamp_name).unlink()
+    if keep_folder:
+        return
     # Python writes compiled copies beside a loaded script (Live does for
     # the remote script); they belong to the copy.
     shutil.rmtree(folder / "__pycache__", ignore_errors=True)
@@ -969,15 +1049,27 @@ def _sources(vim_source, emacs_source, gdb_source, ida_source=None, ableton_sour
 def status(editors=None, home=None, env=None, which=None, system=None,
            vim_source=None, emacs_source=None, gdb_source=None, ida_source=None,
            ableton_source=None, houdini_source=None, jetbrains_source=None,
-           freecad_source=None):
-    """An EditorStatus for each editor (``editors`` filters by id)."""
+           freecad_source=None, sources=None, state_file=None, run=None):
+    """An EditorStatus for each editor (``editors`` filters by id).
+
+    For NEW_EDITORS: ``sources`` maps an editor to its plugin source (tests),
+    ``state_file`` is the remembered projects and installs (:func:`_state`),
+    ``run`` runs the editor's command line program (:func:`_run_cli`)."""
     env = os.environ if env is None else env
     system = system or platform.system()
+    new_sources = sources or {}
     sources = _sources(vim_source, emacs_source, gdb_source, ida_source, ableton_source,
                        houdini_source, jetbrains_source, freecad_source)
+    state = None
     out = []
     for editor in EDITORS:
         if editors is not None and editor not in editors:
+            continue
+        if editor in NEW_EDITORS:
+            if state is None:
+                state = _state(home, state_file)
+            out.append(_status_new(editor, home, env, which, system, new_sources.get(editor),
+                                   state, run or _run_cli))
             continue
         if editor == FREECAD:
             out.append(_status_freecad(home, env, system, sources[editor]))
@@ -1113,6 +1205,389 @@ def _status_one(editor, home, env, which, system, source):
         if other is not None:
             state, detail = STATE_MANUAL, str(other)
     return EditorStatus(editor, state, folder, detail)
+
+
+# --- the programs of editor_targets -----------------------------------------------
+
+# English names for the messages (the dialog has its own, editor_label()).
+EDITOR_NAMES = {BLENDER: "Blender", MAYA: "Maya", QGIS: "QGIS", BITWIG: "Bitwig Studio",
+                VSCODE: "VS Code", CURSOR: "Cursor", WINDSURF: "Windsurf",
+                JUPYTERLAB: "JupyterLab", GODOT: "Godot", UNITY: "Unity", OBSIDIAN: "Obsidian"}
+# The Extensions folder holds every Bitwig extension: a stamp of its own name.
+BITWIG_STAMP_NAME = ".polykybd-host-bitwig.json"
+# The module file Maya reads from <version>/modules, beside the module folder.
+# Its key in the stamp is relative to that folder, like HOUDINI_PACKAGE_FILE.
+MAYA_MOD_FILE = "../polykybd.mod"
+_MAYA_PLUGIN = "plug-ins/polykybd_mode_reporter.py"
+# The files without which a source folder is not the plugin.
+_REQUIRED = {BLENDER: ("__init__.py", "blender_manifest.toml"),
+             QGIS: ("__init__.py", "metadata.txt"),
+             GODOT: ("plugin.cfg",),
+             UNITY: ("package.json",),
+             OBSIDIAN: ("main.js", "manifest.json")}
+CLI_LIST_TIMEOUT_S = 60
+CLI_INSTALL_TIMEOUT_S = 180
+
+
+def _stamp_name(editor):
+    return BITWIG_STAMP_NAME if editor == BITWIG else STAMP_NAME
+
+
+def _tree_files(folder):
+    """``{relative path: bytes}`` of every file under ``folder``, without
+    bytecode, dot files and folders ending in ``~`` (Unity skips those:
+    ``Tests~``)."""
+    folder = Path(folder)
+    files = {}
+    for path in sorted(folder.rglob("*")):
+        rel = path.relative_to(folder)
+        if not path.is_file() or path.suffix == ".pyc":
+            continue
+        if any(p == "__pycache__" or p.startswith(".") or p.endswith("~") for p in rel.parts):
+            continue
+        files[rel.as_posix()] = path.read_bytes()
+    return files or None
+
+
+def new_shipped_files(editor, source=None, folder=None):
+    """``{relative path: bytes}`` to copy for a COPY_EDITORS or
+    PROJECT_EDITORS editor, or None when this installation has no plugin
+    files. For MAYA the module file names ``folder``, the folder it is
+    copied to."""
+    source = Path(source or _NEW_SOURCES[editor])
+    if editor == BITWIG:
+        return {et.BITWIG_FILE: source.read_bytes()} if source.is_file() else None
+    if editor == MAYA:
+        plugin, mod = source / _MAYA_PLUGIN, source / "polykybd.mod"
+        if not (plugin.is_file() and mod.is_file()):
+            return None
+        # The module file names an absolute folder: a relative one is
+        # documented, but was reported not to work in Maya 2018.
+        where = Path(folder).as_posix() if folder is not None else "PATH_TO_THIS_FOLDER"
+        text = mod.read_text(encoding="utf-8").replace("PATH_TO_THIS_FOLDER", where)
+        return {_MAYA_PLUGIN: plugin.read_bytes(), MAYA_MOD_FILE: text.encode("utf-8")}
+    if not all((source / name).is_file() for name in _REQUIRED[editor]):
+        return None
+    return _tree_files(source)
+
+
+def _multi_base(editor, home, env, system):
+    """The folder the Editors page shows for the editor, or None (projects)."""
+    env = os.environ if env is None else env
+    if editor == BLENDER:
+        custom = env.get("BLENDER_USER_RESOURCES")
+        return Path(custom) if custom else et.blender_config_bases(home, env, system)[0][1]
+    if editor == MAYA:
+        return et.maya_app_dir(home, env, system)
+    if editor == QGIS:
+        return et.qgis_profiles_dirs(home, env, system)[0][1]
+    if editor == BITWIG:
+        return et.bitwig_extensions_dir(home, env, system)
+    return None
+
+
+_PROJECT_PRESENT = {GODOT: et.godot_present, UNITY: et.unity_present,
+                    OBSIDIAN: et.obsidian_present}
+
+
+def _multi_targets(editor, home, env, system, state):
+    """(program found, ``[(label, plugin folder)]``)."""
+    if editor == BLENDER:
+        targets = et.blender_targets(home, env, system)
+    elif editor == MAYA:
+        targets = et.maya_targets(home, env, system)
+    elif editor == QGIS:
+        targets = et.qgis_targets(home, env, system)
+    elif editor == BITWIG:
+        folder = et.bitwig_extensions_dir(home, env, system)
+        targets = [("Bitwig Studio", folder)] if folder is not None else []
+    else:
+        targets = [(p, et.project_plugin_dir(editor, p)) for p in state.projects(editor)
+                   if et.is_project(editor, p)]
+        return bool(targets) or _PROJECT_PRESENT[editor](home, env, system), targets
+    return bool(targets), targets
+
+
+def _other_copy(editor, folder):
+    """A copy of the plugin that this app did not write, which the program
+    loads beside or instead of ours, or None."""
+    folder = Path(folder)
+    if editor == MAYA:
+        # <appdir>/<version>/modules/polykybd -> <appdir>/modules/polykybd.mod
+        for mod in (folder.parent / "polykybd.mod", folder.parents[2] / "modules" / "polykybd.mod"):
+            if mod.exists():
+                return mod
+    elif editor == BLENDER:
+        # Both places are <version>/<two folders>/polykybd_context_reporter.
+        version_dir = folder.parents[2]
+        others = [version_dir / "scripts" / "addons" / et.BLENDER_PACKAGE]
+        others += sorted((version_dir / "extensions").glob("*/" + et.BLENDER_PACKAGE))
+        for other in others:
+            if other != folder and other.exists():
+                return other
+    elif editor == UNITY:
+        project = folder.parents[1]
+        if et.unity_manifest_names_package(project):
+            return project / "Packages" / "manifest.json"
+    return None
+
+
+def _target_state(editor, folder, shipped):
+    """(state, detail) of one copy of a MULTI_EDITORS editor."""
+    state = _copy_state(folder, shipped, _stamp_name(editor), shared=True)
+    if state == STATE_MANUAL:
+        return state, str(folder)
+    if state == STATE_NOT_INSTALLED:
+        other = _other_copy(editor, folder)
+        if other is not None:
+            return STATE_MANUAL, str(other)
+    return state, ""
+
+
+def _multi_states(editor, targets, source):
+    """``[(label, folder, state, detail, shipped)]``."""
+    out = []
+    for label, folder in targets:
+        shipped = new_shipped_files(editor, source, folder)
+        state, detail = _target_state(editor, folder, shipped)
+        out.append((label, folder, state, detail, shipped))
+    return out
+
+
+def _status_multi(editor, home, env, system, source, state):
+    base = _multi_base(editor, home, env, system)
+    if new_shipped_files(editor, source) is None:
+        return EditorStatus(editor, STATE_NO_SOURCE, base, str(source or _NEW_SOURCES[editor]))
+    present, targets = _multi_targets(editor, home, env, system, state)
+    if not targets:
+        if editor in PROJECT_EDITORS and present:
+            return EditorStatus(editor, STATE_NO_PROJECT, None, "")
+        return EditorStatus(editor, STATE_NOT_PRESENT, base, "")
+    states = _multi_states(editor, targets, source)
+    summary = _jetbrains_summary([(label, folder, st) for label, folder, st, _d, _s in states])
+    if summary == STATE_MANUAL:
+        detail = next(d for _l, _f, st, d, _s in states if st == STATE_MANUAL)
+    else:
+        detail = ", ".join(label for label, *_rest in states)
+    return EditorStatus(editor, summary, base, detail)
+
+
+def _install_target(editor, folder, state, detail, shipped):
+    folder = Path(folder)
+    if state == STATE_INSTALLED:
+        return Result(editor, True, False, MSG_ALREADY.format(path=folder), None)
+    if state == STATE_MODIFIED:
+        return Result(editor, False, False, MSG_MODIFIED.format(path=folder), None)
+    if state == STATE_MANUAL:
+        return Result(editor, False, False, MSG_NOT_OURS.format(path=detail or folder), None)
+    stamp = _stamp_name(editor)
+    try:
+        _write_copy(folder, shipped, read_stamp(folder, stamp), stamp)
+    except OSError as exc:
+        return Result(editor, False, False, MSG_WRITE_FAILED.format(path=folder, error=exc), None)
+    log.info("Editor plugin: %s %s", editor, folder)
+    msg = MSG_UPDATED if state == STATE_OUTDATED else MSG_INSTALLED
+    return Result(editor, True, True, msg.format(path=folder), None)
+
+
+def _remove_target(editor, folder, state):
+    folder = Path(folder)
+    if state == STATE_MODIFIED:
+        return Result(editor, False, False, MSG_MODIFIED.format(path=folder), None)
+    stamp = _stamp_name(editor)
+    try:
+        if editor == GODOT:
+            # Godot 4.4 and later write <script>.uid beside each script.
+            for rel in read_stamp(folder, stamp) or {}:
+                try:
+                    (folder / (rel + ".uid")).unlink()
+                except FileNotFoundError:
+                    pass
+        if editor != BITWIG:
+            for cache in sorted(folder.rglob("__pycache__")):
+                shutil.rmtree(cache, ignore_errors=True)
+        _delete_copy(folder, stamp, keep_folder=editor == BITWIG)
+    except OSError as exc:
+        return Result(editor, False, False, MSG_WRITE_FAILED.format(path=folder, error=exc), None)
+    log.info("Editor plugin: removed %s from %s", editor, folder)
+    return Result(editor, True, True, MSG_REMOVED.format(path=folder), None)
+
+
+def _change_multi(editor, install, source, home=None, env=None, system=None, state=None,
+                  only_outdated=False, projects=None):
+    """Install or remove one copy per version, profile or project; one Result
+    per copy acted on or that could not be. ``projects`` (PROJECT_EDITORS)
+    names the project folders to act on instead of the remembered ones; a
+    folder is remembered after a successful install and forgotten after a
+    removal. ``only_outdated`` (the refresh at start) updates this app's older
+    copies and touches nothing else."""
+    name = EDITOR_NAMES[editor]
+    if new_shipped_files(editor, source) is None:
+        return [Result(editor, False, False,
+                       MSG_NO_SOURCE.format(path=source or _NEW_SOURCES[editor]), None)]
+    results = []
+    if editor in PROJECT_EDITORS and projects:
+        targets = []
+        for p in projects:
+            if et.is_project(editor, p):
+                targets.append((str(Path(p)), et.project_plugin_dir(editor, p)))
+            else:
+                results.append(Result(editor, False, False, MSG_NOT_A_PROJECT.format(
+                    path=p, editor=name, marker=et.PROJECT_MARKERS[editor]), None))
+    else:
+        _present, targets = _multi_targets(editor, home, env, system, state)
+    for label, folder, st, detail, shipped in _multi_states(editor, targets, source):
+        if only_outdated and st != STATE_OUTDATED:
+            continue
+        if install:
+            r = _install_target(editor, folder, st, detail, shipped)
+            if editor in PROJECT_EDITORS and r.ok:
+                state.add_project(editor, label)
+            results.append(r)
+        elif st in (STATE_INSTALLED, STATE_OUTDATED, STATE_MODIFIED):
+            r = _remove_target(editor, folder, st)
+            if editor in PROJECT_EDITORS and r.ok:
+                state.forget_project(editor, label)
+            results.append(r)
+        elif editor in PROJECT_EDITORS and st == STATE_NOT_INSTALLED:
+            state.forget_project(editor, label)
+    if not results and not only_outdated:
+        if install:
+            msg = (MSG_NO_PROJECT.format(editor=name) if editor in PROJECT_EDITORS
+                   else MSG_NOT_PRESENT.format(editor=name))
+            results.append(Result(editor, False, False, msg, None))
+        else:
+            where = targets[0][1] if targets else _multi_base(editor, home, env, system)
+            results.append(Result(editor, True, False,
+                                  MSG_NOT_INSTALLED.format(path=where or name), None))
+    return results
+
+
+def vsix_digest(path):
+    """SHA-256 over the names and bytes of the ``.vsix``'s entries, so a
+    rebuild that only changes the zip's file times reads as the same."""
+    h = hashlib.sha256()
+    with zipfile.ZipFile(path) as zf:
+        for info in sorted(zf.infolist(), key=lambda i: i.filename):
+            if info.is_dir():
+                continue
+            h.update(info.filename.encode("utf-8") + b"\0")
+            h.update(hashlib.sha256(zf.read(info)).digest())
+    return h.hexdigest()
+
+
+def _run_cli(argv, timeout):
+    """(exit code, stdout, stderr) of the editor's command line program."""
+    kwargs = {}
+    if platform.system() == "Windows":
+        kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    # Audit (Sourcery dangerous-subprocess-use): argv is a list, no shell
+    # parses it. argv[0] is what vscode_cli() found for code, cursor or
+    # windsurf; the other items are fixed options, the extension id and the
+    # .vsix path inside this installation.
+    # nosemgrep
+    proc = subprocess.run(argv, capture_output=True, timeout=timeout, **kwargs)
+    return (proc.returncode, proc.stdout.decode("utf-8", "replace"),
+            proc.stderr.decode("utf-8", "replace"))
+
+
+def _status_cli(editor, which, home, env, system, source, state, run):
+    vsix = Path(source or VSCODE_SOURCE)
+    if not vsix.is_file():
+        return EditorStatus(editor, STATE_NO_SOURCE, None, str(vsix))
+    cli = et.vscode_cli(editor, which, home, env, system)
+    if cli is None:
+        return EditorStatus(editor, STATE_NOT_PRESENT, None, "")
+    try:
+        code, out, err = run([str(cli), "--list-extensions", "--show-versions"], CLI_LIST_TIMEOUT_S)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return EditorStatus(editor, STATE_NOT_PRESENT, cli, f"{cli.name} did not answer: {exc}")
+    if code != 0:
+        return EditorStatus(editor, STATE_NOT_PRESENT, cli,
+                            f"{cli.name} did not answer: {err.strip() or code}")
+    version = et.parse_extension_list(out)
+    if version is None:
+        return EditorStatus(editor, STATE_NOT_INSTALLED, cli, "")
+    recorded = state.cli_digest(editor)
+    if recorded is None:
+        return EditorStatus(editor, STATE_MANUAL, cli, f"{et.VSCODE_EXTENSION_ID}@{version}")
+    state_ = STATE_INSTALLED if recorded == vsix_digest(vsix) else STATE_OUTDATED
+    return EditorStatus(editor, state_, cli, "")
+
+
+def _change_cli(st, install, source, state, run):
+    editor, name = st.editor, EDITOR_NAMES[st.editor]
+    vsix, cli = Path(source or VSCODE_SOURCE), Path(st.target)
+    if install:
+        if st.state == STATE_INSTALLED:
+            return Result(editor, True, False, MSG_ALREADY.format(path=name), None)
+        if st.state == STATE_MANUAL:
+            return Result(editor, False, False,
+                          MSG_CLI_NOT_OURS.format(editor=name, extension=st.detail), None)
+        argv = [str(cli), "--install-extension", str(vsix), "--force"]
+        shown = f"{cli.name} --install-extension {vsix.name}"
+    else:
+        if st.state == STATE_MANUAL:
+            return Result(editor, False, False,
+                          MSG_CLI_NOT_OURS.format(editor=name, extension=st.detail), None)
+        if st.state not in (STATE_INSTALLED, STATE_OUTDATED):
+            return Result(editor, True, False, MSG_NOT_INSTALLED.format(path=name), None)
+        argv = [str(cli), "--uninstall-extension", et.VSCODE_EXTENSION_ID]
+        shown = f"{cli.name} --uninstall-extension {et.VSCODE_EXTENSION_ID}"
+    try:
+        code, _out, err = run(argv, CLI_INSTALL_TIMEOUT_S)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return Result(editor, False, False, MSG_CLI_FAILED.format(command=shown, error=exc), None)
+    if code != 0:
+        error = err.strip().splitlines()[-1] if err.strip() else f"exit code {code}"
+        return Result(editor, False, False, MSG_CLI_FAILED.format(command=shown, error=error), None)
+    state.set_cli(editor, vsix_digest(vsix) if install else None)
+    log.info("Editor plugin: %s", shown)
+    return Result(editor, True, True,
+                  (MSG_CLI_INSTALLED if install else MSG_CLI_REMOVED).format(command=shown), None)
+
+
+def _status_jupyterlab(which, home, env, system, source):
+    src = Path(source or JUPYTERLAB_SOURCE)
+    if not (src / "pyproject.toml").is_file():
+        return EditorStatus(JUPYTERLAB, STATE_NO_SOURCE, None, str(src))
+    if not et.jupyterlab_present(which, home, env, system):
+        return EditorStatus(JUPYTERLAB, STATE_NOT_PRESENT, None, "")
+    return EditorStatus(JUPYTERLAB, STATE_COMMAND, None, et.jupyterlab_install_command(src))
+
+
+def _status_new(editor, home, env, which, system, source, state, run):
+    if editor in MULTI_EDITORS:
+        return _status_multi(editor, home, env, system, source, state)
+    if editor in CLI_EDITORS:
+        return _status_cli(editor, which, home, env, system, source, state, run)
+    return _status_jupyterlab(which, home, env, system, source)
+
+
+def _change_new(st, install, source, home, env, system, state, run, projects):
+    """What install or remove did for a NEW_EDITORS editor: a list of Result."""
+    editor, name = st.editor, EDITOR_NAMES[st.editor]
+    explicit = editor in PROJECT_EDITORS and bool(projects)
+    if st.state == STATE_NOT_PRESENT and not explicit:
+        return [Result(editor, False, False, MSG_NOT_PRESENT.format(editor=name), None)]
+    if st.state == STATE_NO_SOURCE:
+        return [Result(editor, False, False, MSG_NO_SOURCE.format(path=st.detail), None)]
+    if editor in MULTI_EDITORS:
+        return _change_multi(editor, install, source, home, env, system, state, projects=projects)
+    if editor in CLI_EDITORS:
+        return [_change_cli(st, install, source, state, run)]
+    command = st.detail if install else et.JUPYTERLAB_REMOVE_COMMAND
+    return [Result(editor, True, False, MSG_RUN_COMMAND.format(command=command), None)]
+
+
+def _state(home, state_file):
+    """The remembered projects and installs: ``state_file`` (a path or a
+    State), else the app's file; in memory only for a test's ``home``."""
+    if isinstance(state_file, et.State):
+        return state_file
+    if state_file is not None:
+        return et.State(state_file)
+    return et.State(None if home is not None else et.default_state_file())
 
 
 def default_selection(st):
@@ -1276,9 +1751,14 @@ def _change_jetbrains(st, install, source, now=None, home=None, env=None, system
     return results
 
 
-def _change(st, install, sources, now=None, home=None, env=None, system=None):
-    """What install or remove did, as a Result, or for JETBRAINS a list of
-    them (one per IDE)."""
+def _change(st, install, sources, now=None, home=None, env=None, system=None, state=None,
+            run=None, projects=None):
+    """What install or remove did, as a Result, or for JETBRAINS and the
+    NEW_EDITORS a list of them (one per IDE, version, profile or project)."""
+    if st.editor in NEW_EDITORS:
+        return _change_new(st, install, sources.get(st.editor), home, env, system,
+                           state if state is not None else _state(home, None), run or _run_cli,
+                           (projects or {}).get(st.editor))
     if st.state == STATE_NOT_PRESENT:
         return Result(st.editor, False, False, MSG_NOT_PRESENT.format(editor=st.editor), None)
     if st.state == STATE_NO_SOURCE:
@@ -1299,15 +1779,20 @@ def _change(st, install, sources, now=None, home=None, env=None, system=None):
 
 def _apply(install, editors, statuses, home, env, which, system, vim_source, emacs_source,
            gdb_source=None, ida_source=None, ableton_source=None, houdini_source=None,
-           jetbrains_source=None, freecad_source=None):
+           jetbrains_source=None, freecad_source=None, sources=None, state_file=None, run=None,
+           projects=None):
+    state = _state(home, state_file)
+    run = run or _run_cli
     if statuses is None:
         statuses = status(editors, home=home, env=env, which=which, system=system,
                           vim_source=vim_source, emacs_source=emacs_source, gdb_source=gdb_source,
                           ida_source=ida_source, ableton_source=ableton_source,
                           houdini_source=houdini_source, jetbrains_source=jetbrains_source,
-                          freecad_source=freecad_source)
-    sources = _sources(vim_source, emacs_source, gdb_source, ida_source, ableton_source,
-                       houdini_source, jetbrains_source, freecad_source)
+                          freecad_source=freecad_source, sources=sources, state_file=state,
+                          run=run)
+    all_sources = _sources(vim_source, emacs_source, gdb_source, ida_source, ableton_source,
+                           houdini_source, jetbrains_source, freecad_source)
+    all_sources.update(sources or {})
     results = []
     for st in statuses:
         if editors is not None and st.editor not in editors:
@@ -1316,10 +1801,13 @@ def _apply(install, editors, statuses, home, env, which, system, vim_source, ema
             if install and not default_selection(st):
                 continue
             if not install and st.state not in (STATE_INSTALLED, STATE_OUTDATED, STATE_STALE):
-                # One IDE's copy can be this app's while the summary is another state.
-                if st.editor != JETBRAINS or st.state in (STATE_NOT_PRESENT, STATE_NO_SOURCE):
+                # One IDE's (version's, project's) copy can be this app's while
+                # the summary is another state.
+                if (st.editor not in (JETBRAINS,) + MULTI_EDITORS
+                        or st.state in (STATE_NOT_PRESENT, STATE_NO_SOURCE, STATE_NO_PROJECT)):
                     continue
-        r = _change(st, install, sources, home=home, env=env, system=system)
+        r = _change(st, install, all_sources, home=home, env=env, system=system, state=state,
+                    run=run, projects=projects)
         if isinstance(r, list):
             results.extend(r)
         else:
@@ -1330,55 +1818,74 @@ def _apply(install, editors, statuses, home, env, which, system, vim_source, ema
 def install(editors=None, statuses=None, home=None, env=None, which=None,
             system=None, vim_source=None, emacs_source=None, gdb_source=None,
             ida_source=None, ableton_source=None, houdini_source=None, jetbrains_source=None,
-            freecad_source=None):
+            freecad_source=None, sources=None, state_file=None, run=None, projects=None):
     """Copy the plugin for each editor (the ones default_selection() picks
     when ``editors`` is None). Returns a list of Result; JETBRAINS adds one
-    per IDE."""
+    per IDE, the MULTI_EDITORS one per version, profile or project.
+    ``projects`` maps a PROJECT_EDITORS editor to the project folders to
+    install into (and remember); without it, the remembered ones."""
     return _apply(True, editors, statuses, home, env, which, system, vim_source, emacs_source,
                   gdb_source, ida_source, ableton_source, houdini_source, jetbrains_source,
-                  freecad_source)
+                  freecad_source, sources, state_file, run, projects)
 
 
 def remove(editors=None, statuses=None, home=None, env=None, which=None,
            system=None, vim_source=None, emacs_source=None, gdb_source=None,
            ida_source=None, ableton_source=None, houdini_source=None, jetbrains_source=None,
-           freecad_source=None):
-    """Delete this app's copy and, for Emacs and GDB, the marked block."""
+           freecad_source=None, sources=None, state_file=None, run=None, projects=None):
+    """Delete this app's copy and, for Emacs and GDB, the marked block.
+    ``projects`` limits a PROJECT_EDITORS editor to those project folders."""
     return _apply(False, editors, statuses, home, env, which, system, vim_source, emacs_source,
                   gdb_source, ida_source, ableton_source, houdini_source, jetbrains_source,
-                  freecad_source)
+                  freecad_source, sources, state_file, run, projects)
 
 
 def refresh_installed(home=None, env=None, which=None, system=None,
                       vim_source=None, emacs_source=None, gdb_source=None,
                       ida_source=None, ableton_source=None, houdini_source=None,
-                      jetbrains_source=None, freecad_source=None):
+                      jetbrains_source=None, freecad_source=None, sources=None,
+                      state_file=None, run=None):
     """Copy the shipped files again for each editor whose copy is this app's
     and older than them. Runs at every start, so an update reaches the
     editors without a visit to the dialog. Returns the editors refreshed.
-    Never raises."""
+    Never raises.
+
+    A VS Code-type editor is asked (its command line program started) only
+    when this app installed the extension there; JupyterLab never."""
     refreshed = []
     try:
-        statuses = status(None, home=home, env=env, which=which, system=system,
+        state = _state(home, state_file)
+        run = run or _run_cli
+        editors = [e for e in EDITORS
+                   if e != JUPYTERLAB and (e not in CLI_EDITORS or state.cli_digest(e))]
+        statuses = status(editors, home=home, env=env, which=which, system=system,
                           vim_source=vim_source, emacs_source=emacs_source, gdb_source=gdb_source,
                           ida_source=ida_source, ableton_source=ableton_source,
                           houdini_source=houdini_source, jetbrains_source=jetbrains_source,
-                          freecad_source=freecad_source)
+                          freecad_source=freecad_source, sources=sources, state_file=state,
+                          run=run)
     except Exception:  # noqa: BLE001 - a start must not fail for this
         log.warning("Editor plugin refresh: status failed", exc_info=True)
         return refreshed
-    sources = _sources(vim_source, emacs_source, gdb_source, ida_source, ableton_source,
-                       houdini_source, jetbrains_source, freecad_source)
+    all_sources = _sources(vim_source, emacs_source, gdb_source, ida_source, ableton_source,
+                           houdini_source, jetbrains_source, freecad_source)
+    all_sources.update(sources or {})
     for st in statuses:
         if st.state != STATE_OUTDATED:
             continue
         try:
             if st.editor == JETBRAINS:
                 # Only the IDEs whose copy is older: Install sets up the others.
-                rs = _change_jetbrains(st, True, sources.get(JETBRAINS), home=home, env=env,
+                rs = _change_jetbrains(st, True, all_sources.get(JETBRAINS), home=home, env=env,
                                        system=system, only_outdated=True)
+            elif st.editor in MULTI_EDITORS:
+                # Only the versions, profiles and projects whose copy is older.
+                rs = _change_multi(st.editor, True, all_sources.get(st.editor), home=home,
+                                   env=env, system=system, state=state, only_outdated=True)
+            elif st.editor in CLI_EDITORS:
+                rs = [_change_cli(st, True, all_sources.get(st.editor), state, run)]
             else:
-                rs = [_change(st, True, sources, home=home, env=env, system=system)]
+                rs = [_change(st, True, all_sources, home=home, env=env, system=system)]
         except Exception:  # noqa: BLE001
             log.warning("Editor plugin refresh failed for %s", st.editor, exc_info=True)
             continue
