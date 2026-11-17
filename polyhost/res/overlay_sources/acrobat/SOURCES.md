@@ -51,3 +51,13 @@ debugger, the reading-order tool) does nothing in Reader.
   are drawn by the shared concept renderer.
 - ESC: a generic "Ac" rectangle from `../rect_mark.py`, the same treatment as
   the other Adobe apps (not Adobe's logo).
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing
+(maintainer, 2026-11-15). These files give the other keys their own image.
+Files whose name starts with `_` are only parts of a composite.
+
+| file | source | licence |
+|---|---|---|
+| `delpages.png` | Material Symbols `delete_sweep` | Apache-2.0 |

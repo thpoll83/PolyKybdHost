@@ -123,3 +123,18 @@ Deliberately NOT added:
   (<https://github.com/microsoft/terminal/blob/main/src/cascadia/TerminalSettingsModel/defaults.json>);
   Ctrl+S/O/N/P/X/Z/Y/R/W go to the shell. Ctrl+Shift+N (new window) and
   Ctrl+Shift+T (new tab) are drawn with their own icons already.
+
+## One image per action (2026-11-15)
+
+Two keys of one app share an image only when they do the same thing (maintainer, 2026-11-15). Where two keys do related but different things, the second image is the first one with something added. The variants are drawn 1-bit at the binding's region size by `../tui/variant_glyphs.py` from the icons named below: `worded` puts a word under the icon, `side_word` a digit beside it, `badged` a second icon or an arrow at the lower right, `arrowed` a heavy arrow under it. Words are set in Liberation Sans Bold (SIL OFL 1.1). The base icons keep their own licence.
+
+| file | drawn from | keys |
+|---|---|---|
+| `tab_next`, `tab_prev` | `tab` + arrow right / left | Ctrl+Tab, Ctrl+Shift+Tab (Alt+Left/Right keep the plain arrows for focus pane) |
+| `prevpane` | `splitright` + arrow left | Ctrl+Alt+Left, the previously focused pane |
+| `tab_last` | `tab` + "last" | Ctrl+Alt+9 (Ctrl+Shift+End keeps `tobottom`) |
+| `newtab_p1` .. `newtab_p9` | `newtab` + the profile number | Ctrl+Shift+1..9 |
+| `resizepane_up`, `_down`, `_left`, `_right` | `resizepane` + arrow badge | Alt+Shift+arrows |
+
+`nexttab.png` and `prevtab.png` (Fluent arrows, the same picture as focus pane
+right / left) are removed.

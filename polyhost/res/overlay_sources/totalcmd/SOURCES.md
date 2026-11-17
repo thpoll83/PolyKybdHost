@@ -88,7 +88,7 @@ Fluent glyph is used.
 | `back.png` | `Arrow Left` | MIT |
 | `forward.png` | `Arrow Right` | MIT |
 | `props.png` | `Info` | MIT |
-| `dirsizes.png`, `calcspace.png` | `Calculator` | MIT |
+| `calcspace.png` | `Calculator` | MIT |
 | `brief.png` | `Text Bullet List Square` | MIT |
 | `full.png` | `Document Table` | MIT |
 | `thumbs.png` | `Image Multiple` | MIT |
@@ -160,3 +160,20 @@ The 64-bit installer (`tcmd115801x64.exe`) ships `TOTALCMD64.EXE` and the
 32-bit installer (`tcmd115801x32.exe`) ships `TOTALCMD.EXE` (read from each
 `INSTALL.CAB`, 2026-11-05). The mapping keys are `totalcmd` and `totalcmd64`.
 They were not checked against a running install.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `pathbar_left.png` | `breadcrumb.png` with the tag "L", drawn by `../action_variants.py` | same as the base icon |
+| `pathbar_right.png` | `breadcrumb.png` with the tag "R", drawn by `../action_variants.py` | same as the base icon |
+| `history_all.png` | `history.png` with the tag "ALL", drawn by `../action_variants.py` | same as the base icon |
+| `buttonbar_v.png` | `buttonbar.png` with the tag "V", drawn by `../action_variants.py` | same as the base icon |
+| `dirsizes_all.png` | `calcspace.png` with the tag "ALL", drawn by `../action_variants.py` | same as the base icon |
+| `tree_cycle.png` | `tree.png` with a right triangle at the top right, drawn by `../action_variants.py` | same as the base icon |
+| `branch_sel.png` | `branch.png` with the tag "SEL", drawn by `../action_variants.py` | same as the base icon |
+| `newtab_bg.png` | `newtab.png` with the tag "BG", drawn by `../action_variants.py` | same as the base icon |
+| `exchange_tabs.png` | `exchange.png` with the tag "TAB", drawn by `../action_variants.py` | same as the base icon |

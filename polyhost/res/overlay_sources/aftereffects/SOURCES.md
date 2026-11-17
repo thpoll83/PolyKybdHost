@@ -112,3 +112,14 @@ Deliberately NOT added:
 - **Ctrl+Y**: New Solid (already drawn) — never Redo; Redo is Ctrl+Shift+Z (already drawn).
 - **Ctrl+F (Find in Project panel)**: not confirmed against Adobe's page — left off.
 - **Print**: none. **Zoom**: bare `,` / `.` — not a Ctrl chord.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing
+(maintainer, 2026-11-15). These files give the other keys their own image.
+Files whose name starts with `_` are only parts of a composite.
+
+| file | source | licence |
+|---|---|---|
+| `rotationtool.png` | Material Symbols `rotate_right` | Apache-2.0 |
+| `gotolayerin.png` | Fluent `Arrow Previous` | MIT |

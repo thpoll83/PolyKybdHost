@@ -189,3 +189,18 @@ The mapping routes `figma.com/design/`, `/file/` and `/proto/` to this set.
 FigJam (`/board/`) and Figma Slides (`/slides/`) have their own tool keys and
 keep the browser set. Without a URL, a tab title ending in "– Figma" selects
 it. That title form was not checked in a browser.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing
+(maintainer, 2026-11-15). These files give the other keys their own image.
+Files whose name starts with `_` are only parts of a composite.
+
+| file | source | licence |
+|---|---|---|
+| `_tune.png` | Material Symbols `tune` | Apache-2.0 |
+| `menusearch.png` | Material Symbols `manage_search` | Apache-2.0 |
+| `pixelgrid.png` | Material Symbols `grid_4x4` | Apache-2.0 |
+| `pasteoversel.png` | Fluent `Clipboard Arrow Right` | MIT |
+| `copyprops.png` | `copy.png` with `_tune.png` as a badge at the lower right (`../dcc_glyphs.py` `with_badge`) | same as the two parts |
+| `pasteprops.png` | `paste.png` with `_tune.png` as a badge at the lower right (`../dcc_glyphs.py` `with_badge`) | same as the two parts |

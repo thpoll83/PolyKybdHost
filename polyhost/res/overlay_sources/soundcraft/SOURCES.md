@@ -93,6 +93,8 @@ hide the app instead. This is unverified on hardware.
 
 ## Icons
 
+- One icon per action (maintainer rule, 2026-11-15): the glyph + word composites in `WORDS` (`zoomtool` zoom + TOOL, `trimtool` trim + TOOL, `groupclips` group + CLIP, `heightup_all` / `heightdown_all` + ALL, `heightup_sel` / `heightdown_sel` + SEL) are drawn 1-bit at 40x40 by `../ghidra/fetch_icons.py`'s `composites()` from the named glyph (licence as that glyph) and a word in Liberation Sans Bold (SIL OFL 1.1).
+
 | File(s) | Source | Licence |
 |---|---|---|
 | Most glyphs (see the `FLUENT` map in `fetch_icons.py`) | [Microsoft Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) | MIT |

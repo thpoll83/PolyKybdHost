@@ -38,9 +38,9 @@ bindings:
   - { key: W, icon: wordnext.png, label: "Next word" }
   - { key: B, icon: wordprev.png, label: "Previous word" }
   - { key: E, icon: wordend.png, label: "Word end" }
-  - { key: W, mods: [SHIFT], icon: wordnext.png, label: "Next WORD" }
-  - { key: B, mods: [SHIFT], icon: wordprev.png, label: "Previous WORD" }
-  - { key: E, mods: [SHIFT], icon: wordend.png, label: "WORD end" }
+  - { key: W, mods: [SHIFT], icon: wordnext_big.png, label: "Next WORD" }
+  - { key: B, mods: [SHIFT], icon: wordprev_big.png, label: "Previous WORD" }
+  - { key: E, mods: [SHIFT], icon: wordend_big.png, label: "WORD end" }
   - { key: F, icon: findchar.png, label: "Find char" }
   - { key: T, icon: tillchar.png, label: "Till char" }
   - { key: F, mods: [SHIFT], icon: findchar_back.png, label: "Find char back" }
@@ -53,13 +53,13 @@ bindings:
   - { key: D, mods: [CTRL], icon: scroll_down.png, region: [40, 32], label: "Half page down" }
   # --- Prefix menus (the first key only; second keys are listed in the report): "g":Goto, "m":Match, "[":Left bracket,
   # "]":Right bracket, "space":Space, "z" and "Z":View, "C-w":Window.
-  - { key: G, icon: leader.png, label: "Goto menu" }
+  - { key: G, icon: goto_menu.png, label: "Goto menu" }
   - { key: M, icon: bracket.png, region: [40, 32], label: "Match menu" }
   - { key: "[", icon: prevchange.png, label: "Prev bracket menu" }
   - { key: "]", icon: nextchange.png, label: "Next bracket menu" }
   - { key: SPACE, icon: leader.png, label: "Space menu" }
   - { key: Z, icon: viewmode.png, label: "View menu" }
-  - { key: Z, mods: [SHIFT], icon: viewmode.png, label: "View menu (sticky)" }
+  - { key: Z, mods: [SHIFT], icon: viewmode_sticky.png, label: "View menu (sticky)" }
   - { key: W, mods: [CTRL], icon: splitright.png, label: "Window menu" }
   # --- Modes and commands: "v":select_mode, ":":command_mode, "i"/"I"/"a"/"A"/"o"/"O": enter insert mode.
   - { key: V, icon: mark.png, region: [40, 32], label: "Select mode" }
@@ -84,7 +84,7 @@ bindings:
   - { key: "`", mods: [ALT], icon: uppercase.png, label: "Uppercase" }
   - { key: "`", mods: [SHIFT], icon: switchcase.png, label: "Switch case" }
   - { key: J, mods: [SHIFT], icon: join.png, label: "Join lines" }
-  - { key: J, mods: [ALT, SHIFT], icon: join.png, label: "Join with space" }
+  - { key: J, mods: [ALT, SHIFT], icon: join_space.png, label: "Join with space" }
   - { key: ".", mods: [SHIFT], icon: indent.png, label: "Indent" }
   - { key: ",", mods: [SHIFT], icon: unindent.png, label: "Unindent" }
   - { key: "=", icon: format.png, label: "Format selection" }
@@ -94,12 +94,12 @@ bindings:
   # --- Yank, paste, undo, macros: "y":yank, "p":paste_after, "P":paste_before, "u":undo, "U":redo, "A-u":earlier,
   # "A-U":later, "Q":record_macro, "q":replay_macro, "\"":select_register, "C-z":suspend.
   - { key: Y, icon: copy.png, label: "Yank" }
-  - { key: P, icon: paste.png, label: "Paste after" }
-  - { key: P, mods: [SHIFT], icon: paste.png, label: "Paste before" }
+  - { key: P, icon: paste_after.png, label: "Paste after" }
+  - { key: P, mods: [SHIFT], icon: paste_before.png, label: "Paste before" }
   - { key: U, icon: undo.png, label: "Undo" }
   - { key: U, mods: [SHIFT], icon: redo.png, label: "Redo" }
-  - { key: U, mods: [ALT], icon: history.png, label: "Earlier state" }
-  - { key: U, mods: [ALT, SHIFT], icon: history.png, label: "Later state" }
+  - { key: U, mods: [ALT], icon: history_earlier.png, label: "Earlier state" }
+  - { key: U, mods: [ALT, SHIFT], icon: history_later.png, label: "Later state" }
   - { key: Q, mods: [SHIFT], icon: macro_record.png, label: "Record macro" }
   - { key: Q, icon: macro_run.png, label: "Replay macro" }
   - { key: "'", mods: [SHIFT], icon: register.png, label: "Select register" }
@@ -138,23 +138,23 @@ bindings:
   - { key: 7, mods: [SHIFT], icon: align.png, label: "Align selections" }
   - { key: 9, mods: [SHIFT], icon: rotate_back.png, label: "Rotate back" }
   - { key: 0, mods: [SHIFT], icon: rotate_fwd.png, label: "Rotate forward" }
-  - { key: 9, mods: [ALT, SHIFT], icon: rotate_back.png, label: "Rotate contents back" }
-  - { key: 0, mods: [ALT, SHIFT], icon: rotate_fwd.png, label: "Rotate contents fwd" }
+  - { key: 9, mods: [ALT, SHIFT], icon: rotate_back_text.png, label: "Rotate contents back" }
+  - { key: 0, mods: [ALT, SHIFT], icon: rotate_fwd_text.png, label: "Rotate contents fwd" }
   - { key: S, mods: [CTRL], icon: save.png, label: "Save selection" }
   # --- Syntax tree: "A-o":expand_selection, "A-i":shrink_selection, "A-I":select_all_children, "A-p":select_prev_sibling,
   # "A-n":select_next_sibling, "A-a":select_all_siblings, "A-e":move_parent_node_end, "A-b":move_parent_node_start.
   - { key: O, mods: [ALT], icon: expand.png, label: "Expand selection" }
-  - { key: I, mods: [ALT], icon: shrink.png, label: "Shrink selection" }
+  - { key: I, mods: [ALT], icon: narrow.png, label: "Shrink selection" }
   - { key: I, mods: [ALT, SHIFT], icon: children.png, label: "Select children" }
   - { key: P, mods: [ALT], icon: prevsibling.png, label: "Previous sibling" }
   - { key: N, mods: [ALT], icon: nextsibling.png, label: "Next sibling" }
   - { key: A, mods: [ALT], icon: siblings.png, label: "Select siblings" }
-  - { key: E, mods: [ALT], icon: parentend.png, label: "Parent node end" }
-  - { key: B, mods: [ALT], icon: parentstart.png, label: "Parent node start" }
+  - { key: E, mods: [ALT], icon: node_end.png, label: "Parent node end" }
+  - { key: B, mods: [ALT], icon: node_start.png, label: "Parent node start" }
   # --- Jumplist and shell: "C-i"/"tab":jump_forward, "C-o":jump_backward, "|":shell_pipe, "A-|":shell_pipe_to,
   # "!":shell_insert_output, "A-!":shell_append_output, "$":shell_keep_pipe.
-  - { key: TAB, icon: next.png, label: "Jump forward" }
-  - { key: O, mods: [CTRL], icon: prev.png, label: "Jump back" }
+  - { key: TAB, icon: jump_fwd.png, label: "Jump forward" }
+  - { key: O, mods: [CTRL], icon: jump_back.png, label: "Jump back" }
   - { key: "\\", mods: [SHIFT], icon: pipe.png, label: "Pipe to shell" }
   - { key: "\\", mods: [ALT, SHIFT], icon: pipe_to.png, label: "Pipe, discard output" }
   - { key: 1, mods: [SHIFT], icon: shell_insert.png, label: "Insert shell output" }

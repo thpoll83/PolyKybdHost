@@ -66,7 +66,7 @@ bindings:
   - { key: INS, mods: [SHIFT], icon: kp2_pasteentries.png, label: "Paste entries" }
   - { key: D, mods: [CTRL], icon: kp2_compare.png, label: "Compare entries" }
   - { key: D, mods: [CTRL, SHIFT], icon: kp2_markcompare.png, label: "Mark for comparison" }
-  - { key: P, mods: [CTRL, SHIFT], icon: kp2_print.png, label: "Print group" }
+  - { key: P, mods: [CTRL, SHIFT], icon: kp2_printgroup.png, label: "Print group" }
   # --- move the selected entry or group ---
   - { key: HOME, mods: [ALT], icon: kp2_movetop.png, label: "Move to top", except: [linux] }
   - { key: UP, mods: [ALT], icon: ../../effectcraft/icons/nudge10_up.png, label: "Move one up", except: [linux] }

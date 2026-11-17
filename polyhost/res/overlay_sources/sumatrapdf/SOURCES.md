@@ -65,3 +65,16 @@ not checked in the app.
 - Open, Print, Find, Select all, Copy, Undo and Redo are drawn by the shared
   concept renderer.
 - ESC: the generic program mark (the OS icon of SumatraPDF.exe).
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `closetab_quit.png` | `close.png` with `quit.png` at the lower right, drawn by `../action_variants.py` | same as the base icon |
+| `highlight_pdf.png` | `highlight.png` with the tag "PDF", drawn by `../action_variants.py` | same as the base icon |
+| `underline_pdf.png` | `underline.png` with the tag "PDF", drawn by `../action_variants.py` | same as the base icon |
+| `recenttab_fwd.png` | `recenttab.png` with a right triangle at the top right, drawn by `../action_variants.py` | same as the base icon |
+| `recenttab_back.png` | `recenttab.png` with a left triangle at the top right, drawn by `../action_variants.py` | same as the base icon |

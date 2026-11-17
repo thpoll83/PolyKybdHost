@@ -103,7 +103,7 @@ bindings:
   - { key: EQUAL, mods: [CTRL], icon: fontbig.png,   label: "Font bigger",      source: "ms-fluent/Font Increase (MIT)" }
   - { key: MINUS, mods: [CTRL], icon: fontsmall.png, label: "Font smaller",     source: "ms-fluent/Font Decrease (MIT)" }
   - { key: "0",   mods: [CTRL], icon: fontreset.png, label: "Reset font size",  source: "ms-fluent/Text Font Size (MIT)" }
-  - { key: TAB,   mods: [CTRL], icon: nexttab.png,   label: "Next tab",         source: "ms-fluent/Arrow Right (MIT)" }
+  - { key: TAB,   mods: [CTRL], icon: tab_next.png,   label: "Next tab",         source: "ms-fluent/Tab (MIT) + arrow" }
 
   # --- Alt (primary G channel) ------------------------------------------
   - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Full screen",      source: "ms-fluent/Full Screen Maximize (MIT)" }
@@ -131,7 +131,7 @@ bindings:
   - { key: COMMA,  mods: [CTRL, SHIFT], icon: settingsfile.png, label: "Settings file",   source: "ms-fluent/Code (MIT)" }
   - { key: PERIOD, mods: [CTRL, SHIFT], icon: suggestions.png,  label: "Suggestions",     source: "ms-fluent/Lightbulb (MIT)" }
   - { key: SPACE,  mods: [CTRL, SHIFT], icon: tabdropdown.png,  label: "New tab menu",    source: "ms-fluent/Chevron Down (MIT)" }
-  - { key: TAB,    mods: [CTRL, SHIFT], icon: prevtab.png,      label: "Previous tab",    source: "ms-fluent/Arrow Left (MIT)" }
+  - { key: TAB,    mods: [CTRL, SHIFT], icon: tab_prev.png,      label: "Previous tab",    source: "ms-fluent/Tab (MIT) + arrow" }
   # scrolling
   - { key: UP,    mods: [CTRL, SHIFT], icon: scrollup.png,   label: "Scroll up",        source: "ms-fluent/Arrow Sort Up (MIT)" }
   - { key: DOWN,  mods: [CTRL, SHIFT], icon: scrolldown.png, label: "Scroll down",      source: "ms-fluent/Arrow Sort Down (MIT)" }
@@ -140,19 +140,19 @@ bindings:
   - { key: HOME,  mods: [CTRL, SHIFT], icon: totop.png,      label: "Scroll to top",    source: "ms-fluent/Arrow Upload (MIT)" }
   - { key: END,   mods: [CTRL, SHIFT], icon: tobottom.png,   label: "Scroll to bottom", source: "ms-fluent/Arrow Download (MIT)" }
   # new tab with profile 1..9 -- one glyph on all nine; the KEY says which profile
-  - { key: "1", mods: [CTRL, SHIFT], icon: newtab.png, label: "New tab, profile 1", source: "ms-fluent/Tab Add (MIT)" }
-  - { key: "2", mods: [CTRL, SHIFT], icon: newtab.png, label: "New tab, profile 2", source: "ms-fluent/Tab Add (MIT)" }
-  - { key: "3", mods: [CTRL, SHIFT], icon: newtab.png, label: "New tab, profile 3", source: "ms-fluent/Tab Add (MIT)" }
-  - { key: "4", mods: [CTRL, SHIFT], icon: newtab.png, label: "New tab, profile 4", source: "ms-fluent/Tab Add (MIT)" }
-  - { key: "5", mods: [CTRL, SHIFT], icon: newtab.png, label: "New tab, profile 5", source: "ms-fluent/Tab Add (MIT)" }
-  - { key: "6", mods: [CTRL, SHIFT], icon: newtab.png, label: "New tab, profile 6", source: "ms-fluent/Tab Add (MIT)" }
-  - { key: "7", mods: [CTRL, SHIFT], icon: newtab.png, label: "New tab, profile 7", source: "ms-fluent/Tab Add (MIT)" }
-  - { key: "8", mods: [CTRL, SHIFT], icon: newtab.png, label: "New tab, profile 8", source: "ms-fluent/Tab Add (MIT)" }
-  - { key: "9", mods: [CTRL, SHIFT], icon: newtab.png, label: "New tab, profile 9", source: "ms-fluent/Tab Add (MIT)" }
+  - { key: "1", mods: [CTRL, SHIFT], icon: newtab_p1.png, label: "New tab, profile 1", source: "ms-fluent/Tab Add (MIT) + digit" }
+  - { key: "2", mods: [CTRL, SHIFT], icon: newtab_p2.png, label: "New tab, profile 2", source: "ms-fluent/Tab Add (MIT) + digit" }
+  - { key: "3", mods: [CTRL, SHIFT], icon: newtab_p3.png, label: "New tab, profile 3", source: "ms-fluent/Tab Add (MIT) + digit" }
+  - { key: "4", mods: [CTRL, SHIFT], icon: newtab_p4.png, label: "New tab, profile 4", source: "ms-fluent/Tab Add (MIT) + digit" }
+  - { key: "5", mods: [CTRL, SHIFT], icon: newtab_p5.png, label: "New tab, profile 5", source: "ms-fluent/Tab Add (MIT) + digit" }
+  - { key: "6", mods: [CTRL, SHIFT], icon: newtab_p6.png, label: "New tab, profile 6", source: "ms-fluent/Tab Add (MIT) + digit" }
+  - { key: "7", mods: [CTRL, SHIFT], icon: newtab_p7.png, label: "New tab, profile 7", source: "ms-fluent/Tab Add (MIT) + digit" }
+  - { key: "8", mods: [CTRL, SHIFT], icon: newtab_p8.png, label: "New tab, profile 8", source: "ms-fluent/Tab Add (MIT) + digit" }
+  - { key: "9", mods: [CTRL, SHIFT], icon: newtab_p9.png, label: "New tab, profile 9", source: "ms-fluent/Tab Add (MIT) + digit" }
 
   # --- Ctrl+Alt (combo G channel) ---------------------------------------
   - { key: COMMA, mods: [CTRL, ALT], icon: defaultsfile.png, label: "Default settings file", source: "ms-fluent/Document (MIT)" }
-  - { key: LEFT,  mods: [CTRL, ALT], icon: focusleft.png,    label: "Previous pane",         source: "ms-fluent/Arrow Left (MIT)" }
+  - { key: LEFT,  mods: [CTRL, ALT], icon: prevpane.png,    label: "Previous pane",         source: "ms-fluent/Split Vertical (MIT) + arrow" }
   - { key: "1", mods: [CTRL, ALT], icon: tab1.png, label: "Switch to tab 1", source: "ms-fluent/Tab (MIT) + digit" }
   - { key: "2", mods: [CTRL, ALT], icon: tab2.png, label: "Switch to tab 2", source: "ms-fluent/Tab (MIT) + digit" }
   - { key: "3", mods: [CTRL, ALT], icon: tab3.png, label: "Switch to tab 3", source: "ms-fluent/Tab (MIT) + digit" }
@@ -161,15 +161,15 @@ bindings:
   - { key: "6", mods: [CTRL, ALT], icon: tab6.png, label: "Switch to tab 6", source: "ms-fluent/Tab (MIT) + digit" }
   - { key: "7", mods: [CTRL, ALT], icon: tab7.png, label: "Switch to tab 7", source: "ms-fluent/Tab (MIT) + digit" }
   - { key: "8", mods: [CTRL, ALT], icon: tab8.png, label: "Switch to tab 8", source: "ms-fluent/Tab (MIT) + digit" }
-  - { key: "9", mods: [CTRL, ALT], icon: tobottom.png, label: "Switch to LAST tab", source: "ms-fluent/Arrow Download (MIT)" }
+  - { key: "9", mods: [CTRL, ALT], icon: tab_last.png, label: "Switch to LAST tab", source: "ms-fluent/Tab (MIT) + word" }
 
   # --- Alt+Shift (combo B channel) --------------------------------------
   - { key: MINUS, mods: [ALT, SHIFT], icon: splitdown.png,  label: "Split pane down",  source: "ms-fluent/Split Horizontal (MIT)" }
   - { key: EQUAL, mods: [ALT, SHIFT], icon: splitright.png, label: "Split pane right", source: "ms-fluent/Split Vertical (MIT)" }
-  - { key: UP,    mods: [ALT, SHIFT], icon: resizepane.png, label: "Resize pane up",    source: "ms-fluent/Resize (MIT)" }
-  - { key: DOWN,  mods: [ALT, SHIFT], icon: resizepane.png, label: "Resize pane down",  source: "ms-fluent/Resize (MIT)" }
-  - { key: LEFT,  mods: [ALT, SHIFT], icon: resizepane.png, label: "Resize pane left",  source: "ms-fluent/Resize (MIT)" }
-  - { key: RIGHT, mods: [ALT, SHIFT], icon: resizepane.png, label: "Resize pane right", source: "ms-fluent/Resize (MIT)" }
+  - { key: UP,    mods: [ALT, SHIFT], icon: resizepane_up.png, label: "Resize pane up",    source: "ms-fluent/Resize (MIT) + arrow" }
+  - { key: DOWN,  mods: [ALT, SHIFT], icon: resizepane_down.png, label: "Resize pane down",  source: "ms-fluent/Resize (MIT) + arrow" }
+  - { key: LEFT,  mods: [ALT, SHIFT], icon: resizepane_left.png, label: "Resize pane left",  source: "ms-fluent/Resize (MIT) + arrow" }
+  - { key: RIGHT, mods: [ALT, SHIFT], icon: resizepane_right.png, label: "Resize pane right", source: "ms-fluent/Resize (MIT) + arrow" }
 
   # --- standard editing (shared Fluent concepts) ---
   # ctrl+v -> Terminal.PasteFromClipboard is NOT in defaults.json: it is in

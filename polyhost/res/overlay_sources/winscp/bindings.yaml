@@ -83,7 +83,7 @@ bindings:
   - { key: F2, mods: [SHIFT], icon: compare.png,   label: "Compare panels",     source: "ms-fluent/Document Split Hint (MIT)" }
   - { key: F4, mods: [SHIFT], icon: editnew.png,   label: "Edit / create file", source: "ms-fluent/Document Add (MIT)" }
   - { key: F5, mods: [SHIFT], icon: duplicate.png, label: "Duplicate (remote)", source: "ms-fluent/Document Multiple (MIT)" }
-  - { key: F6, mods: [SHIFT], icon: rename.png,    label: "Move / rename (remote)", source: "ms-fluent/Rename (MIT)" }
+  - { key: F6, mods: [SHIFT], icon: renamemove.png, label: "Move / rename (remote)", source: "ms-fluent/Rename + Arrow Forward (MIT), composed in fetch_icons.py" }
   - { key: DELETE, mods: [SHIFT], icon: delete.png, label: Delete,              source: "ms-fluent/Delete (MIT)" }
 
   # --- Ctrl: transfer & session (primary R channel) ---------------------
@@ -104,15 +104,15 @@ bindings:
   - { key: O, mods: [CTRL], icon: bookmarks.png, label: Bookmarks,         source: "ms-fluent/Bookmark Multiple (MIT)" }
   - { key: L, mods: [CTRL], icon: bookmarks.png, label: Bookmarks,         source: "ms-fluent/Bookmark Multiple (MIT)" }
   - { key: A, mods: [CTRL], icon: selectall.png, label: "Select all",      source: "ms-fluent/Select All On (MIT)" }
-  - { key: C, mods: [CTRL], icon: copynames.png, label: "Copy to clipboard", source: "ms-fluent/Clipboard Letter (MIT)" }
+  - { key: C, mods: [CTRL], icon: copyclip.png,  label: "Copy to clipboard", source: "ms-fluent/Copy + Clipboard Paste (MIT), composed in fetch_icons.py" }
   - { key: V, mods: [CTRL], icon: paste.png,     label: Paste,             source: "ms-fluent/Clipboard Paste (MIT)" }
   - { key: F, mods: [CTRL], icon: incsearch.png, label: "Incremental search", concept: find, source: "ms-fluent/Search (MIT)" }
-  - { key: BACKSLASH,    mods: [CTRL], icon: root.png,       label: "Root directory",    source: "ms-fluent/Home (MIT)" }
-  - { key: LEFT_BRACKET, mods: [CTRL], icon: copylocal.png,  label: "Copy local path",   source: "ms-fluent/Panel Left (MIT)" }
-  - { key: RIGHT_BRACKET, mods: [CTRL], icon: copyremote.png, label: "Copy remote path", source: "ms-fluent/Panel Right (MIT)" }
+  - { key: BACKSLASH,    mods: [CTRL], icon: rootdir.png,    label: "Root directory",    source: "ms-fluent/Home (MIT) + 'ROOT' tag, fetch_icons.py" }
+  - { key: LEFT_BRACKET, mods: [CTRL], icon: copylocal_l.png, label: "Copy local path",  source: "ms-fluent/Clipboard Link (MIT) + 'L' tag, fetch_icons.py" }
+  - { key: RIGHT_BRACKET, mods: [CTRL], icon: copyremote_r.png, label: "Copy remote path", source: "ms-fluent/Clipboard Link (MIT) + 'R' tag, fetch_icons.py" }
   # sorting (Ctrl+F3..F9)
   - { key: F3, mods: [CTRL], icon: sortname.png,  label: "Sort by name",       source: "ms-fluent/Text Sort Ascending (MIT)" }
-  - { key: F4, mods: [CTRL], icon: sortext.png,   label: "Sort by extension",  source: "ms-fluent/Filter (MIT)" }
+  - { key: F4, mods: [CTRL], icon: sortext_tag.png, label: "Sort by extension", source: "ms-fluent/Text Sort Ascending (MIT) + 'EXT' tag, fetch_icons.py" }
   - { key: F5, mods: [CTRL], icon: sorttime.png,  label: "Sort by time",       source: "ms-fluent/Calendar (MIT)" }
   - { key: F6, mods: [CTRL], icon: sortsize.png,  label: "Sort by size",       source: "ms-fluent/Data Bar Vertical (MIT)" }
   - { key: F7, mods: [CTRL], icon: sortattrs.png, label: "Sort by permissions", source: "ms-fluent/Options (MIT)" }
@@ -155,7 +155,7 @@ bindings:
 
   # --- Ctrl+Alt (combo G channel) ---------------------------------------
   - { key: T, mods: [CTRL, ALT], icon: tree.png,        label: "Tree panel",           source: "ms-fluent/Organization (MIT)" }
-  - { key: B, mods: [CTRL, ALT], icon: syncbrowse.png,  label: "Synchronised browsing", concept: replace, source: "ms-fluent/Arrow Swap (MIT)" }
+  - { key: B, mods: [CTRL, ALT], icon: syncbrowse_link.png, label: "Synchronised browsing", source: "ms-fluent/Arrow Swap + Link (MIT), composed in fetch_icons.py" }
   - { key: P, mods: [CTRL, ALT], icon: prefs.png,       label: Preferences,            source: "ms-fluent/Settings (MIT)" }
   - { key: R, mods: [CTRL, ALT], icon: autorefresh.png, label: "Auto refresh",         source: "ms-fluent/Arrow Repeat All (MIT)" }
   - { key: C, mods: [CTRL, ALT], icon: copypaths.png,   label: "Copy names + paths",   source: "ms-fluent/Clipboard Link (MIT)" }

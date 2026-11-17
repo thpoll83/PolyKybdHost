@@ -36,7 +36,7 @@ bindings:
   - { key: E, mods: [], icon: loupe.png, label: "Loupe view" }
   - { key: C, mods: [], icon: compare.png, label: "Compare view" }
   - { key: N, mods: [], icon: survey.png, label: "Survey view" }
-  - { key: D, mods: [], icon: develop.png, label: "Develop" }
+  - { key: D, mods: [], icon: develop.png, label: "Develop module" }
   - { key: L, mods: [], icon: lightsout.png, label: "Lights out" }
   - { key: F, mods: [], icon: screenmode.png, label: "Screen mode" }
   - { key: I, mods: [], icon: info.png, label: "Info overlay" }
@@ -70,9 +70,9 @@ bindings:
   - { key: F7, mods: [], icon: leftpanels.png, label: "Left panels" }
   - { key: F8, mods: [], icon: rightpanels.png, label: "Right panels" }
   # --- Shift ---
-  - { key: P, mods: [SHIFT], icon: pick.png, label: "Pick, next photo" }
-  - { key: X, mods: [SHIFT], icon: reject.png, label: "Reject, next photo" }
-  - { key: U, mods: [SHIFT], icon: unflag.png, label: "Unflag, next photo" }
+  - { key: P, mods: [SHIFT], icon: picknext.png, label: "Pick, next photo" }
+  - { key: X, mods: [SHIFT], icon: rejectnext.png, label: "Reject, next photo" }
+  - { key: U, mods: [SHIFT], icon: unflagnext.png, label: "Unflag, next photo" }
   - { key: Y, mods: [SHIFT], icon: splitview.png, label: "Before / after split" }
   - { key: W, mods: [SHIFT], icon: masking.png, label: "Masking" }
   - { key: M, mods: [SHIFT], icon: radialgradient.png, label: "Radial gradient" }
@@ -102,7 +102,7 @@ bindings:
   - { key: RBRACKET, mods: [CMDCTRL], icon: rotateright.png, label: "Rotate right" }
   - { key: LBRACKET, mods: [CMDCTRL], icon: rotateleft.png, label: "Rotate left" }
   - { key: QUOTE, mods: [CMDCTRL], icon: virtualcopy.png, label: "Virtual copy" }
-  - { key: ENTER, mods: [CMDCTRL], icon: slideshow.png, label: "Impromptu slide show" }
+  - { key: ENTER, mods: [CMDCTRL], icon: impromptu.png, label: "Impromptu slide show" }
   - { key: SLASH, mods: [CMDCTRL], icon: shortcuts.png, label: "Module shortcuts" }
   - { key: LEFT, mods: [CMDCTRL], icon: prevphoto.png, label: "Previous photo" }
   - { key: RIGHT, mods: [CMDCTRL], icon: nextphoto.png, label: "Next photo" }
@@ -128,7 +128,7 @@ bindings:
   - { key: "3", mods: [CMDCTRL, ALT], icon: map.png, label: "Map module" }
   - { key: "4", mods: [CMDCTRL, ALT], icon: book.png, label: "Book module" }
   - { key: "5", mods: [CMDCTRL, ALT], icon: slideshow.png, label: "Slideshow module" }
-  - { key: "6", mods: [CMDCTRL, ALT], icon: print.png, label: "Print module" }
+  - { key: "6", mods: [CMDCTRL, ALT], icon: printmodule.png, label: "Print module" }
   - { key: "7", mods: [CMDCTRL, ALT], icon: web.png, label: "Web module" }
   - { key: LEFT, mods: [CMDCTRL, ALT], icon: back.png, label: "Go back" }
   - { key: RIGHT, mods: [CMDCTRL, ALT], icon: forward.png, label: "Go forward" }

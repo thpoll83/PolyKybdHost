@@ -12,6 +12,7 @@ same cell in every DAW. The ESC mark is drawn by
 """
 from __future__ import annotations
 
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -24,11 +25,11 @@ import program_marks  # noqa: E402
 BORROW = {
     **{n: "ableton" for n in (
         "settings.png", "duplicate.png", "group.png", "ungroup.png",
-        "split.png", "consolidate.png", "loop.png", "quantize.png",
+        "consolidate.png", "loop.png", "quantize.png",
         "playstop.png", "continue.png", "narrowgrid.png", "widegrid.png",
         "fixedgrid.png", "automation.png", "deviceview.png", "browser.png")},
     **{n: "reaper" for n in (
-        "snap.png", "itemprops.png", "prevtrack.png", "nexttrack.png",
+        "snap.png", "split.png", "itemprops.png", "prevtrack.png", "nexttrack.png",
         "nudgeleft.png", "nudgeright.png", "tostart.png", "mixer.png",
         "pitchup.png", "pitchdown.png")},
     **{n: "musescore" for n in ("octup.png", "octdown.png")},
@@ -90,12 +91,35 @@ def fine_variants(out: Path) -> int:
     return n
 
 
+# name -> (glyph, word): a glyph with a short word under it, 1-bit at 40x40,
+# drawn with the Ghidra set's code. Edit View's Alt+Left/Right select the
+# previous/next EVENT; the Arrange set's Left/Right select a clip and keep the
+# clip glyph (one icon per action).
+WORDS = {
+    "selprevevent": ("left", "EVT"),
+    "selnextevent": ("right", "EVT"),
+}
+
+
+def word_composites(out: Path, words: dict[str, tuple[str, str]]) -> None:
+    """Draw ``words`` with ``composites()`` from ``../ghidra/fetch_icons.py``."""
+    spec = importlib.util.spec_from_file_location(
+        "ghidra_fetch_icons", Path(__file__).resolve().parent.parent / "ghidra" / "fetch_icons.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    mod.COMPOSITES = words
+    mod.ISA = {}
+    mod.composites(out)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
     n = icon_fetch.fluent(FLUENT, out)
     n += icon_fetch.borrow(BORROW, out)
     n += fine_variants(out)
+    word_composites(out, WORDS)
+    n += len(WORDS)
     # The ESC mark: Simple Icons bitwig (CC0-1.0), 1 bit at keycap size.
     program_marks.pictogram_mark(
         out / "bitwig_mark.png",

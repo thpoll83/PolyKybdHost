@@ -107,7 +107,7 @@ bindings:
   - { key: U, mods: [ALT], icon: upcase.png,     label: "Upper-case word",  source: "readline upcase-word" }
   - { key: L, mods: [ALT], icon: downcase.png,   label: "Lower-case word",  source: "readline downcase-word" }
   - { key: C, mods: [ALT], icon: capitalize.png, label: "Capitalise word",  source: "readline capitalize-word" }
-  - { key: T, mods: [ALT], icon: transpose.png,  label: "Transpose words", concept: replace,  source: "readline transpose-words" }
+  - { key: T, mods: [ALT], icon: transpose_word.png,  label: "Transpose words",  source: "readline transpose-words" }
   - { key: R, mods: [ALT], icon: revertline.png, label: "Revert line",      source: "readline revert-line" }
   - { key: DOT, mods: [ALT], icon: lastarg.png,  label: "Yank last argument", source: "readline yank-last-arg" }
   # PuTTY's OWN shortcut -- the one thing in this file the terminal handles itself

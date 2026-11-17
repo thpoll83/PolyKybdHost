@@ -56,8 +56,8 @@ bindings:
   - { key: DOT,   mods: [CTRL, SHIFT], icon: fontinc.png, label: "Font +" }
   - { key: COMMA, mods: [CTRL, SHIFT], icon: fontdec.png, label: "Font -" }
   - { key: "1", mods: [CTRL, SHIFT], icon: numberfmt.png,  label: "Number" }
-  - { key: "2", mods: [CTRL, SHIFT], icon: time.png,       label: "Time format" }
-  - { key: "3", mods: [CTRL, SHIFT], icon: date.png,       label: "Date format" }
+  - { key: "2", mods: [CTRL, SHIFT], icon: time_fmt.png,   label: "Time format" }
+  - { key: "3", mods: [CTRL, SHIFT], icon: date_fmt.png,   label: "Date format" }
   - { key: "4", mods: [CTRL, SHIFT], icon: currency.png,   label: Currency }
   - { key: "5", mods: [CTRL, SHIFT], icon: percent.png,    label: Percent }
   - { key: "6", mods: [CTRL, SHIFT], icon: scientific.png, label: Scientific }

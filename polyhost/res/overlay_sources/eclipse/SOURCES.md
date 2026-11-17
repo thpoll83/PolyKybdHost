@@ -278,8 +278,8 @@ drawn composites and are not bound directly.
 | `gotoline.png` | Fluent `Text Number Format`, copied from `../sublime/icons/` | MIT |
 | `hunk.png` | Material Symbols `difference`, copied from `../zed/icons/` | Apache-2.0 |
 | `inline.png` | Material Symbols `compress`, copied from `../jetbrains/icons/` | Apache-2.0 |
-| `insertafter.png` | Fluent `Arrow Enter`, copied from `../sublime/icons/` | MIT |
-| `insertbefore.png` | Fluent `Arrow Enter`, copied from `../sublime/icons/` | MIT |
+| `insertafter.png` | Fluent `Text Add Space After`, copied from `../sublime/icons/` | MIT |
+| `insertbefore.png` | Fluent `Text Add Space Before`, copied from `../sublime/icons/` | MIT |
 | `intentions.png` | Fluent `Lightbulb`, copied from `../jetbrains/icons/` | MIT |
 | `introducevariable.png` | Material Symbols `variable_add`, copied from `../jetbrains/icons/` | Apache-2.0 |
 | `joinlines.png` | Fluent `Text Wrap Off`, copied from `../sublime/icons/` | MIT |
@@ -464,3 +464,12 @@ New icons for `cdt.yaml` (in `fetch_icons.py`, `FLUENT`):
 | `togglefunc.png` | Material Symbols `swap_vert` | Apache-2.0 |
 | `alignconst.png` | Material Symbols `format_align_left` | Apache-2.0 |
 | `copyqualified.png` | Material Symbols `label` | Apache-2.0 |
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `opentypehierarchy.png` | `typehierarchy.png` with `_search.png` at the lower right, drawn by `../action_variants.py` | same as the base icon |

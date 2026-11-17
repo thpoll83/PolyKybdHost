@@ -127,6 +127,31 @@ BORROW = {
 NUKE_ICON_URL = "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/nuke.svg"
 
 
+# --- One icon per action (maintainer, 2026-11-15) ----------------------------
+# Two keys of this app share an image only when they do the same thing. The
+# glyphs below give the other keys their own image. The older files stay, because
+# other sets may copy them (icon_fetch.borrow).
+ACTION_FLUENT = {
+    "projsettings": "Document Settings",
+    "_add": "Add",
+}
+# file -> (base, badge): the base reduced to the upper left, the badge in the
+# lower right (dcc_glyphs.with_badge).
+ACTION_BADGED = {
+    "groupcreate.png": ("group.png", "_add.png"),
+}
+
+
+def action_icons(out: Path) -> None:
+    """Draw the ACTION_* icons; a committed composite is left as it is."""
+    from polyhost.res.overlay_sources import dcc_glyphs, icon_fetch as fetch
+    if ACTION_FLUENT:
+        fetch.fluent(ACTION_FLUENT, out)
+    for name, (base, badge) in ACTION_BADGED.items():
+        dcc_glyphs.guarded(out / name, lambda p, b=base, g=badge: dcc_glyphs.with_badge(
+            out / b, out / g, p), f"{base} + {badge}")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -135,6 +160,7 @@ def main() -> int:
     g.guarded(out / "nuke.png",
               lambda p: g.trace_mark(g.svg_icon(NUKE_ICON_URL), p, lit="dark"),
               "simple-icons/nuke (CC0), 32x32 trace")
+    action_icons(out)
     print(f"Wrote icons to {out}")
     return 0
 

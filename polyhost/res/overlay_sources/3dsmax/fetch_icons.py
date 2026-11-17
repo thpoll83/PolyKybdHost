@@ -221,6 +221,32 @@ def _max_mark(path: Path, px: int = 32) -> None:
     Image.fromarray(np.dstack([a, a, a, a]), "RGBA").save(path)
 
 
+# --- One icon per action (maintainer, 2026-11-15) ----------------------------
+# Two keys of this app share an image only when they do the same thing. The
+# glyphs below give the other keys their own image. The older files stay, because
+# other sets may copy them (icon_fetch.borrow).
+ACTION_FLUENT = {
+    "_quad": "ms:grid_view",
+    "_toggle": "ms:toggle_on",
+}
+# file -> (base, badge): the base reduced to the upper left, the badge in the
+# lower right (dcc_glyphs.with_badge).
+ACTION_BADGED = {
+    "quadlock.png": ("lock.png", "_quad.png"),
+    "localview_toggle.png": ("localview.png", "_toggle.png"),
+}
+
+
+def action_icons(out: Path) -> None:
+    """Draw the ACTION_* icons; a committed composite is left as it is."""
+    from polyhost.res.overlay_sources import dcc_glyphs, icon_fetch as fetch
+    if ACTION_FLUENT:
+        fetch.fluent(ACTION_FLUENT, out)
+    for name, (base, badge) in ACTION_BADGED.items():
+        dcc_glyphs.guarded(out / name, lambda p, b=base, g=badge: dcc_glyphs.with_badge(
+            out / b, out / g, p), f"{base} + {badge}")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -236,6 +262,7 @@ def main() -> int:
         g.guarded(out / f"hide_{cat}.png",
                   lambda p, c=cat: g.slashed(out / f"cat_{c}.png", p), f"composite (cat_{cat} slashed)")
     g.guarded(out / "3dsmax.png", _max_mark, "drawn program mark")
+    action_icons(out)
     print(f"Wrote icons to {out}")
     return 0
 

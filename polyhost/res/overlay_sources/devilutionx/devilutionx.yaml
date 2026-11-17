@@ -70,7 +70,7 @@ bindings:
   - { key: G, icon: gammadown.png, label: "Decrease gamma" }
   - { key: KC_LEFT_ALT, icon: highlight.png, label: "Item labels (hold)" }
   - { key: KC_LEFT_ALT, mods: [ALT], icon: highlight.png, label: "Item labels (hold)" }
-  - { key: KC_RIGHT_CTRL, icon: highlight.png, label: "Item labels on / off" }
+  - { key: KC_RIGHT_CTRL, icon: highlighttoggle.png, label: "Item labels on / off" }
   - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Full screen on / off" }
   - { key: PRTSC, icon: screenshot.png, label: "Screenshot" }
 

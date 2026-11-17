@@ -17,7 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
-from polyhost.res.overlay_sources import brand_marks, icon_fetch, number_badge  # noqa: E402
+from polyhost.res.overlay_sources import action_variants, brand_marks, icon_fetch, number_badge  # noqa: E402
 
 FLUENT = {
     "openfile": "Document",
@@ -77,7 +77,6 @@ FLUENT = {
     "uncropbottom": "ms:arrow_downward",
     "uncropright": "ms:arrow_forward",
     "subsize": "ms:format_size",
-    "subsync": "ms:subtitles",
     "effects": "ms:tune",
     "videoeffects": "ms:video_settings",
     "audioeffects": "ms:graphic_eq",
@@ -99,7 +98,6 @@ HOTKEYS = {
     "position": "ms:timer",
     "framenext": "ms:resume",
     "ratenormal": "ms:1x_mobiledata",
-    "syncaudio": "ms:graphic_eq",
     "syncsub": "ms:closed_caption",
     "syncapply": "ms:sync",
     "audiotrack": "ms:library_music",
@@ -136,6 +134,19 @@ def delay_icons(out: Path) -> None:
             print(f"  {kind}delay{way}.png  <- {base}.png + {arrow}.png")
 
 
+# Different actions that start from one icon: each gets its own picture
+# (one icon per action, maintainer 2026-11-15). See action_variants.py.
+VARIANTS = {
+    "repeatall_all.png": ("tag", "repeatall.png", "ALL"),
+    "fitscreen_max.png": ("tag", "fitscreen.png", "MAX"),
+    "subsync_reset.png": ("tag", "subtrack.png", "0"),
+    "faster_fine.png": ("tag", "faster.png", "FINE"),
+    "slower_fine.png": ("tag", "slower.png", "FINE"),
+    "syncaudio_mark.png": ("combine", "audioeffects.png", "syncapply.png"),
+    "fscontrols.png": ("combine", "fsinterface.png", "playpause.png"),
+}
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -146,6 +157,7 @@ def main() -> int:
                           size=0.40, centre=(0.50, 0.42))
     brand_marks.ensure(out / "vlc.png", "vlcmediaplayer")
     print(f"Wrote icons to {out}")
+    action_variants.make(out, VARIANTS)
     return 0
 
 

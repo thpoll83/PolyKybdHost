@@ -36,11 +36,12 @@ here even though they agree.
 - https://www.gnu.org/software/bash/manual/html_node/Bindable-Readline-Commands.html
 - https://man7.org/linux/man-pages/man1/stty.1.html
 
-### Known conflation
+### Transpose characters and words
 
-`Ctrl+T` (transpose characters) and `Alt+T` (transpose words) share one glyph.
-Both mean "swap two adjacent things" and the labels differ; a picture that
-separates them at 40x40 px has not been found. Recorded rather than hidden.
+`Ctrl+T` (transpose characters) and `Alt+T` (transpose words) are different
+actions, so they have different images (maintainer, 2026-11-15: two keys of one
+app share an image only when they do the same thing). `Alt+T` draws
+`transpose_word.png`: the `Arrow Swap` glyph over the word "word".
 
 ## Icons
 
@@ -98,6 +99,7 @@ nobody will confuse.
 | `killword.png` | drawn (fetch_icons.py) | ours (GPL-3.0-or-later, with the repo) |
 | `yank.png` | Fluent `Clipboard Paste` | MIT |
 | `transpose.png` | Fluent `Arrow Swap` | MIT |
+| `transpose_word.png` | `transpose.png` over "word" (Liberation Sans Bold, SIL OFL 1.1), drawn 1-bit at 40x36 by `../tui/variant_glyphs.py` | MIT |
 | `delchar.png` | Fluent `Backspace` | MIT |
 | `complete.png` | Fluent `Text Position Line` | MIT |
 | `clear.png` | Fluent `Broom` | MIT |

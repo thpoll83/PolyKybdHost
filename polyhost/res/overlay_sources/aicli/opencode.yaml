@@ -54,11 +54,11 @@ bindings:
   # --- Models and agents. "model_cycle_recent": "f2",
   # "model_cycle_recent_reverse": "shift+f2", "variant_cycle": "ctrl+t",
   # "agent_cycle": "tab", "agent_cycle_reverse": "shift+tab".
-  - { key: F2, icon: model.png, label: "Next recent model" }
-  - { key: F2, mods: [SHIFT], icon: model.png, label: "Previous model" }
+  - { key: F2, icon: model_next.png, label: "Next recent model" }
+  - { key: F2, mods: [SHIFT], icon: model_prev.png, label: "Previous model" }
   - { key: T, mods: [CTRL], icon: effort.png, label: "Model variant" }
-  - { key: TAB, icon: assistant.png, label: "Next agent" }
-  - { key: TAB, mods: [SHIFT], icon: assistant.png, label: "Previous agent" }
+  - { key: TAB, icon: agent_next.png, label: "Next agent" }
+  - { key: TAB, mods: [SHIFT], icon: agent_prev.png, label: "Previous agent" }
 
   # --- Input. "input_newline": "shift+return,ctrl+return,alt+return,ctrl+j";
   # "input_undo": "ctrl+-,super+z" (super left out); "input_redo": "ctrl+.,super+shift+z";
@@ -83,8 +83,8 @@ bindings:
   - { key: F, mods: [CTRL, ALT], icon: page_down.png, region: [40, 32], label: "Page down" }
   - { key: Y, mods: [CTRL, ALT], icon: scroll_up.png, region: [40, 32], label: "Line up" }
   - { key: E, mods: [CTRL, ALT], icon: scroll_down.png, region: [40, 32], label: "Line down" }
-  - { key: U, mods: [CTRL, ALT], icon: page_up.png, region: [40, 32], label: "Half page up" }
-  - { key: D, mods: [CTRL, ALT], icon: page_down.png, region: [40, 32], label: "Half page down" }
+  - { key: U, mods: [CTRL, ALT], icon: half_up.png, region: [40, 32], label: "Half page up" }
+  - { key: D, mods: [CTRL, ALT], icon: half_down.png, region: [40, 32], label: "Half page down" }
 
   # --- Which-key panel. "which_key_toggle": "ctrl+alt+k";
   # "which_key_layout_toggle": "ctrl+alt+shift+k".

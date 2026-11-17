@@ -96,6 +96,9 @@ The drawn icons, placed 1:1 because their size equals the area:
   that key filled. 1 2 3 are the top row and 5 6 7 the bottom row, as in the
   game's item bar.
 - F2 to F5: the person glyph with the ally number 1 to 4 (Liberation Sans Bold).
+- Ctrl+Q to Ctrl+R: the level-up glyph with the ability number 1 to 4.
+- O (scoreboard on / off): the scoreboard with a switch; Tab (hold) shows the
+  scoreboard alone.
 
 ESC shows LEAGUE in Bebas Neue (SIL OFL 1.1, `ofl/bebasneue/BebasNeue-Regular.ttf`
 from google/fonts at commit e7db6ca), centred on the whole cell and drawn
@@ -112,7 +115,7 @@ art is proprietary and is not used.
 | `taunt.png` | game-icons.net `lorc/shouting` | lorc | CC BY 3.0 |
 | `fistbump.png` | game-icons.net `lorc/fist` | lorc | CC BY 3.0 |
 | `shop.png` | game-icons.net `delapouite/shop` | delapouite | CC BY 3.0 |
-| `levelup.png` | Material Symbols `upgrade` | Google | Apache-2.0 |
+| `levelup1.png` … `levelup4.png` | Material Symbols `upgrade` + the ability number drawn by `fetch_icons.py` (Liberation Sans Bold) | Google | Apache-2.0 |
 | `recall.png` | Material Symbols `home` | Google | Apache-2.0 |
 | `hold.png`, `stop.png` | Material Symbols `pan_tool`, `block` | Google | Apache-2.0 |
 | `centre.png`, `camlock.png` | Material Symbols `center_focus_strong`, `lock` | Google | Apache-2.0 |
@@ -125,6 +128,7 @@ art is proprietary and is not used.
 | `mybad.png`, `emotewheel.png` | Material Symbols `sentiment_dissatisfied`, `add_reaction` | Google | Apache-2.0 |
 | `chat.png`, `allchat.png`, `chathistory.png`, `mic.png` | Material Symbols `chat`, `public`, `history`, `mic` | Google | Apache-2.0 |
 | `scoreboard.png`, `menu.png` | Material Symbols `scoreboard`, `menu` | Google | Apache-2.0 |
+| `scoreboardtoggle.png` | Material Symbols `scoreboard` and `toggle_on`, composed by `fetch_icons.py` (O: scoreboard on / off; Tab, hold, keeps `scoreboard.png`) | Google | Apache-2.0 |
 | `stats.png`, `basicstats.png` | Material Symbols `query_stats`, `bar_chart` | Google | Apache-2.0 |
 | `shopsearch.png`, `shoptabs.png` | Material Symbols `search`, `tab` | Google | Apache-2.0 |
 | `ally1.png` … `ally4.png` | Material Symbols `person` + a digit drawn by `fetch_icons.py` (Liberation Sans Bold) | Google | Apache-2.0 |

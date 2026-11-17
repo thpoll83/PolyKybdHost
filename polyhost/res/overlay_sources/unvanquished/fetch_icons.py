@@ -54,11 +54,10 @@ ICONS = {
     "scoreboard": "ms:scoreboard",
     "voteyes": "ms:thumb_up",
     "voteno": "ms:thumb_down",
-    "screenshot": "ms:screenshot_monitor",
 }
 
 # Key area of each icon, from unvanquished.yaml; the default is 40 x 40.
-SIZES = {"voteyes": xon.F_KEY, "voteno": xon.F_KEY, "screenshot": xon.F_KEY_WIDE}
+SIZES = {"voteyes": xon.F_KEY, "voteno": xon.F_KEY}
 # Solid or wide icons that read heavier than the rest: drawn in a smaller box at
 # the bottom right of their key area.
 INK = {"forward": (30, 30), "back": (30, 30), "left": (30, 30), "right": (30, 30),
@@ -72,16 +71,27 @@ TEAM_VOTES = {"teamvoteyes": "voteyes", "teamvoteno": "voteno"}
 TEAM_BOX = (28, 28)         # the thumb, at the bottom right of the 34 x 40 area
 TEAM_LETTER_PX = 12         # height of the T in the top-left corner of the area
 
+# F11 and Shift+F11 (screenshot as JPEG / as PNG): the screenshot icon with
+# the file type in the top-left corner of the F11 area.
+SCREENSHOT = "ms:screenshot_monitor"
+SCREENSHOTS = {"screenshotjpeg": "JPG", "screenshotpng": "PNG"}
+SCREENSHOT_BOX = (30, 26)   # the icon, at the bottom right of the 30 x 40 area
+SCREENSHOT_TEXT_PX = 9      # height of the file type ("PNG" is 32 px wide at 10)
+
 # One line of 12 letters fits only at 15 px, where the letters touch.
 MARK_LINES = ("UNVAN", "QUISHED")
 
 
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
-    fac.render(ICONS, out)
+    fac.render({**ICONS, "_screenshot": SCREENSHOT}, out)
     for stem, src in TEAM_VOTES.items():
         xon.lettered(out / f"{src}.png", "T", out / f"{stem}.png", xon.F_KEY,
                      TEAM_BOX, TEAM_LETTER_PX)
+    for stem, text in SCREENSHOTS.items():
+        xon.lettered(out / "_screenshot.png", text, out / f"{stem}.png", xon.F_KEY_WIDE,
+                     SCREENSHOT_BOX, SCREENSHOT_TEXT_PX)
+    (out / "_screenshot.png").unlink()
     xon.flat_icons(ICONS, SIZES, INK, out)
     xon.text_mark(MARK_LINES, fac.MARK_FONT_URL, out / "program.png")
     print(f"Wrote icons to {out}")

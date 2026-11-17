@@ -50,7 +50,7 @@ bindings:
   - { key: W, mods: [CTRL], icon: killwordnext.png, label: "Delete next word", only: [macos] }
   - { key: W, mods: [ALT], icon: killwordprev.png, label: "Delete previous word", except: [macos] }
   - { key: E, mods: [CMDCTRL, SHIFT], icon: copyembed.png, label: "Copy block embed" }
-  - { key: V, mods: [CMDCTRL, SHIFT], icon: pasteoneblock.png, label: "Paste as one block" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: pasteoneblock_1.png, label: "Paste as one block" }
   - { key: Y, mods: [CMDCTRL, SHIFT], icon: ytstamp.png, label: "Insert YouTube timestamp" }
   - { key: SPACE, mods: [CTRL], icon: comment.png, label: "Add comment" }
   - { key: RIGHT, mods: [ALT], icon: zoomblock.png, label: "Zoom into block", except: [macos] }

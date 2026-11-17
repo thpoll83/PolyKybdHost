@@ -93,7 +93,7 @@ bindings:
   - { key: RBRACKET, mods: [CMDCTRL, SHIFT], icon: front.png, label: "Bring to front" }
   - { key: LBRACKET, mods: [CMDCTRL, SHIFT], icon: back.png, label: "Send to back" }
   - { key: O, mods: [CMDCTRL, SHIFT], icon: outlines.png, label: "Create outlines" }
-  - { key: P, mods: [CMDCTRL, SHIFT], icon: addpage.png, label: "Add page" }
+  - { key: P, mods: [CMDCTRL, SHIFT], icon: addpages.png, label: "Add page" }
   - { key: D, mods: [CMDCTRL, SHIFT], icon: links.png, label: "Links panel" }
   - { key: T, mods: [CMDCTRL, SHIFT], icon: tabs.png, label: "Tabs" }
   - { key: B, mods: [CMDCTRL, SHIFT], label: "Bold" }

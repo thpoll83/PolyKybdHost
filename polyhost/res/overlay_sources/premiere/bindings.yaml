@@ -47,7 +47,7 @@ bindings:
   - { key: U, mods: [], icon: slide.png,        label: "Slide tool",        source: "custom/nle_glyphs", mode: alpha }
   - { key: P, mods: [], icon: pen.png,          label: "Pen tool",          source: "ms-fluent/Pen (MIT)" }
   - { key: H, mods: [], icon: hand.png,         label: "Hand tool",         source: "ms-fluent/Hand Right (MIT)" }
-  - { key: Z, mods: [], icon: zoom.png,         label: "Zoom tool",         source: "ms-fluent/Zoom In (MIT)" }
+  - { key: Z, mods: [], icon: zoomtool.png,         label: "Zoom tool",         source: "ms-fluent/Search (MIT)" }
 
   # --- timeline / transport (no modifier) ---
   - { key: I, mods: [], icon: markin.png,  label: "Mark In",      source: "custom/nle_glyphs", mode: alpha }
@@ -78,7 +78,7 @@ bindings:
 
   # --- Shift (B channel of the primary file): the panel row ---
   - { key: DELETE, mods: [SHIFT], icon: rippledelete.png, label: "Ripple delete", source: "custom/nle_glyphs", mode: alpha }
-  - { key: "1", mods: [SHIFT], icon: panelproject.png,   label: "Project panel",   source: "ms-fluent/Folder Open (MIT)" }
+  - { key: "1", mods: [SHIFT], icon: panelproj.png,   label: "Project panel",   source: "ms-fluent/Folder List (MIT)" }
   - { key: "2", mods: [SHIFT], icon: panelsource.png,    label: "Source monitor",  source: "ms-fluent/Video Clip (MIT)" }
   - { key: "3", mods: [SHIFT], icon: paneltimeline.png,  label: "Timeline panel",  source: "ms-fluent/Timeline (MIT)" }
   - { key: "4", mods: [SHIFT], icon: panelprogram.png,   label: "Program monitor", source: "ms-fluent/Play Circle (MIT)" }

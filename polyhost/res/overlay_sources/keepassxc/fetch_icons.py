@@ -35,6 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 import icon_fetch  # noqa: E402
 import number_badge  # noqa: E402
 import program_marks  # noqa: E402
+import action_variants  # noqa: E402
 
 TAG = "2.8.0"
 RAW = ("https://raw.githubusercontent.com/keepassxreboot/keepassxc/"
@@ -176,6 +177,13 @@ def close_db(base: Path, dest: Path) -> None:
     print(f"  {dest.name}  <- drawn: database cylinder + X")
 
 
+# Different actions that start from one icon: each gets its own picture
+# (one icon per action, maintainer 2026-11-15). See action_variants.py.
+VARIANTS = {
+    "kp2_printgroup.png": ("tag", "kp2_print.png", "GRP"),
+}
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -207,6 +215,7 @@ def main() -> int:
         print(f"  progmark.png  <- keepassxc {TAG} {PROGMARK}.svg")
     n += 1
     print(f"Wrote {n} icons to {out}")
+    action_variants.make(out, VARIANTS)
     return 0
 
 

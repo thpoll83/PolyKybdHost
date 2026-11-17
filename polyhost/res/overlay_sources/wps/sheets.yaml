@@ -49,7 +49,7 @@ bindings:
   - { key: Y, mods: [CTRL], icon: redo.png,  label: Redo,  source: "ms-fluent/Arrow Redo (MIT), from word/" }
   - { key: F, mods: [CTRL], icon: find.png,    label: Find,    source: "ms-fluent/Search (MIT), from word/" }
   - { key: H, mods: [CTRL], icon: replace.png, label: Replace, source: "ms-fluent/Arrow Swap (MIT), from word/" }
-  - { key: G, mods: [CTRL], icon: goto.png,    label: "Go to", source: "ms-fluent/Arrow Down (MIT), from word/" }
+  - { key: G, mods: [CTRL], icon: gotocell.png, label: "Go to", source: "ms-fluent/Location (MIT)" }
 
   # --- format ---
   - { key: B, mods: [CTRL], icon: bold.png,      label: Bold,      source: "ms-fluent/Text Bold (MIT), from word/" }

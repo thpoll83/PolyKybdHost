@@ -42,6 +42,7 @@ sys.path.insert(0, str(HERE.parents[3]))
 
 import icon_fetch  # noqa: E402
 import number_badge  # noqa: E402
+import action_variants  # noqa: E402
 
 ZED_COMMIT = "36682547bea1c3d4fa60c08d341cf60081853941"
 ZED_ICON = (f"https://raw.githubusercontent.com/zed-industries/zed/{ZED_COMMIT}/"
@@ -56,7 +57,7 @@ BORROW = {
     "findinfiles.png": "vscode", "replaceinfiles.png": "vscode", "sidebar.png": "vscode",
     "split.png": "vscode", "history.png": "vscode",
     # Sublime Text
-    "commandpalette.png": "sublime", "gotosymbolproject.png": "sublime",
+    "commandpalette.png": "sublime",
     "gotoline.png": "sublime", "reopentab.png": "sublime", "blockcomment.png": "sublime",
     "deleteline.png": "sublime", "swapup.png": "sublime", "swapdown.png": "sublime",
     "joinlines.png": "sublime", "insertafter.png": "sublime", "insertbefore.png": "sublime",
@@ -94,7 +95,6 @@ FLUENT = {
     "focusprev": "Arrow Previous",
     "whichkey": "Keyboard",
     "toastaction": "Alert",
-    "branches": "Branch",
     "worktree": "Branch Fork",
     "closeinactive": "Dismiss Square Multiple",
     "tabmoveleft": "Tab Desktop Arrow Left",
@@ -106,7 +106,6 @@ FLUENT = {
     "dockshrink": "Panel Right Contract",
     "dockreset": "Arrow Reset",
     "docksgrow": "Arrow Maximize",
-    "docksshrink": "Arrow Minimize",
     "docksreset": "Arrow Sync",
     "outlinepanel": "Text Bullet List",
     "collab": "People Team",
@@ -259,6 +258,16 @@ def _zed_mark(path: Path) -> None:
     im.crop((xs.min() - p, ys.min() - p, xs.max() + p, ys.max() + p)).save(path)
 
 
+# Different actions that start from one icon: each gets its own picture
+# (one icon per action, maintainer 2026-11-15). See action_variants.py.
+VARIANTS = {
+    "projectsymbols.png": ("tag", "gotosymbol.png", "ALL"),
+    "replaceinproject.png": ("tag", "replaceinfiles.png", "ALL"),
+    "recentbranches.png": ("combine", "win_git.png", "history.png"),
+    "docksshrink_all.png": ("tag", "dockshrink.png", "ALL"),
+}
+
+
 def main() -> int:
     out = HERE / "icons"
     out.mkdir(exist_ok=True)
@@ -276,6 +285,7 @@ def main() -> int:
                                centre=(0.50, 0.60))
     _guarded(out, "zed.png", _zed_mark)
     print(f"Wrote {n} icons (+ program mark) to {out}")
+    action_variants.make(out, VARIANTS)
     return 0
 
 
