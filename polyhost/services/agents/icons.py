@@ -149,6 +149,28 @@ def stale_16():
     return _stamp(ring, _QUESTION_16, 5, 4)
 
 
+# The 12 px card icon's '?': scaling stale_16() down lost the dot (2026-11-17).
+_QUESTION_12 = [
+    "###",
+    "..#",
+    ".##",
+    ".#.",
+    "...",
+    ".#.",
+]
+
+
+def stale_12():
+    """A ring (outer radius 6, about 1.6 px wide) with '?', drawn at 12 px."""
+    import numpy as np
+    ring = np.zeros((12, 12), dtype=bool)
+    for y in range(12):
+        for x in range(12):
+            d = (x + 0.5 - 6.0) ** 2 + (y + 0.5 - 6.0) ** 2
+            ring[y, x] = 4.4 ** 2 < d <= 6.0 ** 2
+    return _stamp(ring, _QUESTION_12, 4, 3)
+
+
 def idle_16():
     """The crescent moon drawn at 16 px."""
     return _grid16(lambda dx, dy: dx * dx + dy * dy <= 7.2 ** 2

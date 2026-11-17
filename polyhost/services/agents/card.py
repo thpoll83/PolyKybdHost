@@ -308,11 +308,13 @@ def state_icon(state):
     from polyhost.services.agents import icons
     if not _STATE_ICONS:
         # The icons of the 16 px card corner (2026-11-11), scaled to ICON: the
-        # check mark and '!' from their 19 px drawing, the rest from 16 px.
+        # check mark and '!' from their 19 px drawing, the rest from 16 px. The
+        # '?' is drawn at 12 px: scaled, it lost its dot.
         _STATE_ICONS.update({k: icons.scaled(v, ICON) for k, v in {
             AgentState.WAITING: icons.waiting(), AgentState.DONE: icons.done(),
-            AgentState.STALE: icons.stale_16(), AgentState.IDLE: icons.idle_16(),
-            AgentState.WORKING: icons.working_16()}.items()})
+            AgentState.IDLE: icons.idle_16(), AgentState.WORKING: icons.working_16()}.items()})
+        _STATE_ICONS[AgentState.STALE] = (icons.stale_12() if ICON == 12
+                                          else icons.scaled(icons.stale_16(), ICON))
     return _STATE_ICONS.get(state)
 
 

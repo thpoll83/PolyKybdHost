@@ -579,6 +579,14 @@ class CardTest(unittest.TestCase):
             self.assertFalse(img[40 - ICON - ICON_CLEAR:, right:72 - ICON].any(), page)
             self.assertFalse(img[40 - ICON - ICON_CLEAR:40 - ICON, 72 - ICON:].any(), page)
 
+    def test_the_12_px_question_mark_keeps_its_dot(self):
+        from polyhost.services.agents.card import state_icon
+        q = state_icon(AgentState.STALE)[2:10, 2:10]          # inside the ring
+        rows = [r for r in range(q.shape[0]) if q[r].any()]
+        gap = [r for r in range(rows[0], rows[-1]) if not q[r].any()]
+        self.assertEqual(len(gap), 1)                          # stem, gap, dot
+        self.assertTrue(q[gap[0] + 1].any())
+
     def test_no_logo_yet_shows_the_short_name(self):
         layout = card_layout("claude-code", "polykybd-docs", None)
         self.assertIsNotNone(layout.mark)
