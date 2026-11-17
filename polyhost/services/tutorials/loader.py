@@ -335,7 +335,7 @@ def _step(raw, where: str) -> Step:
 
 
 def _emoji_mode(value, where: str) -> bool:
-    if value not in _EMOJI_MODES:
+    if not isinstance(value, str) or value not in _EMOJI_MODES:
         raise ScriptError(f"{where}: search or tab")
     return _EMOJI_MODES[value]
 
