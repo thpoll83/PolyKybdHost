@@ -33,56 +33,100 @@ program_icon_legend: false
 
 bindings:
 
-  # Control groups: digit selects, Ctrl+digit creates
-  - { key: "1", icon: group1.png, label: "Select group 1", region: [48, 40], margin: 5 }
-  - { key: "2", icon: group2.png, label: "Select group 2", region: [48, 40], margin: 5 }
-  - { key: "3", icon: group3.png, label: "Select group 3", region: [48, 40], margin: 5 }
-  - { key: "4", icon: group4.png, label: "Select group 4", region: [48, 40], margin: 5 }
-  - { key: "5", icon: group5.png, label: "Select group 5", region: [48, 40], margin: 5 }
-  - { key: "6", icon: group6.png, label: "Select group 6", region: [48, 40], margin: 5 }
-  - { key: "7", icon: group7.png, label: "Select group 7", region: [48, 40], margin: 5 }
-  - { key: "8", icon: group8.png, label: "Select group 8", region: [48, 40], margin: 5 }
-  - { key: "9", icon: group9.png, label: "Select group 9", region: [48, 40], margin: 5 }
-  - { key: "0", icon: group0.png, label: "Select group 0", region: [48, 40], margin: 5 }
-  - { key: "1", mods: [CTRL], icon: groupnew1.png, label: "Create group 1", region: [48, 40], margin: 5 }
-  - { key: "2", mods: [CTRL], icon: groupnew2.png, label: "Create group 2", region: [48, 40], margin: 5 }
-  - { key: "3", mods: [CTRL], icon: groupnew3.png, label: "Create group 3", region: [48, 40], margin: 5 }
-  - { key: "4", mods: [CTRL], icon: groupnew4.png, label: "Create group 4", region: [48, 40], margin: 5 }
-  - { key: "5", mods: [CTRL], icon: groupnew5.png, label: "Create group 5", region: [48, 40], margin: 5 }
-  - { key: "6", mods: [CTRL], icon: groupnew6.png, label: "Create group 6", region: [48, 40], margin: 5 }
-  - { key: "7", mods: [CTRL], icon: groupnew7.png, label: "Create group 7", region: [48, 40], margin: 5 }
-  - { key: "8", mods: [CTRL], icon: groupnew8.png, label: "Create group 8", region: [48, 40], margin: 5 }
-  - { key: "9", mods: [CTRL], icon: groupnew9.png, label: "Create group 9", region: [48, 40], margin: 5 }
-  - { key: "0", mods: [CTRL], icon: groupnew0.png, label: "Create group 0", region: [48, 40], margin: 5 }
+  # Control groups: digit selects, Ctrl+digit creates, Shift+digit adds the
+  # group to the selection
+  - { key: "1", command: COMMAND_GROUP_1_SELECT, icon: group1.png, label: "Select group 1", region: [48, 40], margin: 5 }
+  - { key: "2", command: COMMAND_GROUP_2_SELECT, icon: group2.png, label: "Select group 2", region: [48, 40], margin: 5 }
+  - { key: "3", command: COMMAND_GROUP_3_SELECT, icon: group3.png, label: "Select group 3", region: [48, 40], margin: 5 }
+  - { key: "4", command: COMMAND_GROUP_4_SELECT, icon: group4.png, label: "Select group 4", region: [48, 40], margin: 5 }
+  - { key: "5", command: COMMAND_GROUP_5_SELECT, icon: group5.png, label: "Select group 5", region: [48, 40], margin: 5 }
+  - { key: "6", command: COMMAND_GROUP_6_SELECT, icon: group6.png, label: "Select group 6", region: [48, 40], margin: 5 }
+  - { key: "7", command: COMMAND_GROUP_7_SELECT, icon: group7.png, label: "Select group 7", region: [48, 40], margin: 5 }
+  - { key: "8", command: COMMAND_GROUP_8_SELECT, icon: group8.png, label: "Select group 8", region: [48, 40], margin: 5 }
+  - { key: "9", command: COMMAND_GROUP_9_SELECT, icon: group9.png, label: "Select group 9", region: [48, 40], margin: 5 }
+  - { key: "0", command: COMMAND_GROUP_0_SELECT, icon: group0.png, label: "Select group 0", region: [48, 40], margin: 5 }
+  - { key: "1", mods: [CTRL], command: COMMAND_GROUP_1_ASSIGN, icon: groupnew1.png, label: "Create group 1", region: [48, 40], margin: 5 }
+  - { key: "2", mods: [CTRL], command: COMMAND_GROUP_2_ASSIGN, icon: groupnew2.png, label: "Create group 2", region: [48, 40], margin: 5 }
+  - { key: "3", mods: [CTRL], command: COMMAND_GROUP_3_ASSIGN, icon: groupnew3.png, label: "Create group 3", region: [48, 40], margin: 5 }
+  - { key: "4", mods: [CTRL], command: COMMAND_GROUP_4_ASSIGN, icon: groupnew4.png, label: "Create group 4", region: [48, 40], margin: 5 }
+  - { key: "5", mods: [CTRL], command: COMMAND_GROUP_5_ASSIGN, icon: groupnew5.png, label: "Create group 5", region: [48, 40], margin: 5 }
+  - { key: "6", mods: [CTRL], command: COMMAND_GROUP_6_ASSIGN, icon: groupnew6.png, label: "Create group 6", region: [48, 40], margin: 5 }
+  - { key: "7", mods: [CTRL], command: COMMAND_GROUP_7_ASSIGN, icon: groupnew7.png, label: "Create group 7", region: [48, 40], margin: 5 }
+  - { key: "8", mods: [CTRL], command: COMMAND_GROUP_8_ASSIGN, icon: groupnew8.png, label: "Create group 8", region: [48, 40], margin: 5 }
+  - { key: "9", mods: [CTRL], command: COMMAND_GROUP_9_ASSIGN, icon: groupnew9.png, label: "Create group 9", region: [48, 40], margin: 5 }
+  - { key: "0", mods: [CTRL], command: COMMAND_GROUP_0_ASSIGN, icon: groupnew0.png, label: "Create group 0", region: [48, 40], margin: 5 }
+  - { key: "1", mods: [SHIFT], command: COMMAND_GROUP_1_ADD_TO_SELECTED_UNITS, icon: groupadd1.png, label: "Add group 1 to the selection", region: [48, 40], margin: 5 }
+  - { key: "2", mods: [SHIFT], command: COMMAND_GROUP_2_ADD_TO_SELECTED_UNITS, icon: groupadd2.png, label: "Add group 2 to the selection", region: [48, 40], margin: 5 }
+  - { key: "3", mods: [SHIFT], command: COMMAND_GROUP_3_ADD_TO_SELECTED_UNITS, icon: groupadd3.png, label: "Add group 3 to the selection", region: [48, 40], margin: 5 }
+  - { key: "4", mods: [SHIFT], command: COMMAND_GROUP_4_ADD_TO_SELECTED_UNITS, icon: groupadd4.png, label: "Add group 4 to the selection", region: [48, 40], margin: 5 }
+  - { key: "5", mods: [SHIFT], command: COMMAND_GROUP_5_ADD_TO_SELECTED_UNITS, icon: groupadd5.png, label: "Add group 5 to the selection", region: [48, 40], margin: 5 }
+  - { key: "6", mods: [SHIFT], command: COMMAND_GROUP_6_ADD_TO_SELECTED_UNITS, icon: groupadd6.png, label: "Add group 6 to the selection", region: [48, 40], margin: 5 }
+  - { key: "7", mods: [SHIFT], command: COMMAND_GROUP_7_ADD_TO_SELECTED_UNITS, icon: groupadd7.png, label: "Add group 7 to the selection", region: [48, 40], margin: 5 }
+  - { key: "8", mods: [SHIFT], command: COMMAND_GROUP_8_ADD_TO_SELECTED_UNITS, icon: groupadd8.png, label: "Add group 8 to the selection", region: [48, 40], margin: 5 }
+  - { key: "9", mods: [SHIFT], command: COMMAND_GROUP_9_ADD_TO_SELECTED_UNITS, icon: groupadd9.png, label: "Add group 9 to the selection", region: [48, 40], margin: 5 }
+  - { key: "0", mods: [SHIFT], command: COMMAND_GROUP_0_ADD_TO_SELECTED_UNITS, icon: groupadd0.png, label: "Add group 0 to the selection", region: [48, 40], margin: 5 }
 
-  # Sidebar tabs
-  - { key: W, icon: tabstructures.png, label: "Structures tab" }
-  - { key: E, icon: tabinfantry.png, label: "Infantry tab", region: [48, 40] }
-  - { key: R, icon: tabvehicles.png, label: "Vehicles tab", region: [48, 40] }
-  - { key: T, icon: tabsuper.png, label: "Superweapons tab" }
+  # Sidebar
+  - { key: W, command: COMMAND_CNC_STRUCTURES_TAB, icon: tabstructures.png, label: "Structures tab" }
+  - { key: E, command: COMMAND_CNC_INFANTRY_TAB, icon: tabinfantry.png, label: "Infantry tab", region: [48, 40] }
+  - { key: R, command: COMMAND_CNC_VEHICLES_TAB, icon: tabvehicles.png, label: "Vehicles tab", region: [48, 40] }
+  - { key: T, command: COMMAND_CNC_SUPERWEAPONS_TAB, icon: tabsuper.png, label: "Superweapons tab" }
+  - { key: S, mods: [CTRL], command: COMMAND_CNC_SIDEBAR_TOGGLE, icon: sidebar.png, label: "Show / hide the sidebar" }
+  - { key: PGUP, mods: [CTRL], command: COMMAND_CNC_SIDEBAR_SCROLL_UP, icon: sidebarup.png, label: "Scroll the sidebar up" }
+  - { key: PGDN, mods: [CTRL], command: COMMAND_CNC_SIDEBAR_SCROLL_DOWN, icon: sidebardown.png, label: "Scroll the sidebar down" }
+  - { key: R, mods: [SHIFT], command: COMMAND_CNC_REPAIR_TOGGLE, icon: repair.png, label: "Repair mode" }
+  - { key: S, mods: [SHIFT], command: COMMAND_CNC_SELL_TOGGLE, icon: sell.png, label: "Sell mode" }
+  - { key: X, mods: [SHIFT], command: COMMAND_CNC_TOGGLE_BEACON_MODE, icon: beacon.png, label: "Beacon mode" }
 
   # Orders and selection
-  - { key: S, icon: stop.png, label: "Stop" }
-  - { key: X, icon: scatter.png, label: "Scatter" }
-  - { key: G, icon: guard.png, label: "Guard area" }
-  - { key: Q, icon: queuedmove.png, label: "Queued move (Red Alert)" }
-  - { key: A, icon: selectscreen.png, label: "Select all units on screen" }
-  - { key: A, mods: [CTRL], icon: selectall.png, label: "Select all units on map" }
+  - { key: S, command: COMMAND_CNC_STOP, icon: stop.png, label: "Stop" }
+  - { key: X, command: COMMAND_CNC_SCATTER, icon: scatter.png, label: "Scatter" }
+  - { key: G, command: COMMAND_CNC_GUARD_MODE, icon: guard.png, label: "Guard area" }
+  - { key: Q, command: COMMAND_CNC_QUEUED_MOVEMENT_MODE, icon: queuedmove.png, label: "Queued move (Red Alert)" }
+  - { key: F, mods: [ALT], command: COMMAND_CNC_FORMATION_TOGGLE, icon: formation.png, label: "Team moves at the slowest unit's speed (Red Alert)" }
+  - { key: BACKSLASH, command: COMMAND_CNC_DEPLOY_SELECTED_MCV, icon: deploy.png, label: "Deploy / unload" }
+  - { key: A, command: COMMAND_CNC_SELECT_ALL_ON_SCREEN, icon: selectscreen.png, label: "Select all units on screen" }
+  - { key: A, mods: [SHIFT], command: COMMAND_CNC_SELECT_ALL_IN_WORLD, icon: selectall.png, label: "Select all units on the map" }
+  - { key: DOT, command: COMMAND_CNC_NEXT_UNIT, icon: nextunit.png, label: "Select the next unit or structure" }
+  - { key: COMMA, command: COMMAND_CNC_PREVIOUS_UNIT, icon: prevunit.png, label: "Select the previous unit or structure" }
 
   # Camera
-  - { key: H, icon: conyard.png, label: "Go to Construction Yard" }
-  - { key: TAB, icon: ../../openra/icons/lastevent.png, label: "Go to last event", region: [36, 40] }
-  - { key: F1, icon: bookmark1.png, label: "Go to bookmark 1", region: [30, 40] }
-  - { key: F2, icon: bookmark2.png, label: "Go to bookmark 2", region: [30, 40] }
-  - { key: F3, icon: bookmark3.png, label: "Go to bookmark 3", region: [30, 40] }
-  - { key: F4, icon: bookmark4.png, label: "Go to bookmark 4", region: [30, 40] }
-  - { key: F1, mods: [CTRL], icon: bookmarkset1.png, label: "Set bookmark 1", region: [30, 40] }
-  - { key: F2, mods: [CTRL], icon: bookmarkset2.png, label: "Set bookmark 2", region: [30, 40] }
-  - { key: F3, mods: [CTRL], icon: bookmarkset3.png, label: "Set bookmark 3", region: [30, 40] }
-  - { key: F4, mods: [CTRL], icon: bookmarkset4.png, label: "Set bookmark 4", region: [30, 40] }
+  - { key: H, command: COMMAND_CNC_CAMERA_TO_CONSTRUCTION_YARD, icon: conyard.png, label: "Go to Construction Yard" }
+  - { key: HOME, command: COMMAND_CNC_CAMERA_TO_SELECTION, icon: toselection.png, label: "Go to the selection" }
+  - { key: TAB, command: COMMAND_CNC_CAMERA_TO_PING, icon: ../../openra/icons/lastevent.png, label: "Go to last event", region: [36, 40] }
+  - { key: PGUP, command: COMMAND_CAMERA_ZOOM_IN, icon: zoomin.png, label: "Zoom in" }
+  - { key: PGDN, command: COMMAND_CAMERA_ZOOM_OUT, icon: zoomout.png, label: "Zoom out" }
+  - { key: F1, command: COMMAND_CNC_GO_TO_MAP_LOCATION_BOOKMARK_1, icon: bookmark1.png, label: "Go to bookmark 1", region: [30, 40] }
+  - { key: F2, command: COMMAND_CNC_GO_TO_MAP_LOCATION_BOOKMARK_2, icon: bookmark2.png, label: "Go to bookmark 2", region: [30, 40] }
+  - { key: F3, command: COMMAND_CNC_GO_TO_MAP_LOCATION_BOOKMARK_3, icon: bookmark3.png, label: "Go to bookmark 3", region: [30, 40] }
+  - { key: F4, command: COMMAND_CNC_GO_TO_MAP_LOCATION_BOOKMARK_4, icon: bookmark4.png, label: "Go to bookmark 4", region: [30, 40] }
+  - { key: F1, mods: [CTRL], command: COMMAND_CNC_SET_MAP_LOCATION_BOOKMARK_1, icon: bookmarkset1.png, label: "Set bookmark 1", region: [30, 40] }
+  - { key: F2, mods: [CTRL], command: COMMAND_CNC_SET_MAP_LOCATION_BOOKMARK_2, icon: bookmarkset2.png, label: "Set bookmark 2", region: [30, 40] }
+  - { key: F3, mods: [CTRL], command: COMMAND_CNC_SET_MAP_LOCATION_BOOKMARK_3, icon: bookmarkset3.png, label: "Set bookmark 3", region: [30, 40] }
+  - { key: F4, mods: [CTRL], command: COMMAND_CNC_SET_MAP_LOCATION_BOOKMARK_4, icon: bookmarkset4.png, label: "Set bookmark 4", region: [30, 40] }
+
+  # Chat: Enter writes to the team, Shift+Enter to everyone. F5..F8 send a
+  # preset message to the team, Ctrl+F5..F8 to everyone.
+  - { key: ENTER, command: COMMAND_BEGIN_TEAM_CHAT, icon: teamchat.png, label: "Team chat" }
+  - { key: ENTER, mods: [SHIFT], command: COMMAND_BEGIN_CHAT, icon: allchat.png, label: "Chat to all players" }
+  - { key: F5, command: COMMAND_CNC_SEND_TEAM_PRESET_MESSAGE_1, icon: chatteam1.png, label: "Team: \"Help me!\"", region: [30, 40] }
+  - { key: F6, command: COMMAND_CNC_SEND_TEAM_PRESET_MESSAGE_2, icon: chatteam2.png, label: "Team: \"Attack!\"", region: [30, 40] }
+  - { key: F7, command: COMMAND_CNC_SEND_TEAM_PRESET_MESSAGE_3, icon: chatteam3.png, label: "Team: \"Enemy approaching\"", region: [30, 40] }
+  - { key: F8, command: COMMAND_CNC_SEND_TEAM_PRESET_MESSAGE_4, icon: chatteam4.png, label: "Team: \"Low on resources\"", region: [30, 40] }
+  - { key: F5, mods: [CTRL], command: COMMAND_CNC_SEND_ALL_PRESET_MESSAGE_1, icon: chatall1.png, label: "All: \"Good luck, have fun!\"", region: [30, 40] }
+  - { key: F6, mods: [CTRL], command: COMMAND_CNC_SEND_ALL_PRESET_MESSAGE_2, icon: chatall2.png, label: "All: \"This is not looking good\"", region: [30, 40] }
+  - { key: F7, mods: [CTRL], command: COMMAND_CNC_SEND_ALL_PRESET_MESSAGE_3, icon: chatall3.png, label: "All: \"That was impressive!\"", region: [30, 40] }
+  - { key: F8, mods: [CTRL], command: COMMAND_CNC_SEND_ALL_PRESET_MESSAGE_4, icon: chatall4.png, label: "All: \"Victory!\"", region: [30, 40] }
+
+  # Game
+  - { key: N, mods: [CTRL], command: COMMAND_CNC_QUICK_SAVE, icon: quicksave.png, label: "Quick save" }
+  - { key: L, mods: [CTRL], command: COMMAND_CNC_QUICK_LOAD, icon: quickload.png, label: "Quick load" }
+  - { key: EQUAL, command: COMMAND_MUSIC_NEXT_TRACK, icon: musicnext.png, label: "Next music track" }
+  - { key: MINUS, command: COMMAND_MUSIC_PREV_TRACK, icon: musicprev.png, label: "Previous music track" }
 
   # Display
-  - { key: SPACE, icon: graphics.png, label: "Classic / remastered graphics" }
+  - { key: SPACE, command: COMMAND_CNC_LEGACY_RENDERING_TOGGLE, icon: graphics.png, label: "Classic / remastered graphics" }
+  # Not in the game's key table: the window, not a game command, handles Alt+Enter.
   - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Full screen / window", region: [30, 40] }
 
 # Art read at runtime from the user's own classic Tiberian Dawn files, when they
@@ -120,6 +164,16 @@ game_assets:
     groupnew8: {plus: group8}
     groupnew9: {plus: group9}
     groupnew0: {plus: group0}
+    groupadd1: {mark: ring, of: group1}
+    groupadd2: {mark: ring, of: group2}
+    groupadd3: {mark: ring, of: group3}
+    groupadd4: {mark: ring, of: group4}
+    groupadd5: {mark: ring, of: group5}
+    groupadd6: {mark: ring, of: group6}
+    groupadd7: {mark: ring, of: group7}
+    groupadd8: {mark: ring, of: group8}
+    groupadd9: {mark: ring, of: group9}
+    groupadd0: {mark: ring, of: group0}
     tabstructures: {unit: fact}
     tabinfantry: {gdi: {unit: pyle}, nod: {unit: hand}}
     tabvehicles: {gdi: {unit: weap+weap2}, nod: {unit: afld}}

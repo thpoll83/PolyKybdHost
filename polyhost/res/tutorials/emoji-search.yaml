@@ -1,0 +1,47 @@
+# Emoji search on the Emoji layer (split72). docs/tutorials-plan.md has the field reference.
+id: emoji-search
+category: emoji
+title: Emoji search
+summary: Find an emoji by typing a word on the emoji layer, without the host app.
+min_protocol: 32
+steps:
+  - guide_to_layer: Emoji
+    say: ["Tap the", "ringed key"]
+    text: >-
+      Tap the ringed emoji key. The keyboard changes to the Emoji layer and stays on
+      it. The emoji are typed as Unicode, so the Unicode input mode must be set for
+      your OS.
+    wait: {layer: Emoji}
+  - point: {keycode: KC_EMJ_MODE}
+    spotlight: []
+    say: ["Search mode:", "tap ringed key"]
+    text: >-
+      This key changes between tab mode and search mode. Tap it. In search mode it
+      shows a party face with the switch knob up.
+    wait: {press: KC_EMJ_MODE}
+  - text: >-
+      If the mode key now shows a magnifying glass with the knob down, the layer was
+      in search mode already: tap it once more. Then type a word, for example smile.
+      The letters are at their usual places. The status display shows what you typed
+      and how many emoji match. Then press Next.
+  - point: {keycode: KC_EMJ_PAGE_NEXT}
+    spotlight: [{keycode: KC_EMJ_PAGE_PREV}]
+    say: ["Number row:", "the results"]
+    text: >-
+      The number row shows up to 12 results, best match first. Press one to type it.
+      The two arrow keys at the ends show the previous and next 12.
+  - point: {keycode: KC_EMJ_S_CLEAR}
+    spotlight: [{keycode: KC_EMJ_S_SPACE}, {keycode: KC_EMJ_S_BKSP}]
+    say: ["Clear, Space,", "Backspace"]
+    text: >-
+      This key empties the search. Left Shift types a space for a second word, and
+      right Shift deletes the last letter.
+  - point: {keycode: KC_BASE}
+    spotlight: []
+    say: ["This key goes", "back to typing"]
+    text: The lower-left corner key leaves the Emoji layer. Press it now.
+    wait: {press: KC_BASE}
+  - reveal: {from: {keycode: KC_BASE}}
+    say: ["Done", ""]
+    text: You are back on your typing layer.
+    wait: {seconds: 3}

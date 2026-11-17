@@ -42,7 +42,7 @@ bindings:
   - { key: F, mods: [CTRL], icon: find.png, label: "Find" }
   - { key: F3, icon: find.png, label: "Find" }
   - { key: F7, icon: find.png, label: "Find" }
-  - { key: F, mods: [ALT, SHIFT], icon: search.png, label: "Find literal", concept: find }
+  - { key: F, mods: [ALT, SHIFT], icon: find_literal.png, label: "Find literal"}
   - { key: N, mods: [CTRL], icon: find_next.png, label: "Find next" }
   - { key: P, mods: [CTRL], icon: find_prev.png, region: [40, 32], label: "Find previous" }
   # --- Edit: "Ctrl-z":"Undo", "Ctrl-y":"Redo", "Ctrl-c":"CopyLine|Copy", "Ctrl-x":"Cut", "Ctrl-k":"CutLine",

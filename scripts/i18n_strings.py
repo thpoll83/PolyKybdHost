@@ -50,6 +50,7 @@ EXTRA_EXTRACT = (
     "polyhost/services/game_assets/starcraft/__init__.py",
     "polyhost/services/game_assets/unreal2/__init__.py",
     "polyhost/services/game_assets/warcraft3/__init__.py",
+    "polyhost/services/game_assets/generals/__init__.py",
 )
 
 KEYWORDS = ("_", "_f", "N_", "M_", "_nf:1,2", "ngettext:1,2", "pgettext:1c,2")

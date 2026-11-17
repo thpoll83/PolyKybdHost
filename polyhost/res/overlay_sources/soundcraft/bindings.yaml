@@ -40,6 +40,9 @@ program_icon_anchor: bottom-right
 program_icon_region: [39, 40]   # the mark's own size: placed 1:1
 program_icon_margin: 0
 
+# A 40x40 composite (glyph + word, drawn 1-bit by fetch_icons.py) is placed 1:1.
+_word: &word { region: [40, 40], mode: alpha }
+
 bindings:
   # --- no modifier: Commands Keyboard Focus (shortcuts.rs::commands_focus) ---
   - { key: A, mods: [], icon: trimstart.png,     label: "Trim start to insertion" }
@@ -82,8 +85,8 @@ bindings:
   - { key: F2, mods: [], icon: modeslip.png,     label: "Slip mode" }
   - { key: F3, mods: [], icon: modespot.png,     label: "Spot mode" }
   - { key: F4, mods: [], icon: modegrid.png,     label: "Grid mode" }
-  - { key: F5, mods: [], icon: zoom.png,         label: "Zoom tool" }
-  - { key: F6, mods: [], icon: trim.png,         label: "Trim tool", mode: alpha }
+  - { key: F5, mods: [], icon: zoomtool.png,     label: "Zoom tool", <<: *word }
+  - { key: F6, mods: [], icon: trimtool.png,     label: "Trim tool", <<: *word }
   - { key: F7, mods: [], icon: selector.png,     label: "Selector tool" }
   - { key: F8, mods: [], icon: hand.png,         label: "Grabber tool" }
   - { key: F9, mods: [], icon: scrubber.png,     label: "Scrubber tool" }
@@ -221,7 +224,7 @@ bindings:
   - { key: L, mods: [CMDCTRL, ALT], icon: editleft.png,     label: "Move edit left" }
   - { key: "'", mods: [CMDCTRL, ALT], icon: editright.png,  label: "Move edit right" }
   - { key: F, mods: [CMDCTRL, ALT], icon: scrolltrack.png,  label: "Scroll to track" }
-  - { key: G, mods: [CMDCTRL, ALT], icon: group.png,        label: "Group clips" }
+  - { key: G, mods: [CMDCTRL, ALT], icon: groupclips.png,   label: "Group clips", <<: *word }
   - { key: U, mods: [CMDCTRL, ALT], icon: ungroup.png,      label: "Ungroup clips" }
   - { key: R, mods: [CMDCTRL, ALT], icon: regroup.png,      label: "Regroup clips" }
   - { key: T, mods: [CMDCTRL, ALT], icon: thin.png,         label: "Thin automation" }
@@ -246,10 +249,10 @@ bindings:
   # --- literal Ctrl on every platform (shortcuts.rs::fixed maps them off macOS too) ---
   - { key: UP, mods: [CTRL], icon: heightup.png,     label: "Track height up" }
   - { key: DOWN, mods: [CTRL], icon: heightdown.png, label: "Track height down" }
-  - { key: UP, mods: [CTRL, ALT], icon: heightup.png,     label: "Track height up (all)" }
-  - { key: DOWN, mods: [CTRL, ALT], icon: heightdown.png, label: "Track height down (all)" }
-  - { key: UP, mods: [CTRL, ALT, SHIFT], icon: heightup.png,     label: "Track height up (selected)" }
-  - { key: DOWN, mods: [CTRL, ALT, SHIFT], icon: heightdown.png, label: "Track height down (selected)" }
+  - { key: UP, mods: [CTRL, ALT], icon: heightup_all.png,     label: "Track height up (all)", <<: *word }
+  - { key: DOWN, mods: [CTRL, ALT], icon: heightdown_all.png, label: "Track height down (all)", <<: *word }
+  - { key: UP, mods: [CTRL, ALT, SHIFT], icon: heightup_sel.png,     label: "Track height up (selected)", <<: *word }
+  - { key: DOWN, mods: [CTRL, ALT, SHIFT], icon: heightdown_sel.png, label: "Track height down (selected)", <<: *word }
   - { key: UP, mods: [CTRL, SHIFT], icon: gainup.png,     label: "Clip gain up" }
   - { key: DOWN, mods: [CTRL, SHIFT], icon: gaindown.png, label: "Clip gain down" }
 

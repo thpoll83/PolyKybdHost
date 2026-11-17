@@ -75,6 +75,7 @@ Redo: 3.7.9 binds Ctrl+Y on Windows and Ctrl+Shift+Z elsewhere
 
 ## Icons
 
+- One icon per action (maintainer rule, 2026-11-15): `focusnext.png` and `focusprev.png` (Focus tracks, forward and back) are Material `center_focus_strong` (`_focus.png`) over a heavy arrow, drawn by `../dcc_glyphs.py` `with_arrow()`, so they differ from the cursor jump chevrons.
 - Microsoft Fluent UI System Icons, MIT,
   <https://github.com/microsoft/fluentui-system-icons>. Folder names are in
   `fetch_icons.py`.

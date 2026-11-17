@@ -364,6 +364,18 @@ class RemoteCore(Observable):
     def midi_guide(self, reset=False):
         return self._device(p.M_MIDI_GUIDE, {"reset": bool(reset)})
 
+    def tutorials_list(self):
+        return self._rpc_call(p.M_TUTORIALS_LIST) or {}
+
+    def tutorial_state(self):
+        return self._rpc_call(p.M_TUTORIAL_STATE)
+
+    def tutorial_start(self, tutorial_id):
+        return self._device(p.M_TUTORIAL_START, {"id": tutorial_id})
+
+    def tutorial_action(self, action):
+        return self._device(p.M_TUTORIAL_ACTION, {"action": action})
+
     def agents_list(self):
         return self._rpc_call(p.M_AGENTS_LIST) or {}
 

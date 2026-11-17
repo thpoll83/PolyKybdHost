@@ -7,7 +7,7 @@
 # The grid build-menu keys (Z X C V, and Q W E R / A S D F with a builder or a
 # factory selected) depend on the selection and are not drawn. The order keys
 # are drawn; where the profile binds Shift+key to the same order (queued), the
-# Shift layer shows the same icon.
+# Shift layer shows the order icon with the queue mark (a small list).
 #
 # Regenerate:
 #   PYTHONPATH=. python polyhost/res/overlay_sources/beyond_all_reason/fetch_icons.py
@@ -35,49 +35,49 @@ program_icon_legend: false
 
 bindings:
 
-  # Orders. Shift+key queues the same order.
+  # Orders. Shift+key queues the same order (the icon with the queue mark).
   - { key: A, icon: attack.png, label: "Attack" }
-  - { key: A, mods: [SHIFT], icon: attack.png, label: "Attack (queued)" }
+  - { key: A, mods: [SHIFT], icon: attack_queued.png, label: "Attack (queued)" }
   - { key: D, icon: manualfire.png, label: "Manual fire (D-gun) or manual launch" }
-  - { key: D, mods: [SHIFT], icon: manualfire.png, label: "Manual fire (D-gun) or manual launch (queued)" }
+  - { key: D, mods: [SHIFT], icon: manualfire_queued.png, label: "Manual fire (D-gun) or manual launch (queued)" }
   - { key: E, icon: reclaim.png, label: "Reclaim" }
-  - { key: E, mods: [SHIFT], icon: reclaim.png, label: "Reclaim (queued)" }
+  - { key: E, mods: [SHIFT], icon: reclaim_queued.png, label: "Reclaim (queued)" }
   - { key: F, icon: fight.png, label: "Fight" }
-  - { key: F, mods: [SHIFT], icon: fight.png, label: "Fight (queued)" }
+  - { key: F, mods: [SHIFT], icon: fight_queued.png, label: "Fight (queued)" }
   - { key: G, icon: stop.png, label: "Stop" }
-  - { key: G, mods: [SHIFT], icon: stop.png, label: "Stop (queued)" }
+  - { key: G, mods: [SHIFT], icon: stop_queued.png, label: "Stop (queued)" }
   - { key: H, icon: patrol.png, label: "Patrol" }
-  - { key: H, mods: [SHIFT], icon: patrol.png, label: "Patrol (queued)" }
+  - { key: H, mods: [SHIFT], icon: patrol_queued.png, label: "Patrol (queued)" }
   - { key: J, icon: loadunits.png, label: "Load units" }
-  - { key: J, mods: [SHIFT], icon: loadunits.png, label: "Load units (queued)" }
+  - { key: J, mods: [SHIFT], icon: loadunits_queued.png, label: "Load units (queued)" }
   - { key: K, icon: cloak.png, label: "Cloak" }
-  - { key: K, mods: [SHIFT], icon: cloak.png, label: "Cloak (queued)" }
+  - { key: K, mods: [SHIFT], icon: cloak_queued.png, label: "Cloak (queued)" }
   - { key: L, icon: firestate.png, label: "Cycle fire state" }
-  - { key: L, mods: [SHIFT], icon: firestate.png, label: "Cycle fire state (queued)" }
+  - { key: L, mods: [SHIFT], icon: firestate_queued.png, label: "Cycle fire state (queued)" }
   - { key: SEMICOLON, icon: movestate.png, label: "Cycle move state" }
-  - { key: SEMICOLON, mods: [SHIFT], icon: movestate.png, label: "Cycle move state (queued)" }
+  - { key: SEMICOLON, mods: [SHIFT], icon: movestate_queued.png, label: "Cycle move state (queued)" }
   - { key: M, icon: restore.png, label: "Restore terrain" }
-  - { key: M, mods: [SHIFT], icon: restore.png, label: "Restore terrain (queued)" }
+  - { key: M, mods: [SHIFT], icon: restore_queued.png, label: "Restore terrain (queued)" }
   - { key: O, icon: guard.png, label: "Guard" }
-  - { key: O, mods: [SHIFT], icon: guard.png, label: "Guard (queued)" }
+  - { key: O, mods: [SHIFT], icon: guard_queued.png, label: "Guard (queued)" }
   - { key: P, icon: gatherwait.png, label: "Gather and wait" }
-  - { key: P, mods: [SHIFT], icon: gatherwait.png, label: "Gather and wait (queued)" }
+  - { key: P, mods: [SHIFT], icon: gatherwait_queued.png, label: "Gather and wait (queued)" }
   - { key: R, icon: repair.png, label: "Repair" }
-  - { key: R, mods: [SHIFT], icon: repair.png, label: "Repair (queued)" }
+  - { key: R, mods: [SHIFT], icon: repair_queued.png, label: "Repair (queued)" }
   - { key: S, icon: settarget.png, label: "Set target" }
-  - { key: S, mods: [SHIFT], icon: settarget.png, label: "Set target (queued)" }
+  - { key: S, mods: [SHIFT], icon: settarget_queued.png, label: "Set target (queued)" }
   - { key: T, icon: repeat.png, label: "Repeat orders" }
-  - { key: T, mods: [SHIFT], icon: repeat.png, label: "Repeat orders (queued)" }
+  - { key: T, mods: [SHIFT], icon: repeat_queued.png, label: "Repeat orders (queued)" }
   - { key: U, icon: unloadunits.png, label: "Unload units" }
-  - { key: U, mods: [SHIFT], icon: unloadunits.png, label: "Unload units (queued)" }
+  - { key: U, mods: [SHIFT], icon: unloadunits_queued.png, label: "Unload units (queued)" }
   - { key: W, icon: resurrect.png, label: "Resurrect or capture" }
-  - { key: W, mods: [SHIFT], icon: resurrect.png, label: "Resurrect or capture (queued)" }
+  - { key: W, mods: [SHIFT], icon: resurrect_queued.png, label: "Resurrect or capture (queued)" }
   - { key: Y, icon: wait.png, label: "Wait" }
-  - { key: Y, mods: [SHIFT], icon: wait.png, label: "Wait (queued)" }
+  - { key: Y, mods: [SHIFT], icon: wait_queued.png, label: "Wait (queued)" }
   - { key: "[", icon: facingccw.png, label: "Rotate the building to place: next facing" }
-  - { key: "[", mods: [SHIFT], icon: facingccw.png, label: "Rotate the building to place: next facing (queued)" }
+  - { key: "[", mods: [SHIFT], icon: facingccw_queued.png, label: "Rotate the building to place: next facing (queued)" }
   - { key: "]", icon: facingcw.png, label: "Rotate the building to place: previous facing" }
-  - { key: "]", mods: [SHIFT], icon: facingcw.png, label: "Rotate the building to place: previous facing (queued)" }
+  - { key: "]", mods: [SHIFT], icon: facingcw_queued.png, label: "Rotate the building to place: previous facing (queued)" }
   - { key: N, icon: skipcommand.png, label: "Skip the current command" }
 
   # Selection

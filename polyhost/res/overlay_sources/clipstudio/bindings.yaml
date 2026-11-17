@@ -40,7 +40,7 @@ program_icon_margin: 0
 
 bindings:
   # --- tools (bare letters, Tool Shortcuts) ---
-  - { key: "/", mods: [], icon: zoom.png, label: "Zoom" }
+  - { key: "/", mods: [], icon: ../../clipstudio/icons/zoomtool.png, label: "Zoom" }
   - { key: H, mods: [], icon: hand.png, label: "Hand" }
   - { key: R, mods: [], icon: ../../clipstudio/icons/rotateview.png, label: "Rotate view" }
   - { key: O, mods: [], icon: pathselect.png, mode: alpha, label: "Object" }
@@ -147,5 +147,5 @@ bindings:
   - { key: TAB, mods: [CTRL], icon: ../../clipstudio/icons/nextdoc.png, label: "Next canvas" }
   - { key: TAB, mods: [CTRL, SHIFT], icon: ../../clipstudio/icons/prevdoc.png, label: "Previous canvas" }
   - { key: TAB, mods: [], icon: ../../clipstudio/icons/palettes.png, label: "Show / hide all palettes" }
-  - { key: TAB, mods: [SHIFT], icon: screenmode.png, label: "Hide title bar / menu bar" }
+  - { key: TAB, mods: [SHIFT], icon: ../../clipstudio/icons/hidebars.png, label: "Hide title bar / menu bar" }
   - { key: F1, mods: [], icon: ../../clipstudio/icons/tutorials.png, label: "Training and tutorials" }

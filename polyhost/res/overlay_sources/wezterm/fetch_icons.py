@@ -26,7 +26,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from polyhost.res.overlay_sources import icon_fetch  # noqa: E402
+import dcc_glyphs  # noqa: E402
 import number_badge  # noqa: E402
+from polyhost.res.overlay_sources.tui import variant_glyphs  # noqa: E402
+
+# One image per action (maintainer, 2026-11-15). Drawn 1-bit at the set's
+# 36x32 region by `../tui/variant_glyphs.py`: (function, base icon, argument).
+VARIANTS = {
+    "newtab_default.png": ("worded", "newtab.png", "default"),
+    "resizepane_up.png": ("badged", "resizepane.png", "up"),
+    "resizepane_down.png": ("badged", "resizepane.png", "down"),
+    "resizepane_left.png": ("badged", "resizepane.png", "left"),
+    "resizepane_right.png": ("badged", "resizepane.png", "right"),
+}
 
 # Pinned to the commit the shortcuts were read from (SOURCES.md).
 WEZTERM_COMMIT = "e68a8ec27727fbbda15e07f0a0737cd5e16481f6"
@@ -102,6 +114,11 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
     icon_fetch.fluent(FLUENT, out)
     number_badge.numbered(out / "tab.png", "12345678", out, "tab")
+    for name, (fn, base, arg) in VARIANTS.items():
+        dcc_glyphs.guarded(
+            out / name,
+            lambda p, f=getattr(variant_glyphs, fn), b=out / base, a=arg: f(b, a, p, (36, 32)),
+            f"variant_glyphs.{fn}({base}, {arg})")
     mark = out / "wezterm.png"
     if mark.exists():
         print(f"  {mark.name}  <- committed asset (left as-is)")

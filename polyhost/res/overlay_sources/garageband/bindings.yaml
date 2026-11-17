@@ -38,6 +38,8 @@ program_icon_region: [40, 38]   # the mark's own size: placed 1:1
 program_icon_margin: 0
 
 _m: &m { only: [macos] }
+# A 40x40 composite (glyph + word, drawn 1-bit by fetch_icons.py) is placed 1:1.
+_mw: &mw { only: [macos], region: [40, 40], mode: alpha }
 
 bindings:
   # --- Projects ---
@@ -57,7 +59,7 @@ bindings:
   - { key: M, mods: [GUI, SHIFT], icon: master.png, <<: *m, label: "Master track" }
   - { key: UP, mods: [], icon: prevtrack.png, <<: *m, label: "Select higher track" }
   - { key: DOWN, mods: [], icon: nexttrack.png, <<: *m, label: "Select lower track" }
-  - { key: ENTER, mods: [SHIFT], icon: rename.png, <<: *m, label: "Rename track" }
+  - { key: ENTER, mods: [SHIFT], icon: renametrack.png, <<: *mw, label: "Rename track" }
   - { key: T, mods: [ALT], icon: trackheader.png, <<: *m, label: "Configure track header" }
   - { key: RBRACKET, mods: [], icon: nextpatch.png, <<: *m, label: "Next patch" }
   - { key: LBRACKET, mods: [], icon: prevpatch.png, <<: *m, label: "Previous patch" }

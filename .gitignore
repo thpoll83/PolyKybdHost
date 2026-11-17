@@ -187,3 +187,6 @@ telemetry-collector/dashboard.html
 
 # Emacs backup files
 *~
+# Unity hides folders ending in "~" from its asset import; the package's tests
+# use that on purpose, so they are not backup files.
+!unity-package/Tests~/

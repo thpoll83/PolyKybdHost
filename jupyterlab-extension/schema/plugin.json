@@ -1,0 +1,15 @@
+{
+  "jupyter.lab.setting-icon-label": "PolyKybd",
+  "title": "PolyKybd Context Reporter",
+  "description": "Reports the active JupyterLab activity and the notebook mode to PolyKybdHost on this computer.",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "title": "Report context",
+      "description": "Send the activity (notebook command or edit mode, file editor, console, terminal) to PolyKybdHost. Turn off to stop reporting without uninstalling.",
+      "default": true
+    }
+  },
+  "additionalProperties": false
+}

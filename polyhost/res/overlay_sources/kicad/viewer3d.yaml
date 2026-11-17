@@ -32,19 +32,19 @@ bindings:
   - { key: Y, mods: [SHIFT], icon: viewback.png, label: "View back" }
   - { key: X, mods: [], icon: viewright.png, label: "View right" }
   - { key: X, mods: [SHIFT], icon: viewleft.png, label: "View left" }
-  - { key: F, mods: [], icon: flip.png, label: "Flip board" }
+  - { key: F, mods: [], icon: flipboard.png, label: "Flip board" }
   - { key: HOME, mods: [], icon: homeview.png, label: "Home view" }
   - { key: R, mods: [], icon: rotccw.png, label: "Rotate counterclockwise" }
   - { key: R, mods: [SHIFT], icon: rotcw.png, label: "Rotate clockwise" }
   - { key: SPACE, mods: [], icon: pivot.png, label: "Set pivot" }
-  - { key: UP, mods: [], icon: navup.png, label: "Move board up" }
-  - { key: DOWN, mods: [], icon: prevlayer.png, label: "Move board down" }
-  - { key: LEFT, mods: [], icon: navback.png, label: "Move board left" }
-  - { key: RIGHT, mods: [], icon: navforward.png, label: "Move board right" }
+  - { key: UP, mods: [], icon: boardup.png, label: "Move board up" }
+  - { key: DOWN, mods: [], icon: boarddown.png, label: "Move board down" }
+  - { key: LEFT, mods: [], icon: boardleft.png, label: "Move board left" }
+  - { key: RIGHT, mods: [], icon: boardright.png, label: "Move board right" }
 
   # --- which 3D models are shown ---
   - { key: T, mods: [], icon: showtht.png, label: "Through-hole models" }
-  - { key: S, mods: [], icon: showsmd.png, label: "SMD models" }
+  - { key: S, mods: [], icon: smdmodels.png, label: "SMD models" }
   - { key: V, mods: [], icon: showvirtual.png, label: "Unspecified models" }
   - { key: P, mods: [], icon: shownotpos.png, label: "Models not in POS file" }
   - { key: D, mods: [], icon: showdnp.png, label: "DNP models" }

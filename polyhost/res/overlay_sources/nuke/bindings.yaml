@@ -63,7 +63,7 @@ bindings:
   - { key: N, mods: [], icon: rename.png, label: "Rename node" }
   - { key: Q, mods: [], icon: scriptinfo_named.png, label: "Named script info" }
   - { key: ENTER, mods: [], icon: properties.png, label: "Open properties" }
-  - { key: S, mods: [], icon: projectsettings.png, label: "Project settings" }
+  - { key: S, mods: [], icon: projsettings.png, label: "Project settings" }
   - { key: TAB, mods: [], icon: nodesearch.png, label: "Tab node search" }
   - { key: X, mods: [], icon: command.png, label: "Command entry" }
 
@@ -142,6 +142,6 @@ bindings:
   - { key: X, mods: [CMDCTRL, SHIFT], icon: extract.png, label: "Extract nodes" }
 
   # --- Ctrl+Alt+Shift ---
-  - { key: G, mods: [CMDCTRL, ALT, SHIFT], icon: group.png, label: "Create Group" }
+  - { key: G, mods: [CMDCTRL, ALT, SHIFT], icon: groupcreate.png, label: "Create Group" }
   - { key: K, mods: [CMDCTRL, ALT, SHIFT], icon: forceclone.png, label: "Force clone" }
   - { key: "`", mods: [CMDCTRL, ALT, SHIFT], icon: workspace_prev.png, label: "Previous pane" }

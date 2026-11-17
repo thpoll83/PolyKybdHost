@@ -18,6 +18,7 @@ committed `ardour.png` is left as it is.
 """
 from __future__ import annotations
 
+import importlib.util
 import io
 import sys
 import urllib.request
@@ -47,7 +48,7 @@ BORROW = {
         "inout.png", "keymap.png", "loop.png", "loopend.png", "loopstart.png",
         "metronome.png", "narrowgrid.png", "playstop.png", "quantize.png",
         "record.png", "rename.png", "reverse.png", "search.png", "solo.png",
-        "split.png", "stopsel.png", "ungroup.png", "widegrid.png",
+        "stopsel.png", "ungroup.png", "widegrid.png",
         "zoomsel.png")},
     **{n: "reaper" for n in (
         "fastforward.png", "gridleft.png", "gridright.png", "import.png",
@@ -56,7 +57,7 @@ BORROW = {
         "nudgeright.png", "panic.png", "pitchup.png", "playskip.png",
         "prevmarker.png", "prevtrack.png", "prevtransient.png",
         "projsettings.png", "rewind.png", "routing.png",
-        "saveversion.png", "snap.png", "stretch.png", "tempoenv.png",
+        "saveversion.png", "snap.png", "split.png", "stretch.png", "tempoenv.png",
         "toend.png", "tostart.png", "video.png", "voldown.png", "volup.png",
         "zoomproject.png", "mixer.png")},
     **{n: "soundcraft" for n in (
@@ -71,7 +72,7 @@ BORROW = {
         "locsel.png", "playsel.png", "punchin.png", "punchout.png",
         "rangetool.png", "rightzone.png", "stationary.png")},
     **{n: "logicpro" for n in (
-        "delmarker.png", "exportall.png", "goto.png", "liveloops.png")},
+        "delmarker.png", "exportall.png", "goto.png")},
 }
 
 FLUENT = {
@@ -80,6 +81,7 @@ FLUENT = {
     "alignsync": "ms:align_justify_center",
     "autoreturn": "ms:keyboard_return",
     "contentmode": "ms:ink_selection",
+    "cuepage": "ms:apps",
     "cuemarker": "ms:add_location",
     "exportregion": "ms:file_export",
     "meterbridge": "ms:view_column",
@@ -96,6 +98,25 @@ FLUENT = {
     "rangestart": "ms:line_start",
     "rangeend": "ms:line_end",
 }
+
+
+# name -> (glyph, word): a glyph with a short word under it, 1-bit at 40x40,
+# drawn with the Ghidra set's code. It tells apart two keys whose actions
+# share a glyph (one icon per action).
+WORDS = {
+    "solosel": ("solo", "SEL"),
+}
+
+
+def word_composites(out: Path, words: dict[str, tuple[str, str]]) -> None:
+    """Draw ``words`` with ``composites()`` from ``../ghidra/fetch_icons.py``."""
+    spec = importlib.util.spec_from_file_location(
+        "ghidra_fetch_icons", Path(__file__).resolve().parent.parent / "ghidra" / "fetch_icons.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    mod.COMPOSITES = words
+    mod.ISA = {}
+    mod.composites(out)
 
 
 def _mark(path: Path) -> None:
@@ -118,6 +139,7 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
     n = icon_fetch.fluent(FLUENT, out)
     n += icon_fetch.borrow(BORROW, out)
+    word_composites(out, WORDS)
     _mark(out / "ardour.png")
     print(f"Wrote {n} icons (+ program mark) to {out}")
     return 0

@@ -35,6 +35,7 @@ key labelled delete on a Mac keyboard (Backspace), and "Return" is Enter.
 
 ## Icons
 
+- One icon per action (maintainer rule, 2026-11-15): `renametrack.png` (Rename track) is copied from `../logicpro` (rename + TRK, drawn there), so it differs from Rename regions.
 - Microsoft Fluent UI System Icons, MIT,
   <https://github.com/microsoft/fluentui-system-icons>: `nextpatch`,
   `prevpatch` (Arrow Next / Previous), `library` (Library).

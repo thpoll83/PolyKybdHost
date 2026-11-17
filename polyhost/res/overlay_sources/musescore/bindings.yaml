@@ -30,6 +30,9 @@ margin: 0
 mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
+# A 40x40 composite (glyph + word, drawn 1-bit by fetch_icons.py) is placed 1:1.
+_word: &word { region: [40, 40], mode: alpha }
+
 bindings:
   # --- file and edit ---
   - { key: N, mods: [CMDCTRL], label: "New" }
@@ -210,8 +213,8 @@ bindings:
   - { key: DOWN, mods: [], icon: pitchdown.png, label: "Pitch down" }
   - { key: UP, mods: [CMDCTRL], icon: octup.png, label: "Octave up" }
   - { key: DOWN, mods: [CMDCTRL], icon: octdown.png, label: "Octave down" }
-  - { key: UP, mods: [ALT, SHIFT], icon: marcato.png, label: "Diatonic up" }
-  - { key: DOWN, mods: [ALT, SHIFT], icon: diadown.png, label: "Diatonic down" }
+  - { key: UP, mods: [ALT, SHIFT], icon: diaup.png, label: "Diatonic up", <<: *word }
+  - { key: DOWN, mods: [ALT, SHIFT], icon: diadown.png, label: "Diatonic down", <<: *word }
   - { key: UP, mods: [CMDCTRL, SHIFT], icon: staffup.png, label: "Move to staff above" }
   - { key: DOWN, mods: [CMDCTRL, SHIFT], icon: staffdown.png, label: "Move to staff below" }
   - { key: UP, mods: [CMDCTRL, ALT], icon: topchord.png, label: "Top note in chord" }

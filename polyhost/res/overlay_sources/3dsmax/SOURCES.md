@@ -73,3 +73,16 @@ python scripts/generate_app_overlays.py \
 
 `fetch_icons.py` does not redraw a drawn glyph, a composite or the mark whose
 PNG already exists in `icons/`. Delete the PNG first to redraw it.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing
+(maintainer, 2026-11-15). These files give the other keys their own image.
+Files whose name starts with `_` are only parts of a composite.
+
+| file | source | licence |
+|---|---|---|
+| `_quad.png` | Material Symbols `grid_view` | Apache-2.0 |
+| `_toggle.png` | Material Symbols `toggle_on` | Apache-2.0 |
+| `quadlock.png` | `lock.png` with `_quad.png` as a badge at the lower right (`../dcc_glyphs.py` `with_badge`) | same as the two parts |
+| `localview_toggle.png` | `localview.png` with `_toggle.png` as a badge at the lower right (`../dcc_glyphs.py` `with_badge`) | same as the two parts |
