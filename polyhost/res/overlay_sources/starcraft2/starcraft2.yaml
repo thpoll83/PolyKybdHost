@@ -111,7 +111,7 @@ bindings:
   - { key: INSERT, command: CameraTurnLeft, icon: rotatecw.png, label: "Camera: rotate clockwise" }
   - { key: DEL, command: CameraTurnRight, icon: rotateccw.png, label: "Camera: rotate counterclockwise" }
   - { key: F, mods: [CTRL], command: CameraCenter, icon: follow.png, label: "Follow unit (hold)" }
-  - { key: F, mods: [CTRL, SHIFT], command: CameraFollow, icon: follow.png, label: "Follow unit" }
+  - { key: F, mods: [CTRL, SHIFT], command: CameraFollow, icon: followtoggle.png, label: "Follow unit" }
 
   # Chat
   - { key: ENTER, command: ChatDefault, icon: chat.png, label: "Chat" }

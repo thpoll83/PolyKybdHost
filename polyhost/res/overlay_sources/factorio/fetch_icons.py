@@ -55,6 +55,7 @@ ICONS = {
     "library": "ms:library_books",
     "trains": "ms:train",
     "logistics": "gi:delapouite/cardboard-box-closed",
+    "logisticsrequests": "ms:move_to_inbox",   # Alt+L: items delivered to you
     "character": "ms:person",
     "crafting": "gi:lorc/gear-hammer",
     "back": "ms:arrow_back",
