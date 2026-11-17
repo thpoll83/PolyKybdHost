@@ -94,9 +94,22 @@ it by hand:
    is on, then enable *PolyKybd Mode Reporter* (use the reload button if it is
    not in the list).
 
-Repeat for every vault you use. PolyKybdHost's "Set up the terminal and
-editors…" dialog does not install it: the vault folders and the per-vault
-"enable" step belong to the user.
+Repeat for every vault you use.
+
+**From PolyKybdHost**: tray → *Integrations…* → *Editors* → Obsidian → *Add a
+vault…*, and pick the vault folder (the one with `.obsidian`). Or
+`polyctl editor-plugins install --editor obsidian --project <vault folder>`.
+The host copies `main.js` and `manifest.json` from
+`polyhost/res/obsidian/polykybd-mode-reporter/` to
+`<vault>/.obsidian/plugins/polykybd-mode-reporter/`, remembers the vault, and
+copies them again after a host update. It keeps the plugin's `data.json` (its
+settings) and leaves a copy it did not write alone. Step 2 above (enable the
+plugin) is still yours.
+
+The built files in `polyhost/res/obsidian/` are committed, because a host
+release ships only the source tree; `.github/workflows/built-plugins.yml`
+rebuilds them and fails when they differ from what the sources build. After a
+change here, run `./build.sh` and copy `dist/polykybd-mode-reporter/` there.
 
 ## Settings (plugin settings tab)
 

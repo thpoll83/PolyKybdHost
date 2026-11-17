@@ -62,6 +62,16 @@ PolyKybdHost is not running, the send fails without a message.
 Godot loads editor plugins from the project, so the plugin is installed per
 project. It is not in the Godot Asset Library.
 
+**From PolyKybdHost**: tray → *Integrations…* → *Editors* → Godot → *Add a
+project folder…*, and pick the folder with `project.godot`. Or
+`polyctl editor-plugins install --editor godot --project <project folder>`.
+The host copies `addons/polykybd_reporter/` into the project, remembers the
+folder, copies the plugin again there after a host update, and leaves a copy it
+did not write alone. Step 2 below is still yours. Remove deletes the copy (and
+the `.uid` files Godot 4.4 and later write beside the scripts).
+
+**By hand**:
+
 1. Copy the folder `addons/polykybd_reporter/` into your project's `addons/`
    folder (create it if needed): `<project>/addons/polykybd_reporter/plugin.cfg`.
 2. In Godot: *Project → Project Settings → Plugins*, tick **PolyKybd Reporter**.

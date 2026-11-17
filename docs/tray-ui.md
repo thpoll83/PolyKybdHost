@@ -300,6 +300,20 @@ and relative links were adjusted to suit a standalone file.
     init file that loads `polykybd` outside the block also reads `manual` and is not
     ticked. A host port other than 50164 or a token shows a note: the plugins read
     those from the editor's own settings.
+    The later programs are in the same list (`services/editor_targets.py` has
+    their folders). Blender, Maya, QGIS: one stamped copy per version or profile.
+    Bitwig Studio: the `.bwextension` in the shared Extensions folder, with a stamp
+    of its own name (`.polykybd-host-bitwig.json`). For all of these a copy with
+    none of the shipped files is "not set up", so a settings file the program
+    keeps beside the plugin (Obsidian's `data.json`) does not make it `manual`.
+    VS Code, Cursor, Windsurf: `code --install-extension <vsix> --force`; the
+    content digest of the `.vsix` it installed is recorded, so an extension from
+    the Marketplace reads `manual` and the refresh at start runs `code` only where
+    this app installed it. Godot, Unity, Obsidian: `no-project` until a project or
+    vault folder is chosen (a row button, or Install asks); the folders are
+    remembered in `editor_plugins.json` in the config folder. JupyterLab: the row
+    cannot be ticked; it shows the `pip install` command with a Copy button
+    (`command` state).
 
 - **The unicode input method is WATCHED for the life of the core, and an
   ambiguous reading is applied WITHOUT being stored** (`PolyCore`

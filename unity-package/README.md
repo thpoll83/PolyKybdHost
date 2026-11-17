@@ -15,7 +15,17 @@ Target: Unity 2021.3 or later (`package.json` `"unity": "2021.3"`).
 
 ## Install
 
-Window → Package Manager → **+** → *Add package from git URL…*:
+**From PolyKybdHost**: tray → *Integrations…* → *Editors* → Unity → *Add a
+project folder…*, and pick the folder with `Packages/manifest.json`. Or
+`polyctl editor-plugins install --editor unity --project <project folder>`.
+The host copies the package (without `Tests~`) to
+`<project>/Packages/org.polykybd.context-reporter/`, where Unity loads it as an
+embedded package (Unity manual, "Embedded dependencies"); `manifest.json` is
+not changed. It remembers the folder, copies the package again there after a
+host update, and leaves the project alone when `manifest.json` already lists
+the package (added by git URL or from disk).
+
+**By hand**: Window → Package Manager → **+** → *Add package from git URL…*:
 
 ```
 https://github.com/thpoll83/PolyKybdHost.git?path=/unity-package

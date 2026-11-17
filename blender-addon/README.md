@@ -51,6 +51,30 @@ window that records the mouse position and passes every event straight through
 
 ## Install
 
+**From PolyKybdHost**: tray → *Integrations…* → *Editors* → tick *Blender* →
+Install. Or `polyctl editor-plugins install --editor blender`. The host copies
+the `polykybd_context_reporter/` folder into every Blender version, 3.6 or
+newer, that has run for this user, and copies it again after a host update:
+
+- Blender 4.2 and newer: the `user_default` extension repository,
+  `<version>/extensions/user_default/polykybd_context_reporter/` (where
+  *Install from Disk* puts an extension).
+- Blender 3.6 to 4.1: the user add-ons folder,
+  `<version>/scripts/addons/polykybd_context_reporter/`.
+
+`<version>` is the folder of that version in Blender's user folder:
+`~/.config/blender/4.2` (Linux, `$XDG_CONFIG_HOME` when set; also the Flatpak's
+and the Snap's), `~/Library/Application Support/Blender/4.2` (macOS),
+`%APPDATA%\Blender Foundation\Blender\4.2` (Windows), or
+`$BLENDER_USER_RESOURCES` when that is set (Blender manual, "Blender's
+Directory Layout"). A copy installed by hand is left alone. Then restart
+Blender and enable *PolyKybd Context Reporter* in *Edit → Preferences →
+Add-ons*. ⚠️ The copy into the extension repository was not tested in Blender:
+if the add-on is not listed after a restart, install the zip from disk as
+below.
+
+**By hand**:
+
 ```bash
 ./build.sh          # -> dist/polykybd_context_reporter-<version>.zip
 ```

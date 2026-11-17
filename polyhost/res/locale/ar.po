@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-17 09:25+0000\n"
+"POT-Creation-Date: 2026-11-17 10:41+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ar\n"
@@ -557,7 +557,7 @@ msgid "<b>Failed:</b> {reason}"
 msgstr "<b>فشل:</b> {reason}"
 
 #: polyhost/gui/browser_extension_page.py:37
-#: polyhost/gui/integrations_dialog.py:391
+#: polyhost/gui/integrations_dialog.py:393
 msgid "Browser"
 msgstr "المتصفح"
 
@@ -672,7 +672,7 @@ msgid "Setup script"
 msgstr "سكربت الإعداد"
 
 #: polyhost/gui/cloud_sessions_dialog.py:80
-#: polyhost/gui/forwarder_pairing.py:26
+#: polyhost/gui/forwarder_pairing.py:26 polyhost/gui/shell_editor_pages.py:378
 msgid "Copy"
 msgstr "نسخ"
 
@@ -2012,38 +2012,38 @@ msgstr "إزالة"
 msgid "The check failed: {error}"
 msgstr "فشل الفحص: {error}"
 
-#: polyhost/gui/integrations_dialog.py:257
-#: polyhost/gui/integrations_dialog.py:375
+#: polyhost/gui/integrations_dialog.py:259
+#: polyhost/gui/integrations_dialog.py:377
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "فشل التغيير: {error}"
 
-#: polyhost/gui/integrations_dialog.py:288
-#: polyhost/gui/shell_editor_pages.py:39 polyhost/gui/shell_editor_pages.py:78
+#: polyhost/gui/integrations_dialog.py:290
+#: polyhost/gui/shell_editor_pages.py:46 polyhost/gui/shell_editor_pages.py:152
 msgid "Set up"
 msgstr "مُعدّ"
 
-#: polyhost/gui/integrations_dialog.py:290
+#: polyhost/gui/integrations_dialog.py:292
 msgid "Set up for another copy of the app, or an older version. Install updates it."
 msgstr "مُعدّ لنسخة أخرى من التطبيق أو لإصدار أقدم. يقوم «تثبيت» بتحديثه."
 
-#: polyhost/gui/integrations_dialog.py:295
+#: polyhost/gui/integrations_dialog.py:297
 #, python-brace-format
 msgid "The file cannot be read: {error}"
 msgstr "لا يمكن قراءة الملف: {error}"
 
-#: polyhost/gui/integrations_dialog.py:296
-#: polyhost/gui/shell_editor_pages.py:43 polyhost/gui/shell_editor_pages.py:80
+#: polyhost/gui/integrations_dialog.py:298
+#: polyhost/gui/shell_editor_pages.py:50 polyhost/gui/shell_editor_pages.py:154
 msgid "Not set up"
 msgstr "غير مُعدّ"
 
-#: polyhost/gui/integrations_dialog.py:315
-#: polyhost/gui/integrations_dialog.py:349
-#: polyhost/gui/integrations_dialog.py:390 polyhost/gui/settings_dialog.py:102
+#: polyhost/gui/integrations_dialog.py:317
+#: polyhost/gui/integrations_dialog.py:351
+#: polyhost/gui/integrations_dialog.py:392 polyhost/gui/settings_dialog.py:102
 msgid "AI agents"
 msgstr "وكلاء الذكاء الاصطناعي"
 
-#: polyhost/gui/integrations_dialog.py:316
+#: polyhost/gui/integrations_dialog.py:318
 msgid ""
 "An agent's key shows whether the agent works, waits for you or is finished only when the agent runs the PolyKybd hook.\n"
 "\n"
@@ -2053,44 +2053,45 @@ msgstr ""
 "\n"
 "يضيف «تثبيت» الخطافات إلى ملف إعدادات الوكيل. تُحفظ خطافاتك وإعداداتك الخاصة، وتُحفظ نسخة من كل ملف باسم <file>.polykybd.bak. يزيل «إزالة» خطافات PolyKybd فقط. أعد تشغيل الوكيل لكي يسري التغيير."
 
-#: polyhost/gui/integrations_dialog.py:363
+#: polyhost/gui/integrations_dialog.py:365
 msgid "Nothing to change."
 msgstr "لا يوجد ما يجب تغييره."
 
-#: polyhost/gui/integrations_dialog.py:365
+#: polyhost/gui/integrations_dialog.py:367
 #, python-brace-format
 msgid "Write the PolyKybd hooks into {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
 msgstr "هل تريد كتابة خطافات PolyKybd في {files}؟ تبقى خطافاتك الخاصة كما هي، وتُحفظ نسخة من كل ملف باسم <file>.polykybd.bak."
 
-#: polyhost/gui/integrations_dialog.py:368
+#: polyhost/gui/integrations_dialog.py:370
 #, python-brace-format
 msgid "Remove the PolyKybd hooks from {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
 msgstr "إزالة خطافات PolyKybd من {files}؟ تُحفظ خطافاتك الخاصة، وتُحفظ نسخة من كل ملف باسم <file>.polykybd.bak."
 
-#: polyhost/gui/integrations_dialog.py:378
+#: polyhost/gui/integrations_dialog.py:380
 #, python-brace-format
 msgid "Changed: {path}"
 msgstr "تم التغيير: {path}"
 
-#: polyhost/gui/integrations_dialog.py:383
+#: polyhost/gui/integrations_dialog.py:385
 msgid "Restart the agent for the change to take effect."
 msgstr "أعد تشغيل الوكيل لكي يسري التغيير."
 
-#: polyhost/gui/integrations_dialog.py:390
-#: polyhost/gui/shell_editor_pages.py:101
+#: polyhost/gui/integrations_dialog.py:392
+#: polyhost/gui/shell_editor_pages.py:179
 msgid "Terminals"
 msgstr "الطرفيات"
 
-#: polyhost/gui/integrations_dialog.py:390
-#: polyhost/gui/shell_editor_pages.py:191
+#: polyhost/gui/integrations_dialog.py:392
+#: polyhost/gui/shell_editor_pages.py:269
+#: polyhost/gui/shell_editor_pages.py:289
 msgid "Editors"
 msgstr "المحررات"
 
-#: polyhost/gui/integrations_dialog.py:402
+#: polyhost/gui/integrations_dialog.py:404
 msgid "Integrations"
 msgstr "التكاملات"
 
-#: polyhost/gui/integrations_dialog.py:457
+#: polyhost/gui/integrations_dialog.py:459
 msgid "Changes apply to the program after it restarts."
 msgstr "تسري التغييرات على البرنامج بعد إعادة تشغيله."
 
@@ -3883,53 +3884,114 @@ msgstr "توليد"
 msgid "Fills in a new random token and copies it. Paste it into the browser extension's Options and save both."
 msgstr "يملأ رمزًا مميزًا عشوائيًا جديدًا وينسخه. الصقه في خيارات إضافة المتصفح واحفظ في الطرفين."
 
-#: polyhost/gui/shell_editor_pages.py:41
+#: polyhost/gui/shell_editor_pages.py:48
 msgid "Shows the command without setup. Install adds only the Codex option."
 msgstr "يعرض الأمر دون إعداد. لا يضيف «تثبيت» إلا خيار Codex."
 
-#: polyhost/gui/shell_editor_pages.py:45 polyhost/gui/shell_editor_pages.py:86
+#: polyhost/gui/shell_editor_pages.py:52 polyhost/gui/shell_editor_pages.py:160
 #, python-brace-format
 msgid "Set up for another copy of the app: {path}"
 msgstr "مُعدّ لنسخة أخرى من التطبيق: {path}"
 
-#: polyhost/gui/shell_editor_pages.py:47 polyhost/gui/shell_editor_pages.py:91
+#: polyhost/gui/shell_editor_pages.py:54 polyhost/gui/shell_editor_pages.py:169
 msgid "Not found"
 msgstr "غير موجود"
 
-#: polyhost/gui/shell_editor_pages.py:49
+#: polyhost/gui/shell_editor_pages.py:56
 #, python-brace-format
 msgid "The profile path is unknown: {error}"
 msgstr "مسار ملف التعريف غير معروف: {error}"
 
-#: polyhost/gui/shell_editor_pages.py:51
+#: polyhost/gui/shell_editor_pages.py:58
 #, python-brace-format
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts."
 msgstr "سياسة التنفيذ في PowerShell ({policy}) لا تشغّل نصوص ملف التعريف."
 
-#: polyhost/gui/shell_editor_pages.py:53
+#: polyhost/gui/shell_editor_pages.py:60
 msgid "Shows the command without setup"
 msgstr "يعرض الأمر دون إعداد"
 
-#: polyhost/gui/shell_editor_pages.py:82
+#: polyhost/gui/shell_editor_pages.py:97
+msgid "Live shows Session View or Arrangement View keys with this script. After Install, restart Live and choose PolyKybd as a Control Surface in Settings > Link, Tempo & MIDI."
+msgstr "مع هذا السكربت يعرض Live مفاتيح Session View أو Arrangement View. بعد التثبيت، أعد تشغيل Live واختر PolyKybd كـ Control Surface في Settings > Link, Tempo & MIDI."
+
+#: polyhost/gui/shell_editor_pages.py:101
+msgid "Restart the IDE after Install."
+msgstr "أعد تشغيل بيئة التطوير (IDE) بعد «تثبيت»."
+
+#: polyhost/gui/shell_editor_pages.py:103
+msgid "After Install, restart Blender and enable PolyKybd Context Reporter in Edit > Preferences > Add-ons. Install copies it for each Blender version found."
+msgstr "بعد التثبيت، أعد تشغيل Blender وفعّل PolyKybd Context Reporter في Edit > Preferences > Add-ons. «تثبيت» ينسخه لكل إصدار من Blender يُعثر عليه."
+
+#: polyhost/gui/shell_editor_pages.py:107
+msgid "After Install, restart Maya and tick Loaded and Auto load for polykybd_mode_reporter.py in Windows > Settings/Preferences > Plug-in Manager. Install copies it for each Maya version found."
+msgstr "بعد التثبيت، أعد تشغيل Maya وحدّد Loaded وAuto load للملف polykybd_mode_reporter.py في Windows > Settings/Preferences > Plug-in Manager. «تثبيت» ينسخه لكل إصدار من Maya يُعثر عليه."
+
+#: polyhost/gui/shell_editor_pages.py:111
+msgid "After Install, restart QGIS and enable PolyKybd Context Reporter in Plugins > Manage and Install Plugins > Installed. Install copies it to each QGIS profile."
+msgstr "بعد التثبيت، أعد تشغيل QGIS وفعّل PolyKybd Context Reporter في Plugins > Manage and Install Plugins > Installed. «تثبيت» ينسخه إلى كل ملف تعريف في QGIS."
+
+#: polyhost/gui/shell_editor_pages.py:115
+msgid "After Install, restart Bitwig Studio and add the controller in Settings > Controllers > Add Controller: vendor PolyKybd, model Context Reporter."
+msgstr "بعد التثبيت، أعد تشغيل Bitwig Studio وأضف وحدة التحكم في Settings > Controllers > Add Controller: المورّد PolyKybd، والطراز Context Reporter."
+
+#: polyhost/gui/shell_editor_pages.py:118
+#, python-brace-format
+msgid "Install runs the program's command line tool. Restart {app} afterwards. For Remote SSH, WSL and container windows, also install {path} in the remote window: Extensions view > ... > Install from VSIX."
+msgstr "«تثبيت» يشغّل أداة سطر الأوامر الخاصة بالبرنامج. أعد تشغيل {app} بعد ذلك. لنوافذ Remote SSH وWSL والحاويات، ثبّت أيضًا {path} في النافذة البعيدة: Extensions view > ... > Install from VSIX."
+
+#: polyhost/gui/shell_editor_pages.py:123
+msgid "This app cannot know which Python environment runs JupyterLab, so it does not install the extension. Run this command with that environment's Python (JupyterLab Desktop: Settings > Server > Python environment), then restart JupyterLab:"
+msgstr "لا يمكن لهذا التطبيق معرفة بيئة Python التي تشغّل JupyterLab، لذا لا يثبّت الامتداد. شغّل هذا الأمر باستخدام Python الخاص بتلك البيئة (JupyterLab Desktop: Settings > Server > Python environment)، ثم أعد تشغيل JupyterLab:"
+
+#: polyhost/gui/shell_editor_pages.py:128
+msgid "The plugin is installed per project. Install asks for the project folder (the one with project.godot) if none was chosen. Then tick PolyKybd Reporter in Project > Project Settings > Plugins."
+msgstr "تُثبَّت الإضافة لكل مشروع على حدة. يطلب «تثبيت» مجلد المشروع (الذي يحتوي على project.godot) إن لم يُختر أي مجلد. ثم حدّد PolyKybd Reporter في Project > Project Settings > Plugins."
+
+#: polyhost/gui/shell_editor_pages.py:132
+msgid "The package is installed per project. Install asks for the project folder (the one with Packages/manifest.json) if none was chosen, and copies the package into its Packages folder. Unity loads it when it next has focus."
+msgstr "تُثبَّت الحزمة لكل مشروع على حدة. يطلب «تثبيت» مجلد المشروع (الذي يحتوي على Packages/manifest.json) إن لم يُختر أي مجلد، وينسخ الحزمة إلى مجلد Packages فيه. يحمّلها Unity عندما يصبح في المقدمة في المرة التالية."
+
+#: polyhost/gui/shell_editor_pages.py:136
+msgid "The plugin is installed per vault. Install asks for the vault folder (the one with .obsidian) if none was chosen. Then turn on PolyKybd Mode Reporter in Settings > Community plugins (Restricted mode must be off)."
+msgstr "تُثبَّت الإضافة لكل خزنة على حدة. يطلب «تثبيت» مجلد الخزنة (الذي يحتوي على .obsidian) إن لم يُختر أي مجلد. ثم شغّل PolyKybd Mode Reporter في Settings > Community plugins (يجب إيقاف Restricted mode)."
+
+#: polyhost/gui/shell_editor_pages.py:145
+msgid "Add a vault…"
+msgstr "إضافة خزنة…"
+
+#: polyhost/gui/shell_editor_pages.py:146
+msgid "Add a project folder…"
+msgstr "إضافة مجلد مشروع…"
+
+#: polyhost/gui/shell_editor_pages.py:156
 msgid "Set up with older plugin files. Install copies the current ones."
 msgstr "مُعدّ بملفات إضافة أقدم. يَنسخ «تثبيت» الملفات الحالية."
 
-#: polyhost/gui/shell_editor_pages.py:84
+#: polyhost/gui/shell_editor_pages.py:158
 msgid "Set up, and changed by hand since. This app leaves it alone."
 msgstr "مُعدّ، وعُدِّل يدويًا بعد ذلك. لا يغيّره هذا التطبيق."
 
-#: polyhost/gui/shell_editor_pages.py:88
+#: polyhost/gui/shell_editor_pages.py:162
 #, python-brace-format
 msgid "The plugin is already loaded from {path}."
 msgstr "الإضافة محمّلة بالفعل من {path}."
 
-#: polyhost/gui/shell_editor_pages.py:90
-#: polyhost/services/editor_plugins.py:154
+#: polyhost/gui/shell_editor_pages.py:164
+#: polyhost/services/editor_plugins.py:214
 #, python-brace-format
 msgid "This installation has no plugin files ({path})."
 msgstr "لا توجد ملفات الإضافة في هذا التثبيت ({path})."
 
-#: polyhost/gui/shell_editor_pages.py:102
+#: polyhost/gui/shell_editor_pages.py:166
+msgid "No project folder chosen yet."
+msgstr "لم يُختر مجلد مشروع بعد."
+
+#: polyhost/gui/shell_editor_pages.py:168
+msgid "Installed with a command, see below."
+msgstr "يُثبَّت بأمر، انظر أدناه."
+
+#: polyhost/gui/shell_editor_pages.py:180
 msgid ""
 "The keyboard shows the shortcuts of a program running in a terminal (nano, for example) only when the terminal's window title names the program. bash, zsh and PowerShell do not do this without setup.\n"
 "\n"
@@ -3939,39 +4001,39 @@ msgstr ""
 "\n"
 "يضيف «تثبيت» سطرًا واحدًا إلى ملف بدء كل صدفة محددة، بين تعليقين للتعليم، ويحفظ قبل ذلك نسخة من الملف بجانبه. يحذف «إزالة» هذه الأسطر. يسري التغيير على نوافذ الطرفية التي تُفتح بعد ذلك. لتغيير خيار Codex، حدّد الأصداف واضغط «تثبيت» مرة أخرى."
 
-#: polyhost/gui/shell_editor_pages.py:116
+#: polyhost/gui/shell_editor_pages.py:194
 msgid "Also show Codex in the title (wraps the codex command)"
 msgstr "إظهار Codex في العنوان أيضًا (يغلّف الأمر codex)"
 
-#: polyhost/gui/shell_editor_pages.py:118
+#: polyhost/gui/shell_editor_pages.py:196
 msgid "Codex replaces the terminal title with the thread and project name, so the keyboard cannot tell that it is running. With this option the codex command starts Codex with a title that begins with \"codex\". A codex alias or function of your own, and a title set in Codex's config.toml, are kept."
 msgstr "يستبدل Codex عنوان الطرفية باسم المحادثة والمشروع، فلا تعرف لوحة المفاتيح أنه يعمل. مع هذا الخيار يبدأ الأمر codex برنامج Codex بعنوان يبدأ بـ \"codex\". يُحتفظ بأي اسم مستعار أو دالة codex خاصة بك، وبعنوان مضبوط في ملف config.toml الخاص بـ Codex."
 
-#: polyhost/gui/shell_editor_pages.py:130
+#: polyhost/gui/shell_editor_pages.py:208
 #, python-brace-format
 msgid "The shells could not be checked: {error}"
 msgstr "تعذّر فحص الصدفات: {error}"
 
-#: polyhost/gui/shell_editor_pages.py:147
+#: polyhost/gui/shell_editor_pages.py:225
 #, python-brace-format
 msgid "{shell}: shows the command without setup."
 msgstr "{shell}: يعرض الأمر دون إعداد."
 
-#: polyhost/gui/shell_editor_pages.py:159
+#: polyhost/gui/shell_editor_pages.py:237
 msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "لم يُعثر على bash أو zsh أو PowerShell على هذا الحاسوب."
 
-#: polyhost/gui/shell_editor_pages.py:176
-#: polyhost/gui/shell_editor_pages.py:274
+#: polyhost/gui/shell_editor_pages.py:254
+#: polyhost/gui/shell_editor_pages.py:447
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "نسخة من الملف السابق: {path}"
 
-#: polyhost/gui/shell_editor_pages.py:178
+#: polyhost/gui/shell_editor_pages.py:256
 msgid "Open a new terminal window for the change to take effect."
 msgstr "افتح نافذة طرفية جديدة لكي يسري التغيير."
 
-#: polyhost/gui/shell_editor_pages.py:192
+#: polyhost/gui/shell_editor_pages.py:270
 msgid ""
 "Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin. GDB shows whether the program runs or waits at the prompt only with it.\n"
 "\n"
@@ -3981,38 +4043,49 @@ msgstr ""
 "\n"
 "يَنسخ «تثبيت» الإضافة من هذا التثبيت إلى المكان الذي يحمّلها منه البرنامج. وفي Emacs وGDB يضيف أيضًا إلى ملف التهيئة أسطرًا تحمّل الإضافة، بين تعليقين للتعليم، ويحفظ قبل ذلك نسخة من الملف. عند تحديث هذا التطبيق، يَنسخ ملفات الإضافة الجديدة عند بدء تشغيله التالي. أعد تشغيل البرنامج لكي يسري التغيير."
 
-#: polyhost/gui/shell_editor_pages.py:206
+#: polyhost/gui/shell_editor_pages.py:291
 msgid "FreeCAD shows the keys of the active workbench only with the PolyKybd add-on. Install copies it to FreeCAD's Mod folder."
 msgstr "لا يُظهر FreeCAD مفاتيح منضدة العمل النشطة إلا مع إضافة PolyKybd. يَنسخ «تثبيت» الإضافة إلى مجلد Mod في FreeCAD."
 
-#: polyhost/gui/shell_editor_pages.py:218
+#: polyhost/gui/shell_editor_pages.py:303
 #, python-brace-format
 msgid "The editors could not be checked: {error}"
 msgstr "تعذّر فحص المحررات: {error}"
 
-#: polyhost/gui/shell_editor_pages.py:237
-msgid "Live shows Session View or Arrangement View keys with this script. After Install, restart Live and choose PolyKybd as a Control Surface in Settings > Link, Tempo & MIDI."
-msgstr "مع هذا السكربت يعرض Live مفاتيح Session View أو Arrangement View. بعد التثبيت، أعد تشغيل Live واختر PolyKybd كـ Control Surface في Settings > Link, Tempo & MIDI."
-
-#: polyhost/gui/shell_editor_pages.py:243
-msgid "Restart the IDE after Install."
-msgstr "أعد تشغيل بيئة التطوير (IDE) بعد «تثبيت»."
-
-#: polyhost/gui/shell_editor_pages.py:247
+#: polyhost/gui/shell_editor_pages.py:344
 msgid "No Vim, Neovim or Emacs was found on this computer."
 msgstr "لم يُعثر على Vim أو Neovim أو Emacs على هذا الحاسوب."
 
-#: polyhost/gui/shell_editor_pages.py:253
+#: polyhost/gui/shell_editor_pages.py:350
 #, python-brace-format
 msgid "This app listens on port {port} and requires a token. The plugins use port 50164 and no token: set g:polykybd_port and g:polykybd_token in Vim, or polykybd-port and polykybd-token in Emacs, to the same values."
 msgstr "يستمع هذا التطبيق على المنفذ {port} ويتطلب رمزًا مميزًا. تستخدم الإضافات المنفذ 50164 دون رمز مميز: اضبط g:polykybd_port و g:polykybd_token في Vim، أو polykybd-port و polykybd-token في Emacs، على القيم نفسها."
 
-#: polyhost/gui/shell_editor_pages.py:258
+#: polyhost/gui/shell_editor_pages.py:355
 #, python-brace-format
 msgid "This app listens on port {port}. The plugins use port 50164: set g:polykybd_port in Vim, or polykybd-port in Emacs, to the same value."
 msgstr "يستمع هذا التطبيق على المنفذ {port}. تستخدم الإضافات المنفذ 50164: اضبط g:polykybd_port في Vim، أو polykybd-port في Emacs، على القيمة نفسها."
 
-#: polyhost/gui/shell_editor_pages.py:276
+#: polyhost/gui/shell_editor_pages.py:387
+msgid "Copied"
+msgstr "نُسخ"
+
+#: polyhost/gui/shell_editor_pages.py:390
+msgid "Choose the Obsidian vault folder"
+msgstr "اختر مجلد خزنة Obsidian"
+
+#: polyhost/gui/shell_editor_pages.py:391
+#, python-brace-format
+msgid "Choose the {program} project folder"
+msgstr "اختر مجلد مشروع {program}"
+
+#: polyhost/gui/shell_editor_pages.py:401
+#: polyhost/services/editor_plugins.py:222
+#, python-brace-format
+msgid "{path} is not a {editor} project folder: it has no {marker}."
+msgstr "{path} ليس مجلد مشروع {editor}: لا يحتوي على {marker}."
+
+#: polyhost/gui/shell_editor_pages.py:449
 msgid "Restart the editor for the change to take effect."
 msgstr "أعد تشغيل المحرر لكي يسري التغيير."
 
@@ -5271,45 +5344,80 @@ msgstr ""
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "بدأ برنامج تثبيت WinCompose. بمجرد انتهائه وتشغيل WinCompose، ستنتقل PolyKybd إليه تلقائيًا."
 
-#: polyhost/services/editor_plugins.py:148
+#: polyhost/services/editor_plugins.py:208
 #, python-brace-format
 msgid "Copied the plugin to {path}."
 msgstr "نُسخت الإضافة إلى {path}."
 
-#: polyhost/services/editor_plugins.py:149
+#: polyhost/services/editor_plugins.py:209
 #, python-brace-format
 msgid "Replaced the plugin in {path} with the one from this installation."
 msgstr "استُبدلت الإضافة في {path} بالإضافة من هذا التثبيت."
 
-#: polyhost/services/editor_plugins.py:151
+#: polyhost/services/editor_plugins.py:211
 #, python-brace-format
 msgid "Removed the plugin from {path}."
 msgstr "أُزيلت الإضافة من {path}."
 
-#: polyhost/services/editor_plugins.py:153
+#: polyhost/services/editor_plugins.py:213
 #, python-brace-format
 msgid "{editor} was not found on this computer."
 msgstr "لم يُعثر على {editor} على هذا الحاسوب."
 
-#: polyhost/services/editor_plugins.py:155
+#: polyhost/services/editor_plugins.py:215
 #, python-brace-format
 msgid "{path} was changed by hand. Remove or update it by hand."
 msgstr "عُدِّل {path} يدويًا. أزله أو حدّثه يدويًا."
 
-#: polyhost/services/editor_plugins.py:158
+#: polyhost/services/editor_plugins.py:218
 #, python-brace-format
 msgid "Copied the plugin to {path} and added the lines that load it to {init}."
 msgstr "نُسخت الإضافة إلى {path} وأُضيفت الأسطر التي تحمّلها إلى {init}."
 
-#: polyhost/services/editor_plugins.py:159
+#: polyhost/services/editor_plugins.py:219
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}."
 msgstr "أُزيلت الأسطر التي تحمّل الإضافة من {init}."
 
-#: polyhost/services/editor_plugins.py:160
+#: polyhost/services/editor_plugins.py:220
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}, and the plugin from {path}."
 msgstr "أُزيلت الأسطر التي تحمّل الإضافة من {init}، وأُزيلت الإضافة من {path}."
+
+#: polyhost/services/editor_plugins.py:221
+#, python-brace-format
+msgid "{path} has a copy of the plugin that this app did not write. It is left alone."
+msgstr "يحتوي {path} على نسخة من الإضافة لم يكتبها هذا التطبيق. تُترك كما هي."
+
+#: polyhost/services/editor_plugins.py:223
+#, python-brace-format
+msgid "No {editor} project folder was chosen."
+msgstr "لم يُختر مجلد مشروع {editor}."
+
+#: polyhost/services/editor_plugins.py:224
+#, python-brace-format
+msgid "Installed the extension with {command}."
+msgstr "ثُبّت الامتداد باستخدام {command}."
+
+#: polyhost/services/editor_plugins.py:225
+#, python-brace-format
+msgid "Removed the extension with {command}."
+msgstr "أُزيل الامتداد باستخدام {command}."
+
+#: polyhost/services/editor_plugins.py:226
+#, python-brace-format
+msgid "{command} failed: {error}"
+msgstr "فشل {command}: {error}"
+
+#: polyhost/services/editor_plugins.py:227
+#, python-brace-format
+msgid "{editor} has the extension {extension} from another source. It is left alone."
+msgstr "لدى {editor} الامتداد {extension} من مصدر آخر. يُترك كما هو."
+
+#: polyhost/services/editor_plugins.py:228
+#, python-brace-format
+msgid "Run this command in the Python environment that runs JupyterLab: {command}"
+msgstr "شغّل هذا الأمر في بيئة Python التي تشغّل JupyterLab: {command}"
 
 #: polyhost/services/fw_keymap_changes.py:18
 msgid "The Hyper key on the QWERTY, Stag, Colemak DH and Workman layouts becomes the AI key."
@@ -5535,7 +5643,7 @@ msgstr "أُضيف السطر إلى {path}."
 msgid "Replaced the line in {path} with one for this installation."
 msgstr "استُبدل السطر في {path} بسطر لهذا التثبيت."
 
-#: polyhost/services/editor_plugins.py:150 polyhost/services/shell_title.py:109
+#: polyhost/services/editor_plugins.py:210 polyhost/services/shell_title.py:109
 #, python-brace-format
 msgid "Already set up in {path}."
 msgstr "مُعدّ مسبقًا في {path}."
@@ -5555,7 +5663,7 @@ msgstr "تم إيقاف عنوان Codex في {path}."
 msgid "Removed the line from {path}."
 msgstr "أُزيل السطر من {path}."
 
-#: polyhost/services/editor_plugins.py:152 polyhost/services/shell_title.py:113
+#: polyhost/services/editor_plugins.py:212 polyhost/services/shell_title.py:113
 #, python-brace-format
 msgid "Nothing to remove in {path}."
 msgstr "لا شيء لإزالته في {path}."
@@ -5575,12 +5683,12 @@ msgstr "لم تُبلغ {shell} عن مسار ملف التعريف: {error}"
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts. Run 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' in PowerShell first."
 msgstr "سياسة التنفيذ في PowerShell ({policy}) لا تشغّل نصوص ملف التعريف. شغّل أولًا 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' في PowerShell."
 
-#: polyhost/services/editor_plugins.py:156 polyhost/services/shell_title.py:118
+#: polyhost/services/editor_plugins.py:216 polyhost/services/shell_title.py:118
 #, python-brace-format
 msgid "{path} has a start marker without an end marker. Remove the block by hand."
 msgstr "في {path} علامة بداية دون علامة نهاية. أزل الكتلة يدويًا."
 
-#: polyhost/services/editor_plugins.py:157 polyhost/services/shell_title.py:119
+#: polyhost/services/editor_plugins.py:217 polyhost/services/shell_title.py:119
 #, python-brace-format
 msgid "Could not change {path}: {error}"
 msgstr "تعذّر تغيير {path}: {error}"
