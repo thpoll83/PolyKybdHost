@@ -9,24 +9,34 @@ and relative links were adjusted to suit a standalone file.
   (`gui/menu_fetch.py`, `MenuFetcher`). Split the refresh into the core call, passed
   to `self._menu_fetch.fetch(key, fn, apply)`, and an `apply(result)` that touches
   the Qt objects. In client mode the call is an RPC with no timeout, so a stalled
-  daemon used to freeze the whole tray when Idle Display, Keycap Script, Keycap
-  Size, Emoji Search Language, Updates or Brightness opened. The menu keeps its last
+  daemon used to freeze the whole tray when a device submenu (Updates, Brightness)
+  opened. The menu keeps its last
   state until the answer arrives; one call per key is in flight at a time. Tests
   that read the result call `self._menu_fetch.wait_idle()` first
   (`tests/gui/menu_fetch_test.py`).
 - **A menu CLICK sends its core call off the GUI thread too**, through
   `self._menu_fetch.call(fn, apply)`: `PolyHost._core_click(fn, done)` in `host.py`,
   `_report_async` / `_read_async` in `gui/cmd_menu.py`. Clicks run one at a time in
-  click order on one thread, so two quick Keycap Size clicks reach the keyboard in
+  click order on one thread, so two quick Brightness clicks reach the keyboard in
   that order; `done(ok, msg)` runs on the GUI thread. Still on the GUI thread: the
-  settings dialog's read and write, the status rendering, and the in-process
+  settings dialog's settings.yaml read and write, the status rendering, and the in-process
   firmware flash dialog, which owns the device for its whole run.
 - **The tray menu is TWO-TIER: a normal menu of ~9 rows, plus a Developer submenu
   that only ever ADDS.** The old menu had 16 top-level entries, one of which ("All
   PolyKybd Commands") held 15 more — mostly diagnostics, one click from a normal
-  user. Now: status · Pause · [Language] · Brightness · Idle Display · Keycap Script ·
-  Configure Keymap · Updates · Maintenance · Settings · Help & About · Quit, with
-  **Developer** slotted in before Settings when developer mode is on. The invariant is
+  user. Now: status · Pause · [Language] · Brightness · AI Agents · Configure Keymap ·
+  Tutorials… · Updates · Maintenance · Integrations… · Settings… · Help & About · Quit,
+  with **Developer** slotted in before Integrations when developer mode is on.
+  The settings that are rarely changed and stored on the keyboard (idle display and
+  idle timeout, keycap script and its placement, keycap size, tap-hold timing) are in
+  **Settings → Keyboard**, not the menu (`gui/keyboard_settings.py`). The dialog reads
+  them off the GUI thread when it opens (`read_all`, one `MenuFetcher` key); the rows
+  stay disabled until the answer arrives, and a row the firmware does not have stays
+  disabled with a tooltip. OK sends only the changed values, through `_core_click`,
+  in order; the tap-hold values go in one `set_tap_terms` call. The emoji search
+  language is only in Settings → Keyboard too. Maintenance ends with Read keyboard
+  crash record and Open config folder, which keep the Maintenance parent enabled
+  with no keyboard (`add_always_enabled_maintenance_action`). The invariant is
   that turning developer mode on **does not rearrange anything** (asserted by
   `tests/gui/host_client_test.py` `test_developer_mode_only_adds_a_submenu`), so muscle
   memory survives the toggle. `CommandsSubMenu` (`gui/cmd_menu.py`) builds Brightness +
@@ -36,7 +46,7 @@ and relative links were adjusted to suit a standalone file.
   `managed_connection_status` still blanket-disables every top-level action first, so a
   **new group parent must be re-enabled explicitly there** or its whole submenu goes
   unreachable on a disconnect (that is why Updates / Help & About / Pause are listed).
-  Help & About starts with **Tutorials…** (`gui/tutorials_dialog.py`,
+  **Tutorials…** is a top-level row (`gui/tutorials_dialog.py`,
   [`tutorials-plan.md`](tutorials-plan.md)), enabled when the keyboard is connected
   and supports key attention (protocol 32+).
   Three rows are **contextual** (built once, `setVisible` toggled): the newer-firmware
@@ -300,6 +310,26 @@ and relative links were adjusted to suit a standalone file.
     init file that loads `polykybd` outside the block also reads `manual` and is not
     ticked. A host port other than 50164 or a token shows a note: the plugins read
     those from the editor's own settings.
+    The later programs are in the same list (`services/editor_targets.py` has
+    their folders). Blender, Maya, QGIS: one stamped copy per version or profile.
+    Bitwig Studio: the `.bwextension` in the shared Extensions folder, with a stamp
+    of its own name (`.polykybd-host-bitwig.json`). For all of these a copy with
+    none of the shipped files is "not set up", so a settings file the program
+    keeps beside the plugin (Obsidian's `data.json`) does not make it `manual`.
+    VS Code, Cursor, Windsurf: `code --install-extension <vsix> --force`; the
+    content digest and the version of the `.vsix` it installed are recorded. An
+    installed extension with another version (a Marketplace or Open VSX copy, for
+    example) reads `manual` and is left alone; a store copy with the same version
+    counts as this app's (the refresh may install the same build over it, Remove
+    uninstalls it). The refresh at start runs `code` only where this app installed it. Godot, Unity, Obsidian: `no-project` until a project or
+    vault folder is chosen (a row button, or Install asks); the folders are
+    remembered in `editor_plugins.json` in the config folder. JupyterLab: the row
+    cannot be ticked; it shows the `pip install` command with a Copy button
+    (`command` state). Every stamp entry must be a plain relative path that stays
+    inside the stamped folder with symbolic links followed (`stamp_path_ok`; only
+    Houdini's and Maya's file beside the folder are allowed): a project the user
+    downloaded can hold a stamp of its own, and a stamp with another entry makes
+    the copy `manual`, so nothing is written or deleted.
 
 - **The unicode input method is WATCHED for the life of the core, and an
   ambiguous reading is applied WITHOUT being stored** (`PolyCore`
@@ -392,8 +422,7 @@ and relative links were adjusted to suit a standalone file.
   `test_the_long_step_text_does_not_overlap_its_button` pins it. An offscreen
   test screen is 800×600, and `show()` caps a window at two thirds of it.
 
-- **Brightness, Idle Display, Keycap Script and Keycap Size are tile grids where Qt
-  draws the tray menu** (`gui/menu_tiles.py`, previews in `gui/keycap_tiles.py`):
+- **Brightness is a tile grid where Qt draws the tray menu** (`gui/menu_tiles.py`, previews in `gui/keycap_tiles.py`):
   Windows, and Linux without a StatusNotifier host. A KDE or AppIndicator tray
   menu is exported over DBusMenu, which drops a widget, and macOS embeds it
   unreliably (QTBUG-63578), so both keep the text rows. ⚠️ A tile is bound to the

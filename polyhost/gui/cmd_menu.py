@@ -241,17 +241,18 @@ class CommandsSubMenu:
                                  self.activate_bootloader, firmware=True))
         return menu
 
-    def add_always_enabled_maintenance_action(self, action):
-        """Append ``action`` at the end of Maintenance, after a separator, and
+    def add_always_enabled_maintenance_action(self, *actions):
+        """Append ``actions`` at the end of Maintenance, after a separator, and
         keep the Maintenance parent enabled from now on.
 
         Every other row under Maintenance is gated by its own list, so an
         enabled parent with no keyboard shows those rows greyed out. Without
-        this, a disconnected keyboard would make ``action`` unreachable.
+        this, a disconnected keyboard would make the new rows unreachable.
         """
         menu = self._maintenance_action.menu()
         menu.addSeparator()
-        menu.addAction(action)
+        for action in actions:
+            menu.addAction(action)
         self._maintenance_always_enabled = True
         self._maintenance_action.setEnabled(True)
 

@@ -1,0 +1,133 @@
+# Builds the VS Code extension (vscode-extension/) and the Obsidian plugin
+# (obsidian-plugin/), runs their tests, and checks that the built files are
+# the ones the host ships:
+#
+#   polyhost/res/vscode/polykybd-mode-reporter.vsix
+#   polyhost/res/vscode/polykybd-mode-reporter-remote.vsix
+#   polyhost/res/obsidian/polykybd-mode-reporter/{main.js,manifest.json}
+#
+# A host release ships no built files: users install and update from the
+# tag's source tarball. So these files reach an installation only as files in
+# the tree, which the Integrations > Editors page installs
+# (polyhost/services/editor_plugins.py), like the JetBrains plugin zip
+# (jetbrains-plugin.yml). When this job fails, run ./build.sh in the plugin's
+# folder, copy the files from its dist/ folder (names without the version) and
+# commit them, or take them from this run's artifact.
+#
+# A .vsix is a zip, and vsce writes the files' times into it, so two builds of
+# the same sources differ in bytes. The check compares the names and the bytes
+# of the entries instead, as the host does (editor_plugins.vsix_digest).
+name: Built plugins
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - vscode-extension/**
+      - obsidian-plugin/**
+      - polyhost/res/vscode/**
+      - polyhost/res/obsidian/**
+      - .github/workflows/built-plugins.yml
+  push:
+    branches: [main]
+    paths:
+      - vscode-extension/**
+      - obsidian-plugin/**
+      - polyhost/res/vscode/**
+      - polyhost/res/obsidian/**
+      - .github/workflows/built-plugins.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vscode:
+    name: VS Code extension
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: vscode-extension
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Build and test
+        run: ./build.sh
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vscode-extension
+          path: vscode-extension/dist/*.vsix
+          if-no-files-found: ignore
+
+      - name: The shipped .vsix files are the ones these sources build
+        run: |
+          python3 - <<'EOF'
+          import glob, hashlib, sys, zipfile
+
+          def entries(path):
+              with zipfile.ZipFile(path) as zf:
+                  return {i.filename: hashlib.sha256(zf.read(i)).hexdigest()[:16]
+                          for i in zf.infolist() if not i.is_dir()}
+
+          bad = False
+          for name in ("polykybd-mode-reporter", "polykybd-mode-reporter-remote"):
+              built = glob.glob(f"dist/{name}-[0-9]*.vsix")
+              shipped = f"../polyhost/res/vscode/{name}.vsix"
+              b, s = entries(built[0]), entries(shipped)
+              if b == s:
+                  print(f"{shipped} is current.")
+                  continue
+              bad = True
+              print(f"::error::{shipped} is not what these sources build. Run ./build.sh in "
+                    f"vscode-extension/ and copy {built[0]} to it.")
+              for entry in sorted(set(b) | set(s)):
+                  if b.get(entry) != s.get(entry):
+                      print(f"  {entry}: built {b.get(entry)}, shipped {s.get(entry)}")
+          sys.exit(1 if bad else 0)
+          EOF
+
+  obsidian:
+    name: Obsidian plugin
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: obsidian-plugin
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Build and test
+        run: |
+          ./build.sh
+          node --test test/core.test.mjs
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: obsidian-plugin
+          path: obsidian-plugin/dist/polykybd-mode-reporter/
+          if-no-files-found: ignore
+
+      - name: The shipped plugin is the one these sources build
+        run: |
+          if diff -r dist/polykybd-mode-reporter ../polyhost/res/obsidian/polykybd-mode-reporter; then
+            echo "polyhost/res/obsidian/polykybd-mode-reporter is current."
+          else
+            echo "::error::polyhost/res/obsidian/polykybd-mode-reporter is not what these sources build. Run ./build.sh in obsidian-plugin/ and copy dist/polykybd-mode-reporter/ to it."
+            exit 1
+          fi

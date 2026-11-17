@@ -276,7 +276,7 @@ daemon client.
     `crash: side=slave` console line alike. The host cannot tell that apart from a
     new one. The fix is firmware-side: clear the slave's fresh flag once the master
     has pulled it.
-  - **Help & About → "Read keyboard crash record"** is the manual readout. It reads
+  - **Maintenance → "Read keyboard crash record"** is the manual readout. It reads
     both halves over cmd 39, opens the same dialog with whatever is archived
     (fresh or older) and copies the report text to the clipboard. Gated on
     `connected`, not paused, and `supports("crash_record")` in

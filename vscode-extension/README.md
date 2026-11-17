@@ -151,6 +151,28 @@ extension. The remote part is installed separately (below).
 
 ## Install
 
+**From PolyKybdHost**: tray → *Integrations…* → *Editors* → tick *VS Code*,
+*Cursor* or *Windsurf* → Install. Or `polyctl editor-plugins install --editor
+vscode` (`cursor`, `windsurf`). The host runs the editor's command line
+program, `code --install-extension polyhost/res/vscode/polykybd-mode-reporter.vsix
+--force` (`cursor`, `windsurf`), found on PATH or in the editor's standard
+install folder, and reads the state with `--list-extensions --show-versions`.
+It installs again after a host update that changed the `.vsix`, but only where
+it installed it. It records the version it installed: an installed extension
+with another version (from the Marketplace or Open VSX, for example) is left
+alone. A store copy with the same version counts as this app's: the refresh
+may install the same build again over it, and Remove uninstalls it.
+The remote part is not installed by the host: in a remote window, use *Install
+from VSIX…* with `polyhost/res/vscode/polykybd-mode-reporter-remote.vsix`.
+Restart the editor afterwards.
+
+The two `.vsix` files in `polyhost/res/vscode/` are built by `./build.sh` and
+committed, because a host release ships only the source tree;
+`.github/workflows/built-plugins.yml` rebuilds them and fails when the
+committed files differ from what the sources build. After a change here, run
+`./build.sh` and copy `dist/polykybd-mode-reporter-<version>.vsix` and
+`dist/polykybd-mode-reporter-remote-<version>.vsix` there, without the version.
+
 From the store:
 
 - **VS Code**: Extensions view → search *PolyKybd Mode Reporter* (Visual Studio

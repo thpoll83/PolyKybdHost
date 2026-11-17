@@ -90,6 +90,15 @@ Install steps: Bitwig's installation guide,
 
 ## Install
 
+**From PolyKybdHost**: tray → *Integrations…* → *Editors* → tick *Bitwig
+Studio* → Install. Or `polyctl editor-plugins install --editor bitwig`. The
+host copies `PolyKybdContextReporter.bwextension` into the Extensions folder
+below (once Bitwig Studio has run and created its `Bitwig Studio` folder),
+copies it again after a host update, and leaves a copy it did not write alone.
+Step 2 below is still yours.
+
+**By hand**:
+
 1. Drag `PolyKybdContextReporter.bwextension` onto the Bitwig Studio window
    (Bitwig Studio 4.2.5 or later copies it to the Extensions folder). Or copy it
    there yourself:
@@ -99,9 +108,8 @@ Install steps: Bitwig's installation guide,
 2. In Bitwig Studio: *Settings → Controllers → Add Controller*, vendor
    **PolyKybd**, model **Context Reporter**. It has no MIDI ports.
 
-The tray's "Set up the terminal and editors…" dialog does not install it: the
-file alone does nothing until the controller is added in step 2, which only
-Bitwig's own settings can do.
+The file alone does nothing until the controller is added in step 2, which
+only Bitwig's own settings can do.
 
 ## Settings (the controller's settings in Bitwig)
 

@@ -17,6 +17,7 @@ Wire protocol (see ``polyhost/server/protocol.py``):
 """
 import argparse
 import json
+import os
 import sys
 import time
 
@@ -238,6 +239,8 @@ _EDITOR_STATE_TEXT = {
     "manual": "the plugin is loaded from somewhere else",
     "not-present": "not found",
     "no-source": "this installation has no plugin files",
+    "no-project": "no project folder chosen (install with --project PATH)",
+    "command": "install it yourself with the command below",
 }
 
 
@@ -249,6 +252,13 @@ def _cmd_editor_plugins(_client, args):
     from polyhost.settings import read_setting
 
     editors = args.editor or None
+    projects = None
+    if getattr(args, "project", None):
+        named = [e for e in (editors or ()) if e in editor_plugins.PROJECT_EDITORS]
+        if not named:
+            print("--project needs --editor godot, unity or obsidian", file=sys.stderr)
+            return 2
+        projects = {e: [os.path.abspath(p) for p in args.project] for e in named}
     if args.ep_action == "status":
         for st in editor_plugins.status(editors):
             line = f"{st.editor:<13}{_EDITOR_STATE_TEXT.get(st.state, st.state)}"
@@ -264,10 +274,11 @@ def _cmd_editor_plugins(_client, args):
                   "set g:polykybd_port/g:polykybd_token (Vim) or polykybd-port/"
                   "polykybd-token (Emacs) to match.")
         return 0
+    kwargs = {"projects": projects} if projects else {}
     if args.ep_action == "install":
-        results = editor_plugins.install(editors)
+        results = editor_plugins.install(editors, **kwargs)
     else:
-        results = editor_plugins.remove(editors)
+        results = editor_plugins.remove(editors, **kwargs)
     if not results:
         print("nothing to do" if args.ep_action == "remove"
               else "no editor to set up was found (name one with --editor)")
@@ -2285,8 +2296,8 @@ def build_parser():
     # Local only, like shell-integration.
     p_ep = sub.add_parser(
         "editor-plugins",
-        help="copy the Vim/Neovim plugin, the Emacs package, the GDB script, the "
-             "Houdini package and the JetBrains plugin that report the program's mode "
+        help="copy or install the plugins that report the program's mode: Vim, Neovim, "
+             "Emacs, GDB, the JetBrains IDEs, Blender, VS Code, Godot and the others "
              "(works with the host stopped)",
         description="Copies the plugin shipped with this installation to "
                     "~/.vim/pack/polykybd/start/polykybd (Vim), the Neovim "
@@ -2297,7 +2308,14 @@ def build_parser():
                     "<plugins folder>/polykybd-context-reporter in every JetBrains "
                     "IDE 2024.2 or newer (jetbrains) or <FreeCAD user data>/Mod/PolyKybd "
                     "(FreeCAD); for Emacs and GDB also a "
-                    "marked block in the init file, saved first. Copies made "
+                    "marked block in the init file, saved first. Blender, Maya and "
+                    "QGIS get a copy per version or profile found, Bitwig Studio "
+                    "the .bwextension in its Extensions folder; VS Code, Cursor and "
+                    "Windsurf get the .vsix through their command line program "
+                    "(code --install-extension). Godot, Unity and Obsidian are per "
+                    "project: name the project or vault folder with --project once, "
+                    "it is remembered. JupyterLab is a pip install into the Python "
+                    "that runs it: status prints the command. Copies made "
                     "this way are refreshed when the app starts after an update.")
     ep_sub = p_ep.add_subparsers(dest="ep_action", required=True)
     ep_install = ep_sub.add_parser(
@@ -2308,8 +2326,15 @@ def build_parser():
     for p in (ep_install, ep_remove, ep_status):
         p.add_argument("--editor", action="append",
                        choices=("vim", "neovim", "emacs", "gdb", "ida", "binaryninja", "resolve",
-                                "ableton", "houdini", "jetbrains", "freecad"),
+                                "ableton", "houdini", "jetbrains", "freecad", "blender", "maya",
+                                "qgis", "bitwig", "vscode", "cursor", "windsurf", "jupyterlab",
+                                "godot", "unity", "obsidian"),
                        help="only this editor (repeat for more)")
+    for p in (ep_install, ep_remove):
+        p.add_argument("--project", action="append", metavar="PATH",
+                       help="a Godot project, Unity project or Obsidian vault folder (with "
+                            "--editor godot, unity or obsidian; repeat for more). Install "
+                            "remembers it; without it, the remembered folders are used")
     p_ep.set_defaults(func=_cmd_editor_plugins)
 
     sub.add_parser("watch", help="stream events until Ctrl-C").set_defaults(func=_cmd_watch)

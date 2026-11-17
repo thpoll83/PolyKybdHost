@@ -56,6 +56,41 @@ class PolyctlEditorPluginsTest(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("vim: nope", out)
 
+    def test_project_folders_reach_the_service(self):
+        with mock.patch.object(editor_plugins, "install", return_value=[]) as inst:
+            code, out, _ = self.run_main("editor-plugins", "install", "--editor", "godot",
+                                         "--editor", "vim", "--project", "game")
+        self.assertEqual(code, 0, out)
+        inst.assert_called_once_with(["godot", "vim"],
+                                     projects={"godot": [os.path.abspath("game")]})
+        with mock.patch.object(editor_plugins, "remove", return_value=[]) as rem:
+            self.run_main("editor-plugins", "remove", "--editor", "obsidian", "--project", "/v")
+        rem.assert_called_once_with(["obsidian"], projects={"obsidian": [os.path.abspath("/v")]})
+
+    def test_project_needs_a_per_project_editor(self):
+        with mock.patch.object(editor_plugins, "install") as inst:
+            code, _out, err = self.run_main("editor-plugins", "install", "--editor", "vim",
+                                            "--project", "x")
+        self.assertEqual(code, 2)
+        self.assertIn("--project needs", err)
+        inst.assert_not_called()
+
+    def test_every_editor_is_a_choice_and_every_state_has_a_text(self):
+        for editor in editor_plugins.EDITORS:
+            with mock.patch.object(editor_plugins, "status", return_value=[]):
+                code, _out, err = self.run_main("editor-plugins", "status", "--editor", editor)
+            self.assertEqual(code, 0, err)
+        states = [v for k, v in vars(editor_plugins).items() if k.startswith("STATE_")]
+        for state in states:
+            self.assertIn(state, polyctl._EDITOR_STATE_TEXT)
+
+    def test_the_jupyterlab_command_is_printed(self):
+        st = [editor_plugins.EditorStatus("jupyterlab", "command", None,
+                                          'python -m pip install "/x/jupyterlab-extension"')]
+        with mock.patch.object(editor_plugins, "status", return_value=st):
+            _code, out, _ = self.run_main("editor-plugins", "status")
+        self.assertIn('python -m pip install "/x/jupyterlab-extension"', out)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -139,13 +139,27 @@ export function reportUrl(port: number): string {
 /** A POST: resolves when done; any rejection is caught by the Sender. */
 export type PostFn = (url: string, body: string) => Promise<unknown>;
 
+/** Whether a body is a withdrawal (`url: null, focused: false`). */
+function isWithdrawal(body: string): boolean {
+    try {
+        const o = JSON.parse(body);
+        return o.url === null && o.focused === false;
+    } catch {
+        return false;
+    }
+}
+
 /** Delivers the LATEST report; an older one still waiting is dropped. At most
  *  one request is in flight, so a host that is down or slow cannot pile up
- *  requests. Failures are reported once per distinct message to `log`. */
+ *  requests. Failures are reported once per distinct message to `log`.
+ *
+ *  A withdrawal waiting for another endpoint (the port before a port change)
+ *  is kept and sent first: replacing it would leave the old receiver with
+ *  this instance's context until it expires. */
 export class Sender {
     private post: PostFn;
     private log: (msg: string) => void;
-    private pending: [string, string] | null = null;
+    private pending: Array<[string, string, boolean]> = [];
     private busy = false;
     private seen = new Set<string>();
 
@@ -155,7 +169,9 @@ export class Sender {
     }
 
     submit(port: number, body: string): Promise<void> {
-        this.pending = [reportUrl(port), body];
+        const url = reportUrl(port);
+        this.pending = this.pending.filter(([u, , withdrawal]) => withdrawal && u !== url);
+        this.pending.push([url, body, isWithdrawal(body)]);
         return this.pump();
     }
 
@@ -164,9 +180,8 @@ export class Sender {
         if (this.busy) return;
         this.busy = true;
         try {
-            while (this.pending) {
-                const [url, body] = this.pending;
-                this.pending = null;
+            while (this.pending.length > 0) {
+                const [url, body] = this.pending.shift()!;
                 try {
                     await this.post(url, body);
                 } catch (e) {
