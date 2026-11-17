@@ -74,6 +74,11 @@ M_COMBOS_SET = "combos.set"   # {"combos": [...]?, "tap_dances": [...]?} -> (ok,
 # The MIDI guide (firmware protocol v34+): ripple Fn, then the MIDI key, until the MIDI
 # layer is on. "reset" forgets which programs already had it.
 M_MIDI_GUIDE = "key.midi_guide"  # {"reset": bool} -> (ok, msg)
+# Tutorials (services/tutorials, docs/tutorials-plan.md). List and state need no device.
+M_TUTORIALS_LIST = "tutorials.list"   # {} -> {"tutorials", "errors", "protocol", "user_dir", "running"}
+M_TUTORIAL_START = "tutorial.start"   # {"id"} -> (ok, state)
+M_TUTORIAL_ACTION = "tutorial.action"  # {"action": "next"|"back"|"stop"} -> (ok, state)
+M_TUTORIAL_STATE = "tutorial.state"   # {} -> state | None
 M_TAP_TERMS_GET = "tap_terms.get"  # {} -> (ok, {"tapping_term", "flow_tap_term", "flow_tap_available", "auto_shift_available", "auto_shift", "auto_shift_ms"})
 # AI agents on the number row (services/agents). No device I/O: the registry is
 # host state, so these work with the keyboard away and the feature off.

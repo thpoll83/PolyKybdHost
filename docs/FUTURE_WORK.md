@@ -39,22 +39,47 @@ files, every changed key drawn white on black beside the shipped icon:
 
 ## The player's key bindings for the other game readers
 
-**Status:** built for UT2004, Warcraft III and the three OpenRA mods (2026-11-14). A reader with a `bindings(files)`
-function returns the player's {command: [key, ...]}, and `build.remap` moves
-every icon whose spec binding names a `command:` to those keys
-(`game_assets/build.py`; the UT2004 reader parses System/User.ini, the
-Warcraft III reader the hotkeys of the installed language and CustomKeys.txt).
-A spec may also name a bindings source apart from its art reader
-(`bindings: openra`: `openra_keys.py` reads OpenRA's settings.yaml). The
-other overlays keep their default keys.
+**Status:** built for UT2004, Warcraft III, the three OpenRA mods
+(2026-11-14), StarCraft II and Command & Conquer Generals (2026-11-15). A
+reader with a `bindings(files)` function returns the player's {command:
+[key, ...]}, and `build.remap` moves every icon whose spec binding names a
+`command:` to those keys (`game_assets/build.py`; the UT2004 reader parses
+System/User.ini, the Warcraft III reader the hotkeys of the installed
+language and CustomKeys.txt, the Generals reader CommandMap.ini and
+Generals.csf of the installed language). A spec may also name a bindings
+source apart from its art reader (`bindings: openra`: `openra_keys.py` reads
+OpenRA's settings.yaml; `bindings: sc2`: `sc2_keys.py` reads the active
+`.SC2Hotkeys` profile, also without a StarCraft install). Team Fortress 2,
+Apex Legends and Path of Exile 1 and 2 (2026-11-15) have only a bindings
+source and the `keys` reader, which reads no art (`tf2_keys.py`,
+`apex_keys.py`, `poe_keys.py`, `poe2_keys.py`).
 
-**What each would need.** A parser for the game's binding file and a
-`command:` on each binding of its spec. Candidates, none checked against real
-files: StarCraft II keeps hotkeys in `.SC2Hotkeys` text files under the
-player's Documents folder (the `starcraft` reader draws its overlay). The DOS
-releases of C&C, Red Alert and Dune II have fixed keys, so there is nothing to
-read there. The C&C
-Remastered Collection's binding file was not looked for.
+**What is left.**
+
+- C&C Remastered Collection: the client keeps its settings, the hotkeys
+  probably among them, in `Player_TD_settings_1.bin` and
+  `Player_RA_settings_1.bin` (Documents\CnCRemastered, or the Steam cloud
+  folder `userdata\<id>\1213210\remote`). The format is binary and not
+  described anywhere public; the open-source DLL receives commands, not keys.
+  It needs a real file with a known rebind to work out.
+- StarCraft II: the profile was parsed from TheCoreLite's files, not from an
+  install; the values of `hotkeyprofile=` for the built-in Grid and
+  left-handed profiles are not known (a name that starts with `0_` is taken
+  as built-in). The camera zoom keys, Quote, Print Screen and Alt+Enter have
+  no `command:`: TheCore's Defaults.ini does not list them.
+- Rocket League: the in-game rebinds are in an encrypted save file
+  (`TAGame\SaveData*\*.save`, AES-256-ECB, object `ProfilePCSave_TA`
+  array `PCBindings`, according to DaricHughesJ/rocket-league-keybind-manager);
+  TAInput.ini holds only the defaults. Overwatch 2 keeps the bindings on
+  Blizzard's servers, and Genshin Impact in an undocumented registry value.
+  All three overlays show the default keys.
+- Apex Legends: the defaults come from player files, not from Respawn, and
+  it is not known whether the game writes a line for an unbound command
+  (`BINDINGS_COMPLETE = False`). Path of Exile: the modifier value for Alt
+  (3 or 4) is not known, so such a binding is ignored.
+- Dune II, Dune Legacy and the DOS releases of C&C and Red Alert: fixed keys
+  (Dune Legacy's `Game::handleKeyInput`, sourceforge commit 591b9e16), so
+  there is nothing to read.
 
 **Limit.** `remap` moves an icon within one overlay file: the primary file
 holds the plain, Ctrl, Alt and Shift keys, the `.combo` file the
