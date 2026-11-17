@@ -51,7 +51,7 @@ bindings:
 
   # --- Ctrl+Shift ---
   - { key: Z, mods: [CMDCTRL, SHIFT], icon: redo.png,        label: Redo,          source: "ms-fluent/Arrow Redo (MIT)" }
-  - { key: V, mods: [CMDCTRL, SHIFT], icon: pasteplain.png,  label: "Paste without formatting", source: "ms-fluent/Clipboard Paste (MIT)" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: pasteplain.png,  label: "Paste without formatting", source: "ms-fluent/Clipboard Letter (MIT)" }
   - { key: L, mods: [CMDCTRL, SHIFT], icon: alignleft.png,   label: "Align left",   source: "ms-fluent/Text Align Left (MIT)" }
   - { key: E, mods: [CMDCTRL, SHIFT], icon: aligncenter.png, label: "Center align", source: "ms-fluent/Text Align Center (MIT)" }
   - { key: R, mods: [CMDCTRL, SHIFT], icon: alignright.png,  label: "Right align",  source: "ms-fluent/Text Align Right (MIT)" }

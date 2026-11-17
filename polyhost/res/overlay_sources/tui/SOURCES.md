@@ -109,3 +109,47 @@ window (Fluent `Layout Row Two`) over the word TUI (`tui_key()`).
   across it (`gdb_mark()` in `fetch_icons.py`). The others are drawn letter
   frames (`../rect_mark.py`): bt, MC, YZ, LG, K9, LS. Simple Icons' `less` is the CSS preprocessor,
   not the pager, so less uses a letter frame.
+
+## One image per action (2026-11-15)
+
+Two keys of one app share an image only when they do the same thing (maintainer, 2026-11-15). Where two keys do related but different things, the second image is the first one with something added. The variants are drawn 1-bit at the binding's region size by `../tui/variant_glyphs.py` from the icons named below: `worded` puts a word under the icon, `side_word` a digit beside it, `badged` a second icon or an arrow at the lower right, `arrowed` a heavy arrow under it. Words are set in Liberation Sans Bold (SIL OFL 1.1). The base icons keep their own licence. Glyph-above-word composites are drawn with `composite()` of `../emacs/fetch_icons.py` (Liberation Sans Bold, SIL OFL 1.1), as the other composites in this folder.
+
+| file | drawn from | keys |
+|---|---|---|
+| `wordnext_big`, `wordprev_big`, `wordend_big` | the word motion icon + "WORD" | Helix Shift+W, Shift+B, Shift+E (WORD = whitespace-separated) |
+| `goto_menu` | `leader` + "goto" | Helix G (Space keeps the plain leader icon) |
+| `viewmode_sticky` | `viewmode` + Fluent `Pin` badge | Helix Shift+Z |
+| `node_start`, `node_end` | `parentstart` / `parentend` + "node" | Helix Alt+B, Alt+E (`O` / Shift+O keep the plain glyphs) |
+| `join_space` | `join` + "space" | Helix Alt+Shift+J |
+| `paste_after`, `paste_before` | `paste` + arrow right / left | Helix P, Shift+P |
+| `history_earlier`, `history_later` | `history` + arrow left / right | Helix Alt+U, Alt+Shift+U |
+| `rotate_back_text`, `rotate_fwd_text` | `rotate_back` / `rotate_fwd` + "text" | Helix Alt+Shift+9, Alt+Shift+0 |
+| `jump_fwd`, `jump_back` | arrow + "JUMP" (composite) | Helix Tab, Ctrl+O (the plain arrows looked like Next sibling) |
+| `narrow` | Fluent `Full Screen Minimize` | Helix Alt+I, mc Alt+Shift+Left (the old `shrink` looked like `recenter` and `shrinkline`) |
+| `preset_next`, `preset_back` | `preset` + arrow right / left | btop P, Shift+P |
+| `tag_children` | `tag` + `tree` badge | htop C |
+| `save_context` | `save` + `settings` badge | k9s Ctrl+P |
+| `mark_range` | `checklist` + "range" | k9s Ctrl+Space |
+| `copy_namespace` | `copy` + `namespace` badge | k9s N |
+| `namespace_all`, `namespace_fav1` | `namespace` + "all" / "1" | k9s 0, 1 |
+| `logs_previous` | `logs` + `history` badge | k9s P |
+| `portforward_list` | `portforward` + `listing` badge | k9s F |
+| `k9s_sort_*` | `sort` + the column name (NAME, AGE, READY, RESTART, STATUS, IP, NODE, CPU, MEM, CPU/R, MEM/R, CPU/L, MEM/L) | k9s sort keys |
+| `page_down_eof` | `page_down` + "EOF" | less Alt+Space |
+| `follow_match` | `follow` + `search` badge | less Alt+Shift+F |
+| `reload_drop` | `reload` + `clear` badge | less Shift+R |
+| `find_next_any`, `find_prev_any` | the glyph of `find_next` / `find_prev` + "ANY" | less Alt+N, Alt+Shift+N |
+| `bracket_close`, `bracket_open` | `bracket` + arrow right / left | less `[`, `]` |
+| `mark_top`, `mark_bottom` | the flag of `mark` + "TOP" / "BOTTOM" | less M, Shift+M |
+| `option_show` | `option` + `details` badge | less Shift+- |
+| `find_literal` | `find` + "abc" | micro Alt+Shift+F |
+| `copy_single`, `move_single`, `delete_single` | `copy` / `move` / `delete` + "single" | mc Shift+F5, Shift+F6, Shift+F8 |
+| `menu_last` | `menu` + "last" | mc Shift+F9 |
+| `exit_now` | `exit` + "now" | mc Shift+F10 |
+| `findfile` | Fluent `Document Search` | mc Alt+Shift+/ |
+| `showhidden` | Fluent `Eye Off` | mc Alt+. (F3 View file keeps the eye) |
+| `history_dir`, `history_edit` | `history` + `namespace` / `fileinfo` badge | mc Alt+Shift+H, Alt+Shift+E |
+
+Kept as one action: GDB Ctrl+D ("Quit GDB", end of input at the prompt) and
+q ("q: quit") both quit GDB; the label of q keeps the one-letter command form
+of the other letter keys.

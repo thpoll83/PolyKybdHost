@@ -41,10 +41,10 @@ bindings:
   - { key: DOWN, icon: back.png, label: "Move backward" }
   - { key: LEFT, icon: turnleft.png, label: "Turn left" }
   - { key: RIGHT, icon: turnright.png, label: "Turn right" }
-  - { key: W, icon: forward.png, label: "Move forward (second key)" }
-  - { key: S, icon: back.png, label: "Move backward (second key)" }
-  - { key: A, icon: strafeleft.png, label: "Strafe left (second key)" }
-  - { key: D, icon: straferight.png, label: "Strafe right (second key)" }
+  - { key: W, icon: forward.png, label: "Move forward" }
+  - { key: S, icon: back.png, label: "Move backward" }
+  - { key: A, icon: strafeleft.png, label: "Strafe left" }
+  - { key: D, icon: straferight.png, label: "Strafe right" }
   - { key: COMMA, icon: strafeleft.png, label: "Strafe left" }
   - { key: DOT, icon: straferight.png, label: "Strafe right" }
   - { key: SPACE, icon: use.png, label: "Use" }

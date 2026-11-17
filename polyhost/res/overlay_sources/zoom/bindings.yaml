@@ -92,7 +92,7 @@ bindings:
   # Windows/Linux has one key per view; the Mac toggles between them.
   - { key: F1, mods: [ALT],         <<: *wl,  icon: speakerview.png, label: "Speaker view" }
   - { key: F2, mods: [ALT],         <<: *wl,  icon: galleryview.png, label: "Gallery view" }
-  - { key: W,  mods: [GUI, SHIFT],  <<: *mac, icon: galleryview.png, label: "Speaker / gallery view" }
+  - { key: W,  mods: [GUI, SHIFT],  <<: *mac, icon: speakergallery.png, label: "Speaker / gallery view" }
   # Windows/Linux toggles both with Alt+M; the Mac splits them.
   - { key: U,  mods: [GUI, CTRL],   <<: *mac, icon: unmuteall.png,   label: "Unmute all" }
 

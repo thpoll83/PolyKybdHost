@@ -51,6 +51,7 @@ layout; they are drawn on the US key that types them with Shift.
 
 ## Icons
 
+- One icon per action (maintainer rule, 2026-11-15): `centup.png` and `centdown.png` (Pitch up/down 1 cent) are an arrow with the word CENT, drawn 1-bit at 40x40 by `../ghidra/fetch_icons.py`'s `composites()` (word in Liberation Sans Bold, SIL OFL 1.1); a plain chevron drew the same pixels as Previous/Next track.
 - Microsoft Fluent UI System Icons, MIT,
   <https://github.com/microsoft/fluentui-system-icons>. Folder names are in
   `fetch_icons.py`.

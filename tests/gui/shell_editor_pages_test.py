@@ -315,6 +315,19 @@ class EditorsPageTest(_PageTestBase):
         self.assertFalse(page.settings_note.isHidden())
         self.assertIn("50200", page.settings_note.text())
 
+    def test_the_jetbrains_row_has_its_label_and_restart_hint(self):
+        from PyQt5.QtWidgets import QLabel
+        page = self.make(statuses=[
+            ep.EditorStatus(ep.JETBRAINS, ep.STATE_NOT_INSTALLED, Path("/h/.local/share/JetBrains"),
+                            "PyCharm2025.2")])
+        self.assertEqual(list(page.boxes()), [ep.JETBRAINS])
+        self.assertTrue(page.boxes()[ep.JETBRAINS].isChecked())
+        texts = [w.text() for w in page.findChildren(QLabel)]
+        self.assertEqual(sep.editor_label(ep.JETBRAINS), "JetBrains IDEs")
+        self.assertTrue(any("JetBrains IDEs" in t for t in texts)
+                        or "JetBrains IDEs" in page.boxes()[ep.JETBRAINS].text(), texts)
+        self.assertIn("Restart the IDE after Install.", texts)
+
     def test_every_editor_state_has_a_text(self):
         for state in (ep.STATE_INSTALLED, ep.STATE_NOT_INSTALLED, ep.STATE_OUTDATED,
                       ep.STATE_MODIFIED, ep.STATE_STALE, ep.STATE_MANUAL,

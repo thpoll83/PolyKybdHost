@@ -57,9 +57,9 @@ bindings:
   - { key: G, mods: [], icon: gradient.png,     label: Gradient,         source: "ms-fluent/Color Line (MIT)" }
   - { key: I, mods: [], icon: eyedropper.png,   label: Eyedropper,       source: "ms-fluent/Eyedropper (MIT)" }
   - { key: K, mods: [], icon: livepaint.png,    label: "Live paint",     source: "ms-fluent/Paint Bucket (MIT)" }
-  - { key: Z, mods: [], icon: zoom.png,         label: Zoom,             source: "ms-fluent/Zoom In (MIT)" }
+  - { key: Z, mods: [], icon: zoomtool.png,         label: Zoom,             source: "ms-fluent/Search (MIT)" }
   - { key: H, mods: [], icon: hand.png,         label: Hand,             source: "ms-fluent/Hand Right (MIT)" }
-  - { key: E, mods: [], icon: scale.png,        label: "Free transform", source: "ms-fluent/Resize (MIT) - reused for transform" }
+  - { key: E, mods: [], icon: freetransform.png,        label: "Free transform", source: "material-symbols/transform (Apache-2.0)" }
   - { key: X, mods: [], icon: swap.png, mode: alpha, label: "Swap fill/stroke", source: "custom (drawn: swap squares)" }
   - { key: D, mods: [], icon: default.png, mode: alpha, label: "Default fill/stroke", source: "custom (drawn: default swatch)" }
 
@@ -84,8 +84,8 @@ bindings:
   - { key: "2", mods: [CMDCTRL], icon: lock.png,   label: Lock,             source: "ms-fluent/Lock Closed (MIT)" }
   - { key: "7", mods: [CMDCTRL], icon: clipmask.png, label: "Clip mask",    source: "ms-fluent/Crop (MIT)" }
   - { key: "8", mods: [CMDCTRL], icon: compound.png, label: "Compound path", source: "ms-fluent/Shape Subtract (MIT)" }
-  - { key: "]", mods: [CMDCTRL], icon: tofront.png, label: "Bring forward", source: "ms-fluent/Position To Front (MIT)" }
-  - { key: "[", mods: [CMDCTRL], icon: toback.png,  label: "Send backward", source: "ms-fluent/Position To Back (MIT)" }
+  - { key: "]", mods: [CMDCTRL], icon: bringforward.png, label: "Bring forward", source: "ms-fluent/Position Forward (MIT)" }
+  - { key: "[", mods: [CMDCTRL], icon: sendbackward.png,  label: "Send backward", source: "ms-fluent/Position Backward (MIT)" }
 
   # ===== View (Ctrl) =====
   - { key: EQUAL, mods: [CMDCTRL], icon: zoomin.png,  label: "Zoom in",  source: "ms-fluent/Zoom In (MIT)" }
@@ -95,7 +95,7 @@ bindings:
   - { key: S, mods: [CMDCTRL, SHIFT], icon: saveas.png,   label: "Save as",         source: "ms-fluent/Save Edit (MIT)" }
   - { key: O, mods: [CMDCTRL, SHIFT], icon: outlines.png, label: "Create outlines", source: "ms-fluent/Text Effects (MIT)" }
   - { key: G, mods: [CMDCTRL, SHIFT], icon: ungroup.png,  label: Ungroup,           source: "ms-fluent/Group Dismiss (MIT)" }
-  - { key: V, mods: [CMDCTRL, SHIFT], icon: paste.png,    label: "Paste in place",  source: "ms-fluent/Clipboard Paste (MIT)" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: pasteinplace.png,    label: "Paste in place",  source: "ms-fluent/Clipboard Paste + Target (MIT), dcc_glyphs.with_badge" }
   - { key: P, mods: [CMDCTRL, SHIFT], icon: place.png,    label: Place,             source: "ms-fluent/Image Add (MIT)" }
   - { key: "]", mods: [CMDCTRL, SHIFT], icon: tofront.png, label: "Bring to front", source: "ms-fluent/Position To Front (MIT)" }
   - { key: "[", mods: [CMDCTRL, SHIFT], icon: toback.png,  label: "Send to back",   source: "ms-fluent/Position To Back (MIT)" }
@@ -103,8 +103,8 @@ bindings:
   # ===== Shift -> B channel of primary =====
   - { key: E, mods: [SHIFT], icon: eraser.png,     label: Eraser,           source: "ms-fluent/Eraser (MIT)" }
   - { key: W, mods: [SHIFT], icon: width.png, mode: alpha, label: "Width tool", source: "custom (drawn: variable width)" }
-  - { key: B, mods: [SHIFT], icon: paintbrush.png, label: "Blob brush",     source: "ms-fluent/Paint Brush (MIT)" }
-  - { key: L, mods: [SHIFT], icon: livepaint.png,  label: "Live paint select", source: "ms-fluent/Paint Bucket (MIT)" }
+  - { key: B, mods: [SHIFT], icon: blobbrush.png, label: "Blob brush",     source: "ms-fluent/Paint Brush (MIT) + material-symbols/water_drop (Apache-2.0), dcc_glyphs.with_badge" }
+  - { key: L, mods: [SHIFT], icon: livepaintselect.png,  label: "Live paint select", source: "ms-fluent/Paint Bucket + Cursor (MIT), dcc_glyphs.with_badge" }
 
   # ===== added: coverage audit 2026-06 =====
   - { key: Y, mods: [CMDCTRL], icon: outline.png, mode: alpha, label: "Outline mode", source: "custom (drawn: wireframe + handles)" }

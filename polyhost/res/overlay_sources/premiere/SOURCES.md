@@ -120,3 +120,14 @@ Deliberately NOT added:
 - **Ctrl+F (Find)**: listed only by third-party cheat sheets (evercast.us), not
   confirmed on Adobe's own table — left off.
 - **Print**: no print command. **Zoom**: bare `=` / `-` already drawn.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing
+(maintainer, 2026-11-15). These files give the other keys their own image.
+Files whose name starts with `_` are only parts of a composite.
+
+| file | source | licence |
+|---|---|---|
+| `zoomtool.png` | Fluent `Search` | MIT |
+| `panelproj.png` | Fluent `Folder List` | MIT |

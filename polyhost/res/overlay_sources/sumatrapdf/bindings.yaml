@@ -85,18 +85,18 @@ bindings:
   - { key: I, mods: [SHIFT], icon: invert.png, label: "Invert colors", except: [macos] }
   - { key: M, mods: [], icon: cursorpos.png, label: "Cursor position", except: [macos] }
   - { key: R, mods: [], icon: reload.png, label: "Reload", except: [macos] }
-  - { key: Q, mods: [], icon: close.png, label: "Close tab", except: [macos] }
+  - { key: Q, mods: [], icon: closetab_quit.png, label: "Close tab, window or app", except: [macos] }
   - { key: SLASH, mods: [], label: "Find", except: [macos] }
   - { key: LBRACKET, mods: [], icon: rotateleft.png, label: "Rotate left", except: [macos] }
   - { key: RBRACKET, mods: [], icon: rotateright.png, label: "Rotate right", except: [macos] }
   - { key: A, mods: [], icon: highlight.png, label: "Highlight selection", except: [macos] }
-  - { key: A, mods: [SHIFT], icon: highlight.png, label: "Highlight selection, edit PDF", except: [macos] }
+  - { key: A, mods: [SHIFT], icon: highlight_pdf.png, label: "Highlight selection, edit PDF", except: [macos] }
   - { key: U, mods: [], icon: underline.png, label: "Underline selection", except: [macos] }
-  - { key: U, mods: [SHIFT], icon: underline.png, label: "Underline selection, edit PDF", except: [macos] }
+  - { key: U, mods: [SHIFT], icon: underline_pdf.png, label: "Underline selection, edit PDF", except: [macos] }
   # Ctrl+Tab is Smart Tab Switch: with three or more tabs it goes in most-recently-used
   # order, so it gets its own icon, apart from Ctrl+Page Down/Up (tab-strip order).
-  - { key: TAB, mods: [CTRL], icon: recenttab.png, label: "Recent tab (Smart Tab Switch)", except: [macos] }
-  - { key: TAB, mods: [CTRL, SHIFT], icon: recenttab.png, label: "Recent tab, backwards (Smart Tab Switch)", except: [macos] }
+  - { key: TAB, mods: [CTRL], icon: recenttab_fwd.png, label: "Recent tab (Smart Tab Switch)", except: [macos] }
+  - { key: TAB, mods: [CTRL, SHIFT], icon: recenttab_back.png, label: "Recent tab, backwards (Smart Tab Switch)", except: [macos] }
   - { key: PGDN, mods: [CTRL], icon: nexttab.png, label: "Next tab", except: [macos] }
   - { key: PGUP, mods: [CTRL], icon: prevtab.png, label: "Previous tab", except: [macos] }
   - { key: "1", mods: [ALT], icon: tab1.png, label: "Tab 1", except: [macos] }

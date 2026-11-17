@@ -46,7 +46,7 @@ setup(name='PolyHost',
       # The shell title scripts are sourced by the user's shell startup files
       # from this install's path (services/shell_title.py).
       package_data={"polyhost": ["res/prc_table_v*.bin", "res/locale/*.po", "device/*.rules",
-                                 "res/shell/polykybd-title.*"]},
+                                 "res/shell/polykybd-title.*", "res/tutorials/*.yaml"]},
       install_requires=requirements(),
       # The font-pack *extend* path (build glyphs from TTF/OTF, fontconvert-parity)
       # needs freetype-py/uharfbuzz/fonttools — now core deps (requirements.txt) so

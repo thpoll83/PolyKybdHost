@@ -85,19 +85,19 @@ bindings:
   - { key: "8", mods: [SHIFT], icon: groupadd8.png, label: "Add to group 8", region: [48, 40], margin: 5 }
   - { key: "9", mods: [SHIFT], icon: groupadd9.png, label: "Add to group 9", region: [48, 40], margin: 5 }
   - { key: "0", mods: [SHIFT], icon: groupadd0.png, label: "Add to group 0", region: [48, 40], margin: 5 }
-  - { key: "1", mods: [ALT], icon: commander.png, label: "Select commander 1", region: [48, 40], margin: 5 }
-  - { key: "2", mods: [ALT], icon: commander.png, label: "Select commander 2", region: [48, 40], margin: 5 }
-  - { key: "3", mods: [ALT], icon: commander.png, label: "Select commander 3", region: [48, 40], margin: 5 }
-  - { key: "4", mods: [ALT], icon: commander.png, label: "Select commander 4", region: [48, 40], margin: 5 }
-  - { key: "5", mods: [ALT], icon: commander.png, label: "Select commander 5", region: [48, 40], margin: 5 }
-  - { key: "6", mods: [ALT], icon: commander.png, label: "Select commander 6", region: [48, 40], margin: 5 }
-  - { key: "7", mods: [ALT], icon: commander.png, label: "Select commander 7", region: [48, 40], margin: 5 }
-  - { key: "8", mods: [ALT], icon: commander.png, label: "Select commander 8", region: [48, 40], margin: 5 }
-  - { key: "9", mods: [ALT], icon: commander.png, label: "Select commander 9", region: [48, 40], margin: 5 }
-  - { key: "0", mods: [ALT], icon: commander.png, label: "Select commander 0", region: [48, 40], margin: 5 }
+  - { key: "1", mods: [ALT], icon: commander1.png, label: "Select commander 1", region: [48, 40], margin: 5 }
+  - { key: "2", mods: [ALT], icon: commander2.png, label: "Select commander 2", region: [48, 40], margin: 5 }
+  - { key: "3", mods: [ALT], icon: commander3.png, label: "Select commander 3", region: [48, 40], margin: 5 }
+  - { key: "4", mods: [ALT], icon: commander4.png, label: "Select commander 4", region: [48, 40], margin: 5 }
+  - { key: "5", mods: [ALT], icon: commander5.png, label: "Select commander 5", region: [48, 40], margin: 5 }
+  - { key: "6", mods: [ALT], icon: commander6.png, label: "Select commander 6", region: [48, 40], margin: 5 }
+  - { key: "7", mods: [ALT], icon: commander7.png, label: "Select commander 7", region: [48, 40], margin: 5 }
+  - { key: "8", mods: [ALT], icon: commander8.png, label: "Select commander 8", region: [48, 40], margin: 5 }
+  - { key: "9", mods: [ALT], icon: commander9.png, label: "Select commander 9", region: [48, 40], margin: 5 }
+  - { key: "0", mods: [ALT], icon: commander0.png, label: "Select commander 0", region: [48, 40], margin: 5 }
 
   # Camera and game speed
-  - { key: BSPC, icon: north.png, label: "Snap view to north" }
+  - { key: BSPC, icon: north.png, label: "View north" }   # kf_SeekNorth; Ctrl+Up (kf_FaceNorth) calls it
   - { key: SPACE, icon: trackcamera.png, label: "Toggle tracking camera", region: [46, 40] }
   - { key: UP, mods: [CTRL], icon: north.png, label: "View north" }
   - { key: DOWN, mods: [CTRL], icon: south.png, label: "View south" }

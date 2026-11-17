@@ -28,7 +28,7 @@ program_icon_margin: 0
 bindings:
   # --- no modifier ---
   - { key: F2,  mods: [], icon: editcell.png,  label: "Edit cell",  source: "ms-fluent/Table Cell Edit (MIT)" }
-  - { key: F4,  mods: [], icon: absref.png,    label: "Absolute / relative reference", source: "ms-fluent/Money (MIT)" }
+  - { key: F4,  mods: [], icon: absref_tag.png, label: "Absolute / relative reference", source: "ms-fluent/Table Simple (MIT) + '$' tag, fetch_icons.py" }
   - { key: F5,  mods: [], icon: navigator.png, label: Navigator,    source: "ms-fluent/Compass Northwest (MIT)" }
   - { key: F7,  mods: [], icon: spelling.png,  label: Spelling,     source: "ms-fluent/Text Grammar Wand (MIT)", except: [macos] }
   - { key: F9,  mods: [], icon: recalc.png,    label: Recalculate, concept: reload,  source: "ms-fluent/Arrow Sync (MIT)" }
@@ -65,8 +65,8 @@ bindings:
   # --- Ctrl+Shift ---
   # Ctrl+Plus is Ctrl+Shift+= on a US layout, which is how it is bound here.
   - { key: "=", mods: [CMDCTRL, SHIFT], icon: insertcells.png,    label: "Insert cells", source: "ms-fluent/Table Add (MIT)" }
-  - { key: SPACE, mods: [CTRL, SHIFT], icon: selectallcells.png, label: "Select all cells", source: "ms-fluent/Table Simple (MIT)" }
-  - { key: V, mods: [CMDCTRL, SHIFT], icon: pastespecial.png, label: "Paste special", source: "ms-fluent/Clipboard Paste (MIT)" }
+  - { key: SPACE, mods: [CTRL, SHIFT], icon: selectallcells_tag.png, label: "Select all cells", source: "ms-fluent/Table Simple (MIT) + 'ALL' tag, fetch_icons.py" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: pastespecial.png, label: "Paste special", source: "ms-fluent/Clipboard Settings (MIT)" }
   - { key: "1", mods: [CTRL, SHIFT], icon: fmtdecimal.png,  label: "Format: 2 decimals", source: "ms-fluent/Text Number Format (MIT)" }
   - { key: "2", mods: [CTRL, SHIFT], icon: fmtexp.png,      label: "Format: exponential", source: "ms-fluent/Text Superscript (MIT)" }
   - { key: "3", mods: [CTRL, SHIFT], icon: fmtdate.png,     label: "Format: date",     source: "ms-fluent/Calendar (MIT)" }

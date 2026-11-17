@@ -39,7 +39,7 @@ bindings:
   - { key: F4, icon: togglepanels.png, label: "Toggle floating panels" }
   - { key: F5, icon: netcolor.png, label: "Net color override" }
   - { key: F11, icon: properties.png, label: "Properties panel" }
-  - { key: F12, icon: filterpanel.png, label: "PCB Filter panel" }
+  - { key: F12, icon: filterpanel.png, label: "Filter panel" }
   - { key: "1", icon: planmode.png, label: "Board planning mode" }
   - { key: "2", icon: mode2d.png, label: "2D layout mode" }
   - { key: "3", icon: viewer3d.png, label: "3D layout mode" }
@@ -116,7 +116,7 @@ bindings:
   - { key: Z, mods: [SHIFT], icon: models3d.png, label: "Toggle 3D models" }
   - { key: F4, mods: [SHIFT], icon: tiledocs.png, label: "Tile documents" }
   - { key: F5, mods: [SHIFT], icon: focuspanel.png, label: "Focus panel or document" }
-  - { key: F12, mods: [SHIFT], icon: listpanel.png, label: "PCB List panel" }
+  - { key: F12, mods: [SHIFT], icon: listpanel.png, label: "List panel" }
 
   # ============================================================= Alt =========
   - { key: INSERT, mods: [ALT], icon: pastespecial.png, label: "Paste on current layer" }
@@ -132,7 +132,7 @@ bindings:
   - { key: B, mods: [CTRL, SHIFT], icon: alignbottom.png, label: "Align bottom" }
   - { key: H, mods: [CTRL, SHIFT], icon: spaceh.png, label: "Equal horizontal spacing" }
   - { key: V, mods: [CTRL, SHIFT], icon: spacev.png, label: "Equal vertical spacing" }
-  - { key: D, mods: [CTRL, SHIFT], icon: aligngrid.png, label: "Move to placement grid" }
+  - { key: D, mods: [CTRL, SHIFT], icon: aligngrid.png, label: "Align to grid" }
   - { key: G, mods: [CTRL, SHIFT], icon: globalgrid.png, label: "Set global snap grid" }
   - { key: X, mods: [CTRL, SHIFT], icon: crosssel.png, label: "Cross select mode" }
   - { key: Y, mods: [CTRL, SHIFT], icon: crossrepos.png, label: "Cross select: reposition" }

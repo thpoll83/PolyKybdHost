@@ -27,11 +27,11 @@ threshold: 150
 
 bindings:
   # --- layers and display ---
-  - { key: PGUP, mods: [], icon: nextlayer.png, label: "Previous layer" }
-  - { key: PGDN, mods: [], icon: prevlayer.png, label: "Next layer" }
+  - { key: PGUP, mods: [], icon: gbrlayerprev.png, label: "Previous layer" }
+  - { key: PGDN, mods: [], icon: gbrlayernext.png, label: "Next layer" }
   - { key: EQUAL, mods: [SHIFT], icon: layerup.png, label: "Move layer up" }
   - { key: MINUS, mods: [], icon: layerdown.png, label: "Move layer down" }
-  - { key: L, mods: [], icon: sketch.png, label: "Sketch lines" }
+  - { key: L, mods: [], icon: sketchlines.png, label: "Sketch lines" }
   - { key: F, mods: [], icon: sketchflashed.png, label: "Sketch flashed items" }
   - { key: P, mods: [], icon: sketchpoly.png, label: "Sketch polygons" }
   - { key: D, mods: [], icon: dcodes.png, label: "Show D codes" }

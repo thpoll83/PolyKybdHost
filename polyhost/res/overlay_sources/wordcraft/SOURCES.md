@@ -126,3 +126,14 @@ threshold 150, region `[46, 40]`, bottom-right. Upstream calls this icon a
 placeholder. When the mascot lands, delete `icons/wordcraft.png` and re-run
 `fetch_icons.py` with the new SHA. The script never overwrites an existing
 `wordcraft.png`.
+
+## One icon per action (2026-11-15)
+
+Two keys of one app share an image only when they do the same thing (maintainer,
+2026-11-15). Shift+Tab (Back tab: previous table cell, list
+level up or outdent by context, `back_tab` in `cmd/text.rs`) draws `backtab`, Material
+Symbols `keyboard_tab_rtl` (Apache-2.0). Cmd+Shift+M (paragraph Outdent) keeps
+`outdent`.
+
+Shift+F10 (Context menu) draws Material Symbols `menu_open` (Apache-2.0): Fluent
+`Navigation` rendered the same keycap cell as Justify (Cmd+J).

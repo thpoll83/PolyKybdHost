@@ -168,3 +168,12 @@ cut out. The other polarity (dark pixels lit) keeps only the "qb" and loses
 the globe. The file is guarded: a committed `qutebrowser.png` is not redrawn;
 delete it to redraw. Placement: `program_icon_mode: alpha`, anchor right,
 region [37, 32], margin 0, so the 32x32 mark is copied 1:1.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `closetab_left.png` | `closetab.png` with a left triangle at the top right, drawn by `../action_variants.py` | same as the base icon |

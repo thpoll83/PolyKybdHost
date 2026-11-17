@@ -32,6 +32,9 @@ threshold: 150
 # No program_icon: ESC is left to the host's program mark (OS icon, then the
 # icon catalogs), as for the other proprietary DAWs.
 
+# A 40x40 composite (glyph + word, drawn 1-bit by fetch_icons.py) is placed 1:1.
+_word: &word { region: [40, 40], mode: alpha }
+
 bindings:
   # --- File ---
   - { key: N, mods: [CMDCTRL], label: New }
@@ -56,7 +59,7 @@ bindings:
   - { key: DEL, mods: [], label: Delete }
   - { key: BACKSPACE, mods: [], label: Delete }
   - { key: D, mods: [CMDCTRL], icon: duplicate.png, label: Duplicate }
-  - { key: K, mods: [CMDCTRL], icon: repeat.png, label: Repeat }
+  - { key: K, mods: [CMDCTRL], icon: repeatev.png, label: Repeat, <<: *word }
   - { key: G, mods: [CMDCTRL], icon: group.png, label: Group }
   - { key: U, mods: [CMDCTRL], icon: ungroup.png, label: Ungroup }
   - { key: L, mods: [CMDCTRL, SHIFT], label: Lock }
@@ -72,7 +75,7 @@ bindings:
   - { key: U, mods: [], icon: bringfront.png, label: "Move events to front" }
   - { key: F, mods: [CMDCTRL], icon: search.png, label: "Find track/channel" }
   - { key: F2, mods: [], icon: rename.png, label: "Rename selected events" }
-  - { key: F2, mods: [ALT], icon: rename.png, label: "Rename first selected track" }
+  - { key: F2, mods: [ALT], icon: renametrack.png, label: "Rename first selected track", <<: *word }
   - { key: A, mods: [ALT], icon: deactivate.png, label: "Activate/deactivate" }
   - { key: J, mods: [], icon: snap.png, label: "Snap on/off" }
   - { key: F, mods: [], icon: follow.png, label: "Auto-scroll on/off" }
@@ -87,7 +90,7 @@ bindings:
   - { key: Z, mods: [ALT, SHIFT], icon: mixredo.png, label: "Redo MixConsole step" }
 
   # --- Editors and project ---
-  - { key: ENTER, mods: [], icon: exteditor.png, label: "Open/close editor" }
+  - { key: ENTER, mods: [], icon: editortoggle.png, label: "Open/close editor", <<: *word }
   - { key: E, mods: [CMDCTRL], icon: exteditor.png, label: "Open editor" }
   - { key: R, mods: [CMDCTRL], icon: scoreeditor.png, label: "Open Score Editor" }
   - { key: I, mods: [CMDCTRL, SHIFT], icon: editinplace.png, label: "Edit in-place" }
@@ -114,8 +117,8 @@ bindings:
   - { key: C, mods: [], icon: metronome.png, label: Metronome }
   - { key: I, mods: [], icon: punchin.png, label: "Punch in" }
   - { key: O, mods: [], icon: punchout.png, label: "Punch out" }
-  - { key: N, mods: [], icon: nextevent.png, label: "Locate next event" }
-  - { key: B, mods: [], icon: prevevent.png, label: "Locate previous event" }
+  - { key: N, mods: [], icon: locnextevent.png, label: "Locate next event", <<: *word }
+  - { key: B, mods: [], icon: locprevevent.png, label: "Locate previous event", <<: *word }
   - { key: N, mods: [SHIFT], icon: nextmarker.png, label: "Locate next marker" }
   - { key: B, mods: [SHIFT], icon: prevmarker.png, label: "Locate previous marker" }
   - { key: N, mods: [ALT], icon: nexttransient.png, label: "Locate next hitpoint" }
@@ -149,8 +152,8 @@ bindings:
   - { key: "3", mods: [], icon: slice.png, label: "Split tool" }
   - { key: "4", mods: [], icon: glue.png, label: "Glue tool" }
   - { key: "5", mods: [], icon: deltool.png, label: "Erase tool" }
-  - { key: "6", mods: [], icon: zoomtool.png, label: "Zoom tool" }
-  - { key: "7", mods: [], icon: mutetool.png, label: "Mute tool" }
+  - { key: "6", mods: [], icon: zoomtool.png, label: "Zoom tool", <<: *word }
+  - { key: "7", mods: [], icon: mutetool.png, label: "Mute tool", <<: *word }
   - { key: "8", mods: [], icon: draw.png, label: "Draw tool" }
   - { key: "9", mods: [], icon: playtool.png, label: "Play tool" }
   - { key: "0", mods: [], icon: drumstick.png, label: "Drumstick tool" }

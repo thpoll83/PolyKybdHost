@@ -214,7 +214,7 @@ bindings:
   - { key: ENTER, mods: [SHIFT],          icon: linebreak.png,   label: "Line break" }
   - { key: BACKSPACE, mods: [CMDCTRL], icon: delwordback.png, label: "Delete previous word" }
   - { key: BACKSPACE, mods: [ALT],     icon: delwordback.png, label: "Delete previous word" }
-  - { key: TAB, mods: [SHIFT], icon: outdent.png, label: "Back tab" }
+  - { key: TAB, mods: [SHIFT], icon: backtab.png, label: "Back tab" }
   # Reset character formatting: mac_or("Ctrl+Space", "Mod+Space")
   - { key: SPACE, mods: [CMDCTRL], icon: resetchar.png, label: "Reset character", except: [macos] }
   - { key: SPACE, mods: [CTRL],    icon: resetchar.png, label: "Reset character", only: [macos] }

@@ -87,7 +87,7 @@ Digit opacity applies only with a selection. Neither shadows another binding.
 - **Microsoft Fluent UI System Icons (MIT)**,
   <https://github.com/microsoft/fluentui-system-icons> `main`, `assets/<Name>/SVG/`. The
   per-file names are in `fetch_icons.py` `FLUENT`. All were probed before use.
-- **Google Material Symbols (Apache-2.0)**, weight 300, for: `select`, `opacity`,
+- **Google Material Symbols (Apache-2.0)**, weight 300, for: `select`,
   `grid_guides`, `menu_open`, `format_color_reset`, `unfold_more`/`unfold_less`,
   `fullscreen`, `line_curve`, `background_grid_small`, `format_list_numbered`,
   `find_replace`.
@@ -151,3 +151,20 @@ figcraft,ai.storyteller.figcraft:
     macos:
       overlay: [figcraft_template_mac.mods.png, figcraft_template_mac.combo.mods.png, figcraft_template_mac.extra.mods.png, figcraft_template_mac.gui.mods.png]
 ```
+
+## One icon per action (2026-11-15)
+
+Two keys of one app share an image only when they do the same thing (maintainer,
+2026-11-15). Changed images:
+
+| File(s) | What | Source | Licence |
+|---|---|---|---|
+| `opacity1`..`opacity0` | 1..0, opacity 10%..100%: the opacity glyph over the percentage | byte-identical copies of `../photocraft/icons/` (drawn over Material Symbols `opacity`) | GPL-3.0-or-later / Apache-2.0 |
+| `space_hand` | Space held: the hand with four arrows (`../space_hint.py`) | copy of `../vectorcraft/icons/` | GPL-3.0-or-later / MIT |
+| `copyprops`, `pasteprops` | Cmd+Alt+C / V, copy / paste properties: glyph + PROP | drawn (composite) | GPL-3.0-or-later |
+| `zoomtoolhold`, `zoomtoolouthold` | Z / Alt+Z held, the zoom tool while the key is down: glyph + HOLD (the bare glyphs look like the Zoom in / Zoom out concepts of Shift+= / Shift+-) | drawn (composite) | GPL-3.0-or-later |
+
+Glyph + word composites are 1-bit at 40x40, drawn by `fetch_icons.py` with the glyph +
+word code of `../ghidra/fetch_icons.py` (Liberation Sans Bold), and placed 1:1
+(`region: [40, 40], mode: alpha`). They are GPL-3.0-or-later drawings over the glyphs
+named, which keep their own licences.

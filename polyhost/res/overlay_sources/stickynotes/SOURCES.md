@@ -79,3 +79,12 @@ Verified byte-identical on a re-run.
 Ctrl+C, Ctrl+X, Ctrl+V, Ctrl+Z, Ctrl+Y and Ctrl+F — all already drawn with their
 documented wording. Notes save automatically (no Ctrl+S) and there is no print,
 open, replace or zoom chord.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `cycleback.png` | `cyclefwd.png` mirrored, drawn by `../action_variants.py` | same as the base icon |

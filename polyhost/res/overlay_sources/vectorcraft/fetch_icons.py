@@ -59,7 +59,7 @@ BORROWED = {  # name -> sibling app folder it is copied from
         # file / edit
         "new.png", "open.png", "save.png", "saveas.png", "print.png", "place.png",
         "undo.png", "copy.png", "cut.png", "paste.png", "selectall.png",
-        "transformagain.png", "forward.png", "backward.png",
+        "transformagain.png",
         # object / view
         "group.png", "ungroup.png", "lock.png", "clipmask.png", "compound.png",
         "tofront.png", "toback.png", "outlines.png", "zoomin.png", "zoomout.png",
@@ -110,6 +110,8 @@ APP = {  # stem -> VectorCraft assets/icons/<name>.svg (the toolbar icon the app
 }
 
 FLUENT = {  # stem -> Fluent folder name, or "ms:<material symbol>"
+    "tooldialog": "Options",   # Enter: the active tool's dialog (Move... only with a selection tool)
+    "cursor": "Cursor",        # badge of the zoom TOOL (zoomtool.png)
     "fillstrokefocus": "ms:flip_to_front",   # X   Toggle Fill/Stroke focus
     "lastcolor": "ms:format_color_fill",     # ,   Apply Last Color
     "lastgradient": "ms:gradient",           # .   Apply Last Gradient (dc-grad-linear loses its light half at 1-bit)
@@ -280,6 +282,51 @@ def _program_mark(out: Path) -> None:
     Image.fromarray(arr, "RGBA").save(out)
 
 
+WORDS = {
+    "zoomhold": ("zoom", "HOLD"),        # Cmd+Space held
+    "zoomouthold": ("zoomout", "HOLD"),  # Cmd+Alt+Space held
+}
+SPACE_HAND = "hand.png"
+BADGED = {"zoomtool.png": ("zoomin.png", "cursor.png")}   # Z, the tool; Cmd+= zooms in one step
+
+
+# ------------------------------------------------- one icon per action (2026-11-15)
+# Two keys share an image only when they do the same thing (maintainer, 2026-11-15).
+# The variants below are drawn from glyphs this set already has:
+# * WORDS: the glyph over a short word, 1-bit at 40x40, with the glyph + word code
+#   of ../ghidra/fetch_icons.py (as the Binary Ninja set does); placed 1:1.
+# * SPACE_HAND: the hand with an arrow on each side, the "hold Space" pan hint of
+#   ../space_hint.py; placed 1:1 on the whole 72x40 key.
+# * BADGED: dcc_glyphs.with_badge, the glyph at the upper left, a second one at
+#   the lower right.
+# All are guarded: a committed PNG is left as it is.
+def _ghidra_helpers():
+    """`../ghidra/fetch_icons.py` as a module, for its glyph + word composites."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "ghidra_fetch_icons", Path(__file__).resolve().parent.parent / "ghidra" / "fetch_icons.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _variants(out: Path) -> None:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+    from polyhost.res.overlay_sources import dcc_glyphs, space_hint
+    g = _ghidra_helpers()
+    g.COMPOSITES, g.ISA = WORDS, {}
+    g.composites(out)
+    if SPACE_HAND:
+        dcc_glyphs.guarded(
+            out / "space_hand.png",
+            lambda q: space_hint.draw(space_hint.glyph_from_png(out / SPACE_HAND, 20), q),
+            f"drawn: {SPACE_HAND} + four arrows (space_hint.py)")
+    for name, (base, badge) in BADGED.items():
+        dcc_glyphs.guarded(out / name,
+                           lambda q, b=base, k=badge: dcc_glyphs.with_badge(out / b, out / k, q),
+                           f"composite ({base} + {badge} badge)")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -292,6 +339,7 @@ def main() -> int:
         print(f"  {stem}.png  <- storytold/vectorcraft@{VC_SHA[:7]} assets/icons/{name}.svg")
 
     i = lambda n: out / f"{n}.png"  # noqa: E731
+    _variants(out)
     derived = {
         # guides family (Ctrl+5 / Ctrl+Alt+5 / Ctrl+Alt+;)
         "makeguides.png": lambda p: _badge(p, i("guides"), "plus"),
@@ -317,6 +365,10 @@ def main() -> int:
         # misc
         "colorsettings.png": lambda p: _badge(p, i("color"), i("_settings")),
         "pasteartboards.png": lambda p: _badge(p, i("paste"), i("artboards")),
+        # Paste in front / back: the clipboard with the up / down arrow (they drew the
+        # same arrows as Nudge up / down before 2026-11-15)
+        "pastefront.png": lambda p: _badge(p, i("paste"), i("nudgeup")),
+        "pasteback.png": lambda p: _badge(p, i("paste"), i("nudgedown")),
         "nudgecopyleft.png": lambda p: _badge(p, i("copy"), i("nudgeleft")),
         "nudgecopyright.png": lambda p: _badge(p, i("copy"), i("nudgeright")),
         "nudgecopyup.png": lambda p: _badge(p, i("copy"), i("nudgeup")),

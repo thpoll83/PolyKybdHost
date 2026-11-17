@@ -27,6 +27,8 @@ has focus:
   window (`emacs://org-mode`, `emacs://dired-mode`, `emacs://fundamental-mode`).
   With [evil](https://github.com/emacs-evil/evil) active in that buffer it also
   names the evil state: `emacs://org-mode/normal`, `emacs://org-mode/insert`.
+  The host then shows that state's keys (normal, visual, insert, replace,
+  motion) in place of the major mode's; in Emacs state it shows the major mode's.
   A mode name with characters outside `A-Z a-z 0-9 _ . + -` is not sent.
 - `pid` is Emacs's process id and `input_age` the seconds since this Emacs last
   ran a command (a key or a mouse click) or gained focus. With several Emacs (or Vim) instances

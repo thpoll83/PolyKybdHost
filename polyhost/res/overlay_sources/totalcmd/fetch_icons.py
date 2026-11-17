@@ -19,7 +19,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
-from polyhost.res.overlay_sources import icon_fetch  # noqa: E402
+from polyhost.res.overlay_sources import action_variants, icon_fetch  # noqa: E402
 
 BOLD = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
 
@@ -61,7 +61,6 @@ FLUENT = {
     "back":        "Arrow Left",
     "forward":     "Arrow Right",
     "props":       "Info",
-    "dirsizes":    "Calculator",
     # Ctrl + F-keys: views, sort, filters
     "brief":       "Text Bullet List Square",
     "full":        "Document Table",
@@ -155,6 +154,21 @@ def _floppy_mark(dest: Path) -> None:
     print(f"  {dest.name}  <- drawn floppy disk")
 
 
+# Different actions that start from one icon: each gets its own picture
+# (one icon per action, maintainer 2026-11-15). See action_variants.py.
+VARIANTS = {
+    "pathbar_left.png": ("tag", "breadcrumb.png", "L"),
+    "pathbar_right.png": ("tag", "breadcrumb.png", "R"),
+    "history_all.png": ("tag", "history.png", "ALL"),
+    "buttonbar_v.png": ("tag", "buttonbar.png", "V"),
+    "dirsizes_all.png": ("tag", "calcspace.png", "ALL"),
+    "tree_cycle.png": ("arrow", "tree.png", "right"),
+    "branch_sel.png": ("tag", "branch.png", "SEL"),
+    "newtab_bg.png": ("tag", "newtab.png", "BG"),
+    "exchange_tabs.png": ("tag", "exchange.png", "TAB"),
+}
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -163,6 +177,7 @@ def main() -> int:
         _badge(out / f"{name}.png", text)
     _floppy_mark(out / "progmark.png")
     print(f"Wrote icons to {out}")
+    action_variants.make(out, VARIANTS)
     return 0
 
 

@@ -11,6 +11,7 @@ program icon: the host draws the ESC mark for the app itself.
 """
 from __future__ import annotations
 
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -81,8 +82,6 @@ FLUENT = {
     "normalizeall": "ms:align_vertical_top",
     "pitchup": "ms:arrow_upward",
     "pitchdown": "ms:arrow_downward",
-    "centup": "ms:expand_less",
-    "centdown": "ms:expand_more",
     "rateup": "ms:fast_forward",
     "ratedown": "ms:slow_motion_video",
     "rateup10": "ms:north_east",
@@ -174,10 +173,32 @@ FLUENT = {
 }
 
 
+# name -> (glyph, word): a glyph with a short word under it, 1-bit at 40x40,
+# drawn with the Ghidra set's code. Pitch up/down 1 cent: a plain chevron drew
+# the same pixels as Previous/Next track (one icon per action).
+WORDS = {
+    "centup": ("up", "CENT"),
+    "centdown": ("down", "CENT"),
+}
+
+
+def word_composites(out: Path, words: dict[str, tuple[str, str]]) -> None:
+    """Draw ``words`` with ``composites()`` from ``../ghidra/fetch_icons.py``."""
+    spec = importlib.util.spec_from_file_location(
+        "ghidra_fetch_icons", Path(__file__).resolve().parent.parent / "ghidra" / "fetch_icons.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    mod.COMPOSITES = words
+    mod.ISA = {}
+    mod.composites(out)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
     n = icon_fetch.fluent(FLUENT, out)
+    word_composites(out, WORDS)
+    n += len(WORDS)
     digits = "1234567890"
     n += number_badge.numbered(out / "_markbase.png", digits, out, "goto")
     n += number_badge.numbered(out / "_setbase.png", digits, out, "setmark")

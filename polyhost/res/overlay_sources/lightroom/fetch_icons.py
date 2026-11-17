@@ -107,6 +107,40 @@ FLUENT = {
 }
 
 
+# --- One icon per action (maintainer, 2026-11-15) ----------------------------
+# Two keys of this app share an image only when they do the same thing. The
+# glyphs below give the other keys their own image. The older files stay, because
+# other sets may copy them (icon_fetch.borrow).
+ACTION_FLUENT = {
+    "impromptu": "Slide Play",
+    "_modules": "ms:grid_view",
+}
+# file -> (base, badge): the base reduced to the upper left, the badge in the
+# lower right (dcc_glyphs.with_badge).
+ACTION_BADGED = {
+    "printmodule.png": ("print.png", "_modules.png"),
+}
+# file -> (base, forward): the base over a heavy arrow (dcc_glyphs.with_arrow).
+ACTION_ARROWS = {
+    "picknext.png": ("pick.png", True),
+    "rejectnext.png": ("reject.png", True),
+    "unflagnext.png": ("unflag.png", True),
+}
+
+
+def action_icons(out: Path) -> None:
+    """Draw the ACTION_* icons; a committed composite is left as it is."""
+    from polyhost.res.overlay_sources import dcc_glyphs, icon_fetch as fetch
+    if ACTION_FLUENT:
+        fetch.fluent(ACTION_FLUENT, out)
+    for name, (base, badge) in ACTION_BADGED.items():
+        dcc_glyphs.guarded(out / name, lambda p, b=base, g=badge: dcc_glyphs.with_badge(
+            out / b, out / g, p), f"{base} + {badge}")
+    for name, (base, fwd) in ACTION_ARROWS.items():
+        dcc_glyphs.guarded(out / name, lambda p, b=base, f=fwd: dcc_glyphs.with_arrow(
+            out / b, p, f), f"{base} + arrow")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -115,6 +149,7 @@ def main() -> int:
     number_badge.numbered(out / "_tag.png", "RYGB", out, "label", size=0.36, centre=(0.50, 0.53))
     rect_mark.ensure(out / "lightroom.png", "Lr",
                      size=rect_mark.shared_size(["Ps", "Ai", "Pr", "Ae"]))
+    action_icons(out)
     print(f"Wrote icons to {out}")
     return 0
 

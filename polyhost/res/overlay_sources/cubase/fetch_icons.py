@@ -12,6 +12,7 @@ app itself.
 """
 from __future__ import annotations
 
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -23,13 +24,13 @@ import icon_fetch  # noqa: E402
 BORROW = {
     **{n: "ableton" for n in (
         "playstop.png", "metronome.png", "solo.png", "arm.png", "duplicate.png",
-        "group.png", "ungroup.png", "split.png", "cuttime.png", "pastetime.png",
+        "group.png", "ungroup.png", "cuttime.png", "pastetime.png",
         "deltime.png", "insertsilence.png", "fade.png", "loop.png", "quantize.png",
         "deactivate.png", "midikeyboard.png", "rename.png", "search.png",
         "zoomsel.png", "browser.png", "keymap.png", "automation.png",
         "overview.png")},
     **{n: "reaper" for n in (
-        "saveversion.png", "inspaste.png", "repeat.png", "splitsel.png",
+        "saveversion.png", "inspaste.png", "split.png", "splitsel.png",
         "mute.png", "snap.png", "history.png",
         "exteditor.png", "inserttrack.png", "tempoenv.png", "projsettings.png",
         "maxheight.png", "minheight.png", "nextmarker.png", "prevmarker.png", "nexttransient.png",
@@ -43,7 +44,7 @@ BORROW = {
     **{n: "flstudio" for n in (
         "deselect.png", "invert.png", "mutesel.png", "unmutesel.png",
         "select.png", "slice.png", "deltool.png", "zoomtool.png",
-        "mutetool.png", "draw.png", "playtool.png")},
+        "draw.png", "playtool.png")},
     **{n: "protools" for n in (
         "writeauto.png", "writeall.png", "scoreeditor.png", "zoomtoggle.png",
         "prevclip.png", "nextclip.png", "transport.png", "xfade.png")},
@@ -89,11 +90,37 @@ FLUENT = {
 }
 
 
+# name -> (glyph, word): a glyph with a short word under it, 1-bit at 40x40,
+# drawn with the Ghidra set's code. It tells apart two keys whose actions
+# share a glyph (one icon per action).
+WORDS = {
+    "repeatev": ("duplicate", "\u00d7N"),       # Repeat (Ctrl+K), not Loop selection
+    "renametrack": ("rename", "TRK"),         # Rename first selected track
+    "mutetool": ("mute", "TOOL"),             # Mute tool, not Mute
+    "editortoggle": ("exteditor", "TGL"),     # Open/close editor (Enter)
+    "locnextevent": ("nextevent", "EVT"),     # Locate next event, not next marker
+    "locprevevent": ("prevevent", "EVT"),
+}
+
+
+def word_composites(out: Path, words: dict[str, tuple[str, str]]) -> None:
+    """Draw ``words`` with ``composites()`` from ``../ghidra/fetch_icons.py``."""
+    spec = importlib.util.spec_from_file_location(
+        "ghidra_fetch_icons", Path(__file__).resolve().parent.parent / "ghidra" / "fetch_icons.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    mod.COMPOSITES = words
+    mod.ISA = {}
+    mod.composites(out)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
     n = icon_fetch.fluent(FLUENT, out)
     n += icon_fetch.borrow(BORROW, out)
+    word_composites(out, WORDS)
+    n += len(WORDS)
     print(f"Wrote {n} icons to {out}")
     return 0
 

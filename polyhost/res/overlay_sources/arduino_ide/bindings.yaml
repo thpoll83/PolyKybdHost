@@ -136,7 +136,7 @@ bindings:
   - { key: F10, mods: [CTRL, SHIFT], only: [linux], icon: peekdefinition.png, label: "Peek definition" }
   - { key: F12, mods: [CMDCTRL, SHIFT], icon: peekimpl.png, label: "Peek implementation" }
   - { key: F2, icon: rename.png, label: "Rename symbol" }
-  - { key: F2, mods: [CMDCTRL], icon: selectall.png, label: "Change all occurrences" }
+  - { key: F2, mods: [CMDCTRL], icon: changeall.png, label: "Change all occurrences" }
   - { key: O, mods: [CMDCTRL, SHIFT], icon: gotosymbol.png, label: "Go to symbol" }
   # Ctrl+G is Arduino's Find next; on macOS that is Cmd+G and Ctrl+G stays
   # Monaco's Go to line.
@@ -185,7 +185,7 @@ bindings:
   - { key: A, mods: [ALT, SHIFT], except: [linux], icon: blockcomment.png, label: "Toggle block comment" }
   - { key: A, mods: [CTRL, SHIFT], only: [linux], icon: blockcomment.png, label: "Toggle block comment" }
   # Linux's Ctrl+Shift+I is Arduino's Library manager, which takes priority.
-  - { key: F, mods: [ALT, SHIFT], except: [linux], icon: autoformat.png, label: "Format document" }
+  - { key: F, mods: [ALT, SHIFT], except: [linux], icon: autoformat.png, label: "Auto format" }
   # --- folding ---
   - { key: "[", mods: [CTRL, SHIFT], except: [macos], icon: ../../sublime/icons/fold.png, label: "Fold" }
   - { key: "]", mods: [CTRL, SHIFT], except: [macos], icon: unfold.png, label: "Unfold" }

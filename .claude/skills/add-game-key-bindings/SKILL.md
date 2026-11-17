@@ -11,7 +11,7 @@ or plays a localized install whose hotkeys differ, the icon sits on the wrong ke
 `polyhost/services/game_assets/build.py` can move each icon to the player's key at
 build time (`remap`). This skill wires one game into that.
 
-Done six times on 2026-11-14/15 (PolyKybdHost#869, #874, #898):
+Done on 2026-11-14/15 (PolyKybdHost#869, #874, #898, and the free-to-play batch):
 
 | Game | Binding source | Hook | Complete? |
 |---|---|---|---|
@@ -20,6 +20,9 @@ Done six times on 2026-11-14/15 (PolyKybdHost#869, #874, #898):
 | OpenRA (3 mods) | `Keys:` in `settings.yaml` in the support folder | spec `bindings: openra` → `openra_keys.py` | no: only changed keys are written |
 | C&C Generals | `Data\<Language>\CommandMap.ini` and `Generals.csf` (in `<Language>ZH.big`, or a loose file that replaces it), then `Data\INI\CommandMap.ini` | key-only reader `generals` (`generals/reader.py`) | no |
 | StarCraft II | the `.SC2Hotkeys` profile `Variables.txt` names | spec `bindings: sc2` → `sc2_keys.py`, also without the art files (`build.keys_only`) | no: only changes are written |
+| Team Fortress 2 | `tf/cfg/config.cfg` (`bind "<key>" "<command>"`) | `reader: keys` + `bindings: tf2` → `tf2_keys.py` | yes: `unbindall`, then every bind |
+| Apex Legends | `Saved Games/Respawn/Apex/local/settings.cfg` (`bind_US_standard`) | `reader: keys` + `bindings: apex` → `apex_keys.py` | no: not known |
+| Path of Exile 1 and 2 | `[ACTION_KEYS]` (PoE 2: or `[WASD_ACTION_KEYS]`) of the config INI, VK codes | `reader: keys` + `bindings: poe` / `poe2` | no: the actions change per league |
 
 ## 1. Find the two sources
 
@@ -68,6 +71,10 @@ as default keys, so the stock file moves nothing, and no icon is drawn on them.
   key.
 - **No art at all** (Warcraft III): a reader whose `draw()` raises and whose spec
   has `icons: {}` is fine; `build.build` still patches the shipped overlay.
+- **No art and no install to find**: `reader: keys` (`game_assets/keys/`) finds
+  nothing, so `build.build` always takes `build.keys_only` with the spec's
+  `bindings:` source. It adds no setting and no translation. `key_files.py` has
+  the Steam library, Windows user folder and Source bind helpers.
 
 Tokens are the generator's key names with modifiers: `"S"`, `"ALT+Q"`,
 `"CTRL+SHIFT+1"` (`build.key_token`). Map the game's key names to those in a
@@ -108,6 +115,20 @@ translations (`translate-ui-catalogs`).
   found X labelled "select all"; the game binds X to Scatter and Q to select
   all. Fix the spec and regenerate the overlay, then check that the stock
   files move nothing.
+- ⚠️ **Keep a command whose only keys have no keycap cell, as `[]`.** A parser
+  that skips the whole line when the key has no cell (a mouse button, the
+  keypad, a gamepad button) leaves the command out. With `BINDINGS_COMPLETE =
+  False` that means "unknown", so the icon stays on a key the player no longer
+  uses: an Apex tactical moved to MOUSE4 kept its Q icon (CodeRabbit on #916).
+  Record the command, and append a key only when it has a token
+  (`key_files.parse_source_binds`).
+- ⚠️ **Parse a quoted field with one `[^"]*` run, never an alternation whose
+  branches overlap.** `"((?:\\\\|[^"])*)"` lets a backslash match both
+  branches, so a line of backslashes with no closing quote backtracks
+  exponentially: 21 s for 20 escaped backslashes. CodeQL flagged it as
+  `py/redos` (high) and failed the check on #916 (HOST-7 in
+  `polykybd-ctnd/docs/SECURITY_AUDIT.md`). Unescape after the match, and keep a
+  test with a hostile line that hangs on the old pattern.
 - **Never draw on ESC**: `remap` drops it as a target; keep it that way.
 - **Point `find()` at the developer's machine in tests only through a mock**: a
   developer's own settings file would otherwise move icons in unrelated tests

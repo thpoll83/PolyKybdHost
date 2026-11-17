@@ -181,3 +181,12 @@ All three are 32x32, drawn at the keycap size so the generator copies them
   is drawn: a filled folder with the letters "lf" cut out, pixel by pixel.
 
 PolyKybdHost is GPL-3.0-or-later; MIT and Apache-2.0 are GPL-3.0-compatible.
+
+## One image per action (2026-11-15)
+
+Two keys of one app share an image only when they do the same thing (maintainer, 2026-11-15). Where two keys do related but different things, the second image is the first one with something added. Glyph-above-word composites are drawn with `composite()` of `../emacs/fetch_icons.py` (Liberation Sans Bold, SIL OFL 1.1), as the other composites in this folder.
+
+| file | drawn from | key |
+|---|---|---|
+| `copy_menu` | `copy` + "MENU" | ranger `y`, which opens the copy menu (yy, yp, yd, yn ...); F5 is the plain copy |
+| `quit_nocd` | `quit` + "NOCD" | yazi Shift+Q, quit without writing the cwd file |

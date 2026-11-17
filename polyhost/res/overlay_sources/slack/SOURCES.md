@@ -95,3 +95,15 @@ Not added / why:
 Noted, not changed: Slack's current table gives "Upload a file" as Ctrl/⌘O,
 whereas this spec draws Upload on Ctrl/⌘U; and Browse DMs as Ctrl+Shift+2 /
 ⌘⇧K. Existing bindings were left as they are.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `channel_prev.png` | `channel.png` with a up triangle at the top right, drawn by `../action_variants.py` | same as the base icon |
+| `channel_next.png` | `channel.png` with a down triangle at the top right, drawn by `../action_variants.py` | same as the base icon |
+| `unreads_prev.png` | `unreads.png` with a up triangle at the top right, drawn by `../action_variants.py` | same as the base icon |
+| `unreads_next.png` | `unreads.png` with a down triangle at the top right, drawn by `../action_variants.py` | same as the base icon |

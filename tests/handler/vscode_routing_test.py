@@ -5,19 +5,25 @@ Drives `polyhost/res/overlay-mapping.poly.yaml` itself. What it pins:
 * each `<app>://edit`, `<app>://debug/running`, `<app>://debug/stopped` the
   extension (vscode-extension/) sends puts that mode's debug set after the app's
   own set, on every `os:` branch;
+* the same URL with `/diff` after it (a diff editor is the active tab) adds the
+  diff set last and keeps the mode's debug set; the `/diff` routes are listed
+  before the plain ones, which `urls-contains` would otherwise match first;
 * no report (or a stale one, which `current_url` turns into None) is the app's
   set plus the fallback debug set, which draws the keys the app's set drew
   before the reporter existed;
 * a mode REPLACES the fallback (`layer: false`): no underlay, no fallback file;
 * one app's URL never routes another app's entry (vscode:// on Cursor);
 * the entry names are exactly the context-reporter allow-list per token;
-* every file named exists, and no switch shows more images than the pool holds.
+* every file named exists, and no switch shows more images than the pool holds
+  (counted from the PNGs: every lit cell and channel a route's files draw).
 """
 
 import unittest
 from pathlib import Path
 
+import numpy as np
 import yaml
+from PIL import Image
 
 from polyhost.handler.browser_url import CONTEXT_REPORTERS, BrowserUrlProvider
 from polyhost.handler.common import find_matching_entry
@@ -37,6 +43,9 @@ APPS = {
                                                   "linux": "windsurf_linux_template"}),
 }
 MODES = ("edit", "debug/running", "debug/stopped")
+DIFF_FILES = ["vscode_diff.mods.png", "vscode_diff.combo.mods.png"]
+# OVERLAY_POOL_CAPACITY (firmware NUM_OVERLAY_SLOTS).
+POOL = 600
 TITLE = "main.py - project - Visual Studio Code"
 
 
@@ -69,6 +78,14 @@ class VscodeMappingFileTest(unittest.TestCase):
             self.assertGreater(len(files), 30, key)
             missing = [f for f in files if not (RES / "overlays" / f).is_file()]
             self.assertEqual(missing, [], key)
+
+    def test_diff_routes_come_before_the_plain_ones(self):
+        for key, (token, _) in APPS.items():
+            levels = [self.raw[key]] + [self.raw[key]["os"][o] for o in ("macos", "linux")]
+            for level in levels:
+                needles = list(level["urls-contains"])
+                self.assertEqual(needles, [f"{token}://{m}/diff" for m in ("debug/stopped", "debug/running", "edit")]
+                                 + [f"{token}://{m}" for m in ("debug/stopped", "debug/running", "edit")], key)
 
     def test_every_level_opts_out_of_layering(self):
         for key in APPS:
@@ -118,13 +135,50 @@ class VscodeRoutingTest(unittest.TestCase):
         got = _names(self._route("cursor", "vscode://debug/stopped", "windows"))
         self.assertEqual(got[-1], "vscode_debug_fallback.mods.png")
 
-    def test_pool_capacity(self):
-        # One switch shows at most 600 distinct images (OVERLAY_POOL_CAPACITY);
-        # these sets are far below it, counted generously as files x 90 keys.
+    def test_diff_adds_the_diff_set_and_keeps_the_debug_set(self):
+        for key, (token, stems) in APPS.items():
+            for os_name, stem in stems.items():
+                for mode in MODES:
+                    plain = _names(self._route(key, f"{token}://{mode}", os_name))
+                    got = _names(self._route(key, f"{token}://{mode}/diff", os_name))
+                    self.assertEqual(got, plain + DIFF_FILES, (key, os_name, mode))
+
+    def test_diff_without_a_report_is_the_fallback(self):
+        # A diff URL from another app, or no report: no diff set.
+        got = _names(self._route("cursor", "vscode://edit/diff", "windows"))
+        self.assertEqual(got[-1], "vscode_debug_fallback.mods.png")
+
+    def test_diff_keys_are_free_in_every_set_below_them(self):
+        # The diff set is drawn last; it must not cover a key the app set or a
+        # debug set draws (same cell and channel of the same tier).
+        diff = _lit(DIFF_FILES)
         for key, (token, stems) in APPS.items():
             for os_name in stems:
                 for mode in MODES:
-                    self.assertLess(len(self._route(key, f"{token}://{mode}", os_name)["overlay"]) * 90, 600)
+                    below = _names(self._route(key, f"{token}://{mode}", os_name))
+                    self.assertEqual(diff & _lit(below), set(), (key, os_name, mode))
+
+    def test_pool_capacity(self):
+        # One switch shows at most 600 distinct images (OVERLAY_POOL_CAPACITY):
+        # count every lit (tier, channel, cell) a route's files draw.
+        for key, (token, stems) in APPS.items():
+            for os_name in stems:
+                for url in [None] + [f"{token}://{m}{d}" for m in MODES for d in ("", "/diff")]:
+                    files = _names(self._route(key, url, os_name))
+                    self.assertLess(len(_lit(files)), POOL, (key, os_name, url))
+
+
+def _lit(files):
+    """Every (tier, channel, cell) a list of overlay PNGs draws."""
+    out = set()
+    for name in files:
+        tier = name.split(".", 1)[1].rsplit(".mods.png", 1)[0] if "." in name.split(".mods.png")[0] else ""
+        a = np.asarray(Image.open(RES / "overlays" / name).convert("RGBA"))
+        h, w = a.shape[0] // 40, a.shape[1] // 72
+        cells = a[: h * 40, : w * 72].reshape(h, 40, w, 72, 4).max(axis=(1, 3))
+        for y, x, c in zip(*np.nonzero(cells)):
+            out.add((tier, int(c), int(y), int(x)))
+    return out
 
 
 class VscodeProviderTest(unittest.TestCase):

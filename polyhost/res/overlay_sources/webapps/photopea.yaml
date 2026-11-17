@@ -58,7 +58,7 @@ bindings:
   - { key: U, mods: [], icon: shape.png, label: "Shape" }
   - { key: H, mods: [], icon: hand.png, label: "Hand" }
   - { key: R, mods: [], icon: ../../webapps/icons/rotateccw.png, label: "Rotate view" }
-  - { key: Z, mods: [], icon: zoom.png, label: "Zoom" }
+  - { key: Z, mods: [], icon: ../../webapps/icons/search.png, label: "Zoom" }
   - { key: X, mods: [], icon: swapcolors.png, mode: alpha, region: [72, 40], anchor: center, label: "Swap FG/BG" }
   - { key: D, mods: [], icon: defaultcolors.png, mode: alpha, label: "Default colours" }
   - { key: Q, mods: [], icon: quickmask.png, mode: alpha, label: "Quick mask" }

@@ -131,3 +131,31 @@ layout these keys move.
 - KiCad's own toolbar icons are not used (CC-BY-SA 4.0).
 - New, Open, Save, Undo and the other standard commands are drawn by the shared
   concept renderer.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing
+(maintainer, 2026-11-15). These files give the other keys their own image.
+Files whose name starts with `_` are only parts of a composite.
+
+| file | source | licence |
+|---|---|---|
+| `flipboard.png` | Material Symbols `flip_camera_android` | Apache-2.0 |
+| `boardup.png` | Material Symbols `arrow_circle_up` | Apache-2.0 |
+| `boarddown.png` | Material Symbols `arrow_circle_down` | Apache-2.0 |
+| `boardleft.png` | Material Symbols `arrow_circle_left` | Apache-2.0 |
+| `boardright.png` | Material Symbols `arrow_circle_right` | Apache-2.0 |
+| `sheetup.png` | Material Symbols `drive_folder_upload` | Apache-2.0 |
+| `gbrlayerprev.png` | Material Symbols `keyboard_double_arrow_up` | Apache-2.0 |
+| `gbrlayernext.png` | Material Symbols `keyboard_double_arrow_down` | Apache-2.0 |
+| `sketchlines.png` | Material Symbols `line_style` | Apache-2.0 |
+| `placesymbol.png` | Material Symbols `change_history` | Apache-2.0 |
+| `dragfree.png` | Material Symbols `moving` | Apache-2.0 |
+| `selnode.png` | Material Symbols `share` | Apache-2.0 |
+| `smdmodels.png` | Material Symbols `deployed_code` | Apache-2.0 |
+| `editsymbol.png` | `openeditor.png` with `placesymbol.png` as a badge at the lower right (`../dcc_glyphs.py` `with_badge`) | same as the two parts |
+| `editfootprint.png` | `openeditor.png` with `footprints.png` as a badge at the lower right (`../dcc_glyphs.py` `with_badge`) | same as the two parts |
+| `libsymbol.png` | `library.png` with `placesymbol.png` as a badge at the lower right (`../dcc_glyphs.py` `with_badge`) | same as the two parts |
+| `libfootprint.png` | `library.png` with `footprints.png` as a badge at the lower right (`../dcc_glyphs.py` `with_badge`) | same as the two parts |
+| `fcu.png` | the word "F.Cu" in Liberation Sans Bold, drawn in `fetch_icons.py` | SIL OFL 1.1 (font) |
+| `bcu.png` | the word "B.Cu" in Liberation Sans Bold, drawn in `fetch_icons.py` | SIL OFL 1.1 (font) |

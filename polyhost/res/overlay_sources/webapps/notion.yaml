@@ -35,8 +35,8 @@ bindings:
   - { key: N, mods: [CMDCTRL], icon: newpage.png,  label: "New page",       source: "ms-fluent/Document Add (MIT)" }
   - { key: P, mods: [CMDCTRL], icon: search.png,   label: "Search / jump to", concept: find, source: "ms-fluent/Search (MIT)" }
   - { key: K, mods: [CMDCTRL], icon: link.png,     label: "Add link",       source: "ms-fluent/Link (MIT)" }
-  - { key: F, mods: [CMDCTRL], icon: find.png,     label: "Search in page", concept: find, source: "ms-fluent/Search (MIT)" }
-  - { key: L, mods: [CMDCTRL], icon: canonical.png, label: "Copy page URL", source: "ms-fluent/Link (MIT)" }
+  - { key: F, mods: [CMDCTRL], icon: searchpage.png, label: "Search in page", source: "ms-fluent/Document Search (MIT)" }
+  - { key: L, mods: [CMDCTRL], icon: canonical.png, label: "Copy page URL", source: "ms-fluent/Link Square (MIT)" }
   - { key: D, mods: [CMDCTRL], icon: duplicate.png, label: Duplicate,       source: "ms-fluent/Square Multiple (MIT)" }
   - { key: B, mods: [CMDCTRL], icon: bold.png,     label: Bold,             source: "ms-fluent/Text Bold (MIT)" }
   - { key: I, mods: [CMDCTRL], icon: italic.png,   label: Italic,           source: "ms-fluent/Text Italic (MIT)" }

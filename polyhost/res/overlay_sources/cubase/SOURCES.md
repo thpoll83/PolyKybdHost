@@ -59,6 +59,7 @@ the overlay cannot tell.
 
 ## Icons
 
+- One icon per action (maintainer rule, 2026-11-15): `split.png` (Split at cursor) is now copied from `../reaper` (Material `vertical_split`), so it differs from the Split tool scissors (`slice.png`). The glyph + word composites in `WORDS` (`repeatev` duplicate + ×N, `renametrack` rename + TRK, `mutetool` mute + TOOL, `editortoggle` editor + TGL, `locnextevent` / `locprevevent` skip + EVT; `zoomtool.png` is the FL Studio set's zoom + TOOL, copied, so it differs from Zoom in) are drawn 1-bit at 40x40 by `../ghidra/fetch_icons.py`'s `composites()` from the named glyph (licence as that glyph) and a word in Liberation Sans Bold (SIL OFL 1.1).
 - Microsoft Fluent UI System Icons, MIT,
   <https://github.com/microsoft/fluentui-system-icons>: `unlock` (Lock Open),
   `color` (Color).
