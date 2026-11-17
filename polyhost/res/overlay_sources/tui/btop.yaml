@@ -48,8 +48,8 @@ bindings:
   - { key: "2", icon: box_mem.png, label: "Toggle memory box" }
   - { key: "3", icon: box_net.png, label: "Toggle network box" }
   - { key: "4", icon: box_proc.png, label: "Toggle process box" }
-  - { key: P, icon: preset.png, label: "Next preset" }
-  - { key: P, mods: [SHIFT], icon: preset_prev.png, label: "Previous preset" }
+  - { key: P, icon: preset_next.png, label: "Next preset" }
+  - { key: P, mods: [SHIFT], icon: preset_back.png, label: "Previous preset" }
   # --- CPU box: "+" and "-" change update_ms by 100 ms (1000 ms on a fast repeat).
   - { key: "=", mods: [SHIFT], icon: timer_up.png, label: "Slower updates" }
   - { key: "-", icon: timer_down.png, label: "Faster updates" }

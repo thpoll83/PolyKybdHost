@@ -78,7 +78,7 @@ bindings:
   - { key: F, mods: [SHIFT], icon: follow.png, label: "Follow process" }
   # --- Tagging: ' ' actionTag, 'c' actionTagAllChildren, 'U' actionUntagAll.
   - { key: SPACE, icon: tag.png, label: "Tag process" }
-  - { key: C, icon: tag.png, label: "Tag with children" }
+  - { key: C, icon: tag_children.png, label: "Tag with children" }
   - { key: U, mods: [SHIFT], icon: untag.png, label: "Untag all" }
   # --- Tree view: '+' '-' '=' actionExpandOrCollapse, '*' actionExpandOrCollapseAllBranches.
   # Act only in tree view.

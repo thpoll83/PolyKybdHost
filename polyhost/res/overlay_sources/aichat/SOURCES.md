@@ -183,3 +183,14 @@ Not added / why:
 - Close: Claude desktop already draws Ctrl/⌘W "Close session"; Codex documents none.
 - Zoom / Reload: not documented (Claude desktop's ⌘R is "Reload page in preview",
   already drawn, macOS only).
+
+## One image per action (2026-11-15)
+
+Two keys of one app share an image only when they do the same thing (maintainer, 2026-11-15). Where two keys do related but different things, the second image is the first one with something added. The variants are drawn 1-bit at the binding's region size by `../tui/variant_glyphs.py` from the icons named below: `worded` puts a word under the icon, `side_word` a digit beside it, `badged` a second icon or an arrow at the lower right, `arrowed` a heavy arrow under it. Words are set in Liberation Sans Bold (SIL OFL 1.1). The base icons keep their own licence.
+
+| file | drawn from | keys (Claude desktop) |
+|---|---|---|
+| `sidebar_next`, `sidebar_prev` | `sidebar` + arrow right / left | Ctrl+Alt+Right / Left, the sidebar tabs (the session keys keep `next` / `prev`) |
+| `search_new` | `search` + "new" | Ctrl+K, search or start a session (Ctrl+Shift+K is the plain search) |
+| `browser_preview` | `browser` + `viewmode` badge | macOS Cmd+Shift+P, the preview pane |
+| `reopen_session` | `reopen` + "close" | macOS Cmd+Shift+T (Cmd+Z Undo draws the same arrow) |
