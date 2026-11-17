@@ -1214,7 +1214,7 @@ class PolyKybd:
         """Set the emoji layer to search mode (True) or tab mode (False), or only read
         it (None). (True, the mode before: True for search) on success. The keyboard
         restores the mode it found when the tutorial session ends (END or watchdog).
-        Refused without an emoji search dictionary."""
+        Refused, a query too, without an emoji search dictionary."""
         if not self.supports("tutorial_emoji_mode"):
             return False, (f"Firmware protocol too old for the tutorial's emoji mode "
                            f"(need v{TUTORIAL_EMOJI_MODE_MIN_PROTOCOL}+).")

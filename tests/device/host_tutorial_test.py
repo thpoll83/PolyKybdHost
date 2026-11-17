@@ -171,7 +171,7 @@ class EmojiModeTest(unittest.TestCase):
         ok, msg = kb.tutorial_emoji_mode(True)
         self.assertFalse(ok)
         self.assertIn("refused", msg)
-        self.assertTrue(kb.tutorial_emoji_mode(None)[0])   # a query is still answered
+        self.assertFalse(kb.tutorial_emoji_mode(None)[0])  # a query too (firmware #443)
 
 
 if __name__ == "__main__":

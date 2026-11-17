@@ -790,7 +790,7 @@ class MockFirmware:
         if op == 7 and self.protocol >= 37:     # EMOJI_MODE
             before = bool(getattr(self, "emoji_search_mode", False))
             want = p[3]
-            if want not in (0, 1, 0xFF) or (want != 0xFF and not getattr(self, "emoji_dict", True)):
+            if want not in (0, 1, 0xFF) or not getattr(self, "emoji_dict", True):
                 return _reply(p[1], False, body=bytes([int(before)]))
             if want != 0xFF:
                 if getattr(self, "tutorial_emoji_restore", None) is None:
