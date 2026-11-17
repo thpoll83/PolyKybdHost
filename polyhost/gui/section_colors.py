@@ -47,6 +47,11 @@ SECTION_SLOTS = {
     "agents": "brown",
 }
 
+# The alpha (0-255) of the light tint: the section's background and the selected
+# sidebar entry. The sidebar's hover tint is weaker.
+TINT_ALPHA = 80
+HOVER_ALPHA = 35
+
 _BY_NAME = {name: (light, dark) for name, light, dark in SLOTS + (NEUTRAL,)}
 
 
@@ -54,3 +59,30 @@ def section_color(section_id, dark):
     """The hex colour of ``section_id`` for the dark or the light theme."""
     light_hex, dark_hex = _BY_NAME[SECTION_SLOTS.get(section_id, NEUTRAL[0])]
     return dark_hex if dark else light_hex
+
+
+def tint(hexcolor, alpha=TINT_ALPHA):
+    """``hexcolor`` as an ``rgba()`` style sheet colour with ``alpha`` (0-255)."""
+    r, g, b = (int(hexcolor[i:i + 2], 16) for i in (1, 3, 5))
+    return f"rgba({r}, {g}, {b}, {alpha})"
+
+
+def _luminance(hexcolor):
+    out = []
+    for i in (1, 3, 5):
+        c = int(hexcolor[i:i + 2], 16) / 255
+        out.append(c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4)
+    return 0.2126 * out[0] + 0.7152 * out[1] + 0.0722 * out[2]
+
+
+def contrast(a, b):
+    """The WCAG contrast ratio of two hex colours."""
+    hi, lo = sorted((_luminance(a), _luminance(b)), reverse=True)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def title_ink(hexcolor):
+    """White or near-black, whichever reads better on a band of ``hexcolor``.
+    The light theme's darker colours take white, the dark theme's lighter ones
+    near-black."""
+    return max(("#ffffff", "#1e1e1e"), key=lambda ink: contrast(ink, hexcolor))

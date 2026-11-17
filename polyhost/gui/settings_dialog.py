@@ -670,7 +670,7 @@ class _NavDelegate(QStyledItemDelegate):
         painter.setPen(Qt.NoPen)
         if selected or hover:
             fill = QColor(color)
-            fill.setAlpha(80 if selected else 35)
+            fill.setAlpha(section_colors.TINT_ALPHA if selected else section_colors.HOVER_ALPHA)
             painter.setBrush(fill)
             painter.drawRoundedRect(QRectF(rect), px(6), px(6))
         painter.setBrush(color)
@@ -826,8 +826,9 @@ class _Group(QWidget):
 
 
 class _Section(QFrame):
-    """A section: a frame in its colour (gui/section_colors.py) around its title
-    and groups."""
+    """A section in its colour (gui/section_colors.py): a frame and a light tint
+    of the colour around its groups, and its title on a band of the full colour.
+    The selected sidebar entry has the same tint."""
 
     def __init__(self, section_id, title, color=None, parent=None):
         super().__init__(parent)
@@ -836,15 +837,31 @@ class _Section(QFrame):
         self.color = color
         self.groups = []
         self.setObjectName("settingsSection")
+        radius = px(10)
         if color:
-            self.setStyleSheet(f"QFrame#settingsSection {{ border: 2px solid {color}; "
-                               f"border-radius: {px(10)}px; }}")
-        self._lay = QVBoxLayout(self)
-        self._lay.setContentsMargins(px(14), px(10), px(14), px(14))
-        self._lay.setSpacing(14)
+            self.setStyleSheet(
+                f"QFrame#settingsSection {{ border: 2px solid {color}; "
+                f"border-radius: {radius}px; background: {section_colors.tint(color)}; }}"
+                f"QLabel#settingsSectionTitle {{ background: {color}; "
+                f"color: {section_colors.title_ink(color)}; "
+                f"border-top-left-radius: {radius - 2}px; "
+                f"border-top-right-radius: {radius - 2}px; "
+                f"padding: {px(6)}px {px(14)}px; }}")
+        outer = QVBoxLayout(self)
+        # The band reaches the frame on three sides; 2 px is the border.
+        outer.setContentsMargins(2, 2, 2, 2)
+        outer.setSpacing(0)
         head = QLabel(self.title)
         head.setObjectName("settingsSectionTitle")
-        self._lay.addWidget(head)
+        if not color:
+            head.setContentsMargins(px(14), px(6), px(14), 0)
+        outer.addWidget(head)
+        body = QWidget()
+        body.setAttribute(Qt.WA_TranslucentBackground)
+        outer.addWidget(body)
+        self._lay = QVBoxLayout(body)
+        self._lay.setContentsMargins(px(12), px(12), px(12), px(12))
+        self._lay.setSpacing(14)
         self.note = QLabel()
         self.note.setWordWrap(True)
         self.note.setObjectName("settingsRowNote")
