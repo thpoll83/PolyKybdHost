@@ -27,7 +27,7 @@ from polyhost.gui import section_colors, section_style
 from polyhost.gui.settings_dialog import (_STYLE as SETTINGS_STYLE, MIN_DIALOG_SIZE,
                                           SIDEBAR_WIDTH, initial_dialog_size,
                                           minimum_dialog_size)
-from polyhost.gui.ui_kit import (CARD_STYLE, WrapLabel, muted, px, set_button_icon,
+from polyhost.gui.ui_kit import (CARD_STYLE, WrapLabel, card, muted, px, set_button_icon,
                                  style_button_box)
 from polyhost.i18n import _, _f
 
@@ -459,7 +459,18 @@ class IntegrationsDialog(QDialog):
             if heading is not None:
                 heading.hide()
             section = section_style.ColorSection(title, color)
-            section.body_layout.addWidget(page)
+            # The page's content sits in a card on the base colour (white or
+            # black), like a Settings group and a tutorial entry. A page with
+            # cards of its own (Browser) is not wrapped again. The stretch
+            # below keeps the card as tall as its content.
+            if page.findChildren(QFrame, "uiCard"):
+                section.body_layout.addWidget(page)
+            else:
+                content, content_lay = card()
+                content_lay.setContentsMargins(px(14), px(12), px(14), px(12))
+                content_lay.addWidget(page)
+                section.body_layout.addWidget(content)
+                section.body_layout.addStretch(1)
             page.accent_color = color
             section_style.adopt(page, color)
             # Each page scrolls on its own: a long result list or a small
