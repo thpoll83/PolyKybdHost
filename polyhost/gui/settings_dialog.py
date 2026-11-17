@@ -525,6 +525,13 @@ class ToggleSwitch(QCheckBox):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setCursor(Qt.PointingHandCursor)
+        # The colour of the track when on: its section's colour
+        # (gui/section_colors.py), or the palette highlight when None.
+        self.accent = None
+
+    def set_accent(self, color):
+        self.accent = QColor(color) if color else None
+        self.update()
 
     def sizeHint(self):
         return self.TRACK + QSize(4, 4)
@@ -546,7 +553,7 @@ class ToggleSwitch(QCheckBox):
         if not self.isEnabled():
             fill = pal.color(QPalette.Disabled, QPalette.Mid)
         elif self.isChecked():
-            fill = pal.color(QPalette.Highlight)
+            fill = self.accent or pal.color(QPalette.Highlight)
         else:
             fill = pal.color(QPalette.Mid)
         painter.setPen(Qt.NoPen)
@@ -560,7 +567,7 @@ class ToggleSwitch(QCheckBox):
         painter.setBrush(QColor("#ffffff"))
         painter.drawEllipse(QRectF(x, track.top() + 3, knob_d, knob_d))
         if self.hasFocus():
-            ring = QPen(pal.color(QPalette.Highlight))
+            ring = QPen(self.accent or pal.color(QPalette.Highlight))
             ring.setWidthF(1.5)
             painter.setPen(ring)
             painter.setBrush(Qt.NoBrush)
@@ -647,7 +654,7 @@ QFrame#settingsCard {
 QFrame#settingsDivider { background: palette(midlight); border: none; }
 QLabel#settingsSectionTitle { font-size: 15pt; font-weight: 600; }
 QLabel#settingsSubheading { font-weight: 600; color: palette(text); }
-QLabel#settingsRowNote { color: palette(link); }
+QLabel#settingsRowNote { color: palette(text); font-style: italic; }
 QListWidget#settingsNav {
     background: transparent;
     border: none;
@@ -930,6 +937,11 @@ class SettingsDialog(QDialog):
                     else:
                         group.add_row(self._make_row(full_key, settings_dict[full_key]))
                 section.add_group(group)
+            # On/off switches take the section's colour, like its band.
+            for group in section.groups:
+                for row in group.rows:
+                    if isinstance(row.editor, ToggleSwitch):
+                        row.editor.set_accent(section.color)
             if section_id == "keyboard" and keyboard:
                 self._keyboard_section = section
                 section.set_note(_("Reading the settings stored on the keyboard\u2026"))

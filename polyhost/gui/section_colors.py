@@ -1,50 +1,54 @@
-"""The colours of the Settings dialog's sections.
+"""The colours of the coloured dialogs' sections (Settings, Integrations, Tutorials).
 
-Each section has one colour: the band behind its title, a light tint of it
-behind the section, and the stripe of its entry in the sidebar, so the sidebar entry and its section read as one thing.
-The colour is decoration only: the sidebar entry and the section title carry the
-name, and all text stays in the palette's text colours.
+Each section has one colour: the band behind its title, a light tint of it behind
+the section, the stripe of its sidebar entry, and its on/off switches.
 
-There are two schemes. Light mode uses darker colours, dark mode lighter ones of
-the same hues, so each one has at least 3:1 contrast against the window colour of
-its theme (#f0f0f0 light, #505050 dark, gui/theme.py).
+The scheme is a rainbow in spectrum order: red, orange, yellow, green, teal,
+blue, violet, pink. It was chosen by look (2026-11-17) over schemes whose
+neighbours were further apart for colour-blind readers: in spectrum order two
+neighbours are close (validator, deutan distance 1.5), so the colour is never
+the only way to tell sections apart. The sidebar entry and the band name each one.
 
-The hue order was chosen with the dataviz skill's validator
-(`validate_palette.js`), in both modes: neighbouring hues keep a colour-blind
-(deutan, protan, tritan) OKLab distance of at least 8.6 and a normal-vision
-distance of at least 15.1. Sections take the slots in sidebar order. The last
-two slots (magenta, green) are free for new sections. A section added after
-them shares a slot or takes the neutral grey; never invent a new hue without
-re-running the validator on the whole order.
+There are two sets of the same hues. Light mode uses darker colours, dark mode
+lighter ones, so each has at least 3:1 contrast against the window colour of its
+theme (#f0f0f0 light, #505050 dark, gui/theme.py). The one exception is yellow in
+light mode: 2.0:1, the floor the tray icon colours use, because a darker yellow
+turns olive. The title text on its band
+is near-black at 7.2:1, and the stripe stays visible.
+
+A section added after the eighth takes the neutral grey, or shares a hue; a new
+hue needs the scheme checked again in both themes.
 """
 
 # (name, light, dark), in slot order.
 SLOTS = (
-    ("teal",    "#0e8a62", "#4fd8a8"),
-    ("orange",  "#c8521f", "#ff9a66"),
-    ("blue",    "#2a6fc9", "#7fb2ff"),
-    ("gold",    "#a87400", "#f5c542"),
-    ("violet",  "#6a4fd8", "#b9a2ff"),
-    ("red",     "#c93b3a", "#ff7d7a"),
-    ("cyan",    "#0b7f9e", "#55d0f0"),
-    ("brown",   "#9a5b1e", "#e6a465"),
-    ("magenta", "#b8457a", "#ff8fc0"),   # free
-    ("green",   "#3d7f12", "#9bdc5a"),   # free
+    ("red",    "#d15c56", "#ee857e"),
+    ("orange", "#cb6620", "#e88e59"),
+    ("yellow", "#c5aa00", "#efd551"),   # 2.0:1 in light mode, see above
+    ("green",  "#25984d", "#5cb572"),
+    ("teal",   "#17959b", "#0eb4bb"),
+    ("blue",   "#2f8adc", "#60aaf3"),
+    ("violet", "#8e71d6", "#ae96f1"),
+    ("pink",   "#bf5da2", "#dd86c1"),
 )
+
+# The lowest contrast a slot may have against its theme's window colour.
+MIN_CONTRAST = 3.0
+MIN_CONTRAST_EXCEPTIONS = {("yellow", "light"): 2.0}
 
 # Developer and Other: settings most users never open, so no hue of their own.
 NEUTRAL = ("grey", "#6b7280", "#c0c4cc")
 
 # Section id -> slot name. A section not listed is neutral.
 SECTION_SLOTS = {
-    "general": "teal",
+    "general": "red",
     "icons": "orange",
-    "games": "blue",
-    "brightness": "gold",
-    "keyboard": "violet",
-    "connections": "red",
-    "privacy": "cyan",
-    "agents": "brown",
+    "games": "yellow",
+    "brightness": "green",
+    "keyboard": "teal",
+    "connections": "blue",
+    "privacy": "violet",
+    "agents": "pink",
 }
 
 # The alpha (0-255) of the light tint: the section's background and the selected
