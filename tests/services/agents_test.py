@@ -539,6 +539,45 @@ class CardTest(unittest.TestCase):
         self.assertTrue(first[:24, 25:].any())                # text right of it
         self.assertFalse(render_page(layout, 1)[:24, :24].all())        # no mark on page 2
 
+    def test_the_state_icon_is_in_the_corner_with_a_cleared_margin(self):
+        from polyhost.services.agents.card import ICON, ICON_CLEAR, _spans, state_icon
+        import numpy as np
+        self.assertIsNone(state_icon(AgentState.EMPTY))
+        states = (AgentState.WORKING, AgentState.WAITING, AgentState.DONE,
+                  AgentState.IDLE, AgentState.STALE)
+        icons = [state_icon(st) for st in states]
+        self.assertTrue(all(i is not None and i.shape == (ICON, ICON) and i.any()
+                            for i in icons))
+        self.assertEqual(len({i.tobytes() for i in icons}), len(states))   # all differ
+        icon = icons[1]
+        right = 72 - ICON - ICON_CLEAR
+        # Only line 1 meets the icon and its margin.
+        self.assertEqual(_spans(None, icon), [(1, right), (1, 71), (1, 71)])
+        # "comments" (66 px) fits a full line, not line 1 beside the icon; on
+        # every page.
+        self.assertEqual(paginate("comments", icon=icon), [["", "comments"]])
+        self.assertEqual(paginate("comments"), [["comments"]])
+        self.assertEqual(paginate("Windows Windows Windows Windows comments",
+                                  icon=icon)[1][0], "")
+        # The vendor mark shrinks until the first word fits between it and the
+        # icon: "firmware" (54 px) fits beside 16 px alone, with the icon at no size.
+
+        class Square:
+            def get(self, vid, box=24):
+                return np.ones((box, box), dtype=bool)
+        self.assertEqual(card_layout("x", "firmware", Square()).mark.shape, (16, 16))
+        self.assertEqual(card_layout("x", "firmware", Square(), AgentState.DONE).mark.shape,
+                         (12, 12))
+        # Drawn top right on every page; nothing else in its margin.
+        layout = card_layout("x", "Fix the HID reconnect after resume on Windows", None,
+                             AgentState.WAITING)
+        self.assertGreater(layout.page_count, 1)
+        for page in range(layout.page_count):
+            img = render_page(layout, page)
+            self.assertTrue((img[:ICON, 72 - ICON:] == icon).all(), page)
+            self.assertFalse(img[:ICON + ICON_CLEAR, right:72 - ICON].any(), page)
+            self.assertFalse(img[ICON:ICON + ICON_CLEAR, 72 - ICON:].any(), page)
+
     def test_no_logo_yet_shows_the_short_name(self):
         layout = card_layout("claude-code", "polykybd-docs", None)
         self.assertIsNotNone(layout.mark)
@@ -670,8 +709,8 @@ class ControllerTest(unittest.TestCase):
         self.assertEqual(self.kb.cards, {})
         self.r.report("claude-code", "a", "waiting")
         self.c.sync(self.kb)
-        # The card shows no state (the light does): only '+' changes, its count.
-        self.assertEqual(sorted(self.kb.cards), [2])
+        # The card gets the '!' state mark, and '+' shows the waiting count.
+        self.assertEqual(sorted(self.kb.cards), [0, 2])
         self.assertEqual(self.kb.keys[-1][1], 0x08 | 0x04)
 
     def test_clear_keyboard_turns_every_key_off(self):
@@ -875,14 +914,16 @@ class ControllerTest(unittest.TestCase):
         self.assertEqual(self.kb.cards, {})                     # pages are reused
         self.assertEqual(uploads, 5)
 
-    def test_a_state_change_uploads_no_card(self):
+    def test_a_state_change_uploads_the_page_shown(self):
         self.r.report("codex", "a", "working", headline="Fix the build")
         self.c.sync(self.kb)
         self.kb.cards.clear()
-        self.r.report("codex", "a", "done")
         self.c.sync(self.kb)
-        self.assertEqual(self.kb.cards, {})
-        self.assertEqual(self.kb.keys[-1][0][0], AgentState.DONE)
+        self.assertEqual(self.kb.cards, {})              # nothing changed
+        self.r.report("codex", "a", "idle")              # the icon changes
+        self.c.sync(self.kb)
+        self.assertEqual(len(self.kb.cards), 1)
+        self.assertEqual(self.kb.keys[-1][0][0], AgentState.IDLE)
 
     def test_a_full_pool_shows_no_card_rather_than_evict_the_shown_app(self):
         from polyhost.device.overlay_cache import OverlayMRUCache

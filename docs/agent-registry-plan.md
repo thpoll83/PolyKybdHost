@@ -81,8 +81,8 @@ ESC (the pager) does not end AI mode in either case.
 
 ```
 ┌────────────────────────────────────┐
-│ [vendor ] Fix the                  │   line 1  rows  0..12
-│ [ mark  ] HID                      │   line 2  rows 13..25
+│ [vendor ] Fix            [state]   │   line 1  rows  0..12
+│ [ mark  ] the HID                  │   line 2  rows 13..25
 │ reconnect                          │   line 3  rows 26..39
 └────────────────────────────────────┘
 ```
@@ -92,8 +92,9 @@ ESC (the pager) does not end AI mode in either case.
   When the title's first word does not fit beside it, a square mark is drawn at 20,
   16 or 12 px; a wordmark (wider than 1.5 times its height) is never scaled, and the
   first word starts below it. A vendor with no mark yet gets its short name.
-- No state mark (host 1.27.11): the key's light shows the state. Waiting blinks and
-  working breathes; done and idle differ only in brightness.
+- State icon: 12 px, top right, on every page, with 1 px kept free left of and
+  below it, so only line 1 is shorter. The icons are the 16 px card icons, scaled
+  (see the state table). A state change uploads the page shown again.
 - Headline: three lines of 14 px text, breaking at spaces and after `-`. Only a word
   wider than the key is split between letters. A longer title is split into pages of
   three lines (at most 4), without the mark after the first; the key switches to the
@@ -107,7 +108,7 @@ layout with `tools/oled_preview.py`: 0 pixels outside 72×40.
 
 ## States
 
-| State | Meaning | LED | Mark (before host 1.27.11) |
+| State | Meaning | LED | Mark |
 |---|---|---|---|
 | `working` | a turn is running | amber, breathing | turning arrows |
 | `waiting` | the agent waits for the user: a permission prompt or a question | red, blinking | `!` |
@@ -126,7 +127,7 @@ layout with `tools/oled_preview.py`: 0 pixels outside 72×40.
   shown page rings its own key (firmware 1.13.6). A page change rings nothing: the
   firmware takes the new page's states as the start.
 - Cards are cached per agent and text page, not per key, so paging back to a page
-  reuses the cards the keyboard still holds. A state change uploads no card.
+  reuses the cards the keyboard still holds.
 
 ## The registry (host)
 
@@ -298,7 +299,7 @@ firmware bump commit exists: #276 lost 17 to #278 in the same way.
 ## Host
 
 - `services/agents/registry.py`, `services/agents/adapters/*.py`: Qt-free, unit-tested.
-- `services/agents/card.py`: renders a card (vendor mark, headline pages) to a
+- `services/agents/card.py`: renders a card (vendor mark, state icon, headline pages) to a
   72×40 1-bit image. Golden tests against rendered cards.
 - `PolyCore`: owns the registry; pushes op 1 when a shown key changes; uploads cards
   for the shown page; reads op 2 on the console line or a `G` change; acts on presses

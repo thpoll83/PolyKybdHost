@@ -8,9 +8,10 @@
 
 The vendor mark is drawn whole at up to 24 px, top left, with the text 1 px to
 its right; lines below the mark use the full width. Three lines of 14 px text
-(card experiments, 2026-11-17). No state icon: the key's light shows the state
-(ai_rgb_paint in the firmware). When the first word does not fit beside the
-mark, the mark is drawn smaller (24, 20, 16 or 12 px) until it does.
+(card experiments, 2026-11-17). The state icon (12 px) is in the top right corner
+on every page, with a cleared margin of ICON_CLEAR px; only line 1 meets it, and
+ends before that margin. When the first word does not fit between the vendor mark and
+the state icon, a square mark is drawn smaller (24, 20, 16 or 12 px) until it does.
 
 A title that does not fit one card is split into pages of three lines, without
 the mark after the first; the controller switches the key between them
@@ -29,7 +30,7 @@ import re
 import threading
 from dataclasses import dataclass
 
-from polyhost.services.agents.model import vendor
+from polyhost.services.agents.model import AgentState, vendor
 
 log = logging.getLogger("PolyHost")
 
@@ -41,6 +42,8 @@ FONT_SIZE = 14
 LINE_PITCH = 13        # three lines in 40 rows; a descender may touch the cap below
 LINES = 3
 TEXT_W = PANEL_W - 2   # a full-width line: 1 px margin each side
+ICON = 12              # the state icon, top right: it touches line 1 only
+ICON_CLEAR = 1         # px kept free left of and below the state icon
 WORDMARK_RATIO = 1.5   # wider than this times its height: a wordmark, never scaled
 MAX_PAGES = 4          # a longer title ends with '.' on the last page
 _FONTS = {}
@@ -134,6 +137,22 @@ def flow(text: str, widths, size: int = FONT_SIZE, full: int = TEXT_W) -> list[s
     return lines
 
 
+def _spans(mark, icon) -> list[tuple[int, int]]:
+    """(left, right) x of each text line (right exclusive): a line whose rows meet
+    the vendor mark starts MARK_GAP right of it, a line that meets the state icon
+    or its cleared margin ends before them."""
+    spans = []
+    for k in range(LINES):
+        top = k * LINE_PITCH
+        left, right = 1, PANEL_W - 1
+        if mark is not None and top < mark.shape[0]:
+            left = mark.shape[1] + MARK_GAP
+        if icon is not None and top < icon.shape[0] + ICON_CLEAR:
+            right = PANEL_W - icon.shape[1] - ICON_CLEAR
+        spans.append((left, right))
+    return spans
+
+
 def _beside(mask) -> int:
     """How many text lines sit right of a mark this tall."""
     if mask is None:
@@ -141,17 +160,18 @@ def _beside(mask) -> int:
     return min(LINES, -(-mask.shape[0] // LINE_PITCH))   # 1..13 rows: 1, 14..26: 2
 
 
-def paginate(text: str, mask=None, size: int = FONT_SIZE) -> list[list[str]]:
-    """The pages of a card: lists of at most LINES lines. On page 1 the first
-    _beside(mask) lines are narrowed by the mark; later pages are full width."""
-    beside = _beside(mask)
-    narrow = TEXT_W + 1 - (mask.shape[1] + MARK_GAP) if beside else TEXT_W
-    first = flow(text, [narrow] * beside + [TEXT_W], size)
+def paginate(text: str, mask=None, icon=None, size: int = FONT_SIZE) -> list[list[str]]:
+    """The pages of a card: lists of at most LINES lines. Each line is as wide as
+    _spans allows: the vendor mark narrows lines on page 1 only, the state icon on
+    every page."""
+    first = flow(text, [r - l for l, r in _spans(mask, icon)] + [TEXT_W], size)
     pages = [first[:LINES]]
     rest = " ".join(line for line in first[LINES:] if line)
-    if rest:
-        more = flow(rest, [TEXT_W], size)
-        pages += [more[i:i + LINES] for i in range(0, len(more), LINES)]
+    later = [r - l for l, r in _spans(None, icon)] + [TEXT_W]
+    while rest:
+        more = flow(rest, later, size)
+        pages.append(more[:LINES])
+        rest = " ".join(line for line in more[LINES:] if line)
     if len(pages) > MAX_PAGES:
         pages = pages[:MAX_PAGES]
         pages[-1][-1] = fit_text(pages[-1][-1] + "\u2026", TEXT_W, size)
@@ -280,72 +300,94 @@ def _text_mark(text: str):
     return _crop(np.array(img, dtype=bool))
 
 
+_STATE_ICONS = {}
+
+
+def state_icon(state):
+    """The ICON x ICON mask for a state (services/agents/icons.py), or None."""
+    from polyhost.services.agents import icons
+    if not _STATE_ICONS:
+        # The icons of the 16 px card corner (2026-11-11), scaled to ICON: the
+        # check mark and '!' from their 19 px drawing, the rest from 16 px.
+        _STATE_ICONS.update({k: icons.scaled(v, ICON) for k, v in {
+            AgentState.WAITING: icons.waiting(), AgentState.DONE: icons.done(),
+            AgentState.STALE: icons.stale_16(), AgentState.IDLE: icons.idle_16(),
+            AgentState.WORKING: icons.working_16()}.items()})
+    return _STATE_ICONS.get(state)
+
+
 @dataclass
 class CardLayout:
-    """What an agent card shows: the mark (or None) and the pages of text."""
+    """What an agent card shows: the vendor mark (or None), the state icon (or
+    None) and the pages of text."""
     mark: object
     pages: list
+    icon: object = None
 
     @property
     def page_count(self) -> int:
         return len(self.pages)
 
 
-def card_layout(vendor_id: str, headline: str, marks: VendorMarks | None = None) -> CardLayout:
+def card_layout(vendor_id: str, headline: str, marks: VendorMarks | None = None,
+                state=None) -> CardLayout:
     """The mark size and pages for one agent. The largest mark in MARK_SIZES that
-    leaves room beside it for the title's first word; the smallest when none does."""
+    leaves room for the title's first word between it and the state icon; the
+    smallest when none does."""
     tokens = _tokens(headline)
+    icon = state_icon(state)
     first = tokens[0][0] if tokens else ""
     mark = None
     for box in MARK_SIZES:
         mark = marks.get(vendor_id, box) if marks is not None else None
         if mark is None:
             mark = _text_mark(vendor(vendor_id).short[:3])
-        if (mark is None or _ink_width(first) <= TEXT_W + 1 - (mark.shape[1] + MARK_GAP)
+        left, right = _spans(mark, icon)[0]
+        if (mark is None or _ink_width(first) <= right - left
                 or mark.shape[1] > WORDMARK_RATIO * mark.shape[0]):
             # A wordmark (aider, opencode, the short-name text) is not scaled: it
             # stops reading. The first word then starts below it.
             break
-    return CardLayout(mark, paginate(headline, mark))
+    return CardLayout(mark, paginate(headline, mark, icon), icon)
 
 
 def render_page(layout: CardLayout, page: int = 0):
-    """A (40, 72) bool array: one page of an agent card. The text block (and the
-    mark, on page 1) is centred vertically when it is shorter than the panel."""
+    """A (40, 72) bool array: one page of an agent card. Lines start at the top;
+    a title that fits beside the vendor mark is centred on the mark."""
     import numpy as np
     from PIL import Image
-    lines = layout.pages[page % layout.page_count] if layout.pages else []
-    mark = layout.mark if page % max(1, layout.page_count) == 0 else None
+    index = page % max(1, layout.page_count)
+    lines = layout.pages[index] if layout.pages else []
+    mark = layout.mark if index == 0 else None
+    spans = _spans(mark, layout.icon)
     beside = _beside(mark)
     cap = _measure("H")[1]
     text_h = (len(lines) - 1) * LINE_PITCH + (_measure("Hg")[3] - cap) if lines else 0
-    block = max(text_h, mark.shape[0] if mark is not None else 0)
-    top = max(0, (PANEL_H - block) // 2)
+    shift = (mark.shape[0] - text_h) // 2 if mark is not None and len(lines) <= beside else 0
     img = Image.new("1", (PANEL_W, PANEL_H), 0)
     draw = _draw(img)
-    # A title that fits beside the mark is centred on the mark, not on its top.
-    shift = (block - text_h) // 2 if mark is not None and len(lines) <= beside else 0
     for k, line in enumerate(lines):
         if not line:
             continue
         box = _measure(line)
+        left, right = spans[k]
         if k < beside:
-            left = mark.shape[1] + MARK_GAP
-            x = left - box[0]
+            x = left - box[0]                                   # against the mark
         else:
-            x = (PANEL_W - (box[2] - box[0])) // 2 - box[0]
-        draw.text((x, top + shift + k * LINE_PITCH - cap), line, font=_font(FONT_SIZE), fill=1)
+            x = left + (right - left - (box[2] - box[0])) // 2 - box[0]
+        draw.text((x, max(0, shift) + k * LINE_PITCH - cap), line, font=_font(FONT_SIZE), fill=1)
     canvas = np.array(img, dtype=bool)
     if mark is not None:
-        rows = beside * LINE_PITCH - 1
-        _paste(canvas, np.asarray(mark, dtype=bool), 0,
-               top + max(0, (min(rows, block) - mark.shape[0]) // 2))
+        _paste(canvas, np.asarray(mark, dtype=bool), 0, 0)
+    if layout.icon is not None:
+        _paste(canvas, layout.icon, PANEL_W - layout.icon.shape[1], 0)
     return canvas
 
 
-def render_card(vendor_id: str, headline: str, marks: VendorMarks | None = None, page: int = 0):
+def render_card(vendor_id: str, headline: str, marks: VendorMarks | None = None, page: int = 0,
+                state=None):
     """A (40, 72) bool array for one page of one agent card."""
-    return render_page(card_layout(vendor_id, headline, marks), page)
+    return render_page(card_layout(vendor_id, headline, marks, state), page)
 
 
 MIC_SCALE = 1.7

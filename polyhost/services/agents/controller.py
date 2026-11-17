@@ -146,12 +146,13 @@ class AgentKeysController:
                 slots.append(NO_SLOT)
                 continue
             states.append(agent.state)
-            # The card shows no state (the key's light does), so a state change
-            # uploads nothing. A long title has pages; every key shows the same
+            # The state icon is on every page, so a state change uploads the
+            # page shown again. A long title has pages; every key shows the same
             # page index at the same time, each page cached in its own slot.
             layout = self._layout(agent)
             index = int(self._clock() // TEXT_PAGE_S) % layout.page_count
-            drawn = (agent.vendor, agent.display_headline, self.marks.version, index)
+            drawn = (agent.vendor, agent.display_headline, self.marks.version,
+                     agent.state, index)
             slots.append(self._card(keeb, cache, ("agentcard",) + agent.key + (index,), drawn,
                                     lambda lay=layout, i=index: render_page(lay, i)))
         waiting = len(self.registry.waiting())
@@ -195,14 +196,15 @@ class AgentKeysController:
         return ok
 
     def _layout(self, agent):
-        """The card layout of an agent, measured once per title and mark version."""
-        key = (agent.vendor, agent.display_headline, self.marks.version)
+        """The card layout of an agent, measured once per title, mark version and
+        state."""
+        key = (agent.vendor, agent.display_headline, self.marks.version, agent.state)
         layout = self._layouts.get(key)
         if layout is None:
             if len(self._layouts) > 64:
                 self._layouts.clear()
             layout = self._layouts[key] = card_layout(agent.vendor, agent.display_headline,
-                                                      self.marks)
+                                                      self.marks, agent.state)
         return layout
 
     def _card(self, keeb, cache, key, drawn, render) -> int:
