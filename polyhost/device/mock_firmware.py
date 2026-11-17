@@ -735,7 +735,8 @@ class MockFirmware:
         rows, cols = self.settings.MATRIX_ROWS, self.settings.MATRIX_COLUMNS
         op = p[2]
         if op == 0:     # INFO
-            return _reply(p[1], body=bytes([0x7F, 4, 10, 59]))
+            ops = 0xFF if self.protocol >= 37 else 0x7F
+            return _reply(p[1], body=bytes([ops, 4, 10, 59]))
         if op == 1:     # TEXT
             pos, lines = 3, []
             for _ in range(2):
@@ -779,7 +780,20 @@ class MockFirmware:
         if op == 6:     # END
             self.tutorial_text, self.tutorial_spotlight = ("", ""), None
             self.tutorial_conds, self.tutorial_matched = [], 0
+            if getattr(self, "tutorial_emoji_restore", None) is not None:
+                self.emoji_search_mode = self.tutorial_emoji_restore
+                self.tutorial_emoji_restore = None
             return _reply(p[1])
+        if op == 7 and self.protocol >= 37:     # EMOJI_MODE
+            before = bool(getattr(self, "emoji_search_mode", False))
+            want = p[3]
+            if want not in (0, 1, 0xFF) or (want != 0xFF and not getattr(self, "emoji_dict", True)):
+                return _reply(p[1], False, body=bytes([int(before)]))
+            if want != 0xFF:
+                if getattr(self, "tutorial_emoji_restore", None) is None:
+                    self.tutorial_emoji_restore = before
+                self.emoji_search_mode = bool(want)
+            return _reply(p[1], body=bytes([int(before)]))
         return _reply(p[1], False)
 
     def _combos(self, p):

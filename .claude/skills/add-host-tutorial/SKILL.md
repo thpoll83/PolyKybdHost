@@ -40,6 +40,7 @@ script did not expect. Before writing a step, find in `qmk_firmware/keyboards/po
 | a key whose keycode the mode hides | `wait: {key: {keycode: ...}}` (arms the position) |
 | a step that ends when a layer closes | `wait: {leave: NAME}` |
 | show only some keys | `spotlight: [...]`; add the keys the user must see (an inverted Ctrl) |
+| a step that needs the emoji layer's tab or search mode | `emoji_mode: search` (or `tab`), and `min_protocol: 37`. Never ask the user to press the mode key: it toggles, so the press switches a user who was already in that mode out of it |
 | leave the layer at the end | `point: {keycode: KC_BASE}` + `wait: {press: KC_BASE}`, then a `reveal` step |
 
 `say` is one or two lines, ASCII, at most 128 px each in the status face and 59 bytes

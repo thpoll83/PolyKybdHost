@@ -186,8 +186,10 @@ class TutorialRun:
             self._show_on_keyboard(step)
 
     def _show_on_keyboard(self, step):
-        """Cmd 49 for the step shown: text, spotlight, reveal, and the event it waits
-        for. A refusal is logged; the step still runs with Next."""
+        """Cmd 49 for the step shown: the emoji mode, text, spotlight, reveal, and the
+        event it waits for. A refusal is logged; the step still runs with Next."""
+        if step.emoji_mode is not None and self.keeb.supports("tutorial_emoji_mode"):
+            self._report("emoji mode", self.keeb.tutorial_emoji_mode(step.emoji_mode))
         lines = list(step.say) + ["", ""]
         self._report("text", self.keeb.tutorial_text(lines[0], lines[1]))
         if step.spotlight is not None:

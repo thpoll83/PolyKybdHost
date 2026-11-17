@@ -97,6 +97,13 @@ class ParseTest(unittest.TestCase):
         self.assertEqual(parse_script(_step(wait={"leave": "Language"})).steps[0].wait,
                          Wait("leave", "Language"))
 
+    def test_emoji_mode(self):
+        self.assertTrue(parse_script(_step(emoji_mode="search")).steps[0].emoji_mode)
+        self.assertFalse(parse_script(_step(emoji_mode="tab")).steps[0].emoji_mode)
+        self.assertIsNone(parse_script(_step()).steps[0].emoji_mode)
+        with self.assertRaises(ScriptError):
+            parse_script(_step(emoji_mode="on"))
+
     def test_one_shot_layer_keycode(self):
         self.assertEqual(parse_script(_step(point={"keycode": "OSL(7)"})).steps[0].point,
                          Point("keycode", 0x5287))

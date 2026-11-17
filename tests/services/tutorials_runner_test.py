@@ -60,11 +60,16 @@ class _Keyboard:
         self.calls.append(("end",))
         return True, "ok"
 
+    def tutorial_emoji_mode(self, search):
+        self.calls.append(("emoji", search))
+        return True, False
+
     def cmd49(self):
         return [c for c in self.calls if c[0] in ("text", "spot", "reveal", "arm", "end")]
 
     def supports(self, feature):
         return self.protocol_version >= {"key_attention": 32, "key_guide": 34,
+                                         "tutorial_emoji_mode": 37,
                                          "host_tutorial": 35}[feature]
 
     def get_layer_names(self):
@@ -463,6 +468,18 @@ class HostTutorialTest(unittest.TestCase):
         kb.layer, kb.matched = 0, 0          # between two presses of the way to Fn
         self.assertFalse(run.poll())
         self.assertEqual(run.index, 1)
+
+    def test_emoji_mode_is_set_from_protocol_37(self):
+        steps = [{"say": "a", "emoji_mode": "search"}, {"say": "b"}]
+        run, kb = _run(steps, _Keyboard(protocol=37))
+        run.start()
+        self.assertIn(("emoji", True), kb.calls)
+        self.assertLess(kb.calls.index(("emoji", True)), kb.calls.index(("text", "a", "")))
+        run.next()
+        self.assertEqual([c for c in kb.calls if c[0] == "emoji"], [("emoji", True)])
+        run, kb = _run(steps, _Keyboard(protocol=36))
+        run.start()
+        self.assertNotIn(("emoji", True), kb.calls)     # v36 NACKs op 7: not sent
 
     def test_a_next_step_polls_too(self):
         # The session stays alive while a step waits for Next.

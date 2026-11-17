@@ -175,6 +175,10 @@ KEY_GUIDE_MAX_STEPS = 4
 # Minimum firmware PROTOCOL_VERSION for the host tutorial (cmd 49): status text, the
 # spotlight, the reveal and key/layer conditions (services/tutorials).
 HOST_TUTORIAL_MIN_PROTOCOL = 35
+# Minimum firmware PROTOCOL_VERSION for cmd 49 op 7 EMOJI_MODE: the tutorial sets the
+# emoji layer's tab or search mode, and the keyboard restores the user's mode when the
+# session ends. A v36 firmware NACKs the op.
+TUTORIAL_EMOJI_MODE_MIN_PROTOCOL = 37
 # Minimum firmware PROTOCOL_VERSION for the agent-key page bytes (cmd 45 op 1): the page
 # shown, the page count and the finished-elsewhere counter. Esc shows "Next 1/2", the
 # AI key ripples for agents on another page, and a page change rings nothing. A v35
@@ -235,6 +239,7 @@ FEATURE_MIN_PROTOCOL = {
     "combos": COMBOS_MIN_PROTOCOL,
     "key_guide": KEY_GUIDE_MIN_PROTOCOL,
     "host_tutorial": HOST_TUTORIAL_MIN_PROTOCOL,
+    "tutorial_emoji_mode": TUTORIAL_EMOJI_MODE_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -1200,9 +1205,25 @@ class PolyKybd:
                       "layer": reply[6]}
 
     def tutorial_end(self) -> tuple[bool, str]:
-        """Clear the text, the spotlight and the conditions on both halves."""
+        """Clear the text, the spotlight and the conditions on both halves, and restore
+        the emoji mode a tutorial changed."""
         ok, reply = self._host_tutorial("end", HostTutorial.OP_END)
         return ok, "ok" if ok else reply
+
+    def tutorial_emoji_mode(self, search: bool | None) -> tuple[bool, bool | str]:
+        """Set the emoji layer to search mode (True) or tab mode (False), or only read
+        it (None). (True, the mode before: True for search) on success. The keyboard
+        restores the mode it found when the tutorial session ends (END or watchdog).
+        Refused without an emoji search dictionary."""
+        if not self.supports("tutorial_emoji_mode"):
+            return False, (f"Firmware protocol too old for the tutorial's emoji mode "
+                           f"(need v{TUTORIAL_EMOJI_MODE_MIN_PROTOCOL}+).")
+        value = HostTutorial.EMOJI_QUERY if search is None else \
+            HostTutorial.EMOJI_SEARCH if search else HostTutorial.EMOJI_TAB
+        ok, reply = self._host_tutorial("emoji mode", HostTutorial.OP_EMOJI_MODE, value)
+        if not ok:
+            return ok, reply
+        return True, reply[3] == HostTutorial.EMOJI_SEARCH
 
     # ---- agent keys (cmd 45 / 46, v31+) ---------------------------------------
 

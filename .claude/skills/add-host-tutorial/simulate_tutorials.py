@@ -3,7 +3,7 @@
 
 Builds the stored layers (0..8) from the firmware's keymap.c the way
 scripts/export_preview_data.py reads it, gives the runner a fake keyboard on
-protocol 35, and prints what every step would send: the ring or guide, the
+the current protocol, and prints what every step would send: the ring or guide, the
 spotlight size, the ARM conditions and the reveal. A step whose ring_error is not
 None points at a key the keymap does not have.
 
@@ -30,6 +30,8 @@ import export_preview_data as E                                          # noqa:
 from polyhost.gui.layout_dialog import qmk_keycode_helper as qh          # noqa: E402
 from polyhost.services.tutorials import loader as L                     # noqa: E402
 from polyhost.services.tutorials.runner import TutorialRun              # noqa: E402
+
+from polyhost._version import __protocol__ as PROTOCOL                 # noqa: E402
 
 STORED = ["_L0", "_L1", "_L2", "_L3", "_L4", "_FL", "_NL", "_UL", "_ML"]
 NAMES = ["Qwerty", "Stag!", "ColDH", "Neo", "Workman", "Fn", "Numpad", "Utility", "MIDI"]
@@ -74,7 +76,7 @@ def stored_buffer(pk: pathlib.Path) -> list:
 
 
 class FakeKeyboard:
-    protocol_version = 35
+    protocol_version = PROTOCOL
     device_settings = types.SimpleNamespace(MATRIX_ROWS=ROWS, MATRIX_COLUMNS=COLS)
 
     def __init__(self, buf):
@@ -107,6 +109,10 @@ class FakeKeyboard:
 
     def tutorial_end(self):
         return True, "ok"
+
+    def tutorial_emoji_mode(self, search):
+        self.log.append(("emoji", search))
+        return True, False
 
     def get_layer_names(self):
         return True, list(NAMES)
@@ -146,7 +152,11 @@ def main() -> int:
         kb = FakeKeyboard(buf)
         run = TutorialRun(tutorial, kb)
         print(f"===== {tid}")
-        run.start()
+        ok, msg = run.start()
+        if not ok:
+            print(f" NOT STARTED: {msg}")
+            bad = True
+            continue
         for i in range(len(tutorial.steps)):
             st = run.state()
             json.dumps(st)        # the control socket must be able to send it

@@ -132,6 +132,7 @@ Step fields:
 | `spotlight` | a list of keys in the `point` forms, plus `{layer: NAME}` (every key with a keycode on that layer); `[]` darkens all but the ringed key. Applies to that step only | cmd 49 SPOTLIGHT |
 | `reveal` | `{from: <point>}`: the wave from that key lights the dark keys and ends the spotlight. A reveal step keeps the spotlight of the step before | cmd 49 REVEAL |
 | `wait` | `next`, `{seconds: N}`, `{layer: NAME}`, `{press: keycode}`, `{key: <point>}` (that key position is pressed, whatever it types then: the macro slot picker swallows keys and reports the base layer's keycode), `{leave: NAME}` (the keyboard is no longer on that layer, read from POLL) | `layer`/`press`/`key`/`leave` need cmd 49 ARM/POLL; else they become `next` |
+| `emoji_mode` | `search` or `tab`: sets the emoji layer's mode when the step is shown, so a step does not depend on the mode the user chose last. The keyboard restores the user's mode when the session ends (END or the watchdog). A script that relies on it sets `min_protocol: 37` | cmd 49 op 7 EMOJI_MODE (protocol 37); skipped below |
 
 A step after `guide_to_layer: NAME` with `wait: {layer: NAME}` is about that layer
 when the guide's last key stays on it (`TO`, `TG`). This lasts until a step that
@@ -184,6 +185,9 @@ PROTOCOL_HISTORY.md` → *v35*. What the host does with it:
 - The slave learns TEXT, SPOTLIGHT, REVEAL and END as the forwarded report, not
   through `poly_sync_t` (firmware `SPLIT_SYNC.md` → *Host state goes to the slave as
   the report*).
+- A step with `emoji_mode` sends EMOJI_MODE (op 7, v37) before its TEXT. The keyboard
+  remembers the mode it first overwrote and restores it with END or the watchdog, so
+  the host sends no restore of its own.
 - RAM: +108 B in the pack firmware (main SRAM free 6056 → 5948 B, local gcc 13.2); not
   in the DOOM monolith.
 
@@ -195,7 +199,7 @@ PROTOCOL_HISTORY.md` → *v35*. What the host does with it:
 | `brightness` | guide to Utility, the preset row, - and +, AUTO/MAN, back to typing |
 | `accents` | hold Intl (guide, `MO`), press e, tap Ctrl (the picker), pick an accent, the remap key. The spotlight keeps the picker row and Ctrl lit; `INTL_LAYER.md`'s "nothing may overlay this layer" is about app overlays |
 | `rgb-lighting` | guide to Settings, on/off, effects, hue and saturation, brightness and speed, back to typing |
-| `emoji-search` | guide to Emoji, the mode key, type a word (no `say`, so the status display shows the query), results, Clear/Space/Backspace, back to typing |
+| `emoji-search` | guide to Emoji, `emoji_mode: search` on the mode-key step (`min_protocol: 37`), type a word (no `say`, so the status display shows the query), results, Clear/Space/Backspace, back to typing |
 | `keyboard-language` | the Lang key, the continent row, tap a language (`leave`) |
 | `base-layouts` | guide to Settings, `KC_L0`..`KC_L4`, back to typing |
 | `record-macro` | Fn, then the `OSL(Utility)` key twice (one-shot, then REC), the slot picker (`key` wait on M0), record (no `say`, so the status display shows REC), stop, play |

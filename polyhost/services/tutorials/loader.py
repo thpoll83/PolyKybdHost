@@ -32,7 +32,9 @@ OSL_BASE = 0x5280
 
 _ID = re.compile(r"[a-z0-9][a-z0-9-]*")
 _SCRIPT_KEYS = {"id", "category", "title", "summary", "min_protocol", "steps"}
-_STEP_KEYS = {"say", "text", "point", "guide_to_layer", "spotlight", "reveal", "wait"}
+_STEP_KEYS = {"say", "text", "point", "guide_to_layer", "spotlight", "reveal", "wait",
+              "emoji_mode"}
+_EMOJI_MODES = {"search": True, "tab": False}
 _POINT_KINDS = {"keycode", "layer_key", "key"}
 _WAIT_KINDS = {"seconds", "layer", "press", "key", "leave"}
 
@@ -76,6 +78,9 @@ class Step:
     # ends the spotlight. A step with a reveal and no spotlight keeps the one before.
     reveal: Point | None = None
     wait: Wait = Wait("next")
+    # True: the emoji layer in search mode, False: tab mode, None: as it is (cmd 49 op 7,
+    # protocol 37). The keyboard restores the user's mode when the tutorial ends.
+    emoji_mode: bool | None = None
 
 
 @dataclass(frozen=True)
@@ -324,7 +329,15 @@ def _step(raw, where: str) -> Step:
                         if "guide_to_layer" in raw else None),
         spotlight=_spotlight(raw["spotlight"], f"{where}.spotlight") if "spotlight" in raw else None,
         reveal=_reveal(raw["reveal"], f"{where}.reveal") if "reveal" in raw else None,
-        wait=_wait(raw["wait"], f"{where}.wait") if "wait" in raw else Wait("next"))
+        wait=_wait(raw["wait"], f"{where}.wait") if "wait" in raw else Wait("next"),
+        emoji_mode=_emoji_mode(raw["emoji_mode"], f"{where}.emoji_mode")
+        if "emoji_mode" in raw else None)
+
+
+def _emoji_mode(value, where: str) -> bool:
+    if value not in _EMOJI_MODES:
+        raise ScriptError(f"{where}: search or tab")
+    return _EMOJI_MODES[value]
 
 
 def parse_script(raw, path: str = "", user: bool = False) -> Tutorial:

@@ -106,6 +106,7 @@ CALLS = {
     "tutorial_arm": [([(1, 2, 0), (2, 8, 0), (3, 0x08, 0x7E)],), ([],)],
     "tutorial_poll": [()],
     "tutorial_end": [()],
+    "tutorial_emoji_mode": [(True,), (False,), (None,)],
     "ai_query": [()],
     "ai_set_keys": [([1, 2, 3, 4, 5, 0, 0, 0, 0, 0], 0x0F, [588, 589, 590, 591, 592] + [0xFFFF] * 5 + [598, 599]),
                     ([1, 0, 0, 0, 0, 0, 0, 0, 0, 0], 0x02, [0xFFFF] * 12, (1, 2, 3))],

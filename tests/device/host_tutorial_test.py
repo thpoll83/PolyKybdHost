@@ -118,5 +118,53 @@ class HostTutorialTest(unittest.TestCase):
         self.assertFalse(kb.tutorial_reveal(12, 0)[0])
 
 
+
+class EmojiModeTest(unittest.TestCase):
+    """cmd 49 op 7 (v37): the tutorial sets the emoji layer's mode; END restores it."""
+
+    def test_gate(self):
+        from polyhost.device.poly_kybd import TUTORIAL_EMOJI_MODE_MIN_PROTOCOL
+        self.assertEqual(TUTORIAL_EMOJI_MODE_MIN_PROTOCOL, 37)
+        kb, fw = _keyboard(protocol=36)
+        ok, msg = kb.tutorial_emoji_mode(True)
+        self.assertFalse(ok)
+        self.assertIn("too old", msg)
+        self.assertTrue(kb.tutorial_text("a")[0])       # the rest of cmd 49 still works
+        self.assertEqual(fw.refused, [])
+
+    def test_wire_bytes(self):
+        kb, _ = _keyboard(protocol=37)
+        rec = _Recorder()
+        kb.hid = rec
+        kb.tutorial_emoji_mode(True)
+        kb.tutorial_emoji_mode(False)
+        kb.tutorial_emoji_mode(None)
+        # report id 'P', cmd 49, op 7, then search 1 / tab 0 / query 0xFF
+        self.assertEqual([m[:4] for m in rec.sent],
+                         [bytes([0x50, 49, 7, 1]), bytes([0x50, 49, 7, 0]),
+                          bytes([0x50, 49, 7, 0xFF])])
+
+    def test_set_then_end_restores(self):
+        kb, fw = _keyboard(protocol=37)
+        self.assertEqual(kb.tutorial_emoji_mode(None), (True, False))
+        self.assertEqual(kb.tutorial_emoji_mode(True), (True, False))   # the mode before
+        self.assertTrue(fw.emoji_search_mode)
+        self.assertEqual(kb.tutorial_emoji_mode(False), (True, True))
+        self.assertTrue(kb.tutorial_end()[0])
+        self.assertFalse(fw.emoji_search_mode)          # the mode before the first set
+        fw.emoji_search_mode = True
+        kb.tutorial_emoji_mode(False)
+        kb.tutorial_end()
+        self.assertTrue(fw.emoji_search_mode)
+
+    def test_refused_without_a_dictionary(self):
+        kb, fw = _keyboard(protocol=37)
+        fw.emoji_dict = False
+        ok, msg = kb.tutorial_emoji_mode(True)
+        self.assertFalse(ok)
+        self.assertIn("refused", msg)
+        self.assertTrue(kb.tutorial_emoji_mode(None)[0])   # a query is still answered
+
+
 if __name__ == "__main__":
     unittest.main()

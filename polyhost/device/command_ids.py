@@ -424,6 +424,10 @@ class HostTutorial:
     OP_ARM = 4
     OP_POLL = 5
     OP_END = 6
+    OP_EMOJI_MODE = 7   # v37: [3] EMOJI_*; reply [3] the mode before
+    EMOJI_TAB = 0
+    EMOJI_SEARCH = 1
+    EMOJI_QUERY = 0xFF
     # TEXT: a length byte per line and both lines after the op byte, in one report.
     TEXT_BYTES = 59
     SPOT_FLAG_ON = 0x01

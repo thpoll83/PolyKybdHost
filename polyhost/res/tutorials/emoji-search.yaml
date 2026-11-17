@@ -3,7 +3,7 @@ id: emoji-search
 category: emoji
 title: Emoji search
 summary: Find an emoji by typing a word on the emoji layer, without the host app.
-min_protocol: 32
+min_protocol: 37
 steps:
   - guide_to_layer: Emoji
     say: ["Tap the", "ringed key"]
@@ -13,17 +13,17 @@ steps:
       your OS.
     wait: {layer: Emoji}
   - point: {keycode: KC_EMJ_MODE}
+    emoji_mode: search
     spotlight: []
-    say: ["Search mode:", "tap ringed key"]
+    say: ["Search mode", "is on"]
     text: >-
-      This key changes between tab mode and search mode. Tap it. In search mode it
-      shows a party face with the switch knob up.
-    wait: {press: KC_EMJ_MODE}
+      The tutorial switched the layer to search mode: the ringed key shows a party face
+      with the switch knob up. This key changes between tab mode and search mode. When
+      the tutorial ends, the layer goes back to the mode you had.
+    wait: {seconds: 6}
   - text: >-
-      If the mode key now shows a magnifying glass with the knob down, the layer was
-      in search mode already: tap it once more. Then type a word, for example smile.
-      The letters are at their usual places. The status display shows what you typed
-      and how many emoji match. Then press Next.
+      Type a word, for example smile. The letters are at their usual places. The
+      status display shows what you typed and how many emoji match. Then press Next.
   - point: {keycode: KC_EMJ_PAGE_NEXT}
     spotlight: [{keycode: KC_EMJ_PAGE_PREV}]
     say: ["Number row:", "the results"]

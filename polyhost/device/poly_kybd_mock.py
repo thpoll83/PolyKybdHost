@@ -506,6 +506,13 @@ class PolyKybdMock:
     def tutorial_end(self):
         return self._tutorial_call("tutorial_end")
 
+    def tutorial_emoji_mode(self, search):
+        self._log_call("tutorial_emoji_mode", search)
+        if (refusal := self._too_old("tutorial_emoji_mode")):
+            return False, refusal
+        self._wire.protocol_version = self.protocol_version
+        return self._wire.tutorial_emoji_mode(search)
+
     def ai_set_keys(self, states, flags, slots, page=None):
         return self._ai_call("ai_set_keys", states, flags, slots, page)
 
