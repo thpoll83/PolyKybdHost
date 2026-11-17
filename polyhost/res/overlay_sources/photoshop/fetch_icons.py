@@ -353,6 +353,35 @@ _DRAWN = {
 BORROWED = {"swapcolors.png": "gimp"}
 
 
+# --- One icon per action (maintainer, 2026-11-15) ----------------------------
+# Two keys of this app share an image only when they do the same thing. The
+# glyphs below give the other keys their own image. The older files stay, because
+# other sets may copy them (icon_fetch.borrow).
+ACTION_FLUENT = {
+    "zoomtool": "Search",
+    "stepbackward": "Arrow Step Back",
+    "screenmodes": "Desktop",
+    "_eye": "Eye",
+    "_cut": "Cut",
+}
+# file -> (base, badge): the base reduced to the upper left, the badge in the
+# lower right (dcc_glyphs.with_badge).
+ACTION_BADGED = {
+    "mergevisible.png": ("mergedown.png", "_eye.png"),
+    "newlayercut.png": ("newlayer.png", "_cut.png"),
+}
+
+
+def action_icons(out: Path) -> None:
+    """Draw the ACTION_* icons; a committed composite is left as it is."""
+    from polyhost.res.overlay_sources import dcc_glyphs, icon_fetch as fetch
+    if ACTION_FLUENT:
+        fetch.fluent(ACTION_FLUENT, out)
+    for name, (base, badge) in ACTION_BADGED.items():
+        dcc_glyphs.guarded(out / name, lambda p, b=base, g=badge: dcc_glyphs.with_badge(
+            out / b, out / g, p), f"{base} + {badge}")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -384,6 +413,7 @@ def main() -> int:
     # One size across the whole family (see rect_mark.shared_size).
     rect_mark.ensure(out / "photoshop.png", "Ps",
                      size=rect_mark.shared_size(["Ps", "Ai", "Pr", "Ae"]))
+    action_icons(out)
     print(f"Wrote icons to {out}")
     return 0
 

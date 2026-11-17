@@ -15,6 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import dcc_glyphs  # noqa: E402
 import icon_fetch  # noqa: E402
 
 FLUENT = {
@@ -110,8 +111,7 @@ FLUENT = {
     "mutesel": "ms:volume_mute",
     "unmutesel": "ms:volume_up",
     "newtrack": "ms:playlist_add",
-    "focusnext": "ms:keyboard_arrow_right",
-    "focusprev": "ms:keyboard_arrow_left",
+    "_focus": "ms:center_focus_strong",  # base of focusnext / focusprev
     "trackgain": "ms:tune",
     "trackmenu": "ms:menu",
     "trackmute": "ms:no_sound",
@@ -131,6 +131,13 @@ def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
     n = icon_fetch.fluent(FLUENT, out)
+    # Focus tracks forward / back: a focus frame over an arrow, so they differ
+    # from the cursor jump chevrons (one icon per action).
+    for name, fwd in (("focusnext", True), ("focusprev", False)):
+        dcc_glyphs.guarded(out / f"{name}.png",
+                           lambda q, f=fwd: dcc_glyphs.with_arrow(out / "_focus.png", q, f),
+                           "_focus + arrow")
+        n += 1
     print(f"Wrote {n} icons to {out}")
     return 0
 

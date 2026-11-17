@@ -186,6 +186,34 @@ _DRAWN = {
 }
 
 
+# --- One icon per action (maintainer, 2026-11-15) ----------------------------
+# Two keys of this app share an image only when they do the same thing. The
+# glyphs below give the other keys their own image. The older files stay, because
+# other sets may copy them (icon_fetch.borrow).
+ACTION_FLUENT = {
+    "_tune": "ms:tune",
+    "menusearch": "ms:manage_search",
+    "pixelgrid": "ms:grid_4x4",
+    "pasteoversel": "Clipboard Arrow Right",
+}
+# file -> (base, badge): the base reduced to the upper left, the badge in the
+# lower right (dcc_glyphs.with_badge).
+ACTION_BADGED = {
+    "copyprops.png": ("copy.png", "_tune.png"),
+    "pasteprops.png": ("paste.png", "_tune.png"),
+}
+
+
+def action_icons(out: Path) -> None:
+    """Draw the ACTION_* icons; a committed composite is left as it is."""
+    from polyhost.res.overlay_sources import dcc_glyphs, icon_fetch as fetch
+    if ACTION_FLUENT:
+        fetch.fluent(ACTION_FLUENT, out)
+    for name, (base, badge) in ACTION_BADGED.items():
+        dcc_glyphs.guarded(out / name, lambda p, b=base, g=badge: dcc_glyphs.with_badge(
+            out / b, out / g, p), f"{base} + {badge}")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -201,6 +229,7 @@ def main() -> int:
         else:
             fn(out / fname)
             print(f"  {fname}  <- drawn (white-on-transparent)")
+    action_icons(out)
     print(f"Wrote icons to {out}")
     return 0
 

@@ -40,7 +40,7 @@ bindings:
   - { key: O, mods: [], icon: anim_add.png, label: "Add animation from scene selection" }
   - { key: P, mods: [], icon: pose_add.png, label: "Add pose from scene selection" }
   - { key: A, mods: [], icon: frame_all.png, label: "Frame all" }
-  - { key: F, mods: [], icon: zoomextsel.png, label: "Frame selection" }
+  - { key: F, mods: [], icon: zoomextsel.png, label: "Frame selected" }
   - { key: W, mods: [], icon: clip_split.png, label: "Split clip at current frame" }
   - { key: G, mods: [], icon: trim_start.png, label: "Trim clip before" }
   - { key: H, mods: [], icon: trim_end.png, label: "Trim clip after" }
@@ -50,7 +50,7 @@ bindings:
   - { key: R, mods: [], icon: clip_scale.png, label: "Scale clip" }
   - { key: T, mods: [], icon: clip_loop.png, label: "Loop clip" }
   - { key: Y, mods: [], icon: clip_hold.png, label: "Hold clip" }
-  - { key: G, mods: [CTRL], icon: group.png, label: "Group clips" }
+  - { key: G, mods: [CTRL], icon: group_clips.png, label: "Group clips" }
   - { key: G, mods: [CTRL, SHIFT], icon: ungroup.png, label: "Ungroup clips" }
 
   # --- playback (Animation hotkeys, Playback Control) ---

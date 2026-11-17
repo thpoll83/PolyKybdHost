@@ -43,7 +43,7 @@ bindings:
   - { key: PGDN, mods: [], icon: hier_child.png, label: "Select child" }
   - { key: INSERT, mods: [], icon: pivot.png, label: "Affect pivot only" }
   - { key: DELETE, mods: [], icon: delete.png, label: "Delete objects" }
-  - { key: SPACE, mods: [], icon: lock.png, label: "Lock" }
+  - { key: SPACE, mods: [], icon: quadlock.png, label: "Lock quad menu" }
 
   # --- no modifier: sub-object levels (Editable Poly) ---
   - { key: "1", mods: [], icon: sel_vert.png, label: "Sub-object level 1" }
@@ -202,7 +202,7 @@ bindings:
   # --- Ctrl+Alt ---
   - { key: F, mods: [CTRL, ALT], icon: fetch.png, label: "Fetch" }
   - { key: S, mods: [CTRL, ALT], icon: save_incremental.png, label: "Save incremental" }
-  - { key: Q, mods: [CTRL, ALT], icon: localview.png, label: "Isolate selection toggle" }
+  - { key: Q, mods: [CTRL, ALT], icon: localview_toggle.png, label: "Isolate selection toggle" }
   - { key: Z, mods: [CTRL, ALT], icon: frame_all.png, label: "Zoom extents" }
   - { key: X, mods: [CTRL, ALT], icon: expert.png, label: "Expert mode" }
 

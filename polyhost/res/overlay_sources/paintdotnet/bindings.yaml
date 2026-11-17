@@ -68,10 +68,10 @@ bindings:
   - { key: LEFT_BRACKET,  mods: [], icon: brushdec1.png, label: "Brush width -1", source: "drawn (thin bar + -1)", mode: alpha }
   - { key: RIGHT_BRACKET, mods: [], icon: brushinc1.png, label: "Brush width +1", source: "drawn (thick bar + +1)", mode: alpha }
   # window toggles
-  - { key: F5, mods: [], icon: toolswin.png,   label: "Tools window",   source: "ms-fluent/Options (MIT)" }
+  - { key: F5, mods: [], icon: toolswindow.png,   label: "Tools window",   source: "ms-fluent/Toolbox (MIT)" }
   - { key: F6, mods: [], icon: historywin.png, label: "History window", source: "ms-fluent/History (MIT)" }
-  - { key: F7, mods: [], icon: layerswin.png,  label: "Layers window",  source: "ms-fluent/Layer Diagonal (MIT)" }
-  - { key: F8, mods: [], icon: colorswin.png,  label: "Colours window", source: "ms-fluent/Color (MIT)" }
+  - { key: F7, mods: [], icon: layerswindow.png,  label: "Layers window",  source: "material-symbols/stacks (Apache-2.0)" }
+  - { key: F8, mods: [], icon: colourswindow.png,  label: "Colours window", source: "ms-fluent/Window (MIT) + material-symbols/palette (Apache-2.0), dcc_glyphs.with_badge" }
   - { key: F4, mods: [], icon: layerprops.png, label: "Layer properties", source: "ms-fluent/Options (MIT)" }
 
   # --- Ctrl: file (primary R channel) -----------------------------------
@@ -120,7 +120,7 @@ bindings:
   # --- Ctrl+Shift (combo R channel) -------------------------------------
   - { key: S, mods: [CTRL, SHIFT], icon: saveas.png,    label: "Save as",             source: "ms-fluent/Save Edit (MIT)" }
   - { key: C, mods: [CTRL, SHIFT], icon: copymerged.png, label: "Copy merged",        source: "ms-fluent/Layer Diagonal (MIT)" }
-  - { key: V, mods: [CTRL, SHIFT], icon: pastelayer.png, label: "Paste into new layer", source: "ms-fluent/Layer Diagonal Add (MIT)" }
+  - { key: V, mods: [CTRL, SHIFT], icon: pasteintolayer.png, label: "Paste into new layer", source: "ms-fluent/Clipboard Paste + Layer Diagonal Add (MIT), dcc_glyphs.with_badge" }
   - { key: X, mods: [CTRL, SHIFT], icon: crop.png,      label: "Crop to selection",   source: "ms-fluent/Crop (MIT)" }
   - { key: N, mods: [CTRL, SHIFT], icon: newlayer.png,  label: "Add new layer",       source: "ms-fluent/Layer Diagonal Add (MIT)" }
   - { key: D, mods: [CTRL, SHIFT], icon: duplayer.png,  label: "Duplicate layer",     source: "ms-fluent/Document Multiple (MIT)" }
@@ -136,7 +136,7 @@ bindings:
   - { key: U, mods: [CTRL, SHIFT], icon: huesat.png,     label: "Hue / saturation",   source: "ms-fluent/Color (MIT)" }
   - { key: I, mods: [CTRL, SHIFT], icon: invertcolors.png, label: "Invert colours",   source: "ms-fluent/Color Background (MIT)" }
   - { key: P, mods: [CTRL, SHIFT], icon: posterize.png,  label: Posterize,            source: "ms-fluent/Filter (MIT)" }
-  - { key: E, mods: [CTRL, SHIFT], icon: sepia.png,      label: Sepia,                source: "ms-fluent/Weather Sunny (MIT)" }
+  - { key: E, mods: [CTRL, SHIFT], icon: sepiatone.png,      label: Sepia,                source: "material-symbols/filter_vintage (Apache-2.0)" }
   - { key: TAB, mods: [CTRL, SHIFT], icon: previmage.png, label: "Previous image",    source: "ms-fluent/Arrow Left (MIT)" }
 
   # --- Ctrl+Alt (combo G channel) ---------------------------------------

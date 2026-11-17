@@ -52,7 +52,7 @@ bindings:
   - { key: W, mods: [CTRL, SHIFT], icon: ins_move.png, label: "Insert translate key" }
   - { key: E, mods: [CTRL, SHIFT], icon: ins_rotate.png, label: "Insert rotate key" }
   - { key: R, mods: [CTRL, SHIFT], icon: ins_scale.png, label: "Insert scale key" }
-  - { key: I, mods: [ALT], icon: key_insert_all.png, label: "Key on selected curve" }
+  - { key: I, mods: [ALT], icon: key_curve.png, label: "Key on selected curve" }
   - { key: ".", mods: [], icon: key_next.png, label: "Next key" }
   - { key: ",", mods: [], icon: key_prev.png, label: "Previous key" }
 

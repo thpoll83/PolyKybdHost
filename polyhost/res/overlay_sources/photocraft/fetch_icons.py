@@ -68,7 +68,7 @@ FLUENT = {
     "desaturate": "Color Line",
     "rulers": "Ruler",
     "extras": "Eye Off",
-    "fitscreen": "Full Screen Maximize",
+    "fitscreen": "Zoom Fit",   # was the Screen mode glyph (F)
     "zoomin": "Zoom In",
     "zoomout": "Zoom Out",
     "invertsel": "Arrow Swap",
@@ -79,11 +79,10 @@ FLUENT = {
     "eraser": "Eraser",
     "type": "Text T",
     "eyedropper": "Eyedropper",
-    "zoom": "Zoom In",
+    "cursor": "Cursor",   # badge of the zoom TOOL (zoomtool.png)
     "hand": "Hand Right",
     "pen": "Pen",
     "shape": "Shapes",
-    "historybrush": "History",
     "fill": "Paint Bucket",
     "screenmode": "Full Screen Maximize",
     "stepback": "History",
@@ -212,6 +211,62 @@ def _preserve(fill: Path, lock: Path, path: Path) -> None:
     print(f"  {path.name}  <- composite ({fill.stem} + lock)")
 
 
+_PCT = {"1": "10%", "2": "20%", "3": "30%", "4": "40%", "5": "50%",
+        "6": "60%", "7": "70%", "8": "80%", "9": "90%", "0": "100%"}
+WORDS = {f"opacity{k}": ("opacity", w) for k, w in _PCT.items()}
+WORDS.update({f"flowfill{k}": ("flowfill", w) for k, w in _PCT.items()})
+WORDS.update({
+    "eraserhold": ("eraser", "HOLD"),       # ` held: erase with the brush
+    "zoominhold": ("zoomin", "HOLD"),       # Cmd+Space held
+    "zoomouthold": ("zoomout", "HOLD"),     # Alt+Space held
+    "layerviacut": ("cut", "LAYER"),        # Cmd+Shift+J
+    "typesizeup10": ("typesizeup", "+10"),
+    "typesizedown10": ("typesizedown", "-10"),
+})
+SPACE_HAND = "hand.png"
+BADGED = {
+    "zoomtool.png": ("zoomin.png", "cursor.png"),       # Z, the tool; Cmd+= zooms in one step
+    "historybrush.png": ("brush.png", "stepback.png"),  # Y; Cmd+Alt+Z is the History glyph alone
+}
+
+
+# ------------------------------------------------- one icon per action (2026-11-15)
+# Two keys share an image only when they do the same thing (maintainer, 2026-11-15).
+# The variants below are drawn from glyphs this set already has:
+# * WORDS: the glyph over a short word, 1-bit at 40x40, with the glyph + word code
+#   of ../ghidra/fetch_icons.py (as the Binary Ninja set does); placed 1:1.
+# * SPACE_HAND: the hand with an arrow on each side, the "hold Space" pan hint of
+#   ../space_hint.py; placed 1:1 on the whole 72x40 key.
+# * BADGED: dcc_glyphs.with_badge, the glyph at the upper left, a second one at
+#   the lower right.
+# All are guarded: a committed PNG is left as it is.
+def _ghidra_helpers():
+    """`../ghidra/fetch_icons.py` as a module, for its glyph + word composites."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "ghidra_fetch_icons", Path(__file__).resolve().parent.parent / "ghidra" / "fetch_icons.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _variants(out: Path) -> None:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+    from polyhost.res.overlay_sources import dcc_glyphs, space_hint
+    g = _ghidra_helpers()
+    g.COMPOSITES, g.ISA = WORDS, {}
+    g.composites(out)
+    if SPACE_HAND:
+        dcc_glyphs.guarded(
+            out / "space_hand.png",
+            lambda q: space_hint.draw(space_hint.glyph_from_png(out / SPACE_HAND, 20), q),
+            f"drawn: {SPACE_HAND} + four arrows (space_hint.py)")
+    for name, (base, badge) in BADGED.items():
+        dcc_glyphs.guarded(out / name,
+                           lambda q, b=base, k=badge: dcc_glyphs.with_badge(out / b, out / k, q),
+                           f"composite ({base} + {badge} badge)")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -221,6 +276,7 @@ def main() -> int:
     icon_fetch.borrow(BORROWED, out)
     _preserve(out / "fillfg.png", out / "lockbadge.png", out / "fillfgpreserve.png")
     _preserve(out / "fillbg.png", out / "lockbadge.png", out / "fillbgpreserve.png")
+    _variants(out)
     program_marks.own_icon(out / "photocraft.png", PC_ICO, frame=64,
                            credit="storytold/photocraft assets/app-icon/photocraft.ico (MIT OR Apache-2.0)")
     # The ESC mark: the icon's animal as one solid shape at keycap size, with its

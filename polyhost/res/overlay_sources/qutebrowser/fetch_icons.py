@@ -33,6 +33,7 @@ from PIL import Image
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
+import action_variants  # noqa: E402
 
 # Actions qutebrowser shares with Chromium / Firefox: the same cells, copied.
 BORROWED = {f: "chrome" for f in (
@@ -127,6 +128,13 @@ def _qutebrowser_mark(dest: Path, px: int = 32) -> None:
     Image.merge("RGBA", (a, a, a, a)).save(dest)
 
 
+# Different actions that start from one icon: each gets its own picture
+# (one icon per action, maintainer 2026-11-15). See action_variants.py.
+VARIANTS = {
+    "closetab_left.png": ("arrow", "closetab.png", "left"),
+}
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -140,6 +148,7 @@ def main() -> int:
         print(f"  {mark.name}  <- qutebrowser logo, 32x32 1-bit trace")
     n += 1
     print(f"{n} icons in {out}")
+    action_variants.make(out, VARIANTS)
     return 0
 
 

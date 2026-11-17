@@ -183,7 +183,10 @@ Most commands come in families that differ only by the unit they act on
 CHR / WORD / SEXP, mark WORD / PARA / FUNC / SEXP), so they are drawn
 composites: a glyph above a word of up to four capitals (arrow = move,
 Delete-key shape = kill or delete, two arrows = transpose, dashed box = mark,
-magnifier with an arrow = search, plus = new heading). Commands with a usual
+magnifier with an arrow = search, plus = new heading, a filled row beside
+an arrow = move the text itself). Two keys of the Emacs sets (global, Org,
+Dired and the evil states together) share a picture only when they do the same
+thing (maintainer's rule, 2026-11-15). Commands with a usual
 picture use Fluent, with Material Symbols where Fluent has no match. Copy,
 Cut, Paste, Undo, Redo, Help and Print are drawn by the shared renderer (the
 concept icons every app overlay shares), so `icons/` has no file for them.
@@ -277,7 +280,6 @@ pixels at 40x40) reads better, so it is the one used.
 | `apropos.png` | `quick_reference_all` |
 | `dabbrev.png` | `auto_fix_high` |
 | `cyclespace.png` | `space_bar` |
-| `indentation.png` | `format_indent_increase` |
 | `tabstop.png` | `keyboard_tab` |
 | `windowline.png` | `vertical_align_top` |
 | `menubar_text.png` | `menu_open` |
@@ -377,6 +379,8 @@ Drawn by `fetch_icons.py` (`composite()`): a glyph above a word, 40x32, 1-bit. T
 | `re_search_fwd.png` | `search` | REGX |
 | `re_search_back.png` | `searchback` | REGX |
 | `re_replace.png` | `png:queryreplace` | REGX |
+| `indentation.png` | `firstchar` (indent dots, a bar, an arrow to it) | INDT |
+| `newline_comment.png` | `png:newline_indent` | CMNT |
 | `universal.png` | `text:×4` | ARG |
 | `complete.png` | `png:dabbrev` | SYM |
 | `dabbrev_list.png` | `png:dabbrev` | LIST |
@@ -391,10 +395,10 @@ Drawn by `fetch_icons.py` (`composite()`): a glyph above a word, 40x32, 1-bit. T
 | `org_todo_after.png` | `plusafter` | TODO |
 | `org_promote_tree.png` | `png:promote` | TREE |
 | `org_demote_tree.png` | `png:demote` | TREE |
-| `org_tree_up.png` | `up` | TREE |
-| `org_tree_down.png` | `down` | TREE |
-| `org_line_up.png` | `up` | LINE |
-| `org_line_down.png` | `down` | LINE |
+| `org_tree_up.png` | `dragup` | TREE |
+| `org_tree_down.png` | `dragdown` | TREE |
+| `org_line_up.png` | `dragup` | LINE |
+| `org_line_down.png` | `dragdown` | LINE |
 | `org_todo_prev.png` | `left` | TODO |
 | `org_todo_next.png` | `right` | TODO |
 | `org_prio_up.png` | `up` | PRIO |
@@ -415,6 +419,8 @@ Drawn by `fetch_icons.py` (`composite()`): a glyph above a word, 40x32, 1-bit. T
 | `dired_marked_prev.png` | `up` | MARK |
 | `dired_marked_next.png` | `down` | MARK |
 | `dired_copyname.png` | `png:_copy` | NAME |
+| `dired_grep_marked.png` | `png:grep` | MARK |
+| `dired_replace_marked.png` | `png:queryreplace` | MARK |
 | `dired_flag_autosave.png` | `png:_flag` | AUTO |
 | `dired_flag_backup.png` | `png:_flag` | BAK |
 | `dired_hardlink.png` | `png:_link` | HARD |

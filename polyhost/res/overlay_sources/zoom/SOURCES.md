@@ -143,3 +143,12 @@ Not added / why: the mapping is title-gated to the meeting window, and Zoom
 documents none of Save / Open / New / Print / Cut / Copy / Paste / Undo / Redo /
 Select all / Find / Zoom / Reload as in-meeting chords. Zoom is not an Electron
 app, so no editing roles are assumed.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `speakergallery.png` | `speakerview.png` with `galleryview.png` at the lower right, drawn by `../action_variants.py` | same as the base icon |

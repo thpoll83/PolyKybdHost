@@ -46,6 +46,9 @@ program_icon_anchor: bottom-right
 program_icon_region: [35, 40]   # the mark's own size: placed 1:1
 program_icon_margin: 0
 
+# A 40x40 composite (glyph + word, fetch_icons.py WORDS) is placed 1:1.
+_word: &word { region: [40, 40], mode: alpha }
+
 bindings:
 
   # --- no modifier: tools (A channel, primary) ---
@@ -59,7 +62,7 @@ bindings:
   - { key: "U", mods: [], icon: slide.png, label: "Slide tool", mode: alpha }
   - { key: "P", mods: [], icon: pen.png, label: "Pen tool" }
   - { key: "H", mods: [], icon: hand.png, label: "Hand tool" }
-  - { key: "Z", mods: [], icon: zoom.png, label: "Zoom tool" }
+  - { key: "Z", mods: [], icon: zoomtool.png, label: "Zoom tool" }
   - { key: "T", mods: [], icon: typetool.png, label: "Type tool" }
 
   # --- no modifier: timeline / transport ---
@@ -152,12 +155,12 @@ bindings:
   - { key: "]", mods: [SHIFT], icon: volumeupmany.png, label: "Increase clip volume many" }
   - { key: "\\", mods: [SHIFT], icon: toggleview.png, label: "Toggle view (Project)" }
   - { key: "`", mods: [SHIFT], icon: maxframe.png, label: "Maximize active frame" }
-  - { key: "UP", mods: [SHIFT], icon: prevedit.png, label: "Previous edit point on any track" }
-  - { key: "DOWN", mods: [SHIFT], icon: nextedit.png, label: "Next edit point on any track" }
+  - { key: "UP", mods: [SHIFT], icon: prevedit_all.png, label: "Previous edit point on any track", <<: *word }
+  - { key: "DOWN", mods: [SHIFT], icon: nextedit_all.png, label: "Next edit point on any track", <<: *word }
   - { key: "LEFT", mods: [SHIFT], icon: stepback5.png, label: "Step back five frames" }
   - { key: "RIGHT", mods: [SHIFT], icon: stepfwd5.png, label: "Step forward five frames" }
-  - { key: "HOME", mods: [SHIFT], icon: seqstart.png, label: "Go to selected clip start" }
-  - { key: "END", mods: [SHIFT], icon: seqend.png, label: "Go to selected clip end" }
+  - { key: "HOME", mods: [SHIFT], icon: clipstart.png, label: "Go to selected clip start", <<: *word }
+  - { key: "END", mods: [SHIFT], icon: clipend.png, label: "Go to selected clip end", <<: *word }
 
   # --- Alt (G channel, primary) ---
   - { key: "K", mods: [ALT], icon: playinout.png, label: "Play In to Out" }
@@ -169,8 +172,8 @@ bindings:
   - { key: "BACKSPACE", mods: [ALT], icon: textdelete.png, label: "Delete segment text (Text)" }
   - { key: "LEFT", mods: [ALT], icon: trimback.png, label: "Trim backward" }
   - { key: "RIGHT", mods: [ALT], icon: trimfwd.png, label: "Trim forward" }
-  - { key: "UP", mods: [ALT], icon: nudgeup.png, label: "Nudge clip selection up (Timeline)" }
-  - { key: "DOWN", mods: [ALT], icon: nudgedown.png, label: "Nudge clip selection down (Timeline)" }
+  - { key: "UP", mods: [ALT], icon: nudgeup1.png, label: "Nudge clip selection up (Timeline)", <<: *word }
+  - { key: "DOWN", mods: [ALT], icon: nudgedown1.png, label: "Nudge clip selection down (Timeline)", <<: *word }
   - { key: "=", mods: [ALT], icon: audioheightup.png, label: "Increase audio tracks height (Timeline)" }
   - { key: "-", mods: [ALT], icon: audioheightdown.png, label: "Decrease audio tracks height (Timeline)" }
   - { key: ",", mods: [ALT], icon: slideleft.png, label: "Slide clip selection left (Timeline)" }
@@ -229,8 +232,8 @@ bindings:
   - { key: "-", mods: [CMDCTRL], icon: videoheightdown.png, label: "Decrease video tracks height (Timeline)" }
   - { key: "UP", mods: [CMDCTRL], icon: selectprevclip.png, label: "Select previous clip" }
   - { key: "DOWN", mods: [CMDCTRL], icon: selectnextclip.png, label: "Select next clip" }
-  - { key: "LEFT", mods: [CMDCTRL], icon: nudgeleft.png, label: "Nudge clip selection left (Timeline)" }
-  - { key: "RIGHT", mods: [CMDCTRL], icon: nudgeleft.png, label: "Nudge clip selection right (Timeline)" }
+  - { key: "LEFT", mods: [CMDCTRL], icon: nudgeleft1.png, label: "Nudge clip selection left (Timeline)", <<: *word }
+  - { key: "RIGHT", mods: [CMDCTRL], icon: nudgeright1.png, label: "Nudge clip selection right (Timeline)", <<: *word }
   - { key: "PGUP", mods: [CMDCTRL], icon: viewlist.png, label: "List view (Project)" }
   - { key: "PGDN", mods: [CMDCTRL], icon: viewicon.png, label: "Icon view (Project)" }
 
@@ -258,10 +261,10 @@ bindings:
   - { key: ";", mods: [CMDCTRL, SHIFT], icon: prevgap.png, label: "Go to previous gap" }
   - { key: "[", mods: [CMDCTRL, SHIFT], icon: sendtoback.png, label: "Send to back" }
   - { key: "]", mods: [CMDCTRL, SHIFT], icon: bringtofront.png, label: "Bring to front" }
-  - { key: "LEFT", mods: [CMDCTRL, SHIFT], icon: nudgeleft.png, label: "Nudge clip selection left five (Timeline)" }
-  - { key: "RIGHT", mods: [CMDCTRL, SHIFT], icon: nudgeleft.png, label: "Nudge clip selection right five (Timeline)" }
-  - { key: "UP", mods: [CMDCTRL, SHIFT], icon: nudgeup.png, label: "Nudge object up five (Program)" }
-  - { key: "DOWN", mods: [CMDCTRL, SHIFT], icon: nudgedown.png, label: "Nudge object down five (Program)" }
+  - { key: "LEFT", mods: [CMDCTRL, SHIFT], icon: nudgeleft5.png, label: "Nudge clip selection left five (Timeline)", <<: *word }
+  - { key: "RIGHT", mods: [CMDCTRL, SHIFT], icon: nudgeright5.png, label: "Nudge clip selection right five (Timeline)", <<: *word }
+  - { key: "UP", mods: [CMDCTRL, SHIFT], icon: nudgeup5.png, label: "Nudge object up five (Program)", <<: *word }
+  - { key: "DOWN", mods: [CMDCTRL, SHIFT], icon: nudgedown5.png, label: "Nudge object down five (Program)", <<: *word }
 
   # --- Cmd/Ctrl+Alt (G channel, combo) ---
   - { key: "N", mods: [CMDCTRL, ALT], icon: newproject.png, label: "New project" }
@@ -282,16 +285,16 @@ bindings:
   - { key: "]", mods: [CMDCTRL, ALT], icon: nextlayer.png, label: "Select next layer" }
   - { key: "UP", mods: [CMDCTRL, ALT], icon: captionprev.png, label: "Previous caption segment" }
   - { key: "DOWN", mods: [CMDCTRL, ALT], icon: captionnext.png, label: "Next caption segment" }
-  - { key: "LEFT", mods: [CMDCTRL, ALT], icon: slip.png, label: "Slip clip selection left (Timeline)", mode: alpha }
-  - { key: "RIGHT", mods: [CMDCTRL, ALT], icon: slip.png, label: "Slip clip selection right (Timeline)", mode: alpha }
+  - { key: "LEFT", mods: [CMDCTRL, ALT], icon: slipleft.png, label: "Slip clip selection left (Timeline)", <<: *word }
+  - { key: "RIGHT", mods: [CMDCTRL, ALT], icon: slipright.png, label: "Slip clip selection right (Timeline)", <<: *word }
 
   # --- Cmd/Ctrl+Alt+Shift (R channel, extra) ---
-  - { key: "0", mods: [CMDCTRL, ALT, SHIFT], icon: programfit.png, label: "Zoom source monitor to fit" }
-  - { key: "1", mods: [CMDCTRL, ALT, SHIFT], icon: program100.png, label: "Zoom source monitor to 100%" }
+  - { key: "0", mods: [CMDCTRL, ALT, SHIFT], icon: sourcefit.png, label: "Zoom source monitor to fit", <<: *word }
+  - { key: "1", mods: [CMDCTRL, ALT, SHIFT], icon: source100.png, label: "Zoom source monitor to 100%", <<: *word }
   - { key: "M", mods: [CMDCTRL, ALT, SHIFT], icon: clearmarkers.png, label: "Clear all markers" }
   - { key: "R", mods: [CMDCTRL, ALT, SHIFT], icon: lockguides.png, label: "Lock guides (Program)" }
-  - { key: "LEFT", mods: [CMDCTRL, ALT, SHIFT], icon: slip.png, label: "Slip clip selection left five (Timeline)", mode: alpha }
-  - { key: "RIGHT", mods: [CMDCTRL, ALT, SHIFT], icon: slip.png, label: "Slip clip selection right five (Timeline)", mode: alpha }
+  - { key: "LEFT", mods: [CMDCTRL, ALT, SHIFT], icon: slipleft5.png, label: "Slip clip selection left five (Timeline)", <<: *word }
+  - { key: "RIGHT", mods: [CMDCTRL, ALT, SHIFT], icon: slipright5.png, label: "Slip clip selection right five (Timeline)", <<: *word }
 
   # --- literal Ctrl (macOS Control key; Ctrl on every OS) ---
   - { key: "1", mods: [CTRL], icon: cutcam1.png, label: "Cut to camera 1" }

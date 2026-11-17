@@ -50,7 +50,7 @@ bindings:
   - { key: O,   mods: [SHIFT], icon: opentab.png,    label: "Open URL in new tab" }
   - { key: X,   mods: [],      icon: openbg.png,     label: "Open URL in background tab (xo, xO)" }
   - { key: D,   mods: [],      icon: closetab.png,   <<: *r, label: "Close tab" }
-  - { key: D,   mods: [SHIFT], icon: closetab.png,   <<: *r, label: "Close tab, select other side" }
+  - { key: D,   mods: [SHIFT], icon: closetab_left.png, <<: *r, label: "Close tab, select other side" }
   - { key: U,   mods: [],      icon: reopentab.png,  <<: *r, label: "Reopen closed tab" }
   - { key: U,   mods: [SHIFT], icon: reopenwindow.png, label: "Reopen closed window" }
   - { key: J,   mods: [SHIFT], icon: nexttab.png,    <<: *r, label: "Next tab" }

@@ -226,7 +226,7 @@ bindings:
   mods:
   - ALT
   label: Between markers
-  icon: column_markers.png
+  icon: column_between.png
   source: 'Dopesheet: action.select_column(mode=MARKERS_BETWEEN)'
 - key: P
   mods:
@@ -238,7 +238,7 @@ bindings:
   mods:
   - ALT
   label: Fallback tool pie
-  icon: tools.png
+  icon: tool_pie.png
   source: 'Window: wm.toolbar_fallback_pie'
 - key: B
   mods:
@@ -441,7 +441,7 @@ bindings:
   mods:
   - CTRL
   label: Column at frame
-  icon: column.png
+  icon: column_frame.png
   source: 'Dopesheet: action.select_column(mode=CFRA)'
 - key: KC_COMMA
   mods:
@@ -453,13 +453,13 @@ bindings:
   mods:
   - CTRL
   label: Set end frame
-  icon: jump_end.png
+  icon: end_frame_set.png
   source: 'Animation: anim.end_frame_set'
 - key: KC_HOME
   mods:
   - CTRL
   label: Set start frame
-  icon: jump_start.png
+  icon: start_frame_set.png
   source: 'Animation: anim.start_frame_set'
 - key: KC_LEFT
   mods:
@@ -695,7 +695,7 @@ bindings:
   mods:
   - GUI
   label: Column at frame
-  icon: column.png
+  icon: column_frame.png
   source: 'Dopesheet: action.select_column(mode=CFRA)'
   only:
   - macos
@@ -711,7 +711,7 @@ bindings:
   mods:
   - GUI
   label: Set end frame
-  icon: jump_end.png
+  icon: end_frame_set.png
   source: 'Animation: anim.end_frame_set'
   only:
   - macos
@@ -719,7 +719,7 @@ bindings:
   mods:
   - GUI
   label: Set start frame
-  icon: jump_start.png
+  icon: start_frame_set.png
   source: 'Animation: anim.start_frame_set'
   only:
   - macos

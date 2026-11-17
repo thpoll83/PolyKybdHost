@@ -10,6 +10,7 @@ draws the ESC mark for the app itself.
 """
 from __future__ import annotations
 
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -22,7 +23,7 @@ FLUENT = {
     "savenew": "ms:note_stack_add",
     "exportwav": "ms:audio_file",
     "exportmp3": "ms:music_note",
-    "exportmidi": "ms:piano",
+    "_export": "ms:file_export",   # base of the exportmidi composite
     "arrange": "ms:dashboard",
     "undosteps": "ms:history",
     # --- transport and recording ---
@@ -62,7 +63,6 @@ FLUENT = {
     "draw": "Pen",
     "mutetool": "ms:volume_off",
     "playtool": "Play",
-    "zoomtool": "Zoom In",
     # --- edit ---
     "duplicate": "ms:library_add",
     "deselect": "ms:deselect",
@@ -81,10 +81,32 @@ FLUENT = {
 }
 
 
+# name -> (glyph, word): a glyph with a short word under it, 1-bit at 40x40,
+# drawn with the Ghidra set's code. It tells apart two keys whose actions
+# share a glyph (one icon per action).
+WORDS = {
+    "exportmidi": ("_export", "MIDI"),   # Export MIDI, not the Piano roll
+    "zoomtool": ("zoomin", "TOOL"),      # Zoom tool, not Zoom in
+}
+
+
+def word_composites(out: Path, words: dict[str, tuple[str, str]]) -> None:
+    """Draw ``words`` with ``composites()`` from ``../ghidra/fetch_icons.py``."""
+    spec = importlib.util.spec_from_file_location(
+        "ghidra_fetch_icons", Path(__file__).resolve().parent.parent / "ghidra" / "fetch_icons.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    mod.COMPOSITES = words
+    mod.ISA = {}
+    mod.composites(out)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
     n = icon_fetch.fluent(FLUENT, out)
+    word_composites(out, WORDS)
+    n += len(WORDS)
     print(f"Wrote {n} icons to {out}")
     return 0
 

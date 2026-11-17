@@ -49,7 +49,7 @@ bindings:
   - { key: B, icon: page_up.png, region: [40, 32], label: "Page up" }
   - { key: B, mods: [CTRL], icon: page_up.png, region: [40, 32], label: "Page up" }
   - { key: V, mods: [ALT], icon: page_up.png, region: [40, 32], label: "Page up" }
-  - { key: SPACE, mods: [ALT], icon: page_down.png, region: [40, 32], label: "Page down to the end" }
+  - { key: SPACE, mods: [ALT], icon: page_down_eof.png, region: [40, 32], label: "Page down to the end" }
   - { key: D, icon: halfdown.png, label: "Half page down" }
   - { key: D, mods: [CTRL], icon: halfdown.png, label: "Half page down" }
   - { key: U, icon: halfup.png, label: "Half page up" }
@@ -69,12 +69,12 @@ bindings:
   - { key: LEFT, mods: [ALT], icon: scroll_left.png, region: [40, 32], label: "Scroll left" }
   # "F" forward forever like tail -f; "ESC-F" the same but stop when the search pattern is found.
   - { key: F, mods: [SHIFT], icon: follow.png, label: "Follow (tail -f)" }
-  - { key: F, mods: [ALT, SHIFT], icon: follow.png, label: "Follow until match" }
+  - { key: F, mods: [ALT, SHIFT], icon: follow_match.png, label: "Follow until match" }
   # "r ^R ^L" repaint; "R" repaint and discard buffered input.
   - { key: R, icon: reload.png, label: "Repaint screen" }
   - { key: R, mods: [CTRL], icon: reload.png, label: "Repaint screen" }
   - { key: L, mods: [CTRL], icon: reload.png, label: "Repaint screen" }
-  - { key: R, mods: [SHIFT], icon: reload.png, label: "Repaint, drop input" }
+  - { key: R, mods: [SHIFT], icon: reload_drop.png, label: "Repaint, drop input" }
 
   # --- Searching (help screen "SEARCHING").
   # "/pattern" forward, "?pattern" backward, "n" repeat, "N" repeat reversed,
@@ -84,8 +84,8 @@ bindings:
   - { key: "/", mods: [SHIFT], icon: search_back.png, region: [40, 32], label: "Search backward" }
   - { key: N, icon: find_next.png, region: [40, 32], label: "Next match" }
   - { key: N, mods: [SHIFT], icon: find_prev.png, region: [40, 32], label: "Previous match" }
-  - { key: N, mods: [ALT], icon: find_next.png, region: [40, 32], label: "Next match, any file" }
-  - { key: N, mods: [ALT, SHIFT], icon: find_prev.png, region: [40, 32], label: "Previous, any file" }
+  - { key: N, mods: [ALT], icon: find_next_any.png, region: [40, 32], label: "Next match, any file" }
+  - { key: N, mods: [ALT, SHIFT], icon: find_prev_any.png, region: [40, 32], label: "Previous, any file" }
   - { key: U, mods: [ALT], icon: highlight.png, label: "Toggle highlight" }
   - { key: U, mods: [ALT, SHIFT], icon: clearhighlight.png, label: "Clear highlight" }
   - { key: "7", mods: [SHIFT], icon: filter.png, label: "Show matching lines" }
@@ -103,12 +103,12 @@ bindings:
   - { key: "5", mods: [SHIFT], icon: goto_line.png, region: [40, 32], label: "Go to percent" }
   - { key: T, icon: next.png, label: "Next tag" }
   - { key: T, mods: [SHIFT], icon: prev.png, label: "Previous tag" }
-  - { key: "[", icon: bracket.png, region: [40, 32], label: "Find close bracket" }
-  - { key: "]", icon: bracket.png, region: [40, 32], label: "Find open bracket" }
+  - { key: "[", icon: bracket_close.png, region: [40, 32], label: "Find close bracket" }
+  - { key: "]", icon: bracket_open.png, region: [40, 32], label: "Find open bracket" }
   # "m<letter>" mark top line, "M<letter>" mark bottom line, "'<letter>" go to mark,
   # "''" previous position, "ESC-M<letter>" clear a mark.
-  - { key: M, icon: mark.png, region: [40, 32], label: "Set mark (top)" }
-  - { key: M, mods: [SHIFT], icon: mark.png, region: [40, 32], label: "Set mark (bottom)" }
+  - { key: M, icon: mark_top.png, region: [40, 32], label: "Set mark (top)" }
+  - { key: M, mods: [SHIFT], icon: mark_bottom.png, region: [40, 32], label: "Set mark (bottom)" }
   - { key: "'", icon: gotomark.png, label: "Go to mark" }
   - { key: M, mods: [ALT, SHIFT], icon: clearmark.png, label: "Clear a mark" }
 
@@ -121,7 +121,7 @@ bindings:
   - { key: "=", icon: fileinfo.png, label: "File name, position" }
   - { key: G, mods: [CTRL], icon: fileinfo.png, label: "File name, position" }
   - { key: "-", icon: option.png, label: "Toggle option" }
-  - { key: "-", mods: [SHIFT], icon: option.png, label: "Show option" }
+  - { key: "-", mods: [SHIFT], icon: option_show.png, label: "Show option" }
   - { key: "1", mods: [SHIFT], icon: terminal.png, label: "Shell command" }
   - { key: "\\", mods: [SHIFT], icon: pipe.png, label: "Pipe to command" }
   - { key: S, icon: save.png, label: "Save input to file" }

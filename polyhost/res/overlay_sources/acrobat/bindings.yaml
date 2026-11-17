@@ -56,7 +56,7 @@ bindings:
   - { key: DOWN, mods: [CMDCTRL, SHIFT], icon: lastpage.png, label: "Last page" }
   - { key: T, mods: [CMDCTRL, SHIFT], icon: insertblank.png, label: "Insert blank page" }
   - { key: I, mods: [CMDCTRL, SHIFT], icon: insertfiles.png, label: "Insert files" }
-  - { key: D, mods: [CMDCTRL, SHIFT], icon: deletepages.png, label: "Delete pages" }
+  - { key: D, mods: [CMDCTRL, SHIFT], icon: delpages.png, label: "Delete pages" }
   # --- documents and search ---
   - { key: TAB, mods: [CTRL], icon: nextdoc.png, label: "Next document tab" }
   - { key: TAB, mods: [CTRL, SHIFT], icon: prevdoc.png, label: "Previous document tab" }

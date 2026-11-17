@@ -73,6 +73,7 @@ in the score view:
 
 ## Icons
 
+- One icon per action (maintainer rule, 2026-11-15): `measurerest.png` (Full measure rest) is a whole rest drawn in `fetch_icons.py` (a block hanging from a staff line), because Material `horizontal_rule` drew the same pixels as the Tenuto line. `diaup.png` and `diadown.png` (Diatonic up/down) are an arrow with the word STEP, drawn 1-bit at 40x40 by `../ghidra/fetch_icons.py`'s `composites()` (word in Liberation Sans Bold, SIL OFL 1.1); a plain chevron drew the same pixels as Marcato.
 - Microsoft Fluent UI System Icons, MIT,
   <https://github.com/microsoft/fluentui-system-icons>. Folder names are in
   `fetch_icons.py`.

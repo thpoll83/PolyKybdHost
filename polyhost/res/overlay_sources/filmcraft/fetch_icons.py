@@ -41,11 +41,11 @@ ICON_URL = ("https://raw.githubusercontent.com/storytold/filmcraft/"
 # Same action as the Premiere overlay -> the same committed bytes.
 BORROW = {f"{n}.png": "premiere" for n in [
     "select", "trackselect", "rippleedit", "rolledit", "ratestretch", "blade",
-    "slip", "slide", "pen", "hand", "zoom", "markin", "markout", "rev", "stop",
+    "slip", "slide", "pen", "hand", "markin", "markout", "rev", "stop",
     "fwd", "play", "zoomin", "zoomout", "zoomfit", "newsequence", "newproject",
     "open", "save", "saveas", "import", "export", "undo", "redo", "cut", "copy",
     "paste", "selectall", "group", "ungroup", "link", "addedit", "speed",
-    "rippledelete", "panelproject", "panelsource", "paneltimeline",
+    "rippledelete", "panelsource", "paneltimeline",
     "panelprogram", "paneleffectctl", "panelaudio", "paneleffects",
 ]}
 BORROW.update({"marker.png": "resolve", "insert.png": "resolve"})
@@ -128,7 +128,12 @@ FLUENT = {
     "newtext": "Text Add T",
     "sendbackward": "Arrow Sort Down",
     "bringforward": "ms:move_up",
-    "nudgeleft": "Arrow Move",
+    # Cmd+Left / Cmd+Right nudge the clip selection: west / east, like ms:north /
+    # ms:south of Alt+Up / Alt+Down (both keys drew Arrow Move before 2026-11-15)
+    "nudgeleft": "ms:west",
+    "nudgeright": "ms:east",
+    "panelproject": "Folder",   # the premiere copy was the Open project folder (Cmd+O)
+    "cursor": "Cursor",         # badge of the zoom TOOL (zoomtool.png)
     "showguides": "ms:grid_guides",
     "viewlist": "Text Bullet List",
     "viewicon": "Grid",
@@ -242,6 +247,59 @@ def _flag_arrow(src: Path, dest: Path, forward: bool) -> None:
     print(f"  {dest.name}  <- composite ({src.stem} + {'next' if forward else 'previous'} chevron)")
 
 
+WORDS = {
+    "slipleft": ("slip", "-1"), "slipright": ("slip", "+1"),
+    "slipleft5": ("slip", "-5"), "slipright5": ("slip", "+5"),
+    "prevedit_all": ("prevedit", "ALL"), "nextedit_all": ("nextedit", "ALL"),
+    "clipstart": ("seqstart", "CLIP"), "clipend": ("seqend", "CLIP"),
+    # one frame / five frames: the arrow alone looks like the Slide arrows (Alt+, / Alt+.)
+    "nudgeleft1": ("nudgeleft", "1"), "nudgeright1": ("nudgeright", "1"),
+    "nudgeup1": ("nudgeup", "1"), "nudgedown1": ("nudgedown", "1"),
+    "nudgeleft5": ("nudgeleft", "5"), "nudgeright5": ("nudgeright", "5"),
+    "nudgeup5": ("nudgeup", "5"), "nudgedown5": ("nudgedown", "5"),
+    "sourcefit": ("programfit", "SRC"), "source100": ("program100", "SRC"),
+}
+SPACE_HAND = None
+BADGED = {"zoomtool.png": ("zoomin.png", "cursor.png")}   # Z, the tool; = zooms in one step
+
+
+# ------------------------------------------------- one icon per action (2026-11-15)
+# Two keys share an image only when they do the same thing (maintainer, 2026-11-15).
+# The variants below are drawn from glyphs this set already has:
+# * WORDS: the glyph over a short word, 1-bit at 40x40, with the glyph + word code
+#   of ../ghidra/fetch_icons.py (as the Binary Ninja set does); placed 1:1.
+# * SPACE_HAND: the hand with an arrow on each side, the "hold Space" pan hint of
+#   ../space_hint.py; placed 1:1 on the whole 72x40 key.
+# * BADGED: dcc_glyphs.with_badge, the glyph at the upper left, a second one at
+#   the lower right.
+# All are guarded: a committed PNG is left as it is.
+def _ghidra_helpers():
+    """`../ghidra/fetch_icons.py` as a module, for its glyph + word composites."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "ghidra_fetch_icons", Path(__file__).resolve().parent.parent / "ghidra" / "fetch_icons.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _variants(out: Path) -> None:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+    from polyhost.res.overlay_sources import dcc_glyphs, space_hint
+    g = _ghidra_helpers()
+    g.COMPOSITES, g.ISA = WORDS, {}
+    g.composites(out)
+    if SPACE_HAND:
+        dcc_glyphs.guarded(
+            out / "space_hand.png",
+            lambda q: space_hint.draw(space_hint.glyph_from_png(out / SPACE_HAND, 20), q),
+            f"drawn: {SPACE_HAND} + four arrows (space_hint.py)")
+    for name, (base, badge) in BADGED.items():
+        dcc_glyphs.guarded(out / name,
+                           lambda q, b=base, k=badge: dcc_glyphs.with_badge(out / b, out / k, q),
+                           f"composite ({base} + {badge} badge)")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -263,6 +321,7 @@ def main() -> int:
     _flag_arrow(out / "_flag.png", out / "prevmarker.png", forward=False)
     for base in ("_cambase", "_cutbase", "_wsbase", "_flag"):
         (out / f"{base}.png").unlink()
+    _variants(out)
     program_marks.own_icon(out / "filmcraft.png", ICON_URL, frame=64,
                            credit="storytold/filmcraft assets/app-icon/filmcraft.ico")
     # The ESC mark: the icon's animal as one solid shape at keycap size, with its

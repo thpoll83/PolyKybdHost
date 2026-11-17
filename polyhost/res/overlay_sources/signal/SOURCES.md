@@ -63,3 +63,13 @@ so no AGPL file is in this repo. CC0 grants no trademark rights: the basis is
 nominative use, the mark names the app this overlay is for, unchanged and with
 no endorsement implied (the same basis as the other `brand_marks` logos).
 Signal publishes no brand guideline that forbids this use that was found.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `unread_prev.png` | `unread.png` with a up triangle at the top right, drawn by `../action_variants.py` | same as the base icon |
+| `unread_next.png` | `unread.png` with a down triangle at the top right, drawn by `../action_variants.py` | same as the base icon |

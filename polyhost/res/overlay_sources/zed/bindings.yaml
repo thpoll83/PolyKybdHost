@@ -101,7 +101,7 @@ bindings:
   - { key: E, mods: [CTRL], only: [windows, linux], icon: quickopen.png, label: "Go to file", source: "file_finder::Toggle @ w695 l705" }
   - { key: P, mods: [CMDCTRL, SHIFT], icon: commandpalette.png, label: "Command palette", source: "command_palette::Toggle @ w697 l707 m759" }
   - { key: "F1", mods: [], only: [windows, linux], icon: commandpalette.png, label: "Command palette", source: "command_palette::Toggle @ w696 l706" }
-  - { key: T, mods: [CMDCTRL], icon: gotosymbolproject.png, label: "Project symbols", source: "project_symbols::Toggle @ w691 l701 m755" }
+  - { key: T, mods: [CMDCTRL], icon: projectsymbols.png, label: "Project symbols", source: "project_symbols::Toggle @ w691 l701 m755" }
   - { key: O, mods: [CMDCTRL, SHIFT], icon: gotosymbol.png, label: "Outline (symbols in file)", source: "outline::Toggle @ w629 l630 m670" }
   - { key: G, mods: [CTRL], icon: gotoline.png, label: "Go to line", source: "go_to_line::Toggle @ w630 l631 m671" }
   - { key: TAB, mods: [CTRL], icon: tabswitcher.png, label: "Tab switcher", source: "tab_switcher::Toggle @ w694 l704 m758" }
@@ -119,8 +119,8 @@ bindings:
   - { key: "F6", mods: [SHIFT], icon: focusprev.png, label: "Focus previous part", source: "workspace::FocusPreviousPart @ w643 l643 m705" }
   - { key: "/", mods: [ALT], icon: whichkey.png, label: "Show pending keys", source: "which_key::ShowPendingBindings @ w637 l637 m699" }
   - { key: ENTER, mods: [ALT, SHIFT], icon: toastaction.png, label: "Run notification action", source: "toast::RunAction @ w654 l657 m720" }
-  - { key: B, mods: [ALT, SHIFT], only: [windows], icon: branches.png, label: "Recent branches", source: "branches::OpenRecent @ w652" }
-  - { key: B, mods: [CTRL, GUI], only: [macos], icon: branches.png, label: "Recent branches", source: "branches::OpenRecent @ m715" }
+  - { key: B, mods: [ALT, SHIFT], only: [windows], icon: recentbranches.png, label: "Recent branches", source: "branches::OpenRecent @ w652" }
+  - { key: B, mods: [CTRL, GUI], only: [macos], icon: recentbranches.png, label: "Recent branches", source: "branches::OpenRecent @ m715" }
   - { key: W, mods: [ALT, SHIFT], only: [windows], icon: worktree.png, label: "Worktrees", source: "git::Worktree @ w653" }
   - { key: W, mods: [CTRL, GUI], only: [macos], icon: worktree.png, label: "Worktrees", source: "git::Worktree @ m716" }
 
@@ -185,7 +185,7 @@ bindings:
   - { key: "-", mods: [CTRL, ALT], only: [macos], icon: dockshrink.png, label: "Shrink dock", source: "workspace::DecreaseActiveDockSize @ m742" }
   - { key: "0", mods: [CTRL, ALT], only: [linux, macos], icon: dockreset.png, label: "Reset dock size", source: "workspace::ResetActiveDockSize @ l685 m741" }
   - { key: "=", mods: [CTRL, ALT, SHIFT], only: [linux, macos], icon: docksgrow.png, label: "Grow all docks", source: "workspace::IncreaseOpenDocksSize @ l691 m746" }
-  - { key: "-", mods: [CTRL, ALT, SHIFT], only: [macos], icon: docksshrink.png, label: "Shrink all docks", source: "workspace::DecreaseOpenDocksSize @ m745" }
+  - { key: "-", mods: [CTRL, ALT, SHIFT], only: [macos], icon: docksshrink_all.png, label: "Shrink all docks", source: "workspace::DecreaseOpenDocksSize @ m745" }
   - { key: "0", mods: [CTRL, ALT, SHIFT], only: [linux, macos], icon: docksreset.png, label: "Reset all dock sizes", concept: reload, source: "workspace::ResetOpenDocksSize @ l689 m744" }
   - { key: "0", mods: [ALT, SHIFT], only: [windows], icon: docksreset.png, label: "Reset all dock sizes", concept: reload, source: "workspace::ResetOpenDocksSize @ w682" }
   - { key: E, mods: [CMDCTRL, SHIFT], icon: explorer.png, label: "Project panel", source: "project_panel::ToggleFocus @ w699 l709 m761" }
@@ -230,7 +230,7 @@ bindings:
   - { key: L, mods: [CTRL, ALT, SHIFT], only: [linux], icon: findinselection.png, label: "Find in selection", source: "search::ToggleSelection @ l522" }
   - { key: F, mods: [GUI, SHIFT], only: [macos], icon: findinfiles.png, label: "Find in project", source: "pane::DeploySearch @ m692" }
   - { key: F, mods: [CTRL, SHIFT], only: [windows, linux], icon: findinfiles.png, label: "Find in project", source: "project_search::ToggleFocus @ w524 l520" }
-  - { key: H, mods: [CTRL, SHIFT], only: [windows, linux], icon: replaceinfiles.png, label: "Replace in project", concept: replace, source: "pane::DeploySearch @ w684 l694" }
+  - { key: H, mods: [CTRL, SHIFT], only: [windows, linux], icon: replaceinproject.png, label: "Replace in project", source: "pane::DeploySearch @ w684 l694" }
   - { key: F, mods: [ALT], only: [windows], icon: filters.png, label: "Search filters", source: "project_search::ToggleFilters @ w530" }
   - { key: F, mods: [CMDCTRL, ALT], icon: textfinder.png, label: "Text finder", source: "text_finder::Toggle @ w144 l148 m169" }
 

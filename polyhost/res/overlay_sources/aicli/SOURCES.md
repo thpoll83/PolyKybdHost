@@ -190,3 +190,14 @@ HALF from `../emacs/fetch_icons.py`, so it differs from Ctrl+K's SCRL.
 Up`) are stored at their keycap size, 36x36, with the round badge redrawn in
 whole pixels (`crisp_badge()` in `fetch_icons.py`): scaled from the Fluent
 artwork, the cut-out plus and arrow came out lopsided.
+
+## One image per action (2026-11-15)
+
+Two keys of one app share an image only when they do the same thing (maintainer, 2026-11-15). Where two keys do related but different things, the second image is the first one with something added. Glyph-above-word composites are drawn with `composite()` of `../emacs/fetch_icons.py` (Liberation Sans Bold, SIL OFL 1.1), as the other composites in this folder.
+
+| file | drawn from | keys |
+|---|---|---|
+| `half_down` | arrow + "HALF" | OpenCode Ctrl+Alt+D (Ctrl+Alt+U uses `half_up`) |
+| `model_next`, `model_prev` | `model` + "NEXT" / "PREV" | OpenCode F2, Shift+F2 |
+| `agent_next`, `agent_prev` | `assistant` + "NEXT" / "PREV" | OpenCode Tab, Shift+Tab; Codex Alt+Right, Alt+Left |
+| `history_search` | `search` + "HIST" | Codex Ctrl+R (F3 Find in transcript keeps the shared find) |

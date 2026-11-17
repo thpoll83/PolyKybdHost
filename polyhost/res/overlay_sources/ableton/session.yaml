@@ -89,7 +89,7 @@ bindings:
   - { key: R, mods: [CMDCTRL, ALT], icon: returns.png, label: "Show returns" }
   - { key: C, mods: [], icon: arm.png, label: "Arm track" }
   - { key: S, mods: [], icon: solo.png, label: Solo }
-  - { key: "0", mods: [], icon: deactivate.png, label: "Deactivate clip" }
+  - { key: "0", mods: [], icon: deactivate.png, label: Deactivate }
 
   # --- transport ---
   - { key: SPACE, mods: [], icon: playstop.png, label: "Play/stop" }

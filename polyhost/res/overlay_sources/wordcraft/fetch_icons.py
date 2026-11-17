@@ -72,7 +72,7 @@ FLUENT = {
     "extendsel": "Text Expand",
     "columnsel": "Column Triple",
     "tellme": "Lightbulb",
-    "contextmenu": "Navigation",
+    "contextmenu": "ms:menu_open",   # Navigation drew the same cell as Justify (Cmd+J)
     "keytips": "Keyboard",
     # character format
     "bold": "Text Bold",
@@ -101,6 +101,9 @@ FLUENT = {
     "distribute": "Text Align Distributed",
     "indent": "Text Indent Increase",
     "outdent": "Text Indent Decrease",
+    # Shift+Tab, Back tab: previous table cell, list level up or outdent by context
+    # (text.rs back_tab); Cmd+Shift+M is the paragraph Outdent alone
+    "backtab": "ms:keyboard_tab_rtl",
     "spacebefore": "Text Add Space Before",
     "clearfmt": "Text Clear Formatting",
     "normalstyle": "Text T",

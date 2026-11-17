@@ -26,7 +26,7 @@ bindings:
 - key: '1'
   mods: []
   label: Face mask
-  icon: sel_face.png
+  icon: face_mask.png
   source: 'Image Paint: wm.context_toggle(data_path=image_paint_object.data.use_paint_mask)'
 - key: B
   mods: []
@@ -167,7 +167,7 @@ bindings:
 - key: W
   mods: []
   label: Select tool
-  icon: select_box.png
+  icon: select_tool.png
   source: '3D View: wm.tool_set_by_id(cycle=True,name=builtin.select_box)'
 - key: X
   mods: []
@@ -218,7 +218,7 @@ bindings:
   mods:
   - ALT
   label: Fallback tool pie
-  icon: tools.png
+  icon: tool_pie.png
   source: 'Window: wm.toolbar_fallback_pie'
 - key: Z
   mods:
@@ -426,7 +426,7 @@ bindings:
   mods:
   - CTRL
   label: Frame all (quad)
-  icon: frame_all.png
+  icon: frame_all_quad.png
   source: '3D View: view3d.view_all(center=False,use_all_regions=True)'
 - key: KC_LEFT
   mods:
@@ -518,7 +518,7 @@ bindings:
   - CTRL
   - ALT
   label: Mask tex. angle
-  icon: tex_angle.png
+  icon: tex_angle_mask.png
   source: 'Image Paint: wm.radial_control(color_path=tool_settings.image_paint.brush.cursor_color_add,data_path_primary=tool_settings.image_paint.brush.mask_texture_slot.angle,data_path_secondary=,fill_color_override_path=tool_settings.image_paint.unified_paint_settings.color,fill_color_override_test_path=tool_settings.image_paint.unified_paint_settings.use_unified_color,fill_color_path=tool_settings.image_paint.brush.color,image_id=tool_settings.image_paint.brush,rotation_path=tool_settings.image_paint.brush.mask_texture_slot.angle,secondary_tex=True,use_secondary=,zoom_path=)'
 - key: F12
   mods:
@@ -593,7 +593,7 @@ bindings:
   - CTRL
   - SHIFT
   label: Sample merged
-  icon: eyedropper.png
+  icon: sample_merged.png
   source: 'Image Paint: paint.sample_color(merged=True)'
 - key: Z
   mods:
@@ -667,7 +667,7 @@ bindings:
   mods:
   - GUI
   label: Frame all (quad)
-  icon: frame_all.png
+  icon: frame_all_quad.png
   source: '3D View: view3d.view_all(center=False,use_all_regions=True)'
   only:
   - macos
@@ -766,7 +766,7 @@ bindings:
   - ALT
   - GUI
   label: Mask tex. angle
-  icon: tex_angle.png
+  icon: tex_angle_mask.png
   source: 'Image Paint: wm.radial_control(color_path=tool_settings.image_paint.brush.cursor_color_add,data_path_primary=tool_settings.image_paint.brush.mask_texture_slot.angle,data_path_secondary=,fill_color_override_path=tool_settings.image_paint.unified_paint_settings.color,fill_color_override_test_path=tool_settings.image_paint.unified_paint_settings.use_unified_color,fill_color_path=tool_settings.image_paint.brush.color,image_id=tool_settings.image_paint.brush,rotation_path=tool_settings.image_paint.brush.mask_texture_slot.angle,secondary_tex=True,use_secondary=,zoom_path=)'
   only:
   - macos
@@ -854,7 +854,7 @@ bindings:
   - SHIFT
   - GUI
   label: Sample merged
-  icon: eyedropper.png
+  icon: sample_merged.png
   source: 'Image Paint: paint.sample_color(merged=True)'
   only:
   - macos

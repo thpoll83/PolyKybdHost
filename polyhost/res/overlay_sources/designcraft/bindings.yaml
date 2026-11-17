@@ -35,6 +35,9 @@ program_icon_anchor: bottom-right
 program_icon_region: [40, 38]   # the mark's own size: placed 1:1
 program_icon_margin: 0
 
+# The "hold Space" hint (../space_hint.py) covers the whole key and is placed 1:1.
+_space: &space { region: [72, 40], mode: alpha }
+
 bindings:
   # ===== Tools, no modifier (crates/tools/src/catalog.rs) =====
   - { key: V, mods: [], icon: select.png,       label: Selection,         source: "illustrator/select.png (Fluent Cursor, MIT)" }
@@ -59,7 +62,7 @@ bindings:
   - { key: I, mods: [], icon: eyedropper.png,   label: Eyedropper,        source: "illustrator/eyedropper.png (Fluent Eyedropper, MIT)" }
   - { key: K, mods: [], icon: measure.png,      label: Measure,           source: "material-symbols/straighten (Apache-2.0)" }
   - { key: H, mods: [], icon: hand.png,         label: Hand,              source: "illustrator/hand.png (Fluent Hand Right, MIT)" }
-  - { key: Z, mods: [], icon: zoom.png,         label: Zoom,              source: "illustrator/zoom.png (Fluent Zoom In, MIT)" }
+  - { key: Z, mods: [], icon: zoomtool.png,         label: Zoom,              source: "vectorcraft/zoomtool.png (Fluent Zoom In + Cursor badge, MIT)" }
 
   # ===== Single-key commands (menus.rs UI_COMMANDS; edit.rs) =====
   - { key: W, mods: [], icon: preview.png,      label: "Toggle normal/preview", source: "material-symbols/preview (Apache-2.0)" }
@@ -67,9 +70,9 @@ bindings:
   - { key: X, mods: [], icon: togglefs.png,     label: "Toggle fill/stroke", source: "material-symbols/flip_to_front (Apache-2.0)" }
   - { key: "/", mods: [], icon: applynone.png,  label: "Apply none",      source: "ms-fluent/Prohibited (MIT)" }
   - { key: DELETE, mods: [], icon: clear.png,   label: Clear,             source: "ms-fluent/Delete (MIT)" }
-  - { key: BACKSPACE, mods: [], icon: clear.png, label: "Clear selection", source: "ms-fluent/Delete (MIT); selection tool, tools/src/select.rs:802" }
+  - { key: BACKSPACE, mods: [], icon: clear.png, label: "Clear", source: "ms-fluent/Delete (MIT); selection tool, tools/src/select.rs:802" }
   - { key: TAB, mods: [], icon: hidepanels.png, label: "Show/hide panels", source: "ms-fluent/Panel Right Contract (MIT)" }
-  - { key: SPACE, mods: [], icon: hand.png,     label: "Hand (hold)",     source: "illustrator/hand.png (Fluent Hand Right, MIT); canvas.rs:1386-1403" }
+  - { key: SPACE, mods: [], icon: space_hand.png,     label: "Hand (hold)",     source: "vectorcraft/space_hand.png (Fluent Hand Right + four arrows, space_hint.py); canvas.rs:1386-1403", <<: *space }
 
   # ===== Shift (tools + commands) =====
   - { key: P, mods: [SHIFT], icon: pagetool.png,     label: "Page tool",       source: "ms-fluent/Document One Page (MIT)" }
@@ -106,8 +109,8 @@ bindings:
   - { key: X, mods: [CMDCTRL], icon: cut.png,         label: Cut,               source: "illustrator/cut.png (Fluent Cut, MIT)" }
   - { key: V, mods: [CMDCTRL], icon: paste.png,       label: Paste,             source: "illustrator/paste.png (Fluent Clipboard Paste, MIT)" }
   - { key: W, mods: [CMDCTRL],                        label: Close,             source: "concept (shared Fluent)" }
-  - { key: "]", mods: [CMDCTRL], icon: tofront.png,   label: "Bring forward",   source: "illustrator/tofront.png (Fluent Position To Front, MIT)" }
-  - { key: "[", mods: [CMDCTRL], icon: toback.png,    label: "Send backward",   source: "illustrator/toback.png (Fluent Position To Back, MIT)" }
+  - { key: "]", mods: [CMDCTRL], icon: bringforward.png,   label: "Bring forward",   source: "vectorcraft/bringforward.png (Fluent Position Forward, MIT)" }
+  - { key: "[", mods: [CMDCTRL], icon: sendbackward.png,    label: "Send backward",   source: "vectorcraft/sendbackward.png (Fluent Position Backward, MIT)" }
   - { key: G, mods: [CMDCTRL], icon: group.png,       label: Group,             source: "illustrator/group.png (Fluent Group, MIT)" }
   - { key: L, mods: [CMDCTRL], icon: lock.png,        label: Lock,              source: "illustrator/lock.png (Fluent Lock Closed, MIT)" }
   - { key: "3", mods: [CMDCTRL], icon: hide.png,      label: Hide,              source: "ms-fluent/Eye Off (MIT)" }
@@ -145,7 +148,7 @@ bindings:
   - { key: S, mods: [CMDCTRL, ALT], icon: savecopy.png,    label: "Save a copy",      source: "ms-fluent/Save Copy (MIT)" }
   - { key: EQUAL, mods: [CMDCTRL, ALT], icon: fitsel.png,  label: "Fit selection",    source: "ms-fluent/Zoom Fit (MIT)" }
   - { key: "0", mods: [CMDCTRL, ALT], icon: fitspread.png, label: "Fit spread",       source: "ms-fluent/Book Open (MIT)" }
-  - { key: "'", mods: [CMDCTRL, ALT], icon: baseline.png,  label: "Baseline grid",    source: "ms-fluent/Line Horizontal 3 (MIT)" }
+  - { key: "'", mods: [CMDCTRL, ALT], icon: baseline.png,  label: "Baseline grid",    source: "ms:table_rows (Apache-2.0)" }
   - { key: Y, mods: [CMDCTRL, ALT], icon: threads.png,     label: "Text threads",     source: "ms-fluent/Link (MIT)" }
   - { key: I, mods: [CMDCTRL, ALT], icon: hiddenchars.png, label: "Hidden characters", source: "material-symbols/format_paragraph (Apache-2.0)" }
   - { key: Z, mods: [CMDCTRL, ALT], icon: typical.png,     label: "Typical display",  source: "ms-fluent/Image (MIT)" }
@@ -167,7 +170,7 @@ bindings:
   - { key: "0", mods: [CMDCTRL, ALT, SHIFT], icon: pasteboard.png, label: "Entire pasteboard", source: "ms-fluent/Arrow Expand (MIT)" }
   - { key: Y, mods: [CMDCTRL, ALT, SHIFT], icon: overprint.png,   label: "Overprint preview", source: "ms-fluent/Shape Intersect (MIT)" }
   - { key: Z, mods: [CMDCTRL, ALT, SHIFT], icon: fast.png,        label: "Fast display",     source: "ms-fluent/Flash (MIT)" }
-  - { key: V, mods: [CMDCTRL, ALT, SHIFT], icon: paste.png,       label: "Paste in place",   source: "illustrator/paste.png (Fluent Clipboard Paste, MIT)" }
+  - { key: V, mods: [CMDCTRL, ALT, SHIFT], icon: pasteinplace.png,       label: "Paste in place",   source: "vectorcraft/pasteinplace.png (Material Symbols content_paste_go, Apache-2.0)" }
   - { key: D, mods: [CMDCTRL, ALT, SHIFT], icon: duplicate.png,   label: "Duplicate object", source: "ms-fluent/Copy Select (MIT)" }
   - { key: L, mods: [CMDCTRL, ALT, SHIFT], icon: overrideparent.png, label: "Override parent items", source: "ms-fluent/Document Edit (MIT)" }
   - { key: "8", mods: [CMDCTRL, ALT, SHIFT], icon: releasecompound.png, label: "Release compound path", source: "material-symbols/call_split (Apache-2.0)" }

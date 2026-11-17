@@ -47,6 +47,7 @@ import icon_fetch  # noqa: E402
 import program_marks  # noqa: E402
 import prompt_glyph  # noqa: E402
 import number_badge  # noqa: E402
+import action_variants  # noqa: E402
 
 FLUENT = {
     # transfer -- the app's whole purpose
@@ -76,13 +77,10 @@ FLUENT = {
     "restoresel":  "Arrow Counterclockwise",
     "copynames":   "Clipboard Letter",
     "copypaths":   "Clipboard Link",
-    "copylocal":   "Panel Left",
-    "copyremote":  "Panel Right",
     "paste":       "Clipboard Paste",
     # navigation
     "reread":    "Arrow Sync",
     "parent":    "Folder Arrow Up",
-    "root":      "Home",
     "homedir":   "Home",
     "back":      "Arrow Circle Left",
     "forward":   "Arrow Circle Right",
@@ -108,12 +106,10 @@ FLUENT = {
     "hidden":     "Eye Off",
     "filter":     "Filter",
     "autorefresh": "Arrow Repeat All",
-    "syncbrowse": "Arrow Swap",
     "switchpanel": "Arrow Swap",
     "quit":       "Power",
     # sorting (Ctrl+F3..F9)
     "sortname":  "Text Sort Ascending",
-    "sortext":   "Filter",
     "sorttime":  "Calendar",
     "sortsize":  "Data Bar Vertical",
     "sortattrs": "Options",
@@ -124,6 +120,19 @@ FLUENT = {
 
 WINSCP_ICO = ("https://raw.githubusercontent.com/winscp/winscp/master/"
               "source/resource/Application.ico")
+
+
+# Different actions that start from one icon: each gets its own picture
+# (one icon per action, maintainer 2026-11-15). See action_variants.py.
+VARIANTS = {
+    "renamemove.png": ("combine", "rename.png", "movefiles.png"),
+    "syncbrowse_link.png": ("combine", "switchpanel.png", "link.png"),
+    "rootdir.png": ("tag", "homedir.png", "ROOT"),
+    "copyclip.png": ("combine", "copyfiles.png", "paste.png"),
+    "copylocal_l.png": ("tag", "copypaths.png", "L"),
+    "copyremote_r.png": ("tag", "copypaths.png", "R"),
+    "sortext_tag.png": ("tag", "sortname.png", "EXT"),
+}
 
 
 def main() -> int:
@@ -145,6 +154,7 @@ def main() -> int:
                            credit="winscp/winscp Application.ico")
     n += 1
     print(f"Wrote {n} icons (+ program mark) to {out}")
+    action_variants.make(out, VARIANTS)
     return 0
 
 

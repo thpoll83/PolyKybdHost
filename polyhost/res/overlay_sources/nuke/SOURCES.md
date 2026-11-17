@@ -90,3 +90,15 @@ python scripts/generate_app_overlays.py \
 
 `fetch_icons.py` does not redraw the mark when `icons/nuke.png` exists. Delete
 it first to redraw it.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing
+(maintainer, 2026-11-15). These files give the other keys their own image.
+Files whose name starts with `_` are only parts of a composite.
+
+| file | source | licence |
+|---|---|---|
+| `projsettings.png` | Fluent `Document Settings` | MIT |
+| `_add.png` | Fluent `Add` | MIT |
+| `groupcreate.png` | `group.png` with `_add.png` as a badge at the lower right (`../dcc_glyphs.py` `with_badge`) | same as the two parts |

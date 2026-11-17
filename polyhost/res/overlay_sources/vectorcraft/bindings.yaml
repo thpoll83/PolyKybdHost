@@ -44,6 +44,11 @@ program_icon_anchor: bottom-right
 program_icon_region: [40, 40]
 program_icon_margin: 0
 
+# A 40x40 composite (glyph + word, fetch_icons.py WORDS) is placed 1:1.
+_word: &word { region: [40, 40], mode: alpha }
+# The "hold Space" hint (../space_hint.py) covers the whole key and is placed 1:1.
+_space: &space { region: [72, 40], mode: alpha }
+
 bindings:
   # ===== Tools: single key, no modifier (crates/tools/src/catalog.rs) =====
   - { key: V, mods: [], icon: select.png,        label: Selection,          source: "illustrator/select.png (ms-fluent Cursor, MIT)" }
@@ -70,7 +75,7 @@ bindings:
   - { key: J, mods: [], icon: graph.png,         label: "Column graph",     source: "vectorcraft chart-column.svg (Lucide, ISC)" }
   - { key: K, mods: [], icon: livepaint.png,     label: "Live paint bucket", source: "illustrator/livepaint.png (ms-fluent, MIT)" }
   - { key: H, mods: [], icon: hand.png,          label: Hand,               source: "illustrator/hand.png (ms-fluent, MIT)" }
-  - { key: Z, mods: [], icon: zoom.png,          label: Zoom,               source: "illustrator/zoom.png (ms-fluent, MIT)" }
+  - { key: Z, mods: [], icon: zoomtool.png,      label: Zoom,               source: "drawn: zoomin.png + Fluent Cursor badge (dcc_glyphs.with_badge)" }
 
   # ===== Single-key commands, no modifier (paint.rs, menus.rs) =====
   - { key: D, mods: [], icon: default.png, mode: alpha, label: "Default fill/stroke", source: "illustrator/default.png (drawn)" }
@@ -85,12 +90,12 @@ bindings:
   - { key: F7, mods: [], icon: layers.png,       label: Layers,             source: "vectorcraft layers.svg (Lucide, ISC)" }
   - { key: F12, mods: [], icon: revert.png,      label: Revert,             source: "ms:restore_page (Apache-2.0)" }
   # Enter / Backspace / Tab / Space (shortcuts.rs handle(); canvas.rs Space pan/zoom)
-  - { key: ENTER, mods: [], icon: move.png,      label: "Move / tool dialog", source: "ms-fluent/Arrow Move (MIT); Enter with a selection tool opens Move…" }
+  - { key: ENTER, mods: [], icon: tooldialog.png,      label: "Move / tool dialog", source: "ms-fluent/Options (MIT); Enter opens the active tool's dialog (Move… with a selection tool)" }
   - { key: BACKSPACE, mods: [], icon: clear.png, label: Clear,              source: "ms-fluent/Delete (MIT)" }
   - { key: TAB, mods: [], icon: panels.png,      label: "Show/hide panels", source: "ms:right_panel_close (Apache-2.0)" }
-  - { key: SPACE, mods: [], icon: hand.png,      label: "Hand (hold)",      source: "illustrator/hand.png (ms-fluent, MIT)" }
-  - { key: SPACE, mods: [CMDCTRL], icon: zoom.png, label: "Zoom (hold)",    source: "illustrator/zoom.png (ms-fluent, MIT)" }
-  - { key: SPACE, mods: [CMDCTRL, ALT], icon: zoomout.png, label: "Zoom out (hold)", source: "illustrator/zoomout.png (ms-fluent, MIT)" }
+  - { key: SPACE, mods: [], icon: space_hand.png,      label: "Hand (hold)",      source: "drawn: hand.png + four arrows (space_hint.py)", <<: *space }
+  - { key: SPACE, mods: [CMDCTRL], icon: zoomhold.png, label: "Zoom (hold)",    source: "drawn: zoom.png + HOLD (../ghidra glyph + word)", <<: *word }
+  - { key: SPACE, mods: [CMDCTRL, ALT], icon: zoomouthold.png, label: "Zoom out (hold)", source: "drawn: zoomout.png + HOLD (../ghidra glyph + word)", <<: *word }
   # arrows nudge the selection (shortcuts.rs: Shift = x10, Alt = copy)
   - { key: LEFT,  mods: [], icon: nudgeleft.png,  label: "Nudge left",  source: "ms-fluent/Arrow Left (MIT)" }
   - { key: RIGHT, mods: [], icon: nudgeright.png, label: "Nudge right", source: "ms-fluent/Arrow Right (MIT)" }
@@ -151,10 +156,10 @@ bindings:
   - { key: X, mods: [CMDCTRL], icon: cut.png,       label: Cut,             source: "illustrator/cut.png (ms-fluent, MIT)" }
   - { key: C, mods: [CMDCTRL], icon: copy.png,      label: Copy,            source: "illustrator/copy.png (ms-fluent, MIT)" }
   - { key: V, mods: [CMDCTRL], icon: paste.png,     label: Paste,           source: "illustrator/paste.png (ms-fluent, MIT)" }
-  - { key: F, mods: [CMDCTRL], icon: forward.png,   label: "Paste in front", source: "illustrator/forward.png (ms-fluent, MIT)" }
-  - { key: B, mods: [CMDCTRL], icon: backward.png,  label: "Paste in back",  source: "illustrator/backward.png (ms-fluent, MIT)" }
+  - { key: F, mods: [CMDCTRL], icon: pastefront.png,   label: "Paste in front", source: "drawn: paste.png + nudgeup.png badge (_badge)" }
+  - { key: B, mods: [CMDCTRL], icon: pasteback.png,  label: "Paste in back",  source: "drawn: paste.png + nudgedown.png badge (_badge)" }
   - { key: K, mods: [CMDCTRL], icon: prefs.png,     label: Preferences,     source: "illustrator/prefs.png (ms-fluent, MIT)" }
-  - { key: COMMA, mods: [CMDCTRL], icon: prefs.png, label: Settings, only: [macos], source: "illustrator/prefs.png (ms-fluent, MIT); macOS-only Cmd+, (shortcuts.rs settings_chord)" }
+  - { key: COMMA, mods: [CMDCTRL], icon: prefs.png, label: "Preferences", only: [macos], source: "illustrator/prefs.png (ms-fluent, MIT); macOS-only Cmd+, (shortcuts.rs settings_chord)" }
   # object
   - { key: D, mods: [CMDCTRL], icon: transformagain.png, label: "Transform again", source: "illustrator/transformagain.png (ms-fluent, MIT)" }
   - { key: G, mods: [CMDCTRL], icon: group.png,     label: Group,           source: "illustrator/group.png (ms-fluent, MIT)" }

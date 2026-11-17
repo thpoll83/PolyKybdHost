@@ -47,6 +47,11 @@ FROM_WORD = {
     "selectall.png": "word",
 }
 
+# One icon per action (2026-11-15): Space held is the hand with an arrow on each
+# side, the "hold Space" hint of ../space_hint.py. VectorCraft draws it from the
+# same Fluent Hand Right, so the copy is byte-identical.
+FROM_VECTORCRAFT = {"space_hand.png": "vectorcraft"}
+
 FLUENT = {
     "closeall":     "Dismiss Square Multiple",
     "properties":   "Info",
@@ -105,6 +110,7 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
     n = icon_fetch.fluent(FLUENT, out)
     n += icon_fetch.borrow(FROM_WORD, out)
+    n += icon_fetch.borrow(FROM_VECTORCRAFT, out)
     _compose_findprev(out)
     program_marks.own_icon(out / "progmark.png", PDFCRAFT_ICO, 64,
                            credit="storytold/pdfcraft assets/app-icon/pdfcraft.ico")

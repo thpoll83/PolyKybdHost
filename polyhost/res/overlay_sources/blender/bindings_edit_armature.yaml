@@ -45,7 +45,7 @@ bindings:
 - key: F
   mods: []
   label: Fill between
-  icon: fill.png
+  icon: fill_bone.png
   source: 'Armature: armature.fill'
 - key: F1
   mods: []
@@ -167,11 +167,11 @@ bindings:
 - key: L
   mods: []
   label: Select linked (cursor)
-  icon: select_linked.png
+  icon: linked_pick.png
   source: 'Armature: armature.select_linked_pick(deselect=False)'
 - key: M
   mods: []
-  label: Move to bone coll.
+  label: Move to collection
   icon: collection_move.png
   source: 'Armature: armature.move_to_collection'
 - key: N
@@ -207,7 +207,7 @@ bindings:
 - key: W
   mods: []
   label: Select tool
-  icon: select_box.png
+  icon: select_tool.png
   source: '3D View: wm.tool_set_by_id(cycle=True,name=builtin.select_box)'
 - key: X
   mods: []
@@ -275,19 +275,19 @@ bindings:
   mods:
   - ALT
   label: Clear roll
-  icon: clear_rot.png
+  icon: roll_clear.png
   source: 'Armature: armature.roll_clear'
 - key: S
   mods:
   - ALT
   label: Envelope
-  icon: bbone.png
+  icon: envelope.png
   source: 'Armature: transform.transform(mode=BONE_ENVELOPE_DIST)'
 - key: W
   mods:
   - ALT
   label: Disable option
-  icon: bone_options.png
+  icon: bone_option_off.png
   source: 'Armature: wm.call_menu(name=VIEW3D_MT_bone_options_disable)'
 - key: Z
   mods:
@@ -425,7 +425,7 @@ bindings:
   mods:
   - SHIFT
   label: Extend to parent
-  icon: hier_parent.png
+  icon: parent_add.png
   source: 'Armature: armature.select_hierarchy(direction=PARENT,extend=True)'
 - key: KC_RIGHT
   mods:
@@ -437,7 +437,7 @@ bindings:
   mods:
   - SHIFT
   label: Extend to child
-  icon: hier_child.png
+  icon: child_add.png
   source: 'Armature: armature.select_hierarchy(direction=CHILD,extend=True)'
 - key: KC_SPACE
   mods:
@@ -455,19 +455,19 @@ bindings:
   mods:
   - SHIFT
   label: Deselect linked
-  icon: deselect.png
+  icon: deselect_linked.png
   source: 'Armature: armature.select_linked_pick(deselect=True)'
 - key: M
   mods:
   - SHIFT
   label: Bone collection
-  icon: collection_add.png
+  icon: bone_collection_add.png
   source: 'Armature: armature.assign_to_collection'
 - key: N
   mods:
   - SHIFT
   label: Recalc roll
-  icon: rotate.png
+  icon: roll_recalc.png
   source: 'Armature: armature.calculate_roll'
 - key: R
   mods:
@@ -555,7 +555,7 @@ bindings:
   mods:
   - CTRL
   label: Frame all (quad)
-  icon: frame_all.png
+  icon: frame_all_quad.png
   source: '3D View: view3d.view_all(center=False,use_all_regions=True)'
 - key: KC_LEFT
   mods:
@@ -635,7 +635,7 @@ bindings:
   mods:
   - CTRL
   label: Bone roll
-  icon: rotate.png
+  icon: bone_roll.png
   source: 'Armature: transform.transform(mode=BONE_ROLL)'
 - key: S
   mods:
@@ -739,7 +739,7 @@ bindings:
   - CTRL
   - SHIFT
   label: Select mirror
-  icon: mirror.png
+  icon: select_mirror.png
   source: 'Armature: armature.select_mirror(extend=False)'
 - key: O
   mods:
@@ -759,7 +759,7 @@ bindings:
   - CTRL
   - SHIFT
   label: Enable option
-  icon: bone_options.png
+  icon: bone_option_on.png
   source: 'Armature: wm.call_menu(name=VIEW3D_MT_bone_options_enable)'
 - key: Z
   mods:
@@ -849,7 +849,7 @@ bindings:
   mods:
   - GUI
   label: Frame all (quad)
-  icon: frame_all.png
+  icon: frame_all_quad.png
   source: '3D View: view3d.view_all(center=False,use_all_regions=True)'
   only:
   - macos
@@ -933,7 +933,7 @@ bindings:
   mods:
   - GUI
   label: Bone roll
-  icon: rotate.png
+  icon: bone_roll.png
   source: 'Armature: transform.transform(mode=BONE_ROLL)'
   only:
   - macos
@@ -1051,7 +1051,7 @@ bindings:
   - SHIFT
   - GUI
   label: Select mirror
-  icon: mirror.png
+  icon: select_mirror.png
   source: 'Armature: armature.select_mirror(extend=False)'
   only:
   - macos
@@ -1077,7 +1077,7 @@ bindings:
   - SHIFT
   - GUI
   label: Enable option
-  icon: bone_options.png
+  icon: bone_option_on.png
   source: 'Armature: wm.call_menu(name=VIEW3D_MT_bone_options_enable)'
   only:
   - macos

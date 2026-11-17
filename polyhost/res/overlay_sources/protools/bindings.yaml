@@ -43,17 +43,20 @@ program_icon_anchor: right
 program_icon_region: [37, 32]
 program_icon_margin: 0
 
+# A 40x40 composite (glyph + word, drawn 1-bit by fetch_icons.py) is placed 1:1.
+_word: &word { region: [40, 40], mode: alpha }
+
 bindings:
   # --- no modifier: Commands Keyboard Focus (QWERTY order, guide chapter 3) ---
-  - { key: "1", mods: [], icon: zoom1.png, label: "Zoom memory 1" }
-  - { key: "2", mods: [], icon: zoom2.png, label: "Zoom memory 2" }
-  - { key: "3", mods: [], icon: zoom3.png, label: "Zoom memory 3" }
-  - { key: "4", mods: [], icon: zoom4.png, label: "Zoom memory 4" }
-  - { key: "5", mods: [], icon: zoom5.png, label: "Zoom memory 5" }
-  - { key: "6", mods: [], icon: play_to_start.png, label: "Play to edit start" }
-  - { key: "7", mods: [], icon: play_from_start.png, label: "Play from edit start" }
-  - { key: "8", mods: [], icon: play_to_end.png, label: "Play to edit end" }
-  - { key: "9", mods: [], icon: play_from_end.png, label: "Play from edit end" }
+  - { key: "1", mods: [], icon: zoom1.png, label: "Zoom preset 1" }
+  - { key: "2", mods: [], icon: zoom2.png, label: "Zoom preset 2" }
+  - { key: "3", mods: [], icon: zoom3.png, label: "Zoom preset 3" }
+  - { key: "4", mods: [], icon: zoom4.png, label: "Zoom preset 4" }
+  - { key: "5", mods: [], icon: zoom5.png, label: "Zoom preset 5" }
+  - { key: "6", mods: [], icon: play_to_start.png, label: "Pre-roll to selection start" }
+  - { key: "7", mods: [], icon: play_from_start.png, label: "Post-roll from selection start" }
+  - { key: "8", mods: [], icon: play_to_end.png, label: "Pre-roll to selection end" }
+  - { key: "9", mods: [], icon: play_from_end.png, label: "Post-roll from selection end" }
   - { key: "0", mods: [], icon: tl2edit.png, label: "Edit sel. to timeline sel." }
   - { key: MINUS, mods: [], icon: playlistview.png, label: "Toggle playlist view" }
   - { key: Q, mods: [], icon: showselstart.png, label: "Show timeline sel. start" }
@@ -65,20 +68,20 @@ bindings:
   - { key: U, mods: [], icon: clipsync_tc.png, label: "Clip sync point to timecode" }
   - { key: I, mods: [], icon: clipend_tc.png, label: "Clip end to timecode" }
   - { key: O, mods: [], icon: edit2tl.png, label: "Timeline sel. to edit sel." }
-  - { key: P, mods: [], icon: prevtrack.png, label: "Insertion to previous track" }
+  - { key: P, mods: [], icon: prevtrack.png, label: "Move edit up" }
   - { key: "[", mods: [], icon: playedit.png, label: "Play edit selection" }
   - { key: "]", mods: [], icon: playtimeline.png, label: "Play timeline selection" }
   - { key: "\\", mods: [], icon: nudgeleft.png, label: "Nudge play earlier by grid" }
-  - { key: A, mods: [], icon: trimstart.png, label: "Trim clip start to cursor" }
-  - { key: S, mods: [], icon: trimend.png, label: "Trim clip end to cursor" }
-  - { key: D, mods: [], icon: fadein.png, label: "Fade from start" }
+  - { key: A, mods: [], icon: trimstart.png, label: "Trim clip start to insertion" }
+  - { key: S, mods: [], icon: trimend.png, label: "Trim clip end to insertion" }
+  - { key: D, mods: [], icon: fadein.png, label: "Fade to start" }
   - { key: F, mods: [], icon: xfade.png, label: "Crossfade, no dialog" }
-  - { key: G, mods: [], icon: fadeout.png, label: "Fade out to clip end" }
+  - { key: G, mods: [], icon: fadeout.png, label: "Fade to end" }
   - { key: H, mods: [], icon: clipstart_play.png, label: "Clip start to play position" }
   - { key: J, mods: [], icon: clipsync_play.png, label: "Clip sync point to play position" }
   - { key: K, mods: [], icon: clipend_play.png, label: "Clip end to play position" }
   - { key: L, mods: [], icon: prevedit.png, label: "Insertion to previous edit" }
-  - { key: ";", mods: [], icon: nexttrack.png, label: "Insertion to next track" }
+  - { key: ";", mods: [], icon: nexttrack.png, label: "Move edit down" }
   - { key: "'", mods: [], icon: nextedit.png, label: "Insertion to next edit" }
   - { key: Z, mods: [], label: "Undo" }
   - { key: Z, mods: [SHIFT], label: "Redo" }
@@ -235,7 +238,7 @@ bindings:
   - { key: "=", mods: [ALT], icon: eventlist.png, label: "MIDI event list" }
   - { key: MINUS, mods: [ALT], icon: trackview.png, label: "Toggle track view, all" }
   - { key: "/", mods: [ALT], icon: glide.png, label: "Glide automation, current" }
-  - { key: SPACE, mods: [ALT], icon: online.png, label: "Online playback" }
+  - { key: SPACE, mods: [ALT], icon: onlineplay.png, label: "Online playback", <<: *word }
   - { key: LEFT, mods: [ALT], icon: play_to_start.png, label: "Pre-roll to selection start" }
   - { key: RIGHT, mods: [ALT], icon: play_to_end.png, label: "Pre-roll to selection end" }
 
@@ -281,7 +284,7 @@ bindings:
   - { key: A, mods: [CMDCTRL, SHIFT], icon: selclips.png, label: "Select all clips in list" }
   - { key: U, mods: [CMDCTRL, SHIFT], icon: unused.png, label: "Select unused clips" }
   - { key: B, mods: [CMDCTRL, SHIFT], icon: clearclips.png, label: "Clear selected clips" }
-  - { key: R, mods: [CMDCTRL, SHIFT], icon: rename.png, label: "Rename selected clips" }
+  - { key: R, mods: [CMDCTRL, SHIFT], icon: renamesel.png, label: "Rename selected clips", <<: *word }
   - { key: M, mods: [CMDCTRL, SHIFT], icon: timestamp.png, label: "Time stamp clips" }
   - { key: Y, mods: [CMDCTRL, SHIFT], icon: exportdef.png, label: "Export clip definition" }
   - { key: K, mods: [CMDCTRL, SHIFT], icon: exportclips.png, label: "Export clips as files" }
@@ -289,8 +292,8 @@ bindings:
   - { key: SPACE, mods: [CMDCTRL, SHIFT], icon: recsession.png, label: "Half-speed record" }
   - { key: "=", mods: [CMDCTRL, SHIFT], icon: chat.png, label: "Artist Chat" }
   - { key: ".", mods: [CMDCTRL, SHIFT], icon: panic.png, label: "All MIDI notes off" }
-  - { key: "[", mods: [CMDCTRL, SHIFT], icon: vzoomout.png, label: "MIDI zoom out" }
-  - { key: "]", mods: [CMDCTRL, SHIFT], icon: vzoomin.png, label: "MIDI zoom in" }
+  - { key: "[", mods: [CMDCTRL, SHIFT], icon: vzoomout_midi.png, label: "MIDI zoom out", <<: *word }
+  - { key: "]", mods: [CMDCTRL, SHIFT], icon: vzoomin_midi.png, label: "MIDI zoom in", <<: *word }
   - { key: "/", mods: [CMDCTRL, SHIFT], icon: trimauto.png, label: "Trim automation, current" }
   - { key: UP, mods: [CMDCTRL, SHIFT], icon: cycleprev.png, label: "Cycle in previous playlist" }
   - { key: DOWN, mods: [CMDCTRL, SHIFT], icon: cyclenext.png, label: "Cycle in next playlist" }
@@ -315,8 +318,8 @@ bindings:
   - { key: T, mods: [CMDCTRL, ALT], icon: thinauto.png, label: "Thin automation" }
   - { key: TAB, mods: [CMDCTRL, ALT], icon: tabtransients.png, label: "Tab to transients" }
   - { key: SPACE, mods: [CMDCTRL, ALT], icon: onlinerec.png, label: "Online record" }
-  - { key: "[", mods: [CMDCTRL, ALT], icon: vzoomout.png, label: "Audio zoom out" }
-  - { key: "]", mods: [CMDCTRL, ALT], icon: vzoomin.png, label: "Audio zoom in" }
+  - { key: "[", mods: [CMDCTRL, ALT], icon: vzoomout_audio.png, label: "Audio zoom out", <<: *word }
+  - { key: "]", mods: [CMDCTRL, ALT], icon: vzoomin_audio.png, label: "Audio zoom in", <<: *word }
   - { key: "/", mods: [CMDCTRL, ALT], icon: writeall.png, label: "Write automation, all" }
   - { key: "1", mods: [CMDCTRL, ALT], icon: focusedit.png, label: "Commands Keyboard Focus" }
   - { key: "2", mods: [CMDCTRL, ALT], icon: focusclips.png, label: "Clip list focus" }

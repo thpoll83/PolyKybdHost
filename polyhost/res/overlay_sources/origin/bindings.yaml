@@ -44,7 +44,7 @@ bindings:
   - { key: "F9", mods: [CTRL], icon: float.png, label: "Float window" }
   - { key: "F9", mods: [CTRL, SHIFT], icon: retract.png, label: "Retract floating windows" }
   - { key: "Z", mods: [CTRL, ALT], icon: lastwindow.png, label: "Last window" }
-  - { key: "KC_TAB", mods: [CTRL], icon: switcher.png, label: "Window switcher" }
+  - { key: "KC_TAB", mods: [CTRL], icon: winswitcher.png, label: "Window switcher" }
   - { key: "KC_TAB", mods: [CTRL, SHIFT], icon: switcherback.png, label: "Window switcher back" }
   - { key: "F3", mods: [], icon: browser.png, label: "Project Browser" }
   - { key: "F12", mods: [CTRL, SHIFT], icon: findfiles.png, label: "Find in project files" }

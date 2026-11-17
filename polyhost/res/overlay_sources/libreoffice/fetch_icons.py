@@ -22,6 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import doc_mark, icon_fetch  # noqa: E402
 import material_symbols as ms  # noqa: E402
+import action_variants  # noqa: E402
 
 FLUENT = {
     # --- shared across all three modules ---
@@ -35,7 +36,7 @@ FLUENT = {
     "cut": "Cut",
     "copy": "Copy",
     "paste": "Clipboard Paste",
-    "pastespecial": "Clipboard Paste",
+    "pastespecial": "Clipboard Settings",
     "selectall": "Select All On",
     "find": "Search",
     "replace": "Arrow Swap",
@@ -61,16 +62,14 @@ FLUENT = {
     "unorderedlist": "Text Bullet List",
     "createstyle": "Star Emphasis",
     "updatestyle": "Arrow Sync",
-    "lastpos": "Arrow Undo",
+    "lastpos": "History",
     # --- Calc ---
     "editcell": "Table Cell Edit",
-    "absref": "Money",
     "recalc": "Arrow Sync",
     "recalcall": "Arrow Repeat All",
     "formatcells": "Table Simple",
     "selectcolumn": "Table Insert Column",
     "selectrow": "Table Insert Row",
-    "selectallcells": "Table Simple",
     "insertcells": "Table Add",
     "deletecells": "Table Delete Row",
     "showformulas": "Calculator",
@@ -103,6 +102,14 @@ DOC_MARKS = {"writer": "WRITER", "calc": "CALC", "impress": "IMPR"}
 MATERIAL = {"orderedlist": "format_list_numbered"}
 
 
+# Different actions that start from one icon: each gets its own picture
+# (one icon per action, maintainer 2026-11-15). See action_variants.py.
+VARIANTS = {
+    "absref_tag.png": ("tag", "formatcells.png", "$"),
+    "selectallcells_tag.png": ("tag", "formatcells.png", "ALL"),
+}
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
@@ -121,6 +128,7 @@ def main() -> int:
         assert r and r[1] == 0 and r[2] == 0, f"{app}: content touches the page outline: {r}"
         print(f"  {dest.name}  <- fluent Document + '{r[0]}' (0 touching, 0 outside)")
     print(f"Wrote {n} icons (+ {len(DOC_MARKS)} document marks) to {out}")
+    action_variants.make(out, VARIANTS)
     return 0
 
 

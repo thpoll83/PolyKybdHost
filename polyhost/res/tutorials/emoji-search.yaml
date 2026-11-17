@@ -16,11 +16,14 @@ steps:
     spotlight: []
     say: ["Search mode:", "tap ringed key"]
     text: >-
-      This key changes between tab mode and search mode. In search mode it shows a
-      party face with the switch knob up. Set it to search mode, then press Next.
+      This key changes between tab mode and search mode. Tap it. In search mode it
+      shows a party face with the switch knob up.
+    wait: {press: KC_EMJ_MODE}
   - text: >-
-      Type a word, for example smile. The letters are at their usual places. The
-      status display shows what you typed and how many emoji match. Then press Next.
+      If the mode key now shows a magnifying glass with the knob down, the layer was
+      in search mode already: tap it once more. Then type a word, for example smile.
+      The letters are at their usual places. The status display shows what you typed
+      and how many emoji match. Then press Next.
   - point: {keycode: KC_EMJ_PAGE_NEXT}
     spotlight: [{keycode: KC_EMJ_PAGE_PREV}]
     say: ["Number row:", "the results"]

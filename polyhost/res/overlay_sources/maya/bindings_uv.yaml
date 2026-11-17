@@ -31,15 +31,15 @@ bindings:
   # --- UV Editor hotkeys ---
   - { key: "4", mods: [], icon: wireframe.png, label: "Wireframe" }
   - { key: "5", mods: [], icon: shaded.png, label: "Shaded" }
-  - { key: "6", mods: [], icon: textured.png, label: "Show texture image" }
+  - { key: "6", mods: [], icon: uv_image.png, label: "Show texture image" }
   - { key: "7", mods: [], icon: uv_distort.png, label: "UV distortion display" }
   - { key: A, mods: [CTRL, SHIFT], icon: select_all.png, label: "Select all active components" }
   - { key: I, mods: [CTRL, SHIFT], icon: select_invert.png, label: "Invert selection" }
   # "Ctrl + < or >": < and > are Shift+, and Shift+. on a US layout.
   - { key: ",", mods: [CTRL, SHIFT], icon: shrink.png, label: "Shrink selection" }
   - { key: ".", mods: [CTRL, SHIFT], icon: grow.png, label: "Grow selection" }
-  - { key: C, mods: [CTRL], icon: copy.png, label: "Copy face UVs" }
-  - { key: V, mods: [CTRL], icon: paste.png, label: "Paste face UVs" }
+  - { key: C, mods: [CTRL], icon: copy_uv.png, label: "Copy face UVs" }
+  - { key: V, mods: [CTRL], icon: paste_uv.png, label: "Paste face UVs" }
   - { key: L, mods: [CTRL], icon: uv_layout.png, label: "Layout" }
   - { key: U, mods: [CTRL], icon: uv_unwrap.png, label: "Unfold" }
   - { key: X, mods: [CTRL, SHIFT], icon: uv_shell.png, label: "Create UV shell" }
@@ -49,7 +49,7 @@ bindings:
   - { key: W, mods: [], icon: move.png, label: "Move Tool" }
   - { key: E, mods: [], icon: rotate.png, label: "Rotate Tool" }
   - { key: R, mods: [], icon: scale.png, label: "Scale Tool" }
-  - { key: A, mods: [], icon: frame_all.png, label: "Frame all UV shells" }
+  - { key: A, mods: [], icon: frame_all.png, label: "Frame all" }
   - { key: F, mods: [], icon: zoomextsel.png, label: "Frame selected" }
   - { key: UP, mods: [CTRL], icon: checker_up.png, label: "Checker map resolution up" }
   - { key: DOWN, mods: [CTRL], icon: checker_down.png, label: "Checker map resolution down" }

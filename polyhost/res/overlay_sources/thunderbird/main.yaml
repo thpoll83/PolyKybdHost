@@ -125,8 +125,8 @@ bindings:
   # --- Spaces ---
   - { key: "1", mods: [ALT], icon: spacemail.png, label: "Mail", only: [windows] }
   - { key: "1", mods: [CTRL], icon: spacemail.png, label: "Mail", except: [windows] }
-  - { key: "2", mods: [ALT], icon: spacecontacts.png, label: "Address book space", only: [windows] }
-  - { key: "2", mods: [CTRL], icon: spacecontacts.png, label: "Address book space", except: [windows] }
+  - { key: "2", mods: [ALT], icon: spacecontacts.png, label: "Address book", only: [windows] }
+  - { key: "2", mods: [CTRL], icon: spacecontacts.png, label: "Address book", except: [windows] }
   - { key: "3", mods: [ALT], icon: spacecalendar.png, label: "Calendar", only: [windows] }
   - { key: "3", mods: [CTRL], icon: spacecalendar.png, label: "Calendar", except: [windows] }
   - { key: "4", mods: [ALT], icon: spacetasks.png, label: "Tasks", only: [windows] }

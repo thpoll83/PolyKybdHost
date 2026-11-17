@@ -24,6 +24,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import brand_marks, icon_fetch, number_badge  # noqa: E402
+import action_variants  # noqa: E402
 
 FLUENT = {
     # --- navigation ---
@@ -93,6 +94,14 @@ FLUENT = {
 }
 
 
+# Different actions that start from one icon: each gets its own picture
+# (one icon per action, maintainer 2026-11-15). See action_variants.py.
+VARIANTS = {
+    "unread_prev.png": ("arrow", "unread.png", "up"),
+    "unread_next.png": ("arrow", "unread.png", "down"),
+}
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
@@ -100,6 +109,7 @@ def main() -> int:
                                size=0.50, centre=(0.53, 0.47))
     brand_marks.ensure(out / "signal.png", "signal")
     print(f"Wrote {n} icons to {out}")
+    action_variants.make(out, VARIANTS)
     return 0
 
 

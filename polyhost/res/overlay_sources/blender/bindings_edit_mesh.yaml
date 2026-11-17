@@ -187,7 +187,7 @@ bindings:
 - key: L
   mods: []
   label: Select linked (cursor)
-  icon: select_linked.png
+  icon: linked_pick.png
   source: 'Mesh: mesh.select_linked_pick(deselect=False)'
 - key: M
   mods: []
@@ -242,7 +242,7 @@ bindings:
 - key: W
   mods: []
   label: Select tool
-  icon: select_box.png
+  icon: select_tool.png
   source: '3D View: wm.tool_set_by_id(cycle=True,name=builtin.select_box)'
 - key: X
   mods: []
@@ -274,13 +274,13 @@ bindings:
   mods:
   - ALT
   label: Rip fill
-  icon: rip.png
+  icon: rip_fill.png
   source: 'Mesh: mesh.rip_edge_move'
 - key: E
   mods:
   - ALT
   label: Extrude menu
-  icon: extrude.png
+  icon: extrude_menu.png
   source: 'Mesh: wm.call_menu(name=VIEW3D_MT_edit_mesh_extrude)'
 - key: F
   mods:
@@ -316,7 +316,7 @@ bindings:
   mods:
   - ALT
   label: Point normals
-  icon: normals.png
+  icon: normals_point.png
   source: 'Mesh: mesh.point_normals'
 - key: M
   mods:
@@ -358,7 +358,7 @@ bindings:
   mods:
   - ALT
   label: Fallback tool pie
-  icon: tools.png
+  icon: tool_pie.png
   source: 'Window: wm.toolbar_fallback_pie'
 - key: Z
   mods:
@@ -370,19 +370,19 @@ bindings:
   mods:
   - SHIFT
   label: + vertex select
-  icon: sel_vert.png
+  icon: sel_vert_add.png
   source: 'Mesh: mesh.select_mode(type=VERT,use_extend=True)'
 - key: '2'
   mods:
   - SHIFT
   label: + edge select
-  icon: sel_edge.png
+  icon: sel_edge_add.png
   source: 'Mesh: mesh.select_mode(type=EDGE,use_extend=True)'
 - key: '3'
   mods:
   - SHIFT
   label: + face select
-  icon: sel_face.png
+  icon: sel_face_add.png
   source: 'Mesh: mesh.select_mode(type=FACE,use_extend=True)'
 - key: A
   mods:
@@ -412,7 +412,7 @@ bindings:
   mods:
   - SHIFT
   label: Edge crease
-  icon: crease.png
+  icon: edge_crease.png
   source: 'Mesh: transform.edge_crease'
 - key: F1
   mods:
@@ -502,7 +502,7 @@ bindings:
   mods:
   - SHIFT
   label: Knife selected
-  icon: knife.png
+  icon: knife_selected.png
   source: 'Mesh: mesh.knife_tool(only_selected=True,use_occlude_geometry=False)'
 - key: KC_GRAVE
   mods:
@@ -538,13 +538,13 @@ bindings:
   mods:
   - SHIFT
   label: Deselect linked
-  icon: deselect.png
+  icon: deselect_linked.png
   source: 'Mesh: mesh.select_linked_pick(deselect=True)'
 - key: N
   mods:
   - SHIFT
   label: Recalc normals
-  icon: normals.png
+  icon: normals_recalc.png
   source: 'Mesh: mesh.normals_make_consistent(inside=False)'
 - key: O
   mods:
@@ -586,25 +586,25 @@ bindings:
   mods:
   - CTRL
   label: Expand to vertex
-  icon: sel_vert.png
+  icon: sel_vert_exp.png
   source: 'Mesh: mesh.select_mode(type=VERT,use_expand=True)'
 - key: '2'
   mods:
   - CTRL
   label: Expand to edge
-  icon: sel_edge.png
+  icon: sel_edge_exp.png
   source: 'Mesh: mesh.select_mode(type=EDGE,use_expand=True)'
 - key: '3'
   mods:
   - CTRL
   label: Expand to face
-  icon: sel_face.png
+  icon: sel_face_exp.png
   source: 'Mesh: mesh.select_mode(type=FACE,use_expand=True)'
 - key: A
   mods:
   - CTRL
   label: Skin resize
-  icon: scale.png
+  icon: skin_resize.png
   source: 'Mesh: transform.skin_resize'
 - key: B
   mods:
@@ -621,13 +621,13 @@ bindings:
   mods:
   - CTRL
   label: Edge menu
-  icon: sel_edge.png
+  icon: sel_edge_menu.png
   source: 'Mesh: wm.call_menu(name=VIEW3D_MT_edit_mesh_edges)'
 - key: F
   mods:
   - CTRL
   label: Face menu
-  icon: sel_face.png
+  icon: sel_face_menu.png
   source: 'Mesh: wm.call_menu(name=VIEW3D_MT_edit_mesh_faces)'
 - key: F11
   mods:
@@ -692,7 +692,7 @@ bindings:
   mods:
   - CTRL
   label: Frame all (quad)
-  icon: frame_all.png
+  icon: frame_all_quad.png
   source: '3D View: view3d.view_all(center=False,use_all_regions=True)'
 - key: KC_LEFT
   mods:
@@ -761,7 +761,7 @@ bindings:
   mods:
   - CTRL
   label: Vertex parent
-  icon: parent.png
+  icon: vertex_parent.png
   source: 'Mesh: object.vertex_parent_set'
 - key: Q
   mods:
@@ -789,7 +789,7 @@ bindings:
   mods:
   - CTRL
   label: Vertex menu
-  icon: sel_vert.png
+  icon: sel_vert_menu.png
   source: 'Mesh: wm.call_menu(name=VIEW3D_MT_edit_mesh_vertices)'
 - key: X
   mods:
@@ -807,7 +807,7 @@ bindings:
   - SHIFT
   - ALT
   label: To sphere
-  icon: tosphere.png
+  icon: to_sphere.png
   source: 'Mesh: transform.tosphere'
 - key: Z
   mods:
@@ -862,21 +862,21 @@ bindings:
   - CTRL
   - SHIFT
   label: + expand vertex
-  icon: sel_vert.png
+  icon: sel_vert_add_exp.png
   source: 'Mesh: mesh.select_mode(type=VERT,use_expand=True,use_extend=True)'
 - key: '2'
   mods:
   - CTRL
   - SHIFT
   label: + expand edge
-  icon: sel_edge.png
+  icon: sel_edge_add_exp.png
   source: 'Mesh: mesh.select_mode(type=EDGE,use_expand=True,use_extend=True)'
 - key: '3'
   mods:
   - CTRL
   - SHIFT
   label: + expand face
-  icon: sel_face.png
+  icon: sel_face_add_exp.png
   source: 'Mesh: mesh.select_mode(type=FACE,use_expand=True,use_extend=True)'
 - key: B
   mods:
@@ -918,7 +918,7 @@ bindings:
   - CTRL
   - SHIFT
   label: Select mirror
-  icon: mirror.png
+  icon: select_mirror.png
   source: 'Mesh: mesh.select_mirror'
 - key: N
   mods:
@@ -952,7 +952,7 @@ bindings:
   - CTRL
   - SHIFT
   label: Triangulate fixed
-  icon: triangulate.png
+  icon: triangulate_fixed.png
   source: 'Mesh: mesh.quads_convert_to_tris(ngon_method=CLIP,quad_method=FIXED)'
 - key: Z
   mods:
@@ -972,7 +972,7 @@ bindings:
   mods:
   - GUI
   label: Expand to vertex
-  icon: sel_vert.png
+  icon: sel_vert_exp.png
   source: 'Mesh: mesh.select_mode(type=VERT,use_expand=True)'
   only:
   - macos
@@ -980,7 +980,7 @@ bindings:
   mods:
   - GUI
   label: Expand to edge
-  icon: sel_edge.png
+  icon: sel_edge_exp.png
   source: 'Mesh: mesh.select_mode(type=EDGE,use_expand=True)'
   only:
   - macos
@@ -988,7 +988,7 @@ bindings:
   mods:
   - GUI
   label: Expand to face
-  icon: sel_face.png
+  icon: sel_face_exp.png
   source: 'Mesh: mesh.select_mode(type=FACE,use_expand=True)'
   only:
   - macos
@@ -996,7 +996,7 @@ bindings:
   mods:
   - GUI
   label: Skin resize
-  icon: scale.png
+  icon: skin_resize.png
   source: 'Mesh: transform.skin_resize'
   only:
   - macos
@@ -1019,7 +1019,7 @@ bindings:
   mods:
   - GUI
   label: Edge menu
-  icon: sel_edge.png
+  icon: sel_edge_menu.png
   source: 'Mesh: wm.call_menu(name=VIEW3D_MT_edit_mesh_edges)'
   only:
   - macos
@@ -1027,7 +1027,7 @@ bindings:
   mods:
   - GUI
   label: Face menu
-  icon: sel_face.png
+  icon: sel_face_menu.png
   source: 'Mesh: wm.call_menu(name=VIEW3D_MT_edit_mesh_faces)'
   only:
   - macos
@@ -1098,7 +1098,7 @@ bindings:
   mods:
   - GUI
   label: Frame all (quad)
-  icon: frame_all.png
+  icon: frame_all_quad.png
   source: '3D View: view3d.view_all(center=False,use_all_regions=True)'
   only:
   - macos
@@ -1167,7 +1167,7 @@ bindings:
   mods:
   - GUI
   label: Vertex parent
-  icon: parent.png
+  icon: vertex_parent.png
   source: 'Mesh: object.vertex_parent_set'
   only:
   - macos
@@ -1205,7 +1205,7 @@ bindings:
   mods:
   - GUI
   label: Vertex menu
-  icon: sel_vert.png
+  icon: sel_vert_menu.png
   source: 'Mesh: wm.call_menu(name=VIEW3D_MT_edit_mesh_vertices)'
   only:
   - macos
@@ -1273,7 +1273,7 @@ bindings:
   - SHIFT
   - GUI
   label: + expand vertex
-  icon: sel_vert.png
+  icon: sel_vert_add_exp.png
   source: 'Mesh: mesh.select_mode(type=VERT,use_expand=True,use_extend=True)'
   only:
   - macos
@@ -1282,7 +1282,7 @@ bindings:
   - SHIFT
   - GUI
   label: + expand edge
-  icon: sel_edge.png
+  icon: sel_edge_add_exp.png
   source: 'Mesh: mesh.select_mode(type=EDGE,use_expand=True,use_extend=True)'
   only:
   - macos
@@ -1291,7 +1291,7 @@ bindings:
   - SHIFT
   - GUI
   label: + expand face
-  icon: sel_face.png
+  icon: sel_face_add_exp.png
   source: 'Mesh: mesh.select_mode(type=FACE,use_expand=True,use_extend=True)'
   only:
   - macos
@@ -1345,7 +1345,7 @@ bindings:
   - SHIFT
   - GUI
   label: Select mirror
-  icon: mirror.png
+  icon: select_mirror.png
   source: 'Mesh: mesh.select_mirror'
   only:
   - macos
@@ -1389,7 +1389,7 @@ bindings:
   - SHIFT
   - GUI
   label: Triangulate fixed
-  icon: triangulate.png
+  icon: triangulate_fixed.png
   source: 'Mesh: mesh.quads_convert_to_tris(ngon_method=CLIP,quad_method=FIXED)'
   only:
   - macos

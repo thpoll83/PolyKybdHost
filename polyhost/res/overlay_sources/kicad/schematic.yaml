@@ -82,7 +82,7 @@ bindings:
   - { key: F1, mods: [CMDCTRL], icon: hotkeys.png, label: "List hotkeys" }
 
   # --- place and draw ---
-  - { key: A, mods: [], icon: symbol.png, label: "Place symbols" }
+  - { key: A, mods: [], icon: placesymbol.png, label: "Place symbols" }
   - { key: P, mods: [], icon: power.png, label: "Place power symbols" }
   - { key: W, mods: [], icon: wire.png, label: "Draw wires" }
   - { key: B, mods: [], icon: bus.png, label: "Draw buses" }
@@ -114,12 +114,12 @@ bindings:
   - { key: F, mods: [], icon: footprint.png, label: "Edit footprint" }
   - { key: O, mods: [], icon: autoplace.png, label: "Autoplace fields" }
   - { key: D, mods: [], icon: datasheet.png, label: "Show datasheet" }
-  - { key: E, mods: [CMDCTRL], icon: openeditor.png, label: "Edit with Symbol Editor" }
-  - { key: E, mods: [CMDCTRL, SHIFT], icon: library.png, label: "Edit library symbol" }
+  - { key: E, mods: [CMDCTRL], icon: editsymbol.png, label: "Edit with Symbol Editor" }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: libsymbol.png, label: "Edit library symbol" }
 
   # --- select, highlight, navigate ---
   - { key: "4", mods: [CMDCTRL], icon: expandconn.png, label: "Select connection" }
-  - { key: "3", mods: [ALT], icon: selectnode.png, label: "Select node" }
+  - { key: "3", mods: [ALT], icon: selnode.png, label: "Select node" }
   - { key: GRAVE, mods: [], icon: highlight.png, label: "Highlight net" }
   - { key: GRAVE, mods: [SHIFT], icon: clearhighlight.png, label: "Clear net highlighting" }
   - { key: TAB, mods: [], icon: nextnet.png, label: "Next net item" }
@@ -127,7 +127,7 @@ bindings:
   - { key: PGUP, mods: [], icon: prevsheet.png, label: "Previous sheet" }
   - { key: PGDN, mods: [], icon: nextsheet.png, label: "Next sheet" }
   - { key: BSPC, mods: [ALT], icon: leavesheet.png, label: "Leave sheet" }
-  - { key: UP, mods: [ALT], icon: navup.png, label: "Navigate up" }
+  - { key: UP, mods: [ALT], icon: sheetup.png, label: "Navigate up" }
   - { key: LEFT, mods: [ALT], icon: navback.png, label: "Navigate back" }
   - { key: RIGHT, mods: [ALT], icon: navforward.png, label: "Navigate forward" }
   - { key: H, mods: [CTRL], icon: hierarchy.png, label: "Hierarchy navigator", except: [macos] }

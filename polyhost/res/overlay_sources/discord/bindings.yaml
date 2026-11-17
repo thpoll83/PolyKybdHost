@@ -52,22 +52,22 @@ bindings:
   - { key: U,    mods: [CMDCTRL], icon: members.png, <<: *r, label: "Member list" }
   - { key: "/",  mods: [CMDCTRL], icon: hotkeys.png, <<: *r, label: "Hotkey list" }
   # Option+arrow on the Mac too.
-  - { key: UP,   mods: [ALT],     icon: channel.png, <<: *r, label: "Previous channel" }
-  - { key: DOWN, mods: [ALT],     icon: channel.png, <<: *r, label: "Next channel" }
+  - { key: UP,   mods: [ALT],     icon: channel_prev.png, <<: *r, label: "Previous channel" }
+  - { key: DOWN, mods: [ALT],     icon: channel_next.png, <<: *r, label: "Next channel" }
   - { key: PAGEUP,   mods: [SHIFT], icon: oldestunread.png, <<: *r, label: "Oldest unread" }
-  - { key: PAGEUP,   mods: [],      icon: scrollchat.png,   <<: *r, label: "Scroll chat up" }
-  - { key: PAGEDOWN, mods: [],      icon: scrollchat.png,   <<: *r, label: "Scroll chat down" }
+  - { key: PAGEUP,   mods: [],      icon: scroll_up.png,   <<: *r, label: "Scroll chat up" }
+  - { key: PAGEDOWN, mods: [],      icon: scroll_down.png,   <<: *r, label: "Scroll chat down" }
 
   # ============================ ADDED from Discord's hotkey reference =========
   # -- navigation --
   - { key: K,    mods: [CMDCTRL],              icon: quickswitcher.png, label: "Quick switcher", concept: replace }
   - { key: I,    mods: [CMDCTRL],              icon: inbox.png,         label: Inbox }
-  - { key: UP,   mods: [CMDCTRL, ALT],         icon: server.png,  label: "Previous server" }
-  - { key: DOWN, mods: [CMDCTRL, ALT],         icon: server.png,  label: "Next server" }
-  - { key: UP,   mods: [ALT, SHIFT],           icon: unread.png,  label: "Previous unread channel" }
-  - { key: DOWN, mods: [ALT, SHIFT],           icon: unread.png,  label: "Next unread channel" }
-  - { key: UP,   mods: [CMDCTRL, ALT, SHIFT],  icon: mention.png, label: "Previous unread mention" }
-  - { key: DOWN, mods: [CMDCTRL, ALT, SHIFT],  icon: mention.png, label: "Next unread mention" }
+  - { key: UP,   mods: [CMDCTRL, ALT],         icon: server_prev.png,  label: "Previous server" }
+  - { key: DOWN, mods: [CMDCTRL, ALT],         icon: server_next.png,  label: "Next server" }
+  - { key: UP,   mods: [ALT, SHIFT],           icon: unread_prev.png,  label: "Previous unread channel" }
+  - { key: DOWN, mods: [ALT, SHIFT],           icon: unread_next.png,  label: "Next unread channel" }
+  - { key: UP,   mods: [CMDCTRL, ALT, SHIFT],  icon: mention_prev.png, label: "Previous unread mention" }
+  - { key: DOWN, mods: [CMDCTRL, ALT, SHIFT],  icon: mention_next.png, label: "Next unread mention" }
 
   # -- messages --
   - { key: U,    mods: [CMDCTRL, SHIFT],       icon: upload.png,  label: "Upload file" }

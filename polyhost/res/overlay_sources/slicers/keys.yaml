@@ -96,7 +96,7 @@ editor:
   - {key: A, mods: [SHIFT], label: "Arrange plate", icon: arrange_sel,
      apps: {bambu: "Arrange objects on selected plates", orca: ArrangePlate}}
   - {key: Q, label: "Auto orient", icon: orient, apps: {orca: Orient}}
-  - {key: Q, mods: [SHIFT], label: "Auto orient plate", icon: orient, apps: {orca: OrientPlate}}
+  - {key: Q, mods: [SHIFT], label: "Auto orient plate", icon: orient_plate, apps: {orca: OrientPlate}}
   - {key: R, mods: [SHIFT], label: "Auto orient", icon: orient, apps: {bambu: "Auto orientates selected objects or all objects"}}
   # '+' and '-' are characters: on a US layout '+' is Shift+=.
   - {key: "=", mods: [SHIFT], label: "Add instance", icon: add_instance,
