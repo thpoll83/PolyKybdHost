@@ -101,6 +101,9 @@ class ParseTest(unittest.TestCase):
         self.assertTrue(parse_script(_step(emoji_mode="search")).steps[0].emoji_mode)
         self.assertFalse(parse_script(_step(emoji_mode="tab")).steps[0].emoji_mode)
         self.assertIsNone(parse_script(_step()).steps[0].emoji_mode)
+        # A script with an emoji_mode step needs protocol 37, whatever it declares.
+        self.assertEqual(parse_script(_step(emoji_mode="search")).min_protocol, 37)
+        self.assertEqual(parse_script(_step()).min_protocol, loader.BASE_PROTOCOL)
         for bad in ("on", ["search"], {"mode": "search"}, True):
             with self.assertRaises(ScriptError):
                 parse_script(_step(emoji_mode=bad))

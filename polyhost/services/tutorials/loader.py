@@ -35,6 +35,9 @@ _SCRIPT_KEYS = {"id", "category", "title", "summary", "min_protocol", "steps"}
 _STEP_KEYS = {"say", "text", "point", "guide_to_layer", "spotlight", "reveal", "wait",
               "emoji_mode"}
 _EMOJI_MODES = {"search": True, "tab": False}
+# cmd 49 op 7 EMOJI_MODE (device FEATURE_MIN_PROTOCOL["tutorial_emoji_mode"]): a script
+# with an emoji_mode step needs at least this protocol, whatever it declares.
+EMOJI_MODE_PROTOCOL = 37
 _POINT_KINDS = {"keycode", "layer_key", "key"}
 _WAIT_KINDS = {"seconds", "layer", "press", "key", "leave"}
 
@@ -362,6 +365,8 @@ def parse_script(raw, path: str = "", user: bool = False) -> Tutorial:
     if not isinstance(steps, list) or not steps:
         raise ScriptError("steps: a list of at least one step")
     parsed = tuple(_step(s, f"steps[{i}]") for i, s in enumerate(steps))
+    if any(s.emoji_mode is not None for s in parsed):
+        min_protocol = max(min_protocol, EMOJI_MODE_PROTOCOL)
     return Tutorial(
         id=tid, category=raw["category"], title=_texts(raw["title"], "title"),
         summary=_texts(raw["summary"], "summary") if "summary" in raw else {},

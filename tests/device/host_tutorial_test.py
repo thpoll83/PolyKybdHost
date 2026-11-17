@@ -157,6 +157,14 @@ class EmojiModeTest(unittest.TestCase):
         kb.tutorial_end()
         self.assertTrue(fw.emoji_search_mode)
 
+    def test_a_reboot_forgets_the_restore(self):
+        # The restore is RAM in the firmware: after a reset END has nothing to restore.
+        kb, fw = _keyboard(protocol=37)
+        kb.tutorial_emoji_mode(True)
+        fw.reboot()
+        kb.tutorial_end()
+        self.assertTrue(fw.emoji_search_mode)
+
     def test_refused_without_a_dictionary(self):
         kb, fw = _keyboard(protocol=37)
         fw.emoji_dict = False

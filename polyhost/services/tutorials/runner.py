@@ -77,6 +77,9 @@ class TutorialRun:
             self._cmd49 = ok
             if not ok:
                 self.log.info("Tutorial %s: no cmd 49 (%s); ring only", self.tutorial.id, info)
+        refusal = self._set_first_emoji_mode()
+        if refusal:
+            return False, refusal
         self._show(0)
         return True, "started"
 
@@ -260,6 +263,23 @@ class TutorialRun:
     def _leaves_a_layer(wait) -> bool:
         return wait.kind == "press" and (wait.value == KC_BASE
                                          or layer_target(wait.value) is not None)
+
+    def _set_first_emoji_mode(self):
+        """Set the emoji mode the script's first `emoji_mode` step needs, before any
+        step shows, so no step text can describe a mode the keyboard refused (it has
+        no emoji search dictionary). The message when it refuses, else None. The
+        script's min_protocol (37 with emoji_mode) keeps older firmware out."""
+        first = next((s.emoji_mode for s in self.tutorial.steps if s.emoji_mode is not None),
+                     None)
+        if first is None:
+            return None
+        if not (self._cmd49 and self.keeb.supports("tutorial_emoji_mode")):
+            return "The keyboard cannot set the emoji layer's mode (firmware protocol 37)."
+        ok, msg = self.keeb.tutorial_emoji_mode(first)
+        if ok:
+            return None
+        self.keeb.tutorial_end()
+        return f"The keyboard refused the emoji layer's mode: {msg}"
 
     def _report(self, what, result):
         ok, msg = result

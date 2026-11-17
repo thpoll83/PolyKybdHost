@@ -476,6 +476,9 @@ class MockFirmware:
         self._ctx = {}
         self._staging = None
         self._active = None
+        # The tutorial's emoji-mode restore is RAM (anim/host_tutorial.c): a reset
+        # forgets it, and the mode the session set stays.
+        self.tutorial_emoji_restore = None
         if self._apply_pending:
             self.running_image = bytes(self._fw_staging.data[:self._fw_staging.size])
             self.fw_staged_valid = False

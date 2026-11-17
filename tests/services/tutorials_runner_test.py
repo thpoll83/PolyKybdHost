@@ -62,7 +62,7 @@ class _Keyboard:
 
     def tutorial_emoji_mode(self, search):
         self.calls.append(("emoji", search))
-        return True, False
+        return (False, "refused") if getattr(self, "refuse_emoji", False) else (True, False)
 
     def cmd49(self):
         return [c for c in self.calls if c[0] in ("text", "spot", "reveal", "arm", "end")]
@@ -470,16 +470,29 @@ class HostTutorialTest(unittest.TestCase):
         self.assertEqual(run.index, 1)
 
     def test_emoji_mode_is_set_from_protocol_37(self):
-        steps = [{"say": "a", "emoji_mode": "search"}, {"say": "b"}]
+        steps = [{"say": "a"}, {"say": "b", "emoji_mode": "search"}, {"say": "c"}]
         run, kb = _run(steps, _Keyboard(protocol=37))
-        run.start()
-        self.assertIn(("emoji", True), kb.calls)
+        self.assertTrue(run.start()[0])
+        # Set at start, before any step text, and again when its step shows.
         self.assertLess(kb.calls.index(("emoji", True)), kb.calls.index(("text", "a", "")))
         run.next()
-        self.assertEqual([c for c in kb.calls if c[0] == "emoji"], [("emoji", True)])
+        run.next()
+        self.assertEqual([c for c in kb.calls if c[0] == "emoji"], [("emoji", True)] * 2)
         run, kb = _run(steps, _Keyboard(protocol=36))
-        run.start()
-        self.assertNotIn(("emoji", True), kb.calls)     # v36 NACKs op 7: not sent
+        ok, msg = run.start()                           # the script needs protocol 37
+        self.assertFalse(ok)
+        self.assertNotIn(("emoji", True), kb.calls)
+
+    def test_a_refused_emoji_mode_does_not_start(self):
+        # A keyboard without an emoji search dictionary: no step may claim the mode.
+        kb = _Keyboard(protocol=37)
+        kb.refuse_emoji = True
+        run, _kb = _run([{"say": "Search mode", "emoji_mode": "search"}], kb)
+        ok, msg = run.start()
+        self.assertFalse(ok)
+        self.assertIn("refused", msg)
+        self.assertNotIn(("text", "Search mode", ""), kb.calls)
+        self.assertEqual(kb.cmd49()[-1], ("end",))
 
     def test_a_next_step_polls_too(self):
         # The session stays alive while a step waits for Next.
