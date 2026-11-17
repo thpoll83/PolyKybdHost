@@ -480,7 +480,7 @@ bindings:
   source: :help X
 - key: D
   icon: delete.png
-  label: Delete (operator)
+  label: Delete
   shared: false
   source: :help d
 - key: D
@@ -492,7 +492,7 @@ bindings:
   source: :help D
 - key: C
   icon: change.png
-  label: Change (operator)
+  label: Change
   shared: false
   source: :help c
 - key: C
@@ -511,18 +511,18 @@ bindings:
   mods:
   - SHIFT
   icon: change_line.png
-  label: Substitute line
+  label: Change lines
   shared: false
   source: :help S
 - key: Y
   icon: copy.png
-  label: Yank (operator)
+  label: Yank
   shared: false
   source: :help y
 - key: Y
   mods:
   - SHIFT
-  icon: copy.png
+  icon: yank_line_eol.png
   label: Yank line (Vim), to end of line (Neovim)
   shared: false
   source: :help Y
@@ -587,19 +587,19 @@ bindings:
   mods:
   - SHIFT
   icon: indent_inc.png
-  label: Indent (operator)
+  label: Indent
   shared: false
   source: :help >
 - key: ','
   mods:
   - SHIFT
   icon: indent_dec.png
-  label: Unindent (operator)
+  label: Unindent
   shared: false
   source: :help <
 - key: '='
   icon: align_left.png
-  label: Re-indent (operator)
+  label: Re-indent
   shared: false
   source: :help =
 - key: '1'
