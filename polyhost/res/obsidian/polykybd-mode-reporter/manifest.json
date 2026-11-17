@@ -1,0 +1,9 @@
+{
+  "id": "polykybd-mode-reporter",
+  "name": "PolyKybd Mode Reporter",
+  "version": "1.0.0",
+  "minAppVersion": "1.0.0",
+  "description": "Tells PolyKybdHost on this computer which view and Vim mode is active, so the keyboard shows the shortcuts that apply.",
+  "author": "PolyKybd",
+  "isDesktopOnly": true
+}
