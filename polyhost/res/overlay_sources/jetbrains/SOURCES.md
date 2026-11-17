@@ -77,6 +77,44 @@ drawn on, KDE included, and each set's cells were checked for collisions
   Run, Debug, Stop and the three step icons are the drawings VS Code now uses as
   well, and Notepad++'s Run uses the same triangle.
 
+## One icon per action (2026-11-15)
+
+Maintainer's rule: two keys of the JetBrains sets (all modes together) share an
+image only when they do the same thing. New images, all drawn by `fetch_icons.py`:
+
+| Image | Action | Source |
+|---|---|---|
+| `commit.png` | Commit (Ctrl+K, Ctrl+Enter in the Commit window) | Material `commit` (Apache-2.0) + Fluent `Checkmark` (MIT) badge, `dcc_glyphs.with_badge` |
+| `viewbreakpoints_list.png` | View breakpoints | the reclaimed `breakpoint.png` + Fluent `List` (MIT) badge |
+| `filestructure.png` | File structure popup | Fluent `Document Bullet List` (MIT) |
+| `moveline_up.png`, `moveline_down.png` | Move line up / down | Fluent `Text Align Left` (MIT) + drawn arrow, `dcc_glyphs.with_vertical_arrow` |
+| `movestatement_up.png`, `movestatement_down.png` | Move statement up / down | `surroundwith.png` (Fluent `Braces`, MIT) + drawn arrow |
+| `run_selected.png`, `debug_selected.png` | Services: Run / Debug selected | the reclaimed `run.png` / `debug.png` + Fluent `Checkbox Checked` (MIT) badge |
+| `copyconfig.png` | Services: Copy configuration | `copyfile.png` (Fluent `Document Copy`, MIT) + Fluent `Settings` (MIT) badge |
+| `newelement.png` | New element (Project, Bookmarks, Services) | Fluent `Add` (MIT) |
+| `changelistmove.png` | Move to another changelist | Material `move_group` (Apache-2.0) |
+| `desktopterminal.png` | GNOME, KDE: Ctrl+Alt+T opens a terminal (desktop shortcut) | `terminal.png` (Fluent `Window Console`, MIT) + Fluent `Desktop` (MIT) badge; see *Ctrl+Alt+T on GNOME and KDE* |
+| `win_find.png` | Find window (Alt+3, Cmd+3) | Fluent `Text Bullet List Square Search` (MIT); it was Fluent `Search` drawn as the shared find concept, the same picture as Find |
+
+`part_*.png` are the badges and bases of these composites and are not drawn on
+their own. The composites are guarded: delete one to redraw it.
+
+Kept as one image, because the keys do the same thing (labels made the same):
+
+- **Rename** (Shift+F6, F2): every tool window binds its rename (changelist,
+  bookmark, branch, commit message) to the Rename shortcut.
+- **Terminal window** (Alt+F12): `ActivateTerminalToolWindow` toggles, so in the
+  Terminal set it hides the window.
+- **Show context actions** (Alt+Enter): the Problems view's quick fix is
+  `ShowIntentionActions`.
+- **Rerun** (Ctrl+F5): the Find window's `UsageView.Rerun` reruns the search.
+- **Show diff** (Ctrl+D): the Project view compares the selected files with the
+  same diff action.
+- **Group by type** (Ctrl+Alt+T): groups the list by type in Services and Find
+  (Windows, macOS on ⌃T, and Linux desktops other than GNOME and KDE).
+- **New element** (Alt+Insert): `NewElement` in each view.
+- **Show in file manager** (Explorer, Finder or the Linux file manager).
+
 ## KDE
 
 JetBrains' `Default for KDE` keymap moves 14 of the drawn actions away from the
@@ -132,3 +170,186 @@ Deliberately NOT added:
 - **Print**: no default chord. **Zoom**: font size is Alt+Shift+. / Alt+Shift+, (already
   drawn); no Ctrl+= zoom.
 - Save/Undo/Redo/Cut/Copy/Paste/Select all/Find/Replace/Close tab were already drawn.
+
+## Mode sets (JetBrains plugin)
+
+The plugin `jetbrains-plugin/` reports `jetbrains://<window>[/running|/paused]`.
+The mapping entry routes four mode sets; without a report the five sets above
+stay the fallback.
+
+| Mode | Spec | Sets | Route |
+|---|---|---|---|
+| Editor (no paused session) | `bindings_editor.yaml` (generated) | 5 keymaps | `jetbrains://` |
+| Debugger paused | `bindings_debug.yaml` (generated) | 5 keymaps | `/paused` |
+| Project tool window | `bindings_project.yaml` | Windows, macOS, Linux | `jetbrains://project` |
+| Terminal tool window | `bindings_terminal.yaml` | Windows, macOS, Linux, KDE | `jetbrains://terminal` |
+| Commit tool window | `bindings_commit.yaml` (generated) | Windows, macOS | `jetbrains://commit` |
+| Git tool window | `bindings_git.yaml` (generated) | Windows, macOS, KDE | `jetbrains://git` |
+| Run tool window, Debug window while running | `bindings_run.yaml` (generated) | Windows, macOS, GNOME, KDE | `jetbrains://run`, `jetbrains://debug` |
+| Services tool window | `bindings_services.yaml` (generated) | Windows, macOS, GNOME, KDE | `jetbrains://services` |
+| Find tool window | `bindings_find.yaml` (generated) | Windows, macOS, GNOME, KDE | `jetbrains://find` |
+| Problems tool window | `bindings_problems.yaml` (generated) | Windows, macOS | `jetbrains://problems` |
+| Bookmarks tool window | `bindings_bookmarks.yaml` (generated) | Windows, macOS, GNOME | `jetbrains://bookmarks` |
+| Structure tool window | `bindings_structure.yaml` (generated) | Windows, macOS | `jetbrains://structure` |
+
+A platform without its own set in this table uses the next one down: GNOME and
+KDE use the Linux set, and Linux uses the Windows set. A paused debug session
+takes priority over every tool window (`/paused` is the second route).
+
+```bash
+.venv/bin/python polyhost/res/overlay_sources/jetbrains/gen_mode_specs.py
+for m in editor debug project terminal commit git run services find problems bookmarks structure; do
+  .venv/bin/python scripts/generate_app_overlays.py \
+      polyhost/res/overlay_sources/jetbrains/bindings_$m.yaml --preview /tmp/jb_$m
+done
+```
+
+- **Editor and debugger** are derived from `bindings.yaml` by `gen_mode_specs.py`
+  (`--check` compares; `tests/handler/jetbrains_routing_test.py` runs it). The
+  editor set drops the ten actions that only work while the debugger is
+  suspended (Step over/into/out, Smart/Force step into, Force step over, Resume,
+  Evaluate, Run to cursor, Show execution point). The debugger set keeps the
+  debug, run and navigation keys and adds Quick evaluate
+  (`QuickEvaluateExpression`), Force run to cursor (`ForceRunToCursor`),
+  Temporary breakpoint (`ToggleTemporaryLineBreakpoint`), Resume on ⌘⌥R and Rerun
+  on ⌘R (macOS, where ⌘R is Replace only in the editor). Their chords per keymap:
+
+  | Action | $default | macOS | XWin | GNOME, KDE |
+  |---|---|---|---|---|
+  | Quick evaluate | Ctrl+Alt+F8 | ⌘⌥F8 | Ctrl+Alt+8 | Ctrl+Alt+8 |
+  | Force run to cursor | Ctrl+Alt+F9 | ⌘⌥F9 | Ctrl+Alt+9 | Ctrl+Alt+9 |
+  | Evaluate | Alt+F8 | ⌥F8 | Alt+F8 | Alt+Shift+8 |
+  | Run to cursor | Alt+F9 | ⌥F9 | Alt+Shift+9 | Alt+Shift+9 |
+  | Show execution point | Alt+F10 | ⌥F10 | Alt+F10 | Alt+Shift+0 |
+  | Toggle breakpoint | Ctrl+F8 | ⌘F8 | Ctrl+F8 | Ctrl+F8 (KDE Ctrl+8) |
+
+- **Project view** chords are the platform actions the Project view handles:
+  `NewElement`, `RenameElement`, `CopyElement` (F5), `Move` (F6), `$Delete`,
+  `SafeDelete`, `EditSource` (F4), `OpenInRightSplit`, `CompareTwoFiles`,
+  `CollapseAll`, `ExpandAll`, `CopyPaths`, `CopyReference`, `ShowFilePath`
+  (Ctrl+Alt+F12 in $default, Ctrl+Alt+Shift+2 in XWin/GNOME/KDE).
+- **Terminal** actions are from `plugins/terminal/resources/META-INF/plugin.xml`
+  and `plugins/terminal/frontend/resources/intellij.terminal.frontend.xml`:
+  `Terminal.NewTab` (Ctrl+Shift+T, ⌘T), `Terminal.CopySelectedText` and
+  `Terminal.Paste` (Ctrl+C/V in $default, Ctrl+Shift+C/V in XWin, ⌘C/V),
+  `Terminal.ClearBuffer` (⌘K, macOS only), `Terminal.PageUp/PageDown`
+  (Shift+PgUp/PgDn), Find, Close tab (`CloseContent`), Next/Previous tab. With
+  the default "Override IDE shortcuts" most other keys go to the shell, so the
+  set also draws the bash/zsh keys Ctrl+C, Ctrl+D, Ctrl+R and Ctrl+W on macOS
+  and Linux (not Windows, whose shells bind them differently).
+- New icons (in `fetch_icons.py`, "mode sets"): Fluent UI System Icons (MIT)
+  and Material Symbols (Apache-2.0: `delete_forever`, `compare`,
+  `manage_search`). Fetched on 2026-11-13.
+
+## Tool window sets (mode audit, 2026-11-14)
+
+The plugin already sent these window tokens; until now they all showed the
+editor set. `gen_mode_specs.py` (`TOOL_WINDOWS`) writes one spec per window.
+Each set draws the keys that window handles, plus the keys that work in every
+tool window: the tool-window row (Alt+1…0, ⌘1…⌘0, Alt+F12), Go to file, Go to
+class, Recent files, Find action, Settings (chords from `bindings.yaml`) and
+Hide window (`HideActiveWindow`, Shift+Esc). Editing and refactoring keys are
+not drawn: they do nothing while a tool window has the focus.
+
+Sources: the keymap XML (`platform/platform-resources/src/keymaps/`) and the
+plugin XML files that add `keyboard-shortcut` entries to `$default`:
+`platform/vcs-impl/resources/META-INF/VcsActions.xml`,
+`plugins/git4idea/backend/resources/intellij.vcs.git.backend.xml`,
+`platform/vcs-log/impl/resources/intellij.platform.vcs.log.impl.xml`, and the
+`use-shortcut-of` attributes in `platform/usageView-impl`, `platform/bookmarks`,
+`platform/execution.dashboard` and `platform/problemsView` (intellij-community
+`master` at f5ca7abe, read 2026-11-14). The parent chain is applied as for the
+fallback set; macOS converts an inherited `control` to Cmd unless
+`Mac OS X 10.5+.xml` sets the action itself.
+
+| Window | Action id | $default | macOS | Linux differences |
+|---|---|---|---|---|
+| Commit | commit button (`CommitActionsPanel.DEFAULT_COMMIT_ACTION_SHORTCUT`) | Ctrl+Enter | Ctrl+Enter or ⌘Enter | |
+| Commit | `Git.Commit.And.Push.Executor` | Ctrl+Alt+K | ⌘⌥K | |
+| Commit | `Vcs.ToggleAmendCommitMode` | Alt+M | ⌃⌥M | |
+| Commit | `Vcs.ShowMessageHistory` | Ctrl+M | ⌃M | |
+| Commit | `ChangesView.ShowCommitOptions` | Ctrl+O | ⌃O | |
+| Commit | `ChangesView.Revert`, `Vcs.RollbackChangedLines` | Ctrl+Alt+Z | ⌘⌥Z | |
+| Commit | `ChangesView.Move` | Alt+Shift+M | ⌘⇧M | |
+| Commit | `ChangesView.Rename` | F2, Shift+F6 | same | |
+| Commit | `ChangesView.SetDefault` | Ctrl+Space | ⌃Space | |
+| Commit | `ChangesView.AddUnversioned`, `ShelveSilently`, `UnshelveSilently` | Ctrl+Alt+A, Ctrl+Shift+H, Ctrl+Alt+U | ⌘ for Ctrl | |
+| Commit, Git | `Vcs.QuickListPopupAction` | Alt+` | ⌃V | |
+| Commit, Git | `Git.Branches` | Ctrl+Shift+` | ⌘⇧` | |
+| Commit, Git | `Diff.ShowDiff` | Ctrl+D | ⌘D | |
+| Git | `Git.CreateNewBranch`, `Git.New.Branch.In.Log` | Ctrl+Alt+N | ⌘⌥N | |
+| Git | `Git.Reword.Commit`, `Git.Rename.Local.Branch` | F2, Shift+F6 | same | |
+| Git | `VcsHistory.ShowAllAffected` | Alt+Shift+A | ⌘⌃A | |
+| Git | `Vcs.Log.FocusTextFilter` | Ctrl+L | ⌘L | |
+| Git | `Vcs.Log.Refresh` (uses `Refresh`) | Ctrl+F5 | ⌘R | KDE Ctrl+5 |
+| Run | `Rerun`, `Stop` | Ctrl+F5, Ctrl+F2 | ⌘R, ⌘F2 | KDE Ctrl+5, Ctrl+2 |
+| Run, Find | `NextOccurence`, `PreviousOccurence` | Ctrl+Alt+↓/↑ | ⌘⌥↓/↑ | GNOME Alt+Shift+↓/↑ |
+| Run, Git, Find | `NextTab`, `PreviousTab` | Alt+→/← | ⌘⇧] / ⌘⇧[ | |
+| Services | `RunDashboard.Run` (uses `RunClass`) | Ctrl+Shift+F10 | ⌃⇧R | |
+| Services | `RunDashboard.Debug` (uses `DebugClass`) | none | ⌃⇧D | none |
+| Services | `RunDashboard.EditConfiguration` (uses `EditSourceInNewWindow`) | Shift+F4 | same | |
+| Services | `RunDashboard.CopyConfiguration` (uses `EditorDuplicate`) | Ctrl+D | ⌘D | |
+| Services, Bookmarks | `ServiceView.AddService`, `BookmarksView.Create` (use `NewElement`) | Alt+Insert | ⌘N | |
+| Services | `ServiceView.GroupByContributor` | Ctrl+Alt+T | ⌃T | GNOME, KDE: the desktop's terminal shortcut |
+| Find | `UsageView.Exclude` (uses `$Delete`), `UsageView.Include` | Delete, Insert | Delete, ⇧⌫ | |
+| Find | `UsageView.Rerun` (uses `Rerun`) | Ctrl+F5 | ⌘R | KDE Ctrl+5 |
+| Find | `UsageGrouping.UsageType`, `UsageGrouping.Directory` | Ctrl+Alt+T, Ctrl+Alt+P | ⌃T, ⌃P | GNOME, KDE: Ctrl+Alt+T is the desktop's terminal shortcut |
+| Find | `UsageFiltering.ReadAccess`, `WriteAccess`, `Imports` | Ctrl+R, Ctrl+W, Ctrl+I | ⌃R, ⌃W, ⌃I | |
+| Find | `ExportToTextFile` | Alt+O | ⌃O | |
+| Problems | quick fix (uses `ShowIntentionActions`) | Alt+Enter | ⌥Enter | |
+| Bookmarks | `BookmarksView.Rename` (uses `Tree-startEditing`) | F2 | F2 | |
+| Bookmarks | `BookmarksView.Delete` (uses `$Delete`) | Delete | Delete | |
+| Bookmarks | `BookmarksView.ChooseType` (uses `ToggleBookmarkWithMnemonic`) | Ctrl+F11 | ⌥F3 | |
+| Bookmarks | `BookmarksView.MoveUp/MoveDown` (use `PreviousOccurence` / `NextOccurence`) | Ctrl+Alt+↑/↓ | ⌘⌥↑/↓ | GNOME Alt+Shift+↑/↓ |
+| all | `EditSource`, `CollapseAll`, `ExpandAll` | F4, Ctrl+-, Ctrl+= | F4, ⌘-, ⌘= | |
+
+Notes:
+
+- On macOS `ChangesView.GroupBy.Module` is also ⌃M. The Commit set labels ⌃M
+  as Commit message history, the action of the message field.
+- `ServiceView.GroupByContributor` and `UsageGrouping.UsageType` are Ctrl+Alt+T
+  in the Linux keymaps too. The GNOME and KDE sets draw the desktop's terminal
+  shortcut on that chord instead (next section).
+- Not drawn: `Pause` and `XDebugger.MuteBreakpoints` have no default shortcut;
+  the Problems view implements no occurrence navigator, so it has no Next/Previous
+  problem key; `RerunTests` (Alt+Shift+R) only applies to test runs; the change
+  list grouping keys collide on macOS (`GroupBy.Module` ⌃M).
+- The Run set is also the Debug window's set while the session runs. Typed text
+  goes to the program, so the set draws chords and function keys only.
+- The Commit set draws the clipboard and undo chords for the commit message
+  field. Its letters type text and are not drawn.
+- New icons are Fluent UI System Icons (MIT), in `fetch_icons.py` under
+  "tool window sets". Fetched on 2026-11-14.
+- Not checked in a running IDE. Each chord was checked against the files above.
+
+## Ctrl+Alt+T on GNOME and KDE (2026-11-16)
+
+Ubuntu's GNOME and KDE Plasma open a terminal on Ctrl+Alt+T, so the IDE never
+receives that chord there. In the `linux_gnome` and `linux_kde` sets of the Find and Services
+windows, Ctrl+Alt+T shows `desktopterminal.png`, labelled "Open terminal
+(desktop shortcut)" (`DESKTOP_TERMINAL` in `gen_mode_specs.py`). Windows, macOS
+(⌃T) and the plain `linux` set keep Group by type. No other JetBrains set draws
+Ctrl+Alt+T on Linux: Surround with is drawn on Ctrl+Alt+Shift+B there, as the
+XWin keymap binds it.
+
+The image is not `terminal.png`, because Alt+F12 (Terminal window) is a
+different action: it is the terminal glyph with a desktop badge.
+
+Sources:
+
+- **GNOME**: Ubuntu's `gnome-settings-daemon` adds the media-keys key
+  `terminal` with the default `['<Primary><Alt>t']`, and runs the
+  `org.gnome.desktop.default-applications.terminal` command on it
+  (`debian/patches/ubuntu/media-keys-restore-terminal-keyboard-shortcut-schema.patch`,
+  git.launchpad.net/ubuntu/+source/gnome-settings-daemon, branches
+  `ubuntu/noble` at 1410c1f2 and `ubuntu/devel` at ac997c54, read 2026-11-16).
+  Upstream GNOME has no such key: `data/org.gnome.settings-daemon.plugins.media-keys.gschema.xml.in`
+  in GNOME/gnome-settings-daemon has no `terminal` key in tags 40.0 to 49.0 or
+  on `master` (d3e71700). So on Fedora and other distributions that ship
+  upstream GNOME, Ctrl+Alt+T reaches the IDE and does Group by type, and the
+  GNOME set shows the wrong action there.
+- **KDE**: Konsole's `desktop/org.kde.konsole.desktop` sets
+  `X-KDE-Shortcuts=Ctrl+Alt+T`, which KDE's global shortcut service registers
+  for Konsole (invent.kde.org/utilities/konsole, `master` at 051a7117, read
+  2026-11-16).
+- Not checked on a running desktop.

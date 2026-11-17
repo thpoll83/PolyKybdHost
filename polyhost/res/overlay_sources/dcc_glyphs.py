@@ -12,6 +12,8 @@ Also here: three composites built from an icon that already exists in an
 
 * ``slashed``    -- the icon with a diagonal stroke across it ("hide X").
 * ``with_arrow`` -- the icon with a heavy arrow under it ("next / previous X").
+* ``with_vertical_arrow`` -- the icon with a heavy up or down arrow on its left
+  ("move X up / down").
 * ``with_badge`` -- the icon reduced to the upper left, a second icon in the
   lower right ("tool + particles", "clone + absolute source").
 
@@ -144,6 +146,23 @@ def with_arrow(base: Path, path: Path, forward: bool) -> None:
     else:
         d.rectangle([x0 + h, y - t, x1, y + t], fill=255)
         d.polygon([(x0, y), (x0 + h, y - h), (x0 + h, y + h)], fill=255)
+    _save_mask(m, path)
+
+
+def with_vertical_arrow(base: Path, path: Path, up: bool) -> None:
+    """``base`` fitted into the right 62 % of the square, a heavy arrow on the
+    left pointing up (``up``) or down ("move this up / down")."""
+    u, m, d = _canvas()
+    icon = _fit_ink(base, int(u * 0.62))
+    m.paste(icon, (u - icon.width, (u - icon.height) // 2))
+    x, t, h = int(u * 0.16), int(u * 0.05), int(u * 0.13)
+    y0, y1 = int(u * 0.14), int(u * 0.86)
+    if up:
+        d.rectangle([x - t, y0 + h, x + t, y1], fill=255)
+        d.polygon([(x, y0), (x - h, y0 + h), (x + h, y0 + h)], fill=255)
+    else:
+        d.rectangle([x - t, y0, x + t, y1 - h], fill=255)
+        d.polygon([(x, y1), (x - h, y1 - h), (x + h, y1 - h)], fill=255)
     _save_mask(m, path)
 
 

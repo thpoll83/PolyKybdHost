@@ -109,7 +109,7 @@ bindings:
 
   # -- CMDCTRL+Shift --
   - { key: F, mods: [CMDCTRL, SHIFT], icon: findinfiles.png,    label: "Find in files",    source: "ms-fluent/Folder Search (MIT)" }
-  - { key: H, mods: [CMDCTRL, SHIFT], icon: replaceinfiles.png, label: "Replace in files", concept: replace, source: "ms-fluent/Arrow Swap (MIT)" }
+  - { key: H, mods: [CMDCTRL, SHIFT], icon: replaceinfiles.png, label: "Replace in files", source: "material-symbols/find_replace (Apache-2.0)" }
   - { key: O, mods: [CMDCTRL, SHIFT], icon: gotosymbol.png,     label: "Go to symbol in file", source: "ms-fluent/Text Bullet List Tree (MIT)" }
   - { key: L, mods: [CMDCTRL, SHIFT], icon: selectall.png,      label: "Select all occurrences", source: "ms-fluent/Select All On (MIT)" }
   - { key: V, mods: [CMDCTRL, SHIFT], icon: mdpreview.png,      label: "Markdown preview", source: "ms-fluent/Eye (MIT)" }

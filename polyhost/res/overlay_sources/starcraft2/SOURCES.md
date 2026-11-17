@@ -263,3 +263,25 @@ The last two are the reader's own settings
   frame (offsets, size, line table), and per row a run-length code (0x80
   transparent run, 0x40 repeat, else literal). Written from the descriptions
   on the Staredit Network wiki and in the PyMS and OpenBW sources.
+
+## The player's hotkeys
+
+Each binding names its `[Hotkeys]` command (`ControlGroupRecall1`,
+`CameraSave0`, `TownCamera`). With *Art from installed games* on,
+`game_assets/sc2_keys.py` reads the active profile: the `hotkeyprofile=` line of
+`Variables.txt` in the StarCraft II user folder, then
+`Accounts/<account>/Hotkeys/<name>.SC2Hotkeys` (the newest one when several
+accounts have it). The icons move to the player's keys, with or without a
+StarCraft install for the pictures (`build.keys_only`). A built-in profile
+(`0_Default`) has no file, so the defaults stay.
+
+The defaults of all 90 named commands were compared with TheCoreLite's
+`Defaults.ini` (github.com/supercowz/TheCoreLite), a copy of the Standard
+profile: all matched. The file format is from that repository and from the
+parser of github.com/jcfieldsdev/starcraft2-hotkey-editor; neither was checked
+on an install. Blizzard's own `GameHotkeys.txt` was not read.
+
+Not named, so they keep their keys: the camera zoom keys (Page Up, Page Down,
+End, Home), Quote, Print Screen and Alt+Enter, which `Defaults.ini` does not
+list. A command moved between the primary file (plain, Ctrl, Alt, Shift) and the
+combo file (two modifiers) keeps its default key.

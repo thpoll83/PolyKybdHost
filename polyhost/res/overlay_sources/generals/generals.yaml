@@ -3,7 +3,8 @@
 # Keys: the default hotkeys in Data\English\CommandMap.ini (EnglishZH.big of
 # the Steam release) and the command-card letters of generals.csf (&Attack
 # Move, &Guard). Each binding names its CommandMap command (or the csf label
-# of a command-card button). See SOURCES.md.
+# of a command-card button), so the `generals` reader can move the icons to the
+# keys of the installed game. See SOURCES.md.
 #
 # Letter keys alone build and use abilities, and their meaning changes with the
 # selection, so they stay blank, except attack move, guard and stop, and the
@@ -104,7 +105,7 @@ bindings:
 
   # Selection and view
   - { key: E, command: SELECT_MATCHING_UNITS, icon: sametype.png, label: "Select matching units" }
-  - { key: X, command: SELECT_ALL, icon: selectall.png, label: "Select all units" }
+  - { key: Q, command: SELECT_ALL, icon: selectall.png, label: "Select all units" }
   - { key: H, command: VIEW_COMMAND_CENTER, icon: commandcenter.png, label: "Go to command center" }
   - { key: H, mods: [CTRL], command: SELECT_HERO, icon: hero.png, label: "Select hero" }
   - { key: SPACE, command: VIEW_LAST_RADAR_EVENT, icon: lastevent.png, label: "Go to last radar event" }
@@ -119,3 +120,9 @@ bindings:
   - { key: DELETE, command: DELETE_BEACON, icon: deletebeacon.png, label: "Delete beacon" }
   - { key: C, mods: [CTRL], command: ALL_CHEER, icon: cheer.png, label: "Cheer" }
   - { key: F12, command: TAKE_SCREENSHOT, icon: screenshot.png, label: "Screenshot" }
+
+# No pictures: the reader moves the icons to the keys of the installed
+# language and of the player's own CommandMap.ini (game_assets/generals).
+game_assets:
+  reader: generals
+  icons: {}

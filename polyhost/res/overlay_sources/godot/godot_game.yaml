@@ -1,0 +1,32 @@
+# Godot editor, Game screen keys for PolyKybd (Godot 4.4 and later). See SOURCES.md.
+#
+# Only the keys of the Game screen (the running project embedded in the
+# editor), drawn on top of godot_template (godot.yaml) when the plugin reports
+# godot://game. Shortcuts: editor/run/game_view_plugin.cpp in Godot 4.7.2.
+# F10 is Next Frame here, not the debugger's Step Over.
+#
+# Regenerate:
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/godot/godot_game.yaml --preview /tmp/godot_game_preview
+app: godot
+match: [godot]
+output: godot_game_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+program_icon: esc_game.png         # the logo with the screen name (fetch_icons.py)
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+  - { key: F9, icon: suspend.png, label: "Suspend / resume project", except: [macos] }
+  - { key: B, mods: [GUI, SHIFT], icon: suspend.png, label: "Suspend / resume project", only: [macos] }
+  - { key: F10, icon: nextframe.png, label: "Next frame" }

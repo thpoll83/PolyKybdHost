@@ -254,10 +254,31 @@ def _board(pk: pathlib.Path, custom: dict, aliases: dict) -> dict:
             return qh.encode_layer_switch(m.group(1), tags[m.group(2)])
         return None
 
+    # The layers the keyboard does not store (from `stored` up) are compiled in and
+    # cannot be read over HID, so the tutorial runner finds their keys here. A
+    # token that does not resolve keeps keycode null, as on the base layer.
+    stored = qh.parse_stored_layer_count(pk / "config.h") or 0
+    fixed = {}
+    for idx, tag in sorted(qh.parse_layers_h(pk / "layers.h").items()):
+        if idx < stored:
+            continue
+        layer_tokens = _layout_args(src, f"_{tag}")
+        if len(layer_tokens) != len(layout):
+            raise RuntimeError(f"_{tag} has {len(layer_tokens)} keys, "
+                               f"keyboard.json {len(layout)}")
+        fixed[str(idx)] = [{"matrix": entry["matrix"], "token": token,
+                            "keycode": resolve(token)}
+                           for entry, token in zip(layout, layer_tokens)
+                           if token not in ("KC_NO", "XXXXXXX")]
+
     return {"layout": BOARD_LAYOUT,
+            # rows, cols: the runner uses the fixed layers only on this matrix.
+            "matrix": [max(e["matrix"][0] for e in layout) + 1,
+                       max(e["matrix"][1] for e in layout) + 1],
             "keys": [{"matrix": entry["matrix"], "label": entry.get("label", ""),
                       "token": token, "keycode": resolve(token)}
-                     for entry, token in zip(layout, tokens)]}
+                     for entry, token in zip(layout, tokens)],
+            "fixed_layers": fixed}
 
 
 def _ui_pack(fonts_dir: str) -> bytes:
