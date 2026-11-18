@@ -3590,7 +3590,7 @@ msgstr "曲線 Gamma"
 
 #: polyhost/gui/settings_dialog.py:156
 msgid "Icons for apps without an overlay"
-msgstr ""
+msgstr "沒有覆蓋圖的應用程式的圖示"
 
 #: polyhost/gui/settings_dialog.py:157
 msgid "Add the Escape mark"
@@ -3598,15 +3598,15 @@ msgstr "加上 Esc 標誌"
 
 #: polyhost/gui/settings_dialog.py:158
 msgid "Add icons from the app's menus"
-msgstr ""
+msgstr "從應用程式選單加入圖示"
 
 #: polyhost/gui/settings_dialog.py:159
 msgid "Read shortcuts from app menus"
-msgstr ""
+msgstr "從應用程式選單讀取快捷鍵"
 
 #: polyhost/gui/settings_dialog.py:160
 msgid "Download icons from the internet"
-msgstr ""
+msgstr "從網際網路下載圖示"
 
 #: polyhost/gui/settings_dialog.py:161
 msgid "Turn on accessibility"
@@ -3674,7 +3674,7 @@ msgstr "接受轉送器"
 
 #: polyhost/gui/settings_dialog.py:178
 msgid "Send font packs on connect"
-msgstr ""
+msgstr "連線時傳送字型包"
 
 #: polyhost/gui/settings_dialog.py:179
 msgid "Search language"
@@ -3690,7 +3690,7 @@ msgstr "字型包檔案"
 
 #: polyhost/gui/settings_dialog.py:182
 msgid "Match the website in the browser"
-msgstr ""
+msgstr "比對瀏覽器中的網站"
 
 #: polyhost/gui/settings_dialog.py:183
 msgid "Receive browser reports"
@@ -3718,7 +3718,7 @@ msgstr "安裝 ID"
 
 #: polyhost/gui/settings_dialog.py:189
 msgid "Watch the keyboard's messages"
-msgstr ""
+msgstr "監看鍵盤的訊息"
 
 #: polyhost/gui/settings_dialog.py:190
 msgid "Watch this app's log"
@@ -3766,7 +3766,7 @@ msgstr "按一下「確定」時設定鍵帽的亮度。所選亮度會一直保
 
 #: polyhost/gui/settings_dialog.py:213
 msgid "What the keycaps show when you have not typed for a while. A moving picture protects the displays from burn-in."
-msgstr ""
+msgstr "一段時間未打字時鍵帽上顯示的內容。動態畫面可防止顯示器烙印。"
 
 #: polyhost/gui/settings_dialog.py:215
 msgid "How long the keyboard waits before the idle display starts."
@@ -3774,7 +3774,7 @@ msgstr "鍵盤開始閒置顯示前等待的時間。"
 
 #: polyhost/gui/settings_dialog.py:217
 msgid "Draws the letters and digits on the keycaps in another script, for example runes or a retro computer font. The keys still type the same characters. Standard shows the normal legends of your language."
-msgstr ""
+msgstr "以另一種文字顯示鍵帽上的字母和數字，例如盧恩字母或復古電腦字型。按鍵輸入的字元不變。「標準」會顯示您所用語言的一般字樣。"
 
 #: polyhost/gui/settings_dialog.py:221
 msgid "Where the script's letters sit on the keycap. The top-left corner leaves room for an app icon."
@@ -3782,7 +3782,7 @@ msgstr "文字的字母在鍵帽上的位置。左上角會為應用程式圖示
 
 #: polyhost/gui/settings_dialog.py:224
 msgid "The size of the large letter or digit in the middle of each keycap. Medium and Large apply to Latin letters and digits; other scripts, such as Arabic or Chinese, stay Small."
-msgstr ""
+msgstr "每個鍵帽中央大字母或數字的大小。「中」和「大」適用於拉丁字母和數字；其他文字（例如阿拉伯文或中文）維持「小」。"
 
 #: polyhost/gui/settings_dialog.py:228
 msgid "A key with a tap and a hold action types its tap action when you release it before this time, and acts as its hold action when you hold it longer."
@@ -3830,7 +3830,7 @@ msgstr "AI 模式下減號鍵為開始聽寫而傳送的快速鍵，例如 <cmd>
 
 #: polyhost/gui/settings_dialog.py:265
 msgid "Tells the keyboard which Unicode input method this computer uses (for example WinCompose on Windows), when it connects and whenever the method changes. The keyboard needs it to type characters that are not on your layout, such as emoji. Off: the keyboard keeps the method it has stored."
-msgstr ""
+msgstr "在鍵盤連線時以及輸入方式變更時，告訴鍵盤這台電腦使用的 Unicode 輸入方式（例如 Windows 上的 WinCompose）。鍵盤需要此資訊才能輸入配置中沒有的字元，例如表情符號。關閉：鍵盤繼續使用已儲存的輸入方式。"
 
 #: polyhost/gui/settings_dialog.py:270
 msgid "Sets the keycap brightness from the daylight at your location, every ten minutes."
@@ -3846,15 +3846,15 @@ msgstr "依據您的 IP 位址查詢大略位置（ip-api.com），每次執行�
 
 #: polyhost/gui/settings_dialog.py:280
 msgid "The sunlight value at which the keycaps are at their dimmest. Less sunlight keeps them at the dimmest level."
-msgstr ""
+msgstr "鍵帽處於最暗時的日照強度值。日照強度低於此值時，鍵帽維持最暗。"
 
 #: polyhost/gui/settings_dialog.py:283
 msgid "The sunlight value at which the keycaps are at their brightest. Lower it to reach full brightness on a cloudy day."
-msgstr ""
+msgstr "鍵帽處於最亮時的日照強度值。降低此值可在陰天達到最高亮度。"
 
 #: polyhost/gui/settings_dialog.py:286
 msgid "Multiplies the sunlight value before it is compared with Sunlight at dimmest and Sunlight at brightest. Below 1 makes the keycaps dimmer for the same daylight."
-msgstr ""
+msgstr "在與「最暗時的日照強度」和「最亮時的日照強度」比較之前，以此數乘上日照強度值。小於 1 時，同樣的日光下鍵帽會較暗。"
 
 #: polyhost/gui/settings_dialog.py:290
 msgid "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, below 1 brighter. The dimmest and brightest levels do not change."
@@ -3862,27 +3862,27 @@ msgstr "調整日光曲線的形狀。大於 1 時一天中段變暗，小於 1 
 
 #: polyhost/gui/settings_dialog.py:293
 msgid "Draws icons for apps that have no overlay of their own: the app's logo on the Escape key and an icon on each shortcut key. Off: these apps get no icons. Apps with their own overlay are not affected."
-msgstr ""
+msgstr "為沒有專屬覆蓋圖的應用程式繪製圖示：在 Esc 鍵上顯示應用程式的標誌，在每個快捷鍵上顯示一個圖示。關閉：這些應用程式不會顯示圖示。有專屬覆蓋圖的應用程式不受影響。"
 
 #: polyhost/gui/settings_dialog.py:297
 msgid "An app with its own overlay also gets its logo on the Escape key, when its overlay leaves Escape blank."
-msgstr ""
+msgstr "有專屬覆蓋圖的應用程式，若其覆蓋圖未使用 Esc 鍵，也會在 Esc 鍵上顯示其標誌。"
 
 #: polyhost/gui/settings_dialog.py:300
 msgid "An app with its own overlay also gets icons for the shortcuts listed in its menus, on the keys its overlay leaves blank. Reading the menus of a large app, such as a browser with a long page, can take minutes."
-msgstr ""
+msgstr "有專屬覆蓋圖的應用程式，也會在其覆蓋圖未使用的按鍵上，顯示其選單中列出的快捷鍵圖示。讀取大型應用程式（例如開啟長頁面的瀏覽器）的選單可能需要數分鐘。"
 
 #: polyhost/gui/settings_dialog.py:304
 msgid "Reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system, and draws an icon on each shortcut key. The shortcuts stay on this computer. Off: no app is read."
-msgstr ""
+msgstr "透過作業系統的協助工具介面，讀取目前焦點應用程式選單中列出的快捷鍵，並在每個快捷鍵上繪製圖示。快捷鍵資訊只會留在這台電腦上。關閉：不讀取任何應用程式。"
 
 #: polyhost/gui/settings_dialog.py:308
 msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."
-msgstr ""
+msgstr "從網際網路（simple-icons 和 Iconify）下載這台電腦上還沒有的應用程式標誌和快捷鍵圖示。下載的圖示會儲存在這台電腦上。關閉：已下載的圖示仍可使用，沒有已儲存圖示的應用程式不會顯示圖示。"
 
 #: polyhost/gui/settings_dialog.py:313
 msgid "Linux only. Turns on the desktop's accessibility switch, so Qt and KDE apps list their shortcuts for Read shortcuts from app menus. Off: only apps that list them anyway (GTK) are read."
-msgstr ""
+msgstr "僅限 Linux。開啟桌面的協助工具開關，讓 Qt 和 KDE 應用程式為「從應用程式選單讀取快捷鍵」列出其快捷鍵。關閉：只讀取原本就會列出快捷鍵的應用程式（GTK）。"
 
 #: polyhost/gui/settings_dialog.py:317
 msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
@@ -3894,7 +3894,7 @@ msgstr "USB 傳輸：該暫停的長度，以秒為單位。僅在回報問題�
 
 #: polyhost/gui/settings_dialog.py:324
 msgid "How many times the app asks the keyboard for its ID without an answer before it closes and reopens the USB connection. Change it only when asked to while reporting a problem."
-msgstr ""
+msgstr "應用程式向鍵盤要求 ID 而沒有收到回應的次數，達到此次數後會關閉並重新開啟 USB 連線。僅在回報問題時被要求才變更此值。"
 
 #: polyhost/gui/settings_dialog.py:328
 msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
@@ -3946,31 +3946,31 @@ msgstr "在背景處理程序中執行鍵盤連線，系統匣應用程式會連
 
 #: polyhost/gui/settings_dialog.py:361
 msgid "Accepts reports of the focused window from the forwarder app on another computer, for example one you use through remote desktop, so the keyboard shows the icons of that computer's apps. Opens a network port. Applies after a restart."
-msgstr ""
+msgstr "接收另一台電腦（例如您透過遠端桌面使用的電腦）上轉送器應用程式傳來的目前焦點視窗資訊，讓鍵盤顯示那台電腦上應用程式的圖示。會開啟一個網路連接埠。重新啟動後生效。"
 
 #: polyhost/gui/settings_dialog.py:366
 msgid "The language of the words the keyboard's emoji search matches. The dictionary is sent to the keyboard when you click OK, and when it connects if Send font packs on connect is on. Own dictionary file, when set, is used instead."
-msgstr ""
+msgstr "鍵盤表情符號搜尋所比對的字詞語言。按一下「確定」時，以及在「連線時傳送字型包」開啟的情況下鍵盤連線時，字典會傳送到鍵盤。若已設定「自訂字典檔」，則改用該檔案。"
 
 #: polyhost/gui/settings_dialog.py:371
 msgid "A dictionary file you built yourself (.plyd), sent to the keyboard instead of the Search language dictionary. Empty: the dictionary for the Search language is used."
-msgstr ""
+msgstr "您自己建立的字典檔（.plyd），取代「搜尋語言」的字典傳送到鍵盤。空白：使用「搜尋語言」的字典。"
 
 #: polyhost/gui/settings_dialog.py:375
 msgid "When the keyboard connects, sends it the font packs it is missing or has in an older version. Font packs hold the characters for languages, symbols and emoji."
-msgstr ""
+msgstr "鍵盤連線時，傳送鍵盤缺少的字型包或版本較舊的字型包。字型包包含各種語言的字元、符號和表情符號。"
 
 #: polyhost/gui/settings_dialog.py:379
 msgid "A font-pack file (.plyf) to send to the keyboard instead of the one that comes with this app. Empty: the font pack that comes with this app is used."
-msgstr ""
+msgstr "取代本應用程式隨附的字型包而傳送到鍵盤的字型包檔案（.plyf）。空白：使用本應用程式隨附的字型包。"
 
 #: polyhost/gui/settings_dialog.py:382
 msgid "Chooses a website's overlay from the address of the focused browser tab. The address comes from the PolyKybd browser extension; on macOS, Safari and Chromium browsers such as Chrome also give it without the extension. Off: a website's overlay is chosen from the window title only."
-msgstr ""
+msgstr "依據目前焦點瀏覽器分頁的網址選擇網站的覆蓋圖。網址來自 PolyKybd 瀏覽器擴充功能；在 macOS 上，Safari 及 Chrome 等 Chromium 瀏覽器不需擴充功能也會提供網址。關閉：僅依據視窗標題選擇網站的覆蓋圖。"
 
 #: polyhost/gui/settings_dialog.py:387
 msgid "Runs the receiver that the PolyKybd browser extension sends the address of the focused tab to. It accepts connections from this computer only (127.0.0.1)."
-msgstr ""
+msgstr "執行接收器，PolyKybd 瀏覽器擴充功能會將目前焦點分頁的網址傳送給它。它只接受來自這台電腦的連線（127.0.0.1）。"
 
 #: polyhost/gui/settings_dialog.py:391
 msgid "The receiver's port. It must match the Host port in the browser extension."
@@ -3986,7 +3986,7 @@ msgstr "每天傳送一份匿名使用情況報告：版本、作業系統和少
 
 #: polyhost/gui/settings_dialog.py:398
 msgid "The web address the usage report is sent to. Empty: no report is sent."
-msgstr ""
+msgstr "使用情況報告的傳送網址。空白：不傳送報告。"
 
 #: polyhost/gui/settings_dialog.py:400
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
@@ -3994,11 +3994,11 @@ msgstr "此安裝的隨機 ID，在傳送第一份報告時建立。刪除後會
 
 #: polyhost/gui/settings_dialog.py:403
 msgid "Watches the messages the keyboard sends over USB for known failures, and offers to report a problem."
-msgstr ""
+msgstr "監看鍵盤透過 USB 傳送的訊息中是否有已知故障，並提供回報問題的選項。"
 
 #: polyhost/gui/settings_dialog.py:406
 msgid "Watches this app's own log for known failure messages, and offers to report a problem."
-msgstr ""
+msgstr "監看本應用程式自己的記錄檔中是否有已知的故障訊息，並提供回報問題的選項。"
 
 #: polyhost/gui/settings_dialog.py:408
 msgid "What counts as a problem: errors only, or errors and warnings."
@@ -4010,11 +4010,11 @@ msgstr "當遊戲安裝在這台電腦上時，從遊戲本身的檔案繪製部
 
 #: polyhost/gui/settings_dialog.py:867
 msgid "Advanced"
-msgstr ""
+msgstr "進階"
 
 #: polyhost/gui/settings_dialog.py:876
 msgid "Shows the settings that most people never change."
-msgstr ""
+msgstr "顯示大多數人從不變更的設定。"
 
 #: polyhost/gui/settings_dialog.py:907 polyhost/host.py:1680
 msgid "PolyKybd Settings"

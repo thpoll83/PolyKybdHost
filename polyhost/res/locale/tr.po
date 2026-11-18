@@ -3590,7 +3590,7 @@ msgstr "Eğri gaması"
 
 #: polyhost/gui/settings_dialog.py:156
 msgid "Icons for apps without an overlay"
-msgstr ""
+msgstr "Kaplaması olmayan uygulamalar için simgeler"
 
 #: polyhost/gui/settings_dialog.py:157
 msgid "Add the Escape mark"
@@ -3598,15 +3598,15 @@ msgstr "Escape işaretini ekle"
 
 #: polyhost/gui/settings_dialog.py:158
 msgid "Add icons from the app's menus"
-msgstr ""
+msgstr "Uygulamanın menülerinden simge ekle"
 
 #: polyhost/gui/settings_dialog.py:159
 msgid "Read shortcuts from app menus"
-msgstr ""
+msgstr "Kısayolları uygulama menülerinden oku"
 
 #: polyhost/gui/settings_dialog.py:160
 msgid "Download icons from the internet"
-msgstr ""
+msgstr "Simgeleri internetten indir"
 
 #: polyhost/gui/settings_dialog.py:161
 msgid "Turn on accessibility"
@@ -3674,7 +3674,7 @@ msgstr "Yönlendiricileri kabul et"
 
 #: polyhost/gui/settings_dialog.py:178
 msgid "Send font packs on connect"
-msgstr ""
+msgstr "Bağlanınca yazı tipi paketlerini gönder"
 
 #: polyhost/gui/settings_dialog.py:179
 msgid "Search language"
@@ -3690,7 +3690,7 @@ msgstr "Yazı tipi paketi dosyası"
 
 #: polyhost/gui/settings_dialog.py:182
 msgid "Match the website in the browser"
-msgstr ""
+msgstr "Tarayıcıdaki web sitesini eşleştir"
 
 #: polyhost/gui/settings_dialog.py:183
 msgid "Receive browser reports"
@@ -3718,7 +3718,7 @@ msgstr "Kurulum ID'si"
 
 #: polyhost/gui/settings_dialog.py:189
 msgid "Watch the keyboard's messages"
-msgstr ""
+msgstr "Klavyenin mesajlarını izle"
 
 #: polyhost/gui/settings_dialog.py:190
 msgid "Watch this app's log"
@@ -3766,7 +3766,7 @@ msgstr "Tamam'a tıkladığınızda tuş kapaklarının parlaklığını ayarlar
 
 #: polyhost/gui/settings_dialog.py:213
 msgid "What the keycaps show when you have not typed for a while. A moving picture protects the displays from burn-in."
-msgstr ""
+msgstr "Bir süre yazmadığınızda tuş kapaklarının gösterdiği şey. Hareketli bir görüntü, ekranları yanmaya (kalıcı görüntü izine) karşı korur."
 
 #: polyhost/gui/settings_dialog.py:215
 msgid "How long the keyboard waits before the idle display starts."
@@ -3774,7 +3774,7 @@ msgstr "Boşta ekranı başlamadan önce klavyenin beklediği süre."
 
 #: polyhost/gui/settings_dialog.py:217
 msgid "Draws the letters and digits on the keycaps in another script, for example runes or a retro computer font. The keys still type the same characters. Standard shows the normal legends of your language."
-msgstr ""
+msgstr "Tuş kapaklarındaki harfleri ve rakamları başka bir yazıyla çizer, örneğin runlarla veya eski bir bilgisayar yazı tipiyle. Tuşlar yine aynı karakterleri yazar. Standart, dilinizin normal etiketlerini gösterir."
 
 #: polyhost/gui/settings_dialog.py:221
 msgid "Where the script's letters sit on the keycap. The top-left corner leaves room for an app icon."
@@ -3782,7 +3782,7 @@ msgstr "Yazının harflerinin tuş kapağındaki yeri. Sol üst köşe, bir uygu
 
 #: polyhost/gui/settings_dialog.py:224
 msgid "The size of the large letter or digit in the middle of each keycap. Medium and Large apply to Latin letters and digits; other scripts, such as Arabic or Chinese, stay Small."
-msgstr ""
+msgstr "Her tuş kapağının ortasındaki büyük harfin veya rakamın boyutu. Orta ve Büyük, Latin harfleri ve rakamlar için geçerlidir; Arapça veya Çince gibi diğer yazılar Küçük kalır."
 
 #: polyhost/gui/settings_dialog.py:228
 msgid "A key with a tap and a hold action types its tap action when you release it before this time, and acts as its hold action when you hold it longer."
@@ -3830,7 +3830,7 @@ msgstr "Eksi tuşunun AI modunda dikteyi başlatmak için gönderdiği kısayol,
 
 #: polyhost/gui/settings_dialog.py:265
 msgid "Tells the keyboard which Unicode input method this computer uses (for example WinCompose on Windows), when it connects and whenever the method changes. The keyboard needs it to type characters that are not on your layout, such as emoji. Off: the keyboard keeps the method it has stored."
-msgstr ""
+msgstr "Klavyeye bu bilgisayarın hangi Unicode giriş yöntemini kullandığını (örneğin Windows'ta WinCompose) bildirir: klavye bağlandığında ve yöntem her değiştiğinde. Klavye, düzeninizde olmayan karakterleri (örneğin emojileri) yazmak için buna ihtiyaç duyar. Kapalıyken: klavye kayıtlı yöntemini korur."
 
 #: polyhost/gui/settings_dialog.py:270
 msgid "Sets the keycap brightness from the daylight at your location, every ten minutes."
@@ -3846,15 +3846,15 @@ msgstr "Yaklaşık konumunuzu IP adresinizden (ip-api.com) her çalıştırmada 
 
 #: polyhost/gui/settings_dialog.py:280
 msgid "The sunlight value at which the keycaps are at their dimmest. Less sunlight keeps them at the dimmest level."
-msgstr ""
+msgstr "Tuş kapaklarının en düşük parlaklıkta olduğu güneş ışığı değeri. Daha az güneş ışığında en düşük seviyede kalırlar."
 
 #: polyhost/gui/settings_dialog.py:283
 msgid "The sunlight value at which the keycaps are at their brightest. Lower it to reach full brightness on a cloudy day."
-msgstr ""
+msgstr "Tuş kapaklarının en yüksek parlaklıkta olduğu güneş ışığı değeri. Bulutlu bir günde tam parlaklığa ulaşmak için düşürün."
 
 #: polyhost/gui/settings_dialog.py:286
 msgid "Multiplies the sunlight value before it is compared with Sunlight at dimmest and Sunlight at brightest. Below 1 makes the keycaps dimmer for the same daylight."
-msgstr ""
+msgstr "Güneş ışığı değerini, \"En düşük parlaklıkta güneş ışığı\" ve \"En yüksek parlaklıkta güneş ışığı\" ile karşılaştırmadan önce bu sayıyla çarpar. 1'in altındaki bir değer, aynı gün ışığında tuş kapaklarını daha sönük yapar."
 
 #: polyhost/gui/settings_dialog.py:290
 msgid "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, below 1 brighter. The dimmest and brightest levels do not change."
@@ -3862,27 +3862,27 @@ msgstr "Gün ışığı eğrisini biçimlendirir. 1'in üzerinde günün ortası
 
 #: polyhost/gui/settings_dialog.py:293
 msgid "Draws icons for apps that have no overlay of their own: the app's logo on the Escape key and an icon on each shortcut key. Off: these apps get no icons. Apps with their own overlay are not affected."
-msgstr ""
+msgstr "Kendi kaplaması olmayan uygulamalar için simgeler çizer: Escape tuşunda uygulamanın logosu ve her kısayol tuşunda bir simge. Kapalıyken: bu uygulamalar simge almaz. Kendi kaplaması olan uygulamalar etkilenmez."
 
 #: polyhost/gui/settings_dialog.py:297
 msgid "An app with its own overlay also gets its logo on the Escape key, when its overlay leaves Escape blank."
-msgstr ""
+msgstr "Kendi kaplaması olan bir uygulama da, kaplaması Escape'i boş bıraktığında Escape tuşunda kendi logosunu alır."
 
 #: polyhost/gui/settings_dialog.py:300
 msgid "An app with its own overlay also gets icons for the shortcuts listed in its menus, on the keys its overlay leaves blank. Reading the menus of a large app, such as a browser with a long page, can take minutes."
-msgstr ""
+msgstr "Kendi kaplaması olan bir uygulama da menülerinde listelenen kısayollar için, kaplamasının boş bıraktığı tuşlarda simgeler alır. Büyük bir uygulamanın, örneğin uzun bir sayfa açık bir tarayıcının, menülerini okumak dakikalar sürebilir."
 
 #: polyhost/gui/settings_dialog.py:304
 msgid "Reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system, and draws an icon on each shortcut key. The shortcuts stay on this computer. Off: no app is read."
-msgstr ""
+msgstr "Odaktaki uygulamanın menülerinde listelenen kısayolları işletim sisteminin erişilebilirlik arayüzü üzerinden okur ve her kısayol tuşuna bir simge çizer. Kısayollar bu bilgisayarda kalır. Kapalıyken: hiçbir uygulama okunmaz."
 
 #: polyhost/gui/settings_dialog.py:308
 msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."
-msgstr ""
+msgstr "Bu bilgisayarda henüz olmayan uygulama logolarını ve kısayol simgelerini internetten (simple-icons ve Iconify) indirir. Simgeler bu bilgisayarda saklanır. Kapalıyken: önceden indirilen simgeler çalışmaya devam eder ve kayıtlı simgesi olmayan bir uygulama simge almaz."
 
 #: polyhost/gui/settings_dialog.py:313
 msgid "Linux only. Turns on the desktop's accessibility switch, so Qt and KDE apps list their shortcuts for Read shortcuts from app menus. Off: only apps that list them anyway (GTK) are read."
-msgstr ""
+msgstr "Yalnızca Linux. Masaüstünün erişilebilirlik anahtarını açar; böylece Qt ve KDE uygulamaları kısayollarını \"Kısayolları uygulama menülerinden oku\" için listeler. Kapalıyken: yalnızca kısayollarını zaten listeleyen uygulamalar (GTK) okunur."
 
 #: polyhost/gui/settings_dialog.py:317
 msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
@@ -3894,7 +3894,7 @@ msgstr "USB aktarımı: bu duraklamanın saniye cinsinden uzunluğu. Yalnızca b
 
 #: polyhost/gui/settings_dialog.py:324
 msgid "How many times the app asks the keyboard for its ID without an answer before it closes and reopens the USB connection. Change it only when asked to while reporting a problem."
-msgstr ""
+msgstr "Uygulamanın, USB bağlantısını kapatıp yeniden açmadan önce klavyeye kimliğini yanıt almadan kaç kez sorduğu. Yalnızca bir sorun bildirirken sizden istenirse değiştirin."
 
 #: polyhost/gui/settings_dialog.py:328
 msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
@@ -3946,31 +3946,31 @@ msgstr "Klavye bağlantısını, sistem tepsisi uygulamasının bağlandığı b
 
 #: polyhost/gui/settings_dialog.py:361
 msgid "Accepts reports of the focused window from the forwarder app on another computer, for example one you use through remote desktop, so the keyboard shows the icons of that computer's apps. Opens a network port. Applies after a restart."
-msgstr ""
+msgstr "Başka bir bilgisayardaki (örneğin uzak masaüstü ile kullandığınız bir bilgisayardaki) yönlendirici uygulamasından odaktaki pencere bildirimlerini kabul eder; böylece klavye o bilgisayarın uygulamalarının simgelerini gösterir. Bir ağ bağlantı noktası açar. Yeniden başlatmadan sonra uygulanır."
 
 #: polyhost/gui/settings_dialog.py:366
 msgid "The language of the words the keyboard's emoji search matches. The dictionary is sent to the keyboard when you click OK, and when it connects if Send font packs on connect is on. Own dictionary file, when set, is used instead."
-msgstr ""
+msgstr "Klavyenin emoji aramasının eşleştirdiği kelimelerin dili. Sözlük, Tamam'a tıkladığınızda ve \"Bağlanınca yazı tipi paketlerini gönder\" açıksa klavye bağlandığında klavyeye gönderilir. \"Kendi sözlük dosyanız\" ayarlanmışsa onun yerine o kullanılır."
 
 #: polyhost/gui/settings_dialog.py:371
 msgid "A dictionary file you built yourself (.plyd), sent to the keyboard instead of the Search language dictionary. Empty: the dictionary for the Search language is used."
-msgstr ""
+msgstr "Kendi oluşturduğunuz bir sözlük dosyası (.plyd); \"Arama dili\" sözlüğü yerine klavyeye gönderilir. Boş: \"Arama dili\" için olan sözlük kullanılır."
 
 #: polyhost/gui/settings_dialog.py:375
 msgid "When the keyboard connects, sends it the font packs it is missing or has in an older version. Font packs hold the characters for languages, symbols and emoji."
-msgstr ""
+msgstr "Klavye bağlandığında, klavyede eksik olan veya eski bir sürümü bulunan yazı tipi paketlerini ona gönderir. Yazı tipi paketleri diller, semboller ve emojiler için karakterleri içerir."
 
 #: polyhost/gui/settings_dialog.py:379
 msgid "A font-pack file (.plyf) to send to the keyboard instead of the one that comes with this app. Empty: the font pack that comes with this app is used."
-msgstr ""
+msgstr "Bu uygulamayla gelen paket yerine klavyeye gönderilecek bir yazı tipi paketi dosyası (.plyf). Boş: bu uygulamayla gelen yazı tipi paketi kullanılır."
 
 #: polyhost/gui/settings_dialog.py:382
 msgid "Chooses a website's overlay from the address of the focused browser tab. The address comes from the PolyKybd browser extension; on macOS, Safari and Chromium browsers such as Chrome also give it without the extension. Off: a website's overlay is chosen from the window title only."
-msgstr ""
+msgstr "Bir web sitesinin kaplamasını, tarayıcıda odaktaki sekmenin adresine göre seçer. Adres PolyKybd tarayıcı uzantısından gelir; macOS'ta Safari ve Chrome gibi Chromium tarayıcıları adresi uzantı olmadan da verir. Kapalıyken: web sitesinin kaplaması yalnızca pencere başlığına göre seçilir."
 
 #: polyhost/gui/settings_dialog.py:387
 msgid "Runs the receiver that the PolyKybd browser extension sends the address of the focused tab to. It accepts connections from this computer only (127.0.0.1)."
-msgstr ""
+msgstr "PolyKybd tarayıcı uzantısının odaktaki sekmenin adresini gönderdiği alıcıyı çalıştırır. Yalnızca bu bilgisayardan gelen bağlantıları kabul eder (127.0.0.1)."
 
 #: polyhost/gui/settings_dialog.py:391
 msgid "The receiver's port. It must match the Host port in the browser extension."
@@ -3986,7 +3986,7 @@ msgstr "Günde bir anonim kullanım raporu gönderir: sürümler, işletim siste
 
 #: polyhost/gui/settings_dialog.py:398
 msgid "The web address the usage report is sent to. Empty: no report is sent."
-msgstr ""
+msgstr "Kullanım raporunun gönderildiği web adresi. Boş: hiçbir rapor gönderilmez."
 
 #: polyhost/gui/settings_dialog.py:400
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
@@ -3994,11 +3994,11 @@ msgstr "Bu kurulumun ilk raporla oluşturulan rastgele ID'si. Yeni bir kurulum o
 
 #: polyhost/gui/settings_dialog.py:403
 msgid "Watches the messages the keyboard sends over USB for known failures, and offers to report a problem."
-msgstr ""
+msgstr "Klavyenin USB üzerinden gönderdiği mesajlarda bilinen hataları izler ve bir sorun bildirmeyi önerir."
 
 #: polyhost/gui/settings_dialog.py:406
 msgid "Watches this app's own log for known failure messages, and offers to report a problem."
-msgstr ""
+msgstr "Bu uygulamanın kendi günlüğünde bilinen hata mesajlarını izler ve bir sorun bildirmeyi önerir."
 
 #: polyhost/gui/settings_dialog.py:408
 msgid "What counts as a problem: errors only, or errors and warnings."
@@ -4010,11 +4010,11 @@ msgstr "Oyun bu bilgisayarda yüklüyse bazı oyun katmanlarını oyunun kendi d
 
 #: polyhost/gui/settings_dialog.py:867
 msgid "Advanced"
-msgstr ""
+msgstr "Gelişmiş"
 
 #: polyhost/gui/settings_dialog.py:876
 msgid "Shows the settings that most people never change."
-msgstr ""
+msgstr "Çoğu kişinin hiç değiştirmediği ayarları gösterir."
 
 #: polyhost/gui/settings_dialog.py:907 polyhost/host.py:1680
 msgid "PolyKybd Settings"
