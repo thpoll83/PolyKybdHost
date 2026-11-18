@@ -156,7 +156,7 @@ SETTING_LABELS = {
     "brightness_gamma": N_("Curve gamma"),
     "generic_overlays_enabled": N_("Icons for apps without an overlay"),
     "generic_overlays_fill_gaps": N_("Add the Escape mark"),
-    "generic_overlays_fill_shortcuts": N_("Add icons from the app's menus"),
+    "generic_overlays_fill_shortcuts": N_("Fill blank keys from the app's menus"),
     "shortcut_icons_enabled": N_("Read shortcuts from app menus"),
     "shortcut_icon_auto_fetch": N_("Download icons from the internet"),
     "shortcut_enable_accessibility": N_("Turn on accessibility"),
@@ -304,13 +304,15 @@ SETTING_DESCRIPTIONS = {
         "An app with its own overlay also gets its logo on the Escape key, when its "
         "overlay leaves Escape blank."),
     "generic_overlays_fill_shortcuts": N_(
-        "An app with its own overlay also gets icons for the shortcuts listed in its "
-        "menus, on the keys its overlay leaves blank. Reading the menus of a large "
+        "Only for an app that comes with its own overlay: the keys its overlay leaves "
+        "blank also get icons from the app's menus. Off: such an app shows only its "
+        "overlay. Needs Read shortcuts from app menus. Reading the menus of a large "
         "app, such as a browser with a long page, can take minutes."),
     "shortcut_icons_enabled": N_(
-        "Reads the shortcuts listed in the focused app's menus, through the "
-        "accessibility interface of the operating system, and draws an icon on each "
-        "shortcut key. The shortcuts stay on this computer. Off: no app is read."),
+        "The main switch for shortcut icons. PolyKybdHost reads the shortcuts listed "
+        "in the focused app's menus, through the accessibility interface of the "
+        "operating system, and draws an icon on each shortcut key. The shortcuts stay "
+        "on this computer. Off: no app's menus are read."),
     "shortcut_icon_auto_fetch": N_(
         "Downloads app logos and shortcut icons that this computer does not have yet "
         "from the internet (simple-icons and Iconify). They are stored on this "

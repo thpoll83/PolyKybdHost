@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-18 08:12+0000\n"
+"POT-Creation-Date: 2026-11-18 09:14+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ar\n"
@@ -1353,7 +1353,7 @@ msgid "pick one from Source fonts below, or Browse…"
 msgstr "اختر واحدًا من «خطوط المصدر» أدناه، أو استعرض…"
 
 #: polyhost/gui/fontpack_extend_dialog.py:120
-#: polyhost/gui/settings_dialog.py:1331 polyhost/gui/settings_dialog.py:1332
+#: polyhost/gui/settings_dialog.py:1333 polyhost/gui/settings_dialog.py:1334
 msgid "Browse…"
 msgstr "استعراض…"
 
@@ -2311,7 +2311,7 @@ msgid "Eden"
 msgstr "Eden"
 
 #. TRANSLATORS: shown in the Flow Tap spin box when its value is 0.
-#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1162
+#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1164
 msgid "Off"
 msgstr "إيقاف"
 
@@ -3756,8 +3756,8 @@ msgid "Add the Escape mark"
 msgstr "إضافة علامة Escape"
 
 #: polyhost/gui/settings_dialog.py:159
-msgid "Add icons from the app's menus"
-msgstr "إضافة أيقونات من قوائم التطبيق"
+msgid "Fill blank keys from the app's menus"
+msgstr ""
 
 #: polyhost/gui/settings_dialog.py:160
 msgid "Read shortcuts from app menus"
@@ -4036,178 +4036,178 @@ msgid "An app with its own overlay also gets its logo on the Escape key, when it
 msgstr "يحصل التطبيق الذي له تراكب خاص أيضًا على شعاره على مفتاح Escape، عندما يترك تراكبه مفتاح Escape فارغًا."
 
 #: polyhost/gui/settings_dialog.py:307
-msgid "An app with its own overlay also gets icons for the shortcuts listed in its menus, on the keys its overlay leaves blank. Reading the menus of a large app, such as a browser with a long page, can take minutes."
-msgstr "يحصل التطبيق الذي له تراكب خاص أيضًا على أيقونات للاختصارات المذكورة في قوائمه، على المفاتيح التي يتركها تراكبه فارغة. قد تستغرق قراءة قوائم تطبيق كبير، مثل متصفح يعرض صفحة طويلة، عدة دقائق."
+msgid "Only for an app that comes with its own overlay: the keys its overlay leaves blank also get icons from the app's menus. Off: such an app shows only its overlay. Needs Read shortcuts from app menus. Reading the menus of a large app, such as a browser with a long page, can take minutes."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:311
-msgid "Reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system, and draws an icon on each shortcut key. The shortcuts stay on this computer. Off: no app is read."
-msgstr "يقرأ الاختصارات المذكورة في قوائم التطبيق النشط، عبر واجهة إمكانية الوصول في نظام التشغيل، ويرسم أيقونة على كل مفتاح اختصار. تبقى الاختصارات على هذا الحاسوب. عند الإيقاف: لا يُقرأ أي تطبيق."
+#: polyhost/gui/settings_dialog.py:312
+msgid "The main switch for shortcut icons. PolyKybdHost reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system, and draws an icon on each shortcut key. The shortcuts stay on this computer. Off: no app's menus are read."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:315
+#: polyhost/gui/settings_dialog.py:317
 msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."
 msgstr "يُنزّل من الإنترنت شعارات التطبيقات وأيقونات الاختصارات التي لا توجد بعد على هذا الحاسوب (simple-icons و Iconify). تُخزَّن على هذا الحاسوب. عند الإيقاف: تبقى الأيقونات المنزّلة سابقًا تعمل، ولا يحصل التطبيق الذي ليس له أيقونة مخزّنة على أي أيقونة."
 
-#: polyhost/gui/settings_dialog.py:320
+#: polyhost/gui/settings_dialog.py:322
 msgid "Linux only. Turns on the desktop's accessibility switch, so Qt and KDE apps list their shortcuts for Read shortcuts from app menus. Off: only apps that list them anyway (GTK) are read."
 msgstr "Linux فقط. يشغّل مفتاح إمكانية الوصول في سطح المكتب، لكي تعرض تطبيقات Qt و KDE اختصاراتها من أجل «قراءة الاختصارات من قوائم التطبيقات». عند الإيقاف: تُقرأ فقط التطبيقات التي تعرض اختصاراتها في كل الأحوال (GTK)."
 
-#: polyhost/gui/settings_dialog.py:324
+#: polyhost/gui/settings_dialog.py:326
 msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
 msgstr "نقل USB: عدد رسائل الصور التي تُرسل قبل توقف قصير، لكي تظل لوحة المفاتيح تستجيب للكتابة. لا تغيّره إلا إذا طُلب منك ذلك أثناء الإبلاغ عن مشكلة."
 
-#: polyhost/gui/settings_dialog.py:328
+#: polyhost/gui/settings_dialog.py:330
 msgid "USB transport: the length of that pause, in seconds. Change it only when asked to while reporting a problem."
 msgstr "نقل USB: مدة هذا التوقف بالثواني. لا تغيّره إلا إذا طُلب منك ذلك أثناء الإبلاغ عن مشكلة."
 
-#: polyhost/gui/settings_dialog.py:331
+#: polyhost/gui/settings_dialog.py:333
 msgid "How many times the app asks the keyboard for its ID without an answer before it closes and reopens the USB connection. Change it only when asked to while reporting a problem."
 msgstr "عدد المرات التي يطلب فيها التطبيق من لوحة المفاتيح معرّفها دون رد، قبل أن يغلق اتصال USB ويعيد فتحه. لا تغيّره إلا إذا طُلب منك ذلك عند الإبلاغ عن مشكلة."
 
-#: polyhost/gui/settings_dialog.py:335
+#: polyhost/gui/settings_dialog.py:337
 msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
 msgstr "مظهر قائمة علبة النظام والنوافذ الحوارية. «تلقائي» يتبع إعداد سطح المكتب الفاتح أو الداكن."
 
-#: polyhost/gui/settings_dialog.py:338
+#: polyhost/gui/settings_dialog.py:340
 msgid "The language of the menus and dialogs. Applies when the tray app restarts."
 msgstr "لغة القوائم والنوافذ الحوارية. تُطبَّق عند إعادة تشغيل تطبيق علبة النظام."
 
-#: polyhost/gui/settings_dialog.py:340
+#: polyhost/gui/settings_dialog.py:342
 msgid "Shows the developer settings in this dialog, and the Developer submenu in the tray menu after a restart."
 msgstr "يُظهر إعدادات المطوّر في هذه النافذة، والقائمة الفرعية «المطوّر» في قائمة علبة النظام بعد إعادة التشغيل."
 
-#: polyhost/gui/settings_dialog.py:343
+#: polyhost/gui/settings_dialog.py:345
 msgid "How much the app writes to its log. Debug and Detailed help when you report a problem, and make the log grow faster. Applies after a restart."
 msgstr "مقدار ما يكتبه التطبيق في سجله. يساعد «تصحيح الأخطاء» و«مفصّل» عند الإبلاغ عن مشكلة، ويجعلان السجل يكبر بسرعة أكبر. يُطبَّق بعد إعادة التشغيل."
 
-#: polyhost/gui/settings_dialog.py:345
+#: polyhost/gui/settings_dialog.py:347
 msgid "Adds a simulated keyboard next to the real one."
 msgstr "يضيف لوحة مفاتيح وهمية بجانب اللوحة الحقيقية."
 
-#: polyhost/gui/settings_dialog.py:347
+#: polyhost/gui/settings_dialog.py:349
 msgid "Uses a simulated keyboard instead of a real one, so the app runs without hardware."
 msgstr "يستخدم لوحة مفاتيح وهمية بدلًا من لوحة حقيقية، فيعمل التطبيق دون أجهزة."
 
-#: polyhost/gui/settings_dialog.py:350
+#: polyhost/gui/settings_dialog.py:352
 msgid "The protocol version the simulated keyboard reports. 0 uses the newest version this host knows."
 msgstr "إصدار البروتوكول الذي تُبلغ عنه لوحة المفاتيح الوهمية. القيمة 0 تستخدم أحدث إصدار يعرفه هذا المضيف."
 
-#: polyhost/gui/settings_dialog.py:353
+#: polyhost/gui/settings_dialog.py:355
 msgid "Tracks the active window even when no keyboard is connected."
 msgstr "يتتبّع النافذة النشطة حتى عندما لا تكون أي لوحة مفاتيح متصلة."
 
-#: polyhost/gui/settings_dialog.py:355
+#: polyhost/gui/settings_dialog.py:357
 msgid "Windows only, experimental. Switches the input language with Win32 calls instead of the standard method, and falls back to it on a failure."
 msgstr "Windows فقط، تجريبي. يغيّر لغة الإدخال باستدعاءات Win32 بدلًا من الطريقة القياسية، ويعود إليها عند الفشل."
 
-#: polyhost/gui/settings_dialog.py:358
+#: polyhost/gui/settings_dialog.py:360
 msgid "Uses the USB HID channel only, as if the keyboard had no fast link: firmware updates go over HID. For testing the HID path by hand."
 msgstr "يستخدم قناة USB HID فقط، كما لو أن لوحة المفاتيح بلا وصلة سريعة: تحديثات البرنامج الثابت تمر عبر HID. لاختبار مسار HID يدويًا."
 
-#: polyhost/gui/settings_dialog.py:361
+#: polyhost/gui/settings_dialog.py:363
 msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
 msgstr "يقبل تقارير النوافذ من أدوات إعادة التوجيه القديمة عبر TCP غير مشفّر وغير موثّق (المنفذ 50162) على كل واجهات الشبكة. شغّله فقط لأداة إعادة توجيه قديمة."
 
-#: polyhost/gui/settings_dialog.py:365
+#: polyhost/gui/settings_dialog.py:367
 msgid "Runs the keyboard connection in a background process that the tray app connects to, so the connection stays up when the tray app restarts."
 msgstr "يشغّل اتصال لوحة المفاتيح في عملية في الخلفية يتصل بها تطبيق علبة النظام، فيبقى الاتصال قائمًا عند إعادة تشغيل تطبيق علبة النظام."
 
-#: polyhost/gui/settings_dialog.py:368
+#: polyhost/gui/settings_dialog.py:370
 msgid "Accepts reports of the focused window from the forwarder app on another computer, for example one you use through remote desktop, so the keyboard shows the icons of that computer's apps. Opens a network port. Applies after a restart."
 msgstr "يقبل تقارير النافذة النشطة من تطبيق مُعيد التوجيه على حاسوب آخر، مثل حاسوب تستخدمه عبر سطح المكتب البعيد، لكي تعرض لوحة المفاتيح أيقونات تطبيقات ذلك الحاسوب. يفتح منفذ شبكة. يُطبَّق بعد إعادة التشغيل."
 
-#: polyhost/gui/settings_dialog.py:373
+#: polyhost/gui/settings_dialog.py:375
 msgid "The language of the words the keyboard's emoji search matches. The dictionary is sent to the keyboard when you click OK, and when it connects if Send font packs on connect is on. Own dictionary file, when set, is used instead."
 msgstr "لغة الكلمات التي يطابقها البحث عن الرموز التعبيرية في لوحة المفاتيح. يُرسَل القاموس إلى لوحة المفاتيح عند النقر على «موافق»، وعند اتصالها إذا كان «إرسال حزم الخطوط عند الاتصال» مفعّلًا. إذا تم تعيين «ملف قاموس خاص»، فيُستخدم بدلًا منه."
 
-#: polyhost/gui/settings_dialog.py:378
+#: polyhost/gui/settings_dialog.py:380
 msgid "A dictionary file you built yourself (.plyd), sent to the keyboard instead of the Search language dictionary. Empty: the dictionary for the Search language is used."
 msgstr "ملف قاموس أنشأته بنفسك (.plyd)، يُرسَل إلى لوحة المفاتيح بدلًا من قاموس «لغة البحث». فارغ: يُستخدم قاموس «لغة البحث»."
 
-#: polyhost/gui/settings_dialog.py:382
+#: polyhost/gui/settings_dialog.py:384
 msgid "When the keyboard connects, sends it the font packs it is missing or has in an older version. Font packs hold the characters for languages, symbols and emoji."
 msgstr "عند اتصال لوحة المفاتيح، يرسل إليها حزم الخطوط التي تنقصها أو التي لديها نسخة أقدم منها. تحتوي حزم الخطوط على حروف اللغات والرموز والرموز التعبيرية."
 
-#: polyhost/gui/settings_dialog.py:386
+#: polyhost/gui/settings_dialog.py:388
 msgid "A font-pack file (.plyf) to send to the keyboard instead of the one that comes with this app. Empty: the font pack that comes with this app is used."
 msgstr "ملف حزمة خطوط (.plyf) يُرسَل إلى لوحة المفاتيح بدلًا من الحزمة المرفقة بهذا التطبيق. فارغ: تُستخدم حزمة الخطوط المرفقة بهذا التطبيق."
 
-#: polyhost/gui/settings_dialog.py:389
+#: polyhost/gui/settings_dialog.py:391
 msgid "Chooses a website's overlay from the address of the focused browser tab. The address comes from the PolyKybd browser extension; on macOS, Safari and Chromium browsers such as Chrome also give it without the extension. Off: a website's overlay is chosen from the window title only."
 msgstr "يختار تراكب موقع الويب من رابط علامة التبويب النشطة في المتصفح. يأتي الرابط من إضافة المتصفح PolyKybd؛ وعلى macOS يعطيه أيضًا Safari ومتصفحات Chromium مثل Chrome دون الإضافة. عند الإيقاف: يُختار تراكب موقع الويب من عنوان النافذة فقط."
 
-#: polyhost/gui/settings_dialog.py:394
+#: polyhost/gui/settings_dialog.py:396
 msgid "Runs the receiver that the PolyKybd browser extension sends the address of the focused tab to. It accepts connections from this computer only (127.0.0.1)."
 msgstr "يشغّل المستقبِل الذي ترسل إليه إضافة المتصفح PolyKybd رابط علامة التبويب النشطة. لا يقبل الاتصالات إلا من هذا الحاسوب (127.0.0.1)."
 
-#: polyhost/gui/settings_dialog.py:398
+#: polyhost/gui/settings_dialog.py:400
 msgid "The receiver's port. It must match the Host port in the browser extension."
 msgstr "منفذ المستقبِل. يجب أن يطابق Host port في إضافة المتصفح."
 
-#: polyhost/gui/settings_dialog.py:400
+#: polyhost/gui/settings_dialog.py:402
 msgid "A shared secret. When set, the browser extension must send the same token."
 msgstr "سرّ مشترك. عند ضبطه، يجب أن ترسل إضافة المتصفح الرمز المميز نفسه."
 
-#: polyhost/gui/settings_dialog.py:402
+#: polyhost/gui/settings_dialog.py:404
 msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
 msgstr "يرسل تقرير استخدام مجهول الهوية واحدًا يوميًا: الإصدارات ونظام التشغيل وبعض العدّادات. لا يرسل أبدًا عناوين النوافذ أو أسماء التطبيقات."
 
-#: polyhost/gui/settings_dialog.py:405
+#: polyhost/gui/settings_dialog.py:407
 msgid "The web address the usage report is sent to. Empty: no report is sent."
 msgstr "عنوان الويب الذي يُرسَل إليه تقرير الاستخدام. فارغ: لا يُرسَل أي تقرير."
 
-#: polyhost/gui/settings_dialog.py:407
+#: polyhost/gui/settings_dialog.py:409
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
 msgstr "المعرّف (ID) العشوائي لهذا التثبيت، يُنشأ مع أول تقرير. احذفه ليُحسب التثبيت كتثبيت جديد."
 
-#: polyhost/gui/settings_dialog.py:410
+#: polyhost/gui/settings_dialog.py:412
 msgid "Watches the messages the keyboard sends over USB for known failures, and offers to report a problem."
 msgstr "يراقب الرسائل التي ترسلها لوحة المفاتيح عبر USB بحثًا عن أعطال معروفة، ويعرض عليك الإبلاغ عن مشكلة."
 
-#: polyhost/gui/settings_dialog.py:413
+#: polyhost/gui/settings_dialog.py:415
 msgid "Watches this app's own log for known failure messages, and offers to report a problem."
 msgstr "يراقب سجل هذا التطبيق نفسه بحثًا عن رسائل أعطال معروفة، ويعرض عليك الإبلاغ عن مشكلة."
 
-#: polyhost/gui/settings_dialog.py:415
+#: polyhost/gui/settings_dialog.py:417
 msgid "What counts as a problem: errors only, or errors and warnings."
 msgstr "ما يُعدّ مشكلة: الأخطاء فقط، أو الأخطاء والتحذيرات."
 
-#: polyhost/gui/settings_dialog.py:417
+#: polyhost/gui/settings_dialog.py:419
 msgid "Draws some game overlays from the game's own files when the game is installed on this computer. The images stay on this computer. Off: the shipped overlays are used."
 msgstr "يرسم بعض تراكبات الألعاب من ملفات اللعبة نفسها عندما تكون اللعبة مثبتة على هذا الحاسوب. تبقى الصور على هذا الحاسوب. عند الإيقاف: تُستخدم التراكبات المرفقة."
 
-#: polyhost/gui/settings_dialog.py:894
+#: polyhost/gui/settings_dialog.py:896
 msgid "Advanced"
 msgstr "متقدّم"
 
-#: polyhost/gui/settings_dialog.py:903
+#: polyhost/gui/settings_dialog.py:905
 msgid "Shows the settings that most people never change."
 msgstr "يعرض الإعدادات التي لا يغيّرها معظم الناس أبدًا."
 
-#: polyhost/gui/settings_dialog.py:934 polyhost/host.py:1680
+#: polyhost/gui/settings_dialog.py:936 polyhost/host.py:1680
 msgid "PolyKybd Settings"
 msgstr "إعدادات PolyKybd"
 
-#: polyhost/gui/settings_dialog.py:1003
+#: polyhost/gui/settings_dialog.py:1005
 msgid "Search settings"
 msgstr "البحث في الإعدادات"
 
-#: polyhost/gui/settings_dialog.py:1055
+#: polyhost/gui/settings_dialog.py:1057
 msgid "An overlay is a set of icons for one app. Help & About, Basics shows an example."
 msgstr "التراكب مجموعة أيقونات لتطبيق واحد. يعرض «التعليمات & حول»، «الأساسيات» مثالًا على ذلك."
 
-#: polyhost/gui/settings_dialog.py:1059
+#: polyhost/gui/settings_dialog.py:1061
 msgid "Reading the settings stored on the keyboard…"
 msgstr "جارٍ قراءة الإعدادات المخزّنة في لوحة المفاتيح…"
 
-#: polyhost/gui/settings_dialog.py:1063
+#: polyhost/gui/settings_dialog.py:1065
 msgid "No setting matches the search."
 msgstr "لا يوجد إعداد يطابق البحث."
 
-#: polyhost/gui/settings_dialog.py:1078
+#: polyhost/gui/settings_dialog.py:1080
 msgid "Some settings might need a restart to take effect."
 msgstr "قد تحتاج بعض الإعدادات إلى إعادة التشغيل لتسري."
 
-#: polyhost/gui/settings_dialog.py:1113
+#: polyhost/gui/settings_dialog.py:1115
 #, python-brace-format
 msgid "Set by {flag} for this run. This setting applies when the app starts without it."
 msgstr "مضبوط بواسطة {flag} لهذا التشغيل. يُطبَّق هذا الإعداد عندما يبدأ التطبيق بدونه."
@@ -4216,35 +4216,35 @@ msgstr "مضبوط بواسطة {flag} لهذا التشغيل. يُطبَّق �
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
 #: polyhost/gui/layout_dialog/combo_tab.py:371
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
-#: polyhost/gui/settings_dialog.py:1159
+#: polyhost/gui/settings_dialog.py:1161
 msgid " ms"
 msgstr " ms"
 
-#: polyhost/gui/settings_dialog.py:1206
+#: polyhost/gui/settings_dialog.py:1208
 msgid "This keyboard's firmware does not have this setting."
 msgstr "لا يحتوي البرنامج الثابت لهذه اللوحة على هذا الإعداد."
 
-#: polyhost/gui/settings_dialog.py:1208
+#: polyhost/gui/settings_dialog.py:1210
 msgid "Could not read this setting from the keyboard."
 msgstr "تعذّرت قراءة هذا الإعداد من لوحة المفاتيح."
 
-#: polyhost/gui/settings_dialog.py:1216
+#: polyhost/gui/settings_dialog.py:1218
 msgid "Connect the keyboard to change the settings stored on it."
 msgstr "وصّل لوحة المفاتيح لتغيير الإعدادات المخزّنة فيها."
 
-#: polyhost/gui/settings_dialog.py:1218
+#: polyhost/gui/settings_dialog.py:1220
 msgid "Some settings could not be read from the keyboard. Update the keyboard firmware to change them here."
 msgstr "تعذّرت قراءة بعض الإعدادات من لوحة المفاتيح. حدّث البرنامج الثابت للوحة المفاتيح لتغييرها هنا."
 
-#: polyhost/gui/settings_dialog.py:1269
+#: polyhost/gui/settings_dialog.py:1271
 msgid "These developer settings are not at their default, so they stay in effect while developer mode is off."
 msgstr "إعدادات المطوّر هذه ليست على قيمها الافتراضية، لذا تبقى سارية أثناء إيقاف وضع المطوّر."
 
-#: polyhost/gui/settings_dialog.py:1339
+#: polyhost/gui/settings_dialog.py:1341
 msgid "Generate"
 msgstr "توليد"
 
-#: polyhost/gui/settings_dialog.py:1340
+#: polyhost/gui/settings_dialog.py:1342
 msgid "Fills in a new random token and copies it. Paste it into the browser extension's Options and save both."
 msgstr "يملأ رمزًا مميزًا عشوائيًا جديدًا وينسخه. الصقه في خيارات إضافة المتصفح واحفظ في الطرفين."
 

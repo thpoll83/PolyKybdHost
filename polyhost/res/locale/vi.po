@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-18 08:12+0000\n"
+"POT-Creation-Date: 2026-11-18 09:14+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: vi\n"
@@ -1338,7 +1338,7 @@ msgid "pick one from Source fonts below, or Browse…"
 msgstr "chọn một phông trong Phông nguồn bên dưới, hoặc Duyệt…"
 
 #: polyhost/gui/fontpack_extend_dialog.py:120
-#: polyhost/gui/settings_dialog.py:1331 polyhost/gui/settings_dialog.py:1332
+#: polyhost/gui/settings_dialog.py:1333 polyhost/gui/settings_dialog.py:1334
 msgid "Browse…"
 msgstr "Duyệt…"
 
@@ -2276,7 +2276,7 @@ msgid "Eden"
 msgstr "Eden"
 
 #. TRANSLATORS: shown in the Flow Tap spin box when its value is 0.
-#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1162
+#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1164
 msgid "Off"
 msgstr "Tắt"
 
@@ -3671,8 +3671,8 @@ msgid "Add the Escape mark"
 msgstr "Thêm dấu Esc"
 
 #: polyhost/gui/settings_dialog.py:159
-msgid "Add icons from the app's menus"
-msgstr "Thêm biểu tượng từ menu của ứng dụng"
+msgid "Fill blank keys from the app's menus"
+msgstr ""
 
 #: polyhost/gui/settings_dialog.py:160
 msgid "Read shortcuts from app menus"
@@ -3951,178 +3951,178 @@ msgid "An app with its own overlay also gets its logo on the Escape key, when it
 msgstr "Ứng dụng có lớp phủ riêng cũng được hiển thị logo trên phím Escape, khi lớp phủ của nó để trống phím Escape."
 
 #: polyhost/gui/settings_dialog.py:307
-msgid "An app with its own overlay also gets icons for the shortcuts listed in its menus, on the keys its overlay leaves blank. Reading the menus of a large app, such as a browser with a long page, can take minutes."
-msgstr "Ứng dụng có lớp phủ riêng cũng được hiển thị biểu tượng cho các phím tắt có trong menu của nó, trên những phím mà lớp phủ để trống. Đọc menu của một ứng dụng lớn, chẳng hạn trình duyệt đang mở một trang dài, có thể mất vài phút."
+msgid "Only for an app that comes with its own overlay: the keys its overlay leaves blank also get icons from the app's menus. Off: such an app shows only its overlay. Needs Read shortcuts from app menus. Reading the menus of a large app, such as a browser with a long page, can take minutes."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:311
-msgid "Reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system, and draws an icon on each shortcut key. The shortcuts stay on this computer. Off: no app is read."
-msgstr "Đọc các phím tắt có trong menu của ứng dụng đang được chọn, thông qua giao diện trợ năng của hệ điều hành, và vẽ một biểu tượng trên mỗi phím tắt. Các phím tắt chỉ ở lại trên máy tính này. Tắt: không đọc ứng dụng nào."
+#: polyhost/gui/settings_dialog.py:312
+msgid "The main switch for shortcut icons. PolyKybdHost reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system, and draws an icon on each shortcut key. The shortcuts stay on this computer. Off: no app's menus are read."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:315
+#: polyhost/gui/settings_dialog.py:317
 msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."
 msgstr "Tải từ internet (simple-icons và Iconify) logo ứng dụng và biểu tượng phím tắt mà máy tính này chưa có. Chúng được lưu trên máy tính này. Tắt: các biểu tượng đã tải vẫn hoạt động, còn ứng dụng chưa có biểu tượng được lưu sẽ không có biểu tượng."
 
-#: polyhost/gui/settings_dialog.py:320
+#: polyhost/gui/settings_dialog.py:322
 msgid "Linux only. Turns on the desktop's accessibility switch, so Qt and KDE apps list their shortcuts for Read shortcuts from app menus. Off: only apps that list them anyway (GTK) are read."
 msgstr "Chỉ dành cho Linux. Bật công tắc trợ năng của màn hình nền để các ứng dụng Qt và KDE liệt kê phím tắt của chúng cho Đọc phím tắt từ menu ứng dụng. Tắt: chỉ đọc các ứng dụng vốn đã liệt kê phím tắt (GTK)."
 
-#: polyhost/gui/settings_dialog.py:324
+#: polyhost/gui/settings_dialog.py:326
 msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
 msgstr "Truyền qua USB: số thông điệp hình ảnh được gửi trước một khoảng dừng ngắn, để bàn phím vẫn phản hồi khi gõ. Chỉ thay đổi khi được yêu cầu trong lúc báo cáo sự cố."
 
-#: polyhost/gui/settings_dialog.py:328
+#: polyhost/gui/settings_dialog.py:330
 msgid "USB transport: the length of that pause, in seconds. Change it only when asked to while reporting a problem."
 msgstr "Truyền qua USB: độ dài của khoảng dừng đó, tính bằng giây. Chỉ thay đổi khi được yêu cầu trong lúc báo cáo sự cố."
 
-#: polyhost/gui/settings_dialog.py:331
+#: polyhost/gui/settings_dialog.py:333
 msgid "How many times the app asks the keyboard for its ID without an answer before it closes and reopens the USB connection. Change it only when asked to while reporting a problem."
 msgstr "Số lần ứng dụng hỏi ID của bàn phím mà không nhận được trả lời trước khi đóng và mở lại kết nối USB. Chỉ thay đổi khi được yêu cầu trong lúc báo cáo sự cố."
 
-#: polyhost/gui/settings_dialog.py:335
+#: polyhost/gui/settings_dialog.py:337
 msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
 msgstr "Giao diện của menu khay hệ thống và các hộp thoại. Tự động theo thiết lập sáng hoặc tối của desktop."
 
-#: polyhost/gui/settings_dialog.py:338
+#: polyhost/gui/settings_dialog.py:340
 msgid "The language of the menus and dialogs. Applies when the tray app restarts."
 msgstr "Ngôn ngữ của menu và hộp thoại. Có hiệu lực khi ứng dụng khay hệ thống khởi động lại."
 
-#: polyhost/gui/settings_dialog.py:340
+#: polyhost/gui/settings_dialog.py:342
 msgid "Shows the developer settings in this dialog, and the Developer submenu in the tray menu after a restart."
 msgstr "Hiển thị các cài đặt dành cho nhà phát triển trong hộp thoại này, và menu con Nhà phát triển trong menu khay hệ thống sau khi khởi động lại."
 
-#: polyhost/gui/settings_dialog.py:343
+#: polyhost/gui/settings_dialog.py:345
 msgid "How much the app writes to its log. Debug and Detailed help when you report a problem, and make the log grow faster. Applies after a restart."
 msgstr "Mức độ ứng dụng ghi vào nhật ký. Gỡ lỗi và Chi tiết giúp ích khi bạn báo cáo sự cố, nhưng làm nhật ký tăng nhanh hơn. Có hiệu lực sau khi khởi động lại."
 
-#: polyhost/gui/settings_dialog.py:345
+#: polyhost/gui/settings_dialog.py:347
 msgid "Adds a simulated keyboard next to the real one."
 msgstr "Thêm một bàn phím mô phỏng bên cạnh bàn phím thật."
 
-#: polyhost/gui/settings_dialog.py:347
+#: polyhost/gui/settings_dialog.py:349
 msgid "Uses a simulated keyboard instead of a real one, so the app runs without hardware."
 msgstr "Dùng bàn phím mô phỏng thay cho bàn phím thật, để ứng dụng chạy được mà không cần phần cứng."
 
-#: polyhost/gui/settings_dialog.py:350
+#: polyhost/gui/settings_dialog.py:352
 msgid "The protocol version the simulated keyboard reports. 0 uses the newest version this host knows."
 msgstr "Phiên bản giao thức mà bàn phím mô phỏng báo cáo. 0 dùng phiên bản mới nhất mà host này biết."
 
-#: polyhost/gui/settings_dialog.py:353
+#: polyhost/gui/settings_dialog.py:355
 msgid "Tracks the active window even when no keyboard is connected."
 msgstr "Theo dõi cửa sổ đang hoạt động ngay cả khi không có bàn phím nào được kết nối."
 
-#: polyhost/gui/settings_dialog.py:355
+#: polyhost/gui/settings_dialog.py:357
 msgid "Windows only, experimental. Switches the input language with Win32 calls instead of the standard method, and falls back to it on a failure."
 msgstr "Chỉ Windows, thử nghiệm. Chuyển ngôn ngữ nhập bằng lệnh gọi Win32 thay cho phương pháp tiêu chuẩn, và quay lại phương pháp tiêu chuẩn khi thất bại."
 
-#: polyhost/gui/settings_dialog.py:358
+#: polyhost/gui/settings_dialog.py:360
 msgid "Uses the USB HID channel only, as if the keyboard had no fast link: firmware updates go over HID. For testing the HID path by hand."
 msgstr "Chỉ dùng kênh USB HID, như thể bàn phím không có liên kết nhanh: cập nhật firmware đi qua HID. Dùng để kiểm thử đường HID bằng tay."
 
-#: polyhost/gui/settings_dialog.py:361
+#: polyhost/gui/settings_dialog.py:363
 msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
 msgstr "Nhận báo cáo cửa sổ từ các bộ chuyển tiếp cũ qua TCP không mã hóa, không xác thực (cổng 50162) trên mọi giao diện mạng. Chỉ bật khi dùng bộ chuyển tiếp cũ."
 
-#: polyhost/gui/settings_dialog.py:365
+#: polyhost/gui/settings_dialog.py:367
 msgid "Runs the keyboard connection in a background process that the tray app connects to, so the connection stays up when the tray app restarts."
 msgstr "Chạy kết nối bàn phím trong một tiến trình nền mà ứng dụng khay hệ thống kết nối tới, để kết nối vẫn duy trì khi ứng dụng khay hệ thống khởi động lại."
 
-#: polyhost/gui/settings_dialog.py:368
+#: polyhost/gui/settings_dialog.py:370
 msgid "Accepts reports of the focused window from the forwarder app on another computer, for example one you use through remote desktop, so the keyboard shows the icons of that computer's apps. Opens a network port. Applies after a restart."
 msgstr "Nhận thông tin về cửa sổ đang được chọn từ ứng dụng bộ chuyển tiếp trên một máy tính khác, ví dụ máy bạn dùng qua màn hình từ xa, để bàn phím hiển thị biểu tượng của các ứng dụng trên máy đó. Mở một cổng mạng. Có hiệu lực sau khi khởi động lại."
 
-#: polyhost/gui/settings_dialog.py:373
+#: polyhost/gui/settings_dialog.py:375
 msgid "The language of the words the keyboard's emoji search matches. The dictionary is sent to the keyboard when you click OK, and when it connects if Send font packs on connect is on. Own dictionary file, when set, is used instead."
 msgstr "Ngôn ngữ của các từ mà chức năng tìm emoji của bàn phím so khớp. Từ điển được gửi tới bàn phím khi bạn nhấp OK, và khi bàn phím kết nối nếu Gửi gói phông chữ khi kết nối đang bật. Nếu đã đặt Tệp từ điển riêng thì tệp đó được dùng thay thế."
 
-#: polyhost/gui/settings_dialog.py:378
+#: polyhost/gui/settings_dialog.py:380
 msgid "A dictionary file you built yourself (.plyd), sent to the keyboard instead of the Search language dictionary. Empty: the dictionary for the Search language is used."
 msgstr "Tệp từ điển bạn tự tạo (.plyd), được gửi tới bàn phím thay cho từ điển của Ngôn ngữ tìm kiếm. Để trống: dùng từ điển của Ngôn ngữ tìm kiếm."
 
-#: polyhost/gui/settings_dialog.py:382
+#: polyhost/gui/settings_dialog.py:384
 msgid "When the keyboard connects, sends it the font packs it is missing or has in an older version. Font packs hold the characters for languages, symbols and emoji."
 msgstr "Khi bàn phím kết nối, gửi cho nó các gói phông chữ mà nó còn thiếu hoặc đang có ở phiên bản cũ hơn. Gói phông chữ chứa các ký tự cho ngôn ngữ, ký hiệu và emoji."
 
-#: polyhost/gui/settings_dialog.py:386
+#: polyhost/gui/settings_dialog.py:388
 msgid "A font-pack file (.plyf) to send to the keyboard instead of the one that comes with this app. Empty: the font pack that comes with this app is used."
 msgstr "Tệp gói phông chữ (.plyf) để gửi tới bàn phím thay cho gói đi kèm ứng dụng này. Để trống: dùng gói phông chữ đi kèm ứng dụng này."
 
-#: polyhost/gui/settings_dialog.py:389
+#: polyhost/gui/settings_dialog.py:391
 msgid "Chooses a website's overlay from the address of the focused browser tab. The address comes from the PolyKybd browser extension; on macOS, Safari and Chromium browsers such as Chrome also give it without the extension. Off: a website's overlay is chosen from the window title only."
 msgstr "Chọn lớp phủ của trang web theo địa chỉ của thẻ trình duyệt đang được chọn. Địa chỉ đến từ tiện ích mở rộng trình duyệt PolyKybd; trên macOS, Safari và các trình duyệt Chromium như Chrome cũng cung cấp địa chỉ mà không cần tiện ích. Tắt: lớp phủ của trang web chỉ được chọn theo tiêu đề cửa sổ."
 
-#: polyhost/gui/settings_dialog.py:394
+#: polyhost/gui/settings_dialog.py:396
 msgid "Runs the receiver that the PolyKybd browser extension sends the address of the focused tab to. It accepts connections from this computer only (127.0.0.1)."
 msgstr "Chạy bộ thu mà tiện ích mở rộng trình duyệt PolyKybd gửi địa chỉ của thẻ đang được chọn tới. Bộ thu chỉ chấp nhận kết nối từ máy tính này (127.0.0.1)."
 
-#: polyhost/gui/settings_dialog.py:398
+#: polyhost/gui/settings_dialog.py:400
 msgid "The receiver's port. It must match the Host port in the browser extension."
 msgstr "Cổng của bộ thu. Cổng này phải khớp với Host port trong tiện ích mở rộng trình duyệt."
 
-#: polyhost/gui/settings_dialog.py:400
+#: polyhost/gui/settings_dialog.py:402
 msgid "A shared secret. When set, the browser extension must send the same token."
 msgstr "Một khóa bí mật dùng chung. Khi được đặt, tiện ích mở rộng trình duyệt phải gửi cùng token đó."
 
-#: polyhost/gui/settings_dialog.py:402
+#: polyhost/gui/settings_dialog.py:404
 msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
 msgstr "Gửi một báo cáo sử dụng ẩn danh mỗi ngày: các phiên bản, hệ điều hành và một vài bộ đếm. Không bao giờ gửi tiêu đề cửa sổ hay tên ứng dụng."
 
-#: polyhost/gui/settings_dialog.py:405
+#: polyhost/gui/settings_dialog.py:407
 msgid "The web address the usage report is sent to. Empty: no report is sent."
 msgstr "Địa chỉ web mà báo cáo sử dụng được gửi tới. Để trống: không gửi báo cáo."
 
-#: polyhost/gui/settings_dialog.py:407
+#: polyhost/gui/settings_dialog.py:409
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
 msgstr "ID ngẫu nhiên của bản cài đặt này, được tạo cùng báo cáo đầu tiên. Xóa nó để được tính là một bản cài đặt mới."
 
-#: polyhost/gui/settings_dialog.py:410
+#: polyhost/gui/settings_dialog.py:412
 msgid "Watches the messages the keyboard sends over USB for known failures, and offers to report a problem."
 msgstr "Theo dõi các thông báo bàn phím gửi qua USB để tìm lỗi đã biết, và đề nghị báo cáo sự cố."
 
-#: polyhost/gui/settings_dialog.py:413
+#: polyhost/gui/settings_dialog.py:415
 msgid "Watches this app's own log for known failure messages, and offers to report a problem."
 msgstr "Theo dõi nhật ký của chính ứng dụng này để tìm thông báo lỗi đã biết, và đề nghị báo cáo sự cố."
 
-#: polyhost/gui/settings_dialog.py:415
+#: polyhost/gui/settings_dialog.py:417
 msgid "What counts as a problem: errors only, or errors and warnings."
 msgstr "Điều gì được coi là sự cố: chỉ lỗi, hoặc lỗi và cảnh báo."
 
-#: polyhost/gui/settings_dialog.py:417
+#: polyhost/gui/settings_dialog.py:419
 msgid "Draws some game overlays from the game's own files when the game is installed on this computer. The images stay on this computer. Off: the shipped overlays are used."
 msgstr "Vẽ một số lớp phủ trò chơi từ chính các tệp của trò chơi khi trò chơi được cài trên máy tính này. Hình ảnh ở lại trên máy tính này. Tắt: dùng các lớp phủ đi kèm."
 
-#: polyhost/gui/settings_dialog.py:894
+#: polyhost/gui/settings_dialog.py:896
 msgid "Advanced"
 msgstr "Nâng cao"
 
-#: polyhost/gui/settings_dialog.py:903
+#: polyhost/gui/settings_dialog.py:905
 msgid "Shows the settings that most people never change."
 msgstr "Hiển thị các cài đặt mà hầu hết mọi người không bao giờ thay đổi."
 
-#: polyhost/gui/settings_dialog.py:934 polyhost/host.py:1680
+#: polyhost/gui/settings_dialog.py:936 polyhost/host.py:1680
 msgid "PolyKybd Settings"
 msgstr "Cài đặt PolyKybd"
 
-#: polyhost/gui/settings_dialog.py:1003
+#: polyhost/gui/settings_dialog.py:1005
 msgid "Search settings"
 msgstr "Tìm kiếm cài đặt"
 
-#: polyhost/gui/settings_dialog.py:1055
+#: polyhost/gui/settings_dialog.py:1057
 msgid "An overlay is a set of icons for one app. Help & About, Basics shows an example."
 msgstr "Lớp phủ là một bộ biểu tượng cho một ứng dụng. Trợ giúp & Giới thiệu, Kiến thức cơ bản có một ví dụ."
 
-#: polyhost/gui/settings_dialog.py:1059
+#: polyhost/gui/settings_dialog.py:1061
 msgid "Reading the settings stored on the keyboard…"
 msgstr "Đang đọc các cài đặt lưu trên bàn phím…"
 
-#: polyhost/gui/settings_dialog.py:1063
+#: polyhost/gui/settings_dialog.py:1065
 msgid "No setting matches the search."
 msgstr "Không có cài đặt nào khớp với tìm kiếm."
 
-#: polyhost/gui/settings_dialog.py:1078
+#: polyhost/gui/settings_dialog.py:1080
 msgid "Some settings might need a restart to take effect."
 msgstr "Một số cài đặt có thể cần khởi động lại để có hiệu lực."
 
-#: polyhost/gui/settings_dialog.py:1113
+#: polyhost/gui/settings_dialog.py:1115
 #, python-brace-format
 msgid "Set by {flag} for this run. This setting applies when the app starts without it."
 msgstr "Được đặt bởi {flag} cho lần chạy này. Cài đặt này có hiệu lực khi ứng dụng khởi động mà không có cờ đó."
@@ -4131,35 +4131,35 @@ msgstr "Được đặt bởi {flag} cho lần chạy này. Cài đặt này có
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
 #: polyhost/gui/layout_dialog/combo_tab.py:371
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
-#: polyhost/gui/settings_dialog.py:1159
+#: polyhost/gui/settings_dialog.py:1161
 msgid " ms"
 msgstr " ms"
 
-#: polyhost/gui/settings_dialog.py:1206
+#: polyhost/gui/settings_dialog.py:1208
 msgid "This keyboard's firmware does not have this setting."
 msgstr "Firmware của bàn phím này không có cài đặt này."
 
-#: polyhost/gui/settings_dialog.py:1208
+#: polyhost/gui/settings_dialog.py:1210
 msgid "Could not read this setting from the keyboard."
 msgstr "Không thể đọc cài đặt này từ bàn phím."
 
-#: polyhost/gui/settings_dialog.py:1216
+#: polyhost/gui/settings_dialog.py:1218
 msgid "Connect the keyboard to change the settings stored on it."
 msgstr "Kết nối bàn phím để thay đổi các cài đặt lưu trên đó."
 
-#: polyhost/gui/settings_dialog.py:1218
+#: polyhost/gui/settings_dialog.py:1220
 msgid "Some settings could not be read from the keyboard. Update the keyboard firmware to change them here."
 msgstr "Không thể đọc một số cài đặt từ bàn phím. Hãy cập nhật firmware bàn phím để thay đổi chúng tại đây."
 
-#: polyhost/gui/settings_dialog.py:1269
+#: polyhost/gui/settings_dialog.py:1271
 msgid "These developer settings are not at their default, so they stay in effect while developer mode is off."
 msgstr "Các cài đặt dành cho nhà phát triển này không ở giá trị mặc định, nên vẫn có hiệu lực khi chế độ nhà phát triển đang tắt."
 
-#: polyhost/gui/settings_dialog.py:1339
+#: polyhost/gui/settings_dialog.py:1341
 msgid "Generate"
 msgstr "Tạo"
 
-#: polyhost/gui/settings_dialog.py:1340
+#: polyhost/gui/settings_dialog.py:1342
 msgid "Fills in a new random token and copies it. Paste it into the browser extension's Options and save both."
 msgstr "Điền một token ngẫu nhiên mới và sao chép nó. Dán token vào phần Tùy chọn của tiện ích mở rộng trình duyệt và lưu cả hai bên."
 
