@@ -1513,6 +1513,29 @@ class RaiserTest(unittest.TestCase):
         self.assertTrue(wins[1].active)
         self.assertFalse(wins[0].active)
 
+    def test_a_numbered_agent_is_found_by_its_title_without_the_number(self):
+        # Their cards both show "Fix login bug", so they are numbered; a window
+        # title shows the session's own title, without the number.
+        import os
+        from polyhost.services.agents.remote import RemoteAgent, agent_payload
+        r = AgentRegistry()
+        r.report("claude-code", "a", "working", headline="Fix the login bug", pid=os.getpid())
+        r.report("claude-code", "b", "working", headline="Fix login bug", pid=os.getpid())
+        a, b = r.agents()
+        self.assertEqual((a.dup_number, b.dup_number), (1, 2))
+        self.assertEqual(a.display_headline, "Fix the login bug 1")
+        wins = [_Win("1", os.getpid(), "\u2733 Fix login bug"),
+                _Win("2", os.getpid(), "\u2733 Fix the login bug")]
+        self.assertTrue(raise_agent(a, windows=wins))
+        self.assertTrue(wins[1].active)
+        self.assertFalse(wins[0].active)
+        # A forwarder gets the title without the number too.
+        self.assertEqual(agent_payload(a)["headline"], "Fix the login bug")
+        remote = RemoteAgent.from_payload(agent_payload(a))
+        wins[1].active = False
+        self.assertTrue(raise_agent(remote, windows=wins))
+        self.assertTrue(wins[1].active)
+
     def test_by_the_vendors_own_title(self):
         # Windows Terminal is not an ancestor of the agent's process, so the window is
         # found by Claude Code's own title; the one naming the headline first.
