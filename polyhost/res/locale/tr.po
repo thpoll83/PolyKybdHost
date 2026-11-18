@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-18 06:27+0000\n"
+"POT-Creation-Date: 2026-11-18 07:04+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: tr\n"
@@ -453,24 +453,114 @@ msgstr "Yönlendirici modu: bu bilgisayarda klavye yok. Buradaki etkin pencereyi
 msgid "Download, install, and restart the forwarder now?"
 msgstr "Yönlendirici şimdi indirilsin, yüklensin ve yeniden başlatılsın mı?"
 
-#: polyhost/gui/about_dialog.py:43
+#: polyhost/gui/about_dialog.py:47
 msgid "Blog"
 msgstr "Blog"
 
-#: polyhost/gui/about_dialog.py:76
+#: polyhost/gui/about_dialog.py:80
 #, python-brace-format
 msgid "Version {version}"
 msgstr "Sürüm {version}"
 
-#: polyhost/gui/about_dialog.py:107
+#: polyhost/gui/about_dialog.py:105
+msgid "Keycap displays and legends"
+msgstr "Tuş kapağı ekranları ve etiketler"
+
+#: polyhost/gui/about_dialog.py:106
+msgid "Every key has a small display. What it shows is the key's legend: the character the key types and, on some keys, the character it types with Shift."
+msgstr "Her tuşun küçük bir ekranı vardır. Ekranın gösterdiği şey tuşun etiketidir: tuşun yazdığı karakter ve bazı tuşlarda Shift ile yazdığı karakter."
+
+#: polyhost/gui/about_dialog.py:110
+msgid "Keyboard language"
+msgstr "Klavye dili"
+
+#: polyhost/gui/about_dialog.py:111
+msgid "The keycaps show the characters of the language your computer types in. When you switch the input language, the keyboard draws the new legends. The picture shows the A key in English, Russian, Arabic and Japanese."
+msgstr "Tuş kapakları, bilgisayarınızın yazdığı dilin karakterlerini gösterir. Giriş dilini değiştirdiğinizde klavye yeni etiketleri çizer. Resimde A tuşu İngilizce, Rusça, Arapça ve Japonca olarak görünüyor."
+
+#: polyhost/gui/about_dialog.py:115 polyhost/gui/tutorials_dialog.py:33
+msgid "Layers"
+msgstr "Katmanlar"
+
+#: polyhost/gui/about_dialog.py:116
+msgid "A layer gives every key a second function. While you hold a layer key such as Fn, the keys and their legends change: here the 1 key becomes F1."
+msgstr "Katman, her tuşa ikinci bir işlev verir. Fn gibi bir katman tuşunu basılı tuttuğunuz sürece tuşlar ve etiketleri değişir: burada 1 tuşu F1 olur."
+
+#: polyhost/gui/about_dialog.py:119 polyhost/gui/cmd_menu.py:196
+msgid "Overlays"
+msgstr "Kaplamalar"
+
+#: polyhost/gui/about_dialog.py:120
+msgid "An overlay is a set of icons for one app. While that app is in front and you hold a modifier such as Ctrl, each key shows what its shortcut does: here Ctrl+S saves in GIMP. PolyKybdHost comes with overlays for many apps. For other apps it reads the shortcuts from the app's menus (Settings, Keycap icons)."
+msgstr "Kaplama, tek bir uygulama için bir simge setidir. O uygulama öndeyken Ctrl gibi bir değiştirici tuşu basılı tutarsanız her tuş, kısayolunun ne yaptığını gösterir: burada Ctrl+S, GIMP'te kaydeder. PolyKybdHost birçok uygulama için kaplamalarla birlikte gelir. Diğer uygulamalar için kısayolları uygulamanın menülerinden okur (Ayarlar, Tuş kapağı simgeleri)."
+
+#: polyhost/gui/about_dialog.py:126 polyhost/gui/settings_dialog.py:86
+msgid "Font packs"
+msgstr "Yazı tipi paketleri"
+
+#: polyhost/gui/about_dialog.py:127
+msgid "The keyboard draws characters with fonts stored on the keyboard, in font packs: one for each group of scripts, and packs for symbols and emoji. PolyKybdHost sends missing or newer font packs to the keyboard when it connects."
+msgstr "Klavye, karakterleri klavyede saklanan yazı tipleriyle çizer. Bu yazı tipleri yazı tipi paketlerindedir: her yazı sistemi grubu için bir paket, ayrıca simgeler ve emojiler için paketler. PolyKybdHost, klavye bağlandığında eksik veya daha yeni yazı tipi paketlerini klavyeye gönderir."
+
+#: polyhost/gui/about_dialog.py:132 polyhost/gui/cmd_menu.py:241
+msgid "Firmware"
+msgstr "Ürün yazılımı"
+
+#: polyhost/gui/about_dialog.py:133
+msgid "The firmware is the program that runs inside the keyboard. PolyKybdHost offers new versions under Updates in the tray menu."
+msgstr "Ürün yazılımı, klavyenin içinde çalışan programdır. PolyKybdHost yeni sürümleri sistem tepsisi menüsündeki Güncellemeler altında sunar."
+
+#: polyhost/gui/about_dialog.py:136
+msgid "Forwarder"
+msgstr "Yönlendirici"
+
+#: polyhost/gui/about_dialog.py:137
+msgid "The forwarder is a small second app for another computer, for example one you control through remote desktop. It tells PolyKybdHost which app is in front on that computer, so the keyboard shows that app's icons. Turn on Accept forwarders in Settings, Connections, then pair the two computers with AI Agents, Pair a Forwarder in the tray menu."
+msgstr "Yönlendirici, başka bir bilgisayar için küçük ikinci bir uygulamadır; örneğin uzak masaüstüyle kontrol ettiğiniz bir bilgisayar için. O bilgisayarda hangi uygulamanın önde olduğunu PolyKybdHost'a bildirir, böylece klavye o uygulamanın simgelerini gösterir. Ayarlar, Bağlantılar içinde Yönlendiricileri kabul et seçeneğini açın, ardından iki bilgisayarı sistem tepsisi menüsündeki Yapay Zekâ Ajanları, Yönlendirici Eşleştir ile eşleştirin."
+
+#: polyhost/gui/about_dialog.py:195
+msgid ""
+"Forwarder\n"
+"(other computer)"
+msgstr ""
+"Yönlendirici\n"
+"(diğer bilgisayar)"
+
+#: polyhost/gui/about_dialog.py:196
+msgid ""
+"PolyKybdHost\n"
+"(this computer)"
+msgstr ""
+"PolyKybdHost\n"
+"(bu bilgisayar)"
+
+#: polyhost/gui/about_dialog.py:197 polyhost/gui/settings_dialog.py:81
+#: polyhost/host.py:2030
+msgid "Keyboard"
+msgstr "Klavye"
+
+#: polyhost/gui/about_dialog.py:243
 msgid "About PolyKybdHost"
 msgstr "PolyKybdHost hakkında"
 
-#: polyhost/gui/about_dialog.py:151 polyhost/gui/about_dialog.py:162
+#: polyhost/forwarder.py:325 polyhost/gui/about_dialog.py:281
+#: polyhost/host.py:393
+msgid "About"
+msgstr "Hakkında"
+
+#: polyhost/gui/about_dialog.py:316
+msgid "Basics"
+msgstr "Temel Bilgiler"
+
+#: polyhost/gui/about_dialog.py:317
+msgid "The words PolyKybd uses in its menus and settings, with a picture of each."
+msgstr "PolyKybd'nin menülerinde ve ayarlarında kullandığı sözcükler, her biri için bir resimle."
+
+#: polyhost/gui/about_dialog.py:362 polyhost/gui/about_dialog.py:373
 msgid "Copy diagnostics"
 msgstr "Tanılama bilgilerini kopyala"
 
-#: polyhost/gui/about_dialog.py:156
+#: polyhost/gui/about_dialog.py:367
 msgid "Copied ✓"
 msgstr "Kopyalandı ✓"
 
@@ -824,10 +914,6 @@ msgstr "Ürün yazılımı dosyası yaz (.bin)…"
 msgid "Activate bootloader…"
 msgstr "Önyükleyiciyi etkinleştir…"
 
-#: polyhost/gui/cmd_menu.py:196
-msgid "Overlays"
-msgstr "Kaplamalar"
-
 #: polyhost/gui/cmd_menu.py:197
 msgid "Enable shortcut overlays"
 msgstr "Kısayol kaplamalarını etkinleştir"
@@ -902,10 +988,6 @@ msgstr "TÜM demetleri yeniden yaz (zorla)…"
 #: polyhost/gui/cmd_menu.py:235
 msgid "Wipe (empty all bundles)"
 msgstr "Sil (tüm demetleri boşalt)"
-
-#: polyhost/gui/cmd_menu.py:241
-msgid "Firmware"
-msgstr "Ürün yazılımı"
 
 #: polyhost/gui/cmd_menu.py:242
 msgid "Flash only (.bin, stage)…"
@@ -1256,7 +1338,7 @@ msgid "pick one from Source fonts below, or Browse…"
 msgstr "aşağıdaki Kaynak yazı tiplerinden birini seçin veya Gözat…"
 
 #: polyhost/gui/fontpack_extend_dialog.py:120
-#: polyhost/gui/settings_dialog.py:1301 polyhost/gui/settings_dialog.py:1302
+#: polyhost/gui/settings_dialog.py:1324 polyhost/gui/settings_dialog.py:1325
 msgid "Browse…"
 msgstr "Gözat…"
 
@@ -2194,7 +2276,7 @@ msgid "Eden"
 msgstr "Eden"
 
 #. TRANSLATORS: shown in the Flow Tap spin box when its value is 0.
-#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1132
+#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1155
 msgid "Off"
 msgstr "Kapalı"
 
@@ -3426,10 +3508,6 @@ msgstr "Parlaklık"
 msgid "Daylight curve"
 msgstr "Gün ışığı eğrisi"
 
-#: polyhost/gui/settings_dialog.py:81 polyhost/host.py:2030
-msgid "Keyboard"
-msgstr "Klavye"
-
 #: polyhost/gui/settings_dialog.py:82
 msgid "Idle display"
 msgstr "Boşta ekranı"
@@ -3445,10 +3523,6 @@ msgstr "Dokunma-Basılı Tutma Süreleri"
 #: polyhost/gui/settings_dialog.py:85
 msgid "Unicode input"
 msgstr "Unicode girişi"
-
-#: polyhost/gui/settings_dialog.py:86
-msgid "Font packs"
-msgstr "Yazı tipi paketleri"
 
 #: polyhost/gui/settings_dialog.py:87
 msgid "Emoji search"
@@ -4008,35 +4082,39 @@ msgstr "Neyin sorun sayılacağı: yalnızca hatalar veya hatalar ve uyarılar."
 msgid "Draws some game overlays from the game's own files when the game is installed on this computer. The images stay on this computer. Off: the shipped overlays are used."
 msgstr "Oyun bu bilgisayarda yüklüyse bazı oyun katmanlarını oyunun kendi dosyalarından çizer. Görüntüler bu bilgisayarda kalır. Kapalı: birlikte gelen katmanlar kullanılır."
 
-#: polyhost/gui/settings_dialog.py:867
+#: polyhost/gui/settings_dialog.py:887
 msgid "Advanced"
 msgstr "Gelişmiş"
 
-#: polyhost/gui/settings_dialog.py:876
+#: polyhost/gui/settings_dialog.py:896
 msgid "Shows the settings that most people never change."
 msgstr "Çoğu kişinin hiç değiştirmediği ayarları gösterir."
 
-#: polyhost/gui/settings_dialog.py:907 polyhost/host.py:1680
+#: polyhost/gui/settings_dialog.py:927 polyhost/host.py:1680
 msgid "PolyKybd Settings"
 msgstr "PolyKybd Ayarları"
 
-#: polyhost/gui/settings_dialog.py:976
+#: polyhost/gui/settings_dialog.py:996
 msgid "Search settings"
 msgstr "Ayarlarda ara"
 
-#: polyhost/gui/settings_dialog.py:1029
+#: polyhost/gui/settings_dialog.py:1048
+msgid "An overlay is a set of icons for one app. Help & About, Basics shows an example."
+msgstr "Kaplama, tek bir uygulama için bir simge setidir. Yardım & Hakkında, Temel Bilgiler bir örnek gösterir."
+
+#: polyhost/gui/settings_dialog.py:1052
 msgid "Reading the settings stored on the keyboard…"
 msgstr "Klavyede kayıtlı ayarlar okunuyor…"
 
-#: polyhost/gui/settings_dialog.py:1033
+#: polyhost/gui/settings_dialog.py:1056
 msgid "No setting matches the search."
 msgstr "Aramayla eşleşen ayar yok."
 
-#: polyhost/gui/settings_dialog.py:1048
+#: polyhost/gui/settings_dialog.py:1071
 msgid "Some settings might need a restart to take effect."
 msgstr "Bazı ayarların etkili olması için yeniden başlatma gerekebilir."
 
-#: polyhost/gui/settings_dialog.py:1083
+#: polyhost/gui/settings_dialog.py:1106
 #, python-brace-format
 msgid "Set by {flag} for this run. This setting applies when the app starts without it."
 msgstr "Bu çalıştırma için {flag} ile ayarlandı. Bu ayar, uygulama onsuz başlatıldığında geçerli olur."
@@ -4045,35 +4123,35 @@ msgstr "Bu çalıştırma için {flag} ile ayarlandı. Bu ayar, uygulama onsuz b
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
 #: polyhost/gui/layout_dialog/combo_tab.py:371
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
-#: polyhost/gui/settings_dialog.py:1129
+#: polyhost/gui/settings_dialog.py:1152
 msgid " ms"
 msgstr " ms"
 
-#: polyhost/gui/settings_dialog.py:1176
+#: polyhost/gui/settings_dialog.py:1199
 msgid "This keyboard's firmware does not have this setting."
 msgstr "Bu klavyenin ürün yazılımında bu ayar yok."
 
-#: polyhost/gui/settings_dialog.py:1178
+#: polyhost/gui/settings_dialog.py:1201
 msgid "Could not read this setting from the keyboard."
 msgstr "Bu ayar klavyeden okunamadı."
 
-#: polyhost/gui/settings_dialog.py:1186
+#: polyhost/gui/settings_dialog.py:1209
 msgid "Connect the keyboard to change the settings stored on it."
 msgstr "Klavyede kayıtlı ayarları değiştirmek için klavyeyi bağlayın."
 
-#: polyhost/gui/settings_dialog.py:1188
+#: polyhost/gui/settings_dialog.py:1211
 msgid "Some settings could not be read from the keyboard. Update the keyboard firmware to change them here."
 msgstr "Bazı ayarlar klavyeden okunamadı. Bunları burada değiştirmek için klavyenin ürün yazılımını güncelleyin."
 
-#: polyhost/gui/settings_dialog.py:1239
+#: polyhost/gui/settings_dialog.py:1262
 msgid "These developer settings are not at their default, so they stay in effect while developer mode is off."
 msgstr "Bu geliştirici ayarları varsayılan değerlerinde değil, bu yüzden geliştirici modu kapalıyken de geçerli kalır."
 
-#: polyhost/gui/settings_dialog.py:1309
+#: polyhost/gui/settings_dialog.py:1332
 msgid "Generate"
 msgstr "Oluştur"
 
-#: polyhost/gui/settings_dialog.py:1310
+#: polyhost/gui/settings_dialog.py:1333
 msgid "Fills in a new random token and copies it. Paste it into the browser extension's Options and save both."
 msgstr "Yeni rastgele bir belirteç girer ve kopyalar. Bunu tarayıcı uzantısının seçeneklerine yapıştırın ve iki tarafı da kaydedin."
 
@@ -4340,10 +4418,6 @@ msgstr "{prefix} — ürün yazılımı v{fw_version} kullanılabilir"
 msgid "Updates"
 msgstr "Güncellemeler"
 
-#: polyhost/gui/tutorials_dialog.py:33
-msgid "Layers"
-msgstr "Katmanlar"
-
 #: polyhost/gui/tutorials_dialog.py:34
 msgid "Languages and accents"
 msgstr "Diller ve vurgular"
@@ -4529,10 +4603,6 @@ msgstr "Çık"
 #: polyhost/host.py:388
 msgid "Quit && stop background daemon"
 msgstr "Çık && arka plan hizmetini durdur"
-
-#: polyhost/forwarder.py:325 polyhost/host.py:393
-msgid "About"
-msgstr "Hakkında"
 
 #: polyhost/forwarder.py:308 polyhost/host.py:401
 msgid "Integrations…"

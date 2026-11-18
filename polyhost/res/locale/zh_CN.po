@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-18 06:27+0000\n"
+"POT-Creation-Date: 2026-11-18 07:04+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans_CN\n"
@@ -453,24 +453,114 @@ msgstr "转发器模式：本机没有连接键盘。它会监视本机的活动
 msgid "Download, install, and restart the forwarder now?"
 msgstr "立即下载、安装并重新启动转发器吗？"
 
-#: polyhost/gui/about_dialog.py:43
+#: polyhost/gui/about_dialog.py:47
 msgid "Blog"
 msgstr "博客"
 
-#: polyhost/gui/about_dialog.py:76
+#: polyhost/gui/about_dialog.py:80
 #, python-brace-format
 msgid "Version {version}"
 msgstr "版本 {version}"
 
-#: polyhost/gui/about_dialog.py:107
+#: polyhost/gui/about_dialog.py:105
+msgid "Keycap displays and legends"
+msgstr "键帽显示屏和键面字符"
+
+#: polyhost/gui/about_dialog.py:106
+msgid "Every key has a small display. What it shows is the key's legend: the character the key types and, on some keys, the character it types with Shift."
+msgstr "每个按键都有一块小显示屏。它显示的是按键的键面字符：按键输入的字符，在某些按键上还有按住 Shift 时输入的字符。"
+
+#: polyhost/gui/about_dialog.py:110
+msgid "Keyboard language"
+msgstr "键盘语言"
+
+#: polyhost/gui/about_dialog.py:111
+msgid "The keycaps show the characters of the language your computer types in. When you switch the input language, the keyboard draws the new legends. The picture shows the A key in English, Russian, Arabic and Japanese."
+msgstr "键帽显示你的电脑当前输入语言的字符。切换输入语言后，键盘会显示新的键面字符。图中是 A 键在英语、俄语、阿拉伯语和日语中的样子。"
+
+#: polyhost/gui/about_dialog.py:115 polyhost/gui/tutorials_dialog.py:33
+msgid "Layers"
+msgstr "层"
+
+#: polyhost/gui/about_dialog.py:116
+msgid "A layer gives every key a second function. While you hold a layer key such as Fn, the keys and their legends change: here the 1 key becomes F1."
+msgstr "层让每个按键拥有第二种功能。按住 Fn 等层键时，按键及其键面字符会改变：这里 1 键变成 F1。"
+
+#: polyhost/gui/about_dialog.py:119 polyhost/gui/cmd_menu.py:196
+msgid "Overlays"
+msgstr "叠加图标"
+
+#: polyhost/gui/about_dialog.py:120
+msgid "An overlay is a set of icons for one app. While that app is in front and you hold a modifier such as Ctrl, each key shows what its shortcut does: here Ctrl+S saves in GIMP. PolyKybdHost comes with overlays for many apps. For other apps it reads the shortcuts from the app's menus (Settings, Keycap icons)."
+msgstr "叠加图标是为某一个应用准备的一组图标。当该应用在前台、你按住 Ctrl 等修饰键时，每个按键都会显示其快捷键的作用：这里 Ctrl+S 在 GIMP 中表示保存。PolyKybdHost 自带许多应用的叠加图标。对于其他应用，它会从应用的菜单中读取快捷键（设置，键帽图标）。"
+
+#: polyhost/gui/about_dialog.py:126 polyhost/gui/settings_dialog.py:86
+msgid "Font packs"
+msgstr "字体包"
+
+#: polyhost/gui/about_dialog.py:127
+msgid "The keyboard draws characters with fonts stored on the keyboard, in font packs: one for each group of scripts, and packs for symbols and emoji. PolyKybdHost sends missing or newer font packs to the keyboard when it connects."
+msgstr "键盘使用存储在键盘上的字体来显示字符，这些字体放在字体包中：每组文字一个字体包，另有符号和表情符号的字体包。PolyKybdHost 在连接时会把缺少的或更新的字体包发送到键盘。"
+
+#: polyhost/gui/about_dialog.py:132 polyhost/gui/cmd_menu.py:241
+msgid "Firmware"
+msgstr "固件"
+
+#: polyhost/gui/about_dialog.py:133
+msgid "The firmware is the program that runs inside the keyboard. PolyKybdHost offers new versions under Updates in the tray menu."
+msgstr "固件是在键盘内部运行的程序。PolyKybdHost 会在托盘菜单的“更新”中提供新版本。"
+
+#: polyhost/gui/about_dialog.py:136
+msgid "Forwarder"
+msgstr "转发器"
+
+#: polyhost/gui/about_dialog.py:137
+msgid "The forwarder is a small second app for another computer, for example one you control through remote desktop. It tells PolyKybdHost which app is in front on that computer, so the keyboard shows that app's icons. Turn on Accept forwarders in Settings, Connections, then pair the two computers with AI Agents, Pair a Forwarder in the tray menu."
+msgstr "转发器是在另一台电脑上运行的一个小型辅助应用，例如你通过远程桌面控制的电脑。它告诉 PolyKybdHost 那台电脑上哪个应用在前台，这样键盘就会显示该应用的图标。请在设置，连接中打开“接受转发器”，然后在托盘菜单中通过 AI 智能体，与转发器配对 将两台电脑配对。"
+
+#: polyhost/gui/about_dialog.py:195
+msgid ""
+"Forwarder\n"
+"(other computer)"
+msgstr ""
+"转发器\n"
+"（另一台电脑）"
+
+#: polyhost/gui/about_dialog.py:196
+msgid ""
+"PolyKybdHost\n"
+"(this computer)"
+msgstr ""
+"PolyKybdHost\n"
+"（本机）"
+
+#: polyhost/gui/about_dialog.py:197 polyhost/gui/settings_dialog.py:81
+#: polyhost/host.py:2030
+msgid "Keyboard"
+msgstr "键盘"
+
+#: polyhost/gui/about_dialog.py:243
 msgid "About PolyKybdHost"
 msgstr "关于 PolyKybdHost"
 
-#: polyhost/gui/about_dialog.py:151 polyhost/gui/about_dialog.py:162
+#: polyhost/forwarder.py:325 polyhost/gui/about_dialog.py:281
+#: polyhost/host.py:393
+msgid "About"
+msgstr "关于"
+
+#: polyhost/gui/about_dialog.py:316
+msgid "Basics"
+msgstr "基础知识"
+
+#: polyhost/gui/about_dialog.py:317
+msgid "The words PolyKybd uses in its menus and settings, with a picture of each."
+msgstr "PolyKybd 在菜单和设置中使用的术语，每个术语都配有一张图。"
+
+#: polyhost/gui/about_dialog.py:362 polyhost/gui/about_dialog.py:373
 msgid "Copy diagnostics"
 msgstr "复制诊断信息"
 
-#: polyhost/gui/about_dialog.py:156
+#: polyhost/gui/about_dialog.py:367
 msgid "Copied ✓"
 msgstr "已复制 ✓"
 
@@ -824,10 +914,6 @@ msgstr "刷写固件文件（.bin）…"
 msgid "Activate bootloader…"
 msgstr "进入引导加载程序…"
 
-#: polyhost/gui/cmd_menu.py:196
-msgid "Overlays"
-msgstr "叠加图标"
-
 #: polyhost/gui/cmd_menu.py:197
 msgid "Enable shortcut overlays"
 msgstr "启用快捷键叠加图标"
@@ -902,10 +988,6 @@ msgstr "重新刷写所有分包（强制）…"
 #: polyhost/gui/cmd_menu.py:235
 msgid "Wipe (empty all bundles)"
 msgstr "清空（清空所有分包）"
-
-#: polyhost/gui/cmd_menu.py:241
-msgid "Firmware"
-msgstr "固件"
 
 #: polyhost/gui/cmd_menu.py:242
 msgid "Flash only (.bin, stage)…"
@@ -1256,7 +1338,7 @@ msgid "pick one from Source fonts below, or Browse…"
 msgstr "从下方的源字体中选择一个，或点击“浏览…”"
 
 #: polyhost/gui/fontpack_extend_dialog.py:120
-#: polyhost/gui/settings_dialog.py:1301 polyhost/gui/settings_dialog.py:1302
+#: polyhost/gui/settings_dialog.py:1324 polyhost/gui/settings_dialog.py:1325
 msgid "Browse…"
 msgstr "浏览…"
 
@@ -2194,7 +2276,7 @@ msgid "Eden"
 msgstr "Eden"
 
 #. TRANSLATORS: shown in the Flow Tap spin box when its value is 0.
-#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1132
+#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1155
 msgid "Off"
 msgstr "关"
 
@@ -3426,10 +3508,6 @@ msgstr "亮度"
 msgid "Daylight curve"
 msgstr "日光曲线"
 
-#: polyhost/gui/settings_dialog.py:81 polyhost/host.py:2030
-msgid "Keyboard"
-msgstr "键盘"
-
 #: polyhost/gui/settings_dialog.py:82
 msgid "Idle display"
 msgstr "空闲显示"
@@ -3445,10 +3523,6 @@ msgstr "点按/按住时间"
 #: polyhost/gui/settings_dialog.py:85
 msgid "Unicode input"
 msgstr "Unicode 输入"
-
-#: polyhost/gui/settings_dialog.py:86
-msgid "Font packs"
-msgstr "字体包"
 
 #: polyhost/gui/settings_dialog.py:87
 msgid "Emoji search"
@@ -4008,35 +4082,39 @@ msgstr "哪些情况算作问题：仅错误，或错误和警告。"
 msgid "Draws some game overlays from the game's own files when the game is installed on this computer. The images stay on this computer. Off: the shipped overlays are used."
 msgstr "当游戏安装在这台电脑上时，从游戏自身的文件绘制部分游戏叠加层。图像留在这台电脑上。关闭：使用自带的叠加层。"
 
-#: polyhost/gui/settings_dialog.py:867
+#: polyhost/gui/settings_dialog.py:887
 msgid "Advanced"
 msgstr "高级"
 
-#: polyhost/gui/settings_dialog.py:876
+#: polyhost/gui/settings_dialog.py:896
 msgid "Shows the settings that most people never change."
 msgstr "显示大多数人从不更改的设置。"
 
-#: polyhost/gui/settings_dialog.py:907 polyhost/host.py:1680
+#: polyhost/gui/settings_dialog.py:927 polyhost/host.py:1680
 msgid "PolyKybd Settings"
 msgstr "PolyKybd 设置"
 
-#: polyhost/gui/settings_dialog.py:976
+#: polyhost/gui/settings_dialog.py:996
 msgid "Search settings"
 msgstr "搜索设置"
 
-#: polyhost/gui/settings_dialog.py:1029
+#: polyhost/gui/settings_dialog.py:1048
+msgid "An overlay is a set of icons for one app. Help & About, Basics shows an example."
+msgstr "叠加图标是为某一个应用准备的一组图标。帮助 & 关于，基础知识 中有一个示例。"
+
+#: polyhost/gui/settings_dialog.py:1052
 msgid "Reading the settings stored on the keyboard…"
 msgstr "正在读取键盘中存储的设置…"
 
-#: polyhost/gui/settings_dialog.py:1033
+#: polyhost/gui/settings_dialog.py:1056
 msgid "No setting matches the search."
 msgstr "没有与搜索匹配的设置。"
 
-#: polyhost/gui/settings_dialog.py:1048
+#: polyhost/gui/settings_dialog.py:1071
 msgid "Some settings might need a restart to take effect."
 msgstr "某些设置可能需要重新启动才能生效。"
 
-#: polyhost/gui/settings_dialog.py:1083
+#: polyhost/gui/settings_dialog.py:1106
 #, python-brace-format
 msgid "Set by {flag} for this run. This setting applies when the app starts without it."
 msgstr "本次运行由 {flag} 设置。应用不带此参数启动时，使用此设置。"
@@ -4045,35 +4123,35 @@ msgstr "本次运行由 {flag} 设置。应用不带此参数启动时，使用�
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
 #: polyhost/gui/layout_dialog/combo_tab.py:371
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
-#: polyhost/gui/settings_dialog.py:1129
+#: polyhost/gui/settings_dialog.py:1152
 msgid " ms"
 msgstr " ms"
 
-#: polyhost/gui/settings_dialog.py:1176
+#: polyhost/gui/settings_dialog.py:1199
 msgid "This keyboard's firmware does not have this setting."
 msgstr "此键盘的固件没有此设置。"
 
-#: polyhost/gui/settings_dialog.py:1178
+#: polyhost/gui/settings_dialog.py:1201
 msgid "Could not read this setting from the keyboard."
 msgstr "无法从键盘读取此设置。"
 
-#: polyhost/gui/settings_dialog.py:1186
+#: polyhost/gui/settings_dialog.py:1209
 msgid "Connect the keyboard to change the settings stored on it."
 msgstr "请连接键盘以更改其中存储的设置。"
 
-#: polyhost/gui/settings_dialog.py:1188
+#: polyhost/gui/settings_dialog.py:1211
 msgid "Some settings could not be read from the keyboard. Update the keyboard firmware to change them here."
 msgstr "部分设置无法从键盘读取。请更新键盘固件以在此处更改它们。"
 
-#: polyhost/gui/settings_dialog.py:1239
+#: polyhost/gui/settings_dialog.py:1262
 msgid "These developer settings are not at their default, so they stay in effect while developer mode is off."
 msgstr "这些开发者设置不是默认值，因此在关闭开发者模式时仍然有效。"
 
-#: polyhost/gui/settings_dialog.py:1309
+#: polyhost/gui/settings_dialog.py:1332
 msgid "Generate"
 msgstr "生成"
 
-#: polyhost/gui/settings_dialog.py:1310
+#: polyhost/gui/settings_dialog.py:1333
 msgid "Fills in a new random token and copies it. Paste it into the browser extension's Options and save both."
 msgstr "填入一个新的随机令牌并复制。请将其粘贴到浏览器扩展的选项中，然后两边都保存。"
 
@@ -4340,10 +4418,6 @@ msgstr "{prefix} — 有可用更新：固件 v{fw_version}"
 msgid "Updates"
 msgstr "更新"
 
-#: polyhost/gui/tutorials_dialog.py:33
-msgid "Layers"
-msgstr "层"
-
 #: polyhost/gui/tutorials_dialog.py:34
 msgid "Languages and accents"
 msgstr "语言和重音符号"
@@ -4529,10 +4603,6 @@ msgstr "退出"
 #: polyhost/host.py:388
 msgid "Quit && stop background daemon"
 msgstr "退出 && 停止后台守护进程"
-
-#: polyhost/forwarder.py:325 polyhost/host.py:393
-msgid "About"
-msgstr "关于"
 
 #: polyhost/forwarder.py:308 polyhost/host.py:401
 msgid "Integrations…"
