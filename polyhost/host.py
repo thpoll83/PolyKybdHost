@@ -35,7 +35,7 @@ from polyhost.services import os_theme
 from polyhost.services.os_theme import THEME_AUTO
 from polyhost.services.fw_keymap_changes import keymap_changes
 from polyhost.settings import read_setting
-from polyhost.gui.update_ui import UpdateProgressController
+from polyhost.gui.update_ui import UpdateProgressController, update_headline
 from polyhost.gui.update_dialog import confirm_update
 from polyhost.gui.tray_notify import (balloons_are_delivered, updates_menu_title,
                                       updates_tooltip)
@@ -63,7 +63,7 @@ from polyhost._version import __version__, __protocol__
 from polyhost.services.updater import (
     UpdateChecker, UpdateInstaller, FwUpDownloader, discard_fw_download,
     AUTO_CHECK_INTERVAL_S, claim_automatic_check, fix_commands_from_message,
-    dialog_release_name)
+    dialog_release_name, format_release_date)
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
 from polyhost.gui.split_link_dialog import show_split_link_help
 from polyhost.gui.progress_dialog import StableProgressDialog
@@ -115,27 +115,18 @@ def _fw_version_str(version):
     return str(version) if version else None
 
 
-def _fmt_release_date(published_at: str) -> str:
-    """Return a human-readable date string from an ISO 8601 timestamp, or '' on failure."""
-    if not published_at:
-        return ""
-    try:
-        import datetime
-        dt = datetime.datetime.strptime(published_at[:10], "%Y-%m-%d")
-        return dt.strftime("%B %d, %Y").replace(" 0", " ")
-    except (ValueError, TypeError):
-        return ""
-
-
 def _msgbox(icon, title: str, text: str,
             buttons=QMessageBox.Ok, default=None) -> int:
     """A modal message box with no parent; see ``gui/message_box.py``."""
     return message_box.message(icon, title, text, buttons, default)
 
 
-def _progress_dlg(label: str, title: str, tray_icon=None, on_cancel=None) -> QProgressDialog:
+def _progress_dlg(label: str, title: str, tray_icon=None, on_cancel=None,
+                  headline: str = "") -> QProgressDialog:
     dlg = StableProgressDialog(label, None, 0, 100, None)
     dlg.setWindowTitle(title)
+    if headline:
+        dlg.set_headline(headline)
     dlg.setWindowFlag(Qt.WindowStaysOnTopHint, True)
     dlg.setMinimumDuration(0)
     dlg.setAutoClose(False)
@@ -2614,7 +2605,7 @@ class PolyHost(QApplication):
                    "Run with --dev 1 for details.", error=msg))
 
     def _prompt_and_install(self, release):
-        date_str = _fmt_release_date(release.published_at)
+        date_str = format_release_date(release.published_at)
         info = _f("Released: {date}", date=date_str) + "\n" if date_str else ""
         message = _f("Version {version} is available.", version=release.version) + "\n" + info
         if not confirm_update(_("Update PolyKybdHost"), message,
@@ -2633,7 +2624,7 @@ class PolyHost(QApplication):
         self.update_action.setEnabled(False)
         self._update_progress = _progress_dlg(
             _f("Downloading v{version}…", version=release.version), _("PolyKybdHost Update"),
-            tray_icon=self.tray)
+            tray_icon=self.tray, headline=update_headline(release.version))
 
         if self.client_mode:
             # Daemon-by-default (H4b): the daemon owns the device AND the
@@ -3031,7 +3022,7 @@ class PolyHost(QApplication):
             _msgbox(QMessageBox.Warning, _("Firmware Update"),
                     _("The keyboard must be connected to update the firmware."))
             return
-        date_str = _fmt_release_date(release.published_at)
+        date_str = format_release_date(release.published_at)
         info = _f("Released: {date}", date=date_str) + "\n" if date_str else ""
         current = _fw_version_str(self.kb_sw_version)
         installed = (_f("Installed: v{version}", version=current) if current

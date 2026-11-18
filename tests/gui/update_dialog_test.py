@@ -6,6 +6,7 @@ import unittest.mock as mock
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 try:
+    from PyQt5.QtGui import QTextFormat
     from PyQt5.QtWidgets import QApplication, QDialog
     from polyhost.gui import update_dialog
     _IMPORT_ERR = None
@@ -100,6 +101,10 @@ class UpdateDialogWhitespaceTest(unittest.TestCase):
             shown["min"] = dlg.minimumSizeHint().height()
             shown["dialog"] = dlg.height()
             shown["labels"] = [lbl.text() for lbl in dlg.findChildren(update_dialog.QLabel)]
+            shown["rule_margins"] = [
+                (b.blockFormat().topMargin(), b.blockFormat().bottomMargin())
+                for b in _blocks(browser.document())
+                if b.blockFormat().hasProperty(QTextFormat.BlockTrailingHorizontalRulerWidth)]
             dlg.close()
             return QDialog.Rejected
 
@@ -124,6 +129,20 @@ class UpdateDialogWhitespaceTest(unittest.TestCase):
                            "- n")
         self.assertIn("Version 1.2.3 is available.\nReleased: 2026-11-12",
                       shown["labels"])
+
+
+    def test_rule_between_two_releases_has_room_above_and_below(self):
+        shown = self._open("Version 1.2.3 is available.",
+                           "# v1.2.3\n\n- three\n\n---\n\n# v1.2.2\n\n- two")
+        margin = update_dialog.px(update_dialog._RULE_MARGIN)
+        self.assertEqual(shown["rule_margins"], [(margin, margin)])
+
+
+def _blocks(document):
+    block = document.begin()
+    while block.isValid():
+        yield block
+        block = block.next()
 
 
 if __name__ == "__main__":
