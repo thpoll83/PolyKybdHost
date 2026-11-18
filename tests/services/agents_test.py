@@ -339,6 +339,24 @@ class CardWordsTest(unittest.TestCase):
         self.assertEqual([a.card_text for a in r.agents()],
                          ["Fix login bug 1", "Fix login bug 2", "Fix parser"])
 
+    def test_a_title_of_brackets_only_shows_the_folder(self):
+        r = AgentRegistry()
+        r.report("codex", "a", "working", headline="[]", cwd="/home/u/docs")
+        r.report("codex", "b", "working", headline="()", cwd="/home/u/docs")
+        self.assertEqual([a.card_text for a in r.agents()], ["docs 1", "docs 2"])
+        self.assertEqual(r.agents()[0].display_headline, "[] 1")       # the list keeps it
+        r.report("codex", "c", "working", headline="( )")
+        self.assertEqual(r.agents()[2].card_text, "Codex")
+        self.assertTrue(r.label("codex", "c", "[ ]"))                  # a label too
+        self.assertEqual(r.agents()[2].card_text, "Codex")
+
+    def test_a_number_never_repeats_another_agents_title(self):
+        r = AgentRegistry()
+        r.report("codex", "a", "working", headline="(IO)")
+        r.report("codex", "b", "working", headline="IO")
+        r.report("codex", "c", "working", headline="IO 1")
+        self.assertEqual([a.card_text for a in r.agents()], ["IO 2", "IO 3", "IO 1"])
+
     def test_the_card_has_no_brackets_and_titles_that_differ_only_in_them_are_numbered(self):
         r = AgentRegistry()
         r.report("codex", "a", "working", headline="Fix (the) login [WIP]")
@@ -622,9 +640,9 @@ class CardTest(unittest.TestCase):
             self.assertTrue(last.endswith("\u2026"), (title, last))
             self.assertFalse(last.rstrip("\u2026").endswith("."), (title, last))
 
-    def test_no_mark_is_scaled_and_a_cloud_session_gets_the_cloud(self):
+    def test_no_mark_is_scaled(self):
         import numpy as np
-        from polyhost.services.agents.card import CLOUD_W, MARK_SHOWN
+        from polyhost.services.agents.card import MARK_SHOWN
 
         class Marks:
             def get(self, vid):
@@ -633,34 +651,25 @@ class CardTest(unittest.TestCase):
         self.assertEqual(local.mark.shape, (12, 26))
         # 12 rows sit beside line 1 only: line 1 is narrower, line 2 full width.
         self.assertEqual(local.pages[0], ["Investi", "gate"])
-        cloud = card_layout("x", "Investigate", Marks(), cloud=True)
-        self.assertEqual(cloud.mark.shape, local.mark.shape)    # inside the logo's box
-        self.assertEqual(cloud.pages, local.pages)              # the text is the same
-        self.assertFalse(cloud.mark.all())                      # its inside cleared
-        left = 26 - CLOUD_W - 1                                 # left of the cloud's border
-        self.assertTrue(cloud.mark[:, :left].all())             # the logo's left unchanged
-        self.assertTrue(cloud.mark[-1, left + 1:].any())        # the outline at the bottom
 
-    def test_a_wordmark_keeps_its_size_with_the_cloud_too(self):
+    def test_a_cloud_session_shows_a_browser_tab_in_place_of_the_logo(self):
         import numpy as np
+        from polyhost.services.agents import icons
 
         class Marks:
             def get(self, vid):
                 return np.ones((13, 29), dtype=bool)            # aider's wordmark
-        layout = card_layout("aider", "refactor the overlay cache", Marks())
-        self.assertEqual(layout.mark.shape, (13, 29))
-        # 13 rows sit beside line 1 only: line 2 is full width.
-        self.assertEqual(layout.pages[0][:2], ["refact", "or the overl"])
-        cloud = card_layout("aider", "refactor", Marks(), cloud=True).mark
-        self.assertEqual(cloud.shape, (13, 29))
-        self.assertTrue(cloud[:2, :].all())                     # the wordmark's top unchanged
-
-    def test_a_mark_smaller_than_the_cloud_grows_to_hold_it(self):
-        import numpy as np
-        from polyhost.services.agents.card import CLOUD_H, CLOUD_W, with_cloud
-        mark = with_cloud(np.ones((6, 8), dtype=bool))
-        self.assertEqual(mark.shape, (CLOUD_H, CLOUD_W))
-        self.assertTrue(mark.any())
+        tab = icons.browser_tab()
+        self.assertEqual(tab.shape, (11, 20))
+        self.assertTrue(tab[0].any() and tab[-1].any())         # no empty rows
+        self.assertTrue(tab[:, 0].any() and tab[:, -1].any())   # no empty columns
+        for vendor_id in ("aider", "codex", "unknown"):
+            cloud = card_layout(vendor_id, "refactor", Marks(), cloud=True)
+            self.assertTrue((cloud.mark == tab).all(), vendor_id)
+        self.assertTrue((card_layout("x", "refactor", None, cloud=True).mark == tab).all())
+        # Beside line 1 only, like a logo: line 2 is full width.
+        layout = card_layout("aider", "refactor the overlay cache", Marks(), cloud=True)
+        self.assertEqual(layout.pages[0][:2], ["refacto", "r the overla"])
 
     def test_korean_and_japanese_come_from_the_fallback_font(self):
         from polyhost.services.agents.card import _fallbacks, _font, _has, _runs
@@ -836,6 +845,9 @@ class CardTest(unittest.TestCase):
         self.assertEqual(no_brackets("fix(io) [wip] {a} <b>"), "fix io wip a b")
         self.assertEqual(no_brackets("\u300c\u30c6\u30b9\u30c8\u300d\uff08\u4fee\u6b63\uff09"),
                          "\u30c6\u30b9\u30c8 \u4fee\u6b63")
+        self.assertEqual(no_brackets("\uff62\u30c6\u30b9\u30c8\uff63 \uff5fa\uff60"),
+                         "\u30c6\u30b9\u30c8 a")
+        self.assertEqual(no_brackets("\u00abFix\u00bb \u2018a\u2019 \u300ca\u300d"), "\u00abFix\u00bb \u2018a\u2019 a")
         self.assertEqual(no_brackets('Fix "HID" \u201ereconnect\u201c'),
                          'Fix "HID" \u201ereconnect\u201c')         # quotation marks stay
         shown = "".join(paginate("Fix (the) [HID] reconnect")[0])
@@ -857,6 +869,7 @@ class CardTest(unittest.TestCase):
         self.assertTrue(_joins("\u0628", "\u064e\u0628"))
         self.assertTrue(_joins("\u0628", "\u0640"))     # tatweel joins both sides
         self.assertFalse(_joins("\u0628\u200c", "\u0628"))  # ZWNJ stops the join
+        self.assertFalse(_joins("\u0628\u06dd", "\u0628"))  # END OF AYAH: Cf, but joining type U
         self.assertFalse(_joins("\u0628", ""))
         lines = flow("\u062a\u0633\u062c\u064a\u0644" * 6, [30])
         self.assertGreater(len(lines), 1)
@@ -866,6 +879,17 @@ class CardTest(unittest.TestCase):
                 self.assertTrue(lines[k + 1].startswith("\u200d"), lines[k + 1])
         self.assertEqual("".join(lines).replace("\u200d", ""),
                          "\u062a\u0633\u062c\u064a\u0644" * 6)
+
+    def test_a_joiner_stays_in_the_run_of_the_letter_it_joins(self):
+        from polyhost.services.agents.card import _runs
+        _FontCache(self).add("Noto Sans Arabic", DEJAVU)
+        for text in ("\u200d\u0628\u0628", "\u0628\u0628\u200d", "\u0628\u200c\u0628"):
+            runs = _runs(text)
+            self.assertEqual(len(runs), 1, (text, runs))
+            self.assertEqual(runs[0][2], text)
+        runs = _runs("HID \u200d\u0628")
+        self.assertEqual(runs[-1][2], "\u200d\u0628")
+        self.assertEqual("".join(r[2] for r in _runs("\u200d")), "\u200d")
 
     def test_a_missing_bundled_font_is_left_out(self):
         from polyhost.services.agents import card
@@ -1428,7 +1452,7 @@ class ControllerTest(unittest.TestCase):
         # Drawn with version 0, so version 1 draws it again.
         self.assertEqual(len(self.kb.cards), 1)
 
-    def test_a_cloud_session_gets_the_cloud_on_its_card(self):
+    def test_a_cloud_session_gets_the_browser_tab_on_its_card(self):
         self.r.report("codex", "remote", "working", headline="Fix the build", machine="cloud")
         self.c.sync(self.kb)
         sent = self.kb.cards[self.kb.keys[-1][2][0]]

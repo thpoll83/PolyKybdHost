@@ -92,10 +92,9 @@ ESC (the pager) does not end AI mode in either case.
   (`res/icons/agents/`, already cut). The text starts 1 px to its right. No mark is
   scaled: a first word that does not fit beside it starts below it. A vendor with
   no mark yet gets its short name.
-- Cloud session (machine `cloud`): a 1 px cloud outline, 16 x 10 px, drawn over the
-  logo's lower right corner, inside the logo's box, with its inside cleared first
-  (`card.with_cloud`). The mark is no wider and no taller, so the text is the same
-  as on a local session's card.
+- Cloud session (machine `cloud`): a browser tab, 20 x 11 px, in place of the
+  vendor's logo (`icons.browser_tab`), drawn like a Chrome tab with a favicon and
+  the close x, because a cloud session runs in the browser.
 - State icon: 12 px, bottom right, with 1 px kept free left of and
   above it, so only line 3 is shorter (58 px). Working, waiting and idle are the
   16 px card icons, scaled. Done and stale are drawn at 12 px: a filled disc with a

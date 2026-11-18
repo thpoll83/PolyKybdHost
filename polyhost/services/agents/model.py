@@ -94,7 +94,8 @@ _ENGLISH_MARKERS = frozenset("after and before from into the when with".split())
 # fullwidth and CJK brackets; quotation marks stay.
 _BRACKETS = frozenset("()[]{}<>\uff08\uff09\uff3b\uff3d\uff5b\uff5d\uff1c\uff1e"
                       "\u3008\u3009\u300a\u300b\u300c\u300d\u300e\u300f"
-                      "\u3010\u3011\u3014\u3015\u3016\u3017\u3018\u3019\u301a\u301b")
+                      "\u3010\u3011\u3014\u3015\u3016\u3017\u3018\u3019\u301a\u301b"
+                      "\uff5f\uff60\uff62\uff63")
 
 
 def no_brackets(text: str) -> str:

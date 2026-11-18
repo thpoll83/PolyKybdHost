@@ -8,8 +8,9 @@
 
 The vendor mark is the lower 12 rows of the logo at 26 px, cut by the top edge
 (2026-11-18), top left, with the text 1 px to its right; only
-line 1 is beside it, lines 2 and 3 use the full width. A cloud session's mark has a cloud outline drawn over the logo's
-lower right, inside the logo's box (with_cloud). Marks are never scaled. Three lines of 14 px text
+line 1 is beside it, lines 2 and 3 use the full width. A cloud session shows a
+browser tab (icons.browser_tab, 20 x 11 px) in place of the logo, because it runs
+in the browser. Marks are never scaled. Three lines of 14 px text
 (card experiments, 2026-11-17). The state icon (12 px) is in the bottom right
 corner on every page, with a cleared margin of ICON_CLEAR px; only line 3 meets it,
 and ends before that margin.
@@ -259,7 +260,17 @@ def _runs(text: str, size: int = FONT_SIZE) -> list[tuple]:
     import unicodedata
     base = _font(size)
     runs = []
+    joiners = ""
     for ch in text:
+        # ZWJ and ZWNJ stay in the run of the letter they join: the run before
+        # them, or after a space and at the start of a line (flow) the run after.
+        # Drawn in another run, the shaper never sees them next to the letter.
+        if ch in "\u200c\u200d":
+            if runs and not runs[-1][2][-1].isspace():
+                runs[-1] = (runs[-1][0], runs[-1][1], runs[-1][2] + ch)
+            else:
+                joiners += ch
+            continue
         # A combining mark (a Devanagari vowel sign, a Thai tone mark) stays in the
         # run of its letter: drawn alone, the shaper puts it on a dotted circle.
         # A space stays in the run before it too, so a right-to-left phrase is one
@@ -275,7 +286,10 @@ def _runs(text: str, size: int = FONT_SIZE) -> list[tuple]:
         if runs and runs[-1][0] is font:
             runs[-1] = (font, dy, runs[-1][2] + ch)
         else:
-            runs.append((font, dy, ch))
+            runs.append((font, dy, joiners + ch))
+            joiners = ""
+    if joiners:
+        runs.append((base, 0, joiners))
     return runs
 
 
@@ -424,11 +438,17 @@ _JOINS_PREVIOUS = _code_points(
 )
 
 
+# Marks and format characters whose joining type is not T (Unicode 16.0): the
+# Arabic number signs, END OF AYAH, ZWNJ and ZWJ, the bidi isolates.
+_NOT_TRANSPARENT = _code_points(
+    "0600-0605 06DD 0890-0891 08E2 180E 200C-200D 2066-2069 110BD 110CD 1171E")
+
+
 def _transparent(ch: str) -> bool:
     """A character that joining skips (joining type T): a mark (Mn, Me) or a
-    format character (Cf) such as U+061C ARABIC LETTER MARK. ZWNJ and ZWJ are not:
-    they stop or cause a join."""
-    return unicodedata.category(ch) in ("Mn", "Me", "Cf") and ch not in "\u200c\u200d"
+    format character (Cf) such as U+061C ARABIC LETTER MARK, except those of
+    _NOT_TRANSPARENT, which stop a join (U+06DD) or cause one (ZWJ)."""
+    return unicodedata.category(ch) in ("Mn", "Me", "Cf") and ch not in _NOT_TRANSPARENT
 
 
 def _joins(left: str, right: str) -> bool:
@@ -627,34 +647,6 @@ def _paste(canvas, mask, x, y):
     canvas[y:y + h, x:x + w] |= mask[:h, :w]
 
 
-# Cloud sessions: a cloud outline drawn over the lower right of the agent's logo
-# (card experiments, 2026-11-17). Since the logo strip is 12 rows (2026-11-18) the
-# cloud stays inside it, so the mark is no wider and no taller and lines 2 and 3
-# keep the full width.
-CLOUD_W, CLOUD_H = 16, 10   # px
-
-
-def with_cloud(logo):
-    """`logo` with a 1 px cloud outline drawn in front of its lower right corner,
-    inside the logo's box. The cloud's inside and a 1 px border are cleared first,
-    so the outline reads over the logo. A wordmark gets the same cloud at its
-    right end; a mark smaller than the cloud grows to hold it."""
-    import numpy as np
-    from polyhost.services.agents import icons
-    logo = np.asarray(logo, dtype=bool)
-    shape = icons.cloud(CLOUD_W, CLOUD_H)
-    x = max(0, logo.shape[1] - CLOUD_W)
-    y = max(0, logo.shape[0] - CLOUD_H)
-    out = np.zeros((max(logo.shape[0], y + CLOUD_H), max(logo.shape[1], x + CLOUD_W)),
-                   dtype=bool)
-    out[:logo.shape[0], :logo.shape[1]] = logo
-    region = np.zeros_like(out)
-    region[y:y + CLOUD_H, x:x + CLOUD_W] = shape
-    out &= ~icons.grow(region)
-    out[y:y + CLOUD_H, x:x + CLOUD_W] |= icons.outline(shape, 1)
-    return out
-
-
 def _text_mark(text: str):
     """The vendor's short name as a mark, while its logo is not fetched yet."""
     import numpy as np
@@ -699,13 +691,17 @@ class CardLayout:
 
 def card_layout(vendor_id: str, headline: str, marks: VendorMarks | None = None,
                 state=None, cloud: bool = False, number: int = 0) -> CardLayout:
-    """The mark and pages for one agent. `cloud`: a cloud session, whose mark has
-    the cloud over the logo (with_cloud). `number`: see paginate. No mark is
-    scaled: a first word that does not fit beside the mark starts below it."""
-    logo = marks.get(vendor_id) if marks is not None else None
-    if logo is None:
-        logo = _text_mark(vendor(vendor_id).short[:3])
-    mark = with_cloud(logo) if cloud and logo is not None else logo
+    """The mark and pages for one agent. `cloud`: a cloud session, which shows a
+    browser tab (icons.browser_tab) in place of the vendor's logo. `number`: see
+    paginate. No mark is scaled: a first word that does not fit beside the mark
+    starts below it."""
+    if cloud:
+        from polyhost.services.agents import icons
+        mark = icons.browser_tab()
+    else:
+        mark = marks.get(vendor_id) if marks is not None else None
+        if mark is None:
+            mark = _text_mark(vendor(vendor_id).short[:3])
     icon = state_icon(state)
     return CardLayout(mark, paginate(headline, mark, icon, number=number), icon)
 
