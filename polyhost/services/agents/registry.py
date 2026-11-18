@@ -15,7 +15,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 
-from polyhost.services.agents.model import ENDED, AgentState, vendor
+from polyhost.services.agents.model import ENDED, AgentState, card_words, vendor
 
 log = logging.getLogger(__name__)
 
@@ -93,6 +93,16 @@ class Agent:
         show the same text (two sessions in one folder: "agent 1", "agent 2")."""
         base = self.base_headline
         return f"{base} {self.dup_number}" if self.dup_number else base
+
+    @property
+    def card_text(self) -> str:
+        """What the number key's card shows: display_headline, with a session title
+        cut to its subject words (model.card_words). A label of the user's is shown
+        as it was set."""
+        if self.label or not self.headline:
+            return self.display_headline
+        text = card_words(self.headline)
+        return f"{text} {self.dup_number}" if self.dup_number else text
 
     def to_dict(self) -> dict:
         return {

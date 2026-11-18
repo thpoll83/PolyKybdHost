@@ -20,9 +20,6 @@ from polyhost.services.agents.card import (VendorMarks, card_bytes, card_layout,
 from polyhost.services.agents.model import AgentState
 
 PAGER_KEY = 10
-# A title longer than one card (card.paginate) switches to its next page this often.
-# The controller runs about once a second, so a page shows 3 to 4 s.
-TEXT_PAGE_S = 3.0
 DICTATION_KEY = 11     # '-'
 NEXT_WAITING_KEY = 12  # '+'
 # Event code beside the key indexes (firmware AI_EVENT_LEAVE, v36): AI mode ended.
@@ -44,7 +41,7 @@ FLAG_EXTRA_CARDS = 0x08
 
 class AgentKeysController:
     def __init__(self, registry, cache_for, raise_agent=None, log=None, marks=None,
-                 dictate=None, clock=time.monotonic):
+                 dictate=None):
         """`cache_for()` returns the keyboard's overlay MRU cache (it is replaced at
         every connect). The cards take pool slots from it as "aside" entries, so no
         slot is reserved: a program switch evicts a card before any app image, and
@@ -66,7 +63,6 @@ class AgentKeysController:
         self.last_press = None
         self.log = log or logging.getLogger("PolyHost")
         self.marks = marks or VendorMarks()
-        self._clock = clock
         self._layouts = {}               # (vendor, title, marks version) -> CardLayout
         self.page = 0
         # Increased (1..255, never 0 again) when an agent on a page that is not shown
@@ -146,18 +142,16 @@ class AgentKeysController:
                 slots.append(NO_SLOT)
                 continue
             states.append(agent.state)
-            # The state icon is on every page, so a state change uploads the
-            # page shown again. A long title has pages; every key shows the same
-            # page index at the same time, each page cached in its own slot.
+            # One page per card (card.MAX_PAGES): the state icon is on it, so a
+            # state change uploads it again.
             # Read once: a mark fetched while the layout is built must not record
             # the new version for the old picture (the card would never redraw).
             version = self.marks.version
             layout = self._layout(agent, version)
-            index = int(self._clock() // TEXT_PAGE_S) % layout.page_count
-            drawn = (agent.vendor, agent.display_headline, version,
-                     agent.state, agent.machine == "cloud", index)
-            slots.append(self._card(keeb, cache, ("agentcard",) + agent.key + (index,), drawn,
-                                    lambda lay=layout, i=index: render_page(lay, i)))
+            drawn = (agent.vendor, agent.card_text, version,
+                     agent.state, agent.machine == "cloud")
+            slots.append(self._card(keeb, cache, ("agentcard",) + agent.key, drawn,
+                                    lambda lay=layout: render_page(lay, 0)))
         waiting = len(self.registry.waiting())
         extra = [self._card(keeb, cache, ("agentcard", CARD_DICTATION), ("dictation",),
                             render_dictation_card),
@@ -202,12 +196,12 @@ class AgentKeysController:
         """The card layout of an agent, measured once per title, mark version and
         state."""
         cloud = agent.machine == "cloud"
-        key = (agent.vendor, agent.display_headline, version, agent.state, cloud)
+        key = (agent.vendor, agent.card_text, version, agent.state, cloud)
         layout = self._layouts.get(key)
         if layout is None:
             if len(self._layouts) > 64:
                 self._layouts.clear()
-            layout = self._layouts[key] = card_layout(agent.vendor, agent.display_headline,
+            layout = self._layouts[key] = card_layout(agent.vendor, agent.card_text,
                                                       self.marks, agent.state, cloud)
         return layout
 

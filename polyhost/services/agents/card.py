@@ -1,23 +1,22 @@
 """Render an agent card: the 72x40 1-bit image a number key shows in AI mode.
 
     +------------------------------------+
-    | [vendor ] title, first words       |   line 1  rows  0..12
-    | [ mark  ] more words               |   line 2  rows 13..25
-    | the title goes on, full width      |   line 3  rows 26..39
+    | [mark] title, first words          |   line 1  rows  0..12
+    | the title goes on, full width      |   line 2  rows 13..25
+    | and ends with '…' when it is cut   |   line 3  rows 26..39
     +------------------------------------+
 
-The vendor mark is the lower 16 rows of the logo at 26 px, cut by the top edge
-(2026-11-10), top left, with the text 1 px to its right; lines below the mark use
-the full width. A cloud session's mark has a cloud outline drawn over the logo's
-lower right (with_cloud). Marks are never scaled. Three lines of 14 px text
+The vendor mark is the lower 12 rows of the logo at 26 px, cut by the top edge
+(2026-11-18), top left, with the text 1 px to its right; only
+line 1 is beside it, lines 2 and 3 use the full width. A cloud session's mark has a cloud outline drawn over the logo's
+lower right, inside the logo's box (with_cloud). Marks are never scaled. Three lines of 14 px text
 (card experiments, 2026-11-17). The state icon (12 px) is in the bottom right
 corner on every page, with a cleared margin of ICON_CLEAR px; only line 3 meets it,
 and ends before that margin.
 
-A title that does not fit one card is split into pages of three lines, without
-the mark after the first; the controller switches the key between them
-(TEXT_PAGE_S). Text breaks at spaces and after '-'; only a word wider than the
-key is split between letters. Text is Pillow's bundled sans font (Aileron)
+One page per card: a title that does not fit ends with '…'. The controller draws
+a session title's subject words (model.card_words). Text breaks at spaces and after
+'-'; only a word wider than the key is split between letters. Text is Pillow's bundled sans font (Aileron)
 drawn without anti-aliasing.
 
 The result is 360 bytes, the same packing as OverlayData.all_bytes (np.packbits,
@@ -37,7 +36,7 @@ log = logging.getLogger("PolyHost")
 
 PANEL_W, PANEL_H = 72, 40
 MARK_BOX = 26          # a logo is rendered at this size; its lower part shows
-MARK_SHOWN = 16        # rows of the logo shown at the top edge
+MARK_SHOWN = 12        # rows of the logo shown at the top edge: beside line 1 only
 MARK_GAP = 1           # px between the mark and the text beside it
 FONT_SIZE = 14
 LINE_PITCH = 13        # three lines in 40 rows; a descender may touch the cap below
@@ -45,7 +44,7 @@ LINES = 3
 TEXT_W = PANEL_W - 2   # a full-width line: 1 px margin each side
 ICON = 12              # the state icon, bottom right: it touches line 3 only
 ICON_CLEAR = 1         # px kept free left of and above the state icon
-MAX_PAGES = 4          # a longer title ends with '.' on the last page
+MAX_PAGES = 1          # one page; a longer title ends with '…'
 _FONTS = {}
 
 
@@ -290,31 +289,30 @@ def _paste(canvas, mask, x, y):
 
 
 # Cloud sessions: a cloud outline drawn over the lower right of the agent's logo
-# (card experiments, 2026-11-17). The logo keeps its size; the cloud is sized from
-# CLOUD_BOX and reaches below and right of it.
-CLOUD_BOX = 24              # the cloud's size is given as parts of this
-CLOUD_W, CLOUD_H = 0.92, 0.62   # the cloud's size, as parts of CLOUD_BOX
-CLOUD_OVERLAP_X = 1.0       # the cloud ends with the logo: the mark is no wider
-CLOUD_OVERLAP_Y = 0.45      # and of its height
+# (card experiments, 2026-11-17). Since the logo strip is 12 rows (2026-11-18) the
+# cloud stays inside it, so the mark is no wider and no taller and lines 2 and 3
+# keep the full width.
+CLOUD_W, CLOUD_H = 16, 10   # px
 
 
-def with_cloud(logo, box: int = CLOUD_BOX):
-    """`logo` with a 1 px cloud outline drawn in front of its lower right corner. The
-    cloud's inside and a 1 px border are cleared first, so the outline reads over
-    the logo. A wordmark gets the same cloud at its right end."""
+def with_cloud(logo):
+    """`logo` with a 1 px cloud outline drawn in front of its lower right corner,
+    inside the logo's box. The cloud's inside and a 1 px border are cleared first,
+    so the outline reads over the logo. A wordmark gets the same cloud at its
+    right end; a mark smaller than the cloud grows to hold it."""
     import numpy as np
     from polyhost.services.agents import icons
     logo = np.asarray(logo, dtype=bool)
-    cw, ch = max(8, round(box * CLOUD_W)), max(6, round(box * CLOUD_H))
-    shape = icons.cloud(cw, ch)
-    x = max(0, logo.shape[1] - round(cw * CLOUD_OVERLAP_X))
-    y = max(0, logo.shape[0] - round(ch * CLOUD_OVERLAP_Y))
-    out = np.zeros((max(logo.shape[0], y + ch), max(logo.shape[1], x + cw)), dtype=bool)
+    shape = icons.cloud(CLOUD_W, CLOUD_H)
+    x = max(0, logo.shape[1] - CLOUD_W)
+    y = max(0, logo.shape[0] - CLOUD_H)
+    out = np.zeros((max(logo.shape[0], y + CLOUD_H), max(logo.shape[1], x + CLOUD_W)),
+                   dtype=bool)
     out[:logo.shape[0], :logo.shape[1]] = logo
     region = np.zeros_like(out)
-    region[y:y + ch, x:x + cw] = shape
+    region[y:y + CLOUD_H, x:x + CLOUD_W] = shape
     out &= ~icons.grow(region)
-    out[y:y + ch, x:x + cw] |= icons.outline(shape, 1)
+    out[y:y + CLOUD_H, x:x + CLOUD_W] |= icons.outline(shape, 1)
     return out
 
 

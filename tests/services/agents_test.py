@@ -289,6 +289,39 @@ class RegistryTest(unittest.TestCase):
             self.r.report("codex", "a", "sleepy")
 
 
+class CardWordsTest(unittest.TestCase):
+    def test_small_words_and_a_leading_verb_are_dropped(self):
+        from polyhost.services.agents.model import card_words
+        self.assertEqual(card_words("Fix the HID reconnect after resume on Windows"),
+                         "HID reconnect resume Windows")
+        self.assertEqual(card_words("Refactor: the overlay cache"), "overlay cache")
+        self.assertEqual(card_words("Add tests for the cloud relay"), "tests cloud relay")
+        # A verb later in the title stays; only the first word is the kind of work.
+        self.assertEqual(card_words("docs fix"), "docs fix")
+        # A title of such words only, or of one verb, is kept as it is.
+        self.assertEqual(card_words("Fix"), "Fix")
+        self.assertEqual(card_words("on the"), "on the")
+        self.assertEqual(card_words(""), "")
+        self.assertEqual(card_words("Mise à jour de la doc"), "Mise à jour de la doc")
+
+    def test_the_card_shows_subject_words_but_a_label_as_set(self):
+        r = AgentRegistry()
+        r.report("codex", "a", "working", headline="Fix the login test")
+        agent = r.agents()[0]
+        self.assertEqual(agent.card_text, "login test")
+        self.assertEqual(agent.display_headline, "Fix the login test")   # the list keeps it
+        self.assertTrue(r.label("codex", "a", "Fix the parser"))
+        self.assertEqual(r.agents()[0].card_text, "Fix the parser")
+        r.report("codex", "b", "working", cwd="/home/u/the-docs")
+        self.assertEqual(r.agents()[1].card_text, "the-docs")          # a folder as it is
+
+    def test_two_sessions_with_one_title_keep_their_numbers(self):
+        r = AgentRegistry()
+        r.report("codex", "a", "working", headline="Fix the build")
+        r.report("codex", "b", "working", headline="Fix the build")
+        self.assertEqual([a.card_text for a in r.agents()], ["build 1", "build 2"])
+
+
 class HookTest(unittest.TestCase):
     def test_session_end_reasons(self):
         def end(reason):
@@ -483,13 +516,16 @@ class CardTest(unittest.TestCase):
         self.assertEqual("".join(lines), "Supercalifragilistic")
         self.assertTrue(all(card_mod._ink_width(line) <= 70 for line in lines))
 
-    def test_pages_hold_three_lines_and_lose_no_word(self):
+    def test_one_page_of_three_lines_cut_with_an_ellipsis(self):
         title = "Investigate the HIL failure in the split link soak on Windows"
         pages = paginate(title)
-        self.assertGreater(len(pages), 1)
-        self.assertTrue(all(len(p) <= card_mod.LINES for p in pages))
-        self.assertEqual(" ".join(w for p in pages for w in p if w).split(), title.split())
+        self.assertEqual(len(pages), 1)
+        self.assertEqual(len(pages[0]), card_mod.LINES)
+        self.assertTrue(pages[0][-1].endswith("\u2026"))
+        shown = " ".join(w for w in pages[0] if w).rstrip("\u2026").split()
+        self.assertEqual(shown, title.split()[:len(shown)])     # the start, in order
         self.assertEqual(paginate("Agent 1"), [["Agent 1"]])
+        self.assertEqual(paginate("polykybd docs"), [["polykybd", "docs"]])   # no cut
 
     def test_pages_stop_at_the_limit_with_a_mark(self):
         pages = paginate("word " * 60)
@@ -498,20 +534,22 @@ class CardTest(unittest.TestCase):
 
     def test_no_mark_is_scaled_and_a_cloud_session_gets_the_cloud(self):
         import numpy as np
+        from polyhost.services.agents.card import CLOUD_W, MARK_SHOWN
 
         class Marks:
             def get(self, vid):
-                return np.ones((16, 26), dtype=bool)            # a half-cut logo
+                return np.ones((MARK_SHOWN, 26), dtype=bool)    # a half-cut logo
         local = card_layout("x", "Investigate", Marks())
-        self.assertEqual(local.mark.shape, (16, 26))
-        # "Investigate" (69 px) fits beside no mark: it starts below it, on line 3.
-        self.assertEqual(local.pages[0], ["", "", "Investigate"])
+        self.assertEqual(local.mark.shape, (12, 26))
+        # 12 rows sit beside line 1 only: "Investigate" (69 px) starts line 2.
+        self.assertEqual(local.pages[0], ["", "Investigate"])
         cloud = card_layout("x", "Investigate", Marks(), cloud=True)
-        self.assertEqual(cloud.mark.shape[1], 26)               # no wider than the logo
-        self.assertGreater(cloud.mark.shape[0], 16)             # the cloud reaches below it
-        self.assertTrue(cloud.mark[16:].any())
-        self.assertFalse(cloud.mark[:16].all())                 # its inside cleared on the logo
-        self.assertTrue((cloud.mark[:8] == local.mark[:8]).all())   # the logo's top unchanged
+        self.assertEqual(cloud.mark.shape, local.mark.shape)    # inside the logo's box
+        self.assertEqual(cloud.pages, local.pages)              # the text is the same
+        self.assertFalse(cloud.mark.all())                      # its inside cleared
+        left = 26 - CLOUD_W - 1                                 # left of the cloud's border
+        self.assertTrue(cloud.mark[:, :left].all())             # the logo's left unchanged
+        self.assertTrue(cloud.mark[-1, left + 1:].any())        # the outline at the bottom
 
     def test_a_wordmark_keeps_its_size_with_the_cloud_too(self):
         import numpy as np
@@ -525,22 +563,28 @@ class CardTest(unittest.TestCase):
         # line 2, which is full width.
         self.assertEqual(layout.pages[0][:2], ["", "refactor"])
         cloud = card_layout("aider", "refactor", Marks(), cloud=True).mark
-        self.assertEqual(cloud.shape[1], 29)
-        self.assertTrue(cloud[:6, :29].all())                   # the wordmark's top unchanged
+        self.assertEqual(cloud.shape, (13, 29))
+        self.assertTrue(cloud[:2, :].all())                     # the wordmark's top unchanged
 
-    def test_text_starts_right_of_the_mark_and_later_pages_have_none(self):
+    def test_a_mark_smaller_than_the_cloud_grows_to_hold_it(self):
+        import numpy as np
+        from polyhost.services.agents.card import CLOUD_H, CLOUD_W, with_cloud
+        mark = with_cloud(np.ones((6, 8), dtype=bool))
+        self.assertEqual(mark.shape, (CLOUD_H, CLOUD_W))
+        self.assertTrue(mark.any())
+
+    def test_text_starts_right_of_the_mark(self):
         import numpy as np
 
         class Marks:
             def get(self, vid):
                 return np.ones((16, 20), dtype=bool)
         layout = card_layout("x", "Fix the HID reconnect after resume on Windows", Marks())
-        self.assertGreater(layout.page_count, 1)
+        self.assertEqual(layout.page_count, 1)
         first = render_page(layout, 0)
         self.assertTrue(first[:16, :20].all())                # the mark, top left
         self.assertFalse(first[:16, 20].any())                # the 1 px gap
         self.assertTrue(first[:16, 21:].any())                # text right of it
-        self.assertFalse(render_page(layout, 1)[:16, :20].all())        # no mark on page 2
 
     def test_the_state_icon_is_in_the_corner_with_a_cleared_margin(self):
         from polyhost.services.agents.card import ICON, ICON_CLEAR, _spans, state_icon
@@ -556,14 +600,12 @@ class CardTest(unittest.TestCase):
         right = 72 - ICON - ICON_CLEAR
         # Only line 3 (rows 26..39) meets the icon (rows 28..39) and its margin.
         self.assertEqual(_spans(None, icon), [(1, 71), (1, 71), (1, right)])
-        # "comments" (66 px) fits a full line, not line 3 beside the icon; on
-        # every page.
+        # "comments" (66 px) fits a full line, not line 3 beside the icon: the
+        # card is cut there.
         self.assertEqual(paginate("Windows Windows comments", icon=icon),
-                         [["Windows", "Windows", ""], ["comments"]])
+                         [["Windows", "Windows", "\u2026"]])
         self.assertEqual(paginate("Windows Windows comments"),
                          [["Windows", "Windows", "comments"]])
-        self.assertEqual(paginate("Windows Windows Windows Windows Windows comments",
-                                  icon=icon)[1][2], "")
         # The icon leaves line 1 alone.
 
         class Mark:
@@ -571,15 +613,13 @@ class CardTest(unittest.TestCase):
                 return np.ones((16, 16), dtype=bool)
         self.assertEqual(card_layout("x", "firmware", Mark()).pages,
                          card_layout("x", "firmware", Mark(), AgentState.DONE).pages)
-        # Drawn bottom right on every page; nothing else in its margin.
+        # Drawn bottom right; nothing else in its margin.
         layout = card_layout("x", "Fix the HID reconnect after resume on Windows", None,
                              AgentState.WAITING)
-        self.assertGreater(layout.page_count, 1)
-        for page in range(layout.page_count):
-            img = render_page(layout, page)
-            self.assertTrue((img[40 - ICON:, 72 - ICON:] == icon).all(), page)
-            self.assertFalse(img[40 - ICON - ICON_CLEAR:, right:72 - ICON].any(), page)
-            self.assertFalse(img[40 - ICON - ICON_CLEAR:40 - ICON, 72 - ICON:].any(), page)
+        img = render_page(layout, 0)
+        self.assertTrue((img[40 - ICON:, 72 - ICON:] == icon).all())
+        self.assertFalse(img[40 - ICON - ICON_CLEAR:, right:72 - ICON].any())
+        self.assertFalse(img[40 - ICON - ICON_CLEAR:40 - ICON, 72 - ICON:].any())
 
     @staticmethod
     def _cut_out(state):
@@ -614,14 +654,15 @@ class CardTest(unittest.TestCase):
         self.assertEqual(sum(1 for r in dot if r.any()), 2)
         self.assertGreaterEqual(rows[-1] - rows[0] + 1, 8)     # 8 px tall
 
-    def test_a_break_carried_to_the_next_page_keeps_its_separator(self):
+    def test_a_title_without_spaces_is_split_and_cut(self):
         from polyhost.services.agents.card import state_icon
         title = "a-" * 40                                     # no space anywhere
         pages = paginate(title, icon=state_icon(AgentState.WAITING))
-        lines = [line for page in pages for line in page]
-        self.assertGreater(len(pages), 1)
+        self.assertEqual(len(pages), 1)
+        lines = pages[0]
         self.assertFalse(any(" " in line for line in lines))
-        self.assertEqual("".join(lines), title)
+        self.assertTrue(lines[-1].endswith("\u2026"))
+        self.assertTrue(title.startswith("".join(lines).rstrip("\u2026").rstrip(".")))
 
     def test_the_cut_last_line_fits_beside_the_state_icon(self):
         from polyhost.services.agents.card import ICON, ICON_CLEAR, state_icon
@@ -930,7 +971,7 @@ class ControllerTest(unittest.TestCase):
         self.c.sync(self.kb)
         again = self.kb.keys[-1][2][0]
         self.assertIn(again, self.kb.cards)       # uploaded into its new slot
-        self.assertEqual(self.cache.holds(("agentcard", "codex", "a", 0)), again)
+        self.assertEqual(self.cache.holds(("agentcard", "codex", "a")), again)
 
     def test_an_evicted_card_given_the_SAME_slot_again_is_uploaded_again(self):
         self.r.report("codex", "a", "working")
@@ -944,29 +985,23 @@ class ControllerTest(unittest.TestCase):
         self.assertEqual(self.kb.keys[-1][2][0], first)
         self.assertIn(first, self.kb.cards)       # not skipped on the old record
 
-    def test_a_long_title_switches_pages_each_uploaded_once(self):
-        from polyhost.services.agents.controller import TEXT_PAGE_S
-        now = [0.0]
-        self.c._clock = lambda: now[0]
+    def test_a_long_title_is_one_page_with_its_subject_words(self):
         self.r.report("codex", "a", "working",
                       headline="Fix the HID reconnect after resume on Windows")
-        self.r.report("codex", "b", "working", headline="short")
-        long_pages = self.c._layout(self.r.agents()[0], self.c.marks.version).page_count
-        self.assertGreater(long_pages, 1)
-        seen = []
-        for _ in range(2 * long_pages):
-            self.c.sync(self.kb)
-            seen.append(tuple(self.kb.keys[-1][2][:2]))
-            now[0] += TEXT_PAGE_S
-        long_slots = [a for a, _ in seen]
-        self.assertEqual(len(set(long_slots)), long_pages)       # each page its slot
-        self.assertEqual(long_slots[:long_pages], long_slots[long_pages:])   # in turn
-        self.assertEqual(len({b for _, b in seen}), 1)          # one page: it stays
-        # Each page uploaded once, plus the short card, '-' and '+'.
-        self.assertEqual(len(self.kb.cards), long_pages + 1 + 2)
-        self.kb.cards.clear()
         self.c.sync(self.kb)
-        self.assertEqual(self.kb.cards, {})                     # pages are reused
+        agent = self.r.agents()[0]
+        self.assertEqual(agent.card_text, "HID reconnect resume Windows")
+        layout = self.c._layout(agent, self.c.marks.version)
+        self.assertEqual(layout.page_count, 1)
+        sent = self.kb.cards[self.kb.keys[-1][2][0]]
+        self.assertEqual(sent, card_bytes(render_page(layout, 0)))
+        # Uploaded once: later passes send the same slot and no card.
+        slot = self.kb.keys[-1][2][0]
+        self.kb.cards.clear()
+        for _ in range(4):
+            self.c.sync(self.kb)
+            self.assertEqual(self.kb.keys[-1][2][0], slot)
+        self.assertEqual(self.kb.cards, {})
 
     def test_a_state_change_uploads_the_page_shown(self):
         self.r.report("codex", "a", "working", headline="Fix the build")
@@ -1001,7 +1036,7 @@ class ControllerTest(unittest.TestCase):
         sent = self.kb.cards[self.kb.keys[-1][2][0]]
 
         def drawn(cloud):
-            return card_bytes(render_page(card_layout("codex", "Fix the build", self.c.marks,
+            return card_bytes(render_page(card_layout("codex", "build", self.c.marks,
                                                       AgentState.WORKING, cloud), 0))
         self.assertEqual(sent, drawn(True))
         self.assertNotEqual(sent, drawn(False))

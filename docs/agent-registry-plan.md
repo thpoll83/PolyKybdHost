@@ -81,29 +81,32 @@ ESC (the pager) does not end AI mode in either case.
 
 ```
 ┌────────────────────────────────────┐
-│ [vendor ] Fix the                  │   line 1  rows  0..12
-│ [ mark  ] HID                      │   line 2  rows 13..25
-│ after                     [state]  │   line 3  rows 26..39
+│ [mark] HID                         │   line 1  rows  0..12
+│ reconnect                          │   line 2  rows 13..25
+│ resume…                   [state]  │   line 3  rows 26..39
 └────────────────────────────────────┘
 ```
 
-- Vendor mark: the lower 16 rows of the logo at 26 px, cut by the top edge, top
-  left, from `services/app_icons.py` (Simple Icons) or a shipped mark
+- Vendor mark: the lower 12 rows of the logo at 26 px, cut by the top edge, top
+  left, beside line 1 only, from `services/app_icons.py` (Simple Icons) or a shipped mark
   (`res/icons/agents/`, already cut). The text starts 1 px to its right. No mark is
   scaled: a first word that does not fit beside it starts below it. A vendor with
   no mark yet gets its short name.
-- Cloud session (machine `cloud`): a 1 px cloud outline drawn over the logo's lower
-  half, right-aligned with it, with its inside cleared first (`card.with_cloud`). The
-  mark is no wider and 8 px taller.
-- State icon: 12 px, bottom right, on every page, with 1 px kept free left of and
+- Cloud session (machine `cloud`): a 1 px cloud outline, 16 x 10 px, drawn over the
+  logo's lower right corner, inside the logo's box, with its inside cleared first
+  (`card.with_cloud`). The mark is no wider and no taller, so the text is the same
+  as on a local session's card.
+- State icon: 12 px, bottom right, with 1 px kept free left of and
   above it, so only line 3 is shorter (58 px). Working, waiting and idle are the
   16 px card icons, scaled. Done and stale are drawn at 12 px: a filled disc with a
   check (2 px strokes) or a `?` (2 x 2 dot) cut out of it. A state change uploads
-  the page shown again.
+  the card again.
 - Headline: three lines of 14 px text, breaking at spaces and after `-`. Only a word
-  wider than the key is split between letters. A longer title is split into pages of
-  three lines (at most 4), without the mark after the first; the key switches to the
-  next page every 3 s. Source order: a label the user set (`polyctl agents label`),
+  wider than the key is split between letters. One page: a longer title ends with
+  `…`. A session title is cut to its subject words first (`model.card_words`): no
+  small words (the, a, for, on, after, …) and no leading verb (Fix, Add, Refactor,
+  …), so "Fix the HID reconnect after resume" shows "HID reconnect resume". A
+  label the user set is shown as it was set. Source order: a label the user set (`polyctl agents label`),
   the topic from the terminal title (Claude Code writes `✳ <topic>`), the session's
   working directory name.
 
