@@ -3990,7 +3990,7 @@ msgstr "Лише для програми з власною накладкою: �
 
 #: polyhost/gui/settings_dialog.py:311
 msgid "The main switch for shortcut icons. On: an app without its own overlay also gets icons on its shortcut keys, when its menus can be read. PolyKybdHost reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system. The reading runs in the background, one app at a time, so the other keycaps do not wait for it. It stops after 3 minutes on Windows, and after 4,000 parts of the app's window on Linux (3,000 on macOS). The shortcuts stay on this computer. Off: no app's menus are read, and an app that comes with its own overlay still shows it."
-msgstr ""
+msgstr "Головний перемикач значків скорочень. Увімкнено: програма без власної накладки також отримує значки на клавішах своїх скорочень, якщо її меню вдається прочитати. PolyKybdHost читає скорочення, наведені в меню активної програми, через інтерфейс спеціальних можливостей операційної системи. Читання відбувається у фоновому режимі, по одній програмі за раз, тому інші клавіші на нього не чекають. Воно зупиняється через 3 хвилини у Windows і після 4 000 елементів вікна програми в Linux (3 000 у macOS). Скорочення залишаються на цьому комп’ютері. Вимкнено: меню жодної програми не читаються, а програма з власною накладкою і далі показує її."
 
 #: polyhost/gui/settings_dialog.py:321
 msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."

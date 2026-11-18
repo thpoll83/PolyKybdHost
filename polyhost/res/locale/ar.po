@@ -4041,7 +4041,7 @@ msgstr "فقط للتطبيق الذي يأتي بتراكب خاص به: الم
 
 #: polyhost/gui/settings_dialog.py:311
 msgid "The main switch for shortcut icons. On: an app without its own overlay also gets icons on its shortcut keys, when its menus can be read. PolyKybdHost reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system. The reading runs in the background, one app at a time, so the other keycaps do not wait for it. It stops after 3 minutes on Windows, and after 4,000 parts of the app's window on Linux (3,000 on macOS). The shortcuts stay on this computer. Off: no app's menus are read, and an app that comes with its own overlay still shows it."
-msgstr ""
+msgstr "المفتاح الرئيسي لأيقونات الاختصارات. عند التشغيل: يحصل التطبيق الذي ليس له تراكب خاص أيضًا على أيقونات على مفاتيح اختصاراته، عندما يمكن قراءة قوائمه. يقرأ PolyKybdHost الاختصارات المذكورة في قوائم التطبيق النشط، عبر واجهة إمكانية الوصول في نظام التشغيل. تجري القراءة في الخلفية، تطبيقًا واحدًا في كل مرة، لكي لا تنتظرها أغطية المفاتيح الأخرى. تتوقف القراءة بعد 3 دقائق على Windows، وبعد 4,000 جزء من نافذة التطبيق على Linux (و3,000 على macOS). تبقى الاختصارات على هذا الحاسوب. عند الإيقاف: لا تُقرأ قوائم أي تطبيق، ويبقى التطبيق الذي يأتي بتراكب خاص به يعرض تراكبه."
 
 #: polyhost/gui/settings_dialog.py:321
 msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."

@@ -3956,7 +3956,7 @@ msgstr "専用のオーバーレイがあるアプリだけが対象です: オ�
 
 #: polyhost/gui/settings_dialog.py:311
 msgid "The main switch for shortcut icons. On: an app without its own overlay also gets icons on its shortcut keys, when its menus can be read. PolyKybdHost reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system. The reading runs in the background, one app at a time, so the other keycaps do not wait for it. It stops after 3 minutes on Windows, and after 4,000 parts of the app's window on Linux (3,000 on macOS). The shortcuts stay on this computer. Off: no app's menus are read, and an app that comes with its own overlay still shows it."
-msgstr ""
+msgstr "ショートカットのアイコン全体のメインスイッチです。オン: 専用のオーバーレイがないアプリでも、メニューを読み取れる場合は、そのショートカットキーにアイコンを表示します。PolyKybdHost は、フォーカスのあるアプリのメニューに記載されたショートカットを、オペレーティングシステムのアクセシビリティ機能を通じて読み取ります。読み取りはバックグラウンドで 1 つのアプリずつ行われるため、ほかのキーキャップは待たされません。Windows では 3 分後、Linux ではアプリのウィンドウの部品 4,000 個を読んだ後 (macOS では 3,000 個) に読み取りを止めます。ショートカットの情報はこのコンピューターの外に送られません。オフ: どのアプリのメニューも読み取りません。専用のオーバーレイがあるアプリは、引き続きそのオーバーレイを表示します。"
 
 #: polyhost/gui/settings_dialog.py:321
 msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."

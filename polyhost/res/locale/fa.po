@@ -3956,7 +3956,7 @@ msgstr "فقط برای برنامه‌ای که هم‌پوشانی اختصا�
 
 #: polyhost/gui/settings_dialog.py:311
 msgid "The main switch for shortcut icons. On: an app without its own overlay also gets icons on its shortcut keys, when its menus can be read. PolyKybdHost reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system. The reading runs in the background, one app at a time, so the other keycaps do not wait for it. It stops after 3 minutes on Windows, and after 4,000 parts of the app's window on Linux (3,000 on macOS). The shortcuts stay on this computer. Off: no app's menus are read, and an app that comes with its own overlay still shows it."
-msgstr ""
+msgstr "کلید اصلی نمادهای میان‌بر. در حالت روشن: برنامه‌ای که هم‌پوشانی اختصاصی ندارد نیز روی کلیدهای میان‌برش نماد می‌گیرد، وقتی بتوان منوهایش را خواند. PolyKybdHost میان‌برهای فهرست‌شده در منوهای برنامهٔ فعال را از راه رابط دسترس‌پذیری سیستم‌عامل می‌خواند. خواندن در پس‌زمینه و هر بار برای یک برنامه انجام می‌شود، تا کلاهک‌های دیگر منتظر آن نمانند. خواندن در Windows پس از ۳ دقیقه، و در Linux پس از ۴٬۰۰۰ بخش از پنجرهٔ برنامه (در macOS پس از ۳٬۰۰۰) متوقف می‌شود. میان‌برها روی همین رایانه می‌مانند. در حالت خاموش: منوهای هیچ برنامه‌ای خوانده نمی‌شوند، و برنامه‌ای که هم‌پوشانی اختصاصی خودش را دارد همچنان آن را نشان می‌دهد."
 
 #: polyhost/gui/settings_dialog.py:321
 msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."

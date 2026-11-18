@@ -3956,7 +3956,7 @@ msgstr "仅适用于自带叠加图标的应用：其叠加图标留空的按键
 
 #: polyhost/gui/settings_dialog.py:311
 msgid "The main switch for shortcut icons. On: an app without its own overlay also gets icons on its shortcut keys, when its menus can be read. PolyKybdHost reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system. The reading runs in the background, one app at a time, so the other keycaps do not wait for it. It stops after 3 minutes on Windows, and after 4,000 parts of the app's window on Linux (3,000 on macOS). The shortcuts stay on this computer. Off: no app's menus are read, and an app that comes with its own overlay still shows it."
-msgstr ""
+msgstr "快捷键图标的总开关。开启：没有自带叠加图标的应用，只要能读取其菜单，也会在其快捷键上显示图标。PolyKybdHost 通过操作系统的辅助功能接口，读取当前焦点应用菜单中列出的快捷键。读取在后台进行，每次只读取一个应用，因此其他键帽不必等待。在 Windows 上，读取 3 分钟后停止；在 Linux 上，读取应用窗口的 4,000 个部件后停止（macOS 上为 3,000 个）。快捷键信息只保留在这台电脑上。关闭：不读取任何应用的菜单，自带叠加图标的应用仍会显示其叠加图标。"
 
 #: polyhost/gui/settings_dialog.py:321
 msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."
