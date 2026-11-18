@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-18 06:09+0000\n"
+"POT-Creation-Date: 2026-11-18 06:27+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -1262,7 +1262,7 @@ msgid "pick one from Source fonts below, or Browse…"
 msgstr "wybierz z listy Czcionki źródłowe poniżej lub kliknij Przeglądaj…"
 
 #: polyhost/gui/fontpack_extend_dialog.py:120
-#: polyhost/gui/settings_dialog.py:1212 polyhost/gui/settings_dialog.py:1213
+#: polyhost/gui/settings_dialog.py:1301 polyhost/gui/settings_dialog.py:1302
 msgid "Browse…"
 msgstr "Przeglądaj…"
 
@@ -1992,7 +1992,7 @@ msgstr "Stosowanie — aktywacja przygotowanego oprogramowania układowego…"
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "Anulowanie — oczekiwanie na zakończenie bieżącego fragmentu…"
 
-#: polyhost/gui/i18n_qt.py:89 polyhost/gui/settings_dialog.py:152
+#: polyhost/gui/i18n_qt.py:89 polyhost/gui/settings_dialog.py:166
 msgid "Language"
 msgstr "Język"
 
@@ -2045,7 +2045,7 @@ msgstr "Nie skonfigurowano"
 
 #: polyhost/gui/integrations_dialog.py:327
 #: polyhost/gui/integrations_dialog.py:361
-#: polyhost/gui/integrations_dialog.py:402 polyhost/gui/settings_dialog.py:112
+#: polyhost/gui/integrations_dialog.py:402 polyhost/gui/settings_dialog.py:103
 msgid "AI agents"
 msgstr "Agenci AI"
 
@@ -2208,7 +2208,7 @@ msgid "Eden"
 msgstr "Eden"
 
 #. TRANSLATORS: shown in the Flow Tap spin box when its value is 0.
-#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1050
+#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1132
 msgid "Off"
 msgstr "Wyłączona"
 
@@ -3453,90 +3453,90 @@ msgid "General"
 msgstr "Ogólne"
 
 #: polyhost/gui/settings_dialog.py:72
-msgid "Keycap icons"
-msgstr "Ikony na nasadkach"
-
-#: polyhost/gui/settings_dialog.py:75
-msgid "Apps with their own overlay"
-msgstr "Aplikacje z własną nakładką"
-
-#: polyhost/gui/settings_dialog.py:77
-msgid "Linux"
-msgstr "Linux"
-
-#: polyhost/gui/settings_dialog.py:79
-msgid "Games"
-msgstr "Gry"
-
-#: polyhost/gui/settings_dialog.py:81
-msgid "Installed games"
-msgstr "Zainstalowane gry"
-
-#: polyhost/gui/settings_dialog.py:83
 msgid "Brightness"
 msgstr "Jasność"
 
-#: polyhost/gui/settings_dialog.py:87
+#: polyhost/gui/settings_dialog.py:76
 msgid "Daylight curve"
 msgstr "Krzywa światła dziennego"
 
-#: polyhost/gui/settings_dialog.py:92 polyhost/host.py:2030
+#: polyhost/gui/settings_dialog.py:81 polyhost/host.py:2030
 msgid "Keyboard"
 msgstr "Klawiatura"
 
-#: polyhost/gui/settings_dialog.py:93
+#: polyhost/gui/settings_dialog.py:82
 msgid "Idle display"
 msgstr "Ekran bezczynności"
 
-#: polyhost/gui/settings_dialog.py:94
+#: polyhost/gui/settings_dialog.py:83
 msgid "Keycaps"
 msgstr "Nasadki"
 
-#: polyhost/gui/settings_dialog.py:95 polyhost/host.py:1705
+#: polyhost/gui/settings_dialog.py:84 polyhost/host.py:1705
 msgid "Tap-Hold Timing"
 msgstr "Czasy dotknięcia i przytrzymania"
 
-#: polyhost/gui/settings_dialog.py:96
+#: polyhost/gui/settings_dialog.py:85
 msgid "Unicode input"
 msgstr "Wprowadzanie Unicode"
 
-#: polyhost/gui/settings_dialog.py:97
+#: polyhost/gui/settings_dialog.py:86
 msgid "Font packs"
 msgstr "Pakiety czcionek"
 
-#: polyhost/gui/settings_dialog.py:98
+#: polyhost/gui/settings_dialog.py:87
 msgid "Emoji search"
 msgstr "Wyszukiwanie emoji"
 
-#: polyhost/gui/settings_dialog.py:100
+#: polyhost/gui/settings_dialog.py:89
 msgid "Connections"
 msgstr "Połączenia"
 
-#: polyhost/gui/settings_dialog.py:101
+#: polyhost/gui/settings_dialog.py:90
 msgid "Browser extension"
 msgstr "Rozszerzenie przeglądarki"
 
-#: polyhost/gui/settings_dialog.py:103
+#: polyhost/gui/settings_dialog.py:92
 msgid "Forwarders"
 msgstr "Przekaźniki"
 
-#: polyhost/gui/settings_dialog.py:104
+#: polyhost/gui/settings_dialog.py:93
 msgid "USB transport"
 msgstr "Transmisja USB"
 
-#: polyhost/gui/settings_dialog.py:107
+#: polyhost/gui/settings_dialog.py:96
+msgid "Keycap icons"
+msgstr "Ikony na nasadkach"
+
+#: polyhost/gui/settings_dialog.py:99
+msgid "Apps with their own overlay"
+msgstr "Aplikacje z własną nakładką"
+
+#: polyhost/gui/settings_dialog.py:101
+msgid "Linux"
+msgstr "Linux"
+
+#: polyhost/gui/settings_dialog.py:108
+msgid "Games"
+msgstr "Gry"
+
+#: polyhost/gui/settings_dialog.py:110
+msgid "Installed games"
+msgstr "Zainstalowane gry"
+
+#: polyhost/gui/settings_dialog.py:112
 msgid "Privacy and diagnostics"
 msgstr "Prywatność i diagnostyka"
 
-#: polyhost/gui/settings_dialog.py:108
+#: polyhost/gui/settings_dialog.py:113
 msgid "Usage report"
 msgstr "Raport użycia"
 
-#: polyhost/gui/settings_dialog.py:109
+#: polyhost/gui/settings_dialog.py:114
 msgid "Problem detection"
 msgstr "Wykrywanie problemów"
 
-#: polyhost/gui/settings_dialog.py:110
+#: polyhost/gui/settings_dialog.py:115
 msgid "Logs"
 msgstr "Dzienniki"
 
@@ -3549,520 +3549,528 @@ msgstr "Programista"
 msgid "Other"
 msgstr "Inne"
 
-#: polyhost/gui/settings_dialog.py:124
+#: polyhost/gui/settings_dialog.py:138
 msgid "Send Unicode input mode"
 msgstr "Wysyłaj tryb wprowadzania Unicode"
 
-#: polyhost/gui/settings_dialog.py:125 polyhost/host.py:1701
+#: polyhost/gui/settings_dialog.py:139 polyhost/host.py:1701
 msgid "Keycap brightness"
 msgstr "Jasność nasadek"
 
-#: polyhost/gui/settings_dialog.py:126
+#: polyhost/gui/settings_dialog.py:140
 msgid "Idle animation"
 msgstr "Animacja bezczynności"
 
-#: polyhost/gui/settings_dialog.py:127 polyhost/host.py:1663
+#: polyhost/gui/settings_dialog.py:141 polyhost/host.py:1663
 msgid "Idle After"
 msgstr "Bezczynność po"
 
-#: polyhost/gui/settings_dialog.py:128 polyhost/host.py:1664
+#: polyhost/gui/settings_dialog.py:142 polyhost/host.py:1664
 msgid "Keycap Script"
 msgstr "Pismo nasadek"
 
-#: polyhost/gui/settings_dialog.py:129 polyhost/host.py:1665
+#: polyhost/gui/settings_dialog.py:143 polyhost/host.py:1665
 msgid "Script placement"
 msgstr "Położenie pisma"
 
-#: polyhost/gui/settings_dialog.py:130 polyhost/host.py:1666
+#: polyhost/gui/settings_dialog.py:144 polyhost/host.py:1666
 msgid "Keycap Size"
 msgstr "Rozmiar oznaczeń nasadek"
 
 #: polyhost/gui/layout_dialog/combo_tab.py:372
-#: polyhost/gui/settings_dialog.py:131
+#: polyhost/gui/settings_dialog.py:145
 msgid "Tapping term"
 msgstr "Czas dotknięcia"
 
-#: polyhost/gui/settings_dialog.py:132
+#: polyhost/gui/settings_dialog.py:146
 msgid "Flow Tap term"
 msgstr "Czas Flow Tap"
 
-#: polyhost/gui/settings_dialog.py:133
+#: polyhost/gui/settings_dialog.py:147
 msgid "Auto Shift"
 msgstr "Auto Shift"
 
-#: polyhost/gui/settings_dialog.py:134
+#: polyhost/gui/settings_dialog.py:148
 msgid "Auto Shift timeout"
 msgstr "Opóźnienie Auto Shift"
 
-#: polyhost/gui/settings_dialog.py:135
+#: polyhost/gui/settings_dialog.py:149
 msgid "Follow daylight"
 msgstr "Według światła dziennego"
 
-#: polyhost/gui/settings_dialog.py:136
+#: polyhost/gui/settings_dialog.py:150
 msgid "Online sunlight data"
 msgstr "Dane o nasłonecznieniu online"
 
-#: polyhost/gui/settings_dialog.py:137
+#: polyhost/gui/settings_dialog.py:151
 msgid "Online location lookup"
 msgstr "Ustalanie lokalizacji online"
 
-#: polyhost/gui/settings_dialog.py:138
+#: polyhost/gui/settings_dialog.py:152
 msgid "Sunlight at dimmest"
 msgstr "Nasłonecznienie przy minimum"
 
-#: polyhost/gui/settings_dialog.py:139
+#: polyhost/gui/settings_dialog.py:153
 msgid "Sunlight at brightest"
 msgstr "Nasłonecznienie przy maksimum"
 
-#: polyhost/gui/settings_dialog.py:140
+#: polyhost/gui/settings_dialog.py:154
 msgid "Sunlight scale"
 msgstr "Skala nasłonecznienia"
 
-#: polyhost/gui/settings_dialog.py:141
+#: polyhost/gui/settings_dialog.py:155
 msgid "Curve gamma"
 msgstr "Gamma krzywej"
 
-#: polyhost/gui/settings_dialog.py:142
-msgid "Generic icons"
-msgstr "Ikony ogólne"
+#: polyhost/gui/settings_dialog.py:156
+msgid "Icons for apps without an overlay"
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:143
+#: polyhost/gui/settings_dialog.py:157
 msgid "Add the Escape mark"
 msgstr "Dodaj logo na Escape"
 
-#: polyhost/gui/settings_dialog.py:144
-msgid "Add shortcut icons"
-msgstr "Dodaj ikony skrótów"
+#: polyhost/gui/settings_dialog.py:158
+msgid "Add icons from the app's menus"
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:145
-msgid "Shortcut icons"
-msgstr "Ikony skrótów"
+#: polyhost/gui/settings_dialog.py:159
+msgid "Read shortcuts from app menus"
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:146
-msgid "Download missing icons"
-msgstr "Pobieraj brakujące ikony"
+#: polyhost/gui/settings_dialog.py:160
+msgid "Download icons from the internet"
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:147
+#: polyhost/gui/settings_dialog.py:161
 msgid "Turn on accessibility"
 msgstr "Włącz ułatwienia dostępu"
 
-#: polyhost/gui/settings_dialog.py:148
+#: polyhost/gui/settings_dialog.py:162
 msgid "Messages before a pause"
 msgstr "Komunikaty przed przerwą"
 
-#: polyhost/gui/settings_dialog.py:149
+#: polyhost/gui/settings_dialog.py:163
 msgid "Pause length (s)"
 msgstr "Długość przerwy (s)"
 
-#: polyhost/gui/settings_dialog.py:150
+#: polyhost/gui/settings_dialog.py:164
 msgid "ID requests before reconnect"
 msgstr "Zapytania o ID przed ponownym połączeniem"
 
-#: polyhost/gui/settings_dialog.py:151
+#: polyhost/gui/settings_dialog.py:165
 msgid "Theme"
 msgstr "Motyw"
 
-#: polyhost/gui/settings_dialog.py:153
+#: polyhost/gui/settings_dialog.py:167
 msgid "Developer mode"
 msgstr "Tryb programisty"
 
-#: polyhost/gui/settings_dialog.py:154
+#: polyhost/gui/settings_dialog.py:168
 msgid "Log detail"
 msgstr "Szczegółowość dziennika"
 
-#: polyhost/gui/settings_dialog.py:155
+#: polyhost/gui/settings_dialog.py:169
 msgid "Add a simulated keyboard"
 msgstr "Dodaj symulowaną klawiaturę"
 
-#: polyhost/gui/settings_dialog.py:156
+#: polyhost/gui/settings_dialog.py:170
 msgid "Simulated keyboard only"
 msgstr "Tylko symulowana klawiatura"
 
-#: polyhost/gui/settings_dialog.py:157
+#: polyhost/gui/settings_dialog.py:171
 msgid "Simulated protocol version"
 msgstr "Symulowana wersja protokołu"
 
-#: polyhost/gui/settings_dialog.py:158
+#: polyhost/gui/settings_dialog.py:172
 msgid "Track windows without a keyboard"
 msgstr "Śledź okna bez klawiatury"
 
-#: polyhost/gui/settings_dialog.py:159
+#: polyhost/gui/settings_dialog.py:173
 msgid "Native Windows language switch"
 msgstr "Natywna zmiana języka w Windows"
 
-#: polyhost/gui/settings_dialog.py:160
+#: polyhost/gui/settings_dialog.py:174
 msgid "Legacy plaintext relay"
 msgstr "Starszy przekaźnik bez szyfrowania"
 
-#: polyhost/gui/settings_dialog.py:161
+#: polyhost/gui/settings_dialog.py:175
 msgid "Force the HID link"
 msgstr "Wymuś łącze HID"
 
-#: polyhost/gui/settings_dialog.py:162
+#: polyhost/gui/settings_dialog.py:176
 msgid "Background service"
 msgstr "Usługa w tle"
 
-#: polyhost/gui/settings_dialog.py:163
+#: polyhost/gui/settings_dialog.py:177
 msgid "Accept forwarders"
 msgstr "Akceptuj przekaźniki"
 
-#: polyhost/gui/settings_dialog.py:164
-msgid "Update on connect"
-msgstr "Aktualizuj po połączeniu"
+#: polyhost/gui/settings_dialog.py:178
+msgid "Send font packs on connect"
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:165
+#: polyhost/gui/settings_dialog.py:179
 msgid "Search language"
 msgstr "Język wyszukiwania"
 
-#: polyhost/gui/settings_dialog.py:166
+#: polyhost/gui/settings_dialog.py:180
 msgid "Own dictionary file"
 msgstr "Własny plik słownika"
 
-#: polyhost/gui/settings_dialog.py:167
+#: polyhost/gui/settings_dialog.py:181
 msgid "Font pack file"
 msgstr "Plik pakietu czcionek"
 
-#: polyhost/gui/settings_dialog.py:168
-msgid "Match websites"
-msgstr "Dopasowuj strony internetowe"
+#: polyhost/gui/settings_dialog.py:182
+msgid "Match the website in the browser"
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:169
+#: polyhost/gui/settings_dialog.py:183
 msgid "Receive browser reports"
 msgstr "Odbieraj raporty przeglądarki"
 
-#: polyhost/gui/settings_dialog.py:170
+#: polyhost/gui/settings_dialog.py:184
 msgid "Receiver port"
 msgstr "Port odbiornika"
 
-#: polyhost/gui/settings_dialog.py:171
+#: polyhost/gui/settings_dialog.py:185
 msgid "Receiver token"
 msgstr "Token odbiornika"
 
-#: polyhost/gui/settings_dialog.py:172
+#: polyhost/gui/settings_dialog.py:186
 msgid "Send usage report"
 msgstr "Wysyłaj raport użycia"
 
-#: polyhost/gui/settings_dialog.py:173
+#: polyhost/gui/settings_dialog.py:187
 msgid "Report address"
 msgstr "Adres raportu"
 
-#: polyhost/gui/settings_dialog.py:174
+#: polyhost/gui/settings_dialog.py:188
 msgid "Installation ID"
 msgstr "Identyfikator instalacji"
 
-#: polyhost/gui/settings_dialog.py:175
-msgid "Watch the keyboard console"
-msgstr "Obserwuj konsolę klawiatury"
+#: polyhost/gui/settings_dialog.py:189
+msgid "Watch the keyboard's messages"
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:176
+#: polyhost/gui/settings_dialog.py:190
 msgid "Watch this app's log"
 msgstr "Obserwuj dziennik tej aplikacji"
 
-#: polyhost/gui/settings_dialog.py:177
+#: polyhost/gui/settings_dialog.py:191
 msgid "What counts as a problem"
 msgstr "Co jest problemem"
 
-#: polyhost/gui/settings_dialog.py:178
+#: polyhost/gui/settings_dialog.py:192
 msgid "Art from installed games"
 msgstr "Grafika z zainstalowanych gier"
 
-#: polyhost/gui/settings_dialog.py:179
+#: polyhost/gui/settings_dialog.py:193
 msgid "Show on the number row"
 msgstr "Pokazuj w rzędzie cyfr"
 
-#: polyhost/gui/settings_dialog.py:180
+#: polyhost/gui/settings_dialog.py:194
 msgid "Find by window title"
 msgstr "Wyszukuj po tytule okna"
 
-#: polyhost/gui/settings_dialog.py:181
+#: polyhost/gui/settings_dialog.py:195
 msgid "Dictation shortcut"
 msgstr "Skrót dyktowania"
 
-#: polyhost/gui/settings_dialog.py:182
+#: polyhost/gui/settings_dialog.py:196
 msgid "Agents from other computers"
 msgstr "Agenci z innych komputerów"
 
-#: polyhost/gui/settings_dialog.py:183
+#: polyhost/gui/settings_dialog.py:197
 msgid "Raise agent windows on this computer"
 msgstr "Wysuwaj okna agentów na tym komputerze"
 
-#: polyhost/gui/settings_dialog.py:184
+#: polyhost/gui/settings_dialog.py:198
 msgid "Stale after (minutes)"
 msgstr "Nieaktualny po (minuty)"
 
-#: polyhost/gui/settings_dialog.py:185
+#: polyhost/gui/settings_dialog.py:199
 msgid "Remove idle agents after (minutes)"
 msgstr "Usuwaj bezczynnych agentów po (minuty)"
 
-#: polyhost/gui/settings_dialog.py:194
+#: polyhost/gui/settings_dialog.py:208
 msgid "Sets the brightness of the keycaps when you click OK. A level stays until you choose Automatic, which follows the daylight when Follow daylight is on, and otherwise returns to the keyboard's own stored level. The keyboard does not report its level, so no picture is selected when this dialog opens."
 msgstr "Ustawia jasność nasadek po kliknięciu OK. Wybrany poziom obowiązuje, dopóki nie wybierzesz opcji Automatyczny. Ta opcja dostosowuje jasność do światła dziennego, gdy włączone jest Według światła dziennego, a w przeciwnym razie przywraca poziom zapisany w klawiaturze. Klawiatura nie zgłasza swojego poziomu, dlatego po otwarciu tego okna żaden obrazek nie jest zaznaczony."
 
-#: polyhost/gui/settings_dialog.py:199
-msgid "What the keycaps show when you have not typed for a while. It protects the displays from burn-in."
-msgstr "Co pokazują nasadki, gdy przez jakiś czas nie piszesz. Chroni to wyświetlacze przed wypaleniem."
+#: polyhost/gui/settings_dialog.py:213
+msgid "What the keycaps show when you have not typed for a while. A moving picture protects the displays from burn-in."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:201
+#: polyhost/gui/settings_dialog.py:215
 msgid "How long the keyboard waits before the idle display starts."
 msgstr "Jak długo klawiatura czeka, zanim włączy ekran bezczynności."
 
-#: polyhost/gui/settings_dialog.py:203
-msgid "Draws the letters and digits on the keycaps in another script. Standard shows the normal legends of your language."
-msgstr "Rysuje litery i cyfry na nasadkach innym pismem. Opcja Standardowe pokazuje zwykłe oznaczenia Twojego języka."
+#: polyhost/gui/settings_dialog.py:217
+msgid "Draws the letters and digits on the keycaps in another script, for example runes or a retro computer font. The keys still type the same characters. Standard shows the normal legends of your language."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:206
+#: polyhost/gui/settings_dialog.py:221
 msgid "Where the script's letters sit on the keycap. The top-left corner leaves room for an app icon."
 msgstr "Gdzie na nasadce znajdują się litery pisma. Lewy górny róg zostawia miejsce na ikonę aplikacji."
 
-#: polyhost/gui/settings_dialog.py:209
-msgid "The size of the main legend. The larger sizes cover Latin letters."
-msgstr "Rozmiar głównego oznaczenia. Większe rozmiary obejmują litery łacińskie."
+#: polyhost/gui/settings_dialog.py:224
+msgid "The size of the large letter or digit in the middle of each keycap. Medium and Large apply to Latin letters and digits; other scripts, such as Arabic or Chinese, stay Small."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:211
+#: polyhost/gui/settings_dialog.py:228
 msgid "A key with a tap and a hold action types its tap action when you release it before this time, and acts as its hold action when you hold it longer."
 msgstr "Klawisz z akcją dotknięcia i przytrzymania wpisuje akcję dotknięcia, gdy puścisz go przed upływem tego czasu, a działa jako akcja przytrzymania, gdy przytrzymasz go dłużej."
 
-#: polyhost/gui/settings_dialog.py:214
+#: polyhost/gui/settings_dialog.py:231
 msgid "A tap-hold key pressed within this time after the previous key always types its tap action, so fast typing does not trigger a modifier. 0 turns Flow Tap off."
 msgstr "Klawisz dotknięcia/przytrzymania naciśnięty w tym czasie po poprzednim klawiszu zawsze wpisuje akcję dotknięcia, więc szybkie pisanie nie włącza modyfikatora. 0 wyłącza Flow Tap."
 
-#: polyhost/gui/settings_dialog.py:217
+#: polyhost/gui/settings_dialog.py:234
 msgid "With Auto Shift on, holding a letter, digit or symbol key longer than the Auto Shift timeout types its shifted character."
 msgstr "Gdy Auto Shift jest włączony, przytrzymanie klawisza litery, cyfry lub symbolu dłużej niż czas Auto Shift wpisuje jego znak z Shiftem."
 
-#: polyhost/gui/settings_dialog.py:219
+#: polyhost/gui/settings_dialog.py:236
 msgid "How long you hold a key before Auto Shift types its shifted character."
 msgstr "Jak długo trzeba przytrzymać klawisz, zanim Auto Shift wpisze znak z Shift."
 
-#: polyhost/gui/settings_dialog.py:222
+#: polyhost/gui/settings_dialog.py:239
 msgid "Shows the state of AI coding agents on the number row and, while the AI key is pressed, one card per agent. Needs keyboard firmware with protocol 31. Takes effect at the next keyboard connect."
 msgstr "Pokazuje stan agentów AI do programowania w rzędzie cyfr, a gdy wciśnięty jest klawisz AI — po jednej karcie na agenta. Wymaga oprogramowania układowego klawiatury z protokołem 31. Obowiązuje od następnego połączenia klawiatury."
 
-#: polyhost/gui/settings_dialog.py:226
+#: polyhost/gui/settings_dialog.py:243
 msgid "Also finds agents that run in a terminal from the window title, without a hook. Not on macOS."
 msgstr "Znajduje też agentów działających w terminalu na podstawie tytułu okna, bez hooka. Nie działa w macOS."
 
-#: polyhost/gui/settings_dialog.py:229
+#: polyhost/gui/settings_dialog.py:246
 msgid "Also shows agents that run on a computer with the forwarder. A key press brings forward the remote-desktop viewer that shows that computer (NoMachine, Remote Desktop, VNC). They report over the network endpoint for forwarders, which must be on too. Off: only this computer's agents."
 msgstr "Pokazuje też agentów działających na komputerze z przekaźnikiem. Naciśnięcie klawisza wysuwa na wierzch przeglądarkę pulpitu zdalnego, która pokazuje tamten komputer (NoMachine, Pulpit zdalny, VNC). Raportują one przez sieciowy punkt końcowy dla przekaźników, który też musi być włączony. Wyłączone: tylko agenci tego komputera."
 
-#: polyhost/gui/settings_dialog.py:234
+#: polyhost/gui/settings_dialog.py:251
 msgid "On a computer with the forwarder: a key press on one of this computer's agents also brings the agent's own window forward here. Off: only the viewer on the keyboard's computer comes forward."
 msgstr "Na komputerze z przekaźnikiem: naciśnięcie klawisza jednego z agentów tego komputera wysuwa tu na wierzch także własne okno agenta. Wyłączone: na wierzch wysuwa się tylko przeglądarka pulpitu zdalnego na komputerze klawiatury."
 
-#: polyhost/gui/settings_dialog.py:238
+#: polyhost/gui/settings_dialog.py:255
 msgid "A working agent that reports nothing for this many minutes shows as stale (dim white). 0: never."
 msgstr "Pracujący agent, który przez tyle minut nic nie zgłasza, jest pokazywany jako nieaktualny (przyciemniona biel). 0: nigdy."
 
-#: polyhost/gui/settings_dialog.py:241
+#: polyhost/gui/settings_dialog.py:258
 msgid "An idle or stale agent that reports nothing for this many minutes is removed and frees its key. An agent whose process ends is removed at once. 0: never."
 msgstr "Bezczynny lub nieaktualny agent, który przez tyle minut nic nie zgłasza, jest usuwany i zwalnia swój klawisz. Agent, którego proces się zakończył, jest usuwany od razu. 0: nigdy."
 
-#: polyhost/gui/settings_dialog.py:244
+#: polyhost/gui/settings_dialog.py:261
 msgid "The shortcut the minus key sends in AI mode to start dictation, for example <cmd>+h or <ctrl>+<alt>+d. Empty: Win+H on Windows, nothing on macOS and Linux."
 msgstr "Skrót, który klawisz minus wysyła w trybie AI, aby rozpocząć dyktowanie, na przykład <cmd>+h lub <ctrl>+<alt>+d. Puste: Win+H w Windows, nic w macOS i Linux."
 
-#: polyhost/gui/settings_dialog.py:248
-msgid "Tells the keyboard how this computer takes Unicode input (for example WinCompose), on connect and whenever it changes. Off: the keyboard keeps the mode it has stored."
-msgstr "Informuje klawiaturę, w jaki sposób ten komputer przyjmuje wprowadzanie Unicode (na przykład przez WinCompose), po połączeniu i przy każdej zmianie. Wyłączone: klawiatura zachowuje zapisany w niej tryb."
+#: polyhost/gui/settings_dialog.py:265
+msgid "Tells the keyboard which Unicode input method this computer uses (for example WinCompose on Windows), when it connects and whenever the method changes. The keyboard needs it to type characters that are not on your layout, such as emoji. Off: the keyboard keeps the method it has stored."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:252
+#: polyhost/gui/settings_dialog.py:270
 msgid "Sets the keycap brightness from the daylight at your location, every ten minutes."
 msgstr "Ustawia jasność nasadek na podstawie światła dziennego w Twojej lokalizacji, co dziesięć minut."
 
-#: polyhost/gui/settings_dialog.py:255
+#: polyhost/gui/settings_dialog.py:273
 msgid "Asks open-meteo.com for this hour's sunlight at your location, including clouds. Off: the host computes a cloudless-sky value from the location and time."
 msgstr "Pobiera z open-meteo.com nasłonecznienie w Twojej lokalizacji dla bieżącej godziny, z uwzględnieniem zachmurzenia. Wyłączone: host oblicza wartość dla bezchmurnego nieba na podstawie lokalizacji i godziny."
 
-#: polyhost/gui/settings_dialog.py:259
+#: polyhost/gui/settings_dialog.py:277
 msgid "Looks up your approximate location from your IP address (ip-api.com), once per run. Off: the brightness follows the hour of the day."
 msgstr "Ustala Twoją przybliżoną lokalizację na podstawie adresu IP (ip-api.com), raz na uruchomienie. Wyłączone: jasność zależy od pory dnia."
 
-#: polyhost/gui/settings_dialog.py:261
-msgid "The sunlight value that gives the dimmest brightness level."
-msgstr "Wartość nasłonecznienia, przy której jasność jest najniższa."
+#: polyhost/gui/settings_dialog.py:280
+msgid "The sunlight value at which the keycaps are at their dimmest. Less sunlight keeps them at the dimmest level."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:263
-msgid "The sunlight value that gives the brightest level. Lower it to reach full brightness on a cloudy day."
-msgstr "Wartość nasłonecznienia, przy której jasność jest najwyższa. Zmniejsz ją, aby osiągać pełną jasność w pochmurny dzień."
+#: polyhost/gui/settings_dialog.py:283
+msgid "The sunlight value at which the keycaps are at their brightest. Lower it to reach full brightness on a cloudy day."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:265
-msgid "Multiplies the sunlight value before the dimmest and brightest values apply."
-msgstr "Mnoży wartość nasłonecznienia przed zastosowaniem wartości minimalnej i maksymalnej."
+#: polyhost/gui/settings_dialog.py:286
+msgid "Multiplies the sunlight value before it is compared with Sunlight at dimmest and Sunlight at brightest. Below 1 makes the keycaps dimmer for the same daylight."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:267
+#: polyhost/gui/settings_dialog.py:290
 msgid "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, below 1 brighter. The dimmest and brightest levels do not change."
 msgstr "Kształtuje krzywą światła dziennego. Powyżej 1 środek dnia jest ciemniejszy, poniżej 1 jaśniejszy. Najniższy i najwyższy poziom się nie zmieniają."
 
-#: polyhost/gui/settings_dialog.py:270
-msgid "Icons for apps without their own overlay: the app's mark on Escape and an icon for each of its shortcuts. Off: nothing generic is drawn for any app."
-msgstr "Ikony dla aplikacji bez własnej nakładki: logo aplikacji na Escape i ikona dla każdego jej skrótu. Wyłączone: dla żadnej aplikacji nie są rysowane ogólne ikony."
+#: polyhost/gui/settings_dialog.py:293
+msgid "Draws icons for apps that have no overlay of their own: the app's logo on the Escape key and an icon on each shortcut key. Off: these apps get no icons. Apps with their own overlay are not affected."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:273
-msgid "An app with its own overlay also gets its mark on Escape, when the overlay leaves Escape blank."
-msgstr "Aplikacja z własną nakładką również otrzymuje swoje logo na Escape, gdy nakładka pozostawia Escape pusty."
+#: polyhost/gui/settings_dialog.py:297
+msgid "An app with its own overlay also gets its logo on the Escape key, when its overlay leaves Escape blank."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:276
-msgid "An app with its own overlay is also read for its shortcuts, with icons on the keys the overlay leaves blank. Reading a large app, such as a browser with a long page, can take minutes."
-msgstr "Z aplikacji z własną nakładką również odczytywane są skróty, a ikony pojawiają się na klawiszach, które nakładka pozostawia puste. Odczyt dużej aplikacji, na przykład przeglądarki z długą stroną, może trwać kilka minut."
+#: polyhost/gui/settings_dialog.py:300
+msgid "An app with its own overlay also gets icons for the shortcuts listed in its menus, on the keys its overlay leaves blank. Reading the menus of a large app, such as a browser with a long page, can take minutes."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:280
-msgid "Reads the focused app's shortcuts to draw an icon for each. Off: no app is read and no shortcut icons are drawn. To remove every generic icon, the Escape mark included, turn off Generic icons."
-msgstr "Odczytuje skróty aktywnej aplikacji, aby narysować ikonę dla każdego z nich. Wyłączone: żadna aplikacja nie jest odczytywana i nie są rysowane ikony skrótów. Aby usunąć wszystkie ogólne ikony, łącznie z logo na Escape, wyłącz „Ikony ogólne”."
+#: polyhost/gui/settings_dialog.py:304
+msgid "Reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system, and draws an icon on each shortcut key. The shortcuts stay on this computer. Off: no app is read."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:284
-msgid "Downloads icons that are missing. Off: icons already downloaded keep working, new ones are skipped."
-msgstr "Pobiera brakujące ikony. Wyłączone: już pobrane ikony nadal działają, nowe są pomijane."
+#: polyhost/gui/settings_dialog.py:308
+msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:287
-msgid "Linux only. Turns on the desktop's accessibility switch so Qt and KDE apps publish their shortcuts. Off: only apps that publish them anyway (GTK) are read."
-msgstr "Tylko Linux. Włącza przełącznik ułatwień dostępu w środowisku pulpitu, aby aplikacje Qt i KDE udostępniały swoje skróty. Wyłączone: odczytywane są tylko aplikacje, które udostępniają je i tak (GTK)."
+#: polyhost/gui/settings_dialog.py:313
+msgid "Linux only. Turns on the desktop's accessibility switch, so Qt and KDE apps list their shortcuts for Read shortcuts from app menus. Off: only apps that list them anyway (GTK) are read."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:291
+#: polyhost/gui/settings_dialog.py:317
 msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
 msgstr "Transmisja USB: ile komunikatów z obrazami jest wysyłanych przed krótką przerwą, aby klawiatura nadal reagowała na pisanie. Zmieniaj tylko na prośbę przy zgłaszaniu problemu."
 
-#: polyhost/gui/settings_dialog.py:295
+#: polyhost/gui/settings_dialog.py:321
 msgid "USB transport: the length of that pause, in seconds. Change it only when asked to while reporting a problem."
 msgstr "Transmisja USB: długość tej przerwy w sekundach. Zmieniaj tylko na prośbę przy zgłaszaniu problemu."
 
-#: polyhost/gui/settings_dialog.py:298
-msgid "How many times the host asks the keyboard for its ID before it reopens the USB connection."
-msgstr "Ile razy host pyta klawiaturę o jej ID, zanim ponownie otworzy połączenie USB."
+#: polyhost/gui/settings_dialog.py:324
+msgid "How many times the app asks the keyboard for its ID without an answer before it closes and reopens the USB connection. Change it only when asked to while reporting a problem."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:301
+#: polyhost/gui/settings_dialog.py:328
 msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
 msgstr "Wygląd menu w zasobniku i okien dialogowych. Automatyczny odpowiada jasnemu lub ciemnemu ustawieniu pulpitu."
 
-#: polyhost/gui/settings_dialog.py:304
+#: polyhost/gui/settings_dialog.py:331
 msgid "The language of the menus and dialogs. Applies when the tray app restarts."
 msgstr "Język menu i okien dialogowych. Obowiązuje po ponownym uruchomieniu aplikacji w zasobniku."
 
-#: polyhost/gui/settings_dialog.py:306
+#: polyhost/gui/settings_dialog.py:333
 msgid "Shows the developer settings in this dialog, and the Developer submenu in the tray menu after a restart."
 msgstr "Pokazuje ustawienia programisty w tym oknie, a po ponownym uruchomieniu podmenu Programista w menu zasobnika."
 
-#: polyhost/gui/settings_dialog.py:309
+#: polyhost/gui/settings_dialog.py:336
 msgid "How much the app writes to its log. Debug and Detailed help when you report a problem, and make the log grow faster. Applies after a restart."
 msgstr "Ile aplikacja zapisuje w dzienniku. Poziomy „Debugowanie” i „Szczegółowy” pomagają przy zgłaszaniu problemu, ale dziennik rośnie szybciej. Obowiązuje po ponownym uruchomieniu."
 
-#: polyhost/gui/settings_dialog.py:311
+#: polyhost/gui/settings_dialog.py:338
 msgid "Adds a simulated keyboard next to the real one."
 msgstr "Dodaje symulowaną klawiaturę obok prawdziwej."
 
-#: polyhost/gui/settings_dialog.py:313
+#: polyhost/gui/settings_dialog.py:340
 msgid "Uses a simulated keyboard instead of a real one, so the app runs without hardware."
 msgstr "Używa symulowanej klawiatury zamiast prawdziwej, dzięki czemu aplikacja działa bez sprzętu."
 
-#: polyhost/gui/settings_dialog.py:316
+#: polyhost/gui/settings_dialog.py:343
 msgid "The protocol version the simulated keyboard reports. 0 uses the newest version this host knows."
 msgstr "Wersja protokołu zgłaszana przez symulowaną klawiaturę. 0 oznacza najnowszą wersję znaną temu hostowi."
 
-#: polyhost/gui/settings_dialog.py:319
+#: polyhost/gui/settings_dialog.py:346
 msgid "Tracks the active window even when no keyboard is connected."
 msgstr "Śledzi aktywne okno nawet wtedy, gdy żadna klawiatura nie jest połączona."
 
-#: polyhost/gui/settings_dialog.py:321
+#: polyhost/gui/settings_dialog.py:348
 msgid "Windows only, experimental. Switches the input language with Win32 calls instead of the standard method, and falls back to it on a failure."
 msgstr "Tylko Windows, eksperymentalne. Przełącza język wprowadzania wywołaniami Win32 zamiast metodą standardową, a w razie błędu wraca do niej."
 
-#: polyhost/gui/settings_dialog.py:324
+#: polyhost/gui/settings_dialog.py:351
 msgid "Uses the USB HID channel only, as if the keyboard had no fast link: firmware updates go over HID. For testing the HID path by hand."
 msgstr "Używa tylko kanału USB HID, tak jakby klawiatura nie miała szybkiego łącza: aktualizacje firmware idą przez HID. Do ręcznego testowania ścieżki HID."
 
-#: polyhost/gui/settings_dialog.py:327
+#: polyhost/gui/settings_dialog.py:354
 msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
 msgstr "Przyjmuje raporty o oknach od starszych przekaźników przez nieszyfrowane, nieuwierzytelnione połączenie TCP (port 50162) na wszystkich interfejsach sieciowych. Włącz tylko dla starszego przekaźnika."
 
-#: polyhost/gui/settings_dialog.py:331
+#: polyhost/gui/settings_dialog.py:358
 msgid "Runs the keyboard connection in a background process that the tray app connects to, so the connection stays up when the tray app restarts."
 msgstr "Obsługuje połączenie z klawiaturą w procesie w tle, z którym łączy się aplikacja w zasobniku, dzięki czemu połączenie pozostaje aktywne, gdy aplikacja w zasobniku jest ponownie uruchamiana."
 
-#: polyhost/gui/settings_dialog.py:334
-msgid "Accepts window reports from a forwarder on another computer. Opens a network port. Applies after a restart."
-msgstr "Przyjmuje raporty o oknach od przekaźnika na innym komputerze. Otwiera port sieciowy. Obowiązuje po ponownym uruchomieniu."
+#: polyhost/gui/settings_dialog.py:361
+msgid "Accepts reports of the focused window from the forwarder app on another computer, for example one you use through remote desktop, so the keyboard shows the icons of that computer's apps. Opens a network port. Applies after a restart."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:337
-msgid "The language the keyboard's emoji layer searches in. The keyboard gets the dictionary right away when you change this, and when it connects if Update on connect is on. Own dictionary file, when set, is used instead."
-msgstr "Język, w którym wyszukuje warstwa emoji klawiatury. Klawiatura otrzymuje słownik od razu po zmianie tego ustawienia oraz po połączeniu, jeśli opcja „Aktualizuj po połączeniu” jest włączona. „Własny plik słownika”, jeśli jest ustawiony, jest używany zamiast niego."
+#: polyhost/gui/settings_dialog.py:366
+msgid "The language of the words the keyboard's emoji search matches. The dictionary is sent to the keyboard when you click OK, and when it connects if Send font packs on connect is on. Own dictionary file, when set, is used instead."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:341
-msgid "A dictionary you built yourself (.plyd), used instead of Search language. Empty: the shipped dictionary is used. Choose it in the tray to flash it right away."
-msgstr "Słownik zbudowany samodzielnie (.plyd), używany zamiast ustawienia „Język wyszukiwania”. Puste: używany jest dołączony słownik. Wybierz go w zasobniku, aby od razu go wgrać."
+#: polyhost/gui/settings_dialog.py:371
+msgid "A dictionary file you built yourself (.plyd), sent to the keyboard instead of the Search language dictionary. Empty: the dictionary for the Search language is used."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:345
-msgid "Flashes missing or outdated font-pack bundles when the keyboard connects."
-msgstr "Wgrywa brakujące lub nieaktualne paczki pakietu czcionek po podłączeniu klawiatury."
+#: polyhost/gui/settings_dialog.py:375
+msgid "When the keyboard connects, sends it the font packs it is missing or has in an older version. Font packs hold the characters for languages, symbols and emoji."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:347
-msgid "A .plyf file to flash instead of the font pack that ships with the app. Empty uses the shipped pack."
-msgstr "Plik .plyf do wgrania zamiast pakietu czcionek dostarczanego z aplikacją. Puste pole oznacza użycie dostarczanego pakietu."
+#: polyhost/gui/settings_dialog.py:379
+msgid "A font-pack file (.plyf) to send to the keyboard instead of the one that comes with this app. Empty: the font pack that comes with this app is used."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:350
-msgid "Matches overlays to the website in the focused browser tab. Off: browser overlays match on the window title only."
-msgstr "Dopasowuje nakładki do witryny w aktywnej karcie przeglądarki. Wyłączone: nakładki przeglądarki są dopasowywane tylko na podstawie tytułu okna."
+#: polyhost/gui/settings_dialog.py:382
+msgid "Chooses a website's overlay from the address of the focused browser tab. The address comes from the PolyKybd browser extension; on macOS, Safari and Chromium browsers such as Chrome also give it without the extension. Off: a website's overlay is chosen from the window title only."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:353
-msgid "Runs the receiver the browser extension reports to. It listens on 127.0.0.1 only."
-msgstr "Uruchamia odbiornik, do którego raportuje rozszerzenie przeglądarki. Nasłuchuje wyłącznie na 127.0.0.1."
+#: polyhost/gui/settings_dialog.py:387
+msgid "Runs the receiver that the PolyKybd browser extension sends the address of the focused tab to. It accepts connections from this computer only (127.0.0.1)."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:356
+#: polyhost/gui/settings_dialog.py:391
 msgid "The receiver's port. It must match the Host port in the browser extension."
 msgstr "Port odbiornika. Musi być zgodny z polem Host port w rozszerzeniu przeglądarki."
 
-#: polyhost/gui/settings_dialog.py:358
+#: polyhost/gui/settings_dialog.py:393
 msgid "A shared secret. When set, the browser extension must send the same token."
 msgstr "Wspólny sekret. Jeśli jest ustawiony, rozszerzenie przeglądarki musi wysyłać ten sam token."
 
-#: polyhost/gui/settings_dialog.py:360
+#: polyhost/gui/settings_dialog.py:395
 msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
 msgstr "Wysyła jeden anonimowy raport użycia dziennie: wersje, system operacyjny i kilka liczników. Nigdy tytułów okien ani nazw aplikacji."
 
-#: polyhost/gui/settings_dialog.py:362
-msgid "Where the usage report goes. Empty sends nothing."
-msgstr "Dokąd trafia raport użycia. Puste pole oznacza, że nic nie jest wysyłane."
+#: polyhost/gui/settings_dialog.py:398
+msgid "The web address the usage report is sent to. Empty: no report is sent."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:364
+#: polyhost/gui/settings_dialog.py:400
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
 msgstr "Losowy ID tej instalacji, tworzony wraz z pierwszym raportem. Usuń go, aby instalacja była liczona jako nowa."
 
-#: polyhost/gui/settings_dialog.py:367
-msgid "Watches the keyboard's console for known failure messages and offers to report a problem."
-msgstr "Obserwuje konsolę klawiatury pod kątem znanych komunikatów o błędach i proponuje zgłoszenie problemu."
+#: polyhost/gui/settings_dialog.py:403
+msgid "Watches the messages the keyboard sends over USB for known failures, and offers to report a problem."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:369
-msgid "Watches this app's own log for known failure messages."
-msgstr "Obserwuje własny dziennik tej aplikacji pod kątem znanych komunikatów o błędach."
+#: polyhost/gui/settings_dialog.py:406
+msgid "Watches this app's own log for known failure messages, and offers to report a problem."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:370
+#: polyhost/gui/settings_dialog.py:408
 msgid "What counts as a problem: errors only, or errors and warnings."
 msgstr "Co jest uznawane za problem: tylko błędy albo błędy i ostrzeżenia."
 
-#: polyhost/gui/settings_dialog.py:372
+#: polyhost/gui/settings_dialog.py:410
 msgid "Draws some game overlays from the game's own files when the game is installed on this computer. The images stay on this computer. Off: the shipped overlays are used."
 msgstr "Rysuje niektóre nakładki gier z plików samej gry, gdy gra jest zainstalowana na tym komputerze. Obrazy pozostają na tym komputerze. Wyłączone: używane są dołączone nakładki."
 
-#: polyhost/gui/settings_dialog.py:828 polyhost/host.py:1680
+#: polyhost/gui/settings_dialog.py:867
+msgid "Advanced"
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:876
+msgid "Shows the settings that most people never change."
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:907 polyhost/host.py:1680
 msgid "PolyKybd Settings"
 msgstr "Ustawienia PolyKybd"
 
-#: polyhost/gui/settings_dialog.py:897
+#: polyhost/gui/settings_dialog.py:976
 msgid "Search settings"
 msgstr "Szukaj ustawień"
 
-#: polyhost/gui/settings_dialog.py:947
+#: polyhost/gui/settings_dialog.py:1029
 msgid "Reading the settings stored on the keyboard…"
 msgstr "Odczytywanie ustawień zapisanych na klawiaturze…"
 
-#: polyhost/gui/settings_dialog.py:951
+#: polyhost/gui/settings_dialog.py:1033
 msgid "No setting matches the search."
 msgstr "Żadne ustawienie nie pasuje do wyszukiwania."
 
-#: polyhost/gui/settings_dialog.py:966
+#: polyhost/gui/settings_dialog.py:1048
 msgid "Some settings might need a restart to take effect."
 msgstr "Niektóre ustawienia mogą wymagać ponownego uruchomienia, aby zaczęły obowiązywać."
 
-#: polyhost/gui/settings_dialog.py:1001
+#: polyhost/gui/settings_dialog.py:1083
 #, python-brace-format
 msgid "Set by {flag} for this run. This setting applies when the app starts without it."
 msgstr "Ustawione przez {flag} dla tego uruchomienia. To ustawienie obowiązuje, gdy aplikacja jest uruchamiana bez niego."
@@ -4071,35 +4079,35 @@ msgstr "Ustawione przez {flag} dla tego uruchomienia. To ustawienie obowiązuje,
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
 #: polyhost/gui/layout_dialog/combo_tab.py:371
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
-#: polyhost/gui/settings_dialog.py:1047
+#: polyhost/gui/settings_dialog.py:1129
 msgid " ms"
 msgstr " ms"
 
-#: polyhost/gui/settings_dialog.py:1094
+#: polyhost/gui/settings_dialog.py:1176
 msgid "This keyboard's firmware does not have this setting."
 msgstr "Oprogramowanie układowe tej klawiatury nie ma tego ustawienia."
 
-#: polyhost/gui/settings_dialog.py:1096
+#: polyhost/gui/settings_dialog.py:1178
 msgid "Could not read this setting from the keyboard."
 msgstr "Nie udało się odczytać tego ustawienia z klawiatury."
 
-#: polyhost/gui/settings_dialog.py:1104
+#: polyhost/gui/settings_dialog.py:1186
 msgid "Connect the keyboard to change the settings stored on it."
 msgstr "Podłącz klawiaturę, aby zmienić zapisane na niej ustawienia."
 
-#: polyhost/gui/settings_dialog.py:1106
+#: polyhost/gui/settings_dialog.py:1188
 msgid "Some settings could not be read from the keyboard. Update the keyboard firmware to change them here."
 msgstr "Nie udało się odczytać niektórych ustawień z klawiatury. Zaktualizuj oprogramowanie układowe klawiatury, aby zmieniać je tutaj."
 
-#: polyhost/gui/settings_dialog.py:1150
+#: polyhost/gui/settings_dialog.py:1239
 msgid "These developer settings are not at their default, so they stay in effect while developer mode is off."
 msgstr "Te ustawienia programisty mają wartości inne niż domyślne, więc obowiązują również przy wyłączonym trybie programisty."
 
-#: polyhost/gui/settings_dialog.py:1220
+#: polyhost/gui/settings_dialog.py:1309
 msgid "Generate"
 msgstr "Generuj"
 
-#: polyhost/gui/settings_dialog.py:1221
+#: polyhost/gui/settings_dialog.py:1310
 msgid "Fills in a new random token and copies it. Paste it into the browser extension's Options and save both."
 msgstr "Wpisuje nowy losowy token i kopiuje go. Wklej go w opcjach rozszerzenia przeglądarki („Options”) i zapisz w obu miejscach."
 

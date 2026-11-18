@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-18 06:09+0000\n"
+"POT-Creation-Date: 2026-11-18 06:27+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -1256,7 +1256,7 @@ msgid "pick one from Source fonts below, or Browse…"
 msgstr "아래 원본 글꼴에서 선택하거나 찾아보기…"
 
 #: polyhost/gui/fontpack_extend_dialog.py:120
-#: polyhost/gui/settings_dialog.py:1212 polyhost/gui/settings_dialog.py:1213
+#: polyhost/gui/settings_dialog.py:1301 polyhost/gui/settings_dialog.py:1302
 msgid "Browse…"
 msgstr "찾아보기…"
 
@@ -1978,7 +1978,7 @@ msgstr "적용하는 중 — 스테이징된 펌웨어를 활성화하는 중…
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "취소하는 중 — 현재 청크가 끝나기를 기다리는 중…"
 
-#: polyhost/gui/i18n_qt.py:89 polyhost/gui/settings_dialog.py:152
+#: polyhost/gui/i18n_qt.py:89 polyhost/gui/settings_dialog.py:166
 msgid "Language"
 msgstr "언어"
 
@@ -2031,7 +2031,7 @@ msgstr "설정 안 됨"
 
 #: polyhost/gui/integrations_dialog.py:327
 #: polyhost/gui/integrations_dialog.py:361
-#: polyhost/gui/integrations_dialog.py:402 polyhost/gui/settings_dialog.py:112
+#: polyhost/gui/integrations_dialog.py:402 polyhost/gui/settings_dialog.py:103
 msgid "AI agents"
 msgstr "AI 에이전트"
 
@@ -2194,7 +2194,7 @@ msgid "Eden"
 msgstr "Eden"
 
 #. TRANSLATORS: shown in the Flow Tap spin box when its value is 0.
-#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1050
+#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1132
 msgid "Off"
 msgstr "끄기"
 
@@ -3419,90 +3419,90 @@ msgid "General"
 msgstr "일반"
 
 #: polyhost/gui/settings_dialog.py:72
-msgid "Keycap icons"
-msgstr "키캡 아이콘"
-
-#: polyhost/gui/settings_dialog.py:75
-msgid "Apps with their own overlay"
-msgstr "전용 오버레이가 있는 앱"
-
-#: polyhost/gui/settings_dialog.py:77
-msgid "Linux"
-msgstr "Linux"
-
-#: polyhost/gui/settings_dialog.py:79
-msgid "Games"
-msgstr "게임"
-
-#: polyhost/gui/settings_dialog.py:81
-msgid "Installed games"
-msgstr "설치된 게임"
-
-#: polyhost/gui/settings_dialog.py:83
 msgid "Brightness"
 msgstr "밝기"
 
-#: polyhost/gui/settings_dialog.py:87
+#: polyhost/gui/settings_dialog.py:76
 msgid "Daylight curve"
 msgstr "일광 곡선"
 
-#: polyhost/gui/settings_dialog.py:92 polyhost/host.py:2030
+#: polyhost/gui/settings_dialog.py:81 polyhost/host.py:2030
 msgid "Keyboard"
 msgstr "키보드"
 
-#: polyhost/gui/settings_dialog.py:93
+#: polyhost/gui/settings_dialog.py:82
 msgid "Idle display"
 msgstr "유휴 화면"
 
-#: polyhost/gui/settings_dialog.py:94
+#: polyhost/gui/settings_dialog.py:83
 msgid "Keycaps"
 msgstr "키캡"
 
-#: polyhost/gui/settings_dialog.py:95 polyhost/host.py:1705
+#: polyhost/gui/settings_dialog.py:84 polyhost/host.py:1705
 msgid "Tap-Hold Timing"
 msgstr "탭-홀드 타이밍"
 
-#: polyhost/gui/settings_dialog.py:96
+#: polyhost/gui/settings_dialog.py:85
 msgid "Unicode input"
 msgstr "유니코드 입력"
 
-#: polyhost/gui/settings_dialog.py:97
+#: polyhost/gui/settings_dialog.py:86
 msgid "Font packs"
 msgstr "글꼴 팩"
 
-#: polyhost/gui/settings_dialog.py:98
+#: polyhost/gui/settings_dialog.py:87
 msgid "Emoji search"
 msgstr "이모지 검색"
 
-#: polyhost/gui/settings_dialog.py:100
+#: polyhost/gui/settings_dialog.py:89
 msgid "Connections"
 msgstr "연결"
 
-#: polyhost/gui/settings_dialog.py:101
+#: polyhost/gui/settings_dialog.py:90
 msgid "Browser extension"
 msgstr "브라우저 확장 프로그램"
 
-#: polyhost/gui/settings_dialog.py:103
+#: polyhost/gui/settings_dialog.py:92
 msgid "Forwarders"
 msgstr "포워더"
 
-#: polyhost/gui/settings_dialog.py:104
+#: polyhost/gui/settings_dialog.py:93
 msgid "USB transport"
 msgstr "USB 전송"
 
-#: polyhost/gui/settings_dialog.py:107
+#: polyhost/gui/settings_dialog.py:96
+msgid "Keycap icons"
+msgstr "키캡 아이콘"
+
+#: polyhost/gui/settings_dialog.py:99
+msgid "Apps with their own overlay"
+msgstr "전용 오버레이가 있는 앱"
+
+#: polyhost/gui/settings_dialog.py:101
+msgid "Linux"
+msgstr "Linux"
+
+#: polyhost/gui/settings_dialog.py:108
+msgid "Games"
+msgstr "게임"
+
+#: polyhost/gui/settings_dialog.py:110
+msgid "Installed games"
+msgstr "설치된 게임"
+
+#: polyhost/gui/settings_dialog.py:112
 msgid "Privacy and diagnostics"
 msgstr "개인 정보 및 진단"
 
-#: polyhost/gui/settings_dialog.py:108
+#: polyhost/gui/settings_dialog.py:113
 msgid "Usage report"
 msgstr "사용 보고서"
 
-#: polyhost/gui/settings_dialog.py:109
+#: polyhost/gui/settings_dialog.py:114
 msgid "Problem detection"
 msgstr "문제 감지"
 
-#: polyhost/gui/settings_dialog.py:110
+#: polyhost/gui/settings_dialog.py:115
 msgid "Logs"
 msgstr "로그"
 
@@ -3515,520 +3515,528 @@ msgstr "개발자"
 msgid "Other"
 msgstr "기타"
 
-#: polyhost/gui/settings_dialog.py:124
+#: polyhost/gui/settings_dialog.py:138
 msgid "Send Unicode input mode"
 msgstr "유니코드 입력 모드 전송"
 
-#: polyhost/gui/settings_dialog.py:125 polyhost/host.py:1701
+#: polyhost/gui/settings_dialog.py:139 polyhost/host.py:1701
 msgid "Keycap brightness"
 msgstr "키캡 밝기"
 
-#: polyhost/gui/settings_dialog.py:126
+#: polyhost/gui/settings_dialog.py:140
 msgid "Idle animation"
 msgstr "유휴 애니메이션"
 
-#: polyhost/gui/settings_dialog.py:127 polyhost/host.py:1663
+#: polyhost/gui/settings_dialog.py:141 polyhost/host.py:1663
 msgid "Idle After"
 msgstr "유휴 전환 시간"
 
-#: polyhost/gui/settings_dialog.py:128 polyhost/host.py:1664
+#: polyhost/gui/settings_dialog.py:142 polyhost/host.py:1664
 msgid "Keycap Script"
 msgstr "키캡 문자 체계"
 
-#: polyhost/gui/settings_dialog.py:129 polyhost/host.py:1665
+#: polyhost/gui/settings_dialog.py:143 polyhost/host.py:1665
 msgid "Script placement"
 msgstr "문자 체계 위치"
 
-#: polyhost/gui/settings_dialog.py:130 polyhost/host.py:1666
+#: polyhost/gui/settings_dialog.py:144 polyhost/host.py:1666
 msgid "Keycap Size"
 msgstr "키캡 크기"
 
 #: polyhost/gui/layout_dialog/combo_tab.py:372
-#: polyhost/gui/settings_dialog.py:131
+#: polyhost/gui/settings_dialog.py:145
 msgid "Tapping term"
 msgstr "탭 시간"
 
-#: polyhost/gui/settings_dialog.py:132
+#: polyhost/gui/settings_dialog.py:146
 msgid "Flow Tap term"
 msgstr "Flow Tap 시간"
 
-#: polyhost/gui/settings_dialog.py:133
+#: polyhost/gui/settings_dialog.py:147
 msgid "Auto Shift"
 msgstr "Auto Shift"
 
-#: polyhost/gui/settings_dialog.py:134
+#: polyhost/gui/settings_dialog.py:148
 msgid "Auto Shift timeout"
 msgstr "Auto Shift 시간"
 
-#: polyhost/gui/settings_dialog.py:135
+#: polyhost/gui/settings_dialog.py:149
 msgid "Follow daylight"
 msgstr "일광 따르기"
 
-#: polyhost/gui/settings_dialog.py:136
+#: polyhost/gui/settings_dialog.py:150
 msgid "Online sunlight data"
 msgstr "온라인 일사량 데이터"
 
-#: polyhost/gui/settings_dialog.py:137
+#: polyhost/gui/settings_dialog.py:151
 msgid "Online location lookup"
 msgstr "온라인 위치 조회"
 
-#: polyhost/gui/settings_dialog.py:138
+#: polyhost/gui/settings_dialog.py:152
 msgid "Sunlight at dimmest"
 msgstr "가장 어두울 때의 일사량"
 
-#: polyhost/gui/settings_dialog.py:139
+#: polyhost/gui/settings_dialog.py:153
 msgid "Sunlight at brightest"
 msgstr "가장 밝을 때의 일사량"
 
-#: polyhost/gui/settings_dialog.py:140
+#: polyhost/gui/settings_dialog.py:154
 msgid "Sunlight scale"
 msgstr "일사량 배율"
 
-#: polyhost/gui/settings_dialog.py:141
+#: polyhost/gui/settings_dialog.py:155
 msgid "Curve gamma"
 msgstr "곡선 감마"
 
-#: polyhost/gui/settings_dialog.py:142
-msgid "Generic icons"
-msgstr "일반 아이콘"
+#: polyhost/gui/settings_dialog.py:156
+msgid "Icons for apps without an overlay"
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:143
+#: polyhost/gui/settings_dialog.py:157
 msgid "Add the Escape mark"
 msgstr "Esc 마크 추가"
 
-#: polyhost/gui/settings_dialog.py:144
-msgid "Add shortcut icons"
-msgstr "단축키 아이콘 추가"
+#: polyhost/gui/settings_dialog.py:158
+msgid "Add icons from the app's menus"
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:145
-msgid "Shortcut icons"
-msgstr "단축키 아이콘"
+#: polyhost/gui/settings_dialog.py:159
+msgid "Read shortcuts from app menus"
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:146
-msgid "Download missing icons"
-msgstr "누락된 아이콘 다운로드"
+#: polyhost/gui/settings_dialog.py:160
+msgid "Download icons from the internet"
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:147
+#: polyhost/gui/settings_dialog.py:161
 msgid "Turn on accessibility"
 msgstr "접근성 켜기"
 
-#: polyhost/gui/settings_dialog.py:148
+#: polyhost/gui/settings_dialog.py:162
 msgid "Messages before a pause"
 msgstr "일시 중지 전 메시지 수"
 
-#: polyhost/gui/settings_dialog.py:149
+#: polyhost/gui/settings_dialog.py:163
 msgid "Pause length (s)"
 msgstr "일시 중지 시간(초)"
 
-#: polyhost/gui/settings_dialog.py:150
+#: polyhost/gui/settings_dialog.py:164
 msgid "ID requests before reconnect"
 msgstr "다시 연결 전 ID 요청 횟수"
 
-#: polyhost/gui/settings_dialog.py:151
+#: polyhost/gui/settings_dialog.py:165
 msgid "Theme"
 msgstr "테마"
 
-#: polyhost/gui/settings_dialog.py:153
+#: polyhost/gui/settings_dialog.py:167
 msgid "Developer mode"
 msgstr "개발자 모드"
 
-#: polyhost/gui/settings_dialog.py:154
+#: polyhost/gui/settings_dialog.py:168
 msgid "Log detail"
 msgstr "로그 상세 수준"
 
-#: polyhost/gui/settings_dialog.py:155
+#: polyhost/gui/settings_dialog.py:169
 msgid "Add a simulated keyboard"
 msgstr "모의 키보드 추가"
 
-#: polyhost/gui/settings_dialog.py:156
+#: polyhost/gui/settings_dialog.py:170
 msgid "Simulated keyboard only"
 msgstr "모의 키보드만 사용"
 
-#: polyhost/gui/settings_dialog.py:157
+#: polyhost/gui/settings_dialog.py:171
 msgid "Simulated protocol version"
 msgstr "모의 프로토콜 버전"
 
-#: polyhost/gui/settings_dialog.py:158
+#: polyhost/gui/settings_dialog.py:172
 msgid "Track windows without a keyboard"
 msgstr "키보드 없이 창 추적"
 
-#: polyhost/gui/settings_dialog.py:159
+#: polyhost/gui/settings_dialog.py:173
 msgid "Native Windows language switch"
 msgstr "Windows 기본 언어 전환"
 
-#: polyhost/gui/settings_dialog.py:160
+#: polyhost/gui/settings_dialog.py:174
 msgid "Legacy plaintext relay"
 msgstr "레거시 일반 텍스트 릴레이"
 
-#: polyhost/gui/settings_dialog.py:161
+#: polyhost/gui/settings_dialog.py:175
 msgid "Force the HID link"
 msgstr "HID 링크 강제"
 
-#: polyhost/gui/settings_dialog.py:162
+#: polyhost/gui/settings_dialog.py:176
 msgid "Background service"
 msgstr "백그라운드 서비스"
 
-#: polyhost/gui/settings_dialog.py:163
+#: polyhost/gui/settings_dialog.py:177
 msgid "Accept forwarders"
 msgstr "포워더 허용"
 
-#: polyhost/gui/settings_dialog.py:164
-msgid "Update on connect"
-msgstr "연결 시 업데이트"
+#: polyhost/gui/settings_dialog.py:178
+msgid "Send font packs on connect"
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:165
+#: polyhost/gui/settings_dialog.py:179
 msgid "Search language"
 msgstr "검색 언어"
 
-#: polyhost/gui/settings_dialog.py:166
+#: polyhost/gui/settings_dialog.py:180
 msgid "Own dictionary file"
 msgstr "사용자 사전 파일"
 
-#: polyhost/gui/settings_dialog.py:167
+#: polyhost/gui/settings_dialog.py:181
 msgid "Font pack file"
 msgstr "글꼴 팩 파일"
 
-#: polyhost/gui/settings_dialog.py:168
-msgid "Match websites"
-msgstr "웹사이트 일치"
+#: polyhost/gui/settings_dialog.py:182
+msgid "Match the website in the browser"
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:169
+#: polyhost/gui/settings_dialog.py:183
 msgid "Receive browser reports"
 msgstr "브라우저 보고 받기"
 
-#: polyhost/gui/settings_dialog.py:170
+#: polyhost/gui/settings_dialog.py:184
 msgid "Receiver port"
 msgstr "수신 포트"
 
-#: polyhost/gui/settings_dialog.py:171
+#: polyhost/gui/settings_dialog.py:185
 msgid "Receiver token"
 msgstr "수신 토큰"
 
-#: polyhost/gui/settings_dialog.py:172
+#: polyhost/gui/settings_dialog.py:186
 msgid "Send usage report"
 msgstr "사용 보고서 보내기"
 
-#: polyhost/gui/settings_dialog.py:173
+#: polyhost/gui/settings_dialog.py:187
 msgid "Report address"
 msgstr "보고서 주소"
 
-#: polyhost/gui/settings_dialog.py:174
+#: polyhost/gui/settings_dialog.py:188
 msgid "Installation ID"
 msgstr "설치 ID"
 
-#: polyhost/gui/settings_dialog.py:175
-msgid "Watch the keyboard console"
-msgstr "키보드 콘솔 감시"
+#: polyhost/gui/settings_dialog.py:189
+msgid "Watch the keyboard's messages"
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:176
+#: polyhost/gui/settings_dialog.py:190
 msgid "Watch this app's log"
 msgstr "이 앱의 로그 감시"
 
-#: polyhost/gui/settings_dialog.py:177
+#: polyhost/gui/settings_dialog.py:191
 msgid "What counts as a problem"
 msgstr "문제로 볼 범위"
 
-#: polyhost/gui/settings_dialog.py:178
+#: polyhost/gui/settings_dialog.py:192
 msgid "Art from installed games"
 msgstr "설치된 게임의 그림"
 
-#: polyhost/gui/settings_dialog.py:179
+#: polyhost/gui/settings_dialog.py:193
 msgid "Show on the number row"
 msgstr "숫자 행에 표시"
 
-#: polyhost/gui/settings_dialog.py:180
+#: polyhost/gui/settings_dialog.py:194
 msgid "Find by window title"
 msgstr "창 제목으로 찾기"
 
-#: polyhost/gui/settings_dialog.py:181
+#: polyhost/gui/settings_dialog.py:195
 msgid "Dictation shortcut"
 msgstr "받아쓰기 바로 가기 키"
 
-#: polyhost/gui/settings_dialog.py:182
+#: polyhost/gui/settings_dialog.py:196
 msgid "Agents from other computers"
 msgstr "다른 컴퓨터의 에이전트"
 
-#: polyhost/gui/settings_dialog.py:183
+#: polyhost/gui/settings_dialog.py:197
 msgid "Raise agent windows on this computer"
 msgstr "이 컴퓨터에서 에이전트 창을 앞으로 가져오기"
 
-#: polyhost/gui/settings_dialog.py:184
+#: polyhost/gui/settings_dialog.py:198
 msgid "Stale after (minutes)"
 msgstr "응답 없음으로 표시할 시간(분)"
 
-#: polyhost/gui/settings_dialog.py:185
+#: polyhost/gui/settings_dialog.py:199
 msgid "Remove idle agents after (minutes)"
 msgstr "유휴 에이전트를 제거할 시간(분)"
 
-#: polyhost/gui/settings_dialog.py:194
+#: polyhost/gui/settings_dialog.py:208
 msgid "Sets the brightness of the keycaps when you click OK. A level stays until you choose Automatic, which follows the daylight when Follow daylight is on, and otherwise returns to the keyboard's own stored level. The keyboard does not report its level, so no picture is selected when this dialog opens."
 msgstr "확인을 클릭하면 키캡의 밝기를 설정합니다. 선택한 밝기는 자동을 선택할 때까지 유지됩니다. 자동은 일광 따르기가 켜져 있으면 일광을 따르고, 꺼져 있으면 키보드에 저장된 밝기로 돌아갑니다. 키보드는 현재 밝기를 알려 주지 않으므로 이 대화 상자를 열 때는 아무 그림도 선택되어 있지 않습니다."
 
-#: polyhost/gui/settings_dialog.py:199
-msgid "What the keycaps show when you have not typed for a while. It protects the displays from burn-in."
-msgstr "한동안 입력하지 않을 때 키캡에 표시되는 내용입니다. 디스플레이 번인을 방지합니다."
+#: polyhost/gui/settings_dialog.py:213
+msgid "What the keycaps show when you have not typed for a while. A moving picture protects the displays from burn-in."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:201
+#: polyhost/gui/settings_dialog.py:215
 msgid "How long the keyboard waits before the idle display starts."
 msgstr "유휴 화면이 시작되기 전에 키보드가 기다리는 시간입니다."
 
-#: polyhost/gui/settings_dialog.py:203
-msgid "Draws the letters and digits on the keycaps in another script. Standard shows the normal legends of your language."
-msgstr "키캡의 문자와 숫자를 다른 문자 체계로 그립니다. 표준은 사용 언어의 일반 레전드를 표시합니다."
+#: polyhost/gui/settings_dialog.py:217
+msgid "Draws the letters and digits on the keycaps in another script, for example runes or a retro computer font. The keys still type the same characters. Standard shows the normal legends of your language."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:206
+#: polyhost/gui/settings_dialog.py:221
 msgid "Where the script's letters sit on the keycap. The top-left corner leaves room for an app icon."
 msgstr "키캡에서 문자 체계의 글자가 놓이는 위치입니다. 왼쪽 위 모서리를 선택하면 앱 아이콘을 위한 공간이 남습니다."
 
-#: polyhost/gui/settings_dialog.py:209
-msgid "The size of the main legend. The larger sizes cover Latin letters."
-msgstr "기본 레전드의 크기입니다. 큰 크기는 라틴 문자에 적용됩니다."
+#: polyhost/gui/settings_dialog.py:224
+msgid "The size of the large letter or digit in the middle of each keycap. Medium and Large apply to Latin letters and digits; other scripts, such as Arabic or Chinese, stay Small."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:211
+#: polyhost/gui/settings_dialog.py:228
 msgid "A key with a tap and a hold action types its tap action when you release it before this time, and acts as its hold action when you hold it longer."
 msgstr "탭 동작과 홀드 동작이 있는 키는 이 시간 전에 놓으면 탭 동작을 입력하고, 더 오래 누르고 있으면 홀드 동작을 합니다."
 
-#: polyhost/gui/settings_dialog.py:214
+#: polyhost/gui/settings_dialog.py:231
 msgid "A tap-hold key pressed within this time after the previous key always types its tap action, so fast typing does not trigger a modifier. 0 turns Flow Tap off."
 msgstr "이전 키를 누른 후 이 시간 안에 누른 탭-홀드 키는 항상 탭 동작을 입력하므로, 빠르게 입력해도 보조 키가 작동하지 않습니다. 0이면 Flow Tap이 꺼집니다."
 
-#: polyhost/gui/settings_dialog.py:217
+#: polyhost/gui/settings_dialog.py:234
 msgid "With Auto Shift on, holding a letter, digit or symbol key longer than the Auto Shift timeout types its shifted character."
 msgstr "Auto Shift를 켜면 문자, 숫자 또는 기호 키를 Auto Shift 시간보다 오래 누를 때 Shift 문자가 입력됩니다."
 
-#: polyhost/gui/settings_dialog.py:219
+#: polyhost/gui/settings_dialog.py:236
 msgid "How long you hold a key before Auto Shift types its shifted character."
 msgstr "Auto Shift가 Shift 문자를 입력하기 전에 키를 누르고 있어야 하는 시간입니다."
 
-#: polyhost/gui/settings_dialog.py:222
+#: polyhost/gui/settings_dialog.py:239
 msgid "Shows the state of AI coding agents on the number row and, while the AI key is pressed, one card per agent. Needs keyboard firmware with protocol 31. Takes effect at the next keyboard connect."
 msgstr "AI 코딩 에이전트의 상태를 숫자 행에 표시하고, AI 키를 누르고 있는 동안 에이전트마다 카드 하나를 표시합니다. 프로토콜 31의 키보드 펌웨어가 필요합니다. 다음에 키보드를 연결할 때 적용됩니다."
 
-#: polyhost/gui/settings_dialog.py:226
+#: polyhost/gui/settings_dialog.py:243
 msgid "Also finds agents that run in a terminal from the window title, without a hook. Not on macOS."
 msgstr "터미널에서 실행되는 에이전트도 훅 없이 창 제목으로 찾습니다. macOS에서는 사용할 수 없습니다."
 
-#: polyhost/gui/settings_dialog.py:229
+#: polyhost/gui/settings_dialog.py:246
 msgid "Also shows agents that run on a computer with the forwarder. A key press brings forward the remote-desktop viewer that shows that computer (NoMachine, Remote Desktop, VNC). They report over the network endpoint for forwarders, which must be on too. Off: only this computer's agents."
 msgstr "포워더가 있는 컴퓨터에서 실행되는 에이전트도 표시합니다. 키를 누르면 해당 컴퓨터를 표시하는 원격 데스크톱 뷰어(NoMachine, 원격 데스크톱, VNC)가 앞으로 옵니다. 에이전트는 포워더용 네트워크 엔드포인트를 통해 보고하므로 그것도 켜져 있어야 합니다. 끄기: 이 컴퓨터의 에이전트만."
 
-#: polyhost/gui/settings_dialog.py:234
+#: polyhost/gui/settings_dialog.py:251
 msgid "On a computer with the forwarder: a key press on one of this computer's agents also brings the agent's own window forward here. Off: only the viewer on the keyboard's computer comes forward."
 msgstr "포워더가 있는 컴퓨터에서: 이 컴퓨터의 에이전트 키를 누르면 해당 에이전트 자체의 창도 여기에서 앞으로 옵니다. 끄기: 키보드 컴퓨터의 뷰어만 앞으로 옵니다."
 
-#: polyhost/gui/settings_dialog.py:238
+#: polyhost/gui/settings_dialog.py:255
 msgid "A working agent that reports nothing for this many minutes shows as stale (dim white). 0: never."
 msgstr "작업 중인 에이전트가 이 시간(분) 동안 아무것도 보고하지 않으면 응답 없음(흐린 흰색)으로 표시됩니다. 0: 사용 안 함."
 
-#: polyhost/gui/settings_dialog.py:241
+#: polyhost/gui/settings_dialog.py:258
 msgid "An idle or stale agent that reports nothing for this many minutes is removed and frees its key. An agent whose process ends is removed at once. 0: never."
 msgstr "유휴 또는 응답 없음 상태의 에이전트가 이 시간(분) 동안 아무것도 보고하지 않으면 제거되고 해당 키가 비워집니다. 프로세스가 끝난 에이전트는 즉시 제거됩니다. 0: 사용 안 함."
 
-#: polyhost/gui/settings_dialog.py:244
+#: polyhost/gui/settings_dialog.py:261
 msgid "The shortcut the minus key sends in AI mode to start dictation, for example <cmd>+h or <ctrl>+<alt>+d. Empty: Win+H on Windows, nothing on macOS and Linux."
 msgstr "AI 모드에서 빼기 키가 받아쓰기를 시작하기 위해 보내는 바로 가기 키입니다(예: <cmd>+h 또는 <ctrl>+<alt>+d). 비워 두면: Windows에서는 Win+H, macOS와 Linux에서는 아무것도 보내지 않습니다."
 
-#: polyhost/gui/settings_dialog.py:248
-msgid "Tells the keyboard how this computer takes Unicode input (for example WinCompose), on connect and whenever it changes. Off: the keyboard keeps the mode it has stored."
-msgstr "연결할 때와 변경될 때마다 이 컴퓨터가 유니코드 입력을 받는 방식(예: WinCompose)을 키보드에 알립니다. 끄면: 키보드가 저장된 모드를 유지합니다."
+#: polyhost/gui/settings_dialog.py:265
+msgid "Tells the keyboard which Unicode input method this computer uses (for example WinCompose on Windows), when it connects and whenever the method changes. The keyboard needs it to type characters that are not on your layout, such as emoji. Off: the keyboard keeps the method it has stored."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:252
+#: polyhost/gui/settings_dialog.py:270
 msgid "Sets the keycap brightness from the daylight at your location, every ten minutes."
 msgstr "현재 위치의 일광에 따라 10분마다 키캡 밝기를 설정합니다."
 
-#: polyhost/gui/settings_dialog.py:255
+#: polyhost/gui/settings_dialog.py:273
 msgid "Asks open-meteo.com for this hour's sunlight at your location, including clouds. Off: the host computes a cloudless-sky value from the location and time."
 msgstr "open-meteo.com에 현재 위치의 이 시간 일사량(구름 포함)을 요청합니다. 끄면: 호스트가 위치와 시간으로 맑은 하늘 기준 값을 계산합니다."
 
-#: polyhost/gui/settings_dialog.py:259
+#: polyhost/gui/settings_dialog.py:277
 msgid "Looks up your approximate location from your IP address (ip-api.com), once per run. Off: the brightness follows the hour of the day."
 msgstr "IP 주소로 대략적인 위치를 조회합니다(ip-api.com). 실행할 때마다 한 번 조회합니다. 끄면: 밝기가 하루 중 시간을 따릅니다."
 
-#: polyhost/gui/settings_dialog.py:261
-msgid "The sunlight value that gives the dimmest brightness level."
-msgstr "가장 어두운 밝기 수준에 해당하는 일사량 값입니다."
+#: polyhost/gui/settings_dialog.py:280
+msgid "The sunlight value at which the keycaps are at their dimmest. Less sunlight keeps them at the dimmest level."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:263
-msgid "The sunlight value that gives the brightest level. Lower it to reach full brightness on a cloudy day."
-msgstr "가장 밝은 수준에 해당하는 일사량 값입니다. 흐린 날에도 최대 밝기에 도달하려면 이 값을 낮추십시오."
+#: polyhost/gui/settings_dialog.py:283
+msgid "The sunlight value at which the keycaps are at their brightest. Lower it to reach full brightness on a cloudy day."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:265
-msgid "Multiplies the sunlight value before the dimmest and brightest values apply."
-msgstr "가장 어두운 값과 가장 밝은 값을 적용하기 전에 일사량 값에 곱하는 값입니다."
+#: polyhost/gui/settings_dialog.py:286
+msgid "Multiplies the sunlight value before it is compared with Sunlight at dimmest and Sunlight at brightest. Below 1 makes the keycaps dimmer for the same daylight."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:267
+#: polyhost/gui/settings_dialog.py:290
 msgid "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, below 1 brighter. The dimmest and brightest levels do not change."
 msgstr "일광 곡선의 모양을 정합니다. 1보다 크면 한낮이 더 어두워지고, 1보다 작으면 더 밝아집니다. 가장 어두운 수준과 가장 밝은 수준은 바뀌지 않습니다."
 
-#: polyhost/gui/settings_dialog.py:270
-msgid "Icons for apps without their own overlay: the app's mark on Escape and an icon for each of its shortcuts. Off: nothing generic is drawn for any app."
-msgstr "자체 오버레이가 없는 앱을 위한 아이콘: Esc 키에 앱 마크를, 각 단축키에 아이콘을 표시합니다. 끄면: 어떤 앱에도 일반 아이콘을 그리지 않습니다."
+#: polyhost/gui/settings_dialog.py:293
+msgid "Draws icons for apps that have no overlay of their own: the app's logo on the Escape key and an icon on each shortcut key. Off: these apps get no icons. Apps with their own overlay are not affected."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:273
-msgid "An app with its own overlay also gets its mark on Escape, when the overlay leaves Escape blank."
-msgstr "자체 오버레이가 있는 앱도 오버레이가 Esc 키를 비워 두면 Esc 키에 앱 마크를 표시합니다."
+#: polyhost/gui/settings_dialog.py:297
+msgid "An app with its own overlay also gets its logo on the Escape key, when its overlay leaves Escape blank."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:276
-msgid "An app with its own overlay is also read for its shortcuts, with icons on the keys the overlay leaves blank. Reading a large app, such as a browser with a long page, can take minutes."
-msgstr "자체 오버레이가 있는 앱에서도 단축키를 읽어, 오버레이가 비워 둔 키에 아이콘을 표시합니다. 긴 페이지를 연 브라우저처럼 큰 앱을 읽는 데는 몇 분이 걸릴 수 있습니다."
+#: polyhost/gui/settings_dialog.py:300
+msgid "An app with its own overlay also gets icons for the shortcuts listed in its menus, on the keys its overlay leaves blank. Reading the menus of a large app, such as a browser with a long page, can take minutes."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:280
-msgid "Reads the focused app's shortcuts to draw an icon for each. Off: no app is read and no shortcut icons are drawn. To remove every generic icon, the Escape mark included, turn off Generic icons."
-msgstr "포커스된 앱의 단축키를 읽어 각각에 아이콘을 그립니다. 끄면: 어떤 앱도 읽지 않고 단축키 아이콘도 그리지 않습니다. Esc 마크를 포함한 모든 일반 아이콘을 없애려면 '일반 아이콘'을 끄세요."
+#: polyhost/gui/settings_dialog.py:304
+msgid "Reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system, and draws an icon on each shortcut key. The shortcuts stay on this computer. Off: no app is read."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:284
-msgid "Downloads icons that are missing. Off: icons already downloaded keep working, new ones are skipped."
-msgstr "없는 아이콘을 다운로드합니다. 끄면: 이미 다운로드한 아이콘은 계속 사용되고, 새 아이콘은 건너뜁니다."
+#: polyhost/gui/settings_dialog.py:308
+msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:287
-msgid "Linux only. Turns on the desktop's accessibility switch so Qt and KDE apps publish their shortcuts. Off: only apps that publish them anyway (GTK) are read."
-msgstr "Linux 전용. 데스크톱의 접근성 스위치를 켜서 Qt 및 KDE 앱이 단축키를 공개하도록 합니다. 끄면: 원래 단축키를 공개하는 앱(GTK)만 읽습니다."
+#: polyhost/gui/settings_dialog.py:313
+msgid "Linux only. Turns on the desktop's accessibility switch, so Qt and KDE apps list their shortcuts for Read shortcuts from app menus. Off: only apps that list them anyway (GTK) are read."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:291
+#: polyhost/gui/settings_dialog.py:317
 msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
 msgstr "USB 전송: 짧게 멈추기 전에 보내는 이미지 메시지 수로, 키보드가 입력에 계속 반응하도록 합니다. 문제를 보고하는 중에 요청받은 경우에만 변경하십시오."
 
-#: polyhost/gui/settings_dialog.py:295
+#: polyhost/gui/settings_dialog.py:321
 msgid "USB transport: the length of that pause, in seconds. Change it only when asked to while reporting a problem."
 msgstr "USB 전송: 그 멈춤의 길이(초)입니다. 문제를 보고하는 중에 요청받은 경우에만 변경하십시오."
 
-#: polyhost/gui/settings_dialog.py:298
-msgid "How many times the host asks the keyboard for its ID before it reopens the USB connection."
-msgstr "USB 연결을 다시 열기 전에 호스트가 키보드에 ID를 요청하는 횟수입니다."
+#: polyhost/gui/settings_dialog.py:324
+msgid "How many times the app asks the keyboard for its ID without an answer before it closes and reopens the USB connection. Change it only when asked to while reporting a problem."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:301
+#: polyhost/gui/settings_dialog.py:328
 msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
 msgstr "트레이 메뉴와 대화 상자의 모양입니다. '자동'은 데스크톱의 밝게/어둡게 설정을 따릅니다."
 
-#: polyhost/gui/settings_dialog.py:304
+#: polyhost/gui/settings_dialog.py:331
 msgid "The language of the menus and dialogs. Applies when the tray app restarts."
 msgstr "메뉴와 대화 상자의 언어입니다. 트레이 앱을 다시 시작하면 적용됩니다."
 
-#: polyhost/gui/settings_dialog.py:306
+#: polyhost/gui/settings_dialog.py:333
 msgid "Shows the developer settings in this dialog, and the Developer submenu in the tray menu after a restart."
 msgstr "이 대화 상자에 개발자 설정을 표시하고, 다시 시작한 후에는 트레이 메뉴에 '개발자' 하위 메뉴를 표시합니다."
 
-#: polyhost/gui/settings_dialog.py:309
+#: polyhost/gui/settings_dialog.py:336
 msgid "How much the app writes to its log. Debug and Detailed help when you report a problem, and make the log grow faster. Applies after a restart."
 msgstr "앱이 로그에 기록하는 양입니다. '디버그'와 '자세히'는 문제를 보고할 때 도움이 되며, 로그가 더 빨리 커집니다. 다시 시작한 후 적용됩니다."
 
-#: polyhost/gui/settings_dialog.py:311
+#: polyhost/gui/settings_dialog.py:338
 msgid "Adds a simulated keyboard next to the real one."
 msgstr "실제 키보드 외에 모의 키보드를 추가합니다."
 
-#: polyhost/gui/settings_dialog.py:313
+#: polyhost/gui/settings_dialog.py:340
 msgid "Uses a simulated keyboard instead of a real one, so the app runs without hardware."
 msgstr "실제 키보드 대신 모의 키보드를 사용하여 하드웨어 없이 앱을 실행합니다."
 
-#: polyhost/gui/settings_dialog.py:316
+#: polyhost/gui/settings_dialog.py:343
 msgid "The protocol version the simulated keyboard reports. 0 uses the newest version this host knows."
 msgstr "모의 키보드가 보고하는 프로토콜 버전입니다. 0이면 이 호스트가 아는 최신 버전을 사용합니다."
 
-#: polyhost/gui/settings_dialog.py:319
+#: polyhost/gui/settings_dialog.py:346
 msgid "Tracks the active window even when no keyboard is connected."
 msgstr "키보드가 연결되어 있지 않아도 활성 창을 추적합니다."
 
-#: polyhost/gui/settings_dialog.py:321
+#: polyhost/gui/settings_dialog.py:348
 msgid "Windows only, experimental. Switches the input language with Win32 calls instead of the standard method, and falls back to it on a failure."
 msgstr "Windows 전용, 실험적 기능. 표준 방식 대신 Win32 호출로 입력 언어를 전환하고, 실패하면 표준 방식으로 돌아갑니다."
 
-#: polyhost/gui/settings_dialog.py:324
+#: polyhost/gui/settings_dialog.py:351
 msgid "Uses the USB HID channel only, as if the keyboard had no fast link: firmware updates go over HID. For testing the HID path by hand."
 msgstr "키보드에 고속 링크가 없는 것처럼 USB HID 채널만 사용합니다. 펌웨어 업데이트는 HID로 전송됩니다. HID 경로를 수동으로 테스트하기 위한 설정입니다."
 
-#: polyhost/gui/settings_dialog.py:327
+#: polyhost/gui/settings_dialog.py:354
 msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
 msgstr "모든 네트워크 인터페이스에서 암호화되지 않고 인증되지 않은 TCP(포트 50162)로 이전 포워더의 창 보고를 받습니다. 이전 포워더를 사용할 때만 켜십시오."
 
-#: polyhost/gui/settings_dialog.py:331
+#: polyhost/gui/settings_dialog.py:358
 msgid "Runs the keyboard connection in a background process that the tray app connects to, so the connection stays up when the tray app restarts."
 msgstr "키보드 연결을 백그라운드 프로세스에서 실행하고 트레이 앱이 여기에 연결하므로, 트레이 앱을 다시 시작해도 연결이 유지됩니다."
 
-#: polyhost/gui/settings_dialog.py:334
-msgid "Accepts window reports from a forwarder on another computer. Opens a network port. Applies after a restart."
-msgstr "다른 컴퓨터의 포워더가 보내는 창 보고를 받습니다. 네트워크 포트를 엽니다. 다시 시작한 후 적용됩니다."
+#: polyhost/gui/settings_dialog.py:361
+msgid "Accepts reports of the focused window from the forwarder app on another computer, for example one you use through remote desktop, so the keyboard shows the icons of that computer's apps. Opens a network port. Applies after a restart."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:337
-msgid "The language the keyboard's emoji layer searches in. The keyboard gets the dictionary right away when you change this, and when it connects if Update on connect is on. Own dictionary file, when set, is used instead."
-msgstr "키보드의 이모지 레이어가 검색하는 언어입니다. 이 설정을 바꾸면 바로, 그리고 '연결 시 업데이트'가 켜져 있으면 연결할 때 키보드가 사전을 받습니다. '사용자 사전 파일'을 지정하면 그 파일이 대신 사용됩니다."
+#: polyhost/gui/settings_dialog.py:366
+msgid "The language of the words the keyboard's emoji search matches. The dictionary is sent to the keyboard when you click OK, and when it connects if Send font packs on connect is on. Own dictionary file, when set, is used instead."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:341
-msgid "A dictionary you built yourself (.plyd), used instead of Search language. Empty: the shipped dictionary is used. Choose it in the tray to flash it right away."
-msgstr "직접 만든 사전(.plyd)으로, '검색 언어' 대신 사용됩니다. 비어 있으면 기본 제공 사전을 사용합니다. 트레이에서 선택하면 바로 플래시됩니다."
+#: polyhost/gui/settings_dialog.py:371
+msgid "A dictionary file you built yourself (.plyd), sent to the keyboard instead of the Search language dictionary. Empty: the dictionary for the Search language is used."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:345
-msgid "Flashes missing or outdated font-pack bundles when the keyboard connects."
-msgstr "키보드가 연결되면 없거나 오래된 글꼴 팩 번들을 플래시합니다."
+#: polyhost/gui/settings_dialog.py:375
+msgid "When the keyboard connects, sends it the font packs it is missing or has in an older version. Font packs hold the characters for languages, symbols and emoji."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:347
-msgid "A .plyf file to flash instead of the font pack that ships with the app. Empty uses the shipped pack."
-msgstr "앱에 포함된 글꼴 팩 대신 플래시할 .plyf 파일입니다. 비워 두면 포함된 팩을 사용합니다."
+#: polyhost/gui/settings_dialog.py:379
+msgid "A font-pack file (.plyf) to send to the keyboard instead of the one that comes with this app. Empty: the font pack that comes with this app is used."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:350
-msgid "Matches overlays to the website in the focused browser tab. Off: browser overlays match on the window title only."
-msgstr "포커스된 브라우저 탭의 웹사이트에 맞춰 오버레이를 선택합니다. 끄면: 브라우저 오버레이를 창 제목으로만 선택합니다."
+#: polyhost/gui/settings_dialog.py:382
+msgid "Chooses a website's overlay from the address of the focused browser tab. The address comes from the PolyKybd browser extension; on macOS, Safari and Chromium browsers such as Chrome also give it without the extension. Off: a website's overlay is chosen from the window title only."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:353
-msgid "Runs the receiver the browser extension reports to. It listens on 127.0.0.1 only."
-msgstr "브라우저 확장 프로그램이 보고하는 수신기를 실행합니다. 127.0.0.1에서만 수신 대기합니다."
+#: polyhost/gui/settings_dialog.py:387
+msgid "Runs the receiver that the PolyKybd browser extension sends the address of the focused tab to. It accepts connections from this computer only (127.0.0.1)."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:356
+#: polyhost/gui/settings_dialog.py:391
 msgid "The receiver's port. It must match the Host port in the browser extension."
 msgstr "수신기의 포트입니다. 브라우저 확장 프로그램의 Host port와 같아야 합니다."
 
-#: polyhost/gui/settings_dialog.py:358
+#: polyhost/gui/settings_dialog.py:393
 msgid "A shared secret. When set, the browser extension must send the same token."
 msgstr "공유 비밀 값입니다. 설정하면 브라우저 확장 프로그램이 같은 토큰을 보내야 합니다."
 
-#: polyhost/gui/settings_dialog.py:360
+#: polyhost/gui/settings_dialog.py:395
 msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
 msgstr "하루에 한 번 익명 사용 보고서를 보냅니다: 버전, 운영 체제, 몇 가지 카운터. 창 제목이나 앱 이름은 절대 보내지 않습니다."
 
-#: polyhost/gui/settings_dialog.py:362
-msgid "Where the usage report goes. Empty sends nothing."
-msgstr "사용 보고서를 보낼 곳입니다. 비워 두면 아무것도 보내지 않습니다."
+#: polyhost/gui/settings_dialog.py:398
+msgid "The web address the usage report is sent to. Empty: no report is sent."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:364
+#: polyhost/gui/settings_dialog.py:400
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
 msgstr "이 설치의 임의 ID로, 첫 보고서와 함께 만들어집니다. 삭제하면 새 설치로 집계됩니다."
 
-#: polyhost/gui/settings_dialog.py:367
-msgid "Watches the keyboard's console for known failure messages and offers to report a problem."
-msgstr "키보드 콘솔에서 알려진 오류 메시지를 감시하고 문제 보고를 제안합니다."
+#: polyhost/gui/settings_dialog.py:403
+msgid "Watches the messages the keyboard sends over USB for known failures, and offers to report a problem."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:369
-msgid "Watches this app's own log for known failure messages."
-msgstr "이 앱 자체 로그에서 알려진 오류 메시지를 감시합니다."
+#: polyhost/gui/settings_dialog.py:406
+msgid "Watches this app's own log for known failure messages, and offers to report a problem."
+msgstr ""
 
-#: polyhost/gui/settings_dialog.py:370
+#: polyhost/gui/settings_dialog.py:408
 msgid "What counts as a problem: errors only, or errors and warnings."
 msgstr "문제로 간주할 범위: 오류만, 또는 오류 및 경고."
 
-#: polyhost/gui/settings_dialog.py:372
+#: polyhost/gui/settings_dialog.py:410
 msgid "Draws some game overlays from the game's own files when the game is installed on this computer. The images stay on this computer. Off: the shipped overlays are used."
 msgstr "게임이 이 컴퓨터에 설치되어 있으면 일부 게임 오버레이를 게임 자체 파일로 그립니다. 이미지는 이 컴퓨터에만 남습니다. 끔: 기본 제공 오버레이를 사용합니다."
 
-#: polyhost/gui/settings_dialog.py:828 polyhost/host.py:1680
+#: polyhost/gui/settings_dialog.py:867
+msgid "Advanced"
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:876
+msgid "Shows the settings that most people never change."
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:907 polyhost/host.py:1680
 msgid "PolyKybd Settings"
 msgstr "PolyKybd 설정"
 
-#: polyhost/gui/settings_dialog.py:897
+#: polyhost/gui/settings_dialog.py:976
 msgid "Search settings"
 msgstr "설정 검색"
 
-#: polyhost/gui/settings_dialog.py:947
+#: polyhost/gui/settings_dialog.py:1029
 msgid "Reading the settings stored on the keyboard…"
 msgstr "키보드에 저장된 설정을 읽는 중…"
 
-#: polyhost/gui/settings_dialog.py:951
+#: polyhost/gui/settings_dialog.py:1033
 msgid "No setting matches the search."
 msgstr "검색과 일치하는 설정이 없습니다."
 
-#: polyhost/gui/settings_dialog.py:966
+#: polyhost/gui/settings_dialog.py:1048
 msgid "Some settings might need a restart to take effect."
 msgstr "일부 설정은 다시 시작해야 적용될 수 있습니다."
 
-#: polyhost/gui/settings_dialog.py:1001
+#: polyhost/gui/settings_dialog.py:1083
 #, python-brace-format
 msgid "Set by {flag} for this run. This setting applies when the app starts without it."
 msgstr "이번 실행에서는 {flag} 플래그로 설정되었습니다. 이 설정은 앱을 이 플래그 없이 시작할 때 적용됩니다."
@@ -4037,35 +4045,35 @@ msgstr "이번 실행에서는 {flag} 플래그로 설정되었습니다. 이 �
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
 #: polyhost/gui/layout_dialog/combo_tab.py:371
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
-#: polyhost/gui/settings_dialog.py:1047
+#: polyhost/gui/settings_dialog.py:1129
 msgid " ms"
 msgstr " ms"
 
-#: polyhost/gui/settings_dialog.py:1094
+#: polyhost/gui/settings_dialog.py:1176
 msgid "This keyboard's firmware does not have this setting."
 msgstr "이 키보드의 펌웨어에는 이 설정이 없습니다."
 
-#: polyhost/gui/settings_dialog.py:1096
+#: polyhost/gui/settings_dialog.py:1178
 msgid "Could not read this setting from the keyboard."
 msgstr "키보드에서 이 설정을 읽을 수 없습니다."
 
-#: polyhost/gui/settings_dialog.py:1104
+#: polyhost/gui/settings_dialog.py:1186
 msgid "Connect the keyboard to change the settings stored on it."
 msgstr "키보드에 저장된 설정을 변경하려면 키보드를 연결하십시오."
 
-#: polyhost/gui/settings_dialog.py:1106
+#: polyhost/gui/settings_dialog.py:1188
 msgid "Some settings could not be read from the keyboard. Update the keyboard firmware to change them here."
 msgstr "일부 설정을 키보드에서 읽을 수 없습니다. 여기서 변경하려면 키보드 펌웨어를 업데이트하십시오."
 
-#: polyhost/gui/settings_dialog.py:1150
+#: polyhost/gui/settings_dialog.py:1239
 msgid "These developer settings are not at their default, so they stay in effect while developer mode is off."
 msgstr "이 개발자 설정은 기본값이 아니므로 개발자 모드가 꺼져 있어도 계속 적용됩니다."
 
-#: polyhost/gui/settings_dialog.py:1220
+#: polyhost/gui/settings_dialog.py:1309
 msgid "Generate"
 msgstr "생성"
 
-#: polyhost/gui/settings_dialog.py:1221
+#: polyhost/gui/settings_dialog.py:1310
 msgid "Fills in a new random token and copies it. Paste it into the browser extension's Options and save both."
 msgstr "새 무작위 토큰을 입력하고 복사합니다. 브라우저 확장 프로그램의 옵션에 붙여넣고 양쪽 모두 저장하십시오."
 

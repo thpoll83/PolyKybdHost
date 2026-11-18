@@ -7,13 +7,14 @@ a band of the full colour, so the entry and the section read as one.
 
 * :func:`style_nav` sets up a ``QListWidget`` as such a sidebar, and
   :func:`add_nav_item` adds an entry with its colour.
-* :class:`ColorSection` is a section: the title band and a body layout
-  (``body_layout``) for the content.
+* :class:`ColorSection` is a section: the title band, a layout for controls
+  on its right end (``head_layout``), and a body layout (``body_layout``) for
+  the content.
 * :func:`dialog_is_dark` tells which of the two colour schemes a widget needs.
 """
 from PyQt5.QtCore import QRectF, QSize, Qt
 from PyQt5.QtGui import QColor, QFont, QFontMetrics, QPainter, QPalette
-from PyQt5.QtWidgets import (QFrame, QLabel, QListWidgetItem, QStyle, QStyledItemDelegate,
+from PyQt5.QtWidgets import (QFrame, QHBoxLayout, QLabel, QListWidgetItem, QStyle, QStyledItemDelegate,
                              QVBoxLayout, QWidget)
 
 from polyhost.gui import section_colors
@@ -123,6 +124,11 @@ class ColorSection(QFrame):
             font.setBold(True)
             self.head.setFont(font)
         outer.addWidget(self.head)
+        # Controls on the right end of the title band (Settings: the
+        # Advanced switch). The title text stays the label's own.
+        self.head_layout = QHBoxLayout(self.head)
+        self.head_layout.setContentsMargins(0, 0, px(10), 0)
+        self.head_layout.addStretch(1)
         body = QWidget()
         body.setAttribute(Qt.WA_TranslucentBackground)
         outer.addWidget(body)
