@@ -127,6 +127,9 @@ class HwIdHashTest(unittest.TestCase):
 
     def test_junk_is_dropped(self):
         self.assertEqual(telemetry.hash_hw_ids(["zz" * 8, "12", None, 5]), [])
+        # bytes.fromhex skips spaces: 16 characters, 7 bytes. Must not hash.
+        self.assertEqual(telemetry.hash_hw_ids(["001122 33445566", "0011223344556\t7"]), [])
+        self.assertEqual(len(telemetry.hash_hw_ids(["00112233AABBCCDD"])), 1)   # mixed case
         self.assertEqual(telemetry.hash_hw_ids(None), [])
 
     def test_no_snapshot_ids_sends_an_empty_list(self):

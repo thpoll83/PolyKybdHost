@@ -228,7 +228,8 @@ class TestSimpleCommandPayloads(unittest.TestCase, LockCheckMixin):
         # Firmware hid_com.c hid_cmd_50 reads no request byte.
         keeb, device = make_keeb(auto_ack=True)
         keeb.get_hw_ids()
-        self.assertEqual(device.payloads()[0][:3], bytes([POLY, 50, 0x00]))
+        payload = device.payloads()[0]
+        self.assertEqual(payload, bytes([POLY, 50]) + bytes(len(payload) - 2))
 
     def test_get_idle_timeout_queries_with_the_sentinel(self):
         keeb, device = make_keeb(auto_ack=True)

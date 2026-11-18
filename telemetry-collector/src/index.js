@@ -90,7 +90,8 @@ function validate(payload) {
 
 function toRow(payload, country, now) {
   const dev = payload.device && typeof payload.device === 'object' ? payload.device : {};
-  const [hwA, hwB] = hwIds(dev.hw_ids);
+  // Schema 3 only: an older host never sends hw_ids, so its columns stay ''.
+  const [hwA, hwB] = payload.schema >= 3 ? hwIds(dev.hw_ids) : ['', ''];
   return {
     received_at: now.toISOString(),
     day: now.toISOString().slice(0, 10),

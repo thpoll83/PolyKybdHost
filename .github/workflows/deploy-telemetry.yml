@@ -14,6 +14,9 @@ name: Deploy telemetry collector
 # Deliberately NOT automated: applying schema.sql. Schema changes to a live
 # database want a human deciding when, and an accidental re-run should never be
 # one push away. Do those by hand (see telemetry-collector/SETUP.md).
+# What IS automated is the check that they were done: the deploy stops when the
+# live table lacks a column the Worker's INSERT names (check_schema.py), because
+# that Worker would answer every ping with a 503.
 
 on:
   push:
@@ -62,6 +65,18 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           persist-credentials: false
+      - name: Check the live table has every column the Worker writes
+        working-directory: telemetry-collector
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # Read-only. --remote is required: without it wrangler reads a local
+        # sqlite file and the check would pass against nothing.
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.119.0 d1 execute polyhost-telemetry --remote --json \
+            --command "PRAGMA table_info(ping)" > "$RUNNER_TEMP/ping_columns.json"
+          python3 check_schema.py src/index.js "$RUNNER_TEMP/ping_columns.json"
       - name: wrangler deploy
         working-directory: telemetry-collector
         env:

@@ -194,6 +194,14 @@ class PolyCore(Observable):
         # undecided (defaults to safe + prompts). Remembered for the session, keyed
         # to the protocol it was chosen for so a re-flash re-asks.
         self.safe_mode = False
+        # The keyboard's hardware IDs for the telemetry ping (cmd 50, v37): see
+        # _hw_id_read_job. Numbered per connection, so a read for an earlier
+        # keyboard can never fill the cache of the one connected now.
+        self._hw_ids = None
+        self._hw_id_conn = 0
+        self._hw_id_reads_left = 0
+        self._hw_id_seen_generation = None
+        self._hw_id_pending = False
         self._newer_fw_policy = None
         self._newer_fw_policy_proto = None
         # Worker-side reconnect bookkeeping. `last_applied_connected` is the
@@ -306,6 +314,7 @@ class PolyCore(Observable):
         self.poly_settings = PolySettings()
         self.device_settings = DeviceSettings()
         mock_primary = bool(self.poly_settings.get("dev_mock_primary"))
+        self._mock_primary = mock_primary
         if mock_primary:
             # No hardware at all: the mock IS the keyboard. Imported here for the
             # same reason as the secondary below (numpy on the startup path).
@@ -2008,6 +2017,7 @@ class PolyCore(Observable):
                   and not snapshot["fresh_boot"])
         self._release_held_fontpack_check(steady)
         self._recheck_fontpack_on_generation(steady)
+        self._recheck_hw_ids(steady)
         if not snapshot["state_changed"] and not snapshot["fresh_boot"]:
             return snapshot
 
@@ -2103,6 +2113,10 @@ class PolyCore(Observable):
                 newer_fw_policy=self._newer_fw_policy)
             applied["decision"] = decision
             self.safe_mode = decision.get("safe_mode", False)
+            if connected_now:
+                # Before self.connected is set: the telemetry snapshot must never
+                # pair this connection with the previous keyboard's IDs.
+                self._start_hw_id_reads()
 
             # Mirror the original warning logs.
             if not snapshot["version_ok"] and self.ignore_version:
@@ -2123,9 +2137,7 @@ class PolyCore(Observable):
             # tell us a tester's link is unhealthy without asking them.
             if connected_now:
                 self.telemetry.note("connects")
-                if self.connected:
-                    self.worker.submit("hw_id_read", self._hw_id_read_job,
-                                       coalesce_key="hw_id_read")
+                self._submit_hw_id_read()
             else:
                 self.telemetry.note("reconnect_flaps")
             if snapshot["version_ok"] or self.ignore_version:
@@ -3320,14 +3332,64 @@ class PolyCore(Observable):
         """The flash unique IDs of both halves (cmd 50, v37+), read now."""
         return self._device_call("hw_ids_get", lambda c: self.keeb.get_hw_ids())
 
-    def _hw_id_read_job(self, cancel):
-        """Worker job after a connect: read the hardware IDs once for the
-        telemetry snapshot, which reads only ``keeb.hw_ids``."""
-        if cancel.is_set() or not self.connected or not self.keeb.supports("hw_id"):
+    # Reads per connection: the first, plus retries after a failed read or when
+    # the other half appears later (a slave that joins after the master).
+    HW_ID_READS_PER_CONNECTION = 4
+
+    def _start_hw_id_reads(self):
+        """A new connection: forget the previous keyboard's IDs and allow new reads."""
+        self._hw_ids = None
+        self._hw_id_conn = getattr(self, "_hw_id_conn", 0) + 1
+        self._hw_id_reads_left = self.HW_ID_READS_PER_CONNECTION
+        self._hw_id_seen_generation = getattr(self.keeb, "state_generation", None)
+
+    def _hw_id_read_allowed(self) -> bool:
+        return (self.connected and not self.safe_mode and not self.paused
+                and getattr(self, "_hw_id_reads_left", 0) > 0
+                and self.keeb.supports("hw_id"))
+
+    def _submit_hw_id_read(self):
+        if getattr(self, "_hw_id_pending", False) or not self._hw_id_read_allowed():
             return
-        ok, msg = self.keeb.get_hw_ids()
+        self._hw_id_reads_left -= 1
+        self._hw_id_pending = True
+        conn = self._hw_id_conn
+        self.worker.submit("hw_id_read", lambda cancel: self._hw_id_read_job(cancel, conn),
+                           coalesce_key="hw_id_read")
+
+    def _recheck_hw_ids(self, steady: bool):
+        """From the probe: read the IDs again after a failed read, or when the
+        other half is missing and GET_ID's 'G' counter moved (the master counts a
+        split link change there). Bounded by HW_ID_READS_PER_CONNECTION."""
+        if not steady or getattr(self, "_hw_id_reads_left", 0) <= 0:
+            return
+        gen = getattr(self.keeb, "state_generation", None)
+        moved = gen != getattr(self, "_hw_id_seen_generation", None)
+        self._hw_id_seen_generation = gen
+        ids = getattr(self, "_hw_ids", None)
+        if ids is None or (moved and ids.get("other") is None):
+            self._submit_hw_id_read()
+
+    def _hw_id_read_job(self, cancel, conn):
+        """Worker job: read the hardware IDs for the telemetry snapshot, which reads
+        only ``self._hw_ids``. Checks again here: the connection, safe mode or the
+        keyboard can change between submit and run."""
+        try:
+            self._hw_id_read(cancel, conn)
+        finally:
+            self._hw_id_pending = False
+
+    def _hw_id_read(self, cancel, conn):
+        if (cancel.is_set() or conn != self._hw_id_conn or not self.connected
+                or self.safe_mode or not self.keeb.supports("hw_id")):
+            return
+        ok, ids = self.keeb.get_hw_ids()
         if not ok:
-            self.log.debug("Hardware ID read failed: %s", msg)
+            self.log.debug("Hardware ID read failed (%d reads left): %s",
+                           self._hw_id_reads_left, ids)
+            return
+        if conn == self._hw_id_conn:
+            self._hw_ids = dict(ids)
 
     def clear_crash_record(self):
         """Erase the keyboard's crash archive; a cleared record can be reported again."""
@@ -4013,8 +4075,10 @@ class PolyCore(Observable):
         # object ever lacked it the whole device block would vanish from the
         # ping with no trace, and all three reads should fail the same way.
         status = dict(self.get_status())
-        # Raw IDs; build_payload() hashes them and sends only the hashes.
-        hw_ids = getattr(self.keeb, "hw_ids", None) or {}
+        # Raw IDs; build_payload() hashes them and sends only the hashes. The
+        # emulated primary (dev_mock_primary) is not a keyboard: it sends none.
+        hw_ids = {} if getattr(self, "_mock_primary", False) else (
+            getattr(self, "_hw_ids", None) or {})
         status["hw_ids"] = [v for v in (hw_ids.get("own"), hw_ids.get("other")) if v]
         return (status,
                 dict(getattr(self.keeb, "fontpack_bundle_versions", None) or {}))

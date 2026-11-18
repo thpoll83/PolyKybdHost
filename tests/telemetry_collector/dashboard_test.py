@@ -230,6 +230,18 @@ class Aggregations(unittest.TestCase):
         ]
         self.assertEqual(dash.keyboard_counts(rows), (2, 2, 1))
 
+    def test_keyboard_counts_ignore_column_order(self):
+        a, b = "a" * 32, "b" * 32
+        rows = [row("i1", "2026-11-01", hw_id_a=a, hw_id_b=b),
+                row("i2", "2026-11-01", hw_id_a=b, hw_id_b=a)]
+        self.assertEqual(dash.keyboard_counts(rows), (1, 1, 0))
+
+    def test_the_replacement_count_is_on_the_dashboard(self):
+        a, b, c = "a" * 32, "b" * 32, "c" * 32
+        html = dash.render([row("i1", "2026-11-01", hw_id_a=a, hw_id_b=b),
+                            row("i1", "2026-11-02", hw_id_a=a, hw_id_b=c)], None, "now")
+        self.assertIn("half replacements, inferred from hash pairs", html)
+
     def test_keyboard_counts_a_lone_half_joins_its_pair(self):
         a, b = "a" * 32, "b" * 32
         rows = [row("i1", "2026-11-01", hw_id_a=b, hw_id_b=""),

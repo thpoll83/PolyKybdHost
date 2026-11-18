@@ -32,6 +32,7 @@ import logging
 import math
 import os
 import platform
+import re
 import sys
 import threading
 import time
@@ -96,6 +97,7 @@ DEVICE_KEYS = frozenset({
 HW_ID_HASH_KEY = b"polykybd-telemetry-hw-id-v1"
 HW_ID_HEX_LEN = 16      # one flash unique ID, 8 bytes
 HW_ID_HASH_HEX_LEN = 32  # 128 bits of the HMAC-SHA256
+_HW_ID_RE = re.compile(r"[0-9a-f]{%d}" % HW_ID_HEX_LEN)
 
 
 def hash_hw_ids(ids) -> list:
@@ -109,13 +111,11 @@ def hash_hw_ids(ids) -> list:
     """
     raw = []
     for value in ids or ():
-        text = str(value).strip().lower()
-        if len(text) != HW_ID_HEX_LEN:
-            continue
-        try:
+        # fullmatch, not bytes.fromhex alone: fromhex skips spaces, so
+        # "001122 33445566" would decode to 7 bytes and still hash.
+        text = value.strip().lower() if isinstance(value, str) else ""
+        if _HW_ID_RE.fullmatch(text):
             raw.append(bytes.fromhex(text))
-        except ValueError:
-            continue
     raw.sort(key=lambda b: int.from_bytes(b, "big"))
     return [hmac.new(HW_ID_HASH_KEY, b, hashlib.sha256).hexdigest()[:HW_ID_HASH_HEX_LEN]
             for b in raw[:2]]
