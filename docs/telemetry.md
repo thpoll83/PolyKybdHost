@@ -98,7 +98,8 @@ each half's flash chip (firmware v37+, `polyctl hwid`) and sends a hash of it.
 
 The key is public, so anyone who has your keyboard can compute its hash. The
 hash identifies the keyboard across computers and reinstalls, which is its
-purpose. It does not identify you.
+purpose. The report has no name, but someone who knows who owns a keyboard and
+can read the reports can link those reports to that owner.
 
 ## What is never sent
 
