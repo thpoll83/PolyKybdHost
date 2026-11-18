@@ -4,7 +4,7 @@ import re
 import string
 
 from PyQt5.QtCore import QRectF, QSize, Qt
-from PyQt5.QtGui import QColor, QCursor, QGuiApplication, QPainter, QPalette, QPen
+from PyQt5.QtGui import QColor, QCursor, QFont, QGuiApplication, QPainter, QPalette, QPen
 from PyQt5.QtWidgets import (
     QAbstractScrollArea, QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog, QFrame,
     QHBoxLayout, QLabel, QLineEdit, QListWidget, QPushButton, QScrollArea, QSpinBox,
@@ -713,6 +713,20 @@ class _SearchField(QLineEdit):
         super().keyPressEvent(event)
 
 
+# How far the description text moves from the text colour toward the card's
+# background (Base), so the setting's name stands out above it.
+_DESCRIPTION_FADE = 0.40
+
+
+def _description_color(palette):
+    text = palette.color(QPalette.Active, QPalette.WindowText)
+    base = palette.color(QPalette.Active, QPalette.Base)
+    f = _DESCRIPTION_FADE
+    return QColor(round(text.red() + (base.red() - text.red()) * f),
+                  round(text.green() + (base.green() - text.green()) * f),
+                  round(text.blue() + (base.blue() - text.blue()) * f))
+
+
 class _SettingRow(QWidget):
     """One setting: its label, the description below it, and its control.
 
@@ -735,6 +749,13 @@ class _SettingRow(QWidget):
 
         title_lbl = QLabel(title)
         title_lbl.setWordWrap(True)
+        title_lbl.setObjectName("settingsTitle")
+        # The name stands out from the longer description below it: semibold
+        # and a little larger.
+        title_font = title_lbl.font()
+        title_font.setWeight(QFont.DemiBold)
+        title_font.setPointSizeF(title_font.pointSizeF() * 1.06)
+        title_lbl.setFont(title_font)
         title_lbl.setToolTip(setting_tooltip(full_key))
         title_lbl.setBuddy(editor)
         text_col = QVBoxLayout()
@@ -748,8 +769,7 @@ class _SettingRow(QWidget):
             font.setPointSizeF(max(font.pointSizeF() * 0.88, 7.0))
             desc_lbl.setFont(font)
             muted = desc_lbl.palette()
-            muted.setColor(QPalette.WindowText,
-                           muted.color(QPalette.Disabled, QPalette.WindowText))
+            muted.setColor(QPalette.WindowText, _description_color(muted))
             desc_lbl.setPalette(muted)
             text_col.addWidget(desc_lbl)
         if note:
