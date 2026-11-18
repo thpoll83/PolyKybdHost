@@ -25,11 +25,14 @@ The payload carries no timestamp: the server stamps arrival, so there is one
 less client-supplied field to trust and clock skew cannot bucket a ping into
 the wrong day.
 """
+import hashlib
+import hmac
 import json
 import logging
 import math
 import os
 import platform
+import re
 import sys
 import threading
 import time
@@ -46,7 +49,8 @@ log = logging.getLogger(__name__)
 #: Payload format version. Bump when a field changes meaning or is removed —
 #: the server keeps parsing old hosts, which live in the field for months.
 #: v2 added ``session`` / ``desktop`` / ``window_backend``.
-PAYLOAD_SCHEMA = 2
+#: v3 added ``device.hw_ids``.
+PAYLOAD_SCHEMA = 3
 
 #: Wait between pings. Deliberately a day: this is a census, not monitoring.
 SEND_INTERVAL_S = 24 * 60 * 60
@@ -84,8 +88,37 @@ PAYLOAD_KEYS = frozenset({
 #: Same, for the nested device block.
 DEVICE_KEYS = frozenset({
     "present", "connected", "name", "fw_version", "protocol",
-    "hw_version", "fontpack",
+    "hw_version", "fontpack", "hw_ids",
 })
+
+#: HMAC key for the hardware ID hashes. A constant, not per install: the same
+#: keyboard must hash the same on every computer, or it cannot be counted once.
+#: Changing it starts every keyboard's count from zero.
+HW_ID_HASH_KEY = b"polykybd-telemetry-hw-id-v1"
+HW_ID_HEX_LEN = 16      # one flash unique ID, 8 bytes
+HW_ID_HASH_HEX_LEN = 32  # 128 bits of the HMAC-SHA256
+_HW_ID_RE = re.compile(r"[0-9a-f]{%d}" % HW_ID_HEX_LEN)
+
+
+def hash_hw_ids(ids) -> list:
+    """Hash the flash unique IDs of a keyboard's halves for the ping.
+
+    ``ids`` holds 0..2 hex strings (cmd 50). Each ID is hashed on its own, and
+    the hashes are ordered by the numeric value of the raw ID, so the pair does
+    not depend on which half is plugged in to the computer. A replaced half
+    changes one hash of the pair and keeps the other. Anything that is not a
+    16-digit hex string is dropped. The raw IDs never leave this function.
+    """
+    raw = []
+    for value in ids or ():
+        # fullmatch, not bytes.fromhex alone: fromhex skips spaces, so
+        # "001122 33445566" would decode to 7 bytes and still hash.
+        text = value.strip().lower() if isinstance(value, str) else ""
+        if _HW_ID_RE.fullmatch(text):
+            raw.append(bytes.fromhex(text))
+    raw.sort(key=lambda b: int.from_bytes(b, "big"))
+    return [hmac.new(HW_ID_HASH_KEY, b, hashlib.sha256).hexdigest()[:HW_ID_HASH_HEX_LEN]
+            for b in raw[:2]]
 
 
 def new_install_id() -> str:
@@ -230,6 +263,8 @@ def build_payload(install_id, mode, status=None, fontpack=None, counters=None) -
             "hw_version": _text(status.get("hw_version")),
             "fontpack": {str(k): _int_or_none(v)
                          for k, v in (fontpack or {}).items()},
+            # Hashed here; the raw flash IDs are never sent (hash_hw_ids).
+            "hw_ids": hash_hw_ids(status.get("hw_ids")),
         },
         "counters": {k: int(counters.get(k, 0)) for k in COUNTER_KEYS} if counters
                     else {k: 0 for k in COUNTER_KEYS},

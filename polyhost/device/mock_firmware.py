@@ -131,6 +131,7 @@ CMD_MIN_PROTOCOL: dict[int, int] = {
     Cmd.KEY_ATTENTION.value: 32,
     Cmd.COMBOS.value: 33,
     Cmd.HOST_TUTORIAL.value: 35,
+    Cmd.HW_ID.value: 37,
     fw.CMD_FW_UP_BEGIN: 0,
     fw.CMD_FW_UP_CHUNK: 0,
     fw.CMD_FW_UP_COMMIT: 0,
@@ -350,6 +351,10 @@ class MockFirmware:
         self.reboot_count = 0     # cmd 43 reboots taken (the boot-loop diagnostic)
         self.crash_record = None  # the master's archived 48-byte record (cmd 39)
         self.crash_fresh = False
+        # cmd 50 (v37): the flash unique IDs of the half the host talks to and of the
+        # other half. None = no usable ID (flag bit clear). Tests set them.
+        self.hw_uid_own: bytes | None = bytes.fromhex("e66038b7c32f5a2c")
+        self.hw_uid_other: bytes | None = bytes.fromhex("e66038b7c3284d26")
         self.state_generation = 0
         self._reset_agent_keys()
         # What owns the keycaps, as the GET_ID 'A' block reports it (v28): 0 none,
@@ -849,6 +854,11 @@ class MockFirmware:
         flags = (1 if present else 0) | (2 if present and self.crash_fresh else 0)
         return _reply(p[1], body=bytes([flags]) + (self.crash_record if present else bytes(48)))
 
+    def _hw_id(self, p):
+        own, other = self.hw_uid_own, self.hw_uid_other
+        flags = (1 if own else 0) | (2 if other else 0)
+        return _reply(p[1], body=bytes([flags]) + (own or bytes(8)) + (other or bytes(8)))
+
     def _glyph_script(self, p):
         """cmd 30: the script byte as _get_or_set, plus the v26 placement op in p[3]
         (0 keep, 1 centre, 2 top-left; script 0xFF with an op sets the placement
@@ -1304,6 +1314,7 @@ class MockFirmware:
         Cmd.ENTER_BOOTLOADER.value: _bootloader,
         Cmd.REBOOT.value: _reboot,
         Cmd.CRASH_RECORD.value: _crash_record,
+        Cmd.HW_ID.value: _hw_id,
         Cmd.SET_HANDEDNESS.value: _handedness,
         Cmd.GET_LAYER_NAMES.value: _layer_names,
         Cmd.OVERLAY_FLAGS_ON.value: _flags_on,

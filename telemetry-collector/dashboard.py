@@ -351,6 +351,49 @@ def latest_per_install(rows: list[dict]) -> list[dict]:
     return sorted(best.values(), key=lambda r: str(r.get("received_at") or ""), reverse=True)
 
 
+def keyboard_counts(rows: list[dict]) -> tuple[int, int, int]:
+    """(linked hardware groups, pairs, inferred half replacements) from the
+    hardware ID hashes (schema 3+). All three are estimates.
+
+    A row carries up to two hashes, one per half (``hw_id_a``, ``hw_id_b``). Two
+    hashes in one row are taken as one keyboard, so a group is a set of hashes
+    linked through rows. A pair is one distinct set {a, b} of both halves, in
+    either column order. A group with more than one pair is counted as a half
+    replacement per extra pair. A half moved from one keyboard to another links
+    the two keyboards into one group, and the group stays merged, so the group
+    count can be too low and the replacement count too high. Rows from older
+    hosts or firmware carry no hash and are skipped, so this counts only
+    keyboards on firmware protocol 37+ with a schema 3 host.
+    """
+    parent: dict[str, str] = {}
+
+    def find(h: str) -> str:
+        while parent[h] != h:
+            parent[h] = parent[parent[h]]
+            h = parent[h]
+        return h
+
+    pairs: set[tuple[str, str]] = set()
+    for r in rows:
+        hashes = [str(r.get(k) or "") for k in ("hw_id_a", "hw_id_b")]
+        hashes = [h for h in hashes if h]
+        if len(hashes) == 2 and hashes[0] == hashes[1]:
+            hashes = hashes[:1]     # the same hash twice is one half, not a pair
+        for h in hashes:
+            parent.setdefault(h, h)
+        if len(hashes) == 2:
+            # Sorted: the Worker cannot check the order, and (A, B) and (B, A)
+            # are the same two halves.
+            pairs.add(tuple(sorted(hashes)))
+            ra, rb = find(hashes[0]), find(hashes[1])
+            if ra != rb:
+                parent[rb] = ra
+    groups = {find(h) for h in parent}
+    pairs_per_group: Counter = Counter(find(a) for a, _ in pairs)
+    replaced = sum(n - 1 for n in pairs_per_group.values() if n > 1)
+    return len(groups), len(pairs), replaced
+
+
 def breakdown(rows: list[dict], field: str, blank: str = "(none)") -> list[tuple[str, int]]:
     counts: Counter = Counter(str(r.get(field) or "").strip() or blank for r in rows)
     return counts.most_common()
@@ -575,11 +618,14 @@ def render(rows: list[dict], days: int | None, generated: str) -> str:
     in_window = [r for r in rows if str(r.get("day") or "") in window_days]
     installs_today = daily_installs(rows, window)[-1][1] if window else 0
 
+    kb_groups, _, kb_replaced = keyboard_counts(rows)
     kpis = [
         (len(latest), "installs ever seen"),
         (installs_today, "reported on the last day"),
         (len({r.get("host_version") for r in latest if r.get("host_version")}), "host versions in the field"),
         (sum(1 for r in latest if r.get("device_present")), "with a keyboard attached"),
+        (kb_groups, "keyboards seen, estimate (firmware protocol 37+)"),
+        (kb_replaced, "half replacements, inferred from hash pairs"),
         (len(rows), "reports total"),
     ]
     kpi_html = "".join(
@@ -641,8 +687,9 @@ from {len(latest)} installs</p>
 <footer>
 Each install reports at most once per UTC day, so a bar is a count of installs, not of launches.
 Counters are per-report totals since that install's previous report.<br>
-"Anonymous" here means the data carries nothing identifying — with this few keyboards it is
-not lost in a crowd either. Nothing on this page left your machine to produce it.
+The reports carry no names, but the keyboard ID hashes are persistent device identifiers:
+someone who knows who owns a keyboard can link its reports to that owner. With this few
+keyboards a report is not lost in a crowd either. Nothing on this page left your machine to produce it.
 </footer>
 </div></body></html>
 """

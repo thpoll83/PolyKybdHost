@@ -219,6 +219,41 @@ class Aggregations(unittest.TestCase):
         ]
         self.assertEqual(dash.fw_breakdown(rows), [("0.11.4", 1)])
 
+    def test_keyboard_counts_join_halves_and_count_a_replaced_half(self):
+        a, b, c, d = "a" * 32, "b" * 32, "c" * 32, "d" * 32
+        rows = [
+            row("i1", "2026-11-01", hw_id_a=a, hw_id_b=b),
+            row("i2", "2026-11-01", hw_id_a=a, hw_id_b=b),   # same keyboard, 2nd PC
+            row("i1", "2026-11-02", hw_id_a=a, hw_id_b=c),   # half b replaced by c
+            row("i3", "2026-11-02", hw_id_a=d, hw_id_b=""),  # slave not answering
+            row("i4", "2026-11-02"),                          # older host: no hashes
+        ]
+        self.assertEqual(dash.keyboard_counts(rows), (2, 2, 1))
+
+    def test_keyboard_counts_ignore_column_order(self):
+        a, b = "a" * 32, "b" * 32
+        rows = [row("i1", "2026-11-01", hw_id_a=a, hw_id_b=b),
+                row("i2", "2026-11-01", hw_id_a=b, hw_id_b=a)]
+        self.assertEqual(dash.keyboard_counts(rows), (1, 1, 0))
+
+    def test_the_replacement_count_is_on_the_dashboard(self):
+        a, b, c = "a" * 32, "b" * 32, "c" * 32
+        html = dash.render([row("i1", "2026-11-01", hw_id_a=a, hw_id_b=b),
+                            row("i1", "2026-11-02", hw_id_a=a, hw_id_b=c)], None, "now")
+        self.assertIn('<b>1</b><span>half replacements, inferred from hash pairs</span>', html)
+
+    def test_the_same_hash_twice_is_one_half(self):
+        a, b = "a" * 32, "b" * 32
+        rows = [row("i1", "2026-11-01", hw_id_a=a, hw_id_b=b),
+                row("i2", "2026-11-01", hw_id_a=a, hw_id_b=a)]
+        self.assertEqual(dash.keyboard_counts(rows), (1, 1, 0))
+
+    def test_keyboard_counts_a_lone_half_joins_its_pair(self):
+        a, b = "a" * 32, "b" * 32
+        rows = [row("i1", "2026-11-01", hw_id_a=b, hw_id_b=""),
+                row("i1", "2026-11-02", hw_id_a=a, hw_id_b=b)]
+        self.assertEqual(dash.keyboard_counts(rows), (1, 1, 0))
+
     def test_counter_totals_lists_every_known_counter(self):
         totals = dash.counter_totals([row("a", "2026-08-01", counters='{"sessions": 2}')])
         self.assertEqual([k for k, _, _ in totals], [k for k, _ in dash.COUNTERS])

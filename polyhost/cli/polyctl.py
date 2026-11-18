@@ -1744,6 +1744,18 @@ def _cmd_telemetry(client, args):
     return 0
 
 
+def _cmd_hwid(client, args):
+    """Print the flash unique IDs of both halves (cmd 50, firmware v37+) and the
+    hashes the telemetry ping sends for them."""
+    from polyhost.services.telemetry import hash_hw_ids
+    ids = client.call(protocol.M_HW_IDS_GET, {}) or {}
+    own, other = ids.get("own"), ids.get("other")
+    print(f"this half:   {own or '(none)'}")
+    print(f"other half:  {other or '(none)'}")
+    print("telemetry:   " + (", ".join(hash_hw_ids([v for v in (own, other) if v])) or "(none)"))
+    return 0
+
+
 def _fmt_time(ts):
     if not ts:
         return "never"
@@ -2204,6 +2216,11 @@ def build_parser():
         help="status (default) | preview the exact payload | enable | disable | "
              "send now (ignores the once-a-day throttle)")
     p_tel.set_defaults(func=_cmd_telemetry)
+
+    p_hwid = sub.add_parser(
+        "hwid", help="show the flash unique IDs of both halves and their telemetry hashes "
+                     "(firmware v37+)")
+    p_hwid.set_defaults(func=_cmd_hwid)
 
     p_set = sub.add_parser("settings", help="get or set a settings key")
     set_sub = p_set.add_subparsers(dest="settings_action", required=True)

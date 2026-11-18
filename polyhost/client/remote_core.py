@@ -456,6 +456,9 @@ class RemoteCore(Observable):
     def clear_crash_record(self):
         return self._device(p.M_CRASH_CLEAR)
 
+    def get_hw_ids(self):
+        return self._device(p.M_HW_IDS_GET)
+
     # -- overlays -----------------------------------------------------------
     def send_overlay_data(self, files):
         # The core takes one name or a list; list("sublime") would be its letters.

@@ -112,6 +112,8 @@ M_MOCK_KEYCAPS = "mock.keycaps"          # {"modifier": 0..15} -> (ok, {images, 
 # as crash_report.CrashRecord.to_dict() (or None); CLEAR erases the keyboard's archive.
 M_CRASH_GET = "crash.get"                # {"which": 0|1} -> (ok, record|None)
 M_CRASH_CLEAR = "crash.clear"            # {} -> (ok, payload)
+# Hardware IDs (cmd 50, protocol v37+): the flash unique IDs of both halves, raw.
+M_HW_IDS_GET = "device.hwids"            # {} -> (ok, {"own": hex|None, "other": hex|None})
 M_REBOOT = "device.reboot"               # {} -> "rebooting" (cmd 43, protocol v22+)
 # Boot-loop diagnostic: progress and the verdict arrive as boot_loop_* events.
 M_BOOT_LOOP_START = "bootloop.start"     # {"rounds": 1..50} -> {"rounds": n}

@@ -180,6 +180,10 @@ HOST_TUTORIAL_MIN_PROTOCOL = 35
 # AI key ripples for agents on another page, and a page change rings nothing. A v35
 # firmware ignores the bytes, so they are sent only from v36.
 AGENT_PAGES_MIN_PROTOCOL = 36
+# Minimum firmware PROTOCOL_VERSION for cmd 50, the flash unique IDs of both halves.
+# The telemetry ping sends them hashed, to count keyboards rather than installs.
+HW_ID_MIN_PROTOCOL = 37
+HW_ID_LEN = 8
 AGENT_KEY_COUNT = 10
 # Card slots: the 10 number keys, then '-' (dictation) and '+' (next waiting agent).
 AGENT_CARD_COUNT = 12
@@ -235,6 +239,7 @@ FEATURE_MIN_PROTOCOL = {
     "combos": COMBOS_MIN_PROTOCOL,
     "key_guide": KEY_GUIDE_MIN_PROTOCOL,
     "host_tutorial": HOST_TUTORIAL_MIN_PROTOCOL,
+    "hw_id": HW_ID_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -251,6 +256,17 @@ def protocol_supports(protocol: int | None, feature: str) -> bool:
     client so the feature/min-protocol table lives in exactly one place.
     """
     return (protocol or 0) >= FEATURE_MIN_PROTOCOL[feature]
+
+
+def decode_hw_ids(reply: bytes) -> dict:
+    """Decode a cmd 50 reply into {"own": hex|None, "other": hex|None}."""
+    flags = reply[3]
+    own = reply[4:4 + HW_ID_LEN]
+    other = reply[4 + HW_ID_LEN:4 + 2 * HW_ID_LEN]
+    return {
+        "own": own.hex() if flags & 0x01 else None,
+        "other": other.hex() if flags & 0x02 else None,
+    }
 
 
 LAYER_NAME_MAX = 8   # firmware POLY_LAYER_NAME_MAX: longest name, excluding the NUL
@@ -354,6 +370,10 @@ class PolyKybd:
         self.fontpack_bundle_versions = {}
         # None until a GET_ID lands, and None forever on firmware with no 'G' block.
         self.state_generation = None
+        # {"own": hex|None, "other": hex|None} from the last cmd 50 (get_hw_ids), or
+        # None before one. Kept after a disconnect: the telemetry ping reports the
+        # keyboard this install saw last.
+        self.hw_ids = None
         # hid_fontpack.ANIM_* from the GET_ID 'A' block (v28); None on older firmware.
         self.anim_state = None
 
@@ -1458,6 +1478,29 @@ class PolyKybd:
         from polyhost.services.crash_report import decode_record
         rec = decode_record(bytes(reply[3:]), "slave" if which == 1 else "master")
         return True, (rec.to_dict() if rec else None)
+
+    def get_hw_ids(self) -> tuple[bool, Any]:
+        """Read the flash unique IDs of both halves (cmd 50, v37+).
+
+        Returns (True, {"own": hex|None, "other": hex|None}): "own" is the half the
+        host talks to, "other" the half behind the split link. A half without a
+        usable ID (unplugged, older slave firmware) is None. The result is also kept
+        in ``self.hw_ids`` for the telemetry snapshot, which does no device I/O.
+        (False, message) when the firmware is too old or did not answer."""
+        if not self.supports("hw_id"):
+            return False, (
+                f"Firmware protocol too old for the hardware ID command "
+                f"(need v{HW_ID_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+        try:
+            result, reply = self.hid.send_and_read_validate(
+                compose_cmd(Cmd.HW_ID), 200, expect(Cmd.HW_ID))
+        except Exception as e:  # noqa: BLE001 — surfaced as a plain failure
+            return False, f"Hardware ID read failed: {e}"
+        if not result or len(reply) < 4 + 2 * HW_ID_LEN or reply[2:3] != b'.':
+            return False, "Hardware ID read was refused by the keyboard."
+        ids = decode_hw_ids(bytes(reply))
+        self.hw_ids = ids
+        return True, ids
 
     def clear_crash_record(self) -> tuple[bool, Any]:
         """Erase the keyboard's crash archive (cmd 39 sub-op 2)."""
