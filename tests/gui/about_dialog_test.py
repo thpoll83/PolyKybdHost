@@ -55,13 +55,13 @@ class AboutDialogTest(unittest.TestCase):
         dlg = self._dialog()
         dlg.resize(640, 480)
         self.app.processEvents()
-        scroll = dlg.findChild(QScrollArea)
-        width = scroll.viewport().width()
         pictures = dlg.findChildren(ad._FitPicture)
         self.assertEqual(len(pictures), sum(p.endswith(".png") for _t, _b, p in ad.BASICS))
+        # The four-keycap language picture is 666 px: at this size it must shrink.
+        self.assertTrue(any(pic.pixmap().width() < pic.sizeHint().width() for pic in pictures))
         for pic in pictures:
             self.assertGreater(pic.pixmap().width(), 0)
-            self.assertLessEqual(pic.pixmap().width(), width)
+            self.assertLessEqual(pic.pixmap().width(), pic.width())
 
     def test_the_sidebar_follows_the_scrolling(self):
         dlg = self._dialog()
