@@ -3969,11 +3969,11 @@ msgstr "Eine App mit eigenem Overlay bekommt ihr Logo ebenfalls auf der Esc-Tast
 
 #: polyhost/gui/settings_dialog.py:307
 msgid "Only for an app that comes with its own overlay: the keys its overlay leaves blank also get icons from the app's menus. Off: such an app shows only its overlay. Needs Read shortcuts from app menus."
-msgstr ""
+msgstr "Nur für eine App, die ein eigenes Overlay mitbringt: Die Tasten, die ihr Overlay leer lässt, bekommen zusätzlich Symbole aus den Menüs der App. Aus: Eine solche App zeigt nur ihr Overlay. Benötigt die Einstellung „Tastenkürzel aus App-Menüs lesen“."
 
 #: polyhost/gui/settings_dialog.py:311
 msgid "The main switch for shortcut icons. PolyKybdHost reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system, and draws an icon on each shortcut key. The reading runs in the background, one app at a time, so the other keycaps do not wait for it. It stops after 3 minutes on Windows, and after 4,000 parts of the app's window on Linux (3,000 on macOS). The shortcuts stay on this computer. Off: no app's menus are read, and an app that comes with its own overlay still shows it."
-msgstr ""
+msgstr "Der Hauptschalter für Tastenkürzel-Symbole. PolyKybdHost liest die Tastenkürzel aus den Menüs der App im Vordergrund über die Barrierefreiheits-Schnittstelle des Betriebssystems und zeichnet ein Symbol auf jede Tastenkürzel-Taste. Das Lesen läuft im Hintergrund, eine App nach der anderen, damit die anderen Tastenkappen nicht darauf warten. Es endet unter Windows nach 3 Minuten und unter Linux nach 4.000 Teilen des App-Fensters (unter macOS nach 3.000). Die Tastenkürzel bleiben auf diesem Rechner. Aus: Die Menüs keiner App werden gelesen, und eine App, die ein eigenes Overlay mitbringt, zeigt es weiterhin."
 
 #: polyhost/gui/settings_dialog.py:320
 msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."

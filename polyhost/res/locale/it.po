@@ -3969,11 +3969,11 @@ msgstr "Un'app con un overlay proprio riceve anche il suo logo sul tasto Esc, qu
 
 #: polyhost/gui/settings_dialog.py:307
 msgid "Only for an app that comes with its own overlay: the keys its overlay leaves blank also get icons from the app's menus. Off: such an app shows only its overlay. Needs Read shortcuts from app menus."
-msgstr ""
+msgstr "Solo per un'app che ha un overlay proprio: i tasti che il suo overlay lascia vuoti ricevono anche icone dai menu dell'app. Spenta: un'app di questo tipo mostra solo il suo overlay. Richiede l'impostazione “Leggi le scorciatoie dai menu delle app”."
 
 #: polyhost/gui/settings_dialog.py:311
 msgid "The main switch for shortcut icons. PolyKybdHost reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system, and draws an icon on each shortcut key. The reading runs in the background, one app at a time, so the other keycaps do not wait for it. It stops after 3 minutes on Windows, and after 4,000 parts of the app's window on Linux (3,000 on macOS). The shortcuts stay on this computer. Off: no app's menus are read, and an app that comes with its own overlay still shows it."
-msgstr ""
+msgstr "L'interruttore principale per le icone delle scorciatoie. PolyKybdHost legge le scorciatoie elencate nei menu dell'app in primo piano, tramite l'interfaccia di accessibilità del sistema operativo, e disegna un'icona su ogni tasto di scorciatoia. La lettura avviene in background, un'app alla volta, così gli altri keycap non devono aspettarla. Si ferma dopo 3 minuti su Windows e dopo 4.000 parti della finestra dell'app su Linux (3.000 su macOS). Le scorciatoie restano su questo computer. Spenta: i menu di nessuna app vengono letti, e un'app che ha un overlay proprio continua a mostrarlo."
 
 #: polyhost/gui/settings_dialog.py:320
 msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."

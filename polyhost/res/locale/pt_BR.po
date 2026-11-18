@@ -3969,11 +3969,11 @@ msgstr "Um aplicativo com sobreposição própria também recebe seu logotipo na
 
 #: polyhost/gui/settings_dialog.py:307
 msgid "Only for an app that comes with its own overlay: the keys its overlay leaves blank also get icons from the app's menus. Off: such an app shows only its overlay. Needs Read shortcuts from app menus."
-msgstr ""
+msgstr "Somente para um aplicativo que vem com sobreposição própria: as teclas que a sobreposição dele deixa vazias também recebem ícones a partir dos menus do aplicativo. Desligado: esse aplicativo mostra somente a sobreposição dele. Precisa da configuração “Ler atalhos dos menus dos aplicativos”."
 
 #: polyhost/gui/settings_dialog.py:311
 msgid "The main switch for shortcut icons. PolyKybdHost reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system, and draws an icon on each shortcut key. The reading runs in the background, one app at a time, so the other keycaps do not wait for it. It stops after 3 minutes on Windows, and after 4,000 parts of the app's window on Linux (3,000 on macOS). The shortcuts stay on this computer. Off: no app's menus are read, and an app that comes with its own overlay still shows it."
-msgstr ""
+msgstr "A chave principal dos ícones de atalhos. O PolyKybdHost lê os atalhos listados nos menus do aplicativo em foco, pela interface de acessibilidade do sistema operacional, e desenha um ícone em cada tecla de atalho. A leitura é feita em segundo plano, um aplicativo por vez, para que as outras teclas não precisem esperar por ela. Ela para depois de 3 minutos no Windows e depois de 4.000 partes da janela do aplicativo no Linux (3.000 no macOS). Os atalhos ficam neste computador. Desligado: os menus de nenhum aplicativo são lidos, e um aplicativo que vem com sobreposição própria continua a mostrá-la."
 
 #: polyhost/gui/settings_dialog.py:320
 msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."

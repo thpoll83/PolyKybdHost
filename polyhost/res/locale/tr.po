@@ -3952,11 +3952,11 @@ msgstr "Kendi kaplaması olan bir uygulama da, kaplaması Escape'i boş bırakt�
 
 #: polyhost/gui/settings_dialog.py:307
 msgid "Only for an app that comes with its own overlay: the keys its overlay leaves blank also get icons from the app's menus. Off: such an app shows only its overlay. Needs Read shortcuts from app menus."
-msgstr ""
+msgstr "Yalnızca kendi kaplamasıyla gelen bir uygulama için: kaplamasının boş bıraktığı tuşlar da uygulamanın menülerinden simge alır. Kapalıyken: böyle bir uygulama yalnızca kendi kaplamasını gösterir. \"Kısayolları uygulama menülerinden oku\" ayarının açık olması gerekir."
 
 #: polyhost/gui/settings_dialog.py:311
 msgid "The main switch for shortcut icons. PolyKybdHost reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system, and draws an icon on each shortcut key. The reading runs in the background, one app at a time, so the other keycaps do not wait for it. It stops after 3 minutes on Windows, and after 4,000 parts of the app's window on Linux (3,000 on macOS). The shortcuts stay on this computer. Off: no app's menus are read, and an app that comes with its own overlay still shows it."
-msgstr ""
+msgstr "Kısayol simgelerinin ana anahtarı. PolyKybdHost, odaktaki uygulamanın menülerinde listelenen kısayolları işletim sisteminin erişilebilirlik arayüzü üzerinden okur ve her kısayol tuşuna bir simge çizer. Okuma arka planda, her seferinde bir uygulama için yapılır; böylece diğer tuş kapakları onu beklemez. Windows'ta 3 dakika sonra, Linux'ta uygulama penceresinin 4.000 parçasından sonra (macOS'ta 3.000) durur. Kısayollar bu bilgisayarda kalır. Kapalıyken: hiçbir uygulamanın menüleri okunmaz ve kendi kaplamasıyla gelen bir uygulama kaplamasını göstermeye devam eder."
 
 #: polyhost/gui/settings_dialog.py:320
 msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."

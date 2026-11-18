@@ -3952,11 +3952,11 @@ msgstr "有專屬覆蓋圖的應用程式，若其覆蓋圖未使用 Esc 鍵，�
 
 #: polyhost/gui/settings_dialog.py:307
 msgid "Only for an app that comes with its own overlay: the keys its overlay leaves blank also get icons from the app's menus. Off: such an app shows only its overlay. Needs Read shortcuts from app menus."
-msgstr ""
+msgstr "僅適用於自帶覆蓋圖的應用程式：其覆蓋圖留空的按鍵也會顯示來自應用程式選單的圖示。關閉：這類應用程式只顯示其覆蓋圖。需要開啟「從應用程式選單讀取快捷鍵」。"
 
 #: polyhost/gui/settings_dialog.py:311
 msgid "The main switch for shortcut icons. PolyKybdHost reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system, and draws an icon on each shortcut key. The reading runs in the background, one app at a time, so the other keycaps do not wait for it. It stops after 3 minutes on Windows, and after 4,000 parts of the app's window on Linux (3,000 on macOS). The shortcuts stay on this computer. Off: no app's menus are read, and an app that comes with its own overlay still shows it."
-msgstr ""
+msgstr "快捷鍵圖示的總開關。PolyKybdHost 透過作業系統的協助工具介面，讀取目前焦點應用程式選單中列出的快捷鍵，並在每個快捷鍵上繪製圖示。讀取在背景進行，每次只讀取一個應用程式，因此其他鍵帽不必等待。在 Windows 上，讀取 3 分鐘後停止；在 Linux 上，讀取應用程式視窗的 4,000 個元件後停止（macOS 上為 3,000 個）。快捷鍵資訊只會留在這台電腦上。關閉：不讀取任何應用程式的選單，自帶覆蓋圖的應用程式仍會顯示其覆蓋圖。"
 
 #: polyhost/gui/settings_dialog.py:320
 msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."

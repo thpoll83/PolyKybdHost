@@ -3986,11 +3986,11 @@ msgstr "Aplikace s vlastním překryvem také dostane své logo na klávese Esca
 
 #: polyhost/gui/settings_dialog.py:307
 msgid "Only for an app that comes with its own overlay: the keys its overlay leaves blank also get icons from the app's menus. Off: such an app shows only its overlay. Needs Read shortcuts from app menus."
-msgstr ""
+msgstr "Jen pro aplikaci, která má vlastní překryv: klávesy, které její překryv nechává prázdné, také dostanou ikony z nabídek aplikace. Vypnuto: taková aplikace ukazuje jen svůj překryv. Vyžaduje zapnuté „Číst zkratky z nabídek aplikací“."
 
 #: polyhost/gui/settings_dialog.py:311
 msgid "The main switch for shortcut icons. PolyKybdHost reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system, and draws an icon on each shortcut key. The reading runs in the background, one app at a time, so the other keycaps do not wait for it. It stops after 3 minutes on Windows, and after 4,000 parts of the app's window on Linux (3,000 on macOS). The shortcuts stay on this computer. Off: no app's menus are read, and an app that comes with its own overlay still shows it."
-msgstr ""
+msgstr "Hlavní vypínač ikon zkratek. PolyKybdHost čte zkratky uvedené v nabídkách aktivní aplikace přes rozhraní zpřístupnění operačního systému a na každou klávesu zkratky vykreslí ikonu. Čtení běží na pozadí, vždy jen pro jednu aplikaci, takže ostatní klávesy na něj nečekají. Zastaví se po 3 minutách ve Windows a po 4 000 částech okna aplikace v Linuxu (3 000 v macOS). Zkratky zůstávají v tomto počítači. Vypnuto: nabídky žádné aplikace se nečtou a aplikace s vlastním překryvem ho dál ukazuje."
 
 #: polyhost/gui/settings_dialog.py:320
 msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."

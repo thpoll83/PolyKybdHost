@@ -3969,11 +3969,11 @@ msgstr "Een app met een eigen overlay krijgt ook zijn logo op de Escape-toets, a
 
 #: polyhost/gui/settings_dialog.py:307
 msgid "Only for an app that comes with its own overlay: the keys its overlay leaves blank also get icons from the app's menus. Off: such an app shows only its overlay. Needs Read shortcuts from app menus."
-msgstr ""
+msgstr "Alleen voor een app die een eigen overlay heeft: de toetsen die zijn overlay leeg laat, krijgen ook pictogrammen uit de menu's van de app. Uit: zo'n app toont alleen zijn overlay. Vereist de instelling ‘Sneltoetsen uit app-menu's lezen’."
 
 #: polyhost/gui/settings_dialog.py:311
 msgid "The main switch for shortcut icons. PolyKybdHost reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system, and draws an icon on each shortcut key. The reading runs in the background, one app at a time, so the other keycaps do not wait for it. It stops after 3 minutes on Windows, and after 4,000 parts of the app's window on Linux (3,000 on macOS). The shortcuts stay on this computer. Off: no app's menus are read, and an app that comes with its own overlay still shows it."
-msgstr ""
+msgstr "De hoofdschakelaar voor sneltoetspictogrammen. PolyKybdHost leest de sneltoetsen in de menu's van de actieve app via de toegankelijkheidsinterface van het besturingssysteem, en tekent een pictogram op elke sneltoets. Het lezen gebeurt op de achtergrond, één app tegelijk, zodat de andere toetsen er niet op wachten. Het stopt na 3 minuten op Windows, en na 4.000 onderdelen van het app-venster op Linux (3.000 op macOS). De sneltoetsen blijven op deze computer. Uit: de menu's van geen enkele app worden gelezen, en een app die een eigen overlay heeft, toont die nog steeds."
 
 #: polyhost/gui/settings_dialog.py:320
 msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."
