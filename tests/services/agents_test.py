@@ -610,7 +610,7 @@ class CardTest(unittest.TestCase):
             self.assertTrue(_has(galmuri, ch), ch)
         runs = _runs("HID 재연결 v1.2")
         self.assertEqual([(f is galmuri, part) for f, _dy, part in runs],
-                         [(False, "HID "), (True, "재연결"), (False, " v1.2")])
+                         [(False, "HID "), (True, "재연결 "), (False, "v1.2")])  # a space stays
 
     def test_a_fallback_glyph_stands_no_higher_than_a_capital(self):
         from polyhost.services.agents.card import _measure
@@ -677,6 +677,9 @@ class CardTest(unittest.TestCase):
             "Traditional Chinese": "修復登入錯誤最佳化快取邏輯測試雲端中繼",
             "Hindi": "लॉगिनबगठीककरेंकैशसुधारेंक्लाउडरिलेपरीक्षण",
             "Thai": "แก้ไขข้อผิดพลาดการเข้าสู่ระบบปรับปรุงแคช",
+            "Armenian": "ԱԲԳԴԵԶԷԸԹԺԻԼԽԾԿՀՁՂՃՄՅՆՇՈՉՊՋՌՍՎՏՐՑՒՓՔՕՖաբգդեզէըթժիլխծկհձղճմյնշոչպջռսվտրցւփքօֆ",
+            "Hebrew": "אבגדהוזחטיכךלמםנןסעפףצץקרשת",
+            "Arabic, Persian, Urdu": "ابتثجحخدذرزسشصضطظعغفقكلمنهويءأإآةىپچژگکیٹڈڑںھے",
         }
         import unicodedata as ud
         for script, text in samples.items():
@@ -684,8 +687,60 @@ class CardTest(unittest.TestCase):
                 if ud.category(ch).startswith("M"):
                     continue                      # drawn in its letter's run
                 self.assertTrue(any(_has(f, ch) for f in fonts), (script, ch))
-        # No font yet: Georgian (README "Not covered yet").
+        # No font yet: Georgian (README "Not covered yet", added on demand).
         self.assertFalse(any(_has(f, "ა") for f in fonts))
+
+    def test_hebrew_and_arabic_read_right_to_left(self):
+        from polyhost.services.agents.card import is_rtl
+        self.assertTrue(is_rtl("תיקון באג"))
+        self.assertTrue(is_rtl("  إصلاح v1.2"))
+        self.assertTrue(is_rtl("2 إصلاح"))                     # a digit is not a letter
+        self.assertFalse(is_rtl("Fix the עברית title"))
+        self.assertFalse(is_rtl("修复登录"))
+        self.assertFalse(is_rtl(""))
+
+    def test_a_right_to_left_line_is_drawn_as_the_shaper_orders_it(self):
+        import numpy as np
+        from PIL import Image
+        from polyhost.services.agents.card import _draw, _draw_text, _fallbacks, _runs
+        hebrew = next(f for f, _dy in _fallbacks() if f.getname()[0] == "Noto Sans Hebrew")
+        text = "תיקון באג"
+        self.assertEqual(len(_runs(text)), 1)                 # one run, spaces included
+
+        def drawn(fn):
+            img = Image.new("1", (72, 20))
+            fn(_draw(img))
+            return np.array(img, dtype=bool)
+        ours = drawn(lambda d: _draw_text(d, (0, 0), text))
+        self.assertTrue(ours.any())
+        # The same as the shaper draws the whole phrase right to left, at its dy.
+        dy = dict((id(f), d) for f, d in _fallbacks())[id(hebrew)]
+        ascent = card_mod._font().getmetrics()[0]
+        ref = drawn(lambda d: d.text((0, ascent + dy), text, font=hebrew, anchor="ls",
+                                     fill=1, direction="rtl"))
+        self.assertTrue((ours == ref).all())
+        # A Latin word and a number in a right-to-left line: drawn without error, and
+        # the Latin word left of the Hebrew one.
+        mixed = drawn(lambda d: _draw_text(d, (0, 0), "בדיקה HID"))
+        cols = mixed.any(axis=0).nonzero()[0]
+        latin = drawn(lambda d: _draw_text(d, (0, 0), "HID"))
+        self.assertTrue((mixed[:, :latin.any(axis=0).nonzero()[0].max() + 1] ==
+                         latin[:, :latin.any(axis=0).nonzero()[0].max() + 1]).all())
+        self.assertGreater(cols.max(), 40)
+
+    def test_an_arabic_word_split_by_a_line_keeps_its_joined_forms(self):
+        from polyhost.services.agents.card import _joins
+        self.assertTrue(_joins("\u062e", "\u0637"))            # kha, tah
+        self.assertFalse(_joins("\u0627", "\u0644"))           # alef joins no letter after it
+        self.assertFalse(_joins("a", "\u0637"))
+        lines = flow("\u062a\u0633\u062c\u064a\u0644" * 6, [30])
+        self.assertGreater(len(lines), 1)
+        for k, line in enumerate(lines[:-1]):
+            if _joins(line.rstrip("\u200d")[-1], lines[k + 1].lstrip("\u200d")[:1]):
+                self.assertTrue(line.endswith("\u200d"), line)
+                self.assertTrue(lines[k + 1].startswith("\u200d"), lines[k + 1])
+        self.assertEqual("".join(lines).replace("\u200d", ""),
+                         "\u062a\u0633\u062c\u064a\u0644" * 6)
 
     def test_a_missing_fallback_font_is_left_out(self):
         from polyhost.services.agents import card

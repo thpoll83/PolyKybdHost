@@ -78,6 +78,9 @@ FALLBACK_FONTS = (
     ("WenQuanYiZenHeiMono-cjk.ttf.xz", 12),  # the Chinese characters Galmuri lacks
     ("NotoSansDevanagari.ttf.xz", 13),       # Hindi, Marathi, Nepali (shaped by raqm)
     ("NotoSansThai.ttf.xz", 13),             # Thai
+    ("NotoSansArmenian.ttf.xz", 13),         # Armenian
+    ("NotoSansHebrew.ttf.xz", 13),           # Hebrew (right to left)
+    ("NotoSansArabic.ttf.xz", 13),           # Arabic, Persian, Urdu (right to left, joined)
 )
 FONT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)))), "res", "fonts", "agent-cards")
@@ -150,7 +153,9 @@ def _runs(text: str, size: int = FONT_SIZE) -> list[tuple]:
     for ch in text:
         # A combining mark (a Devanagari vowel sign, a Thai tone mark) stays in the
         # run of its letter: drawn alone, the shaper puts it on a dotted circle.
-        if runs and unicodedata.category(ch).startswith("M"):
+        # A space stays in the run before it too, so a right-to-left phrase is one
+        # run that the shaper orders as a whole.
+        if runs and (unicodedata.category(ch).startswith("M") or ch.isspace()):
             runs[-1] = (runs[-1][0], runs[-1][1], runs[-1][2] + ch)
             continue
         font, dy = base, 0
@@ -182,12 +187,40 @@ def _measure(text, size=FONT_SIZE):
     return tuple(int(v) for v in box)
 
 
-def _draw_text(draw, xy, text, size=FONT_SIZE):
+def is_rtl(text: str) -> bool:
+    """Whether `text` reads right to left: its first letter is Hebrew or Arabic."""
+    import unicodedata
+    for ch in text or "":
+        kind = unicodedata.bidirectional(ch)
+        if kind in ("R", "AL"):
+            return True
+        if kind == "L":
+            return False
+    return False
+
+
+def _draw_text(draw, xy, text, size=FONT_SIZE, rtl=None):
     """Draw `text` with its top left at `xy` as draw.text does with Aileron, each
-    character in the font _runs picks."""
+    character in the font _runs picks. In a right-to-left text (`rtl`, else
+    is_rtl(text)) the runs are drawn from right to left; the shaper orders the
+    characters inside each run (a Latin word or a number in it stays left to
+    right)."""
     x, y = xy
     ascent = _font(size).getmetrics()[0]
-    for font, dy, part in _runs(text, size):
+    runs = _runs(text, size)
+    if is_rtl(text) if rtl is None else rtl:
+        runs = [(f, dy, part.strip()) for f, dy, part in reversed(runs)]
+        gap = draw.textlength(" ", font=_font(size))
+        for k, (font, dy, part) in enumerate(runs):
+            from PIL import ImageFont
+            # Only a raqm font takes a direction (Pillow's Aileron is basic layout,
+            # and draws left to right).
+            kw = ({"direction": "rtl" if is_rtl(part) else "ltr"}
+                  if getattr(font, "layout_engine", None) == ImageFont.Layout.RAQM else {})
+            draw.text((x, y + ascent + dy), part, font=font, anchor="ls", fill=1, **kw)
+            x += draw.textlength(part, font=font) + (gap if k + 1 < len(runs) else 0)
+        return
+    for font, dy, part in runs:
         draw.text((x, y + ascent + dy), part, font=font, anchor="ls", fill=1)
         x += draw.textlength(part, font=font)
 
@@ -237,6 +270,20 @@ def _ink_width(text: str, size: int = FONT_SIZE) -> int:
     return box[2] - box[0]
 
 
+def _joins(left: str, right: str) -> bool:
+    """Whether two Arabic letters next to each other are drawn joined. A letter of
+    _RIGHT_JOINING never joins the letter after it."""
+    import unicodedata
+    return bool(left and right) and left not in _RIGHT_JOINING and all(
+        unicodedata.bidirectional(c) == "AL" and unicodedata.category(c) == "Lo"
+        for c in (left, right))
+
+
+# Arabic letters that join only the letter before them (alef, dal, reh, waw, ...).
+_RIGHT_JOINING = frozenset("\u0622\u0623\u0624\u0625\u0627\u0629\u062f\u0630\u0631"
+                           "\u0632\u0648\u0671\u0688\u0691\u0698")
+
+
 def flow(text: str, widths, size: int = FONT_SIZE) -> list[str]:
     """`text` in lines; line k is `widths[k]` px wide (the last width repeats). Each
     line takes as many characters as fit, so a word is split at any letter (the
@@ -252,6 +299,11 @@ def flow(text: str, widths, size: int = FONT_SIZE) -> list[str]:
             continue
         if _ink_width(cur + ch, size) <= width():
             cur += ch
+            continue
+        if _joins(cur[-1:], ch[:1]):
+            # An Arabic word split here keeps its joined letter forms.
+            lines.append(cur + "\u200d")
+            cur = "\u200d" + ch
             continue
         lines.append(cur.rstrip())
         cur = "" if ch == " " else ch
@@ -505,6 +557,7 @@ def render_page(layout: CardLayout, page: int = 0):
     spans = _spans(mark, layout.icon)
     beside = _beside(mark)
     cap = _measure("H")[1]
+    rtl = is_rtl("".join(line for page in layout.pages for line in page))
     text_h = (len(lines) - 1) * LINE_PITCH + (_measure("Hg")[3] - cap) if lines else 0
     shift = (mark.shape[0] - text_h) // 2 if mark is not None and len(lines) <= beside else 0
     img = Image.new("1", (PANEL_W, PANEL_H), 0)
@@ -518,7 +571,7 @@ def render_page(layout: CardLayout, page: int = 0):
             x = left - box[0]                                   # against the mark
         else:
             x = left + (right - left - (box[2] - box[0])) // 2 - box[0]
-        _draw_text(draw, (x, max(0, shift) + k * LINE_PITCH - cap), line)
+        _draw_text(draw, (x, max(0, shift) + k * LINE_PITCH - cap), line, rtl=rtl)
     canvas = np.array(img, dtype=bool)
     if mark is not None:
         _paste(canvas, np.asarray(mark, dtype=bool), 0, 0)
