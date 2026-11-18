@@ -202,6 +202,7 @@ class PolyCore(Observable):
         self._hw_id_reads_left = 0
         self._hw_id_seen_generation = None
         self._hw_id_pending = False
+        self._hw_id_want_other = False
         self._newer_fw_policy = None
         self._newer_fw_policy_proto = None
         # Worker-side reconnect bookkeeping. `last_applied_connected` is the
@@ -3345,20 +3346,28 @@ class PolyCore(Observable):
         with self._hw_id_lock:
             self._hw_ids = None
             self._hw_id_conn = getattr(self, "_hw_id_conn", 0) + 1
-        self._hw_id_reads_left = self.HW_ID_READS_PER_CONNECTION
-        self._hw_id_seen_generation = getattr(self.keeb, "state_generation", None)
+            self._hw_id_reads_left = self.HW_ID_READS_PER_CONNECTION
+            self._hw_id_pending = False
+            self._hw_id_want_other = False
+            self._hw_id_seen_generation = getattr(self.keeb, "state_generation", None)
 
     def _hw_id_read_allowed(self) -> bool:
+        # The CACHED protocol: this runs on the Qt thread in the GUI, and
+        # keeb.supports() does a GET_ID when the protocol is unknown. The job
+        # checks supports() again on the worker.
         return (self.connected and not self.safe_mode and not self.paused
                 and getattr(self, "_hw_id_reads_left", 0) > 0
-                and self.keeb.supports("hw_id"))
+                and protocol_supports(self.keeb.protocol_version, "hw_id"))
 
     def _submit_hw_id_read(self):
-        if getattr(self, "_hw_id_pending", False) or not self._hw_id_read_allowed():
-            return
-        self._hw_id_reads_left -= 1
-        self._hw_id_pending = True
-        conn = self._hw_id_conn
+        # Check, reserve a read and capture the connection in one step: the Qt
+        # thread (apply_reconnect) and the worker probe can both get here.
+        with self._hw_id_lock:
+            if getattr(self, "_hw_id_pending", False) or not self._hw_id_read_allowed():
+                return
+            self._hw_id_reads_left -= 1
+            self._hw_id_pending = True
+            conn = self._hw_id_conn
         self.worker.submit("hw_id_read", lambda cancel: self._hw_id_read_job(cancel, conn),
                            coalesce_key="hw_id_read")
 
@@ -3369,10 +3378,14 @@ class PolyCore(Observable):
         if not steady or getattr(self, "_hw_id_reads_left", 0) <= 0:
             return
         gen = getattr(self.keeb, "state_generation", None)
-        moved = gen != getattr(self, "_hw_id_seen_generation", None)
-        self._hw_id_seen_generation = gen
         ids = getattr(self, "_hw_ids", None)
-        if ids is None or (moved and ids.get("other") is None):
+        if gen != getattr(self, "_hw_id_seen_generation", None):
+            self._hw_id_seen_generation = gen
+            if ids is not None and ids.get("other") is None:
+                # Stays set until a read brings the other half, so a timeout
+                # after the counter moved is retried (within the budget).
+                self._hw_id_want_other = True
+        if ids is None or getattr(self, "_hw_id_want_other", False):
             self._submit_hw_id_read()
 
     def _hw_id_read_job(self, cancel, conn):
@@ -3382,7 +3395,9 @@ class PolyCore(Observable):
         try:
             self._hw_id_read(cancel, conn)
         finally:
-            self._hw_id_pending = False
+            with self._hw_id_lock:
+                if conn == self._hw_id_conn:
+                    self._hw_id_pending = False
 
     def _hw_id_read(self, cancel, conn):
         if (cancel.is_set() or conn != self._hw_id_conn or not self.connected
@@ -3396,6 +3411,8 @@ class PolyCore(Observable):
         with self._hw_id_lock:
             if conn == self._hw_id_conn:
                 self._hw_ids = dict(ids)
+                if ids.get("other") is not None:
+                    self._hw_id_want_other = False
 
     def clear_crash_record(self):
         """Erase the keyboard's crash archive; a cleared record can be reported again."""

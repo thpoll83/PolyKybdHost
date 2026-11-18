@@ -5,10 +5,13 @@ name: Deploy telemetry collector
 # ends up sitting unshipped because the one person set up to deploy it is away.
 #
 # Requires two repository secrets (Settings -> Secrets and variables -> Actions):
-#   CLOUDFLARE_API_TOKEN   - a token with the "Edit Cloudflare Workers" template.
-#                            Scope it to this account only. It is the one real
-#                            credential here; everything else in wrangler.toml is
-#                            an identifier.
+#   CLOUDFLARE_API_TOKEN   - a token with the "Edit Cloudflare Workers" template
+#                            PLUS account-scoped "D1: Read" (or Edit). The
+#                            template has no D1 permission, and the schema check
+#                            below queries D1 before the deploy: without D1 it
+#                            fails and nothing deploys. Scope it to this account
+#                            only. It is the one real credential here; everything
+#                            else in wrangler.toml is an identifier.
 #   CLOUDFLARE_ACCOUNT_ID  - the account the Worker lives in.
 #
 # Deliberately NOT automated: applying schema.sql. Schema changes to a live

@@ -23,6 +23,7 @@ def make_core(*, supports=True, safe_mode=False):
     core.worker = mock.MagicMock()
     core.keeb = mock.MagicMock()
     core.keeb.supports.return_value = supports
+    core.keeb.protocol_version = 37 if supports else 36
     core.keeb.state_generation = 5
     core.keeb.get_hw_ids.return_value = (True, dict(A))
     core.get_status = lambda: {"connected": True}
@@ -102,6 +103,7 @@ class HwIdCoreTest(unittest.TestCase):
             self.assertFalse(stored.wait(0.2), "the store did not wait for the lock")
             core._hw_id_conn += 1                   # the reset completes
         t.join(2)
+        self.assertTrue(stored.is_set(), "the stale job did not finish")
         self.assertIsNone(core._hw_ids)
 
     def test_safe_mode_sends_no_cmd_50(self):
@@ -147,6 +149,30 @@ class HwIdCoreTest(unittest.TestCase):
         core._recheck_hw_ids(steady=True)
         self.assertEqual(run_jobs(core), 1)
         self.assertEqual(core._telemetry_snapshot()[0]["hw_ids"], [A["own"], A["other"]])
+
+    def test_a_timeout_after_the_counter_moved_is_retried(self):
+        core = make_core()
+        core.keeb.get_hw_ids.return_value = (True, {"own": A["own"], "other": None})
+        core._submit_hw_id_read()
+        run_jobs(core)
+        core.keeb.state_generation = 6                  # the slave linked up
+        core.keeb.get_hw_ids.return_value = (False, "timeout")
+        core._recheck_hw_ids(steady=True)
+        self.assertEqual(run_jobs(core), 1)             # timed out
+        core.keeb.get_hw_ids.return_value = (True, dict(A))
+        core._recheck_hw_ids(steady=True)               # same counter, still retried
+        self.assertEqual(run_jobs(core), 1)
+        self.assertEqual(core._telemetry_snapshot()[0]["hw_ids"], [A["own"], A["other"]])
+        core._recheck_hw_ids(steady=True)               # complete: no more reads
+        self.assertEqual(run_jobs(core), 0)
+
+    def test_the_qt_side_check_does_no_device_io(self):
+        # keeb.supports() would do a GET_ID when the protocol is unknown.
+        core = make_core()
+        core.keeb.protocol_version = None
+        core._submit_hw_id_read()
+        self.assertEqual(core.worker.submit.call_count, 0)
+        core.keeb.supports.assert_not_called()
 
     def test_complete_ids_are_not_read_again(self):
         core = make_core()
