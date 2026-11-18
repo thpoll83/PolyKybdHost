@@ -46,6 +46,11 @@ CREATE TABLE IF NOT EXISTS ping (
   device_protocol  INTEGER,
   hw_version       TEXT,
   fontpack         TEXT,                      -- JSON {bundle: content_version}
+  -- Hardware ID hashes (schema 3+): HMAC-SHA256 of each half's flash unique ID,
+  -- 32 hex digits, ordered by the raw ID so the pair does not depend on which
+  -- half is plugged in. '' when not sent. A replaced half changes one of the two.
+  hw_id_a          TEXT NOT NULL DEFAULT '',
+  hw_id_b          TEXT NOT NULL DEFAULT '',
 
   counters         TEXT,                      -- JSON {name: count}
   -- The CANONICAL row as JSON — i.e. exactly the allow-listed columns above,
@@ -67,6 +72,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS ping_install_day ON ping (install_id, day);
 
 CREATE INDEX IF NOT EXISTS ping_day ON ping (day);
 CREATE INDEX IF NOT EXISTS ping_host_version ON ping (host_version);
+CREATE INDEX IF NOT EXISTS ping_hw_id_a ON ping (hw_id_a);
 
 -- Daily actives split by host version — the question this whole thing exists
 -- to answer.
@@ -91,7 +97,7 @@ GROUP BY day, fw_version ORDER BY day DESC, installs DESC;
 --   wrangler d1 execute polyhost-telemetry --remote \
 --     --command "ALTER TABLE ping ADD COLUMN session TEXT NOT NULL DEFAULT ''"
 --
--- D1 takes one ALTER per statement, so run the three separately. Each is a
+-- D1 takes one ALTER per statement, so run each one separately. Each is a
 -- no-op error ("duplicate column name") if already applied — safe to re-run.
 --
 -- schema 2 (payload session/desktop/window_backend):
@@ -99,7 +105,12 @@ GROUP BY day, fw_version ORDER BY day DESC, installs DESC;
 --   ALTER TABLE ping ADD COLUMN desktop        TEXT NOT NULL DEFAULT '';
 --   ALTER TABLE ping ADD COLUMN window_backend TEXT NOT NULL DEFAULT '';
 --
+-- schema 3 (payload device.hw_ids):
+--   ALTER TABLE ping ADD COLUMN hw_id_a TEXT NOT NULL DEFAULT '';
+--   ALTER TABLE ping ADD COLUMN hw_id_b TEXT NOT NULL DEFAULT '';
+--   CREATE INDEX IF NOT EXISTS ping_hw_id_a ON ping (hw_id_a);
+--
 -- ⚠️ Apply the migration BEFORE deploying the worker. The worker's INSERT
--- names all three columns, so between a new worker and an un-migrated table
+-- names every column, so between a new worker and an un-migrated table
 -- every ping fails with a 503 and the day's data is simply lost — pings are
 -- daily and never retried, so it cannot be backfilled.

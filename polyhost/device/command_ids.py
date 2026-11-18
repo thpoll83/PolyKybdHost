@@ -123,6 +123,10 @@ class Cmd(Enum):
     # conditions the master watches (key, layer, keycode), polled by the host, and a
     # 10 s watchdog. Firmware base/host_tutorial_plan.h.
     HOST_TUTORIAL = 49
+    # Hardware IDs (protocol v37+): no request payload. Reply [3] flags (bit 0: [4..11]
+    # valid, bit 1: [12..19] valid), [4..11] the flash unique ID of the half the host
+    # talks to, [12..19] the other half's. Always ACKs. Firmware base/hw_uid.h.
+    HW_ID = 50
 
 
 

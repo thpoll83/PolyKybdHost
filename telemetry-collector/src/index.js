@@ -17,7 +17,7 @@
  */
 
 const MAX_BODY_BYTES = 8 * 1024;
-const SUPPORTED_SCHEMAS = new Set([1, 2]);
+const SUPPORTED_SCHEMAS = new Set([1, 2, 3]);
 
 // Field caps. A payload is machine-generated, so anything longer is either a
 // bug or an attempt to fill the database; truncating beats rejecting because a
@@ -55,6 +55,15 @@ const DESKTOPS = new Set([
 const WINDOW_BACKENDS = new Set([
   'pywinctl', 'kde_win_reporter', 'gnome_wayland_reporter',
 ]);
+/** Schema 3+: the keyboard's hardware ID hashes, at most two (one per half),
+ *  each 32 lowercase hex digits. The host sends them ordered by the raw ID, so
+ *  the first is hw_id_a and the second hw_id_b. Anything else is dropped. */
+const HW_ID_HASH = /^[a-f0-9]{32}$/;
+function hwIds(v) {
+  if (!Array.isArray(v)) return ['', ''];
+  const ok = v.filter((h) => typeof h === 'string' && HW_ID_HASH.test(h)).slice(0, 2);
+  return [ok[0] ?? '', ok[1] ?? ''];
+}
 const int = (v) => (Number.isFinite(v) ? Math.trunc(v) : null);
 const bool = (v) => (v ? 1 : 0);
 
@@ -81,6 +90,7 @@ function validate(payload) {
 
 function toRow(payload, country, now) {
   const dev = payload.device && typeof payload.device === 'object' ? payload.device : {};
+  const [hwA, hwB] = hwIds(dev.hw_ids);
   return {
     received_at: now.toISOString(),
     day: now.toISOString().slice(0, 10),
@@ -107,6 +117,9 @@ function toRow(payload, country, now) {
     device_protocol: int(dev.protocol),
     hw_version: str(dev.hw_version, LIMITS.hw_version),
     fontpack: jsonMap(dev.fontpack),
+    // Schema 3+. '' for an older host, older firmware or a half without an ID.
+    hw_id_a: hwA,
+    hw_id_b: hwB,
     counters: jsonMap(payload.counters),
   };
 }
@@ -117,8 +130,8 @@ INSERT OR IGNORE INTO ping (
   host_version, host_protocol, os, os_release, session, desktop,
   window_backend, arch, python, mode,
   device_present, device_connected, device_name, fw_version, device_protocol,
-  hw_version, fontpack, counters, raw
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+  hw_version, fontpack, hw_id_a, hw_id_b, counters, raw
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
 export default {
   async fetch(request, env) {
@@ -177,7 +190,7 @@ export default {
           row.session, row.desktop, row.window_backend, row.arch,
           row.python, row.mode, row.device_present, row.device_connected,
           row.device_name, row.fw_version, row.device_protocol, row.hw_version,
-          row.fontpack, row.counters, JSON.stringify(row),
+          row.fontpack, row.hw_id_a, row.hw_id_b, row.counters, JSON.stringify(row),
         )
         .run();
     } catch (e) {

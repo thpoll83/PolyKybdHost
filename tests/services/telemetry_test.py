@@ -5,6 +5,8 @@ frozen key set, so any future field has to be added deliberately in two places
 (the builder and PAYLOAD_KEYS) rather than sliding in because someone added a
 key to PolyCore.get_status().
 """
+import hashlib
+import hmac
 import json
 import logging
 import unittest
@@ -87,6 +89,48 @@ class BuildPayloadTest(unittest.TestCase):
         ids = {telemetry.new_install_id() for _ in range(50)}
         self.assertEqual(len(ids), 50)
         self.assertTrue(all(len(i) == 32 for i in ids))
+
+
+class HwIdHashTest(unittest.TestCase):
+    LOW, HIGH = "00ff000000000001", "e66038b7c3284d26"
+
+    def test_the_pair_does_not_depend_on_which_half_is_plugged_in(self):
+        self.assertEqual(telemetry.hash_hw_ids([self.LOW, self.HIGH]),
+                         telemetry.hash_hw_ids([self.HIGH, self.LOW]))
+
+    def test_ordered_by_the_numeric_raw_id(self):
+        h = telemetry.hash_hw_ids([self.HIGH, self.LOW])
+        self.assertEqual(h[0], telemetry.hash_hw_ids([self.LOW])[0])
+        self.assertEqual(h[1], telemetry.hash_hw_ids([self.HIGH])[0])
+
+    def test_each_half_is_hashed_on_its_own(self):
+        # A replaced half keeps the other half's hash, which is how a swap shows.
+        a = telemetry.hash_hw_ids([self.LOW, self.HIGH])
+        b = telemetry.hash_hw_ids([self.LOW, "ffffffffffff0000"])
+        self.assertEqual(a[0], b[0])
+        self.assertNotEqual(a[1], b[1])
+
+    def test_raw_ids_never_appear_in_the_payload(self):
+        p = telemetry.build_payload("x" * 32, "daemon", {"hw_ids": [self.LOW, self.HIGH]})
+        text = json.dumps(p)
+        self.assertNotIn(self.LOW, text)
+        self.assertNotIn(self.HIGH, text)
+        self.assertEqual(len(p["device"]["hw_ids"]), 2)
+        for h in p["device"]["hw_ids"]:
+            self.assertRegex(h, r"^[0-9a-f]{32}$")
+
+    def test_hash_is_pinned(self):
+        # Changing the key or the truncation restarts every keyboard's count.
+        self.assertEqual(telemetry.hash_hw_ids([self.LOW]),
+                         [hmac.new(b"polykybd-telemetry-hw-id-v1", bytes.fromhex(self.LOW),
+                                   hashlib.sha256).hexdigest()[:32]])
+
+    def test_junk_is_dropped(self):
+        self.assertEqual(telemetry.hash_hw_ids(["zz" * 8, "12", None, 5]), [])
+        self.assertEqual(telemetry.hash_hw_ids(None), [])
+
+    def test_no_snapshot_ids_sends_an_empty_list(self):
+        self.assertEqual(telemetry.build_payload("x" * 32, "daemon", {})["device"]["hw_ids"], [])
 
 
 class DecideShouldSendTest(unittest.TestCase):

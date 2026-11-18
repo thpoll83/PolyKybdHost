@@ -23,7 +23,10 @@ widening fail loudly. **Never add a field by spreading.**
   one small JSON POST per install per day — host/protocol version, OS + coarse release,
   arch, python, run mode, the attached keyboard's model/fw/protocol/hw/font-pack versions,
   six counters since the last report (sessions, connects, reconnect_flaps, fw_flashes,
-  fontpack_flashes, update_installs), and a locally-generated random `install_id`. **On by
+  fontpack_flashes, update_installs), a locally-generated random `install_id`, and
+  (schema 3) `device.hw_ids`: HMAC hashes of both halves' flash unique IDs (cmd 50,
+  firmware v37), ordered by raw ID. The core reads the IDs once per connect on the
+  worker (`_hw_id_read_job`) into `keeb.hw_ids`; the snapshot only reads that cache. **On by
   default**, opt out in the settings dialog or `polyctl telemetry disable`;
   `polyctl telemetry status|preview|send` are the rest of the CLI surface. `PolyCore` owns
   the reporter (`start_telemetry()` is called next to `worker.start()` in **both**

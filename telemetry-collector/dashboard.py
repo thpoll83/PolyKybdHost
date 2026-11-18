@@ -351,6 +351,41 @@ def latest_per_install(rows: list[dict]) -> list[dict]:
     return sorted(best.values(), key=lambda r: str(r.get("received_at") or ""), reverse=True)
 
 
+def keyboard_counts(rows: list[dict]) -> tuple[int, int, int]:
+    """(keyboards, pairs, replaced halves) from the hardware ID hashes (schema 3+).
+
+    A row carries up to two hashes, one per half (``hw_id_a``, ``hw_id_b``). Two
+    hashes in one row are the same keyboard, so a keyboard is a group of hashes
+    linked through rows. A pair is one distinct (a, b) with both halves. A group
+    with more than one pair had a half replaced: each pair after the first is one
+    replacement. Rows from older hosts or firmware carry no hash and are skipped,
+    so this counts only keyboards on firmware v37+ with a v3 host.
+    """
+    parent: dict[str, str] = {}
+
+    def find(h: str) -> str:
+        while parent[h] != h:
+            parent[h] = parent[parent[h]]
+            h = parent[h]
+        return h
+
+    pairs: set[tuple[str, str]] = set()
+    for r in rows:
+        hashes = [str(r.get(k) or "") for k in ("hw_id_a", "hw_id_b")]
+        hashes = [h for h in hashes if h]
+        for h in hashes:
+            parent.setdefault(h, h)
+        if len(hashes) == 2:
+            pairs.add((hashes[0], hashes[1]))
+            ra, rb = find(hashes[0]), find(hashes[1])
+            if ra != rb:
+                parent[rb] = ra
+    groups = {find(h) for h in parent}
+    pairs_per_group: Counter = Counter(find(a) for a, _ in pairs)
+    replaced = sum(n - 1 for n in pairs_per_group.values() if n > 1)
+    return len(groups), len(pairs), replaced
+
+
 def breakdown(rows: list[dict], field: str, blank: str = "(none)") -> list[tuple[str, int]]:
     counts: Counter = Counter(str(r.get(field) or "").strip() or blank for r in rows)
     return counts.most_common()
@@ -580,6 +615,7 @@ def render(rows: list[dict], days: int | None, generated: str) -> str:
         (installs_today, "reported on the last day"),
         (len({r.get("host_version") for r in latest if r.get("host_version")}), "host versions in the field"),
         (sum(1 for r in latest if r.get("device_present")), "with a keyboard attached"),
+        (keyboard_counts(rows)[0], "keyboards seen (firmware v37+)"),
         (len(rows), "reports total"),
     ]
     kpi_html = "".join(

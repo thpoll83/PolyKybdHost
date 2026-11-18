@@ -29,7 +29,7 @@ marketing** — if the payload gains a field, the notes have to say so.
 
 ```json
 {
-  "schema": 2,
+  "schema": 3,
   "install_id": "9f2c…",           // random uuid4, generated on this machine
   "host_version": "0.11.5",
   "host_protocol": 12,
@@ -42,7 +42,9 @@ marketing** — if the payload gains a field, the notes have to say so.
     "present": true, "connected": true,
     "name": "PolyKybd Split72",
     "fw_version": "0.11.4", "protocol": 12, "hw_version": "1.0",
-    "fontpack": {"symbol": 5, "emoji": 1}
+    "fontpack": {"symbol": 5, "emoji": 1},
+    // See "Counting keyboards" below. Empty before firmware v37.
+    "hw_ids": ["3c1f…", "a90e…"]
   },
   "counters": {
     "sessions": 1, "connects": 3, "reconnect_flaps": 0,
@@ -77,6 +79,27 @@ sent is never the text of those variables.** It is mapped to one of the names
 listed above, and anything not on the list is sent as `other`. So a desktop we
 have not heard of is counted, and never named.
 
+### Counting keyboards (added in schema 3)
+
+The `install_id` counts host installs, not keyboards: one keyboard on two
+computers is two installs. To count keyboards, the host reads the unique ID of
+each half's flash chip (firmware v37+, `polyctl hwid`) and sends a hash of it.
+
+- Each half's 8-byte ID is hashed on its own with HMAC-SHA256 and a key that is
+  the same in every host (`HW_ID_HASH_KEY` in `services/telemetry.py`). The
+  first 32 hex digits are sent. The raw ID is never sent.
+- The two hashes are ordered by the numeric value of the raw IDs, so the pair
+  is the same whichever half is plugged in to the computer.
+- A replaced half changes one hash and keeps the other. The collector stores
+  them as `hw_id_a` and `hw_id_b`, so a new pair that shares one hash with an
+  older pair is the same keyboard with one half replaced.
+- With one half unplugged, or a slave on older firmware, the list has one hash.
+  Before firmware v37 it is empty.
+
+The key is public, so anyone who has your keyboard can compute its hash. The
+hash identifies the keyboard across computers and reinstalls, which is its
+purpose. It does not identify you.
+
 ## What is never sent
 
 The host application can see all of the following. None of it is collected:
@@ -87,7 +110,8 @@ The host application can see all of the following. None of it is collected:
   them
 - **your location** — the daylight-brightness feature may look up an approximate
   location; that never reaches telemetry
-- user name, machine name, MAC address, keyboard serial number
+- user name, machine name, MAC address, the keyboard's raw flash IDs (only
+  their hashes, see above)
 - file paths, overlay contents, keymaps
 
 This is enforced by construction: `build_payload()` copies named fields only,

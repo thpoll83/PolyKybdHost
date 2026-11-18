@@ -118,6 +118,7 @@ CALLS = {
     "set_glyph_placement": [(GlyphPlacement.CENTRE,), (GlyphPlacement.TOP_LEFT,)],
     "get_glyph_placement": [()],
     "get_crash_record": [(0,), (1,)], "clear_crash_record": [()],
+    "get_hw_ids": [()],
     "get_layer_names": [()],
     "get_macro_info": [()], "read_macro_buffer": [(64,)],
     "write_macro_buffer": [(b"hi\x00",)], "get_macro_look": [(0,)],

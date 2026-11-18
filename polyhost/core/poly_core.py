@@ -2123,6 +2123,9 @@ class PolyCore(Observable):
             # tell us a tester's link is unhealthy without asking them.
             if connected_now:
                 self.telemetry.note("connects")
+                if self.connected:
+                    self.worker.submit("hw_id_read", self._hw_id_read_job,
+                                       coalesce_key="hw_id_read")
             else:
                 self.telemetry.note("reconnect_flaps")
             if snapshot["version_ok"] or self.ignore_version:
@@ -3313,6 +3316,19 @@ class PolyCore(Observable):
         return self._device_call(
             "crash_get", lambda c, w=w: self.keeb.get_crash_record(w))
 
+    def get_hw_ids(self):
+        """The flash unique IDs of both halves (cmd 50, v37+), read now."""
+        return self._device_call("hw_ids_get", lambda c: self.keeb.get_hw_ids())
+
+    def _hw_id_read_job(self, cancel):
+        """Worker job after a connect: read the hardware IDs once for the
+        telemetry snapshot, which reads only ``keeb.hw_ids``."""
+        if cancel.is_set() or not self.connected or not self.keeb.supports("hw_id"):
+            return
+        ok, msg = self.keeb.get_hw_ids()
+        if not ok:
+            self.log.debug("Hardware ID read failed: %s", msg)
+
     def clear_crash_record(self):
         """Erase the keyboard's crash archive; a cleared record can be reported again."""
         ok, payload = self._device_call(
@@ -3996,7 +4012,11 @@ class PolyCore(Observable):
         # than a live bug — but the callers swallow exceptions, so if a device
         # object ever lacked it the whole device block would vanish from the
         # ping with no trace, and all three reads should fail the same way.
-        return (self.get_status(),
+        status = dict(self.get_status())
+        # Raw IDs; build_payload() hashes them and sends only the hashes.
+        hw_ids = getattr(self.keeb, "hw_ids", None) or {}
+        status["hw_ids"] = [v for v in (hw_ids.get("own"), hw_ids.get("other")) if v]
+        return (status,
                 dict(getattr(self.keeb, "fontpack_bundle_versions", None) or {}))
 
     def _log_telemetry_notice(self):

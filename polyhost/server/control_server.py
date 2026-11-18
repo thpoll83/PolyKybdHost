@@ -272,6 +272,7 @@ class ControlServer(MpcListenerServer):
             p.M_MOCK_KEYCAPS: lambda conn, params: _unwrap(c.mock_keycaps(params.get("modifier", 0))),
             p.M_CRASH_GET: lambda conn, params: _unwrap(c.get_crash_record(params.get("which", 0))),
             p.M_CRASH_CLEAR: lambda conn, params: _unwrap(c.clear_crash_record()),
+            p.M_HW_IDS_GET: lambda conn, params: _unwrap(c.get_hw_ids()),
             p.M_REBOOT: lambda conn, params: _unwrap(c.reboot_keyboard()),
             p.M_BOOT_LOOP_START: lambda conn, params: _unwrap(
                 c.start_boot_loop(params.get("rounds", c.BOOT_LOOP_DEFAULT_ROUNDS))),
