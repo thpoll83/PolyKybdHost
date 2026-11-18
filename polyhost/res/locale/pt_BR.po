@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-18 07:53+0000\n"
+"POT-Creation-Date: 2026-11-18 08:12+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pt_BR\n"
@@ -1341,7 +1341,7 @@ msgid "pick one from Source fonts below, or Browse…"
 msgstr "escolha uma em Fontes de origem abaixo ou em Procurar…"
 
 #: polyhost/gui/fontpack_extend_dialog.py:120
-#: polyhost/gui/settings_dialog.py:1330 polyhost/gui/settings_dialog.py:1331
+#: polyhost/gui/settings_dialog.py:1331 polyhost/gui/settings_dialog.py:1332
 msgid "Browse…"
 msgstr "Procurar…"
 
@@ -2283,7 +2283,7 @@ msgid "Eden"
 msgstr "Eden"
 
 #. TRANSLATORS: shown in the Flow Tap spin box when its value is 0.
-#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1161
+#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1162
 msgid "Off"
 msgstr "Desligado"
 
@@ -3904,242 +3904,242 @@ msgid "Also finds agents that run in a terminal from the window title, without a
 msgstr "Também encontra pelo título da janela os agentes executados em um terminal, sem hook. Não disponível no macOS."
 
 #: polyhost/gui/settings_dialog.py:248
-msgid "Downloads a font the first time an agent title needs one: Chinese, Hindi, Thai, Armenian, Hebrew or Arabic. The fonts come from GitHub and www.polykybd.org. Off: those titles show boxes on the keys."
-msgstr "Baixa uma fonte na primeira vez que o título de um agente precisa dela: chinês, hindi, tailandês, armênio, hebraico ou árabe. As fontes vêm do GitHub e de www.polykybd.org. Desligado: esses títulos mostram quadrados nas teclas."
+msgid "Downloads a font the first time an agent title needs one: Chinese, Hindi, Thai, Armenian, Hebrew or Arabic. The fonts come from GitHub and www.polykybd.org. Off: nothing is downloaded; fonts downloaded before are still used, and a title in a script without a font shows boxes."
+msgstr "Baixa uma fonte na primeira vez que o título de um agente precisa dela: chinês, hindi, tailandês, armênio, hebraico ou árabe. As fontes vêm do GitHub e de www.polykybd.org. Desligado: nada é baixado; as fontes baixadas antes continuam em uso, e um título em uma escrita sem fonte mostra quadrados."
 
-#: polyhost/gui/settings_dialog.py:252
+#: polyhost/gui/settings_dialog.py:253
 msgid "Also shows agents that run on a computer with the forwarder. A key press brings forward the remote-desktop viewer that shows that computer (NoMachine, Remote Desktop, VNC). They report over the network endpoint for forwarders, which must be on too. Off: only this computer's agents."
 msgstr "Também mostra os agentes executados em um computador com o encaminhador. Um toque na tecla traz para a frente o visualizador de área de trabalho remota que mostra esse computador (NoMachine, Remote Desktop, VNC). Esses agentes enviam relatórios pelo ponto de acesso de rede para encaminhadores, que também precisa estar ativado. Desligado: somente os agentes deste computador."
 
-#: polyhost/gui/settings_dialog.py:257
+#: polyhost/gui/settings_dialog.py:258
 msgid "On a computer with the forwarder: a key press on one of this computer's agents also brings the agent's own window forward here. Off: only the viewer on the keyboard's computer comes forward."
 msgstr "Em um computador com o encaminhador: um toque na tecla de um agente deste computador também traz para a frente aqui a janela do próprio agente. Desligado: somente o visualizador no computador do teclado vem para a frente."
 
-#: polyhost/gui/settings_dialog.py:261
+#: polyhost/gui/settings_dialog.py:262
 msgid "A working agent that reports nothing for this many minutes shows as stale (dim white). 0: never."
 msgstr "Um agente trabalhando que não envia nada por este número de minutos aparece como sem resposta (branco esmaecido). 0: nunca."
 
-#: polyhost/gui/settings_dialog.py:264
+#: polyhost/gui/settings_dialog.py:265
 msgid "An idle or stale agent that reports nothing for this many minutes is removed and frees its key. An agent whose process ends is removed at once. 0: never."
 msgstr "Um agente ocioso ou sem resposta que não envia nada por este número de minutos é removido e libera a sua tecla. Um agente cujo processo termina é removido imediatamente. 0: nunca."
 
-#: polyhost/gui/settings_dialog.py:267
+#: polyhost/gui/settings_dialog.py:268
 msgid "The shortcut the minus key sends in AI mode to start dictation, for example <cmd>+h or <ctrl>+<alt>+d. Empty: Win+H on Windows, nothing on macOS and Linux."
 msgstr "O atalho que a tecla de menos envia no modo IA para iniciar o ditado, por exemplo <cmd>+h ou <ctrl>+<alt>+d. Vazio: Win+H no Windows, nada no macOS e no Linux."
 
-#: polyhost/gui/settings_dialog.py:271
+#: polyhost/gui/settings_dialog.py:272
 msgid "Tells the keyboard which Unicode input method this computer uses (for example WinCompose on Windows), when it connects and whenever the method changes. The keyboard needs it to type characters that are not on your layout, such as emoji. Off: the keyboard keeps the method it has stored."
 msgstr "Informa ao teclado qual método de entrada Unicode este computador usa (por exemplo WinCompose no Windows), ao conectar e sempre que o método muda. O teclado precisa disso para digitar caracteres que não estão no seu layout, como emojis. Desligado: o teclado mantém o método que tem armazenado."
 
-#: polyhost/gui/settings_dialog.py:276
+#: polyhost/gui/settings_dialog.py:277
 msgid "Sets the keycap brightness from the daylight at your location, every ten minutes."
 msgstr "Ajusta o brilho das keycaps conforme a luz do dia na sua localização, a cada dez minutos."
 
-#: polyhost/gui/settings_dialog.py:279
+#: polyhost/gui/settings_dialog.py:280
 msgid "Asks open-meteo.com for this hour's sunlight at your location, including clouds. Off: the host computes a cloudless-sky value from the location and time."
 msgstr "Consulta o open-meteo.com sobre a luz solar desta hora na sua localização, incluindo nuvens. Desativado: o host calcula um valor de céu sem nuvens a partir da localização e do horário."
 
-#: polyhost/gui/settings_dialog.py:283
+#: polyhost/gui/settings_dialog.py:284
 msgid "Looks up your approximate location from your IP address (ip-api.com), once per run. Off: the brightness follows the hour of the day."
 msgstr "Obtém sua localização aproximada a partir do seu endereço IP (ip-api.com), uma vez por execução. Desativado: o brilho acompanha a hora do dia."
 
-#: polyhost/gui/settings_dialog.py:286
+#: polyhost/gui/settings_dialog.py:287
 msgid "The sunlight value at which the keycaps are at their dimmest. Less sunlight keeps them at the dimmest level."
 msgstr "O valor de luz solar em que as keycaps ficam no brilho mínimo. Com menos luz solar, elas continuam no brilho mínimo."
 
-#: polyhost/gui/settings_dialog.py:289
+#: polyhost/gui/settings_dialog.py:290
 msgid "The sunlight value at which the keycaps are at their brightest. Lower it to reach full brightness on a cloudy day."
 msgstr "O valor de luz solar em que as keycaps ficam no brilho máximo. Diminua-o para chegar ao brilho máximo em um dia nublado."
 
-#: polyhost/gui/settings_dialog.py:292
+#: polyhost/gui/settings_dialog.py:293
 msgid "Multiplies the sunlight value before it is compared with Sunlight at dimmest and Sunlight at brightest. Below 1 makes the keycaps dimmer for the same daylight."
 msgstr "Multiplica o valor de luz solar antes de compará-lo com Luz solar no brilho mínimo e Luz solar no brilho máximo. Um valor abaixo de 1 deixa as keycaps mais escuras com a mesma luz do dia."
 
-#: polyhost/gui/settings_dialog.py:296
+#: polyhost/gui/settings_dialog.py:297
 msgid "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, below 1 brighter. The dimmest and brightest levels do not change."
 msgstr "Define o formato da curva de luz do dia. Acima de 1, o meio do dia fica mais escuro; abaixo de 1, mais claro. Os níveis mais baixo e mais alto não mudam."
 
-#: polyhost/gui/settings_dialog.py:299
+#: polyhost/gui/settings_dialog.py:300
 msgid "Draws icons for apps that have no overlay of their own: the app's logo on the Escape key and an icon on each shortcut key. Off: these apps get no icons. Apps with their own overlay are not affected."
 msgstr "Desenha ícones para aplicativos que não têm sobreposição própria: o logotipo do aplicativo na tecla Esc e um ícone em cada tecla de atalho. Desligado: esses aplicativos não recebem ícones. Aplicativos com sobreposição própria não são afetados."
 
-#: polyhost/gui/settings_dialog.py:303
+#: polyhost/gui/settings_dialog.py:304
 msgid "An app with its own overlay also gets its logo on the Escape key, when its overlay leaves Escape blank."
 msgstr "Um aplicativo com sobreposição própria também recebe seu logotipo na tecla Esc, quando a sobreposição dele deixa o Esc vazio."
 
-#: polyhost/gui/settings_dialog.py:306
+#: polyhost/gui/settings_dialog.py:307
 msgid "An app with its own overlay also gets icons for the shortcuts listed in its menus, on the keys its overlay leaves blank. Reading the menus of a large app, such as a browser with a long page, can take minutes."
 msgstr "Um aplicativo com sobreposição própria também recebe ícones para os atalhos listados nos seus menus, nas teclas que a sobreposição dele deixa vazias. Ler os menus de um aplicativo grande, como um navegador com uma página longa, pode levar minutos."
 
-#: polyhost/gui/settings_dialog.py:310
+#: polyhost/gui/settings_dialog.py:311
 msgid "Reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system, and draws an icon on each shortcut key. The shortcuts stay on this computer. Off: no app is read."
 msgstr "Lê os atalhos listados nos menus do aplicativo em foco, pela interface de acessibilidade do sistema operacional, e desenha um ícone em cada tecla de atalho. Os atalhos ficam neste computador. Desligado: nenhum aplicativo é lido."
 
-#: polyhost/gui/settings_dialog.py:314
+#: polyhost/gui/settings_dialog.py:315
 msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."
 msgstr "Baixa da internet os logotipos de aplicativos e os ícones de atalhos que este computador ainda não tem (simple-icons e Iconify). Eles são armazenados neste computador. Desligado: os ícones já baixados continuam funcionando, e um aplicativo sem ícone armazenado não recebe nenhum."
 
-#: polyhost/gui/settings_dialog.py:319
+#: polyhost/gui/settings_dialog.py:320
 msgid "Linux only. Turns on the desktop's accessibility switch, so Qt and KDE apps list their shortcuts for Read shortcuts from app menus. Off: only apps that list them anyway (GTK) are read."
 msgstr "Somente Linux. Ativa a chave de acessibilidade do desktop, para que os aplicativos Qt e KDE listem seus atalhos para Ler atalhos dos menus dos aplicativos. Desligado: somente os aplicativos que já os listam (GTK) são lidos."
 
-#: polyhost/gui/settings_dialog.py:323
+#: polyhost/gui/settings_dialog.py:324
 msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
 msgstr "Transporte USB: quantas mensagens de imagem são enviadas antes de uma pausa curta, para que o teclado continue respondendo à digitação. Altere somente se for solicitado ao relatar um problema."
 
-#: polyhost/gui/settings_dialog.py:327
+#: polyhost/gui/settings_dialog.py:328
 msgid "USB transport: the length of that pause, in seconds. Change it only when asked to while reporting a problem."
 msgstr "Transporte USB: a duração dessa pausa, em segundos. Altere somente se for solicitado ao relatar um problema."
 
-#: polyhost/gui/settings_dialog.py:330
+#: polyhost/gui/settings_dialog.py:331
 msgid "How many times the app asks the keyboard for its ID without an answer before it closes and reopens the USB connection. Change it only when asked to while reporting a problem."
 msgstr "Quantas vezes o aplicativo pede o ID ao teclado sem resposta antes de fechar e reabrir a conexão USB. Altere somente se for solicitado ao relatar um problema."
 
-#: polyhost/gui/settings_dialog.py:334
+#: polyhost/gui/settings_dialog.py:335
 msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
 msgstr "A aparência do menu da bandeja e das caixas de diálogo. Automático segue a configuração clara ou escura do desktop."
 
-#: polyhost/gui/settings_dialog.py:337
+#: polyhost/gui/settings_dialog.py:338
 msgid "The language of the menus and dialogs. Applies when the tray app restarts."
 msgstr "O idioma dos menus e das caixas de diálogo. Entra em vigor quando o aplicativo da bandeja é reiniciado."
 
-#: polyhost/gui/settings_dialog.py:339
+#: polyhost/gui/settings_dialog.py:340
 msgid "Shows the developer settings in this dialog, and the Developer submenu in the tray menu after a restart."
 msgstr "Mostra as configurações de desenvolvedor nesta caixa de diálogo e, após reiniciar, o submenu Desenvolvedor no menu da bandeja."
 
-#: polyhost/gui/settings_dialog.py:342
+#: polyhost/gui/settings_dialog.py:343
 msgid "How much the app writes to its log. Debug and Detailed help when you report a problem, and make the log grow faster. Applies after a restart."
 msgstr "Quanto o aplicativo grava no log. Depuração e Detalhado ajudam quando você relata um problema, e fazem o log crescer mais rápido. Aplica-se após reiniciar."
 
-#: polyhost/gui/settings_dialog.py:344
+#: polyhost/gui/settings_dialog.py:345
 msgid "Adds a simulated keyboard next to the real one."
 msgstr "Adiciona um teclado simulado ao lado do real."
 
-#: polyhost/gui/settings_dialog.py:346
+#: polyhost/gui/settings_dialog.py:347
 msgid "Uses a simulated keyboard instead of a real one, so the app runs without hardware."
 msgstr "Usa um teclado simulado em vez de um real, para que o aplicativo funcione sem hardware."
 
-#: polyhost/gui/settings_dialog.py:349
+#: polyhost/gui/settings_dialog.py:350
 msgid "The protocol version the simulated keyboard reports. 0 uses the newest version this host knows."
 msgstr "A versão de protocolo que o teclado simulado informa. 0 usa a versão mais recente que este host conhece."
 
-#: polyhost/gui/settings_dialog.py:352
+#: polyhost/gui/settings_dialog.py:353
 msgid "Tracks the active window even when no keyboard is connected."
 msgstr "Acompanha a janela ativa mesmo quando nenhum teclado está conectado."
 
-#: polyhost/gui/settings_dialog.py:354
+#: polyhost/gui/settings_dialog.py:355
 msgid "Windows only, experimental. Switches the input language with Win32 calls instead of the standard method, and falls back to it on a failure."
 msgstr "Somente Windows, experimental. Troca o idioma de entrada com chamadas Win32 em vez do método padrão, e volta a ele em caso de falha."
 
-#: polyhost/gui/settings_dialog.py:357
+#: polyhost/gui/settings_dialog.py:358
 msgid "Uses the USB HID channel only, as if the keyboard had no fast link: firmware updates go over HID. For testing the HID path by hand."
 msgstr "Usa apenas o canal USB HID, como se o teclado não tivesse link rápido: as atualizações de firmware vão por HID. Para testar o caminho HID manualmente."
 
-#: polyhost/gui/settings_dialog.py:360
+#: polyhost/gui/settings_dialog.py:361
 msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
 msgstr "Aceita relatórios de janela de encaminhadores antigos via TCP sem criptografia e sem autenticação (porta 50162) em todas as interfaces de rede. Ative somente para um encaminhador antigo."
 
-#: polyhost/gui/settings_dialog.py:364
+#: polyhost/gui/settings_dialog.py:365
 msgid "Runs the keyboard connection in a background process that the tray app connects to, so the connection stays up when the tray app restarts."
 msgstr "Executa a conexão com o teclado em um processo em segundo plano ao qual o aplicativo da bandeja se conecta, para que a conexão continue ativa quando o aplicativo da bandeja for reiniciado."
 
-#: polyhost/gui/settings_dialog.py:367
+#: polyhost/gui/settings_dialog.py:368
 msgid "Accepts reports of the focused window from the forwarder app on another computer, for example one you use through remote desktop, so the keyboard shows the icons of that computer's apps. Opens a network port. Applies after a restart."
 msgstr "Aceita relatórios da janela em foco do aplicativo encaminhador em outro computador, por exemplo um que você usa por área de trabalho remota, para que o teclado mostre os ícones dos aplicativos desse computador. Abre uma porta de rede. Entra em vigor após reiniciar."
 
-#: polyhost/gui/settings_dialog.py:372
+#: polyhost/gui/settings_dialog.py:373
 msgid "The language of the words the keyboard's emoji search matches. The dictionary is sent to the keyboard when you click OK, and when it connects if Send font packs on connect is on. Own dictionary file, when set, is used instead."
 msgstr "O idioma das palavras que a busca de emojis do teclado procura. O dicionário é enviado ao teclado quando você clica em OK, e quando ele se conecta se Enviar pacotes de fontes ao conectar estiver ativado. Se Arquivo de dicionário próprio estiver definido, ele é usado no lugar."
 
-#: polyhost/gui/settings_dialog.py:377
+#: polyhost/gui/settings_dialog.py:378
 msgid "A dictionary file you built yourself (.plyd), sent to the keyboard instead of the Search language dictionary. Empty: the dictionary for the Search language is used."
 msgstr "Um arquivo de dicionário criado por você (.plyd), enviado ao teclado no lugar do dicionário do Idioma de busca. Vazio: o dicionário do Idioma de busca é usado."
 
-#: polyhost/gui/settings_dialog.py:381
+#: polyhost/gui/settings_dialog.py:382
 msgid "When the keyboard connects, sends it the font packs it is missing or has in an older version. Font packs hold the characters for languages, symbols and emoji."
 msgstr "Quando o teclado se conecta, envia a ele os pacotes de fontes que faltam ou que ele tem em uma versão mais antiga. Os pacotes de fontes contêm os caracteres de idiomas, símbolos e emojis."
 
-#: polyhost/gui/settings_dialog.py:385
+#: polyhost/gui/settings_dialog.py:386
 msgid "A font-pack file (.plyf) to send to the keyboard instead of the one that comes with this app. Empty: the font pack that comes with this app is used."
 msgstr "Um arquivo de pacote de fontes (.plyf) enviado ao teclado no lugar do que vem com este aplicativo. Vazio: o pacote de fontes que vem com este aplicativo é usado."
 
-#: polyhost/gui/settings_dialog.py:388
+#: polyhost/gui/settings_dialog.py:389
 msgid "Chooses a website's overlay from the address of the focused browser tab. The address comes from the PolyKybd browser extension; on macOS, Safari and Chromium browsers such as Chrome also give it without the extension. Off: a website's overlay is chosen from the window title only."
 msgstr "Escolhe a sobreposição de um site pelo endereço da aba em foco do navegador. O endereço vem da extensão do navegador PolyKybd; no macOS, o Safari e navegadores Chromium como o Chrome também o fornecem sem a extensão. Desligado: a sobreposição de um site é escolhida somente pelo título da janela."
 
-#: polyhost/gui/settings_dialog.py:393
+#: polyhost/gui/settings_dialog.py:394
 msgid "Runs the receiver that the PolyKybd browser extension sends the address of the focused tab to. It accepts connections from this computer only (127.0.0.1)."
 msgstr "Executa o receptor para o qual a extensão do navegador PolyKybd envia o endereço da aba em foco. Ele aceita conexões somente deste computador (127.0.0.1)."
 
-#: polyhost/gui/settings_dialog.py:397
+#: polyhost/gui/settings_dialog.py:398
 msgid "The receiver's port. It must match the Host port in the browser extension."
 msgstr "A porta do receptor. Deve corresponder a “Host port” na extensão do navegador."
 
-#: polyhost/gui/settings_dialog.py:399
+#: polyhost/gui/settings_dialog.py:400
 msgid "A shared secret. When set, the browser extension must send the same token."
 msgstr "Um segredo compartilhado. Quando definido, a extensão do navegador precisa enviar o mesmo token."
 
-#: polyhost/gui/settings_dialog.py:401
+#: polyhost/gui/settings_dialog.py:402
 msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
 msgstr "Envia um relatório de uso anônimo por dia: versões, sistema operacional e alguns contadores. Nunca títulos de janelas ou nomes de aplicativos."
 
-#: polyhost/gui/settings_dialog.py:404
+#: polyhost/gui/settings_dialog.py:405
 msgid "The web address the usage report is sent to. Empty: no report is sent."
 msgstr "O endereço web para o qual o relatório de uso é enviado. Vazio: nenhum relatório é enviado."
 
-#: polyhost/gui/settings_dialog.py:406
+#: polyhost/gui/settings_dialog.py:407
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
 msgstr "O ID aleatório desta instalação, criado com o primeiro relatório. Apague-o para contar como uma nova instalação."
 
-#: polyhost/gui/settings_dialog.py:409
+#: polyhost/gui/settings_dialog.py:410
 msgid "Watches the messages the keyboard sends over USB for known failures, and offers to report a problem."
 msgstr "Monitora as mensagens que o teclado envia por USB em busca de falhas conhecidas e oferece relatar um problema."
 
-#: polyhost/gui/settings_dialog.py:412
+#: polyhost/gui/settings_dialog.py:413
 msgid "Watches this app's own log for known failure messages, and offers to report a problem."
 msgstr "Monitora o log deste aplicativo em busca de mensagens de falha conhecidas e oferece relatar um problema."
 
-#: polyhost/gui/settings_dialog.py:414
+#: polyhost/gui/settings_dialog.py:415
 msgid "What counts as a problem: errors only, or errors and warnings."
 msgstr "O que conta como problema: apenas erros, ou erros e avisos."
 
-#: polyhost/gui/settings_dialog.py:416
+#: polyhost/gui/settings_dialog.py:417
 msgid "Draws some game overlays from the game's own files when the game is installed on this computer. The images stay on this computer. Off: the shipped overlays are used."
 msgstr "Desenha algumas sobreposições de jogos a partir dos arquivos do próprio jogo quando ele está instalado neste computador. As imagens ficam neste computador. Desligado: as sobreposições incluídas são usadas."
 
-#: polyhost/gui/settings_dialog.py:893
+#: polyhost/gui/settings_dialog.py:894
 msgid "Advanced"
 msgstr "Avançado"
 
-#: polyhost/gui/settings_dialog.py:902
+#: polyhost/gui/settings_dialog.py:903
 msgid "Shows the settings that most people never change."
 msgstr "Mostra as configurações que a maioria das pessoas nunca altera."
 
-#: polyhost/gui/settings_dialog.py:933 polyhost/host.py:1680
+#: polyhost/gui/settings_dialog.py:934 polyhost/host.py:1680
 msgid "PolyKybd Settings"
 msgstr "Configurações do PolyKybd"
 
-#: polyhost/gui/settings_dialog.py:1002
+#: polyhost/gui/settings_dialog.py:1003
 msgid "Search settings"
 msgstr "Buscar configurações"
 
-#: polyhost/gui/settings_dialog.py:1054
+#: polyhost/gui/settings_dialog.py:1055
 msgid "An overlay is a set of icons for one app. Help & About, Basics shows an example."
 msgstr "Uma sobreposição é um conjunto de ícones para um aplicativo. Ajuda & sobre, Noções básicas mostra um exemplo."
 
-#: polyhost/gui/settings_dialog.py:1058
+#: polyhost/gui/settings_dialog.py:1059
 msgid "Reading the settings stored on the keyboard…"
 msgstr "Lendo as configurações armazenadas no teclado…"
 
-#: polyhost/gui/settings_dialog.py:1062
+#: polyhost/gui/settings_dialog.py:1063
 msgid "No setting matches the search."
 msgstr "Nenhuma configuração corresponde à busca."
 
-#: polyhost/gui/settings_dialog.py:1077
+#: polyhost/gui/settings_dialog.py:1078
 msgid "Some settings might need a restart to take effect."
 msgstr "Algumas configurações podem exigir reinicialização para ter efeito."
 
-#: polyhost/gui/settings_dialog.py:1112
+#: polyhost/gui/settings_dialog.py:1113
 #, python-brace-format
 msgid "Set by {flag} for this run. This setting applies when the app starts without it."
 msgstr "Definido por {flag} nesta execução. Esta configuração se aplica quando o aplicativo inicia sem essa opção."
@@ -4148,35 +4148,35 @@ msgstr "Definido por {flag} nesta execução. Esta configuração se aplica quan
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
 #: polyhost/gui/layout_dialog/combo_tab.py:371
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
-#: polyhost/gui/settings_dialog.py:1158
+#: polyhost/gui/settings_dialog.py:1159
 msgid " ms"
 msgstr " ms"
 
-#: polyhost/gui/settings_dialog.py:1205
+#: polyhost/gui/settings_dialog.py:1206
 msgid "This keyboard's firmware does not have this setting."
 msgstr "O firmware deste teclado não tem esta configuração."
 
-#: polyhost/gui/settings_dialog.py:1207
+#: polyhost/gui/settings_dialog.py:1208
 msgid "Could not read this setting from the keyboard."
 msgstr "Não foi possível ler esta configuração do teclado."
 
-#: polyhost/gui/settings_dialog.py:1215
+#: polyhost/gui/settings_dialog.py:1216
 msgid "Connect the keyboard to change the settings stored on it."
 msgstr "Conecte o teclado para alterar as configurações armazenadas nele."
 
-#: polyhost/gui/settings_dialog.py:1217
+#: polyhost/gui/settings_dialog.py:1218
 msgid "Some settings could not be read from the keyboard. Update the keyboard firmware to change them here."
 msgstr "Algumas configurações não puderam ser lidas do teclado. Atualize o firmware do teclado para alterá-las aqui."
 
-#: polyhost/gui/settings_dialog.py:1268
+#: polyhost/gui/settings_dialog.py:1269
 msgid "These developer settings are not at their default, so they stay in effect while developer mode is off."
 msgstr "Estas configurações de desenvolvedor não estão no valor padrão, por isso continuam em vigor enquanto o modo desenvolvedor está desativado."
 
-#: polyhost/gui/settings_dialog.py:1338
+#: polyhost/gui/settings_dialog.py:1339
 msgid "Generate"
 msgstr "Gerar"
 
-#: polyhost/gui/settings_dialog.py:1339
+#: polyhost/gui/settings_dialog.py:1340
 msgid "Fills in a new random token and copies it. Paste it into the browser extension's Options and save both."
 msgstr "Preenche um novo token aleatório e o copia. Cole-o nas “Opções” da extensão do navegador e salve os dois."
 

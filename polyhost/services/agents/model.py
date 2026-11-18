@@ -91,11 +91,13 @@ _ENGLISH_MARKERS = frozenset("after and before from into the when with".split())
 
 def card_words(title: str) -> str:
     """The words of `title` a card shows: in a title with an _ENGLISH_MARKERS word,
-    no small words. Any other title, and one made only of small words, is returned
-    as it is. The first word stays, also a verb such as "Fix" (2026-11-18)."""
+    no small words after the first word. Any other title is returned as it is.
+    The first word stays, also a verb such as "Fix" or a small word (2026-11-18)."""
     title = title or ""
     words = title.split()
     low = [w.lower().rstrip(":,") for w in words]
-    if _ENGLISH_MARKERS.intersection(low):
-        words = [w for w, lw in zip(words, low) if lw not in _SMALL_WORDS]
+    if _ENGLISH_MARKERS.intersection(low) and not all(lw in _SMALL_WORDS for lw in low):
+        # The first word stays, also a small word ("After the fix works").
+        words = words[:1] + [w for w, lw in zip(words[1:], low[1:], strict=True)
+                             if lw not in _SMALL_WORDS]
     return " ".join(words) or title

@@ -298,6 +298,7 @@ class CardWordsTest(unittest.TestCase):
                          "Fix HID reconnect resume Windows")
         self.assertEqual(card_words("Refactor: the overlay cache"), "Refactor: overlay cache")
         self.assertEqual(card_words("Add tests for the cloud relay"), "Add tests cloud relay")
+        self.assertEqual(card_words("After the fix works"), "After fix works")  # first word stays
         # A title of small words only is kept as it is.
         self.assertEqual(card_words("on the"), "on the")
         self.assertEqual(card_words(""), "")
@@ -513,7 +514,9 @@ class _FontCache:
         test.addCleanup(patch.stop)
         test.addCleanup(card.fonts_changed)
         test.addCleanup(card._REQUESTED.clear)
+        test.addCleanup(card._MISSING.clear)
         card._REQUESTED.clear()
+        card._MISSING.clear()
         card.fonts_changed()
         self.test = test
 
@@ -583,6 +586,16 @@ class CardTest(unittest.TestCase):
         self.assertTrue(title.replace(" ", "").startswith(shown))   # the start, in order
         self.assertEqual(paginate("Agent 1"), [["Agent 1"]])
         self.assertEqual(paginate("polykybd docs"), [["polykybd", "docs"]])   # no cut
+
+    def test_a_cut_title_keeps_its_number_after_the_ellipsis(self):
+        from polyhost.services.agents.card import ICON, ICON_CLEAR, state_icon
+        icon = state_icon(AgentState.WAITING)
+        title = "Investigate the HIL failure in the split link soak on Windows"
+        pages = paginate(title, icon=icon, number=2)
+        self.assertTrue(pages[0][-1].endswith("\u2026 2"), pages)
+        self.assertLessEqual(card_mod._ink_width(pages[0][-1]), 72 - 1 - ICON - ICON_CLEAR)
+        self.assertEqual(paginate("Fix build", number=2), [["Fix build 2"]])   # not cut
+        self.assertEqual(paginate(title, icon=icon)[0][-1][-1], "\u2026")     # no number
 
     def test_pages_stop_at_the_limit_with_a_mark(self):
         pages = paginate("word " * 60)
@@ -686,6 +699,7 @@ class CardTest(unittest.TestCase):
         self.assertEqual(_clusters("क्ल"), ["क्ल"])               # a conjunct stays
         self.assertEqual(_clusters("แก้ไข"), ["แ", "ก้", "ไ", "ข"])  # a Thai tone mark stays
         self.assertEqual(_clusters("e\u0301a"), ["e\u0301", "a"])  # a Latin accent stays
+        self.assertEqual(_clusters("\u0e01\u0e33\u0e01"), ["\u0e01\u0e33", "\u0e01"])  # Sara Am
         # A mark goes into the run of its letter, whatever font has it.
         self.assertEqual([part for _f, _d, part in _runs("ab\u0301")], ["ab\u0301"])
         # A narrow line never starts with a mark or the second half of a conjunct.
@@ -756,8 +770,11 @@ class CardTest(unittest.TestCase):
         import numpy as np
         from PIL import Image
         from polyhost.services.agents.card import _draw, _draw_text, _fallbacks, _runs
+        from PIL import ImageFont
         _FontCache(self).add("Noto Sans Hebrew", DEJAVU)
         hebrew = next(f for f, _dy, e in _fallbacks() if e.name == "Noto Sans Hebrew")
+        if hebrew.layout_engine != ImageFont.Layout.RAQM:
+            self.skipTest("Pillow without raqm draws no right-to-left text")
         text = "תיקון באג"
         self.assertEqual(len(_runs(text)), 1)                 # one run, spaces included
 
@@ -782,10 +799,49 @@ class CardTest(unittest.TestCase):
                          latin[:, :latin.any(axis=0).nonzero()[0].max() + 1]).all())
         self.assertGreater(cols.max(), 40)
 
+    def test_a_right_to_left_line_is_as_wide_as_measured_and_mirrors_brackets(self):
+        import numpy as np
+        from PIL import Image, ImageFont
+        from polyhost.services.agents.card import _draw, _draw_text, _fallbacks, _measure
+        _FontCache(self).add("Noto Sans Hebrew", DEJAVU)
+        hebrew = next(f for f, _dy, e in _fallbacks() if e.name == "Noto Sans Hebrew")
+        if hebrew.layout_engine != ImageFont.Layout.RAQM:
+            self.skipTest("Pillow without raqm draws no right-to-left text")
+
+        def drawn(text):
+            img = Image.new("1", (120, 20))
+            _draw_text(_draw(img), (0, 0), text, rtl=True)
+            return np.array(img, dtype=bool)
+        for text in ("בדיקהHID", "בדיקה HID", "(בדיקה)"):
+            cols = drawn(text).any(axis=0).nonzero()[0]
+            self.assertLessEqual(cols.max(), _measure(text)[2] + 1, text)   # no extra space
+        # No space in the title, none drawn: narrower than with a space.
+        self.assertLess(drawn("בדיקהHID").any(axis=0).nonzero()[0].max(),
+                        drawn("בדיקה HID").any(axis=0).nonzero()[0].max())
+        # "(" opens the title, so it is drawn at the right end, facing left: ")".
+        img = drawn("(בדיקה)")
+
+        def glyph(ch):
+            g = Image.new("1", (20, 20))
+            _draw(g).text((0, 0), ch, font=card_mod._font(), fill=1)
+            g = np.array(g, dtype=bool)
+            c = g.any(axis=0).nonzero()[0]
+            return g[:, c.min():c.max() + 1]
+        opening, closing = glyph("("), glyph(")")
+        self.assertFalse((opening == closing).all())
+        cols = img.any(axis=0).nonzero()[0]
+        # The left end is the closing ")" mirrored, so it has the shape of "(";
+        # the right end is the opening "(" drawn as ")".
+        self.assertTrue((img[:, cols.min():cols.min() + opening.shape[1]] == opening).all())
+        self.assertTrue((img[:, cols.max() + 1 - closing.shape[1]:cols.max() + 1] == closing).all())
+
     def test_an_arabic_word_split_by_a_line_keeps_its_joined_forms(self):
         from polyhost.services.agents.card import _joins
         _FontCache(self).add("Noto Sans Arabic", DEJAVU)
         self.assertTrue(_joins("\u062e", "\u0637"))            # kha, tah
+        self.assertTrue(_joins("\u0628\u064e", "\u0628"))       # a vowel mark in between
+        self.assertFalse(_joins("\u0628", "\u0621"))           # hamza joins no letter
+        self.assertFalse(_joins("\u0621", "\u0628"))
         self.assertFalse(_joins("\u0627", "\u0644"))           # alef joins no letter after it
         self.assertFalse(_joins("a", "\u0637"))
         lines = flow("\u062a\u0633\u062c\u064a\u0644" * 6, [30])
@@ -825,6 +881,7 @@ class CardTest(unittest.TestCase):
             self.assertEqual(card.fonts_version(), before)
         # Downloads off (the hook says False): nothing is remembered, asked next time.
         card._REQUESTED.clear()
+        card._MISSING.clear()
         refused = []
         with mock.patch.object(card, "MISSING_FONT_HOOK", lambda e: refused.append(e.name) and False):
             card.paginate("תיקון")
@@ -1292,6 +1349,31 @@ class ControllerTest(unittest.TestCase):
             self.c.sync(self.kb)
             self.assertEqual(self.kb.keys[-1][2][0], slot)
         self.assertEqual(self.kb.cards, {})
+
+    def test_a_missing_font_is_asked_again_without_drawing_the_card_again(self):
+        from polyhost.services.agents import card
+        _FontCache(self)
+        allow = [False]
+        asked = []
+
+        def hook(entry):
+            asked.append(entry.name)
+            return allow[0]
+        with mock.patch.object(card, "MISSING_FONT_HOOK", hook):
+            self.r.report("codex", "a", "working", headline="תיקון באג")
+            self.c.sync(self.kb)                               # drawn; downloads off
+            first = len(asked)
+            self.assertGreater(first, 0)
+            self.kb.cards.clear()
+            self.c.sync(self.kb)                               # not drawn again ...
+            self.assertEqual(self.kb.cards, {})
+            self.assertGreater(len(asked), first)              # ... but asked again
+            allow[0] = True                                    # downloads turned on
+            self.c.sync(self.kb)
+            n = len(asked)
+            self.c.sync(self.kb)                               # started: not asked again
+            self.assertEqual(len(asked), n)
+        self.assertEqual(set(asked), {"Noto Sans Hebrew"})
 
     def test_a_card_is_drawn_again_when_a_font_was_downloaded(self):
         from polyhost.services.agents import card

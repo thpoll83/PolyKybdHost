@@ -247,7 +247,8 @@ SETTING_DESCRIPTIONS = {
     "agents_download_fonts": N_(
         "Downloads a font the first time an agent title needs one: Chinese, Hindi, "
         "Thai, Armenian, Hebrew or Arabic. The fonts come from GitHub and "
-        "www.polykybd.org. Off: those titles show boxes on the keys."),
+        "www.polykybd.org. Off: nothing is downloaded; fonts downloaded before are "
+        "still used, and a title in a script without a font shows boxes."),
     "agents_remote_enabled": N_(
         "Also shows agents that run on a computer with the forwarder. A key press "
         "brings forward the remote-desktop viewer that shows that computer "

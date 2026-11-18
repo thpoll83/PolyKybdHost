@@ -16,7 +16,7 @@ import threading
 import time
 
 from polyhost.services.agents.card import (VendorMarks, card_bytes, card_layout, fonts_version,
-                                           render_page,
+                                           render_page, request_missing,
                                            render_dictation_card, render_next_waiting_card)
 from polyhost.services.agents.model import AgentState
 
@@ -127,6 +127,9 @@ class AgentKeysController:
         if read:
             self._poll_events(keeb)
         self.registry.tick()
+        # A font a card needed and did not get (failed, or downloads were off):
+        # asked again here, as an unchanged card is not drawn again.
+        request_missing()
         with self._lock:
             pages = self.registry.page_count()
             self.page = min(self.page, pages - 1)
@@ -148,11 +151,14 @@ class AgentKeysController:
             # Read once: a mark fetched while the layout is built must not record
             # the new version for the old picture (the card would never redraw).
             version = self.marks.version
-            layout = self._layout(agent, version)
+            # Read once for the layout and the record of what is drawn: a font
+            # that arrives during this pass is drawn on the next one.
+            fonts = fonts_version()
+            layout = self._layout(agent, version, fonts)
             # fonts_version(): a title in a script whose font was downloaded since
             # showed boxes, and is drawn again.
             drawn = (agent.vendor, agent.card_text, version,
-                     agent.state, agent.machine == "cloud", fonts_version())
+                     agent.state, agent.machine == "cloud", fonts)
             slots.append(self._card(keeb, cache, ("agentcard",) + agent.key, drawn,
                                     lambda lay=layout: render_page(lay, 0)))
         waiting = len(self.registry.waiting())
@@ -195,17 +201,19 @@ class AgentKeysController:
         self.forget_device()
         return ok
 
-    def _layout(self, agent, version):
+    def _layout(self, agent, version, fonts=None):
         """The card layout of an agent, measured once per title, mark version and
         state."""
         cloud = agent.machine == "cloud"
-        key = (agent.vendor, agent.card_text, version, agent.state, cloud, fonts_version())
+        fonts = fonts_version() if fonts is None else fonts
+        key = (agent.vendor, agent.card_text, version, agent.state, cloud, fonts)
         layout = self._layouts.get(key)
         if layout is None:
             if len(self._layouts) > 64:
                 self._layouts.clear()
-            layout = self._layouts[key] = card_layout(agent.vendor, agent.card_text,
-                                                      self.marks, agent.state, cloud)
+            layout = self._layouts[key] = card_layout(agent.vendor, agent.card_base,
+                                                      self.marks, agent.state, cloud,
+                                                      number=agent.dup_number)
         return layout
 
     def _card(self, keeb, cache, key, drawn, render) -> int:

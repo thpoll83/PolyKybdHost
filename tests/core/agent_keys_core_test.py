@@ -48,7 +48,6 @@ class AgentKeysCoreTest(unittest.TestCase):
 
         def download(spec, timeout=60):
             fetched.append((spec.name, spec.url))
-            done.set()
             return "/x"
         with mock.patch.object(font_downloader, "download_font", download), \
                 mock.patch.object(card, "fonts_changed", done.set):

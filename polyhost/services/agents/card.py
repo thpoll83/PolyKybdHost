@@ -30,6 +30,7 @@ import os
 import re
 import threading
 import time
+import unicodedata
 from dataclasses import dataclass
 
 from polyhost.services.agents.model import AgentState, vendor
@@ -112,6 +113,7 @@ RETRY_S = 600.0                  # a failed or refused download is asked for aga
 _FALLBACKS = None
 _FONTS_VERSION = 0
 _REQUESTED = {}                  # font name -> time.monotonic() of the last request
+_MISSING = set()                 # names of fonts a drawn card needed
 _HAS = {}
 _FALLBACK_LOCK = threading.RLock()
 
@@ -195,26 +197,40 @@ def _fallbacks() -> list:
 
 
 def _note_missing(ch: str) -> None:
-    """No loaded font has `ch`: ask MISSING_FONT_HOOK for the entry whose ranges
-    hold it, at most once per RETRY_S."""
-    hook = MISSING_FONT_HOOK
-    if hook is None:
-        return
+    """No loaded font has `ch`: remember the entry whose ranges hold it, and ask
+    for it (request_missing)."""
     cp = ord(ch)
+    entry = next((e for e in FALLBACK_FONTS
+                  if any(a <= cp <= b for a, b in e.ranges)), None)
+    if entry is not None:
+        _MISSING.add(entry.name)
+        request_missing()
+
+
+def request_missing() -> None:
+    """Ask MISSING_FONT_HOOK for each font a drawn card needed and that is not
+    loaded, at most once per RETRY_S. The controller calls it on every pass too:
+    an unchanged card is not drawn again, so a failed download, or downloads
+    turned on later, would otherwise never be asked again."""
+    hook = MISSING_FONT_HOOK
+    if hook is None or not _MISSING:
+        return
     loaded = {e.name for _f, _d, e in _fallbacks()}
     for entry in FALLBACK_FONTS:
-        if entry.name in loaded or not any(a <= cp <= b for a, b in entry.ranges):
+        if entry.name not in _MISSING:
+            continue
+        if entry.name in loaded:
+            _MISSING.discard(entry.name)
             continue
         now = time.monotonic()
         last = _REQUESTED.get(entry.name)
         if last is not None and now - last < RETRY_S:
-            return
+            continue
         try:
             if hook(entry):          # False: downloads are off; asked again next time
                 _REQUESTED[entry.name] = now
         except Exception as e:  # noqa: BLE001 - drawing a card must not fail on it
             log.warning("Agent cards: font download for %s not started: %s", entry.name, e)
-        return
 
 
 def _has(font, ch: str) -> bool:
@@ -282,6 +298,9 @@ def _measure(text, size=FONT_SIZE):
     return tuple(int(v) for v in box)
 
 
+_MIRRORED = str.maketrans("()[]{}<>", ")(][}{><")
+
+
 def is_rtl(text: str) -> bool:
     """Whether `text` reads right to left: its first letter is Hebrew or Arabic."""
     import unicodedata
@@ -304,16 +323,27 @@ def _draw_text(draw, xy, text, size=FONT_SIZE, rtl=None):
     ascent = _font(size).getmetrics()[0]
     runs = _runs(text, size)
     if is_rtl(text) if rtl is None else rtl:
-        runs = [(f, dy, part.strip()) for f, dy, part in reversed(runs)]
-        gap = draw.textlength(" ", font=_font(size))
-        for k, (font, dy, part) in enumerate(runs):
-            from PIL import ImageFont
-            # Only a raqm font takes a direction (Pillow's Aileron is basic layout,
-            # and draws left to right).
-            kw = ({"direction": "rtl" if is_rtl(part) else "ltr"}
-                  if getattr(font, "layout_engine", None) == ImageFont.Layout.RAQM else {})
-            draw.text((x, y + ascent + dy), part, font=font, anchor="ls", fill=1, **kw)
-            x += draw.textlength(part, font=font) + (gap if k + 1 < len(runs) else 0)
+        from PIL import ImageFont
+        # Drawn from the last run to the first. The space after a run in the text
+        # (a space stays in the run before it) is drawn left of that run, between
+        # it and the run drawn next, so the width is the same as _measure's.
+        visual = list(reversed(runs))
+        for k, (font, dy, part) in enumerate(visual):
+            shown = part.rstrip()
+            if getattr(font, "layout_engine", None) == ImageFont.Layout.RAQM:
+                # Only a raqm font takes a direction (Pillow's Aileron is basic
+                # layout, and draws left to right).
+                kw = {"direction": "rtl" if is_rtl(shown) else "ltr"}
+            else:
+                kw = {}
+                if not any(unicodedata.bidirectional(c) == "L" for c in shown):
+                    shown = shown.translate(_MIRRORED)      # "(" reads ")" right to left
+            draw.text((x, y + ascent + dy), shown, font=font, anchor="ls", fill=1, **kw)
+            x += draw.textlength(shown, font=font)
+            if k + 1 < len(visual):
+                trail = visual[k + 1][2][len(visual[k + 1][2].rstrip()):]
+                if trail:
+                    x += draw.textlength(trail, font=visual[k + 1][0])
         return
     for font, dy, part in runs:
         draw.text((x, y + ascent + dy), part, font=font, anchor="ls", fill=1)
@@ -335,6 +365,11 @@ def fit_text(text: str, width: int = TEXT_W, size: int = FONT_SIZE) -> str:
     return text.rstrip() + "."
 
 
+# Letters (category Lo) that are spacing marks of the letter before them in the
+# grapheme break rules: Thai and Lao Sara Am.
+_SPACING_MARKS = frozenset("\u0e33\u0eb3")
+
+
 def _clusters(text: str) -> list[str]:
     """`text` split where a line may break: a letter with its combining marks, and
     a Devanagari-style conjunct (a letter after a virama or a zero-width joiner)
@@ -342,7 +377,8 @@ def _clusters(text: str) -> list[str]:
     import unicodedata
     out = []
     for ch in text:
-        if out and (unicodedata.category(ch).startswith("M") or ch == "\u200d"
+        if out and (unicodedata.category(ch).startswith("M") or ch in _SPACING_MARKS
+                    or ch == "\u200d"
                     or out[-1][-1] == "\u200d" or unicodedata.combining(out[-1][-1]) == 9):
             out[-1] += ch
         else:
@@ -366,17 +402,21 @@ def _ink_width(text: str, size: int = FONT_SIZE) -> int:
 
 
 def _joins(left: str, right: str) -> bool:
-    """Whether two Arabic letters next to each other are drawn joined. A letter of
-    _RIGHT_JOINING never joins the letter after it."""
+    """Whether the Arabic text `left` ends with a letter that is drawn joined to the
+    letter `right` starts with. Vowel marks in between are skipped. A letter of
+    _RIGHT_JOINING never joins the letter after it; hamza joins neither side."""
     import unicodedata
-    return bool(left and right) and left not in _RIGHT_JOINING and all(
+    left = left.rstrip("".join(c for c in set(left) if unicodedata.category(c) == "Mn"))
+    a, b = left[-1:], right[:1]
+    return bool(a and b) and a not in _RIGHT_JOINING and b not in _NON_JOINING and all(
         unicodedata.bidirectional(c) == "AL" and unicodedata.category(c) == "Lo"
-        for c in (left, right))
+        for c in (a, b))
 
 
 # Arabic letters that join only the letter before them (alef, dal, reh, waw, ...).
-_RIGHT_JOINING = frozenset("\u0622\u0623\u0624\u0625\u0627\u0629\u062f\u0630\u0631"
-                           "\u0632\u0648\u0671\u0688\u0691\u0698")
+_RIGHT_JOINING = frozenset("\u0621\u0622\u0623\u0624\u0625\u0627\u0629\u062f\u0630"
+                           "\u0631\u0632\u0648\u0671\u0688\u0691\u0698")
+_NON_JOINING = frozenset("\u0621")      # hamza
 
 
 def flow(text: str, widths, size: int = FONT_SIZE) -> list[str]:
@@ -395,7 +435,7 @@ def flow(text: str, widths, size: int = FONT_SIZE) -> list[str]:
         if _ink_width(cur + ch, size) <= width():
             cur += ch
             continue
-        if _joins(cur[-1:], ch[:1]):
+        if _joins(cur, ch):
             # An Arabic word split here keeps its joined letter forms.
             lines.append(cur + "\u200d")
             cur = "\u200d" + ch
@@ -430,21 +470,27 @@ def _beside(mask) -> int:
     return min(LINES, -(-mask.shape[0] // LINE_PITCH))   # 1..13 rows: 1, 14..26: 2
 
 
-def paginate(text: str, mask=None, icon=None, size: int = FONT_SIZE) -> list[list[str]]:
+def paginate(text: str, mask=None, icon=None, size: int = FONT_SIZE,
+             number: int = 0) -> list[list[str]]:
     """The pages of a card: lists of at most LINES lines. Each line is as wide as
     _spans allows: the vendor mark narrows lines on page 1 only, the state icon on
-    every page. One flow over all pages, cut every LINES lines."""
+    every page. One flow over all pages, cut every LINES lines. `number` (two
+    agents whose cards show the same title) follows the title, and stays after the
+    '…' of a cut title: it is what tells the two keys apart."""
+    suffix = f" {number}" if number else ""
+    text = (text or "") + suffix
     first = [r - l for l, r in _spans(mask, icon)]
     later = [r - l for l, r in _spans(None, icon)]
     # Enough lines for any title: each line holds at least one character.
-    widths = first + later * (len(text or "") // LINES + 2)
+    widths = first + later * (len(text) // LINES + 2)
     lines = flow(text, widths, size)
     pages = [lines[i:i + LINES] for i in range(0, max(1, len(lines)), LINES)]
     if len(pages) > MAX_PAGES:
         pages = pages[:MAX_PAGES]
         last = len(pages[-1]) - 1
         # Its own line's width: the state icon can make it shorter than TEXT_W.
-        pages[-1][last] = _cut_with_ellipsis(pages[-1][last], later[last], size)
+        room = later[last] - (_ink_width(suffix, size) + 1 if suffix else 0)
+        pages[-1][last] = _cut_with_ellipsis(pages[-1][last], room, size) + suffix
     return pages
 
 
@@ -629,16 +675,16 @@ class CardLayout:
 
 
 def card_layout(vendor_id: str, headline: str, marks: VendorMarks | None = None,
-                state=None, cloud: bool = False) -> CardLayout:
+                state=None, cloud: bool = False, number: int = 0) -> CardLayout:
     """The mark and pages for one agent. `cloud`: a cloud session, whose mark has
-    the cloud over the logo (with_cloud). No mark is scaled: a first word that
-    does not fit beside the mark starts below it."""
+    the cloud over the logo (with_cloud). `number`: see paginate. No mark is
+    scaled: a first word that does not fit beside the mark starts below it."""
     logo = marks.get(vendor_id) if marks is not None else None
     if logo is None:
         logo = _text_mark(vendor(vendor_id).short[:3])
     mark = with_cloud(logo) if cloud and logo is not None else logo
     icon = state_icon(state)
-    return CardLayout(mark, paginate(headline, mark, icon), icon)
+    return CardLayout(mark, paginate(headline, mark, icon, number=number), icon)
 
 
 def render_page(layout: CardLayout, page: int = 0):

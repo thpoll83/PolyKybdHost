@@ -35,8 +35,9 @@ Not covered yet (boxes), added on demand: Georgian, Bengali, Tamil and the other
 Indic scripts, Ethiopic, Khmer, Lao, Myanmar, Sinhala, Tibetan. Several have a
 Noto font in `noto-fonts.yaml` already.
 
-To add a script: add a `FallbackFont` with its catalog name (or a URL), its size
-and its Unicode ranges. Prefer a font drawn on a pixel grid at about 12 px; for a
+To add a script: add a `FallbackFont` with its `noto-fonts.yaml` name, or with a
+`url` and a `filename` (its file name in the cache, unique among the fonts there),
+its size and its Unicode ranges. Prefer a font drawn on a pixel grid at about 12 px; for a
 script that needs shaping (Indic, Thai), an outline font with OpenType tables at
 13 px reads better than a pixel font without them. Check the result with a
 rendered card before adding it.
