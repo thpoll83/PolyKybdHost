@@ -377,6 +377,8 @@ def keyboard_counts(rows: list[dict]) -> tuple[int, int, int]:
     for r in rows:
         hashes = [str(r.get(k) or "") for k in ("hw_id_a", "hw_id_b")]
         hashes = [h for h in hashes if h]
+        if len(hashes) == 2 and hashes[0] == hashes[1]:
+            hashes = hashes[:1]     # the same hash twice is one half, not a pair
         for h in hashes:
             parent.setdefault(h, h)
         if len(hashes) == 2:
