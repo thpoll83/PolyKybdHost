@@ -135,9 +135,15 @@ def _has(font, ch: str) -> bool:
 def _runs(text: str, size: int = FONT_SIZE) -> list[tuple]:
     """(font, dy, part) runs of `text`: each character in the first font of
     Aileron at `size` and _fallbacks() that has it (Aileron when none has it)."""
+    import unicodedata
     base = _font(size)
     runs = []
     for ch in text:
+        # A combining mark (a Devanagari vowel sign, a Thai tone mark) stays in the
+        # run of its letter: drawn alone, the shaper puts it on a dotted circle.
+        if runs and unicodedata.category(ch).startswith("M"):
+            runs[-1] = (runs[-1][0], runs[-1][1], runs[-1][2] + ch)
+            continue
         font, dy = base, 0
         if not _has(base, ch):
             font, dy = next(((f, d) for f, d in _fallbacks() if _has(f, ch)), (base, 0))
@@ -192,12 +198,29 @@ def fit_text(text: str, width: int = TEXT_W, size: int = FONT_SIZE) -> str:
     return text.rstrip() + "."
 
 
+def _clusters(text: str) -> list[str]:
+    """`text` split where a line may break: a letter with its combining marks, and
+    a Devanagari-style conjunct (a letter after a virama or a zero-width joiner)
+    stay together. Split inside one, the shaper draws a dotted circle."""
+    import unicodedata
+    out = []
+    for ch in text:
+        if out and (unicodedata.category(ch).startswith("M") or ch == "\u200d"
+                    or out[-1][-1] == "\u200d" or unicodedata.combining(out[-1][-1]) == 9):
+            out[-1] += ch
+        else:
+            out.append(ch)
+    return out
+
+
 def _cut_with_ellipsis(text: str, width: int, size: int = FONT_SIZE) -> str:
     """`text` cut to what fits `width` pixels, ending with '…'."""
-    text = text.rstrip()
-    while text and _ink_width(text + "\u2026", size) > width:
-        text = text[:-1].rstrip()
-    return text + "\u2026"
+    parts = _clusters(text.rstrip())
+    while parts and _ink_width("".join(parts) + "\u2026", size) > width:
+        parts.pop()
+        while parts and parts[-1].isspace():
+            parts.pop()
+    return "".join(parts) + "\u2026"
 
 
 def _ink_width(text: str, size: int = FONT_SIZE) -> int:
@@ -208,14 +231,14 @@ def _ink_width(text: str, size: int = FONT_SIZE) -> int:
 def flow(text: str, widths, size: int = FONT_SIZE) -> list[str]:
     """`text` in lines; line k is `widths[k]` px wide (the last width repeats). Each
     line takes as many characters as fit, so a word is split at any letter (the
-    card shows as much of the title as it can, 2026-11-18). A space at the start
-    of a line is dropped."""
+    card shows as much of the title as it can, 2026-11-18), but never inside a
+    _clusters() unit. A space at the start of a line is dropped."""
     lines, cur = [], ""
 
     def width():
         return widths[min(len(lines), len(widths) - 1)]
 
-    for ch in " ".join((text or "").split()):
+    for ch in _clusters(" ".join((text or "").split())):
         if not cur and ch == " ":
             continue
         if _ink_width(cur + ch, size) <= width():

@@ -1,6 +1,7 @@
 """The agent registry, the hook and title adapters, the card, and the controller
 against the emulated firmware (cmd 45/46, protocol v31)."""
 import os
+import unicodedata
 import unittest
 import unittest.mock as mock
 
@@ -639,6 +640,26 @@ class CardTest(unittest.TestCase):
         box = drawn("\U0010fffd", fallback=False)               # Aileron's .notdef
         self.assertFalse((drawn("가") == box).all())
         self.assertFalse((drawn("가") == drawn("\U0010fffd")).all())
+
+    def test_a_letter_and_its_marks_are_never_split(self):
+        from polyhost.services.agents.card import _clusters, _runs
+        self.assertEqual(_clusters("रिले"), ["रि", "ले"])        # vowel signs stay
+        self.assertEqual(_clusters("क्ल"), ["क्ल"])               # a conjunct stays
+        self.assertEqual(_clusters("แก้ไข"), ["แ", "ก้", "ไ", "ข"])  # a Thai tone mark stays
+        self.assertEqual(_clusters("e\u0301a"), ["e\u0301", "a"])  # a Latin accent stays
+        # A mark goes into the run of its letter, whatever font has it.
+        self.assertEqual([part for _f, _d, part in _runs("ab\u0301")], ["ab\u0301"])
+        # A narrow line never starts with a mark or the second half of a conjunct.
+        title = "क्लाउड रिले परीक्षण " * 3
+        for widths in ([20], [33], [46, 70, 70]):
+            for line in flow(title, widths):
+                self.assertFalse(line and unicodedata.category(line[0]).startswith("M"),
+                                 (widths, line))
+                self.assertFalse(line.endswith("\u094d"), (widths, line))   # a virama
+        cut = card_mod._cut_with_ellipsis("रिलेरिलेरिले", 20)
+        self.assertTrue(cut.endswith("\u2026"))
+        self.assertFalse(unicodedata.category(cut[0]).startswith("M"))
+        self.assertNotIn("\u094d\u2026", cut)                  # no half conjunct
 
     def test_a_missing_fallback_font_is_left_out(self):
         from polyhost.services.agents import card
