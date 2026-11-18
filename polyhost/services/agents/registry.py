@@ -105,7 +105,8 @@ class Agent:
         (model.card_words). A label of the user's keeps its words."""
         # A title of brackets only ("[]") shows what an agent without a title
         # shows, and the vendor when the folder is brackets only too.
-        unnamed = no_brackets(self._unnamed_headline()) or vendor(self.vendor).name
+        unnamed = (no_brackets(self._unnamed_headline())
+                   or no_brackets(vendor(self.vendor).name) or "Agent")
         if self.label or not self.headline:
             return no_brackets(self.base_headline) or unnamed
         return card_words(no_brackets(self.headline)) or unnamed
@@ -429,18 +430,20 @@ class AgentRegistry:
             # card, so they are numbered too.
             group = "\0anonymous" if agent.anonymous else agent.card_base.casefold()
             groups.setdefault(group, []).append(agent)
-        # A number never makes a card read like another agent's own title: with
-        # "(IO)", "IO" and "IO 1", the first two are "IO 2" and "IO 3".
+        # A number never makes a card read like another agent's title, its own
+        # or a numbered one: with "(IO)", "IO" and "IO 1", the first two are
+        # "IO 2" and "IO 3". Anonymous agents too ("Agent 1" beside a label
+        # "Agent 1").
         taken = {a.card_base.casefold() for a in out}
-        for group, same in groups.items():
+        for same in groups.values():
             if len(same) > 1 or same[0].anonymous:
                 number = 0
                 for agent in same:
                     number += 1
-                    while (group != "\0anonymous"
-                           and f"{agent.card_base} {number}".casefold() in taken):
+                    while f"{agent.card_base} {number}".casefold() in taken:
                         number += 1
                     agent.dup_number = number
+                    taken.add(f"{agent.card_base} {number}".casefold())
         return out
 
     def snapshot(self) -> list[dict]:

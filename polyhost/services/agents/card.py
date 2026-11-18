@@ -275,6 +275,11 @@ def _runs(text: str, size: int = FONT_SIZE) -> list[tuple]:
         # run of its letter: drawn alone, the shaper puts it on a dotted circle.
         # A space stays in the run before it too, so a right-to-left phrase is one
         # run that the shaper orders as a whole.
+        if runs and ch.isspace() and joiners:
+            # A joiner before a space joins nothing after it: it stays before
+            # the space, not carried over to the next letter.
+            runs[-1] = (runs[-1][0], runs[-1][1], runs[-1][2] + joiners)
+            joiners = ""
         if runs and (unicodedata.category(ch).startswith("M") or ch.isspace()):
             runs[-1] = (runs[-1][0], runs[-1][1], runs[-1][2] + ch)
             continue
@@ -423,9 +428,11 @@ def _code_points(ranges: str) -> frozenset:
 # Arabic, Syriac, N'Ko, Mandaic. _JOINS_NEXT: dual-joining, left-joining and
 # join-causing (tatweel) characters, which join the letter after them.
 # _JOINS_PREVIOUS: dual-joining, right-joining and join-causing ones, which join
-# the letter before them. Alef, dal, reh and waw join only the letter before them;
-# hamza joins neither side. Python's unicodedata has no joining type.
+# the letter before them. ZWJ (join-causing) is in both. Alef, dal, reh and waw
+# join only the letter before them; hamza joins neither side. Python's
+# unicodedata has no joining type.
 _JOINS_NEXT = _code_points(
+    "200D "
     "0620 0626 0628 062A-062E 0633-0647 0649-064A 066E-066F 0678-0687 069A-06BF "
     "06C1-06C2 06CC 06CE 06D0-06D1 06FA-06FC 06FF 0712-0714 071A-071D 071F-0727 "
     "0729 072B 072D-072E 074E-0758 075C-076A 076D-0770 0772 0775-0777 077A-077F "
@@ -433,22 +440,30 @@ _JOINS_NEXT = _code_points(
     "0889-088D 08A0-08A9 08AF-08B0 08B3-08B8 08BA-08C8 "
 )
 _JOINS_PREVIOUS = _code_points(
+    "200D "
     "0620 0622-064A 066E-066F 0671-0673 0675-06D3 06D5 06EE-06EF 06FA-06FC 06FF "
     "0710 0712-072F 074D-077F 07CA-07EA 07FA 0840-0858 0860 0862-0865 0867-086A "
     "0870-0886 0889-088E 08A0-08AC 08AE-08C8 "
 )
 
 
-# Marks and format characters whose joining type is not T (Unicode 16.0): the
-# Arabic number signs, END OF AYAH, ZWNJ and ZWJ, the bidi isolates.
-_NOT_TRANSPARENT = _code_points(
-    "0600-0605 06DD 0890-0891 08E2 180E 200C-200D 2066-2069 110BD 110CD 1171E")
+# Joining type T (transparent) in U+0600..U+08FF, from the same file: the
+# runtime's unicodedata can be an older Unicode (Python 3.13: 15.1, which does
+# not know U+0897).
+_TRANSPARENT = _code_points(
+    "0610-061A 061C 064B-065F 0670 06D6-06DC 06DF-06E4 06E7-06E8 06EA-06ED 070F "
+    "0711 0730-074A 07A6-07B0 07EB-07F3 07FD 0816-0819 081B-0823 0825-0827 "
+    "0829-082D 0859-085B 0897-089F 08CA-08E1 08E3-08FF")
+# Outside that range: marks and format characters whose joining type is not T
+# (ZWNJ, ZWJ, the bidi isolates, ...).
+_NOT_TRANSPARENT = _code_points("180E 200C-200D 2066-2069 110BD 110CD 1171E")
 
 
 def _transparent(ch: str) -> bool:
-    """A character that joining skips (joining type T): a mark (Mn, Me) or a
-    format character (Cf) such as U+061C ARABIC LETTER MARK, except those of
-    _NOT_TRANSPARENT, which stop a join (U+06DD) or cause one (ZWJ)."""
+    """A character that joining skips (joining type T), such as a vowel mark or
+    U+061C ARABIC LETTER MARK. U+06DD END OF AYAH stops a join, ZWJ causes one."""
+    if "\u0600" <= ch <= "\u08ff":
+        return ch in _TRANSPARENT
     return unicodedata.category(ch) in ("Mn", "Me", "Cf") and ch not in _NOT_TRANSPARENT
 
 

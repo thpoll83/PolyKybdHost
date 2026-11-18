@@ -359,6 +359,25 @@ class CardWordsTest(unittest.TestCase):
         r.report("codex", "c", "working", headline="IO 1")
         self.assertEqual([a.card_text for a in r.agents()], ["IO 2", "IO 3", "IO 1"])
 
+    def test_an_anonymous_agent_never_repeats_another_agents_title(self):
+        r = AgentRegistry()
+        r.report("claude-code", "a", "working", machine="cloud", headline="", cwd="")
+        r.report("codex", "b", "working", headline="Agent")
+        r.report("codex", "c", "working", headline="Agent")
+        r.report("codex", "d", "working", headline="Fix it")
+        self.assertTrue(r.label("codex", "d", "Agent 1"))
+        texts = [a.card_text for a in r.agents()]
+        self.assertEqual(len(set(t.casefold() for t in texts)), len(texts), texts)
+        self.assertEqual(texts[3], "Agent 1")
+
+    def test_a_vendor_name_of_brackets_only_shows_agent(self):
+        r = AgentRegistry()
+        r.report("tool(x)", "a", "working", headline="[]", cwd="/work/[]")
+        r.report("tool(x)", "b", "working", headline="tool x")
+        texts = [a.card_text for a in r.agents()]
+        self.assertFalse(set("()[]") & set("".join(texts)), texts)
+        self.assertEqual(len(set(texts)), 2, texts)
+
     def test_the_card_has_no_brackets_and_titles_that_differ_only_in_them_are_numbered(self):
         r = AgentRegistry()
         r.report("codex", "a", "working", headline="Fix (the) login [WIP]")
@@ -872,6 +891,9 @@ class CardTest(unittest.TestCase):
         self.assertTrue(_joins("\u0628", "\u0640"))     # tatweel joins both sides
         self.assertFalse(_joins("\u0628\u200c", "\u0628"))  # ZWNJ stops the join
         self.assertFalse(_joins("\u0628\u06dd", "\u0628"))  # END OF AYAH: Cf, but joining type U
+        self.assertTrue(_joins("\u0628\u0897", "\u0628"))   # Unicode 16.0 mark, unknown to 15.1
+        self.assertTrue(_joins("\u0628\u200d\u064e", "\u0628"))  # an explicit ZWJ joins at a wrap
+        self.assertFalse(_joins("a\u200c", "\u0628"))
         self.assertFalse(_joins("\u0628", ""))
         lines = flow("\u062a\u0633\u062c\u064a\u0644" * 6, [30])
         self.assertGreater(len(lines), 1)
@@ -891,6 +913,8 @@ class CardTest(unittest.TestCase):
             self.assertEqual(runs[0][2], text)
         runs = _runs("HID \u200d\u0628")
         self.assertEqual(runs[-1][2], "\u200d\u0628")
+        # A joiner before a space is not carried over it.
+        self.assertEqual([r[2] for r in _runs("\u0628 \u200d \u0628")], ["\u0628 \u200d \u0628"])
         # After a space in the same font: the joiner stays before the letter.
         self.assertEqual([r[2] for r in _runs("\u0628 \u200d\u0628")], ["\u0628 \u200d\u0628"])
         self.assertEqual("".join(r[2] for r in _runs("\u200d")), "\u200d")
