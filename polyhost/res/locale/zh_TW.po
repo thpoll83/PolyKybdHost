@@ -464,19 +464,19 @@ msgstr "版本 {version}"
 
 #: polyhost/gui/about_dialog.py:105
 msgid "Keycap displays and legends"
-msgstr ""
+msgstr "鍵帽顯示器與字樣"
 
 #: polyhost/gui/about_dialog.py:106
 msgid "Every key has a small display. What it shows is the key's legend: the character the key types and, on some keys, the character it types with Shift."
-msgstr ""
+msgstr "每個按鍵都有一個小顯示器。它顯示的是按鍵的字樣：按鍵輸入的字元，在某些按鍵上還有按住 Shift 時輸入的字元。"
 
 #: polyhost/gui/about_dialog.py:110
 msgid "Keyboard language"
-msgstr ""
+msgstr "鍵盤語言"
 
 #: polyhost/gui/about_dialog.py:111
 msgid "The keycaps show the characters of the language your computer types in. When you switch the input language, the keyboard draws the new legends. The picture shows the A key in English, Russian, Arabic and Japanese."
-msgstr ""
+msgstr "鍵帽會顯示電腦目前輸入語言的字元。切換輸入語言後，鍵盤會顯示新的字樣。圖中是 A 鍵在英文、俄文、阿拉伯文和日文中的樣子。"
 
 #: polyhost/gui/about_dialog.py:115 polyhost/gui/tutorials_dialog.py:33
 msgid "Layers"
@@ -484,7 +484,7 @@ msgstr "層"
 
 #: polyhost/gui/about_dialog.py:116
 msgid "A layer gives every key a second function. While you hold a layer key such as Fn, the keys and their legends change: here the 1 key becomes F1."
-msgstr ""
+msgstr "層讓每個按鍵擁有第二種功能。按住 Fn 等層按鍵時，按鍵及其字樣會改變：這裡 1 鍵變成 F1。"
 
 #: polyhost/gui/about_dialog.py:119 polyhost/gui/cmd_menu.py:196
 msgid "Overlays"
@@ -492,7 +492,7 @@ msgstr "覆蓋圖"
 
 #: polyhost/gui/about_dialog.py:120
 msgid "An overlay is a set of icons for one app. While that app is in front and you hold a modifier such as Ctrl, each key shows what its shortcut does: here Ctrl+S saves in GIMP. PolyKybdHost comes with overlays for many apps. For other apps it reads the shortcuts from the app's menus (Settings, Keycap icons)."
-msgstr ""
+msgstr "覆蓋圖是為某一個應用程式準備的一組圖示。當該應用程式在前景、您按住 Ctrl 等修飾鍵時，每個按鍵都會顯示其快捷鍵的作用：這裡 Ctrl+S 在 GIMP 中表示儲存。PolyKybdHost 內建許多應用程式的覆蓋圖。對於其他應用程式，它會從應用程式的選單讀取快捷鍵（設定，鍵帽圖示）。"
 
 #: polyhost/gui/about_dialog.py:126 polyhost/gui/settings_dialog.py:86
 msgid "Font packs"
@@ -500,7 +500,7 @@ msgstr "字型包"
 
 #: polyhost/gui/about_dialog.py:127
 msgid "The keyboard draws characters with fonts stored on the keyboard, in font packs: one for each group of scripts, and packs for symbols and emoji. PolyKybdHost sends missing or newer font packs to the keyboard when it connects."
-msgstr ""
+msgstr "鍵盤使用儲存在鍵盤上的字型來顯示字元，這些字型放在字型包中：每組文字一個字型包，另有符號和表情符號的字型包。PolyKybdHost 在連線時會將缺少的或較新的字型包傳送到鍵盤。"
 
 #: polyhost/gui/about_dialog.py:132 polyhost/gui/cmd_menu.py:241
 msgid "Firmware"
@@ -508,27 +508,31 @@ msgstr "韌體"
 
 #: polyhost/gui/about_dialog.py:133
 msgid "The firmware is the program that runs inside the keyboard. PolyKybdHost offers new versions under Updates in the tray menu."
-msgstr ""
+msgstr "韌體是在鍵盤內部執行的程式。PolyKybdHost 會在系統匣選單的「更新」中提供新版本。"
 
 #: polyhost/gui/about_dialog.py:136
 msgid "Forwarder"
-msgstr ""
+msgstr "轉送器"
 
 #: polyhost/gui/about_dialog.py:137
 msgid "The forwarder is a small second app for another computer, for example one you control through remote desktop. It tells PolyKybdHost which app is in front on that computer, so the keyboard shows that app's icons. Turn on Accept forwarders in Settings, Connections, then pair the two computers with AI Agents, Pair a Forwarder in the tray menu."
-msgstr ""
+msgstr "轉送器是在另一台電腦上執行的一個小型輔助應用程式，例如您透過遠端桌面控制的電腦。它會告訴 PolyKybdHost 那台電腦上哪個應用程式在前景，讓鍵盤顯示該應用程式的圖示。請在設定，連線中開啟「接受轉送器」，然後在系統匣選單中透過 AI 代理程式，與轉送器配對 將兩台電腦配對。"
 
 #: polyhost/gui/about_dialog.py:195
 msgid ""
 "Forwarder\n"
 "(other computer)"
 msgstr ""
+"轉送器\n"
+"（另一台電腦）"
 
 #: polyhost/gui/about_dialog.py:196
 msgid ""
 "PolyKybdHost\n"
 "(this computer)"
 msgstr ""
+"PolyKybdHost\n"
+"（這台電腦）"
 
 #: polyhost/gui/about_dialog.py:197 polyhost/gui/settings_dialog.py:81
 #: polyhost/host.py:2030
@@ -546,11 +550,11 @@ msgstr "關於"
 
 #: polyhost/gui/about_dialog.py:316
 msgid "Basics"
-msgstr ""
+msgstr "基礎知識"
 
 #: polyhost/gui/about_dialog.py:317
 msgid "The words PolyKybd uses in its menus and settings, with a picture of each."
-msgstr ""
+msgstr "PolyKybd 在選單和設定中使用的用語，每個用語都附有一張圖。"
 
 #: polyhost/gui/about_dialog.py:362 polyhost/gui/about_dialog.py:373
 msgid "Copy diagnostics"
@@ -4096,7 +4100,7 @@ msgstr "搜尋設定"
 
 #: polyhost/gui/settings_dialog.py:1048
 msgid "An overlay is a set of icons for one app. Help & About, Basics shows an example."
-msgstr ""
+msgstr "覆蓋圖是為某一個應用程式準備的一組圖示。說明 & 關於，基礎知識 中有一個範例。"
 
 #: polyhost/gui/settings_dialog.py:1052
 msgid "Reading the settings stored on the keyboard…"

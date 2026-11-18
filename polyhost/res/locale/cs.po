@@ -464,19 +464,19 @@ msgstr "Verze {version}"
 
 #: polyhost/gui/about_dialog.py:105
 msgid "Keycap displays and legends"
-msgstr ""
+msgstr "Displeje a popisky kláves"
 
 #: polyhost/gui/about_dialog.py:106
 msgid "Every key has a small display. What it shows is the key's legend: the character the key types and, on some keys, the character it types with Shift."
-msgstr ""
+msgstr "Každá klávesa má malý displej. Zobrazuje popisek klávesy: znak, který klávesa píše, a u některých kláves také znak, který píše se Shift."
 
 #: polyhost/gui/about_dialog.py:110
 msgid "Keyboard language"
-msgstr ""
+msgstr "Jazyk klávesnice"
 
 #: polyhost/gui/about_dialog.py:111
 msgid "The keycaps show the characters of the language your computer types in. When you switch the input language, the keyboard draws the new legends. The picture shows the A key in English, Russian, Arabic and Japanese."
-msgstr ""
+msgstr "Klávesy zobrazují znaky jazyka, ve kterém píše váš počítač. Když přepnete jazyk vstupu, klávesnice nakreslí nové popisky. Obrázek ukazuje klávesu A v angličtině, ruštině, arabštině a japonštině."
 
 #: polyhost/gui/about_dialog.py:115 polyhost/gui/tutorials_dialog.py:33
 msgid "Layers"
@@ -484,7 +484,7 @@ msgstr "Vrstvy"
 
 #: polyhost/gui/about_dialog.py:116
 msgid "A layer gives every key a second function. While you hold a layer key such as Fn, the keys and their legends change: here the 1 key becomes F1."
-msgstr ""
+msgstr "Vrstva dává každé klávese druhou funkci. Dokud držíte klávesu vrstvy, například Fn, klávesy a jejich popisky se změní: zde se z klávesy 1 stane F1."
 
 #: polyhost/gui/about_dialog.py:119 polyhost/gui/cmd_menu.py:196
 msgid "Overlays"
@@ -492,7 +492,7 @@ msgstr "Překryvy"
 
 #: polyhost/gui/about_dialog.py:120
 msgid "An overlay is a set of icons for one app. While that app is in front and you hold a modifier such as Ctrl, each key shows what its shortcut does: here Ctrl+S saves in GIMP. PolyKybdHost comes with overlays for many apps. For other apps it reads the shortcuts from the app's menus (Settings, Keycap icons)."
-msgstr ""
+msgstr "Překryv je sada ikon pro jednu aplikaci. Když je tato aplikace v popředí a držíte modifikátor, například Ctrl, každá klávesa ukazuje, co dělá její zkratka: zde Ctrl+S ukládá v GIMP. PolyKybdHost obsahuje překryvy pro mnoho aplikací. U ostatních aplikací čte zkratky z nabídek aplikace („Nastavení“, „Ikony na klávesách“)."
 
 #: polyhost/gui/about_dialog.py:126 polyhost/gui/settings_dialog.py:86
 msgid "Font packs"
@@ -500,7 +500,7 @@ msgstr "Balíčky písem"
 
 #: polyhost/gui/about_dialog.py:127
 msgid "The keyboard draws characters with fonts stored on the keyboard, in font packs: one for each group of scripts, and packs for symbols and emoji. PolyKybdHost sends missing or newer font packs to the keyboard when it connects."
-msgstr ""
+msgstr "Klávesnice kreslí znaky písmy uloženými v klávesnici v balíčcích písem: jeden pro každou skupinu písemných soustav a další pro symboly a emoji. Při připojení PolyKybdHost pošle do klávesnice chybějící nebo novější balíčky písem."
 
 #: polyhost/gui/about_dialog.py:132 polyhost/gui/cmd_menu.py:241
 msgid "Firmware"
@@ -508,27 +508,31 @@ msgstr "Firmware"
 
 #: polyhost/gui/about_dialog.py:133
 msgid "The firmware is the program that runs inside the keyboard. PolyKybdHost offers new versions under Updates in the tray menu."
-msgstr ""
+msgstr "Firmware je program, který běží uvnitř klávesnice. PolyKybdHost nabízí nové verze v položce „Aktualizace“ v nabídce v oznamovací oblasti."
 
 #: polyhost/gui/about_dialog.py:136
 msgid "Forwarder"
-msgstr ""
+msgstr "Přeposílač"
 
 #: polyhost/gui/about_dialog.py:137
 msgid "The forwarder is a small second app for another computer, for example one you control through remote desktop. It tells PolyKybdHost which app is in front on that computer, so the keyboard shows that app's icons. Turn on Accept forwarders in Settings, Connections, then pair the two computers with AI Agents, Pair a Forwarder in the tray menu."
-msgstr ""
+msgstr "Přeposílač je malá druhá aplikace pro jiný počítač, například ten, který ovládáte přes vzdálenou plochu. Sděluje PolyKybdHost, která aplikace je na tom počítači v popředí, aby klávesnice zobrazovala ikony této aplikace. Zapněte „Přijímat přeposílače“ v „Nastavení“, „Připojení“ a pak spárujte oba počítače přes „Agenti AI“, „Spárovat přeposílač“ v nabídce v oznamovací oblasti."
 
 #: polyhost/gui/about_dialog.py:195
 msgid ""
 "Forwarder\n"
 "(other computer)"
 msgstr ""
+"Přeposílač\n"
+"(jiný počítač)"
 
 #: polyhost/gui/about_dialog.py:196
 msgid ""
 "PolyKybdHost\n"
 "(this computer)"
 msgstr ""
+"PolyKybdHost\n"
+"(tento počítač)"
 
 #: polyhost/gui/about_dialog.py:197 polyhost/gui/settings_dialog.py:81
 #: polyhost/host.py:2030
@@ -546,11 +550,11 @@ msgstr "O aplikaci"
 
 #: polyhost/gui/about_dialog.py:316
 msgid "Basics"
-msgstr ""
+msgstr "Základy"
 
 #: polyhost/gui/about_dialog.py:317
 msgid "The words PolyKybd uses in its menus and settings, with a picture of each."
-msgstr ""
+msgstr "Pojmy, které PolyKybd používá ve svých nabídkách a nastaveních, každý s obrázkem."
 
 #: polyhost/gui/about_dialog.py:362 polyhost/gui/about_dialog.py:373
 msgid "Copy diagnostics"
@@ -4130,7 +4134,7 @@ msgstr "Hledat v nastavení"
 
 #: polyhost/gui/settings_dialog.py:1048
 msgid "An overlay is a set of icons for one app. Help & About, Basics shows an example."
-msgstr ""
+msgstr "Překryv je sada ikon pro jednu aplikaci. Příklad najdete v „Nápověda & O aplikaci“, „Základy“."
 
 #: polyhost/gui/settings_dialog.py:1052
 msgid "Reading the settings stored on the keyboard…"

@@ -464,19 +464,19 @@ msgstr "버전 {version}"
 
 #: polyhost/gui/about_dialog.py:105
 msgid "Keycap displays and legends"
-msgstr ""
+msgstr "키캡 디스플레이와 범례"
 
 #: polyhost/gui/about_dialog.py:106
 msgid "Every key has a small display. What it shows is the key's legend: the character the key types and, on some keys, the character it types with Shift."
-msgstr ""
+msgstr "모든 키에는 작은 디스플레이가 있습니다. 여기에 표시되는 것이 키의 범례입니다. 키가 입력하는 문자이며, 일부 키에서는 Shift와 함께 입력하는 문자도 표시됩니다."
 
 #: polyhost/gui/about_dialog.py:110
 msgid "Keyboard language"
-msgstr ""
+msgstr "키보드 언어"
 
 #: polyhost/gui/about_dialog.py:111
 msgid "The keycaps show the characters of the language your computer types in. When you switch the input language, the keyboard draws the new legends. The picture shows the A key in English, Russian, Arabic and Japanese."
-msgstr ""
+msgstr "키캡에는 컴퓨터에서 입력하는 언어의 문자가 표시됩니다. 입력 언어를 바꾸면 키보드가 새 범례를 표시합니다. 그림은 영어, 러시아어, 아랍어, 일본어의 A 키입니다."
 
 #: polyhost/gui/about_dialog.py:115 polyhost/gui/tutorials_dialog.py:33
 msgid "Layers"
@@ -484,7 +484,7 @@ msgstr "레이어"
 
 #: polyhost/gui/about_dialog.py:116
 msgid "A layer gives every key a second function. While you hold a layer key such as Fn, the keys and their legends change: here the 1 key becomes F1."
-msgstr ""
+msgstr "레이어는 모든 키에 두 번째 기능을 줍니다. Fn 같은 레이어 키를 누르고 있는 동안 키와 범례가 바뀝니다. 여기서는 1 키가 F1이 됩니다."
 
 #: polyhost/gui/about_dialog.py:119 polyhost/gui/cmd_menu.py:196
 msgid "Overlays"
@@ -492,7 +492,7 @@ msgstr "오버레이"
 
 #: polyhost/gui/about_dialog.py:120
 msgid "An overlay is a set of icons for one app. While that app is in front and you hold a modifier such as Ctrl, each key shows what its shortcut does: here Ctrl+S saves in GIMP. PolyKybdHost comes with overlays for many apps. For other apps it reads the shortcuts from the app's menus (Settings, Keycap icons)."
-msgstr ""
+msgstr "오버레이는 한 앱을 위한 아이콘 모음입니다. 그 앱이 앞에 있을 때 Ctrl 같은 모디파이어를 누르고 있으면, 각 키에 해당 단축키가 하는 일이 표시됩니다. 여기서는 GIMP에서 Ctrl+S가 저장입니다. PolyKybdHost에는 많은 앱의 오버레이가 포함되어 있습니다. 다른 앱의 경우 앱의 메뉴에서 단축키를 읽어 옵니다(설정, 키캡 아이콘)."
 
 #: polyhost/gui/about_dialog.py:126 polyhost/gui/settings_dialog.py:86
 msgid "Font packs"
@@ -500,7 +500,7 @@ msgstr "글꼴 팩"
 
 #: polyhost/gui/about_dialog.py:127
 msgid "The keyboard draws characters with fonts stored on the keyboard, in font packs: one for each group of scripts, and packs for symbols and emoji. PolyKybdHost sends missing or newer font packs to the keyboard when it connects."
-msgstr ""
+msgstr "키보드는 키보드에 저장된 글꼴로 문자를 표시합니다. 글꼴은 글꼴 팩에 들어 있습니다. 문자 체계 그룹마다 하나씩, 그리고 기호와 이모지용 팩이 있습니다. PolyKybdHost는 연결될 때 없거나 더 새로운 글꼴 팩을 키보드로 보냅니다."
 
 #: polyhost/gui/about_dialog.py:132 polyhost/gui/cmd_menu.py:241
 msgid "Firmware"
@@ -508,27 +508,31 @@ msgstr "펌웨어"
 
 #: polyhost/gui/about_dialog.py:133
 msgid "The firmware is the program that runs inside the keyboard. PolyKybdHost offers new versions under Updates in the tray menu."
-msgstr ""
+msgstr "펌웨어는 키보드 안에서 실행되는 프로그램입니다. PolyKybdHost는 트레이 메뉴의 '업데이트'에서 새 버전을 제공합니다."
 
 #: polyhost/gui/about_dialog.py:136
 msgid "Forwarder"
-msgstr ""
+msgstr "포워더"
 
 #: polyhost/gui/about_dialog.py:137
 msgid "The forwarder is a small second app for another computer, for example one you control through remote desktop. It tells PolyKybdHost which app is in front on that computer, so the keyboard shows that app's icons. Turn on Accept forwarders in Settings, Connections, then pair the two computers with AI Agents, Pair a Forwarder in the tray menu."
-msgstr ""
+msgstr "포워더는 다른 컴퓨터(예: 원격 데스크톱으로 제어하는 컴퓨터)에서 실행하는 작은 보조 앱입니다. 그 컴퓨터에서 앞에 있는 앱을 PolyKybdHost에 알려 주므로, 키보드에 그 앱의 아이콘이 표시됩니다. 설정, 연결에서 '포워더 허용'을 켠 다음, 트레이 메뉴의 AI 에이전트, 포워더 페어링으로 두 컴퓨터를 페어링하십시오."
 
 #: polyhost/gui/about_dialog.py:195
 msgid ""
 "Forwarder\n"
 "(other computer)"
 msgstr ""
+"포워더\n"
+"(다른 컴퓨터)"
 
 #: polyhost/gui/about_dialog.py:196
 msgid ""
 "PolyKybdHost\n"
 "(this computer)"
 msgstr ""
+"PolyKybdHost\n"
+"(이 컴퓨터)"
 
 #: polyhost/gui/about_dialog.py:197 polyhost/gui/settings_dialog.py:81
 #: polyhost/host.py:2030
@@ -546,11 +550,11 @@ msgstr "정보"
 
 #: polyhost/gui/about_dialog.py:316
 msgid "Basics"
-msgstr ""
+msgstr "기본 사항"
 
 #: polyhost/gui/about_dialog.py:317
 msgid "The words PolyKybd uses in its menus and settings, with a picture of each."
-msgstr ""
+msgstr "PolyKybd가 메뉴와 설정에서 사용하는 용어와 각 용어의 그림입니다."
 
 #: polyhost/gui/about_dialog.py:362 polyhost/gui/about_dialog.py:373
 msgid "Copy diagnostics"
@@ -4096,7 +4100,7 @@ msgstr "설정 검색"
 
 #: polyhost/gui/settings_dialog.py:1048
 msgid "An overlay is a set of icons for one app. Help & About, Basics shows an example."
-msgstr ""
+msgstr "오버레이는 한 앱을 위한 아이콘 모음입니다. 도움말 & 정보, 기본 사항에서 예를 볼 수 있습니다."
 
 #: polyhost/gui/settings_dialog.py:1052
 msgid "Reading the settings stored on the keyboard…"

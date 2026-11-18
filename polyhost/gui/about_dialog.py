@@ -192,8 +192,12 @@ def _forwarder_diagram():
     row.setContentsMargins(0, 0, 0, 0)
     row.setSpacing(px(10))
     size = px(48)
-    parts = (("fcolor.png", N_("Forwarder\n(other computer)")), ("arrow_forward.svg", None),
-             ("pcolor.png", N_("PolyKybdHost\n(this computer)")), ("arrow_forward.svg", None),
+    # The row mirrors in Arabic and Persian, so the arrows must point left there.
+    from PyQt5.QtWidgets import QApplication
+    arrow = ("arrow_back.svg" if QApplication.layoutDirection() == Qt.RightToLeft
+             else "arrow_forward.svg")
+    parts = (("fcolor.png", N_("Forwarder\n(other computer)")), (arrow, None),
+             ("pcolor.png", N_("PolyKybdHost\n(this computer)")), (arrow, None),
              ("keyboard.svg", N_("Keyboard")))
     for icon, caption in parts:
         col = QVBoxLayout()

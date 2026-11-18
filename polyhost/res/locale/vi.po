@@ -464,19 +464,19 @@ msgstr "Phiên bản {version}"
 
 #: polyhost/gui/about_dialog.py:105
 msgid "Keycap displays and legends"
-msgstr ""
+msgstr "Màn hình mặt phím và ký hiệu phím"
 
 #: polyhost/gui/about_dialog.py:106
 msgid "Every key has a small display. What it shows is the key's legend: the character the key types and, on some keys, the character it types with Shift."
-msgstr ""
+msgstr "Mỗi phím có một màn hình nhỏ. Nội dung nó hiển thị là ký hiệu của phím: ký tự mà phím gõ ra và, trên một số phím, ký tự mà phím gõ ra khi nhấn cùng Shift."
 
 #: polyhost/gui/about_dialog.py:110
 msgid "Keyboard language"
-msgstr ""
+msgstr "Ngôn ngữ bàn phím"
 
 #: polyhost/gui/about_dialog.py:111
 msgid "The keycaps show the characters of the language your computer types in. When you switch the input language, the keyboard draws the new legends. The picture shows the A key in English, Russian, Arabic and Japanese."
-msgstr ""
+msgstr "Mặt phím hiển thị các ký tự của ngôn ngữ mà máy tính của bạn đang dùng để gõ. Khi bạn chuyển ngôn ngữ nhập, bàn phím sẽ vẽ các ký hiệu phím mới. Hình minh họa phím A bằng tiếng Anh, tiếng Nga, tiếng Ả Rập và tiếng Nhật."
 
 #: polyhost/gui/about_dialog.py:115 polyhost/gui/tutorials_dialog.py:33
 msgid "Layers"
@@ -484,7 +484,7 @@ msgstr "Lớp"
 
 #: polyhost/gui/about_dialog.py:116
 msgid "A layer gives every key a second function. While you hold a layer key such as Fn, the keys and their legends change: here the 1 key becomes F1."
-msgstr ""
+msgstr "Lớp cho mỗi phím thêm một chức năng thứ hai. Khi bạn giữ một phím lớp như Fn, các phím và ký hiệu của chúng sẽ thay đổi: ở đây phím 1 trở thành F1."
 
 #: polyhost/gui/about_dialog.py:119 polyhost/gui/cmd_menu.py:196
 msgid "Overlays"
@@ -492,7 +492,7 @@ msgstr "Lớp phủ"
 
 #: polyhost/gui/about_dialog.py:120
 msgid "An overlay is a set of icons for one app. While that app is in front and you hold a modifier such as Ctrl, each key shows what its shortcut does: here Ctrl+S saves in GIMP. PolyKybdHost comes with overlays for many apps. For other apps it reads the shortcuts from the app's menus (Settings, Keycap icons)."
-msgstr ""
+msgstr "Lớp phủ là một bộ biểu tượng cho một ứng dụng. Khi ứng dụng đó ở phía trước và bạn giữ một phím bổ trợ như Ctrl, mỗi phím sẽ hiển thị phím tắt của nó làm gì: ở đây Ctrl+S lưu tệp trong GIMP. PolyKybdHost có sẵn lớp phủ cho nhiều ứng dụng. Với các ứng dụng khác, nó đọc phím tắt từ menu của ứng dụng (Cài đặt, Biểu tượng trên mặt phím)."
 
 #: polyhost/gui/about_dialog.py:126 polyhost/gui/settings_dialog.py:86
 msgid "Font packs"
@@ -500,7 +500,7 @@ msgstr "Gói phông chữ"
 
 #: polyhost/gui/about_dialog.py:127
 msgid "The keyboard draws characters with fonts stored on the keyboard, in font packs: one for each group of scripts, and packs for symbols and emoji. PolyKybdHost sends missing or newer font packs to the keyboard when it connects."
-msgstr ""
+msgstr "Bàn phím vẽ ký tự bằng phông chữ lưu trên bàn phím, trong các gói phông chữ: mỗi nhóm hệ chữ viết một gói, cùng các gói cho ký hiệu và emoji. Khi kết nối, PolyKybdHost gửi các gói phông chữ còn thiếu hoặc mới hơn sang bàn phím."
 
 #: polyhost/gui/about_dialog.py:132 polyhost/gui/cmd_menu.py:241
 msgid "Firmware"
@@ -508,27 +508,31 @@ msgstr "Firmware"
 
 #: polyhost/gui/about_dialog.py:133
 msgid "The firmware is the program that runs inside the keyboard. PolyKybdHost offers new versions under Updates in the tray menu."
-msgstr ""
+msgstr "Firmware là chương trình chạy bên trong bàn phím. PolyKybdHost cung cấp phiên bản mới trong mục Cập nhật của menu khay hệ thống."
 
 #: polyhost/gui/about_dialog.py:136
 msgid "Forwarder"
-msgstr ""
+msgstr "Bộ chuyển tiếp"
 
 #: polyhost/gui/about_dialog.py:137
 msgid "The forwarder is a small second app for another computer, for example one you control through remote desktop. It tells PolyKybdHost which app is in front on that computer, so the keyboard shows that app's icons. Turn on Accept forwarders in Settings, Connections, then pair the two computers with AI Agents, Pair a Forwarder in the tray menu."
-msgstr ""
+msgstr "Bộ chuyển tiếp là một ứng dụng phụ nhỏ dành cho một máy tính khác, ví dụ máy bạn điều khiển qua màn hình từ xa. Nó cho PolyKybdHost biết ứng dụng nào đang ở phía trước trên máy đó, để bàn phím hiển thị biểu tượng của ứng dụng đó. Hãy bật Nhận bộ chuyển tiếp trong Cài đặt, Kết nối, rồi ghép đôi hai máy tính bằng Tác tử AI, Ghép đôi bộ chuyển tiếp trong menu khay hệ thống."
 
 #: polyhost/gui/about_dialog.py:195
 msgid ""
 "Forwarder\n"
 "(other computer)"
 msgstr ""
+"Bộ chuyển tiếp\n"
+"(máy tính khác)"
 
 #: polyhost/gui/about_dialog.py:196
 msgid ""
 "PolyKybdHost\n"
 "(this computer)"
 msgstr ""
+"PolyKybdHost\n"
+"(máy tính này)"
 
 #: polyhost/gui/about_dialog.py:197 polyhost/gui/settings_dialog.py:81
 #: polyhost/host.py:2030
@@ -546,11 +550,11 @@ msgstr "Giới thiệu"
 
 #: polyhost/gui/about_dialog.py:316
 msgid "Basics"
-msgstr ""
+msgstr "Kiến thức cơ bản"
 
 #: polyhost/gui/about_dialog.py:317
 msgid "The words PolyKybd uses in its menus and settings, with a picture of each."
-msgstr ""
+msgstr "Các thuật ngữ PolyKybd dùng trong menu và cài đặt, kèm một hình minh họa cho mỗi thuật ngữ."
 
 #: polyhost/gui/about_dialog.py:362 polyhost/gui/about_dialog.py:373
 msgid "Copy diagnostics"
@@ -4096,7 +4100,7 @@ msgstr "Tìm kiếm cài đặt"
 
 #: polyhost/gui/settings_dialog.py:1048
 msgid "An overlay is a set of icons for one app. Help & About, Basics shows an example."
-msgstr ""
+msgstr "Lớp phủ là một bộ biểu tượng cho một ứng dụng. Trợ giúp & Giới thiệu, Kiến thức cơ bản có một ví dụ."
 
 #: polyhost/gui/settings_dialog.py:1052
 msgid "Reading the settings stored on the keyboard…"

@@ -464,19 +464,19 @@ msgstr "Versão {version}"
 
 #: polyhost/gui/about_dialog.py:105
 msgid "Keycap displays and legends"
-msgstr ""
+msgstr "Telas das keycaps e legendas"
 
 #: polyhost/gui/about_dialog.py:106
 msgid "Every key has a small display. What it shows is the key's legend: the character the key types and, on some keys, the character it types with Shift."
-msgstr ""
+msgstr "Cada tecla tem uma pequena tela. O que ela mostra é a legenda da tecla: o caractere que a tecla digita e, em algumas teclas, o caractere que ela digita com Shift."
 
 #: polyhost/gui/about_dialog.py:110
 msgid "Keyboard language"
-msgstr ""
+msgstr "Idioma do teclado"
 
 #: polyhost/gui/about_dialog.py:111
 msgid "The keycaps show the characters of the language your computer types in. When you switch the input language, the keyboard draws the new legends. The picture shows the A key in English, Russian, Arabic and Japanese."
-msgstr ""
+msgstr "As keycaps mostram os caracteres do idioma em que o seu computador digita. Quando você troca o idioma de entrada, o teclado desenha as novas legendas. A imagem mostra a tecla A em inglês, russo, árabe e japonês."
 
 #: polyhost/gui/about_dialog.py:115 polyhost/gui/tutorials_dialog.py:33
 msgid "Layers"
@@ -484,7 +484,7 @@ msgstr "Camadas"
 
 #: polyhost/gui/about_dialog.py:116
 msgid "A layer gives every key a second function. While you hold a layer key such as Fn, the keys and their legends change: here the 1 key becomes F1."
-msgstr ""
+msgstr "Uma camada dá a cada tecla uma segunda função. Enquanto você segura uma tecla de camada como Fn, as teclas e suas legendas mudam: aqui a tecla 1 vira F1."
 
 #: polyhost/gui/about_dialog.py:119 polyhost/gui/cmd_menu.py:196
 msgid "Overlays"
@@ -492,7 +492,7 @@ msgstr "Sobreposições"
 
 #: polyhost/gui/about_dialog.py:120
 msgid "An overlay is a set of icons for one app. While that app is in front and you hold a modifier such as Ctrl, each key shows what its shortcut does: here Ctrl+S saves in GIMP. PolyKybdHost comes with overlays for many apps. For other apps it reads the shortcuts from the app's menus (Settings, Keycap icons)."
-msgstr ""
+msgstr "Uma sobreposição é um conjunto de ícones para um aplicativo. Enquanto esse aplicativo está em primeiro plano e você segura um modificador como Ctrl, cada tecla mostra o que o seu atalho faz: aqui Ctrl+S salva no GIMP. O PolyKybdHost vem com sobreposições para muitos aplicativos. Para outros aplicativos, ele lê os atalhos dos menus do aplicativo (Configurações, Ícones das keycaps)."
 
 #: polyhost/gui/about_dialog.py:126 polyhost/gui/settings_dialog.py:86
 msgid "Font packs"
@@ -500,7 +500,7 @@ msgstr "Pacotes de fontes"
 
 #: polyhost/gui/about_dialog.py:127
 msgid "The keyboard draws characters with fonts stored on the keyboard, in font packs: one for each group of scripts, and packs for symbols and emoji. PolyKybdHost sends missing or newer font packs to the keyboard when it connects."
-msgstr ""
+msgstr "O teclado desenha os caracteres com fontes guardadas no teclado, em pacotes de fontes: um para cada grupo de escritas, e pacotes para símbolos e emoji. O PolyKybdHost envia ao teclado os pacotes de fontes que faltam ou que são mais novos quando ele se conecta."
 
 #: polyhost/gui/about_dialog.py:132 polyhost/gui/cmd_menu.py:241
 msgid "Firmware"
@@ -508,27 +508,31 @@ msgstr "Firmware"
 
 #: polyhost/gui/about_dialog.py:133
 msgid "The firmware is the program that runs inside the keyboard. PolyKybdHost offers new versions under Updates in the tray menu."
-msgstr ""
+msgstr "O firmware é o programa que roda dentro do teclado. O PolyKybdHost oferece novas versões em Atualizações, no menu da bandeja."
 
 #: polyhost/gui/about_dialog.py:136
 msgid "Forwarder"
-msgstr ""
+msgstr "Encaminhador"
 
 #: polyhost/gui/about_dialog.py:137
 msgid "The forwarder is a small second app for another computer, for example one you control through remote desktop. It tells PolyKybdHost which app is in front on that computer, so the keyboard shows that app's icons. Turn on Accept forwarders in Settings, Connections, then pair the two computers with AI Agents, Pair a Forwarder in the tray menu."
-msgstr ""
+msgstr "O encaminhador é um pequeno segundo aplicativo para outro computador, por exemplo um que você controla por área de trabalho remota. Ele informa ao PolyKybdHost qual aplicativo está em primeiro plano nesse computador, para que o teclado mostre os ícones desse aplicativo. Ative Aceitar encaminhadores em Configurações, Conexões e depois pareie os dois computadores com Agentes de IA, Parear um encaminhador no menu da bandeja."
 
 #: polyhost/gui/about_dialog.py:195
 msgid ""
 "Forwarder\n"
 "(other computer)"
 msgstr ""
+"Encaminhador\n"
+"(outro computador)"
 
 #: polyhost/gui/about_dialog.py:196
 msgid ""
 "PolyKybdHost\n"
 "(this computer)"
 msgstr ""
+"PolyKybdHost\n"
+"(este computador)"
 
 #: polyhost/gui/about_dialog.py:197 polyhost/gui/settings_dialog.py:81
 #: polyhost/host.py:2030
@@ -546,11 +550,11 @@ msgstr "Sobre"
 
 #: polyhost/gui/about_dialog.py:316
 msgid "Basics"
-msgstr ""
+msgstr "Noções básicas"
 
 #: polyhost/gui/about_dialog.py:317
 msgid "The words PolyKybd uses in its menus and settings, with a picture of each."
-msgstr ""
+msgstr "Os termos que o PolyKybd usa nos seus menus e configurações, cada um com uma imagem."
 
 #: polyhost/gui/about_dialog.py:362 polyhost/gui/about_dialog.py:373
 msgid "Copy diagnostics"
@@ -4113,7 +4117,7 @@ msgstr "Buscar configurações"
 
 #: polyhost/gui/settings_dialog.py:1048
 msgid "An overlay is a set of icons for one app. Help & About, Basics shows an example."
-msgstr ""
+msgstr "Uma sobreposição é um conjunto de ícones para um aplicativo. Ajuda & sobre, Noções básicas mostra um exemplo."
 
 #: polyhost/gui/settings_dialog.py:1052
 msgid "Reading the settings stored on the keyboard…"
