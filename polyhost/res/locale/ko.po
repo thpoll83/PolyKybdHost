@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-18 06:27+0000\n"
+"POT-Creation-Date: 2026-11-18 07:04+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -453,24 +453,110 @@ msgstr "포워더 모드: 이 컴퓨터에는 키보드가 없습니다. 이 컴
 msgid "Download, install, and restart the forwarder now?"
 msgstr "지금 포워더를 다운로드하여 설치하고 다시 시작하시겠습니까?"
 
-#: polyhost/gui/about_dialog.py:43
+#: polyhost/gui/about_dialog.py:47
 msgid "Blog"
 msgstr "블로그"
 
-#: polyhost/gui/about_dialog.py:76
+#: polyhost/gui/about_dialog.py:80
 #, python-brace-format
 msgid "Version {version}"
 msgstr "버전 {version}"
 
-#: polyhost/gui/about_dialog.py:107
+#: polyhost/gui/about_dialog.py:105
+msgid "Keycap displays and legends"
+msgstr ""
+
+#: polyhost/gui/about_dialog.py:106
+msgid "Every key has a small display. What it shows is the key's legend: the character the key types and, on some keys, the character it types with Shift."
+msgstr ""
+
+#: polyhost/gui/about_dialog.py:110
+msgid "Keyboard language"
+msgstr ""
+
+#: polyhost/gui/about_dialog.py:111
+msgid "The keycaps show the characters of the language your computer types in. When you switch the input language, the keyboard draws the new legends. The picture shows the A key in English, Russian, Arabic and Japanese."
+msgstr ""
+
+#: polyhost/gui/about_dialog.py:115 polyhost/gui/tutorials_dialog.py:33
+msgid "Layers"
+msgstr "레이어"
+
+#: polyhost/gui/about_dialog.py:116
+msgid "A layer gives every key a second function. While you hold a layer key such as Fn, the keys and their legends change: here the 1 key becomes F1."
+msgstr ""
+
+#: polyhost/gui/about_dialog.py:119 polyhost/gui/cmd_menu.py:196
+msgid "Overlays"
+msgstr "오버레이"
+
+#: polyhost/gui/about_dialog.py:120
+msgid "An overlay is a set of icons for one app. While that app is in front and you hold a modifier such as Ctrl, each key shows what its shortcut does: here Ctrl+S saves in GIMP. PolyKybdHost comes with overlays for many apps. For other apps it reads the shortcuts from the app's menus (Settings, Keycap icons)."
+msgstr ""
+
+#: polyhost/gui/about_dialog.py:126 polyhost/gui/settings_dialog.py:86
+msgid "Font packs"
+msgstr "글꼴 팩"
+
+#: polyhost/gui/about_dialog.py:127
+msgid "The keyboard draws characters with fonts stored on the keyboard, in font packs: one for each group of scripts, and packs for symbols and emoji. PolyKybdHost sends missing or newer font packs to the keyboard when it connects."
+msgstr ""
+
+#: polyhost/gui/about_dialog.py:132 polyhost/gui/cmd_menu.py:241
+msgid "Firmware"
+msgstr "펌웨어"
+
+#: polyhost/gui/about_dialog.py:133
+msgid "The firmware is the program that runs inside the keyboard. PolyKybdHost offers new versions under Updates in the tray menu."
+msgstr ""
+
+#: polyhost/gui/about_dialog.py:136
+msgid "Forwarder"
+msgstr ""
+
+#: polyhost/gui/about_dialog.py:137
+msgid "The forwarder is a small second app for another computer, for example one you control through remote desktop. It tells PolyKybdHost which app is in front on that computer, so the keyboard shows that app's icons. Turn on Accept forwarders in Settings, Connections, then pair the two computers with AI Agents, Pair a Forwarder in the tray menu."
+msgstr ""
+
+#: polyhost/gui/about_dialog.py:195
+msgid ""
+"Forwarder\n"
+"(other computer)"
+msgstr ""
+
+#: polyhost/gui/about_dialog.py:196
+msgid ""
+"PolyKybdHost\n"
+"(this computer)"
+msgstr ""
+
+#: polyhost/gui/about_dialog.py:197 polyhost/gui/settings_dialog.py:81
+#: polyhost/host.py:2030
+msgid "Keyboard"
+msgstr "키보드"
+
+#: polyhost/gui/about_dialog.py:243
 msgid "About PolyKybdHost"
 msgstr "PolyKybdHost 정보"
 
-#: polyhost/gui/about_dialog.py:151 polyhost/gui/about_dialog.py:162
+#: polyhost/forwarder.py:325 polyhost/gui/about_dialog.py:281
+#: polyhost/host.py:393
+msgid "About"
+msgstr "정보"
+
+#: polyhost/gui/about_dialog.py:316
+msgid "Basics"
+msgstr ""
+
+#: polyhost/gui/about_dialog.py:317
+msgid "The words PolyKybd uses in its menus and settings, with a picture of each."
+msgstr ""
+
+#: polyhost/gui/about_dialog.py:362 polyhost/gui/about_dialog.py:373
 msgid "Copy diagnostics"
 msgstr "진단 정보 복사"
 
-#: polyhost/gui/about_dialog.py:156
+#: polyhost/gui/about_dialog.py:367
 msgid "Copied ✓"
 msgstr "복사됨 ✓"
 
@@ -824,10 +910,6 @@ msgstr "펌웨어 파일 플래시(.bin)…"
 msgid "Activate bootloader…"
 msgstr "부트로더 활성화…"
 
-#: polyhost/gui/cmd_menu.py:196
-msgid "Overlays"
-msgstr "오버레이"
-
 #: polyhost/gui/cmd_menu.py:197
 msgid "Enable shortcut overlays"
 msgstr "단축키 오버레이 사용"
@@ -902,10 +984,6 @@ msgstr "모든 번들 다시 플래시(강제)…"
 #: polyhost/gui/cmd_menu.py:235
 msgid "Wipe (empty all bundles)"
 msgstr "지우기(모든 번들 비우기)"
-
-#: polyhost/gui/cmd_menu.py:241
-msgid "Firmware"
-msgstr "펌웨어"
 
 #: polyhost/gui/cmd_menu.py:242
 msgid "Flash only (.bin, stage)…"
@@ -1256,7 +1334,7 @@ msgid "pick one from Source fonts below, or Browse…"
 msgstr "아래 원본 글꼴에서 선택하거나 찾아보기…"
 
 #: polyhost/gui/fontpack_extend_dialog.py:120
-#: polyhost/gui/settings_dialog.py:1301 polyhost/gui/settings_dialog.py:1302
+#: polyhost/gui/settings_dialog.py:1324 polyhost/gui/settings_dialog.py:1325
 msgid "Browse…"
 msgstr "찾아보기…"
 
@@ -2194,7 +2272,7 @@ msgid "Eden"
 msgstr "Eden"
 
 #. TRANSLATORS: shown in the Flow Tap spin box when its value is 0.
-#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1132
+#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1155
 msgid "Off"
 msgstr "끄기"
 
@@ -3426,10 +3504,6 @@ msgstr "밝기"
 msgid "Daylight curve"
 msgstr "일광 곡선"
 
-#: polyhost/gui/settings_dialog.py:81 polyhost/host.py:2030
-msgid "Keyboard"
-msgstr "키보드"
-
 #: polyhost/gui/settings_dialog.py:82
 msgid "Idle display"
 msgstr "유휴 화면"
@@ -3445,10 +3519,6 @@ msgstr "탭-홀드 타이밍"
 #: polyhost/gui/settings_dialog.py:85
 msgid "Unicode input"
 msgstr "유니코드 입력"
-
-#: polyhost/gui/settings_dialog.py:86
-msgid "Font packs"
-msgstr "글꼴 팩"
 
 #: polyhost/gui/settings_dialog.py:87
 msgid "Emoji search"
@@ -4008,35 +4078,39 @@ msgstr "문제로 간주할 범위: 오류만, 또는 오류 및 경고."
 msgid "Draws some game overlays from the game's own files when the game is installed on this computer. The images stay on this computer. Off: the shipped overlays are used."
 msgstr "게임이 이 컴퓨터에 설치되어 있으면 일부 게임 오버레이를 게임 자체 파일로 그립니다. 이미지는 이 컴퓨터에만 남습니다. 끔: 기본 제공 오버레이를 사용합니다."
 
-#: polyhost/gui/settings_dialog.py:867
+#: polyhost/gui/settings_dialog.py:887
 msgid "Advanced"
 msgstr "고급"
 
-#: polyhost/gui/settings_dialog.py:876
+#: polyhost/gui/settings_dialog.py:896
 msgid "Shows the settings that most people never change."
 msgstr "대부분의 사람이 변경하지 않는 설정을 표시합니다."
 
-#: polyhost/gui/settings_dialog.py:907 polyhost/host.py:1680
+#: polyhost/gui/settings_dialog.py:927 polyhost/host.py:1680
 msgid "PolyKybd Settings"
 msgstr "PolyKybd 설정"
 
-#: polyhost/gui/settings_dialog.py:976
+#: polyhost/gui/settings_dialog.py:996
 msgid "Search settings"
 msgstr "설정 검색"
 
-#: polyhost/gui/settings_dialog.py:1029
+#: polyhost/gui/settings_dialog.py:1048
+msgid "An overlay is a set of icons for one app. Help & About, Basics shows an example."
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:1052
 msgid "Reading the settings stored on the keyboard…"
 msgstr "키보드에 저장된 설정을 읽는 중…"
 
-#: polyhost/gui/settings_dialog.py:1033
+#: polyhost/gui/settings_dialog.py:1056
 msgid "No setting matches the search."
 msgstr "검색과 일치하는 설정이 없습니다."
 
-#: polyhost/gui/settings_dialog.py:1048
+#: polyhost/gui/settings_dialog.py:1071
 msgid "Some settings might need a restart to take effect."
 msgstr "일부 설정은 다시 시작해야 적용될 수 있습니다."
 
-#: polyhost/gui/settings_dialog.py:1083
+#: polyhost/gui/settings_dialog.py:1106
 #, python-brace-format
 msgid "Set by {flag} for this run. This setting applies when the app starts without it."
 msgstr "이번 실행에서는 {flag} 플래그로 설정되었습니다. 이 설정은 앱을 이 플래그 없이 시작할 때 적용됩니다."
@@ -4045,35 +4119,35 @@ msgstr "이번 실행에서는 {flag} 플래그로 설정되었습니다. 이 �
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
 #: polyhost/gui/layout_dialog/combo_tab.py:371
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
-#: polyhost/gui/settings_dialog.py:1129
+#: polyhost/gui/settings_dialog.py:1152
 msgid " ms"
 msgstr " ms"
 
-#: polyhost/gui/settings_dialog.py:1176
+#: polyhost/gui/settings_dialog.py:1199
 msgid "This keyboard's firmware does not have this setting."
 msgstr "이 키보드의 펌웨어에는 이 설정이 없습니다."
 
-#: polyhost/gui/settings_dialog.py:1178
+#: polyhost/gui/settings_dialog.py:1201
 msgid "Could not read this setting from the keyboard."
 msgstr "키보드에서 이 설정을 읽을 수 없습니다."
 
-#: polyhost/gui/settings_dialog.py:1186
+#: polyhost/gui/settings_dialog.py:1209
 msgid "Connect the keyboard to change the settings stored on it."
 msgstr "키보드에 저장된 설정을 변경하려면 키보드를 연결하십시오."
 
-#: polyhost/gui/settings_dialog.py:1188
+#: polyhost/gui/settings_dialog.py:1211
 msgid "Some settings could not be read from the keyboard. Update the keyboard firmware to change them here."
 msgstr "일부 설정을 키보드에서 읽을 수 없습니다. 여기서 변경하려면 키보드 펌웨어를 업데이트하십시오."
 
-#: polyhost/gui/settings_dialog.py:1239
+#: polyhost/gui/settings_dialog.py:1262
 msgid "These developer settings are not at their default, so they stay in effect while developer mode is off."
 msgstr "이 개발자 설정은 기본값이 아니므로 개발자 모드가 꺼져 있어도 계속 적용됩니다."
 
-#: polyhost/gui/settings_dialog.py:1309
+#: polyhost/gui/settings_dialog.py:1332
 msgid "Generate"
 msgstr "생성"
 
-#: polyhost/gui/settings_dialog.py:1310
+#: polyhost/gui/settings_dialog.py:1333
 msgid "Fills in a new random token and copies it. Paste it into the browser extension's Options and save both."
 msgstr "새 무작위 토큰을 입력하고 복사합니다. 브라우저 확장 프로그램의 옵션에 붙여넣고 양쪽 모두 저장하십시오."
 
@@ -4340,10 +4414,6 @@ msgstr "{prefix} — 펌웨어 v{fw_version} 사용 가능"
 msgid "Updates"
 msgstr "업데이트"
 
-#: polyhost/gui/tutorials_dialog.py:33
-msgid "Layers"
-msgstr "레이어"
-
 #: polyhost/gui/tutorials_dialog.py:34
 msgid "Languages and accents"
 msgstr "언어와 악센트"
@@ -4529,10 +4599,6 @@ msgstr "종료"
 #: polyhost/host.py:388
 msgid "Quit && stop background daemon"
 msgstr "종료 && 백그라운드 데몬 중지"
-
-#: polyhost/forwarder.py:325 polyhost/host.py:393
-msgid "About"
-msgstr "정보"
 
 #: polyhost/forwarder.py:308 polyhost/host.py:401
 msgid "Integrations…"

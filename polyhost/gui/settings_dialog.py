@@ -1044,6 +1044,9 @@ class SettingsDialog(QDialog):
             section.add_advanced_switch(
                 section_id in SettingsDialog.advanced_sections,
                 lambda on, sid=section_id: self._advanced_toggled(sid, on))
+            if section_id == "icons":
+                section.set_note(_("An overlay is a set of icons for one app. Help & "
+                                   "About, Basics shows an example."))
             if section_id == "keyboard" and keyboard:
                 self._keyboard_section = section
                 section.set_note(_("Reading the settings stored on the keyboard\u2026"))

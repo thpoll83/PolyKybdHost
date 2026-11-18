@@ -510,6 +510,15 @@ and relative links were adjusted to suit a standalone file.
       nothing. The dialog therefore sees a slice, and the writer merges the changed
       keys back into the full dict (`set_all(updated)` alone would drop every key
       the dialog was never shown).
+    - **About has two sections, in the Settings style: About and Basics.** About
+      holds the version, the boxed and muted blocks and the links. Basics
+      (`BASICS`) explains the words PolyKybd uses (legend, keyboard language,
+      layer, overlay, font pack, firmware, forwarder), each with a picture. The
+      keycap pictures in `res/basics/` are drawn by
+      `scripts/render_basics_images.py` with the layout editor's keycap renderer
+      and a shipped overlay; run it again when the renderer, the preview data or
+      `gimp_template.mods.png` changes. Settings → Keycap icons points to Basics
+      in its section note.
     - **About is `gui/about_dialog.build_about_dialog`, shared with `host.py`.**
       Each app supplies its own heading, description, boxed block and diagnostics;
       the forwarder's boxed block names the target, the transport and whether
