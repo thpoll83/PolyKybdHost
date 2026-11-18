@@ -426,6 +426,12 @@ class DialogBehaviourTest(unittest.TestCase):
         from PyQt5.QtWidgets import QApplication
         cls.app = QApplication.instance() or QApplication([])
 
+    def setUp(self):
+        from polyhost.gui.settings_dialog import SettingsDialog
+        # The Advanced switches are remembered for the process; every test
+        # starts with all of them off.
+        SettingsDialog.advanced_sections = set()
+
     def _dialog(self, settings=None, developer_mode=False):
         from PyQt5.QtCore import QSize
         from polyhost.gui.settings_dialog import SettingsDialog
@@ -452,8 +458,53 @@ class DialogBehaviourTest(unittest.TestCase):
         QApplication.sendEvent(widget, event)
         self.app.processEvents()
 
+    def _section(self, dlg, section_id):
+        return next(s for s in dlg._sections if s.section_id == section_id)
+
+    def test_advanced_rows_hide_until_their_section_switch_is_on(self):
+        dlg = self._dialog()
+        brightness = self._section(dlg, "brightness")
+        rows = dlg._rows
+        self.assertFalse(rows["irradiance_min"].isVisible())
+        self.assertTrue(rows["brightness_set_daylight_dependent"].isVisible())
+        # The Daylight curve group holds only advanced rows: it hides whole.
+        self.assertFalse(rows["irradiance_min"].parentWidget().parentWidget().isVisible())
+        brightness.advanced_switch.setChecked(True)
+        self.app.processEvents()
+        self.assertTrue(rows["irradiance_min"].isVisible())
+        # Only that section: Connections keeps its advanced rows hidden.
+        self.assertFalse(rows["hid_reconnect_retries"].isVisible())
+
+    def test_a_search_finds_advanced_rows_with_the_switch_off(self):
+        dlg = self._dialog()
+        dlg.search.setText("sunlight scale")
+        self.app.processEvents()
+        self.assertTrue(dlg._rows["irradiance_prescaler"].isVisible())
+        dlg.search.clear()
+        self.app.processEvents()
+        self.assertFalse(dlg._rows["irradiance_prescaler"].isVisible())
+
+    def test_the_switch_is_remembered_for_the_next_dialog(self):
+        dlg = self._dialog()
+        self._section(dlg, "privacy").advanced_switch.setChecked(True)
+        again = self._dialog()
+        self.assertTrue(self._section(again, "privacy").advanced_switch.isChecked())
+        self.assertTrue(again._rows["telemetry_endpoint"].isVisible())
+        self.assertFalse(self._section(again, "brightness").advanced_switch.isChecked())
+
+    def test_a_section_without_advanced_rows_has_no_switch(self):
+        from polyhost.gui.settings_dialog import ADVANCED_SETTINGS
+        from polyhost.settings import DEFAULT_SETTINGS
+        dlg = self._dialog()
+        self.assertFalse(hasattr(self._section(dlg, "general"), "advanced_switch"))
+        # Every advanced key names a real setting: a typo would hide nothing.
+        from polyhost.gui import keyboard_settings as kbd
+        self.assertEqual(ADVANCED_SETTINGS - set(DEFAULT_SETTINGS) - set(kbd.KEYS), set())
+
     def test_the_wheel_over_an_unfocused_field_scrolls_the_page(self):
         """Scrolling past a number or a list must not change it."""
+        from polyhost.gui.settings_dialog import SettingsDialog
+        SettingsDialog.advanced_sections = {"brightness", "connections"}
         dlg = self._dialog()
         bar = dlg.scroll.verticalScrollBar()
         for key in ("irradiance_min", "hid_reconnect_retries", "problem_scan_level"):

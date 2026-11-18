@@ -39,16 +39,17 @@ MIN_CONTRAST_EXCEPTIONS = {("yellow", "light"): 2.0}
 # Developer and Other: settings most users never open, so no hue of their own.
 NEUTRAL = ("grey", "#6b7280", "#c0c4cc")
 
-# Section id -> slot name. A section not listed is neutral.
+# Section id -> slot name, in sidebar order, so the sidebar reads as the
+# spectrum. A section not listed is neutral.
 SECTION_SLOTS = {
     "general": "red",
-    "icons": "orange",
-    "games": "yellow",
-    "brightness": "green",
-    "keyboard": "teal",
-    "connections": "blue",
-    "privacy": "violet",
-    "agents": "pink",
+    "brightness": "orange",
+    "keyboard": "yellow",
+    "connections": "green",
+    "icons": "teal",
+    "agents": "blue",
+    "games": "violet",
+    "privacy": "pink",
 }
 
 # The alpha (0-255) of the light tint: the section's background and the selected

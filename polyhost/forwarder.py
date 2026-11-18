@@ -31,7 +31,7 @@ from polyhost.gui.dialog_util import bring_to_front, position_near_tray
 from polyhost.gui.theme import apply_theme
 from polyhost.services.os_theme import THEME_AUTO
 from polyhost.settings import read_setting
-from polyhost.gui.update_ui import UpdateProgressController
+from polyhost.gui.update_ui import UpdateProgressController, update_headline
 from polyhost.gui.error_dialog import show_copyable_error
 from polyhost.gui.icon_state_manager import IconStateManager
 from polyhost.gui.qt_crash import install_qt_message_handler
@@ -1026,6 +1026,7 @@ class PolyForwarder(QApplication):
         dlg = StableProgressDialog(
             _f("Downloading v{version}…", version=release.version), "", 0, 100)
         dlg.setWindowTitle(_("PolyKybdHost Update"))
+        dlg.set_headline(update_headline(release.version))
         dlg.setCancelButton(None)
         dlg.setMinimumDuration(0)
         # Same size as the tray's update dialog. The label no longer resizes

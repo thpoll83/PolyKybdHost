@@ -36,6 +36,24 @@ _READING_W = 760          # notes read best at this width; wider only if asked
 _MIN_NOTES_H = 140        # the user cannot shrink a longer pane below about seven lines
 
 
+# Space above and below the rule between two releases' sections. Qt's markdown
+# import gives the rule no margin, so the sections looked glued together.
+_RULE_MARGIN = 18
+
+
+def _space_rules(document) -> None:
+    """Give every horizontal rule in ``document`` room above and below."""
+    from PyQt5.QtGui import QTextCursor, QTextFormat
+    block = document.begin()
+    while block.isValid():
+        fmt = block.blockFormat()
+        if fmt.hasProperty(QTextFormat.BlockTrailingHorizontalRulerWidth):
+            fmt.setTopMargin(px(_RULE_MARGIN))
+            fmt.setBottomMargin(px(_RULE_MARGIN))
+            QTextCursor(block).setBlockFormat(fmt)
+        block = block.next()
+
+
 def _available():
     from PyQt5.QtWidgets import QApplication
     screen = QApplication.primaryScreen()
@@ -156,6 +174,7 @@ def confirm_update(title: str, message: str, notes: str = "", html_url: str = ""
     browser.setOpenExternalLinks(True)
     if hasattr(browser, "setMarkdown"):
         browser.setMarkdown(notes)
+        _space_rules(browser.document())
     else:
         browser.setPlainText(notes)
     browser.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
