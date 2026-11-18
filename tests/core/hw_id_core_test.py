@@ -98,6 +98,7 @@ class HwIdCoreTest(unittest.TestCase):
         core = make_core()
         core._hw_id_lock = lock = SignalLock()
         core._submit_hw_id_read()
+        lock.attempted.clear()                      # the submit took the lock itself
         done = threading.Event()
         with lock.real:                             # the job is between check and store
             t = threading.Thread(target=lambda: (core._start_hw_id_reads(), done.set()))
