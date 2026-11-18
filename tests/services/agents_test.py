@@ -339,6 +339,15 @@ class CardWordsTest(unittest.TestCase):
         self.assertEqual([a.card_text for a in r.agents()],
                          ["Fix login bug 1", "Fix login bug 2", "Fix parser"])
 
+    def test_the_card_has_no_brackets_and_titles_that_differ_only_in_them_are_numbered(self):
+        r = AgentRegistry()
+        r.report("codex", "a", "working", headline="Fix (the) login [WIP]")
+        r.report("codex", "b", "working", headline="Fix login WIP")
+        self.assertEqual([a.card_text for a in r.agents()], ["Fix login WIP 1", "Fix login WIP 2"])
+        self.assertEqual(r.agents()[0].display_headline, "Fix (the) login [WIP] 1")  # the list keeps them
+        self.assertTrue(r.label("codex", "a", "Parser (v2)"))
+        self.assertEqual(r.agents()[0].card_text, "Parser v2")
+
 
 class HookTest(unittest.TestCase):
     def test_session_end_reasons(self):
@@ -799,7 +808,7 @@ class CardTest(unittest.TestCase):
                          latin[:, :latin.any(axis=0).nonzero()[0].max() + 1]).all())
         self.assertGreater(cols.max(), 40)
 
-    def test_a_right_to_left_line_is_as_wide_as_measured_and_mirrors_brackets(self):
+    def test_a_right_to_left_line_is_as_wide_as_measured(self):
         import numpy as np
         from PIL import Image, ImageFont
         from polyhost.services.agents.card import _draw, _draw_text, _fallbacks, _measure
@@ -812,28 +821,25 @@ class CardTest(unittest.TestCase):
             img = Image.new("1", (120, 20))
             _draw_text(_draw(img), (0, 0), text, rtl=True)
             return np.array(img, dtype=bool)
-        for text in ("בדיקהHID", "בדיקה HID", "(בדיקה)"):
+        for text in ("בדיקהHID", "בדיקה HID", "בדיקה 12"):
             cols = drawn(text).any(axis=0).nonzero()[0]
             self.assertLessEqual(cols.max(), _measure(text)[2] + 1, text)   # no extra space
         # No space in the title, none drawn: narrower than with a space.
         self.assertLess(drawn("בדיקהHID").any(axis=0).nonzero()[0].max(),
                         drawn("בדיקה HID").any(axis=0).nonzero()[0].max())
-        # "(" opens the title, so it is drawn at the right end, facing left: ")".
-        img = drawn("(בדיקה)")
 
-        def glyph(ch):
-            g = Image.new("1", (20, 20))
-            _draw(g).text((0, 0), ch, font=card_mod._font(), fill=1)
-            g = np.array(g, dtype=bool)
-            c = g.any(axis=0).nonzero()[0]
-            return g[:, c.min():c.max() + 1]
-        opening, closing = glyph("("), glyph(")")
-        self.assertFalse((opening == closing).all())
-        cols = img.any(axis=0).nonzero()[0]
-        # The left end is the closing ")" mirrored, so it has the shape of "(";
-        # the right end is the opening "(" drawn as ")".
-        self.assertTrue((img[:, cols.min():cols.min() + opening.shape[1]] == opening).all())
-        self.assertTrue((img[:, cols.max() + 1 - closing.shape[1]:cols.max() + 1] == closing).all())
+    def test_a_card_leaves_out_brackets(self):
+        # Nested brackets in a right-to-left title would each need mirroring and
+        # reverse order; the card has none (2026-11-18).
+        from polyhost.services.agents.model import no_brackets
+        self.assertEqual(no_brackets("([בדיקה])"), "בדיקה")
+        self.assertEqual(no_brackets("fix(io) [wip] {a} <b>"), "fix io wip a b")
+        self.assertEqual(no_brackets("\u300c\u30c6\u30b9\u30c8\u300d\uff08\u4fee\u6b63\uff09"),
+                         "\u30c6\u30b9\u30c8 \u4fee\u6b63")
+        self.assertEqual(no_brackets('Fix "HID" \u201ereconnect\u201c'),
+                         'Fix "HID" \u201ereconnect\u201c')         # quotation marks stay
+        shown = "".join(paginate("Fix (the) [HID] reconnect")[0])
+        self.assertEqual(shown.replace(" ", ""), "FixtheHIDreconnect")
 
     def test_an_arabic_word_split_by_a_line_keeps_its_joined_forms(self):
         from polyhost.services.agents.card import _joins
@@ -844,6 +850,14 @@ class CardTest(unittest.TestCase):
         self.assertFalse(_joins("\u0621", "\u0628"))
         self.assertFalse(_joins("\u0627", "\u0644"))           # alef joins no letter after it
         self.assertFalse(_joins("a", "\u0637"))
+        # By the Unicode joining types, not a hand-picked list:
+        self.assertFalse(_joins("\u0672", "\u0628"))     # alef with wavy hamza: right-joining
+        self.assertTrue(_joins("\u0628", "\u0672"))
+        self.assertTrue(_joins("\u0628\u061c", "\u0628"))   # ARABIC LETTER MARK is transparent
+        self.assertTrue(_joins("\u0628", "\u064e\u0628"))
+        self.assertTrue(_joins("\u0628", "\u0640"))     # tatweel joins both sides
+        self.assertFalse(_joins("\u0628\u200c", "\u0628"))  # ZWNJ stops the join
+        self.assertFalse(_joins("\u0628", ""))
         lines = flow("\u062a\u0633\u062c\u064a\u0644" * 6, [30])
         self.assertGreater(len(lines), 1)
         for k, line in enumerate(lines[:-1]):

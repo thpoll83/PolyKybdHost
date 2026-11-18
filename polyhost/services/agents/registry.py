@@ -15,7 +15,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 
-from polyhost.services.agents.model import ENDED, AgentState, card_words, vendor
+from polyhost.services.agents.model import ENDED, AgentState, card_words, no_brackets, vendor
 
 log = logging.getLogger(__name__)
 
@@ -96,11 +96,12 @@ class Agent:
 
     @property
     def card_base(self) -> str:
-        """base_headline as the card shows it: a session title cut to its subject
-        words (model.card_words). A label of the user's is shown as it was set."""
+        """base_headline as the card shows it: without brackets
+        (model.no_brackets), and a session title cut to its subject words
+        (model.card_words). A label of the user's keeps its words."""
         if self.label or not self.headline:
-            return self.base_headline
-        return card_words(self.headline)
+            return no_brackets(self.base_headline) or self.base_headline
+        return card_words(no_brackets(self.headline)) or self.headline
 
     @property
     def card_text(self) -> str:

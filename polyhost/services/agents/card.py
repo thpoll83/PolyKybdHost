@@ -33,7 +33,7 @@ import time
 import unicodedata
 from dataclasses import dataclass
 
-from polyhost.services.agents.model import AgentState, vendor
+from polyhost.services.agents.model import AgentState, no_brackets, vendor
 
 log = logging.getLogger("PolyHost")
 
@@ -298,9 +298,6 @@ def _measure(text, size=FONT_SIZE):
     return tuple(int(v) for v in box)
 
 
-_MIRRORED = str.maketrans("()[]{}<>", ")(][}{><")
-
-
 def is_rtl(text: str) -> bool:
     """Whether `text` reads right to left: its first letter is Hebrew or Arabic."""
     import unicodedata
@@ -330,14 +327,11 @@ def _draw_text(draw, xy, text, size=FONT_SIZE, rtl=None):
         visual = list(reversed(runs))
         for k, (font, dy, part) in enumerate(visual):
             shown = part.rstrip()
-            if getattr(font, "layout_engine", None) == ImageFont.Layout.RAQM:
-                # Only a raqm font takes a direction (Pillow's Aileron is basic
-                # layout, and draws left to right).
-                kw = {"direction": "rtl" if is_rtl(shown) else "ltr"}
-            else:
-                kw = {}
-                if not any(unicodedata.bidirectional(c) == "L" for c in shown):
-                    shown = shown.translate(_MIRRORED)      # "(" reads ")" right to left
+            # Only a raqm font takes a direction (Pillow's Aileron is basic layout,
+            # and draws left to right). A card has no brackets (model.no_brackets),
+            # so no character needs mirroring.
+            kw = ({"direction": "rtl" if is_rtl(shown) else "ltr"}
+                  if getattr(font, "layout_engine", None) == ImageFont.Layout.RAQM else {})
             draw.text((x, y + ascent + dy), shown, font=font, anchor="ls", fill=1, **kw)
             x += draw.textlength(shown, font=font)
             if k + 1 < len(visual):
@@ -401,22 +395,50 @@ def _ink_width(text: str, size: int = FONT_SIZE) -> int:
     return box[2] - box[0]
 
 
+def _code_points(ranges: str) -> frozenset:
+    """The characters of `ranges`: hex code points and ranges, "0620 0622-064A"."""
+    out = set()
+    for item in ranges.split():
+        lo, _, hi = item.partition("-")
+        out.update(map(chr, range(int(lo, 16), int(hi or lo, 16) + 1)))
+    return frozenset(out)
+
+
+# Unicode joining types (DerivedJoiningType.txt, Unicode 16.0) of U+0600..U+08FF:
+# Arabic, Syriac, N'Ko, Mandaic. _JOINS_NEXT: dual-joining, left-joining and
+# join-causing (tatweel) characters, which join the letter after them.
+# _JOINS_PREVIOUS: dual-joining, right-joining and join-causing ones, which join
+# the letter before them. Alef, dal, reh and waw join only the letter before them;
+# hamza joins neither side. Python's unicodedata has no joining type.
+_JOINS_NEXT = _code_points(
+    "0620 0626 0628 062A-062E 0633-0647 0649-064A 066E-066F 0678-0687 069A-06BF "
+    "06C1-06C2 06CC 06CE 06D0-06D1 06FA-06FC 06FF 0712-0714 071A-071D 071F-0727 "
+    "0729 072B 072D-072E 074E-0758 075C-076A 076D-0770 0772 0775-0777 077A-077F "
+    "07CA-07EA 07FA 0841-0845 0848 084A-0853 0855 0860 0862-0865 0868 0883-0886 "
+    "0889-088D 08A0-08A9 08AF-08B0 08B3-08B8 08BA-08C8 "
+)
+_JOINS_PREVIOUS = _code_points(
+    "0620 0622-064A 066E-066F 0671-0673 0675-06D3 06D5 06EE-06EF 06FA-06FC 06FF "
+    "0710 0712-072F 074D-077F 07CA-07EA 07FA 0840-0858 0860 0862-0865 0867-086A "
+    "0870-0886 0889-088E 08A0-08AC 08AE-08C8 "
+)
+
+
+def _transparent(ch: str) -> bool:
+    """A character that joining skips (joining type T): a mark (Mn, Me) or a
+    format character (Cf) such as U+061C ARABIC LETTER MARK. ZWNJ and ZWJ are not:
+    they stop or cause a join."""
+    return unicodedata.category(ch) in ("Mn", "Me", "Cf") and ch not in "\u200c\u200d"
+
+
 def _joins(left: str, right: str) -> bool:
-    """Whether the Arabic text `left` ends with a letter that is drawn joined to the
-    letter `right` starts with. Vowel marks in between are skipped. A letter of
-    _RIGHT_JOINING never joins the letter after it; hamza joins neither side."""
-    import unicodedata
-    left = left.rstrip("".join(c for c in set(left) if unicodedata.category(c) == "Mn"))
+    """Whether the text `left` ends with a letter that is drawn joined to the letter
+    `right` starts with, by the Unicode joining types. Transparent characters in
+    between (vowel marks, U+061C) are skipped on both sides."""
+    left = left.rstrip("".join(c for c in set(left) if _transparent(c)))
+    right = right.lstrip("".join(c for c in set(right) if _transparent(c)))
     a, b = left[-1:], right[:1]
-    return bool(a and b) and a not in _RIGHT_JOINING and b not in _NON_JOINING and all(
-        unicodedata.bidirectional(c) == "AL" and unicodedata.category(c) == "Lo"
-        for c in (a, b))
-
-
-# Arabic letters that join only the letter before them (alef, dal, reh, waw, ...).
-_RIGHT_JOINING = frozenset("\u0621\u0622\u0623\u0624\u0625\u0627\u0629\u062f\u0630"
-                           "\u0631\u0632\u0648\u0671\u0688\u0691\u0698")
-_NON_JOINING = frozenset("\u0621")      # hamza
+    return a in _JOINS_NEXT and b in _JOINS_PREVIOUS
 
 
 def flow(text: str, widths, size: int = FONT_SIZE) -> list[str]:
@@ -474,11 +496,12 @@ def paginate(text: str, mask=None, icon=None, size: int = FONT_SIZE,
              number: int = 0) -> list[list[str]]:
     """The pages of a card: lists of at most LINES lines. Each line is as wide as
     _spans allows: the vendor mark narrows lines on page 1 only, the state icon on
-    every page. One flow over all pages, cut every LINES lines. `number` (two
+    every page. One flow over all pages, cut every LINES lines. Brackets are left
+    out (model.no_brackets). `number` (two
     agents whose cards show the same title) follows the title, and stays after the
     '…' of a cut title: it is what tells the two keys apart."""
     suffix = f" {number}" if number else ""
-    text = (text or "") + suffix
+    text = no_brackets(text or "") + suffix
     first = [r - l for l, r in _spans(mask, icon)]
     later = [r - l for l, r in _spans(None, icon)]
     # Enough lines for any title: each line holds at least one character.

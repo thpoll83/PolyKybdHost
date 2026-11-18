@@ -107,8 +107,10 @@ ESC (the pager) does not end AI mode in either case.
   (`model.card_words`), so "Fix the HID reconnect after resume" shows "Fix HID
   reconnect resume". They go only in a title with a word that no other common
   language uses (after, and, before, from, into, the, when, with). A title in
-  another language, a label the user set and a folder name are shown as they are.
-  Agents whose cards would show the same text are numbered.
+  another language, a label the user set and a folder name keep their words.
+  Brackets ((), [], {}, <> and the fullwidth and CJK ones) are left out of every
+  card (`model.no_brackets`); quotation marks stay. Agents whose cards would show
+  the same text are numbered.
 - Fonts: Aileron (Pillow's bundled font, ASCII only). A character it does not have
   comes from the first font in `card.FALLBACK_FONTS` that has it. Galmuri11 12 px is
   bundled (`res/fonts/agent-cards/`): European Latin, Greek, Cyrillic, Korean,
@@ -120,7 +122,7 @@ ESC (the pager) does not end AI mode in either case.
   until then and is drawn again after (`card.fonts_version()`). A letter and its
   combining marks stay in one font run and one line (`_clusters`). A Hebrew or
   Arabic title is drawn right to left (`is_rtl`); an Arabic word split by a line
-  keeps its joined forms. Georgian, the other Indic scripts and the rest have no
+  keeps its joined forms, by the Unicode joining types (`card._joins`). Georgian, the other Indic scripts and the rest have no
   font yet and show boxes (the README there says how to add one).
 - Source order: a label the user set (`polyctl agents label`),
   the topic from the terminal title (Claude Code writes `✳ <topic>`), the session's
