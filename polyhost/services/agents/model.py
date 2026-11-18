@@ -82,6 +82,11 @@ def vendor(vid: str) -> Vendor:
 # hard to recognise). English only: a title in another language is shown whole.
 _SMALL_WORDS = frozenset(
     "a after an and at before by for from in into is of on or the to via when with".split())
+# Small words that are not also common words of another language ("in" and "an"
+# are German, "a" is French, Spanish and Italian): a title is English when it has
+# one of these or starts with a leading verb.
+_ENGLISH_MARKERS = frozenset(
+    "after and before for from into is of the to via when with".split())
 # A first word that names the kind of work, not the subject.
 _LEADING_VERBS = frozenset(
     "add change create debug fix implement improve investigate make refactor remove "
@@ -90,8 +95,14 @@ _LEADING_VERBS = frozenset(
 
 def card_words(title: str) -> str:
     """The words of `title` a card shows: no small words, and no leading verb such
-    as "Fix" or "Add". A title made only of such words is returned as it is."""
-    words = [w for w in (title or "").split() if w.lower() not in _SMALL_WORDS]
-    if len(words) > 1 and words[0].lower().rstrip(":") in _LEADING_VERBS:
-        words = words[1:]
-    return " ".join(words) or (title or "")
+    as "Fix" or "Add". A title that is not English, or that is made only of such
+    words, is returned as it is."""
+    title = title or ""
+    words = title.split()
+    low = [w.lower().rstrip(":,") for w in words]
+    if not low or not (low[0] in _LEADING_VERBS or _ENGLISH_MARKERS.intersection(low)):
+        return title
+    kept = [w for w, lw in zip(words, low) if lw not in _SMALL_WORDS]
+    if kept and kept[0].lower().rstrip(":,") in _LEADING_VERBS:
+        kept = kept[1:]
+    return " ".join(kept) or title

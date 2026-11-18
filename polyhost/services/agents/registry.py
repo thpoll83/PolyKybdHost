@@ -95,14 +95,19 @@ class Agent:
         return f"{base} {self.dup_number}" if self.dup_number else base
 
     @property
-    def card_text(self) -> str:
-        """What the number key's card shows: display_headline, with a session title
-        cut to its subject words (model.card_words). A label of the user's is shown
-        as it was set."""
+    def card_base(self) -> str:
+        """base_headline as the card shows it: a session title cut to its subject
+        words (model.card_words). A label of the user's is shown as it was set."""
         if self.label or not self.headline:
-            return self.display_headline
-        text = card_words(self.headline)
-        return f"{text} {self.dup_number}" if self.dup_number else text
+            return self.base_headline
+        return card_words(self.headline)
+
+    @property
+    def card_text(self) -> str:
+        """What the number key's card shows: card_base, numbered like
+        display_headline."""
+        base = self.card_base
+        return f"{base} {self.dup_number}" if self.dup_number else base
 
     def to_dict(self) -> dict:
         return {
@@ -412,7 +417,9 @@ class AgentRegistry:
         for agent in out:
             agent.dup_number = 0
             # Its own group: a local agent in a folder named "agent" is not one of them.
-            group = "\0anonymous" if agent.anonymous else agent.base_headline.casefold()
+            # By the card's text: "Fix login bug" and "Add login bug" show the same
+            # card, so they are numbered too.
+            group = "\0anonymous" if agent.anonymous else agent.card_base.casefold()
             groups.setdefault(group, []).append(agent)
         for same in groups.values():
             if len(same) > 1 or same[0].anonymous:

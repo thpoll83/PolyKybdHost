@@ -92,6 +92,14 @@ def fit_text(text: str, width: int = TEXT_W, size: int = FONT_SIZE) -> str:
     return text.rstrip() + "."
 
 
+def _cut_with_ellipsis(text: str, width: int, size: int = FONT_SIZE) -> str:
+    """`text` cut to what fits `width` pixels, ending with '…'."""
+    text = text.rstrip()
+    while text and _ink_width(text + "\u2026", size) > width:
+        text = text[:-1].rstrip()
+    return text + "\u2026"
+
+
 def _ink_width(text: str, size: int = FONT_SIZE) -> int:
     box = _measure(text, size)
     return box[2] - box[0]
@@ -174,7 +182,7 @@ def paginate(text: str, mask=None, icon=None, size: int = FONT_SIZE) -> list[lis
         pages = pages[:MAX_PAGES]
         last = len(pages[-1]) - 1
         # Its own line's width: the state icon can make it shorter than TEXT_W.
-        pages[-1][last] = fit_text(pages[-1][last] + "\u2026", later[last], size)
+        pages[-1][last] = _cut_with_ellipsis(pages[-1][last], later[last], size)
     return pages
 
 

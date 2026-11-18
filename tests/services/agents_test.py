@@ -300,9 +300,14 @@ class CardWordsTest(unittest.TestCase):
         self.assertEqual(card_words("docs fix"), "docs fix")
         # A title of such words only, or of one verb, is kept as it is.
         self.assertEqual(card_words("Fix"), "Fix")
+        self.assertEqual(card_words("Fix the"), "Fix the")
         self.assertEqual(card_words("on the"), "on the")
         self.assertEqual(card_words(""), "")
+        self.assertEqual(card_words("Fix login"), "login")
+        # Not English: shown whole, also with a word that is an English small word.
         self.assertEqual(card_words("Mise à jour de la doc"), "Mise à jour de la doc")
+        self.assertEqual(card_words("Fehler in der Anmeldung"), "Fehler in der Anmeldung")
+        self.assertEqual(card_words("Arreglar a la base"), "Arreglar a la base")
 
     def test_the_card_shows_subject_words_but_a_label_as_set(self):
         r = AgentRegistry()
@@ -320,6 +325,14 @@ class CardWordsTest(unittest.TestCase):
         r.report("codex", "a", "working", headline="Fix the build")
         r.report("codex", "b", "working", headline="Fix the build")
         self.assertEqual([a.card_text for a in r.agents()], ["build 1", "build 2"])
+
+    def test_titles_that_show_the_same_card_are_numbered(self):
+        r = AgentRegistry()
+        r.report("codex", "a", "working", headline="Fix login bug")
+        r.report("codex", "b", "working", headline="Add login bug")
+        r.report("codex", "c", "working", headline="Fix the parser")
+        self.assertEqual([a.card_text for a in r.agents()],
+                         ["login bug 1", "login bug 2", "parser"])
 
 
 class HookTest(unittest.TestCase):
@@ -530,7 +543,18 @@ class CardTest(unittest.TestCase):
     def test_pages_stop_at_the_limit_with_a_mark(self):
         pages = paginate("word " * 60)
         self.assertEqual(len(pages), card_mod.MAX_PAGES)
-        self.assertTrue(pages[-1][-1].endswith((".", "\u2026")))
+        self.assertTrue(pages[-1][-1].endswith("\u2026"))
+
+    def test_a_cut_line_whose_ellipsis_does_not_fit_still_ends_with_it(self):
+        from polyhost.services.agents.card import state_icon
+        icon = state_icon(AgentState.DONE)
+        # Line 3 full beside the icon: the ellipsis replaces letters, never '.'.
+        for title in ("tests cloud relay join code coverage report",
+                      "Windows Windows Windows Windows", "HID reconnect resume Windows",
+                      "overlay cache eviction logic"):
+            last = paginate(title, icon=icon)[0][-1]
+            self.assertTrue(last.endswith("\u2026"), (title, last))
+            self.assertFalse(last.rstrip("\u2026").endswith("."), (title, last))
 
     def test_no_mark_is_scaled_and_a_cloud_session_gets_the_cloud(self):
         import numpy as np
@@ -669,7 +693,7 @@ class CardTest(unittest.TestCase):
         pages = paginate("firmware " * 40, icon=state_icon(AgentState.WAITING))
         self.assertEqual(len(pages), card_mod.MAX_PAGES)
         last = pages[-1][-1]
-        self.assertTrue(last.endswith((".", "\u2026")))
+        self.assertTrue(last.endswith("\u2026"))
         self.assertLessEqual(card_mod._ink_width(last), 72 - 1 - ICON - ICON_CLEAR)
 
     def test_no_logo_yet_shows_the_short_name(self):
