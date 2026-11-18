@@ -113,6 +113,16 @@ and relative links were adjusted to suit a standalone file.
   Keep such refreshes to reads that are genuinely free; an `aboutToShow` that touches
   the device would stall the menu.
 
+- **Settings sections and the Advanced switch.** The sidebar order is General,
+  Brightness, Keyboard, Connections, Keycap icons, AI agents, Games, Privacy and
+  diagnostics, Developer (`SECTIONS` in `gui/settings_dialog.py`). The colours follow
+  that order through the rainbow (`SECTION_SLOTS` in `gui/section_colors.py`); a
+  reorder moves the colours with it, and `SectionColorTest` fails otherwise. Rows in
+  `ADVANCED_SETTINGS` are hidden until the Advanced switch in their section's title
+  band is on. A section without such rows has no switch. A search shows advanced rows
+  whatever the switch says. The switch state is kept for the life of the tray process
+  (`SettingsDialog.advanced_sections`), not in the settings file.
+
 - **Settings → Brightness → Keycap brightness has an "Automatic" tile because the
   firmware's auto mode is a ONE-WAY DOOR from the host's side.** Any manual
   `set_brightness` drops the keyboard out of auto mode (its own LTR-559 sensor then
@@ -500,6 +510,15 @@ and relative links were adjusted to suit a standalone file.
       nothing. The dialog therefore sees a slice, and the writer merges the changed
       keys back into the full dict (`set_all(updated)` alone would drop every key
       the dialog was never shown).
+    - **About has two sections, in the Settings style: About and Basics.** About
+      holds the version, the boxed and muted blocks and the links. Basics
+      (`BASICS`) explains the words PolyKybd uses (legend, keyboard language,
+      layer, overlay, font pack, firmware, forwarder), each with a picture. The
+      keycap pictures in `res/basics/` are drawn by
+      `scripts/render_basics_images.py` with the layout editor's keycap renderer
+      and a shipped overlay; run it again when the renderer, the preview data or
+      `gimp_template.mods.png` changes. Settings → Keycap icons points to Basics
+      in its section note.
     - **About is `gui/about_dialog.build_about_dialog`, shared with `host.py`.**
       Each app supplies its own heading, description, boxed block and diagnostics;
       the forwarder's boxed block names the target, the transport and whether

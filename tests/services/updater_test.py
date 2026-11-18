@@ -2176,9 +2176,25 @@ class TestSkippedReleaseNotes(unittest.TestCase):
         self.assertEqual(release.notes_releases, 3)
         self.assertEqual(updater.dialog_release_name(release), "")
         self.assertEqual(release.notes,
-                         "# PolyKybd v1.11.3\n\ntap-hold timing\n\n"
-                         "# PolyKybd v1.11.2\n\nsearch on Shift\n\n"
+                         "# PolyKybd v1.11.3\n\n*June 5, 2026*\n\ntap-hold timing\n\n---\n\n"
+                         "# PolyKybd v1.11.2\n\nsearch on Shift\n\n---\n\n"
                          "# PolyKybd v1.11.0\n\nemoji search")
+
+    def test_each_section_names_its_release_date(self):
+        latest = self._latest_fw()
+        latest["published_at"] = "2026-11-17T15:00:00Z"
+        page = [self._rel("1.11.3", "tap-hold timing"),
+                dict(self._rel("1.11.2", "search"), published_at="2026-11-02T08:00:00Z"),
+                dict(self._rel("1.11.0", ""), published_at="not a date")]
+        get, _calls = self._serve(latest, [page])
+        with mock.patch.object(updater.requests, "get", side_effect=get):
+            release = updater.check_fw_latest("1.10.2")
+        # The newest release's date comes from releases/latest; a release with
+        # no readable date and no notes keeps only its title.
+        self.assertEqual(release.notes,
+                         "# PolyKybd v1.11.3\n\n*November 17, 2026*\n\ntap-hold timing\n\n---\n\n"
+                         "# PolyKybd v1.11.2\n\n*November 2, 2026*\n\nsearch\n\n---\n\n"
+                         "# PolyKybd v1.11.0")
 
     def test_one_release_ahead_keeps_its_own_name_and_notes(self):
         page = [self._rel("1.11.3", "tap-hold timing"), self._rel("1.11.2", "x")]
@@ -2233,7 +2249,7 @@ class TestSkippedReleaseNotes(unittest.TestCase):
         with mock.patch.object(updater.requests, "get", side_effect=get):
             release = updater.check_fw_latest("1.11.0")
         self.assertEqual(release.notes,
-                         "# PolyKybd v1.11.3\n\ntap-hold timing\n\n"
+                         "# PolyKybd v1.11.3\n\ntap-hold timing\n\n---\n\n"
                          "# PolyKybd v1.11.2\n\nsearch")
 
     def test_an_old_release_created_late_does_not_stop_the_paging(self):
@@ -2291,7 +2307,7 @@ class TestSkippedReleaseNotes(unittest.TestCase):
         with mock.patch.object(updater, "__version__", "1.21.2"), \
              mock.patch.object(updater.requests, "get", side_effect=get):
             release = updater.check_latest()
-        self.assertEqual(release.notes, "# v1.21.4\n\nfour\n\n# v1.21.3\n\nthree")
+        self.assertEqual(release.notes, "# v1.21.4\n\nfour\n\n---\n\n# v1.21.3\n\nthree")
         self.assertEqual(release.name, "v1.21.4")
         self.assertEqual(release.notes_releases, 2)
         self.assertIn(updater._RELEASES_API.format(repo=updater.HOST_REPO),

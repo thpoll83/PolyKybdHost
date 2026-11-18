@@ -4,7 +4,7 @@ import re
 import string
 
 from PyQt5.QtCore import QRectF, QSize, Qt
-from PyQt5.QtGui import QColor, QCursor, QGuiApplication, QPainter, QPalette, QPen
+from PyQt5.QtGui import QColor, QCursor, QFont, QGuiApplication, QPainter, QPalette, QPen
 from PyQt5.QtWidgets import (
     QAbstractScrollArea, QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog, QFrame,
     QHBoxLayout, QLabel, QLineEdit, QListWidget, QPushButton, QScrollArea, QSpinBox,
@@ -69,17 +69,6 @@ SECTIONS = (
     ("general", N_("General"), (
         (None, ("ui_theme", "ui_language", "daemon_mode", "developer_mode")),
     )),
-    ("icons", N_("Keycap icons"), (
-        (None, ("generic_overlays_enabled", "shortcut_icons_enabled",
-                "shortcut_icon_auto_fetch", "browser_url_detection")),
-        (N_("Apps with their own overlay"), ("generic_overlays_fill_gaps",
-                                             "generic_overlays_fill_shortcuts")),
-        (N_("Linux"), ("shortcut_enable_accessibility",)),
-    )),
-    ("games", N_("Games"), (
-        (None, ("game_assets_enabled",)),
-        (N_("Installed games"), ("game_*",)),
-    )),
     ("brightness", N_("Brightness"), (
         (None, (kbd.BRIGHTNESS, "brightness_set_daylight_dependent",
                 "brightness_allow_online_location_lookup",
@@ -104,10 +93,12 @@ SECTIONS = (
         (N_("USB transport"), ("hid_reconnect_retries", "max_hid_message_before_delay",
                                "delay_time_after_max_hid_messages")),
     )),
-    ("privacy", N_("Privacy and diagnostics"), (
-        (N_("Usage report"), ("telemetry_*",)),
-        (N_("Problem detection"), ("problem_scan_*",)),
-        (N_("Logs"), ("log_detail",)),
+    ("icons", N_("Keycap icons"), (
+        (None, ("generic_overlays_enabled", "shortcut_icons_enabled",
+                "shortcut_icon_auto_fetch", "browser_url_detection")),
+        (N_("Apps with their own overlay"), ("generic_overlays_fill_gaps",
+                                             "generic_overlays_fill_shortcuts")),
+        (N_("Linux"), ("shortcut_enable_accessibility",)),
     )),
     ("agents", N_("AI agents"), (
         (None, ("agents_enabled", "agents_title_scan", "agents_download_fonts",
@@ -115,11 +106,34 @@ SECTIONS = (
                 "agents_remote_enabled", "agents_raise_here", "agents_stale_minutes",
                 "agents_forget_minutes")),
     )),
+    ("games", N_("Games"), (
+        (None, ("game_assets_enabled",)),
+        (N_("Installed games"), ("game_*",)),
+    )),
+    ("privacy", N_("Privacy and diagnostics"), (
+        (N_("Usage report"), ("telemetry_*",)),
+        (N_("Problem detection"), ("problem_scan_*",)),
+        (N_("Logs"), ("log_detail",)),
+    )),
     ("developer", N_("Developer"), (
         (None, ("dev_*",)),
     )),
 )
 OTHER_SECTION = ("other", N_("Other"))
+
+# Rows most users never change. A section that has any gets an Advanced switch
+# in its title band; with the switch off these rows are hidden. A search shows
+# them whatever the switch says, so a search never hides a setting.
+ADVANCED_SETTINGS = frozenset((
+    "irradiance_min", "irradiance_max", "irradiance_prescaler", "brightness_gamma",
+    kbd.GLYPH_PLACEMENT, kbd.FLOW_TAP_TERM, kbd.AUTO_SHIFT_MS,
+    "fontpack_path", "emoji_search_dict_file",
+    "browser_report_port", "browser_report_token", "hid_reconnect_retries",
+    "max_hid_message_before_delay", "delay_time_after_max_hid_messages",
+    "shortcut_enable_accessibility",
+    "agents_download_fonts", "agents_stale_minutes", "agents_forget_minutes",
+    "telemetry_endpoint", "telemetry_install_id",
+))
 
 SETTING_LABELS = {
     "unicode_send_composition_mode": N_("Send Unicode input mode"),
@@ -140,11 +154,11 @@ SETTING_LABELS = {
     "irradiance_max": N_("Sunlight at brightest"),
     "irradiance_prescaler": N_("Sunlight scale"),
     "brightness_gamma": N_("Curve gamma"),
-    "generic_overlays_enabled": N_("Generic icons"),
+    "generic_overlays_enabled": N_("Icons for apps without an overlay"),
     "generic_overlays_fill_gaps": N_("Add the Escape mark"),
-    "generic_overlays_fill_shortcuts": N_("Add shortcut icons"),
-    "shortcut_icons_enabled": N_("Shortcut icons"),
-    "shortcut_icon_auto_fetch": N_("Download missing icons"),
+    "generic_overlays_fill_shortcuts": N_("Add icons from the app's menus"),
+    "shortcut_icons_enabled": N_("Read shortcuts from app menus"),
+    "shortcut_icon_auto_fetch": N_("Download icons from the internet"),
     "shortcut_enable_accessibility": N_("Turn on accessibility"),
     "max_hid_message_before_delay": N_("Messages before a pause"),
     "delay_time_after_max_hid_messages": N_("Pause length (s)"),
@@ -162,18 +176,18 @@ SETTING_LABELS = {
     "dev_force_hid_link": N_("Force the HID link"),
     "daemon_mode": N_("Background service"),
     "window_report_network_enabled": N_("Accept forwarders"),
-    "fontpack_auto_flash": N_("Update on connect"),
+    "fontpack_auto_flash": N_("Send font packs on connect"),
     "emoji_search_dict": N_("Search language"),
     "emoji_search_dict_file": N_("Own dictionary file"),
     "fontpack_path": N_("Font pack file"),
-    "browser_url_detection": N_("Match websites"),
+    "browser_url_detection": N_("Match the website in the browser"),
     "browser_report_local_enabled": N_("Receive browser reports"),
     "browser_report_port": N_("Receiver port"),
     "browser_report_token": N_("Receiver token"),
     "telemetry_enabled": N_("Send usage report"),
     "telemetry_endpoint": N_("Report address"),
     "telemetry_install_id": N_("Installation ID"),
-    "problem_scan_keyboard_console": N_("Watch the keyboard console"),
+    "problem_scan_keyboard_console": N_("Watch the keyboard's messages"),
     "problem_scan_host_logs": N_("Watch this app's log"),
     "problem_scan_level": N_("What counts as a problem"),
     "game_assets_enabled": N_("Art from installed games"),
@@ -198,17 +212,20 @@ SETTING_DESCRIPTIONS = {
         "otherwise returns to the keyboard's own stored level. The keyboard does not "
         "report its level, so no picture is selected when this dialog opens."),
     kbd.IDLE_STYLE: N_(
-        "What the keycaps show when you have not typed for a while. It protects the "
-        "displays from burn-in."),
+        "What the keycaps show when you have not typed for a while. A moving picture "
+        "protects the displays from burn-in."),
     kbd.IDLE_TIMEOUT: N_("How long the keyboard waits before the idle display starts."),
     kbd.GLYPH_SCRIPT: N_(
-        "Draws the letters and digits on the keycaps in another script. Standard shows "
-        "the normal legends of your language."),
+        "Draws the letters and digits on the keycaps in another script, for example "
+        "runes or a retro computer font. The keys still type the same characters. "
+        "Standard shows the normal legends of your language."),
     kbd.GLYPH_PLACEMENT: N_(
         "Where the script's letters sit on the keycap. The top-left corner leaves room "
         "for an app icon."),
     kbd.GLYPH_SIZE: N_(
-        "The size of the main legend. The larger sizes cover Latin letters."),
+        "The size of the large letter or digit in the middle of each keycap. Medium "
+        "and Large apply to Latin letters and digits; other scripts, such as Arabic "
+        "or Chinese, stay Small."),
     kbd.TAPPING_TERM: N_(
         "A key with a tap and a hold action types its tap action when you release it "
         "before this time, and acts as its hold action when you hold it longer."),
@@ -251,9 +268,10 @@ SETTING_DESCRIPTIONS = {
         "<cmd>+h or <ctrl>+<alt>+d. Empty: Win+H on Windows, nothing on macOS and "
         "Linux."),
     "unicode_send_composition_mode": N_(
-        "Tells the keyboard how this computer takes Unicode input (for example "
-        "WinCompose), on connect and whenever it changes. Off: the keyboard keeps "
-        "the mode it has stored."),
+        "Tells the keyboard which Unicode input method this computer uses (for "
+        "example WinCompose on Windows), when it connects and whenever the method "
+        "changes. The keyboard needs it to type characters that are not on your "
+        "layout, such as emoji. Off: the keyboard keeps the method it has stored."),
     "brightness_set_daylight_dependent": N_(
         "Sets the keycap brightness from the daylight at your location, every ten "
         "minutes."),
@@ -264,35 +282,43 @@ SETTING_DESCRIPTIONS = {
     "brightness_allow_online_location_lookup": N_(
         "Looks up your approximate location from your IP address (ip-api.com), "
         "once per run. Off: the brightness follows the hour of the day."),
-    "irradiance_min": N_("The sunlight value that gives the dimmest brightness level."),
+    "irradiance_min": N_(
+        "The sunlight value at which the keycaps are at their dimmest. Less sunlight "
+        "keeps them at the dimmest level."),
     "irradiance_max": N_(
-        "The sunlight value that gives the brightest level. Lower it to reach full "
-        "brightness on a cloudy day."),
-    "irradiance_prescaler": N_("Multiplies the sunlight value before the dimmest and brightest values apply."),
+        "The sunlight value at which the keycaps are at their brightest. Lower it to "
+        "reach full brightness on a cloudy day."),
+    "irradiance_prescaler": N_(
+        "Multiplies the sunlight value before it is compared with Sunlight at dimmest "
+        "and Sunlight at brightest. Below 1 makes the keycaps dimmer for the same "
+        "daylight."),
     "brightness_gamma": N_(
         "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, "
         "below 1 brighter. The dimmest and brightest levels do not change."),
     "generic_overlays_enabled": N_(
-        "Icons for apps without their own overlay: the app's mark on Escape and an "
-        "icon for each of its shortcuts. Off: nothing generic is drawn for any app."),
+        "Draws icons for apps that have no overlay of their own: the app's logo on "
+        "the Escape key and an icon on each shortcut key. Off: these apps get no "
+        "icons. Apps with their own overlay are not affected."),
     "generic_overlays_fill_gaps": N_(
-        "An app with its own overlay also gets its mark on Escape, when the overlay "
-        "leaves Escape blank."),
+        "An app with its own overlay also gets its logo on the Escape key, when its "
+        "overlay leaves Escape blank."),
     "generic_overlays_fill_shortcuts": N_(
-        "An app with its own overlay is also read for its shortcuts, with icons on "
-        "the keys the overlay leaves blank. Reading a large app, such as a browser "
-        "with a long page, can take minutes."),
+        "An app with its own overlay also gets icons for the shortcuts listed in its "
+        "menus, on the keys its overlay leaves blank. Reading the menus of a large "
+        "app, such as a browser with a long page, can take minutes."),
     "shortcut_icons_enabled": N_(
-        "Reads the focused app's shortcuts to draw an icon for each. Off: no app is "
-        "read and no shortcut icons are drawn. To remove every generic icon, the "
-        "Escape mark included, turn off Generic icons."),
+        "Reads the shortcuts listed in the focused app's menus, through the "
+        "accessibility interface of the operating system, and draws an icon on each "
+        "shortcut key. The shortcuts stay on this computer. Off: no app is read."),
     "shortcut_icon_auto_fetch": N_(
-        "Downloads icons that are missing. Off: icons already downloaded keep "
-        "working, new ones are skipped."),
+        "Downloads app logos and shortcut icons that this computer does not have yet "
+        "from the internet (simple-icons and Iconify). They are stored on this "
+        "computer. Off: icons already downloaded keep working, and an app without a "
+        "stored icon gets none."),
     "shortcut_enable_accessibility": N_(
-        "Linux only. Turns on the desktop's accessibility switch so Qt and KDE apps "
-        "publish their shortcuts. Off: only apps that publish them anyway (GTK) are "
-        "read."),
+        "Linux only. Turns on the desktop's accessibility switch, so Qt and KDE apps "
+        "list their shortcuts for Read shortcuts from app menus. Off: only apps that "
+        "list them anyway (GTK) are read."),
     "max_hid_message_before_delay": N_(
         "USB transport: how many image messages are sent before a short pause, so "
         "the keyboard keeps reacting to typing. Change it only when asked to while "
@@ -301,8 +327,9 @@ SETTING_DESCRIPTIONS = {
         "USB transport: the length of that pause, in seconds. Change it only when "
         "asked to while reporting a problem."),
     "hid_reconnect_retries": N_(
-        "How many times the host asks the keyboard for its ID before it reopens the "
-        "USB connection."),
+        "How many times the app asks the keyboard for its ID without an answer before "
+        "it closes and reopens the USB connection. Change it only when asked to while "
+        "reporting a problem."),
     "ui_theme": N_(
         "The look of the tray menu and dialogs. Automatic follows the desktop's "
         "light or dark setting."),
@@ -337,27 +364,35 @@ SETTING_DESCRIPTIONS = {
         "Runs the keyboard connection in a background process that the tray app "
         "connects to, so the connection stays up when the tray app restarts."),
     "window_report_network_enabled": N_(
-        "Accepts window reports from a forwarder on another computer. Opens a "
-        "network port. Applies after a restart."),
+        "Accepts reports of the focused window from the forwarder app on another "
+        "computer, for example one you use through remote desktop, so the keyboard "
+        "shows the icons of that computer's apps. Opens a network port. Applies after "
+        "a restart."),
     "emoji_search_dict": N_(
-        "The language the keyboard's emoji layer searches in. The keyboard gets "
-        "the dictionary right away when you change this, and when it connects if "
-        "Update on connect is on. Own dictionary file, when set, is used instead."),
+        "The language of the words the keyboard's emoji search matches. The "
+        "dictionary is sent to the keyboard when you click OK, and when it connects "
+        "if Send font packs on connect is on. Own dictionary file, when set, is used "
+        "instead."),
     "emoji_search_dict_file": N_(
-        "A dictionary you built yourself (.plyd), used instead of Search language. "
-        "Empty: the shipped dictionary is used. Choose it in the tray to flash it "
-        "right away."),
+        "A dictionary file you built yourself (.plyd), sent to the keyboard instead "
+        "of the Search language dictionary. Empty: the dictionary for the Search "
+        "language is used."),
     "fontpack_auto_flash": N_(
-        "Flashes missing or outdated font-pack bundles when the keyboard connects."),
+        "When the keyboard connects, sends it the font packs it is missing or has in "
+        "an older version. Font packs hold the characters for languages, symbols and "
+        "emoji."),
     "fontpack_path": N_(
-        "A .plyf file to flash instead of the font pack that ships with the app. "
-        "Empty uses the shipped pack."),
+        "A font-pack file (.plyf) to send to the keyboard instead of the one that "
+        "comes with this app. Empty: the font pack that comes with this app is used."),
     "browser_url_detection": N_(
-        "Matches overlays to the website in the focused browser tab. Off: browser "
-        "overlays match on the window title only."),
+        "Chooses a website's overlay from the address of the focused browser tab. The "
+        "address comes from the PolyKybd browser extension; on macOS, Safari and "
+        "Chromium browsers such as Chrome also give it without the extension. Off: a "
+        "website's overlay is chosen from the window title only."),
     "browser_report_local_enabled": N_(
-        "Runs the receiver the browser extension reports to. It listens on "
-        "127.0.0.1 only."),
+        "Runs the receiver that the PolyKybd browser extension sends the address of "
+        "the focused tab to. It accepts connections from this computer only "
+        "(127.0.0.1)."),
     "browser_report_port": N_(
         "The receiver's port. It must match the Host port in the browser extension."),
     "browser_report_token": N_(
@@ -365,14 +400,17 @@ SETTING_DESCRIPTIONS = {
     "telemetry_enabled": N_(
         "Sends one anonymous usage report per day: versions, operating system and a "
         "few counters. Never window titles or app names."),
-    "telemetry_endpoint": N_("Where the usage report goes. Empty sends nothing."),
+    "telemetry_endpoint": N_(
+        "The web address the usage report is sent to. Empty: no report is sent."),
     "telemetry_install_id": N_(
         "The random ID of this installation, created with the first report. Delete "
         "it to count as a new installation."),
     "problem_scan_keyboard_console": N_(
-        "Watches the keyboard's console for known failure messages and offers to "
-        "report a problem."),
-    "problem_scan_host_logs": N_("Watches this app's own log for known failure messages."),
+        "Watches the messages the keyboard sends over USB for known failures, and "
+        "offers to report a problem."),
+    "problem_scan_host_logs": N_(
+        "Watches this app's own log for known failure messages, and offers to report "
+        "a problem."),
     "problem_scan_level": N_("What counts as a problem: errors only, or errors and warnings."),
     "game_assets_enabled": N_(
         "Draws some game overlays from the game's own files when the game is "
@@ -534,6 +572,8 @@ class ToggleSwitch(QCheckBox):
         # The colour of the track when on: its section's colour
         # (gui/section_colors.py), or the palette highlight when None.
         self.accent = None
+        # The knob's colour when on; white when None.
+        self.knob = None
 
     def set_accent(self, color):
         self.accent = QColor(color) if color else None
@@ -570,7 +610,7 @@ class ToggleSwitch(QCheckBox):
         on_right = not self.isRightToLeft()
         at_end = self.isChecked() == on_right
         x = track.right() - 3 - knob_d if at_end else track.left() + 3
-        painter.setBrush(QColor("#ffffff"))
+        painter.setBrush(QColor(self.knob if self.isChecked() and self.knob else "#ffffff"))
         painter.drawEllipse(QRectF(x, track.top() + 3, knob_d, knob_d))
         if self.hasFocus():
             ring = QPen(self.accent or pal.color(QPalette.Highlight))
@@ -679,6 +719,20 @@ class _SearchField(QLineEdit):
         super().keyPressEvent(event)
 
 
+# How far the description text moves from the text colour toward the card's
+# background (Base), so the setting's name stands out above it.
+_DESCRIPTION_FADE = 0.40
+
+
+def _description_color(palette):
+    text = palette.color(QPalette.Active, QPalette.WindowText)
+    base = palette.color(QPalette.Active, QPalette.Base)
+    f = _DESCRIPTION_FADE
+    return QColor(round(text.red() + (base.red() - text.red()) * f),
+                  round(text.green() + (base.green() - text.green()) * f),
+                  round(text.blue() + (base.blue() - text.blue()) * f))
+
+
 class _SettingRow(QWidget):
     """One setting: its label, the description below it, and its control.
 
@@ -694,12 +748,20 @@ class _SettingRow(QWidget):
         # False hides the row whatever the search says (a developer setting
         # while developer mode is off and the setting is at its default).
         self.available = True
+        self.advanced = full_key in ADVANCED_SETTINGS
         title = setting_label(full_key)
         description = setting_description(full_key)
         self.search_words = search_words(f"{title} {description} {full_key}")
 
         title_lbl = QLabel(title)
         title_lbl.setWordWrap(True)
+        title_lbl.setObjectName("settingsTitle")
+        # The name stands out from the longer description below it: semibold
+        # and a little larger.
+        title_font = title_lbl.font()
+        title_font.setWeight(QFont.DemiBold)
+        title_font.setPointSizeF(title_font.pointSizeF() * 1.06)
+        title_lbl.setFont(title_font)
         title_lbl.setToolTip(setting_tooltip(full_key))
         title_lbl.setBuddy(editor)
         text_col = QVBoxLayout()
@@ -713,8 +775,7 @@ class _SettingRow(QWidget):
             font.setPointSizeF(max(font.pointSizeF() * 0.88, 7.0))
             desc_lbl.setFont(font)
             muted = desc_lbl.palette()
-            muted.setColor(QPalette.WindowText,
-                           muted.color(QPalette.Disabled, QPalette.WindowText))
+            muted.setColor(QPalette.WindowText, _description_color(muted))
             desc_lbl.setPalette(muted)
             text_col.addWidget(desc_lbl)
         if note:
@@ -783,10 +844,13 @@ class _Group(QWidget):
         self.rows.append(row)
         self._card_lay.addWidget(row)
 
-    def apply_filter(self, query):
-        """Show the matching rows; a subheading match shows the whole group."""
+    def apply_filter(self, query, show_advanced=True):
+        """Show the matching rows; a subheading match shows the whole group.
+        Without ``show_advanced`` and without a search, the advanced rows are
+        hidden."""
         whole = bool(query) and search_matches(query, search_words(self.subheading))
-        shown = [r for r in self.rows if r.available and (whole or r.matches(query))]
+        shown = [r for r in self.rows if r.available and (whole or r.matches(query))
+                 and (show_advanced or query or not r.advanced)]
         for r in self.rows:
             r.setVisible(r in shown)
         # A divider sits above every row but the first; show one only between
@@ -822,13 +886,48 @@ class _Section(ColorSection):
         self.groups.append(group)
         self._lay.addWidget(group)
 
+    def add_advanced_switch(self, on, on_toggled):
+        """Put the Advanced switch in the title band, when a row is advanced."""
+        if not any(r.advanced for g in self.groups for r in g.rows):
+            return
+        label = QLabel(_("Advanced"))
+        label.setObjectName("sectionAdvancedLabel")
+        if self.color:
+            label.setStyleSheet(f"color: {section_colors.title_ink(self.color)}; "
+                                "font-size: 10pt; font-weight: normal; "
+                                "background: transparent; padding: 0;")
+        self.advanced_switch = ToggleSwitch()
+        self.advanced_switch.setChecked(on)
+        self.advanced_switch.setToolTip(_(
+            "Shows the settings that most people never change."))
+        if self.color:
+            # The section colour on a band of the same colour would vanish;
+            # the title ink keeps the switch visible.
+            # The knob takes the section colour, so a white track (the light
+            # theme's ink) still shows it.
+            self.advanced_switch.set_accent(section_colors.title_ink(self.color))
+            self.advanced_switch.knob = QColor(self.color)
+        label.setBuddy(self.advanced_switch)
+        self.head_layout.addWidget(label)
+        self.head_layout.addWidget(self.advanced_switch)
+        self.advanced_switch.toggled.connect(on_toggled)
+
+    @property
+    def show_advanced(self):
+        switch = getattr(self, "advanced_switch", None)
+        return switch is None or switch.isChecked()
+
     def apply_filter(self, query):
-        visible = [g.apply_filter(query) for g in self.groups]
+        visible = [g.apply_filter(query, self.show_advanced) for g in self.groups]
         self.setVisible(any(visible))
         return any(visible)
 
 
 class SettingsDialog(QDialog):
+    # The sections whose Advanced switch is on, kept while the app runs, so
+    # the next Settings window opens the same way.
+    advanced_sections = set()
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle(_("PolyKybd Settings"))
@@ -948,6 +1047,12 @@ class SettingsDialog(QDialog):
                 for row in group.rows:
                     if isinstance(row.editor, ToggleSwitch):
                         row.editor.set_accent(section.color)
+            section.add_advanced_switch(
+                section_id in SettingsDialog.advanced_sections,
+                lambda on, sid=section_id: self._advanced_toggled(sid, on))
+            if section_id == "icons":
+                section.set_note(_("An overlay is a set of icons for one app. Help & "
+                                   "About, Basics shows an example."))
             if section_id == "keyboard" and keyboard:
                 self._keyboard_section = section
                 section.set_note(_("Reading the settings stored on the keyboard\u2026"))
@@ -1126,6 +1231,13 @@ class SettingsDialog(QDialog):
             if value is not None and value != before:
                 out[key] = value
         return out
+
+    def _advanced_toggled(self, section_id, on):
+        if on:
+            SettingsDialog.advanced_sections.add(section_id)
+        else:
+            SettingsDialog.advanced_sections.discard(section_id)
+        self._refilter()
 
     def _developer_settings_shown(self):
         """Whether the dialog shows every developer setting: the switch is on,

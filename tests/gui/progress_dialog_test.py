@@ -13,7 +13,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 # Only a missing PyQt5 skips. An error in the module under test must fail.
 try:
-    from PyQt5.QtCore import QEvent, QObject
+    from PyQt5.QtCore import QEvent, QObject, Qt
     from PyQt5.QtWidgets import QApplication, QLabel, QProgressDialog
     _IMPORT_ERR = None
 except ImportError as e:  # pragma: no cover - PyQt5 not installed
@@ -76,6 +76,18 @@ class TestStableProgressDialog(unittest.TestCase):
         self.assertEqual(dlg.labelText(), "Extracting…")
         self.assertTrue(label.wordWrap())
 
+
+    def test_headline_stays_above_the_changing_status(self):
+        dlg = self._shown(StableProgressDialog)
+        dlg.set_headline("Updating from v1.0.0 to v1.1.0")
+        dlg.setLabelText("Applying <update>…")
+        label = dlg.findChild(QLabel)
+        self.assertEqual(label.textFormat(), Qt.RichText)
+        self.assertEqual(label.text(), "<b>Updating from v1.0.0 to v1.1.0</b><br>"
+                                       "Applying &lt;update&gt;…")
+        dlg.set_headline("")
+        self.assertEqual(label.text(), "Applying <update>…")
+        self.assertEqual(label.textFormat(), Qt.AutoText)
 
 if __name__ == "__main__":
     unittest.main()

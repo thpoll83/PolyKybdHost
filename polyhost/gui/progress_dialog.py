@@ -17,7 +17,13 @@ bar, so a word-wrapped label shows a longer text without a relayout.
 The override is a Python method, so it only intercepts calls made from Python.
 Every caller in this repo (``UpdateProgressController``, the firmware and
 WinCompose progress in ``host.py``) is one.
+
+:meth:`set_headline` adds a bold first line that stays while the status text
+below it changes: the self-update names the version it replaces and the one it
+installs. Without it, the label sat at the bottom of an empty band.
 """
+import html
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QLabel, QProgressDialog, QPushButton
 
@@ -29,6 +35,8 @@ class StableProgressDialog(QProgressDialog):
 
     def __init__(self, label, cancel_text, minimum, maximum, parent=None):
         super().__init__(label, cancel_text, minimum, maximum, parent)
+        self._headline = ""
+        self._text = label
         self._label = self.findChild(QLabel)
         if self._label is not None:
             self._label.setWordWrap(True)
@@ -50,8 +58,22 @@ class StableProgressDialog(QProgressDialog):
         super().setCancelButtonText(text)
         self._style_cancel()
 
+    def set_headline(self, headline):
+        """Show ``headline`` in bold above the status text; "" removes it."""
+        self._headline = headline or ""
+        self.setLabelText(self._text)
+
     def setLabelText(self, text):  # noqa: N802 — Qt override
+        self._text = text
         if self._label is None:
             super().setLabelText(text)
             return
-        self._label.setText(text)
+        if not self._headline:
+            self._label.setTextFormat(Qt.AutoText)
+            self._label.setText(text)
+            return
+        # Rich text for the bold line, so both parts are escaped: a status
+        # message can hold "<" (an error text, a path).
+        self._label.setTextFormat(Qt.RichText)
+        self._label.setText(f"<b>{html.escape(self._headline)}</b><br>"  # i18n: skip
+                            + html.escape(text).replace("\n", "<br>"))
