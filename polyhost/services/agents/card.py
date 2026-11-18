@@ -284,7 +284,8 @@ def _runs(text: str, size: int = FONT_SIZE) -> list[tuple]:
             if font is base and not ch.isspace():
                 _note_missing(ch)
         if runs and runs[-1][0] is font:
-            runs[-1] = (font, dy, runs[-1][2] + ch)
+            runs[-1] = (font, dy, runs[-1][2] + joiners + ch)
+            joiners = ""
         else:
             runs.append((font, dy, joiners + ch))
             joiners = ""

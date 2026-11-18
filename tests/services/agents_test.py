@@ -349,6 +349,8 @@ class CardWordsTest(unittest.TestCase):
         self.assertEqual(r.agents()[2].card_text, "Codex")
         self.assertTrue(r.label("codex", "c", "[ ]"))                  # a label too
         self.assertEqual(r.agents()[2].card_text, "Codex")
+        r.report("codex", "d", "working", headline="[]", cwd="/home/u/[]")
+        self.assertEqual(r.agents()[3].card_text, "Codex 2")        # the folder too
 
     def test_a_number_never_repeats_another_agents_title(self):
         r = AgentRegistry()
@@ -889,6 +891,8 @@ class CardTest(unittest.TestCase):
             self.assertEqual(runs[0][2], text)
         runs = _runs("HID \u200d\u0628")
         self.assertEqual(runs[-1][2], "\u200d\u0628")
+        # After a space in the same font: the joiner stays before the letter.
+        self.assertEqual([r[2] for r in _runs("\u0628 \u200d\u0628")], ["\u0628 \u200d\u0628"])
         self.assertEqual("".join(r[2] for r in _runs("\u200d")), "\u200d")
 
     def test_a_missing_bundled_font_is_left_out(self):

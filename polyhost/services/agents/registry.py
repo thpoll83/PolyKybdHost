@@ -103,10 +103,12 @@ class Agent:
         """base_headline as the card shows it: without brackets
         (model.no_brackets), and a session title cut to its subject words
         (model.card_words). A label of the user's keeps its words."""
-        # A title of brackets only ("[]") shows what an agent without a title shows.
+        # A title of brackets only ("[]") shows what an agent without a title
+        # shows, and the vendor when the folder is brackets only too.
+        unnamed = no_brackets(self._unnamed_headline()) or vendor(self.vendor).name
         if self.label or not self.headline:
-            return no_brackets(self.base_headline) or no_brackets(self._unnamed_headline())
-        return card_words(no_brackets(self.headline)) or no_brackets(self._unnamed_headline())
+            return no_brackets(self.base_headline) or unnamed
+        return card_words(no_brackets(self.headline)) or unnamed
 
     @property
     def card_text(self) -> str:
