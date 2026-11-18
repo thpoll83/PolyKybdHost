@@ -308,6 +308,11 @@ class CardWordsTest(unittest.TestCase):
         self.assertEqual(card_words("Mise à jour de la doc"), "Mise à jour de la doc")
         self.assertEqual(card_words("Fehler in der Anmeldung"), "Fehler in der Anmeldung")
         self.assertEqual(card_words("Arreglar a la base"), "Arreglar a la base")
+        self.assertEqual(card_words("Fout in de aanmelding is zichtbaar"),
+                         "Fout in de aanmelding is zichtbaar")
+        self.assertEqual(card_words("Błąd to jest w logowaniu"), "Błąd to jest w logowaniu")
+        # Without a marker word only the leading verb goes; the small words stay.
+        self.assertEqual(card_words("Fix login in Firefox"), "login in Firefox")
 
     def test_the_card_shows_subject_words_but_a_label_as_set(self):
         r = AgentRegistry()

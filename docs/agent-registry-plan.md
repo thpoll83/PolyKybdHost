@@ -105,10 +105,11 @@ ESC (the pager) does not end AI mode in either case.
   wider than the key is split between letters. One page: a longer title ends with
   `…`. A session title is cut to its subject words first (`model.card_words`): no
   small words (the, a, for, on, after, …) and no leading verb (Fix, Add, Refactor,
-  …), so "Fix the HID reconnect after resume" shows "HID reconnect resume". Only
-  an English title is cut (it starts with such a verb or has a word like "the",
-  "for", "with"); a title in another language, a label the user set and a folder
-  name are shown as they are. Agents whose cards would show the same text are
+  …), so "Fix the HID reconnect after resume" shows "HID reconnect resume". Small
+  words go only in a title with a word that no other common language uses (after,
+  and, before, from, into, the, when, with); otherwise only the leading verb goes.
+  A title in another language, a label the user set and a folder name are shown as
+  they are. Agents whose cards would show the same text are
   numbered. A cut title ends with `…`. Source order: a label the user set (`polyctl agents label`),
   the topic from the terminal title (Claude Code writes `✳ <topic>`), the session's
   working directory name.
