@@ -2567,6 +2567,8 @@ class PolyCore(Observable):
         def dictate():
             return dictation.send_shortcut(dictation.shortcut_for(
                 self.poly_settings.get("agents_dictation_shortcut")))
+        from polyhost.services.agents import card as agent_card
+        agent_card.MISSING_FONT_HOOK = self._download_card_font
         self._agent_keys = AgentKeysController(
             self.agents, self._agent_card_cache, raise_agent=raise_agent, log=self.log,
             dictate=dictate)
@@ -2602,6 +2604,30 @@ class PolyCore(Observable):
             enabled=lambda: bool(self.poly_settings.get("agents_enabled")
                                  and self.poly_settings.get("agents_title_scan")))
         self._agent_titles.start()
+
+    def _download_card_font(self, entry) -> bool:
+        """card.MISSING_FONT_HOOK: download a fallback font that an agent title
+        needs (services/agents/card.py, FALLBACK_FONTS) on its own thread, while
+        the agent keys and agents_download_fonts are on. True when it started."""
+        if not (self.poly_settings.get("agents_enabled")
+                and self.poly_settings.get("agents_download_fonts")):
+            return False
+        from polyhost.services import font_downloader
+        from polyhost.services.agents import card
+        spec = card.download_spec(entry)
+        if spec is None:
+            return False
+
+        def run():
+            try:
+                font_downloader.download_font(spec, timeout=60)
+            except Exception as e:  # noqa: BLE001 - the card shows boxes; tried again later
+                self.log.warning("Agent cards: font %s not downloaded: %s", entry.name, e)
+                return
+            self.log.info("Agent cards: downloaded the font %s", entry.name)
+            card.fonts_changed()
+        threading.Thread(target=run, name="agent-card-font", daemon=True).start()
+        return True
 
     def _agents_active(self) -> bool:
         """The keyboard side runs when the feature is on and the keyboard speaks v31."""

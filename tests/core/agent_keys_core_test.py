@@ -16,7 +16,8 @@ class AgentKeysCoreTest(unittest.TestCase):
         values = {"dev_mock_primary": True, "dev_mock_protocol": protocol,
                   "unicode_send_composition_mode": True,
                   "brightness_set_daylight_dependent": False,
-                  "agents_enabled": True, "agents_title_scan": False, **overrides}
+                  "agents_enabled": True, "agents_title_scan": False,
+                  "agents_download_fonts": False, **overrides}
 
         def get(settings, name):
             return values[name] if name in values else real_get(settings, name)
@@ -25,6 +26,8 @@ class AgentKeysCoreTest(unittest.TestCase):
                   mock.patch.object(PolySettings, "save", lambda *a, **k: True)):
             p.start()
             self.addCleanup(p.stop)
+        from polyhost.services.agents import card
+        self.addCleanup(setattr, card, "MISSING_FONT_HOOK", card.MISSING_FONT_HOOK)
         core = PolyCore(mock.MagicMock(), start_worker=False)
         core.worker.start()
         self.addCleanup(core.shutdown)
@@ -35,6 +38,48 @@ class AgentKeysCoreTest(unittest.TestCase):
 
     def _pass(self, core):
         core.worker.run_sync("agents", core._agents_periodic, timeout=30)
+
+    def test_a_missing_card_font_is_downloaded_only_when_allowed(self):
+        from polyhost.services import font_downloader
+        from polyhost.services.agents import card
+        entry = next(e for e in card.FALLBACK_FONTS if e.name == "Noto Sans Hebrew")
+        fetched = []
+        done = threading.Event()
+
+        def download(spec, timeout=60):
+            fetched.append((spec.name, spec.url))
+            return "/x"
+        with mock.patch.object(font_downloader, "download_font", download), \
+                mock.patch.object(card, "fonts_changed", done.set):
+            core = self._core(31)                                # downloads off
+            self.assertEqual(card.MISSING_FONT_HOOK, core._download_card_font)
+            self.assertFalse(core._download_card_font(entry))
+            core = self._core(31, agents_download_fonts=True, agents_enabled=False)
+            self.assertFalse(core._download_card_font(entry))  # agent keys off
+            core = self._core(31, agents_download_fonts=True)
+            self.assertTrue(core._download_card_font(entry))
+            self.assertTrue(done.wait(5))
+        self.assertEqual(fetched[0][0], "Noto Sans Hebrew")
+        self.assertTrue(fetched[0][1].startswith("https://"))
+
+    def test_a_failed_card_font_download_is_logged_and_changes_nothing(self):
+        from polyhost.services import font_downloader
+        from polyhost.services.agents import card
+        entry = next(e for e in card.FALLBACK_FONTS if e.url)
+        before = card.fonts_version()
+        failed = threading.Event()
+        core = self._core(31, agents_download_fonts=True)
+        warn = core.log.warning
+
+        def logged(*a, **k):
+            warn(*a, **k)
+            failed.set()
+        with mock.patch.object(font_downloader, "download_font",
+                               mock.Mock(side_effect=font_downloader.DownloadError("short"))), \
+                mock.patch.object(core.log, "warning", logged):
+            self.assertTrue(core._download_card_font(entry))
+            self.assertTrue(failed.wait(5))
+        self.assertEqual(card.fonts_version(), before)
 
     def test_push_and_press(self):
         core = self._core(31)
@@ -47,7 +92,7 @@ class AgentKeysCoreTest(unittest.TestCase):
         self._pass(core)
         self.assertEqual(fw.ai_states[0], AgentState.WAITING)
         cache = core.device_mgr.primary.cache
-        card = cache.holds(("agentcard", "claude-code", "s1", 0))   # per agent and page
+        card = cache.holds(("agentcard", "claude-code", "s1"))      # one card per agent
         self.assertEqual(fw.ai_slots[0], card)
         self.assertEqual(len(fw.ai_cards[card]), 360)
         self.assertTrue(any(fw.ai_cards[card]))
