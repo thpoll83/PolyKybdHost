@@ -109,11 +109,14 @@ ESC (the pager) does not end AI mode in either case.
   language uses (after, and, before, from, into, the, when, with). A title in
   another language, a label the user set and a folder name are shown as they are.
   Agents whose cards would show the same text are numbered.
-- Fonts: Aileron (Pillow's bundled font). A character it does not have comes from
-  the first font in `card.FALLBACK_FONTS` that has it: Galmuri11 at 12 px
-  (`res/fonts/agent-cards/`) for Korean, Japanese and CJK ideographs. Hebrew,
-  Arabic, Thai and Devanagari have no font yet and show boxes; adding one is a
-  file and an entry (the README there).
+- Fonts: Aileron (Pillow's bundled font, ASCII only). A character it does not have
+  comes from the first font in `card.FALLBACK_FONTS` that has it
+  (`res/fonts/agent-cards/`): Galmuri11 12 px (European Latin, Greek, Cyrillic,
+  Korean, Japanese), a cut-down WenQuanYi Zen Hei Mono 12 px (the Chinese
+  characters Galmuri lacks), Noto Sans Devanagari and Noto Sans Thai 13 px. A
+  letter and its combining marks stay in one font run and one line (`_clusters`).
+  Georgian, Armenian, Hebrew, Arabic and the other Indic scripts have no font yet
+  and show boxes; adding one is a file and an entry (the README there).
 - Source order: a label the user set (`polyctl agents label`),
   the topic from the terminal title (Claude Code writes `✳ <topic>`), the session's
   working directory name.

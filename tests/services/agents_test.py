@@ -661,6 +661,32 @@ class CardTest(unittest.TestCase):
         self.assertFalse(unicodedata.category(cut[0]).startswith("M"))
         self.assertNotIn("\u094d\u2026", cut)                  # no half conjunct
 
+    def test_every_supported_script_has_a_font_for_each_letter(self):
+        from polyhost.services.agents.card import _fallbacks, _font, _has
+        fonts = [_font()] + [f for f, _dy in _fallbacks()]
+        self.assertEqual(len(fonts), 1 + len(card_mod.FALLBACK_FONTS))   # all loaded
+        samples = {
+            "German, French, Nordic": "ÄÖÜäöüßàâçéèêëîïôœùûÿåæøÅÆØ",
+            "Polish, Czech, Hungarian": "ąćęłńśźżĄĆĘŁŃŚŹŻčďěňřšťůžČĎĚŇŘŠŤŮŽőűŐŰ",
+            "Romanian, Turkish, Baltic, Maltese": "ăîșțĂÎȘȚğıİşĞŞėįųūģķļņċġħĊĠĦ",
+            "Icelandic, Welsh, Sami": "ðþÐÞŵŷŋŧŊŦ",
+            "Greek": "αβγδεζηθικλμνξοπρσςτυφχψωάέήίόύώΑΩΆΏ",
+            "Cyrillic": "абвгдеёжзийклмнопрстуфхцчшщъыьэюяґєіїўђјљњћџѓѕќ",
+            "Korean": "로그인테스트수정", "Japanese": "ログインテストを修正再接続",
+            "Simplified Chinese": "修复登录错误优化缓存逻辑测试云中继们这说时对过",
+            "Traditional Chinese": "修復登入錯誤最佳化快取邏輯測試雲端中繼",
+            "Hindi": "लॉगिनबगठीककरेंकैशसुधारेंक्लाउडरिलेपरीक्षण",
+            "Thai": "แก้ไขข้อผิดพลาดการเข้าสู่ระบบปรับปรุงแคช",
+        }
+        import unicodedata as ud
+        for script, text in samples.items():
+            for ch in text:
+                if ud.category(ch).startswith("M"):
+                    continue                      # drawn in its letter's run
+                self.assertTrue(any(_has(f, ch) for f in fonts), (script, ch))
+        # No font yet: Georgian (README "Not covered yet").
+        self.assertFalse(any(_has(f, "ა") for f in fonts))
+
     def test_a_missing_fallback_font_is_left_out(self):
         from polyhost.services.agents import card
         with mock.patch.object(card, "FALLBACK_FONTS", (("missing.ttf.xz", 12),)), \

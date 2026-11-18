@@ -68,11 +68,17 @@ def _draw(img):
     return draw
 
 
-# Fallback fonts for characters Aileron does not have (2026-11-18: a Korean or
-# Japanese title showed boxes). (file in FONT_DIR, px): a character is drawn with
-# the first font that has it, so another script needs only another entry. Each
-# file is an xz-compressed TTF drawn on a pixel grid (res/fonts/agent-cards/).
-FALLBACK_FONTS = (("Galmuri11.ttf.xz", 12),)
+# Fallback fonts for characters Aileron does not have (2026-11-18: Pillow's copy
+# of Aileron is ASCII only, so a German, Korean or Chinese title showed boxes).
+# (file in FONT_DIR, px): a character is drawn with the first font that has it, so
+# another script needs only another entry. Each file is an xz-compressed TTF; the
+# sources and licenses are in res/fonts/agent-cards/README.md.
+FALLBACK_FONTS = (
+    ("Galmuri11.ttf.xz", 12),                # European Latin, Greek, Cyrillic, Korean, Japanese
+    ("WenQuanYiZenHeiMono-cjk.ttf.xz", 12),  # the Chinese characters Galmuri lacks
+    ("NotoSansDevanagari.ttf.xz", 13),       # Hindi, Marathi, Nepali (shaped by raqm)
+    ("NotoSansThai.ttf.xz", 13),             # Thai
+)
 FONT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)))), "res", "fonts", "agent-cards")
 _FALLBACKS = None
@@ -89,7 +95,8 @@ def _probe_draw():
 def _fallbacks() -> list:
     """(font, dy) for each loadable FALLBACK_FONTS entry. dy moves its baseline so
     its capital H has the same top as Aileron's: a CJK glyph is as tall as that H
-    and would otherwise stand above the line."""
+    and would otherwise stand above the line. A font without an H (the Chinese
+    one) aligns the top of an ideograph instead."""
     global _FALLBACKS
     if _FALLBACKS is None:
         import io
@@ -106,7 +113,9 @@ def _fallbacks() -> list:
             except (OSError, lzma.LZMAError) as e:
                 log.warning("Agent cards: fallback font %s not loaded: %s", name, e)
                 continue
-            top = draw.textbbox((0, 0), "H", font=font, anchor="ls")[1]
+            ref = next((c for c in "H\u4eec\u8fd9\u8bf4\u65f6\u5bf9\u8fc7\u56fd"
+                        if _has(font, c)), "H")
+            top = draw.textbbox((0, 0), ref, font=font, anchor="ls")[1]
             out.append((font, base_top - top))
         _FALLBACKS = out
     return _FALLBACKS
