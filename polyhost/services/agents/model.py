@@ -87,21 +87,15 @@ _SMALL_WORDS = frozenset(
 # and Czech, "for" Danish and Norwegian, "via" Italian): only a title with one of
 # these loses its small words.
 _ENGLISH_MARKERS = frozenset("after and before from into the when with".split())
-# A first word that names the kind of work, not the subject.
-_LEADING_VERBS = frozenset(
-    "add change create debug fix implement improve investigate make refactor remove "
-    "review support update write".split())
 
 
 def card_words(title: str) -> str:
-    """The words of `title` a card shows: no leading verb such as "Fix" or "Add",
-    and, in a title with an _ENGLISH_MARKERS word, no small words. Any other title,
-    and one made only of such words, is returned as it is."""
+    """The words of `title` a card shows: in a title with an _ENGLISH_MARKERS word,
+    no small words. Any other title, and one made only of small words, is returned
+    as it is. The first word stays, also a verb such as "Fix" (2026-11-18)."""
     title = title or ""
     words = title.split()
     low = [w.lower().rstrip(":,") for w in words]
     if _ENGLISH_MARKERS.intersection(low):
         words = [w for w, lw in zip(words, low) if lw not in _SMALL_WORDS]
-    if words and words[0].lower().rstrip(":,") in _LEADING_VERBS:
-        words = words[1:]
     return " ".join(words) or title

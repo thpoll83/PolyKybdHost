@@ -290,35 +290,32 @@ class RegistryTest(unittest.TestCase):
 
 
 class CardWordsTest(unittest.TestCase):
-    def test_small_words_and_a_leading_verb_are_dropped(self):
+    def test_small_words_are_dropped_and_the_first_word_stays(self):
         from polyhost.services.agents.model import card_words
         self.assertEqual(card_words("Fix the HID reconnect after resume on Windows"),
-                         "HID reconnect resume Windows")
-        self.assertEqual(card_words("Refactor: the overlay cache"), "overlay cache")
-        self.assertEqual(card_words("Add tests for the cloud relay"), "tests cloud relay")
-        # A verb later in the title stays; only the first word is the kind of work.
-        self.assertEqual(card_words("docs fix"), "docs fix")
-        # A title of such words only, or of one verb, is kept as it is.
-        self.assertEqual(card_words("Fix"), "Fix")
-        self.assertEqual(card_words("Fix the"), "Fix the")
+                         "Fix HID reconnect resume Windows")
+        self.assertEqual(card_words("Refactor: the overlay cache"), "Refactor: overlay cache")
+        self.assertEqual(card_words("Add tests for the cloud relay"), "Add tests cloud relay")
+        # A title of small words only is kept as it is.
         self.assertEqual(card_words("on the"), "on the")
         self.assertEqual(card_words(""), "")
-        self.assertEqual(card_words("Fix login"), "login")
+        # Without a marker word nothing goes: "on" is French, "in" German.
+        self.assertEqual(card_words("Fix login in Firefox"), "Fix login in Firefox")
         # Not English: shown whole, also with a word that is an English small word.
         self.assertEqual(card_words("Mise à jour de la doc"), "Mise à jour de la doc")
         self.assertEqual(card_words("Fehler in der Anmeldung"), "Fehler in der Anmeldung")
+        self.assertEqual(card_words("Update der Anmeldung"), "Update der Anmeldung")
         self.assertEqual(card_words("Arreglar a la base"), "Arreglar a la base")
         self.assertEqual(card_words("Fout in de aanmelding is zichtbaar"),
                          "Fout in de aanmelding is zichtbaar")
         self.assertEqual(card_words("Błąd to jest w logowaniu"), "Błąd to jest w logowaniu")
-        # Without a marker word only the leading verb goes; the small words stay.
-        self.assertEqual(card_words("Fix login in Firefox"), "login in Firefox")
+        self.assertEqual(card_words("로그인 테스트 수정"), "로그인 테스트 수정")
 
-    def test_the_card_shows_subject_words_but_a_label_as_set(self):
+    def test_the_card_shows_the_short_title_but_a_label_as_set(self):
         r = AgentRegistry()
         r.report("codex", "a", "working", headline="Fix the login test")
         agent = r.agents()[0]
-        self.assertEqual(agent.card_text, "login test")
+        self.assertEqual(agent.card_text, "Fix login test")
         self.assertEqual(agent.display_headline, "Fix the login test")   # the list keeps it
         self.assertTrue(r.label("codex", "a", "Fix the parser"))
         self.assertEqual(r.agents()[0].card_text, "Fix the parser")
@@ -329,15 +326,15 @@ class CardWordsTest(unittest.TestCase):
         r = AgentRegistry()
         r.report("codex", "a", "working", headline="Fix the build")
         r.report("codex", "b", "working", headline="Fix the build")
-        self.assertEqual([a.card_text for a in r.agents()], ["build 1", "build 2"])
+        self.assertEqual([a.card_text for a in r.agents()], ["Fix build 1", "Fix build 2"])
 
     def test_titles_that_show_the_same_card_are_numbered(self):
         r = AgentRegistry()
-        r.report("codex", "a", "working", headline="Fix login bug")
-        r.report("codex", "b", "working", headline="Add login bug")
+        r.report("codex", "a", "working", headline="Fix the login bug")
+        r.report("codex", "b", "working", headline="Fix login bug")
         r.report("codex", "c", "working", headline="Fix the parser")
         self.assertEqual([a.card_text for a in r.agents()],
-                         ["login bug 1", "login bug 2", "parser"])
+                         ["Fix login bug 1", "Fix login bug 2", "Fix parser"])
 
 
 class HookTest(unittest.TestCase):
@@ -522,17 +519,19 @@ class CardTest(unittest.TestCase):
             self.assertLessEqual(mask.shape[0], MARK_SHOWN)
             self.assertTrue(mask.any())
 
-    def test_flow_breaks_at_spaces_and_after_hyphens(self):
-        self.assertEqual(flow("polykybd-docs", [70]), ["polykybd-", "docs"])
-        self.assertEqual(flow("Fix the HID reconnect", [46, 46, 70]),
-                         ["Fix the", "HID", "reconnect"])
-        # A word too wide beside the mark moves down to the first full-width line.
-        self.assertEqual(flow("Fix reconnect", [46, 46, 70]), ["Fix", "", "reconnect"])
-        # Only a word wider than the key is split between letters.
-        lines = flow("Supercalifragilistic", [70])
-        self.assertGreater(len(lines), 1)
-        self.assertEqual("".join(lines), "Supercalifragilistic")
-        self.assertTrue(all(card_mod._ink_width(line) <= 70 for line in lines))
+    def test_flow_fills_each_line_and_splits_at_any_letter(self):
+        lines = flow("Fix the HID reconnect after resume", [46, 70, 70])
+        self.assertEqual(lines[:3], ["Fix the", "HID recon", "nect after r"])
+        widths = [46, 70, 70, 70]
+        for k, line in enumerate(lines):
+            self.assertLessEqual(card_mod._ink_width(line), widths[k])
+            nxt = lines[k + 1][:1] if k + 1 < len(lines) else ""
+            if nxt:                                       # the next letter did not fit
+                self.assertGreater(card_mod._ink_width(line + nxt), widths[k])
+        # Nothing lost, and no space at a line start or end.
+        self.assertEqual("".join(lines).replace(" ", ""),
+                         "Fix the HID reconnect after resume".replace(" ", ""))
+        self.assertFalse(any(line != line.strip() for line in lines))
 
     def test_one_page_of_three_lines_cut_with_an_ellipsis(self):
         title = "Investigate the HIL failure in the split link soak on Windows"
@@ -540,8 +539,8 @@ class CardTest(unittest.TestCase):
         self.assertEqual(len(pages), 1)
         self.assertEqual(len(pages[0]), card_mod.LINES)
         self.assertTrue(pages[0][-1].endswith("\u2026"))
-        shown = " ".join(w for w in pages[0] if w).rstrip("\u2026").split()
-        self.assertEqual(shown, title.split()[:len(shown)])     # the start, in order
+        shown = "".join(pages[0]).rstrip("\u2026").replace(" ", "")
+        self.assertTrue(title.replace(" ", "").startswith(shown))   # the start, in order
         self.assertEqual(paginate("Agent 1"), [["Agent 1"]])
         self.assertEqual(paginate("polykybd docs"), [["polykybd", "docs"]])   # no cut
 
@@ -556,7 +555,7 @@ class CardTest(unittest.TestCase):
         # Line 3 full beside the icon: the ellipsis replaces letters, never '.'.
         for title in ("tests cloud relay join code coverage report",
                       "Windows Windows Windows Windows", "HID reconnect resume Windows",
-                      "overlay cache eviction logic"):
+                      "overlay cache eviction logic and more"):
             last = paginate(title, icon=icon)[0][-1]
             self.assertTrue(last.endswith("\u2026"), (title, last))
             self.assertFalse(last.rstrip("\u2026").endswith("."), (title, last))
@@ -570,8 +569,8 @@ class CardTest(unittest.TestCase):
                 return np.ones((MARK_SHOWN, 26), dtype=bool)    # a half-cut logo
         local = card_layout("x", "Investigate", Marks())
         self.assertEqual(local.mark.shape, (12, 26))
-        # 12 rows sit beside line 1 only: "Investigate" (69 px) starts line 2.
-        self.assertEqual(local.pages[0], ["", "Investigate"])
+        # 12 rows sit beside line 1 only: line 1 is narrower, line 2 full width.
+        self.assertEqual(local.pages[0], ["Investi", "gate"])
         cloud = card_layout("x", "Investigate", Marks(), cloud=True)
         self.assertEqual(cloud.mark.shape, local.mark.shape)    # inside the logo's box
         self.assertEqual(cloud.pages, local.pages)              # the text is the same
@@ -588,9 +587,8 @@ class CardTest(unittest.TestCase):
                 return np.ones((13, 29), dtype=bool)            # aider's wordmark
         layout = card_layout("aider", "refactor the overlay cache", Marks())
         self.assertEqual(layout.mark.shape, (13, 29))
-        # 13 rows sit beside line 1 only: "refactor" does not fit there and starts
-        # line 2, which is full width.
-        self.assertEqual(layout.pages[0][:2], ["", "refactor"])
+        # 13 rows sit beside line 1 only: line 2 is full width.
+        self.assertEqual(layout.pages[0][:2], ["refact", "or the overl"])
         cloud = card_layout("aider", "refactor", Marks(), cloud=True).mark
         self.assertEqual(cloud.shape, (13, 29))
         self.assertTrue(cloud[:2, :].all())                     # the wordmark's top unchanged
@@ -601,6 +599,61 @@ class CardTest(unittest.TestCase):
         mark = with_cloud(np.ones((6, 8), dtype=bool))
         self.assertEqual(mark.shape, (CLOUD_H, CLOUD_W))
         self.assertTrue(mark.any())
+
+    def test_korean_and_japanese_come_from_the_fallback_font(self):
+        from polyhost.services.agents.card import _fallbacks, _font, _has, _runs
+        self.assertTrue(_fallbacks(), "Galmuri11 not loaded")
+        galmuri = _fallbacks()[0][0]
+        for ch in "가힣あアン再接":
+            self.assertFalse(_has(_font(), ch), ch)             # Aileron has none
+            self.assertTrue(_has(galmuri, ch), ch)
+        runs = _runs("HID 재연결 v1.2")
+        self.assertEqual([(f is galmuri, part) for f, _dy, part in runs],
+                         [(False, "HID "), (True, "재연결"), (False, " v1.2")])
+
+    def test_a_fallback_glyph_stands_no_higher_than_a_capital(self):
+        from polyhost.services.agents.card import _measure
+        cap_top = _measure("H")[1]
+        for text in ("재", "再", "ア", "H재"):
+            self.assertGreaterEqual(_measure(text)[1], cap_top, text)
+        # Drawn on line 1 of a card without a mark: no ink is cut at the top edge,
+        # so the glyph is drawn whole (its rows match the glyph alone).
+        layout = card_layout("x", "재연결 버그", None)
+        img = render_page(layout, 0)
+        self.assertTrue(img[:13].any())
+        self.assertFalse(img[0].all())
+
+    def test_a_card_in_korean_draws_no_box(self):
+        import numpy as np
+        from PIL import Image
+        from polyhost.services.agents.card import _draw, _draw_text, _font
+
+        def drawn(text, fallback=True):
+            img = Image.new("1", (72, 20))
+            draw = _draw(img)
+            if fallback:
+                _draw_text(draw, (0, 0), text)
+            else:
+                draw.text((0, 0), text, font=_font(), fill=1)
+            return np.array(img, dtype=bool)
+        box = drawn("\U0010fffd", fallback=False)               # Aileron's .notdef
+        self.assertFalse((drawn("가") == box).all())
+        self.assertFalse((drawn("가") == drawn("\U0010fffd")).all())
+
+    def test_a_missing_fallback_font_is_left_out(self):
+        from polyhost.services.agents import card
+        with mock.patch.object(card, "FALLBACK_FONTS", (("missing.ttf.xz", 12),)), \
+                mock.patch.object(card, "_FALLBACKS", None), \
+                self.assertLogs("PolyHost", "WARNING"):
+            self.assertEqual(card._fallbacks(), [])
+            # The card still renders: the character is Aileron's box.
+            self.assertTrue(render_page(card_layout("x", "재연결", None), 0).any())
+        card._FALLBACKS = None
+
+    def test_a_script_without_a_font_still_renders(self):
+        layout = card_layout("x", "תיקון באג", None)             # Hebrew: no font yet
+        self.assertEqual(layout.page_count, 1)
+        self.assertTrue(render_page(layout, 0).any())
 
     def test_text_starts_right_of_the_mark(self):
         import numpy as np
@@ -629,10 +682,9 @@ class CardTest(unittest.TestCase):
         right = 72 - ICON - ICON_CLEAR
         # Only line 3 (rows 26..39) meets the icon (rows 28..39) and its margin.
         self.assertEqual(_spans(None, icon), [(1, 71), (1, 71), (1, right)])
-        # "comments" (66 px) fits a full line, not line 3 beside the icon: the
-        # card is cut there.
+        # Line 3 beside the icon is shorter: "comments" is cut there.
         self.assertEqual(paginate("Windows Windows comments", icon=icon),
-                         [["Windows", "Windows", "\u2026"]])
+                         [["Windows", "Windows", "comme\u2026"]])
         self.assertEqual(paginate("Windows Windows comments"),
                          [["Windows", "Windows", "comments"]])
         # The icon leaves line 1 alone.
@@ -1019,7 +1071,7 @@ class ControllerTest(unittest.TestCase):
                       headline="Fix the HID reconnect after resume on Windows")
         self.c.sync(self.kb)
         agent = self.r.agents()[0]
-        self.assertEqual(agent.card_text, "HID reconnect resume Windows")
+        self.assertEqual(agent.card_text, "Fix HID reconnect resume Windows")
         layout = self.c._layout(agent, self.c.marks.version)
         self.assertEqual(layout.page_count, 1)
         sent = self.kb.cards[self.kb.keys[-1][2][0]]
@@ -1065,7 +1117,7 @@ class ControllerTest(unittest.TestCase):
         sent = self.kb.cards[self.kb.keys[-1][2][0]]
 
         def drawn(cloud):
-            return card_bytes(render_page(card_layout("codex", "build", self.c.marks,
+            return card_bytes(render_page(card_layout("codex", "Fix build", self.c.marks,
                                                       AgentState.WORKING, cloud), 0))
         self.assertEqual(sent, drawn(True))
         self.assertNotEqual(sent, drawn(False))

@@ -81,7 +81,7 @@ ESC (the pager) does not end AI mode in either case.
 
 ```
 ┌────────────────────────────────────┐
-│ [mark] HID                         │   line 1  rows  0..12
+│ [mark] Fix HID                     │   line 1  rows  0..12
 │ reconnect                          │   line 2  rows 13..25
 │ resume…                   [state]  │   line 3  rows 26..39
 └────────────────────────────────────┘
@@ -101,16 +101,20 @@ ESC (the pager) does not end AI mode in either case.
   16 px card icons, scaled. Done and stale are drawn at 12 px: a filled disc with a
   check (2 px strokes) or a `?` (2 x 2 dot) cut out of it. A state change uploads
   the card again.
-- Headline: three lines of 14 px text, breaking at spaces and after `-`. Only a word
-  wider than the key is split between letters. One page: a longer title ends with
-  `…`. A session title is cut to its subject words first (`model.card_words`): no
-  small words (the, a, for, on, after, …) and no leading verb (Fix, Add, Refactor,
-  …), so "Fix the HID reconnect after resume" shows "HID reconnect resume". Small
-  words go only in a title with a word that no other common language uses (after,
-  and, before, from, into, the, when, with); otherwise only the leading verb goes.
-  A title in another language, a label the user set and a folder name are shown as
-  they are. Agents whose cards would show the same text are
-  numbered. A cut title ends with `…`. Source order: a label the user set (`polyctl agents label`),
+- Headline: three lines of 14 px text. Each line takes as many characters as fit,
+  so words are split at any letter. One page: a longer title ends with `…`. Small
+  words (the, a, for, on, after, …) are left out of a session title
+  (`model.card_words`), so "Fix the HID reconnect after resume" shows "Fix HID
+  reconnect resume". They go only in a title with a word that no other common
+  language uses (after, and, before, from, into, the, when, with). A title in
+  another language, a label the user set and a folder name are shown as they are.
+  Agents whose cards would show the same text are numbered.
+- Fonts: Aileron (Pillow's bundled font). A character it does not have comes from
+  the first font in `card.FALLBACK_FONTS` that has it: Galmuri11 at 12 px
+  (`res/fonts/agent-cards/`) for Korean, Japanese and CJK ideographs. Hebrew,
+  Arabic, Thai and Devanagari have no font yet and show boxes; adding one is a
+  file and an entry (the README there).
+- Source order: a label the user set (`polyctl agents label`),
   the topic from the terminal title (Claude Code writes `✳ <topic>`), the session's
   working directory name.
 

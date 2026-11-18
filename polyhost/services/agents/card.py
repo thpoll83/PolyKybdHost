@@ -15,9 +15,10 @@ corner on every page, with a cleared margin of ICON_CLEAR px; only line 3 meets 
 and ends before that margin.
 
 One page per card: a title that does not fit ends with '…'. The controller draws
-a session title's subject words (model.card_words). Text breaks at spaces and after
-'-'; only a word wider than the key is split between letters. Text is Pillow's bundled sans font (Aileron)
-drawn without anti-aliasing.
+a session title without its small words (model.card_words). Each line takes as
+many characters as fit, so words are split at any letter. Text is Pillow's
+bundled sans font (Aileron) drawn without anti-aliasing; a character Aileron does
+not have comes from FALLBACK_FONTS (Korean, Japanese: Galmuri11).
 
 The result is 360 bytes, the same packing as OverlayData.all_bytes (np.packbits,
 row-major, MSB first), uploaded with cmd 46 straight into a pool slot.
@@ -67,14 +68,113 @@ def _draw(img):
     return draw
 
 
-def _measure(text, size=FONT_SIZE):
-    """(left, top, right, bottom) of `text` as drawn WITHOUT anti-aliasing.
-    ⚠️ Not font.getbbox(): with fontmode "1" the hinting differs, and getbbox read
-    "polykybd-docs" as 65 px wide when it draws 76 px, so the headline was clipped."""
+# Fallback fonts for characters Aileron does not have (2026-11-18: a Korean or
+# Japanese title showed boxes). (file in FONT_DIR, px): a character is drawn with
+# the first font that has it, so another script needs only another entry. Each
+# file is an xz-compressed TTF drawn on a pixel grid (res/fonts/agent-cards/).
+FALLBACK_FONTS = (("Galmuri11.ttf.xz", 12),)
+FONT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__)))), "res", "fonts", "agent-cards")
+_FALLBACKS = None
+_HAS = {}
+
+
+def _probe_draw():
     from PIL import Image, ImageDraw
     draw = ImageDraw.Draw(Image.new("1", (1, 1)))
     draw.fontmode = "1"
-    return draw.textbbox((0, 0), text, font=_font(size))
+    return draw
+
+
+def _fallbacks() -> list:
+    """(font, dy) for each loadable FALLBACK_FONTS entry. dy moves its baseline so
+    its capital H has the same top as Aileron's: a CJK glyph is as tall as that H
+    and would otherwise stand above the line."""
+    global _FALLBACKS
+    if _FALLBACKS is None:
+        import io
+        import lzma
+        from PIL import ImageFont
+        draw = _probe_draw()
+        base_top = draw.textbbox((0, 0), "H", font=_font(FONT_SIZE), anchor="ls")[1]
+        out = []
+        for name, px in FALLBACK_FONTS:
+            try:
+                with open(os.path.join(FONT_DIR, name), "rb") as fh:
+                    data = lzma.decompress(fh.read()) if name.endswith(".xz") else fh.read()
+                font = ImageFont.truetype(io.BytesIO(data), px)
+            except (OSError, lzma.LZMAError) as e:
+                log.warning("Agent cards: fallback font %s not loaded: %s", name, e)
+                continue
+            top = draw.textbbox((0, 0), "H", font=font, anchor="ls")[1]
+            out.append((font, base_top - top))
+        _FALLBACKS = out
+    return _FALLBACKS
+
+
+def _has(font, ch: str) -> bool:
+    """Whether `font` draws `ch` as its own glyph: its drawing differs from the one
+    of a code point no font has (the .notdef box)."""
+    if ch.isspace():
+        return True
+    key = (id(font), ch)
+    if key not in _HAS:
+        from PIL import Image, ImageDraw
+
+        def drawn(c):
+            img = Image.new("1", (48, 48))
+            draw = ImageDraw.Draw(img)
+            draw.fontmode = "1"
+            draw.text((8, 8), c, font=font, fill=1)
+            return img.tobytes()
+        notdef = _HAS.setdefault((id(font), None), drawn("\U0010fffd"))
+        _HAS[key] = drawn(ch) != notdef
+    return _HAS[key]
+
+
+def _runs(text: str, size: int = FONT_SIZE) -> list[tuple]:
+    """(font, dy, part) runs of `text`: each character in the first font of
+    Aileron at `size` and _fallbacks() that has it (Aileron when none has it)."""
+    base = _font(size)
+    runs = []
+    for ch in text:
+        font, dy = base, 0
+        if not _has(base, ch):
+            font, dy = next(((f, d) for f, d in _fallbacks() if _has(f, ch)), (base, 0))
+        if runs and runs[-1][0] is font:
+            runs[-1] = (font, dy, runs[-1][2] + ch)
+        else:
+            runs.append((font, dy, ch))
+    return runs
+
+
+def _measure(text, size=FONT_SIZE):
+    """(left, top, right, bottom) of `text` as drawn WITHOUT anti-aliasing, through
+    the fallback fonts as _draw_text draws it.
+    ⚠️ Not font.getbbox(): with fontmode "1" the hinting differs, and getbbox read
+    "polykybd-docs" as 65 px wide when it draws 76 px, so the headline was clipped."""
+    draw = _probe_draw()
+    runs = _runs(text, size)
+    if len(runs) <= 1 and (not runs or runs[0][0] is _font(size)):
+        return draw.textbbox((0, 0), text, font=_font(size))
+    ascent = _font(size).getmetrics()[0]
+    x, box = 0.0, None
+    for font, dy, part in runs:
+        b = draw.textbbox((x, ascent + dy), part, font=font, anchor="ls")
+        box = b if box is None else (min(box[0], b[0]), min(box[1], b[1]),
+                                     max(box[2], b[2]), max(box[3], b[3]))
+        x += draw.textlength(part, font=font)
+    return tuple(int(v) for v in box)
+
+
+def _draw_text(draw, xy, text, size=FONT_SIZE):
+    """Draw `text` with its top left at `xy` as draw.text does with Aileron, each
+    character in the font _runs picks."""
+    x, y = xy
+    ascent = _font(size).getmetrics()[0]
+    for font, dy, part in _runs(text, size):
+        draw.text((x, y + ascent + dy), part, font=font, anchor="ls", fill=1)
+        x += draw.textlength(part, font=font)
 
 
 def _text_centred(draw, text, y, size=FONT_SIZE):
@@ -105,40 +205,24 @@ def _ink_width(text: str, size: int = FONT_SIZE) -> int:
     return box[2] - box[0]
 
 
-def _tokens(text: str) -> list[tuple[str, bool]]:
-    """(token, a space follows) pairs: words, split after each '-'."""
-    text = " ".join((text or "").split())
-    return [(m.group(1), bool(m.group(2))) for m in re.finditer(r"([^ \-]+-?|-)( ?)", text)]
-
-
-def flow(text: str, widths, size: int = FONT_SIZE, full: int = TEXT_W) -> list[str]:
-    """`text` in lines; line k is `widths[k]` px wide (the last width repeats).
-    Lines break at spaces and after '-'. A token that does not fit a narrower line
-    moves down to the first line wide enough (the line it leaves stays empty);
-    only a token wider than `full` is split between letters."""
-    lines, cur, space = [], "", False
+def flow(text: str, widths, size: int = FONT_SIZE) -> list[str]:
+    """`text` in lines; line k is `widths[k]` px wide (the last width repeats). Each
+    line takes as many characters as fit, so a word is split at any letter (the
+    card shows as much of the title as it can, 2026-11-18). A space at the start
+    of a line is dropped."""
+    lines, cur = [], ""
 
     def width():
         return widths[min(len(lines), len(widths) - 1)]
 
-    for tok, space_after in _tokens(text):
-        cand = cur + (" " if cur and space else "") + tok
-        space = space_after
-        if _ink_width(cand, size) <= width():
-            cur = cand
+    for ch in " ".join((text or "").split()):
+        if not cur and ch == " ":
             continue
-        if cur:
-            lines.append(cur)
-            cur = ""
-        while _ink_width(tok, size) > width() and _ink_width(tok, size) <= full:
-            lines.append("")
-        while _ink_width(tok, size) > width():
-            n = len(tok)
-            while n > 1 and _ink_width(tok[:n], size) > width():
-                n -= 1
-            lines.append(tok[:n])
-            tok = tok[n:]
-        cur = tok
+        if _ink_width(cur + ch, size) <= width():
+            cur += ch
+            continue
+        lines.append(cur.rstrip())
+        cur = "" if ch == " " else ch
     if cur:
         lines.append(cur)
     return lines
@@ -170,8 +254,7 @@ def _beside(mask) -> int:
 def paginate(text: str, mask=None, icon=None, size: int = FONT_SIZE) -> list[list[str]]:
     """The pages of a card: lists of at most LINES lines. Each line is as wide as
     _spans allows: the vendor mark narrows lines on page 1 only, the state icon on
-    every page. One flow over all pages, cut every LINES lines: a break after '-'
-    or inside a long word stays as it is on the next page."""
+    every page. One flow over all pages, cut every LINES lines."""
     first = [r - l for l, r in _spans(mask, icon)]
     later = [r - l for l, r in _spans(None, icon)]
     # Enough lines for any title: each line holds at least one character.
@@ -403,7 +486,7 @@ def render_page(layout: CardLayout, page: int = 0):
             x = left - box[0]                                   # against the mark
         else:
             x = left + (right - left - (box[2] - box[0])) // 2 - box[0]
-        draw.text((x, max(0, shift) + k * LINE_PITCH - cap), line, font=_font(FONT_SIZE), fill=1)
+        _draw_text(draw, (x, max(0, shift) + k * LINE_PITCH - cap), line)
     canvas = np.array(img, dtype=bool)
     if mark is not None:
         _paste(canvas, np.asarray(mark, dtype=bool), 0, 0)
