@@ -107,7 +107,8 @@ def _with_overlay(panel, cell):
 
 def main():
     from PyQt5.QtWidgets import QApplication
-    _app = QApplication.instance() or QApplication([])
+    # The keycap renderer draws into QImages, which need a QApplication.
+    app = QApplication.instance() or QApplication([])
     from polyhost.gui.layout_dialog.keycap_preview import KeycapPreview
 
     preview = KeycapPreview("en-US")
@@ -117,6 +118,7 @@ def main():
     def render(keycode, lang="en-US"):
         preview.set_language(lang)
         img = preview.render(keycode, None)
+        app.processEvents()
         if img is None:
             raise SystemExit(f"no render for keycode {keycode:#x} in {lang}")
         return _qimage_to_pil(img)
