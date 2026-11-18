@@ -308,14 +308,15 @@ SETTING_DESCRIPTIONS = {
         "blank also get icons from the app's menus. Off: such an app shows only its "
         "overlay. Needs Read shortcuts from app menus."),
     "shortcut_icons_enabled": N_(
-        "The main switch for shortcut icons. PolyKybdHost reads the shortcuts listed "
-        "in the focused app's menus, through the accessibility interface of the "
-        "operating system, and draws an icon on each shortcut key. The reading runs "
-        "in the background, one app at a time, so the other keycaps do not wait for "
-        "it. It stops after 3 minutes on Windows, and after 4,000 parts of the app's "
-        "window on Linux (3,000 on macOS). The shortcuts stay on this computer. Off: "
-        "no app's menus are read, and an app that comes with its own overlay still "
-        "shows it."),
+        "The main switch for shortcut icons. On: an app without its own overlay also "
+        "gets icons on its shortcut keys, when its menus can be read. PolyKybdHost "
+        "reads the shortcuts listed in the focused app's menus, through the "
+        "accessibility interface of the operating system. The reading runs in the "
+        "background, one app at a time, so the other keycaps do not wait for it. It "
+        "stops after 3 minutes on Windows, and after 4,000 parts of the app's window "
+        "on Linux (3,000 on macOS). The shortcuts stay on this computer. Off: no "
+        "app's menus are read, and an app that comes with its own overlay still shows "
+        "it."),
     "shortcut_icon_auto_fetch": N_(
         "Downloads app logos and shortcut icons that this computer does not have yet "
         "from the internet (simple-icons and Iconify). They are stored on this "
