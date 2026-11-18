@@ -3335,11 +3335,16 @@ class PolyCore(Observable):
     # Reads per connection: the first, plus retries after a failed read or when
     # the other half appears later (a slave that joins after the master).
     HW_ID_READS_PER_CONNECTION = 4
+    # apply_reconnect runs on the Qt thread in the GUI and on the worker headless,
+    # the read always on the worker: the reset and the job's check-and-store take
+    # this lock, so a reset can never fall between the job's check and its store.
+    _hw_id_lock = threading.Lock()
 
     def _start_hw_id_reads(self):
         """A new connection: forget the previous keyboard's IDs and allow new reads."""
-        self._hw_ids = None
-        self._hw_id_conn = getattr(self, "_hw_id_conn", 0) + 1
+        with self._hw_id_lock:
+            self._hw_ids = None
+            self._hw_id_conn = getattr(self, "_hw_id_conn", 0) + 1
         self._hw_id_reads_left = self.HW_ID_READS_PER_CONNECTION
         self._hw_id_seen_generation = getattr(self.keeb, "state_generation", None)
 
@@ -3388,8 +3393,9 @@ class PolyCore(Observable):
             self.log.debug("Hardware ID read failed (%d reads left): %s",
                            self._hw_id_reads_left, ids)
             return
-        if conn == self._hw_id_conn:
-            self._hw_ids = dict(ids)
+        with self._hw_id_lock:
+            if conn == self._hw_id_conn:
+                self._hw_ids = dict(ids)
 
     def clear_crash_record(self):
         """Erase the keyboard's crash archive; a cleared record can be reported again."""

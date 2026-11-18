@@ -73,6 +73,37 @@ class HwIdCoreTest(unittest.TestCase):
         run_jobs(core)
         self.assertIsNone(core._hw_ids)
 
+    def test_a_reset_waits_for_a_store_in_progress(self):
+        # The reset and the check-and-store share one lock, so a reconnect on the
+        # Qt thread cannot fall between the job's check and its store.
+        core = make_core()
+        core._hw_id_lock = threading.Lock()
+        core._submit_hw_id_read()
+        done = threading.Event()
+        with core._hw_id_lock:                      # the job is between check and store
+            t = threading.Thread(target=lambda: (core._start_hw_id_reads(), done.set()))
+            t.start()
+            self.assertFalse(done.wait(0.2), "the reset did not wait for the lock")
+        t.join(2)
+        self.assertTrue(done.is_set())
+        run_jobs(core)                              # the old job runs after the reset
+        self.assertIsNone(core._hw_ids)
+
+    def test_a_store_waits_for_a_reset_in_progress(self):
+        core = make_core()
+        core._hw_id_lock = threading.Lock()
+        core._submit_hw_id_read()
+        call = core.worker.submit.call_args
+        stored = threading.Event()
+        with core._hw_id_lock:                      # a reset holds the lock
+            t = threading.Thread(target=lambda: (call.args[1](threading.Event()),
+                                                 stored.set()))
+            t.start()
+            self.assertFalse(stored.wait(0.2), "the store did not wait for the lock")
+            core._hw_id_conn += 1                   # the reset completes
+        t.join(2)
+        self.assertIsNone(core._hw_ids)
+
     def test_safe_mode_sends_no_cmd_50(self):
         core = make_core(safe_mode=True)
         core._submit_hw_id_read()
