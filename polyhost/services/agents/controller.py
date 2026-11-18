@@ -15,7 +15,8 @@ import logging
 import threading
 import time
 
-from polyhost.services.agents.card import (VendorMarks, card_bytes, card_layout, render_page,
+from polyhost.services.agents.card import (VendorMarks, card_bytes, card_layout, fonts_version,
+                                           render_page,
                                            render_dictation_card, render_next_waiting_card)
 from polyhost.services.agents.model import AgentState
 
@@ -148,8 +149,10 @@ class AgentKeysController:
             # the new version for the old picture (the card would never redraw).
             version = self.marks.version
             layout = self._layout(agent, version)
+            # fonts_version(): a title in a script whose font was downloaded since
+            # showed boxes, and is drawn again.
             drawn = (agent.vendor, agent.card_text, version,
-                     agent.state, agent.machine == "cloud")
+                     agent.state, agent.machine == "cloud", fonts_version())
             slots.append(self._card(keeb, cache, ("agentcard",) + agent.key, drawn,
                                     lambda lay=layout: render_page(lay, 0)))
         waiting = len(self.registry.waiting())
@@ -196,7 +199,7 @@ class AgentKeysController:
         """The card layout of an agent, measured once per title, mark version and
         state."""
         cloud = agent.machine == "cloud"
-        key = (agent.vendor, agent.card_text, version, agent.state, cloud)
+        key = (agent.vendor, agent.card_text, version, agent.state, cloud, fonts_version())
         layout = self._layouts.get(key)
         if layout is None:
             if len(self._layouts) > 64:

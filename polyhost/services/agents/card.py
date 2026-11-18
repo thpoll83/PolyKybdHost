@@ -29,6 +29,7 @@ import logging
 import os
 import re
 import threading
+import time
 from dataclasses import dataclass
 
 from polyhost.services.agents.model import AgentState, vendor
@@ -69,23 +70,50 @@ def _draw(img):
 
 
 # Fallback fonts for characters Aileron does not have (2026-11-18: Pillow's copy
-# of Aileron is ASCII only, so a German, Korean or Chinese title showed boxes).
-# (file in FONT_DIR, px): a character is drawn with the first font that has it, so
-# another script needs only another entry. Each file is an xz-compressed TTF; the
-# sources and licenses are in res/fonts/agent-cards/README.md.
+# of Aileron is ASCII only, so a German, Korean or Chinese title showed boxes). A
+# character is drawn with the first font that has it. Galmuri11 is bundled
+# (res/fonts/agent-cards/), so European titles work offline. The others are
+# downloaded into font_downloader's cache the first time a title needs one
+# (`ranges`), when agents_download_fonts is on (PolyCore sets MISSING_FONT_HOOK);
+# the card shows boxes until then and is drawn again after (fonts_version()).
+@dataclass(frozen=True)
+class FallbackFont:
+    name: str                    # the bundled file, or the font_downloader catalog name
+    px: int
+    bundled: bool = False
+    url: str = ""                # a download that is not in noto-fonts.yaml
+    filename: str = ""           # its file name in the cache
+    ranges: tuple = ()           # (first, last) code points it is downloaded for
+
+
+CJK = ((0x3000, 0x303F), (0x3400, 0x4DBF), (0x4E00, 0x9FFF), (0xF900, 0xFAFF),
+       (0xFF00, 0xFFEF))
 FALLBACK_FONTS = (
-    ("Galmuri11.ttf.xz", 12),                # European Latin, Greek, Cyrillic, Korean, Japanese
-    ("WenQuanYiZenHeiMono-cjk.ttf.xz", 12),  # the Chinese characters Galmuri lacks
-    ("NotoSansDevanagari.ttf.xz", 13),       # Hindi, Marathi, Nepali (shaped by raqm)
-    ("NotoSansThai.ttf.xz", 13),             # Thai
-    ("NotoSansArmenian.ttf.xz", 13),         # Armenian
-    ("NotoSansHebrew.ttf.xz", 13),           # Hebrew (right to left)
-    ("NotoSansArabic.ttf.xz", 13),           # Arabic, Persian, Urdu (right to left, joined)
+    FallbackFont("Galmuri11.ttf.xz", 12, bundled=True),  # European, Greek, Cyrillic, Korean, Japanese
+    FallbackFont("WenQuanYi Zen Hei Mono (CJK)", 12,     # the Chinese characters Galmuri lacks
+                 url="https://www.polykybd.org/fonts/agent-cards/WenQuanYiZenHeiMono-cjk.ttf",
+                 filename="WenQuanYiZenHeiMono-cjk.ttf", ranges=CJK),
+    FallbackFont("Noto Sans Devanagari", 13, ranges=((0x0900, 0x097F), (0xA8E0, 0xA8FF))),
+    FallbackFont("Noto Sans Thai", 13, ranges=((0x0E00, 0x0E7F),)),
+    FallbackFont("Noto Sans Armenian", 13, ranges=((0x0530, 0x058F), (0xFB13, 0xFB17))),
+    FallbackFont("Noto Sans Hebrew", 13, ranges=((0x0590, 0x05FF), (0xFB1D, 0xFB4F))),
+    FallbackFont("Noto Sans Arabic", 13, ranges=((0x0600, 0x06FF), (0x0750, 0x077F),
+                                                 (0x08A0, 0x08FF), (0xFB50, 0xFDFF),
+                                                 (0xFE70, 0xFEFF))),
 )
 FONT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)))), "res", "fonts", "agent-cards")
+# Called with a FallbackFont that is not on disk and would draw a character of a
+# title; returns True when a download started (not asked again for RETRY_S, so a
+# failed download is tried again then), False when downloads are off. PolyCore
+# sets it.
+MISSING_FONT_HOOK = None
+RETRY_S = 600.0                  # a failed or refused download is asked for again after this
 _FALLBACKS = None
+_FONTS_VERSION = 0
+_REQUESTED = {}                  # font name -> time.monotonic() of the last request
 _HAS = {}
+_FALLBACK_LOCK = threading.RLock()
 
 
 def _probe_draw():
@@ -95,33 +123,98 @@ def _probe_draw():
     return draw
 
 
+def download_spec(entry: FallbackFont):
+    """The font_downloader.NotoFont that fetches a downloaded entry: its own URL,
+    or the catalog entry of that name; None when the catalog has none."""
+    from polyhost.services import font_downloader
+    if entry.url:
+        return font_downloader.NotoFont(entry.name, entry.url, entry.filename)
+    return next((f for f in font_downloader.load_catalog() if f.name == entry.name), None)
+
+
+def _font_bytes(entry: FallbackFont):
+    """The TTF bytes of an entry: the bundled file (xz-compressed), or the
+    downloaded file when it is in the cache; None when it is not there."""
+    import lzma
+    if entry.bundled:
+        with open(os.path.join(FONT_DIR, entry.name), "rb") as fh:
+            data = fh.read()
+        return lzma.decompress(data) if entry.name.endswith(".xz") else data
+    from polyhost.services import font_downloader
+    spec = download_spec(entry)
+    if spec is None or not font_downloader.is_downloaded(spec):
+        return None
+    with open(font_downloader.local_path(spec), "rb") as fh:
+        return fh.read()
+
+
+def fonts_version() -> int:
+    """Increased each time a downloaded font becomes usable: a card drawn with
+    an older version is drawn again."""
+    return _FONTS_VERSION
+
+
+def fonts_changed() -> None:
+    """A font was downloaded: load the fallback fonts again."""
+    global _FALLBACKS, _FONTS_VERSION
+    with _FALLBACK_LOCK:
+        _FALLBACKS = None
+        _FONTS_VERSION += 1
+
+
 def _fallbacks() -> list:
-    """(font, dy) for each loadable FALLBACK_FONTS entry. dy moves its baseline so
-    its capital H has the same top as Aileron's: a CJK glyph is as tall as that H
-    and would otherwise stand above the line. A font without an H (the Chinese
-    one) aligns the top of an ideograph instead."""
+    """(font, dy, entry) for each FALLBACK_FONTS entry that is on disk. dy moves its
+    baseline so its capital H has the same top as Aileron's: a CJK glyph is as
+    tall as that H and would otherwise stand above the line. A font without an H
+    (the Chinese one) aligns the top of an ideograph instead."""
     global _FALLBACKS
-    if _FALLBACKS is None:
-        import io
-        import lzma
-        from PIL import ImageFont
-        draw = _probe_draw()
-        base_top = draw.textbbox((0, 0), "H", font=_font(FONT_SIZE), anchor="ls")[1]
-        out = []
-        for name, px in FALLBACK_FONTS:
-            try:
-                with open(os.path.join(FONT_DIR, name), "rb") as fh:
-                    data = lzma.decompress(fh.read()) if name.endswith(".xz") else fh.read()
-                font = ImageFont.truetype(io.BytesIO(data), px)
-            except (OSError, lzma.LZMAError) as e:
-                log.warning("Agent cards: fallback font %s not loaded: %s", name, e)
-                continue
-            ref = next((c for c in "H\u4eec\u8fd9\u8bf4\u65f6\u5bf9\u8fc7\u56fd"
-                        if _has(font, c)), "H")
-            top = draw.textbbox((0, 0), ref, font=font, anchor="ls")[1]
-            out.append((font, base_top - top))
-        _FALLBACKS = out
-    return _FALLBACKS
+    with _FALLBACK_LOCK:
+        if _FALLBACKS is None:
+            import io
+            import lzma
+            from PIL import ImageFont
+            _HAS.clear()            # keyed by id(font): a new font can reuse an old id
+            draw = _probe_draw()
+            base_top = draw.textbbox((0, 0), "H", font=_font(FONT_SIZE), anchor="ls")[1]
+            out = []
+            for entry in FALLBACK_FONTS:
+                try:
+                    data = _font_bytes(entry)
+                    if data is None:
+                        continue                    # not downloaded (yet)
+                    font = ImageFont.truetype(io.BytesIO(data), entry.px)
+                except (OSError, ValueError, lzma.LZMAError) as e:
+                    log.warning("Agent cards: fallback font %s not loaded: %s", entry.name, e)
+                    continue
+                ref = next((c for c in "H\u4eec\u8fd9\u8bf4\u65f6\u5bf9\u8fc7\u56fd"
+                            if _has(font, c)), "H")
+                top = draw.textbbox((0, 0), ref, font=font, anchor="ls")[1]
+                out.append((font, base_top - top, entry))
+            _FALLBACKS = out
+        return _FALLBACKS
+
+
+def _note_missing(ch: str) -> None:
+    """No loaded font has `ch`: ask MISSING_FONT_HOOK for the entry whose ranges
+    hold it, at most once per RETRY_S."""
+    hook = MISSING_FONT_HOOK
+    if hook is None:
+        return
+    cp = ord(ch)
+    loaded = {e.name for _f, _d, e in _fallbacks()}
+    for entry in FALLBACK_FONTS:
+        if entry.name in loaded or not any(a <= cp <= b for a, b in entry.ranges):
+            continue
+        now = time.monotonic()
+        last = _REQUESTED.get(entry.name)
+        if last is not None and now - last < RETRY_S:
+            return
+        try:
+            if hook(entry):          # False: downloads are off; asked again next time
+                _REQUESTED[entry.name] = now
+        except Exception as e:  # noqa: BLE001 - drawing a card must not fail on it
+            log.warning("Agent cards: font download for %s not started: %s", entry.name, e)
+        return
 
 
 def _has(font, ch: str) -> bool:
@@ -160,7 +253,9 @@ def _runs(text: str, size: int = FONT_SIZE) -> list[tuple]:
             continue
         font, dy = base, 0
         if not _has(base, ch):
-            font, dy = next(((f, d) for f, d in _fallbacks() if _has(f, ch)), (base, 0))
+            font, dy = next(((f, d) for f, d, _e in _fallbacks() if _has(f, ch)), (base, 0))
+            if font is base and not ch.isspace():
+                _note_missing(ch)
         if runs and runs[-1][0] is font:
             runs[-1] = (font, dy, runs[-1][2] + ch)
         else:

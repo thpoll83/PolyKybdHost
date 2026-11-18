@@ -110,7 +110,8 @@ SECTIONS = (
         (N_("Logs"), ("log_detail",)),
     )),
     ("agents", N_("AI agents"), (
-        (None, ("agents_enabled", "agents_title_scan", "agents_dictation_shortcut",
+        (None, ("agents_enabled", "agents_title_scan", "agents_download_fonts",
+                "agents_dictation_shortcut",
                 "agents_remote_enabled", "agents_raise_here", "agents_stale_minutes",
                 "agents_forget_minutes")),
     )),
@@ -178,6 +179,7 @@ SETTING_LABELS = {
     "game_assets_enabled": N_("Art from installed games"),
     "agents_enabled": N_("Show on the number row"),
     "agents_title_scan": N_("Find by window title"),
+    "agents_download_fonts": N_("Download fonts for agent titles"),
     "agents_dictation_shortcut": N_("Dictation shortcut"),
     "agents_remote_enabled": N_("Agents from other computers"),
     "agents_raise_here": N_("Raise agent windows on this computer"),
@@ -225,6 +227,10 @@ SETTING_DESCRIPTIONS = {
     "agents_title_scan": N_(
         "Also finds agents that run in a terminal from the window title, without a "
         "hook. Not on macOS."),
+    "agents_download_fonts": N_(
+        "Downloads a font the first time an agent title needs one: Chinese, Hindi, "
+        "Thai, Armenian, Hebrew or Arabic. The fonts come from GitHub and "
+        "www.polykybd.org. Off: those titles show boxes on the keys."),
     "agents_remote_enabled": N_(
         "Also shows agents that run on a computer with the forwarder. A key press "
         "brings forward the remote-desktop viewer that shows that computer "

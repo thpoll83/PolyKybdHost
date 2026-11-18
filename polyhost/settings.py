@@ -185,6 +185,11 @@ DEFAULT_SETTINGS = {
         "agents_enabled": False,
         # Also find agents from terminal window titles (not on macOS).
         "agents_title_scan": True,
+        # Download a font the first time an agent title needs one that is not
+        # bundled (Chinese, Hindi, Thai, Armenian, Hebrew, Arabic), into the font
+        # cache (services/agents/card.py, FALLBACK_FONTS). Only while
+        # agents_enabled is on. Off: those titles show boxes.
+        "agents_download_fonts": True,
         # The shortcut the '-' key sends in AI mode to start dictation, in pynput's
         # syntax ("<cmd>+h"). Empty: Win+H on Windows, nothing elsewhere.
         "agents_dictation_shortcut": "",

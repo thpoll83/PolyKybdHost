@@ -110,15 +110,18 @@ ESC (the pager) does not end AI mode in either case.
   another language, a label the user set and a folder name are shown as they are.
   Agents whose cards would show the same text are numbered.
 - Fonts: Aileron (Pillow's bundled font, ASCII only). A character it does not have
-  comes from the first font in `card.FALLBACK_FONTS` that has it
-  (`res/fonts/agent-cards/`): Galmuri11 12 px (European Latin, Greek, Cyrillic,
-  Korean, Japanese), a cut-down WenQuanYi Zen Hei Mono 12 px (the Chinese
-  characters Galmuri lacks), Noto Sans Devanagari, Thai, Armenian, Hebrew and
-  Arabic 13 px. A letter and its combining marks stay in one font run and one line
-  (`_clusters`). A Hebrew or Arabic title is drawn right to left (`is_rtl`); an
-  Arabic word split by a line keeps its joined forms. Georgian, the other Indic
-  scripts and the rest have no font yet and show boxes; adding one is a file and
-  an entry (the README there).
+  comes from the first font in `card.FALLBACK_FONTS` that has it. Galmuri11 12 px is
+  bundled (`res/fonts/agent-cards/`): European Latin, Greek, Cyrillic, Korean,
+  Japanese. The others are downloaded into `font_downloader`'s cache the first
+  time a title has a character in their Unicode ranges, while the agent keys and
+  `agents_download_fonts` (Settings → AI agents, on) are on: a cut-down WenQuanYi
+  Zen Hei Mono 12 px from www.polykybd.org (Chinese), Noto Sans Devanagari, Thai,
+  Armenian, Hebrew and Arabic 13 px from `noto-fonts.yaml`. The card shows boxes
+  until then and is drawn again after (`card.fonts_version()`). A letter and its
+  combining marks stay in one font run and one line (`_clusters`). A Hebrew or
+  Arabic title is drawn right to left (`is_rtl`); an Arabic word split by a line
+  keeps its joined forms. Georgian, the other Indic scripts and the rest have no
+  font yet and show boxes (the README there says how to add one).
 - Source order: a label the user set (`polyctl agents label`),
   the topic from the terminal title (Claude Code writes `✳ <topic>`), the session's
   working directory name.

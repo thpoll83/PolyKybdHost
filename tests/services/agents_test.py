@@ -1,6 +1,7 @@
 """The agent registry, the hook and title adapters, the card, and the controller
 against the emulated firmware (cmd 45/46, protocol v31)."""
 import os
+import tempfile
 import unicodedata
 import unittest
 import unittest.mock as mock
@@ -488,6 +489,44 @@ class TitleTest(unittest.TestCase):
         self.assertEqual(r.agents(), [])
 
 
+DEJAVU = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"   # Hebrew and Arabic too
+
+
+def setUpModule():
+    # PolyCore sets the download hook; no test here may start a real download.
+    from polyhost.services.agents import card
+    card.MISSING_FONT_HOOK = None
+
+
+class _FontCache:
+    """font_downloader's cache in a temporary folder for one test, with stand-in
+    files for the downloaded fallback fonts; card.fonts_changed() around it."""
+
+    def __init__(self, test):
+        from polyhost.services import font_downloader
+        from polyhost.services.agents import card
+        self.card = card
+        self.dir = tempfile.TemporaryDirectory()
+        test.addCleanup(self.dir.cleanup)
+        patch = mock.patch.object(font_downloader, "default_cache_dir", lambda: self.dir.name)
+        patch.start()
+        test.addCleanup(patch.stop)
+        test.addCleanup(card.fonts_changed)
+        test.addCleanup(card._REQUESTED.clear)
+        card._REQUESTED.clear()
+        card.fonts_changed()
+        self.test = test
+
+    def add(self, name, source):
+        import shutil
+        if not os.path.exists(source):
+            self.test.skipTest(f"{source} is not installed")
+        entry = next(e for e in self.card.FALLBACK_FONTS if e.name == name)
+        spec = self.card.download_spec(entry)
+        shutil.copy(source, os.path.join(self.dir.name, spec.filename))
+        self.card.fonts_changed()
+
+
 class CardTest(unittest.TestCase):
     def test_card_is_360_bytes_and_inside_the_panel(self):
         img = render_card("claude-code", "polykybd-docs", marks=None)
@@ -661,10 +700,11 @@ class CardTest(unittest.TestCase):
         self.assertFalse(unicodedata.category(cut[0]).startswith("M"))
         self.assertNotIn("\u094d\u2026", cut)                  # no half conjunct
 
-    def test_every_supported_script_has_a_font_for_each_letter(self):
+    def test_the_bundled_font_covers_european_korean_and_japanese(self):
         from polyhost.services.agents.card import _fallbacks, _font, _has
-        fonts = [_font()] + [f for f, _dy in _fallbacks()]
-        self.assertEqual(len(fonts), 1 + len(card_mod.FALLBACK_FONTS))   # all loaded
+        bundled = [f for f, _dy, e in _fallbacks() if e.bundled]
+        self.assertEqual(len(bundled), 1)
+        fonts = [_font()] + bundled
         samples = {
             "German, French, Nordic": "ÄÖÜäöüßàâçéèêëîïôœùûÿåæøÅÆØ",
             "Polish, Czech, Hungarian": "ąćęłńśźżĄĆĘŁŃŚŹŻčďěňřšťůžČĎĚŇŘŠŤŮŽőűŐŰ",
@@ -673,22 +713,35 @@ class CardTest(unittest.TestCase):
             "Greek": "αβγδεζηθικλμνξοπρσςτυφχψωάέήίόύώΑΩΆΏ",
             "Cyrillic": "абвгдеёжзийклмнопрстуфхцчшщъыьэюяґєіїўђјљњћџѓѕќ",
             "Korean": "로그인테스트수정", "Japanese": "ログインテストを修正再接続",
-            "Simplified Chinese": "修复登录错误优化缓存逻辑测试云中继们这说时对过",
-            "Traditional Chinese": "修復登入錯誤最佳化快取邏輯測試雲端中繼",
-            "Hindi": "लॉगिनबगठीककरेंकैशसुधारेंक्लाउडरिलेपरीक्षण",
-            "Thai": "แก้ไขข้อผิดพลาดการเข้าสู่ระบบปรับปรุงแคช",
-            "Armenian": "ԱԲԳԴԵԶԷԸԹԺԻԼԽԾԿՀՁՂՃՄՅՆՇՈՉՊՋՌՍՎՏՐՑՒՓՔՕՖաբգդեզէըթժիլխծկհձղճմյնշոչպջռսվտրցւփքօֆ",
-            "Hebrew": "אבגדהוזחטיכךלמםנןסעפףצץקרשת",
-            "Arabic, Persian, Urdu": "ابتثجحخدذرزسشصضطظعغفقكلمنهويءأإآةىپچژگکیٹڈڑںھے",
         }
-        import unicodedata as ud
         for script, text in samples.items():
             for ch in text:
-                if ud.category(ch).startswith("M"):
-                    continue                      # drawn in its letter's run
                 self.assertTrue(any(_has(f, ch) for f in fonts), (script, ch))
+
+    def test_every_other_script_has_a_font_to_download(self):
+        from polyhost.services.agents.card import FALLBACK_FONTS, download_spec
+        samples = {
+            "Noto Sans Devanagari": "लॉगिनबगठीककरेंकैशसुधारेंक्लाउडरिलेपरीक्षण",
+            "Noto Sans Thai": "แก้ไขข้อผิดพลาดการเข้าสู่ระบบปรับปรุงแคช",
+            "Noto Sans Armenian": "ԱԲԳԴԵԶԷՕՖաբգդեզէօֆ",
+            "Noto Sans Hebrew": "אבגדהוזחטיכךלמםנןסעפףצץקרשת",
+            "Noto Sans Arabic": "ابتثجحخدذرزسشصضطظعغفقكلمنهويءأإآةىپچژگکیٹڈڑںھے",
+            "WenQuanYi Zen Hei Mono (CJK)": "修复登录错误们这说时对过修復登入錯誤",
+        }
+        entries = {e.name: e for e in FALLBACK_FONTS}
+        for name, text in samples.items():
+            entry = entries[name]
+            for ch in text:
+                if unicodedata.category(ch).startswith("M"):
+                    continue                      # drawn in its letter's run
+                self.assertTrue(any(a <= ord(ch) <= b for a, b in entry.ranges), (name, ch))
+            spec = download_spec(entry)           # in noto-fonts.yaml, or its own URL
+            self.assertIsNotNone(spec, name)
+            self.assertTrue(spec.url.startswith("https://"), name)
+        self.assertTrue(entries["WenQuanYi Zen Hei Mono (CJK)"].url.startswith(
+            "https://www.polykybd.org/fonts/agent-cards/"))
         # No font yet: Georgian (README "Not covered yet", added on demand).
-        self.assertFalse(any(_has(f, "ა") for f in fonts))
+        self.assertFalse(any(a <= ord("ა") <= b for e in FALLBACK_FONTS for a, b in e.ranges))
 
     def test_hebrew_and_arabic_read_right_to_left(self):
         from polyhost.services.agents.card import is_rtl
@@ -703,7 +756,8 @@ class CardTest(unittest.TestCase):
         import numpy as np
         from PIL import Image
         from polyhost.services.agents.card import _draw, _draw_text, _fallbacks, _runs
-        hebrew = next(f for f, _dy in _fallbacks() if f.getname()[0] == "Noto Sans Hebrew")
+        _FontCache(self).add("Noto Sans Hebrew", DEJAVU)
+        hebrew = next(f for f, _dy, e in _fallbacks() if e.name == "Noto Sans Hebrew")
         text = "תיקון באג"
         self.assertEqual(len(_runs(text)), 1)                 # one run, spaces included
 
@@ -714,7 +768,7 @@ class CardTest(unittest.TestCase):
         ours = drawn(lambda d: _draw_text(d, (0, 0), text))
         self.assertTrue(ours.any())
         # The same as the shaper draws the whole phrase right to left, at its dy.
-        dy = dict((id(f), d) for f, d in _fallbacks())[id(hebrew)]
+        dy = dict((id(f), d) for f, d, _e in _fallbacks())[id(hebrew)]
         ascent = card_mod._font().getmetrics()[0]
         ref = drawn(lambda d: d.text((0, ascent + dy), text, font=hebrew, anchor="ls",
                                      fill=1, direction="rtl"))
@@ -730,6 +784,7 @@ class CardTest(unittest.TestCase):
 
     def test_an_arabic_word_split_by_a_line_keeps_its_joined_forms(self):
         from polyhost.services.agents.card import _joins
+        _FontCache(self).add("Noto Sans Arabic", DEJAVU)
         self.assertTrue(_joins("\u062e", "\u0637"))            # kha, tah
         self.assertFalse(_joins("\u0627", "\u0644"))           # alef joins no letter after it
         self.assertFalse(_joins("a", "\u0637"))
@@ -742,18 +797,70 @@ class CardTest(unittest.TestCase):
         self.assertEqual("".join(lines).replace("\u200d", ""),
                          "\u062a\u0633\u062c\u064a\u0644" * 6)
 
-    def test_a_missing_fallback_font_is_left_out(self):
+    def test_a_missing_bundled_font_is_left_out(self):
         from polyhost.services.agents import card
-        with mock.patch.object(card, "FALLBACK_FONTS", (("missing.ttf.xz", 12),)), \
+        missing = card.FallbackFont("missing.ttf.xz", 12, bundled=True)
+        with mock.patch.object(card, "FALLBACK_FONTS", (missing,)), \
                 mock.patch.object(card, "_FALLBACKS", None), \
                 self.assertLogs("PolyHost", "WARNING"):
             self.assertEqual(card._fallbacks(), [])
             # The card still renders: the character is Aileron's box.
             self.assertTrue(render_page(card_layout("x", "재연결", None), 0).any())
-        card._FALLBACKS = None
+        card.fonts_changed()
 
-    def test_a_script_without_a_font_still_renders(self):
-        layout = card_layout("x", "תיקון באג", None)             # Hebrew: no font yet
+    def test_a_title_asks_once_for_the_font_it_needs_and_is_drawn_again(self):
+        from polyhost.services.agents import card
+        _FontCache(self)                                       # an empty cache
+        asked = []
+        with mock.patch.object(card, "MISSING_FONT_HOOK", lambda e: asked.append(e.name) or True):
+            before = card.fonts_version()
+            card.paginate("תיקון באג")
+            card.paginate("בדיקה")                              # within RETRY_S: not again
+            card.paginate("修复登录")                            # Galmuri has 修 and 登
+            card.paginate("Prüfung")                            # bundled: nothing to download
+            self.assertEqual(asked, ["Noto Sans Hebrew", "WenQuanYi Zen Hei Mono (CJK)"])
+            with mock.patch.object(card, "RETRY_S", 0.0):
+                card.paginate("בדיקה")
+            self.assertEqual(asked[-1], "Noto Sans Hebrew")   # asked again after RETRY_S
+            self.assertEqual(card.fonts_version(), before)
+        # Downloads off (the hook says False): nothing is remembered, asked next time.
+        card._REQUESTED.clear()
+        refused = []
+        with mock.patch.object(card, "MISSING_FONT_HOOK", lambda e: refused.append(e.name) and False):
+            card.paginate("תיקון")
+            first = len(refused)
+            card.paginate("תיקון")
+        self.assertGreater(first, 0)
+        self.assertGreater(len(refused), first)                 # asked again
+        self.assertEqual(set(refused), {"Noto Sans Hebrew"})
+
+    def test_a_reload_forgets_what_the_old_fonts_had(self):
+        # The glyph cache is keyed by id(font): a new font object can get the id of
+        # a freed old one, and must not inherit its answers.
+        from polyhost.services.agents import card
+        _FontCache(self)
+        card.paginate("Prüfung 재연결")                          # fills the cache
+        old = {id(f) for f, _d, _e in card._fallbacks()}
+        self.assertTrue(any(k[0] in old for k in card._HAS))
+        card.fonts_changed()
+        fresh = card._fallbacks()
+        live = {id(f) for f, _d, _e in fresh} | {id(f) for f in card._FONTS.values()}
+        self.assertTrue(all(k[0] in live for k in card._HAS), "a stale font id is cached")
+
+    def test_a_downloaded_font_is_loaded_and_bumps_the_version(self):
+        from polyhost.services.agents import card
+        cache = _FontCache(self)
+        before = card.fonts_version()
+        self.assertNotIn("Noto Sans Hebrew", [e.name for _f, _d, e in card._fallbacks()])
+        cache.add("Noto Sans Hebrew", DEJAVU)                   # fonts_changed() inside
+        self.assertGreater(card.fonts_version(), before)
+        self.assertIn("Noto Sans Hebrew", [e.name for _f, _d, e in card._fallbacks()])
+        hebrew = [f for f, _d, e in card._fallbacks() if e.name == "Noto Sans Hebrew"][0]
+        self.assertTrue(card._has(hebrew, "א"))
+
+    def test_a_title_whose_font_is_not_there_still_renders(self):
+        _FontCache(self)                                       # nothing downloaded
+        layout = card_layout("x", "תיקון באג", None)
         self.assertEqual(layout.page_count, 1)
         self.assertTrue(render_page(layout, 0).any())
 
@@ -1185,6 +1292,18 @@ class ControllerTest(unittest.TestCase):
             self.c.sync(self.kb)
             self.assertEqual(self.kb.keys[-1][2][0], slot)
         self.assertEqual(self.kb.cards, {})
+
+    def test_a_card_is_drawn_again_when_a_font_was_downloaded(self):
+        from polyhost.services.agents import card
+        self.r.report("codex", "a", "working", headline="תיקון באג")
+        self.c.sync(self.kb)
+        self.kb.cards.clear()
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.cards, {})                    # nothing changed
+        card.fonts_changed()                                   # a font arrived
+        self.addCleanup(card.fonts_changed)
+        self.c.sync(self.kb)
+        self.assertEqual(len(self.kb.cards), 1)                # the card is sent again
 
     def test_a_state_change_uploads_the_page_shown(self):
         self.r.report("codex", "a", "working", headline="Fix the build")
