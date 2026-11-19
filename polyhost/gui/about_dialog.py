@@ -283,7 +283,9 @@ def build_about_dialog(*, heading, description, boxed=None, muted=None,
 
     # --- About ---------------------------------------------------------------
     about = ColorSection(_("About"), section_colors.slot_color(0, dark))
-    outer = about.body_layout
+    # The About text sits in one card, the same white box as each Basics entry.
+    about_card, outer = card()
+    about.body_layout.addWidget(about_card)
     header = QHBoxLayout()
     header.setSpacing(14)
     logo = QLabel()
