@@ -15,7 +15,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 
-from polyhost.services.agents.model import ENDED, AgentState, card_words, vendor
+from polyhost.services.agents.model import ENDED, AgentState, card_words, no_brackets, vendor
 
 log = logging.getLogger(__name__)
 
@@ -79,6 +79,10 @@ class Agent:
             return self.label
         if self.headline:
             return self.headline
+        return self._unnamed_headline()
+
+    def _unnamed_headline(self) -> str:
+        """base_headline without a label or title: the directory, or the vendor."""
         if self.anonymous:
             return "Agent"
         if self.cwd:
@@ -96,11 +100,16 @@ class Agent:
 
     @property
     def card_base(self) -> str:
-        """base_headline as the card shows it: a session title cut to its subject
-        words (model.card_words). A label of the user's is shown as it was set."""
+        """base_headline as the card shows it: without brackets
+        (model.no_brackets), and a session title cut to its subject words
+        (model.card_words). A label of the user's keeps its words."""
+        # A title of brackets only ("[]") shows what an agent without a title
+        # shows, and the vendor when the folder is brackets only too.
+        unnamed = (no_brackets(self._unnamed_headline())
+                   or no_brackets(vendor(self.vendor).name) or "Agent")
         if self.label or not self.headline:
-            return self.base_headline
-        return card_words(self.headline)
+            return no_brackets(self.base_headline) or unnamed
+        return card_words(no_brackets(self.headline)) or unnamed
 
     @property
     def card_text(self) -> str:
@@ -421,10 +430,20 @@ class AgentRegistry:
             # card, so they are numbered too.
             group = "\0anonymous" if agent.anonymous else agent.card_base.casefold()
             groups.setdefault(group, []).append(agent)
+        # A number never makes a card read like another agent's title, its own
+        # or a numbered one: with "(IO)", "IO" and "IO 1", the first two are
+        # "IO 2" and "IO 3". Anonymous agents too ("Agent 1" beside a label
+        # "Agent 1").
+        taken = {a.card_base.casefold() for a in out}
         for same in groups.values():
             if len(same) > 1 or same[0].anonymous:
-                for number, agent in enumerate(same, 1):
+                number = 0
+                for agent in same:
+                    number += 1
+                    while f"{agent.card_base} {number}".casefold() in taken:
+                        number += 1
                     agent.dup_number = number
+                    taken.add(f"{agent.card_base} {number}".casefold())
         return out
 
     def snapshot(self) -> list[dict]:

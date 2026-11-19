@@ -92,10 +92,9 @@ ESC (the pager) does not end AI mode in either case.
   (`res/icons/agents/`, already cut). The text starts 1 px to its right. No mark is
   scaled: a first word that does not fit beside it starts below it. A vendor with
   no mark yet gets its short name.
-- Cloud session (machine `cloud`): a 1 px cloud outline, 16 x 10 px, drawn over the
-  logo's lower right corner, inside the logo's box, with its inside cleared first
-  (`card.with_cloud`). The mark is no wider and no taller, so the text is the same
-  as on a local session's card.
+- Cloud session (machine `cloud`): a browser tab, 20 x 11 px, in place of the
+  vendor's logo (`icons.browser_tab`), drawn like a Chrome tab with a favicon and
+  the close x, because a cloud session runs in the browser.
 - State icon: 12 px, bottom right, with 1 px kept free left of and
   above it, so only line 3 is shorter (58 px). Working, waiting and idle are the
   16 px card icons, scaled. Done and stale are drawn at 12 px: a filled disc with a
@@ -107,8 +106,10 @@ ESC (the pager) does not end AI mode in either case.
   (`model.card_words`), so "Fix the HID reconnect after resume" shows "Fix HID
   reconnect resume". They go only in a title with a word that no other common
   language uses (after, and, before, from, into, the, when, with). A title in
-  another language, a label the user set and a folder name are shown as they are.
-  Agents whose cards would show the same text are numbered.
+  another language, a label the user set and a folder name keep their words.
+  Brackets ((), [], {}, <> and the fullwidth and CJK ones) are left out of every
+  card (`model.no_brackets`); quotation marks stay. Agents whose cards would show
+  the same text are numbered.
 - Fonts: Aileron (Pillow's bundled font, ASCII only). A character it does not have
   comes from the first font in `card.FALLBACK_FONTS` that has it. Galmuri11 12 px is
   bundled (`res/fonts/agent-cards/`): European Latin, Greek, Cyrillic, Korean,
@@ -120,7 +121,7 @@ ESC (the pager) does not end AI mode in either case.
   until then and is drawn again after (`card.fonts_version()`). A letter and its
   combining marks stay in one font run and one line (`_clusters`). A Hebrew or
   Arabic title is drawn right to left (`is_rtl`); an Arabic word split by a line
-  keeps its joined forms. Georgian, the other Indic scripts and the rest have no
+  keeps its joined forms, by the Unicode joining types (`card._joins`). Georgian, the other Indic scripts and the rest have no
   font yet and show boxes (the README there says how to add one).
 - Source order: a label the user set (`polyctl agents label`),
   the topic from the terminal title (Claude Code writes `✳ <topic>`), the session's

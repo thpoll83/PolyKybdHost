@@ -8,8 +8,9 @@
 
 The vendor mark is the lower 12 rows of the logo at 26 px, cut by the top edge
 (2026-11-18), top left, with the text 1 px to its right; only
-line 1 is beside it, lines 2 and 3 use the full width. A cloud session's mark has a cloud outline drawn over the logo's
-lower right, inside the logo's box (with_cloud). Marks are never scaled. Three lines of 14 px text
+line 1 is beside it, lines 2 and 3 use the full width. A cloud session shows a
+browser tab (icons.browser_tab, 20 x 11 px) in place of the logo, because it runs
+in the browser. Marks are never scaled. Three lines of 14 px text
 (card experiments, 2026-11-17). The state icon (12 px) is in the bottom right
 corner on every page, with a cleared margin of ICON_CLEAR px; only line 3 meets it,
 and ends before that margin.
@@ -33,7 +34,7 @@ import time
 import unicodedata
 from dataclasses import dataclass
 
-from polyhost.services.agents.model import AgentState, vendor
+from polyhost.services.agents.model import AgentState, no_brackets, vendor
 
 log = logging.getLogger("PolyHost")
 
@@ -259,11 +260,26 @@ def _runs(text: str, size: int = FONT_SIZE) -> list[tuple]:
     import unicodedata
     base = _font(size)
     runs = []
+    joiners = ""
     for ch in text:
+        # ZWJ and ZWNJ stay in the run of the letter they join: the run before
+        # them, or after a space and at the start of a line (flow) the run after.
+        # Drawn in another run, the shaper never sees them next to the letter.
+        if ch in "\u200c\u200d":
+            if runs and not runs[-1][2][-1].isspace():
+                runs[-1] = (runs[-1][0], runs[-1][1], runs[-1][2] + ch)
+            else:
+                joiners += ch
+            continue
         # A combining mark (a Devanagari vowel sign, a Thai tone mark) stays in the
         # run of its letter: drawn alone, the shaper puts it on a dotted circle.
         # A space stays in the run before it too, so a right-to-left phrase is one
         # run that the shaper orders as a whole.
+        if runs and ch.isspace() and joiners:
+            # A joiner before a space joins nothing after it: it stays before
+            # the space, not carried over to the next letter.
+            runs[-1] = (runs[-1][0], runs[-1][1], runs[-1][2] + joiners)
+            joiners = ""
         if runs and (unicodedata.category(ch).startswith("M") or ch.isspace()):
             runs[-1] = (runs[-1][0], runs[-1][1], runs[-1][2] + ch)
             continue
@@ -273,9 +289,13 @@ def _runs(text: str, size: int = FONT_SIZE) -> list[tuple]:
             if font is base and not ch.isspace():
                 _note_missing(ch)
         if runs and runs[-1][0] is font:
-            runs[-1] = (font, dy, runs[-1][2] + ch)
+            runs[-1] = (font, dy, runs[-1][2] + joiners + ch)
+            joiners = ""
         else:
-            runs.append((font, dy, ch))
+            runs.append((font, dy, joiners + ch))
+            joiners = ""
+    if joiners:
+        runs.append((base, 0, joiners))
     return runs
 
 
@@ -296,9 +316,6 @@ def _measure(text, size=FONT_SIZE):
                                      max(box[2], b[2]), max(box[3], b[3]))
         x += draw.textlength(part, font=font)
     return tuple(int(v) for v in box)
-
-
-_MIRRORED = str.maketrans("()[]{}<>", ")(][}{><")
 
 
 def is_rtl(text: str) -> bool:
@@ -330,14 +347,11 @@ def _draw_text(draw, xy, text, size=FONT_SIZE, rtl=None):
         visual = list(reversed(runs))
         for k, (font, dy, part) in enumerate(visual):
             shown = part.rstrip()
-            if getattr(font, "layout_engine", None) == ImageFont.Layout.RAQM:
-                # Only a raqm font takes a direction (Pillow's Aileron is basic
-                # layout, and draws left to right).
-                kw = {"direction": "rtl" if is_rtl(shown) else "ltr"}
-            else:
-                kw = {}
-                if not any(unicodedata.bidirectional(c) == "L" for c in shown):
-                    shown = shown.translate(_MIRRORED)      # "(" reads ")" right to left
+            # Only a raqm font takes a direction (Pillow's Aileron is basic layout,
+            # and draws left to right). A card has no brackets (model.no_brackets),
+            # so no character needs mirroring.
+            kw = ({"direction": "rtl" if is_rtl(shown) else "ltr"}
+                  if getattr(font, "layout_engine", None) == ImageFont.Layout.RAQM else {})
             draw.text((x, y + ascent + dy), shown, font=font, anchor="ls", fill=1, **kw)
             x += draw.textlength(shown, font=font)
             if k + 1 < len(visual):
@@ -401,22 +415,66 @@ def _ink_width(text: str, size: int = FONT_SIZE) -> int:
     return box[2] - box[0]
 
 
+def _code_points(ranges: str) -> frozenset:
+    """The characters of `ranges`: hex code points and ranges, "0620 0622-064A"."""
+    out = set()
+    for item in ranges.split():
+        lo, _, hi = item.partition("-")
+        out.update(map(chr, range(int(lo, 16), int(hi or lo, 16) + 1)))
+    return frozenset(out)
+
+
+# Unicode joining types (DerivedJoiningType.txt, Unicode 16.0) of U+0600..U+08FF:
+# Arabic, Syriac, N'Ko, Mandaic. _JOINS_NEXT: dual-joining, left-joining and
+# join-causing (tatweel) characters, which join the letter after them.
+# _JOINS_PREVIOUS: dual-joining, right-joining and join-causing ones, which join
+# the letter before them. ZWJ (join-causing) is in both. Alef, dal, reh and waw
+# join only the letter before them; hamza joins neither side. Python's
+# unicodedata has no joining type.
+_JOINS_NEXT = _code_points(
+    "200D "
+    "0620 0626 0628 062A-062E 0633-0647 0649-064A 066E-066F 0678-0687 069A-06BF "
+    "06C1-06C2 06CC 06CE 06D0-06D1 06FA-06FC 06FF 0712-0714 071A-071D 071F-0727 "
+    "0729 072B 072D-072E 074E-0758 075C-076A 076D-0770 0772 0775-0777 077A-077F "
+    "07CA-07EA 07FA 0841-0845 0848 084A-0853 0855 0860 0862-0865 0868 0883-0886 "
+    "0889-088D 08A0-08A9 08AF-08B0 08B3-08B8 08BA-08C8 "
+)
+_JOINS_PREVIOUS = _code_points(
+    "200D "
+    "0620 0622-064A 066E-066F 0671-0673 0675-06D3 06D5 06EE-06EF 06FA-06FC 06FF "
+    "0710 0712-072F 074D-077F 07CA-07EA 07FA 0840-0858 0860 0862-0865 0867-086A "
+    "0870-0886 0889-088E 08A0-08AC 08AE-08C8 "
+)
+
+
+# Joining type T (transparent) in U+0600..U+08FF, from the same file: the
+# runtime's unicodedata can be an older Unicode (Python 3.13: 15.1, which does
+# not know U+0897).
+_TRANSPARENT = _code_points(
+    "0610-061A 061C 064B-065F 0670 06D6-06DC 06DF-06E4 06E7-06E8 06EA-06ED 070F "
+    "0711 0730-074A 07A6-07B0 07EB-07F3 07FD 0816-0819 081B-0823 0825-0827 "
+    "0829-082D 0859-085B 0897-089F 08CA-08E1 08E3-08FF")
+# Outside that range: marks and format characters whose joining type is not T
+# (ZWNJ, ZWJ, the bidi isolates, ...).
+_NOT_TRANSPARENT = _code_points("180E 200C-200D 2066-2069 110BD 110CD 1171E")
+
+
+def _transparent(ch: str) -> bool:
+    """A character that joining skips (joining type T), such as a vowel mark or
+    U+061C ARABIC LETTER MARK. U+06DD END OF AYAH stops a join, ZWJ causes one."""
+    if "\u0600" <= ch <= "\u08ff":
+        return ch in _TRANSPARENT
+    return unicodedata.category(ch) in ("Mn", "Me", "Cf") and ch not in _NOT_TRANSPARENT
+
+
 def _joins(left: str, right: str) -> bool:
-    """Whether the Arabic text `left` ends with a letter that is drawn joined to the
-    letter `right` starts with. Vowel marks in between are skipped. A letter of
-    _RIGHT_JOINING never joins the letter after it; hamza joins neither side."""
-    import unicodedata
-    left = left.rstrip("".join(c for c in set(left) if unicodedata.category(c) == "Mn"))
+    """Whether the text `left` ends with a letter that is drawn joined to the letter
+    `right` starts with, by the Unicode joining types. Transparent characters in
+    between (vowel marks, U+061C) are skipped on both sides."""
+    left = left.rstrip("".join(c for c in set(left) if _transparent(c)))
+    right = right.lstrip("".join(c for c in set(right) if _transparent(c)))
     a, b = left[-1:], right[:1]
-    return bool(a and b) and a not in _RIGHT_JOINING and b not in _NON_JOINING and all(
-        unicodedata.bidirectional(c) == "AL" and unicodedata.category(c) == "Lo"
-        for c in (a, b))
-
-
-# Arabic letters that join only the letter before them (alef, dal, reh, waw, ...).
-_RIGHT_JOINING = frozenset("\u0621\u0622\u0623\u0624\u0625\u0627\u0629\u062f\u0630"
-                           "\u0631\u0632\u0648\u0671\u0688\u0691\u0698")
-_NON_JOINING = frozenset("\u0621")      # hamza
+    return a in _JOINS_NEXT and b in _JOINS_PREVIOUS
 
 
 def flow(text: str, widths, size: int = FONT_SIZE) -> list[str]:
@@ -474,11 +532,12 @@ def paginate(text: str, mask=None, icon=None, size: int = FONT_SIZE,
              number: int = 0) -> list[list[str]]:
     """The pages of a card: lists of at most LINES lines. Each line is as wide as
     _spans allows: the vendor mark narrows lines on page 1 only, the state icon on
-    every page. One flow over all pages, cut every LINES lines. `number` (two
+    every page. One flow over all pages, cut every LINES lines. Brackets are left
+    out (model.no_brackets). `number` (two
     agents whose cards show the same title) follows the title, and stays after the
     '…' of a cut title: it is what tells the two keys apart."""
     suffix = f" {number}" if number else ""
-    text = (text or "") + suffix
+    text = no_brackets(text or "") + suffix
     first = [r - l for l, r in _spans(mask, icon)]
     later = [r - l for l, r in _spans(None, icon)]
     # Enough lines for any title: each line holds at least one character.
@@ -604,34 +663,6 @@ def _paste(canvas, mask, x, y):
     canvas[y:y + h, x:x + w] |= mask[:h, :w]
 
 
-# Cloud sessions: a cloud outline drawn over the lower right of the agent's logo
-# (card experiments, 2026-11-17). Since the logo strip is 12 rows (2026-11-18) the
-# cloud stays inside it, so the mark is no wider and no taller and lines 2 and 3
-# keep the full width.
-CLOUD_W, CLOUD_H = 16, 10   # px
-
-
-def with_cloud(logo):
-    """`logo` with a 1 px cloud outline drawn in front of its lower right corner,
-    inside the logo's box. The cloud's inside and a 1 px border are cleared first,
-    so the outline reads over the logo. A wordmark gets the same cloud at its
-    right end; a mark smaller than the cloud grows to hold it."""
-    import numpy as np
-    from polyhost.services.agents import icons
-    logo = np.asarray(logo, dtype=bool)
-    shape = icons.cloud(CLOUD_W, CLOUD_H)
-    x = max(0, logo.shape[1] - CLOUD_W)
-    y = max(0, logo.shape[0] - CLOUD_H)
-    out = np.zeros((max(logo.shape[0], y + CLOUD_H), max(logo.shape[1], x + CLOUD_W)),
-                   dtype=bool)
-    out[:logo.shape[0], :logo.shape[1]] = logo
-    region = np.zeros_like(out)
-    region[y:y + CLOUD_H, x:x + CLOUD_W] = shape
-    out &= ~icons.grow(region)
-    out[y:y + CLOUD_H, x:x + CLOUD_W] |= icons.outline(shape, 1)
-    return out
-
-
 def _text_mark(text: str):
     """The vendor's short name as a mark, while its logo is not fetched yet."""
     import numpy as np
@@ -676,13 +707,17 @@ class CardLayout:
 
 def card_layout(vendor_id: str, headline: str, marks: VendorMarks | None = None,
                 state=None, cloud: bool = False, number: int = 0) -> CardLayout:
-    """The mark and pages for one agent. `cloud`: a cloud session, whose mark has
-    the cloud over the logo (with_cloud). `number`: see paginate. No mark is
-    scaled: a first word that does not fit beside the mark starts below it."""
-    logo = marks.get(vendor_id) if marks is not None else None
-    if logo is None:
-        logo = _text_mark(vendor(vendor_id).short[:3])
-    mark = with_cloud(logo) if cloud and logo is not None else logo
+    """The mark and pages for one agent. `cloud`: a cloud session, which shows a
+    browser tab (icons.browser_tab) in place of the vendor's logo. `number`: see
+    paginate. No mark is scaled: a first word that does not fit beside the mark
+    starts below it."""
+    if cloud:
+        from polyhost.services.agents import icons
+        mark = icons.browser_tab()
+    else:
+        mark = marks.get(vendor_id) if marks is not None else None
+        if mark is None:
+            mark = _text_mark(vendor(vendor_id).short[:3])
     icon = state_icon(state)
     return CardLayout(mark, paginate(headline, mark, icon, number=number), icon)
 

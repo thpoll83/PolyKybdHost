@@ -27,9 +27,12 @@ shows boxes until the font is there, then it is drawn again.
 
 Right to left: a title whose first letter is Hebrew or Arabic (`card.is_rtl`) has
 its font runs drawn from right to left; raqm orders the characters inside each
-run, so a Latin word or a number in it stays left to right. An Arabic word split
-by a line break gets a zero-width joiner on both sides, so its letters keep their
-joined forms.
+run, so a Latin word or a number in it stays left to right. A card has no
+brackets (`model.no_brackets`), so the host mirrors none itself; raqm still
+mirrors a character such as `«` in a right-to-left run. An Arabic word split
+by a line break gets a zero-width joiner on both sides where its letters join
+(`card._joins`, by the Unicode joining types in `card._JOINS_NEXT` and
+`_JOINS_PREVIOUS`), so they keep their joined forms.
 
 Not covered yet (boxes), added on demand: Georgian, Bengali, Tamil and the other
 Indic scripts, Ethiopic, Khmer, Lao, Myanmar, Sinhala, Tibetan. Several have a

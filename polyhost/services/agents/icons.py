@@ -283,40 +283,26 @@ def right_arrow(width=13):
     return mask
 
 
-def cloud(w: int, h: int):
-    """A filled cloud silhouette, w x h: three bumps on a flat base, drawn at 4x
-    and scaled down (Lanczos, then a threshold)."""
+# A browser tab, as Chrome draws one: rounded top corners, straight sides, feet that
+# curve out into the tab strip, a favicon on the left and the close x on the right.
+# It stands for a cloud session, which runs in the browser (2026-11-18: the cloud
+# over the vendor logo did not help to tell the sessions apart).
+_BROWSER_TAB = (
+    "...##############...",
+    "..#..............#..",
+    ".#................#.",
+    ".#..####...#...#..#.",
+    ".#..####....#.#...#.",
+    ".#..####.....#....#.",
+    ".#..####....#.#...#.",
+    ".#.........#...#..#.",
+    ".#................#.",
+    ".#................#.",
+    "##................##",
+)
+
+
+def browser_tab():
+    """The 20 x 11 browser-tab mark of a cloud session's card."""
     import numpy as np
-    from PIL import Image, ImageDraw
-    big_w, big_h = w * 4, h * 4
-    img = Image.new("L", (big_w, big_h), 0)
-    draw = ImageDraw.Draw(img)
-    draw.ellipse((0, big_h * 0.45, big_w * 0.45, big_h), fill=255)                 # left
-    draw.ellipse((big_w * 0.2, big_h * 0.12, big_w * 0.68, big_h * 0.9), fill=255)  # top
-    draw.ellipse((big_w * 0.52, big_h * 0.35, big_w, big_h), fill=255)             # right
-    draw.rectangle((big_w * 0.18, big_h * 0.7, big_w * 0.84, big_h), fill=255)     # base
-    return np.array(img.resize((w, h), Image.LANCZOS)) > 110
-
-
-def grow(mask, px: int = 1):
-    """`mask` with every pixel within `px` (8-neighbourhood) set."""
-    import numpy as np
-    out = np.asarray(mask, dtype=bool)
-    for _ in range(px):
-        big = np.pad(out, 1)
-        acc = big.copy()
-        for dy in (-1, 0, 1):
-            for dx in (-1, 0, 1):
-                acc |= np.roll(np.roll(big, dy, 0), dx, 1)
-        out = acc[1:-1, 1:-1]
-    return out
-
-
-def outline(mask, px: int = 1):
-    """The `px` px wide inner edge of `mask`."""
-    import numpy as np
-    # Padded first: outside the array counts as outside the shape, so a side that
-    # touches the edge (the cloud's flat base) gets its line too.
-    padded = np.pad(np.asarray(mask, dtype=bool), px)
-    inner = ~grow(~padded, px)
-    return (padded & ~inner)[px:-px, px:-px]
+    return np.array([[c == "#" for c in row] for row in _BROWSER_TAB], dtype=bool)

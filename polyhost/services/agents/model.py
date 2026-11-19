@@ -89,6 +89,21 @@ _SMALL_WORDS = frozenset(
 _ENGLISH_MARKERS = frozenset("after and before from into the when with".split())
 
 
+# Brackets a card leaves out (2026-11-18): in a right-to-left title each one would
+# have to be mirrored and put in reverse order, and the key has little room. ASCII,
+# fullwidth and CJK brackets; quotation marks stay.
+_BRACKETS = frozenset("()[]{}<>\uff08\uff09\uff3b\uff3d\uff5b\uff5d\uff1c\uff1e"
+                      "\u3008\u3009\u300a\u300b\u300c\u300d\u300e\u300f"
+                      "\u3010\u3011\u3014\u3015\u3016\u3017\u3018\u3019\u301a\u301b"
+                      "\uff5f\uff60\uff62\uff63")
+
+
+def no_brackets(text: str) -> str:
+    """`text` without brackets: each one is a space, so "fix(io)" reads "fix io",
+    and runs of spaces become one."""
+    return " ".join("".join(" " if c in _BRACKETS else c for c in text or "").split())
+
+
 def card_words(title: str) -> str:
     """The words of `title` a card shows: in a title with an _ENGLISH_MARKERS word,
     no small words after the first word. Any other title is returned as it is.
