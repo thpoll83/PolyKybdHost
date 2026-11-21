@@ -351,19 +351,12 @@ def latest_per_install(rows: list[dict]) -> list[dict]:
     return sorted(best.values(), key=lambda r: str(r.get("received_at") or ""), reverse=True)
 
 
-def keyboard_counts(rows: list[dict]) -> tuple[int, int, int]:
-    """(linked hardware groups, pairs, inferred half replacements) from the
-    hardware ID hashes (schema 3+). All three are estimates.
+def _keyboard_groups(rows: list[dict]) -> tuple[dict[str, str], set[tuple[str, str]]]:
+    """Map each hardware ID hash to its group root, and collect the pairs.
 
-    A row carries up to two hashes, one per half (``hw_id_a``, ``hw_id_b``). Two
-    hashes in one row are taken as one keyboard, so a group is a set of hashes
-    linked through rows. A pair is one distinct set {a, b} of both halves, in
-    either column order. A group with more than one pair is counted as a half
-    replacement per extra pair. A half moved from one keyboard to another links
-    the two keyboards into one group, and the group stays merged, so the group
-    count can be too low and the replacement count too high. Rows from older
-    hosts or firmware carry no hash and are skipped, so this counts only
-    keyboards on firmware protocol 37+ with a schema 3 host.
+    Two hashes in one row are taken as one keyboard, so a group is a set of
+    hashes linked through rows. A pair is one distinct set {a, b}, in either
+    column order.
     """
     parent: dict[str, str] = {}
 
@@ -375,10 +368,7 @@ def keyboard_counts(rows: list[dict]) -> tuple[int, int, int]:
 
     pairs: set[tuple[str, str]] = set()
     for r in rows:
-        hashes = [str(r.get(k) or "") for k in ("hw_id_a", "hw_id_b")]
-        hashes = [h for h in hashes if h]
-        if len(hashes) == 2 and hashes[0] == hashes[1]:
-            hashes = hashes[:1]     # the same hash twice is one half, not a pair
+        hashes = _row_hashes(r)
         for h in hashes:
             parent.setdefault(h, h)
         if len(hashes) == 2:
@@ -388,10 +378,113 @@ def keyboard_counts(rows: list[dict]) -> tuple[int, int, int]:
             ra, rb = find(hashes[0]), find(hashes[1])
             if ra != rb:
                 parent[rb] = ra
-    groups = {find(h) for h in parent}
-    pairs_per_group: Counter = Counter(find(a) for a, _ in pairs)
+    return {h: find(h) for h in parent}, pairs
+
+
+def _row_hashes(r: dict) -> list[str]:
+    hashes = [str(r.get(k) or "") for k in ("hw_id_a", "hw_id_b")]
+    hashes = [h for h in hashes if h]
+    if len(hashes) == 2 and hashes[0] == hashes[1]:
+        hashes = hashes[:1]     # the same hash twice is one half, not a pair
+    return hashes
+
+
+def keyboard_counts(rows: list[dict]) -> tuple[int, int, int]:
+    """(linked hardware groups, pairs, inferred half replacements) from the
+    hardware ID hashes (schema 3+). All three are estimates.
+
+    A row carries up to two hashes, one per half (``hw_id_a``, ``hw_id_b``).
+    A group with more than one pair is counted as a half replacement per extra
+    pair. A half moved from one keyboard to another links the two keyboards
+    into one group, and the group stays merged, so the group count can be too
+    low and the replacement count too high. Rows from older hosts or firmware
+    carry no hash and are skipped, so this counts only keyboards on firmware
+    protocol 37+ with a schema 3 host.
+    """
+    group, pairs = _keyboard_groups(rows)
+    pairs_per_group: Counter = Counter(group[a] for a, _ in pairs)
     replaced = sum(n - 1 for n in pairs_per_group.values() if n > 1)
-    return len(groups), len(pairs), replaced
+    return len(set(group.values())), len(pairs), replaced
+
+
+def daily_keyboards(rows: list[dict], window: list[str]) -> list[tuple[str, int]]:
+    """Distinct keyboards (hash groups) that reported on each day."""
+    group, _ = _keyboard_groups(rows)
+    seen: dict[str, set] = defaultdict(set)
+    for r in rows:
+        for h in _row_hashes(r):
+            seen[str(r.get("day") or "")].add(group[h])
+    return [(d, len(seen.get(d, ()))) for d in window]
+
+
+#: Device name of the emulated keyboard (``dev_mock_primary``, PolyKybdMock).
+#: A host running it sends this name in the ping, and its firmware and
+#: hardware fields hold host version numbers, so a developer or CI machine
+#: would count as a keyboard owner.
+MOCK_DEVICE_NAME = "PolyKybdMock"
+
+
+def mock_install_ids(rows: list[dict]) -> set:
+    """Installs that ever reported the mock keyboard. They are left out of
+    every count on the page and listed only in the install table."""
+    return {r.get("install_id") for r in rows
+            if str(r.get("device_name") or "") == MOCK_DEVICE_NAME}
+
+
+def last_day(rows: list[dict]) -> date | None:
+    """The newest valid day in the data; the 'last N days' counts end here."""
+    days = []
+    for r in rows:
+        try:
+            days.append(date.fromisoformat(str(r.get("day") or "")))
+        except ValueError:
+            continue
+    return max(days) if days else None
+
+
+def _days_back(end: date, n: int) -> set[str]:
+    return {(end - timedelta(days=i)).isoformat() for i in range(n)}
+
+
+def active_installs(rows: list[dict], end: date | None, n: int) -> int:
+    """Installs with at least one report in the n days ending on `end`."""
+    if end is None:
+        return 0
+    days = _days_back(end, n)
+    return len({r.get("install_id") for r in rows if str(r.get("day") or "") in days})
+
+
+def new_installs(rows: list[dict], end: date | None, n: int) -> int:
+    """Installs whose first report is in the n days ending on `end`."""
+    if end is None:
+        return 0
+    first: dict = {}
+    for r in rows:
+        d = str(r.get("day") or "")
+        key = r.get("install_id")
+        if key not in first or d < first[key]:
+            first[key] = d
+    days = _days_back(end, n)
+    return sum(1 for d in first.values() if d in days)
+
+
+def keyboards_without_id(latest: list[dict]) -> int:
+    """Installs whose newest report has a keyboard but no hardware ID hash
+    (an older host or firmware). Their keyboards may or may not be among the
+    ones counted by hash."""
+    return sum(1 for r in latest if r.get("device_present") and not _row_hashes(r))
+
+
+def counter_periods(rows: list[dict], end: date | None) -> list[tuple[str, int, int, int]]:
+    """Per counter: (label, last 7 days, last 30 days, all reports)."""
+    if end is None:
+        return [(label, 0, 0, 0) for _, label in COUNTERS]
+    d7, d30 = _days_back(end, 7), _days_back(end, 30)
+    t7, t30, tall = (dict((k, n) for k, _, n in counter_totals(sub))
+                     for sub in ([r for r in rows if str(r.get("day") or "") in d7],
+                                 [r for r in rows if str(r.get("day") or "") in d30],
+                                 rows))
+    return [(label, t7[key], t30[key], tall[key]) for key, label in COUNTERS]
 
 
 def breakdown(rows: list[dict], field: str, blank: str = "(none)") -> list[tuple[str, int]]:
@@ -534,7 +627,7 @@ def hbars(items: list[tuple[str, int]], empty: str = "Nothing reported yet.") ->
     return "".join(rows)
 
 
-def install_table(rows: list[dict]) -> str:
+def install_table(rows: list[dict], test_ids: set = frozenset()) -> str:
     if not rows:
         return '<p class="empty">No installs have reported yet.</p>'
     head = (
@@ -543,7 +636,9 @@ def install_table(rows: list[dict]) -> str:
     )
     body = []
     for r in rows:
-        if r.get("device_connected"):
+        if r.get("install_id") in test_ids:
+            device = f'{esc(r.get("device_name"))} <span class="tag">test, not counted</span>'
+        elif r.get("device_connected"):
             device = esc(r.get("device_name") or "connected")
         elif r.get("device_present"):
             device = "present, not connected"
@@ -569,120 +664,181 @@ def install_table(rows: list[dict]) -> str:
 
 
 CSS = """
-:root{--bg:#f7f7f8;--card:#fff;--fg:#1a1a1c;--muted:#6b6b73;--line:#e3e3e7;
-      --accent:#3f6fd8;--accent-soft:#c9d8f6;--grid:#ececf0}
-@media (prefers-color-scheme:dark){
-  :root{--bg:#131316;--card:#1b1b1f;--fg:#e8e8ea;--muted:#9a9aa3;--line:#2c2c32;
-        --accent:#6f9bef;--accent-soft:#2b3f68;--grid:#26262c}}
+:root{--bg:#f4f4f2;--card:#fcfcfb;--fg:#0b0b0b;--muted:#52514e;--line:#e2e1dc;--grid:#ecebe6;
+      --kb:#1baf7a;--kb-soft:#cdeee0;--inst:#2a78d6;--inst-soft:#cde2fb;
+      --use:#eb6834;--use-soft:#fbdccd;--accent:var(--inst);--accent-soft:var(--inst-soft)}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){
+  --bg:#121211;--card:#1a1a19;--fg:#f0efec;--muted:#c3c2b7;--line:#2f2f2c;--grid:#2a2a27;
+  --kb:#199e70;--kb-soft:#173a2d;--inst:#3987e5;--inst-soft:#1d3554;
+  --use:#d95926;--use-soft:#4a2716}}
+:root[data-theme="dark"]{--bg:#121211;--card:#1a1a19;--fg:#f0efec;--muted:#c3c2b7;--line:#2f2f2c;
+  --grid:#2a2a27;--kb:#199e70;--kb-soft:#173a2d;--inst:#3987e5;--inst-soft:#1d3554;
+  --use:#d95926;--use-soft:#4a2716}
 *{box-sizing:border-box}
-body{margin:0;padding:28px 20px 60px;background:var(--bg);color:var(--fg);
+body{margin:0;padding:28px 16px 60px;background:var(--bg);color:var(--fg);
      font:15px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 .wrap{max-width:1040px;margin:0 auto}
-h1{font-size:22px;margin:0 0 2px}
+h1{font-size:24px;margin:0 0 2px}
 h2{font-size:15px;margin:0 0 12px;font-weight:600}
-.sub{color:var(--muted);font-size:13px;margin:0 0 22px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 20px}
+.kb{--accent:var(--kb);--accent-soft:var(--kb-soft)}
+.inst{--accent:var(--inst);--accent-soft:var(--inst-soft)}
+.use{--accent:var(--use);--accent-soft:var(--use-soft)}
+section{margin:34px 0 0}
+.sechead{display:flex;align-items:baseline;gap:12px;border-left:6px solid var(--accent);
+         padding:2px 0 2px 12px;margin:0 0 14px}
+.sechead h2{font-size:19px;margin:0}
+.sechead p{margin:0;color:var(--muted);font-size:13px}
+.hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.big{background:var(--card);border:1px solid var(--line);border-top:5px solid var(--accent);
+     border-radius:10px;padding:14px 16px}
+.big b{display:block;font-size:38px;line-height:1.1;font-variant-numeric:tabular-nums}
+.big .what{display:block;font-weight:600;font-size:14px;margin-top:2px}
+.big .how{display:block;color:var(--muted);font-size:12px;margin-top:4px;line-height:1.4}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:16px}
-.card.span{grid-column:1/-1}
+.grid2 .card{margin-bottom:0}
+.wide{grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}
+@media (max-width:480px){.wide{grid-template-columns:1fr}}
 svg{width:100%;height:auto;display:block;overflow:visible}
 .bar{fill:var(--accent)}
 .grid{stroke:var(--grid);stroke-width:1}
 .tick{fill:var(--muted);font-size:10px}
 .hbar{display:flex;align-items:center;gap:10px;margin:5px 0}
-.hlabel{flex:0 0 150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.hlabel{flex:0 0 130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
 .htrack{flex:1;background:var(--accent-soft);border-radius:3px;height:9px;overflow:hidden}
-.hfill{display:block;height:100%;background:var(--accent)}
-.hval{flex:0 0 34px;text-align:right;font-size:13px;color:var(--muted);
-      font-variant-numeric:tabular-nums}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.hfill{display:block;height:100%;background:var(--accent);border-radius:0 3px 3px 0}
+.hval{flex:0 0 34px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
 .kpi b{display:block;font-size:24px;font-variant-numeric:tabular-nums;line-height:1.2}
 .kpi span{color:var(--muted);font-size:12px}
 table{border-collapse:collapse;width:100%;font-size:13px}
 th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
 th{color:var(--muted);font-weight:600}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .tablewrap{overflow-x:auto}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 .muted,.empty{color:var(--muted)}
 .empty{font-size:13px;margin:6px 0}
-footer{color:var(--muted);font-size:12px;margin-top:26px;line-height:1.7}
+.tag{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 5px;margin-left:4px}
+.note{color:var(--muted);font-size:13px;margin:-4px 0 16px}
+footer{color:var(--muted);font-size:12px;margin-top:30px;line-height:1.7}
 """
 
 
+def _big(cls: str, value, what: str, how: str) -> str:
+    return (f'<div class="big {cls}"><b>{value}</b><span class="what">{esc(what)}</span>'
+            f'<span class="how">{esc(how)}</span></div>')
+
+
+def _kpi(value, label: str) -> str:
+    return f'<div class="kpi"><b>{value}</b><span>{esc(label)}</span></div>'
+
+
+def _section(cls: str, title: str, lead: str, body: str) -> str:
+    return (f'<section class="{cls}"><div class="sechead"><h2>{esc(title)}</h2>'
+            f'<p>{esc(lead)}</p></div>{body}</section>')
+
+
 def render(rows: list[dict], days: int | None, generated: str) -> str:
+    test_ids = mock_install_ids(rows)
+    all_latest = latest_per_install(rows)
+    rows_all = rows
+    rows = [r for r in rows if r.get("install_id") not in test_ids]
     window = day_range(rows, days)
     latest = latest_per_install(rows)
     # One set for the whole pass: with --days all the window is every day in
     # the archive, and rebuilding it per row is O(rows x days).
     window_days = set(window)
     in_window = [r for r in rows if str(r.get("day") or "") in window_days]
-    installs_today = daily_installs(rows, window)[-1][1] if window else 0
+    end = last_day(rows)
+    end_label = end.isoformat() if end else "no data"
 
     kb_groups, _, kb_replaced = keyboard_counts(rows)
-    kpis = [
-        (len(latest), "installs ever seen"),
-        (installs_today, "reported on the last day"),
-        (len({r.get("host_version") for r in latest if r.get("host_version")}), "host versions in the field"),
-        (sum(1 for r in latest if r.get("device_present")), "with a keyboard attached"),
-        (kb_groups, "keyboards seen, estimate (firmware protocol 37+)"),
-        (kb_replaced, "half replacements, inferred from hash pairs"),
-        (len(rows), "reports total"),
-    ]
-    kpi_html = "".join(
-        f'<div class="kpi"><b>{value}</b><span>{esc(label)}</span></div>' for value, label in kpis
-    )
+    with_kb = sum(1 for r in latest if r.get("device_present"))
+    no_id = keyboards_without_id(latest)
+    active7, active30 = active_installs(rows, end, 7), active_installs(rows, end, 30)
 
+    summary = "".join([
+        _big("kb", kb_groups, "keyboards identified",
+             "Counted by hardware ID. Only host 1.28.12+ with firmware 1.13.11+ sends one."),
+        _big("inst", active7, "active installs, 7 days", f"At least one report in the 7 days to {end_label}."),
+        _big("inst", active30, "active installs, 30 days", f"At least one report in the 30 days to {end_label}."),
+        _big("inst", len(latest), "installs ever seen", "Every install that has sent a report."),
+    ])
+
+    keyboards = _section("kb", "Keyboards", "Hardware that reports to a host", "".join([
+        '<div class="kpis">',
+        _kpi(kb_groups, "keyboards identified by hardware ID"),
+        _kpi(no_id, "installs with a keyboard but no ID (older host or firmware)"),
+        _kpi(with_kb, "installs with a keyboard at their last report"),
+        _kpi(kb_replaced, "half replacements, inferred from hash pairs"),
+        "</div>",
+        f'<div class="card"><h2>Keyboards reporting per day</h2>{_keyboard_chart(rows, window)}</div>',
+        '<div class="grid2">',
+        f'<div class="card"><h2>Firmware version</h2>{hbars(fw_breakdown(latest), "No install has reported a keyboard yet.")}</div>',
+        f'<div class="card"><h2>Keyboard model</h2>{hbars(breakdown([r for r in latest if r.get("device_present")], "device_name"), "No install has reported a keyboard yet.")}</div>',
+        f'<div class="card"><h2>Hardware revision</h2>{hbars(breakdown([r for r in latest if r.get("device_present")], "hw_version"), "No install has reported a keyboard yet.")}</div>',
+        f'<div class="card"><h2>Font-pack versions</h2>{_fontpack_html(latest)}</div>',
+        "</div>",
+    ]))
+
+    installs = _section("inst", "Installations", "Computers running PolyHost", "".join([
+        '<div class="kpis">',
+        _kpi(active7, "active in the last 7 days"),
+        _kpi(active30, "active in the last 30 days"),
+        _kpi(new_installs(rows, end, 30), "new in the last 30 days"),
+        _kpi(len(latest), "installs ever seen"),
+        _kpi(len({r.get("host_version") for r in latest if r.get("host_version")}), "host versions in use"),
+        "</div>",
+        (f'<p class="note">{len(test_ids)} test install(s) with the mock keyboard are not counted '
+         f'on this page. They are marked in the table at the bottom.</p>' if test_ids else ""),
+        f'<div class="card"><h2>Installs reporting per day</h2>{svg_bars(daily_installs(rows, window))}</div>',
+        '<div class="grid2">',
+        f'<div class="card"><h2>Host version</h2>{hbars(breakdown(latest, "host_version"))}</div>',
+        f'<div class="card"><h2>Operating system</h2>{hbars(breakdown(latest, "os"))}</div>',
+        f'<div class="card"><h2>Country</h2>{hbars(breakdown(latest, "country"))}</div>',
+        f'<div class="card"><h2>Run mode</h2>{hbars(breakdown(latest, "mode"))}</div>',
+        f'<div class="card"><h2>Display server (Linux)</h2>{hbars(linux_breakdown(latest, "session"), "No Linux install has reported yet.")}</div>',
+        f'<div class="card"><h2>Desktop (Linux)</h2>{hbars(linux_breakdown(latest, "desktop"), "No Linux install has reported yet.")}</div>',
+        f'<div class="card"><h2>Window backend (Linux)</h2>{hbars(linux_breakdown(latest, "window_backend"), "No Linux install has reported yet.")}</div>',
+        "</div>",
+    ]))
+
+    period_rows = "".join(
+        f'<tr><td>{esc(label)}</td><td class="num">{a}</td><td class="num">{b}</td><td class="num">{c}</td></tr>'
+        for label, a, b, c in counter_periods(rows, end)
+    )
     counter_cards = "".join(
-        f'<div class="card"><h2>{esc(label)}</h2>'
-        f'{svg_bars(daily_counter(in_window, key, window), 120, max_labels=3)}</div>'
+        f'<div class="card"><h2>{esc(label)} per day</h2>'
+        f'{svg_bars(daily_counter(in_window, key, window), 150, max_labels=5)}</div>'
         for key, label in COUNTERS
     )
-    totals = "".join(
-        f'<div class="kpi"><b>{n}</b><span>{esc(label)} (window)</span></div>'
-        for _, label, n in counter_totals(in_window)
-    )
+    usage = _section("use", "Usage", "What the installs did, summed over all of them", "".join([
+        '<div class="card"><div class="tablewrap"><table>'
+        '<tr><th>Event</th><th class="num">Last 7 days</th><th class="num">Last 30 days</th>'
+        f'<th class="num">All reports</th></tr>{period_rows}</table></div></div>',
+        f'<div class="grid2 wide">{counter_cards}</div>',
+    ]))
 
-    fontpack = fontpack_summary(latest)
-    fontpack_html = (
-        "".join(
-            f'<div class="hbar"><span class="hlabel">{esc(b)}</span>'
-            f'<span class="hval" style="flex:1;text-align:left">{esc(v)}</span></div>'
-            for b, v in fontpack
-        )
-        or '<p class="empty">No font-pack versions reported yet.</p>'
-    )
+    table = _section("inst", "All installs", "Newest report of each install, test installs included",
+                     f'<div class="card"><div class="tablewrap">{install_table(all_latest, test_ids)}</div></div>')
 
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PolyHost telemetry</title><style>{CSS}</style></head>
+<title>PolyKybd telemetry</title><style>{CSS}</style></head>
 <body><div class="wrap">
-<h1>PolyHost telemetry</h1>
-<p class="sub">Generated {esc(generated)} · window: {esc(_window_label(days, len(window)))} · {len(rows)} reports
-from {len(latest)} installs</p>
+<h1>PolyKybd telemetry</h1>
+<p class="sub">Generated {esc(generated)} · data up to {esc(end_label)} (UTC) · window: {esc(_window_label(days, len(window)))}
+· {len(rows_all)} reports from {len(all_latest)} installs</p>
 
-<div class="kpis" style="margin-bottom:16px">{kpi_html}</div>
-
-<div class="card"><h2>Installs reporting per day</h2>{svg_bars(daily_installs(rows, window))}</div>
-
-<div class="grid2">
-  <div class="card"><h2>Host version (current per install)</h2>{hbars(breakdown(latest, "host_version"))}</div>
-  <div class="card"><h2>Firmware version (keyboard attached)</h2>{hbars(fw_breakdown(latest), "No install has reported a keyboard yet.")}</div>
-  <div class="card"><h2>Operating system</h2>{hbars(breakdown(latest, "os"))}</div>
-  <div class="card"><h2>Display server (Linux)</h2>{hbars(linux_breakdown(latest, "session"), "No Linux install has reported yet.")}</div>
-  <div class="card"><h2>Desktop (Linux)</h2>{hbars(linux_breakdown(latest, "desktop"), "No Linux install has reported yet.")}</div>
-  <div class="card"><h2>Window backend (Linux)</h2>{hbars(linux_breakdown(latest, "window_backend"), "No Linux install has reported yet.")}</div>
-  <div class="card"><h2>Run mode</h2>{hbars(breakdown(latest, "mode"))}</div>
-  <div class="card"><h2>Country</h2>{hbars(breakdown(latest, "country"))}</div>
-  <div class="card"><h2>Hardware revision</h2>{hbars(breakdown(latest, "hw_version"))}</div>
-</div>
-
-<div class="card"><h2>Activity totals in window</h2><div class="kpis">{totals}</div></div>
-<div class="grid2">{counter_cards}</div>
-
-<div class="card"><h2>Font-pack versions on attached keyboards</h2>{fontpack_html}</div>
-
-<div class="card span"><h2>Installs</h2><div class="tablewrap">{install_table(latest)}</div></div>
+<div class="hero">{summary}</div>
+{keyboards}
+{installs}
+{usage}
+{table}
 
 <footer>
 Each install reports at most once per UTC day, so a bar is a count of installs, not of launches.
@@ -693,6 +849,28 @@ keyboards a report is not lost in a crowd either. Nothing on this page left your
 </footer>
 </div></body></html>
 """
+
+
+def _keyboard_chart(rows: list[dict], window: list[str]) -> str:
+    """Keyboards per day, from the first day any keyboard sent an ID. The days
+    before it are not zero keyboards; no host could send an ID then."""
+    series = daily_keyboards(rows, window)
+    first = next((i for i, (_, n) in enumerate(series) if n), None)
+    if first is None:
+        return '<p class="empty">No keyboard has sent a hardware ID yet.</p>'
+    return svg_bars(series[first:])
+
+
+def _fontpack_html(latest: list[dict]) -> str:
+    fontpack = fontpack_summary(latest)
+    return (
+        "".join(
+            f'<div class="hbar"><span class="hlabel">bundle {esc(b)}</span>'
+            f'<span class="hval" style="flex:1;text-align:left">{esc(v)}</span></div>'
+            for b, v in fontpack
+        )
+        or '<p class="empty">No font-pack versions reported yet.</p>'
+    )
 
 
 # --------------------------------------------------------------------------
