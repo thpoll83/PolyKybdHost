@@ -274,6 +274,111 @@ def vscode_cli(editor, which=None, home=None, env=None, system=None):
     return None
 
 
+# Words the command line program prints when a rule refuses the extension.
+# The bare word "policy" is left out: other errors use it too.
+_POLICY_WORDS = re.compile(r"allowed list|not allowed|extensions\.allowed", re.I)
+
+_USER_FOLDER = {"vscode": "Code", "cursor": "Cursor", "windsurf": "Windsurf"}
+_POLICY_KEY = {"vscode": "VSCode", "cursor": "Cursor", "windsurf": "Windsurf"}
+
+
+def _user_settings_files(editor, home, env, system):
+    """The editor's user ``settings.json`` files to read: the usual one, and
+    for a Linux Snap install the Snap's own folder."""
+    name = _USER_FOLDER[editor]
+    h = _home(home)
+    if system == "Windows":
+        return [_appdata(home, env) / name / "User" / "settings.json"]
+    if system == "Darwin":
+        return [h / "Library" / "Application Support" / name / "User" / "settings.json"]
+    xdg = env.get("XDG_CONFIG_HOME")
+    base = Path(xdg) if xdg else h / ".config"
+    files = [base / name / "User" / "settings.json"]
+    if editor == "vscode":
+        files.append(h / "snap" / "code" / "current" / ".config" / name / "User" / "settings.json")
+    return files
+
+
+def _strip_jsonc(text):
+    """``settings.json`` allows comments and trailing commas: drop both.
+    A ``//`` inside a string (``https://``) is kept."""
+    text = re.sub(r'("(?:[^"\\]|\\.)*")|//[^\n]*|/\*.*?\*/',
+                  lambda m: m.group(1) or "", text, flags=re.S)
+    return re.sub(r",(\s*[}\]])", r"\1", text)
+
+
+def _rules_refuse(rules, ext_id=VSCODE_EXTENSION_ID):
+    """True when the ``extensions.allowed`` rules ``{"*": false,
+    "publisher": true, "publisher.name": true}`` refuse ``ext_id``: the most
+    specific rule (the id, then its publisher, then ``*``) says false. No
+    rule for it is not a refusal."""
+    if not isinstance(rules, dict):
+        return False
+    ext = ext_id.lower()
+    lowered = {str(k).lower(): v for k, v in rules.items()}
+    for key in (ext, ext.partition(".")[0], "*"):
+        if key in lowered:
+            return lowered[key] is False
+    return False
+
+
+def _json_value(text):
+    try:
+        return json.loads(_strip_jsonc(text))
+    except ValueError:
+        return None
+
+
+def extension_policy_reason(editor, output="", home=None, env=None, system=None):
+    """Why the editor refused an extension, or None. VS Code 1.96+ and its
+    forks install only what the ``extensions.allowed`` setting or an
+    organization policy (Windows registry ``AllowedExtensions``, Linux
+    ``/etc/vscode/policy.json``) allows. The command line program often
+    prints no reason, so this reads the output first, then the places the
+    rule is kept, and counts a rule only when it refuses this extension.
+    Returns ``"output"``, ``"settings"`` or ``"policy"``."""
+    env = os.environ if env is None else env
+    system = system or platform.system()
+    if _POLICY_WORDS.search(output or ""):
+        return "output"
+    for path in _user_settings_files(editor, home, env, system):
+        try:
+            data = _json_value(path.read_text(encoding="utf-8", errors="replace"))
+        except OSError:
+            continue  # no settings file, or unreadable: the rule is not set there
+        if isinstance(data, dict) and _rules_refuse(data.get("extensions.allowed")):
+            return "settings"
+    if home is not None:
+        return None  # a test's home never reads the machine's policy
+    if system == "Windows":
+        try:
+            import winreg
+        except ImportError:
+            return None  # no winreg module (not a real Windows Python): no registry to read
+        key = "SOFTWARE\\Policies\\Microsoft\\" + _POLICY_KEY[editor]
+        for hive in (winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER):
+            try:
+                with winreg.OpenKey(hive, key) as k:
+                    value = winreg.QueryValueEx(k, "AllowedExtensions")[0]
+            except OSError:
+                continue  # this hive has no such key
+            if _rules_refuse(_json_value(value) if isinstance(value, str) else None):
+                return "policy"
+    elif system == "Linux" and editor == "vscode":
+        # Only VS Code's policy file is known; Cursor and Windsurf are not guessed.
+        try:
+            text = Path("/etc/vscode/policy.json").read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return None  # no policy file, or unreadable: no policy here
+        data = _json_value(text)
+        rules = data.get("AllowedExtensions") if isinstance(data, dict) else None
+        if isinstance(rules, str):
+            rules = _json_value(rules)
+        if _rules_refuse(rules):
+            return "policy"
+    return None
+
+
 def parse_extension_list(text, ext_id=VSCODE_EXTENSION_ID):
     """The version of ``ext_id`` in ``--list-extensions --show-versions``
     output (``publisher.name@1.0.0`` per line), or None."""

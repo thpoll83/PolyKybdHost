@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-18 09:23+0000\n"
+"POT-Creation-Date: 2026-11-21 07:26+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -18,17 +18,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: polyhost/device/command_ids.py:179
+#: polyhost/device/command_ids.py:183
 #, python-brace-format
 msgid "preset {value}"
 msgstr "プリセット {value}"
 
-#: polyhost/device/command_ids.py:181
+#: polyhost/device/command_ids.py:185
 #, python-brace-format
 msgid "{minutes} min"
 msgstr "{minutes} 分"
 
-#: polyhost/device/command_ids.py:182
+#: polyhost/device/command_ids.py:186
 #, python-brace-format
 msgid "{seconds} sec"
 msgstr "{seconds} 秒"
@@ -548,19 +548,19 @@ msgstr "PolyKybdHost について"
 msgid "About"
 msgstr "バージョン情報"
 
-#: polyhost/gui/about_dialog.py:320
+#: polyhost/gui/about_dialog.py:322
 msgid "Basics"
 msgstr "基本"
 
-#: polyhost/gui/about_dialog.py:321
+#: polyhost/gui/about_dialog.py:323
 msgid "The words PolyKybd uses in its menus and settings, with a picture of each."
 msgstr "PolyKybd のメニューと設定で使われる用語と、それぞれの図です。"
 
-#: polyhost/gui/about_dialog.py:366 polyhost/gui/about_dialog.py:377
+#: polyhost/gui/about_dialog.py:368 polyhost/gui/about_dialog.py:379
 msgid "Copy diagnostics"
 msgstr "診断情報をコピー"
 
-#: polyhost/gui/about_dialog.py:371
+#: polyhost/gui/about_dialog.py:373
 msgid "Copied ✓"
 msgstr "コピーしました ✓"
 
@@ -5416,20 +5416,34 @@ msgstr "{command} に失敗しました: {error}"
 
 #: polyhost/services/editor_plugins.py:227
 #, python-brace-format
+msgid ""
+"{command} failed: {error}\n"
+"{reason}"
+msgstr ""
+"{command} に失敗しました: {error}\n"
+"{reason}"
+
+#: polyhost/services/editor_plugins.py:228
+#, python-brace-format
+msgid "{editor} is restricted by a policy (the setting extensions.allowed, or a rule of your organization), so it did not install the extension. Ask your administrator to allow {extension}."
+msgstr "{editor} はポリシー (設定 extensions.allowed、または組織のルール) で制限されているため、拡張機能をインストールしませんでした。管理者に {extension} の許可を依頼してください。"
+
+#: polyhost/services/editor_plugins.py:231
+#, python-brace-format
 msgid "{editor} has the extension {extension} from another source. It is left alone."
 msgstr "{editor} には別の提供元からの拡張機能 {extension} があります。そのままにします。"
 
-#: polyhost/services/editor_plugins.py:228
+#: polyhost/services/editor_plugins.py:232
 #, python-brace-format
 msgid "The change was made, but {path} could not be written, so this app does not remember it."
 msgstr "変更は行われましたが、{path} に書き込めなかったため、このアプリはそれを記憶していません。"
 
-#: polyhost/services/editor_plugins.py:231
+#: polyhost/services/editor_plugins.py:235
 #, python-brace-format
 msgid "The plugin is installed, but {path} could not be written, so this app does not remember this folder."
 msgstr "プラグインはインストール済みですが、{path} に書き込めなかったため、このアプリはこのフォルダーを記憶していません。"
 
-#: polyhost/services/editor_plugins.py:233
+#: polyhost/services/editor_plugins.py:237
 #, python-brace-format
 msgid "Run this command in the Python environment that runs JupyterLab: {command}"
 msgstr "JupyterLab を実行している Python 環境でこのコマンドを実行してください: {command}"

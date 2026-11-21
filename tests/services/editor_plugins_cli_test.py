@@ -271,5 +271,76 @@ class TestJupyterLab(CliFixture):
                          / "package.json").is_file())
 
 
+
+
+class TestBlockedByPolicy(unittest.TestCase):
+    """VS Code refuses a .vsix that is not on extensions.allowed."""
+
+    def _install(self, fail, settings=None):
+        with tempfile.TemporaryDirectory() as d:
+            home = Path(d)
+            vsix = home / "x.vsix"
+            make_vsix(vsix, {"extension/package.json": json.dumps({"version": "1.0.0"})})
+            if settings is not None:
+                f = home / ".config" / "Code" / "User" / "settings.json"
+                f.parent.mkdir(parents=True)
+                f.write_text(settings)
+            st = ep.EditorStatus(ep.VSCODE, ep.STATE_NOT_INSTALLED, Path("/bin/code"), "")
+            state = et.State(None)
+            return ep._change_cli(st, True, vsix, state, FakeCli(fail=fail),
+                                  home=home, env={}, system="Linux")
+
+    def test_reason_in_output(self):
+        r = self._install("Error: not in the allowed list")
+        self.assertFalse(r.ok)
+        self.assertIn("extensions.allowed", r.message)
+        self.assertIn(EXT, r.message)
+
+    def test_silent_cli_with_setting(self):
+        r = self._install("Failed Installing Extensions: file:///x.vsix",
+                          settings='{"extensions.allowed": {"*": false}}')
+        self.assertIn(EXT, r.message)
+
+    def test_other_failure_has_no_hint(self):
+        r = self._install("Failed Installing Extensions: file:///x.vsix")
+        self.assertNotIn("extensions.allowed", r.message)
+
+    def test_a_rule_that_allows_the_extension_gives_no_hint(self):
+        for rules in ('{"*": false, "polykybd.polykybd-mode-reporter": true}',
+                      '{"*": false, "polykybd": true}',
+                      '{"*": true}'):
+            r = self._install("Failed Installing Extensions: x", settings='{"extensions.allowed": %s}' % rules)
+            self.assertNotIn("extensions.allowed", r.message, rules)
+
+    def test_settings_with_comments_and_a_trailing_comma(self):
+        text = ('{\n  // organization default\n  "update.mode": "none", /* x */\n'
+                '  "extensions.allowed": {"*": false, "other": true,},\n}\n')
+        r = self._install("Failed Installing Extensions: x", settings=text)
+        self.assertIn("extensions.allowed", r.message)
+
+    def test_snap_settings(self):
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / "snap" / "code" / "current" / ".config" / "Code" / "User" / "settings.json"
+            f.parent.mkdir(parents=True)
+            f.write_text('{"extensions.allowed": {"*": false}}')
+            self.assertEqual(et.extension_policy_reason("vscode", "", home=d, env={}, system="Linux"),
+                             "settings")
+
+    def test_the_word_policy_alone_is_not_a_refusal(self):
+        self.assertIsNone(et.extension_policy_reason("vscode", "proxy policy error", home="/nonexistent",
+                                                     env={}, system="Linux"))
+
+    def test_the_hint_is_translated_as_part_of_the_message(self):
+        from polyhost import i18n
+        r = self._install("Error: not in the allowed list")
+        try:
+            i18n.install("de")
+            text = i18n.translate_message(r.message)
+        finally:
+            i18n.install("en")
+        self.assertIn("Richtlinie", text)
+        self.assertNotIn("restricted by a policy", text)
+
+
 if __name__ == "__main__":
     unittest.main()
