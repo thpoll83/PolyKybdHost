@@ -105,6 +105,9 @@ class SandboxRpgRoutingTest(unittest.TestCase):
                     self._route("java", os_name, "Minecraft 1.21.4 - Singleplayer"),
                     MINECRAFT_JAVA)
         self.assertEqual(self._route("javaw", "windows", "Minecraft 1.21.4"), MINECRAFT_JAVA)
+        # Forge from CurseForge names itself in the title once it has loaded.
+        self.assertEqual(self._route("javaw", "windows", "Minecraft* Forge 1.21.5"),
+                         MINECRAFT_JAVA)
         self.assertEqual(self._route("java", "windows", "CodeBrowser: demo:/a.exe"), GHIDRA)
         self.assertEqual(self._route("javaw", "windows", "CodeBrowser: demo:/a.exe"), GHIDRA)
 
