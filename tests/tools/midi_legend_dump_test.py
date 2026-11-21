@@ -5,7 +5,6 @@ skips without either. It checks that the shipped export holds exactly what the
 firmware's midi_legend() returns, when the checkout is the firmware the export
 came from.
 """
-import os
 import pathlib
 import sys
 import tempfile
@@ -16,8 +15,8 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 
 import midi_legend_dump as mld                      # noqa: E402
-from polyhost.services import macro_label as ml      # noqa: E402
 from polyhost.services import preview_data as pdata  # noqa: E402
+from polyhost.util.fw_checkout import checkout_dir, fw_file  # noqa: E402
 
 
 class MidiLegendDumpTest(unittest.TestCase):
@@ -26,8 +25,8 @@ class MidiLegendDumpTest(unittest.TestCase):
             self.assertIsNone(mld.midi_legends(tmp))
 
     def test_no_compiler_gives_none(self):
-        pk = pathlib.Path(os.path.dirname(os.path.dirname(ml.default_font_dir())))
-        if not (pk / "midi_legend.c").exists():
+        pk = pathlib.Path(checkout_dir())
+        if not (pathlib.Path(fw_file(pk, "modes/midi_legend.c"))).exists():
             self.skipTest("no firmware checkout with midi_legend.c")
         notes = []
         with unittest.mock.patch.object(mld, "_compiler", return_value=None):
@@ -35,8 +34,8 @@ class MidiLegendDumpTest(unittest.TestCase):
         self.assertTrue(notes)
 
     def test_the_shipped_export_matches_the_firmware(self):
-        pk = pathlib.Path(os.path.dirname(os.path.dirname(ml.default_font_dir())))
-        if not (pk / "midi_legend.c").exists():
+        pk = pathlib.Path(checkout_dir())
+        if not (pathlib.Path(fw_file(pk, "modes/midi_legend.c"))).exists():
             self.skipTest("no firmware checkout with midi_legend.c")
         if mld._compiler() is None:
             self.skipTest("no C compiler")

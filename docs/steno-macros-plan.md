@@ -49,7 +49,7 @@ HID when `STENO_ENABLE` is set, `builddefs/common_features.mk`).
 - A **steno layer** in the default keymap, reached from the settings layer with a
   `TG()` key. A new layer changes stored layer numbers: add it after the existing
   layers so no stored layer moves, and check `KEYMAP_LAYERS_FL_MERGED` and the
-  `DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT` cap of 8 (`qmk_firmware/keyboards/polykybd/KEYMAP_STORAGE.md`). A layer
+  `DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT` cap of 8 (`qmk_firmware/keyboards/polykybd/docs/features/keymap-storage.md`). A layer
   above the cap is served from flash and cannot be edited by the user.
 - **Legends for the steno keycodes that Plover HID uses.** QMK names 83 steno
   keycodes (`QK_STENO`, 0x74C0..0x751F). With Plover HID only 0x74C0..0x7503 do
@@ -239,7 +239,7 @@ real acknowledgement (`sync_succeeded()`). A 25-byte record fits the RPC buffer
 
 **HID command.** One new command, `STENO_MACRO` (cmd 45 if still free), behind a
 new protocol version (30 if still free; 29 is tap-hold timing). Check both numbers
-against `config.h` and `PROTOCOL_HISTORY.md` when the work starts.
+against `config.h` and `keyboards/polykybd/docs/protocol/protocol-history.md` when the work starts.
 
 | Byte | Request | Reply |
 |---|---|---|

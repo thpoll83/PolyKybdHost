@@ -4306,7 +4306,7 @@ class PolyCore(Observable):
         """Install the doom easter egg's executable engine pack (.plyx, both
         halves — the slave's lockstep drone runs the same engine) as a worker
         job. The DoomPack half of the shipping-shape split (qmk repo,
-        doom/PACK_DESIGN.md): same transport, events and error model as
+        keyboards/polykybd/docs/design/doom-pack.md): same transport, events and error model as
         :meth:`install_doomwad`, with the DOOMPACK pseudo bundle routing it
         to the engine-pack slot. Old firmware without the target NACKs the
         BEGIN — plain error, nothing bricks."""

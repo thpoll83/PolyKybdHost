@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Prototype / comparison harness for the per-keycap "courtyard" clear that runs
 behind a glyph drawn over an overlay icon (firmware:
-base/disp_array.c kdisp_clear_bitmap_courtyard).
+drivers/disp_array.c kdisp_clear_bitmap_courtyard).
 
 The OLED preview (oled_preview.py) draws glyphs on a black background, so the
 courtyard clear is invisible there. This tool lays each glyph over a hatched
@@ -25,6 +25,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 from gfx_font import load_all_fonts, OLED_W, OLED_H, BUFFER_X, BASELINE
 from oled_preview import Renderer
+from gfx_font import font_dir
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOME = os.path.dirname(os.path.dirname(HERE))
@@ -150,7 +151,7 @@ def main():
     a = ap.parse_args()
 
     pk = os.path.join(a.qmk, 'keyboards', 'polykybd')
-    R = Renderer(load_all_fonts(os.path.join(pk, 'base', 'fonts')))
+    R = Renderer(load_all_fonts(font_dir(pk)))
     chars = [c for c in a.chars.split(' ') if c != '']
 
     s = a.scale

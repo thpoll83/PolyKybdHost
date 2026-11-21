@@ -3,7 +3,7 @@
 Icons the overlay templates share live in the keyboard's flash (font-pack bundle
 id 8). Instead of uploading such an icon's bitmap, the host sends a
 ``(pool slot, icon id)`` pair and each half draws the icon from its own flash.
-Design: ``qmk_firmware/keyboards/polykybd/OVERLAY_ICON_LIBRARY_DESIGN.md``;
+Design: ``qmk_firmware/keyboards/polykybd/docs/design/overlay-icon-library.md``;
 firmware: ``base/icon_lib.{c,h}``.
 
 The FORMAT is a PlyF pack's byte layout with three differences, all mirrored

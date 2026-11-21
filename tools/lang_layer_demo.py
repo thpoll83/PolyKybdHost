@@ -14,7 +14,7 @@ Faithful to the firmware: geometry from the KLE + split72/keyboard.json, the
 [_LL] roles from keymap.c, the region tables from lang_layer.c, and the per-key
 draw mirrors render_lang_flag_key / render_lang_region_tab / kdisp_write_gfx_vtext
 (poly_keymap.c, disp_array.c). Flag glyphs come from the font pack (flag_fonts.h,
-FLAG_CP_BASE + LANG_* index); the tiny code label is the resident Tiny font.
+FLAG_CP_BASE + LANG_FLAG_GLYPH[LANG_*]); the code label is the resident Nano 10px font.
 
 Usage:
     python tools/lang_layer_demo.py
@@ -37,6 +37,7 @@ from gfx_font import (load_all_fonts, _parse_header, GfxFont,
 from kle_render import KeyContent, Theme
 from lang_demo import (LangBoard, parse_layout_matrix, parse_static_text_map,
                        normalize_kc, render_static, strip_c_comments)
+from gfx_font import font_dir, fw_file
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOST_REPO = os.path.dirname(HERE)
@@ -77,6 +78,22 @@ def slot_lang(off, langs, spp, region, page, slot):
 
 
 # ── single-font loader for the standalone Tiny label font ────────────────────
+def load_flag_glyphs(fonts_dir: str, n_langs: int) -> list:
+    """LANG_FLAG_GLYPH[] from fonts/generated/lang_flag_glyph.h: the flag glyph of
+    each LANG_* index. The flags font has one glyph per COUNTRY, so languages that
+    share a country share a glyph (lang_flag_glyph() in poly_keymap.c). A checkout
+    from before the per-country font has no table; there the enum index is the glyph."""
+    path = os.path.join(fonts_dir, 'generated', 'lang_flag_glyph.h')
+    try:
+        with open(path, encoding='utf-8') as fh:
+            m = re.search(r'LANG_FLAG_GLYPH\[\d*\]\s*=\s*\{([^}]*)\}', fh.read())
+    except OSError:
+        m = None
+    if not m:
+        return list(range(n_langs))
+    return [int(v) for v in re.findall(r'\d+', m.group(1))]
+
+
 def load_one_font(header_path: str, name: str) -> GfxFont:
     bm, ga, rf = {}, {}, {}
     _parse_header(open(header_path, encoding='utf-8', errors='replace').read(), bm, ga, rf)
@@ -123,30 +140,34 @@ def _blank():
     return Image.new('L', (OLED_W, OLED_H), 0)
 
 
-def render_flag_key(g_all_fonts, tiny_font, lang_idx, code, selected) -> Image.Image:
+def _lit(font, g, gx, gy) -> bool:
+    """One pixel of a firmware GFX glyph. The firmware stores glyphs column by
+    column in OLED page layout: ceil(h/8) bytes per column, bit (y & 7) of byte
+    (y >> 3). Classic Adafruit row-major decoding shears every glyph."""
+    cb = (g['height'] + 7) >> 3
+    return bool(font.bitmap[g['bitmapOffset'] + gx * cb + (gy >> 3)] & (1 << (gy & 7)))
+
+
+def render_flag_key(g_all_fonts, nano_font, glyph_idx, code, selected) -> Image.Image:
     """render_lang_flag_key: full-height country flag on the left + the language
     code running vertically up the right edge (inverted bar when selected)."""
     img = _blank()
     px = img.load()
-    f = op.Renderer(g_all_fonts)._font(FLAG_CP_BASE + lang_idx)
+    f = op.Renderer(g_all_fonts)._font(FLAG_CP_BASE + glyph_idx)
     if f is not None:
-        g = f.glyphs[FLAG_CP_BASE + lang_idx - f.first]
+        g = f.glyphs[FLAG_CP_BASE + glyph_idx - f.first]
         fw, fh = g['width'], g['height']
         # content lands flush at FLAG_LEFT_X, vertically centred (taller-than-keycap
         # flag clips top/bottom). Single-font draw → no baseline-align shift.
         x0 = FLAG_LEFT_X - BUFFER_X                 # buffer -> viewport
         y0 = (SCREEN_HEIGHT - fh) // 2
-        bo, bit, bits = g['bitmapOffset'], 0, 0
         for gy in range(fh):
             for gx in range(fw):
-                if (bit & 7) == 0:
-                    bits = f.bitmap[bo]; bo += 1
-                if bits & 0x80:
+                if _lit(f, g, gx, gy):
                     vx, vy = x0 + gx, y0 + gy
                     if 0 <= vx < OLED_W and 0 <= vy < OLED_H:
                         px[vx, vy] = 255
-                bits = (bits << 1) & 0xFF; bit += 1
-    _vtext(px, tiny_font, LABEL_COL_X, code, selected)
+    _vtext(px, nano_font, LABEL_COL_X, code, selected)
     return img
 
 
@@ -179,17 +200,13 @@ def _vtext(px, font, col_x, text, selected):
             continue
         g = font.glyphs[cp - font.first]
         w, h, xo, yo = g['width'], g['height'], g['xOffset'], g['yOffset']
-        bo, bit, bits = g['bitmapOffset'], 0, 0
         for gy in range(h):
             for gx in range(w):
-                if (bit & 7) == 0:
-                    bits = font.bitmap[bo]; bo += 1
-                if bits & 0x80:
+                if _lit(font, g, gx, gy):
                     sx, sy = col_x + yo + gy, vcur - xo - gx
                     vx = sx - BUFFER_X
                     if 0 <= vx < OLED_W and 0 <= sy < OLED_H:
                         px[vx, sy] = 0 if selected else 255
-                bits = (bits << 1) & 0xFF; bit += 1
         vcur -= g['xAdvance']
 
 
@@ -201,17 +218,27 @@ def _fill(px, bx, by, w, h, val=255):
                 px[vx, sy] = val
 
 
-def render_region_tab(R_tiny, tiny_font, label, active) -> Image.Image:
+# LANG_TAB_MAX_W in poly_keymap.c: the label must fit between the active frame's rails.
+LANG_TAB_MAX_W = SCREEN_WIDTH - 8
+
+
+def render_region_tab(R_small, R_nano, label, active) -> Image.Image:
     """render_lang_region_tab + lang_draw_tab_indicator/bottom: centred continent
-    label, with the active tab's 3-px frame or an inactive tab's bottom bar."""
+    label in the Small 15px face (baseline 25), or in Nano 10px (baseline 22) when
+    it is wider than LANG_TAB_MAX_W, with the active tab's 3-px frame or an
+    inactive tab's bottom bar."""
     img = _blank()
     px = img.load()
     cps = [ord(c) for c in label]
-    lo, hi = R_tiny.bounds(cps)
-    w = hi - lo
+    R, baseline = R_small, 25
+    lo, hi = R.bounds(cps)
+    if hi - lo + 1 > LANG_TAB_MAX_W:
+        R, baseline = R_nano, 22
+        lo, hi = R.bounds(cps)
+    w = hi - lo + 1
     x = BUFFER_X + (SCREEN_WIDTH - w) // 2 - lo
-    R_tiny.draw(lambda vx, vy: px.__setitem__((vx, vy), 255)
-                if 0 <= vx < OLED_W and 0 <= vy < OLED_H else None, cps, x, 22)
+    R.draw(lambda vx, vy: px.__setitem__((vx, vy), 255)
+           if 0 <= vx < OLED_W and 0 <= vy < OLED_H else None, cps, x, baseline)
     if active:
         _fill(px, BUFFER_X + 1, 1, SCREEN_WIDTH - 2, 1)
         _fill(px, BUFFER_X + 2, 0, SCREEN_WIDTH - 4, 1)
@@ -224,18 +251,18 @@ def render_region_tab(R_tiny, tiny_font, label, active) -> Image.Image:
 
 # ── frame builder ────────────────────────────────────────────────────────────
 def build_frame(ctx, region, page, flash=None):
-    (roles, off, langs, labels, spp, nreg, L, R, g_all, tiny, R_tiny,
+    (roles, off, langs, labels, spp, nreg, L, R, g_all, nano, R_nano, R_small, flag_glyph,
      static_map, current_idx) = ctx
     out = {}
     for mp, tok in roles.items():
         img = None
         n = _macro_n(tok, 'LCAT')
         if n is not None and n < nreg:
-            img = render_region_tab(R_tiny, tiny, labels[n], n == region)
+            img = render_region_tab(R_small, R_nano, labels[n], n == region)
         elif (n := _macro_n(tok, 'LSLOT')) is not None:
             li = slot_lang(off, langs, spp, region, page, n)
             if li is not None:
-                img = render_flag_key(g_all, tiny, li, L.langs[li], li == current_idx)
+                img = render_flag_key(g_all, nano, flag_glyph[li], L.langs[li], li == current_idx)
             else:
                 out[mp] = KeyContent(blank=True); continue
         elif _macro_n(tok, 'LMRU') is not None:
@@ -286,20 +313,24 @@ def main():
     roles = dict(zip(matrices, role_list))
 
     off, langs, labels, spp, nreg = parse_lang_layer(
-        os.path.join(pk, 'lang_layer.c'), os.path.join(pk, 'lang_layer.h'))
-    static_map = parse_static_text_map(os.path.join(pk, 'keycode_helper.c'))
+        fw_file(pk, 'keymap/lang_layer.c'), fw_file(pk, 'keymap/lang_layer.h'))
+    static_map = parse_static_text_map(fw_file(pk, 'keymap/keycode_helper.c'))
     named = load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
     L = Lang(os.path.join(pk, 'lang', 'lang_lut.xlsx'), named)
-    g_all = load_all_fonts(os.path.join(pk, 'base', 'fonts'))
+    g_all = load_all_fonts(font_dir(pk))
     R = Renderer(g_all)
-    tiny = load_one_font(os.path.join(pk, 'base', 'fonts', 'lang_label_font.h'),
-                         'NotoSans_Regular_Tiny_6pt7b')
-    R_tiny = Renderer([tiny])
+    # The faces render_lang_flag_key / render_lang_region_tab use (poly_keymap.c).
+    nano = load_one_font(os.path.join(font_dir(pk), 'nano_font.h'),
+                         'NotoSans_Regular_Nano_10px7b')
+    R_nano = Renderer([nano])
+    R_small = Renderer([load_one_font(os.path.join(font_dir(pk), 'NotoSans_Medium_Base_8pt.h'),
+                                      'NotoSans_Regular_Small_15px7b')])
+    flag_glyph = load_flag_glyphs(font_dir(pk), len(L.langs))
     current_idx = L.langs.index(args.current) if args.current in L.langs else -1
     print(f"  {nreg} regions, {sum(region_count(off,r) for r in range(nreg))} langs, "
           f"{spp} slots/page; flag font {'present' if any(f.first<=FLAG_CP_BASE<=f.last for f in g_all) else 'MISSING'}")
 
-    ctx = (roles, off, langs, labels, spp, nreg, L, R, g_all, tiny, R_tiny,
+    ctx = (roles, off, langs, labels, spp, nreg, L, R, g_all, nano, R_nano, R_small, flag_glyph,
            static_map, current_idx)
 
     renderer = LangBoard(json.load(open(args.kle, encoding='utf-8')),

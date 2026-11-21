@@ -492,7 +492,7 @@ tab by prefix. A name that matches no rule lands in "Additional", the second tab
   - ✅ **MOVE / BADGE / ERASE / ROT are DRAWN now**, which is what makes those
     keycaps render rather than merely be refused. Ported from
     `kdisp_draw_badge_rect` + `rr_row_inset` + `kdisp_draw_glyph_rot_half_at`
-    (`base/disp_array.c`) and `kdisp_gfx_rot_half_extent` (`base/font_lookup.c`).
+    (`drivers/disp_array.c`) and `kdisp_gfx_rot_half_extent` (`base/font_lookup.c`).
     Four things that are load-bearing:
     - **The badge is checked against FIRMWARE DATA, not against itself** — its
       silhouette must equal the baked `ICON_CAPSLOCK_OFF` glyph, which is the claim

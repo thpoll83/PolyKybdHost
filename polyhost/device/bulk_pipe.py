@@ -1,6 +1,6 @@
 """The keyboard's bulk pipe: the CDC serial interface next to raw HID.
 
-A ``POLYKYBD_BULK_PIPE`` firmware (qmk ``keyboards/polykybd/BULK_PIPE.md``)
+A ``POLYKYBD_BULK_PIPE`` firmware (qmk ``keyboards/polykybd/docs/protocol/bulk-pipe.md``)
 enumerates a CDC-ACM function whose data endpoints are bulk, so the host can
 stream 64-byte packets back to back instead of one HID report per 1 ms frame.
 The OS binds its own serial driver, and the port carries the keyboard's

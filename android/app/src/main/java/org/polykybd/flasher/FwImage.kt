@@ -13,8 +13,8 @@ import java.util.zip.CRC32
 object FwImage {
     const val SIG_LEN = 64
 
-    /** ~2 MB hard limit. Must match FW_UP_MAX_SIZE in the host and in qmk `base/fw_staging.h`. */
-    const val MAX_SIZE = 0x1F5000
+    /** ~2 MB hard limit. Must match FW_UP_MAX_SIZE in the host and in qmk `drivers/fw_staging.h`. */
+    const val MAX_SIZE = 0x1F3000
 
     private const val BOOT2_SIZE = 256
     private const val SRAM_BASE = 0x20000000L

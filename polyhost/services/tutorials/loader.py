@@ -125,7 +125,7 @@ def _say(value, where: str) -> tuple:
             isinstance(s, str) for s in lines):
         raise ScriptError(f"{where}: one or two lines of text")
     for line in lines:
-        # The status OLED's face covers 0x20..0x7E only (firmware STATUS_OLED.md).
+        # The status OLED's face covers 0x20..0x7E only (firmware keyboards/polykybd/docs/display/status-oled.md).
         if any(not 0x20 <= ord(ch) <= 0x7E for ch in line):
             raise ScriptError(f"{where}: {line!r} has a character the status display "
                               f"cannot show (ASCII 0x20..0x7E only)")

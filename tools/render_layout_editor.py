@@ -34,6 +34,7 @@ import os
 import pathlib
 import re
 import sys
+from gfx_font import fw_file
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -107,7 +108,7 @@ def layer_wire_names(fw: pathlib.Path):
     cap = int(re.search(r"#define\s+DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT\s+(\d+)",
                         (kb / "config.h").read_text()).group(1))
 
-    src = (kb / "layer_names.c").read_text()
+    src = (pathlib.Path(fw_file(kb, "keymap/layer_names.c"))).read_text()
     layouts = re.search(r"\}\s*layouts\[\]\s*=\s*\{(.*?)\n\};", src, re.S).group(1)
     # each row is `{ U"full", U"short", "wire" }` -- the wire form is the plain literal
     names = [m.group(1) for m in re.finditer(r'\{[^{}]*,\s*"([^"]*)"\s*\}', layouts)]

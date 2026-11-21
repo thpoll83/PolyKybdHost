@@ -39,11 +39,12 @@ sys.path.insert(0, str(a.repo / "tools"))
 import lang_demo as LD
 import oled_preview as op
 from gfx_font import load_all_fonts
+from gfx_font import font_dir, fw_file  # noqa: E402
 
 PK = a.qmk / "keyboards" / "polykybd"
-STATIC = LD.parse_static_text_map(str(PK / "keycode_helper.c"))
+STATIC = LD.parse_static_text_map(fw_file(PK, "keymap/keycode_helper.c"))
 L = op.Lang(str(PK / "lang" / "lang_lut.xlsx"), op.load_named_glyphs(str(PK / "lang" / "named_glyphs.h")))
-R = op.Renderer(load_all_fonts(str(PK / "base" / "fonts")))
+R = op.Renderer(load_all_fonts(font_dir(PK)))
 ALIAS = {"KC_LEFT_SHIFT": "KC_LSFT", "KC_RIGHT_SHIFT": "KC_RSFT"}
 
 def standard(key: str):

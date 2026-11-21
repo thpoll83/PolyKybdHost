@@ -31,6 +31,7 @@ import oled_preview as op
 # to keep in step, and this one already says "keep in sync with REGION_LANGS".
 from polyhost.services.lang_regions import (          # noqa: E402
     LANG_REGION, LANG_REGION_ORDER, LANG_REGION_OVERRIDE)
+from gfx_font import font_dir  # noqa: E402
 
 
 def region_of(code: str) -> str:
@@ -160,7 +161,7 @@ def build_data(qmk: str, codes=None) -> dict:
     # hardcoded row number, so an insert above one of them would silently mis-tune a
     # whole category rather than error.
     op.verify_setting_rows(L)
-    R = op.Renderer(op.load_all_fonts(os.path.join(pk, 'base', 'fonts')))
+    R = op.Renderer(op.load_all_fonts(font_dir(pk)))
     tok_for = make_tok_for(reverse_named(named))
 
     order = list(L.langs) if codes is None else list(codes)

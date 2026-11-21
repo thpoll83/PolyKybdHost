@@ -38,6 +38,7 @@ import oled_preview as op
 from oled_preview import Lang, Renderer, load_named_glyphs
 from gfx_font import load_all_fonts, OLED_W, OLED_H, BUFFER_X, BASELINE
 from kle_render import KleRenderer, KeyContent, Theme
+from gfx_font import font_dir, fw_file
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOST_REPO = os.path.dirname(HERE)
@@ -807,14 +808,14 @@ def main():
         raise SystemExit(f"layout/keymap length mismatch: {len(matrices)} vs {len(kcs)}")
     matrix_kc = dict(zip(matrices, kcs))
 
-    static_map = parse_static_text_map(os.path.join(pk, 'keycode_helper.c'))
+    static_map = parse_static_text_map(fw_file(pk, 'keymap/keycode_helper.c'))
     named = load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
     L = Lang(os.path.join(pk, 'lang', 'lang_lut.xlsx'), named)
     unknown = [x for x in langs if x not in L.langs]
     if unknown:
         raise SystemExit(f"unknown language(s): {unknown}\nhave {len(L.langs)} langs")
-    R = Renderer(load_all_fonts(os.path.join(pk, 'base', 'fonts')))
-    ime = parse_ime_key(os.path.join(pk, 'poly_keymap.c'), L.langs)
+    R = Renderer(load_all_fonts(font_dir(pk)))
+    ime = parse_ime_key(fw_file(pk, 'keymap/poly_keymap.c'), L.langs)
     print(f"  {len(L.langs)} languages available, touring {len(langs)}")
 
     renderer = LangBoard(json.load(open(args.kle, encoding='utf-8')),
