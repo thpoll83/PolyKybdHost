@@ -283,9 +283,13 @@ class PolyCore(Observable):
         self._wincompose_thread = None
         self._wincompose_fast_until = 0.0
         self._wincompose_lock = threading.Lock()
-        # macOS: the keyboard event tap behind InputMethod.MacCompose, created on
-        # the first mode push (_unicode_mode_for_keyboard).
-        self._mac_compose = None
+        # macOS: the keyboard event tap behind InputMethod.MacCompose. Created here,
+        # once, because the mode push runs on several threads (post-connect,
+        # settings change, refresh_unicode_mode) and a lazy creation there could
+        # make two taps (Revix on #1009). Creating it starts no thread and imports
+        # no pyobjc; MacComposeTap.start() has its own lock.
+        from polyhost.input.mac_compose import MacComposeTap
+        self._mac_compose = MacComposeTap(log=self.log)
         # combos_set reads, writes and commits the keyboard's RAM records in several
         # calls; a second save in between would see and restore the first one's records.
         self._combos_lock = threading.Lock()
@@ -571,8 +575,7 @@ class PolyCore(Observable):
         # flag: otherwise a reconnect landing here concurrently would clear the
         # stop Event and start a fresh watcher AFTER shutdown, which would then
         # hold the core and submit to a stopped worker for up to 15 minutes.
-        if self._mac_compose is not None:
-            self._mac_compose.stop()
+        self._mac_compose.stop()
         with self._wincompose_lock:
             self._wincompose_shutting_down = True
             self._wincompose_stop.set()
@@ -1713,9 +1716,6 @@ class PolyCore(Observable):
         if (mode is not InputMethod.Mac or sys.platform != "darwin"
                 or not protocol_supports(self.keeb.protocol_version, "mac_compose")):
             return mode
-        if self._mac_compose is None:
-            from polyhost.input.mac_compose import MacComposeTap
-            self._mac_compose = MacComposeTap(log=self.log)
         return InputMethod.MacCompose if self._mac_compose.start() else mode
 
     def _apply_unicode_mode(self, mode):
