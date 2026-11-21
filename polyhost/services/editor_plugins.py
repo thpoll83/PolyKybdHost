@@ -224,6 +224,7 @@ MSG_NO_PROJECT = M_("No {editor} project folder was chosen.")
 MSG_CLI_INSTALLED = M_("Installed the extension with {command}.")
 MSG_CLI_REMOVED = M_("Removed the extension with {command}.")
 MSG_CLI_FAILED = M_("{command} failed: {error}")
+MSG_CLI_FAILED_BLOCKED = M_("{command} failed: {error}\n{reason}")
 MSG_CLI_BLOCKED = M_("{editor} is restricted by a policy (the setting extensions.allowed, or a rule of "
                      "your organization), so it did not install the extension. Ask your administrator "
                      "to allow {extension}.")
@@ -1653,9 +1654,14 @@ def _change_cli(st, install, source, state, run, home=None, env=None, system=Non
         return Result(editor, False, False, MSG_CLI_FAILED.format(command=shown, error=exc), None)
     if code != 0:
         error = err.strip().splitlines()[-1] if err.strip() else f"exit code {code}"
-        message = MSG_CLI_FAILED.format(command=shown, error=error)
         if install and et.extension_policy_reason(editor, f"{_out}\n{err}", home, env, system):
-            message += " " + MSG_CLI_BLOCKED.format(editor=name, extension=et.VSCODE_EXTENSION_ID)
+            # One template, so translate_message() translates the reason as a
+            # value of its own instead of leaving it inside {error}.
+            message = MSG_CLI_FAILED_BLOCKED.format(
+                command=shown, error=error,
+                reason=MSG_CLI_BLOCKED.format(editor=name, extension=et.VSCODE_EXTENSION_ID))
+        else:
+            message = MSG_CLI_FAILED.format(command=shown, error=error)
         return Result(editor, False, False, message, None)
     log.info("Editor plugin: %s", shown)
     recorded = (state.set_cli(editor, vsix_digest(vsix), vsix_version(vsix)) if install

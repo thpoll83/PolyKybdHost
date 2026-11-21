@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-21 06:55+0000\n"
+"POT-Creation-Date: 2026-11-21 07:26+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cs\n"
@@ -5464,25 +5464,34 @@ msgstr "{command} selhal: {error}"
 
 #: polyhost/services/editor_plugins.py:227
 #, python-brace-format
+msgid ""
+"{command} failed: {error}\n"
+"{reason}"
+msgstr ""
+"{command} selhal: {error}\n"
+"{reason}"
+
+#: polyhost/services/editor_plugins.py:228
+#, python-brace-format
 msgid "{editor} is restricted by a policy (the setting extensions.allowed, or a rule of your organization), so it did not install the extension. Ask your administrator to allow {extension}."
 msgstr "{editor} je omezen zásadami (nastavení extensions.allowed nebo pravidlo vaší organizace), proto rozšíření nenainstaloval. Požádejte správce o povolení {extension}."
 
-#: polyhost/services/editor_plugins.py:230
+#: polyhost/services/editor_plugins.py:231
 #, python-brace-format
 msgid "{editor} has the extension {extension} from another source. It is left alone."
 msgstr "{editor} má rozšíření {extension} z jiného zdroje. Zůstane beze změny."
 
-#: polyhost/services/editor_plugins.py:231
+#: polyhost/services/editor_plugins.py:232
 #, python-brace-format
 msgid "The change was made, but {path} could not be written, so this app does not remember it."
 msgstr "Změna byla provedena, ale {path} se nepodařilo zapsat, takže si ji tato aplikace nepamatuje."
 
-#: polyhost/services/editor_plugins.py:234
+#: polyhost/services/editor_plugins.py:235
 #, python-brace-format
 msgid "The plugin is installed, but {path} could not be written, so this app does not remember this folder."
 msgstr "Plugin je nainstalovaný, ale {path} se nepodařilo zapsat, takže si tato aplikace tuto složku nepamatuje."
 
-#: polyhost/services/editor_plugins.py:236
+#: polyhost/services/editor_plugins.py:237
 #, python-brace-format
 msgid "Run this command in the Python environment that runs JupyterLab: {command}"
 msgstr "Spusťte tento příkaz v prostředí Pythonu, které spouští JupyterLab: {command}"

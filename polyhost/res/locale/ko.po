@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-21 06:55+0000\n"
+"POT-Creation-Date: 2026-11-21 07:26+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -5416,25 +5416,34 @@ msgstr "{command} 실패: {error}"
 
 #: polyhost/services/editor_plugins.py:227
 #, python-brace-format
+msgid ""
+"{command} failed: {error}\n"
+"{reason}"
+msgstr ""
+"{command} 실패: {error}\n"
+"{reason}"
+
+#: polyhost/services/editor_plugins.py:228
+#, python-brace-format
 msgid "{editor} is restricted by a policy (the setting extensions.allowed, or a rule of your organization), so it did not install the extension. Ask your administrator to allow {extension}."
 msgstr "{editor}이(가) 정책(extensions.allowed 설정 또는 조직 규칙)으로 제한되어 있어 확장 프로그램을 설치하지 않았습니다. 관리자에게 {extension} 허용을 요청하세요."
 
-#: polyhost/services/editor_plugins.py:230
+#: polyhost/services/editor_plugins.py:231
 #, python-brace-format
 msgid "{editor} has the extension {extension} from another source. It is left alone."
 msgstr "{editor}에 다른 출처의 확장 {extension}이(가) 있습니다. 그대로 둡니다."
 
-#: polyhost/services/editor_plugins.py:231
+#: polyhost/services/editor_plugins.py:232
 #, python-brace-format
 msgid "The change was made, but {path} could not be written, so this app does not remember it."
 msgstr "변경은 완료되었지만 {path}에 쓸 수 없어 이 앱이 이를 기억하지 않습니다."
 
-#: polyhost/services/editor_plugins.py:234
+#: polyhost/services/editor_plugins.py:235
 #, python-brace-format
 msgid "The plugin is installed, but {path} could not be written, so this app does not remember this folder."
 msgstr "플러그인은 설치되어 있지만 {path}에 쓸 수 없어 이 앱이 이 폴더를 기억하지 않습니다."
 
-#: polyhost/services/editor_plugins.py:236
+#: polyhost/services/editor_plugins.py:237
 #, python-brace-format
 msgid "Run this command in the Python environment that runs JupyterLab: {command}"
 msgstr "JupyterLab을 실행하는 Python 환경에서 이 명령을 실행하세요: {command}"

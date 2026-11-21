@@ -330,6 +330,17 @@ class TestBlockedByPolicy(unittest.TestCase):
         self.assertIsNone(et.extension_policy_reason("vscode", "proxy policy error", home="/nonexistent",
                                                      env={}, system="Linux"))
 
+    def test_the_hint_is_translated_as_part_of_the_message(self):
+        from polyhost import i18n
+        r = self._install("Error: not in the allowed list")
+        try:
+            i18n.install("de")
+            text = i18n.translate_message(r.message)
+        finally:
+            i18n.install("en")
+        self.assertIn("Richtlinie", text)
+        self.assertNotIn("restricted by a policy", text)
+
 
 if __name__ == "__main__":
     unittest.main()

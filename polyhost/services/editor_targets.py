@@ -279,6 +279,7 @@ def vscode_cli(editor, which=None, home=None, env=None, system=None):
 _POLICY_WORDS = re.compile(r"allowed list|not allowed|extensions\.allowed", re.I)
 
 _USER_FOLDER = {"vscode": "Code", "cursor": "Cursor", "windsurf": "Windsurf"}
+_POLICY_KEY = {"vscode": "VSCode", "cursor": "Cursor", "windsurf": "Windsurf"}
 
 
 def _user_settings_files(editor, home, env, system):
@@ -354,16 +355,17 @@ def extension_policy_reason(editor, output="", home=None, env=None, system=None)
             import winreg
         except ImportError:
             return None  # no winreg module (not a real Windows Python): no registry to read
-        for key in (r"SOFTWARE\Policies\Microsoft\VSCode", r"SOFTWARE\Policies\Microsoft\Cursor"):
-            for hive in (winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER):
-                try:
-                    with winreg.OpenKey(hive, key) as k:
-                        value = winreg.QueryValueEx(k, "AllowedExtensions")[0]
-                except OSError:
-                    continue  # this hive has no such key
-                if _rules_refuse(_json_value(value) if isinstance(value, str) else None):
-                    return "policy"
-    elif system == "Linux":
+        key = "SOFTWARE\\Policies\\Microsoft\\" + _POLICY_KEY[editor]
+        for hive in (winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER):
+            try:
+                with winreg.OpenKey(hive, key) as k:
+                    value = winreg.QueryValueEx(k, "AllowedExtensions")[0]
+            except OSError:
+                continue  # this hive has no such key
+            if _rules_refuse(_json_value(value) if isinstance(value, str) else None):
+                return "policy"
+    elif system == "Linux" and editor == "vscode":
+        # Only VS Code's policy file is known; Cursor and Windsurf are not guessed.
         try:
             text = Path("/etc/vscode/policy.json").read_text(encoding="utf-8", errors="replace")
         except OSError:

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-21 06:55+0000\n"
+"POT-Creation-Date: 2026-11-21 07:26+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fa\n"
@@ -5416,25 +5416,34 @@ msgstr "{command} ناموفق بود: {error}"
 
 #: polyhost/services/editor_plugins.py:227
 #, python-brace-format
+msgid ""
+"{command} failed: {error}\n"
+"{reason}"
+msgstr ""
+"{command} ناموفق بود: {error}\n"
+"{reason}"
+
+#: polyhost/services/editor_plugins.py:228
+#, python-brace-format
 msgid "{editor} is restricted by a policy (the setting extensions.allowed, or a rule of your organization), so it did not install the extension. Ask your administrator to allow {extension}."
 msgstr "{editor} با یک سیاست محدود شده است (تنظیم extensions.allowed یا قانونی در سازمان شما)، بنابراین افزونه را نصب نکرد. از مدیر بخواهید {extension} را مجاز کند."
 
-#: polyhost/services/editor_plugins.py:230
+#: polyhost/services/editor_plugins.py:231
 #, python-brace-format
 msgid "{editor} has the extension {extension} from another source. It is left alone."
 msgstr "{editor} افزونه‌ی {extension} را از منبع دیگری دارد. دست‌نخورده می‌ماند."
 
-#: polyhost/services/editor_plugins.py:231
+#: polyhost/services/editor_plugins.py:232
 #, python-brace-format
 msgid "The change was made, but {path} could not be written, so this app does not remember it."
 msgstr "تغییر انجام شد، اما {path} نوشته نشد، پس این برنامه آن را به خاطر نمی‌سپارد."
 
-#: polyhost/services/editor_plugins.py:234
+#: polyhost/services/editor_plugins.py:235
 #, python-brace-format
 msgid "The plugin is installed, but {path} could not be written, so this app does not remember this folder."
 msgstr "افزونه نصب شده است، اما {path} نوشته نشد، پس این برنامه این پوشه را به خاطر نمی‌سپارد."
 
-#: polyhost/services/editor_plugins.py:236
+#: polyhost/services/editor_plugins.py:237
 #, python-brace-format
 msgid "Run this command in the Python environment that runs JupyterLab: {command}"
 msgstr "این فرمان را در محیط Python که JupyterLab را اجرا می‌کند اجرا کنید: {command}"
