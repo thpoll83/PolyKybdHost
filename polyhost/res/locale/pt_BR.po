@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-21 06:47+0000\n"
+"POT-Creation-Date: 2026-11-21 06:55+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pt_BR\n"
@@ -5440,25 +5440,25 @@ msgstr "{command} falhou: {error}"
 
 #: polyhost/services/editor_plugins.py:227
 #, python-brace-format
-msgid "{editor} did not accept the extension because it is not on the list of extensions {editor} may install (the setting extensions.allowed, or a policy of your organization). Ask your administrator to allow {extension}, or add it to extensions.allowed in the user settings."
-msgstr "{editor} não aceitou a extensão porque ela não está na lista de extensões que {editor} pode instalar (a configuração extensions.allowed ou uma política da sua organização). Peça ao administrador para permitir {extension}, ou adicione-a a extensions.allowed nas configurações do usuário."
+msgid "{editor} is restricted by a policy (the setting extensions.allowed, or a rule of your organization), so it did not install the extension. Ask your administrator to allow {extension}."
+msgstr "{editor} está restrito por uma política (a configuração extensions.allowed ou uma regra da sua organização) e por isso não instalou a extensão. Peça ao administrador para permitir {extension}."
 
-#: polyhost/services/editor_plugins.py:231
+#: polyhost/services/editor_plugins.py:230
 #, python-brace-format
 msgid "{editor} has the extension {extension} from another source. It is left alone."
 msgstr "{editor} tem a extensão {extension} de outra origem. Ela não é alterada."
 
-#: polyhost/services/editor_plugins.py:232
+#: polyhost/services/editor_plugins.py:231
 #, python-brace-format
 msgid "The change was made, but {path} could not be written, so this app does not remember it."
 msgstr "A alteração foi feita, mas não foi possível gravar {path}, então este app não se lembra dela."
 
-#: polyhost/services/editor_plugins.py:235
+#: polyhost/services/editor_plugins.py:234
 #, python-brace-format
 msgid "The plugin is installed, but {path} could not be written, so this app does not remember this folder."
 msgstr "O plugin está instalado, mas não foi possível gravar {path}, então este app não se lembra desta pasta."
 
-#: polyhost/services/editor_plugins.py:237
+#: polyhost/services/editor_plugins.py:236
 #, python-brace-format
 msgid "Run this command in the Python environment that runs JupyterLab: {command}"
 msgstr "Execute este comando no ambiente Python que executa o JupyterLab: {command}"

@@ -224,10 +224,9 @@ MSG_NO_PROJECT = M_("No {editor} project folder was chosen.")
 MSG_CLI_INSTALLED = M_("Installed the extension with {command}.")
 MSG_CLI_REMOVED = M_("Removed the extension with {command}.")
 MSG_CLI_FAILED = M_("{command} failed: {error}")
-MSG_CLI_BLOCKED = M_("{editor} did not accept the extension because it is not on the list of extensions "
-                     "{editor} may install (the setting extensions.allowed, or a policy of your organization). "
-                     "Ask your administrator to allow {extension}, or add it to extensions.allowed in the "
-                     "user settings.")
+MSG_CLI_BLOCKED = M_("{editor} is restricted by a policy (the setting extensions.allowed, or a rule of "
+                     "your organization), so it did not install the extension. Ask your administrator "
+                     "to allow {extension}.")
 MSG_CLI_NOT_OURS = M_("{editor} has the extension {extension} from another source. It is left alone.")
 MSG_STATE_NOT_SAVED = M_("The change was made, but {path} could not be written, so this app "
                          "does not remember it.")
