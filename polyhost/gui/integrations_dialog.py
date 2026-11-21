@@ -20,7 +20,7 @@ from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QCursor, QGuiApplication, QPalette
 from PyQt5.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QFrame, QGridLayout,
                              QHBoxLayout, QLabel, QListWidget, QMessageBox,
-                             QPushButton, QScrollArea, QSizePolicy, QStackedWidget,
+                             QPushButton, QScrollArea, QSizePolicy,
                              QVBoxLayout, QWidget)
 
 from polyhost.gui import section_colors, section_style
@@ -445,7 +445,19 @@ class IntegrationsDialog(QDialog):
         side_lay.addWidget(self.nav, 1)
         body.addWidget(side)
 
-        self.stack = QStackedWidget()
+        # All pages sit in one scrolling column, like Settings and About. The
+        # sidebar jumps to a page's section and follows the scroll position.
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setFrameShape(QFrame.NoFrame)
+        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        holder = QWidget()
+        column = QVBoxLayout(holder)
+        column.setContentsMargins(16, 14, 16, 24)
+        column.setSpacing(24)
+        self.scroll.setWidget(holder)
+        self._sections = []
+        self._syncing_nav = False
         dark = section_style.dialog_is_dark(self)
         for index, category in enumerate(self.categories):
             page = factories[category]()
@@ -461,8 +473,7 @@ class IntegrationsDialog(QDialog):
             section = section_style.ColorSection(title, color)
             # The page's content sits in a card on the base colour (white or
             # black), like a Settings group and a tutorial entry. A page with
-            # cards of its own (Browser) is not wrapped again. The stretch
-            # below keeps the card as tall as its content.
+            # cards of its own (Browser) is not wrapped again.
             if page.findChildren(QFrame, "uiCard"):
                 section.body_layout.addWidget(page)
             else:
@@ -470,24 +481,16 @@ class IntegrationsDialog(QDialog):
                 content_lay.setContentsMargins(px(14), px(12), px(14), px(12))
                 content_lay.addWidget(page)
                 section.body_layout.addWidget(content)
-                section.body_layout.addStretch(1)
             page.accent_color = color
             section_style.adopt(page, color)
-            # Each page scrolls on its own: a long result list or a small
-            # screen must not push the Install button out of reach.
-            scroll = QScrollArea()
-            scroll.setWidgetResizable(True)
-            scroll.setFrameShape(QFrame.NoFrame)
-            holder = QWidget()
-            holder_lay = QVBoxLayout(holder)
-            holder_lay.setContentsMargins(16, 14, 16, 16)
-            holder_lay.addWidget(section)
-            scroll.setWidget(holder)
-            self.stack.addWidget(scroll)
+            column.addWidget(section)
+            self._sections.append(section)
             section_style.add_nav_item(self.nav, category_title(category), color)
+        column.addStretch(1)
         # noinspection PyUnresolvedReferences
-        self.nav.currentRowChanged.connect(self.stack.setCurrentIndex)
-        body.addWidget(self.stack, 1)
+        self.nav.currentRowChanged.connect(self._nav_selected)
+        self.scroll.verticalScrollBar().valueChanged.connect(self._sync_nav)
+        body.addWidget(self.scroll, 1)
 
         footer = QHBoxLayout()
         footer.setContentsMargins(16, 8, 16, 12)
@@ -504,7 +507,10 @@ class IntegrationsDialog(QDialog):
         main.addLayout(footer)
 
         if self.categories:
+            # Select the first entry without the jump: the column opens at the top.
+            self._syncing_nav = True
             self.nav.setCurrentRow(0)
+            self._syncing_nav = False
         self._fit_to_screen()
 
     def sizeHint(self):
@@ -521,6 +527,41 @@ class IntegrationsDialog(QDialog):
         minimum = minimum_dialog_size(available)
         self.setMinimumSize(minimum)
         self.resize(initial_dialog_size(available, minimum))
+
+    def _section_top(self, section):
+        holder = self.scroll.widget()
+        holder.layout().activate()
+        return section.mapTo(holder, section.rect().topLeft()).y()
+
+    def _nav_selected(self, row):
+        """The sidebar entry was chosen: scroll to its section. A few pixels
+        above it, so the section's colour band shows."""
+        if self._syncing_nav or not 0 <= row < len(self._sections):
+            return
+        self._syncing_nav = True
+        try:
+            self.scroll.verticalScrollBar().setValue(
+                self._section_top(self._sections[row]) - px(8))
+        finally:
+            self._syncing_nav = False
+
+    def _sync_nav(self, value):
+        """Select the section the reader is in as the column scrolls: the last
+        one whose top is in the upper third of the view, or the last section at
+        the end of the column."""
+        if self._syncing_nav or not self._sections:
+            return
+        bar = self.scroll.verticalScrollBar()
+        reach = value + max(px(40), self.scroll.viewport().height() // 3)
+        current = max((i for i, sec in enumerate(self._sections)
+                       if self._section_top(sec) <= reach), default=0)
+        if bar.maximum() > 0 and value >= bar.maximum():
+            current = len(self._sections) - 1
+        self._syncing_nav = True
+        try:
+            self.nav.setCurrentRow(current)
+        finally:
+            self._syncing_nav = False
 
     def current_category(self):
         row = self.nav.currentRow()

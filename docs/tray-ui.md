@@ -253,7 +253,11 @@ and relative links were adjusted to suit a standalone file.
 
 - **Integrations… (every OS)**: one top-level entry above Settings, in the tray app
   and in the forwarder, opens `gui/integrations_dialog.py`. It has the Settings layout
-  (the same sidebar style and window size) with one page per category: **AI agents**
+  (the same sidebar style and window size). Like Settings and Help & About, every
+  category is a coloured section in one scrolling column with no sideways scroll bar: the
+  sidebar scrolls to a section and follows the scroll position. A control must wrap or
+  shrink to fit the smallest window (640 px), so a long checkbox text uses
+  `ui_kit.wrapped_checkbox`. The categories: **AI agents**
   (the hooks in each agent's config file, `services/agents/hook_install.py`),
   **Terminals** and **Editors** (`gui/shell_editor_pages.py`) and **Browser** (the
   extension folder, `gui/browser_extension_page.py`). The forwarder shows all four
