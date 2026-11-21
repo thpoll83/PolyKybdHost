@@ -331,7 +331,7 @@ and relative links were adjusted to suit a standalone file.
     installed extension with another version (a Marketplace or Open VSX copy, for
     example) reads `manual` and is left alone; a store copy with the same version
     counts as this app's (the refresh may install the same build over it, Remove
-    uninstalls it). The refresh at start runs `code` only where this app installed it. Godot, Unity, Obsidian: `no-project` until a project or
+    uninstalls it). The refresh at start runs `code` only where this app installed it. If the install fails and the command output, the user `settings.json` (`extensions.allowed`), the Windows registry (`AllowedExtensions`) or `/etc/vscode/policy.json` shows an allowed-extensions rule, the message adds `MSG_CLI_BLOCKED` ("restricted by a policy"); an administrator must allow `polykybd.polykybd-mode-reporter`. The command line program often prints no reason (`Failed Installing Extensions: file:///...`), so the rule is read from those places. Godot, Unity, Obsidian: `no-project` until a project or
     vault folder is chosen (a row button, or Install asks); the folders are
     remembered in `editor_plugins.json` in the config folder. JupyterLab: the row
     cannot be ticked; it shows the `pip install` command with a Copy button

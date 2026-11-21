@@ -2258,7 +2258,8 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
     MC_JAVA = "minecraft_java_template.mods.png"
     MC_BEDROCK = "minecraft_bedrock_template.mods.png"
     MC_JAVA_TITLES = ("Minecraft 1.21.4", "Minecraft* 1.21.4 - Singleplayer",
-                      "Minecraft 26.1 - Multiplayer (3rd-party Server)")
+                      "Minecraft 26.1 - Multiplayer (3rd-party Server)",
+                      "Minecraft* Forge 1.21.5")
 
     def _overlays(self, got):
         overlay = (got or {}).get("overlay") or []

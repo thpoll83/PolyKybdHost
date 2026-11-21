@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-18 09:23+0000\n"
+"POT-Creation-Date: 2026-11-21 07:26+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,17 +17,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: polyhost/device/command_ids.py:179
+#: polyhost/device/command_ids.py:183
 #, python-brace-format
 msgid "preset {value}"
 msgstr ""
 
-#: polyhost/device/command_ids.py:181
+#: polyhost/device/command_ids.py:185
 #, python-brace-format
 msgid "{minutes} min"
 msgstr ""
 
-#: polyhost/device/command_ids.py:182
+#: polyhost/device/command_ids.py:186
 #, python-brace-format
 msgid "{seconds} sec"
 msgstr ""
@@ -506,19 +506,19 @@ msgstr ""
 msgid "About"
 msgstr ""
 
-#: polyhost/gui/about_dialog.py:320
+#: polyhost/gui/about_dialog.py:322
 msgid "Basics"
 msgstr ""
 
-#: polyhost/gui/about_dialog.py:321
+#: polyhost/gui/about_dialog.py:323
 msgid "The words PolyKybd uses in its menus and settings, with a picture of each."
 msgstr ""
 
-#: polyhost/gui/about_dialog.py:366 polyhost/gui/about_dialog.py:377
+#: polyhost/gui/about_dialog.py:368 polyhost/gui/about_dialog.py:379
 msgid "Copy diagnostics"
 msgstr ""
 
-#: polyhost/gui/about_dialog.py:371
+#: polyhost/gui/about_dialog.py:373
 msgid "Copied ✓"
 msgstr ""
 
@@ -5309,20 +5309,32 @@ msgstr ""
 
 #: polyhost/services/editor_plugins.py:227
 #, python-brace-format
-msgid "{editor} has the extension {extension} from another source. It is left alone."
+msgid ""
+"{command} failed: {error}\n"
+"{reason}"
 msgstr ""
 
 #: polyhost/services/editor_plugins.py:228
 #, python-brace-format
-msgid "The change was made, but {path} could not be written, so this app does not remember it."
+msgid "{editor} is restricted by a policy (the setting extensions.allowed, or a rule of your organization), so it did not install the extension. Ask your administrator to allow {extension}."
 msgstr ""
 
 #: polyhost/services/editor_plugins.py:231
 #, python-brace-format
+msgid "{editor} has the extension {extension} from another source. It is left alone."
+msgstr ""
+
+#: polyhost/services/editor_plugins.py:232
+#, python-brace-format
+msgid "The change was made, but {path} could not be written, so this app does not remember it."
+msgstr ""
+
+#: polyhost/services/editor_plugins.py:235
+#, python-brace-format
 msgid "The plugin is installed, but {path} could not be written, so this app does not remember this folder."
 msgstr ""
 
-#: polyhost/services/editor_plugins.py:233
+#: polyhost/services/editor_plugins.py:237
 #, python-brace-format
 msgid "Run this command in the Python environment that runs JupyterLab: {command}"
 msgstr ""

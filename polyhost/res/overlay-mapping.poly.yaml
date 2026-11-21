@@ -1510,7 +1510,10 @@ code:
 # minecraft_java.yaml), so `java` on every platform and `java.exe` on Windows
 # (`javaw.exe` has its own entry below). The game titles its window
 # "Minecraft <version>", or "Minecraft* <version>" for a modified client, and
-# appends " - Singleplayer" / " - Multiplayer (...)" in a world. The `title:`
+# appends " - Singleplayer" / " - Multiplayer (...)" in a world. A mod loader
+# can put its name before the version: Forge from CurseForge changes the title
+# to "Minecraft* Forge 1.21.5" once it has loaded (a user's log, 2026-11-21), so
+# the `title:` allows one word there. The `title:`
 # inside each branch needs the version, so "Minecraft Launcher" (and a bare
 # "Minecraft") stays unmatched. The branch key is the title's first word, so
 # "Minecraft" and "Minecraft*" are two keys. The titles are from the Minecraft
@@ -1540,7 +1543,7 @@ java:
   title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
   titles-startswith:
     Minecraft: &minecraft_java_branch
-      title: '^Minecraft\*? \d'
+      title: '^Minecraft\*? (\w+ )?\d'
       overlay: [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
     "Shattered Pixel Dungeon": &spd_branch
       overlay: shattered_pixel_dungeon_template.mods.png
@@ -1752,7 +1755,7 @@ minecraft:
       title: '^(?!Minecraft Launcher)'
       overlay: *minecraft_java
 "minecraft*":
-  title: '^Minecraft\*? \d'
+  title: '^Minecraft\*? (\w+ )?\d'
   overlay: [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
 # JetBrains IDEs. Windows reports the executable (idea64.exe -> idea64), Linux
 # the launcher or WM_CLASS (idea / jetbrains-idea), macOS the display name

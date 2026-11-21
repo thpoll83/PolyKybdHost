@@ -281,6 +281,81 @@ class Aggregations(unittest.TestCase):
         self.assertIn("v5 ×1", summary["symbol"])
 
 
+class SectionCounts(unittest.TestCase):
+    def test_active_installs_count_the_days_back_from_the_newest_day(self):
+        from datetime import date
+        rows = [row("a", "2026-11-19"), row("b", "2026-11-13"), row("c", "2026-11-12"),
+                row("a", "2026-10-21")]
+        end = dash.last_day(rows)
+        self.assertEqual(end, date(2026, 11, 19))
+        self.assertEqual(dash.active_installs(rows, end, 7), 2)   # 11-13..11-19
+        self.assertEqual(dash.active_installs(rows, end, 30), 3)  # 10-21..11-19
+        self.assertEqual(dash.active_installs([], None, 7), 0)
+
+    def test_new_installs_use_the_first_report(self):
+        rows = [row("a", "2026-09-01"), row("a", "2026-11-19"), row("b", "2026-11-18")]
+        self.assertEqual(dash.new_installs(rows, dash.last_day(rows), 30), 1)
+
+    def test_mock_installs_are_test_installs(self):
+        rows = [row("m", "2026-11-01", device_name="PolyKybdMock"),
+                row("m", "2026-11-02", device_name="PolyKybd Split72"),
+                row("r", "2026-11-02")]
+        self.assertEqual(dash.mock_install_ids(rows), {"m"})
+
+    def test_mock_installs_are_left_out_of_the_counts_but_listed(self):
+        m, a = "m" * 32, "a" * 32
+        rows = [row("m", "2026-11-19", device_name="PolyKybdMock", hw_id_a=m,
+                    counters='{"sessions": 7}'),
+                row("r", "2026-11-19", hw_id_a=a, counters='{"sessions": 2}')]
+        out = dash.render(rows, 30, "now")
+        self.assertIn('<b>1</b><span class="what">installs ever seen</span>', out)
+        self.assertIn('<b>1</b><span class="what">keyboards identified</span>', out)
+        self.assertIn('<b>1</b><span>installs with a keyboard at their last report</span>', out)
+        label = dict(dash.COUNTERS)["sessions"]
+        self.assertIn(f'<tr><td>{label}</td><td class="num">2</td>', out)
+        self.assertIn("1 reports from 1 installs, not counting 1 test install(s)", out)
+        self.assertIn("test, not counted", out)
+
+    def test_a_last_day_with_only_test_reports_still_ends_the_window(self):
+        rows = [row("r", "2026-11-18"), row("m", "2026-11-19", device_name="PolyKybdMock")]
+        out = dash.render(rows, 30, "now")
+        self.assertIn("data up to 2026-11-19", out)
+        self.assertIn("2026-11-19: 0", out)
+
+    def test_daily_keyboards_count_groups_not_hashes(self):
+        a, b = "a" * 32, "b" * 32
+        rows = [row("i1", "2026-11-19", hw_id_a=a, hw_id_b=b),
+                row("i2", "2026-11-19", hw_id_a=b, hw_id_b=""),
+                row("i3", "2026-11-18"),
+                # unplugged: the host still sends the IDs it read last
+                row("i1", "2026-11-17", hw_id_a=a, hw_id_b=b, device_present=0)]
+        self.assertEqual(dash.daily_keyboards(rows, ["2026-11-17", "2026-11-18", "2026-11-19"]),
+                         [("2026-11-17", 0), ("2026-11-18", 0), ("2026-11-19", 1)])
+
+    def test_keyboard_chart_starts_at_the_first_id(self):
+        a = "a" * 32
+        rows = [row("i1", "2026-11-01"), row("i1", "2026-11-19", hw_id_a=a)]
+        out = dash._keyboard_chart(rows, dash.day_range(rows, None))
+        self.assertIn("2026-11-19: 1", out)
+        self.assertNotIn("2026-11-01:", out)
+        self.assertIn('class="val"', out)    # the value is printed above the bar
+        self.assertIn("No keyboard sent a hardware ID in this window",
+                      dash._keyboard_chart(rows, ["2026-11-01"]))
+
+    def test_keyboards_without_id(self):
+        latest = [row("a", "2026-11-19"), row("b", "2026-11-19", hw_id_a="a" * 32),
+                  row("c", "2026-11-19", device_present=0)]
+        self.assertEqual(dash.keyboards_without_id(latest), 1)
+
+    def test_counter_periods(self):
+        rows = [row("a", "2026-11-19", counters='{"sessions": 2}'),
+                row("a", "2026-11-01", counters='{"sessions": 3}'),
+                row("a", "2026-09-01", counters='{"sessions": 5}')]
+        periods = {label: rest for label, *rest in dash.counter_periods(rows, dash.last_day(rows))}
+        label = dict(dash.COUNTERS)["sessions"]
+        self.assertEqual(periods[label], [2, 5, 10])
+
+
 class Render(unittest.TestCase):
     def test_empty_dataset_renders_rather_than_dividing_by_zero(self):
         # This is the state the dashboard is in on day one, so it has to be the
