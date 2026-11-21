@@ -111,6 +111,11 @@ a replaced half. A half moved from one keyboard to another links the two
 keyboards into one group, so the count can be too low and the replacement count
 too high. A shared half alone does not prove a replacement.
 
+The dashboard leaves out every install that ever reported the emulated keyboard
+(device name `PolyKybdMock`) and lists those installs only in its table. An
+install counts as active when it sent at least one report in the 7 or 30 days
+that end on the newest day in the data.
+
 The key is public, so anyone who has your keyboard can compute its hash. The
 hashes are persistent device identifiers: the same keyboard sends the same
 hashes on every computer and after a reinstall, which is their purpose. The

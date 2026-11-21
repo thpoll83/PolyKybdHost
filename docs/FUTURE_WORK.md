@@ -6,7 +6,7 @@ question. The point of the file is that a deferral written only as a code commen
 is invisible: `parse_mac_accel`'s `glyph` note (below) sat one line from the code
 for the life of the branch and nothing but this file would have surfaced it.
 
-Siblings: `qmk_firmware/keyboards/polykybd/lang/FUTURE_LANGUAGES.md`,
+Siblings: `qmk_firmware/keyboards/polykybd/docs/lang/future-languages.md`,
 `polykybd-ctnd/docs/FUTURE_TESTS.md`.
 
 ---

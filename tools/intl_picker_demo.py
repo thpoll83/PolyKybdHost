@@ -44,6 +44,7 @@ from gfx_font import load_all_fonts, OLED_W, OLED_H, BUFFER_X, BASELINE
 from kle_render import Theme, KeyContent
 from lang_demo import (LangBoard, parse_layout_matrix, parse_base_layer_keycodes,
                        parse_static_text_map, build_frame, normalize_kc, display_keycode)
+from gfx_font import font_dir, fw_file
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOST_REPO = os.path.dirname(HERE)
@@ -204,12 +205,12 @@ def main():
         raise SystemExit(f"no MO(_ADDLANG1) on [{args.layer}] — nothing opens the Intl layer")
     intl_pos = max(intl_all, key=lambda mp: int(mp.split(',')[0]))
 
-    static_map = parse_static_text_map(os.path.join(pk, 'keycode_helper.c'))
+    static_map = parse_static_text_map(fw_file(pk, 'keymap/keycode_helper.c'))
     named = load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
     # INTL_LAYER_LEGEND (İñțł) and INTL_PICKER_LEGEND (Á»Æ) are defined in
     # keycode_helper.h, not named_glyphs.h — without them the Intl key renders the
     # literal macro NAME ("INTL_LAYER…") instead of the tile.
-    named.update(load_named_glyphs(os.path.join(pk, 'keycode_helper.h')))
+    named.update(load_named_glyphs(fw_file(pk, 'keymap/keycode_helper.h')))
     # The GUI key's glyph is chosen at runtime by kc_os_gui_icon() from the active OS.
     # Draw the GNOME foot rather than the generic penguin — the keyboard really does
     # tell the desktops apart (ICON_OS_WINDOWS / GNOME / KDE / ANDROID / Command).
@@ -220,7 +221,7 @@ def main():
     for alias in ("kc_os_gui_icon()", "kc_os_gui_icon())"):
         named[alias] = named[gui_icon]
     L = Lang(os.path.join(pk, 'lang', 'lang_lut.xlsx'), named)
-    R = Renderer(load_all_fonts(os.path.join(pk, 'base', 'fonts')))
+    R = Renderer(load_all_fonts(font_dir(pk)))
     variations = parse_latin_ex_map(os.path.join(pk, 'lang', 'lang_lut.c'))
     total = sum(len(r) for r in variations)
     print(f"  latin_ex_map: {total} variations over {len(variations)} rows, "

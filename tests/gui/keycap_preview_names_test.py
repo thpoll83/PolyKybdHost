@@ -12,9 +12,9 @@ import unittest.mock
 
 from polyhost.gui.layout_dialog import qmk_keycode_helper as qh
 from polyhost.services import preview_data as pdata
-from polyhost.services import macro_label as ml
 from polyhost.gui.layout_dialog import keycap_preview as kp
 from polyhost.gui.layout_dialog.keycap_preview import KeycapPreview
+from polyhost.util.fw_checkout import checkout_dir, fw_file
 
 
 class _Lang:
@@ -258,7 +258,7 @@ class LayerTagSourceTest(unittest.TestCase):
            7: "NL", 8: "UL", 9: "SL", 10: "LL", 11: "ADDLANG1", 12: "EMJ"}
 
     def _fw(self):
-        pk = os.path.dirname(os.path.dirname(ml.default_font_dir()))
+        pk = checkout_dir()
         if not os.path.exists(os.path.join(pk, "layers.h")):
             self.skipTest("no firmware checkout beside this repo")
         return pk
@@ -461,8 +461,8 @@ class PreviewSourceTest(unittest.TestCase):
         a comparison of the two data structures would agree by construction. The
         pixels are the only claim worth making, and they are what a user sees.
         """
-        pk = os.path.dirname(os.path.dirname(ml.default_font_dir()))
-        if not os.path.exists(os.path.join(pk, "keycode_helper.c")):
+        pk = checkout_dir()
+        if not os.path.exists(fw_file(pk, "keymap/keycode_helper.c")):
             self.skipTest("no firmware checkout beside this repo")
         a, b = KeycapPreview(source="shipped"), KeycapPreview(source="checkout")
         if not (a._load() and b._load()):

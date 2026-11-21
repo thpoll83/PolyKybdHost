@@ -36,6 +36,7 @@ import sys
 sys.path.insert(0, HOST_REPO)
 from polyhost.services.fontpack_reader import decode_pack_file
 from polyhost.services import fontpack_render as FR
+from gfx_font import font_dir, fw_file  # noqa: E402
 
 # fantasy.plyf fonts are in poly_glyph_script order (Tengwar..Braille).
 SCRIPTS = ["Tengwar", "Elder Futhark Runes", "Aurebesh", "Standard Galactic",
@@ -160,7 +161,7 @@ def main():
     matrices = parse_layout_matrix(os.path.join(pk, 'split72', 'keyboard.json'))
     kcs = parse_base_layer_keycodes(os.path.join(pk, 'split72', 'keymaps', 'default', 'keymap.c'))
     matrix_kc = dict(zip(matrices, kcs, strict=True))
-    static_map = parse_static_text_map(os.path.join(pk, 'keycode_helper.c'))
+    static_map = parse_static_text_map(fw_file(pk, 'keymap/keycode_helper.c'))
     named = load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
     # kc_os_gui_icon() is an OS-dependent function, not a named glyph — resolve the
     # GUI/Super key to a neutral OS icon so it isn't drawn as raw text.
@@ -168,7 +169,7 @@ def main():
         if "ICON_OS_LINUX" in named:
             named[alias] = named["ICON_OS_LINUX"]
     L = Lang(os.path.join(pk, 'lang', 'lang_lut.xlsx'), named)
-    R = Renderer(load_all_fonts(os.path.join(pk, 'base', 'fonts')))
+    R = Renderer(load_all_fonts(font_dir(pk)))
     pack = decode_pack_file(args.pack, "fantasy")
     print(f"  base={args.lang}, {len(pack.fonts)} script fonts")
 

@@ -23,6 +23,7 @@ from gfx_font import load_all_fonts
 from kle_render import KeyContent, Theme
 from lang_demo import LangBoard
 from intl_picker_demo import parse_latin_ex_map, render_cps
+from gfx_font import font_dir, fw_file  # noqa: E402
 
 # The line is chosen so each target accent appears in LEFT-TO-RIGHT keycap order
 # (é è ê ë), which is what keeps the four connectors from crossing.
@@ -89,8 +90,8 @@ def main():
     pk = os.path.join(args.qmk, 'keyboards', 'polykybd')
 
     named = load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
-    named.update(load_named_glyphs(os.path.join(pk, 'keycode_helper.h')))
-    R = Renderer(load_all_fonts(os.path.join(pk, 'base', 'fonts')))
+    named.update(load_named_glyphs(fw_file(pk, 'keymap/keycode_helper.h')))
+    R = Renderer(load_all_fonts(font_dir(pk)))
     variations = parse_latin_ex_map(os.path.join(pk, 'lang', 'lang_lut.c'))
     row = variations[26 + (ord(args.source) - ord('a'))]
 

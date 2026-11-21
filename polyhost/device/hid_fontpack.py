@@ -63,7 +63,7 @@ FONTPACK_MAX_SIZE   = 0x200000      # 2 MB cap; the whole bundle window. Per-bun
 # Pseudo bundle ids selecting the doom targets — the easter egg's WHX game
 # data and the executable engine pack, both in the upper resource region
 # (firmware FONTPACK_BUNDLE_DOOMWAD/_DOOMPACK, FW_TARGET_DOOMWAD/_DOOMPACK;
-# layout in qmk base/fw_staging.h, design in doom/PACK_DESIGN.md). Same
+# layout in qmk drivers/fw_staging.h, design in keyboards/polykybd/docs/design/doom-pack.md). Same
 # BEGIN/CHUNK/COMMIT transport, different fixed slots; COMMIT validates the
 # magic instead of reloading fonts.
 DOOMWAD_BUNDLE_ID  = 0x7F
@@ -77,7 +77,7 @@ DOOMPACK_MAGIC     = b"PlyX"
 # The slot was declared as the full 256 KB on both sides until 2026-08; the firmware
 # only erases the sectors an image needs, so nothing had overlapped in practice, but
 # a pack over 248 KB would have wiped the user's settings on flash. Mirrors
-# FW_DOOMPACK_SLOT_SIZE / FW_EEPROM_RESERVE_SIZE in qmk base/fw_staging.h — keep the
+# FW_DOOMPACK_SLOT_SIZE / FW_EEPROM_RESERVE_SIZE in qmk drivers/fw_staging.h — keep the
 # two in step, and prefer failing here (before streaming ~200 KB over HID) to
 # failing at the firmware's COMMIT.
 DOOMPACK_MAX_SIZE  = 0x3E000        # the 248 KB engine-pack slot (flash 0x7C0000..0x7FDFFF)

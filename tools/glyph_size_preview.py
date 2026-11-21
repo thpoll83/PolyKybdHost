@@ -17,7 +17,7 @@ the `latinbig` entries in fonts.yaml.
     python tools/glyph_size_preview.py --out /tmp/sizes.png
 
 Reads the firmware's own generated headers (../qmk_firmware/keyboards/polykybd/
-base/fonts), so it needs no font pack and no device.
+fonts), so it needs no font pack and no device.
 """
 from __future__ import annotations
 
@@ -28,6 +28,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from gfx_font import load_all_fonts  # noqa: E402
+from gfx_font import font_dir  # noqa: E402
 
 OLED_W, OLED_H = 72, 40
 BUFFER_X = 28
@@ -214,10 +215,8 @@ def contact_sheet(board: Board, out: str) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--fonts", default=os.path.join(
-        os.path.dirname(os.path.dirname(HERE)), "qmk_firmware",
-        "keyboards", "polykybd", "base", "fonts"),
-        help="firmware base/fonts directory")
+    ap.add_argument("--fonts", default=font_dir(),
+                    help="firmware font header directory (fonts/, fonts/ before 2026-11)")
     ap.add_argument("--check", action="store_true", help="report ink extents + clipping")
     ap.add_argument("--out", help="write a PNG contact sheet here")
     a = ap.parse_args()

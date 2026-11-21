@@ -95,7 +95,7 @@ CONSOLE_PATTERNS: tuple[ConsolePattern, ...] = (
     # The status OLED. One failed write costs one frame and the next frame
     # repaints it (field report 2026-10-02: one failure in ~7300 idle frames), so a
     # single one is a warning and only a burst is an error. `oled_render … failed`
-    # is stock QMK's line; firmware with keyboards/polykybd/oled_i2c.c retries
+    # is stock QMK's line; firmware with keyboards/polykybd/display/oled_i2c.c retries
     # the write first, so there it means the retry failed too, and adds its own
     # `oled_i2c:` lines (wording in base/oled_i2c_diag.c).
     _p("oled_i2c", r"oled_render(90)? (offset command|data) failed", SEVERITY_WARNING,

@@ -36,6 +36,7 @@ from polyhost.res.overlay_layout import CH, COMBO_CH, PRIMARY_CH, SLOT_H, SLOT_W
 from polyhost.services.game_assets import build             # noqa: E402
 from polyhost.services.game_assets.readers import READERS   # noqa: E402
 from polyhost.res.overlay_sources import svg_silhouette      # noqa: E402
+from gfx_font import font_dir  # noqa: E402
 
 # The F-row and a few keys draw their legend from a fixed string, not from the
 # language table (as the firmware does).
@@ -54,7 +55,7 @@ def legend_renderer(qmk: Path):
     op.OVERSHOOT = 0
     pk = qmk / "keyboards" / "polykybd"
     lang = op.Lang(str(pk / "lang" / "lang_lut.xlsx"), op.load_named_glyphs(str(pk / "lang" / "named_glyphs.h")))
-    rend = op.load_renderer(str(pk / "base" / "fonts"))
+    rend = op.load_renderer(font_dir(pk))
 
     def legend(kc: str) -> np.ndarray:
         if kc in op.ROW:

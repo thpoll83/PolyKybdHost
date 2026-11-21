@@ -14,7 +14,7 @@ pending and fails only when the shipped files no longer match the frozen id
 table. Rebuild when the pending list is worth a re-flash, for example before a
 release.
 
-SELECTION (OVERLAY_ICON_LIBRARY_DESIGN.md §2.1). An icon is in the library when
+SELECTION (keyboards/polykybd/docs/design/overlay-icon-library.md §2.1). An icon is in the library when
 its rendered 72x40 cell appears in two or more apps (sublime and sublime_mac
 count as one) and is a Fluent or Material Symbols icon, a cell drawn by the
 shared concept renderer (``concept:``), or a custom drawing. An icon only one app
