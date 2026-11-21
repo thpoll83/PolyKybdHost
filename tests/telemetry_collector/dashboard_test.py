@@ -303,19 +303,34 @@ class SectionCounts(unittest.TestCase):
         self.assertEqual(dash.mock_install_ids(rows), {"m"})
 
     def test_mock_installs_are_left_out_of_the_counts_but_listed(self):
-        rows = [row("m", "2026-11-19", device_name="PolyKybdMock"), row("r", "2026-11-19")]
+        m, a = "m" * 32, "a" * 32
+        rows = [row("m", "2026-11-19", device_name="PolyKybdMock", hw_id_a=m,
+                    counters='{"sessions": 7}'),
+                row("r", "2026-11-19", hw_id_a=a, counters='{"sessions": 2}')]
         out = dash.render(rows, 30, "now")
         self.assertIn('<b>1</b><span class="what">installs ever seen</span>', out)
+        self.assertIn('<b>1</b><span class="what">keyboards identified</span>', out)
+        self.assertIn('<b>1</b><span>installs with a keyboard at their last report</span>', out)
+        label = dict(dash.COUNTERS)["sessions"]
+        self.assertIn(f'<tr><td>{label}</td><td class="num">2</td>', out)
+        self.assertIn("1 reports from 1 installs, not counting 1 test install(s)", out)
         self.assertIn("test, not counted", out)
-        self.assertIn("1 test install(s)", out)
+
+    def test_a_last_day_with_only_test_reports_still_ends_the_window(self):
+        rows = [row("r", "2026-11-18"), row("m", "2026-11-19", device_name="PolyKybdMock")]
+        out = dash.render(rows, 30, "now")
+        self.assertIn("data up to 2026-11-19", out)
+        self.assertIn("2026-11-19: 0", out)
 
     def test_daily_keyboards_count_groups_not_hashes(self):
         a, b = "a" * 32, "b" * 32
         rows = [row("i1", "2026-11-19", hw_id_a=a, hw_id_b=b),
                 row("i2", "2026-11-19", hw_id_a=b, hw_id_b=""),
-                row("i3", "2026-11-18")]
-        self.assertEqual(dash.daily_keyboards(rows, ["2026-11-18", "2026-11-19"]),
-                         [("2026-11-18", 0), ("2026-11-19", 1)])
+                row("i3", "2026-11-18"),
+                # unplugged: the host still sends the IDs it read last
+                row("i1", "2026-11-17", hw_id_a=a, hw_id_b=b, device_present=0)]
+        self.assertEqual(dash.daily_keyboards(rows, ["2026-11-17", "2026-11-18", "2026-11-19"]),
+                         [("2026-11-17", 0), ("2026-11-18", 0), ("2026-11-19", 1)])
 
     def test_keyboard_chart_starts_at_the_first_id(self):
         a = "a" * 32
@@ -323,7 +338,9 @@ class SectionCounts(unittest.TestCase):
         out = dash._keyboard_chart(rows, dash.day_range(rows, None))
         self.assertIn("2026-11-19: 1", out)
         self.assertNotIn("2026-11-01:", out)
-        self.assertIn("No keyboard has sent", dash._keyboard_chart(rows[:1], ["2026-11-01"]))
+        self.assertIn('class="val"', out)    # the value is printed above the bar
+        self.assertIn("No keyboard sent a hardware ID in this window",
+                      dash._keyboard_chart(rows, ["2026-11-01"]))
 
     def test_keyboards_without_id(self):
         latest = [row("a", "2026-11-19"), row("b", "2026-11-19", hw_id_a="a" * 32),

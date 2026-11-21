@@ -408,10 +408,14 @@ def keyboard_counts(rows: list[dict]) -> tuple[int, int, int]:
 
 
 def daily_keyboards(rows: list[dict], window: list[str]) -> list[tuple[str, int]]:
-    """Distinct keyboards (hash groups) that reported on each day."""
+    """Distinct keyboards (hash groups) attached to a reporting host on each day."""
     group, _ = _keyboard_groups(rows)
     seen: dict[str, set] = defaultdict(set)
     for r in rows:
+        # A ping sent after the keyboard was unplugged still has the IDs read
+        # last. That keyboard did not report on this day.
+        if not r.get("device_present"):
+            continue
         for h in _row_hashes(r):
             seen[str(r.get("day") or "")].add(group[h])
     return [(d, len(seen.get(d, ()))) for d in window]
@@ -557,7 +561,8 @@ def esc(value) -> str:
     return html.escape(str(value if value is not None else ""), quote=True)
 
 
-def svg_bars(series: list[tuple[str, int]], height: int = 170, max_labels: int = 9) -> str:
+def svg_bars(series: list[tuple[str, int]], height: int = 170, max_labels: int = 9,
+             values: bool = False) -> str:
     """A bar chart per day, as inline SVG (no script, no library).
 
     `max_labels` exists because the same viewBox is rendered full width for the
@@ -595,6 +600,11 @@ def svg_bars(series: list[tuple[str, int]], height: int = 170, max_labels: int =
             f'<rect class="bar" x="{x:.1f}" y="{y:.1f}" width="{bar_w:.1f}" height="{h:.1f}" rx="1">'
             f"<title>{esc(day)}: {value}</title></rect>"
         )
+        if values and value:
+            # The number as text above the bar: aqua is below 3:1 contrast on
+            # the light surface, so the bar alone is not enough.
+            parts.append(f'<text class="val" x="{x + bar_w / 2:.1f}" y="{y - 4:.1f}" '
+                         f'text-anchor="middle">{value}</text>')
         # A regular tick closer than half an interval to the last label would
         # run into it (30 days: ticks at 28 and 29), so it is left out.
         regular = i % every == 0 and (len(series) - 1 - i) * 2 >= every
@@ -704,6 +714,7 @@ svg{width:100%;height:auto;display:block;overflow:visible}
 .bar{fill:var(--accent)}
 .grid{stroke:var(--grid);stroke-width:1}
 .tick{fill:var(--muted);font-size:10px}
+.val{fill:var(--fg);font-size:11px;font-variant-numeric:tabular-nums}
 .hbar{display:flex;align-items:center;gap:10px;margin:5px 0}
 .hlabel{flex:0 0 130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
 .htrack{flex:1;background:var(--accent-soft);border-radius:3px;height:9px;overflow:hidden}
@@ -744,16 +755,18 @@ def _section(cls: str, title: str, lead: str, body: str) -> str:
 def render(rows: list[dict], days: int | None, generated: str) -> str:
     test_ids = mock_install_ids(rows)
     all_latest = latest_per_install(rows)
-    rows_all = rows
-    rows = [r for r in rows if r.get("install_id") not in test_ids]
+    # The dates come from every row, so a last day with only test reports
+    # does not cut the window short. The counts use real installs only.
     window = day_range(rows, days)
+    end = last_day(rows)
+    rows = [r for r in rows if r.get("install_id") not in test_ids]
     latest = latest_per_install(rows)
     # One set for the whole pass: with --days all the window is every day in
     # the archive, and rebuilding it per row is O(rows x days).
     window_days = set(window)
     in_window = [r for r in rows if str(r.get("day") or "") in window_days]
-    end = last_day(rows)
     end_label = end.isoformat() if end else "no data"
+    test_note = f", not counting {len(test_ids)} test install(s)" if test_ids else ""
 
     kb_groups, _, kb_replaced = keyboard_counts(rows)
     with_kb = sum(1 for r in latest if r.get("device_present"))
@@ -832,7 +845,7 @@ def render(rows: list[dict], days: int | None, generated: str) -> str:
 <body><div class="wrap">
 <h1>PolyKybd telemetry</h1>
 <p class="sub">Generated {esc(generated)} · data up to {esc(end_label)} (UTC) · window: {esc(_window_label(days, len(window)))}
-· {len(rows_all)} reports from {len(all_latest)} installs</p>
+· {len(rows)} reports from {len(latest)} installs{test_note}</p>
 
 <div class="hero">{summary}</div>
 {keyboards}
@@ -857,8 +870,8 @@ def _keyboard_chart(rows: list[dict], window: list[str]) -> str:
     series = daily_keyboards(rows, window)
     first = next((i for i, (_, n) in enumerate(series) if n), None)
     if first is None:
-        return '<p class="empty">No keyboard has sent a hardware ID yet.</p>'
-    return svg_bars(series[first:])
+        return '<p class="empty">No keyboard sent a hardware ID in this window.</p>'
+    return svg_bars(series[first:], values=len(series) - first <= 45)
 
 
 def _fontpack_html(latest: list[dict]) -> str:
