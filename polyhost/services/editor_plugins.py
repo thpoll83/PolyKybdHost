@@ -224,6 +224,10 @@ MSG_NO_PROJECT = M_("No {editor} project folder was chosen.")
 MSG_CLI_INSTALLED = M_("Installed the extension with {command}.")
 MSG_CLI_REMOVED = M_("Removed the extension with {command}.")
 MSG_CLI_FAILED = M_("{command} failed: {error}")
+MSG_CLI_BLOCKED = M_("{editor} did not accept the extension because it is not on the list of extensions "
+                     "{editor} may install (the setting extensions.allowed, or a policy of your organization). "
+                     "Ask your administrator to allow {extension}, or add it to extensions.allowed in the "
+                     "user settings.")
 MSG_CLI_NOT_OURS = M_("{editor} has the extension {extension} from another source. It is left alone.")
 MSG_STATE_NOT_SAVED = M_("The change was made, but {path} could not be written, so this app "
                          "does not remember it.")
@@ -1625,7 +1629,7 @@ def _status_cli(editor, which, home, env, system, source, state, run):
     return EditorStatus(editor, state_, cli, "")
 
 
-def _change_cli(st, install, source, state, run):
+def _change_cli(st, install, source, state, run, home=None, env=None, system=None):
     editor, name = st.editor, EDITOR_NAMES[st.editor]
     vsix, cli = Path(source or VSCODE_SOURCE), Path(st.target)
     if install:
@@ -1650,7 +1654,10 @@ def _change_cli(st, install, source, state, run):
         return Result(editor, False, False, MSG_CLI_FAILED.format(command=shown, error=exc), None)
     if code != 0:
         error = err.strip().splitlines()[-1] if err.strip() else f"exit code {code}"
-        return Result(editor, False, False, MSG_CLI_FAILED.format(command=shown, error=error), None)
+        message = MSG_CLI_FAILED.format(command=shown, error=error)
+        if install and et.extension_policy_reason(editor, f"{_out}\n{err}", home, env, system):
+            message += " " + MSG_CLI_BLOCKED.format(editor=name, extension=et.VSCODE_EXTENSION_ID)
+        return Result(editor, False, False, message, None)
     log.info("Editor plugin: %s", shown)
     recorded = (state.set_cli(editor, vsix_digest(vsix), vsix_version(vsix)) if install
                 else state.set_cli(editor, None))
@@ -1688,7 +1695,7 @@ def _change_new(st, install, source, home, env, system, state, run, projects):
     if editor in MULTI_EDITORS:
         return _change_multi(editor, install, source, home, env, system, state, projects=projects)
     if editor in CLI_EDITORS:
-        return [_change_cli(st, install, source, state, run)]
+        return [_change_cli(st, install, source, state, run, home, env, system)]
     command = st.detail if install else et.JUPYTERLAB_REMOVE_COMMAND
     return [Result(editor, True, False, MSG_RUN_COMMAND.format(command=command), None)]
 

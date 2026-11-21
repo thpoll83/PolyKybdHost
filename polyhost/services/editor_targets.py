@@ -274,6 +274,65 @@ def vscode_cli(editor, which=None, home=None, env=None, system=None):
     return None
 
 
+_POLICY_WORDS = re.compile(r"allowed list|not allowed|extensions\.allowed|policy|AllowedExtensions", re.I)
+
+_USER_FOLDER = {"vscode": "Code", "cursor": "Cursor", "windsurf": "Windsurf"}
+
+
+def _user_settings(editor, home, env, system):
+    """The editor's user ``settings.json``."""
+    name = _USER_FOLDER[editor]
+    if system == "Windows":
+        return _appdata(home, env) / name / "User" / "settings.json"
+    if system == "Darwin":
+        return _home(home) / "Library" / "Application Support" / name / "User" / "settings.json"
+    xdg = env.get("XDG_CONFIG_HOME")
+    base = Path(xdg) if xdg else _home(home) / ".config"
+    return base / name / "User" / "settings.json"
+
+
+def extension_policy_reason(editor, output="", home=None, env=None, system=None):
+    """Why the editor may refuse an extension that is not on its allowed list,
+    or None. VS Code 1.96+ and its forks install only the extensions named by
+    the ``extensions.allowed`` setting or by an organization policy (Windows
+    registry ``AllowedExtensions``, Linux ``/etc/vscode/policy.json``). The
+    command line program often prints no reason, so this reads the output
+    first, then the places the rule is kept. Returns ``"output"``,
+    ``"settings"`` or ``"policy"``."""
+    env = os.environ if env is None else env
+    system = system or platform.system()
+    if _POLICY_WORDS.search(output or ""):
+        return "output"
+    try:
+        text = _user_settings(editor, home, env, system).read_text(encoding="utf-8", errors="replace")
+        if "extensions.allowed" in text:
+            return "settings"
+    except OSError:
+        pass
+    if home is not None:
+        return None  # a test's home never reads the machine's policy
+    if system == "Windows":
+        try:
+            import winreg
+            for key in (r"SOFTWARE\Policies\Microsoft\VSCode", r"SOFTWARE\Policies\Microsoft\Cursor"):
+                for hive in (winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER):
+                    try:
+                        with winreg.OpenKey(hive, key) as k:
+                            winreg.QueryValueEx(k, "AllowedExtensions")
+                            return "policy"
+                    except OSError:
+                        continue
+        except ImportError:
+            pass
+    elif system == "Linux":
+        try:
+            if "AllowedExtensions" in Path("/etc/vscode/policy.json").read_text(encoding="utf-8"):
+                return "policy"
+        except OSError:
+            pass
+    return None
+
+
 def parse_extension_list(text, ext_id=VSCODE_EXTENSION_ID):
     """The version of ``ext_id`` in ``--list-extensions --show-versions``
     output (``publisher.name@1.0.0`` per line), or None."""

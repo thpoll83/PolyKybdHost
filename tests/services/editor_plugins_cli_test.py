@@ -273,3 +273,36 @@ class TestJupyterLab(CliFixture):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestBlockedByPolicy(unittest.TestCase):
+    """VS Code refuses a .vsix that is not on extensions.allowed."""
+
+    def _install(self, fail, settings=None):
+        with tempfile.TemporaryDirectory() as d:
+            home = Path(d)
+            vsix = home / "x.vsix"
+            make_vsix(vsix, {"extension/package.json": json.dumps({"version": "1.0.0"})})
+            if settings is not None:
+                f = home / ".config" / "Code" / "User" / "settings.json"
+                f.parent.mkdir(parents=True)
+                f.write_text(settings)
+            st = ep.EditorStatus(ep.VSCODE, ep.STATE_NOT_INSTALLED, Path("/bin/code"), "")
+            state = et.State(None)
+            return ep._change_cli(st, True, vsix, state, FakeCli(fail=fail),
+                                  home=home, env={}, system="Linux")
+
+    def test_reason_in_output(self):
+        r = self._install("Error: not in the allowed list")
+        self.assertFalse(r.ok)
+        self.assertIn("extensions.allowed", r.message)
+        self.assertIn(EXT, r.message)
+
+    def test_silent_cli_with_setting(self):
+        r = self._install("Failed Installing Extensions: file:///x.vsix",
+                          settings='{"extensions.allowed": {"*": false}}')
+        self.assertIn(EXT, r.message)
+
+    def test_other_failure_has_no_hint(self):
+        r = self._install("Failed Installing Extensions: file:///x.vsix")
+        self.assertNotIn("extensions.allowed", r.message)

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-18 09:23+0000\n"
+"POT-Creation-Date: 2026-11-21 06:47+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: vi\n"
@@ -18,17 +18,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: polyhost/device/command_ids.py:179
+#: polyhost/device/command_ids.py:183
 #, python-brace-format
 msgid "preset {value}"
 msgstr "mức đặt sẵn {value}"
 
-#: polyhost/device/command_ids.py:181
+#: polyhost/device/command_ids.py:185
 #, python-brace-format
 msgid "{minutes} min"
 msgstr "{minutes} phút"
 
-#: polyhost/device/command_ids.py:182
+#: polyhost/device/command_ids.py:186
 #, python-brace-format
 msgid "{seconds} sec"
 msgstr "{seconds} giây"
@@ -548,19 +548,19 @@ msgstr "Giới thiệu PolyKybdHost"
 msgid "About"
 msgstr "Giới thiệu"
 
-#: polyhost/gui/about_dialog.py:320
+#: polyhost/gui/about_dialog.py:322
 msgid "Basics"
 msgstr "Kiến thức cơ bản"
 
-#: polyhost/gui/about_dialog.py:321
+#: polyhost/gui/about_dialog.py:323
 msgid "The words PolyKybd uses in its menus and settings, with a picture of each."
 msgstr "Các thuật ngữ PolyKybd dùng trong menu và cài đặt, kèm một hình minh họa cho mỗi thuật ngữ."
 
-#: polyhost/gui/about_dialog.py:366 polyhost/gui/about_dialog.py:377
+#: polyhost/gui/about_dialog.py:368 polyhost/gui/about_dialog.py:379
 msgid "Copy diagnostics"
 msgstr "Sao chép thông tin chẩn đoán"
 
-#: polyhost/gui/about_dialog.py:371
+#: polyhost/gui/about_dialog.py:373
 msgid "Copied ✓"
 msgstr "Đã sao chép ✓"
 
@@ -5416,20 +5416,25 @@ msgstr "{command} thất bại: {error}"
 
 #: polyhost/services/editor_plugins.py:227
 #, python-brace-format
+msgid "{editor} did not accept the extension because it is not on the list of extensions {editor} may install (the setting extensions.allowed, or a policy of your organization). Ask your administrator to allow {extension}, or add it to extensions.allowed in the user settings."
+msgstr "{editor} không chấp nhận tiện ích vì nó không nằm trong danh sách tiện ích mà {editor} được phép cài (cài đặt extensions.allowed hoặc chính sách của tổ chức bạn). Hãy nhờ quản trị viên cho phép {extension}, hoặc thêm nó vào extensions.allowed trong cài đặt người dùng."
+
+#: polyhost/services/editor_plugins.py:231
+#, python-brace-format
 msgid "{editor} has the extension {extension} from another source. It is left alone."
 msgstr "{editor} có tiện ích mở rộng {extension} từ nguồn khác. Nó được giữ nguyên."
 
-#: polyhost/services/editor_plugins.py:228
+#: polyhost/services/editor_plugins.py:232
 #, python-brace-format
 msgid "The change was made, but {path} could not be written, so this app does not remember it."
 msgstr "Thay đổi đã được thực hiện, nhưng không ghi được {path}, nên ứng dụng này không ghi nhớ nó."
 
-#: polyhost/services/editor_plugins.py:231
+#: polyhost/services/editor_plugins.py:235
 #, python-brace-format
 msgid "The plugin is installed, but {path} could not be written, so this app does not remember this folder."
 msgstr "Plugin đã được cài, nhưng không ghi được {path}, nên ứng dụng này không ghi nhớ thư mục này."
 
-#: polyhost/services/editor_plugins.py:233
+#: polyhost/services/editor_plugins.py:237
 #, python-brace-format
 msgid "Run this command in the Python environment that runs JupyterLab: {command}"
 msgstr "Hãy chạy lệnh này trong môi trường Python chạy JupyterLab: {command}"
