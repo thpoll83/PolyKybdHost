@@ -5,6 +5,10 @@ pushes overlay / keymap / language updates to the keyboard over HID. It can
 also run as a *forwarder* that relays window info from a remote machine to the
 computer the keyboard is plugged into.
 
+## AI-assisted development
+
+Since mid-2026, the code in this repository is written with AI assistance, mainly with Claude Code. CI and AI review bots check each change, but AI-written code can contain mistakes that these checks do not find. Please report problems as GitHub issues.
+
 ## Install (no git or Python needed)
 
 One command installs the latest release. It needs neither git nor Python: it
