@@ -5,10 +5,6 @@ pushes overlay / keymap / language updates to the keyboard over HID. It can
 also run as a *forwarder* that relays window info from a remote machine to the
 computer the keyboard is plugged into.
 
-## AI-assisted development
-
-Since mid-2026, the code in this repository is written with AI assistance, mainly with Claude Code. CI and AI review bots check most pull requests, but not every change, and AI-written code can contain mistakes that these checks do not find. Please report problems as GitHub issues.
-
 ## Install (no git or Python needed)
 
 One command installs the latest release. It needs neither git nor Python: it
@@ -478,3 +474,9 @@ This project depends on PyQt5, which is licensed under the GPL v3; GPLv3 keeps
 the combined work license-consistent. Moving from GPLv2-or-later to GPLv3 also
 makes the project compatible with **Apache-2.0** assets (e.g. the Material
 Symbols icon set), which GPLv2 is not.
+
+## AI-assisted development
+
+PolyKybd started as a project that I coded entirely by hand, apart from the libraries it uses. The code base has grown too large for one person to write alone. Since mid-2026 I use AI tools to write code, so that I can move faster towards the vision of the project.
+
+I decide on every change. I review the changes, test them myself on real keyboards, and write the summaries based on the results. AI-written code can still contain mistakes. Please report problems as GitHub issues. For security problems, see [SECURITY.md](SECURITY.md).
