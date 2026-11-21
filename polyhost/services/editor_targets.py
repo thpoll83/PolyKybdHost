@@ -323,7 +323,7 @@ def extension_policy_reason(editor, output="", home=None, env=None, system=None)
                     except OSError:
                         continue
         except ImportError:
-            pass
+            pass  # no winreg module (not a real Windows Python): no registry to read
     elif system == "Linux":
         try:
             if "AllowedExtensions" in Path("/etc/vscode/policy.json").read_text(encoding="utf-8"):
