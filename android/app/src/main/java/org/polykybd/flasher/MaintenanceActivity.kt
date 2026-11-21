@@ -92,15 +92,13 @@ class MaintenanceActivity : Activity() {
 
     private fun confirmPublish(s: GitHub.RepoStatus) {
         val p = s.prepared ?: return
-        val again = if (s.preparedPublished) "\n\n${p.tag} is already published. Publishing again only " +
-            "updates its title and notes; the build does not run again." else ""
-        val build = if (s.target.label == "Firmware" && !s.preparedPublished) "\n\nGitHub then builds the " +
+        val build = if (s.target.label == "Firmware") "\n\nGitHub then builds the " +
             ".bin and .uf2 and attaches them. The build refuses to attach them without a green " +
             "firmware-apply run for this commit." else ""
         AlertDialog.Builder(this, R.style.AppDialog)
             .setTitle("Publish ${p.tag}?")
             .setMessage("${s.target.repo}\n“${p.title}”\n\nThe release is public as soon as the " +
-                "workflow finishes.$build$again")
+                "workflow finishes.$build")
             .setPositiveButton("Publish") { _, _ -> state.start(s, dryRun = false) }
             .setNegativeButton("Cancel", null)
             .show()
@@ -139,7 +137,7 @@ class MaintenanceActivity : Activity() {
         val s = state.statuses[t.repo]
         val watching = synchronized(state.watching) { t.repo in state.watching }
         card.findViewById<TextView>(R.id.info).text = describe(t, s)
-        val ready = s != null && s.workflowPresent && s.prepared != null
+        val ready = s?.canPublish == true
         card.findViewById<Button>(R.id.dry_run).isEnabled = ready && !watching && !state.busy
         card.findViewById<Button>(R.id.publish).isEnabled = ready && !watching && !state.busy
 
@@ -164,7 +162,8 @@ class MaintenanceActivity : Activity() {
             !s.workflowPresent -> "${t.repo} has no ${GitHub.WORKFLOW} on ${s.defaultBranch} yet, so it " +
                 "cannot be published from here.\n$latest"
             s.prepared == null -> "No release notes are prepared on the release-notes branch.\n$latest"
-            s.preparedPublished -> "${s.prepared.tag} is already published.\n“${s.prepared.title}”\n$latest"
+            s.preparedPublished -> "Nothing new to publish: ${s.prepared.tag} is already released. " +
+                "Prepare the next notes on the release-notes branch.\n$latest"
             else -> "Ready to publish: ${s.prepared.tag}\n“${s.prepared.title}”\n$latest"
         }
     }
