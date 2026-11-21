@@ -170,8 +170,8 @@ over RPC: the runner is in the core, the dialog and panel only send commands.
 
 ## Cmd 49
 
-The wire format and the firmware side: `qmk_firmware/keyboards/polykybd/
-keyboards/polykybd/docs/protocol/protocol-history.md` → *v35*. What the host does with it:
+The wire format and the firmware side:
+`qmk_firmware/keyboards/polykybd/docs/protocol/protocol-history.md` → *v35*. What the host does with it:
 
 - `TutorialRun.start()` sends INFO. An answered INFO switches cmd 49 on for the run;
   a refused one (DOOM monolith) leaves the run ring-only.

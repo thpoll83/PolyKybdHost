@@ -18,6 +18,8 @@ _BEFORE_MOVE = {
     "keymap/poly_keymap.c": "poly_keymap.c",
     "keymap/keycode_helper.c": "keycode_helper.c",
     "keymap/keycode_helper.h": "keycode_helper.h",
+    "keymap/lang_layer.c": "lang_layer.c",
+    "keymap/lang_layer.h": "lang_layer.h",
     "keymap/layer_names.c": "layer_names.c",
     "keymap/poly_combos.c": "poly_combos.c",
     "keymap/uni.h": "uni.h",

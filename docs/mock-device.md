@@ -104,7 +104,7 @@ older. Regenerate them all together at the next release.
 Sources are paths in `qmk_firmware/keyboards/polykybd/`.
 
 - **The command set per `PROTOCOL_VERSION`** (`CMD_MIN_PROTOCOL`), from
-  `keyboards/polykybd/docs/protocol/protocol-history.md` and, for commands it does not name, the
+  `docs/protocol/protocol-history.md` and, for commands it does not name, the
   `PROTOCOL_VERSION` in `config.h` at the commit that added the case to
   `hid_com.c`. An unknown command gets the firmware's NACK (the request echoed
   with `!`, hid_com.c's default case) and lands in `MockFirmware.refused`.

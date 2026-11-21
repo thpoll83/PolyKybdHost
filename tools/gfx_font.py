@@ -23,7 +23,7 @@ from PIL import Image
 # Every tool imports this module, so the tools get them from here.
 _REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _REPO not in sys.path:
-    sys.path.append(_REPO)
+    sys.path.insert(0, _REPO)  # ahead of an older installed polyhost
 from polyhost.util import fw_checkout as _fw_checkout  # noqa: E402
 
 checkout_dir = _fw_checkout.checkout_dir

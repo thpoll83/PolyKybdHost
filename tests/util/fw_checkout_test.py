@@ -51,12 +51,18 @@ class FwCheckoutTest(unittest.TestCase):
 
     def test_missing_file_reports_the_current_path(self):
         self.assertEqual(fw_checkout.fw_file(self.pk, "modes/midi_legend.c"),
-                         os.path.join(self.pk, "modes", "midi_legend.c"))
+                         os.path.join(self.pk, "modes/midi_legend.c"))
         self.assertEqual(fw_checkout.font_dir(self.pk), os.path.join(self.pk, "fonts"))
+
+    def test_language_layer_before_the_move(self):
+        # tools/lang_layer_demo.py reads both files through fw_file.
+        for name in ("lang_layer.c", "lang_layer.h"):
+            want = _touch(self.pk, name)
+            self.assertEqual(fw_checkout.fw_file(self.pk, "keymap/" + name), want)
 
     def test_unlisted_file_is_joined_unchanged(self):
         self.assertEqual(fw_checkout.fw_file(self.pk, "lang/named_glyphs.h"),
-                         os.path.join(self.pk, "lang", "named_glyphs.h"))
+                         os.path.join(self.pk, "lang/named_glyphs.h"))
 
 
 if __name__ == "__main__":
