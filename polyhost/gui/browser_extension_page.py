@@ -49,7 +49,6 @@ class BrowserPage(QWidget):
         folder_lay.addWidget(muted(WrapLabel(_(
             "Choose an empty folder that stays where it is. After each update of this "
             "app, the new version is copied there too."))))
-        row = QHBoxLayout()
         self.folder = QLineEdit(be.remembered_folder())
         self.folder.setPlaceholderText(_("Folder"))
         browse = set_button_icon(QPushButton(_("Choose…")), "folder")
@@ -59,9 +58,13 @@ class BrowserPage(QWidget):
             set_button_icon(QPushButton(_("Copy Extension")), "install"))
         # noinspection PyUnresolvedReferences
         self.copy_button.clicked.connect(self._copy)
-        row.addWidget(self.folder, 1)
+        # The folder has a line of its own: beside two buttons it forced a
+        # width the dialog's smallest size cannot show.
+        folder_lay.addWidget(self.folder)
+        row = QHBoxLayout()
         row.addWidget(browse)
         row.addWidget(self.copy_button)
+        row.addStretch(1)
         folder_lay.addLayout(row)
         layout.addWidget(folder_card)
 

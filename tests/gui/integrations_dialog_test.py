@@ -38,12 +38,14 @@ class IntegrationsDialogTest(unittest.TestCase):
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
 
-    def _fake_pages(self):
+    def _fake_pages(self, height=0):
         made = []
 
         def factory(name):
             def make():
                 page = QWidget()
+                if height:
+                    page.setMinimumHeight(height)
                 page.reopen = mock.MagicMock()
                 page.name = name
                 made.append(page)
@@ -60,15 +62,44 @@ class IntegrationsDialogTest(unittest.TestCase):
         self.assertEqual(dlg.current_category(), idlg.AGENTS)
         self.assertEqual(dlg.windowTitle(), "Integrations")
 
-    def test_show_category_switches_the_page(self):
-        factories, _made = self._fake_pages()
+    def _shown(self, height=600):
+        factories, _made = self._fake_pages(height)
         dlg = idlg.IntegrationsDialog(mock.MagicMock(), page_factories=factories)
         self.addCleanup(dlg.deleteLater)
+        dlg.resize(700, 500)
+        dlg.show()
+        self.app.processEvents()
+        return dlg
+
+    def test_every_page_is_in_one_scrolling_column(self):
+        from PyQt5.QtCore import Qt
+        dlg = self._shown()
+        self.assertEqual(dlg.scroll.horizontalScrollBarPolicy(), Qt.ScrollBarAlwaysOff)
+        self.assertGreater(dlg.scroll.verticalScrollBar().maximum(), 0)
+        for page in dlg.pages.values():
+            self.assertTrue(dlg.scroll.widget().isAncestorOf(page))
+
+    def test_show_category_scrolls_to_its_section(self):
+        dlg = self._shown()
+        bar = dlg.scroll.verticalScrollBar()
+        self.assertEqual(bar.value(), 0)
         dlg.show_category(idlg.EDITORS)
+        editors = bar.value()
         self.assertEqual(dlg.current_category(), idlg.EDITORS)
-        self.assertEqual(dlg.stack.currentIndex(), 2)
+        self.assertGreater(editors, 0)
+        dlg.show_category(idlg.TERMINALS)
+        self.assertLess(bar.value(), editors)
+        self.assertEqual(dlg.current_category(), idlg.TERMINALS)
         dlg.show_category(idlg.BROWSER)
-        self.assertEqual(dlg.stack.currentIndex(), 3)
+        self.assertEqual(dlg.current_category(), idlg.BROWSER)
+
+    def test_the_sidebar_follows_the_scroll_position(self):
+        dlg = self._shown()
+        bar = dlg.scroll.verticalScrollBar()
+        bar.setValue(bar.maximum())
+        self.assertEqual(dlg.current_category(), idlg.BROWSER)
+        bar.setValue(0)
+        self.assertEqual(dlg.current_category(), idlg.AGENTS)
 
     def test_only_the_listed_categories_are_shown(self):
         factories, made = self._fake_pages()
