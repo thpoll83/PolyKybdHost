@@ -4,7 +4,7 @@ These were skipped by the preview until 2026-09-01, so the keycaps that use them
 either drew nothing (the Context-menu key) or drew their text without their mark
 (Scroll Lock's lock badge). They are ported from the firmware:
 `kdisp_draw_badge_rect` / `rr_row_inset` / `kdisp_draw_glyph_rot_half_at`
-(base/disp_array.c) and `kdisp_gfx_rot_half_extent` (base/font_lookup.c).
+(drivers/disp_array.c) and `kdisp_gfx_rot_half_extent` (base/font_lookup.c).
 
 ⚠️ A Python model of C checked only against itself proves nothing — the standing
 caveat on this module. So the badge is checked against FIRMWARE DATA: the baked
@@ -16,6 +16,7 @@ as a keycap drawn slightly wrong.
 import os
 import sys
 import unittest
+from polyhost.util.fw_checkout import checkout_dir, font_dir
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)))), "tools"))
@@ -32,7 +33,7 @@ except Exception as exc:                              # pragma: no cover - env g
 def _fw():
     """<fw>/keyboards/polykybd, or "" when there is no checkout beside this repo."""
     try:
-        pk = os.path.dirname(os.path.dirname(ml.default_font_dir()))
+        pk = checkout_dir()
     except Exception:
         return ""
     return pk if os.path.isdir(pk) else ""
@@ -68,7 +69,7 @@ class BadgeAgainstTheBakedGlyphTest(unittest.TestCase):
         cps = named.get("ICON_CAPSLOCK_OFF")
         if not cps:
             self.skipTest("ICON_CAPSLOCK_OFF not in this checkout")
-        fonts = load_all_fonts(os.path.join(pk, "base", "fonts"))
+        fonts = load_all_fonts(font_dir(pk))
         cp = cps[-1]
         self.g = self.f = None
         for f in fonts:

@@ -37,6 +37,7 @@ from gfx_font import (load_all_fonts, _parse_header, GfxFont,
 from kle_render import KeyContent, Theme
 from lang_demo import (LangBoard, parse_layout_matrix, parse_static_text_map,
                        normalize_kc, render_static, strip_c_comments)
+from gfx_font import font_dir, fw_file
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOST_REPO = os.path.dirname(HERE)
@@ -286,13 +287,13 @@ def main():
     roles = dict(zip(matrices, role_list))
 
     off, langs, labels, spp, nreg = parse_lang_layer(
-        os.path.join(pk, 'lang_layer.c'), os.path.join(pk, 'lang_layer.h'))
-    static_map = parse_static_text_map(os.path.join(pk, 'keycode_helper.c'))
+        fw_file(pk, 'keymap/lang_layer.c'), fw_file(pk, 'keymap/lang_layer.h'))
+    static_map = parse_static_text_map(fw_file(pk, 'keymap/keycode_helper.c'))
     named = load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
     L = Lang(os.path.join(pk, 'lang', 'lang_lut.xlsx'), named)
-    g_all = load_all_fonts(os.path.join(pk, 'base', 'fonts'))
+    g_all = load_all_fonts(font_dir(pk))
     R = Renderer(g_all)
-    tiny = load_one_font(os.path.join(pk, 'base', 'fonts', 'lang_label_font.h'),
+    tiny = load_one_font(os.path.join(font_dir(pk), 'lang_label_font.h'),
                          'NotoSans_Regular_Tiny_6pt7b')
     R_tiny = Renderer([tiny])
     current_idx = L.langs.index(args.current) if args.current in L.langs else -1

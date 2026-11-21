@@ -173,7 +173,7 @@ skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
     `secrets.BUMP_PAT`, a personal access token whose owner is on the `PolyKybd`
     bypass list, and pushes directly. That needs no extra PR, but its bump stops when
     the token expires (checkout fails to authenticate) or its owner leaves the bypass
-    list (`GH013`); `keyboards/polykybd/RELEASES.md` there has both.
+    list (`GH013`); `keyboards/polykybd/docs/build/releases.md` there has both.
 - **Version bump is label-driven**: the merged PR's `bump:major`/`bump:minor`/
   `bump:protocol` label (else patch) drives `bump-version.yml`. Bump `__protocol__` in
   lockstep with the firmware (see the connect-gate note in [`protocol-gate.md`](protocol-gate.md)).

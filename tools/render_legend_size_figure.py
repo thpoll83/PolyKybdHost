@@ -60,6 +60,7 @@ from gfx_font import load_all_fonts                                    # noqa: E
 # names beside it — two views of one module, where only one of them tracks a
 # rebind. Everything therefore goes through OP.
 import oled_preview as OP                                              # noqa: E402
+from gfx_font import font_dir, fw_file  # noqa: E402
 
 OLED_W, OLED_H, ROW = OP.OLED_W, OP.OLED_H, OP.ROW   # true constants, safe to alias
 
@@ -80,7 +81,7 @@ def _panel_pixels(img):
 
 def load(fw: str):
     L = OP.Lang(f"{fw}/lang/lang_lut.xlsx", OP.load_named_glyphs(f"{fw}/lang/named_glyphs.h"))
-    return L, OP.Renderer(load_all_fonts(f"{fw}/base/fonts"))
+    return L, OP.Renderer(load_all_fonts(font_dir(fw)))
 
 
 def check(L, R, lang: str, keys) -> int:
@@ -144,7 +145,7 @@ def render_static_keys(fw: str, keys, labels, out: str) -> None:
     sys.path.insert(0, HERE)
     import lang_demo as LD
     OP.OVERSHOOT = 0
-    static_map = LD.parse_static_text_map(os.path.join(fw, "keycode_helper.c"))
+    static_map = LD.parse_static_text_map(fw_file(fw, "keymap/keycode_helper.c"))
     missing = [k for k in keys if k not in static_map]
     if missing:
         sys.exit(f"no static legend for {', '.join(missing)} in keycode_helper.c")
@@ -211,7 +212,7 @@ def render_board(fw: str, lang: str, out: str, unit: int, layer: str = None,
     if len(matrices) != len(kcs):
         sys.exit(f"layout/keymap length mismatch: {len(matrices)} vs {len(kcs)}")
     matrix_kc = dict(zip(matrices, kcs))
-    static_map = LD.parse_static_text_map(os.path.join(pk, "keycode_helper.c"))
+    static_map = LD.parse_static_text_map(fw_file(pk, "keymap/keycode_helper.c"))
     L, R = load(pk)
     theme = Theme()
     kle = os.path.join(os.path.dirname(HERE), "polyhost", "res", "polykybd-split72.json")

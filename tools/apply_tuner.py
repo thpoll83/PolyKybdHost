@@ -5,7 +5,7 @@ Reads the "Export changes" text the keycap tuner produces — one `=== code ===`
 block per layout — and writes the changed key_lut cells + category-offset cells
 straight into lang_lut.xlsx, modifying ONLY xl/worksheets/sheet2.xml so the
 formula caches in the other sheets / sharedStrings stay intact (same surgical
-approach as lang/_patch_xlsx.py, but it *edits existing cells* — set / clear —
+approach as lang/scripts/_patch_xlsx.py, but it *edits existing cells* — set / clear —
 instead of appending new language columns).
 
     python apply_tuner.py changes.txt

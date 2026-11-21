@@ -151,7 +151,7 @@ it.
   **auto-fills the source font from the download cache** when it's present (else it
   names the file and points at "Download Noto…"/Browse) — the TTF itself isn't
   bundled. Keep it in sync with the firmware copy
-  (`base/fonts/generated/fontpack_render_settings.json`).
+  (`fonts/generated/fontpack_render_settings.json`).
   **Sequence-mode glyphs** (the language-layer flags): a record with a `sequence`
   field is a HarfBuzz-shaped font (`-S`), so the editor switches to **sequence mode**
   and pre-fills the single group for the edited codepoint (group = `cp − font.first`,
@@ -161,7 +161,7 @@ it.
   regional-indicator `sequence` live in **`polyhost/res/fontpack/lang_flags.json`**,
   which the editor uses as the record when the edited cp is in the flag range. ⚠️
   `lang_flags.json` is mirrored **byte-identically** with the firmware's
-  `base/fonts/generated/lang_flags.json` (emitted by `gen-lang-fonts.sh`) — keep both
+  `fonts/generated/lang_flags.json` (emitted by `gen-lang-fonts.sh`) — keep both
   in sync (`cmp`). Editing a flag needs **NotoColorEmoji** downloaded; if its cached
   file is truncated (a bad download) FreeType fails to open it — re-download. A CBDT
   **colour-bitmap font (NotoColorEmoji) renders whether or not grayscale is checked**:

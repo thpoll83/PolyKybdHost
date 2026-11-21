@@ -23,6 +23,7 @@ the base's margin), which hold for the firmware or for neither.
 import os
 import sys
 import unittest
+from polyhost.util.fw_checkout import checkout_dir, font_dir
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)))), "tools"))
@@ -39,7 +40,7 @@ except Exception as exc:                              # pragma: no cover - env g
 def _fw():
     """<fw>/keyboards/polykybd, or "" when there is no checkout beside this repo."""
     try:
-        pk = os.path.dirname(os.path.dirname(ml.default_font_dir()))
+        pk = checkout_dir()
     except Exception:
         return ""
     return pk if os.path.isdir(pk) else ""
@@ -67,7 +68,7 @@ class HintPairTest(unittest.TestCase):
         xlsx = os.path.join(pk, "lang", "lang_lut.xlsx")
         if not os.path.isfile(xlsx):
             raise unittest.SkipTest("lang_lut.xlsx not in this checkout")
-        cls.R = op.Renderer(load_all_fonts(os.path.join(pk, "base", "fonts")))
+        cls.R = op.Renderer(load_all_fonts(font_dir(pk)))
         cls.L = op.Lang(xlsx, op.load_named_glyphs(
             os.path.join(pk, "lang", "named_glyphs.h")))
 

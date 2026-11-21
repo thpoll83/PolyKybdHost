@@ -175,7 +175,7 @@ These are the ones that have produced wrong diagnoses:
   record since (`polyctl crash clear`, the crash dialog's Clear). The banner's
   `record=` field below survives a clear, so prefer it when there is a console. From fw 1.9.11 the
   console's boot banner names the cause in one line,
-  `reset: cause=… reason=0x… ram=… record=…` (qmk `CRASH_DIAGNOSTICS.md` → *A reset
+  `reset: cause=… reason=0x… ram=… record=…` (qmk `keyboards/polykybd/docs/debugging/crash-diagnostics.md` → *A reset
   with no record*), so look for that line just after the restart before asking for
   anything. ⚠️ `polyctl crash show --slave` can print an OLD record: check its
   `fw=` (2026-10-22: a `fw=0.26.0` HardFault, "archived (older)", beside a master

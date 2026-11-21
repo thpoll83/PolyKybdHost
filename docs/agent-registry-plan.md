@@ -317,7 +317,7 @@ firmware bump commit exists: #276 lost 17 to #278 in the same way.
 - **Press back to the host:** the firmware writes the event to the ring, increments `G`
   (`poly_state_touch()`), and prints `ai ev <seq>` on the console. The host reads
   op 2 when it sees the console line (250 ms) or when `G` moves (1 s). The console
-  announces and op 2 defines, as `PROTOCOL_HISTORY.md` requires. A press during a
+  announces and op 2 defines, as `keyboards/polykybd/docs/protocol/protocol-history.md` requires. A press during a
   flash is announced only by `G`.
 - An `A` block value or similar is not needed: `ai_mode` is in op 0.
 

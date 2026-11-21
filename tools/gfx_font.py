@@ -3,7 +3,7 @@
 Adafruit-GFX pixel-font headers, not a live TTF.
 
 This reproduces ``kdisp_write_gfx_char`` / ``kdisp_write_gfx_text``
-(``base/disp_array.c``): pick the first ``ALL_FONTS`` entry whose 32-bit
+(``drivers/disp_array.c``): pick the first ``ALL_FONTS`` entry whose 32-bit
 ``[first,last]`` covers the codepoint, take the native 1-bit glyph bitmap, and
 blit it at ``(BUFFER_X + xOffset, baseline + yOffset)`` into the 72x40 visible
 window. Result: a keycap rendered with the same pixels, sizes and positions the
@@ -14,9 +14,21 @@ from __future__ import annotations
 import glob
 import os
 import re
+import sys
 from dataclasses import dataclass
 
 from PIL import Image
+
+# Firmware checkout lookups (both the current and the pre-2026-11 file layout).
+# Every tool imports this module, so the tools get them from here.
+_REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _REPO not in sys.path:
+    sys.path.insert(0, _REPO)  # ahead of an older installed polyhost
+from polyhost.util import fw_checkout as _fw_checkout  # noqa: E402
+
+checkout_dir = _fw_checkout.checkout_dir
+font_dir = _fw_checkout.font_dir
+fw_file = _fw_checkout.fw_file
 
 # Visible OLED window and the firmware's text origin (base/disp_array.{h,c}).
 OLED_W, OLED_H = 72, 40
@@ -25,7 +37,7 @@ BASELINE = 23          # the y passed to kdisp_write_gfx_text for keycap glyphs
 EMOJI_PREFIX = "  "    # make_emoji_str(): two leading spaces before the glyph
 
 # The standalone HINT_MID face. Not in ALL_FONTS[] (see load_ui_font), so it has to
-# be named; `base/disp_array.c` binds the same symbol as its `s_mid_font`.
+# be named; `drivers/disp_array.c` binds the same symbol as its `s_mid_font`.
 MID_FONT_FILE = "util_font.h"
 MID_FONT_SYMBOL = "NotoSans_Regular_Mid_19px7b"
 

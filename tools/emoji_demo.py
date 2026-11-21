@@ -30,6 +30,7 @@ from dataclasses import replace
 
 from kle_render import GlyphRenderer, KeyContent, KleRenderer
 from gfx_font import GfxGlyphRenderer
+from gfx_font import font_dir
 
 # Page-nav arrows. 'gfx' mode draws the firmware's real ICON_LEFT/RIGHT
 # (codepoints 0x83/0x84 in IconsFont); 'ttf' mode falls back to chevrons.
@@ -201,7 +202,7 @@ def main():
 
     global ARROW_PREV, ARROW_NEXT
     if args.font_mode == 'gfx':
-        glyphs = GfxGlyphRenderer(os.path.join(pk, 'base', 'fonts'))
+        glyphs = GfxGlyphRenderer(font_dir(pk))
         ARROW_PREV, ARROW_NEXT = chr(0x83), chr(0x84)   # real ICON_LEFT / ICON_RIGHT
         print(f"  gfx: {len(glyphs.fonts)} fonts in ALL_FONTS (pixel-exact)")
     else:

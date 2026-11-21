@@ -134,7 +134,7 @@ and relative links were adjusted to suit a standalone file.
 ## Slot 9: the emoji search dictionary
 
 The emoji layer's keyword search reads a dictionary from slot 9 (128 KB, font-pack
-layout v4; firmware: qmk `keyboards/polykybd/emoji/EMOJI_SEARCH.md`). The host
+layout v4; firmware: qmk `keyboards/polykybd/docs/features/emoji-search.md`). The host
 ships all 79 dictionaries in `res/emojidict/` (gzipped, `manifest.json` from
 `emoji_dict.py build-all`, imported with `scripts/import_emojidict.py`).
 `services/emojidict.py` adds the chosen one to the bundle list
@@ -169,7 +169,7 @@ The external-flash font pack ships as **N per-family bundles**
 connect for whatever the device is missing or behind on. The slot layout, the
 autocheck job, the retry/verify logic and `polyctl fontpack` are in
 [`docs/fontpack.md`](fontpack.md); firmware-side architecture is in the qmk repo's
-`keyboards/polykybd/FONT_PACK.md`.
+`keyboards/polykybd/docs/display/font-pack.md`.
 
 - ⚠️ **A bundle can report a FAILED flash and still read as UP TO DATE, so the version
   comparison alone must never decide what to re-flash.** FONTPACK writes **in place**,

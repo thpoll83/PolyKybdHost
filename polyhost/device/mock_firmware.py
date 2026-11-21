@@ -22,7 +22,7 @@ Three things use it:
   a big transfer.
 
 What it copies from the firmware, and from where (qmk_firmware,
-keyboards/polykybd/): the command set per PROTOCOL_VERSION (PROTOCOL_HISTORY.md
+keyboards/polykybd/): the command set per PROTOCOL_VERSION (keyboards/polykybd/docs/protocol/protocol-history.md
 and the git history of hid_com.c), the unknown-command NACK (hid_com.c
 default), the overlay write paths (fill_overlay.c, base/overlay.c), the mapping
 decoder (set_packed_overlay_mapping), the overlay flag actions
@@ -80,7 +80,7 @@ ACTION_FLAGS = RESET_BUFFERS | USAGE_RESET | MAPPING_RESET | MAPPING_ALLSET
 # The first PROTOCOL_VERSION whose firmware answers each command. A command
 # below its version gets the firmware's unknown-command NACK and lands in
 # MockFirmware.refused. 0 = older than protocol numbering (no host that can
-# connect at all is older). Sources: PROTOCOL_HISTORY.md, and for the commands
+# connect at all is older). Sources: keyboards/polykybd/docs/protocol/protocol-history.md, and for the commands
 # it does not name, the PROTOCOL_VERSION in config.h at the commit that added
 # the case to hid_com.c (REPLAY_ANIM: d367ad154a, v11; FW_UP_SIGNATURE:
 # 99df4db19e, v11; the font-pack transport: 27fc888276, v5, gated by the host

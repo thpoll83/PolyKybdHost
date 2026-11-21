@@ -7,8 +7,8 @@ import os, sys, tempfile
 sys.path.insert(0, os.path.dirname(__file__))
 from gfx_font import GfxGlyphRenderer, OLED_W, OLED_H, BUFFER_X
 from PIL import Image, ImageDraw, ImageFont
-FONTDIR = os.environ.get("POLYKYBD_FONTS", os.path.abspath(os.path.join(
-    os.path.dirname(__file__), "../../qmk_firmware/keyboards/polykybd/base/fonts")))
+from gfx_font import font_dir  # noqa: E402
+FONTDIR = os.environ.get("POLYKYBD_FONTS", font_dir())
 OUT = os.environ.get("POLYKYBD_OUT", tempfile.gettempdir())
 R = GfxGlyphRenderer(FONTDIR)
 SP = 0x20

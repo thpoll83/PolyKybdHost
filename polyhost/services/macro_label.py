@@ -21,6 +21,8 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+from polyhost.util import fw_checkout
+
 # The keycap's visible window. Must match SCREEN_WIDTH / SCREEN_HEIGHT in the firmware's
 # config.h -- these are the panel, not a layout choice.
 PANEL_W = 72
@@ -170,6 +172,4 @@ def _load_ui_face(font_dir: str, filename: str, symbol: str):
 
 def default_font_dir() -> str:
     """Best guess at the firmware's font directory in a checkout beside this repo."""
-    here = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    return os.path.join(os.path.dirname(here), "qmk_firmware",
-                        "keyboards", "polykybd", "base", "fonts")
+    return fw_checkout.font_dir()

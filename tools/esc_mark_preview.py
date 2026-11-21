@@ -28,9 +28,10 @@ sys.path.insert(0, os.path.join(HOST, "tools"))
 from gfx_font import load_all_fonts, OLED_W, OLED_H, BUFFER_X, BASELINE   # noqa: E402
 from oled_preview import Renderer                                          # noqa: E402
 from polyhost.services import app_icons                                    # noqa: E402
+from gfx_font import font_dir  # noqa: E402
 
 ESC_CP = 0x238B
-FONT_DIR = os.path.join(os.path.dirname(HOST), "qmk_firmware", "keyboards", "polykybd", "base", "fonts")
+FONT_DIR = font_dir()
 
 
 def legend_mask(renderer, cps, x=0):

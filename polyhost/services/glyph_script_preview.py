@@ -13,7 +13,7 @@ PIL only, no Qt: the Qt side is one conversion away in
 ``polyhost/gui/glyph_script_icon.py``.
 
 ⚠️ The codepoint arithmetic mirrors the firmware's ``glyph_script_codepoint()``
-(``qmk_firmware/keyboards/polykybd/poly_keymap.c``): each script owns a dense
+(``qmk_firmware/keyboards/polykybd/keymap/poly_keymap.c``): each script owns a dense
 Private-Use block, letters ``a..z`` at ``base+0..25`` and — for the scripts that
 have numerals — digits ``1..0`` at ``base+26..35``.  A script whose block is not
 in the shipped pack simply has no preview; nothing here guesses.

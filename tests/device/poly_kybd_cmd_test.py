@@ -221,7 +221,7 @@ class TestSimpleCommandPayloads(unittest.TestCase, LockCheckMixin):
     def test_set_idle_timeout(self):
         # cmd 40, then the preset index. This is the one test that catches the host
         # and the firmware disagreeing about the wire; the firmware side is
-        # keyboards/polykybd/hid_com.c case 40.
+        # keyboards/polykybd/hid/hid_com.c case 40.
         self.assertEqual(self._payload('set_idle_timeout', 2)[:3], bytes([POLY, 40, 0x02]))
 
     def test_get_hw_ids_sends_cmd_50_with_no_payload(self):
