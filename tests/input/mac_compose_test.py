@@ -136,6 +136,23 @@ class TapCallbackTest(unittest.TestCase):
         tap._on_event("proxy", "disabled", None)
         self.assertEqual(api.re_enabled, 1)
 
+    def test_it_is_not_running_before_setup_has_finished(self):
+        """A start() that times out while the run loop is still being set up must
+        not report a running tap (CodeRabbit on #1009)."""
+        import threading
+        gate = threading.Event()
+
+        class SlowApi(FakeApi):
+            def run(self, tap):
+                gate.wait(5.0)
+                return "loop"
+
+        tap = MacComposeTap(api=SlowApi())
+        try:
+            self.assertFalse(tap.start(timeout=0.05))
+        finally:
+            gate.set()
+
     def test_a_refused_tap_does_not_run(self):
         tap = MacComposeTap(api=FakeApi(tap=None))
         self.assertFalse(tap.start(timeout=2.0))

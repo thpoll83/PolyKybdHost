@@ -19,6 +19,11 @@ and F20 up, drops all of these keys and posts the character with
   Security → Accessibility), the same grant the shortcut harvest uses. Without
   it ``CGEventTapCreate`` returns None, `MacComposeTap.start` returns False and
   PolyCore keeps the plain Mac mode.
+* ⚠️ While any process has Secure Event Input on (a password field, Terminal's
+  Secure Keyboard Entry, some password managers), macOS gives the tap no key
+  events, so the F20 sequence reaches the application as hex digits. Accepted
+  and not handled: plain Mac mode would not type the character either, because
+  it needs the Unicode Hex Input source (maintainer's decision, 2026-11-21).
 
 pyobjc is imported late, inside `_QuartzApi`, because this module loads on every
 OS. `ComposeDecoder` is pure and tested offline
@@ -174,7 +179,10 @@ class MacComposeTap:
 
     @property
     def running(self) -> bool:
-        return self._thread is not None and self._thread.is_alive() and self._tap is not None
+        # _ready first: _run sets _tap before its run loop setup has finished, and
+        # a start() that timed out in that window must not report a running tap.
+        return (self._ready.is_set() and self._thread is not None
+                and self._thread.is_alive() and self._tap is not None)
 
     def start(self, timeout: float = 0.5) -> bool:
         """Start the tap once, and wait up to ``timeout`` seconds for it.

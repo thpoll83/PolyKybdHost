@@ -249,6 +249,10 @@ and relative links were adjusted to suit a standalone file.
   Accessibility permission; without it, or without pyobjc, the host pushes plain Mac and logs
   `MacCompose is off: ...`. Like WinCompose, a host that quits or crashes leaves the keyboard
   in the mode: the digits then reach the application until the next push.
+  ⚠️ While any app has Secure Event Input on (a password field, Terminal's Secure Keyboard
+  Entry), macOS gives the tap no key events, and an emoji key types its hex digits
+  (`d83dde00`) into that app. This is accepted: plain Mac mode would not type the character
+  either without the Unicode Hex Input source.
 
 - **udev rule install from the tray (Linux)**: `polyhost/device/99-hid.rules` grants the
   keyboard's raw HID interface and, since the fast link, its serial port (`tty`), and tells
