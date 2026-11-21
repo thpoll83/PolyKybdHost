@@ -2002,7 +2002,8 @@ def refresh_installed(home=None, env=None, which=None, system=None,
                 rs = _change_multi(st.editor, True, all_sources.get(st.editor), home=home,
                                    env=env, system=system, state=state, only_outdated=True)
             elif st.editor in CLI_EDITORS:
-                rs = [_change_cli(st, True, all_sources.get(st.editor), state, run)]
+                rs = [_change_cli(st, True, all_sources.get(st.editor), state, run,
+                                 home=home, env=env, system=system)]
             else:
                 rs = [_change(st, True, all_sources, home=home, env=env, system=system)]
         except Exception:  # noqa: BLE001
