@@ -62,6 +62,7 @@ q, Tab and others); the overlay shows the Editor meaning.
 
 ## Icons
 
+- One icon per action (maintainer rule, 2026-11-15): `split.png` (Split) is now copied from `../reaper` (Material `vertical_split`), so it differs from the scissors of Cut mode (`slice.png`); `cuepage.png` is Material `apps` (it was the grid of Next grid unit); `solosel.png` (Solo selection) is `solo.png` with the word SEL, drawn 1-bit at 40x40 by `../ghidra/fetch_icons.py`'s `composites()` (word in Liberation Sans Bold, SIL OFL 1.1).
 - Material Symbols, Apache-2.0, <https://fonts.google.com/icons>: every `ms:`
   entry in `fetch_icons.py`.
 - Byte-identical copies of the icons another DAW set draws for the same

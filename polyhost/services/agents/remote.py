@@ -113,7 +113,9 @@ def clear_forwarder_target(path: str | None = None) -> None:
 def agent_payload(agent) -> dict:
     """What the forwarder needs to find the agent's window on its machine."""
     return {"vendor": agent.vendor, "session_id": agent.session_id, "pid": agent.pid,
-            "cwd": agent.cwd, "window": agent.window, "headline": agent.display_headline}
+            "cwd": agent.cwd, "window": agent.window,
+            # Unnumbered: a window title never shows the card's duplicate number.
+            "headline": agent.base_headline}
 
 
 class RemoteRaiseQueue:

@@ -1,6 +1,7 @@
 """Integrations > Terminals and > Editors (gui/shell_editor_pages.py): rows from
 the two services' status, Install/Remove on the ticked rows, results shown."""
 import os
+import tempfile
 import time
 import unittest
 import unittest.mock as mock
@@ -276,7 +277,6 @@ class EditorsPageTest(_PageTestBase):
     def test_remove_keeps_a_plugin_changed_after_the_page_was_shown(self):
         """The real service on a temporary home: a file edited after the
         rows were read is found as changed by hand, not deleted."""
-        import tempfile
         home = tempfile.mkdtemp()
         self.addCleanup(__import__("shutil").rmtree, home, True)
         kw = dict(home=home, env={}, which=lambda _n: "/usr/bin/vim")
@@ -331,8 +331,97 @@ class EditorsPageTest(_PageTestBase):
     def test_every_editor_state_has_a_text(self):
         for state in (ep.STATE_INSTALLED, ep.STATE_NOT_INSTALLED, ep.STATE_OUTDATED,
                       ep.STATE_MODIFIED, ep.STATE_STALE, ep.STATE_MANUAL,
-                      ep.STATE_NOT_PRESENT, ep.STATE_NO_SOURCE):
+                      ep.STATE_NOT_PRESENT, ep.STATE_NO_SOURCE, ep.STATE_NO_PROJECT,
+                      ep.STATE_COMMAND):
             self.assertTrue(sep.editor_state_text(ep.EditorStatus(ep.VIM, state, None, "x")))
+        texts = {sep.editor_state_text(ep.EditorStatus(ep.VIM, s, None, "x"))
+                 for s in (ep.STATE_NO_PROJECT, ep.STATE_COMMAND, ep.STATE_NOT_PRESENT)}
+        self.assertEqual(len(texts), 3)
+
+    def make_new(self, statuses):
+        """A page whose install_fn and remove_fn also take ``projects``."""
+        calls = []
+
+        def install_fn(editors, statuses=None, projects=None):
+            calls.append(("install", editors, projects))
+            return []
+
+        def remove_fn(editors, statuses=None, projects=None):
+            calls.append(("remove", editors, projects))
+            return []
+
+        page = sep.EditorsPage(status_fn=lambda: statuses, install_fn=install_fn,
+                               remove_fn=remove_fn, report_settings=(50164, ""))
+        self.addCleanup(page.deleteLater)
+        self.settle(page)
+        return page, calls
+
+    def tmp_project(self, marker):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        (Path(tmp.name) / marker).write_text("")
+        return Path(tmp.name)
+
+    def test_every_new_editor_has_a_label_and_a_hint(self):
+        for editor in ep.NEW_EDITORS:
+            self.assertNotEqual(sep.editor_label(editor), editor)
+            self.assertTrue(sep.editor_hint(ep.EditorStatus(editor, ep.STATE_NOT_INSTALLED, None, "")),
+                            editor)
+
+    def test_jupyterlab_shows_the_command_with_a_copy_button_and_cannot_be_ticked(self):
+        cmd = 'python -m pip install "/x/jupyterlab-extension"'
+        page, _calls = self.make_new([ep.EditorStatus(ep.JUPYTERLAB, ep.STATE_COMMAND, None, cmd)])
+        box = page.boxes()[ep.JUPYTERLAB]
+        self.assertFalse(box.isEnabled() or box.isChecked())
+        self.assertNotIn(ep.JUPYTERLAB, page._removable)
+        from PyQt5.QtWidgets import QLabel
+        self.assertIn(cmd, [w.text() for w in page.findChildren(QLabel)])
+        page.copy_buttons[ep.JUPYTERLAB].click()
+        self.assertEqual(QApplication.clipboard().text(), cmd)
+
+    def test_add_a_project_folder_installs_into_it(self):
+        game = self.tmp_project("project.godot")
+        page, calls = self.make_new([ep.EditorStatus(ep.GODOT, ep.STATE_NO_PROJECT, None, "")])
+        self.assertFalse(page.boxes()[ep.GODOT].isChecked())
+        page.choose_folder = lambda editor: str(game)
+        page.project_buttons[ep.GODOT].click()
+        self.settle(page)
+        self.assertEqual(calls, [("install", [ep.GODOT], {ep.GODOT: [str(game)]})])
+
+    def test_a_project_button_asks_only_for_its_own_editor(self):
+        game = self.tmp_project("project.godot")
+        page, calls = self.make_new([ep.EditorStatus(ep.GODOT, ep.STATE_NO_PROJECT, None, ""),
+                                     ep.EditorStatus(ep.UNITY, ep.STATE_NO_PROJECT, None, "")])
+        page.boxes()[ep.UNITY].setChecked(True)
+        asked, warned = [], []
+        page.choose_folder = lambda editor: asked.append(editor) or str(game)
+        page.warn = warned.append       # never a modal box in a test
+        page.project_buttons[ep.GODOT].click()
+        self.settle(page)
+        self.assertEqual(asked, [ep.GODOT])
+        self.assertEqual(calls, [("install", [ep.GODOT], {ep.GODOT: [str(game)]})])
+        self.assertEqual(warned, [])
+
+    def test_install_asks_for_a_project_and_refuses_a_wrong_folder(self):
+        wrong = self.tmp_project("README.md")
+        page, calls = self.make_new([ep.EditorStatus(ep.UNITY, ep.STATE_NO_PROJECT, None, ""),
+                                 ep.EditorStatus(ep.VIM, ep.STATE_NOT_INSTALLED, Path("/v"), "")])
+        asked, warned = [], []
+        page.choose_folder = lambda editor: asked.append(editor) or str(wrong)
+        page.warn = warned.append
+        page.boxes()[ep.UNITY].setChecked(True)
+        page.install_button.click()
+        self.settle(page)
+        self.assertEqual(asked, [ep.UNITY])
+        self.assertIn("Packages/manifest.json", warned[0])
+        self.assertEqual(calls, [("install", [ep.UNITY, ep.VIM], None)])
+
+    def test_a_vault_row_shows_its_folders(self):
+        page, _calls = self.make_new([ep.EditorStatus(ep.OBSIDIAN, ep.STATE_INSTALLED, None,
+                                                  "/n/Notes, /n/Work")])
+        from PyQt5.QtWidgets import QLabel
+        self.assertIn("/n/Notes, /n/Work", [w.text() for w in page.findChildren(QLabel)])
+        self.assertEqual(page.project_buttons[ep.OBSIDIAN].text(), sep.project_button_text(ep.OBSIDIAN))
 
 
 if __name__ == "__main__":

@@ -131,6 +131,7 @@ CMD_MIN_PROTOCOL: dict[int, int] = {
     Cmd.KEY_ATTENTION.value: 32,
     Cmd.COMBOS.value: 33,
     Cmd.HOST_TUTORIAL.value: 35,
+    Cmd.HW_ID.value: 37,
     fw.CMD_FW_UP_BEGIN: 0,
     fw.CMD_FW_UP_CHUNK: 0,
     fw.CMD_FW_UP_COMMIT: 0,
@@ -350,6 +351,10 @@ class MockFirmware:
         self.reboot_count = 0     # cmd 43 reboots taken (the boot-loop diagnostic)
         self.crash_record = None  # the master's archived 48-byte record (cmd 39)
         self.crash_fresh = False
+        # cmd 50 (v37): the flash unique IDs of the half the host talks to and of the
+        # other half. None = no usable ID (flag bit clear). Tests set them.
+        self.hw_uid_own: bytes | None = bytes.fromhex("e66038b7c32f5a2c")
+        self.hw_uid_other: bytes | None = bytes.fromhex("e66038b7c3284d26")
         self.state_generation = 0
         self._reset_agent_keys()
         # What owns the keycaps, as the GET_ID 'A' block reports it (v28): 0 none,
@@ -440,6 +445,7 @@ class MockFirmware:
         self.ai_states = [0] * 10
         self.ai_slots = [0xFFFF] * 12
         self.ai_flags = 0
+        self.ai_page = (0, 0, 0)   # v36: page shown, page count, finished-elsewhere counter
         self.ai_events = []        # [(seq, key)], the newest 8
         self.ai_seq = 0
         self.ai_cards = {}         # pool slot -> bytearray(360)
@@ -669,7 +675,13 @@ class MockFirmware:
             if (any(s > 5 for s in states) or flags & ~0x0F
                     or any(s != 0xFFFF and s >= capacity for s in slots)):
                 return _reply(p[1], False)
+            # v36 page bytes, after the 35 above; a v35 keyboard ignores them, as the
+            # firmware does. A page not below its count is refused with the report.
+            page = (p[38], p[39], p[40]) if self.protocol >= 36 else (0, 0, 0)
+            if not (page[0] == 0 if page[1] == 0 else page[0] < page[1]):
+                return _reply(p[1], False)
             self.ai_states, self.ai_flags, self.ai_slots = states, flags, slots
+            self.ai_page = page
             return _reply(p[1])
         if op == 2:
             seen = p[3]
@@ -841,6 +853,11 @@ class MockFirmware:
         present = which == 0 and self.crash_record is not None
         flags = (1 if present else 0) | (2 if present and self.crash_fresh else 0)
         return _reply(p[1], body=bytes([flags]) + (self.crash_record if present else bytes(48)))
+
+    def _hw_id(self, p):
+        own, other = self.hw_uid_own, self.hw_uid_other
+        flags = (1 if own else 0) | (2 if other else 0)
+        return _reply(p[1], body=bytes([flags]) + (own or bytes(8)) + (other or bytes(8)))
 
     def _glyph_script(self, p):
         """cmd 30: the script byte as _get_or_set, plus the v26 placement op in p[3]
@@ -1297,6 +1314,7 @@ class MockFirmware:
         Cmd.ENTER_BOOTLOADER.value: _bootloader,
         Cmd.REBOOT.value: _reboot,
         Cmd.CRASH_RECORD.value: _crash_record,
+        Cmd.HW_ID.value: _hw_id,
         Cmd.SET_HANDEDNESS.value: _handedness,
         Cmd.GET_LAYER_NAMES.value: _layer_names,
         Cmd.OVERLAY_FLAGS_ON.value: _flags_on,

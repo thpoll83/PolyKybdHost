@@ -5,7 +5,7 @@ category's page on the right. Each page installs and removes its own parts:
 
 - AI agents: the hooks in each agent's config file (services/agents/hook_install.py)
 - Terminals: the title line in each shell's startup file (services/shell_title.py)
-- Editors: the Vim, Neovim, Emacs and GDB plugins (services/editor_plugins.py)
+- Editors: the Vim, Neovim, Emacs and GDB plugins and the FreeCAD add-on (services/editor_plugins.py)
 - Browser: the browser extension folder (services/browser_extension.py)
 
 All of it is a local file change on the computer the app runs on. It needs no
@@ -19,14 +19,15 @@ import difflib
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QCursor, QGuiApplication, QPalette
 from PyQt5.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QFrame, QGridLayout,
-                             QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QMessageBox,
+                             QHBoxLayout, QLabel, QListWidget, QMessageBox,
                              QPushButton, QScrollArea, QSizePolicy, QStackedWidget,
                              QVBoxLayout, QWidget)
 
+from polyhost.gui import section_colors, section_style
 from polyhost.gui.settings_dialog import (_STYLE as SETTINGS_STYLE, MIN_DIALOG_SIZE,
                                           SIDEBAR_WIDTH, initial_dialog_size,
                                           minimum_dialog_size)
-from polyhost.gui.ui_kit import (CARD_STYLE, WrapLabel, muted, px, set_button_icon,
+from polyhost.gui.ui_kit import (CARD_STYLE, WrapLabel, card, muted, px, set_button_icon,
                                  style_button_box)
 from polyhost.i18n import _, _f
 
@@ -73,6 +74,7 @@ class RowsPage(QWidget):
         self._boxes = {}
         self._removable = set()
         self._thread = None
+        self.apply_keys = []
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(12)
@@ -107,7 +109,11 @@ class RowsPage(QWidget):
 
         row = QHBoxLayout()
         row.addStretch(1)
-        self.install_button = set_button_icon(QPushButton(_("Install")), "install")
+        self.install_button = section_style.mark_accent_button(
+            set_button_icon(QPushButton(_("Install")), "install"))
+        # The section colour (gui/section_style.py), set by the dialog; rows
+        # added later (the status arrives on a thread) take it in add_row.
+        self.accent_color = None
         self.remove_button = set_button_icon(QPushButton(_("Remove")), "delete")
         # noinspection PyUnresolvedReferences
         self.install_button.clicked.connect(lambda: self._apply(True))
@@ -148,6 +154,8 @@ class RowsPage(QWidget):
         """One program: its checkbox, the file that changes, the state below."""
         row = self.grid.rowCount() if self._boxes else 0
         box = QCheckBox(label)
+        section_style.accent_checkbox(box, self.accent_color)
+        box.setProperty("sectionAccentDone", True)
         box.setChecked(checked)
         box.setEnabled(enabled)
         # noinspection PyUnresolvedReferences
@@ -229,12 +237,16 @@ class RowsPage(QWidget):
         self.remove_button.setEnabled(
             any(k in self._removable for k in chosen) and not busy)
 
-    def _apply(self, install):
-        keys = self.selected()
+    def _apply(self, install, keys=None):
+        """Install or remove the ticked rows, or only ``keys`` (a row's own
+        button)."""
+        keys = self.selected() if keys is None else list(keys)
         if not install:
             keys = [k for k in keys if k in self._removable]
         if not keys or self.busy():
             return
+        # The rows this Install or Remove acts on, for before_apply().
+        self.apply_keys = keys
         self.before_apply(install)
         if self.APPLY_ON_THREAD:
             self._checking.show()
@@ -429,13 +441,38 @@ class IntegrationsDialog(QDialog):
         self.nav.setFrameShape(QFrame.NoFrame)
         self.nav.setWordWrap(True)
         self.nav.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        section_style.style_nav(self.nav)
         side_lay.addWidget(self.nav, 1)
         body.addWidget(side)
 
         self.stack = QStackedWidget()
-        for category in self.categories:
+        dark = section_style.dialog_is_dark(self)
+        for index, category in enumerate(self.categories):
             page = factories[category]()
             self.pages[category] = page
+            # The page sits in a coloured section like a Settings section
+            # (gui/section_style.py). The section's band shows the page's own
+            # title, so the page's heading is hidden.
+            color = section_colors.slot_color(index, dark)
+            heading = page.findChild(QLabel, "settingsSectionTitle")
+            title = heading.text() if heading is not None else category_title(category)
+            if heading is not None:
+                heading.hide()
+            section = section_style.ColorSection(title, color)
+            # The page's content sits in a card on the base colour (white or
+            # black), like a Settings group and a tutorial entry. A page with
+            # cards of its own (Browser) is not wrapped again. The stretch
+            # below keeps the card as tall as its content.
+            if page.findChildren(QFrame, "uiCard"):
+                section.body_layout.addWidget(page)
+            else:
+                content, content_lay = card()
+                content_lay.setContentsMargins(px(14), px(12), px(14), px(12))
+                content_lay.addWidget(page)
+                section.body_layout.addWidget(content)
+                section.body_layout.addStretch(1)
+            page.accent_color = color
+            section_style.adopt(page, color)
             # Each page scrolls on its own: a long result list or a small
             # screen must not push the Install button out of reach.
             scroll = QScrollArea()
@@ -444,10 +481,10 @@ class IntegrationsDialog(QDialog):
             holder = QWidget()
             holder_lay = QVBoxLayout(holder)
             holder_lay.setContentsMargins(16, 14, 16, 16)
-            holder_lay.addWidget(page)
+            holder_lay.addWidget(section)
             scroll.setWidget(holder)
             self.stack.addWidget(scroll)
-            self.nav.addItem(QListWidgetItem(category_title(category)))
+            section_style.add_nav_item(self.nav, category_title(category), color)
         # noinspection PyUnresolvedReferences
         self.nav.currentRowChanged.connect(self.stack.setCurrentIndex)
         body.addWidget(self.stack, 1)

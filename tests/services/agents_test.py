@@ -1,12 +1,16 @@
 """The agent registry, the hook and title adapters, the card, and the controller
 against the emulated firmware (cmd 45/46, protocol v31)."""
 import os
+import tempfile
+import unicodedata
 import unittest
 import unittest.mock as mock
 
 from polyhost.services.agents import hooks, registry as reg_mod
-from polyhost.services.agents.card import (card_bytes, fit_text, render_card,
-                                           render_dictation_card, render_next_waiting_card)
+from polyhost.services.agents import card as card_mod
+from polyhost.services.agents.card import (card_bytes, card_layout, fit_text, flow, paginate,
+                                           render_card, render_dictation_card,
+                                           render_next_waiting_card, render_page)
 from polyhost.services.agents import dictation
 from polyhost.services.agents.controller import (DICTATION_KEY, NEXT_WAITING_KEY, NO_SLOT,
                                                  PAGER_KEY, AgentKeysController)
@@ -176,6 +180,22 @@ class RegistryTest(unittest.TestCase):
         self.assertEqual([a.display_headline for a in self.r.agents()],
                          ["team-core2", "agent", "review"])
 
+    def test_an_anonymous_cloud_agent_is_agent_N(self):
+        # POLYKYBD_CLOUD_ANONYMOUS: no title and no folder come from the cloud VM.
+        self.r.report("claude-code", "a", "working", machine="cloud", headline="", cwd="")
+        self.assertEqual([a.display_headline for a in self.r.agents()], ["Agent 1"])
+        self.r.report("claude-code", "b", "idle", machine="cloud", headline="", cwd="")
+        self.r.report("claude-code", "c", "idle", cwd="C:\\ws\\agent")   # local, folder "agent"
+        self.r.report("claude-code", "d", "idle", machine="cloud", headline="Fix the build")
+        self.assertEqual([a.display_headline for a in self.r.agents()],
+                         ["Agent 1", "Agent 2", "agent", "Fix the build"])
+        self.r.label("claude-code", "b", "review")            # the user's own label
+        self.assertEqual([a.display_headline for a in self.r.agents()][:2], ["Agent 1", "review"])
+
+    def test_a_local_agent_without_a_title_keeps_the_vendor_name(self):
+        self.r.report("claude-code", "a", "working")
+        self.assertEqual([a.display_headline for a in self.r.agents()], ["Claude Code"])
+
     def test_an_exited_agent_process_frees_its_key(self):
         alive = {100: True, 200: False}
         r = AgentRegistry(clock=self.clock, is_alive=lambda pid: alive.get(pid, False))
@@ -269,6 +289,103 @@ class RegistryTest(unittest.TestCase):
         self.assertIsNone(self.r.report("codex", "", "working"))
         with self.assertRaises(ValueError):
             self.r.report("codex", "a", "sleepy")
+
+
+class CardWordsTest(unittest.TestCase):
+    def test_small_words_are_dropped_and_the_first_word_stays(self):
+        from polyhost.services.agents.model import card_words
+        self.assertEqual(card_words("Fix the HID reconnect after resume on Windows"),
+                         "Fix HID reconnect resume Windows")
+        self.assertEqual(card_words("Refactor: the overlay cache"), "Refactor: overlay cache")
+        self.assertEqual(card_words("Add tests for the cloud relay"), "Add tests cloud relay")
+        self.assertEqual(card_words("After the fix works"), "After fix works")  # first word stays
+        # A title of small words only is kept as it is.
+        self.assertEqual(card_words("on the"), "on the")
+        self.assertEqual(card_words(""), "")
+        # Without a marker word nothing goes: "on" is French, "in" German.
+        self.assertEqual(card_words("Fix login in Firefox"), "Fix login in Firefox")
+        # Not English: shown whole, also with a word that is an English small word.
+        self.assertEqual(card_words("Mise à jour de la doc"), "Mise à jour de la doc")
+        self.assertEqual(card_words("Fehler in der Anmeldung"), "Fehler in der Anmeldung")
+        self.assertEqual(card_words("Update der Anmeldung"), "Update der Anmeldung")
+        self.assertEqual(card_words("Arreglar a la base"), "Arreglar a la base")
+        self.assertEqual(card_words("Fout in de aanmelding is zichtbaar"),
+                         "Fout in de aanmelding is zichtbaar")
+        self.assertEqual(card_words("Błąd to jest w logowaniu"), "Błąd to jest w logowaniu")
+        self.assertEqual(card_words("로그인 테스트 수정"), "로그인 테스트 수정")
+
+    def test_the_card_shows_the_short_title_but_a_label_as_set(self):
+        r = AgentRegistry()
+        r.report("codex", "a", "working", headline="Fix the login test")
+        agent = r.agents()[0]
+        self.assertEqual(agent.card_text, "Fix login test")
+        self.assertEqual(agent.display_headline, "Fix the login test")   # the list keeps it
+        self.assertTrue(r.label("codex", "a", "Fix the parser"))
+        self.assertEqual(r.agents()[0].card_text, "Fix the parser")
+        r.report("codex", "b", "working", cwd="/home/u/the-docs")
+        self.assertEqual(r.agents()[1].card_text, "the-docs")          # a folder as it is
+
+    def test_two_sessions_with_one_title_keep_their_numbers(self):
+        r = AgentRegistry()
+        r.report("codex", "a", "working", headline="Fix the build")
+        r.report("codex", "b", "working", headline="Fix the build")
+        self.assertEqual([a.card_text for a in r.agents()], ["Fix build 1", "Fix build 2"])
+
+    def test_titles_that_show_the_same_card_are_numbered(self):
+        r = AgentRegistry()
+        r.report("codex", "a", "working", headline="Fix the login bug")
+        r.report("codex", "b", "working", headline="Fix login bug")
+        r.report("codex", "c", "working", headline="Fix the parser")
+        self.assertEqual([a.card_text for a in r.agents()],
+                         ["Fix login bug 1", "Fix login bug 2", "Fix parser"])
+
+    def test_a_title_of_brackets_only_shows_the_folder(self):
+        r = AgentRegistry()
+        r.report("codex", "a", "working", headline="[]", cwd="/home/u/docs")
+        r.report("codex", "b", "working", headline="()", cwd="/home/u/docs")
+        self.assertEqual([a.card_text for a in r.agents()], ["docs 1", "docs 2"])
+        self.assertEqual(r.agents()[0].display_headline, "[] 1")       # the list keeps it
+        r.report("codex", "c", "working", headline="( )")
+        self.assertEqual(r.agents()[2].card_text, "Codex")
+        self.assertTrue(r.label("codex", "c", "[ ]"))                  # a label too
+        self.assertEqual(r.agents()[2].card_text, "Codex")
+        r.report("codex", "d", "working", headline="[]", cwd="/home/u/[]")
+        self.assertEqual(r.agents()[3].card_text, "Codex 2")        # the folder too
+
+    def test_a_number_never_repeats_another_agents_title(self):
+        r = AgentRegistry()
+        r.report("codex", "a", "working", headline="(IO)")
+        r.report("codex", "b", "working", headline="IO")
+        r.report("codex", "c", "working", headline="IO 1")
+        self.assertEqual([a.card_text for a in r.agents()], ["IO 2", "IO 3", "IO 1"])
+
+    def test_an_anonymous_agent_never_repeats_another_agents_title(self):
+        r = AgentRegistry()
+        r.report("claude-code", "a", "working", machine="cloud", headline="", cwd="")
+        r.report("codex", "b", "working", headline="Agent")
+        r.report("codex", "c", "working", headline="Agent")
+        r.report("codex", "d", "working", headline="Fix it")
+        self.assertTrue(r.label("codex", "d", "Agent 1"))
+        texts = [a.card_text for a in r.agents()]
+        self.assertEqual(len(set(t.casefold() for t in texts)), len(texts), texts)
+        self.assertEqual(texts[3], "Agent 1")
+
+    def test_a_vendor_name_of_brackets_only_shows_agent(self):
+        r = AgentRegistry()
+        r.report("tool(x)", "a", "working", headline="[]", cwd="/work/[]")
+        r.report("tool(x)", "b", "working", headline="tool x")
+        texts = [a.card_text for a in r.agents()]
+        self.assertFalse(set("()[]") & set("".join(texts)), texts)
+        self.assertEqual(len(set(texts)), 2, texts)
+
+    def test_the_card_has_no_brackets_and_titles_that_differ_only_in_them_are_numbered(self):
+        r = AgentRegistry()
+        r.report("codex", "a", "working", headline="Fix (the) login [WIP]")
+        r.report("codex", "b", "working", headline="Fix login WIP")
+        self.assertEqual([a.card_text for a in r.agents()], ["Fix login WIP 1", "Fix login WIP 2"])
+        self.assertEqual(r.agents()[0].display_headline, "Fix (the) login [WIP] 1")  # the list keeps them
+        self.assertTrue(r.label("codex", "a", "Parser (v2)"))
+        self.assertEqual(r.agents()[0].card_text, "Parser v2")
 
 
 class HookTest(unittest.TestCase):
@@ -421,9 +538,49 @@ class TitleTest(unittest.TestCase):
         self.assertEqual(r.agents(), [])
 
 
+DEJAVU = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"   # Hebrew and Arabic too
+
+
+def setUpModule():
+    # PolyCore sets the download hook; no test here may start a real download.
+    from polyhost.services.agents import card
+    card.MISSING_FONT_HOOK = None
+
+
+class _FontCache:
+    """font_downloader's cache in a temporary folder for one test, with stand-in
+    files for the downloaded fallback fonts; card.fonts_changed() around it."""
+
+    def __init__(self, test):
+        from polyhost.services import font_downloader
+        from polyhost.services.agents import card
+        self.card = card
+        self.dir = tempfile.TemporaryDirectory()
+        test.addCleanup(self.dir.cleanup)
+        patch = mock.patch.object(font_downloader, "default_cache_dir", lambda: self.dir.name)
+        patch.start()
+        test.addCleanup(patch.stop)
+        test.addCleanup(card.fonts_changed)
+        test.addCleanup(card._REQUESTED.clear)
+        test.addCleanup(card._MISSING.clear)
+        card._REQUESTED.clear()
+        card._MISSING.clear()
+        card.fonts_changed()
+        self.test = test
+
+    def add(self, name, source):
+        import shutil
+        if not os.path.exists(source):
+            self.test.skipTest(f"{source} is not installed")
+        entry = next(e for e in self.card.FALLBACK_FONTS if e.name == name)
+        spec = self.card.download_spec(entry)
+        shutil.copy(source, os.path.join(self.dir.name, spec.filename))
+        self.card.fonts_changed()
+
+
 class CardTest(unittest.TestCase):
     def test_card_is_360_bytes_and_inside_the_panel(self):
-        img = render_card("claude-code", AgentState.WAITING, "polykybd-docs", marks=None)
+        img = render_card("claude-code", "polykybd-docs", marks=None)
         self.assertEqual(img.shape, (40, 72))
         self.assertTrue(img.any())
         self.assertEqual(len(card_bytes(img)), 360)
@@ -447,34 +604,506 @@ class CardTest(unittest.TestCase):
     def test_shipped_agent_marks_load_without_network(self):
         from polyhost.services.agents.card import MARK_SHOWN, VendorMarks
         marks = VendorMarks()
-        for vid in ("aider", "opencode", "qwen", "antigravity"):
+        for vid in ("aider", "opencode", "qwen", "antigravity", "kimi", "grok"):
             mask = marks._load(vid, allow_network=False)
             self.assertIsNotNone(mask, vid)
             self.assertLessEqual(mask.shape[0], MARK_SHOWN)
             self.assertTrue(mask.any())
 
-    def test_wrap_text_breaks_between_words_into_two_lines(self):
-        from polyhost.services.agents.card import _measure, wrap_text
-        self.assertEqual(wrap_text("agent 2"), ["agent 2"])
-        self.assertEqual(wrap_text("polykybd-docs"), ["polykybd-", "docs"])
-        lines = wrap_text("Investigate the HIL failure in the split link soak")
-        self.assertEqual(len(lines), 2)
-        self.assertEqual(lines[0], "Investigate")
-        self.assertTrue(lines[1].endswith("."))
-        self.assertTrue(all(_measure(line)[2] <= 70 for line in lines))
+    def test_flow_fills_each_line_and_splits_at_any_letter(self):
+        lines = flow("Fix the HID reconnect after resume", [46, 70, 70])
+        self.assertEqual(lines[:3], ["Fix the", "HID recon", "nect after r"])
+        widths = [46, 70, 70, 70]
+        for k, line in enumerate(lines):
+            self.assertLessEqual(card_mod._ink_width(line), widths[k])
+            nxt = lines[k + 1][:1] if k + 1 < len(lines) else ""
+            if nxt:                                       # the next letter did not fit
+                self.assertGreater(card_mod._ink_width(line + nxt), widths[k])
+        # Nothing lost, and no space at a line start or end.
+        self.assertEqual("".join(lines).replace(" ", ""),
+                         "Fix the HID reconnect after resume".replace(" ", ""))
+        self.assertFalse(any(line != line.strip() for line in lines))
+
+    def test_one_page_of_three_lines_cut_with_an_ellipsis(self):
+        title = "Investigate the HIL failure in the split link soak on Windows"
+        pages = paginate(title)
+        self.assertEqual(len(pages), 1)
+        self.assertEqual(len(pages[0]), card_mod.LINES)
+        self.assertTrue(pages[0][-1].endswith("\u2026"))
+        shown = "".join(pages[0]).rstrip("\u2026").replace(" ", "")
+        self.assertTrue(title.replace(" ", "").startswith(shown))   # the start, in order
+        self.assertEqual(paginate("Agent 1"), [["Agent 1"]])
+        self.assertEqual(paginate("polykybd docs"), [["polykybd", "docs"]])   # no cut
+
+    def test_a_cut_title_keeps_its_number_after_the_ellipsis(self):
+        from polyhost.services.agents.card import ICON, ICON_CLEAR, state_icon
+        icon = state_icon(AgentState.WAITING)
+        title = "Investigate the HIL failure in the split link soak on Windows"
+        pages = paginate(title, icon=icon, number=2)
+        self.assertTrue(pages[0][-1].endswith("\u2026 2"), pages)
+        self.assertLessEqual(card_mod._ink_width(pages[0][-1]), 72 - 1 - ICON - ICON_CLEAR)
+        self.assertEqual(paginate("Fix build", number=2), [["Fix build 2"]])   # not cut
+        self.assertEqual(paginate(title, icon=icon)[0][-1][-1], "\u2026")     # no number
+
+    def test_pages_stop_at_the_limit_with_a_mark(self):
+        pages = paginate("word " * 60)
+        self.assertEqual(len(pages), card_mod.MAX_PAGES)
+        self.assertTrue(pages[-1][-1].endswith("\u2026"))
+
+    def test_a_cut_line_whose_ellipsis_does_not_fit_still_ends_with_it(self):
+        from polyhost.services.agents.card import state_icon
+        icon = state_icon(AgentState.DONE)
+        # Line 3 full beside the icon: the ellipsis replaces letters, never '.'.
+        for title in ("tests cloud relay join code coverage report",
+                      "Windows Windows Windows Windows", "HID reconnect resume Windows",
+                      "overlay cache eviction logic and more"):
+            last = paginate(title, icon=icon)[0][-1]
+            self.assertTrue(last.endswith("\u2026"), (title, last))
+            self.assertFalse(last.rstrip("\u2026").endswith("."), (title, last))
+
+    def test_no_mark_is_scaled(self):
+        import numpy as np
+        from polyhost.services.agents.card import MARK_SHOWN
+
+        class Marks:
+            def get(self, vid):
+                return np.ones((MARK_SHOWN, 26), dtype=bool)    # a half-cut logo
+        local = card_layout("x", "Investigate", Marks())
+        self.assertEqual(local.mark.shape, (12, 26))
+        # 12 rows sit beside line 1 only: line 1 is narrower, line 2 full width.
+        self.assertEqual(local.pages[0], ["Investi", "gate"])
+
+    def test_a_cloud_session_shows_a_browser_tab_in_place_of_the_logo(self):
+        import numpy as np
+        from polyhost.services.agents import icons
+
+        class Marks:
+            def get(self, vid):
+                return np.ones((13, 29), dtype=bool)            # aider's wordmark
+        tab = icons.browser_tab()
+        self.assertEqual(tab.shape, (11, 20))
+        self.assertTrue(tab[0].any() and tab[-1].any())         # no empty rows
+        self.assertTrue(tab[:, 0].any() and tab[:, -1].any())   # no empty columns
+        for vendor_id in ("aider", "codex", "unknown"):
+            cloud = card_layout(vendor_id, "refactor", Marks(), cloud=True)
+            self.assertTrue((cloud.mark == tab).all(), vendor_id)
+        self.assertTrue((card_layout("x", "refactor", None, cloud=True).mark == tab).all())
+        # Beside line 1 only, like a logo: line 2 is full width.
+        layout = card_layout("aider", "refactor the overlay cache", Marks(), cloud=True)
+        self.assertEqual(layout.pages[0][:2], ["refacto", "r the overla"])
+
+    def test_korean_and_japanese_come_from_the_fallback_font(self):
+        from polyhost.services.agents.card import _fallbacks, _font, _has, _runs
+        self.assertTrue(_fallbacks(), "Galmuri11 not loaded")
+        galmuri = _fallbacks()[0][0]
+        for ch in "가힣あアン再接":
+            self.assertFalse(_has(_font(), ch), ch)             # Aileron has none
+            self.assertTrue(_has(galmuri, ch), ch)
+        runs = _runs("HID 재연결 v1.2")
+        self.assertEqual([(f is galmuri, part) for f, _dy, part in runs],
+                         [(False, "HID "), (True, "재연결 "), (False, "v1.2")])  # a space stays
+
+    def test_a_fallback_glyph_stands_no_higher_than_a_capital(self):
+        from polyhost.services.agents.card import _measure
+        cap_top = _measure("H")[1]
+        for text in ("재", "再", "ア", "H재"):
+            self.assertGreaterEqual(_measure(text)[1], cap_top, text)
+        # Drawn on line 1 of a card without a mark: no ink is cut at the top edge,
+        # so the glyph is drawn whole (its rows match the glyph alone).
+        layout = card_layout("x", "재연결 버그", None)
+        img = render_page(layout, 0)
+        self.assertTrue(img[:13].any())
+        self.assertFalse(img[0].all())
+
+    def test_a_card_in_korean_draws_no_box(self):
+        import numpy as np
+        from PIL import Image
+        from polyhost.services.agents.card import _draw, _draw_text, _font
+
+        def drawn(text, fallback=True):
+            img = Image.new("1", (72, 20))
+            draw = _draw(img)
+            if fallback:
+                _draw_text(draw, (0, 0), text)
+            else:
+                draw.text((0, 0), text, font=_font(), fill=1)
+            return np.array(img, dtype=bool)
+        box = drawn("\U0010fffd", fallback=False)               # Aileron's .notdef
+        self.assertFalse((drawn("가") == box).all())
+        self.assertFalse((drawn("가") == drawn("\U0010fffd")).all())
+
+    def test_a_letter_and_its_marks_are_never_split(self):
+        from polyhost.services.agents.card import _clusters, _runs
+        self.assertEqual(_clusters("रिले"), ["रि", "ले"])        # vowel signs stay
+        self.assertEqual(_clusters("क्ल"), ["क्ल"])               # a conjunct stays
+        self.assertEqual(_clusters("แก้ไข"), ["แ", "ก้", "ไ", "ข"])  # a Thai tone mark stays
+        self.assertEqual(_clusters("e\u0301a"), ["e\u0301", "a"])  # a Latin accent stays
+        self.assertEqual(_clusters("\u0e01\u0e33\u0e01"), ["\u0e01\u0e33", "\u0e01"])  # Sara Am
+        # A mark goes into the run of its letter, whatever font has it.
+        self.assertEqual([part for _f, _d, part in _runs("ab\u0301")], ["ab\u0301"])
+        # A narrow line never starts with a mark or the second half of a conjunct.
+        title = "क्लाउड रिले परीक्षण " * 3
+        for widths in ([20], [33], [46, 70, 70]):
+            for line in flow(title, widths):
+                self.assertFalse(line and unicodedata.category(line[0]).startswith("M"),
+                                 (widths, line))
+                self.assertFalse(line.endswith("\u094d"), (widths, line))   # a virama
+        cut = card_mod._cut_with_ellipsis("रिलेरिलेरिले", 20)
+        self.assertTrue(cut.endswith("\u2026"))
+        self.assertFalse(unicodedata.category(cut[0]).startswith("M"))
+        self.assertNotIn("\u094d\u2026", cut)                  # no half conjunct
+
+    def test_the_bundled_font_covers_european_korean_and_japanese(self):
+        from polyhost.services.agents.card import _fallbacks, _font, _has
+        bundled = [f for f, _dy, e in _fallbacks() if e.bundled]
+        self.assertEqual(len(bundled), 1)
+        fonts = [_font()] + bundled
+        samples = {
+            "German, French, Nordic": "ÄÖÜäöüßàâçéèêëîïôœùûÿåæøÅÆØ",
+            "Polish, Czech, Hungarian": "ąćęłńśźżĄĆĘŁŃŚŹŻčďěňřšťůžČĎĚŇŘŠŤŮŽőűŐŰ",
+            "Romanian, Turkish, Baltic, Maltese": "ăîșțĂÎȘȚğıİşĞŞėįųūģķļņċġħĊĠĦ",
+            "Icelandic, Welsh, Sami": "ðþÐÞŵŷŋŧŊŦ",
+            "Greek": "αβγδεζηθικλμνξοπρσςτυφχψωάέήίόύώΑΩΆΏ",
+            "Cyrillic": "абвгдеёжзийклмнопрстуфхцчшщъыьэюяґєіїўђјљњћџѓѕќ",
+            "Korean": "로그인테스트수정", "Japanese": "ログインテストを修正再接続",
+        }
+        for script, text in samples.items():
+            for ch in text:
+                self.assertTrue(any(_has(f, ch) for f in fonts), (script, ch))
+
+    def test_every_other_script_has_a_font_to_download(self):
+        from polyhost.services.agents.card import FALLBACK_FONTS, download_spec
+        samples = {
+            "Noto Sans Devanagari": "लॉगिनबगठीककरेंकैशसुधारेंक्लाउडरिलेपरीक्षण",
+            "Noto Sans Thai": "แก้ไขข้อผิดพลาดการเข้าสู่ระบบปรับปรุงแคช",
+            "Noto Sans Armenian": "ԱԲԳԴԵԶԷՕՖաբգդեզէօֆ",
+            "Noto Sans Hebrew": "אבגדהוזחטיכךלמםנןסעפףצץקרשת",
+            "Noto Sans Arabic": "ابتثجحخدذرزسشصضطظعغفقكلمنهويءأإآةىپچژگکیٹڈڑںھے",
+            "WenQuanYi Zen Hei Mono (CJK)": "修复登录错误们这说时对过修復登入錯誤",
+        }
+        entries = {e.name: e for e in FALLBACK_FONTS}
+        for name, text in samples.items():
+            entry = entries[name]
+            for ch in text:
+                if unicodedata.category(ch).startswith("M"):
+                    continue                      # drawn in its letter's run
+                self.assertTrue(any(a <= ord(ch) <= b for a, b in entry.ranges), (name, ch))
+            spec = download_spec(entry)           # in noto-fonts.yaml, or its own URL
+            self.assertIsNotNone(spec, name)
+            self.assertTrue(spec.url.startswith("https://"), name)
+        self.assertTrue(entries["WenQuanYi Zen Hei Mono (CJK)"].url.startswith(
+            "https://www.polykybd.org/fonts/agent-cards/"))
+        # No font yet: Georgian (README "Not covered yet", added on demand).
+        self.assertFalse(any(a <= ord("ა") <= b for e in FALLBACK_FONTS for a, b in e.ranges))
+
+    def test_hebrew_and_arabic_read_right_to_left(self):
+        from polyhost.services.agents.card import is_rtl
+        self.assertTrue(is_rtl("תיקון באג"))
+        self.assertTrue(is_rtl("  إصلاح v1.2"))
+        self.assertTrue(is_rtl("2 إصلاح"))                     # a digit is not a letter
+        self.assertFalse(is_rtl("Fix the עברית title"))
+        self.assertFalse(is_rtl("修复登录"))
+        self.assertFalse(is_rtl(""))
+
+    def test_a_right_to_left_line_is_drawn_as_the_shaper_orders_it(self):
+        import numpy as np
+        from PIL import Image
+        from polyhost.services.agents.card import _draw, _draw_text, _fallbacks, _runs
+        from PIL import ImageFont
+        _FontCache(self).add("Noto Sans Hebrew", DEJAVU)
+        hebrew = next(f for f, _dy, e in _fallbacks() if e.name == "Noto Sans Hebrew")
+        if hebrew.layout_engine != ImageFont.Layout.RAQM:
+            self.skipTest("Pillow without raqm draws no right-to-left text")
+        text = "תיקון באג"
+        self.assertEqual(len(_runs(text)), 1)                 # one run, spaces included
+
+        def drawn(fn):
+            img = Image.new("1", (72, 20))
+            fn(_draw(img))
+            return np.array(img, dtype=bool)
+        ours = drawn(lambda d: _draw_text(d, (0, 0), text))
+        self.assertTrue(ours.any())
+        # The same as the shaper draws the whole phrase right to left, at its dy.
+        dy = dict((id(f), d) for f, d, _e in _fallbacks())[id(hebrew)]
+        ascent = card_mod._font().getmetrics()[0]
+        ref = drawn(lambda d: d.text((0, ascent + dy), text, font=hebrew, anchor="ls",
+                                     fill=1, direction="rtl"))
+        self.assertTrue((ours == ref).all())
+        # A Latin word and a number in a right-to-left line: drawn without error, and
+        # the Latin word left of the Hebrew one.
+        mixed = drawn(lambda d: _draw_text(d, (0, 0), "בדיקה HID"))
+        cols = mixed.any(axis=0).nonzero()[0]
+        latin = drawn(lambda d: _draw_text(d, (0, 0), "HID"))
+        self.assertTrue((mixed[:, :latin.any(axis=0).nonzero()[0].max() + 1] ==
+                         latin[:, :latin.any(axis=0).nonzero()[0].max() + 1]).all())
+        self.assertGreater(cols.max(), 40)
+
+    def test_a_right_to_left_line_is_as_wide_as_measured(self):
+        import numpy as np
+        from PIL import Image, ImageFont
+        from polyhost.services.agents.card import _draw, _draw_text, _fallbacks, _measure
+        _FontCache(self).add("Noto Sans Hebrew", DEJAVU)
+        hebrew = next(f for f, _dy, e in _fallbacks() if e.name == "Noto Sans Hebrew")
+        if hebrew.layout_engine != ImageFont.Layout.RAQM:
+            self.skipTest("Pillow without raqm draws no right-to-left text")
+
+        def drawn(text):
+            img = Image.new("1", (120, 20))
+            _draw_text(_draw(img), (0, 0), text, rtl=True)
+            return np.array(img, dtype=bool)
+        for text in ("בדיקהHID", "בדיקה HID", "בדיקה 12"):
+            cols = drawn(text).any(axis=0).nonzero()[0]
+            self.assertLessEqual(cols.max(), _measure(text)[2] + 1, text)   # no extra space
+        # No space in the title, none drawn: narrower than with a space.
+        self.assertLess(drawn("בדיקהHID").any(axis=0).nonzero()[0].max(),
+                        drawn("בדיקה HID").any(axis=0).nonzero()[0].max())
+
+    def test_a_card_leaves_out_brackets(self):
+        # Nested brackets in a right-to-left title would each need mirroring and
+        # reverse order; the card has none (2026-11-18).
+        from polyhost.services.agents.model import no_brackets
+        self.assertEqual(no_brackets("([בדיקה])"), "בדיקה")
+        self.assertEqual(no_brackets("fix(io) [wip] {a} <b>"), "fix io wip a b")
+        self.assertEqual(no_brackets("\u300c\u30c6\u30b9\u30c8\u300d\uff08\u4fee\u6b63\uff09"),
+                         "\u30c6\u30b9\u30c8 \u4fee\u6b63")
+        self.assertEqual(no_brackets("\uff62\u30c6\u30b9\u30c8\uff63 \uff5fa\uff60"),
+                         "\u30c6\u30b9\u30c8 a")
+        self.assertEqual(no_brackets("\u00abFix\u00bb \u2018a\u2019 \u300ca\u300d"), "\u00abFix\u00bb \u2018a\u2019 a")
+        self.assertEqual(no_brackets('Fix "HID" \u201ereconnect\u201c'),
+                         'Fix "HID" \u201ereconnect\u201c')         # quotation marks stay
+        shown = "".join(paginate("Fix (the) [HID] reconnect")[0])
+        self.assertEqual(shown.replace(" ", ""), "FixtheHIDreconnect")
+
+    def test_an_arabic_word_split_by_a_line_keeps_its_joined_forms(self):
+        from polyhost.services.agents.card import _joins
+        _FontCache(self).add("Noto Sans Arabic", DEJAVU)
+        self.assertTrue(_joins("\u062e", "\u0637"))            # kha, tah
+        self.assertTrue(_joins("\u0628\u064e", "\u0628"))       # a vowel mark in between
+        self.assertFalse(_joins("\u0628", "\u0621"))           # hamza joins no letter
+        self.assertFalse(_joins("\u0621", "\u0628"))
+        self.assertFalse(_joins("\u0627", "\u0644"))           # alef joins no letter after it
+        self.assertFalse(_joins("a", "\u0637"))
+        # By the Unicode joining types, not a hand-picked list:
+        self.assertFalse(_joins("\u0672", "\u0628"))     # alef with wavy hamza: right-joining
+        self.assertTrue(_joins("\u0628", "\u0672"))
+        self.assertTrue(_joins("\u0628\u061c", "\u0628"))   # ARABIC LETTER MARK is transparent
+        self.assertTrue(_joins("\u0628", "\u064e\u0628"))
+        self.assertTrue(_joins("\u0628", "\u0640"))     # tatweel joins both sides
+        self.assertFalse(_joins("\u0628\u200c", "\u0628"))  # ZWNJ stops the join
+        self.assertFalse(_joins("\u0628\u06dd", "\u0628"))  # END OF AYAH: Cf, but joining type U
+        self.assertTrue(_joins("\u0628\u0897", "\u0628"))   # Unicode 16.0 mark, unknown to 15.1
+        self.assertTrue(_joins("\u0628\u200d\u064e", "\u0628"))  # an explicit ZWJ joins at a wrap
+        self.assertFalse(_joins("a\u200c", "\u0628"))
+        self.assertFalse(_joins("\u0628", ""))
+        lines = flow("\u062a\u0633\u062c\u064a\u0644" * 6, [30])
+        self.assertGreater(len(lines), 1)
+        for k, line in enumerate(lines[:-1]):
+            if _joins(line.rstrip("\u200d")[-1], lines[k + 1].lstrip("\u200d")[:1]):
+                self.assertTrue(line.endswith("\u200d"), line)
+                self.assertTrue(lines[k + 1].startswith("\u200d"), lines[k + 1])
+        self.assertEqual("".join(lines).replace("\u200d", ""),
+                         "\u062a\u0633\u062c\u064a\u0644" * 6)
+
+    def test_a_joiner_stays_in_the_run_of_the_letter_it_joins(self):
+        from polyhost.services.agents.card import _runs
+        _FontCache(self).add("Noto Sans Arabic", DEJAVU)
+        for text in ("\u200d\u0628\u0628", "\u0628\u0628\u200d", "\u0628\u200c\u0628"):
+            runs = _runs(text)
+            self.assertEqual(len(runs), 1, (text, runs))
+            self.assertEqual(runs[0][2], text)
+        runs = _runs("HID \u200d\u0628")
+        self.assertEqual(runs[-1][2], "\u200d\u0628")
+        # A joiner before a space is not carried over it.
+        self.assertEqual([r[2] for r in _runs("\u0628 \u200d \u0628")], ["\u0628 \u200d \u0628"])
+        # After a space in the same font: the joiner stays before the letter.
+        self.assertEqual([r[2] for r in _runs("\u0628 \u200d\u0628")], ["\u0628 \u200d\u0628"])
+        self.assertEqual("".join(r[2] for r in _runs("\u200d")), "\u200d")
+
+    def test_a_missing_bundled_font_is_left_out(self):
+        from polyhost.services.agents import card
+        missing = card.FallbackFont("missing.ttf.xz", 12, bundled=True)
+        with mock.patch.object(card, "FALLBACK_FONTS", (missing,)), \
+                mock.patch.object(card, "_FALLBACKS", None), \
+                self.assertLogs("PolyHost", "WARNING"):
+            self.assertEqual(card._fallbacks(), [])
+            # The card still renders: the character is Aileron's box.
+            self.assertTrue(render_page(card_layout("x", "재연결", None), 0).any())
+        card.fonts_changed()
+
+    def test_a_title_asks_once_for_the_font_it_needs_and_is_drawn_again(self):
+        from polyhost.services.agents import card
+        _FontCache(self)                                       # an empty cache
+        asked = []
+        with mock.patch.object(card, "MISSING_FONT_HOOK", lambda e: asked.append(e.name) or True):
+            before = card.fonts_version()
+            card.paginate("תיקון באג")
+            card.paginate("בדיקה")                              # within RETRY_S: not again
+            card.paginate("修复登录")                            # Galmuri has 修 and 登
+            card.paginate("Prüfung")                            # bundled: nothing to download
+            self.assertEqual(asked, ["Noto Sans Hebrew", "WenQuanYi Zen Hei Mono (CJK)"])
+            with mock.patch.object(card, "RETRY_S", 0.0):
+                card.paginate("בדיקה")
+            self.assertEqual(asked[-1], "Noto Sans Hebrew")   # asked again after RETRY_S
+            self.assertEqual(card.fonts_version(), before)
+        # Downloads off (the hook says False): nothing is remembered, asked next time.
+        card._REQUESTED.clear()
+        card._MISSING.clear()
+        refused = []
+        with mock.patch.object(card, "MISSING_FONT_HOOK", lambda e: refused.append(e.name) and False):
+            card.paginate("תיקון")
+            first = len(refused)
+            card.paginate("תיקון")
+        self.assertGreater(first, 0)
+        self.assertGreater(len(refused), first)                 # asked again
+        self.assertEqual(set(refused), {"Noto Sans Hebrew"})
+
+    def test_a_reload_forgets_what_the_old_fonts_had(self):
+        # The glyph cache is keyed by id(font): a new font object can get the id of
+        # a freed old one, and must not inherit its answers.
+        from polyhost.services.agents import card
+        _FontCache(self)
+        card.paginate("Prüfung 재연결")                          # fills the cache
+        old = {id(f) for f, _d, _e in card._fallbacks()}
+        self.assertTrue(any(k[0] in old for k in card._HAS))
+        card.fonts_changed()
+        fresh = card._fallbacks()
+        live = {id(f) for f, _d, _e in fresh} | {id(f) for f in card._FONTS.values()}
+        self.assertTrue(all(k[0] in live for k in card._HAS), "a stale font id is cached")
+
+    def test_a_downloaded_font_is_loaded_and_bumps_the_version(self):
+        from polyhost.services.agents import card
+        cache = _FontCache(self)
+        before = card.fonts_version()
+        self.assertNotIn("Noto Sans Hebrew", [e.name for _f, _d, e in card._fallbacks()])
+        cache.add("Noto Sans Hebrew", DEJAVU)                   # fonts_changed() inside
+        self.assertGreater(card.fonts_version(), before)
+        self.assertIn("Noto Sans Hebrew", [e.name for _f, _d, e in card._fallbacks()])
+        hebrew = [f for f, _d, e in card._fallbacks() if e.name == "Noto Sans Hebrew"][0]
+        self.assertTrue(card._has(hebrew, "א"))
+
+    def test_a_title_whose_font_is_not_there_still_renders(self):
+        _FontCache(self)                                       # nothing downloaded
+        layout = card_layout("x", "תיקון באג", None)
+        self.assertEqual(layout.page_count, 1)
+        self.assertTrue(render_page(layout, 0).any())
+
+    def test_text_starts_right_of_the_mark(self):
+        import numpy as np
+
+        class Marks:
+            def get(self, vid):
+                return np.ones((16, 20), dtype=bool)
+        layout = card_layout("x", "Fix the HID reconnect after resume on Windows", Marks())
+        self.assertEqual(layout.page_count, 1)
+        first = render_page(layout, 0)
+        self.assertTrue(first[:16, :20].all())                # the mark, top left
+        self.assertFalse(first[:16, 20].any())                # the 1 px gap
+        self.assertTrue(first[:16, 21:].any())                # text right of it
+
+    def test_the_state_icon_is_in_the_corner_with_a_cleared_margin(self):
+        from polyhost.services.agents.card import ICON, ICON_CLEAR, _spans, state_icon
+        import numpy as np
+        self.assertIsNone(state_icon(AgentState.EMPTY))
+        states = (AgentState.WORKING, AgentState.WAITING, AgentState.DONE,
+                  AgentState.IDLE, AgentState.STALE)
+        icons = [state_icon(st) for st in states]
+        self.assertTrue(all(i is not None and i.shape == (ICON, ICON) and i.any()
+                            for i in icons))
+        self.assertEqual(len({i.tobytes() for i in icons}), len(states))   # all differ
+        icon = icons[1]
+        right = 72 - ICON - ICON_CLEAR
+        # Only line 3 (rows 26..39) meets the icon (rows 28..39) and its margin.
+        self.assertEqual(_spans(None, icon), [(1, 71), (1, 71), (1, right)])
+        # Line 3 beside the icon is shorter: "comments" is cut there.
+        self.assertEqual(paginate("Windows Windows comments", icon=icon),
+                         [["Windows", "Windows", "comme\u2026"]])
+        self.assertEqual(paginate("Windows Windows comments"),
+                         [["Windows", "Windows", "comments"]])
+        # The icon leaves line 1 alone.
+
+        class Mark:
+            def get(self, vid):
+                return np.ones((16, 16), dtype=bool)
+        self.assertEqual(card_layout("x", "firmware", Mark()).pages,
+                         card_layout("x", "firmware", Mark(), AgentState.DONE).pages)
+        # Drawn bottom right; nothing else in its margin.
+        layout = card_layout("x", "Fix the HID reconnect after resume on Windows", None,
+                             AgentState.WAITING)
+        img = render_page(layout, 0)
+        self.assertTrue((img[40 - ICON:, 72 - ICON:] == icon).all())
+        self.assertFalse(img[40 - ICON - ICON_CLEAR:, right:72 - ICON].any())
+        self.assertFalse(img[40 - ICON - ICON_CLEAR:40 - ICON, 72 - ICON:].any())
+
+    @staticmethod
+    def _cut_out(state):
+        """The glyph cut out of a 12 px disc icon, after checking that the disc
+        keeps at least 1 px around every cut pixel."""
+        from polyhost.services.agents import icons
+        from polyhost.services.agents.card import state_icon
+        icon = state_icon(state)
+        disc = icons._disc_12()
+        assert icon.shape == (12, 12) and not (icon & ~disc).any()
+        cut = disc & ~icon
+        for y, x in zip(*cut.nonzero()):
+            assert disc[y - 1:y + 2, x - 1:x + 2].all(), (state, y, x)
+        return cut
+
+    def test_the_12_px_check_is_cut_out_of_the_disc_with_2_px_strokes(self):
+        check = self._cut_out(AgentState.DONE)
+        rows = [r for r in range(12) if check[r].any()]
+        self.assertGreaterEqual(len(rows), 6)
+        for r in rows[:-1]:                                 # all but the tip
+            self.assertGreaterEqual(len(check[r].nonzero()[0]), 2, r)
+        cols = check.any(axis=0).nonzero()[0]
+        self.assertGreaterEqual(cols.max() - cols.min() + 1, 8)   # 8 px wide
+
+    def test_the_12_px_question_mark_is_cut_out_and_keeps_its_dot(self):
+        q = self._cut_out(AgentState.STALE)
+        rows = [r for r in range(12) if q[r].any()]
+        gap = [r for r in range(rows[0], rows[-1]) if not q[r].any()]
+        self.assertEqual(len(gap), 1)                          # stem, gap, dot
+        dot = q[gap[0] + 1:]
+        self.assertEqual(int(dot.sum()), 4)                    # a 2 x 2 dot
+        self.assertEqual(sum(1 for r in dot if r.any()), 2)
+        self.assertGreaterEqual(rows[-1] - rows[0] + 1, 8)     # 8 px tall
+
+    def test_a_title_without_spaces_is_split_and_cut(self):
+        from polyhost.services.agents.card import state_icon
+        title = "a-" * 40                                     # no space anywhere
+        pages = paginate(title, icon=state_icon(AgentState.WAITING))
+        self.assertEqual(len(pages), 1)
+        lines = pages[0]
+        self.assertFalse(any(" " in line for line in lines))
+        self.assertTrue(lines[-1].endswith("\u2026"))
+        self.assertTrue(title.startswith("".join(lines).rstrip("\u2026").rstrip(".")))
+
+    def test_the_cut_last_line_fits_beside_the_state_icon(self):
+        from polyhost.services.agents.card import ICON, ICON_CLEAR, state_icon
+        pages = paginate("firmware " * 40, icon=state_icon(AgentState.WAITING))
+        self.assertEqual(len(pages), card_mod.MAX_PAGES)
+        last = pages[-1][-1]
+        self.assertTrue(last.endswith("\u2026"))
+        self.assertLessEqual(card_mod._ink_width(last), 72 - 1 - ICON - ICON_CLEAR)
+
+    def test_no_logo_yet_shows_the_short_name(self):
+        layout = card_layout("claude-code", "polykybd-docs", None)
+        self.assertIsNotNone(layout.mark)
+        self.assertLessEqual(layout.mark.shape[0], 13)
 
 
 class _FakeKeeb:
     """Records what the controller sends; events are injected by tests."""
     def __init__(self):
         self.cards, self.keys, self.events, self.newest = {}, [], [], 0
+        self.pages = []
 
     def ai_upload_card(self, slot, data):
         self.cards[slot] = data
         return True, "ok"
 
-    def ai_set_keys(self, states, esc, slots):
+    def ai_set_keys(self, states, esc, slots, page=None):
         self.keys.append((states, esc, slots))
+        self.pages.append(page)
         return True, "ok"
 
     def ai_read_events(self, last_seq):
@@ -489,7 +1118,7 @@ class _FakeKeeb:
 class _NoMarks:
     version = 0
 
-    def get(self, vid):
+    def get(self, vid, box=24):
         return None
 
 
@@ -507,6 +1136,66 @@ class ControllerTest(unittest.TestCase):
         self.c._raise = lambda agent: self.c.raise_agent(agent)   # no thread in tests
         self.c._run_dictate = lambda: self.c.dictate()
         self.kb = _FakeKeeb()
+
+    def _fill(self, n, state="working"):
+        for i in range(n):
+            self.r.report("codex", f"s{i:02d}", state)
+
+    def test_sends_the_page_and_the_page_count(self):
+        self._fill(12)
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.pages[-1], (0, 2, 0))
+        self.kb.press(10)                                # Esc: next page
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.pages[-1], (1, 2, 0))
+
+    def test_leaving_ai_mode_shows_page_one_again(self):
+        self._fill(12)
+        self.c.sync(self.kb)
+        self.kb.press(10)
+        self.c.sync(self.kb)
+        self.assertEqual(self.c.page, 1)
+        self.kb.press(13)                                # AI_EVENT_LEAVE
+        self.c.sync(self.kb)
+        self.assertEqual(self.c.page, 0)
+        self.assertEqual(self.kb.pages[-1][0], 0)
+        self.assertNotEqual((self.c.last_press or {}).get("key"), 13)   # not a key press
+
+    def test_a_finish_on_another_page_increases_the_counter(self):
+        self._fill(12)
+        self.c.sync(self.kb)                             # the start: nothing counted
+        self.r.report("codex", "s11", "done")            # on page 2, page 1 is shown
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.pages[-1][2], 1)
+        self.r.report("codex", "s01", "done")            # on the shown page: the keyboard
+        self.c.sync(self.kb)                             # sees that one itself
+        self.assertEqual(self.kb.pages[-1][2], 1)
+        self.r.report("codex", "s10", "waiting")         # not a finish
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.pages[-1][2], 1)
+
+    def test_the_counter_wraps_without_returning_to_zero(self):
+        self.c._done_elsewhere = 255
+        self._fill(12)
+        self.c.sync(self.kb)
+        self.r.report("codex", "s11", "done")
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.pages[-1][2], 1)
+
+    def test_paging_back_reuses_the_cards_already_uploaded(self):
+        self._fill(12)
+        self.c.sync(self.kb)
+        uploads = len(self.kb.cards)
+        writes = []
+        real = self.kb.ai_upload_card
+        self.kb.ai_upload_card = lambda slot, data: (writes.append(slot), real(slot, data))[1]
+        self.kb.press(10)
+        self.c.sync(self.kb)                             # page 2: its two cards are new
+        self.assertEqual(len(writes), 2)
+        self.kb.press(10)
+        self.c.sync(self.kb)                             # page 1 again: nothing uploaded
+        self.assertEqual(len(writes), 2)
+        self.assertGreater(uploads, 0)
 
     def test_pushes_every_pass_cards_only_on_change(self):
         self.r.report("claude-code", "a", "working")
@@ -527,7 +1216,7 @@ class ControllerTest(unittest.TestCase):
         self.assertEqual(self.kb.cards, {})
         self.r.report("claude-code", "a", "waiting")
         self.c.sync(self.kb)
-        # The card shows the state, and '+' shows the waiting count.
+        # The card gets the '!' state mark, and '+' shows the waiting count.
         self.assertEqual(sorted(self.kb.cards), [0, 2])
         self.assertEqual(self.kb.keys[-1][1], 0x08 | 0x04)
 
@@ -695,7 +1384,112 @@ class ControllerTest(unittest.TestCase):
         self.c.sync(self.kb)
         again = self.kb.keys[-1][2][0]
         self.assertIn(again, self.kb.cards)       # uploaded into its new slot
-        self.assertEqual(self.cache.holds(("agentcard", 0)), again)
+        self.assertEqual(self.cache.holds(("agentcard", "codex", "a")), again)
+
+    def test_an_evicted_card_given_the_SAME_slot_again_is_uploaded_again(self):
+        self.r.report("codex", "a", "working")
+        self.c.sync(self.kb)
+        first = self.kb.keys[-1][2][0]
+        self.cache.forget_slot(first)            # an app image may now be in it
+        self.kb.cards.clear()
+        allocate = self.cache.allocate_aside
+        self.cache.allocate_aside = lambda key: (allocate(key), first)[1]
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.keys[-1][2][0], first)
+        self.assertIn(first, self.kb.cards)       # not skipped on the old record
+
+    def test_a_long_title_is_one_page_with_its_subject_words(self):
+        self.r.report("codex", "a", "working",
+                      headline="Fix the HID reconnect after resume on Windows")
+        self.c.sync(self.kb)
+        agent = self.r.agents()[0]
+        self.assertEqual(agent.card_text, "Fix HID reconnect resume Windows")
+        layout = self.c._layout(agent, self.c.marks.version)
+        self.assertEqual(layout.page_count, 1)
+        sent = self.kb.cards[self.kb.keys[-1][2][0]]
+        self.assertEqual(sent, card_bytes(render_page(layout, 0)))
+        # Uploaded once: later passes send the same slot and no card.
+        slot = self.kb.keys[-1][2][0]
+        self.kb.cards.clear()
+        for _ in range(4):
+            self.c.sync(self.kb)
+            self.assertEqual(self.kb.keys[-1][2][0], slot)
+        self.assertEqual(self.kb.cards, {})
+
+    def test_a_missing_font_is_asked_again_without_drawing_the_card_again(self):
+        from polyhost.services.agents import card
+        _FontCache(self)
+        allow = [False]
+        asked = []
+
+        def hook(entry):
+            asked.append(entry.name)
+            return allow[0]
+        with mock.patch.object(card, "MISSING_FONT_HOOK", hook):
+            self.r.report("codex", "a", "working", headline="תיקון באג")
+            self.c.sync(self.kb)                               # drawn; downloads off
+            first = len(asked)
+            self.assertGreater(first, 0)
+            self.kb.cards.clear()
+            self.c.sync(self.kb)                               # not drawn again ...
+            self.assertEqual(self.kb.cards, {})
+            self.assertGreater(len(asked), first)              # ... but asked again
+            allow[0] = True                                    # downloads turned on
+            self.c.sync(self.kb)
+            n = len(asked)
+            self.c.sync(self.kb)                               # started: not asked again
+            self.assertEqual(len(asked), n)
+        self.assertEqual(set(asked), {"Noto Sans Hebrew"})
+
+    def test_a_card_is_drawn_again_when_a_font_was_downloaded(self):
+        from polyhost.services.agents import card
+        self.r.report("codex", "a", "working", headline="תיקון באג")
+        self.c.sync(self.kb)
+        self.kb.cards.clear()
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.cards, {})                    # nothing changed
+        card.fonts_changed()                                   # a font arrived
+        self.addCleanup(card.fonts_changed)
+        self.c.sync(self.kb)
+        self.assertEqual(len(self.kb.cards), 1)                # the card is sent again
+
+    def test_a_state_change_uploads_the_page_shown(self):
+        self.r.report("codex", "a", "working", headline="Fix the build")
+        self.c.sync(self.kb)
+        self.kb.cards.clear()
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.cards, {})              # nothing changed
+        self.r.report("codex", "a", "idle")              # the icon changes
+        self.c.sync(self.kb)
+        self.assertEqual(len(self.kb.cards), 1)
+        self.assertEqual(self.kb.keys[-1][0][0], AgentState.IDLE)
+
+    def test_a_mark_fetched_while_the_layout_is_built_redraws_the_card(self):
+        class Racing:
+            version = 0
+
+            def get(self, vid):
+                if Racing.version == 0:
+                    Racing.version = 1        # the fetch finishes during the layout
+                return None                   # this layout uses the short name
+        self.c.marks = Racing()
+        self.r.report("codex", "a", "working", headline="Fix the build")
+        self.c.sync(self.kb)
+        self.kb.cards.clear()
+        self.c.sync(self.kb)
+        # Drawn with version 0, so version 1 draws it again.
+        self.assertEqual(len(self.kb.cards), 1)
+
+    def test_a_cloud_session_gets_the_browser_tab_on_its_card(self):
+        self.r.report("codex", "remote", "working", headline="Fix the build", machine="cloud")
+        self.c.sync(self.kb)
+        sent = self.kb.cards[self.kb.keys[-1][2][0]]
+
+        def drawn(cloud):
+            return card_bytes(render_page(card_layout("codex", "Fix build", self.c.marks,
+                                                      AgentState.WORKING, cloud), 0))
+        self.assertEqual(sent, drawn(True))
+        self.assertNotEqual(sent, drawn(False))
 
     def test_a_full_pool_shows_no_card_rather_than_evict_the_shown_app(self):
         from polyhost.device.overlay_cache import OverlayMRUCache
@@ -784,6 +1578,29 @@ class RaiserTest(unittest.TestCase):
         self.assertTrue(raise_agent(r.agents()[0], windows=wins))
         self.assertTrue(wins[1].active)
         self.assertFalse(wins[0].active)
+
+    def test_a_numbered_agent_is_found_by_its_title_without_the_number(self):
+        # Their cards both show "Fix login bug", so they are numbered; a window
+        # title shows the session's own title, without the number.
+        import os
+        from polyhost.services.agents.remote import RemoteAgent, agent_payload
+        r = AgentRegistry()
+        r.report("claude-code", "a", "working", headline="Fix the login bug", pid=os.getpid())
+        r.report("claude-code", "b", "working", headline="Fix login bug", pid=os.getpid())
+        a, b = r.agents()
+        self.assertEqual((a.dup_number, b.dup_number), (1, 2))
+        self.assertEqual(a.display_headline, "Fix the login bug 1")
+        wins = [_Win("1", os.getpid(), "\u2733 Fix login bug"),
+                _Win("2", os.getpid(), "\u2733 Fix the login bug")]
+        self.assertTrue(raise_agent(a, windows=wins))
+        self.assertTrue(wins[1].active)
+        self.assertFalse(wins[0].active)
+        # A forwarder gets the title without the number too.
+        self.assertEqual(agent_payload(a)["headline"], "Fix the login bug")
+        remote = RemoteAgent.from_payload(agent_payload(a))
+        wins[1].active = False
+        self.assertTrue(raise_agent(remote, windows=wins))
+        self.assertTrue(wins[1].active)
 
     def test_by_the_vendors_own_title(self):
         # Windows Terminal is not an ancestor of the agent's process, so the window is

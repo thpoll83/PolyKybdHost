@@ -180,6 +180,12 @@ still cloud sessions.
   key then shows the folder name (`user` for a cloud session). Nothing else of
   the prompts or the conversation leaves the VM. `polyctl agents label` names a
   key by hand.
+- `POLYKYBD_CLOUD_ANONYMOUS=1` in the cloud environment sends no title, no prompt
+  words and no folder name, not even encrypted, for a company policy that forbids
+  it. The hook does not read the transcript. Only the state and the session URL
+  are sent. The keys show "Agent 1", "Agent 2" in key order (host 1.27.8 or newer;
+  an older host shows "Claude Code"). A label set with `polyctl agents label`
+  stays on the host.
 - With the PolyKybd browser extension 1.1.0 or newer (`browser-extension/`), a
   key press first switches the browser to the tab with the session's exact page,
   also a background tab or one in another window, and then brings that window to
@@ -196,10 +202,24 @@ still cloud sessions.
 - The connection runs while "Show on the Number Row" (`agents_enabled`) is on and
   a channel exists. It sends a ping every 4 minutes and reconnects after 5 s, then
   up to 5 min apart.
-- Disconnect (the dialog, or `polyctl agents cloud disconnect`) deletes the
-  channel on the relay and the local file, and removes the cloud sessions from the
-  keys. Remove the environment variable in claude.ai too: the hooks there then
-  fail without a message.
+- **More than one computer:** each computer that should show the cloud sessions
+  uses the same channel. On the computer that has it: Copy Join Code in the
+  dialog, or `polyctl agents cloud join-code`. On the other one: Join with a Code,
+  or `polyctl agents cloud join` (it reads the code from stdin or asks for it, so
+  it does not go into the shell history). The host checks the code on the relay
+  before it saves it. The relay sends every report to each connected computer, up
+  to 4 per channel. The code holds the channel's tokens and key: anyone with it
+  can read and write the channel, so handle it like a password. A computer that
+  has a channel of its own joins another only with `--replace`.
+- Disconnect This Computer (`polyctl agents cloud leave`) removes the channel
+  only here: the file and the cloud sessions on the keys. The channel stays on the
+  relay for the other computers and the cloud environment.
+- Delete Channel (`polyctl agents cloud disconnect`) deletes the channel on the
+  relay and the local file, and removes the cloud sessions from the keys on every
+  computer that uses it: the relay closes their connections with code 4001 (a new
+  connection gets 404), and they remove the cloud sessions and stop reconnecting.
+  The dialog says when the relay did not confirm the delete. Remove the environment variable in claude.ai too: the
+  hooks there then fail without a message.
 - A cloud session deleted in claude.ai sends no last report, so its key stays.
   Remove it with tray > AI Agents > Remove Agent (see *Removing agents*). For a
   cloud session the host also deletes its report on the relay, so it does not
@@ -301,6 +321,22 @@ host also deletes the session's report on the relay (`DELETE
 connect.
 
 ## Check that it works
+
+`polyctl agents hooks check` shows where the hooks report to and whether that host
+answers within 4 s (the same connection and key a hook uses, without sending a
+report; hooks installed with `--host` are checked at that host),
+whether each agent's hooks are installed, and the last three runs of each from the
+hook log. `polyctl agents hooks check claude-code` shows one agent. It exits 1 when
+the host does not answer or a hook file is broken.
+
+Each run of `polyctl agents hook` writes one line to `agent_hooks.log` in the
+config folder (moved to `agent_hooks.log.1` at 256 KB): the agent, the event, the
+state, the first 8 characters of the session id, the target, and how it ended,
+with the time it took. No prompt text, title or file content. A report that does
+not finish in 4 s is logged as `timeout in <stage>`: `connect` means the host or
+the forwarder's target cannot be reached (for example from a container), `report`
+means it accepted the connection and did not answer. The log is in the log bundle
+(**Collect logs…**, `polyctl logs bundle`) and in the log viewer.
 
 1. Run `polyctl agents list`. It shows `agent keys: on; keyboard active`.
 2. Send one prompt in the agent. `polyctl agents list` now shows the session with

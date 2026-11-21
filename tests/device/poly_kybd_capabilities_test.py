@@ -15,7 +15,7 @@ from polyhost.device.poly_kybd import (
     PolyKybd, protocol_supports, FEATURE_MIN_PROTOCOL, MIN_SUPPORTED_PROTOCOL,
     OVERLAY_PACKED_HEADER_MIN_PROTOCOL, GLYPH_SIZE_MIN_PROTOCOL,
     MACRO_MIN_PROTOCOL, UNICODE_MODE_VOLATILE_MIN_PROTOCOL,
-    IDLE_TIMEOUT_MIN_PROTOCOL, PRC_OVERLAY_MIN_PROTOCOL,
+    IDLE_TIMEOUT_MIN_PROTOCOL, PRC_OVERLAY_MIN_PROTOCOL, HW_ID_MIN_PROTOCOL,
 )
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.command_ids import HidId, Cmd, GlyphScript, GlyphSize, IdleTimeout
@@ -638,6 +638,61 @@ class MacroCapabilityTest(unittest.TestCase):
         self.assertEqual(Cmd.MACRO_INFO.value, 36)
         self.assertEqual(Cmd.MACRO_BODY.value, 37)
         self.assertEqual(Cmd.MACRO_LABEL.value, 38)
+
+
+
+class TestHwIds(unittest.TestCase):
+    """Cmd 50 (v37): the flash unique IDs of both halves."""
+
+    def _keeb(self, protocol):
+        keeb = PolyKybd(DeviceSettings(), PolySettings())
+        keeb.protocol_version = protocol
+        keeb.hid = MagicMock()
+        return keeb
+
+    def _reply(self, flags, own=bytes(range(1, 9)), other=bytes(range(9, 17)), ack="."):
+        return bytes([ord("P"), Cmd.HW_ID.value, ord(ack), flags]) + own + other + bytes(44)
+
+    def test_feature_threshold_and_command_id(self):
+        self.assertEqual(HW_ID_MIN_PROTOCOL, 37)
+        self.assertEqual(FEATURE_MIN_PROTOCOL["hw_id"], HW_ID_MIN_PROTOCOL)
+        self.assertEqual(Cmd.HW_ID.value, 50)
+
+    def test_old_firmware_refuses_without_touching_the_device(self):
+        keeb = self._keeb(HW_ID_MIN_PROTOCOL - 1)
+        ok, msg = keeb.get_hw_ids()
+        self.assertFalse(ok)
+        self.assertIn("too old", msg)
+        keeb.hid.send_and_read_validate.assert_not_called()
+        self.assertIsNone(keeb.hw_ids)
+
+    def test_both_halves_decode_and_are_cached(self):
+        keeb = self._keeb(HW_ID_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (True, self._reply(0x03))
+        ok, ids = keeb.get_hw_ids()
+        self.assertTrue(ok)
+        self.assertEqual(ids, {"own": "0102030405060708", "other": "090a0b0c0d0e0f10"})
+        self.assertEqual(keeb.hw_ids, ids)
+
+    def test_a_clear_flag_bit_is_none_not_zeros(self):
+        keeb = self._keeb(HW_ID_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (True, self._reply(0x01, other=bytes(8)))
+        ok, ids = keeb.get_hw_ids()
+        self.assertTrue(ok)
+        self.assertEqual(ids, {"own": "0102030405060708", "other": None})
+
+    def test_a_nack_is_a_failure(self):
+        keeb = self._keeb(HW_ID_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (True, self._reply(0x03, ack="!"))
+        ok, _ = keeb.get_hw_ids()
+        self.assertFalse(ok)
+        self.assertIsNone(keeb.hw_ids)
+
+    def test_a_truncated_reply_is_refused(self):
+        keeb = self._keeb(HW_ID_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (True, self._reply(0x03)[:12])
+        ok, _ = keeb.get_hw_ids()
+        self.assertFalse(ok)
 
 
 if __name__ == "__main__":

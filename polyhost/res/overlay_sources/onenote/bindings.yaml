@@ -88,12 +88,12 @@ bindings:
   - { key: END,   mods: [ALT], icon: lastpage.png,  label: "Last page",     except: [macos] }
 
   # --- Windows: plain and Shift ---
-  - { key: F3,  mods: [],      icon: nextresult.png, label: "Next result",     except: [macos] }
-  - { key: F3,  mods: [SHIFT], icon: prevresult.png, label: "Previous result", except: [macos] }
+  - { key: F3,  mods: [],      icon: nextresult_find.png, label: "Next result",     except: [macos] }
+  - { key: F3,  mods: [SHIFT], icon: prevresult_find.png, label: "Previous result", except: [macos] }
   - { key: F7,  mods: [],      icon: spelling.png,   label: Spelling,          except: [macos] }
   - { key: F7,  mods: [SHIFT], icon: thesaurus.png,  label: Thesaurus,         except: [macos] }
   - { key: F9,  mods: [],      icon: syncall.png,    label: "Sync all",        except: [macos] }
-  - { key: F9,  mods: [SHIFT], icon: sync.png,       label: "Sync shared",     except: [macos] }
+  - { key: F9,  mods: [SHIFT], icon: sync.png,       label: "Sync notebook",     except: [macos] }
   - { key: F11, mods: [],      icon: fullpage.png,   label: "Full page view",  except: [macos] }
 
   # --- Windows: Ctrl+Shift ---
@@ -135,8 +135,8 @@ bindings:
   - { key: S, mods: [CTRL, ALT], icon: stop.png,        label: "Stop audio",    except: [macos] }
   - { key: Y, mods: [CTRL, ALT], icon: rewind.png,      label: "Back 10 s",     except: [macos] }
   - { key: U, mods: [CTRL, ALT], icon: fastforward.png, label: "Forward 10 s",  except: [macos] }
-  - { key: "[", mods: [CTRL, ALT], icon: pageout.png,   label: "Page outdent",  except: [macos] }
-  - { key: "]", mods: [CTRL, ALT], icon: pagein.png,    label: "Page indent",   except: [macos] }
+  - { key: "[", mods: [CTRL, ALT], icon: pageout_pg.png, label: "Page outdent",  except: [macos] }
+  - { key: "]", mods: [CTRL, ALT], icon: pagein_pg.png,  label: "Page indent",   except: [macos] }
   - { key: "1", mods: [CTRL, ALT], icon: h1.png, label: "Heading 1", except: [macos] }
   - { key: "2", mods: [CTRL, ALT], icon: h2.png, label: "Heading 2", except: [macos] }
   - { key: "3", mods: [CTRL, ALT], icon: h3.png, label: "Heading 3", except: [macos] }
@@ -186,7 +186,7 @@ bindings:
   - { key: C, mods: [GUI, SHIFT], icon: copypage.png, label: "Copy page",        only: [macos] }
   - { key: "[", mods: [GUI, SHIFT], icon: prevsection.png, label: "Previous section", only: [macos] }
   - { key: "]", mods: [GUI, SHIFT], icon: nextsection.png, label: "Next section",     only: [macos] }
-  - { key: F, mods: [GUI, CTRL], icon: fullpage.png, label: "Full screen",  only: [macos] }
+  - { key: F, mods: [GUI, CTRL], icon: fullscreen.png, label: "Full screen",  only: [macos] }
   - { key: R, mods: [GUI, CTRL], icon: colright.png, label: "Column right", only: [macos] }
   - { key: L, mods: [GUI, CTRL], icon: colleft.png,  label: "Column left",  only: [macos] }
   - { key: C, mods: [GUI, ALT], icon: copyformat.png,  label: "Copy format",      only: [macos] }
@@ -196,4 +196,4 @@ bindings:
   - { key: EQUAL, mods: [GUI, CTRL, ALT],  icon: subscript.png,   label: Subscript,   only: [macos] }
   - { key: L,     mods: [GUI, CTRL, ALT],  icon: lookup.png,      label: "Smart Lookup", only: [macos] }
   - { key: EQUAL, mods: [CTRL], icon: equation.png, label: "Math equation",   only: [macos] }
-  - { key: G,     mods: [CTRL], icon: notebook.png, label: "Notebook list",   only: [macos] }
+  - { key: G,     mods: [CTRL], icon: notebook.png, label: "Switch notebook",   only: [macos] }

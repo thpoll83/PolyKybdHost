@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
     QAction, QFileDialog, QMessageBox, QAbstractItemView, QProxyStyle, QStyle,
 )
 
-from polyhost.gui import keycap_tiles, menu_tiles, message_box
+from polyhost.gui import message_box
 from polyhost.device.hid_fw_up import (get_fw_version, validate_rp2040_firmware,
                                        validate_polykybd_firmware, apply_staged_firmware,
                                        check_signature_file)
@@ -93,7 +93,6 @@ class CommandsSubMenu:
         # True once Maintenance holds a row that must work with no keyboard
         # (client mode's "Only quit GUI"); the parent then stays enabled.
         self._maintenance_always_enabled = False
-        self._auto_brightness_action = None
         self.boot_loop_action = None   # built only in developer mode
         # Rev.2 board mark (cmd 25's board byte, protocol 24). Gated per feature in
         # PolyHost.managed_connection_status, so they are in neither list above.
@@ -132,70 +131,6 @@ class CommandsSubMenu:
         if firmware:
             self._fw_actions.append(action)
         return action
-
-    def build_brightness_menu(self, parent_menu):
-        """Keycap brightness presets - top level, it is the most-used control.
-
-        Deliberately no "auto" RADIO: the keyboard owns that decision (its own
-        light sensor and the host's daylight periodic drive it). These presets
-        are manual overrides; the trailing entry is the way back out of one.
-        """
-        menu = parent_menu.addMenu(get_icon("settings_brightness.svg"), _("Brightness"))
-        presets = []
-        for icon, label, value in (("backlight_high_off.svg", _("Off"), 0),
-                                   ("backlight_low.svg", "1%", 2),
-                                   ("backlight_high.svg", "50%", 25),
-                                   ("backlight_high_fill.svg", "100%", 50)):
-            presets.append(self._act(icon, label, self.set_brightness, data=value, device=True))
-            menu.addAction(presets[-1])
-        menu_tiles.add_tiles_on_first_show(
-            menu, presets,
-            lambda: [keycap_tiles.to_icon(keycap_tiles.brightness_panel(a.data())) for a in presets],
-            4, keycap_tiles.tile_size())
-        menu.addSeparator()
-        # The firmware drops auto mode on ANY manual set and never re-engages by
-        # itself, so without this the presets above are a one-way door until a
-        # replug. Wording/tooltip are set on open from the live setting.
-        self._auto_brightness_action = self._act(
-            "brightness_auto.svg", _("Back to automatic"), self.back_to_automatic_brightness, device=True)
-        menu.addAction(self._auto_brightness_action)
-        # noinspection PyUnresolvedReferences
-        menu.aboutToShow.connect(self._refresh_auto_brightness_action)
-        self._device_actions.append(menu.menuAction())
-        return menu
-
-    def _refresh_auto_brightness_action(self):
-        """Explain what "automatic" will actually do, from the live setting.
-
-        With daylight-dependent brightness ON this re-engages auto mode (the
-        host's daylight value, and the keyboard's own light sensor resumes with
-        it). With it OFF the host tells the keyboard to leave auto mode, which
-        just restores its stored manual level — still the way to clear a preset,
-        but not "automatic", so don't claim it is.
-        """
-        # Off the GUI thread like every menu's device state (gui/menu_fetch.py).
-        self.parent._menu_fetch.fetch(
-            "auto_brightness",
-            lambda: self._core.settings_get("brightness_set_daylight_dependent"),
-            self._apply_auto_brightness_action)
-
-    def _apply_auto_brightness_action(self, result):
-        action = self._auto_brightness_action
-        if isinstance(result, Exception):   # a tooltip must never break the menu
-            action.setToolTip(_("Re-apply the host's automatic brightness."))
-            return
-        if bool(result):
-            action.setText(_("Back to automatic"))
-            action.setToolTip(_("Re-engage automatic (daylight) brightness — the manual "
-                                "preset above is dropped."))
-        else:
-            action.setText(_("Clear manual override"))
-            action.setToolTip(_("Daylight-dependent brightness is off in Settings, so this "
-                                "only returns the keyboard to its own stored brightness."))
-
-    def back_to_automatic_brightness(self):
-        self._report_async(lambda: self._core.refresh_daylight_brightness(),
-                     lambda m: f"Failed to re-apply automatic brightness: '{m}'")
 
     def build_maintenance_menu(self, parent_menu):
         """Rare but legitimate user-facing repair actions.
@@ -241,17 +176,18 @@ class CommandsSubMenu:
                                  self.activate_bootloader, firmware=True))
         return menu
 
-    def add_always_enabled_maintenance_action(self, action):
-        """Append ``action`` at the end of Maintenance, after a separator, and
+    def add_always_enabled_maintenance_action(self, *actions):
+        """Append ``actions`` at the end of Maintenance, after a separator, and
         keep the Maintenance parent enabled from now on.
 
         Every other row under Maintenance is gated by its own list, so an
         enabled parent with no keyboard shows those rows greyed out. Without
-        this, a disconnected keyboard would make ``action`` unreachable.
+        this, a disconnected keyboard would make the new rows unreachable.
         """
         menu = self._maintenance_action.menu()
         menu.addSeparator()
-        menu.addAction(action)
+        for action in actions:
+            menu.addAction(action)
         self._maintenance_always_enabled = True
         self._maintenance_action.setEnabled(True)
 
@@ -454,11 +390,6 @@ class CommandsSubMenu:
     def disable_overlays(self):
         self._report_async(lambda: self._core.disable_overlays(),
                      lambda m: f"Failed disabling overlays: '{m}'")
-
-    def set_brightness(self):
-        value = self.parent.sender().data()
-        self._report_async(lambda: self._core.set_brightness(value),
-                     lambda m: f"Failed setting brightness: '{m}'")
 
     def change_idle(self):
         idle = self.parent.sender().data()

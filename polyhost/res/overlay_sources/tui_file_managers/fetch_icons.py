@@ -145,6 +145,10 @@ COMPOSITES = {
     "shell_pipe": ("png:_shell", "PIPE"),
     "shell_bg": ("png:_shell", "BG"),
     "cmd_next": ("png:_history", "NEXT"), "cmd_prev": ("png:_history", "PREV"),
+    # One image per action (maintainer, 2026-11-15): ranger's `y` opens the
+    # copy menu (yy yp yd yn ...), yazi's Shift+Q quits without the cwd file.
+    "copy_menu": ("png:copy", "MENU"),
+    "quit_nocd": ("png:quit", "NOCD"),
 }
 
 # Top glyphs used only inside a composite.

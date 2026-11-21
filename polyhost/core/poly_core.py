@@ -194,6 +194,15 @@ class PolyCore(Observable):
         # undecided (defaults to safe + prompts). Remembered for the session, keyed
         # to the protocol it was chosen for so a re-flash re-asks.
         self.safe_mode = False
+        # The keyboard's hardware IDs for the telemetry ping (cmd 50, v37): see
+        # _hw_id_read_job. Numbered per connection, so a read for an earlier
+        # keyboard can never fill the cache of the one connected now.
+        self._hw_ids = None
+        self._hw_id_conn = 0
+        self._hw_id_reads_left = 0
+        self._hw_id_seen_generation = None
+        self._hw_id_pending = False
+        self._hw_id_want_other = False
         self._newer_fw_policy = None
         self._newer_fw_policy_proto = None
         # Worker-side reconnect bookkeeping. `last_applied_connected` is the
@@ -306,6 +315,7 @@ class PolyCore(Observable):
         self.poly_settings = PolySettings()
         self.device_settings = DeviceSettings()
         mock_primary = bool(self.poly_settings.get("dev_mock_primary"))
+        self._mock_primary = mock_primary
         if mock_primary:
             # No hardware at all: the mock IS the keyboard. Imported here for the
             # same reason as the secondary below (numpy on the startup path).
@@ -2008,6 +2018,7 @@ class PolyCore(Observable):
                   and not snapshot["fresh_boot"])
         self._release_held_fontpack_check(steady)
         self._recheck_fontpack_on_generation(steady)
+        self._recheck_hw_ids(steady)
         if not snapshot["state_changed"] and not snapshot["fresh_boot"]:
             return snapshot
 
@@ -2103,6 +2114,10 @@ class PolyCore(Observable):
                 newer_fw_policy=self._newer_fw_policy)
             applied["decision"] = decision
             self.safe_mode = decision.get("safe_mode", False)
+            if connected_now:
+                # Before self.connected is set: the telemetry snapshot must never
+                # pair this connection with the previous keyboard's IDs.
+                self._start_hw_id_reads()
 
             # Mirror the original warning logs.
             if not snapshot["version_ok"] and self.ignore_version:
@@ -2123,6 +2138,7 @@ class PolyCore(Observable):
             # tell us a tester's link is unhealthy without asking them.
             if connected_now:
                 self.telemetry.note("connects")
+                self._submit_hw_id_read()
             else:
                 self.telemetry.note("reconnect_flaps")
             if snapshot["version_ok"] or self.ignore_version:
@@ -2567,6 +2583,8 @@ class PolyCore(Observable):
         def dictate():
             return dictation.send_shortcut(dictation.shortcut_for(
                 self.poly_settings.get("agents_dictation_shortcut")))
+        from polyhost.services.agents import card as agent_card
+        agent_card.MISSING_FONT_HOOK = self._download_card_font
         self._agent_keys = AgentKeysController(
             self.agents, self._agent_card_cache, raise_agent=raise_agent, log=self.log,
             dictate=dictate)
@@ -2602,6 +2620,30 @@ class PolyCore(Observable):
             enabled=lambda: bool(self.poly_settings.get("agents_enabled")
                                  and self.poly_settings.get("agents_title_scan")))
         self._agent_titles.start()
+
+    def _download_card_font(self, entry) -> bool:
+        """card.MISSING_FONT_HOOK: download a fallback font that an agent title
+        needs (services/agents/card.py, FALLBACK_FONTS) on its own thread, while
+        the agent keys and agents_download_fonts are on. True when it started."""
+        if not (self.poly_settings.get("agents_enabled")
+                and self.poly_settings.get("agents_download_fonts")):
+            return False
+        from polyhost.services import font_downloader
+        from polyhost.services.agents import card
+        spec = card.download_spec(entry)
+        if spec is None:
+            return False
+
+        def run():
+            try:
+                font_downloader.download_font(spec, timeout=60)
+            except Exception as e:  # noqa: BLE001 - the card shows boxes; tried again later
+                self.log.warning("Agent cards: font %s not downloaded: %s", entry.name, e)
+                return
+            self.log.info("Agent cards: downloaded the font %s", entry.name)
+            card.fonts_changed()
+        threading.Thread(target=run, name="agent-card-font", daemon=True).start()
+        return True
 
     def _agents_active(self) -> bool:
         """The keyboard side runs when the feature is on and the keyboard speaks v31."""
@@ -2773,6 +2815,64 @@ class PolyCore(Observable):
                 self.log.info("Cloud relay: channel created")
             self._apply_cloud_relay()
         return True, self.agents_cloud_status()
+
+    def agents_cloud_join_code(self):
+        """The channel's join code, for another computer (cloud_relay.join_code).
+        A secret like the channel file. No network I/O. (ok, code or reason)."""
+        from polyhost.services.agents import cloud_relay
+        channel = cloud_relay.load_channel(self._cloud_relay_path())
+        if channel is None:
+            return False, "no cloud channel on this computer: connect first"
+        return True, cloud_relay.join_code(channel)
+
+    def agents_cloud_join(self, code: str, replace: bool = False):
+        """Join the channel of another computer's join code. Network I/O (one
+        request to check the channel): never on the HID worker. With a different
+        channel here, only when `replace`. (ok, status or reason)."""
+        from polyhost.services.agents import cloud_relay
+        path = self._cloud_relay_path()
+        try:
+            joined = cloud_relay.parse_join_code(code)
+        except ValueError as e:
+            return False, str(e)
+        with self._cloud_channel_lock:
+            current = cloud_relay.load_channel(path)
+            # The same channel means the same relay too: a code for this channel ID
+            # on another relay replaces the configuration like any other channel.
+            other = current is not None and (current["url"], current["channel"]) != (
+                joined["url"], joined["channel"])
+            if other and not replace:
+                return False, ("this computer has its own cloud channel: leave it first "
+                               "(Disconnect This Computer), or replace it")
+            try:
+                cloud_relay.join_channel(path, code)
+            except (ValueError, cloud_relay.RelayError, OSError) as e:
+                return False, str(e)
+            if other:
+                self._stop_cloud_relay()
+                cloud_relay.RelaySink(self.agents, b"").forget_all()
+            self._apply_cloud_relay()
+        self.log.info("Cloud relay: joined a channel from a join code")
+        return True, self.agents_cloud_status()
+
+    def agents_cloud_leave(self):
+        """Disconnect only this computer: remove the channel file here and the cloud
+        agents, and keep the channel on the relay for the other computers and the
+        cloud environment. No network I/O. (ok, what happened)."""
+        from polyhost.services.agents import cloud_relay
+        path = self._cloud_relay_path()
+        with self._cloud_channel_lock:
+            had = cloud_relay.load_channel(path) is not None
+            self._stop_cloud_relay()
+            try:
+                cloud_relay.remove_channel_file(path)
+            except OSError as e:
+                self._apply_cloud_relay()     # the file stays: so does the connection
+                return False, f"could not remove {path}: {e}"
+            self._apply_cloud_relay()
+            cloud_relay.RelaySink(self.agents, b"").forget_all()
+        self.log.info("Cloud relay: this computer left the channel")
+        return True, "left the channel" if had else "no channel"
 
     def agents_cloud_disconnect(self):
         """Delete the channel on the relay and here, and remove the cloud agents.
@@ -3228,6 +3328,91 @@ class PolyCore(Observable):
             return False, f"Invalid half: {which!r} (0 = master, 1 = slave)"
         return self._device_call(
             "crash_get", lambda c, w=w: self.keeb.get_crash_record(w))
+
+    def get_hw_ids(self):
+        """The flash unique IDs of both halves (cmd 50, v37+), read now."""
+        return self._device_call("hw_ids_get", lambda c: self.keeb.get_hw_ids())
+
+    # Reads per connection: the first, plus retries after a failed read or when
+    # the other half appears later (a slave that joins after the master).
+    HW_ID_READS_PER_CONNECTION = 4
+    # apply_reconnect runs on the Qt thread in the GUI and on the worker headless,
+    # the read always on the worker: the reset and the job's check-and-store take
+    # this lock, so a reset can never fall between the job's check and its store.
+    _hw_id_lock = threading.Lock()
+
+    def _start_hw_id_reads(self):
+        """A new connection: forget the previous keyboard's IDs and allow new reads."""
+        with self._hw_id_lock:
+            self._hw_ids = None
+            self._hw_id_conn = getattr(self, "_hw_id_conn", 0) + 1
+            self._hw_id_reads_left = self.HW_ID_READS_PER_CONNECTION
+            self._hw_id_pending = False
+            self._hw_id_want_other = False
+            self._hw_id_seen_generation = getattr(self.keeb, "state_generation", None)
+
+    def _hw_id_read_allowed(self) -> bool:
+        # The CACHED protocol: this runs on the Qt thread in the GUI, and
+        # keeb.supports() does a GET_ID when the protocol is unknown. The job
+        # checks supports() again on the worker.
+        return (self.connected and not self.safe_mode and not self.paused
+                and getattr(self, "_hw_id_reads_left", 0) > 0
+                and protocol_supports(self.keeb.protocol_version, "hw_id"))
+
+    def _submit_hw_id_read(self):
+        # Check, reserve a read and capture the connection in one step: the Qt
+        # thread (apply_reconnect) and the worker probe can both get here.
+        with self._hw_id_lock:
+            if getattr(self, "_hw_id_pending", False) or not self._hw_id_read_allowed():
+                return
+            self._hw_id_reads_left -= 1
+            self._hw_id_pending = True
+            conn = self._hw_id_conn
+        self.worker.submit("hw_id_read", lambda cancel: self._hw_id_read_job(cancel, conn),
+                           coalesce_key="hw_id_read")
+
+    def _recheck_hw_ids(self, steady: bool):
+        """From the probe: read the IDs again after a failed read, or when the
+        other half is missing and GET_ID's 'G' counter moved (the master counts a
+        split link change there). Bounded by HW_ID_READS_PER_CONNECTION."""
+        if not steady or getattr(self, "_hw_id_reads_left", 0) <= 0:
+            return
+        gen = getattr(self.keeb, "state_generation", None)
+        ids = getattr(self, "_hw_ids", None)
+        if gen != getattr(self, "_hw_id_seen_generation", None):
+            self._hw_id_seen_generation = gen
+            if ids is not None and ids.get("other") is None:
+                # Stays set until a read brings the other half, so a timeout
+                # after the counter moved is retried (within the budget).
+                self._hw_id_want_other = True
+        if ids is None or getattr(self, "_hw_id_want_other", False):
+            self._submit_hw_id_read()
+
+    def _hw_id_read_job(self, cancel, conn):
+        """Worker job: read the hardware IDs for the telemetry snapshot, which reads
+        only ``self._hw_ids``. Checks again here: the connection, safe mode or the
+        keyboard can change between submit and run."""
+        try:
+            self._hw_id_read(cancel, conn)
+        finally:
+            with self._hw_id_lock:
+                if conn == self._hw_id_conn:
+                    self._hw_id_pending = False
+
+    def _hw_id_read(self, cancel, conn):
+        if (cancel.is_set() or conn != self._hw_id_conn or not self.connected
+                or self.safe_mode or not self.keeb.supports("hw_id")):
+            return
+        ok, ids = self.keeb.get_hw_ids()
+        if not ok:
+            self.log.debug("Hardware ID read failed (%d reads left): %s",
+                           self._hw_id_reads_left, ids)
+            return
+        with self._hw_id_lock:
+            if conn == self._hw_id_conn:
+                self._hw_ids = dict(ids)
+                if ids.get("other") is not None:
+                    self._hw_id_want_other = False
 
     def clear_crash_record(self):
         """Erase the keyboard's crash archive; a cleared record can be reported again."""
@@ -3912,7 +4097,13 @@ class PolyCore(Observable):
         # than a live bug — but the callers swallow exceptions, so if a device
         # object ever lacked it the whole device block would vanish from the
         # ping with no trace, and all three reads should fail the same way.
-        return (self.get_status(),
+        status = dict(self.get_status())
+        # Raw IDs; build_payload() hashes them and sends only the hashes. The
+        # emulated primary (dev_mock_primary) is not a keyboard: it sends none.
+        hw_ids = {} if getattr(self, "_mock_primary", False) else (
+            getattr(self, "_hw_ids", None) or {})
+        status["hw_ids"] = [v for v in (hw_ids.get("own"), hw_ids.get("other")) if v]
+        return (status,
                 dict(getattr(self.keeb, "fontpack_bundle_versions", None) or {}))
 
     def _log_telemetry_notice(self):

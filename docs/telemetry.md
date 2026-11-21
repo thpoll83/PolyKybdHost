@@ -29,7 +29,7 @@ marketing** — if the payload gains a field, the notes have to say so.
 
 ```json
 {
-  "schema": 2,
+  "schema": 3,
   "install_id": "9f2c…",           // random uuid4, generated on this machine
   "host_version": "0.11.5",
   "host_protocol": 12,
@@ -41,8 +41,10 @@ marketing** — if the payload gains a field, the notes have to say so.
   "device": {
     "present": true, "connected": true,
     "name": "PolyKybd Split72",
-    "fw_version": "0.11.4", "protocol": 12, "hw_version": "1.0",
-    "fontpack": {"symbol": 5, "emoji": 1}
+    "fw_version": "0.11.4", "protocol": 37, "hw_version": "1.0",
+    "fontpack": {"symbol": 5, "emoji": 1},
+    // See "Counting keyboards" below. Empty before firmware protocol 37.
+    "hw_ids": ["3c1f…", "a90e…"]
   },
   "counters": {
     "sessions": 1, "connects": 3, "reconnect_flaps": 0,
@@ -77,6 +79,44 @@ sent is never the text of those variables.** It is mapped to one of the names
 listed above, and anything not on the list is sent as `other`. So a desktop we
 have not heard of is counted, and never named.
 
+### Counting keyboards (added in schema 3)
+
+The `install_id` counts host installs, not keyboards: one keyboard on two
+computers is two installs. To count keyboards, the host reads the unique ID of
+each half's flash chip (firmware protocol 37+, `polyctl hwid`) and sends a hash
+of it.
+
+- Each half's 8-byte ID is hashed on its own with HMAC-SHA256 and a key that is
+  the same in every host (`HW_ID_HASH_KEY` in `services/telemetry.py`). The
+  first 32 hex digits are sent. The raw ID is never sent.
+- The two hashes are ordered by the numeric value of the raw IDs, not by the
+  hash text, so the pair is the same whichever half is plugged in to the
+  computer.
+- A replaced half changes one hash and keeps the other. The collector stores
+  them as `hw_id_a` and `hw_id_b`. The hash that stays can move to the other
+  column.
+- With one half unplugged, or a slave on older firmware, the list has one hash.
+  Before firmware protocol 37 it is empty.
+- The list shows the halves the host read after the keyboard connected, not at
+  the moment of the ping. The host reads the IDs on each connect, again after a
+  failed read, and again when the other half was missing and the keyboard
+  reports a state change (a split link that comes up). It reads at most
+  `HW_ID_READS_PER_CONNECTION` (4) times per connection. A ping from a computer
+  the keyboard was unplugged from sends the IDs read last. The emulated keyboard
+  (`dev_mock_primary`) sends none.
+
+The dashboard's keyboard count is an estimate. Two hashes in one report are
+taken as one keyboard, and a new pair that shares one hash with an older pair as
+a replaced half. A half moved from one keyboard to another links the two
+keyboards into one group, so the count can be too low and the replacement count
+too high. A shared half alone does not prove a replacement.
+
+The key is public, so anyone who has your keyboard can compute its hash. The
+hashes are persistent device identifiers: the same keyboard sends the same
+hashes on every computer and after a reinstall, which is their purpose. The
+report has no name, but someone who knows who owns a keyboard and can read the
+reports can link those reports to that owner.
+
 ## What is never sent
 
 The host application can see all of the following. None of it is collected:
@@ -87,7 +127,8 @@ The host application can see all of the following. None of it is collected:
   them
 - **your location** — the daylight-brightness feature may look up an approximate
   location; that never reaches telemetry
-- user name, machine name, MAC address, keyboard serial number
+- user name, machine name, MAC address, the keyboard's raw flash IDs (only
+  their hashes, see above)
 - file paths, overlay contents, keymaps
 
 This is enforced by construction: `build_payload()` copies named fields only,

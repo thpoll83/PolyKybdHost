@@ -55,7 +55,7 @@ bindings:
   - { key: KC_GRAVE, mods: [], icon: treeview.png, label: "Toggle file tree" }
   - { key: "-", mods: [], icon: collapseall.png, label: "Collapse all" }
   - { key: "=", mods: [], icon: expandall.png, label: "Expand all" }
-  - { key: KC_ENTER, mods: [], icon: mainview.png, label: "Focus file diff" }
+  - { key: KC_ENTER, mods: [], icon: mainview.png, label: "Focus main view" }  # the main view shows the file diff
   - { key: "0", mods: [], icon: mainview.png, label: "Focus main view" }
   - { key: "/", mods: [], icon: filter.png, label: "Filter view" }
   # --- Files panel, Shift ---

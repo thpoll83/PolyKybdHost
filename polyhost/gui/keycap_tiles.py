@@ -129,6 +129,11 @@ def brightness_panel(level):
     return _paste_centred(_panel(), _legend(), level=grey)
 
 
+def auto_brightness_panel():
+    """"AUTO" on the keycap: the keyboard and the daylight pick the level."""
+    return _paste_centred(_panel(), _legend("AUTO"))
+
+
 # ── Idle Display ─────────────────────────────────────────────────────────────
 
 def idle_panel(style):

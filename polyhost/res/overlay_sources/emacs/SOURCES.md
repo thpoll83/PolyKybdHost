@@ -1,13 +1,16 @@
 # GNU Emacs overlays: sources
 
 Three overlay sets for GNU Emacs, chosen by the `emacs://<major-mode>` report of
-the `polykybd-mode` package (`emacs-package/` at the repository root):
+the `polykybd-mode` package (`emacs-package/` at the repository root), and five
+sets for the evil states it adds to the report (`emacs://<major-mode>/<state>`,
+see "Evil states" below):
 
 | spec | output | used for |
 |---|---|---|
 | `global.yaml` | `emacs_template` | every major mode, and GUI Emacs with no report |
 | `org.yaml` | `emacs_org_template` | org-mode, loaded AFTER the global set (a later file takes priority per key) |
 | `dired.yaml` | `emacs_dired_template` | Dired; a complete set, not drawn on top of the global set |
+| `evil_<state>.yaml` (generated) | `emacs_evil_<state>_template` | evil normal, visual, insert, replace and motion state, in every major mode |
 
 Regenerate:
 
@@ -18,6 +21,77 @@ for s in global org dired; do
       --preview /tmp/emacs_$s
 done
 ```
+
+## Evil states
+
+[evil](https://github.com/emacs-evil/evil) emulates Vim. Its state keymaps take
+priority over the major mode's keys, so an evil state route comes before the
+major-mode routes in the mapping: Dired in normal state shows the evil normal
+set. Org in normal state shows the Org set with the evil normal set drawn on
+top, so Org's keys that evil leaves free (Shift+Tab, Alt/Ctrl/Shift+Enter, the
+Alt and Shift arrows) show, and a key both bind (Tab) shows evil's. Each set is the Vim set of the same mode (`../vim/`) without the
+keys that evil's default keymaps bind differently, so a key never shows Vim's
+action where evil does something else. The icons are the Vim files; ESC shows
+the state word (NOR, VIS, INS, REP, MOT) beside the Emacs logo.
+
+```bash
+python polyhost/res/overlay_sources/emacs/fetch_icons.py          # the ESC marks
+python polyhost/res/overlay_sources/emacs/gen_evil_bindings.py --render --preview /tmp/evil_preview
+```
+
+`evil.yaml` is the input: which Vim set each state starts from, the keys left
+out (each with what evil does instead), the motion-state keys, `labels` and
+`icons`. One picture means one action across all the Emacs sets. A key that
+visual state does not rebind runs the normal-state command on the selection,
+so it keeps the normal state's picture and gets the same label (`d`, `c`, `y`,
+`r`, `>`, `<`, `=`, `:`, `K`, `v`, `V`, `C-v`). `icons` gives a key another
+picture where the command differs:
+
+| key | evil command | picture | instead of (the other action) |
+|---|---|---|---|
+| Shift+G | evil-goto-line (takes a count) | `goto_line.png` ("line N") | `file_end.png`, Ctrl+End end-of-buffer |
+| Shift+Y | evil-yank-line | `yank_lines.png` | `copy.png`, the y operator |
+| visual Shift+P | evil-paste-before, keeps the register | `put_keep.png` ("keep") | `paste.png`, visual p |
+| insert/replace Ctrl+R | evil-paste-from-register | `paste_reg.png` ("reg") | `paste.png`, visual p |
+| insert/replace Ctrl+T, Ctrl+D | evil-shift-right-line, -left-line | `indent_line_inc.png`, `indent_line_dec.png` | `indent_inc.png`, `indent_dec.png`, the > < operators |
+| visual Shift+I, Shift+A | evil-insert, evil-append on a block | `insert_block.png`, `append_block.png` | `insert_bol.png`, `append_eol.png`, normal I A |
+| replace Insert | evil-append | `append.png` (label of normal a) | `insert.png`, normal i |
+
+The new files are drawn by `../vim/fetch_icons.py` (Fluent glyphs from
+`../vim/icons/src/` and Liberation Sans Bold words, see `../vim/SOURCES.md`)
+and are not used by the Vim sets. Source:
+`evil-maps.el` and `evil-vars.el` of evil 1.15.0
+(https://github.com/emacs-evil/evil, branch master, read 2026-11-14), with the
+default settings: `evil-want-C-u-scroll` nil, `evil-want-C-d-scroll` t,
+`evil-want-C-i-jump` t, `evil-want-C-w-delete` t, `evil-want-C-u-delete` nil,
+`evil-want-C-h-delete` nil, `evil-toggle-key` C-z, `evil-undo-system` nil. A
+user who changes one of these sees a blank key or a key that no longer
+matches; the sets follow the defaults only.
+
+| state | starts from | keys | left out (evil does something else) |
+|---|---|---|---|
+| normal | Vim Normal | 105 | C-u (universal argument), C-r (redo: with `evil-undo-system` nil it only reports that no undo system is set), U, C-a, C-x, C-g, C-l, C-z (Emacs state), C-Left/C-Right, S-Left/S-Right, S-Up/S-Down |
+| visual | Vim Visual | 90 | C-u, C-a, C-x, C-c, C-Left/C-Right, S-Left/S-Right, S-Up/S-Down |
+| insert | Vim Insert | 15 | C-u, C-h (help prefix), C-c |
+| replace | Vim Replace | 15 | C-u, C-h, C-c, C-w (it deletes the word and does not restore it) |
+| motion | Vim Normal: the `motions` section of `../vim/keys.yaml` and the motion-map keys K v V C-v : ! y Y C-o C-i TAB C-6 C-w F1 | 71 | as normal, and Backspace (DEL is in the normal map only) |
+
+Keys evil does not bind fall through to the Emacs global keymap. They are drawn
+only where that binding does what the picture shows: PgUp/PgDn, C-Home/C-End,
+Delete, F1.
+
+Not drawn as a set:
+
+- **Emacs state** (`/emacs`, C-z): the Emacs keys are active, so the major-mode
+  route applies (global, Org or Dired set).
+- **Operator-pending state** (`/operator`, after `d`, `c`, `y` ...): evil reads
+  the motion inside the operator command, so `post-command-hook` does not run
+  and the package does not report this state. A report of it would get the
+  major-mode set.
+- **Insert state keeps only evil's keys**: the Emacs global keys that still work
+  in insert state (C-f, M-x ...) are not drawn, because the global set also
+  draws C-z (suspend) and C-n, C-p, C-a, C-e, C-k, C-y, C-w, C-v, C-d, C-t, C-o,
+  C-r with their Emacs meaning, which evil's insert state replaces.
 
 ## Shortcut references (read 2026-10-30)
 
@@ -109,7 +183,10 @@ Most commands come in families that differ only by the unit they act on
 CHR / WORD / SEXP, mark WORD / PARA / FUNC / SEXP), so they are drawn
 composites: a glyph above a word of up to four capitals (arrow = move,
 Delete-key shape = kill or delete, two arrows = transpose, dashed box = mark,
-magnifier with an arrow = search, plus = new heading). Commands with a usual
+magnifier with an arrow = search, plus = new heading, a filled row beside
+an arrow = move the text itself). Two keys of the Emacs sets (global, Org,
+Dired and the evil states together) share a picture only when they do the same
+thing (maintainer's rule, 2026-11-15). Commands with a usual
 picture use Fluent, with Material Symbols where Fluent has no match. Copy,
 Cut, Paste, Undo, Redo, Help and Print are drawn by the shared renderer (the
 concept icons every app overlay shares), so `icons/` has no file for them.
@@ -134,7 +211,7 @@ pixels at 40x40) reads better, so it is the one used.
 | file | source | licence |
 |---|---|---|
 | `emacs.png` | Simple Icons `gnuemacs` | CC0-1.0 (nominative use of the mark) |
-| `esc_global.png`, `esc_org.png`, `esc_dired.png` | `emacs.png` and a word, drawn by `fetch_icons.py` | as `emacs.png`; the word GPL-3.0-or-later |
+| `esc_global.png`, `esc_org.png`, `esc_dired.png`, `esc_evil_<state>.png` | `emacs.png` and a word, drawn by `fetch_icons.py` | as `emacs.png`; the word GPL-3.0-or-later |
 | `dump_keys.el` | this repository | GPL-3.0-or-later |
 
 ### Microsoft Fluent UI System Icons (MIT)
@@ -203,7 +280,6 @@ pixels at 40x40) reads better, so it is the one used.
 | `apropos.png` | `quick_reference_all` |
 | `dabbrev.png` | `auto_fix_high` |
 | `cyclespace.png` | `space_bar` |
-| `indentation.png` | `format_indent_increase` |
 | `tabstop.png` | `keyboard_tab` |
 | `windowline.png` | `vertical_align_top` |
 | `menubar_text.png` | `menu_open` |
@@ -303,6 +379,8 @@ Drawn by `fetch_icons.py` (`composite()`): a glyph above a word, 40x32, 1-bit. T
 | `re_search_fwd.png` | `search` | REGX |
 | `re_search_back.png` | `searchback` | REGX |
 | `re_replace.png` | `png:queryreplace` | REGX |
+| `indentation.png` | `firstchar` (indent dots, a bar, an arrow to it) | INDT |
+| `newline_comment.png` | `png:newline_indent` | CMNT |
 | `universal.png` | `text:×4` | ARG |
 | `complete.png` | `png:dabbrev` | SYM |
 | `dabbrev_list.png` | `png:dabbrev` | LIST |
@@ -317,10 +395,10 @@ Drawn by `fetch_icons.py` (`composite()`): a glyph above a word, 40x32, 1-bit. T
 | `org_todo_after.png` | `plusafter` | TODO |
 | `org_promote_tree.png` | `png:promote` | TREE |
 | `org_demote_tree.png` | `png:demote` | TREE |
-| `org_tree_up.png` | `up` | TREE |
-| `org_tree_down.png` | `down` | TREE |
-| `org_line_up.png` | `up` | LINE |
-| `org_line_down.png` | `down` | LINE |
+| `org_tree_up.png` | `dragup` | TREE |
+| `org_tree_down.png` | `dragdown` | TREE |
+| `org_line_up.png` | `dragup` | LINE |
+| `org_line_down.png` | `dragdown` | LINE |
 | `org_todo_prev.png` | `left` | TODO |
 | `org_todo_next.png` | `right` | TODO |
 | `org_prio_up.png` | `up` | PRIO |
@@ -341,6 +419,8 @@ Drawn by `fetch_icons.py` (`composite()`): a glyph above a word, 40x32, 1-bit. T
 | `dired_marked_prev.png` | `up` | MARK |
 | `dired_marked_next.png` | `down` | MARK |
 | `dired_copyname.png` | `png:_copy` | NAME |
+| `dired_grep_marked.png` | `png:grep` | MARK |
+| `dired_replace_marked.png` | `png:queryreplace` | MARK |
 | `dired_flag_autosave.png` | `png:_flag` | AUTO |
 | `dired_flag_backup.png` | `png:_flag` | BAK |
 | `dired_hardlink.png` | `png:_link` | HARD |

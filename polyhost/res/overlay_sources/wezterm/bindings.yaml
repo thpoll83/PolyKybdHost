@@ -94,10 +94,10 @@ bindings:
   # --- Ctrl+Alt+Shift: panes ---
   - { key: "'", mods: [CTRL, ALT, SHIFT], icon: splitdown.png, label: "Split top/bottom" }
   - { key: "5", mods: [CTRL, ALT, SHIFT], icon: splitright.png, label: "Split left/right" }
-  - { key: UP, mods: [CTRL, ALT, SHIFT], icon: resizepane.png, label: "Resize pane up" }
-  - { key: DOWN, mods: [CTRL, ALT, SHIFT], icon: resizepane.png, label: "Resize pane down" }
-  - { key: LEFT, mods: [CTRL, ALT, SHIFT], icon: resizepane.png, label: "Resize pane left" }
-  - { key: RIGHT, mods: [CTRL, ALT, SHIFT], icon: resizepane.png, label: "Resize pane right" }
+  - { key: UP, mods: [CTRL, ALT, SHIFT], icon: resizepane_up.png, label: "Resize pane up" }
+  - { key: DOWN, mods: [CTRL, ALT, SHIFT], icon: resizepane_down.png, label: "Resize pane down" }
+  - { key: LEFT, mods: [CTRL, ALT, SHIFT], icon: resizepane_left.png, label: "Resize pane left" }
+  - { key: RIGHT, mods: [CTRL, ALT, SHIFT], icon: resizepane_right.png, label: "Resize pane right" }
 
   # --- Cmd (macOS only) ---
   - { key: C, mods: [GUI], icon: copy.png, label: "Copy", only: [macos] }
@@ -125,6 +125,6 @@ bindings:
   - { key: "9", mods: [GUI], icon: lasttab.png, label: "Last tab", only: [macos] }
 
   # --- Cmd+Shift (macOS only) ---
-  - { key: T, mods: [GUI, SHIFT], icon: newtab.png, label: "New tab (default domain)", only: [macos] }
+  - { key: T, mods: [GUI, SHIFT], icon: newtab_default.png, label: "New tab (default domain)", only: [macos] }
   - { key: "[", mods: [GUI, SHIFT], icon: prevtab.png, label: "Previous tab", only: [macos] }
   - { key: "]", mods: [GUI, SHIFT], icon: nexttab.png, label: "Next tab", only: [macos] }

@@ -90,3 +90,12 @@ is CC0-1.0. CC0 covers the copyright only and grants no trademark rights: the
 basis is nominative use, the mark names the app this overlay is for, unchanged
 and with no endorsement implied (the same basis as the other `brand_marks`
 logos). `fetch_icons.py` leaves a committed `evernote.png` as it is.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing (maintainer,
+2026-11-15). These icons give each different action its own picture.
+
+| File | Source | License |
+|---|---|---|
+| `focuslist.png` | Fluent `Apps List Detail` (Focus note list; was the Bulleted list glyph) | MIT |

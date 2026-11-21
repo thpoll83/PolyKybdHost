@@ -45,7 +45,7 @@ ICO_URL = ("https://raw.githubusercontent.com/storytold/designcraft/"
 BORROW = {n: "illustrator" for n in (
     "select.png", "directselect.png", "type.png", "line.png", "pen.png",
     "pencil.png", "rectangle.png", "ellipse.png", "scissors.png", "scale.png",
-    "rotate.png", "gradient.png", "eyedropper.png", "hand.png", "zoom.png",
+    "rotate.png", "gradient.png", "eyedropper.png", "hand.png",
     "swap.png", "default.png", "new.png", "open.png", "save.png", "saveas.png",
     "print.png", "place.png", "undo.png", "copy.png", "cut.png", "paste.png",
     "selectall.png", "group.png", "ungroup.png", "lock.png", "compound.png",
@@ -53,6 +53,15 @@ BORROW = {n: "illustrator" for n in (
     "zoomin.png", "zoomout.png", "rulers.png", "guides.png", "prefs.png",
     "transformagain.png",
 )}
+# One icon per action (2026-11-15): these keys shared an image with another
+# action. The VectorCraft set already has a drawing for each, so the same action
+# draws the same cell in both apps: the zoom TOOL (zoom-in glyph + cursor badge),
+# the "hold Space" hand (../space_hint.py), Paste in place, and the one-step
+# Bring forward / Send backward (Fluent Position Forward / Backward).
+BORROW.update({n: "vectorcraft" for n in (
+    "zoomtool.png", "space_hand.png", "pasteinplace.png", "bringforward.png",
+    "sendbackward.png",
+)})
 
 # All probed (fetched, 404-checked) before use. "ms:" = Material Symbols.
 GLYPHS = {
@@ -100,7 +109,7 @@ GLYPHS = {
     "pasteboard": "Arrow Expand",
     "frameedges": "Border None",
     "snapguides": "ms:vertical_align_center",
-    "baseline": "Line Horizontal 3",
+    "baseline": "ms:table_rows",   # Line Horizontal 3 drew the same cell as Justify (Cmd+Shift+J)
     "threads": "Link",
     "hiddenchars": "ms:format_paragraph",
     "typical": "Image",

@@ -101,55 +101,84 @@ class MenuFetcherTest(unittest.TestCase):
 
 
 class TrayRefreshDoesNotWaitTest(unittest.TestCase):
-    """The tray's real refresh methods return while the core call is stalled."""
+    """Settings > Keyboard reads and sends off the GUI thread: a stalled core does
+    not block the dialog, and the answer fills it when it comes."""
 
     @classmethod
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
 
     def _host(self, release):
+        import logging
         import types
-        from PyQt5.QtWidgets import QAction
         from polyhost.host import PolyHost
 
         def stalled(*_a):
             release.wait(10)
             return True, 1
 
-        core = types.SimpleNamespace(get_glyph_size=stalled, get_idle_style=stalled,
-                                     get_idle_timeout=stalled, get_glyph_placement=stalled)
-        host = types.SimpleNamespace(_menu_fetch=MenuFetcher(), core=core)
-        act = QAction(None)
-        act.setCheckable(True)
-        host.glyph_size_actions = {1: act}
-        host._apply_glyph_size = lambda r: PolyHost._apply_glyph_size(host, r)
-        return host, act, PolyHost
+        core = types.SimpleNamespace(
+            get_glyph_size=stalled, get_idle_style=stalled, get_glyph_script=stalled,
+            get_idle_timeout=lambda: (stalled() and (True, (1, 60))),
+            get_glyph_placement=stalled,
+            get_tap_terms=lambda: (False, "no tap terms"))
+        host = types.SimpleNamespace(_menu_fetch=MenuFetcher(), core=core,
+                                     log=logging.getLogger("test"))
+        host._core_click = lambda fn, done: PolyHost._core_click(host, fn, done)
+        return host, PolyHost
 
-    def test_a_click_returns_while_the_core_is_stalled(self):
-        from polyhost.device.command_ids import GlyphSize
+    def test_keyboard_changes_return_while_the_core_is_stalled(self):
+        from polyhost.gui import keyboard_settings as kbd
         release = threading.Event()
-        host, act, PolyHost = self._host(release)
+        host, PolyHost = self._host(release)
         reported = []
         host.core.set_glyph_size = lambda v: release.wait(10) and (False, "busy")
-        host.sender = lambda: type("A", (), {"data": lambda self: GlyphSize.LARGE.value})()
         host.report_device_result = lambda *a: reported.append(a)
-        host.refresh_glyph_size_menu = lambda: reported.append("refresh")
-        host.log = __import__("logging").getLogger("test")
-        host._core_click = lambda fn, done: PolyHost._core_click(host, fn, done)
-        PolyHost.change_glyph_size(host)            # returns although the core is stalled
+        PolyHost._send_keyboard_changes(host, {kbd.GLYPH_SIZE: 2})   # returns at once
         self.assertEqual(reported, [])
         release.set()
         self.assertTrue(host._menu_fetch.wait_idle())
-        self.assertEqual(reported[-1], "refresh")   # the failure re-syncs the menu
+        self.assertEqual(len(reported), 1)          # the refusal is reported
+        host._keyboard_settings_message.close()
 
-    def test_glyph_size_menu_ticks_after_the_answer(self):
+    def test_brightness_tiles_send_a_level_or_automatic(self):
+        # The keyboard does not report its brightness: the row is a choice to
+        # send. Automatic re-engages the daylight drive; a tile sends its level.
+        from polyhost.gui import keyboard_settings as kbd
+        host, PolyHost = self._host(threading.Event())
+        calls = []
+        host.core.set_brightness = lambda v: calls.append(("level", v)) or (True, "ok")
+        host.core.refresh_daylight_brightness = lambda: calls.append(("auto",)) or (True, "queued")
+        PolyHost._send_keyboard_changes(host, {kbd.BRIGHTNESS: 25})
+        PolyHost._send_keyboard_changes(host, {kbd.BRIGHTNESS: kbd.BRIGHTNESS_AUTO})
+        self.assertTrue(host._menu_fetch.wait_idle())
+        self.assertEqual(calls, [("level", 25), ("auto",)])
+        # Offered whenever the keyboard answered any read, with no tile ticked.
+        values, failed = kbd.values_from_reads({"idle_style": (True, 1)})
+        self.assertIn(kbd.BRIGHTNESS, values)
+        self.assertIsNone(values[kbd.BRIGHTNESS])
+        values, failed = kbd.values_from_reads({"idle_style": (False, "not connected")})
+        self.assertNotIn(kbd.BRIGHTNESS, values)
+
+    def test_keyboard_rows_fill_after_the_answer(self):
+        from polyhost.gui import keyboard_settings as kbd
+        from polyhost.gui.settings_dialog import SettingsDialog
         release = threading.Event()
-        host, act, PolyHost = self._host(release)
-        PolyHost.refresh_glyph_size_menu(host)      # returns although the core is stalled
-        self.assertFalse(act.isChecked())
+        host, PolyHost = self._host(release)
+        dlg = SettingsDialog()
+        dlg.setup({"ui_theme": "auto"}, keyboard=True)
+        host._settings_dlg = dlg
+        host._menu_fetch.fetch("keyboard_settings", lambda: kbd.read_all(host.core),
+                               lambda r: PolyHost._apply_keyboard_reads(host, r))
+        size = dlg.keyboard_widgets[kbd.GLYPH_SIZE]
+        self.assertFalse(size.isEnabled())          # still reading
         release.set()
         self.assertTrue(host._menu_fetch.wait_idle())
-        self.assertTrue(act.isChecked())
+        self.assertTrue(size.isEnabled())
+        self.assertEqual(size.value(), 1)
+        # No tap terms on this keyboard: those rows stay disabled.
+        self.assertFalse(dlg.keyboard_widgets[kbd.TAPPING_TERM].isEnabled())
+        dlg.close()
 
 
 if __name__ == "__main__":

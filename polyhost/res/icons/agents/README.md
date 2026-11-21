@@ -2,7 +2,8 @@
 
 Finished 1-bit masks for the AI-mode agent cards (`services/agents/card.py`), for
 vendors that Simple Icons and Material Design Icons do not carry. The card shows
-each one as it is, bottom-aligned with the 16 px state icon; nothing scales them.
+each one as it is, top left; nothing scales them. A cloud session shows a browser
+tab in place of the mark (`icons.browser_tab`).
 
 Written by `python tools/gen_agent_marks.py`, from the ESC marks of the AI CLI
 overlays (`res/overlay_sources/aicli/icons/`) or from a vendored SVG in `src/`:

@@ -46,8 +46,8 @@ document) are literal Ctrl, but Tab has no cell.
 
 Context-dependent choices: Cmd+E is "Merge Layers" (Merge Down with one layer
 selected). Cmd+J is Layer via Copy. The digit keys set brush opacity with the
-painting tools and layer opacity otherwise (`opacity_keys.rs`); one glyph is
-used and the digit legend carries the value. Shift+O (crop overlay orientation),
+painting tools and layer opacity otherwise (`opacity_keys.rs`); each key draws the
+opacity glyph over its percentage. Shift+O (crop overlay orientation),
 O inside the crop tool, arrow-key nudges and the `+`/`-` of the Color Range
 dialog are modal and not bound.
 
@@ -114,3 +114,28 @@ cut off the coloured tile as one solid shape, fitted into 40 x 40 (38 x 40), and
 interior pixels darker than luma 120 at that size are cut back out (eyes, mouth,
 lines). The spec places it 1:1 (`program_icon_region: [38, 40]`). The
 generator's thresholds turned the engraving into dither at keycap size.
+
+## One icon per action (2026-11-15)
+
+Two keys of one app share an image only when they do the same thing (maintainer,
+2026-11-15). Changed images:
+
+| File(s) | What | Source | Licence |
+|---|---|---|---|
+| `opacity1`..`opacity0`, `flowfill1`..`flowfill0` | 1..0 and Shift+1..0: the glyph over the percentage (10%..100%) | drawn (composite) | GPL-3.0-or-later |
+| `eraserhold`, `zoominhold`, `zoomouthold` | ` held (erase with the brush), Cmd+Space and Alt+Space held: glyph + HOLD | drawn (composite) | GPL-3.0-or-later |
+| `layerviacut` | Cmd+Shift+J, Layer via cut: scissors + LAYER | drawn (composite) | GPL-3.0-or-later |
+| `typesizeup10`, `typesizedown10` | Cmd+Alt+Shift+. / ,: type size by 10: glyph + `+10` / `-10` | drawn (composite) | GPL-3.0-or-later |
+| `space_hand` | Space held: the hand with an arrow on each side (`../space_hint.py`), placed 1:1 on the whole key | drawn (composite) | GPL-3.0-or-later |
+| `zoomtool` | Z, the Zoom tool: the zoom-in glyph with a Fluent `Cursor` badge (`dcc_glyphs.with_badge`); Cmd+= zooms in one step | drawn over Fluent | MIT |
+| `historybrush` | Y, History brush: brush with the History glyph as a badge (Cmd+Alt+Z, Toggle last state, keeps the History glyph alone) | drawn over Photoshop `brush.png` + Fluent `History` | MIT |
+| `fitscreen` | Cmd+0, Fit on screen (was the Screen mode glyph of F) | Fluent `Zoom Fit` | MIT |
+| `cursor` | badge glyph only | Fluent `Cursor` | MIT |
+
+Glyph + word composites are 1-bit at 40x40, drawn by `fetch_icons.py` with the glyph +
+word code of `../ghidra/fetch_icons.py` (Liberation Sans Bold), and placed 1:1
+(`region: [40, 40], mode: alpha`). They are GPL-3.0-or-later drawings over the glyphs
+named, which keep their own licences.
+
+Shift+Backspace is the second shortcut of `edit.fill`, the same action as Shift+F5, so
+both keys are labelled Fill and share the image.

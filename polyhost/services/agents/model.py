@@ -75,3 +75,44 @@ def vendor(vid: str) -> Vendor:
     if vid in VENDORS:
         return VENDORS[vid]
     return Vendor(vid or "agent", vid or "Agent", (vid or "AI")[:3].capitalize())
+
+
+# Words a card leaves out of a session title, so the subject fits the key
+# (2026-11-18: a card that paged through "Fix the HID reconnect after resume" was
+# hard to recognise). English only: a title in another language is shown whole.
+_SMALL_WORDS = frozenset(
+    "a after an and at before by for from in into is of on or the to via when with".split())
+# Small words that are not also common words of another language ("in" and "an"
+# are German, "a" French, Spanish and Italian, "is" and "of" Dutch, "to" Polish
+# and Czech, "for" Danish and Norwegian, "via" Italian): only a title with one of
+# these loses its small words.
+_ENGLISH_MARKERS = frozenset("after and before from into the when with".split())
+
+
+# Brackets a card leaves out (2026-11-18): in a right-to-left title each one would
+# have to be mirrored and put in reverse order, and the key has little room. ASCII,
+# fullwidth and CJK brackets; quotation marks stay.
+_BRACKETS = frozenset("()[]{}<>\uff08\uff09\uff3b\uff3d\uff5b\uff5d\uff1c\uff1e"
+                      "\u3008\u3009\u300a\u300b\u300c\u300d\u300e\u300f"
+                      "\u3010\u3011\u3014\u3015\u3016\u3017\u3018\u3019\u301a\u301b"
+                      "\uff5f\uff60\uff62\uff63")
+
+
+def no_brackets(text: str) -> str:
+    """`text` without brackets: each one is a space, so "fix(io)" reads "fix io",
+    and runs of spaces become one."""
+    return " ".join("".join(" " if c in _BRACKETS else c for c in text or "").split())
+
+
+def card_words(title: str) -> str:
+    """The words of `title` a card shows: in a title with an _ENGLISH_MARKERS word,
+    no small words after the first word. Any other title is returned as it is.
+    The first word stays, also a verb such as "Fix" or a small word (2026-11-18)."""
+    title = title or ""
+    words = title.split()
+    low = [w.lower().rstrip(":,") for w in words]
+    if _ENGLISH_MARKERS.intersection(low) and not all(lw in _SMALL_WORDS for lw in low):
+        # The first word stays, also a small word ("After the fix works").
+        words = words[:1] + [w for w, lw in zip(words[1:], low[1:], strict=True)
+                             if lw not in _SMALL_WORDS]
+    return " ".join(words) or title

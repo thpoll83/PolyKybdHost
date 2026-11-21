@@ -168,47 +168,47 @@ bindings:
   source: :help CTRL-]
 - key: DELETE
   icon: delete.png
-  label: Delete selection
+  label: Delete
   shared: false
   source: :help v_x
 - key: V
   mods:
   - CTRL
   icon: visual_block.png
-  label: Visual block mode (or stop)
+  label: Visual block mode
   shared: false
   source: :help v_CTRL-V
 - key: A
   mods:
   - CTRL
   icon: increment.png
-  label: Add 1 to numbers
+  label: Add 1 to number
   shared: false
   source: :help v_CTRL-A
 - key: X
   mods:
   - CTRL
   icon: decrement.png
-  label: Subtract 1 from numbers
+  label: Subtract 1 from number
   shared: false
   source: :help v_CTRL-X
 - key: C
   mods:
   - CTRL
   icon: esc.png
-  label: Stop Visual mode
+  label: Back to Normal mode
   shared: false
   source: :help v_CTRL-C
 - key: BACKSPACE
   icon: delete.png
-  label: Delete selection
+  label: Delete
   shared: false
   source: :help v_<BS>
 - key: H
   mods:
   - CTRL
   icon: delete.png
-  label: Delete selection
+  label: Delete
   shared: false
   source: :help v_CTRL-H
 - key: G
@@ -229,6 +229,6 @@ bindings:
   mods:
   - CTRL
   icon: clip_letter.png
-  label: Register for the deleted text
+  label: Use register
   shared: false
   source: :help v_CTRL-R

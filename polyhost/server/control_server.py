@@ -52,6 +52,22 @@ def _bool_param(params, key):
     return value
 
 
+def _opt_bool_param(params, key, default=False):
+    """An optional JSON boolean (see _bool_param)."""
+    if key not in params:
+        return default
+    return _bool_param(params, key)
+
+
+def _str_param(params, key, max_len):
+    """A required string of at most `max_len` characters."""
+    value = params.get(key)
+    if not isinstance(value, str) or len(value) > max_len:
+        raise RpcError(p.ERR_INVALID_PARAMS,
+                       f"'{key}' must be a string of at most {max_len} characters")
+    return value
+
+
 class ControlServer(MpcListenerServer):
     """Serve a :class:`PolyCore` over the local control socket."""
 
@@ -242,6 +258,10 @@ class ControlServer(MpcListenerServer):
             p.M_AGENTS_CLOUD_CONNECT: lambda conn, params: _unwrap(c.agents_cloud_connect()),
             p.M_AGENTS_CLOUD_DISCONNECT: lambda conn, params: _unwrap(
                 c.agents_cloud_disconnect()),
+            p.M_AGENTS_CLOUD_JOIN_CODE: lambda conn, params: _unwrap(c.agents_cloud_join_code()),
+            p.M_AGENTS_CLOUD_JOIN: lambda conn, params: _unwrap(c.agents_cloud_join(
+                _str_param(params, "code", 1024), _opt_bool_param(params, "replace"))),
+            p.M_AGENTS_CLOUD_LEAVE: lambda conn, params: _unwrap(c.agents_cloud_leave()),
             p.M_GLYPH_SCRIPT_SET: lambda conn, params: _unwrap(c.set_glyph_script(params["value"])),
             p.M_GLYPH_SCRIPT_GET: lambda conn, params: _unwrap(c.get_glyph_script()),
             p.M_GLYPH_PLACEMENT_SET: lambda conn, params: _unwrap(c.set_glyph_placement(params["value"])),
@@ -252,6 +272,7 @@ class ControlServer(MpcListenerServer):
             p.M_MOCK_KEYCAPS: lambda conn, params: _unwrap(c.mock_keycaps(params.get("modifier", 0))),
             p.M_CRASH_GET: lambda conn, params: _unwrap(c.get_crash_record(params.get("which", 0))),
             p.M_CRASH_CLEAR: lambda conn, params: _unwrap(c.clear_crash_record()),
+            p.M_HW_IDS_GET: lambda conn, params: _unwrap(c.get_hw_ids()),
             p.M_REBOOT: lambda conn, params: _unwrap(c.reboot_keyboard()),
             p.M_BOOT_LOOP_START: lambda conn, params: _unwrap(
                 c.start_boot_loop(params.get("rounds", c.BOOT_LOOP_DEFAULT_ROUNDS))),

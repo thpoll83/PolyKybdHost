@@ -30,7 +30,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import brand_marks, icon_fetch, rect_mark  # noqa: E402
+import brand_marks, dcc_glyphs, icon_fetch, rect_mark  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+from polyhost.res.overlay_sources.tui import variant_glyphs  # noqa: E402
 
 FLUENT = {
     # --- shared ---
@@ -102,6 +105,21 @@ FLUENT = {
     "createmenu": "Add Circle",
 }
 
+# One image per action within an app (maintainer, 2026-11-15). Drawn 1-bit at
+# the 40x36 region by `../tui/variant_glyphs.py`: (function, base, argument).
+VARIANTS = {
+    # Claude desktop: the sidebar tabs, not the sessions
+    "sidebar_next.png": ("arrowed", "sidebar.png", "right"),
+    "sidebar_prev.png": ("arrowed", "sidebar.png", "left"),
+    # Claude desktop: Ctrl+K searches OR starts a session; Ctrl+Shift+K searches
+    "search_new.png": ("worded", "search.png", "new"),
+    # Claude desktop on macOS: the preview pane (Windows/Linux: browser pane)
+    "browser_preview.png": ("badged", "browser.png", "viewmode.png"),
+    # Claude desktop on macOS: reopen a closed session (Cmd+Z Undo draws the
+    # same Arrow Undo through the shared renderer)
+    "reopen_session.png": ("worded", "reopen.png", "close"),
+}
+
 BRAND = {"claude.png": "claude"}
 LETTERS = {"chatgpt.png": "GPT", "codex.png": "Cx", "copilot.png": "Co"}
 
@@ -119,6 +137,13 @@ def main() -> int:
     for fname, letters in LETTERS.items():
         rect_mark.ensure(out / fname, letters)
     n += icon_fetch.borrow(BORROWED, out)
+    for name, (fn, base, arg) in VARIANTS.items():
+        a = out / arg if arg.endswith(".png") else arg
+        dcc_glyphs.guarded(
+            out / name,
+            lambda p, f=getattr(variant_glyphs, fn), b=out / base, a=a: f(b, a, p),
+            f"variant_glyphs.{fn}({base}, {arg})")
+        n += 1
     print(f"Wrote {n} icons (+ {len(BRAND) + len(LETTERS)} program marks) to {out}")
     return 0
 

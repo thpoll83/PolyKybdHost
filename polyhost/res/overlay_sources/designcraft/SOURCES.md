@@ -79,8 +79,8 @@ come after that, and only when no text is being edited.
 The house style is Fluent. A glyph is copied byte-identically from the Illustrator overlay
 when the action is the same, so both apps share the cell.
 
-- **From `../illustrator/icons/` (43):** select, directselect, type, line, pen, pencil,
-  rectangle, ellipse, scissors, scale, rotate, gradient, eyedropper, hand, zoom, swap,
+- **From `../illustrator/icons/` (42):** select, directselect, type, line, pen, pencil,
+  rectangle, ellipse, scissors, scale, rotate, gradient, eyedropper, hand, swap,
   default, new, open, save, saveas, print, place, undo, copy, cut, paste, selectall, group,
   ungroup, lock, compound, tofront, toback, forward, backward, outlines, zoomin, zoomout,
   rulers, guides, prefs, transformagain. Each one's licence is recorded in Illustrator's
@@ -144,3 +144,22 @@ cut off the coloured tile as one solid shape, fitted into 40 x 40 (40 x 38), and
 interior pixels darker than luma 120 at that size are cut back out (eyes, mouth,
 lines). The spec places it 1:1 (`program_icon_region: [40, 38]`). The
 generator's thresholds turned the engraving into dither at keycap size.
+
+## One icon per action (2026-11-15)
+
+Two keys of one app share an image only when they do the same thing (maintainer,
+2026-11-15). These keys shared an image with another action. VectorCraft already draws
+each one, so they are byte-identical copies of `../vectorcraft/icons/` (licences in
+`../vectorcraft/SOURCES.md`):
+
+- `zoomtool` (Z, the Zoom tool: zoom-in glyph + Fluent `Cursor` badge; Cmd+= zooms in one step),
+- `space_hand` (Space held: the hand with four arrows, `../space_hint.py`),
+- `pasteinplace` (Cmd+Alt+Shift+V; Material Symbols `content_paste_go`),
+- `bringforward`, `sendbackward` (Cmd+] / Cmd+[, one step; Fluent `Position Forward` /
+  `Position Backward`; Cmd+Shift+] / [ keep To front / To back).
+
+Delete and Backspace both run `edit.clear` (`tools/src/select.rs:802`), so both are
+labelled Clear and share the image.
+
+Cmd+Alt+' (Baseline grid) draws Material Symbols `table_rows` (Apache-2.0): Fluent
+`Line Horizontal 3` rendered the same keycap cell as Justify (Cmd+Shift+J).

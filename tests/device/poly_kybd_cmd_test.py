@@ -224,6 +224,13 @@ class TestSimpleCommandPayloads(unittest.TestCase, LockCheckMixin):
         # keyboards/polykybd/hid_com.c case 40.
         self.assertEqual(self._payload('set_idle_timeout', 2)[:3], bytes([POLY, 40, 0x02]))
 
+    def test_get_hw_ids_sends_cmd_50_with_no_payload(self):
+        # Firmware hid_com.c hid_cmd_50 reads no request byte.
+        keeb, device = make_keeb(auto_ack=True)
+        keeb.get_hw_ids()
+        payload = device.payloads()[0]
+        self.assertEqual(payload, bytes([POLY, 50]) + bytes(len(payload) - 2))
+
     def test_get_idle_timeout_queries_with_the_sentinel(self):
         keeb, device = make_keeb(auto_ack=True)
         keeb.get_idle_timeout()

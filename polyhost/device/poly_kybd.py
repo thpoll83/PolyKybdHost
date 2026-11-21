@@ -175,6 +175,15 @@ KEY_GUIDE_MAX_STEPS = 4
 # Minimum firmware PROTOCOL_VERSION for the host tutorial (cmd 49): status text, the
 # spotlight, the reveal and key/layer conditions (services/tutorials).
 HOST_TUTORIAL_MIN_PROTOCOL = 35
+# Minimum firmware PROTOCOL_VERSION for the agent-key page bytes (cmd 45 op 1): the page
+# shown, the page count and the finished-elsewhere counter. Esc shows "Next 1/2", the
+# AI key ripples for agents on another page, and a page change rings nothing. A v35
+# firmware ignores the bytes, so they are sent only from v36.
+AGENT_PAGES_MIN_PROTOCOL = 36
+# Minimum firmware PROTOCOL_VERSION for cmd 50, the flash unique IDs of both halves.
+# The telemetry ping sends them hashed, to count keyboards rather than installs.
+HW_ID_MIN_PROTOCOL = 37
+HW_ID_LEN = 8
 AGENT_KEY_COUNT = 10
 # Card slots: the 10 number keys, then '-' (dictation) and '+' (next waiting agent).
 AGENT_CARD_COUNT = 12
@@ -225,10 +234,12 @@ FEATURE_MIN_PROTOCOL = {
     "tap_terms": TAP_TERMS_MIN_PROTOCOL,
     "auto_shift": AUTO_SHIFT_MIN_PROTOCOL,
     "agent_keys": AGENT_KEYS_MIN_PROTOCOL,
+    "agent_pages": AGENT_PAGES_MIN_PROTOCOL,
     "key_attention": KEY_ATTENTION_MIN_PROTOCOL,
     "combos": COMBOS_MIN_PROTOCOL,
     "key_guide": KEY_GUIDE_MIN_PROTOCOL,
     "host_tutorial": HOST_TUTORIAL_MIN_PROTOCOL,
+    "hw_id": HW_ID_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -245,6 +256,17 @@ def protocol_supports(protocol: int | None, feature: str) -> bool:
     client so the feature/min-protocol table lives in exactly one place.
     """
     return (protocol or 0) >= FEATURE_MIN_PROTOCOL[feature]
+
+
+def decode_hw_ids(reply: bytes) -> dict:
+    """Decode a cmd 50 reply into {"own": hex|None, "other": hex|None}."""
+    flags = reply[3]
+    own = reply[4:4 + HW_ID_LEN]
+    other = reply[4 + HW_ID_LEN:4 + 2 * HW_ID_LEN]
+    return {
+        "own": own.hex() if flags & 0x01 else None,
+        "other": other.hex() if flags & 0x02 else None,
+    }
 
 
 LAYER_NAME_MAX = 8   # firmware POLY_LAYER_NAME_MAX: longest name, excluding the NUL
@@ -348,6 +370,10 @@ class PolyKybd:
         self.fontpack_bundle_versions = {}
         # None until a GET_ID lands, and None forever on firmware with no 'G' block.
         self.state_generation = None
+        # {"own": hex|None, "other": hex|None} from the last cmd 50 (get_hw_ids), or
+        # None before one. Kept after a disconnect: the telemetry ping reports the
+        # keyboard this install saw last.
+        self.hw_ids = None
         # hid_fontpack.ANIM_* from the GET_ID 'A' block (v28); None on older firmware.
         self.anim_state = None
 
@@ -1234,15 +1260,33 @@ class PolyKybd:
             payload += [slot & 0xFF, (slot >> 8) & 0xFF]
         return tuple(payload)
 
-    def ai_set_keys(self, states, flags: int, slots) -> tuple[bool, str]:
+    @staticmethod
+    def _ai_page_bytes(page) -> tuple[int, int, int]:
+        """(page shown, page count, finished-elsewhere counter), each one byte. The
+        firmware NACKs a page not below its count, and a page without a count."""
+        shown, count, done_seq = (int(v) for v in page)
+        if not (0 <= count <= 0xFF and 0 <= done_seq <= 0xFF):
+            raise ValueError(f"agent page bytes out of range: {page}")
+        if not (shown == 0 if count == 0 else 0 <= shown < count):
+            raise ValueError(f"agent page {shown} not below the page count {count}")
+        return shown, count, done_seq
+
+    def ai_set_keys(self, states, flags: int, slots, page=None) -> tuple[bool, str]:
         """cmd 45 op 1: the state of each number key, the AGENT_FLAG_* byte and the
         12 card slots (number keys, then '-' and '+'). CLOSED ranges: an unknown state
         or flag is refused here, and the firmware NACKs it too. ⚠️ The ACK marker is
-        checked: expect() also matches a NACK."""
+        checked: expect() also matches a NACK.
+
+        `page` is (page shown, page count, finished-elsewhere counter), sent from
+        protocol v36 (agent_pages); an older keyboard gets the v35 report."""
         if (refusal := self._agent_keys_refusal()):
             return False, refusal
         try:
             payload = self._ai_keys_payload(states, flags, slots)
+            if page is not None:
+                tail = self._ai_page_bytes(page)
+                if self.supports("agent_pages"):
+                    payload += tail
         except ValueError as e:
             return False, str(e)
         result, reply = self.hid.send_and_read_validate(
@@ -1434,6 +1478,29 @@ class PolyKybd:
         from polyhost.services.crash_report import decode_record
         rec = decode_record(bytes(reply[3:]), "slave" if which == 1 else "master")
         return True, (rec.to_dict() if rec else None)
+
+    def get_hw_ids(self) -> tuple[bool, Any]:
+        """Read the flash unique IDs of both halves (cmd 50, v37+).
+
+        Returns (True, {"own": hex|None, "other": hex|None}): "own" is the half the
+        host talks to, "other" the half behind the split link. A half without a
+        usable ID (unplugged, older slave firmware) is None. The result is also kept
+        in ``self.hw_ids`` for the telemetry snapshot, which does no device I/O.
+        (False, message) when the firmware is too old or did not answer."""
+        if not self.supports("hw_id"):
+            return False, (
+                f"Firmware protocol too old for the hardware ID command "
+                f"(need v{HW_ID_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+        try:
+            result, reply = self.hid.send_and_read_validate(
+                compose_cmd(Cmd.HW_ID), 200, expect(Cmd.HW_ID))
+        except Exception as e:  # noqa: BLE001 — surfaced as a plain failure
+            return False, f"Hardware ID read failed: {e}"
+        if not result or len(reply) < 4 + 2 * HW_ID_LEN or reply[2:3] != b'.':
+            return False, "Hardware ID read was refused by the keyboard."
+        ids = decode_hw_ids(bytes(reply))
+        self.hw_ids = ids
+        return True, ids
 
     def clear_crash_record(self) -> tuple[bool, Any]:
         """Erase the keyboard's crash archive (cmd 39 sub-op 2)."""

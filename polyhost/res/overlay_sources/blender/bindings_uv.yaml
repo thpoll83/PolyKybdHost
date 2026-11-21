@@ -41,32 +41,32 @@ bindings:
 - key: '4'
   mods: []
   label: Island select
-  icon: island.png
+  icon: island_select.png
   source: 'UV Editor: wm.context_toggle(data_path=tool_settings.use_uv_select_island)'
 - key: '5'
   mods: []
-  label: Render slot
-  icon: render_slot.png
+  label: Render slot 5
+  icon: render_slot_5.png
   source: 'Image: wm.context_set_int(data_path=space_data.image.render_slots.active_index,value=4)'
 - key: '6'
   mods: []
-  label: Render slot
-  icon: render_slot.png
+  label: Render slot 6
+  icon: render_slot_6.png
   source: 'Image: wm.context_set_int(data_path=space_data.image.render_slots.active_index,value=5)'
 - key: '7'
   mods: []
-  label: Render slot
-  icon: render_slot.png
+  label: Render slot 7
+  icon: render_slot_7.png
   source: 'Image: wm.context_set_int(data_path=space_data.image.render_slots.active_index,value=6)'
 - key: '8'
   mods: []
-  label: Render slot
-  icon: render_slot.png
+  label: Render slot 8
+  icon: render_slot_8.png
   source: 'Image: wm.context_set_int(data_path=space_data.image.render_slots.active_index,value=7)'
 - key: '9'
   mods: []
-  label: Render slot
-  icon: render_slot.png
+  label: Render slot 9
+  icon: render_slot_9.png
   source: 'Image: wm.context_set_int(data_path=space_data.image.render_slots.active_index,value=8)'
 - key: A
   mods: []
@@ -128,7 +128,7 @@ bindings:
 - key: J
   mods: []
   label: Next render slot
-  icon: render_slot.png
+  icon: render_slot_next.png
   source: 'Image Generic: image.cycle_render_slot'
 - key: KC_APPLICATION
   mods: []
@@ -183,7 +183,7 @@ bindings:
 - key: L
   mods: []
   label: Select linked (cursor)
-  icon: select_linked.png
+  icon: linked_pick.png
   source: 'UV Editor: uv.select_linked_pick(deselect=False,extend=True)'
 - key: M
   mods: []
@@ -227,7 +227,7 @@ bindings:
   source: 'Image Generic: wm.context_toggle(data_path=space_data.show_region_toolbar)'
 - key: U
   mods: []
-  label: Unwrap
+  label: UV unwrap
   icon: uv_unwrap.png
   source: 'UV Editor: wm.call_menu(name=IMAGE_MT_uvs_unwrap)'
 - key: V
@@ -238,12 +238,12 @@ bindings:
 - key: W
   mods: []
   label: Select tool
-  icon: select_box.png
+  icon: select_tool.png
   source: 'UV Editor: wm.tool_set_by_id(cycle=True,name=builtin.select_box)'
 - key: Y
   mods: []
   label: Select split
-  icon: split.png
+  icon: select_split.png
   source: 'UV Editor: uv.select_split'
 - key: A
   mods:
@@ -273,7 +273,7 @@ bindings:
   mods:
   - ALT
   label: Prev render slot
-  icon: render_slot.png
+  icon: render_slot_prev.png
   source: 'Image Generic: image.cycle_render_slot(reverse=True)'
 - key: M
   mods:
@@ -320,25 +320,25 @@ bindings:
   mods:
   - ALT
   label: Fallback tool pie
-  icon: tools.png
+  icon: tool_pie.png
   source: 'Window: wm.toolbar_fallback_pie'
 - key: '1'
   mods:
   - SHIFT
   label: + vertex select
-  icon: sel_vert.png
+  icon: sel_vert_add.png
   source: 'UV Editor: mesh.select_mode(type=VERT,use_extend=True)'
 - key: '2'
   mods:
   - SHIFT
   label: + edge select
-  icon: sel_edge.png
+  icon: sel_edge_add.png
   source: 'UV Editor: mesh.select_mode(type=EDGE,use_extend=True)'
 - key: '3'
   mods:
   - SHIFT
   label: + face select
-  icon: sel_face.png
+  icon: sel_face_add.png
   source: 'UV Editor: mesh.select_mode(type=FACE,use_extend=True)'
 - key: B
   mods:
@@ -350,7 +350,7 @@ bindings:
   mods:
   - SHIFT
   label: Center on cursor
-  icon: frame_cursor.png
+  icon: cursor_center_2d.png
   source: 'Image: image.view_cursor_center'
 - key: F1
   mods:
@@ -470,7 +470,7 @@ bindings:
   mods:
   - SHIFT
   label: Deselect linked
-  icon: deselect.png
+  icon: deselect_linked.png
   source: 'UV Editor: uv.select_linked_pick(deselect=True)'
 - key: O
   mods:
@@ -482,7 +482,7 @@ bindings:
   mods:
   - SHIFT
   label: Select pinned
-  icon: pin.png
+  icon: select_pinned.png
   source: 'UV Editor: uv.select_pinned'
 - key: R
   mods:
@@ -500,31 +500,31 @@ bindings:
   mods:
   - SHIFT
   label: Align / mirror
-  icon: align.png
+  icon: align_uv_menu.png
   source: 'UV Editor: wm.call_menu(name=IMAGE_MT_uvs_align)'
 - key: '1'
   mods:
   - CTRL
   label: Expand to vertex
-  icon: sel_vert.png
+  icon: sel_vert_exp.png
   source: 'UV Editor: mesh.select_mode(type=VERT,use_expand=True)'
 - key: '2'
   mods:
   - CTRL
   label: Expand to edge
-  icon: sel_edge.png
+  icon: sel_edge_exp.png
   source: 'UV Editor: mesh.select_mode(type=EDGE,use_expand=True)'
 - key: '3'
   mods:
   - CTRL
   label: Expand to face
-  icon: sel_face.png
+  icon: sel_face_exp.png
   source: 'UV Editor: mesh.select_mode(type=FACE,use_expand=True)'
 - key: B
   mods:
   - CTRL
   label: Custom region
-  icon: render_region.png
+  icon: region_custom.png
   source: 'UV Editor: uv.custom_region_set'
 - key: C
   mods:
@@ -607,7 +607,7 @@ bindings:
   mods:
   - CTRL
   label: Select mode
-  icon: sel_face.png
+  icon: sel_mode_menu.png
   source: 'UV Editor: wm.call_menu(name=IMAGE_MT_uvs_select_mode)'
 - key: L
   mods:
@@ -676,7 +676,7 @@ bindings:
   - CTRL
   - ALT
   label: Use custom region
-  icon: render_region.png
+  icon: region_custom_use.png
   source: 'UV Editor: wm.context_toggle(data_path=tool_settings.use_uv_custom_region)'
 - key: F12
   mods:
@@ -710,21 +710,21 @@ bindings:
   - CTRL
   - SHIFT
   label: + expand vertex
-  icon: sel_vert.png
+  icon: sel_vert_add_exp.png
   source: 'UV Editor: mesh.select_mode(type=VERT,use_expand=True,use_extend=True)'
 - key: '2'
   mods:
   - CTRL
   - SHIFT
   label: + expand edge
-  icon: sel_edge.png
+  icon: sel_edge_add_exp.png
   source: 'UV Editor: mesh.select_mode(type=EDGE,use_expand=True,use_extend=True)'
 - key: '3'
   mods:
   - CTRL
   - SHIFT
   label: + expand face
-  icon: sel_face.png
+  icon: sel_face_add_exp.png
   source: 'UV Editor: mesh.select_mode(type=FACE,use_expand=True,use_extend=True)'
 - key: KC_SPACE
   mods:
@@ -738,7 +738,7 @@ bindings:
   - CTRL
   - SHIFT
   label: Snap target
-  icon: snap_options.png
+  icon: snap_target.png
   source: 'UV Editor: wm.context_menu_enum(data_path=tool_settings.snap_uv_element)'
 - key: O
   mods:
@@ -771,7 +771,7 @@ bindings:
   mods:
   - GUI
   label: Expand to vertex
-  icon: sel_vert.png
+  icon: sel_vert_exp.png
   source: 'UV Editor: mesh.select_mode(type=VERT,use_expand=True)'
   only:
   - macos
@@ -779,7 +779,7 @@ bindings:
   mods:
   - GUI
   label: Expand to edge
-  icon: sel_edge.png
+  icon: sel_edge_exp.png
   source: 'UV Editor: mesh.select_mode(type=EDGE,use_expand=True)'
   only:
   - macos
@@ -787,7 +787,7 @@ bindings:
   mods:
   - GUI
   label: Expand to face
-  icon: sel_face.png
+  icon: sel_face_exp.png
   source: 'UV Editor: mesh.select_mode(type=FACE,use_expand=True)'
   only:
   - macos
@@ -795,7 +795,7 @@ bindings:
   mods:
   - GUI
   label: Custom region
-  icon: render_region.png
+  icon: region_custom.png
   source: 'UV Editor: uv.custom_region_set'
   only:
   - macos
@@ -949,7 +949,7 @@ bindings:
   - ALT
   - GUI
   label: Use custom region
-  icon: render_region.png
+  icon: region_custom_use.png
   source: 'UV Editor: wm.context_toggle(data_path=tool_settings.use_uv_custom_region)'
   only:
   - macos
@@ -984,7 +984,7 @@ bindings:
   - SHIFT
   - GUI
   label: + expand vertex
-  icon: sel_vert.png
+  icon: sel_vert_add_exp.png
   source: 'UV Editor: mesh.select_mode(type=VERT,use_expand=True,use_extend=True)'
   only:
   - macos
@@ -993,7 +993,7 @@ bindings:
   - SHIFT
   - GUI
   label: + expand edge
-  icon: sel_edge.png
+  icon: sel_edge_add_exp.png
   source: 'UV Editor: mesh.select_mode(type=EDGE,use_expand=True,use_extend=True)'
   only:
   - macos
@@ -1002,7 +1002,7 @@ bindings:
   - SHIFT
   - GUI
   label: + expand face
-  icon: sel_face.png
+  icon: sel_face_add_exp.png
   source: 'UV Editor: mesh.select_mode(type=FACE,use_expand=True,use_extend=True)'
   only:
   - macos
@@ -1020,7 +1020,7 @@ bindings:
   - SHIFT
   - GUI
   label: Snap target
-  icon: snap_options.png
+  icon: snap_target.png
   source: 'UV Editor: wm.context_menu_enum(data_path=tool_settings.snap_uv_element)'
   only:
   - macos

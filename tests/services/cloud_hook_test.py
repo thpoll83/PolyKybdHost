@@ -165,6 +165,34 @@ class HookTest(unittest.TestCase):
         self.assertEqual((report["title"], report["cwd"]), ("", "user"))
         self.assertNotIn("secret", json.dumps(report))
 
+    def test_anonymous_sends_no_title_prompt_or_folder(self):
+        self.env[ch.ANONYMOUS_ENV] = "1"
+        with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False,
+                                         encoding="utf-8") as fh:
+            fh.write(json.dumps({"type": "ai-title", "aiTitle": "Secret merger"}) + "\n")
+        self.addCleanup(os.remove, fh.name)
+        with mock.patch.object(ch, "transcript_title") as read:
+            self.hook("UserPromptSubmit", transcript_path=fh.name,
+                      cwd="/home/user/secret-repo", prompt="secret plan")
+        read.assert_not_called()                     # the transcript is not even read
+        report = json.loads(ch.open_sealed(self.chan["key"], self.sent[0][1]))
+        sid = self.env["CLAUDE_CODE_REMOTE_SESSION_ID"]
+        self.assertEqual({k: v for k, v in report.items() if k != "ts"},
+                         {"state": "working", "title": "", "cwd": "",
+                          "url": "https://claude.ai/code/session_" + sid[4:]})
+
+    def test_anonymous_does_not_resend_a_title_sent_before_it_was_on(self):
+        path = self._cloud_transcript()
+        self.hook("UserPromptSubmit", transcript_path=path, prompt="Secret merger plan")
+        self.env[ch.ANONYMOUS_ENV] = "1"
+        self.hook("Stop", transcript_path=path)
+        self.assertEqual(self.titles(), ["Secret merger plan", ""])
+
+    def test_anonymous_values(self):
+        for value, expected in (("1", True), ("yes", True), ("0", False), ("", False)):
+            self.assertEqual(ch.anonymous({ch.ANONYMOUS_ENV: value}), expected, value)
+        self.assertFalse(ch.anonymous({}))
+
     def test_prompt_words(self):
         self.assertEqual(ch.prompt_words("  short   prompt "), "short prompt")
         self.assertEqual(ch.prompt_words("x" * 50), "x" * 40 + "…")

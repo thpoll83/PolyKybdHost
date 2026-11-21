@@ -163,7 +163,11 @@ bindings:
 - key: Q
   mods:
   - SHIFT
-  icon: orient.png
+  icon: orient_plate.png
+  region:
+  - 40
+  - 40
+  anchor: right
   label: Auto orient plate
   source: OrientPlate
 - key: '='

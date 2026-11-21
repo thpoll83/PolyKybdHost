@@ -147,9 +147,18 @@ class DescriptionTest(unittest.TestCase):
         self.assertEqual(set(DEFAULT_SETTINGS) - set(SETTING_DESCRIPTIONS), set())
 
     def test_no_description_for_a_setting_that_does_not_exist(self):
+        # The kbd_ keys are stored on the keyboard, not in settings.yaml.
+        from polyhost.gui import keyboard_settings
         from polyhost.gui.settings_dialog import SETTING_DESCRIPTIONS
         from polyhost.settings import DEFAULT_SETTINGS
-        self.assertEqual(set(SETTING_DESCRIPTIONS) - set(DEFAULT_SETTINGS), set())
+        self.assertEqual(set(SETTING_DESCRIPTIONS) - set(DEFAULT_SETTINGS)
+                         - set(keyboard_settings.KEYS), set())
+
+    def test_every_keyboard_row_has_a_label_and_a_description(self):
+        from polyhost.gui import keyboard_settings
+        from polyhost.gui.settings_dialog import SETTING_DESCRIPTIONS, SETTING_LABELS
+        self.assertEqual(set(keyboard_settings.KEYS) - set(SETTING_LABELS), set())
+        self.assertEqual(set(keyboard_settings.KEYS) - set(SETTING_DESCRIPTIONS), set())
 
     def test_the_tooltip_is_escaped_rich_text(self):
         from unittest import mock
@@ -337,6 +346,57 @@ class SectionLayoutTest(unittest.TestCase):
                 self.assertIn(f'msgid "{text}"', pot)
 
 
+class SectionColorTest(unittest.TestCase):
+    """Each section's band, tint, sidebar stripe and switches share one colour
+    (gui/section_colors.py)."""
+
+    @classmethod
+    def setUpClass(cls):
+        from PyQt5.QtWidgets import QApplication
+        cls.app = QApplication.instance() or QApplication([])
+
+    def test_every_section_but_developer_has_its_own_hue(self):
+        from polyhost.gui import section_colors
+        from polyhost.gui.settings_dialog import SECTIONS
+        ids = [sid for sid, _t, _g in SECTIONS if sid != "developer"]
+        slots = [section_colors.SECTION_SLOTS.get(sid) for sid in ids]
+        self.assertNotIn(None, slots)
+        self.assertEqual(len(set(slots)), len(slots))      # no two share a hue
+
+    def test_sections_take_the_slots_in_sidebar_order(self):
+        # The hue order was validated for neighbours (CVD distance); a section
+        # moved in the sidebar must take the slot of its new place.
+        from polyhost.gui import section_colors
+        from polyhost.gui.settings_dialog import SECTIONS
+        names = [n for n, _l, _d in section_colors.SLOTS]
+        slots = [section_colors.SECTION_SLOTS[sid] for sid, _t, _g in SECTIONS
+                 if sid in section_colors.SECTION_SLOTS]
+        self.assertEqual(slots, names[:len(slots)])
+
+    def test_contrast_against_the_window_in_both_themes(self):
+        # 3:1 for every slot, except the listed exceptions (light-mode yellow,
+        # which turns olive when darker); the band title stays readable on all.
+        from polyhost.gui import section_colors as sc
+        for name, light, dark in sc.SLOTS + (sc.NEUTRAL,):
+            for theme, color, window in (("light", light, "#f0f0f0"), ("dark", dark, "#505050")):
+                with self.subTest(name=name, theme=theme):
+                    floor = sc.MIN_CONTRAST_EXCEPTIONS.get((name, theme), sc.MIN_CONTRAST)
+                    self.assertGreaterEqual(sc.contrast(color, window), floor)
+                    self.assertGreaterEqual(sc.contrast(sc.title_ink(color), color), 4.0)
+
+    def test_switches_take_their_section_colour(self):
+        from PyQt5.QtGui import QColor
+        from polyhost.gui import section_colors as sc
+        from polyhost.gui.settings_dialog import SettingsDialog, ToggleSwitch, is_dark
+        from polyhost.settings import DEFAULT_SETTINGS
+        dlg = SettingsDialog()
+        dlg.setup(dict(DEFAULT_SETTINGS))
+        switch = dlg.edit_widgets["brightness_set_daylight_dependent"]
+        self.assertIsInstance(switch, ToggleSwitch)
+        self.assertEqual(switch.accent, QColor(sc.section_color("brightness", is_dark(dlg.palette()))))
+        dlg.close()
+
+
 class SearchMatchTest(unittest.TestCase):
 
     def _match(self, query, text):
@@ -366,6 +426,12 @@ class DialogBehaviourTest(unittest.TestCase):
         from PyQt5.QtWidgets import QApplication
         cls.app = QApplication.instance() or QApplication([])
 
+    def setUp(self):
+        from polyhost.gui.settings_dialog import SettingsDialog
+        # The Advanced switches are remembered for the process; every test
+        # starts with all of them off.
+        SettingsDialog.advanced_sections = set()
+
     def _dialog(self, settings=None, developer_mode=False):
         from PyQt5.QtCore import QSize
         from polyhost.gui.settings_dialog import SettingsDialog
@@ -392,8 +458,53 @@ class DialogBehaviourTest(unittest.TestCase):
         QApplication.sendEvent(widget, event)
         self.app.processEvents()
 
+    def _section(self, dlg, section_id):
+        return next(s for s in dlg._sections if s.section_id == section_id)
+
+    def test_advanced_rows_hide_until_their_section_switch_is_on(self):
+        dlg = self._dialog()
+        brightness = self._section(dlg, "brightness")
+        rows = dlg._rows
+        self.assertFalse(rows["irradiance_min"].isVisible())
+        self.assertTrue(rows["brightness_set_daylight_dependent"].isVisible())
+        # The Daylight curve group holds only advanced rows: it hides whole.
+        self.assertFalse(rows["irradiance_min"].parentWidget().parentWidget().isVisible())
+        brightness.advanced_switch.setChecked(True)
+        self.app.processEvents()
+        self.assertTrue(rows["irradiance_min"].isVisible())
+        # Only that section: Connections keeps its advanced rows hidden.
+        self.assertFalse(rows["hid_reconnect_retries"].isVisible())
+
+    def test_a_search_finds_advanced_rows_with_the_switch_off(self):
+        dlg = self._dialog()
+        dlg.search.setText("sunlight scale")
+        self.app.processEvents()
+        self.assertTrue(dlg._rows["irradiance_prescaler"].isVisible())
+        dlg.search.clear()
+        self.app.processEvents()
+        self.assertFalse(dlg._rows["irradiance_prescaler"].isVisible())
+
+    def test_the_switch_is_remembered_for_the_next_dialog(self):
+        dlg = self._dialog()
+        self._section(dlg, "privacy").advanced_switch.setChecked(True)
+        again = self._dialog()
+        self.assertTrue(self._section(again, "privacy").advanced_switch.isChecked())
+        self.assertTrue(again._rows["telemetry_endpoint"].isVisible())
+        self.assertFalse(self._section(again, "brightness").advanced_switch.isChecked())
+
+    def test_a_section_without_advanced_rows_has_no_switch(self):
+        from polyhost.gui.settings_dialog import ADVANCED_SETTINGS
+        from polyhost.settings import DEFAULT_SETTINGS
+        dlg = self._dialog()
+        self.assertFalse(hasattr(self._section(dlg, "general"), "advanced_switch"))
+        # Every advanced key names a real setting: a typo would hide nothing.
+        from polyhost.gui import keyboard_settings as kbd
+        self.assertEqual(ADVANCED_SETTINGS - set(DEFAULT_SETTINGS) - set(kbd.KEYS), set())
+
     def test_the_wheel_over_an_unfocused_field_scrolls_the_page(self):
         """Scrolling past a number or a list must not change it."""
+        from polyhost.gui.settings_dialog import SettingsDialog
+        SettingsDialog.advanced_sections = {"brightness", "connections"}
         dlg = self._dialog()
         bar = dlg.scroll.verticalScrollBar()
         for key in ("irradiance_min", "hid_reconnect_retries", "problem_scan_level"):

@@ -41,8 +41,12 @@ from PIL import Image, ImageDraw
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import dcc_glyphs  # noqa: E402
 import icon_fetch  # noqa: E402
 import program_marks  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+from polyhost.res.overlay_sources.tui import variant_glyphs  # noqa: E402
 
 FLUENT = {
     # movement
@@ -188,6 +192,13 @@ def main() -> int:
             fn(p)
             print(f"  {name}.png  <- custom (drawn: {what})")
         n += 1
+
+    # One image per action (maintainer, 2026-11-15): Alt+T transposes WORDS,
+    # Ctrl+T characters, so the word variant has "word" under the glyph.
+    dcc_glyphs.guarded(out / "transpose_word.png",
+                       lambda p: variant_glyphs.worded(out / "transpose.png", "word", p),
+                       "variant_glyphs.worded(transpose.png, word)")
+    n += 1
 
     program_marks.own_icon(out / "progmark.png", PUTTY_ICO, 32,
                            credit="github/putty windows/putty.ico")

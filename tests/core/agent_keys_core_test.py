@@ -16,7 +16,8 @@ class AgentKeysCoreTest(unittest.TestCase):
         values = {"dev_mock_primary": True, "dev_mock_protocol": protocol,
                   "unicode_send_composition_mode": True,
                   "brightness_set_daylight_dependent": False,
-                  "agents_enabled": True, "agents_title_scan": False, **overrides}
+                  "agents_enabled": True, "agents_title_scan": False,
+                  "agents_download_fonts": False, **overrides}
 
         def get(settings, name):
             return values[name] if name in values else real_get(settings, name)
@@ -25,6 +26,8 @@ class AgentKeysCoreTest(unittest.TestCase):
                   mock.patch.object(PolySettings, "save", lambda *a, **k: True)):
             p.start()
             self.addCleanup(p.stop)
+        from polyhost.services.agents import card
+        self.addCleanup(setattr, card, "MISSING_FONT_HOOK", card.MISSING_FONT_HOOK)
         core = PolyCore(mock.MagicMock(), start_worker=False)
         core.worker.start()
         self.addCleanup(core.shutdown)
@@ -35,6 +38,48 @@ class AgentKeysCoreTest(unittest.TestCase):
 
     def _pass(self, core):
         core.worker.run_sync("agents", core._agents_periodic, timeout=30)
+
+    def test_a_missing_card_font_is_downloaded_only_when_allowed(self):
+        from polyhost.services import font_downloader
+        from polyhost.services.agents import card
+        entry = next(e for e in card.FALLBACK_FONTS if e.name == "Noto Sans Hebrew")
+        fetched = []
+        done = threading.Event()
+
+        def download(spec, timeout=60):
+            fetched.append((spec.name, spec.url))
+            return "/x"
+        with mock.patch.object(font_downloader, "download_font", download), \
+                mock.patch.object(card, "fonts_changed", done.set):
+            core = self._core(31)                                # downloads off
+            self.assertEqual(card.MISSING_FONT_HOOK, core._download_card_font)
+            self.assertFalse(core._download_card_font(entry))
+            core = self._core(31, agents_download_fonts=True, agents_enabled=False)
+            self.assertFalse(core._download_card_font(entry))  # agent keys off
+            core = self._core(31, agents_download_fonts=True)
+            self.assertTrue(core._download_card_font(entry))
+            self.assertTrue(done.wait(5))
+        self.assertEqual(fetched[0][0], "Noto Sans Hebrew")
+        self.assertTrue(fetched[0][1].startswith("https://"))
+
+    def test_a_failed_card_font_download_is_logged_and_changes_nothing(self):
+        from polyhost.services import font_downloader
+        from polyhost.services.agents import card
+        entry = next(e for e in card.FALLBACK_FONTS if e.url)
+        before = card.fonts_version()
+        failed = threading.Event()
+        core = self._core(31, agents_download_fonts=True)
+        warn = core.log.warning
+
+        def logged(*a, **k):
+            warn(*a, **k)
+            failed.set()
+        with mock.patch.object(font_downloader, "download_font",
+                               mock.Mock(side_effect=font_downloader.DownloadError("short"))), \
+                mock.patch.object(core.log, "warning", logged):
+            self.assertTrue(core._download_card_font(entry))
+            self.assertTrue(failed.wait(5))
+        self.assertEqual(card.fonts_version(), before)
 
     def test_push_and_press(self):
         core = self._core(31)
@@ -47,7 +92,7 @@ class AgentKeysCoreTest(unittest.TestCase):
         self._pass(core)
         self.assertEqual(fw.ai_states[0], AgentState.WAITING)
         cache = core.device_mgr.primary.cache
-        card = cache.holds(("agentcard", 0))
+        card = cache.holds(("agentcard", "claude-code", "s1"))      # one card per agent
         self.assertEqual(fw.ai_slots[0], card)
         self.assertEqual(len(fw.ai_cards[card]), 360)
         self.assertTrue(any(fw.ai_cards[card]))
@@ -110,6 +155,82 @@ class AgentKeysCoreTest(unittest.TestCase):
         self.assertFalse(os.path.exists(path))
         self.assertEqual([a.session_id for a in core.agents.agents()], ["local"])
         self.assertIsNone(core._cloud_relay)
+
+    def test_a_second_computer_joins_with_the_code_and_leaves_alone(self):
+        import os
+        import tempfile
+        from polyhost.server import protocol
+        from polyhost.services.agents import cloud_relay
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        paths = {"now": os.path.join(tmp.name, "a.json")}
+        calls = []
+        known = set()
+
+        def http(url, method, rel, token=None, body=None):
+            calls.append((method, rel))
+            if method == "POST":
+                known.add(body["channel"])
+                return 201, {"ok": True}
+            channel = rel.split("/")[3]
+            return (200, {"entries": []}) if channel in known else (404, {"error": "no"})
+        for p in (mock.patch.object(protocol, "cloud_relay_path", lambda: paths["now"]),
+                  mock.patch.object(cloud_relay, "http_call", http),
+                  mock.patch.object(cloud_relay.RelayClient, "start", lambda client: None)):
+            p.start()
+            self.addCleanup(p.stop)
+        first = self._core(31)
+        self.assertFalse(first.agents_cloud_join_code()[0])        # no channel yet
+        first.agents_cloud_connect()
+        ok, code = first.agents_cloud_join_code()
+        self.assertTrue(ok)
+        self.assertTrue(code.startswith(cloud_relay.JOIN_PREFIX))
+        first_config = first.agents_cloud_status()["setup"]["config"]   # before the switch
+
+        paths["now"] = os.path.join(tmp.name, "b.json")             # the other computer
+        second = self._core(31)
+        self.assertEqual(second.agents_cloud_join("not a code")[0], False)
+        ok, status = second.agents_cloud_join(code)
+        self.assertTrue(ok, status)
+        self.assertEqual(calls[-1][0], "GET")                       # checked on the relay
+        self.assertEqual(status["setup"]["config"], first_config)
+        self.assertIsNotNone(second._cloud_relay)
+
+        # Leaving keeps the channel: no request, the first computer's file stays.
+        second.agents.report("claude-code", "c" * 32, "working", machine="cloud")
+        before = len(calls)
+        ok, result = second.agents_cloud_leave()
+        self.assertTrue(ok)
+        self.assertEqual(result, "left the channel")
+        self.assertEqual(len(calls), before)
+        self.assertFalse(os.path.exists(paths["now"]))
+        self.assertTrue(os.path.exists(os.path.join(tmp.name, "a.json")))
+        self.assertEqual(second.agents.agents(), [])
+        self.assertIsNone(second._cloud_relay)
+
+        # A computer with a channel of its own joins another only with replace.
+        second.agents_cloud_connect()
+        ok, reason = second.agents_cloud_join(code)
+        self.assertFalse(ok)
+        self.assertIn("leave it first", reason)
+        self.assertTrue(second.agents_cloud_join(code, replace=True)[0])
+        self.assertEqual(cloud_relay.load_channel(paths["now"])["channel"],
+                         cloud_relay.parse_join_code(code)["channel"])
+
+        # The same channel id on another relay is another channel.
+        moved = dict(cloud_relay.parse_join_code(code), url="https://other.example")
+        known.add(moved["channel"])
+        ok, reason = second.agents_cloud_join(cloud_relay.join_code(moved))
+        self.assertFalse(ok)
+        self.assertIn("leave it first", reason)
+
+        # Leaving keeps the connection when the file cannot be removed.
+        with mock.patch.object(cloud_relay, "remove_channel_file",
+                               mock.Mock(side_effect=PermissionError("locked"))):
+            ok, reason = second.agents_cloud_leave()
+        self.assertFalse(ok)
+        self.assertIn("locked", reason)
+        self.assertIsNotNone(second._cloud_relay)
 
     def test_removing_a_cloud_agent_removes_it_on_the_relay(self):
         from polyhost.services.agents import cloud_relay

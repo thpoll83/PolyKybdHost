@@ -85,7 +85,7 @@ bindings:
   - { key: "8", mods: [GUI], icon: mentionsall.png, label: "Mentions to all", only: [macos] }
   - { key: F, mods: [ALT, SHIFT], icon: flagged.png, label: "Flagged", except: [macos] }
   - { key: "9", mods: [GUI], icon: flagged.png, label: "Flagged", only: [macos] }
-  - { key: M, mods: [CTRL, GUI], icon: spacemessages.png, label: "Messages tab", only: [macos] }
+  - { key: M, mods: [CTRL, GUI], icon: spacemessages_tab.png, label: "Messages tab", only: [macos] }
   - { key: C, mods: [CTRL, GUI], icon: spacecontent.png, label: "Content tab", only: [macos] }
   - { key: P, mods: [ALT, SHIFT, GUI], icon: peopletab.png, label: "People tab", only: [macos] }
   - { key: L, mods: [SHIFT, GUI], icon: linkstab.png, label: "Links tab", only: [macos] }

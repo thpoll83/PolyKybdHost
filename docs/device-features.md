@@ -14,8 +14,8 @@ and relative links were adjusted to suit a standalone file.
   range (`GlyphPlacement`, NACKed past 2). `PolyKybd.get/set_glyph_placement` behind
   `GLYPH_PLACEMENT_MIN_PROTOCOL=26`, `PolyCore`, `M_GLYPH_PLACEMENT_GET/SET`,
   `RemoteCore`, `polyctl glyph-script [script] --placement centre|top-left`, and the
-  two radio entries at the bottom of the tray's "Keycap Script" submenu, greyed out
-  when the keyboard does not answer the read (older firmware).
+  the "Script placement" row in Settings → Keyboard, disabled when the keyboard does
+  not answer the read (older firmware).
 - **Glyph-script override (protocol 9+; expanded set at v10)**: HID cmd 30
   (`GLYPH_SCRIPT`) selects a glyph-script *override* of the keycap language legends —
   `GlyphScript.STANDARD` (0, normal) or one of the fantasy/retro scripts from the
@@ -25,9 +25,9 @@ and relative links were adjusted to suit a standalone file.
   BRAILLE=10`. Wired like idle-style (cmd 28): `PolyKybd.get/set_glyph_script` +
   `GLYPH_SCRIPT_MIN_PROTOCOL=9`, `PolyCore.get/set_glyph_script`, `M_GLYPH_SCRIPT_GET/SET`,
   `RemoteCore`, and `polyctl glyph-script [standard|tengwar|runes|…|braille]` (choices
-  derived from the enum). GUI: the tray **"Keycap Script"** submenu (radio, built from
-  the enum via `GLYPH_SCRIPT_LABELS` in `host.py`); its first entry, Standard, is the
-  reset. (A settings-dialog reset button duplicated it and was removed 2026-10-16.) Firmware persists the choice; the glyphs need
+  derived from the enum). GUI: the **"Keycap Script"** tiles in Settings → Keyboard (built
+  via `GLYPH_SCRIPT_LABELS` in `gui/keyboard_settings.py`); the first tile, Standard, is
+  the reset. (A settings-dialog reset button duplicated it and was removed 2026-10-16.) Firmware persists the choice; the glyphs need
   the `fantasy` bundle flashed (auto on connect; regrown to `content_version 2` for the
   expansion — reshipped `polyhost/res/fontpack/fantasy.plyf` + `bundles.json`).
   **Open-ended index (v10+):** the firmware accepts ANY glyph-script byte `0..0xFE` and
@@ -82,8 +82,8 @@ and relative links were adjusted to suit a standalone file.
   legend is drawn — `GlyphSize.SMALL` (the original face), `MEDIUM`, `LARGE`. Wired
   exactly like the glyph script: `PolyKybd.get/set_glyph_size` behind a
   `"glyph_size"` `FEATURE_MIN_PROTOCOL` entry, `PolyCore`, `M_GLYPH_SIZE_GET/SET`,
-  the `RemoteCore` mirror, `polyctl glyph-size`, and a **"Keycap Size"** tray
-  submenu gated on `self.supports("glyph_size")`.
+  the `RemoteCore` mirror, `polyctl glyph-size`, and the **"Keycap Size"** tiles
+  in Settings → Keyboard, disabled when the keyboard does not answer the read.
   - ⚠️ **`GlyphSize` is a CLOSED range and that is the ONE way it differs from
     `GlyphScript` — do not "simplify" it to match.** An unknown SCRIPT index is
     accepted by the firmware and degrades to the normal legend, which is what lets

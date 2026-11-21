@@ -379,7 +379,8 @@ def _skipped_releases(repo: str, current: Version, latest: Version) -> list:
     a user who jumps from 1.10.2 to 1.11.3 also needs the notes of 1.11.0 and
     1.11.2. Drafts and prereleases are skipped: ``releases/latest`` never
     offers them either. Pages are read until a page holds no release above
-    ``current``, or the list ends. Returns ``[{"tag", "name", "notes"}]``;
+    ``current``, or the list ends. Returns ``[{"tag", "name", "notes",
+    "published_at"}]``;
     raises ``requests.RequestException`` or ``ValueError`` on failure.
     """
     found = {}             # tag -> (version, release); a tag seen twice counts once
@@ -412,7 +413,8 @@ def _skipped_releases(repo: str, current: Version, latest: Version) -> list:
                 page_has_newer = True
                 if ver < latest:
                     found[tag] = (ver, {"tag": tag, "name": str(rel.get("name") or ""),
-                                        "notes": str(rel.get("body") or "")})
+                                        "notes": str(rel.get("body") or ""),
+                                        "published_at": str(rel.get("published_at") or "")})
         # The list is ordered by creation date, not by version, so an old
         # version can sit among newer ones. Stop at the first page that holds
         # nothing newer than the installed version.
@@ -423,13 +425,28 @@ def _skipped_releases(repo: str, current: Version, latest: Version) -> list:
     return [rel for _ver, rel in ordered]
 
 
+def format_release_date(published_at: str) -> str:
+    """A release's day from its ISO 8601 timestamp (``November 17, 2026``), or ""
+    when it is not one. The confirm dialog's lead line and each section of the
+    merged notes use it, so both show the same form."""
+    if not published_at:
+        return ""
+    try:
+        import datetime
+        dt = datetime.datetime.strptime(published_at[:10], "%Y-%m-%d")
+        return dt.strftime("%B %d, %Y").replace(" 0", " ")
+    except (ValueError, TypeError):
+        return ""
+
+
 def _with_skipped_notes(repo: str, current: Version, latest: Version,
-                        tag: str, name: str, notes: str) -> tuple:
+                        tag: str, name: str, notes: str, published_at: str = "") -> tuple:
     """``(notes, count)`` for the confirm dialog, covering every skipped release.
 
     When releases lie between ``current`` and ``latest``, the notes become one
-    section per release, newest first, each headed by its release title, and
-    ``count`` is the number of sections (see :func:`dialog_release_name`).
+    section per release, newest first, each headed by its release title and its
+    date (``published_at`` for the newest), with a horizontal rule between two
+    sections, and ``count`` is the number of sections (see :func:`dialog_release_name`).
     With no release in between, or when the list cannot be read, the newest
     release's own notes are returned unchanged with ``count`` 1.
     """
@@ -442,13 +459,19 @@ def _with_skipped_notes(repo: str, current: Version, latest: Version,
     if not skipped:
         return notes, 1
     sections = []
-    for rel in [{"tag": tag, "name": name, "notes": notes}] + skipped:
-        title = rel["name"].strip() or rel["tag"]
+    newest = {"tag": tag, "name": name, "notes": notes, "published_at": published_at}
+    for rel in [newest] + skipped:
+        parts = [f"# {rel['name'].strip() or rel['tag']}"]
+        day = format_release_date(rel.get("published_at", ""))
+        if day:
+            parts.append(f"*{day}*")
         body = rel["notes"].strip()
-        sections.append(f"# {title}\n\n{body}" if body else f"# {title}")
+        if body:
+            parts.append(body)
+        sections.append("\n\n".join(parts))
     log.info("Update notes cover %d release(s) from %s to %s",
              len(sections), current, latest)
-    return "\n\n".join(sections), len(sections)
+    return "\n\n---\n\n".join(sections), len(sections)
 
 
 def parse_asset_urls(html: str) -> list:
@@ -606,7 +629,8 @@ def check_latest() -> Optional[ReleaseInfo]:
                          __version__, cached_ver)
                 notes, notes_releases = _with_skipped_notes(
                     HOST_REPO, _current_version(), Version(cached_ver), host["tag"],
-                    host.get("name", ""), host.get("notes", ""))
+                    host.get("name", ""), host.get("notes", ""),
+                    host.get("published_at", ""))
                 return ReleaseInfo(
                     tag=host["tag"],
                     version=cached_ver,
@@ -669,7 +693,7 @@ def check_latest() -> Optional[ReleaseInfo]:
 
     log.info("Update check: new version available: %s -> %s", __version__, latest)
     notes, notes_releases = _with_skipped_notes(HOST_REPO, _current_version(), latest,
-                                                tag, rel_name, notes)
+                                                tag, rel_name, notes, published_at)
     return ReleaseInfo(tag=tag, version=str(latest), tarball_url=tarball_url,
                        html_url=html_url, published_at=published_at,
                        name=rel_name, notes=notes, notes_releases=notes_releases)
@@ -735,7 +759,7 @@ def check_fw_latest(current_version: str,
                 if skipped_notes:
                     notes, notes_releases = _with_skipped_notes(
                         FW_REPO, current, Version(cached_ver), fw["tag"],
-                        fw.get("name", ""), notes)
+                        fw.get("name", ""), notes, fw.get("published_at", ""))
                 return FwUpReleaseInfo(
                     tag=fw["tag"],
                     version=cached_ver,
@@ -818,7 +842,7 @@ def check_fw_latest(current_version: str,
     notes_releases = 1
     if skipped_notes:
         notes, notes_releases = _with_skipped_notes(FW_REPO, current, latest, tag,
-                                                    rel_name, notes)
+                                                    rel_name, notes, published_at)
     return FwUpReleaseInfo(tag=tag, version=str(latest), bin_url=bin_url,
                            uf2_url=uf2_url or "", html_url=html_url, published_at=published_at,
                            name=rel_name, notes=notes, sig_url=sig_url or "",

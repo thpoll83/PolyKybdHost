@@ -138,7 +138,7 @@ bindings:
   - { key: E, mods: [CMDCTRL, SHIFT], icon: switcheditor.png, label: "Switch to editor" }
   - { key: F, mods: [CMDCTRL, SHIFT], icon: reformat.png, <<: *reclaimed, label: "Format" }
   - { key: G, mods: [CMDCTRL, SHIFT], icon: searchrefs.png, <<: *worded, label: "References in workspace" }
-  - { key: H, mods: [CMDCTRL, SHIFT], icon: typehierarchy.png, label: "Open type in hierarchy" }
+  - { key: H, mods: [CMDCTRL, SHIFT], icon: opentypehierarchy.png, label: "Open type in hierarchy" }
   - { key: J, mods: [CMDCTRL, SHIFT], icon: incfindrev.png, <<: *worded, label: "Incremental find reverse" }
   - { key: K, mods: [CMDCTRL, SHIFT], icon: findprev.png, label: "Find previous" }
   - { key: L, mods: [CMDCTRL, SHIFT], icon: keyassist.png, label: "Show key assist" }

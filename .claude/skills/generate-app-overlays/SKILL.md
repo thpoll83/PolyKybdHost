@@ -192,10 +192,26 @@ are the icons the user actually sees. Order of preference:
 `polyhost/res/overlay_sources/game_icons.py`, because Fluent and Material have no
 game shapes (catapult, anvil, barracks). CC BY requires credit per AUTHOR, so the
 set's `SOURCES.md` has a file / icon / author table (`overlay_sources/aoe2/` is the
-example). Three differences from an app set:
+example). The differences from an app set:
 - Label only keys that do the same thing whatever is selected (go-to keys, idle
   units, function keys, chat). A game's bare letters change with the selection,
   so they stay blank.
+- ⚠️ **A first-person game draws W A S D** (move forward, left, back, right),
+  even though the letter legend is on the key (maintainer, 2026-11-16, for TF2,
+  Apex and Overwatch). The CS2 set predates this rule and leaves them blank.
+- ⚠️ **One picture per action.** Two keys show the same picture only when they
+  run the same action. Numbered slots (weapons 1 and 2, flasks, party members,
+  quick chats) carry their number in the icon, even on a digit key whose legend
+  shows it (maintainer, 2026-11-16). `tests/res/f2p_overlays_distinct_test.py`
+  checks this on the generated cells, so a picture the shared concept renderer
+  draws counts too; add a new game set to its `SPECS`.
+- **Start a new game set from `overlay_sources/game_set.py`** (2026-11-16): it
+  has the steps the TF2, Apex, Rocket League, Path of Exile, Overwatch and
+  Genshin sets share. `build(out, ICONS, sizes=, ink=, numbered=, mark=)` renders
+  game-icons.net and Material Symbols icons flat at their key area; `numbered`
+  draws a digit into copies of one icon (a stem starting with `src_` is deleted
+  after); `mark_canvas`, `save_mark`, `fit_text` and `google_font` draw an ESC
+  mark. Each set's `fetch_icons.py` is then mostly data (`tf2/fetch_icons.py`).
 - An icon may use the full height (`anchor: right`, `region: [40, 40]`,
   `margin: 0`). The firmware draws the overlay AFTER the legend and clears 3 px
   around the icon's ink, so the icon takes priority: a letter legend (x 2–22)
@@ -332,6 +348,10 @@ the ESC mark with its `Mods+Key: label`, and prints the key count from the spec:
 #   --platform macos | linux   the macOS or Linux set
 #   --check-1to1               game sets: every cell is its icon placed 1:1
 ```
+
+`--check-1to1` also lists a key whose label names a concept (Zoom in, Zoom out):
+the shared concept renderer draws it, not the committed icon (*A label that
+NAMES a concept*, above). That is expected; check only the other keys it lists.
 
 Write a caption's key count from the script's output: two captions written by
 eye said 87 and 37 keys for sets with 74 and 36 (2026-11-03).
@@ -575,6 +595,29 @@ favicon service, `https://www.google.com/s2/favicons?domain=<site>&sz=256`,
 returns the site's apple-touch icon (Canva 180 px, Photopea and Steam 256 px).
 canva.com answered with a bot check, and the Wikimedia Commons API rate-limited
 the container after two requests (2026-11-05).
+
+**A game's mark: compare it with the game's logo first** (maintainer, 2026-11-16,
+asked twice). Simple Icons has no game logos. A Steam game's logo is at
+`https://cdn.cloudflare.steamstatic.com/steam/apps/<appid>/logo.png` (and
+`header.jpg`); the `shared.cloudflare.steamstatic.com/store_item_assets/...`
+path answers 301 with an HTML page. The favicon service gave TF2, Rocket League
+and Overwatch only 16 to 31 px icons. Download for the comparison only, never
+commit it. Then:
+- **The logo is a word** (TF2, Apex, Rocket League, Genshin): set the logo's own
+  words, not a short name, in the free font closest to its lettering, on as
+  many lines as the logo has: TEAM / FORTRESS 2 in Anton, APEX over a small
+  LEGENDS in Bebas Neue, ROCKET / LEAGUE in Archivo Black, GENSHIN / IMPACT in
+  Marcellus (`game_set.google_font`, google/fonts at the pinned commit). "TF2"
+  and "RL" in Bebas Neue were refused as too far from the originals.
+- **The logo is an emblem** (Overwatch's ring, Path of Exile's winged crest):
+  draw a resembling shape from polygons and arcs in `fetch_icons.py`, at 8x
+  supersampling (`game_set.mark_canvas`, `save_mark`).
+- **A thin font loses strokes at 1 bit**: Marcellus dropped the stem of a T, and
+  Cinzel Decorative's swashes broke into specks. `fit_text(..., stroke=3)`
+  (supersampled pixels per side) kept every stem lit; render the candidates at
+  keycap size before choosing.
+- A mark drawn from code and a pinned font is not guarded: every run redraws it
+  (CodeRabbit on #916 found the guards this rule forbids).
 
 **Composite icons** (a value + a shared glyph), e.g. Word line-spacing 1 / 1½ / 2
 which all share the line-spacing glyph: compose `<number on top> + <glyph below>`

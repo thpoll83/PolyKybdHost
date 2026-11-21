@@ -70,6 +70,14 @@ def _win32_force_foreground(hwnd: int) -> bool:
     return user32.GetForegroundWindow() == hwnd
 
 
+def _title(agent) -> str:
+    """The text a window title can show for the agent: its title without the
+    number two agents with the same card text get ("Fix the login bug", not
+    "Fix the login bug 1"). A remote record (RemoteAgent) has display_headline only,
+    and the forwarder sends base_headline in it."""
+    return getattr(agent, "base_headline", None) or agent.display_headline or ""
+
+
 def raise_agent(agent, windows=None):
     """True when a window was brought to the front; False when none was found; a
     text when one was found but the system kept the focus elsewhere, or when this
@@ -105,7 +113,7 @@ def raise_agent(agent, windows=None):
         # One process can own several windows (VS Code runs every window in one
         # main process): prefer the one whose title names the agent's folder or
         # title, which VS Code and most editors show.
-        hints = [h.lower() for h in (agent.display_headline,
+        hints = [h.lower() for h in (_title(agent),
                                      agent.cwd.replace("\\", "/").rstrip("/").rsplit("/", 1)[-1]
                                      if agent.cwd else "") if h]
         for pid in _ancestors(agent.pid):
@@ -114,8 +122,8 @@ def raise_agent(agent, windows=None):
                 target = next((w for w in owned
                                if any(h in (w.title or "").lower() for h in hints)), owned[0])
                 break
-    if target is None and agent.display_headline:
-        text = agent.display_headline.lower()
+    if target is None and _title(agent):
+        text = _title(agent).lower()
         target = next((w for w in windows if text in (w.title or "").lower()), None)
     if target is None:
         from polyhost.services.agents.titles import parse_title
@@ -124,7 +132,7 @@ def raise_agent(agent, windows=None):
             parsed = parse_title(w.title or "")
             if parsed is not None and parsed[0] == agent.vendor:
                 own.append((w, parsed[2]))
-        text = (agent.display_headline or "").lower()
+        text = (_title(agent) or "").lower()
         target = next((w for w, topic in own if text and text in (topic or "").lower()),
                       own[0][0] if own else None)
     if target is None:

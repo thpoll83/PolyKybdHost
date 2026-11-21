@@ -208,3 +208,22 @@ Deliberately NOT added:
 - **Ctrl+Y**: Outline mode in Illustrator (already drawn) — never Redo.
 - **Ctrl+F**: Paste in front (already drawn); Find and Replace has no default chord.
 - New/Open/Save/Print/Undo/Cut/Copy/Paste/Select all and Ctrl+= / Ctrl+- zoom were already drawn.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing
+(maintainer, 2026-11-15). These files give the other keys their own image.
+Files whose name starts with `_` are only parts of a composite.
+
+| file | source | licence |
+|---|---|---|
+| `freetransform.png` | Material Symbols `transform` | Apache-2.0 |
+| `zoomtool.png` | Fluent `Search` | MIT |
+| `bringforward.png` | Fluent `Position Forward` | MIT |
+| `sendbackward.png` | Fluent `Position Backward` | MIT |
+| `_cursor.png` | Fluent `Cursor` | MIT |
+| `_target.png` | Fluent `Target` | MIT |
+| `_blob.png` | Material Symbols `water_drop` | Apache-2.0 |
+| `blobbrush.png` | `paintbrush.png` with `_blob.png` as a badge at the lower right (`../dcc_glyphs.py` `with_badge`) | same as the two parts |
+| `livepaintselect.png` | `livepaint.png` with `_cursor.png` as a badge at the lower right (`../dcc_glyphs.py` `with_badge`) | same as the two parts |
+| `pasteinplace.png` | `paste.png` with `_target.png` as a badge at the lower right (`../dcc_glyphs.py` `with_badge`) | same as the two parts |

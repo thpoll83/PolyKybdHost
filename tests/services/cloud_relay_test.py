@@ -107,6 +107,52 @@ class ChannelFileTest(unittest.TestCase):
         self.assertEqual(seen[0][1]["token"], channel["read_token"])
 
 
+class JoinCodeTest(unittest.TestCase):
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.dir.cleanup)
+        self.path = os.path.join(self.dir.name, "cloud_relay.json")
+        self.channel = ch.new_channel()
+        self.channel["url"] = "https://relay.example"
+
+    def test_the_code_carries_the_whole_channel(self):
+        code = cr.join_code(self.channel)
+        self.assertTrue(code.startswith(cr.JOIN_PREFIX))
+        self.assertLess(len(code), cr.JOIN_CODE_MAX_CHARS)
+        self.assertEqual(cr.parse_join_code(code), self.channel)
+        # Pasted across a line break, with spaces around it.
+        self.assertEqual(cr.parse_join_code("  " + code[:90] + "\n " + code[90:] + "\n"),
+                         self.channel)
+
+    def test_a_wrong_code_is_refused_without_echoing_it(self):
+        code = cr.join_code(self.channel)
+        http_channel = dict(self.channel, url="http://relay.example")
+        for bad in ("", "hello", cr.JOIN_PREFIX + "!!!", code[:-12],
+                    cr.join_code(http_channel), code + "x" * cr.JOIN_CODE_MAX_CHARS):
+            with self.assertRaises(ValueError) as caught:
+                cr.parse_join_code(bad)
+            self.assertNotIn(self.channel["read_token"][:16], str(caught.exception))
+
+    def test_join_checks_the_channel_on_the_relay_and_saves_it(self):
+        seen = []
+
+        def http(url, method, rel, token=None, body=None):
+            seen.append((url, method, rel, token))
+            return 200, {"entries": []}
+        channel = cr.join_channel(self.path, cr.join_code(self.channel), http=http)
+        self.assertEqual(seen, [("https://relay.example", "GET",
+                                 f"/v1/c/{self.channel['channel']}/state",
+                                 self.channel["read_token"])])
+        self.assertEqual(cr.load_channel(self.path), channel)
+
+    def test_a_deleted_channel_is_not_saved(self):
+        for status in (401, 404, 500):
+            with self.assertRaises(cr.RelayError):
+                cr.join_channel(self.path, cr.join_code(self.channel),
+                                http=lambda *a, **k: (status, {}))
+            self.assertFalse(os.path.exists(self.path))
+
+
 class SinkTest(unittest.TestCase):
     def setUp(self):
         self.key = os.urandom(32)
@@ -252,6 +298,12 @@ class WebSocketTest(unittest.TestCase):
             self.ws.recv(1)
 
 
+    def test_close_4001_says_the_channel_was_deleted(self):
+        self.b.sendall(self.frame(0x8, (4001).to_bytes(2, "big") + b"channel deleted"))
+        with self.assertRaises(cr.ChannelGone):
+            self.ws.recv(1)
+
+
 class FakeWs:
     def __init__(self, messages):
         self.messages = list(messages)
@@ -316,6 +368,64 @@ class ClientTest(unittest.TestCase):
             client.stop()
         self.assertGreaterEqual(len(attempts), 2)
         self.assertIn("403", client.status()["error"])
+
+
+    def test_a_deleted_channel_clears_the_cloud_agents_and_stops(self):
+        registry = AgentRegistry()
+        registry.report("claude-code", "c" * 32, "working", machine="cloud")
+        registry.report("claude-code", "local", "working")
+        attempts = []
+
+        def connect(*a):
+            attempts.append(a)
+            raise cr.ChannelGone("the channel was deleted on the relay")
+        client = cr.RelayClient(_channel(), registry, connect=connect)
+        with mock.patch.object(cr, "RECONNECT_MIN_S", 0.01):
+            client.start()
+            deadline = time.monotonic() + 5
+            while client.status()["state"] != "deleted" and time.monotonic() < deadline:
+                time.sleep(0.01)
+            time.sleep(0.05)                        # no further attempt follows
+        self.assertEqual(len(attempts), 1)
+        self.assertEqual(client.status()["state"], "deleted")
+        self.assertIn("deleted", client.status()["error"])
+        self.assertEqual([a.session_id for a in registry.agents()], ["local"])
+        client.stop()
+        self.assertEqual(client.status()["state"], "stopped")
+
+    def test_a_late_404_after_a_replacement_keeps_the_new_channels_agents(self):
+        # stop() waits only join_s; an old client whose handshake answers 404 after
+        # that must not remove the cloud agents of the client that replaced it.
+        registry = AgentRegistry()
+        entered, release = threading.Event(), threading.Event()
+
+        def connect(*a):
+            entered.set()
+            release.wait(5)
+            raise cr.ChannelGone("the channel was deleted on the relay")
+        old = cr.RelayClient(_channel(), registry, connect=connect)
+        old.start()
+        self.assertTrue(entered.wait(5))
+        thread = old._thread
+        old.stop(join_s=0.01)                       # gives up before the 404
+        registry.report("claude-code", "c" * 32, "working", machine="cloud")   # the new channel
+        release.set()
+        thread.join(5)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual([a.session_id for a in registry.agents()], ["c" * 32])
+        self.assertEqual(old.status()["state"], "stopped")
+
+    def test_a_404_handshake_is_a_deleted_channel(self):
+        a, b = socket.socketpair()
+        self.addCleanup(a.close)
+        self.addCleanup(b.close)
+        with mock.patch.object(cr.socket, "create_connection", lambda *x, **k: a), \
+                mock.patch.object(cr, "_proxy_for", lambda host: None), \
+                mock.patch.object(cr, "ssl_context") as ctx, \
+                mock.patch.object(cr.WebSocket, "_read_head", lambda sock: (404, b"")):
+            ctx.return_value.wrap_socket = lambda raw, server_hostname=None: raw
+            with self.assertRaises(cr.ChannelGone):
+                cr.WebSocket.connect("https://relay.example", "/v1/c/x/ws", "t")
 
 
 class KeyPressTest(unittest.TestCase):

@@ -149,6 +149,51 @@ def stale_16():
     return _stamp(ring, _QUESTION_16, 5, 4)
 
 
+# The 12 px card icons are a filled disc with the glyph cut out (2026-11-17): a
+# ring left the glyph 6 px of room, the filled disc gives it 8. The glyphs have
+# 2 px strokes; scaled from 16 or 19 px the '?' lost its dot and the check was
+# 1 px wide.
+_QUESTION_12 = [
+    ".####.",
+    "##..##",
+    "....##",
+    "...##.",
+    "..##..",
+    "......",
+    "..##..",
+    "..##..",
+]
+
+_CHECK_12 = [
+    "......##",
+    ".....##.",
+    "##..##..",
+    "##.##...",
+    ".###....",
+    "..#.....",
+]
+
+
+def _disc_12():
+    """The 12 px card icons' disc: radius 6 around the centre of the 12 x 12 box."""
+    import numpy as np
+    disc = np.zeros((12, 12), dtype=bool)
+    for y in range(12):
+        for x in range(12):
+            disc[y, x] = (x + 0.5 - 6.0) ** 2 + (y + 0.5 - 6.0) ** 2 <= 6.0 ** 2
+    return disc
+
+
+def stale_12():
+    """The disc with a '?' cut out; the dot is 2 x 2."""
+    return _stamp(_disc_12(), _QUESTION_12, 3, 2, value=False)
+
+
+def done_12():
+    """The disc with a 2 px check mark cut out."""
+    return _stamp(_disc_12(), _CHECK_12, 2, 3, value=False)
+
+
 def idle_16():
     """The crescent moon drawn at 16 px."""
     return _grid16(lambda dx, dy: dx * dx + dy * dy <= 7.2 ** 2
@@ -236,3 +281,28 @@ def right_arrow(width=13):
     for i in range(5):
         mask[4 - i: 5 + i, width - 1 - i] = True
     return mask
+
+
+# A browser tab, as Chrome draws one: rounded top corners, straight sides, feet that
+# curve out into the tab strip, a favicon on the left and the close x on the right.
+# It stands for a cloud session, which runs in the browser (2026-11-18: the cloud
+# over the vendor logo did not help to tell the sessions apart).
+_BROWSER_TAB = (
+    "...##############...",
+    "..#..............#..",
+    ".#................#.",
+    ".#..####...#...#..#.",
+    ".#..####....#.#...#.",
+    ".#..####.....#....#.",
+    ".#..####....#.#...#.",
+    ".#.........#...#..#.",
+    ".#................#.",
+    ".#................#.",
+    "##................##",
+)
+
+
+def browser_tab():
+    """The 20 x 11 browser-tab mark of a cloud session's card."""
+    import numpy as np
+    return np.array([[c == "#" for c in row] for row in _BROWSER_TAB], dtype=bool)

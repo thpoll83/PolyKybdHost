@@ -49,6 +49,7 @@ BORROW = {
 
 # Actions with no icon in the Microsoft sets.
 FLUENT = {
+    "gotocell": "Location",
     "trackchanges": "Document Edit",
     "wordcount": "Text Word Count",
     "translate": "Translate",

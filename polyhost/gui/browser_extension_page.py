@@ -13,6 +13,7 @@ import os
 from PyQt5.QtWidgets import (QApplication, QFileDialog, QHBoxLayout, QLabel, QLineEdit,
                              QPushButton, QVBoxLayout, QWidget)
 
+from polyhost.gui import section_style
 from polyhost.gui.ui_kit import (Headline, StatusLabel, WrapLabel, card, muted,
                                  set_button_icon)
 from polyhost.i18n import _, _f
@@ -54,7 +55,8 @@ class BrowserPage(QWidget):
         browse = set_button_icon(QPushButton(_("Choose…")), "folder")
         # noinspection PyUnresolvedReferences
         browse.clicked.connect(self._choose)
-        self.copy_button = set_button_icon(QPushButton(_("Copy Extension")), "install")
+        self.copy_button = section_style.mark_accent_button(
+            set_button_icon(QPushButton(_("Copy Extension")), "install"))
         # noinspection PyUnresolvedReferences
         self.copy_button.clicked.connect(self._copy)
         row.addWidget(self.folder, 1)

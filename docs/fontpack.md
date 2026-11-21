@@ -155,7 +155,7 @@ wipe treat it like any other bundle.
   to slot 9, so the user's dictionary on the keyboard is not replaced.
   `PolyCore.emoji_search_choose()` sets either; choosing the file in use again
   forces a flash, because a rebuilt file keeps its version.
-- Surfaces: tray Selected Language → Emoji Search Language, the settings dialog,
+- Surfaces: Settings → Keyboard → Emoji search,
   `polyctl emoji-dict [status|list|set ID|file PATH|file --clear]`, control methods
   `emojidict.status` and `emojidict.choose`.
 

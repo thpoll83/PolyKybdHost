@@ -113,6 +113,12 @@ PLUS_MINUS = {
     "_fov": ("fa:eye", "fovup", "fovdown"),
 }
 
+# The orders that Shift+key adds to the queue: the Shift layer draws the order
+# icon smaller, moved to the top-left, with the queue mark (queued()).
+QUEUED = ("attack", "manualfire", "reclaim", "fight", "stop", "patrol", "loadunits",
+          "cloak", "firestate", "movestate", "restore", "guard", "gatherwait", "repair",
+          "settarget", "repeat", "unloadunits", "resurrect", "wait", "facingccw", "facingcw")
+
 # The camera anchors (F1 to F4): a pin with the number cut out of its head.
 PIN = "fa:location-dot"
 ANCHORS = (1, 2, 3, 4)
@@ -173,6 +179,35 @@ def _placed(src: Path, size, box):
     canvas = np.zeros((size[1], size[0]), bool)
     canvas[size[1] - m.shape[0]:, size[0] - m.shape[1]:] = m
     return canvas
+
+
+def queue_mark(mask, seam: int = 3):
+    """`mask` with the queue mark (a list: three bullets and bars, 13 x 13) in
+    the bottom-right corner, `seam` px clear around it."""
+    import numpy as np
+    h, w = mask.shape
+    q = np.zeros((h, w), bool)
+    for y in (h - 13, h - 8, h - 3):
+        q[y:y + 3, w - 13:w - 10] = True             # the bullet
+        q[y:y + 3, w - 8:w] = True                   # the bar
+    box = np.zeros((h, w), bool)
+    box[h - 13:, w - 13:] = True
+    return (mask & ~dither.dilate(box, seam)) | q
+
+
+def queued(stems, ink, out: Path) -> dict:
+    """<stem>_queued masks: the order icon in a box at most 30 x 32, moved to
+    the top-left of the 40 x 40 area, with queue_mark(). Read from the rendered
+    sources, so call before flat(); save the result after it."""
+    import numpy as np
+    masks = {}
+    for stem in stems:
+        bw, bh = ink.get(stem, (40, 40))
+        m = _placed(out / f"{stem}.png", (40, 40), (min(30, bw - 6), min(32, bh - 6)))
+        moved = np.zeros_like(m)
+        moved[:-6, :-6] = m[6:, 6:]
+        masks[f"{stem}_queued"] = queue_mark(moved)
+    return masks
 
 
 def plus_minus(table, out: Path) -> None:
@@ -260,7 +295,11 @@ def main() -> int:
     parts = {"_pin": PIN, **{base: row[0] for base, row in PLUS_MINUS.items()}}
     cnc.render({**ICONS, **parts}, out)
     game_icons.render({f"_unit{d}": n for d, n in GROUP_UNITS.items()}, out, render_px=256)
+    queue = queued(QUEUED, INK, out)
     flat(ICONS, SIZES, INK, out)
+    for stem, mask in queue.items():
+        cnc._save_mask(mask, out / f"{stem}.png")
+    print(f"  {len(queue)} <order>_queued.png  <- the order with the queue mark")
     # Shift+Tab (add the commander to the selection): the commander with a plus.
     commander = _placed(out / "commander.png", (40, 40), (30, 34))
     moved = np.zeros_like(commander)

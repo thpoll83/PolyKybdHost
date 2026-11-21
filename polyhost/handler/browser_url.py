@@ -100,6 +100,7 @@ DEFAULT_MAX_AGE_S = 8.0
 CONTEXT_REPORTERS = {
     "blender": "blender",
     "org.blender.blender": "blender",
+    "freecad": "freecad", "org.freecad.freecad": "freecad",     # freecad-addon/
     # Editors with a mode plugin, in their own GUI window. Windows reports
     # gvim.exe / emacs.exe, Linux the WM_CLASS, macOS the display name.
     "gvim": "vim",
@@ -132,6 +133,7 @@ CONTEXT_REPORTERS = {
         "jetbrains-rustrover", "jetbrains-studio", "intellij idea", "intellij idea ce",
         "intellij idea ultimate", "pycharm ce", "pycharm professional", "android studio",
     ), "jetbrains"),
+    "obsidian": "obsidian",       # obsidian-plugin/: obsidian://<view>[/<vim mode>]
     # VS Code and its forks: vscode-extension/ sends <token>://<debug mode>.
     "code": "vscode", "cursor": "cursor",
     "windsurf": "windsurf", "devin": "windsurf", "devin-desktop": "windsurf",
@@ -152,6 +154,14 @@ CONTEXT_REPORTERS = {
     **dict.fromkeys(("ableton live 12 suite", "ableton live 12 standard",
                      "ableton live 12 intro", "ableton live 12 lite",
                      "ableton live 12 trial"), "ableton"),
+    # Godot editor 4.x (godot-plugin/): exactly the `godot` mapping entry's names.
+    "godot": "godot", "godot_v4": "godot", "godot_mono": "godot", "godot4": "godot",
+    "godot-bin": "godot", "org.godotengine.godot": "godot", "org.godotengine.editor": "godot",
+    "unity": "unity",               # Unity Editor package (unity-package/)
+    # JupyterLab Desktop (jupyterlab-extension/); names as its mapping entry.
+    "jupyterlab": "jupyter",
+    "jupyterlab-desktop": "jupyter",
+    "jupyterlab desktop": "jupyter",
 }
 
 # Reporters that also run INSIDE a terminal (vim, emacs -nw). While a terminal
@@ -161,6 +171,12 @@ CONTEXT_REPORTERS = {
 # terminal window running a plain shell gets no URL.
 HOSTED_REPORTERS = frozenset({"vim", "emacs"})
 _REPORTER_TOKENS = frozenset(CONTEXT_REPORTERS.values()) | HOSTED_REPORTERS
+
+# Reporters that also run as a web page INSIDE a browser (JupyterLab). The page
+# knows whether it has focus (document.hasFocus()) and sends focused=false when
+# it loses it, so while a browser is focused, a fresh focused report from one
+# answers for the browser before its tab URL does.
+PAGE_REPORTERS = frozenset({"jupyter"})
 
 # Terminal apps that host those reporters, as the OS reports them (lowercased).
 # Only local terminals: an editor in an SSH session (PuTTY, a remote shell)
@@ -207,7 +223,7 @@ def _app_key(app_name):
 def context_reporter_for(app_name):
     """The reporter token for a focused app with a context add-on, or None.
     A trailing release year or version is dropped as the mapping does ("maya 2026",
-    macOS "IDA Professional 9.1")."""
+    macOS "IDA Professional 9.1", Godot's versioned Linux download)."""
     key = mapping_key(_app_key(app_name), CONTEXT_REPORTERS)
     return CONTEXT_REPORTERS.get(key) if key else None
 
@@ -383,7 +399,8 @@ class BrowserUrlProvider:
           (cross-browser leakage guarded: a Chrome report never answers for
           Firefox). A report naming no recognisable browser (an older
           extension) stays permissive. Otherwise the macOS AppleScript fallback
-          is tried (a no-op off macOS / for Firefox).
+          is tried (a no-op off macOS / for Firefox). A fresh, focused
+          report of a page reporter (a JupyterLab page) answers first.
         * Any other app gets ``None``, so neither a website nor a background
           Blender's context can ever leak onto a native app's overlay."""
         token = context_reporter_for(app_name)
@@ -405,6 +422,9 @@ class BrowserUrlProvider:
         """The answer current_url() takes from stored reports (lock held)."""
         if token is not None:
             return self._app_url(token)
+        page = self._app_url(PAGE_REPORTERS)
+        if page:
+            return page
         brand = _canonical_browser(app_name)
         # The anonymous slot (an older extension naming no browser) answers
         # only when this browser has no fresh report of its own. A fresh one

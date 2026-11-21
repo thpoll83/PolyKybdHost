@@ -386,6 +386,17 @@ def insert_at(where):            # i a I A
     return f
 
 
+def block_edit(where):           # visual-block I A
+    """Three rows of a block with a cursor before (I) or after (A) each row:
+    the text is typed on every line of the block."""
+    def f(img, d):
+        for y in (4, 16, 28):
+            bar(d, 12, 27, y, h=5)
+            x = 6 if where == "I" else 32
+            d.rectangle([x, y - 2, x + 1, y + 6], fill=255)
+    return f
+
+
 def open_line(below):            # o O
     """The current line (solid) and the new, empty line (dashed) with the
     cursor at its start, below or above it."""
@@ -492,6 +503,25 @@ def popup(arrow_dir=None):       # completion list
             varrow(d, 4, 35, 33, t=3, head=5)
         elif arrow_dir == "up":
             varrow(d, 35, 4, 33, t=3, head=5)
+    return f
+
+
+def popup_history(down):        # c_CTRL-N c_CTRL-P
+    """Next / previous completion, or the next / previous command from the
+    history when there is nothing to complete: a narrow completion list
+    beside the history clock, with the arrow under the clock."""
+    def f(img, d):
+        box(d, 0, 1, 15, 38)
+        for i, y in enumerate((7, 17, 27)):
+            if i == 1:
+                d.rectangle([3, y - 3, 12, y + 5], fill=255)
+            else:
+                bar(d, 4, 11, y)
+        paste_icon(img, "history", 20, 19, 0)
+        if down:
+            varrow(d, 22, 38, 29, t=3, head=5)
+        else:
+            varrow(d, 38, 22, 29, t=3, head=5)
     return f
 
 
@@ -605,6 +635,9 @@ DRAWN = {
     "screen_top": screen_pos("top"), "screen_mid": screen_pos("mid"),
     "screen_bot": screen_pos("bot"),
     "file_end": plain("bottom"), "file_start": plain("top"),
+    # G with a count goes to line N: Emacs evil and Obsidian's Vim layer
+    # draw it apart from <C-End>, which always goes to the last line there.
+    "goto_line": icon_over("bottom", word="line N"),
     "match_pair": match_pair,
     "find_next": find("f"), "find_prev": find("F"),
     "till_next": find("t"), "till_prev": find("T"),
@@ -621,6 +654,7 @@ DRAWN = {
     # inserting
     "insert": insert_at("i"), "append": insert_at("a"),
     "insert_bol": insert_at("I"), "append_eol": insert_at("A"),
+    "insert_block": block_edit("I"), "append_block": block_edit("A"),
     "open_below": open_line(True), "open_above": open_line(False),
     # editing
     "delete": plain("eraser"), "delete_eol": icon_over("eraser", "eol"),
@@ -630,6 +664,15 @@ DRAWN = {
     "delete_char": delete_fwd, "delete_before": delete_back,
     "yank_lines": icon_over("copy", "line"),
     "put_after": icon_over("paste", "right"), "put_before": icon_over("paste", "left"),
+    # v_P: put over the selection and keep the register (v_p replaces it).
+    "put_keep": icon_over("paste", word="keep"),
+    # Y: yank the line (Vim) or to the end of the line (Neovim); y is the operator.
+    "yank_line_eol": icon_over("copy", word="line / $"),
+    # i_CTRL-R: insert the contents of a register.
+    "paste_reg": icon_over("paste", word="reg"),
+    # i_CTRL-T i_CTRL-D: indent the current line (the operators > < take a motion).
+    "indent_line_inc": icon_over("indent_inc", "line"),
+    "indent_line_dec": icon_over("indent_dec", "line"),
     "undo_line": icon_over("undo", "line"),
     "replace_char": replace_char, "replace_mode": replace_mode,
     "swap_case": case("swap"), "to_upper": case("upper"), "to_lower": case("lower"),
@@ -643,6 +686,10 @@ DRAWN = {
     # insert / replace / command-line mode
     "complete_next": popup("down"), "complete_prev": popup("up"),
     "complete": popup(None),
+    # c_CTRL-N c_CTRL-P: a completion match, or else a command from the history.
+    "complete_hist_next": popup_history(True), "complete_hist_prev": popup_history(False),
+    # c_<CR>: run the typed command line (@ runs a macro: play.png).
+    "run_cmd": icon_over("play", word=":cmd"),
     "char_below": char_from(True), "char_above": char_from(False),
     "insert_again": word_top("ins", "again"),
     "normal_once": word_top("norm", "once"),

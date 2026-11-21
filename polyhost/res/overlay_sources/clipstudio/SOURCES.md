@@ -138,3 +138,14 @@ work in this repository (GPL-3.0-or-later).
 - macOS: the app bundle is `CLIP STUDIO PAINT.app` (mapping key
   `clip studio paint`). Not verified on a Mac; the reported name is assumed to
   be the bundle name.
+
+## One icon per action (2026-11-15)
+
+Two keys of this app share an image only when they do the same thing
+(maintainer, 2026-11-15). These files give the other keys their own image.
+Files whose name starts with `_` are only parts of a composite.
+
+| file | source | licence |
+|---|---|---|
+| `zoomtool.png` | Fluent `Search` | MIT |
+| `hidebars.png` | Fluent `Desktop` | MIT |

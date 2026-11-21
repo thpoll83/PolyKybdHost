@@ -63,14 +63,14 @@ bindings:
   - { key: F4, mods: [ALT], label: Quit, except: [macos] }
   - { key: F8, mods: [ALT], icon: macros.png, label: Macros, except: [macos] }
   - { key: F11, mods: [ALT], icon: vba.png, label: "Visual Basic editor", except: [macos] }
-  - { key: F2, mods: [CTRL], icon: history.png, label: "Text window", except: [macos] }
+  - { key: F2, mods: [CTRL], icon: textwindow.png, label: "Text window", except: [macos] }
   - { key: F4, mods: [CTRL], icon: closedwg.png, label: "Close drawing", except: [macos] }
   - { key: F6, mods: [CTRL], icon: nexttab.png, label: "Next file tab", except: [macos] }
   # --- palettes (Ctrl+digit) ---
   - { key: "0", mods: [CTRL], icon: cleanscreen.png, label: "Clean screen", except: [macos] }
   - { key: "1", mods: [CTRL], icon: properties.png, label: Properties, except: [macos] }
   - { key: "2", mods: [CTRL], icon: designcenter.png, label: DesignCenter, except: [macos] }
-  - { key: "3", mods: [CTRL], icon: toolsets.png, label: "Tool palettes", except: [macos] }
+  - { key: "3", mods: [CTRL], icon: toolpalettes.png, label: "Tool palettes", except: [macos] }
   - { key: "4", mods: [CTRL], icon: sheetset.png, label: "Sheet Set Manager", except: [macos] }
   - { key: "6", mods: [CTRL], icon: dbconnect.png, label: "dbConnect Manager", except: [macos] }
   - { key: "7", mods: [CTRL], icon: markup.png, label: "Markup Set Manager", except: [macos] }
@@ -133,7 +133,7 @@ bindings:
   - { key: "7", mods: [CMD], icon: xref.png, label: "External references", only: [macos] }
   - { key: "8", mods: [CMD], icon: projectmgr.png, label: "Project manager", only: [macos] }
   - { key: "9", mods: [CMD], icon: materials.png, label: Materials, only: [macos] }
-  - { key: "0", mods: [CMD], icon: cleanscreen.png, label: "Full screen", only: [macos] }
+  - { key: "0", mods: [CMD], icon: fullscreen.png, label: "Full screen", only: [macos] }
   - { key: A, mods: [CMD], label: "Select all", only: [macos] }
   - { key: B, mods: [CMD], icon: snap.png, mode: alpha, label: Snap, only: [macos] }
   - { key: C, mods: [CMD], label: Copy, only: [macos] }
@@ -179,8 +179,8 @@ bindings:
   - { key: V, mods: [CMD, SHIFT], icon: pasteblock.png, label: "Paste as block", shared: false, only: [macos] }
   - { key: Z, mods: [CMD, SHIFT], label: Redo, only: [macos] }
   - { key: DOT, mods: [CMD, SHIFT], icon: docslayouts.png, label: "Documents and layouts", only: [macos] }
-  - { key: LBRACKET, mods: [CMD, SHIFT], icon: prevtab.png, label: "Previous tab", only: [macos] }
-  - { key: RBRACKET, mods: [CMD, SHIFT], icon: nexttab.png, label: "Next tab", only: [macos] }
+  - { key: LBRACKET, mods: [CMD, SHIFT], icon: prevtab.png, label: "Previous file tab", only: [macos] }
+  - { key: RBRACKET, mods: [CMD, SHIFT], icon: nexttab.png, label: "Next file tab", only: [macos] }
   - { key: ";", mods: [CMD, SHIFT], icon: spell.png, label: "Spell check", only: [macos] }
   # --- Option+Cmd ---
   - { key: W, mods: [CMD, ALT], icon: closeall.png, label: "Close all", only: [macos] }
@@ -193,7 +193,7 @@ bindings:
   - { key: RBRACKET, mods: [CMD, ALT], icon: lasttab.png, label: "Last tab", only: [macos] }
   - { key: W, mods: [CMD, ALT, SHIFT], icon: selcycle.png, label: "Selection cycling", only: [macos] }
   # --- Ctrl+Cmd ---
-  - { key: F, mods: [CMD, CTRL], icon: cleanscreen.png, label: "Full screen", only: [macos] }
+  - { key: F, mods: [CMD, CTRL], icon: fullscreen.png, label: "Full screen", only: [macos] }
   # --- Control ---
   - { key: "1", mods: [CTRL], icon: properties.png, label: Properties, only: [macos] }
   - { key: "2", mods: [CTRL], icon: blocks.png, label: "Blocks palette", only: [macos] }
@@ -224,7 +224,7 @@ bindings:
   - { key: Z, mods: [CTRL], label: Undo, only: [macos] }
   - { key: LBRACKET, mods: [CTRL], icon: cancel.png, label: "Cancel command", only: [macos] }
   - { key: "\\", mods: [CTRL], icon: cancel.png, label: "Cancel command", only: [macos] }
-  - { key: TAB, mods: [CTRL], icon: nexttab.png, label: "Next tab", only: [macos] }
+  - { key: TAB, mods: [CTRL], icon: nexttab.png, label: "Next file tab", only: [macos] }
   # --- Ctrl+Shift ---
   - { key: B, mods: [CTRL, SHIFT], icon: snap.png, mode: alpha, label: Snap, only: [macos] }
   - { key: C, mods: [CTRL, SHIFT], icon: copybase.png, label: "Copy with base point", shared: false, only: [macos] }
@@ -236,4 +236,4 @@ bindings:
   - { key: S, mods: [CTRL, SHIFT], label: "Save as", only: [macos] }
   - { key: V, mods: [CTRL, SHIFT], icon: pasteblock.png, label: "Paste as block", shared: false, only: [macos] }
   - { key: W, mods: [CTRL, SHIFT], icon: selcycle.png, label: "Selection cycling", only: [macos] }
-  - { key: TAB, mods: [CTRL, SHIFT], icon: prevtab.png, label: "Previous tab", only: [macos] }
+  - { key: TAB, mods: [CTRL, SHIFT], icon: prevtab.png, label: "Previous file tab", only: [macos] }

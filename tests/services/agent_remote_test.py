@@ -131,9 +131,16 @@ class ForwarderTargetTest(unittest.TestCase):
                                   authkey_file=None,
                                   payload=json.dumps({"session_id": "s1", "cwd": "/w/r",
                                                       "hook_event_name": "Stop"}))
+        from polyhost.services.agents import hook_log
+        log_path = path + ".hooks.log"
+        self.addCleanup(lambda: os.path.exists(log_path) and os.remove(log_path))
         with mock.patch.object(remote, "forwarder_target_path", lambda: path), \
+                mock.patch.object(hook_log, "default_path", lambda: log_path), \
                 mock.patch("sys.stdin", io.StringIO("")):
             self.assertEqual(polyctl._agents_hook_main(args), 0)
+        # The hook log names the event, the state, the session and the target.
+        line = hook_log.tail(1, path=log_path)[0]
+        self.assertIn(f"claude-code Stop done s1 -> 127.0.0.1:{port}: ok", line)
         self.assertEqual(len(got), 1)
         self.assertEqual((got[0]["session_id"], got[0]["state"], got[0]["machine"]),
                          ("s1", "done", "laptop"))
@@ -252,14 +259,25 @@ class RelayTest(unittest.TestCase):
         import threading
         import time
         from polyhost.cli import polyctl
+        import os
+        import tempfile
+        from polyhost.services.agents import hook_log
         hang = threading.Event()
         self.addCleanup(hang.set)
         args = object()
-        with mock.patch.object(polyctl, "_agents_hook_report", lambda a: hang.wait(30)), \
+
+        def report(_args, progress):
+            progress["stage"] = "connect"
+            hang.wait(30)
+        log_path = os.path.join(tempfile.mkdtemp(), "hooks.log")
+        with mock.patch.object(polyctl, "_agents_hook_report", report), \
+                mock.patch.object(hook_log, "default_path", lambda: log_path), \
                 mock.patch.object(polyctl, "AGENT_HOOK_DEADLINE_S", 0.2):
             start = time.monotonic()
             self.assertEqual(polyctl._agents_hook_main(args), 0)
             self.assertLess(time.monotonic() - start, 2.0)
+        # Logged by the main thread, with the stage the report was in.
+        self.assertIn(": timeout in connect (", hook_log.tail(1, path=log_path)[0])
 
     def test_follower_raises_each_new_seq_once_and_skips_the_backlog(self):
         f = RemoteRaiseFollower()

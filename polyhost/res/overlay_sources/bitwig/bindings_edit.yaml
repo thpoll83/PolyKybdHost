@@ -104,12 +104,12 @@ bindings:
   - { key: B, mods: [ALT], icon: browser.png, label: Browser }
 
   # --- Detail Editor events (guide 10.2.1, 11.2.1) ---
-  - { key: LEFT, mods: [], icon: nudgeleft.png, label: "Move events by grid, left" }
-  - { key: RIGHT, mods: [], icon: nudgeright.png, label: "Move events by grid, right" }
+  - { key: LEFT, mods: [], icon: nudgeleft.png, label: "Move by grid, left" }
+  - { key: RIGHT, mods: [], icon: nudgeright.png, label: "Move by grid, right" }
   - { key: LEFT, mods: [SHIFT], icon: fineleft.png, label: "Move events fine, left" }
   - { key: RIGHT, mods: [SHIFT], icon: fineright.png, label: "Move events fine, right" }
-  - { key: LEFT, mods: [ALT], icon: prevclip.png, label: "Select previous event" }
-  - { key: RIGHT, mods: [ALT], icon: nextclip.png, label: "Select next event" }
+  - { key: LEFT, mods: [ALT], icon: selprevevent.png, label: "Select previous event", region: [40, 40], mode: alpha }  # 40x40 glyph + word, placed 1:1
+  - { key: RIGHT, mods: [ALT], icon: selnextevent.png, label: "Select next event", region: [40, 40], mode: alpha }  # 40x40 glyph + word, placed 1:1
   - { key: LEFT, mods: [ALT, SHIFT], icon: extendleft.png, label: "Extend selection to previous event" }
   - { key: RIGHT, mods: [ALT, SHIFT], icon: extendright.png, label: "Extend selection to next event" }
   - { key: LEFT, mods: [CTRL], icon: shorter.png, label: "Shorter by grid" }

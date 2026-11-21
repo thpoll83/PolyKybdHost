@@ -54,9 +54,11 @@ one agent. This plan drives a row of keys for many agents. Parts of them are reu
    - pressing a number key brings that agent's window to the front, and the board
      leaves AI mode;
    - ESC becomes the pager when there are more than 10 agents. Each press shows the
-     next page of 10. The LEDs follow the page.
-3. **The page stays selected after AI mode ends.** The number row LEDs keep showing
-   the page last chosen, until the user picks another page or that page empties.
+     next page of 10, and from protocol v36 ESC shows the page as "Next 1/2". The LEDs
+     follow the page.
+3. **Page 1 again when AI mode ends** (protocol v36). The firmware records event 13
+   (`AI_EVENT_LEAVE`) and the host shows page 1. Before v36 the page stayed selected,
+   and after one Esc press the agents on page 1 seemed gone (2026-11-16).
 
 ### Hold or tap
 
@@ -79,20 +81,51 @@ ESC (the pager) does not end AI mode in either case.
 
 ```
 ┌────────────────────────────────────┐
-│ [vendor mark 24×24]   [state mark] │   rows 0..25
-│                                    │
-│ polykybd-docs                      │   rows 28..39: headline, one line
+│ [mark] Fix HID                     │   line 1  rows  0..12
+│ reconnect                          │   line 2  rows 13..25
+│ resume…                   [state]  │   line 3  rows 26..39
 └────────────────────────────────────┘
 ```
 
-- Vendor mark: the ESC program mark for that vendor's app (`services/app_icons.py`,
-  Simple Icons), scaled to the left part of the card. A vendor with no mark gets its
-  name in text.
-- State mark: the same set for every vendor (see the state table). The state is also
-  on the LED, but the mark covers split42 (no RGB matrix) and colour blindness.
-- Headline: one line in the smallest resident face, cut to what fits in 72 px. Source
-  order: a label the user set (`polyctl agents label`), the topic from the terminal
-  title (Claude Code writes `✳ <topic>`), the session's working directory name.
+- Vendor mark: the lower 12 rows of the logo at 26 px, cut by the top edge, top
+  left, beside line 1 only, from `services/app_icons.py` (Simple Icons) or a shipped mark
+  (`res/icons/agents/`, already cut). The text starts 1 px to its right. No mark is
+  scaled: a first word that does not fit beside it starts below it. A vendor with
+  no mark yet gets its short name.
+- Cloud session (machine `cloud`): a browser tab, 20 x 11 px, in place of the
+  vendor's logo (`icons.browser_tab`), drawn like a Chrome tab with a favicon and
+  the close x, because a cloud session runs in the browser.
+- State icon: 12 px, bottom right, with 1 px kept free left of and
+  above it, so only line 3 is shorter (58 px). Working, waiting and idle are the
+  16 px card icons, scaled. Done and stale are drawn at 12 px: a filled disc with a
+  check (2 px strokes) or a `?` (2 x 2 dot) cut out of it. A state change uploads
+  the card again.
+- Headline: three lines of 14 px text. Each line takes as many characters as fit,
+  so words are split at any letter. One page: a longer title ends with `…`. Small
+  words (the, a, for, on, after, …) are left out of a session title
+  (`model.card_words`), so "Fix the HID reconnect after resume" shows "Fix HID
+  reconnect resume". They go only in a title with a word that no other common
+  language uses (after, and, before, from, into, the, when, with). A title in
+  another language, a label the user set and a folder name keep their words.
+  Brackets ((), [], {}, <> and the fullwidth and CJK ones) are left out of every
+  card (`model.no_brackets`); quotation marks stay. Agents whose cards would show
+  the same text are numbered.
+- Fonts: Aileron (Pillow's bundled font, ASCII only). A character it does not have
+  comes from the first font in `card.FALLBACK_FONTS` that has it. Galmuri11 12 px is
+  bundled (`res/fonts/agent-cards/`): European Latin, Greek, Cyrillic, Korean,
+  Japanese. The others are downloaded into `font_downloader`'s cache the first
+  time a title has a character in their Unicode ranges, while the agent keys and
+  `agents_download_fonts` (Settings → AI agents, on) are on: a cut-down WenQuanYi
+  Zen Hei Mono 12 px from www.polykybd.org (Chinese), Noto Sans Devanagari, Thai,
+  Armenian, Hebrew and Arabic 13 px from `noto-fonts.yaml`. The card shows boxes
+  until then and is drawn again after (`card.fonts_version()`). A letter and its
+  combining marks stay in one font run and one line (`_clusters`). A Hebrew or
+  Arabic title is drawn right to left (`is_rtl`); an Arabic word split by a line
+  keeps its joined forms, by the Unicode joining types (`card._joins`). Georgian, the other Indic scripts and the rest have no
+  font yet and show boxes (the README there says how to add one).
+- Source order: a label the user set (`polyctl agents label`),
+  the topic from the terminal title (Claude Code writes `✳ <topic>`), the session's
+  working directory name.
 
 The host renders the card as an image (Python, the same path as other overlays) and
 uploads it. The firmware draws no text and no layout for it. Measure every card
@@ -105,7 +138,7 @@ layout with `tools/oled_preview.py`: 0 pixels outside 72×40.
 | `working` | a turn is running | amber, breathing | turning arrows |
 | `waiting` | the agent waits for the user: a permission prompt or a question | red, blinking | `!` |
 | `done` | a turn finished and the user has not looked since | green, steady | check |
-| `idle` | finished and seen, or no turn yet | dim green, then off | none |
+| `idle` | finished and seen, or no turn yet | dim green, then off | moon |
 | `stale` | no event for a long time, the process may be gone | dim white | `?` |
 | (empty) | no agent on this key | RGB effect unchanged | normal legend |
 
@@ -113,7 +146,13 @@ layout with `tools/oled_preview.py`: 0 pixels outside 72×40.
   its window (the host sees the focus change).
 - Only `waiting` blinks, as in #276.
 - When a page that is not shown has an agent in `waiting`, the ESC LED blinks red in
-  AI mode. Outside AI mode ESC is not touched (open question: show it there too).
+  AI mode. Outside AI mode the ripple runs from the AI key every 4 s (v36, split72).
+- When an agent on a page that is not shown finishes its turn, the host increases a
+  counter in cmd 45 op 1, and the AI key ripples three times (v36). An agent on the
+  shown page rings its own key (firmware 1.13.6). A page change rings nothing: the
+  firmware takes the new page's states as the start.
+- Cards are cached per agent and text page, not per key, so paging back to a page
+  reuses the cards the keyboard still holds.
 
 ## The registry (host)
 
@@ -285,7 +324,7 @@ firmware bump commit exists: #276 lost 17 to #278 in the same way.
 ## Host
 
 - `services/agents/registry.py`, `services/agents/adapters/*.py`: Qt-free, unit-tested.
-- `services/agents/card.py`: renders a card (vendor mark, state mark, headline) to a
+- `services/agents/card.py`: renders a card (vendor mark, state icon, headline pages) to a
   72×40 1-bit image. Golden tests against rendered cards.
 - `PolyCore`: owns the registry; pushes op 1 when a shown key changes; uploads cards
   for the shown page; reads op 2 on the console line or a `G` change; acts on presses

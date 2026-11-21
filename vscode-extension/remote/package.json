@@ -1,0 +1,24 @@
+{
+  "name": "polykybd-mode-reporter-remote",
+  "displayName": "PolyKybd Mode Reporter (remote part)",
+  "description": "The remote part of PolyKybd Mode Reporter: reads the debug state in a Remote SSH, WSL or container window and passes it to PolyKybd Mode Reporter on your computer.",
+  "version": "1.0.0",
+  "publisher": "polykybd",
+  "license": "GPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thpoll83/PolyKybdHost.git",
+    "directory": "vscode-extension/remote"
+  },
+  "homepage": "https://www.polykybd.org",
+  "categories": ["Other"],
+  "keywords": ["keyboard", "PolyKybd", "debug", "remote"],
+  "engines": { "vscode": "^1.75.0" },
+  "extensionKind": ["workspace"],
+  "activationEvents": ["onStartupFinished", "onDebug", "onCommand:polykybd.modeReporter.remoteSync"],
+  "main": "./out/remote.js",
+  "capabilities": {
+    "untrustedWorkspaces": { "supported": true },
+    "virtualWorkspaces": true
+  }
+}

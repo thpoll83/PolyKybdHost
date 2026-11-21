@@ -306,3 +306,10 @@ OFL). `fetch_icons.py` reads it from the Debian/Ubuntu path; on another system
 set `POLYKYBD_LIBERATION_SANS_BOLD` to the `.ttf`. Only a missing icon is
 redrawn, so a rebuild with the committed `icons/` needs no font. A different
 font version can change pixels.
+
+## One icon per action (2026-11-15)
+
+Two keys of one app share an image only when they do the same thing (maintainer,
+2026-11-15). OrcaSlicer Shift+Q (orient every object on the plate) is `orient_plate.png`:
+Material Symbols `explore` (`icons/_parts/_orient.png`, Apache-2.0) over the word PLAT,
+drawn by `composites()` like the camera views. Q (orient the selection) keeps `orient.png`.

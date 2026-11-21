@@ -113,6 +113,16 @@ Every icon is a 40×40 1-bit PNG, bound with `region: [40, 40]`, `margin: 0`,
 has `shared: false`: the set draws its own art, so a picture used in two modes
 is the same bytes and the keyboard keeps one copy.
 
+Two keys of the Vim sets (all modes together) share a picture only when they
+do the same thing, and then they have the same label (maintainer's rule,
+2026-11-15). Two exceptions keep their own label: `G` ("Last line (or line N)")
+and CTRL-End ("Last line") both go to line [count], default the last line
+(`:help G`, `:help <C-End>`), and only the column differs; the labels stay
+apart because `keys.yaml` also feeds the Obsidian Vim layer and the Vim sets
+feed the Emacs evil sets, which draw these keys differently. Terminal mode's
+CTRL-\ keeps "CTRL-\ CTRL-N: Normal mode", since the label names the second
+key.
+
 ### Fluent and Material glyphs
 
 Microsoft Fluent UI System Icons (MIT,
@@ -122,8 +132,8 @@ renders are in `icons/src/`; `fetch_icons.py` scales them to 1 bit.
 
 | `icons/src/` file | Source | Used for |
 |---|---|---|
-| `copy.png` | Fluent `Copy` | yank (`copy.png`, `yank_lines.png`) |
-| `paste.png` | Fluent `Clipboard Paste` | put, insert register (`paste.png`, `put_after.png`, `put_before.png`) |
+| `copy.png` | Fluent `Copy` | yank (`copy.png`, `yank_lines.png`, `yank_line_eol.png`: Normal `Y`, over "line / $") |
+| `paste.png` | Fluent `Clipboard Paste` | put, insert register (`paste.png`, `put_after.png`, `put_before.png`, `put_keep.png`, `paste_reg.png`) |
 | `undo.png`, `redo.png` | Fluent `Arrow Undo`, `Arrow Redo` | undo, redo, Replace mode restore |
 | `eraser.png` | Fluent `Eraser` | delete (`delete.png`, `delete_eol.png`, `delete_lines.png`) |
 | `edit.png` | Fluent `Edit` | change (`change*.png`, `repeat_change.png`) |
@@ -131,20 +141,20 @@ renders are in `icons/src/`; `fetch_icons.py` scales them to 1 bit.
 | `tag.png` | Fluent `Tag` | CTRL-] and CTRL-T |
 | `bookmark.png`, `bookmark_add.png` | Fluent `Bookmark`, `Bookmark Add` | go to mark, set mark |
 | `filter.png` | Fluent `Filter` | `!` |
-| `play.png`, `record.png` | Fluent `Play`, `Record` | `@`, `q`, run the command line |
+| `play.png`, `record.png` | Fluent `Play`, `Record` | `@`, `q`, run the command line (`run_cmd.png`: over ":cmd") |
 | `book_q.png` | Fluent `Book Question Mark` | `K` |
 | `split.png` | Fluent `Split Vertical` | CTRL-W |
 | `pause.png` | Fluent `Pause` | CTRL-Z |
-| `indent_inc.png`, `indent_dec.png` | Fluent `Text Indent Increase`, `Text Indent Decrease` | `>` `<`, Insert CTRL-T CTRL-D |
+| `indent_inc.png`, `indent_dec.png` | Fluent `Text Indent Increase`, `Text Indent Decrease` | `>` `<`, Insert CTRL-T CTRL-D (`indent_line_inc.png`, `indent_line_dec.png`: with the line mark) |
 | `align_left.png` | Fluent `Text Align Left` | `=` |
 | `clip_letter.png` | Fluent `Clipboard Letter` | `"` (register) |
 | `help.png` | Fluent `Question Circle` | F1 |
 | `swap.png` | Fluent `Arrow Swap` | CTRL-^ (`alt_file.png`) |
-| `history.png` | Fluent `History` | command-line history |
+| `history.png` | Fluent `History` | command-line history (`history_*.png`; `complete_hist_*.png`: beside a completion menu, for command-line CTRL-N CTRL-P) |
 | `list.png` | Fluent `Text Bullet List` | command-line CTRL-D |
 | `window.png` | Fluent `Window` | command-line CTRL-F |
 | `sync.png` | Fluent `Arrow Sync` | CTRL-L |
-| `top.png`, `bottom.png` | Material `vertical_align_top`, `vertical_align_bottom` | first and last line |
+| `top.png`, `bottom.png` | Material `vertical_align_top`, `vertical_align_bottom` | first and last line (`goto_line.png`: with the word "line N") |
 | `backspace.png` | Material `backspace` | `X`, CTRL-H, and mirrored for `x` and Delete |
 
 ### Drawn glyphs
@@ -163,7 +173,7 @@ everywhere:
 | find character | an arrow to a boxed character, over "find" or "till" | `find_*`, `till_*` |
 | repeat | a picture or word over "again" | `find_again*`, `repeat_change`, `repeat_subst`, `insert_again` |
 | search | a magnifier with an arrow, or over "next", "prev", "word" | `search_*`, `match_*`, `word_search_*` |
-| insert | a text cursor before, after, at either end of a line, or on a new line | `insert`, `append`, `insert_bol`, `append_eol`, `open_below`, `open_above` |
+| insert | a text cursor before, after, at either end of a line, or on a new line | `insert`, `append`, `insert_bol`, `append_eol`, `open_below`, `open_above`, `insert_block`, `append_block` (Visual-block `I` `A`: a cursor on every row) |
 | Visual | the selected area | `visual_char`, `visual_line`, `visual_block`, `other_end`, `other_corner` |
 | a glyph with a suffix | a small Fluent glyph over an arrow to the line end, two rows (the line), a box (one character), or a word | `delete_eol`, `change_char`, `undo_line`, `del_word_before`, `restore_*` ... |
 | text | characters and an arrow | `replace_char` ("a→b"), `replace_mode`, `swap_case`, `to_upper`, `to_lower`, `digraph` ("e:→ë"), `literal` ("^M raw"), `normal_once`, `visual_once`, `increment` ("+1"), `decrement` |

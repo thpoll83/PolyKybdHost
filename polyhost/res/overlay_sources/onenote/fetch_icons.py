@@ -21,6 +21,7 @@ from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch, number_badge  # noqa: E402
+import action_variants  # noqa: E402
 
 RENDER_PX = 96
 
@@ -115,8 +116,6 @@ FLUENT = {
     "copypage": "Document Copy",
     "navwider": "Panel Left Expand",
     "navnarrower": "Panel Left Contract",
-    "pagein": "Text Indent Increase",
-    "pageout": "Text Indent Decrease",
     "fullpage": "Full Screen Maximize",
     "closenb": "Dismiss",
     "settings": "Settings",
@@ -126,8 +125,7 @@ FLUENT = {
     # --- search ---
     "find": "Search",
     "searchall": "Book Search",
-    "nextresult": "Arrow Down",
-    "prevresult": "Arrow Up",
+    "fullscreen": "Arrow Maximize",
     "lookup": "Lightbulb",
     # --- review / share / audio ---
     "spelling": "Text Grammar Checkmark",
@@ -197,6 +195,16 @@ def _draw_onenote_logo(path: Path) -> None:
     Image.fromarray(rgba, "RGBA").resize((RENDER_PX, RENDER_PX), Image.LANCZOS).save(path)
 
 
+# Different actions that start from one icon: each gets its own picture
+# (one icon per action, maintainer 2026-11-15). See action_variants.py.
+VARIANTS = {
+    "nextresult_find.png": ("arrow", "find.png", "down"),
+    "prevresult_find.png": ("arrow", "find.png", "up"),
+    "pageout_pg.png": ("tag", "outdent.png", "PG"),
+    "pagein_pg.png": ("tag", "indent.png", "PG"),
+}
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -208,6 +216,7 @@ def main() -> int:
         _draw_onenote_logo(out / "onenote.png")
         print("  onenote.png  <- drawn program mark")
     print(f"Wrote {n} icons to {out}")
+    action_variants.make(out, VARIANTS)
     return 0
 
 

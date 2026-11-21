@@ -57,7 +57,7 @@ ICONS = {
     "tagfilter": "Filter",
     "back": "Arrow Left",
     "forward": "Arrow Right",
-    "focuslist": "Text Bullet List",
+    "focuslist": "Apps List Detail",
     "focusformat": "Text Font",
     "listprev": "Panel Left Contract",
     "listnext": "Panel Left Expand",

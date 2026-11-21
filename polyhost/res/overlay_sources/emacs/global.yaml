@@ -106,9 +106,9 @@ bindings:
   - { key: "\\", mods: [ALT], icon: del_space.png, region: [40, 32], label: "Delete spaces" }
   - { key: SPACE, mods: [ALT], icon: cyclespace.png, label: "Cycle spacing" }
   - { key: H, mods: [ALT], icon: mark_para.png, region: [40, 32], label: "Mark paragraph" }
-  - { key: M, mods: [ALT], icon: indentation.png, label: "Back to indentation" }
+  - { key: M, mods: [ALT], icon: indentation.png, region: [40, 32], label: "Back to indentation" }
   - { key: I, mods: [ALT], icon: tabstop.png, label: "Tab to tab stop" }
-  - { key: J, mods: [ALT], icon: newline_indent.png, label: "Newline in comment" }
+  - { key: J, mods: [ALT], icon: newline_comment.png, region: [40, 32], label: "Newline in comment" }
   - { key: R, mods: [ALT], icon: windowline.png, label: "Point to window center/top/bottom" }
   - { key: "`", mods: [ALT], icon: menubar_text.png, label: "Menu bar (text)" }
   - { key: LEFT, mods: [ALT], icon: word_back.png, region: [40, 32], label: "Backward word" }
@@ -152,7 +152,7 @@ bindings:
   - { key: O, mods: [CTRL, ALT], icon: splitline.png, label: "Split line" }
   - { key: C, mods: [CTRL, ALT], icon: recursive_exit.png, label: "Exit recursive edit" }
   - { key: I, mods: [CTRL, ALT], icon: complete.png, region: [40, 32], label: "Complete symbol" }
-  - { key: J, mods: [CTRL, ALT], icon: newline_indent.png, label: "Newline in comment" }
+  - { key: J, mods: [CTRL, ALT], icon: newline_comment.png, region: [40, 32], label: "Newline in comment" }
   - { key: W, mods: [CTRL, ALT], icon: append_kill.png, region: [40, 32], label: "Append next kill" }
   - { key: "\\", mods: [CTRL, ALT], icon: indentregion.png, label: "Indent region" }
   - { key: ",", mods: [CTRL, ALT], icon: xref_forward.png, label: "Forward to definition" }

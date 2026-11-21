@@ -136,6 +136,7 @@ class PolyKybdMock:
             bundle_versions=_shipped_bundle_versions() if fontpack == "current" else {})
         self.hid = MockHidHelper(self.firmware, device_settings)
         from polyhost.device.poly_kybd import PolyKybd
+        self.hw_ids = None
         self._wire = PolyKybd(device_settings, _NoPauseSettings(poly_settings))
         self._wire.hid = self.hid
         self._wire.protocol_version = self.protocol_version
@@ -506,8 +507,8 @@ class PolyKybdMock:
     def tutorial_end(self):
         return self._tutorial_call("tutorial_end")
 
-    def ai_set_keys(self, states, flags, slots):
-        return self._ai_call("ai_set_keys", states, flags, slots)
+    def ai_set_keys(self, states, flags, slots, page=None):
+        return self._ai_call("ai_set_keys", states, flags, slots, page)
 
     def ai_read_events(self, last_seq):
         return self._ai_call("ai_read_events", last_seq)
@@ -818,6 +819,13 @@ class PolyKybdMock:
     def clear_crash_record(self) -> tuple[bool, Any]:
         self._log_call("clear_crash_record")
         return self._wire.clear_crash_record()
+
+    def get_hw_ids(self) -> tuple[bool, Any]:
+        self._log_call("get_hw_ids")
+        ok, ids = self._wire.get_hw_ids()
+        if ok:
+            self.hw_ids = ids
+        return ok, ids
 
     # ── inspection helpers ──────────────────────────────────────────────────
 

@@ -39,7 +39,6 @@ def _build(developer=True):
     """Build the menus the way PolyHost does (Developer only in developer mode)."""
     menu = QMenu()
     cm = CommandsSubMenu(_StubHost())
-    cm.build_brightness_menu(menu)
     cm.build_maintenance_menu(menu)
     if developer:
         cm.build_developer_menus(menu.addMenu("Developer"))
@@ -94,18 +93,10 @@ class TestUpdateEnabled(unittest.TestCase):
         for action in cm._fw_actions + cm._device_actions:
             self.assertFalse(action.isEnabled(), action.text())
 
-    def test_brightness_follows_the_connection(self):
-        # Brightness is a plain protocol command — it must NOT ride fw_enabled
-        # (a mismatched keyboard can be flashed, not dimmed).
-        cm, menu = _build()
-        cm.update_enabled(False, True)
-        brightness = next(a for a in menu.actions() if a.text() == "Brightness")
-        self.assertFalse(brightness.isEnabled())
-
     def test_normal_mode_builds_no_developer_actions(self):
         _cm, menu = _build(developer=False)
         texts = [a.text() for a in menu.actions() if not a.isSeparator()]
-        self.assertEqual(texts, ["Brightness", "Maintenance"])
+        self.assertEqual(texts, ["Maintenance"])
 
 
 class TestSplitVbusMark(unittest.TestCase):

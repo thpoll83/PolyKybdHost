@@ -98,7 +98,7 @@ bindings:
   - { key: V, mods: [], icon: select.png, label: "Select tool", source: "ms-fluent/Cursor (MIT)" }
   - { key: H, mods: [], icon: hand.png,   label: "Hand tool",   source: "ms-fluent/Hand Right (MIT)" }
   # hold Space = temporary Hand tool, back to the previous tool on release
-  - { key: SPACE, mods: [], icon: hand.png, label: "Hand tool (hold)", source: "ms-fluent/Hand Right (MIT)" }
+  - { key: SPACE, mods: [], icon: space_hand.png, label: "Hand tool (hold)", region: [72, 40], mode: alpha, source: "vectorcraft/space_hand.png (Fluent Hand Right + four arrows, space_hint.py)" }
 
   # --- Enter (measure_ui.rs, comments.rs, edit_text_ui.rs, js_ui.rs) ---
   - { key: ENTER, mods: [],        icon: finish.png, label: "Finish shape", source: "ms-fluent/Checkmark (MIT)" }

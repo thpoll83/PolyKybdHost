@@ -404,6 +404,15 @@ class RemoteCore(Observable):
     def agents_cloud_disconnect(self):
         return self._device(p.M_AGENTS_CLOUD_DISCONNECT)
 
+    def agents_cloud_join_code(self):
+        return self._device(p.M_AGENTS_CLOUD_JOIN_CODE)
+
+    def agents_cloud_join(self, code, replace=False):
+        return self._device(p.M_AGENTS_CLOUD_JOIN, {"code": code, "replace": bool(replace)})
+
+    def agents_cloud_leave(self):
+        return self._device(p.M_AGENTS_CLOUD_LEAVE)
+
     def refresh_unicode_mode(self):
         """Ask the daemon to re-detect + re-push the unicode input mode.
 
@@ -446,6 +455,9 @@ class RemoteCore(Observable):
 
     def clear_crash_record(self):
         return self._device(p.M_CRASH_CLEAR)
+
+    def get_hw_ids(self):
+        return self._device(p.M_HW_IDS_GET)
 
     # -- overlays -----------------------------------------------------------
     def send_overlay_data(self, files):

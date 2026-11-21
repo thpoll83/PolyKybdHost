@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from PIL import Image, ImageDraw, ImageFont  # noqa: E402
 
-from polyhost.res.overlay_sources import brand_marks, icon_fetch, number_badge  # noqa: E402
+from polyhost.res.overlay_sources import action_variants, brand_marks, icon_fetch, number_badge  # noqa: E402
 
 # A bold monospace font for the two operator icons. Set RSTUDIO_ICON_FONT to a
 # .ttf to use another one; otherwise the first of these that exists is used.
@@ -149,17 +149,32 @@ FLUENT = {
     "nextplot": "ms:arrow_forward_ios",
     "gitdiff": "ms:difference",
     "gitcommit": "ms:commit",
-    # panes (Ctrl+1..9)
-    "pane1": "Code",
-    "pane2": "Window Console",
-    "pane3": "Question Circle",
-    "pane4": "History",
-    "pane5": "Folder",
-    "pane6": "Data Line",
-    "pane7": "Box",
-    "pane8": "ms:data_table",
-    "pane9": "ms:preview",
+    # panes (Ctrl+1..9): the pane glyph; VARIANTS adds the digit
+    "_pane1": "Code",
+    "_pane2": "Window Console",
+    "_pane3": "Question Circle",
+    "_pane4": "History",
+    "_pane5": "Folder",
+    "_pane6": "Data Line",
+    "_pane7": "Box",
+    "_pane8": "ms:data_table",
+    "_pane9": "ms:preview",
     "_zoombase": "ms:fullscreen",
+}
+
+
+# Different actions that start from one icon: each gets its own picture
+# (one icon per action, maintainer 2026-11-15). See action_variants.py.
+VARIANTS = {
+    "pane1.png": ("tag", "_pane1.png", "1"),
+    "pane2.png": ("tag", "_pane2.png", "2"),
+    "pane3.png": ("tag", "_pane3.png", "3"),
+    "pane4.png": ("tag", "_pane4.png", "4"),
+    "pane5.png": ("tag", "_pane5.png", "5"),
+    "pane6.png": ("tag", "_pane6.png", "6"),
+    "pane7.png": ("tag", "_pane7.png", "7"),
+    "pane8.png": ("tag", "_pane8.png", "8"),
+    "pane9.png": ("tag", "_pane9.png", "9"),
 }
 
 
@@ -174,6 +189,7 @@ def main() -> int:
         print(f"  {name}.png  <- text {text!r} (DejaVu Sans Mono Bold)")
     brand_marks.ensure(out / "rstudio.png", "rstudioide")
     print(f"Wrote icons to {out}")
+    action_variants.make(out, VARIANTS)
     return 0
 
 

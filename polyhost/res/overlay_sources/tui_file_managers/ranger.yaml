@@ -81,7 +81,7 @@ bindings:
   - { key: F8, mods: [], label: "Delete" }
   - { key: F10, mods: [], label: "Quit" }
   # The first key of a two-key sequence (SOURCES.md).
-  - { key: Y, mods: [], icon: copy.png, label: "Copy..." }                 # yy yp yd yn ya yr yt
+  - { key: Y, mods: [], icon: copy_menu.png, shared: false, label: "Copy..." }                 # yy yp yd yn ya yr yt
   - { key: P, mods: [], icon: paste.png, label: "Paste..." }               # pp po pP pO pl pL phl pd
   - { key: U, mods: [], icon: undo.png, label: "Undo..." }                 # ud uy uv uV ut uq um
   - { key: O, mods: [], icon: sort.png, label: "Sort..." }                 # os ob on om oc oa ot oe or oz

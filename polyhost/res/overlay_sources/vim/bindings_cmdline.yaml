@@ -24,7 +24,7 @@ bindings:
 - key: R
   mods:
   - CTRL
-  icon: paste.png
+  icon: paste_reg.png
   label: Insert register
   shared: false
   source: :help c_CTRL-R
@@ -53,24 +53,24 @@ bindings:
   mods:
   - CTRL
   icon: line_start.png
-  label: Start of command line
+  label: Start of line
   shared: false
   source: :help c_CTRL-B
 - key: E
   mods:
   - CTRL
   icon: line_end.png
-  label: End of command line
+  label: End of line
   shared: false
   source: :help c_CTRL-E
 - key: HOME
   icon: line_start.png
-  label: Start of command line
+  label: Start of line
   shared: false
   source: :help c_<Home>
 - key: END
   icon: line_end.png
-  label: End of command line
+  label: End of line
   shared: false
   source: :help c_<End>
 - key: LEFT
@@ -110,20 +110,20 @@ bindings:
   mods:
   - SHIFT
   icon: complete_prev.png
-  label: Previous completion
+  label: Complete, previous match
   shared: false
   source: :help c_<S-Tab>
 - key: N
   mods:
   - CTRL
-  icon: complete_next.png
+  icon: complete_hist_next.png
   label: Next match or newer command
   shared: false
   source: :help c_CTRL-N
 - key: P
   mods:
   - CTRL
-  icon: complete_prev.png
+  icon: complete_hist_prev.png
   label: Previous match or older command
   shared: false
   source: :help c_CTRL-P
@@ -159,14 +159,14 @@ bindings:
   mods:
   - CTRL
   icon: match_next.png
-  label: Next match (incsearch)
+  label: Next match
   shared: false
   source: :help c_CTRL-G
 - key: T
   mods:
   - CTRL
   icon: match_prev.png
-  label: Previous match (incsearch)
+  label: Previous match
   shared: false
   source: :help c_CTRL-T
 - key: UP
@@ -180,7 +180,7 @@ bindings:
   shared: false
   source: :help c_<Down>
 - key: ENTER
-  icon: play.png
+  icon: run_cmd.png
   label: Run command
   shared: false
   source: :help c_<CR>
@@ -191,20 +191,20 @@ bindings:
   source: :help c_<Del>
 - key: INSERT
   icon: replace_mode.png
-  label: Overstrike mode
+  label: Replace mode
   shared: false
   source: :help c_<Insert>
 - key: '['
   mods:
   - CTRL
   icon: esc.png
-  label: Abandon command line
+  label: Back to Normal mode
   shared: false
   source: :help c_CTRL-[
 - key: C
   mods:
   - CTRL
   icon: esc.png
-  label: Abandon command line
+  label: Back to Normal mode
   shared: false
   source: :help c_CTRL-C

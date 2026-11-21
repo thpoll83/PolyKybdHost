@@ -149,6 +149,26 @@ ICONS = {
     "handle": "ms:line_curve", "interpolation": "ms:timeline", "lock_channel": "ms:lock",
     "filter": "ms:filter_alt", "marker": "ms:flag", "camera_bind": "ms:linked_camera",
     "samples": "ms:scatter_plot", "modifier": "ms:build_circle",
+    # --- mode audit (2026-11): sequencer, outliner, text, curve, grease pencil, NLA, clip
+    "multicam": "ms:switch_video", "gap_insert": "ms:space_bar",
+    "gap_remove": "ms:horizontal_distribute", "unmute": "ms:do_not_disturb_off",
+    "offset_clear": "ms:format_clear", "paste_place": "ms:content_paste", "speed": "ms:speed",
+    "retime": "ms:slow_motion_video", "slip": "ms:settings_ethernet", "change": "ms:change_circle",
+    "filter_off": "ms:filter_alt_off", "collection_include": "ms:folder", "driver": "ms:functions",
+    "keying_set_remove": "ms:key_off", "page_up": "ms:keyboard_double_arrow_up",
+    "page_down": "ms:keyboard_double_arrow_down", "backspace": "ms:backspace",
+    "line_break": "ms:keyboard_return", "top": "ms:vertical_align_top",
+    "bottom": "ms:vertical_align_bottom", "word_prev": "ms:keyboard_double_arrow_left",
+    "arrow_left": "ms:arrow_back", "arrow_right": "ms:arrow_forward", "text_new": "ms:note_add",
+    "text_open": "ms:file_open", "overwrite": "ms:keyboard", "select_line": "ms:short_text",
+    "spacing_less": "ms:format_letter_spacing", "spacing_more": "ms:format_letter_spacing_wide",
+    "small_caps": "ms:format_size", "accent": "ms:translate", "cyclic": "ms:cycle",
+    "row": "ms:table_rows", "erase": "ms:ink_eraser", "layer_hide": "ms:visibility_off",
+    "layers": "ms:layers", "material": "ms:style", "to_front": "ms:flip_to_front",
+    "opacity": "ms:opacity", "edit_lines": "ms:line_style", "single_user": "ms:person",
+    "sound": "ms:music_note", "transition": "ms:transition_fade", "clip_open": "ms:video_file",
+    "prefetch": "ms:download", "reconstruct": "ms:view_in_ar", "solve": "ms:calculate",
+    "track": "ms:location_searching", "path_clear": "ms:remove_road",
 }
 
 # Borrowed drawn glyphs: byte-identical copies from sibling apps.
@@ -253,6 +273,12 @@ def _play_reverse(path: Path, out: Path) -> None:
     Image.open(out / "play.png").transpose(Image.FLIP_LEFT_RIGHT).save(path)
 
 
+def _del_forward(path: Path, out: Path) -> None:
+    """Backspace mirrored: delete the word AFTER the cursor (Material has no
+    forward-delete key glyph)."""
+    Image.open(out / "backspace.png").transpose(Image.FLIP_LEFT_RIGHT).save(path)
+
+
 DRAWN = {
     "sel_vert.png": lambda p: _select_mode(p, "vert"),
     "sel_edge.png": lambda p: _select_mode(p, "edge"),
@@ -266,6 +292,171 @@ DRAWN = {
     "key_prev.png": lambda p: _key(p, "prev"),
     "snap.png": _magnet,
 }
+
+
+# ------------------------------------------------------------------ worded variants
+# One icon per action (maintainer rule, 2026-11-15): two keys may share an image
+# only when they do the same thing, across all Blender sets. A variant of an
+# action ("all", "fine", "select to", a numbered slot, another target) is its
+# base glyph over a short bold word. Drawn 1-bit, white on transparent, at the
+# spec's region size (36x32), so `mode: auto` renders it in alpha 1:1.
+# Not guarded: drawn from code and committed icons only (the skill's guard rule).
+#
+# stem -> (glyph, word). `glyph` is a stem in icons/ or "text:<characters>".
+WORDED = {f"multicam_{n}": ("multicam", str(n)) for n in range(1, 11)}
+WORDED.update({
+    # sequencer / NLA
+    "add_action_strip": ("add", "ACT"), "apply_scale": ("apply", "SCL"),
+    "meta_make": ("group", "META"), "meta_ungroup": ("ungroup", "META"),
+    "meta_toggle": ("group_enter", "META"), "tweak": ("group_enter", "TWK"),
+    "tweak_isolate": ("group_enter", "ISO"),
+    "strip_up": ("hier_parent", "STRIP"), "strip_down": ("hier_child", "STRIP"),
+    "swap_strips": ("swap", "STRIP"), "swap_left": ("swap", "LEFT"),
+    "swap_right": ("swap", "RIGHT"), "swap_inputs": ("swap", "IN"),
+    "lock_strips": ("lock_channel", "STRIP"), "unlock_strips": ("lock_pie", "STRIP"),
+    "lock_tracks": ("lock_channel", "TRK"), "unlock_tracks": ("lock_pie", "TRK"),
+    "mute_strips": ("mute", "STRIP"), "mute_unsel": ("mute", "OTHR"),
+    "unmute_unsel": ("unmute", "OTHR"), "markers_toggle": ("mute", "MRK"),
+    "mute_footage": ("mute", "CLIP"), "gap_remove_all": ("gap_remove", "ALL"),
+    "retime_menu": ("retime", "MENU"), "split_hard": ("split", "HARD"),
+    "split_stroke": ("split", "STRK"), "separate_images": ("separate", "IMG"),
+    "separate_fills": ("separate", "FILL"), "view_type": ("render_view", "PREV"),
+    "overlay_reset": ("overlays", "RST"), "overlay_frame": ("overlays", "FRM"),
+    "refresh_all": ("refresh", "ALL"), "reload_length": ("refresh", "LEN"),
+    "strips_connect": ("link", "CONN"), "strips_snap": ("snap", "STRIP"),
+    "strip_next": ("same_next", "STRIP"), "strip_next_center": ("same_next", "CTR"),
+    "strip_prev": ("same_prev", "STRIP"), "strip_prev_center": ("same_prev", "CTR"),
+    "linked_extend": ("select_linked", "EXT"), "select_box_handles": ("select_box", "HNDL"),
+    # movie clip
+    "clip_mode": ("track", "MASK"), "track_next": ("track", "+1"),
+    "track_prev": ("track", "-1"), "track_fwd": ("track", "FWD"), "track_back": ("track", "BWD"),
+    "path_end": ("jump_end", "PATH"), "path_start": ("jump_start", "PATH"),
+    "jump_failed": ("key_jump", "FAIL"), "marker_delete": ("marker", "DEL"),
+    "marker_pie": ("marker", "PIE"), "join_tracks": ("join", "TRK"),
+    "lock_selection": ("pin", "SEL"), "show_disabled": ("reveal", "DSBL"),
+    "search_area": ("search", "AREA"), "path_clear_after": ("path_clear", "AFT"),
+    "path_clear_before": ("path_clear", "BEF"),
+    # outliner
+    "collapse_all": ("collapse", "ALL"), "expand_all": ("shrink_fatten", "ALL"),
+    "collapse_item": ("collapse", "ONE"), "expand_item": ("shrink_fatten", "ONE"),
+    "expand_toggle": ("collapse", "TOGL"),
+    "extend_up": ("hier_parent", "EXT"), "extend_down": ("hier_child", "EXT"),
+    "collection_exclude": ("collection_include", "EXCL"),
+    "show_hierarchy": ("ed_outliner", "TREE"), "show_active": ("localview", "ACT"),
+    "reveal_all": ("reveal", "ALL"), "drivers_delete": ("driver", "DEL"),
+    "keying_set_add": ("keying_set", "ADD"),
+    # text editor and text objects
+    "delete_word": ("backspace", "WORD"), "line_end": ("jump_end", "LINE"),
+    "line_start": ("jump_start", "LINE"), "sel_line_end": ("jump_end", "SEL"),
+    "sel_line_start": ("jump_start", "SEL"), "sel_text_end": ("bottom", "SEL"),
+    "sel_text_start": ("top", "SEL"), "sel_page_down": ("page_down", "SEL"),
+    "sel_page_up": ("page_up", "SEL"), "word_prev_w": ("word_prev", "WORD"),
+    "word_next_w": ("propagate", "WORD"), "sel_word_prev": ("word_prev", "SEL"),
+    "sel_word_next": ("propagate", "SEL"), "sel_up": ("hier_parent", "SEL"),
+    "sel_down": ("hier_child", "SEL"), "line_up": ("hier_parent", "LINE"),
+    "line_down": ("hier_child", "LINE"), "duplicate_line": ("duplicate", "LINE"),
+    "run_script": ("play", "PY"), "char_up": ("text:A", "+1"), "char_down": ("text:A", "-1"),
+    "spacing_less_fine": ("spacing_less", "FINE"), "spacing_more_fine": ("spacing_more", "FINE"),
+    # curve
+    "tilt_clear": ("clear_rot", "TILT"), "tilt": ("rotate", "TILT"),
+    "make_segment": ("connect", "SEG"), "handles_recalc": ("handle", "CALC"),
+    "curve_radius": ("shrink_fatten", "RAD"),
+    # grease pencil
+    "multiframe_lines": ("edit_lines", "MULTI"), "select_fill": ("fill", "SEL"),
+    "hide_other_layers": ("hide_others", "LYR"), "reveal_layers": ("reveal", "LYR"),
+    "order_forward": ("hier_parent", "FWD"), "order_backward": ("hier_child", "BWD"),
+    "order_to_back": ("select_invert", "BACK"),
+    "gp_interpolate": ("interpolation", "GP"), "gp_interpolate_seq": ("interpolation", "SEQ"),
+    "join_fills": ("join", "FILL"), "join_strokes": ("join", "STRK"),
+    "join_copy": ("join", "COPY"), "layer_move": ("layers", "MOVE"),
+    "stroke_close": ("make_face", "CLS"), "gp_frame_delete": ("key_delete", "FRM"),
+    "gp_frame_delete_all": ("key_delete", "ALL"), "gp_blank_key": ("key_insert", "BLNK"),
+    "gp_anim_menu": ("key_menu", "ANIM"), "layer_merge": ("merge", "LYR"),
+    "paste_behind": ("paste_place", "BACK"),
+    "gp_point_select": ("sel_vert", "SEL"), "gp_point_mask": ("sel_vert", "MASK"),
+    "gp_segment_select": ("sel_edge", "SEL"), "gp_segment_mask": ("sel_edge", "MASK"),
+    "gp_stroke_select": ("stroke", "SEL"), "gp_stroke_mask": ("stroke", "MASK"),
+    "weight_direction": ("switch_dir", "WGT"),
+    # one icon per action across all Blender sets (2026-11-17 sweep)
+    "select_tool": ("select_box", "TOOL"), "to_sphere": ("tosphere", "SPHR"),
+    "render_changed": ("render", "CHNG"), "find_node": ("search", "NODE"),
+    "fit_backdrop": ("frame_all", "BKDR"), "frame_all_quad": ("frame_all", "QUAD"),
+    "same_type_next": ("same_next", "TYPE"), "same_type_prev": ("same_prev", "TYPE"),
+    "bone_roll": ("rotate", "ROLL"), "roll_recalc": ("rotate", "CALC"),
+    "roll_clear": ("clear_rot", "ROLL"), "skin_resize": ("scale", "SKIN"),
+    "deselect_linked": ("deselect", "LINK"), "tool_pie": ("tools", "PIE"),
+    "start_frame_set": ("jump_start", "SET"), "end_frame_set": ("jump_end", "SET"),
+    "snap_target": ("snap_options", "TRGT"), "column_frame": ("column", "FRM"),
+    "column_between": ("column_markers", "BTWN"), "linked_pick": ("select_linked", "PICK"),
+    "handles_show": ("handle", "SHOW"), "select_mirror": ("mirror", "SEL"),
+    "extrude_menu": ("extrude", "MENU"), "fill_bone": ("fill", "BONE"),
+    "parent_add": ("hier_parent", "ADD"), "child_add": ("hier_child", "ADD"),
+    "separate_group": ("separate", "GRP"), "select_split": ("split", "SEL"),
+    "envelope": ("bbone", "ENV"), "bone_select_mask": ("bbone", "SEL"),
+    "bone_option_on": ("bone_options", "ON"), "bone_option_off": ("bone_options", "OFF"),
+    "cursor_center_2d": ("frame_cursor", "CTR"), "bone_collection_add": ("collection_add", "BONE"),
+    "region_custom": ("render_region", "CUST"), "region_custom_use": ("render_region", "USE"),
+    "vertex_parent": ("parent", "VERT"), "align_uv_menu": ("align", "MENU"),
+    "sel_vert_add": ("sel_vert", "ADD"), "sel_edge_add": ("sel_edge", "ADD"),
+    "sel_face_add": ("sel_face", "ADD"), "sel_vert_exp": ("sel_vert", "EXP"),
+    "sel_edge_exp": ("sel_edge", "EXP"), "sel_face_exp": ("sel_face", "EXP"),
+    "sel_vert_add_exp": ("sel_vert", "+EXP"), "sel_edge_add_exp": ("sel_edge", "+EXP"),
+    "sel_face_add_exp": ("sel_face", "+EXP"), "sel_vert_menu": ("sel_vert", "MENU"),
+    "sel_edge_menu": ("sel_edge", "MENU"), "sel_face_menu": ("sel_face", "MENU"),
+    "face_mask": ("sel_face", "MASK"), "sel_mode_menu": ("sel_face", "MODE"),
+    "knife_selected": ("knife", "SEL"), "rip_fill": ("rip", "FILL"),
+    "normals_point": ("normals", "PNT"), "normals_recalc": ("normals", "CALC"),
+    "edge_crease": ("crease", "EDGE"), "island_select": ("island", "ISL"),
+    "sample_group": ("vgroup", "SMPL"), "triangulate_fixed": ("triangulate", "FIX"),
+    "sample_merged": ("eyedropper", "MRG"), "sample_weight": ("eyedropper", "WGT"),
+    "weight_set": ("weight", "SET"), "blend_menu": ("blend_neighbor", "MENU"),
+    "smooth_keys": ("br_smooth", "KEYS"), "duplicate_inputs": ("duplicate_linked", "IN"),
+    "merge_inputs": ("merge", "IN"), "link_sockets": ("link", "SOCK"),
+    "collection_remove_active": ("collection_remove", "ACT"), "tex_angle_mask": ("tex_angle", "MASK"),
+    "mask_pie": ("br_mask", "PIE"), "grow_visible": ("grow", "VIS"),
+    "shrink_visible": ("shrink", "VIS"), "render_slot_next": ("render_slot", "NEXT"),
+    "render_slot_prev": ("render_slot", "PREV"), "select_pinned": ("pin", "PIND"),
+})
+WORDED.update({f"subdiv_{n}": ("subdiv", str(n)) for n in range(6)})
+WORDED.update({f"render_slot_{n}": ("render_slot", str(n)) for n in range(5, 10)})
+
+WORD_BOLD = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
+WORD_SIZE = (36, 32)            # the spec's region: placed 1:1
+WORD_GLYPH_BOX = (2, 0, 34, 20)  # x0, y0, x1, y1 of the glyph above the word
+WORD_PX = 11
+WORD_GLYPH_TEXT_PX = 18
+WORD_BASELINE = 31
+
+
+def _worded(dest: Path, out: Path, glyph: str, word: str) -> None:
+    from PIL import ImageFont
+    w, h = WORD_SIZE
+    mask = Image.new("L", WORD_SIZE, 0)
+    d = ImageDraw.Draw(mask)
+    x0, y0, x1, y1 = WORD_GLYPH_BOX
+    if glyph.startswith("text:"):
+        f = ImageFont.truetype(WORD_BOLD, WORD_GLYPH_TEXT_PX)
+        d.text((w / 2, (y0 + y1) / 2), glyph[5:], font=f, fill=255, anchor="mm")
+    else:
+        im = Image.open(out / f"{glyph}.png").convert("RGBA")
+        a = np.asarray(im).astype(np.float32)
+        # ink = alpha where the art is dark (Material, drawn glyphs) or light (borrowed)
+        ink = Image.fromarray(a[..., 3].astype(np.uint8), "L")
+        bbox = ink.getbbox() or (0, 0, im.width, im.height)
+        ink = ink.crop(bbox)
+        k = min((x1 - x0) / ink.width, (y1 - y0) / ink.height)
+        nw, nh = max(1, round(ink.width * k)), max(1, round(ink.height * k))
+        ink = ink.resize((nw, nh), Image.LANCZOS).point(lambda v: 255 if v >= 128 else 0)
+        mask.paste(255, (x0 + (x1 - x0 - nw) // 2, y0 + (y1 - y0 - nh) // 2), ink)
+    f = ImageFont.truetype(WORD_BOLD, WORD_PX)
+    tw = d.textlength(word, font=f)
+    if tw > w:
+        raise ValueError(f"{dest.name}: word {word!r} is {tw:.0f} px wide (max {w})")
+    d.text(((w - tw) / 2, WORD_BASELINE), word, font=f, fill=255, anchor="ls")
+    mask = mask.point(lambda v: 255 if v >= 128 else 0)
+    img = Image.new("RGBA", WORD_SIZE, (255, 255, 255, 0))
+    img.putalpha(mask)
+    img.save(dest)
 
 
 def _blender_mark(path):
@@ -291,6 +482,8 @@ def main() -> int:
     # limited to other stems on a fresh icons/ must not fail on it.
     if (out / "play.png").exists():
         _play_reverse(out / "play_reverse.png", out)
+    if (out / "backspace.png").exists():
+        _del_forward(out / "del_forward.png", out)
     # Drawn and borrowed glyphs are guarded: the committed file is the source of
     # truth once it exists, so a hand-tuned one survives. The program mark is
     # NOT guarded: it is rebuilt from the vendored marks/si_blender.svg every
@@ -302,6 +495,11 @@ def main() -> int:
             draw(out / name)
             print(f"  {name}  <- drawn")
     icon_fetch.borrow(BORROWED, out)
+    for name, (glyph, word) in WORDED.items():
+        if only and name not in only:
+            continue
+        _worded(out / f"{name}.png", out, glyph, word)
+        print(f"  {name}.png  <- drawn {glyph} + '{word}'")
     _blender_mark(out / "blender_mark.png")
     return 0
 

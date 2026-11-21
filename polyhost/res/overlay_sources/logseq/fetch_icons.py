@@ -21,6 +21,7 @@ from PIL import Image
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
+import action_variants  # noqa: E402
 
 ICONS = {
     # --- while editing a block ---
@@ -40,7 +41,6 @@ ICONS = {
     "killwordnext": "ms:keyboard_tab",
     "killwordprev": "ms:keyboard_tab_rtl",
     "copyembed": "Code Block",
-    "pasteoneblock": "Clipboard Paste",
     "ytstamp": "Video Clip",
     "comment": "Comment Add",
     "zoomblock": "Arrow Maximize",
@@ -122,6 +122,13 @@ def _logseq_mark(dest: Path, px: int = 32) -> None:
     print(f"  {dest.name}  <- Logseq app icon, 1-bit tile with the ovals cut out")
 
 
+# Different actions that start from one icon: each gets its own picture
+# (one icon per action, maintainer 2026-11-15). See action_variants.py.
+VARIANTS = {
+    "pasteoneblock_1.png": ("tag", "paste.png", "1"),
+}
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(ICONS, out)
@@ -131,6 +138,7 @@ def main() -> int:
     print("  killafter.png  <- ms:backspace, mirrored")
     _logseq_mark(out / "logseq.png")
     print(f"Wrote {n} icons (+ program mark) to {out}")
+    action_variants.make(out, VARIANTS)
     return 0
 
 

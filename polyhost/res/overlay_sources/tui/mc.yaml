@@ -47,11 +47,11 @@ bindings:
   # "QuitQuiet = f20" (Shift+F3 ... Shift+F10)
   - { key: F3, mods: [SHIFT], icon: rawoutput.png, label: "View raw" }
   - { key: F4, mods: [SHIFT], icon: newfile.png, label: "Edit new file" }
-  - { key: F5, mods: [SHIFT], icon: copy.png, label: "Copy (single)" }
-  - { key: F6, mods: [SHIFT], icon: move.png, label: "Move (single)" }
-  - { key: F8, mods: [SHIFT], icon: delete.png, label: "Delete (single)" }
-  - { key: F9, mods: [SHIFT], icon: menu.png, label: "Last menu item" }
-  - { key: F10, mods: [SHIFT], icon: exit.png, label: "Quit, no prompt" }
+  - { key: F5, mods: [SHIFT], icon: copy_single.png, shared: false, label: "Copy (single)" }
+  - { key: F6, mods: [SHIFT], icon: move_single.png, label: "Move (single)" }
+  - { key: F8, mods: [SHIFT], icon: delete_single.png, shared: false, label: "Delete (single)" }
+  - { key: F9, mods: [SHIFT], icon: menu_last.png, label: "Last menu item" }
+  - { key: F10, mods: [SHIFT], icon: exit_now.png, label: "Quit, no prompt" }
   # --- [filemanager]: "ChangePanel = tab; ctrl-i"
   - { key: TAB, icon: focusnext.png, label: "Other panel" }
   # --- [filemanager]: "Reread = ctrl-r", "Swap = ctrl-u", "Shell = ctrl-o",
@@ -82,11 +82,11 @@ bindings:
   - { key: E, mods: [ALT], icon: codepage.png, label: "Select codepage" }
   # --- [panel]: "History = alt-shift-h", "HistoryNext = alt-u", "HistoryPrev = alt-y";
   # [filemanager]: "History = alt-h", "EditorViewerHistory = alt-shift-e"
-  - { key: H, mods: [ALT, SHIFT], icon: history.png, label: "Directory history" }
+  - { key: H, mods: [ALT, SHIFT], icon: history_dir.png, label: "Directory history" }
   - { key: U, mods: [ALT], icon: next.png, label: "History next" }
   - { key: Y, mods: [ALT], icon: prev.png, label: "History previous" }
   - { key: H, mods: [ALT], icon: history.png, label: "Command history" }
-  - { key: E, mods: [ALT, SHIFT], icon: history.png, label: "Edit/view history" }
+  - { key: E, mods: [ALT, SHIFT], icon: history_edit.png, label: "Edit/view history" }
   # --- [panel]: "TopOnScreen = alt-g", "MiddleOnScreen = alt-r", "BottomOnScreen = alt-j"
   - { key: G, mods: [ALT], icon: row_top.png, region: [40, 32], label: "Top of screen" }
   - { key: R, mods: [ALT], icon: recenter.png, label: "Middle of screen" }
@@ -97,9 +97,9 @@ bindings:
   - { key: "8", mods: [ALT, SHIFT], icon: invert.png, label: "Invert selection" }
   # --- [filemanager]: "Find = alt-question", "CdQuick = alt-c", "ShowHidden = alt-dot",
   # "ViewFiltered = alt-exclamation", "ScreenList = alt-prime"
-  - { key: "/", mods: [ALT, SHIFT], icon: find.png, label: "Find file", concept: find }
+  - { key: "/", mods: [ALT, SHIFT], icon: findfile.png, label: "Find file"}
   - { key: C, mods: [ALT], icon: openfolder.png, label: "Quick change dir" }
-  - { key: ".", mods: [ALT], icon: hidden.png, label: "Show hidden files" }
+  - { key: ".", mods: [ALT], icon: showhidden.png, label: "Show hidden files" }
   - { key: "1", mods: [ALT, SHIFT], icon: filter.png, label: "View filtered output" }
   - { key: "'", mods: [ALT], icon: screens.png, label: "Screen list" }
   # --- [filemanager]: "SplitVertHoriz = alt-comma", "SplitEqual = alt-equal",
@@ -107,7 +107,7 @@ bindings:
   - { key: ",", mods: [ALT], icon: splitright.png, label: "Split orientation" }
   - { key: "=", mods: [ALT], icon: splitequal.png, label: "Equal panel size" }
   - { key: RIGHT, mods: [ALT, SHIFT], icon: expand.png, label: "Widen panel" }
-  - { key: LEFT, mods: [ALT, SHIFT], icon: shrink.png, label: "Narrow panel" }
+  - { key: LEFT, mods: [ALT, SHIFT], icon: narrow.png, label: "Narrow panel" }
   # --- [filemanager]: "PutCurrentPath = alt-a", "PutOtherPath = alt-shift-a",
   # "PutCurrentSelected = alt-enter; ctrl-enter"
   - { key: A, mods: [ALT], icon: pathcurrent.png, label: "Path to cmd line" }

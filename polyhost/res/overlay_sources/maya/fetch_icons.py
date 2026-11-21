@@ -93,7 +93,6 @@ ICONS = {
     "trim_start": "ms:align_horizontal_left",
     "trim_end": "ms:align_horizontal_right",
     "clip_trim": "ms:crop",
-    "clip_scale": "ms:open_in_full",
     "clip_loop": "ms:all_inclusive",
     "clip_hold": "ms:pause",
     "uv_distort": "ms:blur_on",
@@ -258,6 +257,13 @@ BADGES = [
     ("regraph_both.png", "select_linked.png", "b_sync.png"),
     ("node_unsolo.png", "node_solo.png", "b_close.png"),
     ("node_resolo.png", "node_solo.png", "b_history.png"),
+    # one icon per action: the editor's own version of a viewport action
+    ("clip_scale.png", "b_track.png", "scale.png"),        # Time Editor: scale clip
+    ("group_clips.png", "group.png", "b_track.png"),       # Time Editor: group clips
+    ("key_curve.png", "key_insert.png", "b_curve.png"),    # Graph Editor Alt+I: key on selected curve
+    ("copy_uv.png", "copy.png", "b_uv.png"),               # UV Editor: copy face UVs
+    ("paste_uv.png", "paste.png", "b_uv.png"),             # UV Editor: paste face UVs
+    ("uv_image.png", "b_image.png", "b_uv.png"),           # UV Editor 6: display texture image
 ]
 
 # (output, base, forward): ``base`` over a heavy arrow.
@@ -456,6 +462,17 @@ def _sel_uv(path: Path) -> None:
     img.save(path)
 
 
+def _uv_word(path: Path) -> None:
+    """The badge "UV" in Liberation Sans Bold, filling the square's width."""
+    from PIL import ImageDraw, ImageFont
+    img = Image.new("RGBA", (96, 96), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    font = ImageFont.truetype(
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", 70)
+    d.text((48, 50), "UV", fill=(0, 0, 0, 255), font=font, anchor="mm")
+    img.save(path)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -470,6 +487,7 @@ def main() -> int:
     g.guarded(out / "space_hotbox.png", _space_hotbox, "drawn hotbox (Space, hold), 72x40")
     for dr in ("up", "down", "left", "right"):
         g.guarded(out / f"nudge_{dr}.png", lambda p, k=dr: _nudge(p, k), f"drawn nudge ({dr})")
+    g.guarded(out / "b_uv.png", _uv_word, 'drawn badge "UV"')
     for name, base, badge in BADGES:
         g.guarded(out / name, lambda p, a=base, b=badge: g.with_badge(out / a, out / b, p),
                   f"composite ({base} + {badge})")
