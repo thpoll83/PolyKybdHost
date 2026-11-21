@@ -474,3 +474,9 @@ This project depends on PyQt5, which is licensed under the GPL v3; GPLv3 keeps
 the combined work license-consistent. Moving from GPLv2-or-later to GPLv3 also
 makes the project compatible with **Apache-2.0** assets (e.g. the Material
 Symbols icon set), which GPLv2 is not.
+
+## AI-assisted development
+
+PolyKybd started as a project that I coded entirely by hand, apart from the libraries it uses. The code base has grown too large for one person to write alone. Since mid-2026 I use AI tools to write code, so that I can move faster towards the vision of the project.
+
+I decide on every change. I review the changes, test them myself on real keyboards, and write the summaries based on the results. AI-written code can still contain mistakes. Please report problems as GitHub issues. For security problems, see [SECURITY.md](SECURITY.md).
