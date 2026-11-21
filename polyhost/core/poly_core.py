@@ -283,6 +283,13 @@ class PolyCore(Observable):
         self._wincompose_thread = None
         self._wincompose_fast_until = 0.0
         self._wincompose_lock = threading.Lock()
+        # macOS: the keyboard event tap behind InputMethod.MacCompose. Created here,
+        # once, because the mode push runs on several threads (post-connect,
+        # settings change, refresh_unicode_mode) and a lazy creation there could
+        # make two taps (Revix on #1009). Creating it starts no thread and imports
+        # no pyobjc; MacComposeTap.start() has its own lock.
+        from polyhost.input.mac_compose import MacComposeTap
+        self._mac_compose = MacComposeTap(log=self.log)
         # combos_set reads, writes and commits the keyboard's RAM records in several
         # calls; a second save in between would see and restore the first one's records.
         self._combos_lock = threading.Lock()
@@ -568,6 +575,7 @@ class PolyCore(Observable):
         # flag: otherwise a reconnect landing here concurrently would clear the
         # stop Event and start a fresh watcher AFTER shutdown, which would then
         # hold the core and submit to a stopped worker for up to 15 minutes.
+        self._mac_compose.stop()
         with self._wincompose_lock:
             self._wincompose_shutting_down = True
             self._wincompose_stop.set()
@@ -1692,6 +1700,24 @@ class PolyCore(Observable):
         return (sys.platform == "win32" and mode is InputMethod.Windows
                 and time.monotonic() - self._started_at < self.WINCOMPOSE_FAST_SECONDS)
 
+    def _unicode_mode_for_keyboard(self, mode):
+        """The mode to push for the host's reading ``mode``: MacCompose in place
+        of Mac when the keyboard and the event tap can do it.
+
+        MacCompose (firmware protocol 38+) has the keyboard hold F20 instead of
+        Option, and the host's event tap types the character, so Unicode works
+        with every input source. Plain Mac needs "Unicode Hex Input" selected,
+        which the host's language switching deselects. Without the tap (no
+        Accessibility grant, no pyobjc) or on older firmware it stays Mac.
+
+        Reads the CACHED protocol, like _apply_unicode_mode: no device I/O here.
+        Starting the tap waits at most 0.5 s, once."""
+        from polyhost.input.unicode_input import InputMethod
+        if (mode is not InputMethod.Mac or sys.platform != "darwin"
+                or not protocol_supports(self.keeb.protocol_version, "mac_compose")):
+            return mode
+        return InputMethod.MacCompose if self._mac_compose.start() else mode
+
     def _apply_unicode_mode(self, mode):
         """Push ``mode``, letting the ambiguity rule decide whether it is STORED.
 
@@ -1713,6 +1739,7 @@ class PolyCore(Observable):
         Reads the CACHED protocol (``protocol_supports``) rather than
         ``keeb.supports()``, which lazily does device I/O — this runs on the
         settle watcher's own thread, which must never touch the device."""
+        mode = self._unicode_mode_for_keyboard(mode)
         if not self._unicode_mode_is_ambiguous(mode):
             return self._push_unicode_mode(mode, persist=True)
         if protocol_supports(self.keeb.protocol_version, "unicode_mode_volatile"):
@@ -3246,7 +3273,7 @@ class PolyCore(Observable):
         if not self.poly_settings.get("unicode_send_composition_mode"):
             return False, "Sending the unicode composition mode is disabled in the settings."
         from polyhost.input.unicode_input import get_input_method
-        mode = get_input_method()
+        mode = self._unicode_mode_for_keyboard(get_input_method())
         if mode == self._last_pushed_unicode_mode and not self._last_push_was_volatile:
             # The tray re-sends on its first menu open (see host.py
             # _refresh_wincompose_action); say so, since "persist" reads as a

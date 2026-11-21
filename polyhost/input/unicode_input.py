@@ -21,6 +21,11 @@ class InputMethod(Enum):
     WinCompose = 3
     BSD = 4
     Unknown = 5
+    # macOS: the keyboard holds F20 while it types the hex code, and the host's
+    # event tap (polyhost/input/mac_compose.py) types the character. Firmware
+    # protocol 38+. Chosen by PolyCore when the tap runs; get_input_method()
+    # still reports Mac on macOS.
+    MacCompose = 6
 
 def process_exists(process_name):
     """True when a process of that image name is running (Windows, via TASKLIST).

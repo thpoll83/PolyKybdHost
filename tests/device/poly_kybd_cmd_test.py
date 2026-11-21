@@ -262,6 +262,11 @@ class TestSimpleCommandPayloads(unittest.TestCase, LockCheckMixin):
         self.assertEqual(self._payload('set_unicode_mode', InputMethod.WinCompose)[:4],
                          bytes([POLY, 20, 3, 0]))
 
+    def test_set_unicode_mode_mac_compose_is_value_6(self):
+        """base/host_unicode_mode.h in the firmware: 6 is MacCompose (v38)."""
+        self.assertEqual(self._payload('set_unicode_mode', InputMethod.MacCompose)[:4],
+                         bytes([POLY, 20, 6, 0]))
+
     def test_set_unicode_mode_volatile_sets_the_flag_byte(self):
         """data[3] (protocol 17+): apply in RAM, do not write EEPROM."""
         self.assertEqual(

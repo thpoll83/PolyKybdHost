@@ -658,6 +658,8 @@ class PolyKybdMock:
         self._log_call("set_unicode_mode", mode, persist)
         if not persist and (refusal := self._too_old("unicode_mode_volatile")):
             return False, refusal
+        if mode is InputMethod.MacCompose and (refusal := self._too_old("mac_compose")):
+            return False, refusal
         self._forward("set_unicode_mode", mode, persist)
         self._unicode_mode = mode
         self.log.info("Setting unicode mode to %d", mode.value)

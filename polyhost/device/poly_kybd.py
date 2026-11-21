@@ -183,6 +183,10 @@ AGENT_PAGES_MIN_PROTOCOL = 36
 # Minimum firmware PROTOCOL_VERSION for cmd 50, the flash unique IDs of both halves.
 # The telemetry ping sends them hashed, to count keyboards rather than installs.
 HW_ID_MIN_PROTOCOL = 37
+# Minimum firmware PROTOCOL_VERSION for cmd 20 value 6, MacCompose: the macOS
+# unicode mode with F20 held instead of Option, so the host's event tap types the
+# character (polyhost/input/mac_compose.py). Older firmware NACKs value 6.
+MAC_COMPOSE_MIN_PROTOCOL = 38
 HW_ID_LEN = 8
 AGENT_KEY_COUNT = 10
 # Card slots: the 10 number keys, then '-' (dictation) and '+' (next waiting agent).
@@ -240,6 +244,7 @@ FEATURE_MIN_PROTOCOL = {
     "key_guide": KEY_GUIDE_MIN_PROTOCOL,
     "host_tutorial": HOST_TUTORIAL_MIN_PROTOCOL,
     "hw_id": HW_ID_MIN_PROTOCOL,
+    "mac_compose": MAC_COMPOSE_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -744,6 +749,9 @@ class PolyKybd:
             return False, ("The keyboard firmware is too old for a volatile unicode "
                            "mode (needs protocol "
                            f"{UNICODE_MODE_VOLATILE_MIN_PROTOCOL}).")
+        if mode is InputMethod.MacCompose and not self.supports("mac_compose"):
+            return False, ("The keyboard firmware is too old for MacCompose "
+                           f"(needs protocol {MAC_COMPOSE_MIN_PROTOCOL}).")
         self.log.info("Setting unicode mode to %d (%s)", mode.value,
                       "persist" if persist else "volatile")
         return self.hid.send_and_read_validate(
