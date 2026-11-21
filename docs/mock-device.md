@@ -104,7 +104,7 @@ older. Regenerate them all together at the next release.
 Sources are paths in `qmk_firmware/keyboards/polykybd/`.
 
 - **The command set per `PROTOCOL_VERSION`** (`CMD_MIN_PROTOCOL`), from
-  `PROTOCOL_HISTORY.md` and, for commands it does not name, the
+  `keyboards/polykybd/docs/protocol/protocol-history.md` and, for commands it does not name, the
   `PROTOCOL_VERSION` in `config.h` at the commit that added the case to
   `hid_com.c`. An unknown command gets the firmware's NACK (the request echoed
   with `!`, hid_com.c's default case) and lands in `MockFirmware.refused`.
@@ -127,7 +127,7 @@ Sources are paths in `qmk_firmware/keyboards/polykybd/`.
   update GET_VERSION/BEGIN/CHUNK/SIGNATURE/COMMIT/APPLY (the unsigned-image
   prompt, `S`, the reboot onto the staged image at the next reconnect).
   Every chunk goes through `MockFirmware.stage_block`, which follows
-  `fw_staging_write_chunk()` (`base/fw_staging.c`): a duplicate is ACKed, a
+  `fw_staging_write_chunk()` (`drivers/fw_staging.c`): a duplicate is ACKed, a
   chunk that starts behind the cursor has only the part past it written, and
   a chunk ahead of the cursor or past the end is NACKed with the cursor. BEGIN
   selects the one target every later chunk is written to, HID or pipe.

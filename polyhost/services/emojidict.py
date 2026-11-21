@@ -1,7 +1,7 @@
 """Emoji search dictionaries (font-pack bundle ``emojidict``, slot 9).
 
 The keyboard's emoji layer searches by keyword through a dictionary flashed to
-font-pack slot 9 (firmware: keyboards/polykybd/emoji/EMOJI_SEARCH.md). This host
+font-pack slot 9 (firmware: keyboards/polykybd/docs/features/emoji-search.md). This host
 ships every dictionary in ``polyhost/res/emojidict/`` as ``<id>.plyd.gz`` with the
 builder's ``manifest.json`` (qmk ``emoji_dict.py build-all``, imported by
 ``scripts/import_emojidict.py``), and flashes the one the ``emoji_search_dict``

@@ -1,7 +1,7 @@
 # Host-driven tutorials: plan
 
 Status: steps 1 to 3 done (2026-11-15): host, firmware protocol 35 and rig tests. Firmware side:
-`qmk_firmware/keyboards/polykybd/anim/TUTORIAL.md` and `TUTORIAL_NEXT.md` describe the
+`qmk_firmware/keyboards/polykybd/docs/features/tutorial.md` and `keyboards/polykybd/docs/design/tutorial-next.md` describe the
 first-run (Eden) tutorial, which is compiled into the firmware. This plan is for
 tutorials the HOST starts: one YAML file per topic, picked in a dialog, played with the
 focus ring, the status OLED and a host-side step panel.
@@ -22,7 +22,7 @@ What does not exist:
 - The host cannot write text to the status OLED, dim keys or start the reveal.
 - The host has no whole-layout write. The firmware answers VIA `SET_BUFFER` (cmd 19,
   `dynamic_keymap_set_buffer_poly`) and `RESET` (cmd 6). ⚠️ `RESET` also wipes the
-  user's macros (`KEYMAP_STORAGE.md`).
+  user's macros (`keyboards/polykybd/docs/features/keymap-storage.md`).
 
 ## Steps
 
@@ -34,7 +34,7 @@ What does not exist:
 3. **Cmd 49 HOST TUTORIAL** (firmware protocol 35): status text, spotlight, reveal and
    key/layer conditions. See *Cmd 49* below. Rig tests in polykybd-ctnd; the ctnd PR
    merges before the firmware PR; the host release is published before the firmware
-   release. The first-run tutorial's on/off/replay (`TUTORIAL_NEXT.md` step 3) is a
+   release. The first-run tutorial's on/off/replay (`keyboards/polykybd/docs/design/tutorial-next.md` step 3) is a
    separate change, with a row in the tray's Maintenance menu.
 4. **Whole-layout load and reset in the layout editor**, written with `SET_BUFFER` in
    chunks, followed by the reveal (op 3).
@@ -171,7 +171,7 @@ over RPC: the runner is in the core, the dialog and panel only send commands.
 ## Cmd 49
 
 The wire format and the firmware side: `qmk_firmware/keyboards/polykybd/
-PROTOCOL_HISTORY.md` → *v35*. What the host does with it:
+keyboards/polykybd/docs/protocol/protocol-history.md` → *v35*. What the host does with it:
 
 - `TutorialRun.start()` sends INFO. An answered INFO switches cmd 49 on for the run;
   a refused one (DOOM monolith) leaves the run ring-only.
@@ -182,7 +182,7 @@ PROTOCOL_HISTORY.md` → *v35*. What the host does with it:
 - The keyboard reports matches against the armed conditions only, never raw key
   positions, and only while a session is open.
 - The slave learns TEXT, SPOTLIGHT, REVEAL and END as the forwarded report, not
-  through `poly_sync_t` (firmware `SPLIT_SYNC.md` → *Host state goes to the slave as
+  through `poly_sync_t` (firmware `keyboards/polykybd/docs/protocol/split-sync.md` → *Host state goes to the slave as
   the report*).
 - RAM: +108 B in the pack firmware (main SRAM free 6056 → 5948 B, local gcc 13.2); not
   in the DOOM monolith.
@@ -193,12 +193,12 @@ PROTOCOL_HISTORY.md` → *v35*. What the host does with it:
 |---|---|
 | `midi-layer` | Fn, the key above right Shift (guide), spotlight on the notes |
 | `brightness` | guide to Utility, the preset row, - and +, AUTO/MAN, back to typing |
-| `accents` | hold Intl (guide, `MO`), press e, tap Ctrl (the picker), pick an accent, the remap key. The spotlight keeps the picker row and Ctrl lit; `INTL_LAYER.md`'s "nothing may overlay this layer" is about app overlays |
+| `accents` | hold Intl (guide, `MO`), press e, tap Ctrl (the picker), pick an accent, the remap key. The spotlight keeps the picker row and Ctrl lit; `keyboards/polykybd/docs/features/intl-layer.md`'s "nothing may overlay this layer" is about app overlays |
 | `rgb-lighting` | guide to Settings, on/off, effects, hue and saturation, brightness and speed, back to typing |
 | `emoji-search` | guide to Emoji, the mode key, type a word (no `say`, so the status display shows the query), results, Clear/Space/Backspace, back to typing |
 | `keyboard-language` | the Lang key, the continent row, tap a language (`leave`) |
 | `base-layouts` | guide to Settings, `KC_L0`..`KC_L4`, back to typing |
 | `record-macro` | Fn, then the `OSL(Utility)` key twice (one-shot, then REC), the slot picker (`key` wait on M0), record (no `say`, so the status display shows REC), stop, play |
 
-Later: shortcut hints while a modifier is held (`HINT_ICONS.md`), combos and tap
+Later: shortcut hints while a modifier is held (`keyboards/polykybd/docs/display/hint-icons.md`), combos and tap
 dance, glyph scripts, app overlays and the ESC mark, agent keys.

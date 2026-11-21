@@ -40,9 +40,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))), "tools"))
 
-from polyhost.services import macro_label as ml                      # noqa: E402
 from polyhost.gui.layout_dialog import qmk_keycode_helper as qh      # noqa: E402
 from polyhost.gui.layout_dialog import keycap_preview as kp          # noqa: E402
+from polyhost.util.fw_checkout import checkout_dir, font_dir, fw_file  # noqa: E402
 
 OUT_DIR = pathlib.Path(__file__).resolve().parent.parent / "polyhost" / "res" / "preview"
 
@@ -51,7 +51,7 @@ def firmware_dir(explicit: str | None) -> pathlib.Path:
     """<fw>/keyboards/polykybd -- resolved the way the app resolves it."""
     if explicit:
         return pathlib.Path(explicit)
-    return pathlib.Path(os.path.dirname(os.path.dirname(ml.default_font_dir())))
+    return pathlib.Path(checkout_dir())
 
 
 def fw_version(pk: pathlib.Path) -> str:
@@ -67,18 +67,18 @@ def build(pk: pathlib.Path) -> dict:
     import midi_legend_dump as mld
     import oled_preview as op
 
-    fonts_dir = str(pk / "base" / "fonts")
+    fonts_dir = font_dir(pk)
     named = op.load_named_glyphs(str(pk / "lang" / "named_glyphs.h"))
-    named.update(op.load_named_glyphs(str(pk / "keycode_helper.h")))
+    named.update(op.load_named_glyphs(fw_file(pk, "keymap/keycode_helper.h")))
 
     # The two legend switches, in the firmware's own precedence order.
     legends_src = {
-        **ld.parse_to_static_text_map(str(pk / "poly_keymap.c")),
-        **ld.parse_static_text_map(str(pk / "keycode_helper.c")),
+        **ld.parse_to_static_text_map(fw_file(pk, "keymap/poly_keymap.c")),
+        **ld.parse_static_text_map(fw_file(pk, "keymap/keycode_helper.c")),
     }
     macros = op.parse_function_macros(*(
-        kp._read(str(pk), f) for f in ("lang/named_glyphs.h", "keycode_helper.h",
-                                       "keycode_helper.c", "poly_keymap.c")))
+        kp._read(str(pk), f) for f in ("lang/named_glyphs.h", "keymap/keycode_helper.h",
+                                       "keymap/keycode_helper.c", "keymap/poly_keymap.c")))
 
     # Resolve to CODEPOINTS here rather than shipping C. The host then needs no
     # macro table, no `#define` expansion and no C parsing to draw a keycap --
@@ -133,7 +133,7 @@ def build(pk: pathlib.Path) -> dict:
     # has no name for `QK_KB_0`+n -- and every legend on the settings, brightness
     # and layout keys is keyed by the firmware's name for it (`KC_DMIN`, `KC_LANG`).
     # Without this the host can find 34 legends it cannot address.
-    custom = kp.parse_custom_keycodes(kp._read(str(pk), "keycode_helper.h"))
+    custom = kp.parse_custom_keycodes(kp._read(str(pk), "keymap/keycode_helper.h"))
 
     # QMK's own alias tables, derived from the tree rather than re-typed -- see
     # `lang_demo.load_qmk_aliases`. Mostly redundant with the shipped keycode
@@ -145,7 +145,7 @@ def build(pk: pathlib.Path) -> dict:
     # KC_IME draws per LANGUAGE, so it has no entry in `legends`: the family each
     # language gets, and the icons the Korean / Japanese families draw, resolved to
     # codepoints like every other legend. None on a tree that predates the key.
-    ime = ld.parse_ime_key(str(pk / "poly_keymap.c"), L.langs)
+    ime = ld.parse_ime_key(fw_file(pk, "keymap/poly_keymap.c"), L.langs)
     if ime is not None:
         ime = {"families": ime["families"],
                # Same refusal as every legend above: a name with no glyphs would

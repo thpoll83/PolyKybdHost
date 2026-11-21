@@ -4,7 +4,7 @@ Two claims are worth pinning, and only one of them is arithmetic:
 
 * **The block table.** `script_base()` mirrors the firmware's
   `glyph_script_blocks[]`; the expected values here are copied from
-  `qmk_firmware/keyboards/polykybd/poly_keymap.c`, so a script added on one side
+  `qmk_firmware/keyboards/polykybd/keymap/poly_keymap.c`, so a script added on one side
   without the other fails here rather than previewing a neighbouring script.
 * **That the previews actually have ink.** A decoder that resolves the wrong
   font, or lays glyphs out off its own canvas, still returns a perfectly valid

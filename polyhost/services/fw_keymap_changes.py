@@ -2,7 +2,7 @@
 
 A stored keymap takes priority over the firmware's defaults, so a changed default
 key reaches an existing board only through a one-time migration in the firmware
-(qmk_firmware KEYMAP_STORAGE.md, "One-time migrations"). The migration changes
+(qmk_firmware keyboards/polykybd/docs/features/keymap-storage.md, "One-time migrations"). The migration changes
 only keys that still hold the old default; remapped keys and macros stay.
 
 The update dialog names these changes before the user flashes. Each entry is the

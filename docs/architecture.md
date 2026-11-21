@@ -511,7 +511,7 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
 ### Transport probe (bulk pipe vs HID only)
 
 A `POLYKYBD_BULK_PIPE` firmware enumerates a CDC serial interface next to raw HID
-(qmk `keyboards/polykybd/BULK_PIPE.md`). The host treats it as optional: nothing
+(qmk `keyboards/polykybd/docs/protocol/bulk-pipe.md`). The host treats it as optional: nothing
 in the HID protocol announces it, so `PolyKybd.probe_bulk_pipe()`
 (`device/bulk_pipe.py`) finds the port by VID/PID, opens it raw, PINGs it and
 measures the rate (`measure_rate`: RESET, 128 KB of SINK frames, STAT; the

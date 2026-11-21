@@ -177,7 +177,7 @@ python apply_tuner.py changes.txt --dry-run    # just print the resolved cell ed
 
 It edits **only** `xl/worksheets/sheet2.xml` (set / clear cells) and copies every other
 zip entry byte-for-byte, so the formula caches in the other sheets stay intact — the
-same surgical approach as `lang/_patch_xlsx.py`, which only *appends* columns. Per-key
+same surgical approach as `lang/scripts/_patch_xlsx.py`, which only *appends* columns. Per-key
 lines map to the `key_lut` sheet (`KC_* row`, col = lang\*4 + {base:0, shift:1,
 altgr:3}); `[offset]` lines map to the offset rows (`oled_preview.SET[cat]` =
 voffset/hoffset, var {small:0, shift:1, altgr:3}); `<drop / empty>` clears the cell.

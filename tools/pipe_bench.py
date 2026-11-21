@@ -17,7 +17,7 @@ port is /dev/ttyACM*; add the rules in polyhost/device/99-hid.rules so a user ca
 open it and ModemManager leaves it alone. `--hid` opens the raw-HID interface, so
 stop the running host first (it owns the device).
 
-Frame format (keyboards/polykybd/poly_pipe.h):
+Frame format (keyboards/polykybd/hid/poly_pipe.h):
     'P' 'B'  cmd  len_lo len_hi  payload  crc32 LE
 crc32 is zlib.crc32 over cmd, len and payload. Replies carry cmd | 0x80.
 """

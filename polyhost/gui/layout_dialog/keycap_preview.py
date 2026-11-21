@@ -48,6 +48,7 @@ from polyhost.services import macro_look as mkl
 from polyhost.services import preview_data as pdata
 from polyhost.services import status_screen as ss
 from polyhost.gui.layout_dialog import qmk_keycode_helper as qh
+from polyhost.util.fw_checkout import checkout_dir, font_dir, fw_file
 
 # The editor's tile shows the resting legend, so no modifier is held.
 DEFAULT_LANG = "en-US"
@@ -140,7 +141,7 @@ def _resolve_init(init: str, anchors: dict, seen: dict):
 def _read(base: str, name: str) -> str:
     """Read a firmware source file. Closes it -- the bare `open(...).read()` this
     replaced leaked a handle per load."""
-    with open(os.path.join(base, name), encoding="utf-8") as fh:
+    with open(fw_file(base, name), encoding="utf-8") as fh:
         return fh.read()
 
 
@@ -170,7 +171,7 @@ def _checkout_dir() -> str:
     label meter and `scripts/export_preview_data.py` all look in the same place.
     """
     try:
-        pk = os.path.dirname(os.path.dirname(ml.default_font_dir()))
+        pk = checkout_dir()
     except Exception:
         return ""
     return pk if os.path.isdir(pk) else ""
@@ -411,11 +412,11 @@ class KeycapPreview:
         same order, so the two produce the same keycaps for the same firmware.
         """
         op, ld = self._op, self._ld
-        fonts_dir = os.path.join(pk, "base", "fonts")
+        fonts_dir = font_dir(pk)
         named = op.load_named_glyphs(os.path.join(pk, "lang", "named_glyphs.h"))
         # keycode_helper.h carries the names the static-text switch returns; without
         # it those legends resolve to nothing and the key silently renders blank.
-        named.update(op.load_named_glyphs(os.path.join(pk, "keycode_helper.h")))
+        named.update(op.load_named_glyphs(fw_file(pk, "keymap/keycode_helper.h")))
         # load_renderer, not Renderer(load_all_fonts(...)): it also binds the
         # standalone 19px HINT_MID face, without which the settings legends draw
         # both of their lines at full size, on top of each other.
@@ -436,12 +437,12 @@ class KeycapPreview:
         # picker (KC_L0..KC_L4), the unicode-mode keys, KC_IDDQD and the
         # legend-size key render on the board and nowhere in the editor.
         exprs = {
-            **ld.parse_to_static_text_map(os.path.join(pk, "poly_keymap.c")),
-            **ld.parse_static_text_map(os.path.join(pk, "keycode_helper.c")),
+            **ld.parse_to_static_text_map(fw_file(pk, "keymap/poly_keymap.c")),
+            **ld.parse_static_text_map(fw_file(pk, "keymap/keycode_helper.c")),
         }
         macros = op.parse_function_macros(
-            *(_read(pk, f) for f in ("lang/named_glyphs.h", "keycode_helper.h",
-                                     "keycode_helper.c", "poly_keymap.c")))
+            *(_read(pk, f) for f in ("lang/named_glyphs.h", "keymap/keycode_helper.h",
+                                     "keymap/keycode_helper.c", "keymap/poly_keymap.c")))
         resolved = {}
         for token, expr in exprs.items():
             expanded = op.expand_function_macros(expr, macros)
@@ -466,7 +467,7 @@ class KeycapPreview:
         except Exception as e:
             self.log.debug("MIDI legends unavailable (%s: %s)", type(e).__name__, e)
         self._legends = self._drawable(resolved)
-        self._custom = parse_custom_keycodes(_read(pk, "keycode_helper.h"))
+        self._custom = parse_custom_keycodes(_read(pk, "keymap/keycode_helper.h"))
         # QMK's short aliases, derived from its own headers (see
         # lang_demo.load_qmk_aliases). Without this a keymap spelling KC_MUTE /
         # DE_Z / RGB_M_SW misses a legend the map holds under the long name.
@@ -525,7 +526,7 @@ class KeycapPreview:
         # falls back to keycode text), never the language table it does not need.
         if self._lang_ok:
             try:
-                ime = ld.parse_ime_key(os.path.join(pk, "poly_keymap.c"), self._L.langs)
+                ime = ld.parse_ime_key(fw_file(pk, "keymap/poly_keymap.c"), self._L.langs)
                 if ime is not None:
                     self._set_ime(ime["families"],
                                   {fam: list(self._resolver.resolve(icon))

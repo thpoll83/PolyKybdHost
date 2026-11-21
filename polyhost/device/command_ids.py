@@ -125,7 +125,7 @@ class Cmd(Enum):
     HOST_TUTORIAL = 49
     # Hardware IDs (protocol v37+): no request payload. Reply [3] flags (bit 0: [4..11]
     # valid, bit 1: [12..19] valid), [4..11] the flash unique ID of the half the host
-    # talks to, [12..19] the other half's. Always ACKs. Firmware base/hw_uid.h.
+    # talks to, [12..19] the other half's. Always ACKs. Firmware drivers/hw_uid.h.
     HW_ID = 50
 
 

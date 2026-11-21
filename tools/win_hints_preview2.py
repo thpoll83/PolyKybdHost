@@ -9,13 +9,14 @@ import os, sys, tempfile
 sys.path.insert(0, os.path.dirname(__file__))
 from gfx_font import GfxGlyphRenderer, OLED_W, OLED_H, BUFFER_X
 from PIL import Image, ImageDraw, ImageFont
+from gfx_font import font_dir  # noqa: E402
 
 # qmk_firmware is a sibling of PolyKybdHost in the standard checkout layout;
 # override with $POLYKYBD_FW / write outputs under $POLYKYBD_OUT if elsewhere.
 FW = os.environ.get("POLYKYBD_FW", os.path.abspath(os.path.join(
     os.path.dirname(__file__), "../../qmk_firmware/keyboards/polykybd")))
 OUT = os.environ.get("POLYKYBD_OUT", tempfile.gettempdir())
-R = GfxGlyphRenderer(FW + "/base/fonts")
+R = GfxGlyphRenderer(font_dir(FW))
 SP = 0x20
 SYM2 = FW + "/fonts/Noto_Sans_Symbols_2/NotoSansSymbols2-Regular.ttf"
 EXPLORER_PNG = "polyhost/res/overlay_sources/explorer/icons/explorer.png"

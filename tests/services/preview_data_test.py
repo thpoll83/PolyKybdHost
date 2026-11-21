@@ -25,6 +25,7 @@ except Exception as exc:                              # pragma: no cover - env g
 
 from polyhost.services.preview_data import (PreviewData, choose_source,
                                             parse_version)
+from polyhost.util.fw_checkout import checkout_dir, fw_file  # noqa: E402
 
 
 class ChooseSourceTest(unittest.TestCase):
@@ -171,8 +172,8 @@ class ShippedRendersLikeTheCheckoutTest(unittest.TestCase):
 
     def test_every_shipped_legend_draws_the_same_pixels(self):
 
-        pk = os.path.dirname(os.path.dirname(ml.default_font_dir()))
-        if not os.path.exists(os.path.join(pk, "keycode_helper.c")):
+        pk = checkout_dir()
+        if not os.path.exists(fw_file(pk, "keymap/keycode_helper.c")):
             self.skipTest("no firmware checkout beside this repo")
 
         d = PreviewData()
@@ -181,12 +182,12 @@ class ShippedRendersLikeTheCheckoutTest(unittest.TestCase):
         checkout = op.load_renderer(ml.default_font_dir())
 
         named = op.load_named_glyphs(os.path.join(pk, "lang", "named_glyphs.h"))
-        named.update(op.load_named_glyphs(os.path.join(pk, "keycode_helper.h")))
+        named.update(op.load_named_glyphs(fw_file(pk, "keymap/keycode_helper.h")))
         macros = op.parse_function_macros(*(kp._read(pk, f) for f in (
-            "lang/named_glyphs.h", "keycode_helper.h", "keycode_helper.c",
-            "poly_keymap.c")))
-        legends_c = {**ld.parse_to_static_text_map(os.path.join(pk, "poly_keymap.c")),
-                     **ld.parse_static_text_map(os.path.join(pk, "keycode_helper.c"))}
+            "lang/named_glyphs.h", "keymap/keycode_helper.h", "keymap/keycode_helper.c",
+            "keymap/poly_keymap.c")))
+        legends_c = {**ld.parse_to_static_text_map(fw_file(pk, "keymap/poly_keymap.c")),
+                     **ld.parse_static_text_map(fw_file(pk, "keymap/keycode_helper.c"))}
         resolver = object.__new__(op.Lang)
         resolver.named = named
 
@@ -222,14 +223,14 @@ class ShippedRendersLikeTheCheckoutTest(unittest.TestCase):
         one-off check, not in a suite that runs on every change.
         """
 
-        pk = os.path.dirname(os.path.dirname(ml.default_font_dir()))
+        pk = checkout_dir()
         if not os.path.exists(os.path.join(pk, "lang", "lang_lut.xlsx")):
             self.skipTest("no firmware checkout beside this repo")
 
         d = PreviewData()
         self.assertTrue(d.load(), d.reason)
         named = op.load_named_glyphs(os.path.join(pk, "lang", "named_glyphs.h"))
-        named.update(op.load_named_glyphs(os.path.join(pk, "keycode_helper.h")))
+        named.update(op.load_named_glyphs(fw_file(pk, "keymap/keycode_helper.h")))
         shipped = (d.lang_reader(),
                    op.Renderer(d.fonts, mid_fonts=[d.ui_fonts[mkl.MID_FONT_SYMBOL]]))
         checkout = (op.Lang(os.path.join(pk, "lang", "lang_lut.xlsx"), named),
