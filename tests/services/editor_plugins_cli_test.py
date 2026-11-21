@@ -271,8 +271,6 @@ class TestJupyterLab(CliFixture):
                          / "package.json").is_file())
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class TestBlockedByPolicy(unittest.TestCase):
@@ -306,3 +304,32 @@ class TestBlockedByPolicy(unittest.TestCase):
     def test_other_failure_has_no_hint(self):
         r = self._install("Failed Installing Extensions: file:///x.vsix")
         self.assertNotIn("extensions.allowed", r.message)
+
+    def test_a_rule_that_allows_the_extension_gives_no_hint(self):
+        for rules in ('{"*": false, "polykybd.polykybd-mode-reporter": true}',
+                      '{"*": false, "polykybd": true}',
+                      '{"*": true}'):
+            r = self._install("Failed Installing Extensions: x", settings='{"extensions.allowed": %s}' % rules)
+            self.assertNotIn("extensions.allowed", r.message, rules)
+
+    def test_settings_with_comments_and_a_trailing_comma(self):
+        text = ('{\n  // organization default\n  "update.mode": "none", /* x */\n'
+                '  "extensions.allowed": {"*": false, "other": true,},\n}\n')
+        r = self._install("Failed Installing Extensions: x", settings=text)
+        self.assertIn("extensions.allowed", r.message)
+
+    def test_snap_settings(self):
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / "snap" / "code" / "current" / ".config" / "Code" / "User" / "settings.json"
+            f.parent.mkdir(parents=True)
+            f.write_text('{"extensions.allowed": {"*": false}}')
+            self.assertEqual(et.extension_policy_reason("vscode", "", home=d, env={}, system="Linux"),
+                             "settings")
+
+    def test_the_word_policy_alone_is_not_a_refusal(self):
+        self.assertIsNone(et.extension_policy_reason("vscode", "proxy policy error", home="/nonexistent",
+                                                     env={}, system="Linux"))
+
+
+if __name__ == "__main__":
+    unittest.main()

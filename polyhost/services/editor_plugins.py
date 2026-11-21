@@ -2009,6 +2009,8 @@ def refresh_installed(home=None, env=None, which=None, system=None,
             log.warning("Editor plugin refresh failed for %s", st.editor, exc_info=True)
             continue
         for r in rs:
+            if not r.ok:
+                log.warning("Editor plugin refresh for %s did not work: %s", st.editor, r.message)
             if r.changed:
                 if st.editor not in refreshed:
                     refreshed.append(st.editor)
