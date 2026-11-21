@@ -308,7 +308,7 @@ def extension_policy_reason(editor, output="", home=None, env=None, system=None)
         if "extensions.allowed" in text:
             return "settings"
     except OSError:
-        pass
+        pass  # no settings file, or unreadable: the rule is not set there
     if home is not None:
         return None  # a test's home never reads the machine's policy
     if system == "Windows":
@@ -329,7 +329,7 @@ def extension_policy_reason(editor, output="", home=None, env=None, system=None)
             if "AllowedExtensions" in Path("/etc/vscode/policy.json").read_text(encoding="utf-8"):
                 return "policy"
         except OSError:
-            pass
+            pass  # no policy file, or unreadable: no policy here
     return None
 
 
