@@ -309,5 +309,28 @@ class IdentityTest(unittest.TestCase):
         self.assertEqual(names, fw.layer_names)
 
 
+class UnicodeModeValuesTest(unittest.TestCase):
+    """Cmd 20 is a CLOSED set, like the firmware's base/host_unicode_mode.h:
+    0..4, and 6 (MacCompose) from protocol 38. Anything else is NACKed."""
+
+    @staticmethod
+    def _reply(protocol, value):
+        from polyhost.device.mock_firmware import POLY
+        fw = MockFirmware(protocol)
+        return fw._dispatch(bytes([POLY, 20, value, 0]))[:3]
+
+    def test_mac_compose_is_acked_from_v38_only(self):
+        self.assertEqual(self._reply(38, 6), b"P\x14.")
+        self.assertEqual(self._reply(37, 6), b"P\x14!")
+
+    def test_unknown_values_are_nacked(self):
+        for value in (5, 7, 0xFF):
+            self.assertEqual(self._reply(38, value), b"P\x14!", value)
+
+    def test_the_old_values_are_acked(self):
+        for value in range(5):
+            self.assertEqual(self._reply(17, value), b"P\x14.", value)
+
+
 if __name__ == "__main__":
     unittest.main()

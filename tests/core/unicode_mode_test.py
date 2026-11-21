@@ -42,7 +42,10 @@ def _fake_core(send_mode=True, device_result=(True, "ok")):
         _device_call=_device_call,
         _last_pushed_unicode_mode=None,
         _last_push_was_volatile=False,
+        _mac_compose=None,
     )
+    core._unicode_mode_for_keyboard = functools.partial(
+        PolyCore._unicode_mode_for_keyboard, core)
     core._calls = calls
     core._infos = infos
     return core
@@ -195,8 +198,10 @@ def _watcher_core(modes, send_mode=True, connected=True, rounds=None,
         keeb=types.SimpleNamespace(protocol_version=protocol,
                                    set_unicode_mode=_set_unicode_mode),
     )
+    core._mac_compose = None
     for name in ("_unicode_mode_is_ambiguous", "_apply_unicode_mode",
-                 "_push_unicode_mode", "_unicode_mode_pushed"):
+                 "_push_unicode_mode", "_unicode_mode_pushed",
+                 "_unicode_mode_for_keyboard"):
         setattr(core, name, functools.partial(getattr(PolyCore, name), core))
     core._pushed = pushed
     core._probes = probes
@@ -577,6 +582,61 @@ class WinComposeShutdownTest(unittest.TestCase):
         self.assertIsNone(core._wincompose_thread)
         self.assertTrue(core._wincompose_stop.is_set(),
                         "the stop Event was cleared after shutdown")
+
+
+class _FakeTap:
+    def __init__(self, runs):
+        self.runs = runs
+        self.starts = 0
+
+    def start(self, timeout=0.5):
+        self.starts += 1
+        return self.runs
+
+
+@unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
+class MacComposeChoiceTest(unittest.TestCase):
+    """On macOS the host pushes MacCompose (cmd 20 value 6, protocol v38) in
+    place of Mac when the event tap runs. Plain Mac needs the Unicode Hex Input
+    source, which the host's language switching deselects."""
+
+    def _push(self, protocol=38, tap_runs=True, platform="darwin",
+              mode=InputMethod.Mac):
+        core = _watcher_core([], protocol=protocol)
+        core._last_pushed_unicode_mode = None
+        core._mac_compose = _FakeTap(tap_runs)
+        with patch("polyhost.core.poly_core.sys.platform", platform):
+            core._apply_unicode_mode(mode)
+        return core
+
+    def test_mac_becomes_mac_compose_when_the_tap_runs(self):
+        self.assertEqual(self._push()._pushed, [InputMethod.MacCompose])
+
+    def test_it_stays_mac_without_the_tap(self):
+        """No Accessibility grant, or no pyobjc."""
+        self.assertEqual(self._push(tap_runs=False)._pushed, [InputMethod.Mac])
+
+    def test_it_stays_mac_on_older_firmware_and_does_not_start_the_tap(self):
+        core = self._push(protocol=37)
+        self.assertEqual(core._pushed, [InputMethod.Mac])
+        self.assertEqual(core._mac_compose.starts, 0)
+
+    def test_other_platforms_and_modes_are_unchanged(self):
+        self.assertEqual(self._push(platform="linux")._pushed, [InputMethod.Mac])
+        core = self._push(mode=InputMethod.Linux)
+        self.assertEqual(core._pushed, [InputMethod.Linux])
+        self.assertEqual(core._mac_compose.starts, 0)
+
+    def test_refresh_pushes_mac_compose_too(self):
+        core = _fake_core()
+        core.keeb.protocol_version = 38
+        core._mac_compose = _FakeTap(True)
+        with patch("polyhost.input.unicode_input.get_input_method",
+                   return_value=InputMethod.Mac), \
+                patch("polyhost.core.poly_core.sys.platform", "darwin"):
+            ok, payload = PolyCore.refresh_unicode_mode(core)
+        self.assertTrue(ok)
+        self.assertEqual(payload, {"mode": "MacCompose"})
 
 
 if __name__ == "__main__":

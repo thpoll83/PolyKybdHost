@@ -154,6 +154,10 @@ GET_ID_VERSION_BLOCK_MIN = 6
 GET_ID_GENERATION_BLOCK_MIN = 16
 GET_ID_ANIM_BLOCK_MIN = 28
 UNICODE_VOLATILE_MIN = 17
+# cmd 20 value 6 (MacCompose). Older firmware NACKs it, like any value it does not
+# know (hid_com.c's default case; base/host_unicode_mode.h since v38).
+MAC_COMPOSE_MIN = 38
+MAC_COMPOSE_VALUE = 6
 GUI_COMBO_MIN = 12
 MAPPING_FLAGS_MIN = 21
 # cmd 33's width byte bit 7 draws the report's pairs dimmed (v23). v21/v22 mask
@@ -594,6 +598,11 @@ class MockFirmware:
         if p[3] and self.protocol < UNICODE_VOLATILE_MIN:
             # Older firmware ignores data[3] and PERSISTS the mode.
             self._refuse(p[1], f"volatile unicode mode needs protocol {UNICODE_VOLATILE_MIN}")
+        if p[2] == MAC_COMPOSE_VALUE and self.protocol < MAC_COMPOSE_MIN:
+            self._refuse(p[1], f"MacCompose needs protocol {MAC_COMPOSE_MIN}")
+            return _reply(p[1], ok=False)
+        if p[2] > 4 and p[2] != MAC_COMPOSE_VALUE:
+            return _reply(p[1], ok=False)   # a closed set: 5 and 7+ are NACKed
         self.settings_bytes[p[1]] = p[2]
         return _reply(p[1])
 

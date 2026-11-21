@@ -237,6 +237,19 @@ and relative links were adjusted to suit a standalone file.
   the `pythonw`/`.vbs` autostart chain) and **never raises** — it sits on the post-connect
   path, where an exception would abort the whole connect flow over a cosmetic detection.
 
+- **MacCompose (macOS, firmware protocol 38+)**: QMK's macOS unicode mode holds Option and
+  types the hex code, which produces a character only while the "Unicode Hex Input" source is
+  selected. The host's language switching selects the layout of the keyboard language
+  (`input/macos_input_source.py`), so on a German source a 😀 typed `∂{¶∂∂€≠≠`. In MacCompose
+  (`InputMethod.MacCompose`, cmd 20 value 6) the keyboard holds F20 instead, and the keyboard
+  event tap in `polyhost/input/mac_compose.py` reads the hex digits between F20 down and F20
+  up by virtual key code, drops them and posts the character with
+  `CGEventKeyboardSetUnicodeString`. `PolyCore._unicode_mode_for_keyboard()` pushes
+  MacCompose in place of Mac when the firmware is v38+ and the tap runs. The tap needs the
+  Accessibility permission; without it, or without pyobjc, the host pushes plain Mac and logs
+  `MacCompose is off: ...`. Like WinCompose, a host that quits or crashes leaves the keyboard
+  in the mode: the digits then reach the application until the next push.
+
 - **udev rule install from the tray (Linux)**: `polyhost/device/99-hid.rules` grants the
   keyboard's raw HID interface and, since the fast link, its serial port (`tty`), and tells
   ModemManager to leave that port alone. Without the tty lines the pipe probe reads "no
