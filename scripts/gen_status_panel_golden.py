@@ -23,6 +23,7 @@ import re
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent))   # polyhost, when run outside the repo root
 OUT = HERE.parent / "tests" / "services" / "status_panel_golden.json"
 
 #: The cases the fixture covers: both panels, both RGB states, plus one case whose
