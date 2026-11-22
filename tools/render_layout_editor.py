@@ -130,7 +130,7 @@ def build_buffer(fw: pathlib.Path, names: dict):
     bodies = layer_bodies((kb / "keymaps" / "default" / "keymap.c").read_text())
 
     from polyhost.gui.layout_dialog import qmk_keycode_helper as qk
-    layers = qk.parse_layers_h(kb.parent / "keys_com/layers.h")
+    layers = qk.parse_layers_h(pathlib.Path(fw_file(kb.parent, "keys_com/layers.h")))
 
     buf = [0] * (MATRIX_ROWS * MATRIX_COLS * max(len(bodies), 1))
     for n, (_tag, exprs) in enumerate(bodies):

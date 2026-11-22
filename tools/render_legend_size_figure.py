@@ -250,7 +250,7 @@ def render_board(fw: str, lang: str, out: str, unit: int, layer: str = None,
     # showing: the figure then says what the setting does and does not reach.
     lit = {}
     if status:
-        sys.path.insert(0, os.path.join(pk, "tools"))
+        sys.path.insert(0, os.path.dirname(fw_file(pk, "dev/tools/status_oled_preview.py")))
         import status_oled_preview as SP
         fonts = SP.load_fonts()
         rgb = (128, 255, 100, 80, 5, "Rainbow")

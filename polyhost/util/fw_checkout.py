@@ -29,6 +29,9 @@ _OLDER = {
     "features/modes/midi_legend.c": ("modes/midi_legend.c", "midi_legend.c"),
     "lib/hid/hid_com.c": ("hid/hid_com.c", "hid_com.c"),
     "lib/system/state.h": ("system/state.h", "state.h"),
+    "dev/tools/status_oled_preview.py": ("tools/status_oled_preview.py",),
+    "features/emoji/emoji_data.h": ("emoji/emoji_data.h",),
+    "features/emoji/emoji_layer.c": ("emoji/emoji_layer.c",),
 }
 
 # The font headers: "fonts" now, "base/fonts" before the move. The generator

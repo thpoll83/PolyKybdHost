@@ -259,7 +259,7 @@ class LayerTagSourceTest(unittest.TestCase):
 
     def _fw(self):
         pk = checkout_dir()
-        if not os.path.exists(os.path.join(pk, "keys_com/layers.h")):
+        if not os.path.exists(fw_file(pk, "keys_com/layers.h")):
             self.skipTest("no firmware checkout beside this repo")
         return pk
 
@@ -272,7 +272,7 @@ class LayerTagSourceTest(unittest.TestCase):
             self.skipTest(f"previews unavailable: {p.reason}")
         # From the checkout's own enum, so the expected values follow it.
         tags = {t: i for i, t in qh.parse_layers_h(
-            pathlib.Path(self._fw()) / "keys_com/layers.h").items()}
+            pathlib.Path(fw_file(self._fw(), "keys_com/layers.h"))).items()}
         for kc, tok in ((0x5220 + tags["FL"], "MO(_FL)"), (0x5220 + tags["NL"], "MO(_NL)"),
                         (0x5220 + tags["ADDLANG1"], "MO(_ADDLANG1)"),
                         (0x5200 + tags["EMJ"], "TO(_EMJ)")):
@@ -287,7 +287,7 @@ class LayerTagSourceTest(unittest.TestCase):
         pk = self._fw()
         self.assertEqual(
             qh.LAYER_TAGS,
-            qh.parse_layers_h(pathlib.Path(pk) / "keys_com/layers.h"))
+            qh.parse_layers_h(pathlib.Path(fw_file(pk, "keys_com/layers.h"))))
 
     def test_a_checkout_out_of_step_with_the_host_is_REPORTED(self):
         """⚠️ The part that was missing, and it cost three rounds of guessing.

@@ -193,7 +193,7 @@ class FixtureIsCurrentTest(unittest.TestCase):
 
     def test_the_golden_matches_a_LIVE_firmware_tool(self):
         pk = gen.firmware_dir()
-        if not (pk / "tools" / "status_oled_preview.py").exists():
+        if not gen.preview_tool(pk).exists():
             raise unittest.SkipTest("no firmware checkout beside this repo")
         try:
             from PIL import Image  # noqa: F401  (the tool imports Pillow at module load)

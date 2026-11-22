@@ -96,10 +96,16 @@ def firmware_version(pk: pathlib.Path) -> str:
     return m.group(1) if m else "unknown"
 
 
+def preview_tool(pk: pathlib.Path) -> pathlib.Path:
+    """The firmware's status_oled_preview.py: dev/tools/ now, tools/ in older checkouts."""
+    from polyhost.util.fw_checkout import fw_file
+    return pathlib.Path(fw_file(pk, "dev/tools/status_oled_preview.py"))
+
+
 def build(pk: pathlib.Path):
     """Drive the firmware tool. It resolves its font dir relative to ITS OWN file, so
     only sys.path matters -- but it also expects to be run from keyboards/polykybd."""
-    sys.path.insert(0, str(pk / "tools"))
+    sys.path.insert(0, str(preview_tool(pk).parent))
     cwd = os.getcwd()
     os.chdir(pk)
     try:
@@ -128,7 +134,7 @@ def main():
     args = ap.parse_args()
 
     pk = firmware_dir(args.firmware)
-    if not (pk / "tools" / "status_oled_preview.py").exists():
+    if not preview_tool(pk).exists():
         print("no firmware checkout at %s" % pk)
         return 2
 
