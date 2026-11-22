@@ -2,7 +2,7 @@
 """Faithful Python port of the firmware Eden boot animation.
 
 This is NOT a design mock — it re-implements ``sa_render_frame`` from
-``qmk_firmware/keyboards/polykybd/anim/startup_anim.c`` with the SAME fixed-point
+``qmk_firmware/keyboards/polykybd/features/anim/startup_anim.c`` with the SAME fixed-point
 integer semantics, reading the SAME generated tables
 (``startup_anim_geom.h``: SA_SIN, SA_NOISE, SA_GEOM_*, SA_TARGETS, SA_LETTER_*)
 and the SAME tuning ``#define``s (SA_INTRO_MS, SA_RING_FREQ, …). So a frame it

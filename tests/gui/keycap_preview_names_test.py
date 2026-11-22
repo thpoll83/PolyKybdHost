@@ -246,7 +246,7 @@ class LayerRangeTest(unittest.TestCase):
 class LayerTagSourceTest(unittest.TestCase):
     """Where the layer tags come from, and what happens when that source is stale.
 
-    ⚠️ They come from the firmware CHECKOUT's `layers.h`, not from the shipped
+    ⚠️ They come from the firmware CHECKOUT's `keys_com/layers.h`, not from the shipped
     `LAYER_TAGS` -- because the token they build has to match the spelling the SAME
     tree's `keycode_helper.c` switches on. Hardcoding was tried for one commit and
     broke every layer key on an older checkout, which has no `case MO(_FL)` at all.
@@ -259,7 +259,7 @@ class LayerTagSourceTest(unittest.TestCase):
 
     def _fw(self):
         pk = checkout_dir()
-        if not os.path.exists(os.path.join(pk, "layers.h")):
+        if not os.path.exists(fw_file(pk, "keys_com/layers.h")):
             self.skipTest("no firmware checkout beside this repo")
         return pk
 
@@ -272,7 +272,7 @@ class LayerTagSourceTest(unittest.TestCase):
             self.skipTest(f"previews unavailable: {p.reason}")
         # From the checkout's own enum, so the expected values follow it.
         tags = {t: i for i, t in qh.parse_layers_h(
-            pathlib.Path(self._fw()) / "layers.h").items()}
+            pathlib.Path(fw_file(self._fw(), "keys_com/layers.h"))).items()}
         for kc, tok in ((0x5220 + tags["FL"], "MO(_FL)"), (0x5220 + tags["NL"], "MO(_NL)"),
                         (0x5220 + tags["ADDLANG1"], "MO(_ADDLANG1)"),
                         (0x5200 + tags["EMJ"], "TO(_EMJ)")):
@@ -287,7 +287,7 @@ class LayerTagSourceTest(unittest.TestCase):
         pk = self._fw()
         self.assertEqual(
             qh.LAYER_TAGS,
-            qh.parse_layers_h(pathlib.Path(pk) / "layers.h"))
+            qh.parse_layers_h(pathlib.Path(fw_file(pk, "keys_com/layers.h"))))
 
     def test_a_checkout_out_of_step_with_the_host_is_REPORTED(self):
         """⚠️ The part that was missing, and it cost three rounds of guessing.
@@ -462,7 +462,7 @@ class PreviewSourceTest(unittest.TestCase):
         pixels are the only claim worth making, and they are what a user sees.
         """
         pk = checkout_dir()
-        if not os.path.exists(fw_file(pk, "keymap/keycode_helper.c")):
+        if not os.path.exists(fw_file(pk, "keys_com/keycode_helper.c")):
             self.skipTest("no firmware checkout beside this repo")
         a, b = KeycapPreview(source="shipped"), KeycapPreview(source="checkout")
         if not (a._load() and b._load()):

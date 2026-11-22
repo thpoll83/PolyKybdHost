@@ -9,16 +9,16 @@ from polyhost.services import qmk_keycodes as _qmk_keycodes
 HEADER_FILE = _qmk_keycodes.HEADER_FILE
 parse_qmk_keycode_header = _qmk_keycodes.parse_qmk_keycode_header
 parse_qmk_keycodes = _qmk_keycodes.parse_qmk_keycodes
-# The firmware's `enum kb_layers` (qmk_firmware keyboards/polykybd/layers.h), by
+# The firmware's `enum kb_layers` (qmk_firmware keyboards/polykybd/keys_com/layers.h), by
 # index. These are ENUM TAGS, not display labels: the preview rebuilds the token
 # `keycode_helper.c` switches on (`MO(_FL)`, `TO(_EMJ)`) from them, so the spelling
 # has to be the firmware's own. The tab LABELS come off the wire instead (cmd 35).
 #
 # ⚠️ Hardcoded on purpose, after two goes at deriving it both went stale in their
-# own way. It began as `res/layer_names.yaml`, generated from `layers.h` -- whose
+# own way. It began as `res/layer_names.yaml`, generated from `keys_com/layers.h` -- whose
 # generator's default input path had been dead through two renames, so the file
 # still described the two-Fn-layer era and every layer key from index 5 up resolved
-# to a token that does not exist. Reading `layers.h` LIVE fixed that and introduced
+# to a token that does not exist. Reading `keys_com/layers.h` LIVE fixed that and introduced
 # a worse one: the keycodes come from the CONNECTED KEYBOARD while the enum came
 # from whatever the local firmware checkout happened to be, so an old checkout
 # renamed the device's layers under it -- `MO(_NL)` read as `MO(_FL1)` and drew
@@ -42,7 +42,7 @@ def fold_layer_tags(tags: dict[int, str], stored: int | None,
     """`tags` for a keyboard that stores `device_stored` layers, where `tags` came
     from a firmware storing `stored`.
 
-    A stored layer is added at the END of the stored block (layers.h), so a board
+    A stored layer is added at the END of the stored block (keys_com/layers.h), so a board
     with fewer stored layers lacks the last ones, and its flash layers start at
     `device_stored` instead of `stored`: firmware 1.11.x stores 8, so index 8 is
     `_SL` there and `_ML` on 1.13.0. A board that stores MORE than the tags know
@@ -140,7 +140,7 @@ def build_keycode_to_name(name_to_keycode: dict[str, int]) -> dict[int, str]:
 
 
 def parse_layers_h(path: Path) -> dict[int, str]:
-    """`enum kb_layers` from a firmware checkout's layers.h, as index -> tag.
+    """`enum kb_layers` from a firmware checkout's keys_com/layers.h, as index -> tag.
 
     Handles the two forms the enum actually uses: an explicit value (`_BL = 0x00`)
     sets the running index, and an alias (`_L0 = _BL`) names the SAME index rather

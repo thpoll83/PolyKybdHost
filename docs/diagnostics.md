@@ -231,7 +231,7 @@ daemon client.
 - **A firmware crash is ALERTED, not merely logged — `services/crash_report.py` +
   `gui/crash_alert_dialog.py` (firmware crash record, protocol 16+).** The keyboard
   prints `crash: side=… kind=… pc=… … fw=…` with its boot banner after a HardFault /
-  unhandled exception / watchdog reboot (qmk `drivers/crash_record.*`); the console
+  unhandled exception / watchdog reboot (qmk `lib/drivers/crash_record.*`); the console
   read on the HID worker feeds `CrashScanner`, `PolyCore` emits **`crash_detected`**
   (a `CrashRecord.to_dict()`), and the tray shows one modeless dialog with two ways
   out: **Report on GitHub…** (opens Report-a-Problem with the crash pre-filled via

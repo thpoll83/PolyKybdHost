@@ -10,7 +10,7 @@ focus (Win+Shift+C Color Picker, Win+Ctrl+T Always on Top, Win+Shift+T Text
 Extractor, Win+Ctrl+Shift+V paste as plain text, Win+Shift+/ Shortcut Guide).
 A per-app set shows only while a PowerToys window has focus, so it cannot show
 those. Keycap hints for global shortcuts are drawn by the firmware
-(`qmk_firmware` `hints/os_hints.c`), not by this repo.
+(`qmk_firmware` `features/hints/os_hints.c`), not by this repo.
 
 | window | process | set | why |
 |---|---|---|---|
@@ -106,7 +106,7 @@ PolyKybdHost is GPL-3.0-or-later.
 
 ## Global shortcuts that suit firmware OS hints
 
-For the firmware's `hints/os_hints.c` (Win held), if PowerToys support is
+For the firmware's `features/hints/os_hints.c` (Win held), if PowerToys support is
 wanted there: Win+Shift+C Color Picker, Win+Shift+T Text Extractor,
 Win+Ctrl+T Always on Top, Win+Ctrl+Shift+V paste as plain text,
 Win+Shift+/ Shortcut Guide, Win+Alt+Space Command Palette, Win+Ctrl+Shift+M Screen

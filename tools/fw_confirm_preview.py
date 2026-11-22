@@ -32,7 +32,7 @@ from PIL import Image, ImageDraw
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOST_REPO = os.path.dirname(HERE)
 
-# Keycap geometry — the visible window of a per-key OLED (drivers/disp_array.h).
+# Keycap geometry — the visible window of a per-key OLED (lib/drivers/disp_array.h).
 SCREEN_W, SCREEN_H = 72, 40
 
 # Which key carries the prompt, from poly_keymap.c's FW_CONFIRM_ROW/COL. It is a
@@ -169,7 +169,8 @@ def main():
 
     sys.path.insert(0, HERE)
     sys.path.insert(0, HOST_REPO)
-    sys.path.insert(0, os.path.join(args.qmk, "keyboards", "polykybd", "tools"))
+    sys.path.insert(0, os.path.join(args.qmk, "keyboards", "polykybd", "tools"))      # older checkouts
+    sys.path.insert(0, os.path.join(args.qmk, "keyboards", "polykybd", "dev", "tools"))
     import status_oled_preview as S           # noqa: E402  (path set above)
     from polyhost.services.fontpack_render import simulate_oled   # noqa: E402
     from kle_render import KleRenderer, KeyContent, Theme   # noqa: E402

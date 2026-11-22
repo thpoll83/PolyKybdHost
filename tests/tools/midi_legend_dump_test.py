@@ -26,7 +26,7 @@ class MidiLegendDumpTest(unittest.TestCase):
 
     def test_no_compiler_gives_none(self):
         pk = pathlib.Path(checkout_dir())
-        if not (pathlib.Path(fw_file(pk, "modes/midi_legend.c"))).exists():
+        if not (pathlib.Path(fw_file(pk, "features/modes/midi_legend.c"))).exists():
             self.skipTest("no firmware checkout with midi_legend.c")
         notes = []
         with unittest.mock.patch.object(mld, "_compiler", return_value=None):
@@ -35,7 +35,7 @@ class MidiLegendDumpTest(unittest.TestCase):
 
     def test_the_shipped_export_matches_the_firmware(self):
         pk = pathlib.Path(checkout_dir())
-        if not (pathlib.Path(fw_file(pk, "modes/midi_legend.c"))).exists():
+        if not (pathlib.Path(fw_file(pk, "features/modes/midi_legend.c"))).exists():
             self.skipTest("no firmware checkout with midi_legend.c")
         if mld._compiler() is None:
             self.skipTest("no C compiler")

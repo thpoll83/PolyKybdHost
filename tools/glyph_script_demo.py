@@ -161,7 +161,7 @@ def main():
     matrices = parse_layout_matrix(os.path.join(pk, 'split72', 'keyboard.json'))
     kcs = parse_base_layer_keycodes(os.path.join(pk, 'split72', 'keymaps', 'default', 'keymap.c'))
     matrix_kc = dict(zip(matrices, kcs, strict=True))
-    static_map = parse_static_text_map(fw_file(pk, 'keymap/keycode_helper.c'))
+    static_map = parse_static_text_map(fw_file(pk, 'keys_com/keycode_helper.c'))
     named = load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
     # kc_os_gui_icon() is an OS-dependent function, not a named glyph — resolve the
     # GUI/Super key to a neutral OS icon so it isn't drawn as raw text.
