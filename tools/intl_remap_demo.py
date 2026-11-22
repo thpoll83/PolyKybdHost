@@ -137,9 +137,9 @@ def main():
         raise SystemExit(f"no MO(_ADDLANG1) on [{args.layer}]")
     intl_pos = max(intl_all, key=lambda mp: int(mp.split(',')[0]))
 
-    static_map = parse_static_text_map(fw_file(pk, 'keymap/keycode_helper.c'))
+    static_map = parse_static_text_map(fw_file(pk, 'keys_com/keycode_helper.c'))
     named = load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
-    named.update(load_named_glyphs(fw_file(pk, 'keymap/keycode_helper.h')))
+    named.update(load_named_glyphs(fw_file(pk, 'keys_com/keycode_helper.h')))
     for alias in ("kc_os_gui_icon()", "kc_os_gui_icon())"):
         named[alias] = named[args.gui_icon]
     L = Lang(os.path.join(pk, 'lang', 'lang_lut.xlsx'), named)

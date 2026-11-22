@@ -116,7 +116,7 @@ LANG_REGION = {
 # Per-language overrides for languages whose geographic/cultural home differs
 # from their ISO country code's continent. Key = the keyboard's 4-char language
 # code (e.g. "hwUS"); checked before the country-based LANG_REGION lookup.
-# Keep in sync with REGION_LANGS in qmk_firmware .../polykybd/keymap/lang_layer.c.
+# Keep in sync with REGION_LANGS in qmk_firmware .../polykybd/keys_com/lang_layer.c.
 LANG_REGION_OVERRIDE = {
     "hwUS": "Oceania",   # Hawaiian: US country code, but Polynesian
 }

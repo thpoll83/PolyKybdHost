@@ -808,14 +808,14 @@ def main():
         raise SystemExit(f"layout/keymap length mismatch: {len(matrices)} vs {len(kcs)}")
     matrix_kc = dict(zip(matrices, kcs))
 
-    static_map = parse_static_text_map(fw_file(pk, 'keymap/keycode_helper.c'))
+    static_map = parse_static_text_map(fw_file(pk, 'keys_com/keycode_helper.c'))
     named = load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
     L = Lang(os.path.join(pk, 'lang', 'lang_lut.xlsx'), named)
     unknown = [x for x in langs if x not in L.langs]
     if unknown:
         raise SystemExit(f"unknown language(s): {unknown}\nhave {len(L.langs)} langs")
     R = Renderer(load_all_fonts(font_dir(pk)))
-    ime = parse_ime_key(fw_file(pk, 'keymap/poly_keymap.c'), L.langs)
+    ime = parse_ime_key(fw_file(pk, 'keys_com/poly_keymap.c'), L.langs)
     print(f"  {len(L.langs)} languages available, touring {len(langs)}")
 
     renderer = LangBoard(json.load(open(args.kle, encoding='utf-8')),

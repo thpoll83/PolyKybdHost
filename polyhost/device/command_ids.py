@@ -110,7 +110,7 @@ class Cmd(Enum):
     AI_CARD = 46
     # Key attention (protocol v32+): the focus ripple on one key. data[2] op: 0 START
     # (data[3] row, data[4] col, data[5] count, 0 = until cancelled, data[6] period
-    # in 100 ms units, CLOSED 23..100), 1 CANCEL. firmware anim/key_attention.h.
+    # in 100 ms units, CLOSED 23..100), 1 CANCEL. firmware features/anim/key_attention.h.
     KEY_ATTENTION = 47
     # Runtime combos and tap dance (protocol v33+): data[2] op. 0 INFO (reply [3]
     # combo slots, [4] tap-dance slots, [5] record bytes, [6] bit 0 available, [7..8]
@@ -125,7 +125,7 @@ class Cmd(Enum):
     HOST_TUTORIAL = 49
     # Hardware IDs (protocol v37+): no request payload. Reply [3] flags (bit 0: [4..11]
     # valid, bit 1: [12..19] valid), [4..11] the flash unique ID of the half the host
-    # talks to, [12..19] the other half's. Always ACKs. Firmware drivers/hw_uid.h.
+    # talks to, [12..19] the other half's. Always ACKs. Firmware lib/drivers/hw_uid.h.
     HW_ID = 50
 
 

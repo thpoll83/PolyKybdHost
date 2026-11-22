@@ -145,7 +145,7 @@ def render_static_keys(fw: str, keys, labels, out: str) -> None:
     sys.path.insert(0, HERE)
     import lang_demo as LD
     OP.OVERSHOOT = 0
-    static_map = LD.parse_static_text_map(fw_file(fw, "keymap/keycode_helper.c"))
+    static_map = LD.parse_static_text_map(fw_file(fw, "keys_com/keycode_helper.c"))
     missing = [k for k in keys if k not in static_map]
     if missing:
         sys.exit(f"no static legend for {', '.join(missing)} in keycode_helper.c")
@@ -212,7 +212,7 @@ def render_board(fw: str, lang: str, out: str, unit: int, layer: str = None,
     if len(matrices) != len(kcs):
         sys.exit(f"layout/keymap length mismatch: {len(matrices)} vs {len(kcs)}")
     matrix_kc = dict(zip(matrices, kcs))
-    static_map = LD.parse_static_text_map(fw_file(pk, "keymap/keycode_helper.c"))
+    static_map = LD.parse_static_text_map(fw_file(pk, "keys_com/keycode_helper.c"))
     L, R = load(pk)
     theme = Theme()
     kle = os.path.join(os.path.dirname(HERE), "polyhost", "res", "polykybd-split72.json")

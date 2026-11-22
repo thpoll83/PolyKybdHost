@@ -3,7 +3,7 @@
 Takes the `PackFont` objects from `fontpack_reader` and rasterises them exactly
 the way the keycap OLED does: 1-bit, MSB-first, ``bit = yy*width + xx`` into the
 glyph's own ``width x height`` box (the packing gotcha from the firmware's
-``drivers/disp_array.c`` — continuous-bit-packed, byte-padded per *glyph*, never per
+``lib/drivers/disp_array.c`` — continuous-bit-packed, byte-padded per *glyph*, never per
 scanline).  This mirrors ``tools/gfx_font.GfxGlyphRenderer._blit`` but draws each
 glyph at native size in its own cell instead of compositing into the 72x40 keycap
 window — the right view for browsing/extending a bundle's glyph inventory.

@@ -201,7 +201,7 @@ and relative links were adjusted to suit a standalone file.
       `keyboard.json`'s matrix positions — so every key shows what the keyboard
       really has there. `--compare` additionally writes a Symbol/Preview/Real
       close-up.
-      - ⚠️ **The layer TABS come from `layer_names.c`, not from `layers.h`.** A
+      - ⚠️ **The layer TABS come from `layer_names.c`, not from `keys_com/layers.h`.** A
         real editor draws `DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT` (8) tabs named
         `Qwerty`/`ColemkDH`/`Fn`; the enum has 12 entries named `_L0`/`_ADDLANG1`.
         Rendering from the enum therefore produces a screenshot with four tabs too

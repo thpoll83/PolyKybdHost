@@ -2,7 +2,7 @@
 
 The keyboard reports what its host-remappable layers are called so the layout
 editor stops labelling tabs from the shipped LAYER_TAGS map — a hardcoded fallback
-generated from the firmware's layers.h, which silently went stale for two renames
+generated from the firmware's keys_com/layers.h, which silently went stale for two renames
 of its source path and described an enum the firmware no longer had.
 
 decode_layer_names is pure, so the wire contract is pinned here without a device:

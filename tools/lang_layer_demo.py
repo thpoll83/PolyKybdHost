@@ -313,8 +313,8 @@ def main():
     roles = dict(zip(matrices, role_list))
 
     off, langs, labels, spp, nreg = parse_lang_layer(
-        fw_file(pk, 'keymap/lang_layer.c'), fw_file(pk, 'keymap/lang_layer.h'))
-    static_map = parse_static_text_map(fw_file(pk, 'keymap/keycode_helper.c'))
+        fw_file(pk, 'keys_com/lang_layer.c'), fw_file(pk, 'keys_com/lang_layer.h'))
+    static_map = parse_static_text_map(fw_file(pk, 'keys_com/keycode_helper.c'))
     named = load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
     L = Lang(os.path.join(pk, 'lang', 'lang_lut.xlsx'), named)
     g_all = load_all_fonts(font_dir(pk))

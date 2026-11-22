@@ -13,7 +13,7 @@ focus ring, the status OLED and a host-side step panel.
 | ring on one key, N times or until cancelled | cmd 47 op 0, `PolyKybd.key_attention()` | 32 |
 | ring along a path of layer keys, advanced by the firmware from the active layer | cmd 47 op 2, `services/midi_guide.py` | 34 |
 | keymap read (whole buffer) and single-key write | VIA cmd 18 / cmd 5 | VIA |
-| status text, "lit set" spotlight, board reveal wave | `anim/tutorial.c`, first-run tutorial only | none |
+| status text, "lit set" spotlight, board reveal wave | `features/anim/tutorial.c`, first-run tutorial only | none |
 
 What does not exist:
 

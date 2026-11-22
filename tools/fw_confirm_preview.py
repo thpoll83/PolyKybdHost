@@ -32,7 +32,7 @@ from PIL import Image, ImageDraw
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOST_REPO = os.path.dirname(HERE)
 
-# Keycap geometry — the visible window of a per-key OLED (drivers/disp_array.h).
+# Keycap geometry — the visible window of a per-key OLED (lib/drivers/disp_array.h).
 SCREEN_W, SCREEN_H = 72, 40
 
 # Which key carries the prompt, from poly_keymap.c's FW_CONFIRM_ROW/COL. It is a

@@ -1,7 +1,7 @@
 """The status-OLED panel the editor draws, pinned to the FIRMWARE's own renderer.
 
 `polyhost/services/status_screen.py` is a port of
-`qmk_firmware/keyboards/polykybd/tools/status_oled_preview.py`, and the only claim
+`qmk_firmware/keyboards/polykybd/dev/tools/status_oled_preview.py`, and the only claim
 worth making about a port is that it draws the same pixels. So the core of this file
 is a comparison against `status_panel_golden.json` -- generated from the firmware tool
 by `scripts/gen_status_panel_golden.py` and shipped, so the pin holds on a machine with

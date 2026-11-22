@@ -186,7 +186,7 @@ tab by prefix. A name that matches no rule lands in "Additional", the second tab
       `board_plate.set_screen_images` paints it into the lit rectangle. What is
       decided, not incidental:
       - **It draws the WHOLE panel — it is a PORT of the firmware's own preview tool**
-        (`qmk_firmware/keyboards/polykybd/tools/status_oled_preview.py`, itself a
+        (`qmk_firmware/keyboards/polykybd/dev/tools/status_oled_preview.py`, itself a
         mirror of `split72/status_oled.c` `oled_update_buffer`), function for function
         and coordinate for coordinate, so the two files diff line for line. It shipped
         as a hand-written subset first — top row, side marker, layout name, every other
@@ -492,7 +492,7 @@ tab by prefix. A name that matches no rule lands in "Additional", the second tab
   - ✅ **MOVE / BADGE / ERASE / ROT are DRAWN now**, which is what makes those
     keycaps render rather than merely be refused. Ported from
     `kdisp_draw_badge_rect` + `rr_row_inset` + `kdisp_draw_glyph_rot_half_at`
-    (`drivers/disp_array.c`) and `kdisp_gfx_rot_half_extent` (`base/font_lookup.c`).
+    (`lib/drivers/disp_array.c`) and `kdisp_gfx_rot_half_extent` (`base/font_lookup.c`).
     Four things that are load-bearing:
     - **The badge is checked against FIRMWARE DATA, not against itself** — its
       silhouette must equal the baked `ICON_CAPSLOCK_OFF` glyph, which is the claim
@@ -733,7 +733,7 @@ tab by prefix. A name that matches no rule lands in "Additional", the second tab
     `Numpad`, `Utility`).
   - ⚠️ **`layer_names.yaml` and its generator are GONE (2026-09-01), and the layer
     tags come from the SAME source as the legends — `res/preview/layers.json` when the
-    shipped data is in use, the checkout's own `layers.h` when it is.** That pairing
+    shipped data is in use, the checkout's own `keys_com/layers.h` when it is.** That pairing
     is the whole rule, and it took three tries to see it:
     - **A generated file** — the rot above: a dead generator input, nothing notices.
     - **A hardcoded constant** (tried for exactly one commit, and it is what this
@@ -742,7 +742,7 @@ tab by prefix. A name that matches no rule lands in "Additional", the second tab
       no `case MO(_FL)` at all — it switches on `MO(_FL0)`/`MO(_FL1)`. So a constant
       saying `5 -> FL` builds a token that tree cannot match and the key goes blank.
       Reported within the hour as "L5 is gone again".
-    - **The checkout's own `layers.h`**: correct, because tags and legends then agree
+    - **The checkout's own `keys_com/layers.h`**: correct, because tags and legends then agree
       by construction. `qmk_keycode_helper.parse_layers_h()`; `LAYER_TAGS` remains
       only as the no-checkout fallback and as the yardstick below.
   - ⚠️ **Firmware 1.13.0 inserted the MIDI layer `_ML` as stored layer 8, so every

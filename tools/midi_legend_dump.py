@@ -1,7 +1,7 @@
 """The keycap legends of QMK's MIDI keycodes, from the firmware's own C.
 
 Firmware 1.13.0 (qmk#427) draws every `QK_MIDI_*` key through `midi_legend()` in
-`keyboards/polykybd/modes/midi_legend.c`. The legend is built at runtime from the live
+`keyboards/polykybd/features/modes/midi_legend.c`. The legend is built at runtime from the live
 octave, transpose, velocity and channel, so neither static-text switch has an
 entry for it and `lang_demo.parse_static_text_map` cannot see it.
 
@@ -65,7 +65,7 @@ def midi_legends(pk: str | os.PathLike, log=None) -> dict[str, list[int]] | None
     """{"QK_MIDI_NOTE_C_0": [codepoint, ...], ...} for the tree at `pk`
     (`<fw>/keyboards/polykybd`), or None when it cannot be built here."""
     pk = pathlib.Path(pk)
-    src = pathlib.Path(fw_file(pk, "modes/midi_legend.c"))
+    src = pathlib.Path(fw_file(pk, "features/modes/midi_legend.c"))
     if not src.exists():
         return None                       # a tree from before the MIDI layer
     cc = _compiler()
@@ -78,7 +78,7 @@ def midi_legends(pk: str | os.PathLike, log=None) -> dict[str, list[int]] | None
         main_c = pathlib.Path(tmp) / "main.c"
         exe = pathlib.Path(tmp) / "midi_legend_dump"
         main_c.write_text(_MAIN, encoding="utf-8")
-        # src.parent: midi_legend.h sits next to midi_legend.c (modes/ since the
+        # src.parent: midi_legend.h sits next to midi_legend.c (features/modes/ since the
         # 2026-11 firmware move, the keyboard root before it).
         inc = [f"-I{p}" for p in (src.parent, pk, qmk_root / "quantum",
                                   qmk_root / "quantum" / "keymap_extras",

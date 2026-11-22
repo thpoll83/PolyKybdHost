@@ -173,7 +173,7 @@ class ShippedRendersLikeTheCheckoutTest(unittest.TestCase):
     def test_every_shipped_legend_draws_the_same_pixels(self):
 
         pk = checkout_dir()
-        if not os.path.exists(fw_file(pk, "keymap/keycode_helper.c")):
+        if not os.path.exists(fw_file(pk, "keys_com/keycode_helper.c")):
             self.skipTest("no firmware checkout beside this repo")
 
         d = PreviewData()
@@ -182,12 +182,12 @@ class ShippedRendersLikeTheCheckoutTest(unittest.TestCase):
         checkout = op.load_renderer(ml.default_font_dir())
 
         named = op.load_named_glyphs(os.path.join(pk, "lang", "named_glyphs.h"))
-        named.update(op.load_named_glyphs(fw_file(pk, "keymap/keycode_helper.h")))
+        named.update(op.load_named_glyphs(fw_file(pk, "keys_com/keycode_helper.h")))
         macros = op.parse_function_macros(*(kp._read(pk, f) for f in (
-            "lang/named_glyphs.h", "keymap/keycode_helper.h", "keymap/keycode_helper.c",
-            "keymap/poly_keymap.c")))
-        legends_c = {**ld.parse_to_static_text_map(fw_file(pk, "keymap/poly_keymap.c")),
-                     **ld.parse_static_text_map(fw_file(pk, "keymap/keycode_helper.c"))}
+            "lang/named_glyphs.h", "keys_com/keycode_helper.h", "keys_com/keycode_helper.c",
+            "keys_com/poly_keymap.c")))
+        legends_c = {**ld.parse_to_static_text_map(fw_file(pk, "keys_com/poly_keymap.c")),
+                     **ld.parse_static_text_map(fw_file(pk, "keys_com/keycode_helper.c"))}
         resolver = object.__new__(op.Lang)
         resolver.named = named
 
@@ -230,7 +230,7 @@ class ShippedRendersLikeTheCheckoutTest(unittest.TestCase):
         d = PreviewData()
         self.assertTrue(d.load(), d.reason)
         named = op.load_named_glyphs(os.path.join(pk, "lang", "named_glyphs.h"))
-        named.update(op.load_named_glyphs(fw_file(pk, "keymap/keycode_helper.h")))
+        named.update(op.load_named_glyphs(fw_file(pk, "keys_com/keycode_helper.h")))
         shipped = (d.lang_reader(),
                    op.Renderer(d.fonts, mid_fonts=[d.ui_fonts[mkl.MID_FONT_SYMBOL]]))
         checkout = (op.Lang(os.path.join(pk, "lang", "lang_lut.xlsx"), named),
