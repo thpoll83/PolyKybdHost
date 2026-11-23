@@ -64,10 +64,59 @@ def missing_requirements(req_file: str) -> list:
             if not name:
                 continue
             try:
-                importlib.metadata.distribution(name)
+                dist = importlib.metadata.distribution(name)
             except importlib.metadata.PackageNotFoundError:
                 missing.append(name)
+                continue
+            # Installed is not enough: a raised floor (Pillow>=13.0.0 over an
+            # installed 12.3.0) must count as missing, or a manual source
+            # update never runs pip and the old version stays.
+            if not _version_satisfies(line, dist.version):
+                missing.append(name)
     return missing
+
+
+def _version_tuple(text: str):
+    """Leading numeric release of a version string, e.g. '12.3.0rc1' -> (12, 3, 0).
+    None when the string has no numeric start."""
+    import re
+    m = re.match(r"\d+(?:\.\d+)*", text.strip())
+    return tuple(int(n) for n in m.group(0).split(".")) if m else None
+
+
+def _version_satisfies(line: str, installed) -> bool:
+    """True if `installed` meets the version specifier on requirement `line`.
+
+    Uses `packaging` when it is importable. It is not guaranteed on the very
+    first run, so the fallback reads the ``>=`` and ``==`` specifiers with the
+    standard library (padded numeric tuples); any other operator, a line with
+    no specifier, or an unreadable version counts as satisfied. Failing open
+    here only skips an upgrade: it never reinstalls on every launch.
+    """
+    if not isinstance(installed, str):
+        return True
+    try:
+        from packaging.requirements import Requirement
+        return Requirement(line).specifier.contains(installed, prereleases=True)
+    except ImportError:
+        pass
+    except Exception:
+        return True
+    import re
+    spec = line.split(";", 1)[0]
+    have = _version_tuple(installed)
+    if have is None:
+        return True
+    for op, ver in re.findall(r"(>=|==)\s*([0-9][0-9A-Za-z.*]*)", spec):
+        want = _version_tuple(ver)
+        if want is None:
+            continue
+        size = max(len(have), len(want))
+        a = have + (0,) * (size - len(have))
+        b = want + (0,) * (size - len(want))
+        if (op == ">=" and a < b) or (op == "==" and "*" not in ver and a != b):
+            return False
+    return True
 
 
 def _deps_marker_path() -> str:
@@ -114,7 +163,7 @@ def bootstrap_dependencies(project_root: str) -> None:
     if missing:
         # print() is a no-op crash under pythonw (sys.stdout is None), so guard it.
         if sys.stdout is not None:
-            print(f"PolyKybdHost bootstrap: missing packages {missing}, "
+            print(f"PolyKybdHost bootstrap: missing or outdated packages {missing}, "
                   f"running pip install -r {req_file}", flush=True)
         import subprocess
         try:
