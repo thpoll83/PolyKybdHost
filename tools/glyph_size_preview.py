@@ -33,7 +33,7 @@ from gfx_font import font_dir  # noqa: E402
 OLED_W, OLED_H = 72, 40
 BUFFER_X = 28
 
-# Keep in sync with glyph_size_base[] / glyph_size_baseline[] in poly_keymap.c and
+# Keep in sync with glyph_size_base[] / glyph_size_baseline[] in base/legend_plan.c and
 # the `offset:` values of the `latinbig` entries in fonts.yaml.
 SIZE_BASE = {"S": 0, "M": 0xF0000, "L": 0xF3000}
 SIZE_BASELINE = {"S": 21, "M": 25, "L": 28}

@@ -70,7 +70,7 @@ def script_glyph_image(font, ch: str):
     if not (font.first <= cp <= font.last):
         return None
     # The firmware draws a glyph-script override CENTERED in both axes from the
-    # glyph's pixel bbox (poly_keymap.c render_key), NOT at the fixed y=23 Latin
+    # glyph's pixel bbox (keys_com/render_key.c render_key), NOT at the fixed y=23 Latin
     # baseline. The script fonts are ~30 px tall, so a baseline draw pushes a tall
     # glyph's top above 0 and clips it (Amiga/C64/APL ran ~10 px off the top). Match
     # the firmware: centre the raw glyph bitmap in the 72x40 window.
@@ -82,7 +82,7 @@ def script_glyph_image(font, ch: str):
 
 # C64 keycap script (11): its LETTER keys show a smaller letter with the key's two
 # PETSCII graphics below it. Mirrors render_c64_keycap() in the firmware's
-# poly_keymap.c: letters at 0xEAC0, Commodore graphics a..z at 0xEB00, Shift
+# keys_com/render_key.c: letters at 0xEAC0, Commodore graphics a..z at 0xEB00, Shift
 # graphics a..z at 0xEB1A; each glyph centred on its column, letter top at y=1,
 # cells top at y=25, cell columns 12 px either side of centre.
 C64KEYS_BASE = 0xEA80

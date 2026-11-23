@@ -215,7 +215,7 @@ function newSets(){return{base:new Set(),shift:new Set(),altgr:new Set()};}
 function renderKey(kc,view){view=view||"normal";
  const cat=catOf(kc),o=OFF[cat],K=st[kc];
  // ── AltGr HELD ────────────────────────────────────────────────────────────
- // poly_keymap.c render_key(), the `mods & MOD_RALT` branch: the AltGr cell IS the
+ // keys_com/render_key.c render_key(), the `mods & MOD_RALT` branch: the AltGr cell IS the
  // legend, drawn at the SAME place the resting view draws the hint -- this key's own
  // category, its VAR_ALTGR offsets -- so holding AltGr enlarges the glyph in place
  // rather than teleporting it. It differs from the hint only in being FULL size
@@ -278,7 +278,7 @@ function renderKey(kc,view){view=view||"normal";
   [amin,amax,aymn,aymx]=bbox(acps);
   // {letter|num|sym.altgrhalf}: the AltGr glyph is a HINT, so on an opted-in layout
   // the keys of that CATEGORY draw it half size. The remaining size test is only the
-  // mark guard -- halving a 2x3px nikud makes it a dot. Mirrors poly_keymap.c.
+  // mark guard -- halving a 2x3px nikud makes it a dot. Mirrors keys_com/render_key.c.
   if(AH[cat]&&(aymx-aymn+1)>HALF_MIN_INK_H&&acps[0]!==HINT_SMALL){
    ahalf=true;acps=[HINT_SMALL].concat(acps);[amin,amax,aymn,aymx]=bbox(acps);}
   axx=28+o.altgr.H;[axx,ay]=clampLegend(axx,BL+o.altgr.V,amin,amax,aymn,aymx);

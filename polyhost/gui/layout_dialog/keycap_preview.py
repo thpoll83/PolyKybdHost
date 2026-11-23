@@ -6,7 +6,7 @@ module drives rather than reimplements:
 
 - `tools/oled_preview.py` -- the language LUT (`lang_lut.xlsx`): letters, digits and
   the punctuation row, per language, including the shift and AltGr previews. It
-  already mirrors `render_key()` in `poly_keymap.c` coordinate for coordinate.
+  already mirrors `render_key()` in `keys_com/render_key.c` coordinate for coordinate.
 - `tools/lang_demo.py` -- `keycode_helper.c`'s static-text switch, i.e. every key
   whose legend is a fixed mini display list: modifiers, arrows, Esc/Tab/Enter, the
   layer keys, the custom PolyKybd keycodes.

@@ -13,7 +13,7 @@ any region that spans more than one page (Europe), exactly like emj_draw_tab_*.
 Faithful to the firmware: geometry from the KLE + split72/keyboard.json, the
 [_LL] roles from keymap.c, the region tables from lang_layer.c, and the per-key
 draw mirrors render_lang_flag_key / render_lang_region_tab / kdisp_write_gfx_vtext
-(poly_keymap.c, disp_array.c). Flag glyphs come from the font pack (flag_fonts.h,
+(poly_keymap.c, render_key.c, disp_array.c). Flag glyphs come from the font pack (flag_fonts.h,
 FLAG_CP_BASE + LANG_FLAG_GLYPH[LANG_*]); the code label is the resident Nano 10px font.
 
 Usage:
@@ -218,7 +218,7 @@ def _fill(px, bx, by, w, h, val=255):
                 px[vx, sy] = val
 
 
-# LANG_TAB_MAX_W in poly_keymap.c: the label must fit between the active frame's rails.
+# LANG_TAB_MAX_W in keys_com/render_key.c: the label must fit between the active frame's rails.
 LANG_TAB_MAX_W = SCREEN_WIDTH - 8
 
 
@@ -319,7 +319,7 @@ def main():
     L = Lang(os.path.join(pk, 'lang', 'lang_lut.xlsx'), named)
     g_all = load_all_fonts(font_dir(pk))
     R = Renderer(g_all)
-    # The faces render_lang_flag_key / render_lang_region_tab use (poly_keymap.c).
+    # The faces render_lang_flag_key (poly_keymap.c) / render_lang_region_tab (render_key.c) use.
     nano = load_one_font(os.path.join(font_dir(pk), 'nano_font.h'),
                          'NotoSans_Regular_Nano_10px7b')
     R_nano = Renderer([nano])
