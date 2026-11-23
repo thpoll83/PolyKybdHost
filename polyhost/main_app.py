@@ -214,6 +214,12 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     # reports the same number. Two short git calls when the install is a checkout.
     from polyhost.services.build_info import banner as _build_banner  # Qt-free
     slog.info("%s", _build_banner())
+    if sys.version_info < (3, 11):
+        # requirements.txt keeps Pillow on 12.x here: 13.x needs Python 3.11+.
+        slog.warning("Python %s: Pillow 13 (CVE fixes up to 12.3.0) needs Python 3.11 or "
+                     "newer, so this install stays on Pillow 12.x. Create the virtual "
+                     "environment with Python 3.11+ to get the fixes.",
+                     _platform.python_version())
     # Crash capture, as early as possible: under pythonw an unhandled exception
     # (PyQt aborts after the hook) or a hard fault leaves NO trace at all, which
     # is why a vanished tray icon could not be told apart from a live process

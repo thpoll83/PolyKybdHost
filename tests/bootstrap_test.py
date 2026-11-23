@@ -30,7 +30,8 @@ class TestMissingRequirements(unittest.TestCase):
         # importlib.metadata is imported lazily inside missing_requirements now,
         # so patch the canonical target rather than a module attribute.
         with mock.patch("importlib.metadata.distribution") as dist:
-            dist.return_value = mock.Mock()
+            dist.side_effect = lambda n: mock.Mock(
+                version={"requests": "2.5", "PyQt5": "5.15", "package": "1.0"}[n])
             self.assertEqual(_bootstrap.missing_requirements(path), [])
             called_with = [c.args[0] for c in dist.call_args_list]
         self.assertEqual(called_with, ["requests", "PyQt5", "package"])
@@ -41,13 +42,52 @@ class TestMissingRequirements(unittest.TestCase):
         def fake_distribution(name):
             if name == "nope-this-pkg-does-not-exist":
                 raise importlib.metadata.PackageNotFoundError(name)
-            return mock.Mock()
+            return mock.Mock(version="99.0")
 
         with mock.patch("importlib.metadata.distribution", side_effect=fake_distribution):
             self.assertEqual(
                 _bootstrap.missing_requirements(path),
                 ["nope-this-pkg-does-not-exist"],
             )
+
+    def _versions(self, path, versions):
+        def fake(name):
+            return mock.Mock(version=versions[name])
+        with mock.patch("importlib.metadata.distribution", side_effect=fake):
+            return _bootstrap.missing_requirements(path)
+
+    def test_outdated_package_counts_as_missing(self):
+        path = self._write("Pillow>=13.0.0\nnumpy>=1.0\n")
+        self.assertEqual(self._versions(path, {"Pillow": "12.3.0", "numpy": "2.1"}),
+                         ["Pillow"])
+
+    def test_floor_met_or_exceeded_is_satisfied(self):
+        path = self._write("Pillow>=13.0.0\n")
+        for have in ("13.0.0", "13.1", "14.0.0"):
+            self.assertEqual(self._versions(path, {"Pillow": have}), [], have)
+
+    def test_marker_line_is_checked_only_when_it_applies(self):
+        path = self._write('Pillow>=13.0.0; python_version >= "3.11"\n'
+                           'Pillow>=99.0; python_version < "3.11"\n')
+        self.assertEqual(self._versions(path, {"Pillow": "13.0.0"}), [])
+
+    def test_fallback_without_packaging(self):
+        """packaging may be absent on the first run; the stdlib path must agree."""
+        path = self._write("Pillow>=13.0.0\nnumpy\nfoo==2.0\n")
+        real_import = __import__
+
+        def no_packaging(name, *a, **kw):
+            if name.startswith("packaging"):
+                raise ImportError(name)
+            return real_import(name, *a, **kw)
+
+        with mock.patch("builtins.__import__", side_effect=no_packaging):
+            self.assertEqual(self._versions(
+                path, {"Pillow": "12.3.0", "numpy": "1", "foo": "2.0"}), ["Pillow"])
+            self.assertEqual(self._versions(
+                path, {"Pillow": "13.0.0", "numpy": "1", "foo": "2.0.0"}), [])
+            self.assertEqual(self._versions(
+                path, {"Pillow": "13.0.0", "numpy": "1", "foo": "3.0"}), ["foo"])
 
 
 class TestBootstrapDependencies(unittest.TestCase):
