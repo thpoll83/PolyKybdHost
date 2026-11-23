@@ -1,12 +1,13 @@
 PyQt5
 hid
 NumPy
-# >=12.3.0 for CVE-2026-54058 (out-of-bounds read decoding a McIdas AREA
+# >=13.0.0 fixes the Pillow CVEs Aikido lists up to 12.3.0, among them
+# CVE-2026-54058 (out-of-bounds read decoding a McIdas AREA
 # image opened by filename). im_converter.open() calls Image.open(filename)
 # on a user-chosen overlay image, which is that exact vector. An unpinned
 # `Pillow` is satisfied by an already-installed old one, so pip would not
 # upgrade it -- the floor is what forces it.
-Pillow>=12.3.0
+Pillow>=13.0.0
 PyWinCtl
 pywin32; sys_platform == "win32"
 # The Windows shortcut harvest reads menus through UI Automation with comtypes

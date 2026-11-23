@@ -1,7 +1,7 @@
 # Dependencies for the tools/ keycap demo renderer only.
 # These are NOT runtime deps of the polyhost app — install them separately
 # (e.g. into a venv) when generating demo GIFs.
-Pillow>=12.3.0   # CVE-2026-54058 (out-of-bounds read, McIdas AREA)
+Pillow>=13.0.0   # CVE fixes up to 12.3.0, e.g. CVE-2026-54058 (McIdas AREA)
 fonttools>=4
 openpyxl>=3   # lang_demo.py / oled_preview.py read lang/lang_lut.xlsx
 cairosvg>=2.7   # gen_brand_icons.py rasterises the brand-mark SVG masters

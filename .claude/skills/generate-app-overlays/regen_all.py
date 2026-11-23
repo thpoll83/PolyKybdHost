@@ -24,13 +24,12 @@ sys.path.insert(0, str(REPO / "scripts"))
 sys.path.insert(0, str(REPO))
 import generate_app_overlays as g  # noqa: E402
 
-LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
 specs = []
 for y in sorted(set(glob.glob("polyhost/res/overlay_sources/*/bindings.yaml")
                     + glob.glob("polyhost/res/overlay_sources/*/*.yaml"))):
     try:
         with open(y, encoding="utf-8") as fh:
-            d = yaml.load(fh, Loader=LOADER)
+            d = yaml.safe_load(fh)
     except Exception:
         continue
     if isinstance(d, dict) and "bindings" in d:
