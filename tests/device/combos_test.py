@@ -1,6 +1,6 @@
 """Runtime combos and tap dance (cmd 48, protocol v33+): the gate, the wire bytes,
 the closed validation and the round trip against the emulated keyboard. The
-firmware side is qmk_firmware keyboards/polykybd/keymap/poly_combos.c and
+firmware side is qmk_firmware keyboards/polykybd/keys_com/poly_combos.c and
 base/combo_store.h."""
 
 import threading

@@ -90,7 +90,7 @@ def main():
     pk = os.path.join(args.qmk, 'keyboards', 'polykybd')
 
     named = load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
-    named.update(load_named_glyphs(fw_file(pk, 'keymap/keycode_helper.h')))
+    named.update(load_named_glyphs(fw_file(pk, 'keys_com/keycode_helper.h')))
     R = Renderer(load_all_fonts(font_dir(pk)))
     variations = parse_latin_ex_map(os.path.join(pk, 'lang', 'lang_lut.c'))
     row = variations[26 + (ord(args.source) - ord('a'))]

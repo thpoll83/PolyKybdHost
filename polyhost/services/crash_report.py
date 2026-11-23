@@ -1,7 +1,7 @@
 """Keyboard crash records: detection in the console stream, decoding, and the
 text a user can hand to a maintainer.
 
-The firmware (``keyboards/polykybd/drivers/crash_record.c``) records a HardFault,
+The firmware (``keyboards/polykybd/lib/drivers/crash_record.c``) records a HardFault,
 an unhandled exception or a watchdog timeout into NOLOAD RAM, reboots, and on
 the next boot prints ONE line with its boot banner::
 
@@ -32,7 +32,7 @@ from dataclasses import dataclass
 
 from polyhost.services.console_lines import LineAssembler
 
-# Wire layout of poly_crash_record_t (drivers/crash_record.h), little-endian:
+# Wire layout of poly_crash_record_t (lib/drivers/crash_record.h), little-endian:
 #   u32 magic, u8 kind, u8 core, u8 consecutive, u8 reset_reason,
 #   u32 pc, lr, sp, xpsr, icsr, uptime_ms, u16 phase, u16 phase_arg,
 #   char fw[8], u32 crc
@@ -51,7 +51,7 @@ KIND_NAMES = {
     4: "halt",
 }
 
-# enum crash_phase -- keep in step with drivers/crash_record.h.
+# enum crash_phase -- keep in step with lib/drivers/crash_record.h.
 PHASE_NAMES = {
     0: "unknown",
     1: "boot",

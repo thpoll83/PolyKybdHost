@@ -1,7 +1,7 @@
 """The split72 status OLED, as the editor's board plate draws it.
 
 A PORT of the firmware's own preview tool —
-`qmk_firmware/keyboards/polykybd/tools/status_oled_preview.py`, which is itself a
+`qmk_firmware/keyboards/polykybd/dev/tools/status_oled_preview.py`, which is itself a
 mirror of `split72/status_oled.c` `oled_update_buffer()`. Same coordinates, same
 helpers, same names, so the two files diff against each other line for line. Only
 two things change: the glyph access (host `PackFont` objects rather than the tool's

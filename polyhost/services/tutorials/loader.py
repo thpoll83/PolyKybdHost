@@ -177,7 +177,7 @@ LEGENDS_FILE = os.path.join(os.path.dirname(SHIPPED_DIR), "preview", "legends.js
 BOARD_FILE = os.path.join(os.path.dirname(SHIPPED_DIR), "preview", "board.json")
 LAYERS_FILE = os.path.join(os.path.dirname(SHIPPED_DIR), "preview", "layers.json")
 # Names for the layers the keyboard compiles in and does not store, by their tag in
-# layers.h. Cmd 35 names only the stored layers.
+# keys_com/layers.h. Cmd 35 names only the stored layers.
 FIXED_LAYER_NAMES = {"SL": "Settings", "LL": "Language", "ADDLANG1": "Intl", "EMJ": "Emoji"}
 # A key on a fixed layer whose keycode the export could not resolve (LSLOT(n),
 # ESLOT(n), ...): it has a function, so a spotlight lights it, but no name matches it.

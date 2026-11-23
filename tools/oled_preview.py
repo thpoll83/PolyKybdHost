@@ -38,7 +38,7 @@ SCREEN_WIDTH = 72
 # obvious in the preview. 0 = hardware-exact (no margin). Overridable via --overshoot.
 OVERSHOOT = 2
 
-# ---- display-list ops (drivers/disp_array.c gfx_text_run / base/font_lookup.c) ----
+# ---- display-list ops (lib/drivers/disp_array.c gfx_text_run / base/font_lookup.c) ----
 # A legend is a mini display list, not just text: codepoints below 0x20 are ops, and
 # some of them consume the codepoints that follow as ARGUMENTS. Renderer interprets
 # the cursor nudges and the two size ops; everything else it can only SKIP, because
@@ -123,7 +123,7 @@ def _walk_ops(cps):
 
 
 # ---- composite-op primitives, ported from the firmware --------------------------
-# drivers/disp_array.c (kdisp_draw_badge_rect / rr_row_inset /
+# lib/drivers/disp_array.c (kdisp_draw_badge_rect / rr_row_inset /
 # kdisp_draw_glyph_rot_half_at) and base/font_lookup.c (kdisp_gfx_rot_half_extent).
 # Ported rather than approximated because these draw the LOCK BADGES and the context
 # -menu pointer, and a keycap that is nearly right is the failure this whole module
@@ -502,7 +502,7 @@ def load_named_glyphs(path: str, *extra: str) -> dict[str, list[int]]:
     out = {}
     paths = [path, *extra]
     sibling = fw_file(os.path.dirname(os.path.dirname(os.path.abspath(path))),
-                      'keymap/keycode_helper.h')
+                      'keys_com/keycode_helper.h')
     if not extra and os.path.exists(sibling):
         paths.append(sibling)
     texts = []

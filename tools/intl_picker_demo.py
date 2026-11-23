@@ -205,12 +205,12 @@ def main():
         raise SystemExit(f"no MO(_ADDLANG1) on [{args.layer}] — nothing opens the Intl layer")
     intl_pos = max(intl_all, key=lambda mp: int(mp.split(',')[0]))
 
-    static_map = parse_static_text_map(fw_file(pk, 'keymap/keycode_helper.c'))
+    static_map = parse_static_text_map(fw_file(pk, 'keys_com/keycode_helper.c'))
     named = load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
     # INTL_LAYER_LEGEND (İñțł) and INTL_PICKER_LEGEND (Á»Æ) are defined in
     # keycode_helper.h, not named_glyphs.h — without them the Intl key renders the
     # literal macro NAME ("INTL_LAYER…") instead of the tile.
-    named.update(load_named_glyphs(fw_file(pk, 'keymap/keycode_helper.h')))
+    named.update(load_named_glyphs(fw_file(pk, 'keys_com/keycode_helper.h')))
     # The GUI key's glyph is chosen at runtime by kc_os_gui_icon() from the active OS.
     # Draw the GNOME foot rather than the generic penguin — the keyboard really does
     # tell the desktops apart (ICON_OS_WINDOWS / GNOME / KDE / ANDROID / Command).

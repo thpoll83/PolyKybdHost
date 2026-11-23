@@ -7,8 +7,8 @@ what the keyboard actually does:
   * KLE geometry          polyhost/res/polykybd-split72.json   (the editor's file)
   * arg-index -> matrix    split72/keyboard.json  (LAYOUT_left_right_stacked)
   * matrix  -> key role    split72/keymaps/default/keymap.c  ([_EMJ] layer)
-  * category codepoints    keyboards/.../emoji/emoji_data.h
-  * tab icons              keyboards/.../emoji/emoji_layer.c  (emj_tab_icons[])
+  * category codepoints    keyboards/.../features/emoji/emoji_data.h
+  * tab icons              keyboards/.../features/emoji/emoji_layer.c  (emj_tab_icons[])
 
 The frame sequence walks every category tab (active tab gets the ∩ border, the
 rest a bottom bar, exactly like emj_draw_tab_*), then demonstrates page paging
@@ -30,7 +30,7 @@ from dataclasses import replace
 
 from kle_render import GlyphRenderer, KeyContent, KleRenderer
 from gfx_font import GfxGlyphRenderer
-from gfx_font import font_dir
+from gfx_font import font_dir, fw_file
 
 # Page-nav arrows. 'gfx' mode draws the firmware's real ICON_LEFT/RIGHT
 # (codepoints 0x83/0x84 in IconsFont); 'ttf' mode falls back to chevrons.
@@ -185,8 +185,8 @@ def main():
     pk = os.path.join(args.qmk, 'keyboards', 'polykybd')
     keyboard_json = os.path.join(pk, 'split72', 'keyboard.json')
     keymap_c = os.path.join(pk, 'split72', 'keymaps', 'default', 'keymap.c')
-    emoji_data_h = os.path.join(pk, 'emoji', 'emoji_data.h')
-    emoji_layer_c = os.path.join(pk, 'emoji', 'emoji_layer.c')
+    emoji_data_h = fw_file(pk, 'features/emoji/emoji_data.h')
+    emoji_layer_c = fw_file(pk, 'features/emoji/emoji_layer.c')
 
     matrices = parse_layout_matrix(keyboard_json)
     roles = parse_emj_layer_roles(keymap_c)

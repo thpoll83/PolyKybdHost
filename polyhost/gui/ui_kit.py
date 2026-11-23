@@ -16,7 +16,7 @@ import logging
 
 from PyQt5.QtCore import QEvent, QObject, QSize, Qt
 from PyQt5.QtGui import QPalette
-from PyQt5.QtWidgets import (QBoxLayout, QDialog, QDialogButtonBox, QFrame, QHBoxLayout,
+from PyQt5.QtWidgets import (QBoxLayout, QCheckBox, QDialog, QDialogButtonBox, QFrame, QHBoxLayout,
                              QLabel, QLayout, QMainWindow, QPlainTextEdit, QPushButton,
                              QVBoxLayout, QWidget)
 
@@ -167,6 +167,36 @@ class WrapLabel(QLabel):
         self.setMinimumHeight(0)
         h = self.heightForWidth(self.width())
         self.setMinimumHeight(h if h > 0 else old)
+
+
+class _ToggleLabel(WrapLabel):
+    """The text of a ``wrapped_checkbox``: a click on it clicks the box."""
+
+    def __init__(self, text, box):
+        super().__init__(text)
+        self._box = box
+
+    def mouseReleaseEvent(self, event):  # noqa: N802 - Qt name
+        if event.button() == Qt.LeftButton and self._box.isEnabled() \
+                and self.rect().contains(event.pos()):
+            self._box.click()
+        super().mouseReleaseEvent(event)
+
+
+def wrapped_checkbox(text):
+    """``(box, row)``: a checkbox whose text wraps. A ``QCheckBox`` cannot wrap
+    its text, so a long one sets a minimum width the window cannot go below.
+    Add ``row`` to a layout and use ``box`` as any ``QCheckBox`` (``clicked``,
+    ``isChecked``); the text beside it is a label that clicks the box."""
+    box = QCheckBox()
+    box.setAccessibleName(text)
+    label = _ToggleLabel(text, box)
+    row = QWidget()
+    lay = QHBoxLayout(row)
+    lay.setContentsMargins(0, 0, 0, 0)
+    lay.addWidget(box, 0, Qt.AlignTop)
+    lay.addWidget(label, 1)
+    return box, row
 
 
 def fit_height(dialog):

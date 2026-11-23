@@ -221,7 +221,7 @@ class TestSimpleCommandPayloads(unittest.TestCase, LockCheckMixin):
     def test_set_idle_timeout(self):
         # cmd 40, then the preset index. This is the one test that catches the host
         # and the firmware disagreeing about the wire; the firmware side is
-        # keyboards/polykybd/hid/hid_com.c case 40.
+        # keyboards/polykybd/lib/hid/hid_com.c case 40.
         self.assertEqual(self._payload('set_idle_timeout', 2)[:3], bytes([POLY, 40, 0x02]))
 
     def test_get_hw_ids_sends_cmd_50_with_no_payload(self):
@@ -261,6 +261,11 @@ class TestSimpleCommandPayloads(unittest.TestCase, LockCheckMixin):
     def test_set_unicode_mode(self):
         self.assertEqual(self._payload('set_unicode_mode', InputMethod.WinCompose)[:4],
                          bytes([POLY, 20, 3, 0]))
+
+    def test_set_unicode_mode_mac_compose_is_value_6(self):
+        """base/host_unicode_mode.h in the firmware: 6 is MacCompose (v38)."""
+        self.assertEqual(self._payload('set_unicode_mode', InputMethod.MacCompose)[:4],
+                         bytes([POLY, 20, 6, 0]))
 
     def test_set_unicode_mode_volatile_sets_the_flag_byte(self):
         """data[3] (protocol 17+): apply in RAM, do not write EEPROM."""

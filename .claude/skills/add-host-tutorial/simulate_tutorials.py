@@ -28,6 +28,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 import export_preview_data as E                                          # noqa: E402
 from polyhost.gui.layout_dialog import qmk_keycode_helper as qh          # noqa: E402
+from polyhost.util.fw_checkout import fw_file                             # noqa: E402
 from polyhost.services.tutorials import loader as L                     # noqa: E402
 from polyhost.services.tutorials.runner import TutorialRun              # noqa: E402
 
@@ -42,7 +43,7 @@ def stored_buffer(pk: pathlib.Path) -> list:
     by_name = {v: k for k, v in custom.items()}
     aliases = legends["aliases"]
     names = qh.parse_qmk_keycodes(ROOT / "polyhost/res/keycodes.h")
-    tags = {f"_{t}": i for i, t in qh.parse_layers_h(pk / "layers.h").items()}
+    tags = {f"_{t}": i for i, t in qh.parse_layers_h(pathlib.Path(fw_file(pk, "keys_com/layers.h"))).items()}
     layout = json.loads((pk / "split72/keyboard.json").read_text())[
         "layouts"][E.BOARD_LAYOUT]["layout"]
     src = re.sub(r"/\*.*?\*/|//[^\n]*", "",

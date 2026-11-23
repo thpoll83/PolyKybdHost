@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Import the emoji search dictionaries built by the firmware repo.
 
-    cd ../qmk_firmware/keyboards/polykybd/emoji
+    cd ../qmk_firmware/keyboards/polykybd/features/emoji
     python3 emoji_dict.py build-all /tmp/emojidict
     cd -; python3 scripts/import_emojidict.py /tmp/emojidict
 

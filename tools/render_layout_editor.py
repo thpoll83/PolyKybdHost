@@ -98,7 +98,7 @@ def resolve(expr: str, names: dict, layers: dict):
 def layer_wire_names(fw: pathlib.Path):
     """The layer names a real keyboard reports over HID cmd 35.
 
-    ⚠️ NOT the `layers.h` enum tags, and NOT one per compiled layer. The editor
+    ⚠️ NOT the `keys_com/layers.h` enum tags, and NOT one per compiled layer. The editor
     sizes its tab strip from `DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT` (the
     host-remappable range, 8) and labels it from `layer_names.c` — so a render
     built from the enum shows twelve tabs reading `_L0`/`_ADDLANG1`, which is
@@ -108,7 +108,7 @@ def layer_wire_names(fw: pathlib.Path):
     cap = int(re.search(r"#define\s+DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT\s+(\d+)",
                         (kb / "config.h").read_text()).group(1))
 
-    src = (pathlib.Path(fw_file(kb, "keymap/layer_names.c"))).read_text()
+    src = (pathlib.Path(fw_file(kb, "keys_com/layer_names.c"))).read_text()
     layouts = re.search(r"\}\s*layouts\[\]\s*=\s*\{(.*?)\n\};", src, re.S).group(1)
     # each row is `{ U"full", U"short", "wire" }` -- the wire form is the plain literal
     names = [m.group(1) for m in re.finditer(r'\{[^{}]*,\s*"([^"]*)"\s*\}', layouts)]
@@ -130,7 +130,7 @@ def build_buffer(fw: pathlib.Path, names: dict):
     bodies = layer_bodies((kb / "keymaps" / "default" / "keymap.c").read_text())
 
     from polyhost.gui.layout_dialog import qmk_keycode_helper as qk
-    layers = qk.parse_layers_h(kb.parent / "layers.h")
+    layers = qk.parse_layers_h(pathlib.Path(fw_file(kb.parent, "keys_com/layers.h")))
 
     buf = [0] * (MATRIX_ROWS * MATRIX_COLS * max(len(bodies), 1))
     for n, (_tag, exprs) in enumerate(bodies):

@@ -4,7 +4,7 @@ These were skipped by the preview until 2026-09-01, so the keycaps that use them
 either drew nothing (the Context-menu key) or drew their text without their mark
 (Scroll Lock's lock badge). They are ported from the firmware:
 `kdisp_draw_badge_rect` / `rr_row_inset` / `kdisp_draw_glyph_rot_half_at`
-(drivers/disp_array.c) and `kdisp_gfx_rot_half_extent` (base/font_lookup.c).
+(lib/drivers/disp_array.c) and `kdisp_gfx_rot_half_extent` (base/font_lookup.c).
 
 ⚠️ A Python model of C checked only against itself proves nothing — the standing
 caveat on this module. So the badge is checked against FIRMWARE DATA: the baked

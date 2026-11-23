@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.join(REPO, "tools"))
 import lang_demo as ld  # noqa: E402
 from polyhost.util.fw_checkout import checkout_dir, fw_file  # noqa: E402
 
-FIRMWARE_C = fw_file(checkout_dir(), "keymap/poly_keymap.c")
+FIRMWARE_C = fw_file(checkout_dir(), "keys_com/poly_keymap.c")
 
 LANGS = ["en-US", "de-DE", "ko-KR", "ja-JP", "en-AU"]
 

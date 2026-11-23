@@ -818,7 +818,7 @@ class TestValidateDoomwad(unittest.TestCase):
         self.assertIn("large", msg)
 
     def test_doomwad_bundle_id_matches_firmware(self):
-        # FONTPACK_BUNDLE_DOOMWAD in qmk drivers/fw_staging.h — keep in lockstep.
+        # FONTPACK_BUNDLE_DOOMWAD in qmk lib/drivers/fw_staging.h — keep in lockstep.
         from polyhost.device.hid_fontpack import DOOMWAD_BUNDLE_ID
         self.assertEqual(DOOMWAD_BUNDLE_ID, 0x7F)
 
@@ -861,7 +861,7 @@ class TestValidateDoompack(unittest.TestCase):
         self.assertIn("large", msg)
 
     def test_doompack_bundle_id_matches_firmware(self):
-        # FONTPACK_BUNDLE_DOOMPACK in qmk drivers/fw_staging.h — keep in lockstep.
+        # FONTPACK_BUNDLE_DOOMPACK in qmk lib/drivers/fw_staging.h — keep in lockstep.
         from polyhost.device.hid_fontpack import DOOMPACK_BUNDLE_ID
         self.assertEqual(DOOMPACK_BUNDLE_ID, 0x7E)
 

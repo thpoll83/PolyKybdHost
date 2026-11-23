@@ -16,11 +16,11 @@ JupyterLab shows the ``pip`` command to run, with a Copy button.
 """
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QApplication, QCheckBox, QFileDialog, QHBoxLayout, QMessageBox,
+from PyQt5.QtWidgets import (QApplication, QFileDialog, QHBoxLayout, QMessageBox,
                              QPushButton, QWidget)
 
 from polyhost.gui.integrations_dialog import RowsPage
-from polyhost.gui.ui_kit import WrapLabel, muted
+from polyhost.gui.ui_kit import WrapLabel, muted, wrapped_checkbox
 from polyhost.i18n import _, _f, translate_message
 from polyhost.services import editor_plugins, editor_targets, shell_title
 
@@ -192,8 +192,9 @@ class TerminalsPage(RowsPage):
         self._statuses = []
         # Codex replaces the title with its own, which does not name it; the
         # option makes the installed line wrap the codex command.
-        self.codex_box = QCheckBox(_("Also show Codex in the title (wraps the codex command)"))
-        self.codex_box.setToolTip(_(
+        self.codex_box, codex_row = wrapped_checkbox(
+            _("Also show Codex in the title (wraps the codex command)"))
+        codex_row.setToolTip(_(
             "Codex replaces the terminal title with the thread and project name, so "
             "the keyboard cannot tell that it is running. With this option the codex "
             "command starts Codex with a title that begins with \"codex\". A codex "
@@ -202,7 +203,7 @@ class TerminalsPage(RowsPage):
         self._codex_touched = False
         # noinspection PyUnresolvedReferences
         self.codex_box.clicked.connect(self._on_codex_clicked)
-        self.extra.addWidget(self.codex_box)
+        self.extra.addWidget(codex_row)
         self.refresh()
 
     def status_error_text(self, exc):

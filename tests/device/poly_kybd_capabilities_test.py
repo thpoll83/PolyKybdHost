@@ -370,6 +370,44 @@ class TestUnicodeModeVolatile(unittest.TestCase):
         self.assertEqual(payload[3], 1)
 
 
+class TestMacCompose(unittest.TestCase):
+    """Cmd 20 value 6, MacCompose (protocol v38+): F20 instead of Option.
+
+    Older firmware NACKs value 6, so the host refuses it below v38 instead of
+    sending a report that fails at runtime. The other values are not gated."""
+
+    def _keeb(self, protocol):
+        keeb = PolyKybd(DeviceSettings(), PolySettings())
+        keeb.protocol_version = protocol
+        keeb.hid = MagicMock()
+        keeb.hid.send_and_read_validate.return_value = (True, "ok")
+        return keeb
+
+    def test_feature_threshold(self):
+        self.assertEqual(FEATURE_MIN_PROTOCOL["mac_compose"], 38)
+        self.assertFalse(protocol_supports(37, "mac_compose"))
+        self.assertTrue(protocol_supports(38, "mac_compose"))
+
+    def test_mac_compose_is_REFUSED_on_older_firmware(self):
+        keeb = self._keeb(37)
+        ok, msg = keeb.set_unicode_mode(InputMethod.MacCompose)
+        self.assertFalse(ok)
+        self.assertIn("too old", msg)
+        keeb.hid.send_and_read_validate.assert_not_called()
+
+    def test_plain_mac_still_works_on_older_firmware(self):
+        keeb = self._keeb(37)
+        ok, _ = keeb.set_unicode_mode(InputMethod.Mac)
+        self.assertTrue(ok)
+        self.assertEqual(keeb.hid.send_and_read_validate.call_args.args[0][2], 1)
+
+    def test_mac_compose_sends_value_6(self):
+        keeb = self._keeb(38)
+        ok, _ = keeb.set_unicode_mode(InputMethod.MacCompose)
+        self.assertTrue(ok)
+        self.assertEqual(keeb.hid.send_and_read_validate.call_args.args[0][2], 6)
+
+
 class TestGlyphSize(unittest.TestCase):
     """Keycap legend size (cmd 34, protocol v13+).
 

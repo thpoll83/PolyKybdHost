@@ -69,16 +69,16 @@ def build(pk: pathlib.Path) -> dict:
 
     fonts_dir = font_dir(pk)
     named = op.load_named_glyphs(str(pk / "lang" / "named_glyphs.h"))
-    named.update(op.load_named_glyphs(fw_file(pk, "keymap/keycode_helper.h")))
+    named.update(op.load_named_glyphs(fw_file(pk, "keys_com/keycode_helper.h")))
 
     # The two legend switches, in the firmware's own precedence order.
     legends_src = {
-        **ld.parse_to_static_text_map(fw_file(pk, "keymap/poly_keymap.c")),
-        **ld.parse_static_text_map(fw_file(pk, "keymap/keycode_helper.c")),
+        **ld.parse_to_static_text_map(fw_file(pk, "keys_com/poly_keymap.c")),
+        **ld.parse_static_text_map(fw_file(pk, "keys_com/keycode_helper.c")),
     }
     macros = op.parse_function_macros(*(
-        kp._read(str(pk), f) for f in ("lang/named_glyphs.h", "keymap/keycode_helper.h",
-                                       "keymap/keycode_helper.c", "keymap/poly_keymap.c")))
+        kp._read(str(pk), f) for f in ("lang/named_glyphs.h", "keys_com/keycode_helper.h",
+                                       "keys_com/keycode_helper.c", "keys_com/poly_keymap.c")))
 
     # Resolve to CODEPOINTS here rather than shipping C. The host then needs no
     # macro table, no `#define` expansion and no C parsing to draw a keycap --
@@ -133,7 +133,7 @@ def build(pk: pathlib.Path) -> dict:
     # has no name for `QK_KB_0`+n -- and every legend on the settings, brightness
     # and layout keys is keyed by the firmware's name for it (`KC_DMIN`, `KC_LANG`).
     # Without this the host can find 34 legends it cannot address.
-    custom = kp.parse_custom_keycodes(kp._read(str(pk), "keymap/keycode_helper.h"))
+    custom = kp.parse_custom_keycodes(kp._read(str(pk), "keys_com/keycode_helper.h"))
 
     # QMK's own alias tables, derived from the tree rather than re-typed -- see
     # `lang_demo.load_qmk_aliases`. Mostly redundant with the shipped keycode
@@ -145,7 +145,7 @@ def build(pk: pathlib.Path) -> dict:
     # KC_IME draws per LANGUAGE, so it has no entry in `legends`: the family each
     # language gets, and the icons the Korean / Japanese families draw, resolved to
     # codepoints like every other legend. None on a tree that predates the key.
-    ime = ld.parse_ime_key(fw_file(pk, "keymap/poly_keymap.c"), L.langs)
+    ime = ld.parse_ime_key(fw_file(pk, "keys_com/poly_keymap.c"), L.langs)
     if ime is not None:
         ime = {"families": ime["families"],
                # Same refusal as every legend above: a name with no glyphs would
@@ -174,7 +174,7 @@ def build(pk: pathlib.Path) -> dict:
         "layers.json": {"fw_version": version,
                         "stored": qh.parse_stored_layer_count(pk / "config.h"),
                         "tags": {str(k): v for k, v in
-                                 qh.parse_layers_h(pk / "layers.h").items()}},
+                                 qh.parse_layers_h(pathlib.Path(fw_file(pk, "keys_com/layers.h"))).items()}},
         # ⚠️ The Shift-preview suppression is BAKED here, not left to the host.
         # The rule lives in the firmware tree (`lang/shift_preview.py`) and is what
         # cog turns into the keycap's own bitmap -- so a host with no checkout
@@ -241,7 +241,7 @@ def _board(pk: pathlib.Path, custom: dict, aliases: dict) -> dict:
     names = qh.parse_qmk_keycodes(pathlib.Path(__file__).resolve().parent.parent
                                   / "polyhost" / "res" / "keycodes.h")
     by_name = {v: k for k, v in custom.items()}
-    tags = {f"_{tag}": idx for idx, tag in qh.parse_layers_h(pk / "layers.h").items()}
+    tags = {f"_{tag}": idx for idx, tag in qh.parse_layers_h(pathlib.Path(fw_file(pk, "keys_com/layers.h"))).items()}
 
     def resolve(token: str):
         token = aliases.get(token, token)
@@ -259,7 +259,7 @@ def _board(pk: pathlib.Path, custom: dict, aliases: dict) -> dict:
     # token that does not resolve keeps keycode null, as on the base layer.
     stored = qh.parse_stored_layer_count(pk / "config.h") or 0
     fixed = {}
-    for idx, tag in sorted(qh.parse_layers_h(pk / "layers.h").items()):
+    for idx, tag in sorted(qh.parse_layers_h(pathlib.Path(fw_file(pk, "keys_com/layers.h"))).items()):
         if idx < stored:
             continue
         layer_tokens = _layout_args(src, f"_{tag}")
@@ -344,7 +344,7 @@ def main() -> int:
     args = ap.parse_args()
 
     pk = firmware_dir(args.firmware)
-    if not (pk / "layers.h").exists():
+    if not pathlib.Path(fw_file(pk, "keys_com/layers.h")).exists():
         print(f"no firmware checkout at {pk}", file=sys.stderr)
         return 2
 

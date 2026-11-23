@@ -416,7 +416,7 @@ class KeycapPreview:
         named = op.load_named_glyphs(os.path.join(pk, "lang", "named_glyphs.h"))
         # keycode_helper.h carries the names the static-text switch returns; without
         # it those legends resolve to nothing and the key silently renders blank.
-        named.update(op.load_named_glyphs(fw_file(pk, "keymap/keycode_helper.h")))
+        named.update(op.load_named_glyphs(fw_file(pk, "keys_com/keycode_helper.h")))
         # load_renderer, not Renderer(load_all_fonts(...)): it also binds the
         # standalone 19px HINT_MID face, without which the settings legends draw
         # both of their lines at full size, on top of each other.
@@ -437,12 +437,12 @@ class KeycapPreview:
         # picker (KC_L0..KC_L4), the unicode-mode keys, KC_IDDQD and the
         # legend-size key render on the board and nowhere in the editor.
         exprs = {
-            **ld.parse_to_static_text_map(fw_file(pk, "keymap/poly_keymap.c")),
-            **ld.parse_static_text_map(fw_file(pk, "keymap/keycode_helper.c")),
+            **ld.parse_to_static_text_map(fw_file(pk, "keys_com/poly_keymap.c")),
+            **ld.parse_static_text_map(fw_file(pk, "keys_com/keycode_helper.c")),
         }
         macros = op.parse_function_macros(
-            *(_read(pk, f) for f in ("lang/named_glyphs.h", "keymap/keycode_helper.h",
-                                     "keymap/keycode_helper.c", "keymap/poly_keymap.c")))
+            *(_read(pk, f) for f in ("lang/named_glyphs.h", "keys_com/keycode_helper.h",
+                                     "keys_com/keycode_helper.c", "keys_com/poly_keymap.c")))
         resolved = {}
         for token, expr in exprs.items():
             expanded = op.expand_function_macros(expr, macros)
@@ -467,13 +467,13 @@ class KeycapPreview:
         except Exception as e:
             self.log.debug("MIDI legends unavailable (%s: %s)", type(e).__name__, e)
         self._legends = self._drawable(resolved)
-        self._custom = parse_custom_keycodes(_read(pk, "keymap/keycode_helper.h"))
+        self._custom = parse_custom_keycodes(_read(pk, "keys_com/keycode_helper.h"))
         # QMK's short aliases, derived from its own headers (see
         # lang_demo.load_qmk_aliases). Without this a keymap spelling KC_MUTE /
         # DE_Z / RGB_M_SW misses a legend the map holds under the long name.
         ld.load_qmk_aliases(os.path.dirname(os.path.dirname(pk)), pk)
         self._fw_dir = pk
-        # ⚠️ The tags come from THIS checkout's layers.h, not from the shipped
+        # ⚠️ The tags come from THIS checkout's keys_com/layers.h, not from the shipped
         # LAYER_TAGS -- because they must match the spelling the SAME tree's
         # keycode_helper.c switches on. A tree from before the Fn merge has no
         # `case MO(_FL)` at all; it switches on `MO(_FL0)`/`MO(_FL1)`, so a
@@ -489,10 +489,10 @@ class KeycapPreview:
         # the preview can fix -- but it must not hide it either, hence the
         # warning threaded out through `source_info()` into the tooltip.
         try:
-            derived = qh.parse_layers_h(pathlib.Path(pk) / "layers.h")
+            derived = qh.parse_layers_h(pathlib.Path(fw_file(pk, "keys_com/layers.h")))
         except Exception as e:
             derived = {}
-            self.log.debug("layers.h unreadable (%s: %s)", type(e).__name__, e)
+            self.log.debug("keys_com/layers.h unreadable (%s: %s)", type(e).__name__, e)
         if derived:
             self._layer_tags = derived
             try:
@@ -526,7 +526,7 @@ class KeycapPreview:
         # falls back to keycode text), never the language table it does not need.
         if self._lang_ok:
             try:
-                ime = ld.parse_ime_key(fw_file(pk, "keymap/poly_keymap.c"), self._L.langs)
+                ime = ld.parse_ime_key(fw_file(pk, "keys_com/poly_keymap.c"), self._L.langs)
                 if ime is not None:
                     self._set_ime(ime["families"],
                                   {fam: list(self._resolver.resolve(icon))

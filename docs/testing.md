@@ -183,6 +183,17 @@ and relative links were adjusted to suit a standalone file.
       platform reports an 800×600 screen — so anything taller than 400 px is
       silently cropped. The developer-mode menu lost its last row that way, with no
       warning and no error; only looking at the PNG caught it.
+    - **Does a dialog fit at its smallest size? Measure, then look.** Show it at its
+      minimum size (offscreen), then compare
+      `scroll.widget().minimumSizeHint().width()` with `scroll.viewport().width()`.
+      When the first is larger, something forces a width the window cannot give:
+      a sideways scroll bar if the policy allows one, otherwise clipped text on the
+      right. To find it, loop over `page.findChildren(QWidget)` and print the ones
+      with a large `minimumSizeHint().width()`. Then save `dlg.grab()` as a PNG and
+      `Read` it. Three causes in the Integrations dialog (2026-11-21): a `QCheckBox`
+      with a long text (a `QCheckBox` cannot wrap: use `ui_kit.wrapped_checkbox`),
+      a line edit beside two buttons, and a long path label (give it
+      `QSizePolicy.Ignored`).
     - **`tools/render_layout_editor.py` is the same trick for the LAYOUT EDITOR**,
       and the docs site's `using/keymap-editor` screenshots come out of it. It
       builds the real `KbLayoutDialog` against a fake core whose keymap is parsed
@@ -190,7 +201,7 @@ and relative links were adjusted to suit a standalone file.
       `keyboard.json`'s matrix positions — so every key shows what the keyboard
       really has there. `--compare` additionally writes a Symbol/Preview/Real
       close-up.
-      - ⚠️ **The layer TABS come from `layer_names.c`, not from `layers.h`.** A
+      - ⚠️ **The layer TABS come from `layer_names.c`, not from `keys_com/layers.h`.** A
         real editor draws `DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT` (8) tabs named
         `Qwerty`/`ColemkDH`/`Fn`; the enum has 12 entries named `_L0`/`_ADDLANG1`.
         Rendering from the enum therefore produces a screenshot with four tabs too

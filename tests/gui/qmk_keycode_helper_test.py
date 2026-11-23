@@ -436,7 +436,7 @@ class TestPolyKybdKeycodes(unittest.TestCase):
         from polyhost.util.fw_checkout import checkout_dir, fw_file
         # ⚠️ Not <checkout>/keycode_helper.h: since the 2026-11 firmware move that
         # is a forwarding header with no keycodes, and every lookup would miss.
-        header = pathlib.Path(fw_file(checkout_dir(), "keymap/keycode_helper.h"))
+        header = pathlib.Path(fw_file(checkout_dir(), "keys_com/keycode_helper.h"))
         if not header.is_file():
             self.skipTest("no ../qmk_firmware checkout")
         fw = parse_custom_keycodes(header.read_text(encoding="utf-8"))

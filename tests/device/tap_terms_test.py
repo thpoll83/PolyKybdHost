@@ -1,6 +1,6 @@
 """Tap-hold timing (cmd 44, protocol v29+) and Auto Shift (v30+): the gates, the
 wire bytes, the closed ranges and the reply parse. The firmware side is qmk_firmware
-keyboards/polykybd/hid/hid_com.c hid_cmd_44 and base/tap_terms.h."""
+keyboards/polykybd/lib/hid/hid_com.c hid_cmd_44 and base/tap_terms.h."""
 
 import unittest
 from unittest.mock import MagicMock
