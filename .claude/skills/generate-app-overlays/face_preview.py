@@ -1,7 +1,7 @@
 """Overlay sheet with the keycap face an entry asks for, top-left placement.
 
 Letter and digit keys get the glyph-script legend where the firmware puts it
-(qmk_firmware poly_keymap.c): C64KEYS letters use the keycap layout (22 px
+(qmk_firmware keys_com/render_key.c): C64KEYS letters use the keycap layout (22 px
 letter centred on x 16 from y 1, the Commodore and Shift PETSCII cells centred
 on x 8 and x 24 from y 25); every other glyph has its ink's top-left at (1, 1).
 The overlay icon is drawn on top, with the legend cleared within 3 px of its

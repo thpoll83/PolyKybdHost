@@ -13,7 +13,7 @@ extraction — the old code read them off the tab's widgets, so nothing else cou
 HALVED when a captioned key leaves too few rows, a missing icon glyph falls back to the
 index rather than drawing nothing, and glyphs are plotted through their OWN font because
 `kdisp_write_gfx_char` baseline-aligns to `fonts[0]`. Change it only alongside
-`poly_keymap.c`, and re-check with `tools/macro_label_preview.py --check`.
+`keys_com/render_key.c`, and re-check with `tools/macro_label_preview.py --check`.
 """
 
 from __future__ import annotations
@@ -114,7 +114,7 @@ class MacroKeycapRenderer:
                    free_rows: int, glyph) -> bool:
         """Place the mark in the rows the caption left; report whether it landed.
 
-        Mirrors draw_macro_mark() in poly_keymap.c, including the HALVING: a pack
+        Mirrors draw_macro_mark() in keys_com/render_key.c, including the HALVING: a pack
         emoji renders at 40 px while a captioned key leaves about 29 rows, so drawing
         only at native size showed NOTHING for four picker icons out of five -- and
         because this preview mirrors the firmware, it was silent on both ends.

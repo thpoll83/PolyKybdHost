@@ -19,7 +19,7 @@ then the picker gives each its own accent, and the final board shows
 `é è ê ë` sitting on four different keys at once.
 
 Faithful to the firmware, and the two-step prompt is the part worth being careful
-about (poly_keymap.c render_key(), the LATIN_REMAP_* branch):
+about (keys_com/render_key.c render_key(), the LATIN_REMAP_* branch):
   * PICKKEY blanks everything that is not a TARGET. Targets are the 26 letters AND
     the twelve printable punctuation keycodes KC_MINUS..KC_SLASH, so `; ' ` , . /`
     and friends stay lit here — a key that is masked KC_NO on _ADDLANG1 simply

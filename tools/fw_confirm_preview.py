@@ -35,7 +35,7 @@ HOST_REPO = os.path.dirname(HERE)
 # Keycap geometry — the visible window of a per-key OLED (lib/drivers/disp_array.h).
 SCREEN_W, SCREEN_H = 72, 40
 
-# Which key carries the prompt, from poly_keymap.c's FW_CONFIRM_ROW/COL. It is a
+# Which key carries the prompt, from FW_CONFIRM_ROW/COL in keys_com/poly_keymap_internal.h. It is a
 # LOCAL matrix position on each half; the right half's rows are offset by 5 in
 # the full matrix (left = rows 0-4, right = 5-9).
 FW_CONFIRM_ROW, FW_CONFIRM_COL = 2, 3

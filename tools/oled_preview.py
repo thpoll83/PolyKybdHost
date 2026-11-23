@@ -284,7 +284,7 @@ SHEET = [
 VAR_SMALL, VAR_SHIFT, VAR_CAPS, VAR_ALTGR = 0, 1, 2, 3
 
 # Keycap legend SIZE (HID cmd 34, firmware protocol v13+). Mirrors
-# glyph_size_base[] / glyph_size_baseline[] in poly_keymap.c — the bigger faces are
+# glyph_size_base[] / glyph_size_baseline[] in base/legend_plan.c — the bigger faces are
 # the same characters emitted at an offset into supplementary private-use plane 15,
 # so the resident small face cannot win the front-to-back lookup for them.
 GLYPH_SIZE_BASE     = {0: 0, 1: 0xF0000, 2: 0xF3000}
@@ -300,7 +300,7 @@ SET = {"letter": (57, 56), "num": (59, 58), "sym": (61, 60)}   # (voffset_row, h
 ALTGR_HALF = {"letter": 62, "num": 63, "sym": 64}
 # {letter|num|sym.heldhoffset|heldvoffset} -- the DELTA applied to the AltGr hint's
 # position when AltGr is actually HELD. Default 0, so nothing moves until a layout is
-# tuned; the held view otherwise lands exactly on the hint (poly_keymap.c's MOD_RALT
+# tuned; the held view otherwise lands exactly on the hint (render_key.c's MOD_RALT
 # branch). Read from VAR_ALTGR like the rows above.
 HELD = {"letter": (66, 65), "num": (68, 67), "sym": (70, 69)}   # (voffset_row, hoffset_row)
 

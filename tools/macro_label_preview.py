@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Render a macro keycap the way the firmware draws it, and check it does not clip.
 
-Mirrors ``render_macro_key()`` in keyboards/polykybd/keys_com/poly_keymap.c coordinate for
+Mirrors ``render_macro_key()`` in keyboards/polykybd/keys_com/render_key.c coordinate for
 coordinate: the macro index in the _Mid_ 19 px face centred in whatever the caption
 leaves, the label in the _Nano_ 10 px face pinned so its lowest lit pixel lands on the
 last screen row, and the label truncated by measured width.

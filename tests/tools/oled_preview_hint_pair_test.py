@@ -11,7 +11,7 @@ was looking at.
 ⚠️ It is NOT fixable in `lang_lut.xlsx`. The offsets are per LANGUAGE while the
 room left over is decided by the WIDTH of this key's three glyphs, so one number
 would have to satisfy the worst key of the layout and would crush every other key
-into the base. Hence the rule lives in `render_key()` (and in `poly_keymap.c`,
+into the base. Hence the rule lives in `render_key()` (`keys_com/render_key.c`,
 which this module mirrors): when the two ink boxes intersect in BOTH axes, pull
 the Shift hint left into the gap between the base and the right-clamped AltGr.
 

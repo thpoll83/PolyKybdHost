@@ -28,7 +28,7 @@ MID_FONT_SYMBOL = "NotoSans_Regular_Mid_19px7b"
 # The `latinbig` tiers are emitted into supplementary PUA plane 15 rather than at native
 # codepoints, because g_all_fonts is scanned front-to-back and the resident latin face
 # is always in front -- a second face at the same codepoints could never be reached.
-# These MUST match glyph_size_base[] in the firmware's poly_keymap.c.
+# These MUST match glyph_size_base[] in the firmware's base/legend_plan.c.
 BIG_BASE = {"M": 0xF0000, "L": 0xF3000}
 
 
