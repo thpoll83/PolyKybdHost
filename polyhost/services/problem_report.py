@@ -94,7 +94,8 @@ def scrub_endpoints(text: str) -> str:
 
 
 def forwarder_diagnostics(version: str, host=None, host_file=None,
-                          report_rpc: bool = False, report_port=None) -> str:
+                          report_rpc: bool = False, report_port=None,
+                          detect_host: bool = False) -> str:
     """The diagnostics block for a report from a FORWARDER machine.
 
     Qt-free and free of PolyForwarder, so it is unit-testable: `forwarder.py`
@@ -111,6 +112,8 @@ def forwarder_diagnostics(version: str, host=None, host_file=None,
         lines.append(f"Target: from host file {host_file}")
     if host:
         lines.append(f"Target host: {host}")
+    if detect_host:
+        lines.append("Target: found from the NoMachine or Remote Desktop connection")
     if report_rpc:
         lines.append(f"Window reports: authenticated RPC (port {report_port})")
     else:

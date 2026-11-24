@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-24 11:24+0000\n"
+"POT-Creation-Date: 2026-11-24 13:14+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hant_TW\n"
@@ -327,129 +327,137 @@ msgstr ""
 msgid "{prefix} — the USB half answered, but the other keyboard half did not confirm that it had erased the {what} within 90 s. Check the cable between the two halves. If the other half stays dark, it is not running firmware and needs the firmware .uf2 copied onto it by hand."
 msgstr "{prefix} — 連接 USB 的半邊已回應，但另一個半邊未在 90 s 內確認已清除{what}。請檢查兩個半邊之間的連接線。如果另一個半邊一直沒有亮起，表示它沒有在執行韌體，需要手動將韌體 .uf2 複製到該半邊。"
 
-#: polyhost/forwarder.py:261
+#: polyhost/forwarder.py:269
 msgid "Press to pause forwarding"
 msgstr "按下以暫停轉送"
 
-#: polyhost/forwarder.py:268
+#: polyhost/forwarder.py:276
 msgid "Stop sending this machine's active window to the keyboard machine."
 msgstr "停止將這台電腦的作用中視窗傳送到連接鍵盤的電腦。"
 
-#: polyhost/forwarder.py:281
+#: polyhost/forwarder.py:289
 msgid "Check for host update…"
 msgstr "檢查主機程式更新…"
 
-#: polyhost/forwarder.py:297
+#: polyhost/forwarder.py:305
 msgid "Pair with the Keyboard Computer…"
 msgstr "與鍵盤所在的電腦配對…"
 
-#: polyhost/forwarder.py:390
+#: polyhost/forwarder.py:398
+msgid "no host (waiting for a Remote Desktop or NoMachine connection)"
+msgstr "沒有主機（正在等待遠端桌面或 NoMachine 連線）"
+
+#: polyhost/forwarder.py:400
 #, python-brace-format
 msgid "no host (waiting for {path})"
 msgstr "沒有主機（正在等待 {path}）"
 
-#: polyhost/forwarder.py:391
+#: polyhost/forwarder.py:401
 msgid "no host configured"
 msgstr "未設定主機"
 
-#: polyhost/forwarder.py:394
+#: polyhost/forwarder.py:404
 #, python-brace-format
 msgid "PolyKybdHost {version} (forwarder) → {target}"
 msgstr "PolyKybdHost {version}（轉送器）→ {target}"
 
-#: polyhost/forwarder.py:399
+#: polyhost/forwarder.py:409
 msgid "Forwarding paused"
 msgstr "轉送已暫停"
 
-#: polyhost/forwarder.py:402
+#: polyhost/forwarder.py:412
 #, python-brace-format
 msgid "Forwarding to {target}…"
 msgstr "正在轉送至 {target}…"
 
-#: polyhost/forwarder.py:404
+#: polyhost/forwarder.py:414
 #, python-brace-format
 msgid "Forwarding to {target}"
 msgstr "正在轉送至 {target}"
 
-#: polyhost/forwarder.py:405
+#: polyhost/forwarder.py:415
 #, python-brace-format
 msgid "Cannot reach {target}"
 msgstr "無法連線到 {target}"
 
-#: polyhost/forwarder.py:553
+#: polyhost/forwarder.py:583
 msgid "The hooks are written, but this forwarder runs without --report-rpc, so it cannot pass agent reports on. Start it with --report-rpc to show this computer's agents on the keys."
 msgstr "掛鉤已寫入，但此轉送器未使用 --report-rpc 執行，因此無法轉送代理程式回報。請使用 --report-rpc 啟動它，以便在按鍵上顯示這台電腦的代理程式。"
 
-#: polyhost/forwarder.py:556
+#: polyhost/forwarder.py:586
 msgid "The hooks are written. On the keyboard computer, turn on Settings > AI agents > \"Agents from other computers\"."
 msgstr "掛鉤已寫入。請在鍵盤所在的電腦上開啟 設定 > AI 代理程式 > 「來自其他電腦的代理程式」。"
 
-#: polyhost/forwarder.py:885
+#: polyhost/forwarder.py:916
 msgid "PolyForwarder settings"
 msgstr "PolyForwarder 設定"
 
-#: polyhost/forwarder.py:886
+#: polyhost/forwarder.py:917
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
 msgstr "無法將設定儲存到設定檔，因此設定不會生效。可能有其他程式正開啟該檔案。請再試一次，或查看記錄檔。"
 
-#: polyhost/forwarder.py:904
+#: polyhost/forwarder.py:935
 msgid "Paired. The forwarder uses the authenticated connection from its next start. Restart it now?"
 msgstr "已配對。轉送器會從下次啟動起使用經過驗證的連線。要立即重新啟動嗎？"
 
-#: polyhost/forwarder.py:919
+#: polyhost/forwarder.py:950
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
 msgstr "已驗證的 RPC（連接埠 {port}）"
 
-#: polyhost/forwarder.py:921
+#: polyhost/forwarder.py:952
 msgid "legacy plaintext TCP relay"
 msgstr "舊版明文 TCP 轉送"
 
-#: polyhost/forwarder.py:924
+#: polyhost/forwarder.py:955
 msgid "reaching the keyboard machine"
 msgstr "可連線到鍵盤所在的電腦"
 
-#: polyhost/forwarder.py:925
+#: polyhost/forwarder.py:956
 msgid "not reaching the keyboard machine"
 msgstr "無法連線到鍵盤所在的電腦"
 
-#: polyhost/forwarder.py:926
+#: polyhost/forwarder.py:957
 msgid "starting up"
 msgstr "正在啟動"
 
-#: polyhost/forwarder.py:928
+#: polyhost/forwarder.py:959
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
 msgstr "<b>模式：</b>轉送器 — 這台電腦未連接鍵盤"
 
-#: polyhost/forwarder.py:929
+#: polyhost/forwarder.py:960
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
 msgstr "<b>目標：</b>{target}"
 
-#: polyhost/forwarder.py:931
+#: polyhost/forwarder.py:962
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
 msgstr "<b>視窗回報：</b>{transport}"
 
-#: polyhost/forwarder.py:934
+#: polyhost/forwarder.py:965
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
 msgstr "<b>主機檔案：</b>{path}"
 
-#: polyhost/forwarder.py:955
+#: polyhost/forwarder.py:967
+msgid "<b>Keyboard computer:</b> found from the Remote Desktop or NoMachine connection"
+msgstr "<b>鍵盤所在的電腦：</b>從遠端桌面或 NoMachine 連線中找到"
+
+#: polyhost/forwarder.py:989
 msgid "About PolyKybdHost (forwarder)"
 msgstr "關於 PolyKybdHost（轉送器）"
 
 #. TRANSLATORS: the run mode in the About dialog's environment line
-#: polyhost/forwarder.py:962
+#: polyhost/forwarder.py:996
 msgid "forwarder"
 msgstr "轉送器"
 
-#: polyhost/forwarder.py:964
+#: polyhost/forwarder.py:998
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "轉送器模式：這台電腦沒有連接鍵盤。它會監看這台電腦的作用中視窗，並轉送給連接鍵盤的電腦上執行的 PolyKybdHost。"
 
-#: polyhost/forwarder.py:1004
+#: polyhost/forwarder.py:1038
 msgid "Download, install, and restart the forwarder now?"
 msgstr "要立即下載、安裝並重新啟動轉送器嗎？"
 
@@ -543,7 +551,7 @@ msgstr "鍵盤"
 msgid "About PolyKybdHost"
 msgstr "關於 PolyKybdHost"
 
-#: polyhost/forwarder.py:325 polyhost/gui/about_dialog.py:285
+#: polyhost/forwarder.py:333 polyhost/gui/about_dialog.py:285
 #: polyhost/host.py:393
 msgid "About"
 msgstr "關於"
@@ -1347,7 +1355,7 @@ msgid "pick one from Source fonts below, or Browse…"
 msgstr "從下方的來源字型中選擇一個，或按「瀏覽…」"
 
 #: polyhost/gui/fontpack_extend_dialog.py:120
-#: polyhost/gui/settings_dialog.py:1344 polyhost/gui/settings_dialog.py:1345
+#: polyhost/gui/settings_dialog.py:1350 polyhost/gui/settings_dialog.py:1351
 msgid "Browse…"
 msgstr "瀏覽…"
 
@@ -2020,7 +2028,7 @@ msgstr "與轉送器配對"
 msgid "On the other computer, open the forwarder's menu, choose \"Pair with the Keyboard Computer…\" and enter this code. Anyone with this code can send window and agent reports to this computer, so pass it on only over a channel you trust. \"Accept forwarders\" must be on in Settings."
 msgstr "在另一台電腦上，開啟轉送器的選單，選擇「與鍵盤所在的電腦配對…」，然後輸入此代碼。任何持有此代碼的人都可以向這台電腦傳送視窗和代理程式回報，因此請只透過您信任的管道傳遞。必須在「設定」中開啟「接受轉送器」。"
 
-#: polyhost/forwarder.py:903 polyhost/gui/forwarder_pairing.py:37
+#: polyhost/forwarder.py:934 polyhost/gui/forwarder_pairing.py:37
 #: polyhost/gui/forwarder_pairing.py:44 polyhost/gui/forwarder_pairing.py:51
 msgid "Pair with the Keyboard Computer"
 msgstr "與鍵盤所在的電腦配對"
@@ -2047,7 +2055,7 @@ msgstr "<b>檔案：</b>{path}"
 msgid "Applying staged firmware…"
 msgstr "正在套用已暫存的韌體…"
 
-#: polyhost/forwarder.py:260 polyhost/gui/hid_fw_up_dialog.py:181
+#: polyhost/forwarder.py:268 polyhost/gui/hid_fw_up_dialog.py:181
 msgid "Starting…"
 msgstr "正在開始…"
 
@@ -2285,7 +2293,7 @@ msgid "Eden"
 msgstr "Eden"
 
 #. TRANSLATORS: shown in the Flow Tap spin box when its value is 0.
-#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1175
+#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1181
 msgid "Off"
 msgstr "關閉"
 
@@ -3756,390 +3764,398 @@ msgid "Accept forwarders"
 msgstr "接受轉送器"
 
 #: polyhost/gui/settings_dialog.py:180
+msgid "Find the keyboard computer from the connection"
+msgstr "從連線中尋找鍵盤所在的電腦"
+
+#: polyhost/gui/settings_dialog.py:181
 msgid "Send font packs on connect"
 msgstr "連線時傳送字型包"
 
-#: polyhost/gui/settings_dialog.py:181
+#: polyhost/gui/settings_dialog.py:182
 msgid "Search language"
 msgstr "搜尋語言"
 
-#: polyhost/gui/settings_dialog.py:182
+#: polyhost/gui/settings_dialog.py:183
 msgid "Own dictionary file"
 msgstr "自訂字典檔"
 
-#: polyhost/gui/settings_dialog.py:183
+#: polyhost/gui/settings_dialog.py:184
 msgid "Font pack file"
 msgstr "字型包檔案"
 
-#: polyhost/gui/settings_dialog.py:184
+#: polyhost/gui/settings_dialog.py:185
 msgid "Match the website in the browser"
 msgstr "比對瀏覽器中的網站"
 
-#: polyhost/gui/settings_dialog.py:185
+#: polyhost/gui/settings_dialog.py:186
 msgid "Receive browser reports"
 msgstr "接收瀏覽器回報"
 
-#: polyhost/gui/settings_dialog.py:186
+#: polyhost/gui/settings_dialog.py:187
 msgid "Receiver port"
 msgstr "接收連接埠"
 
-#: polyhost/gui/settings_dialog.py:187
+#: polyhost/gui/settings_dialog.py:188
 msgid "Receiver token"
 msgstr "接收權杖"
 
-#: polyhost/gui/settings_dialog.py:188
+#: polyhost/gui/settings_dialog.py:189
 msgid "Send usage report"
 msgstr "傳送使用情況報告"
 
-#: polyhost/gui/settings_dialog.py:189
+#: polyhost/gui/settings_dialog.py:190
 msgid "Report address"
 msgstr "報告位址"
 
-#: polyhost/gui/settings_dialog.py:190
+#: polyhost/gui/settings_dialog.py:191
 msgid "Installation ID"
 msgstr "安裝 ID"
 
-#: polyhost/gui/settings_dialog.py:191
+#: polyhost/gui/settings_dialog.py:192
 msgid "Watch the keyboard's messages"
 msgstr "監看鍵盤的訊息"
 
-#: polyhost/gui/settings_dialog.py:192
+#: polyhost/gui/settings_dialog.py:193
 msgid "Watch this app's log"
 msgstr "監看此應用程式的記錄檔"
 
-#: polyhost/gui/settings_dialog.py:193
+#: polyhost/gui/settings_dialog.py:194
 msgid "What counts as a problem"
 msgstr "問題判定等級"
 
-#: polyhost/gui/settings_dialog.py:194
+#: polyhost/gui/settings_dialog.py:195
 msgid "Art from installed games"
 msgstr "來自已安裝遊戲的圖像"
 
-#: polyhost/gui/settings_dialog.py:195
+#: polyhost/gui/settings_dialog.py:196
 msgid "Show on the number row"
 msgstr "在數字列上顯示"
 
-#: polyhost/gui/settings_dialog.py:196
+#: polyhost/gui/settings_dialog.py:197
 msgid "Find by window title"
 msgstr "依視窗標題尋找"
 
-#: polyhost/gui/settings_dialog.py:197
+#: polyhost/gui/settings_dialog.py:198
 msgid "Download fonts for agent titles"
 msgstr "為代理標題下載字型"
 
-#: polyhost/gui/settings_dialog.py:198
+#: polyhost/gui/settings_dialog.py:199
 msgid "Dictation shortcut"
 msgstr "聽寫快速鍵"
 
-#: polyhost/gui/settings_dialog.py:199
+#: polyhost/gui/settings_dialog.py:200
 msgid "Agents from other computers"
 msgstr "來自其他電腦的代理程式"
 
-#: polyhost/gui/settings_dialog.py:200
+#: polyhost/gui/settings_dialog.py:201
 msgid "Raise agent windows on this computer"
 msgstr "在這台電腦上將代理程式視窗移到前景"
 
-#: polyhost/gui/settings_dialog.py:201
+#: polyhost/gui/settings_dialog.py:202
 msgid "Hide agent titles and folders"
 msgstr "隱藏代理程式標題和資料夾"
 
-#: polyhost/gui/settings_dialog.py:202
+#: polyhost/gui/settings_dialog.py:203
 msgid "Stale after (minutes)"
 msgstr "多久後視為無回應（分鐘）"
 
-#: polyhost/gui/settings_dialog.py:203
+#: polyhost/gui/settings_dialog.py:204
 msgid "Remove idle agents after (minutes)"
 msgstr "多久後移除閒置代理程式（分鐘）"
 
-#: polyhost/gui/settings_dialog.py:212
+#: polyhost/gui/settings_dialog.py:213
 msgid "Sets the brightness of the keycaps when you click OK. A level stays until you choose Automatic, which follows the daylight when Follow daylight is on, and otherwise returns to the keyboard's own stored level. The keyboard does not report its level, so no picture is selected when this dialog opens."
 msgstr "按一下「確定」時設定鍵帽的亮度。所選亮度會一直保持，直到您選擇「自動」。「自動」在開啟「依日光調整」時會隨日光變化，否則會回到鍵盤本身儲存的亮度。鍵盤不會回報其目前亮度，因此開啟此對話方塊時不會選取任何圖片。"
 
-#: polyhost/gui/settings_dialog.py:217
+#: polyhost/gui/settings_dialog.py:218
 msgid "What the keycaps show when you have not typed for a while. A moving picture protects the displays from burn-in."
 msgstr "一段時間未打字時鍵帽上顯示的內容。動態畫面可防止顯示器烙印。"
 
-#: polyhost/gui/settings_dialog.py:219
+#: polyhost/gui/settings_dialog.py:220
 msgid "How long the keyboard waits before the idle display starts."
 msgstr "鍵盤開始閒置顯示前等待的時間。"
 
-#: polyhost/gui/settings_dialog.py:221
+#: polyhost/gui/settings_dialog.py:222
 msgid "Draws the letters and digits on the keycaps in another script, for example runes or a retro computer font. The keys still type the same characters. Standard shows the normal legends of your language."
 msgstr "以另一種文字顯示鍵帽上的字母和數字，例如盧恩字母或復古電腦字型。按鍵輸入的字元不變。「標準」會顯示您所用語言的一般字樣。"
 
-#: polyhost/gui/settings_dialog.py:225
+#: polyhost/gui/settings_dialog.py:226
 msgid "Where the script's letters sit on the keycap. The top-left corner leaves room for an app icon."
 msgstr "文字的字母在鍵帽上的位置。左上角會為應用程式圖示保留空間。"
 
-#: polyhost/gui/settings_dialog.py:228
+#: polyhost/gui/settings_dialog.py:229
 msgid "The size of the large letter or digit in the middle of each keycap. Medium and Large apply to Latin letters and digits; other scripts, such as Arabic or Chinese, stay Small."
 msgstr "每個鍵帽中央大字母或數字的大小。「中」和「大」適用於拉丁字母和數字；其他文字（例如阿拉伯文或中文）維持「小」。"
 
-#: polyhost/gui/settings_dialog.py:232
+#: polyhost/gui/settings_dialog.py:233
 msgid "A key with a tap and a hold action types its tap action when you release it before this time, and acts as its hold action when you hold it longer."
 msgstr "具有點按和按住動作的按鍵：在此時間之前放開時輸入點按動作，按住更久時則作為按住動作。"
 
-#: polyhost/gui/settings_dialog.py:235
+#: polyhost/gui/settings_dialog.py:236
 msgid "A tap-hold key pressed within this time after the previous key always types its tap action, so fast typing does not trigger a modifier. 0 turns Flow Tap off."
 msgstr "在上一個按鍵之後此時間內按下的點按/按住鍵一律輸入點按動作，因此快速打字不會觸發修飾鍵。0 表示關閉 Flow Tap。"
 
-#: polyhost/gui/settings_dialog.py:238
+#: polyhost/gui/settings_dialog.py:239
 msgid "With Auto Shift on, holding a letter, digit or symbol key longer than the Auto Shift timeout types its shifted character."
 msgstr "開啟 Auto Shift 後，按住字母、數字或符號鍵超過 Auto Shift 時間，會輸入其 Shift 字元。"
 
-#: polyhost/gui/settings_dialog.py:240
+#: polyhost/gui/settings_dialog.py:241
 msgid "How long you hold a key before Auto Shift types its shifted character."
 msgstr "按住按鍵多久後 Auto Shift 會輸入其 Shift 字元。"
 
-#: polyhost/gui/settings_dialog.py:243
+#: polyhost/gui/settings_dialog.py:244
 msgid "Shows the state of AI coding agents on the number row and, while the AI key is pressed, one card per agent. Needs keyboard firmware with protocol 31. Takes effect at the next keyboard connect."
 msgstr "在數字列上顯示 AI 程式設計代理程式的狀態，並在按住 AI 鍵時為每個代理程式顯示一張卡片。需要協定 31 的鍵盤韌體。下次連接鍵盤時生效。"
 
-#: polyhost/gui/settings_dialog.py:247
+#: polyhost/gui/settings_dialog.py:248
 msgid "Also finds agents that run in a terminal from the window title, without a hook. Not on macOS."
 msgstr "也會依視窗標題尋找在終端機中執行的代理程式，不需要掛鉤。不適用於 macOS。"
 
-#: polyhost/gui/settings_dialog.py:250
+#: polyhost/gui/settings_dialog.py:251
 msgid "Downloads a font the first time an agent title needs one: Chinese, Hindi, Thai, Armenian, Hebrew or Arabic. The fonts come from GitHub and www.polykybd.org. Off: nothing is downloaded; fonts downloaded before are still used, and a title in a script without a font shows boxes."
 msgstr "在代理標題第一次需要時下載字型：中文、印地語、泰語、亞美尼亞語、希伯來語或阿拉伯語。字型來自 GitHub 和 www.polykybd.org。關閉：不下載任何內容；之前下載的字型仍會使用，沒有字型的文字所寫的標題會顯示為方框。"
 
-#: polyhost/gui/settings_dialog.py:255
+#: polyhost/gui/settings_dialog.py:256
 msgid "Also shows agents that run on a computer with the forwarder. A key press brings forward the remote-desktop viewer that shows that computer (NoMachine, Remote Desktop, VNC). They report over the network endpoint for forwarders, which must be on too. Off: only this computer's agents."
 msgstr "也會顯示在裝有轉送器的電腦上執行的代理程式。按下按鍵會將顯示該電腦的遠端桌面檢視器（NoMachine、遠端桌面、VNC）移到前景。它們透過供轉送器使用的網路端點回報，該端點也必須開啟。關閉：只顯示這台電腦的代理程式。"
 
-#: polyhost/gui/settings_dialog.py:260
+#: polyhost/gui/settings_dialog.py:261
 msgid "On a computer with the forwarder: a key press on one of this computer's agents also brings the agent's own window forward here. Off: only the viewer on the keyboard's computer comes forward."
 msgstr "在裝有轉送器的電腦上：按下這台電腦某個代理程式的按鍵時，也會在這裡將該代理程式自己的視窗移到前景。關閉：只將鍵盤所在電腦上的檢視器移到前景。"
 
-#: polyhost/gui/settings_dialog.py:264
+#: polyhost/gui/settings_dialog.py:265
 msgid "On a computer with the forwarder: this computer's agents send no title, no folder name and no path to the keyboard's computer, so their keys show only the agent's name. The computer's name still goes with the report. Applies to agents that start after the change."
 msgstr "在裝有轉發器的電腦上：這台電腦上的代理程式不會向鍵盤所在的電腦傳送標題、資料夾名稱或路徑，因此按鍵上只顯示代理程式的名稱。電腦名稱仍會隨報告一併傳送。適用於變更後啟動的代理程式。"
 
-#: polyhost/gui/settings_dialog.py:269
+#: polyhost/gui/settings_dialog.py:270
 msgid "A working agent that reports nothing for this many minutes shows as stale (dim white). 0: never."
 msgstr "工作中的代理程式在這麼多分鐘內沒有任何回報時，會顯示為無回應（暗白色）。0：永不。"
 
-#: polyhost/gui/settings_dialog.py:272
+#: polyhost/gui/settings_dialog.py:273
 msgid "An idle or stale agent that reports nothing for this many minutes is removed and frees its key. An agent whose process ends is removed at once. 0: never."
 msgstr "閒置或無回應的代理程式在這麼多分鐘內沒有任何回報時，會被移除並釋放其按鍵。處理程序結束的代理程式會立即移除。0：永不。"
 
-#: polyhost/gui/settings_dialog.py:275
+#: polyhost/gui/settings_dialog.py:276
 msgid "The shortcut the minus key sends in AI mode to start dictation, for example <cmd>+h or <ctrl>+<alt>+d. Empty: Win+H on Windows, nothing on macOS and Linux."
 msgstr "AI 模式下減號鍵為開始聽寫而傳送的快速鍵，例如 <cmd>+h 或 <ctrl>+<alt>+d。留空：Windows 上為 Win+H，macOS 和 Linux 上不傳送任何內容。"
 
-#: polyhost/gui/settings_dialog.py:279
+#: polyhost/gui/settings_dialog.py:280
 msgid "Tells the keyboard which Unicode input method this computer uses (for example WinCompose on Windows), when it connects and whenever the method changes. The keyboard needs it to type characters that are not on your layout, such as emoji. Off: the keyboard keeps the method it has stored."
 msgstr "在鍵盤連線時以及輸入方式變更時，告訴鍵盤這台電腦使用的 Unicode 輸入方式（例如 Windows 上的 WinCompose）。鍵盤需要此資訊才能輸入配置中沒有的字元，例如表情符號。關閉：鍵盤繼續使用已儲存的輸入方式。"
 
-#: polyhost/gui/settings_dialog.py:284
+#: polyhost/gui/settings_dialog.py:285
 msgid "Sets the keycap brightness from the daylight at your location, every ten minutes."
 msgstr "依據您所在位置的日光，每十分鐘設定一次鍵帽亮度。"
 
-#: polyhost/gui/settings_dialog.py:287
+#: polyhost/gui/settings_dialog.py:288
 msgid "Asks open-meteo.com for this hour's sunlight at your location, including clouds. Off: the host computes a cloudless-sky value from the location and time."
 msgstr "向 open-meteo.com 查詢您所在位置這個小時的日照強度（包含雲量）。關閉時：主機依據位置和時間計算晴空下的值。"
 
-#: polyhost/gui/settings_dialog.py:291
+#: polyhost/gui/settings_dialog.py:292
 msgid "Looks up your approximate location from your IP address (ip-api.com), once per run. Off: the brightness follows the hour of the day."
 msgstr "依據您的 IP 位址查詢大略位置（ip-api.com），每次執行查詢一次。關閉時：亮度隨一天中的時間變化。"
 
-#: polyhost/gui/settings_dialog.py:294
+#: polyhost/gui/settings_dialog.py:295
 msgid "The sunlight value at which the keycaps are at their dimmest. Less sunlight keeps them at the dimmest level."
 msgstr "鍵帽處於最暗時的日照強度值。日照強度低於此值時，鍵帽維持最暗。"
 
-#: polyhost/gui/settings_dialog.py:297
+#: polyhost/gui/settings_dialog.py:298
 msgid "The sunlight value at which the keycaps are at their brightest. Lower it to reach full brightness on a cloudy day."
 msgstr "鍵帽處於最亮時的日照強度值。降低此值可在陰天達到最高亮度。"
 
-#: polyhost/gui/settings_dialog.py:300
+#: polyhost/gui/settings_dialog.py:301
 msgid "Multiplies the sunlight value before it is compared with Sunlight at dimmest and Sunlight at brightest. Below 1 makes the keycaps dimmer for the same daylight."
 msgstr "在與「最暗時的日照強度」和「最亮時的日照強度」比較之前，以此數乘上日照強度值。小於 1 時，同樣的日光下鍵帽會較暗。"
 
-#: polyhost/gui/settings_dialog.py:304
+#: polyhost/gui/settings_dialog.py:305
 msgid "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, below 1 brighter. The dimmest and brightest levels do not change."
 msgstr "調整日光曲線的形狀。大於 1 時一天中段變暗，小於 1 時變亮。最暗和最亮等級不變。"
 
-#: polyhost/gui/settings_dialog.py:307
+#: polyhost/gui/settings_dialog.py:308
 msgid "Draws icons for apps that have no overlay of their own: the app's logo on the Escape key and an icon on each shortcut key. Off: these apps get no icons. Apps with their own overlay are not affected."
 msgstr "為沒有專屬覆蓋圖的應用程式繪製圖示：在 Esc 鍵上顯示應用程式的標誌，在每個快捷鍵上顯示一個圖示。關閉：這些應用程式不會顯示圖示。有專屬覆蓋圖的應用程式不受影響。"
 
-#: polyhost/gui/settings_dialog.py:311
+#: polyhost/gui/settings_dialog.py:312
 msgid "An app with its own overlay also gets its logo on the Escape key, when its overlay leaves Escape blank."
 msgstr "有專屬覆蓋圖的應用程式，若其覆蓋圖未使用 Esc 鍵，也會在 Esc 鍵上顯示其標誌。"
 
-#: polyhost/gui/settings_dialog.py:314
+#: polyhost/gui/settings_dialog.py:315
 msgid "Only for an app that comes with its own overlay: the keys its overlay leaves blank also get icons from the app's menus. Off: such an app shows only its overlay. Needs Read shortcuts from app menus."
 msgstr "僅適用於自帶覆蓋圖的應用程式：其覆蓋圖留空的按鍵也會顯示來自應用程式選單的圖示。關閉：這類應用程式只顯示其覆蓋圖。需要開啟「從應用程式選單讀取快捷鍵」。"
 
-#: polyhost/gui/settings_dialog.py:318
+#: polyhost/gui/settings_dialog.py:319
 msgid "The main switch for shortcut icons. On: an app without its own overlay also gets icons on its shortcut keys, when its menus can be read. PolyKybdHost reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system. The reading runs in the background, one app at a time, so the other keycaps do not wait for it. It stops after 3 minutes on Windows, and after 4,000 parts of the app's window on Linux (3,000 on macOS). The shortcuts stay on this computer. Off: no app's menus are read, and an app that comes with its own overlay still shows it."
 msgstr "快捷鍵圖示的總開關。開啟：沒有自帶覆蓋圖的應用程式，只要能讀取其選單，也會在其快捷鍵上顯示圖示。PolyKybdHost 透過作業系統的協助工具介面，讀取目前焦點應用程式選單中列出的快捷鍵。讀取在背景進行，每次只讀取一個應用程式，因此其他鍵帽不必等待。在 Windows 上，讀取 3 分鐘後停止；在 Linux 上，讀取應用程式視窗的 4,000 個元件後停止（macOS 上為 3,000 個）。快捷鍵資訊只會留在這台電腦上。關閉：不讀取任何應用程式的選單，自帶覆蓋圖的應用程式仍會顯示其覆蓋圖。"
 
-#: polyhost/gui/settings_dialog.py:328
+#: polyhost/gui/settings_dialog.py:329
 msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."
 msgstr "從網際網路（simple-icons 和 Iconify）下載這台電腦上還沒有的應用程式標誌和快捷鍵圖示。下載的圖示會儲存在這台電腦上。關閉：已下載的圖示仍可使用，沒有已儲存圖示的應用程式不會顯示圖示。"
 
-#: polyhost/gui/settings_dialog.py:333
+#: polyhost/gui/settings_dialog.py:334
 msgid "Linux only. Turns on the desktop's accessibility switch, so Qt and KDE apps list their shortcuts for Read shortcuts from app menus. Off: only apps that list them anyway (GTK) are read."
 msgstr "僅限 Linux。開啟桌面的協助工具開關，讓 Qt 和 KDE 應用程式為「從應用程式選單讀取快捷鍵」列出其快捷鍵。關閉：只讀取原本就會列出快捷鍵的應用程式（GTK）。"
 
-#: polyhost/gui/settings_dialog.py:337
+#: polyhost/gui/settings_dialog.py:338
 msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
 msgstr "USB 傳輸：短暫暫停前傳送的影像訊息數量，讓鍵盤能持續回應輸入。僅在回報問題時被要求變更的情況下才變更。"
 
-#: polyhost/gui/settings_dialog.py:341
+#: polyhost/gui/settings_dialog.py:342
 msgid "USB transport: the length of that pause, in seconds. Change it only when asked to while reporting a problem."
 msgstr "USB 傳輸：該暫停的長度，以秒為單位。僅在回報問題時被要求變更的情況下才變更。"
 
-#: polyhost/gui/settings_dialog.py:344
+#: polyhost/gui/settings_dialog.py:345
 msgid "How many times the app asks the keyboard for its ID without an answer before it closes and reopens the USB connection. Change it only when asked to while reporting a problem."
 msgstr "應用程式向鍵盤要求 ID 而沒有收到回應的次數，達到此次數後會關閉並重新開啟 USB 連線。僅在回報問題時被要求才變更此值。"
 
-#: polyhost/gui/settings_dialog.py:348
+#: polyhost/gui/settings_dialog.py:349
 msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
 msgstr "系統匣選單和對話方塊的外觀。「自動」會依照桌面的淺色或深色設定。"
 
-#: polyhost/gui/settings_dialog.py:351
+#: polyhost/gui/settings_dialog.py:352
 msgid "The language of the menus and dialogs. Applies when the tray app restarts."
 msgstr "選單和對話方塊的語言。在系統匣應用程式重新啟動後生效。"
 
-#: polyhost/gui/settings_dialog.py:353
+#: polyhost/gui/settings_dialog.py:354
 msgid "Shows the developer settings in this dialog, and the Developer submenu in the tray menu after a restart."
 msgstr "在此對話方塊中顯示開發人員設定；重新啟動後，也會在系統匣選單中顯示「開發人員」子選單。"
 
-#: polyhost/gui/settings_dialog.py:356
+#: polyhost/gui/settings_dialog.py:357
 msgid "How much the app writes to its log. Debug and Detailed help when you report a problem, and make the log grow faster. Applies after a restart."
 msgstr "應用程式寫入記錄檔的詳細程度。「偵錯」和「詳細」有助於回報問題，但會讓記錄檔增長得更快。重新啟動後生效。"
 
-#: polyhost/gui/settings_dialog.py:358
+#: polyhost/gui/settings_dialog.py:359
 msgid "Adds a simulated keyboard next to the real one."
 msgstr "在實體鍵盤之外加入一個模擬鍵盤。"
 
-#: polyhost/gui/settings_dialog.py:360
+#: polyhost/gui/settings_dialog.py:361
 msgid "Uses a simulated keyboard instead of a real one, so the app runs without hardware."
 msgstr "使用模擬鍵盤取代實體鍵盤，讓應用程式不需硬體即可執行。"
 
-#: polyhost/gui/settings_dialog.py:363
+#: polyhost/gui/settings_dialog.py:364
 msgid "The protocol version the simulated keyboard reports. 0 uses the newest version this host knows."
 msgstr "模擬鍵盤回報的協定版本。0 表示使用此主機所知的最新版本。"
 
-#: polyhost/gui/settings_dialog.py:366
+#: polyhost/gui/settings_dialog.py:367
 msgid "Tracks the active window even when no keyboard is connected."
 msgstr "即使未連接鍵盤，也追蹤作用中的視窗。"
 
-#: polyhost/gui/settings_dialog.py:368
+#: polyhost/gui/settings_dialog.py:369
 msgid "Windows only, experimental. Switches the input language with Win32 calls instead of the standard method, and falls back to it on a failure."
 msgstr "僅限 Windows，實驗性功能。使用 Win32 呼叫而非標準方式切換輸入語言，失敗時改回標準方式。"
 
-#: polyhost/gui/settings_dialog.py:371
+#: polyhost/gui/settings_dialog.py:372
 msgid "Uses the USB HID channel only, as if the keyboard had no fast link: firmware updates go over HID. For testing the HID path by hand."
 msgstr "僅使用 USB HID 通道，如同鍵盤沒有高速連結：韌體更新經由 HID 傳輸。用於手動測試 HID 路徑。"
 
-#: polyhost/gui/settings_dialog.py:374
+#: polyhost/gui/settings_dialog.py:375
 msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
 msgstr "透過未加密、未經驗證的 TCP（連接埠 50162），在所有網路介面上接受來自舊版轉送器的視窗回報。僅在使用舊版轉送器時才開啟。"
 
-#: polyhost/gui/settings_dialog.py:378
+#: polyhost/gui/settings_dialog.py:379
 msgid "Runs the keyboard connection in a background process that the tray app connects to, so the connection stays up when the tray app restarts."
 msgstr "在背景處理程序中執行鍵盤連線，系統匣應用程式會連線到該處理程序，因此系統匣應用程式重新啟動時連線仍會保持。"
 
-#: polyhost/gui/settings_dialog.py:381
+#: polyhost/gui/settings_dialog.py:382
 msgid "Accepts reports of the focused window from the forwarder app on another computer, for example one you use through remote desktop, so the keyboard shows the icons of that computer's apps. Opens a network port. Applies after a restart."
 msgstr "接收另一台電腦（例如您透過遠端桌面使用的電腦）上轉送器應用程式傳來的目前焦點視窗資訊，讓鍵盤顯示那台電腦上應用程式的圖示。會開啟一個網路連接埠。重新啟動後生效。"
 
-#: polyhost/gui/settings_dialog.py:386
+#: polyhost/gui/settings_dialog.py:387
+msgid "On a computer with the forwarder that you reach through NoMachine or Remote Desktop: the forwarder reports to the computer that is connected to this one, found from the connection on port 4000 or 3389. It is used when no host or host file names an address. Applies within a few seconds."
+msgstr "在透過 NoMachine 或遠端桌面存取、裝有轉發器的電腦上：轉發器會向連線到本機的電腦回報，該電腦從連接埠 4000 或 3389 的連線中找到。在沒有主機或主機檔案指定位址時使用。幾秒內生效。"
+
+#: polyhost/gui/settings_dialog.py:392
 msgid "The language of the words the keyboard's emoji search matches. The dictionary is sent to the keyboard when you click OK, and when it connects if Send font packs on connect is on. Own dictionary file, when set, is used instead."
 msgstr "鍵盤表情符號搜尋所比對的字詞語言。按一下「確定」時，以及在「連線時傳送字型包」開啟的情況下鍵盤連線時，字典會傳送到鍵盤。若已設定「自訂字典檔」，則改用該檔案。"
 
-#: polyhost/gui/settings_dialog.py:391
+#: polyhost/gui/settings_dialog.py:397
 msgid "A dictionary file you built yourself (.plyd), sent to the keyboard instead of the Search language dictionary. Empty: the dictionary for the Search language is used."
 msgstr "您自己建立的字典檔（.plyd），取代「搜尋語言」的字典傳送到鍵盤。空白：使用「搜尋語言」的字典。"
 
-#: polyhost/gui/settings_dialog.py:395
+#: polyhost/gui/settings_dialog.py:401
 msgid "When the keyboard connects, sends it the font packs it is missing or has in an older version. Font packs hold the characters for languages, symbols and emoji."
 msgstr "鍵盤連線時，傳送鍵盤缺少的字型包或版本較舊的字型包。字型包包含各種語言的字元、符號和表情符號。"
 
-#: polyhost/gui/settings_dialog.py:399
+#: polyhost/gui/settings_dialog.py:405
 msgid "A font-pack file (.plyf) to send to the keyboard instead of the one that comes with this app. Empty: the font pack that comes with this app is used."
 msgstr "取代本應用程式隨附的字型包而傳送到鍵盤的字型包檔案（.plyf）。空白：使用本應用程式隨附的字型包。"
 
-#: polyhost/gui/settings_dialog.py:402
+#: polyhost/gui/settings_dialog.py:408
 msgid "Chooses a website's overlay from the address of the focused browser tab. The address comes from the PolyKybd browser extension; on macOS, Safari and Chromium browsers such as Chrome also give it without the extension. Off: a website's overlay is chosen from the window title only."
 msgstr "依據目前焦點瀏覽器分頁的網址選擇網站的覆蓋圖。網址來自 PolyKybd 瀏覽器擴充功能；在 macOS 上，Safari 及 Chrome 等 Chromium 瀏覽器不需擴充功能也會提供網址。關閉：僅依據視窗標題選擇網站的覆蓋圖。"
 
-#: polyhost/gui/settings_dialog.py:407
+#: polyhost/gui/settings_dialog.py:413
 msgid "Runs the receiver that the PolyKybd browser extension sends the address of the focused tab to. It accepts connections from this computer only (127.0.0.1)."
 msgstr "執行接收器，PolyKybd 瀏覽器擴充功能會將目前焦點分頁的網址傳送給它。它只接受來自這台電腦的連線（127.0.0.1）。"
 
-#: polyhost/gui/settings_dialog.py:411
+#: polyhost/gui/settings_dialog.py:417
 msgid "The receiver's port. It must match the Host port in the browser extension."
 msgstr "接收器的連接埠。必須與瀏覽器擴充功能中的 Host port 相同。"
 
-#: polyhost/gui/settings_dialog.py:413
+#: polyhost/gui/settings_dialog.py:419
 msgid "A shared secret. When set, the browser extension must send the same token."
 msgstr "共用密碼。設定後，瀏覽器擴充功能必須傳送相同的權杖。"
 
-#: polyhost/gui/settings_dialog.py:415
+#: polyhost/gui/settings_dialog.py:421
 msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
 msgstr "每天傳送一份匿名使用情況報告：版本、作業系統和少數計數器。絕不包含視窗標題或應用程式名稱。"
 
-#: polyhost/gui/settings_dialog.py:418
+#: polyhost/gui/settings_dialog.py:424
 msgid "The web address the usage report is sent to. Empty: no report is sent."
 msgstr "使用情況報告的傳送網址。空白：不傳送報告。"
 
-#: polyhost/gui/settings_dialog.py:420
+#: polyhost/gui/settings_dialog.py:426
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
 msgstr "此安裝的隨機 ID，在傳送第一份報告時建立。刪除後會被計為新的安裝。"
 
-#: polyhost/gui/settings_dialog.py:423
+#: polyhost/gui/settings_dialog.py:429
 msgid "Watches the messages the keyboard sends over USB for known failures, and offers to report a problem."
 msgstr "監看鍵盤透過 USB 傳送的訊息中是否有已知故障，並提供回報問題的選項。"
 
-#: polyhost/gui/settings_dialog.py:426
+#: polyhost/gui/settings_dialog.py:432
 msgid "Watches this app's own log for known failure messages, and offers to report a problem."
 msgstr "監看本應用程式自己的記錄檔中是否有已知的故障訊息，並提供回報問題的選項。"
 
-#: polyhost/gui/settings_dialog.py:428
+#: polyhost/gui/settings_dialog.py:434
 msgid "What counts as a problem: errors only, or errors and warnings."
 msgstr "哪些情況算作問題：僅錯誤，或錯誤與警告。"
 
-#: polyhost/gui/settings_dialog.py:430
+#: polyhost/gui/settings_dialog.py:436
 msgid "Draws some game overlays from the game's own files when the game is installed on this computer. The images stay on this computer. Off: the shipped overlays are used."
 msgstr "當遊戲安裝在這台電腦上時，從遊戲本身的檔案繪製部分遊戲疊加層。圖像留在這台電腦上。關閉：使用內附的疊加層。"
 
-#: polyhost/gui/settings_dialog.py:907
+#: polyhost/gui/settings_dialog.py:913
 msgid "Advanced"
 msgstr "進階"
 
-#: polyhost/gui/settings_dialog.py:916
+#: polyhost/gui/settings_dialog.py:922
 msgid "Shows the settings that most people never change."
 msgstr "顯示大多數人從不變更的設定。"
 
-#: polyhost/gui/settings_dialog.py:947 polyhost/host.py:1680
+#: polyhost/gui/settings_dialog.py:953 polyhost/host.py:1680
 msgid "PolyKybd Settings"
 msgstr "PolyKybd 設定"
 
-#: polyhost/gui/settings_dialog.py:1016
+#: polyhost/gui/settings_dialog.py:1022
 msgid "Search settings"
 msgstr "搜尋設定"
 
-#: polyhost/gui/settings_dialog.py:1068
+#: polyhost/gui/settings_dialog.py:1074
 msgid "An overlay is a set of icons for one app. Help & About, Basics shows an example."
 msgstr "覆蓋圖是為某一個應用程式準備的一組圖示。說明 & 關於，基礎知識 中有一個範例。"
 
-#: polyhost/gui/settings_dialog.py:1072
+#: polyhost/gui/settings_dialog.py:1078
 msgid "Reading the settings stored on the keyboard…"
 msgstr "正在讀取鍵盤中儲存的設定…"
 
-#: polyhost/gui/settings_dialog.py:1076
+#: polyhost/gui/settings_dialog.py:1082
 msgid "No setting matches the search."
 msgstr "沒有符合搜尋的設定。"
 
-#: polyhost/gui/settings_dialog.py:1091
+#: polyhost/gui/settings_dialog.py:1097
 msgid "Some settings might need a restart to take effect."
 msgstr "部分設定可能需要重新啟動才會生效。"
 
-#: polyhost/gui/settings_dialog.py:1126
+#: polyhost/gui/settings_dialog.py:1132
 #, python-brace-format
 msgid "Set by {flag} for this run. This setting applies when the app starts without it."
 msgstr "本次執行由 {flag} 設定。應用程式不帶此參數啟動時，會套用此設定。"
@@ -4148,35 +4164,35 @@ msgstr "本次執行由 {flag} 設定。應用程式不帶此參數啟動時，�
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
 #: polyhost/gui/layout_dialog/combo_tab.py:371
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
-#: polyhost/gui/settings_dialog.py:1172
+#: polyhost/gui/settings_dialog.py:1178
 msgid " ms"
 msgstr " ms"
 
-#: polyhost/gui/settings_dialog.py:1219
+#: polyhost/gui/settings_dialog.py:1225
 msgid "This keyboard's firmware does not have this setting."
 msgstr "此鍵盤的韌體沒有此設定。"
 
-#: polyhost/gui/settings_dialog.py:1221
+#: polyhost/gui/settings_dialog.py:1227
 msgid "Could not read this setting from the keyboard."
 msgstr "無法從鍵盤讀取此設定。"
 
-#: polyhost/gui/settings_dialog.py:1229
+#: polyhost/gui/settings_dialog.py:1235
 msgid "Connect the keyboard to change the settings stored on it."
 msgstr "請連接鍵盤以變更其中儲存的設定。"
 
-#: polyhost/gui/settings_dialog.py:1231
+#: polyhost/gui/settings_dialog.py:1237
 msgid "Some settings could not be read from the keyboard. Update the keyboard firmware to change them here."
 msgstr "部分設定無法從鍵盤讀取。請更新鍵盤韌體以在此處變更。"
 
-#: polyhost/gui/settings_dialog.py:1282
+#: polyhost/gui/settings_dialog.py:1288
 msgid "These developer settings are not at their default, so they stay in effect while developer mode is off."
 msgstr "這些開發人員設定不是預設值，因此在開發人員模式關閉時仍會生效。"
 
-#: polyhost/gui/settings_dialog.py:1352
+#: polyhost/gui/settings_dialog.py:1358
 msgid "Generate"
 msgstr "產生"
 
-#: polyhost/gui/settings_dialog.py:1353
+#: polyhost/gui/settings_dialog.py:1359
 msgid "Fills in a new random token and copies it. Paste it into the browser extension's Options and save both."
 msgstr "填入新的隨機權杖並複製。請將其貼到瀏覽器擴充功能的選項中，然後兩邊都儲存。"
 
@@ -4438,7 +4454,7 @@ msgstr "{prefix} — 主機程式 v{host_version} 可供更新"
 msgid "{prefix} — firmware v{fw_version} available"
 msgstr "{prefix} — 韌體 v{fw_version} 可供更新"
 
-#: polyhost/forwarder.py:278 polyhost/gui/tray_notify.py:81
+#: polyhost/forwarder.py:286 polyhost/gui/tray_notify.py:81
 #: polyhost/host.py:553
 msgid "Updates"
 msgstr "更新"
@@ -4621,7 +4637,7 @@ msgstr "正在等待 PolyKybd..."
 msgid "Press to pause connection"
 msgstr "按下以暫停連線"
 
-#: polyhost/forwarder.py:358 polyhost/host.py:379
+#: polyhost/forwarder.py:366 polyhost/host.py:379
 msgid "Quit"
 msgstr "結束"
 
@@ -4629,23 +4645,23 @@ msgstr "結束"
 msgid "Quit && stop background daemon"
 msgstr "結束 && 停止背景常駐程式"
 
-#: polyhost/forwarder.py:308 polyhost/host.py:401
+#: polyhost/forwarder.py:316 polyhost/host.py:401
 msgid "Integrations…"
 msgstr "整合…"
 
-#: polyhost/forwarder.py:314 polyhost/host.py:406
+#: polyhost/forwarder.py:322 polyhost/host.py:406
 msgid "Settings..."
 msgstr "設定..."
 
-#: polyhost/forwarder.py:329 polyhost/host.py:410
+#: polyhost/forwarder.py:337 polyhost/host.py:410
 msgid "Log file..."
 msgstr "記錄檔..."
 
-#: polyhost/forwarder.py:335 polyhost/host.py:419
+#: polyhost/forwarder.py:343 polyhost/host.py:419
 msgid "Report a Problem..."
 msgstr "回報問題..."
 
-#: polyhost/forwarder.py:341 polyhost/host.py:438
+#: polyhost/forwarder.py:349 polyhost/host.py:438
 msgid "Collect logs..."
 msgstr "收集記錄檔..."
 
@@ -4662,7 +4678,7 @@ msgid "Inspect Font Packs..."
 msgstr "檢視字型包..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
-#: polyhost/forwarder.py:266 polyhost/forwarder.py:416 polyhost/host.py:468
+#: polyhost/forwarder.py:274 polyhost/forwarder.py:426 polyhost/host.py:468
 #: polyhost/host.py:1230
 msgid "Pause"
 msgstr "暫停"
@@ -4728,11 +4744,11 @@ msgstr "重新整理 Unicode 輸入模式"
 msgid "Save MRU cache now"
 msgstr "立即儲存 MRU 快取"
 
-#: polyhost/forwarder.py:351 polyhost/host.py:727
+#: polyhost/forwarder.py:359 polyhost/host.py:727
 msgid "Help && About"
 msgstr "說明 && 關於"
 
-#: polyhost/forwarder.py:347 polyhost/host.py:735
+#: polyhost/forwarder.py:355 polyhost/host.py:735
 msgid "Open config folder"
 msgstr "開啟設定資料夾"
 
@@ -4778,7 +4794,7 @@ msgstr ""
 "所有隨附的字型套件都已在鍵盤上。\n"
 "若鍵帽仍顯示錯誤，可使用「開發人員 → 字型包 → 重新燒錄所有套件」強制重新傳送。"
 
-#: polyhost/forwarder.py:846 polyhost/host.py:1105
+#: polyhost/forwarder.py:877 polyhost/host.py:1105
 msgid "Config folder"
 msgstr "設定資料夾"
 
@@ -4807,7 +4823,7 @@ msgid "Reconnect"
 msgstr "重新連線"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:416 polyhost/host.py:1225
+#: polyhost/forwarder.py:426 polyhost/host.py:1225
 msgid "Resume"
 msgstr "繼續"
 
@@ -4902,7 +4918,7 @@ msgstr "獨立執行"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:923 polyhost/host.py:2020
+#: polyhost/forwarder.py:954 polyhost/host.py:2020
 msgid "paused"
 msgstr "已暫停"
 
@@ -4964,17 +4980,17 @@ msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>覆蓋圖對應：</b>{n} 個應用程式"
 
-#: polyhost/forwarder.py:940 polyhost/host.py:2059
+#: polyhost/forwarder.py:974 polyhost/host.py:2059
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>設定：</b>{path}"
 
-#: polyhost/forwarder.py:941 polyhost/host.py:2060
+#: polyhost/forwarder.py:975 polyhost/host.py:2060
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>記錄檔：</b>{path}"
 
-#: polyhost/forwarder.py:959 polyhost/host.py:2114
+#: polyhost/forwarder.py:993 polyhost/host.py:2114
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "HID 協定 P{protocol}"
@@ -5074,8 +5090,8 @@ msgstr "PolyKybd 覆蓋圖對應（*.poly.yaml）"
 msgid "Update firmware to v{version}…"
 msgstr "將韌體更新至 v{version}…"
 
-#: polyhost/forwarder.py:998 polyhost/forwarder.py:1009
-#: polyhost/forwarder.py:1015 polyhost/host.py:2477 polyhost/host.py:2598
+#: polyhost/forwarder.py:1032 polyhost/forwarder.py:1043
+#: polyhost/forwarder.py:1049 polyhost/host.py:2477 polyhost/host.py:2598
 #: polyhost/host.py:2602
 msgid "Check for updates..."
 msgstr "檢查更新..."
@@ -5085,8 +5101,8 @@ msgstr "檢查更新..."
 msgid "Update to v{version} available"
 msgstr "有可用的更新 v{version}"
 
-#: polyhost/forwarder.py:1011 polyhost/forwarder.py:1017
-#: polyhost/forwarder.py:1028 polyhost/host.py:2556 polyhost/host.py:2596
+#: polyhost/forwarder.py:1045 polyhost/forwarder.py:1051
+#: polyhost/forwarder.py:1062 polyhost/host.py:2556 polyhost/host.py:2596
 #: polyhost/host.py:2603 polyhost/host.py:2626
 msgid "PolyKybdHost Update"
 msgstr "PolyKybdHost 更新"
@@ -5096,7 +5112,7 @@ msgstr "PolyKybdHost 更新"
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "版本 {version} 已推出。按一下系統匣圖示即可更新。"
 
-#: polyhost/forwarder.py:985 polyhost/host.py:2582
+#: polyhost/forwarder.py:1019 polyhost/host.py:2582
 msgid "Checking for updates..."
 msgstr "正在檢查更新..."
 
@@ -5104,12 +5120,12 @@ msgstr "正在檢查更新..."
 msgid "No updates available"
 msgstr "沒有可用的更新"
 
-#: polyhost/forwarder.py:1012 polyhost/host.py:2597
+#: polyhost/forwarder.py:1046 polyhost/host.py:2597
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "您正在執行最新版本（v{version}）。"
 
-#: polyhost/forwarder.py:1018 polyhost/host.py:2604
+#: polyhost/forwarder.py:1052 polyhost/host.py:2604
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -5129,12 +5145,12 @@ msgstr ""
 msgid "Released: {date}"
 msgstr "發行日期：{date}"
 
-#: polyhost/forwarder.py:999 polyhost/host.py:2610
+#: polyhost/forwarder.py:1033 polyhost/host.py:2610
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "版本 {version} 已推出。"
 
-#: polyhost/forwarder.py:1000 polyhost/host.py:2611
+#: polyhost/forwarder.py:1034 polyhost/host.py:2611
 msgid "Update PolyKybdHost"
 msgstr "更新 PolyKybdHost"
 
@@ -5142,20 +5158,20 @@ msgstr "更新 PolyKybdHost"
 msgid "Download, install, and restart now?"
 msgstr "要立即下載、安裝並重新啟動嗎？"
 
-#: polyhost/forwarder.py:1027 polyhost/host.py:2626
+#: polyhost/forwarder.py:1061 polyhost/host.py:2626
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "正在下載 v{version}…"
 
-#: polyhost/forwarder.py:1069 polyhost/host.py:2751
+#: polyhost/forwarder.py:1103 polyhost/host.py:2751
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "無法啟動更新轉接程序；更新未完成。詳細資訊請查看記錄檔。"
 
-#: polyhost/forwarder.py:1081 polyhost/host.py:2766
+#: polyhost/forwarder.py:1115 polyhost/host.py:2766
 msgid "Update failed"
 msgstr "更新失敗"
 
-#: polyhost/forwarder.py:1081 polyhost/host.py:2766
+#: polyhost/forwarder.py:1115 polyhost/host.py:2766
 msgid "The update did not finish."
 msgstr "更新未完成。"
 

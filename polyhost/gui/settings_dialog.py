@@ -89,7 +89,7 @@ SECTIONS = (
     ("connections", N_("Connections"), (
         (N_("Browser extension"), ("browser_report_local_enabled",
                                    "browser_report_port", "browser_report_token")),
-        (N_("Forwarders"), ("window_report_network_enabled",)),
+        (N_("Forwarders"), ("window_report_network_enabled", "forwarder_detect_host")),
         (N_("USB transport"), ("hid_reconnect_retries", "max_hid_message_before_delay",
                                "delay_time_after_max_hid_messages")),
     )),
@@ -177,6 +177,7 @@ SETTING_LABELS = {
     "dev_force_hid_link": N_("Force the HID link"),
     "daemon_mode": N_("Background service"),
     "window_report_network_enabled": N_("Accept forwarders"),
+    "forwarder_detect_host": N_("Find the keyboard computer from the connection"),
     "fontpack_auto_flash": N_("Send font packs on connect"),
     "emoji_search_dict": N_("Search language"),
     "emoji_search_dict_file": N_("Own dictionary file"),
@@ -382,6 +383,11 @@ SETTING_DESCRIPTIONS = {
         "computer, for example one you use through remote desktop, so the keyboard "
         "shows the icons of that computer's apps. Opens a network port. Applies after "
         "a restart."),
+    "forwarder_detect_host": N_(
+        "On a computer with the forwarder that you reach through NoMachine or Remote "
+        "Desktop: the forwarder reports to the computer that is connected to this one, "
+        "found from the connection on port 4000 or 3389. It is used when no host or "
+        "host file names an address. Applies within a few seconds."),
     "emoji_search_dict": N_(
         "The language of the words the keyboard's emoji search matches. The "
         "dictionary is sent to the keyboard when you click OK, and when it connects "

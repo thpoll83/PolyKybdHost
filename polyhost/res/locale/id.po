@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-24 11:24+0000\n"
+"POT-Creation-Date: 2026-11-24 13:14+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: id\n"
@@ -327,129 +327,137 @@ msgstr ""
 msgid "{prefix} — the USB half answered, but the other keyboard half did not confirm that it had erased the {what} within 90 s. Check the cable between the two halves. If the other half stays dark, it is not running firmware and needs the firmware .uf2 copied onto it by hand."
 msgstr "{prefix} — belahan USB merespons, tetapi belahan keyboard lainnya tidak mengonfirmasi bahwa {what} telah dihapus dalam 90 s. Periksa kabel di antara kedua belahan. Jika belahan lainnya tetap gelap, belahan itu tidak menjalankan firmware dan file .uf2 firmware perlu disalin ke sana secara manual."
 
-#: polyhost/forwarder.py:261
+#: polyhost/forwarder.py:269
 msgid "Press to pause forwarding"
 msgstr "Tekan untuk menjeda penerusan"
 
-#: polyhost/forwarder.py:268
+#: polyhost/forwarder.py:276
 msgid "Stop sending this machine's active window to the keyboard machine."
 msgstr "Berhenti mengirim jendela aktif komputer ini ke komputer keyboard."
 
-#: polyhost/forwarder.py:281
+#: polyhost/forwarder.py:289
 msgid "Check for host update…"
 msgstr "Periksa pembaruan host…"
 
-#: polyhost/forwarder.py:297
+#: polyhost/forwarder.py:305
 msgid "Pair with the Keyboard Computer…"
 msgstr "Pasangkan dengan Komputer Keyboard…"
 
-#: polyhost/forwarder.py:390
+#: polyhost/forwarder.py:398
+msgid "no host (waiting for a Remote Desktop or NoMachine connection)"
+msgstr "tidak ada host (menunggu koneksi Remote Desktop atau NoMachine)"
+
+#: polyhost/forwarder.py:400
 #, python-brace-format
 msgid "no host (waiting for {path})"
 msgstr "tidak ada host (menunggu {path})"
 
-#: polyhost/forwarder.py:391
+#: polyhost/forwarder.py:401
 msgid "no host configured"
 msgstr "host belum dikonfigurasi"
 
-#: polyhost/forwarder.py:394
+#: polyhost/forwarder.py:404
 #, python-brace-format
 msgid "PolyKybdHost {version} (forwarder) → {target}"
 msgstr "PolyKybdHost {version} (forwarder) → {target}"
 
-#: polyhost/forwarder.py:399
+#: polyhost/forwarder.py:409
 msgid "Forwarding paused"
 msgstr "Penerusan dijeda"
 
-#: polyhost/forwarder.py:402
+#: polyhost/forwarder.py:412
 #, python-brace-format
 msgid "Forwarding to {target}…"
 msgstr "Meneruskan ke {target}…"
 
-#: polyhost/forwarder.py:404
+#: polyhost/forwarder.py:414
 #, python-brace-format
 msgid "Forwarding to {target}"
 msgstr "Meneruskan ke {target}"
 
-#: polyhost/forwarder.py:405
+#: polyhost/forwarder.py:415
 #, python-brace-format
 msgid "Cannot reach {target}"
 msgstr "Tidak dapat menjangkau {target}"
 
-#: polyhost/forwarder.py:553
+#: polyhost/forwarder.py:583
 msgid "The hooks are written, but this forwarder runs without --report-rpc, so it cannot pass agent reports on. Start it with --report-rpc to show this computer's agents on the keys."
 msgstr "Hook sudah ditulis, tetapi forwarder ini berjalan tanpa --report-rpc, jadi tidak dapat meneruskan laporan agen. Jalankan dengan --report-rpc untuk menampilkan agen komputer ini di tombol."
 
-#: polyhost/forwarder.py:556
+#: polyhost/forwarder.py:586
 msgid "The hooks are written. On the keyboard computer, turn on Settings > AI agents > \"Agents from other computers\"."
 msgstr "Hook sudah ditulis. Di komputer keyboard, nyalakan Pengaturan > Agen AI > \"Agen dari komputer lain\"."
 
-#: polyhost/forwarder.py:885
+#: polyhost/forwarder.py:916
 msgid "PolyForwarder settings"
 msgstr "Pengaturan PolyForwarder"
 
-#: polyhost/forwarder.py:886
+#: polyhost/forwarder.py:917
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
 msgstr "Pengaturan tidak dapat disimpan ke file pengaturan, jadi tidak akan berlaku. Mungkin ada program lain yang sedang membukanya. Coba lagi, atau lihat log."
 
-#: polyhost/forwarder.py:904
+#: polyhost/forwarder.py:935
 msgid "Paired. The forwarder uses the authenticated connection from its next start. Restart it now?"
 msgstr "Berhasil dipasangkan. Forwarder menggunakan koneksi terautentikasi mulai saat dijalankan berikutnya. Mulai ulang sekarang?"
 
-#: polyhost/forwarder.py:919
+#: polyhost/forwarder.py:950
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
 msgstr "RPC terautentikasi (port {port})"
 
-#: polyhost/forwarder.py:921
+#: polyhost/forwarder.py:952
 msgid "legacy plaintext TCP relay"
 msgstr "relai TCP teks biasa lama"
 
-#: polyhost/forwarder.py:924
+#: polyhost/forwarder.py:955
 msgid "reaching the keyboard machine"
 msgstr "menjangkau komputer keyboard"
 
-#: polyhost/forwarder.py:925
+#: polyhost/forwarder.py:956
 msgid "not reaching the keyboard machine"
 msgstr "tidak menjangkau komputer keyboard"
 
-#: polyhost/forwarder.py:926
+#: polyhost/forwarder.py:957
 msgid "starting up"
 msgstr "sedang memulai"
 
-#: polyhost/forwarder.py:928
+#: polyhost/forwarder.py:959
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
 msgstr "<b>Mode:</b> forwarder — tidak ada keyboard yang terpasang di komputer ini"
 
-#: polyhost/forwarder.py:929
+#: polyhost/forwarder.py:960
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
 msgstr "<b>Tujuan:</b> {target}"
 
-#: polyhost/forwarder.py:931
+#: polyhost/forwarder.py:962
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
 msgstr "<b>Laporan jendela:</b> {transport}"
 
-#: polyhost/forwarder.py:934
+#: polyhost/forwarder.py:965
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
 msgstr "<b>File host:</b> {path}"
 
-#: polyhost/forwarder.py:955
+#: polyhost/forwarder.py:967
+msgid "<b>Keyboard computer:</b> found from the Remote Desktop or NoMachine connection"
+msgstr "<b>Komputer Keyboard:</b> ditemukan dari koneksi Remote Desktop atau NoMachine"
+
+#: polyhost/forwarder.py:989
 msgid "About PolyKybdHost (forwarder)"
 msgstr "Tentang PolyKybdHost (forwarder)"
 
 #. TRANSLATORS: the run mode in the About dialog's environment line
-#: polyhost/forwarder.py:962
+#: polyhost/forwarder.py:996
 msgid "forwarder"
 msgstr "forwarder"
 
-#: polyhost/forwarder.py:964
+#: polyhost/forwarder.py:998
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "Mode forwarder: komputer ini tidak memiliki keyboard. Aplikasi memantau jendela aktif di sini dan meneruskannya ke PolyKybdHost yang berjalan di komputer tempat keyboard terpasang."
 
-#: polyhost/forwarder.py:1004
+#: polyhost/forwarder.py:1038
 msgid "Download, install, and restart the forwarder now?"
 msgstr "Unduh, instal, dan mulai ulang forwarder sekarang?"
 
@@ -543,7 +551,7 @@ msgstr "Keyboard"
 msgid "About PolyKybdHost"
 msgstr "Tentang PolyKybdHost"
 
-#: polyhost/forwarder.py:325 polyhost/gui/about_dialog.py:285
+#: polyhost/forwarder.py:333 polyhost/gui/about_dialog.py:285
 #: polyhost/host.py:393
 msgid "About"
 msgstr "Tentang"
@@ -1350,7 +1358,7 @@ msgid "pick one from Source fonts below, or Browse…"
 msgstr "pilih salah satu dari Font sumber di bawah, atau Telusuri…"
 
 #: polyhost/gui/fontpack_extend_dialog.py:120
-#: polyhost/gui/settings_dialog.py:1344 polyhost/gui/settings_dialog.py:1345
+#: polyhost/gui/settings_dialog.py:1350 polyhost/gui/settings_dialog.py:1351
 msgid "Browse…"
 msgstr "Telusuri…"
 
@@ -2027,7 +2035,7 @@ msgstr "Pasangkan Forwarder"
 msgid "On the other computer, open the forwarder's menu, choose \"Pair with the Keyboard Computer…\" and enter this code. Anyone with this code can send window and agent reports to this computer, so pass it on only over a channel you trust. \"Accept forwarders\" must be on in Settings."
 msgstr "Di komputer lain, buka menu forwarder, pilih \"Pasangkan dengan Komputer Keyboard…\" lalu masukkan kode ini. Siapa pun yang memiliki kode ini dapat mengirim laporan jendela dan agen ke komputer ini, jadi berikan kode ini hanya melalui saluran yang Anda percayai. \"Terima forwarder\" harus dinyalakan di Pengaturan."
 
-#: polyhost/forwarder.py:903 polyhost/gui/forwarder_pairing.py:37
+#: polyhost/forwarder.py:934 polyhost/gui/forwarder_pairing.py:37
 #: polyhost/gui/forwarder_pairing.py:44 polyhost/gui/forwarder_pairing.py:51
 msgid "Pair with the Keyboard Computer"
 msgstr "Pasangkan dengan Komputer Keyboard"
@@ -2054,7 +2062,7 @@ msgstr "<b>File:</b> {path}"
 msgid "Applying staged firmware…"
 msgstr "Menerapkan firmware yang ditahap…"
 
-#: polyhost/forwarder.py:260 polyhost/gui/hid_fw_up_dialog.py:181
+#: polyhost/forwarder.py:268 polyhost/gui/hid_fw_up_dialog.py:181
 msgid "Starting…"
 msgstr "Memulai…"
 
@@ -2292,7 +2300,7 @@ msgid "Eden"
 msgstr "Eden"
 
 #. TRANSLATORS: shown in the Flow Tap spin box when its value is 0.
-#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1175
+#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1181
 msgid "Off"
 msgstr "Mati"
 
@@ -3773,390 +3781,398 @@ msgid "Accept forwarders"
 msgstr "Terima forwarder"
 
 #: polyhost/gui/settings_dialog.py:180
+msgid "Find the keyboard computer from the connection"
+msgstr "Temukan komputer keyboard dari koneksi"
+
+#: polyhost/gui/settings_dialog.py:181
 msgid "Send font packs on connect"
 msgstr "Kirim paket font saat terhubung"
 
-#: polyhost/gui/settings_dialog.py:181
+#: polyhost/gui/settings_dialog.py:182
 msgid "Search language"
 msgstr "Bahasa pencarian"
 
-#: polyhost/gui/settings_dialog.py:182
+#: polyhost/gui/settings_dialog.py:183
 msgid "Own dictionary file"
 msgstr "Berkas kamus sendiri"
 
-#: polyhost/gui/settings_dialog.py:183
+#: polyhost/gui/settings_dialog.py:184
 msgid "Font pack file"
 msgstr "Berkas paket font"
 
-#: polyhost/gui/settings_dialog.py:184
+#: polyhost/gui/settings_dialog.py:185
 msgid "Match the website in the browser"
 msgstr "Cocokkan situs web di browser"
 
-#: polyhost/gui/settings_dialog.py:185
+#: polyhost/gui/settings_dialog.py:186
 msgid "Receive browser reports"
 msgstr "Terima laporan browser"
 
-#: polyhost/gui/settings_dialog.py:186
+#: polyhost/gui/settings_dialog.py:187
 msgid "Receiver port"
 msgstr "Port penerima"
 
-#: polyhost/gui/settings_dialog.py:187
+#: polyhost/gui/settings_dialog.py:188
 msgid "Receiver token"
 msgstr "Token penerima"
 
-#: polyhost/gui/settings_dialog.py:188
+#: polyhost/gui/settings_dialog.py:189
 msgid "Send usage report"
 msgstr "Kirim laporan penggunaan"
 
-#: polyhost/gui/settings_dialog.py:189
+#: polyhost/gui/settings_dialog.py:190
 msgid "Report address"
 msgstr "Alamat laporan"
 
-#: polyhost/gui/settings_dialog.py:190
+#: polyhost/gui/settings_dialog.py:191
 msgid "Installation ID"
 msgstr "ID instalasi"
 
-#: polyhost/gui/settings_dialog.py:191
+#: polyhost/gui/settings_dialog.py:192
 msgid "Watch the keyboard's messages"
 msgstr "Pantau pesan keyboard"
 
-#: polyhost/gui/settings_dialog.py:192
+#: polyhost/gui/settings_dialog.py:193
 msgid "Watch this app's log"
 msgstr "Pantau log aplikasi ini"
 
-#: polyhost/gui/settings_dialog.py:193
+#: polyhost/gui/settings_dialog.py:194
 msgid "What counts as a problem"
 msgstr "Yang dianggap masalah"
 
-#: polyhost/gui/settings_dialog.py:194
+#: polyhost/gui/settings_dialog.py:195
 msgid "Art from installed games"
 msgstr "Gambar dari game terpasang"
 
-#: polyhost/gui/settings_dialog.py:195
+#: polyhost/gui/settings_dialog.py:196
 msgid "Show on the number row"
 msgstr "Tampilkan di baris angka"
 
-#: polyhost/gui/settings_dialog.py:196
+#: polyhost/gui/settings_dialog.py:197
 msgid "Find by window title"
 msgstr "Cari berdasarkan judul jendela"
 
-#: polyhost/gui/settings_dialog.py:197
+#: polyhost/gui/settings_dialog.py:198
 msgid "Download fonts for agent titles"
 msgstr "Unduh font untuk judul agen"
 
-#: polyhost/gui/settings_dialog.py:198
+#: polyhost/gui/settings_dialog.py:199
 msgid "Dictation shortcut"
 msgstr "Pintasan dikte"
 
-#: polyhost/gui/settings_dialog.py:199
+#: polyhost/gui/settings_dialog.py:200
 msgid "Agents from other computers"
 msgstr "Agen dari komputer lain"
 
-#: polyhost/gui/settings_dialog.py:200
+#: polyhost/gui/settings_dialog.py:201
 msgid "Raise agent windows on this computer"
 msgstr "Munculkan jendela agen di komputer ini"
 
-#: polyhost/gui/settings_dialog.py:201
+#: polyhost/gui/settings_dialog.py:202
 msgid "Hide agent titles and folders"
 msgstr "Sembunyikan judul dan folder agen"
 
-#: polyhost/gui/settings_dialog.py:202
+#: polyhost/gui/settings_dialog.py:203
 msgid "Stale after (minutes)"
 msgstr "Usang setelah (menit)"
 
-#: polyhost/gui/settings_dialog.py:203
+#: polyhost/gui/settings_dialog.py:204
 msgid "Remove idle agents after (minutes)"
 msgstr "Hapus agen diam setelah (menit)"
 
-#: polyhost/gui/settings_dialog.py:212
+#: polyhost/gui/settings_dialog.py:213
 msgid "Sets the brightness of the keycaps when you click OK. A level stays until you choose Automatic, which follows the daylight when Follow daylight is on, and otherwise returns to the keyboard's own stored level. The keyboard does not report its level, so no picture is selected when this dialog opens."
 msgstr "Mengatur kecerahan keycap saat Anda mengklik OK. Tingkat yang dipilih tetap berlaku sampai Anda memilih Otomatis, yang mengikuti cahaya siang jika Ikuti cahaya siang aktif, dan jika tidak, kembali ke tingkat yang tersimpan di keyboard. Keyboard tidak melaporkan tingkatnya, jadi tidak ada gambar yang dipilih saat dialog ini dibuka."
 
-#: polyhost/gui/settings_dialog.py:217
+#: polyhost/gui/settings_dialog.py:218
 msgid "What the keycaps show when you have not typed for a while. A moving picture protects the displays from burn-in."
 msgstr "Yang ditampilkan keycap saat Anda tidak mengetik selama beberapa waktu. Gambar bergerak melindungi layar dari burn-in (bekas gambar yang tertinggal permanen)."
 
-#: polyhost/gui/settings_dialog.py:219
+#: polyhost/gui/settings_dialog.py:220
 msgid "How long the keyboard waits before the idle display starts."
 msgstr "Berapa lama keyboard menunggu sebelum tampilan diam dimulai."
 
-#: polyhost/gui/settings_dialog.py:221
+#: polyhost/gui/settings_dialog.py:222
 msgid "Draws the letters and digits on the keycaps in another script, for example runes or a retro computer font. The keys still type the same characters. Standard shows the normal legends of your language."
 msgstr "Menggambar huruf dan angka pada keycap dengan skrip lain, misalnya rune atau font komputer retro. Tombol tetap mengetik karakter yang sama. Standar menampilkan legenda normal bahasa Anda."
 
-#: polyhost/gui/settings_dialog.py:225
+#: polyhost/gui/settings_dialog.py:226
 msgid "Where the script's letters sit on the keycap. The top-left corner leaves room for an app icon."
 msgstr "Letak huruf skrip pada keycap. Sudut kiri atas menyisakan ruang untuk ikon aplikasi."
 
-#: polyhost/gui/settings_dialog.py:228
+#: polyhost/gui/settings_dialog.py:229
 msgid "The size of the large letter or digit in the middle of each keycap. Medium and Large apply to Latin letters and digits; other scripts, such as Arabic or Chinese, stay Small."
 msgstr "Ukuran huruf atau angka besar di tengah setiap keycap. Sedang dan Besar berlaku untuk huruf Latin dan angka; skrip lain, seperti Arab atau Tionghoa, tetap Kecil."
 
-#: polyhost/gui/settings_dialog.py:232
+#: polyhost/gui/settings_dialog.py:233
 msgid "A key with a tap and a hold action types its tap action when you release it before this time, and acts as its hold action when you hold it longer."
 msgstr "Tombol dengan aksi ketuk dan aksi tahan mengetikkan aksi ketuknya jika Anda melepasnya sebelum waktu ini, dan bertindak sebagai aksi tahannya jika Anda menahannya lebih lama."
 
-#: polyhost/gui/settings_dialog.py:235
+#: polyhost/gui/settings_dialog.py:236
 msgid "A tap-hold key pressed within this time after the previous key always types its tap action, so fast typing does not trigger a modifier. 0 turns Flow Tap off."
 msgstr "Tombol ketuk-tahan yang ditekan dalam waktu ini setelah tombol sebelumnya selalu mengetikkan aksi ketuknya, sehingga mengetik cepat tidak memicu modifier. 0 mematikan Flow Tap."
 
-#: polyhost/gui/settings_dialog.py:238
+#: polyhost/gui/settings_dialog.py:239
 msgid "With Auto Shift on, holding a letter, digit or symbol key longer than the Auto Shift timeout types its shifted character."
 msgstr "Dengan Auto Shift aktif, menahan tombol huruf, angka, atau simbol lebih lama dari waktu Auto Shift mengetik karakter Shift-nya."
 
-#: polyhost/gui/settings_dialog.py:240
+#: polyhost/gui/settings_dialog.py:241
 msgid "How long you hold a key before Auto Shift types its shifted character."
 msgstr "Berapa lama Anda menahan tombol sebelum Auto Shift mengetikkan karakter dengan Shift."
 
-#: polyhost/gui/settings_dialog.py:243
+#: polyhost/gui/settings_dialog.py:244
 msgid "Shows the state of AI coding agents on the number row and, while the AI key is pressed, one card per agent. Needs keyboard firmware with protocol 31. Takes effect at the next keyboard connect."
 msgstr "Menampilkan status agen AI pemrograman di baris angka dan, selama tombol AI ditekan, satu kartu per agen. Memerlukan firmware keyboard dengan protokol 31. Berlaku saat keyboard terhubung berikutnya."
 
-#: polyhost/gui/settings_dialog.py:247
+#: polyhost/gui/settings_dialog.py:248
 msgid "Also finds agents that run in a terminal from the window title, without a hook. Not on macOS."
 msgstr "Juga menemukan agen yang berjalan di terminal dari judul jendela, tanpa hook. Tidak tersedia di macOS."
 
-#: polyhost/gui/settings_dialog.py:250
+#: polyhost/gui/settings_dialog.py:251
 msgid "Downloads a font the first time an agent title needs one: Chinese, Hindi, Thai, Armenian, Hebrew or Arabic. The fonts come from GitHub and www.polykybd.org. Off: nothing is downloaded; fonts downloaded before are still used, and a title in a script without a font shows boxes."
 msgstr "Mengunduh font saat judul agen pertama kali membutuhkannya: Tionghoa, Hindi, Thai, Armenia, Ibrani, atau Arab. Font berasal dari GitHub dan www.polykybd.org. Nonaktif: tidak ada yang diunduh; font yang sudah diunduh tetap dipakai, dan judul dalam aksara tanpa font tampil sebagai kotak."
 
-#: polyhost/gui/settings_dialog.py:255
+#: polyhost/gui/settings_dialog.py:256
 msgid "Also shows agents that run on a computer with the forwarder. A key press brings forward the remote-desktop viewer that shows that computer (NoMachine, Remote Desktop, VNC). They report over the network endpoint for forwarders, which must be on too. Off: only this computer's agents."
 msgstr "Juga menampilkan agen yang berjalan di komputer dengan forwarder. Menekan tombol memunculkan penampil desktop jarak jauh yang menampilkan komputer tersebut (NoMachine, Remote Desktop, VNC). Agen ini melapor melalui endpoint jaringan untuk forwarder, yang juga harus dinyalakan. Jika mati: hanya agen komputer ini."
 
-#: polyhost/gui/settings_dialog.py:260
+#: polyhost/gui/settings_dialog.py:261
 msgid "On a computer with the forwarder: a key press on one of this computer's agents also brings the agent's own window forward here. Off: only the viewer on the keyboard's computer comes forward."
 msgstr "Di komputer dengan forwarder: menekan tombol salah satu agen komputer ini juga memunculkan jendela agen itu sendiri di sini. Jika mati: hanya penampil di komputer keyboard yang dimunculkan."
 
-#: polyhost/gui/settings_dialog.py:264
+#: polyhost/gui/settings_dialog.py:265
 msgid "On a computer with the forwarder: this computer's agents send no title, no folder name and no path to the keyboard's computer, so their keys show only the agent's name. The computer's name still goes with the report. Applies to agents that start after the change."
 msgstr "Di komputer dengan forwarder: agen di komputer ini tidak mengirim judul, nama folder, atau path ke komputer keyboard, sehingga tombolnya hanya menampilkan nama agen. Nama komputer tetap dikirim bersama laporan. Berlaku untuk agen yang dimulai setelah perubahan."
 
-#: polyhost/gui/settings_dialog.py:269
+#: polyhost/gui/settings_dialog.py:270
 msgid "A working agent that reports nothing for this many minutes shows as stale (dim white). 0: never."
 msgstr "Agen yang sedang bekerja dan tidak melaporkan apa pun selama sekian menit ini ditampilkan sebagai usang (putih redup). 0: tidak pernah."
 
-#: polyhost/gui/settings_dialog.py:272
+#: polyhost/gui/settings_dialog.py:273
 msgid "An idle or stale agent that reports nothing for this many minutes is removed and frees its key. An agent whose process ends is removed at once. 0: never."
 msgstr "Agen yang diam atau usang dan tidak melaporkan apa pun selama sekian menit ini dihapus dan tombolnya dibebaskan. Agen yang prosesnya berakhir langsung dihapus. 0: tidak pernah."
 
-#: polyhost/gui/settings_dialog.py:275
+#: polyhost/gui/settings_dialog.py:276
 msgid "The shortcut the minus key sends in AI mode to start dictation, for example <cmd>+h or <ctrl>+<alt>+d. Empty: Win+H on Windows, nothing on macOS and Linux."
 msgstr "Pintasan yang dikirim tombol minus dalam mode AI untuk memulai dikte, misalnya <cmd>+h atau <ctrl>+<alt>+d. Kosong: Win+H di Windows, tidak ada di macOS dan Linux."
 
-#: polyhost/gui/settings_dialog.py:279
+#: polyhost/gui/settings_dialog.py:280
 msgid "Tells the keyboard which Unicode input method this computer uses (for example WinCompose on Windows), when it connects and whenever the method changes. The keyboard needs it to type characters that are not on your layout, such as emoji. Off: the keyboard keeps the method it has stored."
 msgstr "Memberi tahu keyboard metode input Unicode yang digunakan komputer ini (misalnya WinCompose di Windows), saat keyboard terhubung dan setiap kali metodenya berubah. Keyboard memerlukannya untuk mengetik karakter yang tidak ada di tata letak Anda, seperti emoji. Jika mati: keyboard tetap memakai metode yang sudah tersimpan."
 
-#: polyhost/gui/settings_dialog.py:284
+#: polyhost/gui/settings_dialog.py:285
 msgid "Sets the keycap brightness from the daylight at your location, every ten minutes."
 msgstr "Mengatur kecerahan keycap berdasarkan cahaya siang di lokasi Anda, setiap sepuluh menit."
 
-#: polyhost/gui/settings_dialog.py:287
+#: polyhost/gui/settings_dialog.py:288
 msgid "Asks open-meteo.com for this hour's sunlight at your location, including clouds. Off: the host computes a cloudless-sky value from the location and time."
 msgstr "Meminta open-meteo.com untuk data sinar matahari jam ini di lokasi Anda, termasuk awan. Jika mati: host menghitung nilai langit tanpa awan dari lokasi dan waktu."
 
-#: polyhost/gui/settings_dialog.py:291
+#: polyhost/gui/settings_dialog.py:292
 msgid "Looks up your approximate location from your IP address (ip-api.com), once per run. Off: the brightness follows the hour of the day."
 msgstr "Mencari perkiraan lokasi Anda dari alamat IP Anda (ip-api.com), sekali setiap kali dijalankan. Jika mati: kecerahan mengikuti jam dalam sehari."
 
-#: polyhost/gui/settings_dialog.py:294
+#: polyhost/gui/settings_dialog.py:295
 msgid "The sunlight value at which the keycaps are at their dimmest. Less sunlight keeps them at the dimmest level."
 msgstr "Nilai sinar matahari saat keycap berada pada tingkat paling redup. Dengan sinar matahari yang lebih sedikit, keycap tetap pada tingkat paling redup."
 
-#: polyhost/gui/settings_dialog.py:297
+#: polyhost/gui/settings_dialog.py:298
 msgid "The sunlight value at which the keycaps are at their brightest. Lower it to reach full brightness on a cloudy day."
 msgstr "Nilai sinar matahari saat keycap berada pada tingkat paling terang. Turunkan nilai ini agar kecerahan penuh tercapai pada hari berawan."
 
-#: polyhost/gui/settings_dialog.py:300
+#: polyhost/gui/settings_dialog.py:301
 msgid "Multiplies the sunlight value before it is compared with Sunlight at dimmest and Sunlight at brightest. Below 1 makes the keycaps dimmer for the same daylight."
 msgstr "Mengalikan nilai sinar matahari sebelum dibandingkan dengan \"Sinar matahari saat paling redup\" dan \"Sinar matahari saat paling terang\". Nilai di bawah 1 membuat keycap lebih redup untuk cahaya siang yang sama."
 
-#: polyhost/gui/settings_dialog.py:304
+#: polyhost/gui/settings_dialog.py:305
 msgid "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, below 1 brighter. The dimmest and brightest levels do not change."
 msgstr "Membentuk kurva cahaya siang. Di atas 1, tengah hari menjadi lebih redup; di bawah 1, lebih terang. Tingkat paling redup dan paling terang tidak berubah."
 
-#: polyhost/gui/settings_dialog.py:307
+#: polyhost/gui/settings_dialog.py:308
 msgid "Draws icons for apps that have no overlay of their own: the app's logo on the Escape key and an icon on each shortcut key. Off: these apps get no icons. Apps with their own overlay are not affected."
 msgstr "Menggambar ikon untuk aplikasi yang tidak memiliki overlay sendiri: logo aplikasi di tombol Escape dan ikon di setiap tombol pintasan. Jika mati: aplikasi ini tidak mendapat ikon. Aplikasi dengan overlay sendiri tidak terpengaruh."
 
-#: polyhost/gui/settings_dialog.py:311
+#: polyhost/gui/settings_dialog.py:312
 msgid "An app with its own overlay also gets its logo on the Escape key, when its overlay leaves Escape blank."
 msgstr "Aplikasi dengan overlay sendiri juga mendapat logonya di tombol Escape, jika overlay-nya membiarkan Escape kosong."
 
-#: polyhost/gui/settings_dialog.py:314
+#: polyhost/gui/settings_dialog.py:315
 msgid "Only for an app that comes with its own overlay: the keys its overlay leaves blank also get icons from the app's menus. Off: such an app shows only its overlay. Needs Read shortcuts from app menus."
 msgstr "Hanya untuk aplikasi yang membawa overlay sendiri: tombol yang dibiarkan kosong oleh overlay-nya juga mendapat ikon dari menu aplikasi. Jika mati: aplikasi seperti itu hanya menampilkan overlay-nya. Memerlukan pengaturan \"Baca pintasan dari menu aplikasi\"."
 
-#: polyhost/gui/settings_dialog.py:318
+#: polyhost/gui/settings_dialog.py:319
 msgid "The main switch for shortcut icons. On: an app without its own overlay also gets icons on its shortcut keys, when its menus can be read. PolyKybdHost reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system. The reading runs in the background, one app at a time, so the other keycaps do not wait for it. It stops after 3 minutes on Windows, and after 4,000 parts of the app's window on Linux (3,000 on macOS). The shortcuts stay on this computer. Off: no app's menus are read, and an app that comes with its own overlay still shows it."
 msgstr "Sakelar utama untuk ikon pintasan. Jika menyala: aplikasi tanpa overlay sendiri juga mendapat ikon di tombol pintasannya, jika menunya dapat dibaca. PolyKybdHost membaca pintasan yang tercantum di menu aplikasi yang aktif, melalui antarmuka aksesibilitas sistem operasi. Pembacaan berjalan di latar belakang, satu aplikasi setiap kali, sehingga keycap lain tidak perlu menunggunya. Pembacaan berhenti setelah 3 menit di Windows, dan setelah 4.000 bagian jendela aplikasi di Linux (3.000 di macOS). Pintasan tetap berada di komputer ini. Jika mati: tidak ada menu aplikasi yang dibaca, dan aplikasi yang membawa overlay sendiri tetap menampilkannya."
 
-#: polyhost/gui/settings_dialog.py:328
+#: polyhost/gui/settings_dialog.py:329
 msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."
 msgstr "Mengunduh logo aplikasi dan ikon pintasan yang belum ada di komputer ini dari internet (simple-icons dan Iconify). Ikon disimpan di komputer ini. Jika mati: ikon yang sudah diunduh tetap berfungsi, dan aplikasi tanpa ikon tersimpan tidak mendapat ikon."
 
-#: polyhost/gui/settings_dialog.py:333
+#: polyhost/gui/settings_dialog.py:334
 msgid "Linux only. Turns on the desktop's accessibility switch, so Qt and KDE apps list their shortcuts for Read shortcuts from app menus. Off: only apps that list them anyway (GTK) are read."
 msgstr "Hanya Linux. Menyalakan sakelar aksesibilitas desktop, agar aplikasi Qt dan KDE mencantumkan pintasannya untuk \"Baca pintasan dari menu aplikasi\". Jika mati: hanya aplikasi yang memang sudah mencantumkannya (GTK) yang dibaca."
 
-#: polyhost/gui/settings_dialog.py:337
+#: polyhost/gui/settings_dialog.py:338
 msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
 msgstr "Transport USB: berapa banyak pesan gambar yang dikirim sebelum jeda singkat, agar keyboard tetap merespons pengetikan. Ubah hanya jika diminta saat melaporkan masalah."
 
-#: polyhost/gui/settings_dialog.py:341
+#: polyhost/gui/settings_dialog.py:342
 msgid "USB transport: the length of that pause, in seconds. Change it only when asked to while reporting a problem."
 msgstr "Transport USB: lamanya jeda tersebut, dalam detik. Ubah hanya jika diminta saat melaporkan masalah."
 
-#: polyhost/gui/settings_dialog.py:344
+#: polyhost/gui/settings_dialog.py:345
 msgid "How many times the app asks the keyboard for its ID without an answer before it closes and reopens the USB connection. Change it only when asked to while reporting a problem."
 msgstr "Berapa kali aplikasi meminta ID keyboard tanpa mendapat jawaban sebelum menutup dan membuka kembali koneksi USB. Ubah hanya jika Anda diminta saat melaporkan masalah."
 
-#: polyhost/gui/settings_dialog.py:348
+#: polyhost/gui/settings_dialog.py:349
 msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
 msgstr "Tampilan menu baki sistem dan dialog. Otomatis mengikuti pengaturan terang atau gelap desktop."
 
-#: polyhost/gui/settings_dialog.py:351
+#: polyhost/gui/settings_dialog.py:352
 msgid "The language of the menus and dialogs. Applies when the tray app restarts."
 msgstr "Bahasa menu dan dialog. Berlaku saat aplikasi baki sistem dimulai ulang."
 
-#: polyhost/gui/settings_dialog.py:353
+#: polyhost/gui/settings_dialog.py:354
 msgid "Shows the developer settings in this dialog, and the Developer submenu in the tray menu after a restart."
 msgstr "Menampilkan pengaturan pengembang di dialog ini, dan submenu Pengembang di menu baki sistem setelah aplikasi dimulai ulang."
 
-#: polyhost/gui/settings_dialog.py:356
+#: polyhost/gui/settings_dialog.py:357
 msgid "How much the app writes to its log. Debug and Detailed help when you report a problem, and make the log grow faster. Applies after a restart."
 msgstr "Seberapa banyak aplikasi menulis ke log-nya. Debug dan Rinci membantu saat Anda melaporkan masalah, dan membuat log bertambah lebih cepat. Berlaku setelah aplikasi dimulai ulang."
 
-#: polyhost/gui/settings_dialog.py:358
+#: polyhost/gui/settings_dialog.py:359
 msgid "Adds a simulated keyboard next to the real one."
 msgstr "Menambahkan keyboard tiruan di samping keyboard asli."
 
-#: polyhost/gui/settings_dialog.py:360
+#: polyhost/gui/settings_dialog.py:361
 msgid "Uses a simulated keyboard instead of a real one, so the app runs without hardware."
 msgstr "Menggunakan keyboard tiruan sebagai pengganti keyboard asli, sehingga aplikasi berjalan tanpa perangkat keras."
 
-#: polyhost/gui/settings_dialog.py:363
+#: polyhost/gui/settings_dialog.py:364
 msgid "The protocol version the simulated keyboard reports. 0 uses the newest version this host knows."
 msgstr "Versi protokol yang dilaporkan keyboard tiruan. 0 menggunakan versi terbaru yang dikenal host ini."
 
-#: polyhost/gui/settings_dialog.py:366
+#: polyhost/gui/settings_dialog.py:367
 msgid "Tracks the active window even when no keyboard is connected."
 msgstr "Melacak jendela aktif meskipun tidak ada keyboard yang terhubung."
 
-#: polyhost/gui/settings_dialog.py:368
+#: polyhost/gui/settings_dialog.py:369
 msgid "Windows only, experimental. Switches the input language with Win32 calls instead of the standard method, and falls back to it on a failure."
 msgstr "Hanya Windows, eksperimental. Mengganti bahasa input dengan panggilan Win32 alih-alih metode standar, dan kembali ke metode standar jika gagal."
 
-#: polyhost/gui/settings_dialog.py:371
+#: polyhost/gui/settings_dialog.py:372
 msgid "Uses the USB HID channel only, as if the keyboard had no fast link: firmware updates go over HID. For testing the HID path by hand."
 msgstr "Hanya memakai kanal USB HID, seolah keyboard tidak punya tautan cepat: pembaruan firmware lewat HID. Untuk menguji jalur HID secara manual."
 
-#: polyhost/gui/settings_dialog.py:374
+#: polyhost/gui/settings_dialog.py:375
 msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
 msgstr "Menerima laporan jendela dari forwarder lama melalui TCP tanpa enkripsi dan tanpa autentikasi (port 50162) di semua antarmuka jaringan. Nyalakan hanya untuk forwarder lama."
 
-#: polyhost/gui/settings_dialog.py:378
+#: polyhost/gui/settings_dialog.py:379
 msgid "Runs the keyboard connection in a background process that the tray app connects to, so the connection stays up when the tray app restarts."
 msgstr "Menjalankan koneksi keyboard di proses latar belakang yang dihubungi aplikasi baki sistem, sehingga koneksi tetap tersambung saat aplikasi baki sistem dimulai ulang."
 
-#: polyhost/gui/settings_dialog.py:381
+#: polyhost/gui/settings_dialog.py:382
 msgid "Accepts reports of the focused window from the forwarder app on another computer, for example one you use through remote desktop, so the keyboard shows the icons of that computer's apps. Opens a network port. Applies after a restart."
 msgstr "Menerima laporan jendela aktif dari aplikasi forwarder di komputer lain, misalnya komputer yang Anda gunakan melalui desktop jarak jauh, agar keyboard menampilkan ikon aplikasi komputer tersebut. Membuka port jaringan. Berlaku setelah aplikasi dimulai ulang."
 
-#: polyhost/gui/settings_dialog.py:386
+#: polyhost/gui/settings_dialog.py:387
+msgid "On a computer with the forwarder that you reach through NoMachine or Remote Desktop: the forwarder reports to the computer that is connected to this one, found from the connection on port 4000 or 3389. It is used when no host or host file names an address. Applies within a few seconds."
+msgstr "Di komputer dengan forwarder yang Anda akses lewat NoMachine atau Remote Desktop: forwarder melapor ke komputer yang terhubung ke komputer ini, yang ditemukan dari koneksi di port 4000 atau 3389. Dipakai bila tidak ada host atau file host yang menyebut alamat. Berlaku dalam beberapa detik."
+
+#: polyhost/gui/settings_dialog.py:392
 msgid "The language of the words the keyboard's emoji search matches. The dictionary is sent to the keyboard when you click OK, and when it connects if Send font packs on connect is on. Own dictionary file, when set, is used instead."
 msgstr "Bahasa kata-kata yang dicocokkan oleh pencarian emoji keyboard. Kamus dikirim ke keyboard saat Anda mengklik OK, dan saat keyboard terhubung jika \"Kirim paket font saat terhubung\" menyala. Jika \"Berkas kamus sendiri\" diatur, berkas itu yang digunakan."
 
-#: polyhost/gui/settings_dialog.py:391
+#: polyhost/gui/settings_dialog.py:397
 msgid "A dictionary file you built yourself (.plyd), sent to the keyboard instead of the Search language dictionary. Empty: the dictionary for the Search language is used."
 msgstr "Berkas kamus yang Anda buat sendiri (.plyd), dikirim ke keyboard sebagai pengganti kamus \"Bahasa pencarian\". Kosong: kamus untuk \"Bahasa pencarian\" yang digunakan."
 
-#: polyhost/gui/settings_dialog.py:395
+#: polyhost/gui/settings_dialog.py:401
 msgid "When the keyboard connects, sends it the font packs it is missing or has in an older version. Font packs hold the characters for languages, symbols and emoji."
 msgstr "Saat keyboard terhubung, mengirimkan paket font yang belum dimiliki keyboard atau yang dimilikinya dalam versi lebih lama. Paket font berisi karakter untuk bahasa, simbol, dan emoji."
 
-#: polyhost/gui/settings_dialog.py:399
+#: polyhost/gui/settings_dialog.py:405
 msgid "A font-pack file (.plyf) to send to the keyboard instead of the one that comes with this app. Empty: the font pack that comes with this app is used."
 msgstr "Berkas paket font (.plyf) yang dikirim ke keyboard sebagai pengganti paket bawaan aplikasi ini. Kosong: paket font bawaan aplikasi ini yang digunakan."
 
-#: polyhost/gui/settings_dialog.py:402
+#: polyhost/gui/settings_dialog.py:408
 msgid "Chooses a website's overlay from the address of the focused browser tab. The address comes from the PolyKybd browser extension; on macOS, Safari and Chromium browsers such as Chrome also give it without the extension. Off: a website's overlay is chosen from the window title only."
 msgstr "Memilih overlay situs web dari alamat tab browser yang aktif. Alamat ini berasal dari ekstensi browser PolyKybd; di macOS, Safari dan browser Chromium seperti Chrome juga memberikannya tanpa ekstensi. Jika mati: overlay situs web dipilih dari judul jendela saja."
 
-#: polyhost/gui/settings_dialog.py:407
+#: polyhost/gui/settings_dialog.py:413
 msgid "Runs the receiver that the PolyKybd browser extension sends the address of the focused tab to. It accepts connections from this computer only (127.0.0.1)."
 msgstr "Menjalankan penerima yang menjadi tujuan ekstensi browser PolyKybd mengirim alamat tab yang aktif. Penerima hanya menerima koneksi dari komputer ini (127.0.0.1)."
 
-#: polyhost/gui/settings_dialog.py:411
+#: polyhost/gui/settings_dialog.py:417
 msgid "The receiver's port. It must match the Host port in the browser extension."
 msgstr "Port penerima. Harus sama dengan Host port di ekstensi browser."
 
-#: polyhost/gui/settings_dialog.py:413
+#: polyhost/gui/settings_dialog.py:419
 msgid "A shared secret. When set, the browser extension must send the same token."
 msgstr "Rahasia bersama. Jika diisi, ekstensi browser harus mengirim token yang sama."
 
-#: polyhost/gui/settings_dialog.py:415
+#: polyhost/gui/settings_dialog.py:421
 msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
 msgstr "Mengirim satu laporan penggunaan anonim per hari: versi, sistem operasi, dan beberapa penghitung. Tidak pernah judul jendela atau nama aplikasi."
 
-#: polyhost/gui/settings_dialog.py:418
+#: polyhost/gui/settings_dialog.py:424
 msgid "The web address the usage report is sent to. Empty: no report is sent."
 msgstr "Alamat web tujuan pengiriman laporan penggunaan. Kosong: tidak ada laporan yang dikirim."
 
-#: polyhost/gui/settings_dialog.py:420
+#: polyhost/gui/settings_dialog.py:426
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
 msgstr "ID acak instalasi ini, dibuat bersama laporan pertama. Hapus untuk dihitung sebagai instalasi baru."
 
-#: polyhost/gui/settings_dialog.py:423
+#: polyhost/gui/settings_dialog.py:429
 msgid "Watches the messages the keyboard sends over USB for known failures, and offers to report a problem."
 msgstr "Memantau pesan yang dikirim keyboard melalui USB untuk mencari kegagalan yang sudah dikenal, dan menawarkan untuk melaporkan masalah."
 
-#: polyhost/gui/settings_dialog.py:426
+#: polyhost/gui/settings_dialog.py:432
 msgid "Watches this app's own log for known failure messages, and offers to report a problem."
 msgstr "Memantau log aplikasi ini sendiri untuk mencari pesan kegagalan yang sudah dikenal, dan menawarkan untuk melaporkan masalah."
 
-#: polyhost/gui/settings_dialog.py:428
+#: polyhost/gui/settings_dialog.py:434
 msgid "What counts as a problem: errors only, or errors and warnings."
 msgstr "Apa yang dianggap masalah: hanya kesalahan, atau kesalahan dan peringatan."
 
-#: polyhost/gui/settings_dialog.py:430
+#: polyhost/gui/settings_dialog.py:436
 msgid "Draws some game overlays from the game's own files when the game is installed on this computer. The images stay on this computer. Off: the shipped overlays are used."
 msgstr "Menggambar beberapa overlay game dari berkas game itu sendiri saat game terpasang di komputer ini. Gambar tetap di komputer ini. Mati: overlay bawaan yang dipakai."
 
-#: polyhost/gui/settings_dialog.py:907
+#: polyhost/gui/settings_dialog.py:913
 msgid "Advanced"
 msgstr "Lanjutan"
 
-#: polyhost/gui/settings_dialog.py:916
+#: polyhost/gui/settings_dialog.py:922
 msgid "Shows the settings that most people never change."
 msgstr "Menampilkan pengaturan yang tidak pernah diubah oleh kebanyakan orang."
 
-#: polyhost/gui/settings_dialog.py:947 polyhost/host.py:1680
+#: polyhost/gui/settings_dialog.py:953 polyhost/host.py:1680
 msgid "PolyKybd Settings"
 msgstr "Pengaturan PolyKybd"
 
-#: polyhost/gui/settings_dialog.py:1016
+#: polyhost/gui/settings_dialog.py:1022
 msgid "Search settings"
 msgstr "Cari pengaturan"
 
-#: polyhost/gui/settings_dialog.py:1068
+#: polyhost/gui/settings_dialog.py:1074
 msgid "An overlay is a set of icons for one app. Help & About, Basics shows an example."
 msgstr "Overlay adalah sekumpulan ikon untuk satu aplikasi. Bantuan & Tentang, Dasar-dasar menampilkan contohnya."
 
-#: polyhost/gui/settings_dialog.py:1072
+#: polyhost/gui/settings_dialog.py:1078
 msgid "Reading the settings stored on the keyboard…"
 msgstr "Membaca pengaturan yang tersimpan di keyboard…"
 
-#: polyhost/gui/settings_dialog.py:1076
+#: polyhost/gui/settings_dialog.py:1082
 msgid "No setting matches the search."
 msgstr "Tidak ada pengaturan yang cocok dengan pencarian."
 
-#: polyhost/gui/settings_dialog.py:1091
+#: polyhost/gui/settings_dialog.py:1097
 msgid "Some settings might need a restart to take effect."
 msgstr "Beberapa pengaturan mungkin memerlukan mulai ulang agar berlaku."
 
-#: polyhost/gui/settings_dialog.py:1126
+#: polyhost/gui/settings_dialog.py:1132
 #, python-brace-format
 msgid "Set by {flag} for this run. This setting applies when the app starts without it."
 msgstr "Diatur oleh {flag} untuk sesi ini. Pengaturan ini berlaku saat aplikasi dimulai tanpanya."
@@ -4165,35 +4181,35 @@ msgstr "Diatur oleh {flag} untuk sesi ini. Pengaturan ini berlaku saat aplikasi 
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
 #: polyhost/gui/layout_dialog/combo_tab.py:371
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
-#: polyhost/gui/settings_dialog.py:1172
+#: polyhost/gui/settings_dialog.py:1178
 msgid " ms"
 msgstr " ms"
 
-#: polyhost/gui/settings_dialog.py:1219
+#: polyhost/gui/settings_dialog.py:1225
 msgid "This keyboard's firmware does not have this setting."
 msgstr "Firmware keyboard ini tidak memiliki pengaturan ini."
 
-#: polyhost/gui/settings_dialog.py:1221
+#: polyhost/gui/settings_dialog.py:1227
 msgid "Could not read this setting from the keyboard."
 msgstr "Tidak dapat membaca pengaturan ini dari keyboard."
 
-#: polyhost/gui/settings_dialog.py:1229
+#: polyhost/gui/settings_dialog.py:1235
 msgid "Connect the keyboard to change the settings stored on it."
 msgstr "Hubungkan keyboard untuk mengubah pengaturan yang tersimpan di dalamnya."
 
-#: polyhost/gui/settings_dialog.py:1231
+#: polyhost/gui/settings_dialog.py:1237
 msgid "Some settings could not be read from the keyboard. Update the keyboard firmware to change them here."
 msgstr "Beberapa pengaturan tidak dapat dibaca dari keyboard. Perbarui firmware keyboard untuk mengubahnya di sini."
 
-#: polyhost/gui/settings_dialog.py:1282
+#: polyhost/gui/settings_dialog.py:1288
 msgid "These developer settings are not at their default, so they stay in effect while developer mode is off."
 msgstr "Pengaturan pengembang ini tidak bernilai bawaan, jadi tetap berlaku saat mode pengembang mati."
 
-#: polyhost/gui/settings_dialog.py:1352
+#: polyhost/gui/settings_dialog.py:1358
 msgid "Generate"
 msgstr "Buat"
 
-#: polyhost/gui/settings_dialog.py:1353
+#: polyhost/gui/settings_dialog.py:1359
 msgid "Fills in a new random token and copies it. Paste it into the browser extension's Options and save both."
 msgstr "Mengisi token acak baru dan menyalinnya. Tempelkan ke Opsi ekstensi browser, lalu simpan keduanya."
 
@@ -4455,7 +4471,7 @@ msgstr "{prefix} — host v{host_version} tersedia"
 msgid "{prefix} — firmware v{fw_version} available"
 msgstr "{prefix} — firmware v{fw_version} tersedia"
 
-#: polyhost/forwarder.py:278 polyhost/gui/tray_notify.py:81
+#: polyhost/forwarder.py:286 polyhost/gui/tray_notify.py:81
 #: polyhost/host.py:553
 msgid "Updates"
 msgstr "Pembaruan"
@@ -4640,7 +4656,7 @@ msgstr "Menunggu PolyKybd..."
 msgid "Press to pause connection"
 msgstr "Tekan untuk menjeda koneksi"
 
-#: polyhost/forwarder.py:358 polyhost/host.py:379
+#: polyhost/forwarder.py:366 polyhost/host.py:379
 msgid "Quit"
 msgstr "Keluar"
 
@@ -4648,23 +4664,23 @@ msgstr "Keluar"
 msgid "Quit && stop background daemon"
 msgstr "Keluar && hentikan daemon latar belakang"
 
-#: polyhost/forwarder.py:308 polyhost/host.py:401
+#: polyhost/forwarder.py:316 polyhost/host.py:401
 msgid "Integrations…"
 msgstr "Integrasi…"
 
-#: polyhost/forwarder.py:314 polyhost/host.py:406
+#: polyhost/forwarder.py:322 polyhost/host.py:406
 msgid "Settings..."
 msgstr "Pengaturan..."
 
-#: polyhost/forwarder.py:329 polyhost/host.py:410
+#: polyhost/forwarder.py:337 polyhost/host.py:410
 msgid "Log file..."
 msgstr "File log..."
 
-#: polyhost/forwarder.py:335 polyhost/host.py:419
+#: polyhost/forwarder.py:343 polyhost/host.py:419
 msgid "Report a Problem..."
 msgstr "Laporkan Masalah..."
 
-#: polyhost/forwarder.py:341 polyhost/host.py:438
+#: polyhost/forwarder.py:349 polyhost/host.py:438
 msgid "Collect logs..."
 msgstr "Kumpulkan log..."
 
@@ -4681,7 +4697,7 @@ msgid "Inspect Font Packs..."
 msgstr "Periksa Paket Font..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
-#: polyhost/forwarder.py:266 polyhost/forwarder.py:416 polyhost/host.py:468
+#: polyhost/forwarder.py:274 polyhost/forwarder.py:426 polyhost/host.py:468
 #: polyhost/host.py:1230
 msgid "Pause"
 msgstr "Jeda"
@@ -4747,11 +4763,11 @@ msgstr "Segarkan mode input unicode"
 msgid "Save MRU cache now"
 msgstr "Simpan cache MRU sekarang"
 
-#: polyhost/forwarder.py:351 polyhost/host.py:727
+#: polyhost/forwarder.py:359 polyhost/host.py:727
 msgid "Help && About"
 msgstr "Bantuan && Tentang"
 
-#: polyhost/forwarder.py:347 polyhost/host.py:735
+#: polyhost/forwarder.py:355 polyhost/host.py:735
 msgid "Open config folder"
 msgstr "Buka folder konfigurasi"
 
@@ -4799,7 +4815,7 @@ msgstr ""
 "Setiap bundel font bawaan sudah ada di keyboard.\n"
 "Pengembang → Paket Font → Flash ulang semua bundel akan memaksa pengiriman ulang jika keycap masih tampil salah."
 
-#: polyhost/forwarder.py:846 polyhost/host.py:1105
+#: polyhost/forwarder.py:877 polyhost/host.py:1105
 msgid "Config folder"
 msgstr "Folder konfigurasi"
 
@@ -4828,7 +4844,7 @@ msgid "Reconnect"
 msgstr "Hubungkan ulang"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:416 polyhost/host.py:1225
+#: polyhost/forwarder.py:426 polyhost/host.py:1225
 msgid "Resume"
 msgstr "Lanjutkan"
 
@@ -4923,7 +4939,7 @@ msgstr "mandiri"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:923 polyhost/host.py:2020
+#: polyhost/forwarder.py:954 polyhost/host.py:2020
 msgid "paused"
 msgstr "dijeda"
 
@@ -4987,17 +5003,17 @@ msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>Pemetaan overlay:</b> {n} aplikasi"
 msgstr[1] "<b>Pemetaan overlay:</b> {n} aplikasi"
 
-#: polyhost/forwarder.py:940 polyhost/host.py:2059
+#: polyhost/forwarder.py:974 polyhost/host.py:2059
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>Konfigurasi:</b> {path}"
 
-#: polyhost/forwarder.py:941 polyhost/host.py:2060
+#: polyhost/forwarder.py:975 polyhost/host.py:2060
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>Log:</b> {path}"
 
-#: polyhost/forwarder.py:959 polyhost/host.py:2114
+#: polyhost/forwarder.py:993 polyhost/host.py:2114
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "Protokol HID P{protocol}"
@@ -5097,8 +5113,8 @@ msgstr "Pemetaan overlay PolyKybd (*.poly.yaml)"
 msgid "Update firmware to v{version}…"
 msgstr "Perbarui firmware ke v{version}…"
 
-#: polyhost/forwarder.py:998 polyhost/forwarder.py:1009
-#: polyhost/forwarder.py:1015 polyhost/host.py:2477 polyhost/host.py:2598
+#: polyhost/forwarder.py:1032 polyhost/forwarder.py:1043
+#: polyhost/forwarder.py:1049 polyhost/host.py:2477 polyhost/host.py:2598
 #: polyhost/host.py:2602
 msgid "Check for updates..."
 msgstr "Periksa pembaruan..."
@@ -5108,8 +5124,8 @@ msgstr "Periksa pembaruan..."
 msgid "Update to v{version} available"
 msgstr "Pembaruan ke v{version} tersedia"
 
-#: polyhost/forwarder.py:1011 polyhost/forwarder.py:1017
-#: polyhost/forwarder.py:1028 polyhost/host.py:2556 polyhost/host.py:2596
+#: polyhost/forwarder.py:1045 polyhost/forwarder.py:1051
+#: polyhost/forwarder.py:1062 polyhost/host.py:2556 polyhost/host.py:2596
 #: polyhost/host.py:2603 polyhost/host.py:2626
 msgid "PolyKybdHost Update"
 msgstr "Pembaruan PolyKybdHost"
@@ -5119,7 +5135,7 @@ msgstr "Pembaruan PolyKybdHost"
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "Versi {version} tersedia. Klik ikon baki sistem untuk memperbarui."
 
-#: polyhost/forwarder.py:985 polyhost/host.py:2582
+#: polyhost/forwarder.py:1019 polyhost/host.py:2582
 msgid "Checking for updates..."
 msgstr "Memeriksa pembaruan..."
 
@@ -5127,12 +5143,12 @@ msgstr "Memeriksa pembaruan..."
 msgid "No updates available"
 msgstr "Tidak ada pembaruan"
 
-#: polyhost/forwarder.py:1012 polyhost/host.py:2597
+#: polyhost/forwarder.py:1046 polyhost/host.py:2597
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "Anda menjalankan versi terbaru (v{version})."
 
-#: polyhost/forwarder.py:1018 polyhost/host.py:2604
+#: polyhost/forwarder.py:1052 polyhost/host.py:2604
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -5152,12 +5168,12 @@ msgstr ""
 msgid "Released: {date}"
 msgstr "Dirilis: {date}"
 
-#: polyhost/forwarder.py:999 polyhost/host.py:2610
+#: polyhost/forwarder.py:1033 polyhost/host.py:2610
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "Versi {version} tersedia."
 
-#: polyhost/forwarder.py:1000 polyhost/host.py:2611
+#: polyhost/forwarder.py:1034 polyhost/host.py:2611
 msgid "Update PolyKybdHost"
 msgstr "Perbarui PolyKybdHost"
 
@@ -5165,20 +5181,20 @@ msgstr "Perbarui PolyKybdHost"
 msgid "Download, install, and restart now?"
 msgstr "Unduh, instal, dan mulai ulang sekarang?"
 
-#: polyhost/forwarder.py:1027 polyhost/host.py:2626
+#: polyhost/forwarder.py:1061 polyhost/host.py:2626
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "Mengunduh v{version}…"
 
-#: polyhost/forwarder.py:1069 polyhost/host.py:2751
+#: polyhost/forwarder.py:1103 polyhost/host.py:2751
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "Tidak dapat memulai relai pembaruan; pembaruan belum selesai. Lihat log untuk detailnya."
 
-#: polyhost/forwarder.py:1081 polyhost/host.py:2766
+#: polyhost/forwarder.py:1115 polyhost/host.py:2766
 msgid "Update failed"
 msgstr "Pembaruan gagal"
 
-#: polyhost/forwarder.py:1081 polyhost/host.py:2766
+#: polyhost/forwarder.py:1115 polyhost/host.py:2766
 msgid "The update did not finish."
 msgstr "Pembaruan tidak selesai."
 

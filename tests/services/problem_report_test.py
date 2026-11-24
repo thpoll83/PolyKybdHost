@@ -85,6 +85,11 @@ class ForwarderDiagnosticsTest(unittest.TestCase):
     """Qt-free so it is testable at all: forwarder.py imports pywinctl at module
     load and cannot be imported in the documented test environment."""
 
+    def test_a_forwarder_that_detects_its_host_says_so(self):
+        diag = pr.forwarder_diagnostics("1.28.31", detect_host=True)
+        self.assertIn("found from the NoMachine or Remote Desktop connection", diag)
+        self.assertNotIn("Target host:", diag)
+
     def test_leads_with_forwarder_mode(self):
         """A report from the forwarder machine must not read like one from the
         keyboard machine — different failure domain, no HID device at all."""

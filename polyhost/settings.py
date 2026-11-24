@@ -204,6 +204,11 @@ DEFAULT_SETTINGS = {
         # computer brings forward only its viewer window showing this computer
         # (NoMachine, Remote Desktop, VNC). See the security audit, HOST-6.
         "agents_raise_here": False,
+        # On a forwarder's computer: with no --host-file address to use, find the
+        # keyboard computer's address from the NoMachine (port 4000) or Remote Desktop
+        # (port 3389) connection to this computer (services/session_peer.py). Same as
+        # starting the forwarder with --detect-host.
+        "forwarder_detect_host": False,
         # On a forwarder's computer: this computer's agents report no title, no
         # folder and no path-based session id to the keyboard's computer, so the keys
         # show the vendor's name ("Claude Code 1", "Claude Code 2"). The computer's
