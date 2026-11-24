@@ -11,6 +11,7 @@ forwarder writes `forwarder_log.txt`). The tests skip without a display or pywin
 Nothing here touches the network or the connection table. The socket, the host file's
 text, the window and the address watcher are replaced by fakes.
 """
+import importlib
 import json
 import os
 import subprocess
@@ -57,6 +58,10 @@ class ForwarderHostSetupTest(unittest.TestCase):
 
     def test_the_harness_starts_no_browser_report_listener(self):
         self.assertTrue(self.r["browser_listener_stubbed"])
+
+    def test_the_harness_never_runs_the_workers_that_rewrite_installed_integrations(self):
+        self.assertTrue(self.r["refresh_worker_was_the_stand_in"])
+        self.assertTrue(self.r["update_worker_was_the_stand_in"])
 
     def test_host_names_the_target(self):
         self.assertEqual(self.r["host_only"], "10.0.0.1")
@@ -211,16 +216,20 @@ def _smoke():
     import time
     import unittest.mock as mock
     try:
-        import pywinctl  # noqa: F401 - forwarder.py imports it at module load
+        importlib.import_module("pywinctl")      # forwarder.py imports it at module load
     except Exception:  # noqa: BLE001
         print("SMOKE SKIP no-pywinctl")
         return
     out = {}
     # forwarder.py binds BrowserUrlSource when it is imported, so the stand-in is
     # installed first.
+    # The constructor also starts two workers that rewrite the user's installed
+    # integrations (editor plugins, the browser extension): both are replaced.
     with mock.patch("polyhost.input.linux_gnome_helper.LinuxGnomeInputHelper"), \
             mock.patch("polyhost.handler.browser_url_source.BrowserUrlSource",
-                       _NoBrowserUrlSource):
+                       _NoBrowserUrlSource), \
+            mock.patch("polyhost.services.editor_plugins.start_refresh_thread") as refresh, \
+            mock.patch("polyhost.services.browser_extension.update_if_outdated") as update:
         import polyhost.forwarder as fwd
         out["browser_listener_stubbed"] = fwd.BrowserUrlSource is _NoBrowserUrlSource
         app = fwd.PolyForwarder(logging.CRITICAL, host="10.0.0.1")
@@ -242,6 +251,11 @@ def _smoke():
                     handle.write(text)
 
         setup(host="10.0.0.1")
+        deadline = time.monotonic() + 2.0                # the update runs on a thread
+        while not update.called and time.monotonic() < deadline:
+            time.sleep(0.01)
+        out["refresh_worker_was_the_stand_in"] = refresh.called
+        out["update_worker_was_the_stand_in"] = update.called
         out["host_only"] = app._resolve_host()
         setup(host="10.0.0.1", file=host_file, text="10.0.0.2\n")
         out["file_over_host"] = app._resolve_host()
