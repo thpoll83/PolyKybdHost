@@ -1031,6 +1031,10 @@ def _agents_hook_report(args, progress=None) -> None:
                 with open(target["authkey_file"], "rb") as fh:
                     authkey = fh.read().strip()
             report["machine"] = target.get("machine") or socket.gethostname()
+            from polyhost.settings import read_setting
+            if read_setting("agents_anonymize", False):
+                from polyhost.services.agents.remote import anonymize_report
+                report = anonymize_report(report)
             progress["stage"] = "connect"
             remote = connect_report(target["host"], port=target.get("port"),
                                     authkey=authkey, timeout=2.0)

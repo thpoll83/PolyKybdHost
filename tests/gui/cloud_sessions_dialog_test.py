@@ -107,6 +107,25 @@ class CloudSessionsDialogTest(unittest.TestCase):
         self.run_pending()
         self.assertEqual(self.title(), shown)
 
+    def test_the_anonymous_variable_shows_only_when_asked_for(self):
+        """The hook in the cloud environment reads POLYKYBD_CLOUD_ANONYMOUS; the box
+        only adds the line to copy, and nothing is stored."""
+        from polyhost.services.agents.cloud_hook import ANONYMOUS_ENV
+        self.run_pending()
+        self.dialog._connect()
+        self.run_pending()
+        self.assertEqual(ANONYMOUS_ENV, "POLYKYBD_CLOUD_ANONYMOUS")
+        self.assertFalse(self.dialog.anonymous_variable.isVisibleTo(self.dialog))
+        self.assertFalse(self.dialog.anonymous_copy.isVisibleTo(self.dialog))
+        self.dialog.anonymous_box.setChecked(True)
+        self.assertTrue(self.dialog.anonymous_variable.isVisibleTo(self.dialog))
+        self.assertEqual(self.dialog.anonymous_variable.text(),
+                         "POLYKYBD_CLOUD_ANONYMOUS=1")
+        self.dialog._copy(self.dialog.anonymous_variable)
+        self.assertEqual(QApplication.clipboard().text(), "POLYKYBD_CLOUD_ANONYMOUS=1")
+        self.dialog.anonymous_box.setChecked(False)
+        self.assertFalse(self.dialog.anonymous_variable.isVisibleTo(self.dialog))
+
     def visible(self, widget):
         return widget.isVisibleTo(self.dialog)
 

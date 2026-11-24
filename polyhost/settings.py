@@ -204,6 +204,12 @@ DEFAULT_SETTINGS = {
         # computer brings forward only its viewer window showing this computer
         # (NoMachine, Remote Desktop, VNC). See the security audit, HOST-6.
         "agents_raise_here": False,
+        # On a forwarder's computer: this computer's agents report no title, no
+        # folder and no path-based session id to the keyboard's computer, so the keys
+        # show the vendor's name ("Claude Code 1", "Claude Code 2"). The computer's
+        # name still goes with the report: the keyboard's computer finds the viewer
+        # window by it. The cloud sessions' own switch is POLYKYBD_CLOUD_ANONYMOUS.
+        "agents_anonymize": False,
         # A working agent with no event for this many minutes shows as stale; an
         # idle or stale one is removed after agents_forget_minutes. 0 turns it off.
         "agents_stale_minutes": 30,
