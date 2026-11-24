@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """List the polyhost files the property/fuzz tests import, and check the fuzz workflow.
 
-    python scripts/fuzz_paths.py          # print the files, one per line
+    python scripts/fuzz_paths.py          # print the files, one per line (runs tests/fuzz)
     python scripts/fuzz_paths.py --check  # exit 1 if .github/workflows/host-fuzz.yml's
                                           # pull_request paths: misses one, or lists a
                                           # polyhost file that no fuzz module imports
@@ -12,17 +12,31 @@ the test requirements installed (hypothesis, requirements.txt).
 """
 import glob
 import importlib
+import io
 import os
 import sys
+import unittest
 
 WORKFLOW = ".github/workflows/host-fuzz.yml"
 
 
 def imported_files():
+    """Import every fuzz module AND run it on the fixed-seed `paths` profile (about 5 s), then
+    collect the polyhost modules that were loaded. Running matters: some parsers import
+    a module inside a function (the tutorial loader imports macro_label for a `say`
+    step), and importing the test module alone never loads it."""
     root = os.getcwd()
     sys.path.insert(0, root)
-    for path in sorted(glob.glob("tests/fuzz/*_fuzz_test.py")):
-        importlib.import_module(path[:-3].replace(os.sep, "."))
+    # A fixed seed, so the modules a run reaches are the same every time (profile.py).
+    os.environ["POLYKYBD_HYPOTHESIS_PROFILE"] = "paths"
+    names = [p[:-3].replace(os.sep, ".") for p in sorted(glob.glob("tests/fuzz/*_fuzz_test.py"))]
+    for name in names:
+        importlib.import_module(name)
+    suite = unittest.defaultTestLoader.loadTestsFromNames(names)
+    result = unittest.TextTestRunner(stream=io.StringIO(), verbosity=0).run(suite)
+    if not result.wasSuccessful():
+        sys.exit(f"tests/fuzz failed ({len(result.failures)} failures, "
+                 f"{len(result.errors)} errors); fix them before listing imports")
     prefix = os.path.join(root, "polyhost") + os.sep
     return sorted({os.path.relpath(m.__file__, root).replace(os.sep, "/")
                    for m in list(sys.modules.values())

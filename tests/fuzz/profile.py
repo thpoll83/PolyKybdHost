@@ -11,6 +11,11 @@ settings.register_profile(
 settings.register_profile(
     "fuzz", max_examples=20000, deadline=None,
     suppress_health_check=[HealthCheck.too_slow, HealthCheck.data_too_large])
+# scripts/fuzz_paths.py: the default size with a fixed seed, so the modules the run
+# imports (some only inside a parser) are the same on every run.
+settings.register_profile(
+    "paths", max_examples=50, deadline=None, database=None, derandomize=True,
+    suppress_health_check=[HealthCheck.too_slow])
 # The Wednesday/Sunday CI run (.github/workflows/host-fuzz.yml), one job per module.
 settings.register_profile(
     "nightly", max_examples=200000, deadline=None,
