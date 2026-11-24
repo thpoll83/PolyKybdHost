@@ -35,6 +35,9 @@ MODIFIERS = {
     "rctrl": 0xE4, "rshift": 0xE5, "ralt": 0xE6, "rgui": 0xE7,
 }
 
+# The basic keycode that types each digit: KC_1..KC_9 are 0x1E..0x26, KC_0 is 0x27.
+DIGIT_KEYCODES = {str(d): 0x1E + (d - 1) % 10 for d in range(10)}
+
 
 @dataclass(frozen=True)
 class Step:
@@ -75,8 +78,14 @@ def encode_text(text: str) -> bytes:
 def encode_steps(steps: list[Step]) -> bytes:
     """Encode a step list (the 'sequence' mode of the editor)."""
     out = bytearray()
+    after_delay = False
     for s in steps:
-        if s.kind == "char":
+        if s.kind == "char" and after_delay and chr(s.code) in DIGIT_KEYCODES:
+            # A digit right after a delay would be read as more digits of the
+            # delay (the delay ends at the first non-digit), so "wait 5 ms, type
+            # 3" would become "wait 53 ms". Send the tap that types the digit.
+            out += bytes((PREFIX, OP_TAP, DIGIT_KEYCODES[chr(s.code)]))
+        elif s.kind == "char":
             out += encode_text(chr(s.code))
         elif s.kind in ("tap", "down", "up"):
             if not 0 <= s.code <= 0xFF:
@@ -88,6 +97,7 @@ def encode_steps(steps: list[Step]) -> bytes:
             out += bytes((PREFIX, OP_DELAY)) + str(int(s.ms)).encode("ascii")
         else:
             raise MacroError(f"unknown step kind {s.kind!r}")
+        after_delay = s.kind == "delay"
     return bytes(out)
 
 

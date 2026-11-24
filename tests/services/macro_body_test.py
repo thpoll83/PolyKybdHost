@@ -69,6 +69,18 @@ class RoundTripTest(unittest.TestCase):
         steps = mb.decode(mb.encode_steps([mb.Step("delay", ms=10)]) + b"x")
         self.assertEqual(steps, [mb.Step("delay", ms=10), mb.Step("char", code=ord("x"))])
 
+    def test_a_digit_after_a_delay_is_not_read_as_part_of_it(self):
+        # Found by tests/fuzz/macro_body_fuzz_test.py: "wait 0 ms, type 0" was
+        # encoded as 01 04 '0' '0' and read back as one delay. The digit now goes
+        # as the tap that types it (KC_0), and a digit later in the text stays text.
+        steps = [mb.Step("delay", ms=5), mb.Step("char", code=ord("3")),
+                 mb.Step("char", code=ord("0"))]
+        self.assertEqual(mb.decode(mb.encode_steps(steps)),
+                         [mb.Step("delay", ms=5), mb.Step("tap", code=0x20),
+                          mb.Step("char", code=ord("0"))])
+        self.assertEqual(mb.DIGIT_KEYCODES["0"], 0x27)
+        self.assertEqual(mb.DIGIT_KEYCODES["1"], 0x1E)
+
     def test_a_macro_with_a_chord_is_not_expressible_as_text(self):
         # This is what decides whether the editor may show a macro in its Text tab.
         # Pretending it were text would lose the chord the moment the user saved.
