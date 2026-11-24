@@ -92,7 +92,11 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install
-        run: pip install -q -r requirements.txt "hypothesis>=6.100" pyyaml
+        # The hid package loads the system hidapi library at import time.
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libhidapi-hidraw0
+          pip install -q -r requirements.txt "hypothesis>=6.100" pyyaml
       - name: paths list matches what tests/fuzz imports
         run: python scripts/fuzz_paths.py --check
       - name: Run tests/fuzz
@@ -128,7 +132,11 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install
-        run: pip install -q -r requirements.txt "hypothesis>=6.100"
+        # The hid package loads the system hidapi library at import time.
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libhidapi-hidraw0
+          pip install -q -r requirements.txt "hypothesis>=6.100"
       - name: Restore the example database of the previous run
         uses: actions/cache/restore@v4
         with:
