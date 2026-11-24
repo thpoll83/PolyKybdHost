@@ -872,6 +872,15 @@ nxplayer:
   # A session window is titled '<host> - NoMachine'. The connection chooser
   # is titled 'NoMachine' alone and is not a remote session.
   title: ' - NoMachine$'
+# Windows Remote Desktop Connection, `mstsc.exe`. A session window is titled
+# '<computer> - <address> - Remote Desktop Connection' (field, 2026-11-24:
+# 'at1i-ws05 - 10.102.7.12 - Remote Desktop Connection'). The connection dialog
+# is titled 'Remote Desktop Connection' alone and is not a remote session.
+# The title is in the Windows display language, so a localized Windows needs
+# its own ending added here.
+mstsc:
+  remote: true
+  title: ' - Remote Desktop Connection$'
 # GIMP 2.10 is `gimp-2.10.exe` on Windows, which the host cuts at the first dot
 # to `gimp-2`, and `gimp-2.10` on Linux. Neither was listed, so 2.10 loaded nothing.
 gimp-2.0,gimp-2.8,gimp-2,gimp-2.10,gimp-3.0,gimp,gimp-3,org.gimp.GIMP:
