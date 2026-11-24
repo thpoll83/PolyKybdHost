@@ -18,6 +18,15 @@
 
 set -e
 
+# remote_deploy_scripts.sh replaces this script. Both timers write and delete the
+# same host_ip file, so running this one afterwards would delete the address that
+# the RDP poll writes, every 30 seconds.
+if systemctl --user cat remote-ip-poll.timer >/dev/null 2>&1; then
+    echo "remote-ip-poll.timer is installed (remote_deploy_scripts.sh): it already handles NoMachine." >&2
+    echo "Not installing nx-ip-poll. Run: systemctl --user disable --now remote-ip-poll.timer first to switch back." >&2
+    exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TARGET_DIR="$HOME/.polyhost"
 POLL_SCRIPT="nx_ip_poll.sh"

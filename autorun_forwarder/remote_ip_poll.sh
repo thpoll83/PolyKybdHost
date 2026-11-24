@@ -18,7 +18,8 @@ HOST_IP_FILE="${HOST_IP_FILE:-$HOME/.config/PolyHost/host_ip}"
 
 # Established connections whose LOCAL port is one of the listed ports: column 4
 # is the peer "address:port". A dual-stack listener shows an IPv4 client as
-# [::ffff:a.b.c.d]:port. Take the first IPv4 peer that is not this machine: the
+# [::ffff:a.b.c.d]:port. Take the first IPv4 peer that is not loopback (127.x; a client on this
+# machine's own LAN address is not filtered, as no real session comes from there): the
 # forwarder's report endpoint and legacy relay are AF_INET sockets, so an IPv6
 # address could not be dialled.
 KEYBOARD_IP=""
