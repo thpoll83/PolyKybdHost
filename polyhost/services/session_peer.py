@@ -151,8 +151,13 @@ def _read(kind: str):
     when it cannot be read."""
     try:
         if kind in ("tcp", "tcp6"):
-            with open("/proc/net/" + kind, encoding="ascii", errors="replace") as f:
-                return f.read()
+            try:
+                with open("/proc/net/" + kind, encoding="ascii", errors="replace") as f:
+                    return f.read()
+            except FileNotFoundError:
+                # No tcp6 file: IPv6 is off, so there is nothing to list. (A missing
+                # /proc/net/tcp means no /proc: a failure.)
+                return "" if kind == "tcp6" else None
         if kind == "win":
             return _windows_table()
         kwargs = {"capture_output": True, "text": True, "timeout": TOOL_TIMEOUT_S,
@@ -176,7 +181,9 @@ def detect_client_address(ports=DEFAULT_PORTS, platform=None, read=_read):
         tcp = read("tcp")
         if tcp is None:
             return False, None
-        tcp6 = read("tcp6") or ""          # absent when IPv6 is off: not a failure
+        tcp6 = read("tcp6")                # "" when IPv6 is off, None when unreadable
+        if tcp6 is None:
+            return False, None
         for port in ports:
             peers = parse_proc_tcp(tcp, [port]) + parse_proc_tcp(tcp6, [port])
             if peers:
@@ -243,7 +250,13 @@ class ClientAddressWatcher:
         self.request_look()
 
     def request_look(self):
-        """Ask for a look soon (a report to the found address failed)."""
+        """Ask for a look soon (a report to the found address failed). Ignored while the
+        computer is idle (no window change for `active_for` seconds): a relay that stays
+        down must not keep the watcher looking."""
+        with self._lock:
+            if (self._last_touch is None
+                    or self._clock() - self._last_touch >= self._active_for):
+                return
         if self._thread is None:
             self._thread = threading.Thread(target=self._loop, daemon=True,
                                             name="PolyKybd client address")

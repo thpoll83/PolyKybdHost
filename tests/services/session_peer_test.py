@@ -100,10 +100,25 @@ class DetectTest(unittest.TestCase):
         self.assertEqual(sp.detect_client_address((3389, 4000), "linux", reads.get),
                          (True, "10.0.0.9"))
 
-    def test_linux_without_ipv6_is_not_a_failure(self):
-        reads = {"tcp": PROC_HEADER + proc_row("10.0.0.5", 3389, "10.0.0.9")}
-        self.assertEqual(sp.detect_client_address((3389,), "linux", reads.get),
+    def test_linux_without_ipv6_is_not_a_failure_but_an_unreadable_tcp6_is(self):
+        tcp = PROC_HEADER + proc_row("10.0.0.5", 3389, "10.0.0.9")
+        self.assertEqual(sp.detect_client_address((3389,), "linux",
+                                                  {"tcp": tcp, "tcp6": ""}.get),
                          (True, "10.0.0.9"))
+        nobody = {"tcp": PROC_HEADER, "tcp6": ""}
+        self.assertEqual(sp.detect_client_address((3389,), "linux", nobody.get),
+                         (True, None))
+        self.assertEqual(sp.detect_client_address((3389,), "linux",
+                                                  {"tcp": PROC_HEADER}.get),
+                         (False, None))                 # tcp6 unreadable: keep the address
+
+    def test_the_real_reader_gives_an_empty_tcp6_when_the_file_is_absent(self):
+        from unittest import mock
+        with mock.patch("builtins.open", side_effect=FileNotFoundError):
+            self.assertEqual(sp._read("tcp6"), "")
+            self.assertIsNone(sp._read("tcp"))
+        with mock.patch("builtins.open", side_effect=PermissionError):
+            self.assertIsNone(sp._read("tcp6"))
 
     def test_nobody_connected_is_a_successful_none(self):
         reads = {"tcp": PROC_HEADER, "tcp6": PROC_HEADER}
@@ -196,6 +211,28 @@ class WatcherTest(unittest.TestCase):
         self.assertEqual(len(calls), before + 1)
         time.sleep(0.05)
         self.assertEqual(watcher._timeout(), sp.IDLE_INTERVAL_S)    # the timer is back
+
+    def test_a_failed_send_does_not_wake_an_idle_watcher(self):
+        watcher, calls, clock = self._watcher([(True, "10.0.0.9")], min_gap=0.0)
+        self.addCleanup(watcher.stop)
+        watcher.request_look()                              # never touched: ignored
+        self.assertIsNone(watcher._thread)
+        watcher._last_touch = clock.now
+        clock.now += sp.ACTIVE_FOR_S + 1                    # no window change for 10 min
+        watcher.request_look()
+        self.assertIsNone(watcher._thread)
+        time.sleep(0.05)
+        self.assertEqual(calls, [])
+
+    def test_a_failed_send_wakes_a_watcher_in_use(self):
+        watcher, calls, clock = self._watcher([(True, "10.0.0.9")], min_gap=0.0)
+        self.addCleanup(watcher.stop)
+        watcher._last_touch = clock.now
+        watcher.request_look()
+        deadline = time.monotonic() + 2
+        while not calls and time.monotonic() < deadline:
+            time.sleep(0.01)
+        self.assertEqual(len(calls), 1)
 
     def test_repeated_failures_log_one_warning(self):
         watcher, _calls, _clock = self._watcher([(False, None)])
