@@ -374,6 +374,30 @@ and relative links were adjusted to suit a standalone file.
     i.e. it pins the race, not the symptom, and it fails against the old
     implementation.
 
+## Property and fuzz tests (`tests/fuzz`)
+
+`tests/fuzz/*_fuzz_test.py` use Hypothesis on the code that reads bytes or text from
+the keyboard, from files or from other processes: PRC images, mapping bit packing,
+font packs, macro bodies, keycode text, crash-log markers, log-bundle line parsers and
+the HID and serial reply parsers. Each test checks a round trip where an encoder
+exists, or that a decoder given arbitrary input raises nothing except its documented
+exception.
+
+`tests/fuzz/profile.py` defines two profiles. The normal suite uses `default` (50
+examples per test, 2 s deadline, no example database), so the runner needs nothing
+extra. For a long run, select `fuzz` (20000 examples per test, no deadline):
+
+```bash
+POLYKYBD_HYPOTHESIS_PROFILE=fuzz .venv/bin/python -m unittest discover -s tests/fuzz -t . -p "*_fuzz_test.py"
+POLYKYBD_HYPOTHESIS_PROFILE=fuzz .venv/bin/python -m unittest tests.fuzz.macro_body_fuzz_test
+```
+
+The whole long run takes about 7 minutes. Use `-m unittest` for it, not
+`scripts/run_tests.py`: some tests take longer than the runner's 120 s per-test
+watchdog. The `fuzz` profile keeps failing examples in `.hypothesis/` (ignored by git)
+and replays them first on the next run. When a run finds a bug, fix it in its own
+commit and add the shrunk example as an ordinary test next to the module's other tests.
+
 ## Tests (the CLAUDE.md summary)
 
 _Moved verbatim from `CLAUDE.md` on 2026-10-10. CLAUDE.md keeps a short pointer._

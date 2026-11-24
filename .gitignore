@@ -190,3 +190,6 @@ telemetry-collector/dashboard.html
 # Unity hides folders ending in "~" from its asset import; the package's tests
 # use that on purpose, so they are not backup files.
 !unity-package/Tests~/
+
+# Hypothesis example database (tests/fuzz, fuzz profile)
+.hypothesis/
