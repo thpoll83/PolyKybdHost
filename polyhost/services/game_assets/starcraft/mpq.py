@@ -125,12 +125,19 @@ def decompress_sector(data: bytes, size: int, flags: int) -> bytes:
         # Only the last step's output size is known; earlier steps are capped
         # at MAX_FILE so a damaged sector cannot expand without limit.
         last = next((m for m in (ZLIB, PKWARE, BZIP2) if mask & m), 0)
-        if mask & BZIP2:
-            out = bz2.BZ2Decompressor().decompress(out, (size if last == BZIP2 else MAX_FILE) + 1)
-        if mask & PKWARE:
-            out = explode(out, size if last == PKWARE else MAX_FILE)
-        if mask & ZLIB:
-            out = zlib.decompressobj().decompress(out, size + 1)
+        # A damaged sector is a ValueError, as explode() raises it: bz2 raises
+        # OSError and zlib zlib.error, which build.render does not skip, so one
+        # damaged file used to cost every key of the overlay instead of its own.
+        try:
+            if mask & BZIP2:
+                out = bz2.BZ2Decompressor().decompress(
+                    out, (size if last == BZIP2 else MAX_FILE) + 1)
+            if mask & PKWARE:
+                out = explode(out, size if last == PKWARE else MAX_FILE)
+            if mask & ZLIB:
+                out = zlib.decompressobj().decompress(out, size + 1)
+        except (OSError, EOFError, zlib.error) as e:
+            raise ValueError(f"damaged MPQ sector: {e}") from e
     if len(out) != size:
         raise ValueError(f"sector decompresses to {len(out)} bytes, not {size}")
     return out

@@ -362,6 +362,22 @@ class MpqTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             a.get("x")
 
+    def test_a_damaged_compressed_sector_is_a_ValueError(self):
+        # zlib raises zlib.error and bz2 OSError; neither is an error
+        # build.render skips for one key, so one damaged file cost the whole
+        # overlay (found by tests/fuzz/starcraft_formats_fuzz_test.py).
+        for mask in (mpq.ZLIB, mpq.BZIP2, mpq.BZIP2 | mpq.ZLIB):
+            with self.subTest(mask=mask), self.assertRaises(ValueError):
+                mpq.decompress_sector(bytes([mask]) + b"\0\0not compressed", 64, mpq.COMPRESS)
+        good = write_mpq({"x": (self.DATA, "zlib", set())}, hash_size=4)
+        a = mpq.Archive(good)
+        offset = a.blocks[0][0]
+        damaged = bytearray(good)
+        first_sector = offset + struct.unpack_from("<I", good, offset)[0]
+        damaged[first_sector + 1:first_sector + 3] = b"\0\0"   # the zlib header
+        with self.assertRaises(ValueError):
+            mpq.Archive(bytes(damaged)).get("x")
+
     def test_an_archive_on_disk_is_read_in_parts(self):
         """open() keeps the path, not the bytes; a header past the first
         scan chunk and a file deleted after opening are handled."""
