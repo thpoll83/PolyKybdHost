@@ -139,7 +139,10 @@ hooks to one computer instead.
   then send no title, no folder name and no window to the keyboard computer, and a
   session id made from the folder keeps only a hash of it. The keys show the agent's
   name ("Claude Code 1", "Claude Code 2"). The computer's name still goes with each
-  report, because the keyboard computer finds the viewer window by it. A press can
+  report, because the keyboard computer finds the viewer window by it. The setting covers
+  only what the agent hooks send: the forwarder's window report still carries the title of
+  the focused window, and a terminal running an agent can show the task or folder there
+  (Pause the forwarder when that must stay private). A press can
   then raise this computer's window only by its process, not by its folder. An agent
   that already reported keeps the title and folder the keyboard computer has until it
   is removed (an empty field never replaces a value), so the setting applies to agents
