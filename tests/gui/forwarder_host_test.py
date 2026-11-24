@@ -186,7 +186,7 @@ class _FakeSocket:
 def _smoke():
     import logging
     import time
-    from unittest import mock
+    import unittest.mock as mock
     try:
         import pywinctl  # noqa: F401 - forwarder.py imports it at module load
     except Exception:  # noqa: BLE001
