@@ -200,7 +200,7 @@ class TutorialFileFuzzTest(unittest.TestCase):
         try:
             loader.load_file(self.path, user=True)
         except ScriptError:
-            pass
+            pass  # a documented refusal; any other exception fails the test
         found, errors = loader.load_all(shipped_dir="", user_directory=self._dir.name)
         self.assertEqual(len(found) + len(errors), 1)
 

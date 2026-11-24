@@ -138,7 +138,7 @@ class WebSocketFuzzTest(unittest.TestCase):
             for text in _read_all(ws):
                 self.assertIsInstance(text, str)
         except (ConnectionError, cr.ChannelGone):
-            pass
+            pass  # a documented refusal; any other exception fails the test
 
     @given(st.integers(cr.MAX_MESSAGE_BYTES + 1, 2 ** 63 - 1))
     def test_an_oversized_length_is_refused_before_the_payload(self, n):

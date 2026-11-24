@@ -155,7 +155,7 @@ class WestwoodFuzzTest(unittest.TestCase):
         try:
             self.assertEqual(len(westwood._rle_zeros(src, size)), size)
         except DAMAGED:
-            pass
+            pass  # a documented refusal; any other exception fails the test
 
     @given(st.dictionaries(NAME, st.binary(max_size=40), max_size=6))
     def test_mix_round_trip(self, files):
@@ -239,7 +239,7 @@ class WestwoodFuzzTest(unittest.TestCase):
                 rgb, cover = r.frame(k)
                 self.assertEqual(rgb.shape[:2], cover.shape)
         except DAMAGED:
-            pass
+            pass  # a documented refusal; any other exception fails the test
 
 
 if __name__ == "__main__":

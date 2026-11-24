@@ -55,7 +55,7 @@ class ExplodeFuzzTest(unittest.TestCase):
         try:
             explode.explode(bytes(stream), 4096)
         except ValueError:
-            pass
+            pass  # a documented refusal; any other exception fails the test
 
 
 def _single_only_if_smaller(data, method, options):
@@ -98,14 +98,14 @@ class MpqFuzzTest(unittest.TestCase):
                 got = archive.get(name)
                 self.assertTrue(got is None or len(got) <= mpq.MAX_FILE)
         except DAMAGED:
-            pass
+            pass  # a documented refusal; any other exception fails the test
 
     @given(st.binary(max_size=200))
     def test_arbitrary_bytes(self, data):
         try:
             mpq.Archive(mpq.MAGIC + data).get("a.txt")
         except DAMAGED:
-            pass
+            pass  # a documented refusal; any other exception fails the test
 
     @given(st.binary(max_size=80), st.integers(0, 600),
            st.sampled_from([mpq.IMPLODE, mpq.COMPRESS]))
@@ -203,7 +203,7 @@ class GrpFuzzTest(unittest.TestCase):
             try:
                 grp.frame(bytes(data), i)
             except DAMAGED:
-                pass
+                pass  # a documented refusal; any other exception fails the test
 
 
 if __name__ == "__main__":
