@@ -66,6 +66,14 @@ echo "Installed: $SYSTEMD_USER_DIR/$SERVICE_NAME.timer"
 loginctl enable-linger "$(whoami)"
 echo "Linger enabled for $(whoami)"
 
+# The NoMachine-only timer from nx_deploy_scripts.sh writes and deletes the same
+# host_ip file. Left running, it would delete the address this timer writes for an
+# RDP client, every 30 seconds, because it sees no connection on port 4000.
+if systemctl --user cat nx-ip-poll.timer >/dev/null 2>&1; then
+    systemctl --user disable --now nx-ip-poll.timer || true
+    echo "Disabled the old nx-ip-poll timer (replaced by $SERVICE_NAME)."
+fi
+
 # Reload and start the timer
 systemctl --user daemon-reload
 systemctl --user enable --now "$SERVICE_NAME.timer"

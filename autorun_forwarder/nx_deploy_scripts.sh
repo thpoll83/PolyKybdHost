@@ -6,6 +6,10 @@
 # Replaces the previous NX session hook approach (which crashed NX sessions
 # due to nxuser lacking permission to write to the real user's home directory).
 #
+# ⚠️ Do not run this together with remote_deploy_scripts.sh: both timers write and
+# delete the same host_ip file. remote_deploy_scripts.sh handles NoMachine and RDP
+# and disables this timer.
+#
 # What it does:
 #   1. Installs nx_ip_poll.sh to ~/.polyhost/
 #   2. Installs a systemd user service + timer that polls port 4000 every 30 s
