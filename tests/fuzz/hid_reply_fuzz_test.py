@@ -48,6 +48,8 @@ class HidReplyFuzzTest(unittest.TestCase):
             try:
                 parse(payload)
             except ValueError:
+                # ValueError is the documented rejection of a short or
+                # malformed reply; any other exception fails the test.
                 pass
         reply = bulk_pipe.parse_fw_chunk_reply(payload)
         self.assertEqual(reply is None, len(payload) < 5)
