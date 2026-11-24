@@ -134,6 +134,23 @@ hooks to one computer instead.
   forwarder in the reply to its next window report; while this computer has agents
   on the keys, the forwarder reports every second, so the window comes forward
   within about a second.
+- To hide what the agents here work on, turn on `agents_anonymize` (forwarder
+  Settings > AI agents > "Hide agent titles and folders", off by default). The hooks
+  then send no title, no folder name and no window to the keyboard computer, and a
+  session id made from the folder keeps only a hash of it. The keys show the agent's
+  name ("Claude Code 1", "Claude Code 2"). The computer's name still goes with each
+  report, because the keyboard computer finds the viewer window by it. The setting covers
+  only what the agent hooks send: the forwarder's window report still carries the title of
+  the focused window, and a terminal running an agent can show the task or folder there
+  (Pause the forwarder when that must stay private). A press can
+  then raise this computer's window only by its process, not by its folder. An agent
+  that already reported keeps the title and folder the keyboard computer has until it
+  is removed (an empty field never replaces a value), so the setting applies to agents
+  that start after the change. An agent whose hook payload has no session id of its own
+  is known by its folder; after the change its next event carries the hashed id, so it can
+  show twice (the old key with its title, the new one without) until the old key is
+  removed after `agents_forget_minutes` or with **Remove Agent**. Restart such an agent
+  after you change the setting.
 - The forwarder and the hooks must run on the same computer: both name it with its
   host name.
 
@@ -185,7 +202,9 @@ still cloud sessions.
   it. The hook does not read the transcript. Only the state and the session URL
   are sent. The keys show "Agent 1", "Agent 2" in key order (host 1.27.8 or newer;
   an older host shows "Claude Code"). A label set with `polyctl agents label`
-  stays on the host.
+  stays on the host. In "Connect Cloud Sessions…", the box "Do not send titles or
+  folder names" shows this variable with a Copy button; nothing is stored on this
+  computer, the choice is the variable in the cloud environment.
 - With the PolyKybd browser extension 1.1.0 or newer (`browser-extension/`), a
   key press first switches the browser to the tab with the session's exact page,
   also a background tab or one in another window, and then brings that window to

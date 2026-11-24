@@ -19,8 +19,9 @@ from PyQt5.QtWidgets import (QApplication, QDialog, QDialogButtonBox, QGridLayou
 from polyhost.gui import message_box
 from polyhost.gui.ui_kit import (CARD_STYLE, Headline, StatusLabel, WrapLabel, card,
                                  fit_height, headline_icon, headline_icon_px, muted, px,
-                                 set_button_icon, style_button_box)
+                                 set_button_icon, style_button_box, wrapped_checkbox)
 from polyhost.i18n import _, _f
+from polyhost.services.agents.cloud_hook import ANONYMOUS_ENV
 
 # The dialog's width at 100 % (px() scales it): the setup values are long, and
 # the variable field shows their start.
@@ -86,6 +87,36 @@ class CloudSessionsDialog(QDialog):
             grid.addWidget(field, row * 2 + 1, 0)
             grid.addWidget(copy, row * 2 + 1, 1, Qt.AlignTop)
         card_lay.addLayout(grid)
+        # Optional: the hook in the cloud environment reads this variable, so the
+        # choice is made there, not on this computer. The box only adds the line
+        # to copy; nothing is stored here.
+        self.anonymous_box, anonymous_row = wrapped_checkbox(_(
+            "Do not send titles or folder names"))
+        card_lay.addWidget(anonymous_row)
+        self.anonymous_note = muted(WrapLabel(_(
+            "Also enter this environment variable. Cloud sessions then send no title, no "
+            "prompt words and no folder name, not even encrypted, and show as \"Agent 1\", "
+            "\"Agent 2\". Sessions that already run keep their titles.")))
+        self.anonymous_variable = QLineEdit(readOnly=True)
+        self.anonymous_variable.setLayoutDirection(Qt.LeftToRight)
+        self.anonymous_variable.setText(f"{ANONYMOUS_ENV}=1")
+        self.anonymous_copy = set_button_icon(QPushButton(_("Copy")), "copy")
+        # noinspection PyUnresolvedReferences
+        self.anonymous_copy.clicked.connect(
+            lambda _c=False: self._copy(self.anonymous_variable))
+        self._copies.append(self.anonymous_copy)
+        anonymous_grid = QGridLayout()
+        anonymous_grid.setColumnStretch(0, 1)
+        anonymous_grid.setHorizontalSpacing(px(8))
+        anonymous_grid.addWidget(self.anonymous_variable, 0, 0)
+        anonymous_grid.addWidget(self.anonymous_copy, 0, 1, Qt.AlignTop)
+        self.anonymous_fields = [self.anonymous_note, self.anonymous_variable,
+                                 self.anonymous_copy]
+        card_lay.addWidget(self.anonymous_note)
+        card_lay.addLayout(anonymous_grid)
+        # noinspection PyUnresolvedReferences
+        self.anonymous_box.toggled.connect(self._show_anonymous)
+        self._show_anonymous(False)
         card_lay.addWidget(muted(WrapLabel(_(
             "Each new cloud session of that environment then shows on a number key."))))
         layout.addWidget(self.setup_card)
@@ -227,6 +258,12 @@ class CloudSessionsDialog(QDialog):
             self._set_state(_("Connecting to the relay…"))
 
     # ---- actions --------------------------------------------------------------------
+
+    def _show_anonymous(self, on):
+        for widget in self.anonymous_fields:
+            widget.setVisible(bool(on))
+        self.adjustSize()
+        QTimer.singleShot(0, lambda: fit_height(self))
 
     def _copy(self, field):
         text = field.toPlainText() if isinstance(field, QPlainTextEdit) else field.text()

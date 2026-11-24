@@ -57,6 +57,19 @@ def sanitize_report(params) -> dict | None:
     return out
 
 
+def anonymize_report(report: dict) -> dict:
+    """A copy of an agent report for the network endpoint without what names the work:
+    the title and the folder are dropped, and a session id made from the folder
+    ("cwd:<path>", see hooks.interpret) keeps only a hash of it, stable per folder.
+    The machine's name stays: the keyboard's computer finds the viewer window by it."""
+    import hashlib
+    out = {k: v for k, v in report.items() if k not in ("headline", "cwd", "window")}
+    session = str(out.get("session_id") or "")
+    if session.startswith("cwd:"):
+        out["session_id"] = "cwd:" + hashlib.sha256(session[4:].encode("utf-8")).hexdigest()[:12]
+    return out
+
+
 TARGET_FILE = "polykybd-agents-target.json"
 
 

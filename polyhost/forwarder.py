@@ -75,7 +75,7 @@ AGENT_HEARTBEAT_MSEC = 1000
 # `log_detail` sets this machine's log level at startup (main_app.resolve_dev).
 FORWARDER_SETTING_KEYS = ("ui_theme", "ui_language", "shortcut_icons_enabled",
                           "shortcut_enable_accessibility", "log_detail",
-                          "agents_raise_here") + tuple(_URL_SETTINGS)
+                          "agents_raise_here", "agents_anonymize") + tuple(_URL_SETTINGS)
 
 from polyhost.util.log_util import DEBUG_DETAILED, make_stream_handler, make_collapse_handler  # noqa: F401  (registers debug_detailed on import)
 from polyhost.handler.active_window import log_env_info

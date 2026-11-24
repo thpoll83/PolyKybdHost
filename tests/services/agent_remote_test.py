@@ -6,7 +6,8 @@ import unittest.mock as mock
 from polyhost.services.agents.controller import AgentKeysController
 from polyhost.services.agents.registry import AgentRegistry
 from polyhost.services.agents.remote import (RemoteAgent, RemoteRaiseFollower,
-                                             RemoteRaiseQueue, sanitize_report)
+                                             RemoteRaiseQueue, anonymize_report,
+                                             sanitize_report)
 
 
 class _NullLog:
@@ -145,6 +146,81 @@ class ForwarderTargetTest(unittest.TestCase):
         self.assertEqual((got[0]["session_id"], got[0]["state"], got[0]["machine"]),
                          ("s1", "done", "laptop"))
         os.remove(path)
+
+    def test_hook_sends_no_title_or_folder_when_anonymize_is_on(self):
+        import argparse
+        import io
+        import json
+        import os
+        import socket
+        from polyhost.cli import polyctl
+        from polyhost.server.window_report_server import WindowReportServer
+        from polyhost.services.agents import hook_log, remote
+        got = []
+
+        def on_agents(params):
+            got.append(sanitize_report(params))
+            return True, None
+
+        s = socket.socket()
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+        s.close()
+        server = WindowReportServer(lambda *a, **k: (True, {}), "0.0.1", _NullLog(),
+                                    bind_host="127.0.0.1", port=port, authkey=b"k",
+                                    on_agents_report=on_agents)
+        server.start()
+        self.addCleanup(server.stop)
+        path = self._path()
+        keyfile = path + ".key"
+        with open(keyfile, "wb") as fh:
+            fh.write(b"k\n")
+        remote.write_forwarder_target("127.0.0.1", port, keyfile, "laptop", path=path)
+        args = argparse.Namespace(vendor="claude-code", event=None, host=None,
+                                  authkey_file=None,
+                                  payload=json.dumps({"cwd": "/home/ann/payroll",
+                                                      "hook_event_name": "Stop"}))
+        log_path = path + ".hooks.log"
+        self.addCleanup(lambda: os.path.exists(log_path) and os.remove(log_path))
+        on = lambda name, default=None: True if name == "agents_anonymize" else default
+        with mock.patch.object(remote, "forwarder_target_path", lambda: path), \
+                mock.patch.object(hook_log, "default_path", lambda: log_path), \
+                mock.patch("polyhost.settings.read_setting", on), \
+                mock.patch("sys.stdin", io.StringIO("")):
+            self.assertEqual(polyctl._agents_hook_main(args), 0)
+        self.assertEqual(len(got), 1)
+        self.assertEqual(got[0]["machine"], "laptop")
+        self.assertNotIn("cwd", got[0])
+        self.assertNotIn("headline", got[0])
+        self.assertNotIn("payroll", got[0]["session_id"])
+        os.remove(path)
+
+
+class AnonymizeTest(unittest.TestCase):
+    def test_title_folder_and_window_are_dropped(self):
+        report = {"vendor": "claude-code", "session_id": "abc", "state": "working",
+                  "headline": "Fix the payroll bug", "cwd": "/home/ann/payroll",
+                  "window": "payroll - Terminal", "machine": "laptop", "pid": 7}
+        out = anonymize_report(report)
+        self.assertEqual(out, {"vendor": "claude-code", "session_id": "abc",
+                               "state": "working", "machine": "laptop", "pid": 7})
+        self.assertIn("headline", report)         # the argument is not changed
+
+    def test_a_folder_made_session_id_keeps_only_a_hash(self):
+        a = anonymize_report({"session_id": "cwd:/home/ann/payroll"})["session_id"]
+        b = anonymize_report({"session_id": "cwd:/home/ann/payroll"})["session_id"]
+        c = anonymize_report({"session_id": "cwd:/home/ann/other"})["session_id"]
+        self.assertEqual(a, b)                    # stable per folder
+        self.assertNotEqual(a, c)
+        self.assertTrue(a.startswith("cwd:"))
+        self.assertNotIn("payroll", a)
+        self.assertEqual(len(a), len("cwd:") + 12)
+
+    def test_the_setting_is_off_by_default_and_a_forwarder_setting(self):
+        from polyhost.forwarder import FORWARDER_SETTING_KEYS
+        from polyhost.settings import DEFAULT_SETTINGS
+        self.assertIs(DEFAULT_SETTINGS["agents_anonymize"], False)
+        self.assertIn("agents_anonymize", FORWARDER_SETTING_KEYS)
 
 
 class _Win:

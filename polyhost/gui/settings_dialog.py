@@ -103,7 +103,8 @@ SECTIONS = (
     ("agents", N_("AI agents"), (
         (None, ("agents_enabled", "agents_title_scan", "agents_download_fonts",
                 "agents_dictation_shortcut",
-                "agents_remote_enabled", "agents_raise_here", "agents_stale_minutes",
+                "agents_remote_enabled", "agents_raise_here", "agents_anonymize",
+                "agents_stale_minutes",
                 "agents_forget_minutes")),
     )),
     ("games", N_("Games"), (
@@ -197,6 +198,7 @@ SETTING_LABELS = {
     "agents_dictation_shortcut": N_("Dictation shortcut"),
     "agents_remote_enabled": N_("Agents from other computers"),
     "agents_raise_here": N_("Raise agent windows on this computer"),
+    "agents_anonymize": N_("Hide agent titles and folders"),
     "agents_stale_minutes": N_("Stale after (minutes)"),
     "agents_forget_minutes": N_("Remove idle agents after (minutes)"),
 }
@@ -258,6 +260,11 @@ SETTING_DESCRIPTIONS = {
         "On a computer with the forwarder: a key press on one of this computer's "
         "agents also brings the agent's own window forward here. Off: only the "
         "viewer on the keyboard's computer comes forward."),
+    "agents_anonymize": N_(
+        "On a computer with the forwarder: this computer's agents send no title, no "
+        "folder name and no path to the keyboard's computer, so their keys show only the "
+        "agent's name. The computer's name still goes with the report. Applies to agents "
+        "that start after the change."),
     "agents_stale_minutes": N_(
         "A working agent that reports nothing for this many minutes shows as stale "
         "(dim white). 0: never."),
