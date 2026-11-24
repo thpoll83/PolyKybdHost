@@ -143,7 +143,11 @@ hooks to one computer instead.
   then raise this computer's window only by its process, not by its folder. An agent
   that already reported keeps the title and folder the keyboard computer has until it
   is removed (an empty field never replaces a value), so the setting applies to agents
-  that start after the change.
+  that start after the change. An agent whose hook payload has no session id of its own
+  is known by its folder; after the change its next event carries the hashed id, so it can
+  show twice (the old key with its title, the new one without) until the old key is
+  removed after `agents_forget_minutes` or with **Remove Agent**. Restart such an agent
+  after you change the setting.
 - The forwarder and the hooks must run on the same computer: both name it with its
   host name.
 
