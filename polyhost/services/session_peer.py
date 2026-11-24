@@ -10,6 +10,8 @@ seconds and `address()` answers from memory.
 """
 from __future__ import annotations
 
+import csv
+import io
 import logging
 import re
 import subprocess
@@ -26,17 +28,15 @@ REFRESH_S = 5.0
 #: Seconds one `ss` or `netstat` may run.
 TOOL_TIMEOUT_S = 5.0
 
-_IPV4 = r"(\d{1,3}(?:\.\d{1,3}){3})"
 # Linux `ss -tn`: "0 0 10.0.0.5:3389 10.0.0.9:51234". A dual-stack listener shows an IPv4
 # client as "[::ffff:10.0.0.9]:51234".
 _SS_ROW = re.compile(r"^\s*\d+\s+\d+\s+\S+\s+(\S+)\s*", re.M)
-# Windows `netstat -an -p TCP`: "TCP 10.0.0.5:3389 10.0.0.9:51234 ESTABLISHED".
-_NETSTAT_WIN = re.compile(
-    r"^\s*TCP\s+" + _IPV4 + r":(\d+)\s+" + _IPV4 + r":\d+\s+ESTABLISHED\b", re.M | re.I)
-# macOS/BSD `netstat -an -p tcp`: "tcp4 0 0 10.0.0.5.3389 10.0.0.9.51234 ESTABLISHED".
+# macOS/BSD `netstat -an -p tcp`: "tcp4 0 0 10.0.0.5.3389 10.0.0.9.51234 ESTABLISHED". The word
+# is English there. (Windows' `netstat` translates it, "HERGESTELLT" in German, so Windows
+# asks PowerShell for the connections: see _WINDOWS_COMMAND.)
 _NETSTAT_BSD = re.compile(
-    r"^\s*tcp\S*\s+\d+\s+\d+\s+" + _IPV4 + r"\.(\d+)\s+" + _IPV4 + r"\.\d+\s+ESTABLISHED\b",
-    re.M | re.I)
+    r"^\s*tcp\S*\s+\d+\s+\d+\s+(\d{1,3}(?:\.\d{1,3}){3})\.(\d+)\s+"
+    r"(\d{1,3}(?:\.\d{1,3}){3})\.\d+\s+ESTABLISHED\b", re.M | re.I)
 
 
 def _usable(address: str) -> bool:
@@ -70,15 +70,42 @@ def parse_ss(text: str):
 
 def parse_netstat(text: str, ports):
     """Peer addresses of the established connections TO one of `ports` on this
-    computer, from `netstat -an` (Windows or macOS output), in order."""
+    computer, from the macOS `netstat -an -p tcp` output, in order."""
     wanted = {str(p) for p in ports}
     out = []
-    for pattern in (_NETSTAT_WIN, _NETSTAT_BSD):
-        for match in pattern.finditer(text):
-            _local, local_port, peer = match.group(1), match.group(2), match.group(3)
-            if local_port in wanted and _usable(peer):
-                out.append(peer)
+    for match in _NETSTAT_BSD.finditer(text):
+        if match.group(2) in wanted and _usable(match.group(3)):
+            out.append(match.group(3))
     return out
+
+
+def parse_connections_csv(text: str, ports):
+    """Peer addresses from the CSV of `Get-NetTCPConnection` (Windows), in order, for
+    the rows whose LocalPort is in `ports`. The column names are property names, so they
+    are the same in every display language."""
+    wanted = {int(p) for p in ports}
+    out = []
+    for row in csv.DictReader(io.StringIO(text)):
+        try:
+            port = int(row.get("LocalPort") or 0)
+        except ValueError:
+            continue
+        address = (row.get("RemoteAddress") or "").strip()
+        if address.lower().startswith("::ffff:"):
+            address = address[7:]
+        if port in wanted and _usable(address):
+            out.append(address)
+    return out
+
+
+def _windows_command(ports):
+    """The PowerShell call for the established connections to `ports`. `Get-NetTCPConnection`
+    takes the state as an enum, so it does not depend on the language of Windows."""
+    numbers = ",".join(str(int(p)) for p in ports)
+    return ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command",
+            "Get-NetTCPConnection -State Established -ErrorAction SilentlyContinue "
+            f"| Where-Object {{ $_.LocalPort -in {numbers} }} "
+            "| Select-Object LocalPort,RemoteAddress | ConvertTo-Csv -NoTypeInformation"]
 
 
 def _run(argv):
@@ -112,9 +139,16 @@ def detect_client_address(ports=DEFAULT_PORTS, platform=None, run=_run):
             if peers:
                 return True, peers[0]
         return True, None
-    argv = (["netstat", "-an", "-p", "TCP"] if platform == "win32"
-            else ["netstat", "-an", "-p", "tcp"])
-    text = run(argv)
+    if platform == "win32":
+        text = run(_windows_command(ports))
+        if text is None:
+            return False, None
+        for port in ports:
+            peers = parse_connections_csv(text, [port])
+            if peers:
+                return True, peers[0]
+        return True, None
+    text = run(["netstat", "-an", "-p", "tcp"])
     if text is None:
         return False, None
     for port in ports:

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-24 13:14+0000\n"
+"POT-Creation-Date: 2026-11-24 13:44+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: tr\n"
@@ -343,121 +343,125 @@ msgstr "Ana uygulama güncellemesini denetle…"
 msgid "Pair with the Keyboard Computer…"
 msgstr "Klavye Bilgisayarıyla Eşleştir…"
 
-#: polyhost/forwarder.py:398
+#: polyhost/forwarder.py:399
+msgid "no host (finding the keyboard computer needs a paired forwarder)"
+msgstr "ana bilgisayar yok (klavye bilgisayarını bulmak için eşleştirilmiş bir forwarder gerekir)"
+
+#: polyhost/forwarder.py:400
 msgid "no host (waiting for a Remote Desktop or NoMachine connection)"
 msgstr "ana bilgisayar yok (Uzak Masaüstü veya NoMachine bağlantısı bekleniyor)"
 
-#: polyhost/forwarder.py:400
+#: polyhost/forwarder.py:402
 #, python-brace-format
 msgid "no host (waiting for {path})"
 msgstr "ana bilgisayar yok (bekleniyor: {path})"
 
-#: polyhost/forwarder.py:401
+#: polyhost/forwarder.py:403
 msgid "no host configured"
 msgstr "ana bilgisayar yapılandırılmamış"
 
-#: polyhost/forwarder.py:404
+#: polyhost/forwarder.py:406
 #, python-brace-format
 msgid "PolyKybdHost {version} (forwarder) → {target}"
 msgstr "PolyKybdHost {version} (yönlendirici) → {target}"
 
-#: polyhost/forwarder.py:409
+#: polyhost/forwarder.py:411
 msgid "Forwarding paused"
 msgstr "Yönlendirme duraklatıldı"
 
-#: polyhost/forwarder.py:412
+#: polyhost/forwarder.py:414
 #, python-brace-format
 msgid "Forwarding to {target}…"
 msgstr "Yönlendiriliyor: {target}…"
 
-#: polyhost/forwarder.py:414
+#: polyhost/forwarder.py:416
 #, python-brace-format
 msgid "Forwarding to {target}"
 msgstr "Yönlendiriliyor: {target}"
 
-#: polyhost/forwarder.py:415
+#: polyhost/forwarder.py:417
 #, python-brace-format
 msgid "Cannot reach {target}"
 msgstr "Ulaşılamıyor: {target}"
 
-#: polyhost/forwarder.py:583
+#: polyhost/forwarder.py:599
 msgid "The hooks are written, but this forwarder runs without --report-rpc, so it cannot pass agent reports on. Start it with --report-rpc to show this computer's agents on the keys."
 msgstr "Kancalar yazıldı, ancak bu yönlendirici --report-rpc olmadan çalışıyor, bu yüzden ajan bildirimlerini iletemez. Bu bilgisayarın ajanlarını tuşlarda göstermek için yönlendiriciyi --report-rpc ile başlatın."
 
-#: polyhost/forwarder.py:586
+#: polyhost/forwarder.py:602
 msgid "The hooks are written. On the keyboard computer, turn on Settings > AI agents > \"Agents from other computers\"."
 msgstr "Kancalar yazıldı. Klavye bilgisayarında Ayarlar > Yapay zekâ ajanları > \"Diğer bilgisayarlardaki ajanlar\" seçeneğini açın."
 
-#: polyhost/forwarder.py:916
+#: polyhost/forwarder.py:932
 msgid "PolyForwarder settings"
 msgstr "PolyForwarder ayarları"
 
-#: polyhost/forwarder.py:917
+#: polyhost/forwarder.py:933
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
 msgstr "Ayarlar ayar dosyasına kaydedilemedi, bu yüzden etkili olmayacaklar. Dosya başka bir program tarafından açık tutuluyor olabilir. Yeniden deneyin veya günlüğe bakın."
 
-#: polyhost/forwarder.py:935
+#: polyhost/forwarder.py:951
 msgid "Paired. The forwarder uses the authenticated connection from its next start. Restart it now?"
 msgstr "Eşleştirildi. Yönlendirici, kimliği doğrulanmış bağlantıyı bir sonraki başlatılışından itibaren kullanır. Şimdi yeniden başlatılsın mı?"
 
-#: polyhost/forwarder.py:950
+#: polyhost/forwarder.py:966
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
 msgstr "kimliği doğrulanmış RPC (bağlantı noktası {port})"
 
-#: polyhost/forwarder.py:952
+#: polyhost/forwarder.py:968
 msgid "legacy plaintext TCP relay"
 msgstr "eski düz metin TCP aktarımı"
 
-#: polyhost/forwarder.py:955
+#: polyhost/forwarder.py:971
 msgid "reaching the keyboard machine"
 msgstr "klavye bilgisayarına ulaşılıyor"
 
-#: polyhost/forwarder.py:956
+#: polyhost/forwarder.py:972
 msgid "not reaching the keyboard machine"
 msgstr "klavye bilgisayarına ulaşılamıyor"
 
-#: polyhost/forwarder.py:957
+#: polyhost/forwarder.py:973
 msgid "starting up"
 msgstr "başlatılıyor"
 
-#: polyhost/forwarder.py:959
+#: polyhost/forwarder.py:975
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
 msgstr "<b>Mod:</b> yönlendirici — bu bilgisayara bağlı klavye yok"
 
-#: polyhost/forwarder.py:960
+#: polyhost/forwarder.py:976
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
 msgstr "<b>Hedef:</b> {target}"
 
-#: polyhost/forwarder.py:962
+#: polyhost/forwarder.py:978
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
 msgstr "<b>Pencere bildirimleri:</b> {transport}"
 
-#: polyhost/forwarder.py:965
+#: polyhost/forwarder.py:981
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
 msgstr "<b>Ana bilgisayar dosyası:</b> {path}"
 
-#: polyhost/forwarder.py:967
+#: polyhost/forwarder.py:983
 msgid "<b>Keyboard computer:</b> found from the Remote Desktop or NoMachine connection"
 msgstr "<b>Klavye bilgisayarı:</b> Uzak Masaüstü veya NoMachine bağlantısından bulundu"
 
-#: polyhost/forwarder.py:989
+#: polyhost/forwarder.py:1005
 msgid "About PolyKybdHost (forwarder)"
 msgstr "PolyKybdHost hakkında (yönlendirici)"
 
 #. TRANSLATORS: the run mode in the About dialog's environment line
-#: polyhost/forwarder.py:996
+#: polyhost/forwarder.py:1012
 msgid "forwarder"
 msgstr "yönlendirici"
 
-#: polyhost/forwarder.py:998
+#: polyhost/forwarder.py:1014
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "Yönlendirici modu: bu bilgisayarda klavye yok. Buradaki etkin pencereyi izler ve klavyenin takılı olduğu bilgisayarda çalışan PolyKybdHost'a iletir."
 
-#: polyhost/forwarder.py:1038
+#: polyhost/forwarder.py:1054
 msgid "Download, install, and restart the forwarder now?"
 msgstr "Yönlendirici şimdi indirilsin, yüklensin ve yeniden başlatılsın mı?"
 
@@ -1355,7 +1359,7 @@ msgid "pick one from Source fonts below, or Browse…"
 msgstr "aşağıdaki Kaynak yazı tiplerinden birini seçin veya Gözat…"
 
 #: polyhost/gui/fontpack_extend_dialog.py:120
-#: polyhost/gui/settings_dialog.py:1350 polyhost/gui/settings_dialog.py:1351
+#: polyhost/gui/settings_dialog.py:1351 polyhost/gui/settings_dialog.py:1352
 msgid "Browse…"
 msgstr "Gözat…"
 
@@ -2028,7 +2032,7 @@ msgstr "Yönlendirici Eşleştir"
 msgid "On the other computer, open the forwarder's menu, choose \"Pair with the Keyboard Computer…\" and enter this code. Anyone with this code can send window and agent reports to this computer, so pass it on only over a channel you trust. \"Accept forwarders\" must be on in Settings."
 msgstr "Diğer bilgisayarda yönlendiricinin menüsünü açın, \"Klavye Bilgisayarıyla Eşleştir…\" seçeneğini seçin ve bu kodu girin. Bu koda sahip olan herkes bu bilgisayara pencere ve ajan bildirimleri gönderebilir; bu yüzden kodu yalnızca güvendiğiniz bir kanal üzerinden iletin. Ayarlar'da \"Yönlendiricileri kabul et\" açık olmalıdır."
 
-#: polyhost/forwarder.py:934 polyhost/gui/forwarder_pairing.py:37
+#: polyhost/forwarder.py:950 polyhost/gui/forwarder_pairing.py:37
 #: polyhost/gui/forwarder_pairing.py:44 polyhost/gui/forwarder_pairing.py:51
 msgid "Pair with the Keyboard Computer"
 msgstr "Klavye Bilgisayarıyla Eşleştir"
@@ -2293,7 +2297,7 @@ msgid "Eden"
 msgstr "Eden"
 
 #. TRANSLATORS: shown in the Flow Tap spin box when its value is 0.
-#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1181
+#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1182
 msgid "Off"
 msgstr "Kapalı"
 
@@ -4060,102 +4064,102 @@ msgid "Accepts reports of the focused window from the forwarder app on another c
 msgstr "Başka bir bilgisayardaki (örneğin uzak masaüstü ile kullandığınız bir bilgisayardaki) yönlendirici uygulamasından odaktaki pencere bildirimlerini kabul eder; böylece klavye o bilgisayarın uygulamalarının simgelerini gösterir. Bir ağ bağlantı noktası açar. Yeniden başlatmadan sonra uygulanır."
 
 #: polyhost/gui/settings_dialog.py:387
-msgid "On a computer with the forwarder that you reach through NoMachine or Remote Desktop: the forwarder reports to the computer that is connected to this one, found from the connection on port 4000 or 3389. It is used when no host or host file names an address. Applies within a few seconds."
-msgstr "NoMachine veya Uzak Masaüstü ile eriştiğiniz, forwarder olan bir bilgisayarda: forwarder, bu bilgisayara bağlı olan bilgisayara rapor verir; bu bilgisayar 4000 veya 3389 numaralı bağlantı noktasındaki bağlantıdan bulunur. Hiçbir ana bilgisayar veya ana bilgisayar dosyası adres belirtmediğinde kullanılır. Birkaç saniye içinde uygulanır."
+msgid "On a computer with the forwarder that you reach through NoMachine or Remote Desktop: the forwarder reports to the computer that is connected to this one, found from the connection on port 4000 or 3389. It is used when no host or host file names an address, and only over the paired connection (or --report-rpc). Applies within a few seconds."
+msgstr "NoMachine veya Uzak Masaüstü ile eriştiğiniz, forwarder olan bir bilgisayarda: forwarder, bu bilgisayara bağlı olan bilgisayara rapor verir; bu bilgisayar 4000 veya 3389 numaralı bağlantı noktasındaki bağlantıdan bulunur. Hiçbir ana bilgisayar veya ana bilgisayar dosyası adres belirtmediğinde ve yalnızca eşleştirilmiş bağlantı (veya --report-rpc) üzerinden kullanılır. Birkaç saniye içinde uygulanır."
 
-#: polyhost/gui/settings_dialog.py:392
+#: polyhost/gui/settings_dialog.py:393
 msgid "The language of the words the keyboard's emoji search matches. The dictionary is sent to the keyboard when you click OK, and when it connects if Send font packs on connect is on. Own dictionary file, when set, is used instead."
 msgstr "Klavyenin emoji aramasının eşleştirdiği kelimelerin dili. Sözlük, Tamam'a tıkladığınızda ve \"Bağlanınca yazı tipi paketlerini gönder\" açıksa klavye bağlandığında klavyeye gönderilir. \"Kendi sözlük dosyanız\" ayarlanmışsa onun yerine o kullanılır."
 
-#: polyhost/gui/settings_dialog.py:397
+#: polyhost/gui/settings_dialog.py:398
 msgid "A dictionary file you built yourself (.plyd), sent to the keyboard instead of the Search language dictionary. Empty: the dictionary for the Search language is used."
 msgstr "Kendi oluşturduğunuz bir sözlük dosyası (.plyd); \"Arama dili\" sözlüğü yerine klavyeye gönderilir. Boş: \"Arama dili\" için olan sözlük kullanılır."
 
-#: polyhost/gui/settings_dialog.py:401
+#: polyhost/gui/settings_dialog.py:402
 msgid "When the keyboard connects, sends it the font packs it is missing or has in an older version. Font packs hold the characters for languages, symbols and emoji."
 msgstr "Klavye bağlandığında, klavyede eksik olan veya eski bir sürümü bulunan yazı tipi paketlerini ona gönderir. Yazı tipi paketleri diller, semboller ve emojiler için karakterleri içerir."
 
-#: polyhost/gui/settings_dialog.py:405
+#: polyhost/gui/settings_dialog.py:406
 msgid "A font-pack file (.plyf) to send to the keyboard instead of the one that comes with this app. Empty: the font pack that comes with this app is used."
 msgstr "Bu uygulamayla gelen paket yerine klavyeye gönderilecek bir yazı tipi paketi dosyası (.plyf). Boş: bu uygulamayla gelen yazı tipi paketi kullanılır."
 
-#: polyhost/gui/settings_dialog.py:408
+#: polyhost/gui/settings_dialog.py:409
 msgid "Chooses a website's overlay from the address of the focused browser tab. The address comes from the PolyKybd browser extension; on macOS, Safari and Chromium browsers such as Chrome also give it without the extension. Off: a website's overlay is chosen from the window title only."
 msgstr "Bir web sitesinin kaplamasını, tarayıcıda odaktaki sekmenin adresine göre seçer. Adres PolyKybd tarayıcı uzantısından gelir; macOS'ta Safari ve Chrome gibi Chromium tarayıcıları adresi uzantı olmadan da verir. Kapalıyken: web sitesinin kaplaması yalnızca pencere başlığına göre seçilir."
 
-#: polyhost/gui/settings_dialog.py:413
+#: polyhost/gui/settings_dialog.py:414
 msgid "Runs the receiver that the PolyKybd browser extension sends the address of the focused tab to. It accepts connections from this computer only (127.0.0.1)."
 msgstr "PolyKybd tarayıcı uzantısının odaktaki sekmenin adresini gönderdiği alıcıyı çalıştırır. Yalnızca bu bilgisayardan gelen bağlantıları kabul eder (127.0.0.1)."
 
-#: polyhost/gui/settings_dialog.py:417
+#: polyhost/gui/settings_dialog.py:418
 msgid "The receiver's port. It must match the Host port in the browser extension."
 msgstr "Alıcının bağlantı noktası. Tarayıcı uzantısındaki Host port ile aynı olmalıdır."
 
-#: polyhost/gui/settings_dialog.py:419
+#: polyhost/gui/settings_dialog.py:420
 msgid "A shared secret. When set, the browser extension must send the same token."
 msgstr "Paylaşılan bir gizli anahtar. Ayarlandığında tarayıcı uzantısı aynı belirteci göndermelidir."
 
-#: polyhost/gui/settings_dialog.py:421
+#: polyhost/gui/settings_dialog.py:422
 msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
 msgstr "Günde bir anonim kullanım raporu gönderir: sürümler, işletim sistemi ve birkaç sayaç. Asla pencere başlıkları veya uygulama adları göndermez."
 
-#: polyhost/gui/settings_dialog.py:424
+#: polyhost/gui/settings_dialog.py:425
 msgid "The web address the usage report is sent to. Empty: no report is sent."
 msgstr "Kullanım raporunun gönderildiği web adresi. Boş: hiçbir rapor gönderilmez."
 
-#: polyhost/gui/settings_dialog.py:426
+#: polyhost/gui/settings_dialog.py:427
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
 msgstr "Bu kurulumun ilk raporla oluşturulan rastgele ID'si. Yeni bir kurulum olarak sayılmak için silin."
 
-#: polyhost/gui/settings_dialog.py:429
+#: polyhost/gui/settings_dialog.py:430
 msgid "Watches the messages the keyboard sends over USB for known failures, and offers to report a problem."
 msgstr "Klavyenin USB üzerinden gönderdiği mesajlarda bilinen hataları izler ve bir sorun bildirmeyi önerir."
 
-#: polyhost/gui/settings_dialog.py:432
+#: polyhost/gui/settings_dialog.py:433
 msgid "Watches this app's own log for known failure messages, and offers to report a problem."
 msgstr "Bu uygulamanın kendi günlüğünde bilinen hata mesajlarını izler ve bir sorun bildirmeyi önerir."
 
-#: polyhost/gui/settings_dialog.py:434
+#: polyhost/gui/settings_dialog.py:435
 msgid "What counts as a problem: errors only, or errors and warnings."
 msgstr "Neyin sorun sayılacağı: yalnızca hatalar veya hatalar ve uyarılar."
 
-#: polyhost/gui/settings_dialog.py:436
+#: polyhost/gui/settings_dialog.py:437
 msgid "Draws some game overlays from the game's own files when the game is installed on this computer. The images stay on this computer. Off: the shipped overlays are used."
 msgstr "Oyun bu bilgisayarda yüklüyse bazı oyun katmanlarını oyunun kendi dosyalarından çizer. Görüntüler bu bilgisayarda kalır. Kapalı: birlikte gelen katmanlar kullanılır."
 
-#: polyhost/gui/settings_dialog.py:913
+#: polyhost/gui/settings_dialog.py:914
 msgid "Advanced"
 msgstr "Gelişmiş"
 
-#: polyhost/gui/settings_dialog.py:922
+#: polyhost/gui/settings_dialog.py:923
 msgid "Shows the settings that most people never change."
 msgstr "Çoğu kişinin hiç değiştirmediği ayarları gösterir."
 
-#: polyhost/gui/settings_dialog.py:953 polyhost/host.py:1680
+#: polyhost/gui/settings_dialog.py:954 polyhost/host.py:1680
 msgid "PolyKybd Settings"
 msgstr "PolyKybd Ayarları"
 
-#: polyhost/gui/settings_dialog.py:1022
+#: polyhost/gui/settings_dialog.py:1023
 msgid "Search settings"
 msgstr "Ayarlarda ara"
 
-#: polyhost/gui/settings_dialog.py:1074
+#: polyhost/gui/settings_dialog.py:1075
 msgid "An overlay is a set of icons for one app. Help & About, Basics shows an example."
 msgstr "Kaplama, tek bir uygulama için bir simge setidir. Yardım & Hakkında, Temel Bilgiler bir örnek gösterir."
 
-#: polyhost/gui/settings_dialog.py:1078
+#: polyhost/gui/settings_dialog.py:1079
 msgid "Reading the settings stored on the keyboard…"
 msgstr "Klavyede kayıtlı ayarlar okunuyor…"
 
-#: polyhost/gui/settings_dialog.py:1082
+#: polyhost/gui/settings_dialog.py:1083
 msgid "No setting matches the search."
 msgstr "Aramayla eşleşen ayar yok."
 
-#: polyhost/gui/settings_dialog.py:1097
+#: polyhost/gui/settings_dialog.py:1098
 msgid "Some settings might need a restart to take effect."
 msgstr "Bazı ayarların etkili olması için yeniden başlatma gerekebilir."
 
-#: polyhost/gui/settings_dialog.py:1132
+#: polyhost/gui/settings_dialog.py:1133
 #, python-brace-format
 msgid "Set by {flag} for this run. This setting applies when the app starts without it."
 msgstr "Bu çalıştırma için {flag} ile ayarlandı. Bu ayar, uygulama onsuz başlatıldığında geçerli olur."
@@ -4164,35 +4168,35 @@ msgstr "Bu çalıştırma için {flag} ile ayarlandı. Bu ayar, uygulama onsuz b
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
 #: polyhost/gui/layout_dialog/combo_tab.py:371
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
-#: polyhost/gui/settings_dialog.py:1178
+#: polyhost/gui/settings_dialog.py:1179
 msgid " ms"
 msgstr " ms"
 
-#: polyhost/gui/settings_dialog.py:1225
+#: polyhost/gui/settings_dialog.py:1226
 msgid "This keyboard's firmware does not have this setting."
 msgstr "Bu klavyenin ürün yazılımında bu ayar yok."
 
-#: polyhost/gui/settings_dialog.py:1227
+#: polyhost/gui/settings_dialog.py:1228
 msgid "Could not read this setting from the keyboard."
 msgstr "Bu ayar klavyeden okunamadı."
 
-#: polyhost/gui/settings_dialog.py:1235
+#: polyhost/gui/settings_dialog.py:1236
 msgid "Connect the keyboard to change the settings stored on it."
 msgstr "Klavyede kayıtlı ayarları değiştirmek için klavyeyi bağlayın."
 
-#: polyhost/gui/settings_dialog.py:1237
+#: polyhost/gui/settings_dialog.py:1238
 msgid "Some settings could not be read from the keyboard. Update the keyboard firmware to change them here."
 msgstr "Bazı ayarlar klavyeden okunamadı. Bunları burada değiştirmek için klavyenin ürün yazılımını güncelleyin."
 
-#: polyhost/gui/settings_dialog.py:1288
+#: polyhost/gui/settings_dialog.py:1289
 msgid "These developer settings are not at their default, so they stay in effect while developer mode is off."
 msgstr "Bu geliştirici ayarları varsayılan değerlerinde değil, bu yüzden geliştirici modu kapalıyken de geçerli kalır."
 
-#: polyhost/gui/settings_dialog.py:1358
+#: polyhost/gui/settings_dialog.py:1359
 msgid "Generate"
 msgstr "Oluştur"
 
-#: polyhost/gui/settings_dialog.py:1359
+#: polyhost/gui/settings_dialog.py:1360
 msgid "Fills in a new random token and copies it. Paste it into the browser extension's Options and save both."
 msgstr "Yeni rastgele bir belirteç girer ve kopyalar. Bunu tarayıcı uzantısının seçeneklerine yapıştırın ve iki tarafı da kaydedin."
 
@@ -4678,7 +4682,7 @@ msgid "Inspect Font Packs..."
 msgstr "Yazı Tipi Paketlerini İncele..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
-#: polyhost/forwarder.py:274 polyhost/forwarder.py:426 polyhost/host.py:468
+#: polyhost/forwarder.py:274 polyhost/forwarder.py:428 polyhost/host.py:468
 #: polyhost/host.py:1230
 msgid "Pause"
 msgstr "Duraklat"
@@ -4794,7 +4798,7 @@ msgstr ""
 "Birlikte gelen tüm yazı tipi demetleri zaten klavyede.\n"
 "Tuş kapakları hâlâ yanlış görüntüleniyorsa Geliştirici → Yazı Tipi Paketi → Tüm demetleri yeniden yaz ile yeniden göndermeye zorlayabilirsiniz."
 
-#: polyhost/forwarder.py:877 polyhost/host.py:1105
+#: polyhost/forwarder.py:893 polyhost/host.py:1105
 msgid "Config folder"
 msgstr "Yapılandırma klasörü"
 
@@ -4823,7 +4827,7 @@ msgid "Reconnect"
 msgstr "Yeniden bağlan"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:426 polyhost/host.py:1225
+#: polyhost/forwarder.py:428 polyhost/host.py:1225
 msgid "Resume"
 msgstr "Sürdür"
 
@@ -4918,7 +4922,7 @@ msgstr "bağımsız"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:954 polyhost/host.py:2020
+#: polyhost/forwarder.py:970 polyhost/host.py:2020
 msgid "paused"
 msgstr "duraklatıldı"
 
@@ -4980,17 +4984,17 @@ msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>Kaplama eşlemeleri:</b> {n} uygulama"
 
-#: polyhost/forwarder.py:974 polyhost/host.py:2059
+#: polyhost/forwarder.py:990 polyhost/host.py:2059
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>Yapılandırma:</b> {path}"
 
-#: polyhost/forwarder.py:975 polyhost/host.py:2060
+#: polyhost/forwarder.py:991 polyhost/host.py:2060
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>Günlükler:</b> {path}"
 
-#: polyhost/forwarder.py:993 polyhost/host.py:2114
+#: polyhost/forwarder.py:1009 polyhost/host.py:2114
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "HID protokolü P{protocol}"
@@ -5090,8 +5094,8 @@ msgstr "PolyKybd kaplama eşlemesi (*.poly.yaml)"
 msgid "Update firmware to v{version}…"
 msgstr "Ürün yazılımını güncelle: v{version}…"
 
-#: polyhost/forwarder.py:1032 polyhost/forwarder.py:1043
-#: polyhost/forwarder.py:1049 polyhost/host.py:2477 polyhost/host.py:2598
+#: polyhost/forwarder.py:1048 polyhost/forwarder.py:1059
+#: polyhost/forwarder.py:1065 polyhost/host.py:2477 polyhost/host.py:2598
 #: polyhost/host.py:2602
 msgid "Check for updates..."
 msgstr "Güncellemeleri denetle..."
@@ -5101,8 +5105,8 @@ msgstr "Güncellemeleri denetle..."
 msgid "Update to v{version} available"
 msgstr "Güncelleme kullanılabilir: v{version}"
 
-#: polyhost/forwarder.py:1045 polyhost/forwarder.py:1051
-#: polyhost/forwarder.py:1062 polyhost/host.py:2556 polyhost/host.py:2596
+#: polyhost/forwarder.py:1061 polyhost/forwarder.py:1067
+#: polyhost/forwarder.py:1078 polyhost/host.py:2556 polyhost/host.py:2596
 #: polyhost/host.py:2603 polyhost/host.py:2626
 msgid "PolyKybdHost Update"
 msgstr "PolyKybdHost Güncellemesi"
@@ -5112,7 +5116,7 @@ msgstr "PolyKybdHost Güncellemesi"
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "Sürüm {version} kullanılabilir. Güncellemek için sistem tepsisi simgesine tıklayın."
 
-#: polyhost/forwarder.py:1019 polyhost/host.py:2582
+#: polyhost/forwarder.py:1035 polyhost/host.py:2582
 msgid "Checking for updates..."
 msgstr "Güncellemeler denetleniyor..."
 
@@ -5120,12 +5124,12 @@ msgstr "Güncellemeler denetleniyor..."
 msgid "No updates available"
 msgstr "Güncelleme yok"
 
-#: polyhost/forwarder.py:1046 polyhost/host.py:2597
+#: polyhost/forwarder.py:1062 polyhost/host.py:2597
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "En son sürümü kullanıyorsunuz (v{version})."
 
-#: polyhost/forwarder.py:1052 polyhost/host.py:2604
+#: polyhost/forwarder.py:1068 polyhost/host.py:2604
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -5145,12 +5149,12 @@ msgstr ""
 msgid "Released: {date}"
 msgstr "Yayım tarihi: {date}"
 
-#: polyhost/forwarder.py:1033 polyhost/host.py:2610
+#: polyhost/forwarder.py:1049 polyhost/host.py:2610
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "Sürüm {version} kullanılabilir."
 
-#: polyhost/forwarder.py:1034 polyhost/host.py:2611
+#: polyhost/forwarder.py:1050 polyhost/host.py:2611
 msgid "Update PolyKybdHost"
 msgstr "PolyKybdHost'u Güncelle"
 
@@ -5158,20 +5162,20 @@ msgstr "PolyKybdHost'u Güncelle"
 msgid "Download, install, and restart now?"
 msgstr "Şimdi indirilsin, yüklensin ve yeniden başlatılsın mı?"
 
-#: polyhost/forwarder.py:1061 polyhost/host.py:2626
+#: polyhost/forwarder.py:1077 polyhost/host.py:2626
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "İndiriliyor: v{version}…"
 
-#: polyhost/forwarder.py:1103 polyhost/host.py:2751
+#: polyhost/forwarder.py:1119 polyhost/host.py:2751
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "Güncelleme aktarımı başlatılamadı; güncelleme tamamlanmadı. Ayrıntılar için günlüğe bakın."
 
-#: polyhost/forwarder.py:1115 polyhost/host.py:2766
+#: polyhost/forwarder.py:1131 polyhost/host.py:2766
 msgid "Update failed"
 msgstr "Güncelleme başarısız"
 
-#: polyhost/forwarder.py:1115 polyhost/host.py:2766
+#: polyhost/forwarder.py:1131 polyhost/host.py:2766
 msgid "The update did not finish."
 msgstr "Güncelleme tamamlanmadı."
 

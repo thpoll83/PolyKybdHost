@@ -395,6 +395,8 @@ class PolyForwarder(QApplication):
         if host:
             return host
         if self._detect_enabled():
+            if not self._report_rpc:
+                return _("no host (finding the keyboard computer needs a paired forwarder)")
             return _("no host (waiting for a Remote Desktop or NoMachine connection)")
         if self.host_file:
             return _f("no host (waiting for {path})", path=self.host_file)
@@ -476,6 +478,14 @@ class PolyForwarder(QApplication):
         but set a bool — no Qt objects, no send from off the main thread."""
         self._url_dirty = True
 
+    def _warn_detect_unpaired(self):
+        if not getattr(self, "_warned_detect_unpaired", False):
+            self._warned_detect_unpaired = True
+            self.log.warning("Finding the keyboard computer from the connection needs the "
+                             "authenticated connection: pair this forwarder with the "
+                             "keyboard computer, or start it with --report-rpc. Not using "
+                             "a found address.")
+
     def _detect_enabled(self) -> bool:
         """--detect-host, or the setting forwarder_detect_host (read at most every
         5 seconds: this is asked for every report)."""
@@ -501,7 +511,13 @@ class PolyForwarder(QApplication):
                     text = f.read()
             except OSError:
                 text = None     # file absent means no active session
+        # ⚠️ A found address is used only over the authenticated connection (paired, or
+        # --report-rpc): any computer that can reach port 3389 or 4000 gets a TCP connection
+        # before it authenticates, and the legacy relay would send it the window titles.
         detect = self._detect_enabled()
+        if detect and not self._report_rpc:
+            self._warn_detect_unpaired()
+            detect = False
         if detect and self._client_watcher is None:
             self._client_watcher = session_peer.ClientAddressWatcher()
         return session_peer.resolve_host(self.host, bool(self.host_file), text, detect,

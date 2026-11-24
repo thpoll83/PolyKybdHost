@@ -387,7 +387,8 @@ SETTING_DESCRIPTIONS = {
         "On a computer with the forwarder that you reach through NoMachine or Remote "
         "Desktop: the forwarder reports to the computer that is connected to this one, "
         "found from the connection on port 4000 or 3389. It is used when no host or "
-        "host file names an address. Applies within a few seconds."),
+        "host file names an address, and only over the paired connection (or "
+        "--report-rpc). Applies within a few seconds."),
     "emoji_search_dict": N_(
         "The language of the words the keyboard's emoji search matches. The "
         "dictionary is sent to the keyboard when you click OK, and when it connects "

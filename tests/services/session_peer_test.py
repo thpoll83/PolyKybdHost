@@ -6,13 +6,15 @@ from polyhost.services import session_peer as sp
 
 SS_HEADER = "Recv-Q Send-Q Local Address:Port  Peer Address:Port Process\n"
 
-WINDOWS = (
-    "Active Connections\n\n"
-    "  Proto  Local Address          Foreign Address        State\n"
-    "  TCP    0.0.0.0:3389           0.0.0.0:0              LISTENING\n"
-    "  TCP    10.0.0.5:3389          10.0.0.9:51234         ESTABLISHED\n"
-    "  TCP    10.0.0.5:4000          10.0.0.8:50000         ESTABLISHED\n"
-    "  TCP    10.0.0.5:51000         52.1.2.3:443           ESTABLISHED\n")
+# `Get-NetTCPConnection ... | ConvertTo-Csv -NoTypeInformation`: property names as headers,
+# the same on a German Windows, where `netstat` says HERGESTELLT instead of ESTABLISHED.
+WINDOWS_CSV = ('"LocalPort","RemoteAddress"\r\n'
+               '"3389","10.0.0.9"\r\n'
+               '"4000","10.0.0.8"\r\n'
+               '"3389","::ffff:10.0.0.7"\r\n'
+               '"3389","::1"\r\n'
+               '"3389","2001:db8::9"\r\n'
+               '"51000","52.1.2.3"\r\n')
 
 MACOS = ("tcp4       0      0  10.0.0.5.3389         10.0.0.9.51234        ESTABLISHED\n"
          "tcp4       0      0  *.22                  *.*                   LISTEN\n")
@@ -32,10 +34,19 @@ class ParseTest(unittest.TestCase):
                 + "0 0 10.0.0.5:3389 10.0.0.9:5\n")
         self.assertEqual(sp.parse_ss(text), ["10.0.0.7", "10.0.0.9"])
 
-    def test_netstat_keeps_only_connections_to_the_wanted_ports(self):
-        self.assertEqual(sp.parse_netstat(WINDOWS, [3389]), ["10.0.0.9"])
-        self.assertEqual(sp.parse_netstat(WINDOWS, [4000]), ["10.0.0.8"])
-        self.assertEqual(sp.parse_netstat(WINDOWS, [22]), [])
+    def test_the_windows_csv_keeps_only_the_wanted_ports_and_ipv4_peers(self):
+        self.assertEqual(sp.parse_connections_csv(WINDOWS_CSV, [3389]),
+                         ["10.0.0.9", "10.0.0.7"])
+        self.assertEqual(sp.parse_connections_csv(WINDOWS_CSV, [4000]), ["10.0.0.8"])
+        self.assertEqual(sp.parse_connections_csv(WINDOWS_CSV, [22]), [])
+        self.assertEqual(sp.parse_connections_csv("", [3389]), [])      # nobody connected
+
+    def test_windows_does_not_depend_on_the_language_of_windows(self):
+        """German `netstat` prints HERGESTELLT; the PowerShell CSV has no state word."""
+        german = ("  TCP    10.0.0.5:3389          10.0.0.9:51234         HERGESTELLT\n")
+        self.assertEqual(sp.parse_netstat(german, [3389]), [])      # netstat is not used
+        self.assertEqual(sp.detect_client_address((3389,), "win32", lambda a: WINDOWS_CSV),
+                         (True, "10.0.0.9"))
 
     def test_netstat_reads_the_macos_dotted_ports(self):
         self.assertEqual(sp.parse_netstat(MACOS, [3389]), ["10.0.0.9"])
@@ -65,17 +76,21 @@ class DetectTest(unittest.TestCase):
         self.assertEqual(sp.detect_client_address((4000, 3389), "win32",
                                                   lambda argv: None), (False, None))
 
-    def test_windows_and_macos_use_netstat(self):
+    def test_windows_asks_powershell_and_macos_asks_netstat(self):
         seen = []
 
         def win(argv):
             seen.append(argv)
-            return WINDOWS
+            return WINDOWS_CSV
         self.assertEqual(sp.detect_client_address((4000, 3389), "win32", win),
                          (True, "10.0.0.8"))
-        self.assertEqual(seen[0][:2], ["netstat", "-an"])
+        self.assertEqual(seen[0][0], "powershell.exe")
+        self.assertIn("Get-NetTCPConnection -State Established", seen[0][-1])
+        self.assertIn("-in 4000,3389", seen[0][-1])
         self.assertEqual(sp.detect_client_address((3389,), "darwin", lambda a: MACOS),
                          (True, "10.0.0.9"))
+        self.assertEqual(sp.detect_client_address((3389,), "win32", lambda a: ""),
+                         (True, None))
 
 
 class WatcherTest(unittest.TestCase):
@@ -103,10 +118,10 @@ class WatcherTest(unittest.TestCase):
         thread = watcher._thread
         watcher.address()
         self.assertIs(watcher._thread, thread)
-        for _ in range(200):
-            if watcher.address() == "10.0.0.9":
-                break
-            started.wait(0.01)
+        import time
+        deadline = time.monotonic() + 2
+        while watcher.address() != "10.0.0.9" and time.monotonic() < deadline:
+            time.sleep(0.01)         # the address is stored after detect() returns
         self.assertEqual(watcher.address(), "10.0.0.9")
 
 
