@@ -316,6 +316,8 @@ class ClientAddressWatcher:
                 self._wake.clear()
                 if self._stop.is_set():
                     break
+            if not self._active():
+                continue                   # the gap above ran past the idle cutoff
             try:
                 self.refresh()
             except Exception:  # noqa: BLE001 - a bad look must not end the watch

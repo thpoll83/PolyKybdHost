@@ -240,6 +240,18 @@ class WatcherTest(unittest.TestCase):
         time.sleep(0.6)                                     # the 0.2 s timer ends
         self.assertEqual(len(calls), after_first)
 
+    def test_a_request_that_waits_out_the_gap_past_the_cutoff_does_not_look(self):
+        watcher, calls, clock = self._watcher([(True, "10.0.0.9")], min_gap=0.4)
+        self.addCleanup(watcher.stop)
+        watcher.refresh()                                   # a look just ran: the gap holds
+        watcher._last_touch = clock.now
+        before = len(calls)
+        watcher.request_look()                              # in use: the thread waits the gap
+        time.sleep(0.1)
+        clock.now += sp.ACTIVE_FOR_S + 1                    # the cutoff passes meanwhile
+        time.sleep(0.6)
+        self.assertEqual(len(calls), before)
+
     def test_a_failed_send_wakes_a_watcher_in_use(self):
         watcher, calls, clock = self._watcher([(True, "10.0.0.9")], min_gap=0.0)
         self.addCleanup(watcher.stop)
