@@ -398,6 +398,21 @@ watchdog. The `fuzz` profile keeps failing examples in `.hypothesis/` (ignored b
 and replays them first on the next run. When a run finds a bug, fix it in its own
 commit and add the shrunk example as an ordinary test next to the module's other tests.
 
+### In CI (`.github/workflows/host-fuzz.yml`)
+
+- **On a PR** that changes a `polyhost` module the fuzz tests import, `tests/fuzz/`, the
+  requirements or the workflow: the whole package on the default profile (about 1 s),
+  and `python scripts/fuzz_paths.py --check`, which fails when the workflow's `paths:`
+  list no longer matches what `tests/fuzz` imports. After adding a fuzz module or an
+  import, run `python scripts/fuzz_paths.py` and copy its list into `paths:`.
+- **Every Wednesday and Sunday at 02:17 UTC** on `main`: one job per module on the
+  `nightly` profile (200000 examples per test). Each job keeps its `.hypothesis/`
+  example database in the Actions cache, so an example that failed once is tried first
+  next time. A failed module opens an issue `Fuzz failure: <module>` with the label
+  `fuzz-crash`; the job log shows the falsifying example.
+- **From the Actions tab** (*Host fuzz* → *Run workflow*): the same long run, with the
+  `nightly` or `fuzz` profile.
+
 ## Tests (the CLAUDE.md summary)
 
 _Moved verbatim from `CLAUDE.md` on 2026-10-10. CLAUDE.md keeps a short pointer._

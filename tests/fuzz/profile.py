@@ -11,6 +11,10 @@ settings.register_profile(
 settings.register_profile(
     "fuzz", max_examples=20000, deadline=None,
     suppress_health_check=[HealthCheck.too_slow, HealthCheck.data_too_large])
+# The Wednesday/Sunday CI run (.github/workflows/host-fuzz.yml), one job per module.
+settings.register_profile(
+    "nightly", max_examples=200000, deadline=None,
+    suppress_health_check=[HealthCheck.too_slow, HealthCheck.data_too_large])
 
 
 def load_profile():
