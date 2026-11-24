@@ -253,10 +253,8 @@ class ClientAddressWatcher:
         """Ask for a look soon (a report to the found address failed). Ignored while the
         computer is idle (no window change for `active_for` seconds): a relay that stays
         down must not keep the watcher looking."""
-        with self._lock:
-            if (self._last_touch is None
-                    or self._clock() - self._last_touch >= self._active_for):
-                return
+        if not self._active():
+            return
         if self._thread is None:
             self._thread = threading.Thread(target=self._loop, daemon=True,
                                             name="PolyKybd client address")
@@ -285,6 +283,12 @@ class ClientAddressWatcher:
                          address or "none")
             self._address = address
 
+    def _active(self):
+        """True while a window change happened within the last `active_for` seconds."""
+        with self._lock:
+            return (self._last_touch is not None
+                    and self._clock() - self._last_touch < self._active_for)
+
     def _timeout(self):
         """Seconds the thread sleeps before it looks without being asked: None (until
         the next request) when no address is found, or the computer is idle."""
@@ -298,10 +302,12 @@ class ClientAddressWatcher:
 
     def _loop(self):
         while not self._stop.is_set():
-            self._wake.wait(self._timeout())
+            woke = self._wake.wait(self._timeout())
             if self._stop.is_set():
                 break
             self._wake.clear()
+            if not woke and not self._active():
+                continue                   # the timer ran out while the computer went idle
             with self._lock:
                 wait = (self._min_gap - (self._clock() - self._last_look)
                         if self._last_look is not None else 0.0)

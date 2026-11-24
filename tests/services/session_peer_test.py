@@ -224,6 +224,22 @@ class WatcherTest(unittest.TestCase):
         time.sleep(0.05)
         self.assertEqual(calls, [])
 
+    def test_a_timer_that_runs_out_after_the_idle_cutoff_does_not_look(self):
+        watcher, calls, clock = self._watcher([(True, "10.0.0.9")], min_gap=0.0,
+                                              idle_interval=0.2)
+        self.addCleanup(watcher.stop)
+        watcher.refresh()                                   # an address is found
+        watcher._last_touch = clock.now                     # in use ...
+        before = len(calls)
+        watcher.request_look()                              # starts the thread: one look
+        deadline = time.monotonic() + 2
+        while len(calls) == before and time.monotonic() < deadline:
+            time.sleep(0.01)
+        after_first = len(calls)
+        clock.now += sp.ACTIVE_FOR_S + 1                    # ... then idle, mid-wait
+        time.sleep(0.6)                                     # the 0.2 s timer ends
+        self.assertEqual(len(calls), after_first)
+
     def test_a_failed_send_wakes_a_watcher_in_use(self):
         watcher, calls, clock = self._watcher([(True, "10.0.0.9")], min_gap=0.0)
         self.addCleanup(watcher.stop)
