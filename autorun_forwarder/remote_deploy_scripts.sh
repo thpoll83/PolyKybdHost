@@ -43,7 +43,7 @@ Description=Poll NoMachine or RDP session IP for PolyHost
 [Service]
 Type=oneshot
 Environment="REMOTE_PORTS=$REMOTE_PORTS"
-ExecStart=$TARGET_DIR/$POLL_SCRIPT
+ExecStart="$TARGET_DIR/$POLL_SCRIPT"
 EOF
 
 cat > "$SYSTEMD_USER_DIR/$SERVICE_NAME.timer" <<EOF
@@ -53,6 +53,7 @@ Description=Poll NoMachine or RDP session IP every 30 seconds
 [Timer]
 OnBootSec=10
 OnUnitActiveSec=30
+AccuracySec=1s
 
 [Install]
 WantedBy=timers.target
@@ -71,6 +72,7 @@ echo "Linger enabled for $(whoami)"
 # RDP client, every 30 seconds, because it sees no connection on port 4000.
 if systemctl --user cat nx-ip-poll.timer >/dev/null 2>&1; then
     systemctl --user disable --now nx-ip-poll.timer || true
+    systemctl --user stop nx-ip-poll.service || true
     echo "Disabled the old nx-ip-poll timer (replaced by $SERVICE_NAME)."
 fi
 

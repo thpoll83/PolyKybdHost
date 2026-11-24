@@ -18,13 +18,22 @@ HOST_IP_FILE="${HOST_IP_FILE:-$HOME/.config/PolyHost/host_ip}"
 
 # Established connections whose LOCAL port is one of the listed ports: column 4
 # is the peer "address:port". A dual-stack listener shows an IPv4 client as
-# [::ffff:a.b.c.d]:port. Take the first peer that is not this machine.
+# [::ffff:a.b.c.d]:port. Take the first IPv4 peer that is not this machine: the
+# forwarder's report endpoint and legacy relay are AF_INET sockets, so an IPv6
+# address could not be dialled.
 KEYBOARD_IP=""
 for port in $REMOTE_PORTS; do
-    KEYBOARD_IP=$(ss -tn state established "( sport = :${port} )" \
+    # Check ss itself. A missing or failing ss would otherwise read as "no client"
+    # and delete a valid host_ip; leave the file as it is and fail instead.
+    if ! SS_OUT=$(ss -tn state established "( sport = :${port} )" 2>/dev/null); then
+        echo "remote_ip_poll: ss failed; host_ip left unchanged" >&2
+        exit 1
+    fi
+    KEYBOARD_IP=$(printf '%s\n' "$SS_OUT" \
         | awk 'NR>1 {print $4}' \
-        | sed -e 's/:[0-9]*$//' -e 's/^\[//' -e 's/\]$//' -e 's/^::ffff://' -e 's/%.*$//' \
-        | grep -v -e '^127\.' -e '^::1$' -e '^$' \
+        | sed -e 's/:[0-9]*$//' -e 's/^\[//' -e 's/\]$//' -e 's/^::ffff://' \
+        | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' \
+        | grep -v '^127\.' \
         | head -n 1)
     [ -n "$KEYBOARD_IP" ] && break
 done
