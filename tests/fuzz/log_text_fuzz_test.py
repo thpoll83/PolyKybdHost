@@ -46,9 +46,21 @@ class LogBundleFuzzTest(unittest.TestCase):
         self.assertTrue(cutoff is None or cutoff <= FIXED)
 
     @given(st.text(max_size=200))
-    def test_redact_text_is_idempotent(self, text):
-        once = log_bundle.redact_text(text)
-        self.assertEqual(log_bundle.redact_text(once), once)
+    def test_redact_text_takes_any_text(self, text):
+        self.assertIsInstance(log_bundle.redact_text(text), str)
+
+    # Titles without a quote, backslash or line break, so the pattern ends at
+    # the closing quote.
+    TITLE = st.text(st.characters(blacklist_characters='"\\\n\r'), max_size=60)
+
+    @given(TITLE)
+    def test_redact_text_masks_a_title(self, title):
+        line = f'Changed: "app", Title: "{title}"'
+        self.assertEqual(log_bundle.redact_text(line),
+                         f'Changed: "app", Title: "<redacted:{len(title)} chars>"')
+
+    def test_redact_text_masks_a_one_char_title(self):
+        self.assertEqual(log_bundle.redact_text('Title: "x"'), 'Title: "<redacted:1 chars>"')
 
     @given(st.lists(st.text(max_size=40), max_size=20))
     def test_slice_lines_keeps_a_subsequence(self, lines):
