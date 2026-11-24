@@ -313,7 +313,7 @@ def _step(raw, where: str) -> Step:
         raise ScriptError(f"{where}: a map of step fields")
     unknown = set(raw) - _STEP_KEYS
     if unknown:
-        raise ScriptError(f"{where}: unknown field(s) {', '.join(sorted(unknown))}")
+        raise ScriptError(f"{where}: unknown field(s) {', '.join(sorted(map(str, unknown)))}")
     if "point" in raw and "guide_to_layer" in raw:
         raise ScriptError(f"{where}: point and guide_to_layer both ring; give one")
     return Step(
@@ -333,7 +333,7 @@ def parse_script(raw, path: str = "", user: bool = False) -> Tutorial:
         raise ScriptError("the file is not a map of script fields")
     unknown = set(raw) - _SCRIPT_KEYS
     if unknown:
-        raise ScriptError(f"unknown field(s) {', '.join(sorted(unknown))}")
+        raise ScriptError(f"unknown field(s) {', '.join(sorted(map(str, unknown)))}")
     for key in ("id", "category", "title", "steps"):
         if key not in raw:
             raise ScriptError(f"{key}: missing")
@@ -363,7 +363,9 @@ def load_file(path: str, user: bool = False) -> Tutorial:
             raw = yaml.safe_load(f)
     except OSError as e:
         raise ScriptError(f"cannot read: {e}") from None
-    except yaml.YAMLError as e:
+    except (yaml.YAMLError, ValueError) as e:
+        # ValueError: PyYAML builds a date from `2001-13-01` and lets the
+        # datetime error through instead of a YAMLError.
         raise ScriptError(f"not valid YAML: {e}") from None
     return parse_script(raw, path, user)
 
