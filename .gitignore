@@ -175,6 +175,7 @@ polyhost/device/rle_native
 polyhost/start_polyhost.*
 
 profile.*
+!tests/fuzz/profile.py
 
 
 # Stray runtime logs from a manual/headless run in the checkout.
@@ -190,3 +191,6 @@ telemetry-collector/dashboard.html
 # Unity hides folders ending in "~" from its asset import; the package's tests
 # use that on purpose, so they are not backup files.
 !unity-package/Tests~/
+
+# Hypothesis example database (tests/fuzz, fuzz profile)
+.hypothesis/
