@@ -55,6 +55,9 @@ class ForwarderHostSetupTest(unittest.TestCase):
     def setUpClass(cls):
         cls.r = _results()
 
+    def test_the_harness_starts_no_browser_report_listener(self):
+        self.assertTrue(self.r["browser_listener_stubbed"])
+
     def test_host_names_the_target(self):
         self.assertEqual(self.r["host_only"], "10.0.0.1")
 
@@ -183,6 +186,26 @@ class _FakeSocket:
         pass
 
 
+class _NoBrowserUrlSource:
+    """Stands in for the browser-report listener the forwarder starts at construction
+    (it would bind 127.0.0.1:50164 for the whole run)."""
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def start(self):
+        return False
+
+    def current_url(self, _app_name):
+        return None
+
+    def restart_if_changed(self):
+        pass
+
+    def close(self):
+        pass
+
+
 def _smoke():
     import logging
     import time
@@ -193,8 +216,13 @@ def _smoke():
         print("SMOKE SKIP no-pywinctl")
         return
     out = {}
-    with mock.patch("polyhost.input.linux_gnome_helper.LinuxGnomeInputHelper"):
+    # forwarder.py binds BrowserUrlSource when it is imported, so the stand-in is
+    # installed first.
+    with mock.patch("polyhost.input.linux_gnome_helper.LinuxGnomeInputHelper"), \
+            mock.patch("polyhost.handler.browser_url_source.BrowserUrlSource",
+                       _NoBrowserUrlSource):
         import polyhost.forwarder as fwd
+        out["browser_listener_stubbed"] = fwd.BrowserUrlSource is _NoBrowserUrlSource
         app = fwd.PolyForwarder(logging.CRITICAL, host="10.0.0.1")
         host_file = os.path.join(os.getcwd(), "host_ip")
 
