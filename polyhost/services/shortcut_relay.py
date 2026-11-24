@@ -56,7 +56,7 @@ def encode(shortcuts) -> list[list]:
         try:
             hid = int(hid)
             mods = int(mods or 0)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             continue
         if not label or not displayable_hid(hid) or not 0 <= mods <= 0x0F:
             continue
@@ -81,7 +81,9 @@ def decode(value) -> tuple[Shortcut, ...]:
         mods, hid, label = item[0], item[1], item[2]
         try:
             mods, hid = int(mods), int(hid)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
+            # OverflowError: the frame is read by json.loads, which accepts
+            # Infinity, and int(inf) raises it.
             continue
         if not 0 <= mods <= 0x0F or not displayable_hid(hid):
             continue

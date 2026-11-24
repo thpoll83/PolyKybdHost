@@ -151,6 +151,24 @@ class WindowReportServerTest(unittest.TestCase):
         self.assertEqual(len(agents), 1)
         self.assertEqual(self.reports, [])
 
+    def test_params_that_are_not_an_object_are_invalid_params(self):
+        """A frame's params can be any JSON value. A list or a number used to reach
+        params.get() and come back as an internal error with a traceback in the
+        log (found by tests/fuzz/window_report_fuzz_test.py)."""
+        for params in ([1], 7, "x", True):
+            with self.subTest(params=params):
+                reply = self.server.dispatch(None, 1, p.M_WINDOW_REPORT, params)
+                self.assertEqual(reply["error"]["code"], p.ERR_INVALID_PARAMS)
+        self.assertEqual(self.reports, [])
+
+    def test_an_infinite_shortcut_chord_does_not_fail_the_report(self):
+        reply = self.server.dispatch(None, 1, p.M_WINDOW_REPORT, {
+            "handle": 1, "name": "a.exe", "title": "t",
+            "shortcuts": [[float("inf"), 0x16, "Save"]]})
+        self.assertEqual(reply["result"]["ok"], True)
+        self.assertEqual(self.reports, [(1, "a.exe", "t")])
+        self.assertEqual(self.last_shortcuts, ())
+
     def test_wrong_authkey_cannot_connect(self):
         # answer_challenge() raises AuthenticationError specifically on a key
         # mismatch — assert that exact type so an unrelated socket failure
