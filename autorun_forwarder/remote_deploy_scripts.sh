@@ -1,12 +1,13 @@
 #!/bin/bash
 # Deploys the PolyForwarder IP detection mechanism.
-# Must be run ON THE REMOTE MACHINE (the one running the RDP server and
-# PolyForwarder, not the machine with the keyboard). For an RDP server such as
-# xrdp. The port is 3389; run with RDP_PORT=<port> to use another one.
+# Must be run ON THE REMOTE MACHINE (the one running the NoMachine or RDP server and
+# PolyForwarder, not the machine with the keyboard). It detects NoMachine (4000)
+# and RDP (3389, xrdp) by itself. Run with REMOTE_PORTS="<port> <port>" to use
+# other ports.
 #
 # What it does:
-#   1. Installs rdp_ip_poll.sh to ~/.polyhost/
-#   2. Installs a systemd user service + timer that polls the RDP port every 30 s
+#   1. Installs remote_ip_poll.sh to ~/.polyhost/
+#   2. Installs a systemd user service + timer that polls the NoMachine and RDP ports every 30 s
 #   3. Enables linger so the timer survives without an active login session
 #   4. Enables and starts the timer
 
@@ -14,10 +15,10 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TARGET_DIR="$HOME/.polyhost"
-RDP_PORT="${RDP_PORT:-3389}"
-POLL_SCRIPT="rdp_ip_poll.sh"
+REMOTE_PORTS="${REMOTE_PORTS:-4000 3389}"
+POLL_SCRIPT="remote_ip_poll.sh"
 SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
-SERVICE_NAME="rdp-ip-poll"
+SERVICE_NAME="remote-ip-poll"
 
 echo "Deploying PolyForwarder IP poll timer..."
 
@@ -37,17 +38,17 @@ mkdir -p "$SYSTEMD_USER_DIR"
 
 cat > "$SYSTEMD_USER_DIR/$SERVICE_NAME.service" <<EOF
 [Unit]
-Description=Poll Remote Desktop (RDP) session IP for PolyHost
+Description=Poll NoMachine or RDP session IP for PolyHost
 
 [Service]
 Type=oneshot
-Environment=RDP_PORT=$RDP_PORT
+Environment="REMOTE_PORTS=$REMOTE_PORTS"
 ExecStart=$TARGET_DIR/$POLL_SCRIPT
 EOF
 
 cat > "$SYSTEMD_USER_DIR/$SERVICE_NAME.timer" <<EOF
 [Unit]
-Description=Poll Remote Desktop (RDP) session IP every 30 seconds
+Description=Poll NoMachine or RDP session IP every 30 seconds
 
 [Timer]
 OnBootSec=10
