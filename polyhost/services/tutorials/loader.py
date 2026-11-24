@@ -11,6 +11,7 @@ Qt-free. The texts stay ``{language code: text}`` dicts; the GUI picks one with
 """
 from __future__ import annotations
 
+import math
 import os
 import re
 from dataclasses import dataclass, field
@@ -280,9 +281,15 @@ def _wait(value, where: str) -> Wait:
                           f"{{press: KEYCODE}}, {{key: {{keycode: ...}}}}, {{leave: NAME}}")
     kind, v = next(iter(value.items()))
     if kind == "seconds":
-        if isinstance(v, bool) or not isinstance(v, (int, float)) or v <= 0:
+        # A NaN passes `v <= 0`, and a NaN or infinite deadline is never reached. An int
+        # too large for a float raises OverflowError in float().
+        try:
+            seconds = float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+        except OverflowError:
+            seconds = None
+        if seconds is None or not math.isfinite(seconds) or seconds <= 0:
             raise ScriptError(f"{where}.seconds: a number above 0")
-        return Wait(kind, float(v))
+        return Wait(kind, seconds)
     if kind in ("layer", "leave"):
         return Wait(kind, _layer_name(v, f"{where}.{kind}"))
     if kind == "key":
