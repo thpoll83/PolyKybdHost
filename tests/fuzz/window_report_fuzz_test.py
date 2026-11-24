@@ -115,7 +115,7 @@ class ShortcutRelayFuzzTest(unittest.TestCase):
         self.assertEqual(json.loads(json.dumps(wire)), wire)
         got = shortcut_relay.decode(wire)
         self.assertEqual([(s.mods, s.hid, s.label) for s in got],
-                         [(m, h, lab.strip()[:shortcut_relay.MAX_LABEL])
+                         [(m, h, lab.strip()[:shortcut_relay.MAX_LABEL].strip())
                           for m, h, lab in items
                           if lab.strip()[:shortcut_relay.MAX_LABEL].strip()])
 
