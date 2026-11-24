@@ -75,7 +75,8 @@ AGENT_HEARTBEAT_MSEC = 1000
 # `log_detail` sets this machine's log level at startup (main_app.resolve_dev).
 FORWARDER_SETTING_KEYS = ("ui_theme", "ui_language", "shortcut_icons_enabled",
                           "shortcut_enable_accessibility", "log_detail",
-                          "agents_raise_here", "agents_anonymize") + tuple(_URL_SETTINGS)
+                          "agents_raise_here", "agents_anonymize",
+                          "forwarder_detect_host") + tuple(_URL_SETTINGS)
 
 from polyhost.util.log_util import DEBUG_DETAILED, make_stream_handler, make_collapse_handler  # noqa: F401  (registers debug_detailed on import)
 from polyhost.handler.active_window import log_env_info
@@ -95,7 +96,8 @@ class _UpdateBridge(QObject):
 
 class PolyForwarder(QApplication):
     def __init__(self, log_level, host=None, host_file=None,
-                 report_rpc=False, report_port=None, report_authkey_file=None):
+                 report_rpc=False, report_port=None, report_authkey_file=None,
+                 detect_host=False):
         super().__init__(sys.argv)
         # Tray-only app: keep it out of the macOS Dock (no-op elsewhere).
         from polyhost.util.macos_ui import hide_dock_icon
@@ -110,6 +112,12 @@ class PolyForwarder(QApplication):
         install_front_on_show(self)
         self.host = host
         self.host_file = os.path.expanduser(host_file) if host_file else None
+        # The keyboard computer's address from the remote-desktop connection to this
+        # computer (services/session_peer.py): --detect-host, or the setting
+        # forwarder_detect_host. The watcher is made on first use.
+        self._detect_flag = bool(detect_host)
+        self._detect_checked = (0.0, False)
+        self._client_watcher = None
 
         # H4d: optionally push the active window over the authenticated network
         # window-report endpoint instead of the plaintext TCP relay. ⚠️ The RPC
@@ -386,6 +394,10 @@ class PolyForwarder(QApplication):
         host = self._resolve_host()
         if host:
             return host
+        if self._detect_enabled():
+            if not self._report_rpc:
+                return _("no host (finding the keyboard computer needs a paired forwarder)")
+            return _("no host (waiting for a Remote Desktop or NoMachine connection)")
         if self.host_file:
             return _f("no host (waiting for {path})", path=self.host_file)
         return _("no host configured")
@@ -466,16 +478,50 @@ class PolyForwarder(QApplication):
         but set a bool — no Qt objects, no send from off the main thread."""
         self._url_dirty = True
 
+    def _warn_detect_unpaired(self):
+        if not getattr(self, "_warned_detect_unpaired", False):
+            self._warned_detect_unpaired = True
+            self.log.warning("Finding the keyboard computer from the connection needs the "
+                             "authenticated connection: pair this forwarder with the "
+                             "keyboard computer, or start it with --report-rpc. Not using "
+                             "a found address.")
+
+    def _detect_enabled(self) -> bool:
+        """--detect-host, or the setting forwarder_detect_host (read at most every
+        5 seconds: this is asked for every report)."""
+        if self._detect_flag:
+            return True
+        import time
+        checked, value = self._detect_checked
+        now = time.monotonic()
+        if now - checked >= 5.0:
+            value = bool(read_setting("forwarder_detect_host", False))
+            self._detect_checked = (now, value)
+        return value
+
     def _resolve_host(self):
-        """Return the target host string (from --host or the host-file), or None."""
-        host = self.host
+        """Return the target host string, or None: the host-file (priority) or --host,
+        and with the detection on and neither naming one, the address of the
+        remote-desktop client connected to this computer."""
+        from polyhost.services import session_peer
+        text = None
         if self.host_file:
             try:
                 with open(self.host_file) as f:
-                    host = f.read().strip()
+                    text = f.read()
             except OSError:
-                return None  # file absent means no active session
-        return host or None
+                text = None     # file absent means no active session
+        # ⚠️ A found address is used only over the authenticated connection (paired, or
+        # --report-rpc): any computer that can reach port 3389 or 4000 gets a TCP connection
+        # before it authenticates, and the legacy relay would send it the window titles.
+        detect = self._detect_enabled()
+        if detect and not self._report_rpc:
+            self._warn_detect_unpaired()
+        if detect and self._report_rpc and self._client_watcher is None:
+            self._client_watcher = session_peer.ClientAddressWatcher()
+        return session_peer.resolve_host(self.host, bool(self.host_file), text, detect,
+                                         self._client_watcher,
+                                         authenticated=self._report_rpc)
 
     def _send_via_rpc(self, handle, title, name, url=None):
         """Push the active window over the authenticated window-report endpoint
@@ -794,7 +840,8 @@ class PolyForwarder(QApplication):
         """
         return problem_report.forwarder_diagnostics(
             __version__, host=self.host, host_file=self.host_file,
-            report_rpc=self._report_rpc, report_port=self._report_port)
+            report_rpc=self._report_rpc, report_port=self._report_port,
+            detect_host=self._detect_enabled())
 
     def open_report_problem(self):
         """Guided problem report (retained instance — see PolyHost.open_report_problem)."""
@@ -932,6 +979,9 @@ class PolyForwarder(QApplication):
         ]
         if self.host_file:
             rows.append(_f("<b>Host file:</b> {path}", path=self.host_file))
+        if self._detect_enabled():
+            rows.append(_("<b>Keyboard computer:</b> found from the Remote Desktop or "
+                          "NoMachine connection"))
         return about_dialog.rows_html(rows)
 
     def _about_env_html(self):

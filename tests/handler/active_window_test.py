@@ -1014,7 +1014,7 @@ class RemoteDesktopConnectionIsARemoteEntryTest(unittest.TestCase):
 
     def test_a_SESSION_window_is_the_remote_entry(self):
         handler = self._handler()
-        self._focus(handler, "at1i-ws05 - 10.102.7.12 - Remote Desktop Connection")
+        self._focus(handler, "build-ws01 - 192.0.2.10 - Remote Desktop Connection")
         self.assertTrue(handler.is_remote_mapping_entry())
 
     def test_the_connection_DIALOG_is_not(self):

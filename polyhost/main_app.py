@@ -164,6 +164,11 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
                              'GUI-spawned headless daemon so it does not touch the GUI autostart entry.')
     parser.add_argument('--host', help='Specify a host where the PolyKybd is physically connected to')
     parser.add_argument('--host-file', help='Path to a file containing the host IP, written by a session hook (see folder autorun_forwarder for examples). This option has higher priority than `--host`.')
+    parser.add_argument('--detect-host', default=False, action='store_true',
+                        help='Forwarder: find the keyboard computer\'s address from the '
+                             'NoMachine (port 4000) or Remote Desktop (port 3389) connection '
+                             'to this computer. Use it instead of --host or --host-file; '
+                             'with one of them, it only fills in when they name no host.')
     parser.add_argument('--report-rpc', default=False, action='store_true',
                         help='Forwarder: push the active window over the authenticated, '
                              'version-gated window-report network endpoint (H4d) instead of the '
@@ -178,6 +183,8 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
                              'copied from the keyboard machine). Required across machines; if '
                              "omitted, this machine's local key is used (same-machine only).")
     args=parser.parse_args()
+    # A forwarder: it reports to a keyboard computer named, or found, by one of these.
+    forwarder_mode = bool(args.host or args.host_file or args.detect_host)
 
     # Developer mode + log verbosity (see resolve_dev): the flag overrides the
     # persisted developer_mode and log_detail settings in both directions; with
@@ -265,7 +272,7 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     # daemon's cold import doesn't contend with PyQt5 for CPU/disk/AV). None
     # means "no spawn pending".
     pending_daemon_spawn = None
-    is_plain_gui = not (args.headless or explicit_connect or args.host or args.host_file)
+    is_plain_gui = not (args.headless or explicit_connect or forwarder_mode)
     # One tray icon per user, and the check happens HERE — before the spawn
     # decision below, not around it. Under daemon-by-default the GUI is a client
     # and never owns the control endpoint, so the endpoint lock cannot see a
@@ -279,7 +286,7 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     # The forwarder gets the same one-per-user rule from a lock of its own (it
     # may run beside the tray app). Held in `gui_claim` so the post-update
     # relaunch below drops it before the replacement starts.
-    if (args.host or args.host_file) and not args.headless:
+    if forwarder_mode and not args.headless:
         from polyhost.server.instance import claim_forwarder, EndpointBusy
         try:
             gui_claim = claim_forwarder()
@@ -380,7 +387,7 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     # The claim is passed to run_headless rather than re-taken there: one
     # process, one claim (a second would block on this process's own lock).
     instance_claim = None
-    if not (args.host or args.host_file or client_mode or daemon_handled_instance):
+    if not (forwarder_mode or client_mode or daemon_handled_instance):
         from polyhost.server.instance import claim_instance, EndpointBusy, LIVE, LOCKED
         try:
             instance_claim = claim_instance()
@@ -453,9 +460,10 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     from polyhost.gui import i18n_qt
     i18n_qt.prepare(read_setting("ui_language", i18n.SETTING_AUTO))
 
-    if args.host or args.host_file:
+    if forwarder_mode:
         from polyhost.forwarder import PolyForwarder
-        addr = args.host or f"IP set in {args.host_file}"
+        addr = (args.host or (f"IP set in {args.host_file}" if args.host_file
+                              else "the Remote Desktop or NoMachine client"))
         slog.info("Launch path: forwarder -> %s", addr)
         print(f"Executing Forwarder. Sending to {addr}.")
         # A forwarder paired with the keyboard computer (services/forwarder_pairing.py)
@@ -469,7 +477,8 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
             slog.info("Forwarder: paired with the keyboard computer, using RPC mode")
         app = PolyForwarder(log_level_for(verbosity), args.host, args.host_file,
                             report_rpc=report_rpc, report_port=args.report_port,
-                            report_authkey_file=authkey_file)
+                            report_authkey_file=authkey_file,
+                            detect_host=args.detect_host)
     else:
         from polyhost.host import PolyHost
         # Spawn the deferred daemon now — AFTER the heavy GUI imports above, so
