@@ -113,6 +113,19 @@ class DecodeIsTOTALTest(unittest.TestCase):
     def test_a_non_NUMERIC_chord_is_skipped(self):
         self.assertEqual(shortcut_relay.decode([["ctrl", "s", "Save"]]), ())
 
+    def test_an_INFINITE_chord_is_skipped(self):
+        # json.loads reads `Infinity` and `NaN`, and int(inf) raises
+        # OverflowError, which decode() let through (found by
+        # tests/fuzz/window_report_fuzz_test.py).
+        out = shortcut_relay.decode([[float("inf"), 0x16, "Save"],
+                                     [1, float("-inf"), "Open"],
+                                     [float("nan"), 0x16, "Cut"], [1, 0x06, "Copy"]])
+        self.assertEqual([s.label for s in out], ["Copy"])
+
+    def test_encode_skips_an_infinite_chord(self):
+        self.assertEqual(shortcut_relay.encode([sc(hid=float("inf")), sc(mods=float("inf"))]),
+                         [])
+
     def test_an_out_of_range_chord_is_skipped(self):
         self.assertEqual(shortcut_relay.decode([[99, 0x16, "Save"],
                                                 [1, 0x01, "Save"]]), ())
