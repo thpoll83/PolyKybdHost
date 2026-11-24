@@ -517,11 +517,11 @@ class PolyForwarder(QApplication):
         detect = self._detect_enabled()
         if detect and not self._report_rpc:
             self._warn_detect_unpaired()
-            detect = False
-        if detect and self._client_watcher is None:
+        if detect and self._report_rpc and self._client_watcher is None:
             self._client_watcher = session_peer.ClientAddressWatcher()
         return session_peer.resolve_host(self.host, bool(self.host_file), text, detect,
-                                         self._client_watcher)
+                                         self._client_watcher,
+                                         authenticated=self._report_rpc)
 
     def _send_via_rpc(self, handle, title, name, url=None):
         """Push the active window over the authenticated window-report endpoint

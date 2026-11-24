@@ -207,17 +207,20 @@ class ClientAddressWatcher:
             self._stop.wait(self._interval)
 
 
-def resolve_host(host, has_host_file, host_file_text, detect_enabled, watcher):
+def resolve_host(host, has_host_file, host_file_text, detect_enabled, watcher,
+                 authenticated=True):
     """The address the forwarder reports to.
 
     `host` is `--host`. With a `--host-file` (`has_host_file`), the file takes priority
     over `--host`, as before: `host_file_text` is its text, None when the file is absent
     (no active session). With the detection on (`detect_enabled`) and nothing named,
-    the address of the remote-desktop client is used. None: no host.
+    the address of the remote-desktop client is used, but only when `authenticated`: a
+    computer that can reach port 3389 or 4000 gets a TCP connection before it logs in,
+    and the plaintext relay would send it the window titles. None: no host.
     """
     named = (host_file_text or "").strip() if has_host_file else host
     if named:
         return named
-    if detect_enabled and watcher is not None:
+    if detect_enabled and authenticated and watcher is not None:
         return watcher.address()
     return None

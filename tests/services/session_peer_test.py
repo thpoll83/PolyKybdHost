@@ -156,6 +156,20 @@ class ResolveTest(unittest.TestCase):
         """Unchanged: a host file with no file means no active session."""
         self.assertIsNone(sp.resolve_host("1.1.1.1", True, None, False, None))
 
+    def test_a_found_address_is_not_used_without_the_authenticated_connection(self):
+        """Port 3389 or 4000 accepts a TCP connection before anyone logs in, and the
+        plaintext relay would send that computer the window titles."""
+        w = _Watcher("10.0.0.9")
+        self.assertIsNone(sp.resolve_host(None, False, None, True, w, authenticated=False))
+        self.assertEqual(w.asked, 0)
+        # a host or host file named by the user is not affected
+        self.assertEqual(sp.resolve_host("1.1.1.1", False, None, True, w,
+                                         authenticated=False), "1.1.1.1")
+        self.assertEqual(sp.resolve_host(None, True, "2.2.2.2", True, w,
+                                         authenticated=False), "2.2.2.2")
+        self.assertEqual(sp.resolve_host(None, False, None, True, w, authenticated=True),
+                         "10.0.0.9")
+
     def test_nothing_named_and_no_detection_is_no_host(self):
         self.assertIsNone(sp.resolve_host(None, False, None, False, None))
         self.assertIsNone(sp.resolve_host(None, False, None, True, _Watcher(None)))
