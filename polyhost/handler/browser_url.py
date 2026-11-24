@@ -135,7 +135,11 @@ CONTEXT_REPORTERS = {
     ), "jetbrains"),
     "obsidian": "obsidian",       # obsidian-plugin/: obsidian://<view>[/<vim mode>]
     # VS Code and its forks: vscode-extension/ sends <token>://<debug mode>.
-    "code": "vscode", "cursor": "cursor",
+    # VS Code Insiders, VSCodium and Code - OSS report `vscode` too (appToken);
+    # the names of the mapping's `code` entry.
+    **dict.fromkeys(("code", "code - insiders", "code-insiders", "vscodium",
+                     "codium", "code-oss"), "vscode"),
+    "cursor": "cursor",
     "windsurf": "windsurf", "devin": "windsurf", "devin-desktop": "windsurf",
     # Bitwig Studio's controller extension (bitwig-extension/): the names of the
     # mapping's `bitwig studio` entry.

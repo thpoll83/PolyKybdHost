@@ -265,6 +265,19 @@ class ViewerTest(unittest.TestCase):
         self.assertIsNone(find_viewer("laptop", [win]))
         self.assertIs(find_viewer("laptop", [win], apps), win)
 
+    def test_shipped_vm_and_remote_control_viewers_are_remote_entries(self):
+        import pathlib
+        import yaml
+        from polyhost.services.agents.viewer import mapping_viewer_apps
+        res = pathlib.Path(__file__).resolve().parents[2] / "polyhost" / "res"
+        with open(res / "overlay-mapping.poly.yaml", encoding="utf-8") as f:
+            apps = mapping_viewer_apps(yaml.safe_load(f))
+        for name in ("virtualboxvm", "virtualbox vm", "vmware", "vmplayer", "vmrc",
+                     "vmware fusion", "anydesk", "teamviewer"):
+            self.assertIn(name, apps)
+        # The VirtualBox Manager is its own process and shows no guest.
+        self.assertNotIn("virtualbox", apps)
+
     def test_raise_viewer_brings_it_forward(self):
         from polyhost.services.agents.raiser import raise_viewer
         nx = _Win("nxplayer", "laptop - NoMachine")
