@@ -377,11 +377,16 @@ and relative links were adjusted to suit a standalone file.
 ## Property and fuzz tests (`tests/fuzz`)
 
 `tests/fuzz/*_fuzz_test.py` use Hypothesis on the code that reads bytes or text from
-the keyboard, from files or from other processes: PRC images, mapping bit packing,
-font packs, macro bodies, keycode text, crash-log markers, log-bundle line parsers and
-the HID and serial reply parsers. Each test checks a round trip where an encoder
-exists, or that a decoder given arbitrary input raises nothing except its documented
-exception.
+the keyboard, from files, from the network or from other processes: PRC images, mapping
+bit packing, font packs, macro bodies, keycode text, crash-log markers, log-bundle line
+parsers, the HID and serial reply parsers, the network window-report endpoint and its
+shortcut list, accelerator strings from other applications' accessibility trees, agent
+hook payloads and network agent reports, the cloud relay's WebSocket frames, sealed
+reports, join codes and channel file, tutorial scripts, the Westwood and StarCraft game
+file formats and the game key-binding files. Each test checks a round trip where an
+encoder exists, that a decoder given arbitrary input raises nothing except its
+documented exception, or that what a parser accepts matches a model of the format
+written in the test.
 
 `tests/fuzz/profile.py` defines two profiles. The normal suite uses `default` (50
 examples per test, 2 s deadline, no example database), so the runner needs nothing
@@ -392,7 +397,7 @@ POLYKYBD_HYPOTHESIS_PROFILE=fuzz .venv/bin/python -m unittest discover -s tests/
 POLYKYBD_HYPOTHESIS_PROFILE=fuzz .venv/bin/python -m unittest tests.fuzz.macro_body_fuzz_test
 ```
 
-The whole long run takes about 7 minutes. Use `-m unittest` for it, not
+The whole long run takes about 30 minutes. Use `-m unittest` for it, not
 `scripts/run_tests.py`: some tests take longer than the runner's 120 s per-test
 watchdog. The `fuzz` profile keeps failing examples in `.hypothesis/` (ignored by git)
 and replays them first on the next run. When a run finds a bug, fix it in its own
