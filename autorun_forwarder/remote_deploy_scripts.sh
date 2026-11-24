@@ -16,11 +16,22 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TARGET_DIR="$HOME/.polyhost"
 REMOTE_PORTS="${REMOTE_PORTS:-4000 3389}"
+case "$REMOTE_PORTS" in
+    *[!0-9\ ]*|"") echo "REMOTE_PORTS must be port numbers separated by spaces, got: '$REMOTE_PORTS'" >&2; exit 1 ;;
+esac
 POLL_SCRIPT="remote_ip_poll.sh"
 SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
 SERVICE_NAME="remote-ip-poll"
 
 echo "Deploying PolyForwarder IP poll timer..."
+
+# The unit starts the script as %h/.polyhost/..., the home directory of the user's
+# systemd instance. It must be the directory this script installs into.
+HOME_OF_USER="$(getent passwd "$(id -un)" | cut -d: -f6)"
+if [ -n "$HOME_OF_USER" ] && [ "$HOME_OF_USER" != "$HOME" ]; then
+    echo "HOME ($HOME) differs from the account's home ($HOME_OF_USER); run this as that user's login shell." >&2
+    exit 1
+fi
 
 if [ ! -f "$SCRIPT_DIR/$POLL_SCRIPT" ]; then
     echo "Error: $POLL_SCRIPT not found in $SCRIPT_DIR" >&2
@@ -43,7 +54,7 @@ Description=Poll NoMachine or RDP session IP for PolyHost
 [Service]
 Type=oneshot
 Environment="REMOTE_PORTS=$REMOTE_PORTS"
-ExecStart="$TARGET_DIR/$POLL_SCRIPT"
+ExecStart=%h/.polyhost/$POLL_SCRIPT
 EOF
 
 cat > "$SYSTEMD_USER_DIR/$SERVICE_NAME.timer" <<EOF
