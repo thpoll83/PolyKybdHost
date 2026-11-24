@@ -6,6 +6,10 @@
 # Replaces the previous NX session hook approach (which crashed NX sessions
 # due to nxuser lacking permission to write to the real user's home directory).
 #
+# ⚠️ Do not run this together with remote_deploy_scripts.sh: both timers write and
+# delete the same host_ip file. remote_deploy_scripts.sh handles NoMachine and RDP
+# and disables this timer.
+#
 # What it does:
 #   1. Installs nx_ip_poll.sh to ~/.polyhost/
 #   2. Installs a systemd user service + timer that polls port 4000 every 30 s
@@ -13,6 +17,18 @@
 #   4. Enables and starts the timer
 
 set -e
+
+# remote_deploy_scripts.sh replaces this script. Both timers write and delete the
+# same host_ip file, so running this one afterwards would delete the address that
+# the RDP poll writes, every 30 seconds.
+# is-enabled / is-active, not "cat": an installed but disabled unit still has a
+# file, so "cat" would block this script after "disable --now" for good.
+if systemctl --user is-enabled --quiet remote-ip-poll.timer 2>/dev/null \
+    || systemctl --user is-active --quiet remote-ip-poll.timer 2>/dev/null; then
+    echo "remote-ip-poll.timer is enabled (remote_deploy_scripts.sh): it already handles NoMachine." >&2
+    echo "Not installing nx-ip-poll. Run: systemctl --user disable --now remote-ip-poll.timer first to switch back." >&2
+    exit 1
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TARGET_DIR="$HOME/.polyhost"

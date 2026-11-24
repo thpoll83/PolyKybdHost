@@ -988,6 +988,52 @@ class NoMachineChooserIsNotASessionTest(unittest.TestCase):
 
 
 @unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class RemoteDesktopConnectionIsARemoteEntryTest(unittest.TestCase):
+    """The SHIPPED `mstsc` entry matches a session window only.
+
+    A Windows Remote Desktop Connection session window is titled
+    `<computer> - <address> - Remote Desktop Connection`; the connection dialog is
+    titled `Remote Desktop Connection` alone (field log, 2026-11-24: `mstsc`
+    resolved nothing to draw).
+    """
+
+    def _handler(self):
+        import pathlib
+        import yaml
+        res = pathlib.Path(__file__).resolve().parents[2] / "polyhost" / "res"
+        with open(res / "overlay-mapping.poly.yaml", encoding="utf-8") as f:
+            shipped = yaml.safe_load(f)
+        handler = OverlayHandler({"mstsc": shipped["mstsc"]})
+        self.addCleanup(handler.close)
+        return handler
+
+    def _focus(self, handler, title):
+        return AMatchWithNothingToDrawDisablesTest._focus(
+            self, handler,
+            AMatchWithNothingToDrawDisablesTest._win("mstsc", title, 22))
+
+    def test_a_SESSION_window_is_the_remote_entry(self):
+        handler = self._handler()
+        self._focus(handler, "at1i-ws05 - 10.102.7.12 - Remote Desktop Connection")
+        self.assertTrue(handler.is_remote_mapping_entry())
+
+    def test_the_connection_DIALOG_is_not(self):
+        handler = self._handler()
+        data, cmd = self._focus(handler, "Remote Desktop Connection")
+        self.assertFalse(handler.is_remote_mapping_entry())
+        self.assertEqual(cmd, OverlayCommand.DISABLE)
+
+    def test_the_entry_is_a_viewer_for_the_agent_raise(self):
+        from polyhost.services.agents.viewer import mapping_viewer_apps
+        import pathlib
+        import yaml
+        res = pathlib.Path(__file__).resolve().parents[2] / "polyhost" / "res"
+        with open(res / "overlay-mapping.poly.yaml", encoding="utf-8") as f:
+            shipped = yaml.safe_load(f)
+        self.assertIn("mstsc", mapping_viewer_apps(shipped))
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
 class TheAcceptTimerCountsREALTimeTest(unittest.TestCase):
     """⚠️ It used to add the NOMINAL cycle whatever the tick really cost.
 
