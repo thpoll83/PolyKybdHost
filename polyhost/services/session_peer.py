@@ -71,7 +71,7 @@ def _proc_address(hex_text: str):
             if raw[:12] == b"\0" * 10 + b"\xff\xff":       # ::ffff:a.b.c.d
                 return socket.inet_ntoa(raw[12:])
     except (ValueError, struct.error, OSError):
-        pass
+        return None             # not a hex address: the row is skipped
     return None
 
 
@@ -131,9 +131,9 @@ def parse_netstat(text: str, ports):
 def _windows_table():
     """The bytes of the IPv4 TCP table, or None when Windows refuses."""
     import ctypes
-    from ctypes import wintypes
+    import ctypes.wintypes
     iphlpapi = ctypes.windll.iphlpapi
-    size = wintypes.DWORD(0)
+    size = ctypes.wintypes.DWORD(0)
     buf = None
     for _ in range(4):                 # the table can grow between the two calls
         result = iphlpapi.GetExtendedTcpTable(
