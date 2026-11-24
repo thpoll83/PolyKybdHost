@@ -499,29 +499,51 @@ class PolyForwarder(QApplication):
             self._detect_checked = (now, value)
         return value
 
+    def _host_file_text(self):
+        """The text of --host-file, or None when there is none or it is absent (no
+        active session)."""
+        if not self.host_file:
+            return None
+        try:
+            with open(self.host_file) as f:
+                return f.read()
+        except OSError:
+            return None
+
+    def _watcher(self):
+        """The watcher that finds the keyboard computer, or None when the detection is
+        off or this forwarder is not on the authenticated connection.
+
+        ⚠️ A found address is used only over the authenticated connection (paired, or
+        --report-rpc): any computer that can reach port 3389 or 4000 gets a TCP
+        connection before it authenticates, and the legacy relay would send it the
+        window titles."""
+        from polyhost.services import session_peer
+        if not self._detect_enabled():
+            return None
+        if not self._report_rpc:
+            self._warn_detect_unpaired()
+            return None
+        if self._client_watcher is None:
+            self._client_watcher = session_peer.ClientAddressWatcher()
+        return self._client_watcher
+
     def _resolve_host(self):
         """Return the target host string, or None: the host-file (priority) or --host,
         and with the detection on and neither naming one, the address of the
         remote-desktop client connected to this computer."""
         from polyhost.services import session_peer
-        text = None
-        if self.host_file:
-            try:
-                with open(self.host_file) as f:
-                    text = f.read()
-            except OSError:
-                text = None     # file absent means no active session
-        # ⚠️ A found address is used only over the authenticated connection (paired, or
-        # --report-rpc): any computer that can reach port 3389 or 4000 gets a TCP connection
-        # before it authenticates, and the legacy relay would send it the window titles.
-        detect = self._detect_enabled()
-        if detect and not self._report_rpc:
-            self._warn_detect_unpaired()
-        if detect and self._report_rpc and self._client_watcher is None:
-            self._client_watcher = session_peer.ClientAddressWatcher()
-        return session_peer.resolve_host(self.host, bool(self.host_file), text, detect,
-                                         self._client_watcher,
-                                         authenticated=self._report_rpc)
+        return session_peer.resolve_host(
+            self.host, bool(self.host_file), self._host_file_text(),
+            self._detect_enabled(), self._watcher(), authenticated=self._report_rpc)
+
+    def _found_address_in_use(self):
+        """True when reports go to an address found from the connection."""
+        from polyhost.services import session_peer
+        watcher = self._watcher()
+        return bool(watcher and watcher.address()
+                    and not session_peer.named_host(
+                        self.host, bool(self.host_file), self._host_file_text()))
 
     def _send_via_rpc(self, handle, title, name, url=None):
         """Push the active window over the authenticated window-report endpoint
@@ -776,6 +798,8 @@ class PolyForwarder(QApplication):
             self._say(self._relay.tick(now))
             return False
         ok = self._send_to_host(handle, title, name, url=url)
+        if not ok and self._found_address_in_use():
+            self._client_watcher.request_look()    # the client may have changed
         self._say(self._relay.note(ok, now, self._send_error))
         if ok != self.relay_ok:
             self.relay_ok = ok
@@ -979,7 +1003,7 @@ class PolyForwarder(QApplication):
         ]
         if self.host_file:
             rows.append(_f("<b>Host file:</b> {path}", path=self.host_file))
-        if self._detect_enabled():
+        if self._found_address_in_use():
             rows.append(_("<b>Keyboard computer:</b> found from the Remote Desktop or "
                           "NoMachine connection"))
         return about_dialog.rows_html(rows)
@@ -1217,6 +1241,12 @@ class PolyForwarder(QApplication):
                         self.title = win.title
                         self._url_dirty = False
                         handle = win.getHandle()
+                        if changed:
+                            # Someone uses this computer: let the watcher look for
+                            # the connection (a heartbeat does not count).
+                            watcher = self._watcher()
+                            if watcher:
+                                watcher.touch()
                         self.send_to_host(handle, self.title, app_name, url=url)
                         if changed:
                             # ⚠️ %s, never %d -- the handle is a TUPLE on macOS
