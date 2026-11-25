@@ -379,8 +379,8 @@ and relative links were adjusted to suit a standalone file.
 `tests/fuzz/*_fuzz_test.py` use Hypothesis on the code that reads bytes or text from
 the keyboard, from files, from the network or from other processes: PRC images, mapping
 bit packing, font packs, macro bodies, keycode text, crash-log markers, log-bundle line
-parsers, the HID and serial reply parsers, the network window-report endpoint and its
-shortcut list, accelerator strings from other applications' accessibility trees, agent
+parsers, the HID and serial reply parsers, the local control socket's request dispatch,
+the network window-report endpoint and its shortcut list, accelerator strings from other applications' accessibility trees, agent
 hook payloads and network agent reports, the cloud relay's WebSocket frames, sealed
 reports, join codes and channel file, tutorial scripts, the Westwood and StarCraft game
 file formats and the game key-binding files. Each test checks a round trip where an
@@ -388,7 +388,9 @@ encoder exists, that a decoder given arbitrary input raises nothing except its
 documented exception, or that what a parser accepts matches a model of the format
 written in the test.
 
-`tests/fuzz/profile.py` defines two profiles. The normal suite uses `default` (50
+`tests/fuzz/profile.py` defines four profiles: `default`, `fuzz`, `nightly` (200000
+examples, the scheduled CI run) and `paths` (fixed seed, used by `scripts/fuzz_paths.py`).
+The normal suite uses `default` (50
 examples per test, 2 s deadline, no example database), so the runner needs nothing
 extra. For a long run, select `fuzz` (20000 examples per test, no deadline):
 
