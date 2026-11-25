@@ -347,7 +347,9 @@ and relative links were adjusted to suit a standalone file.
     of its own name (`.polykybd-host-bitwig.json`). For all of these a copy with
     none of the shipped files is "not set up", so a settings file the program
     keeps beside the plugin (Obsidian's `data.json`) does not make it `manual`.
-    VS Code, Cursor, Windsurf: `code --install-extension <vsix> --force`; the
+    VS Code, Cursor, Windsurf, VSCodium: `code --install-extension <vsix> --force`
+    (`codium` for VSCodium; its Flatpak has no command line program outside the
+    sandbox and reads "not found"); the
     content digest and the version of the `.vsix` it installed are recorded. An
     installed extension with another version (a Marketplace or Open VSX copy, for
     example) reads `manual` and is left alone; a store copy with the same version

@@ -5,7 +5,7 @@ the front end for :mod:`polyhost.services.shell_title` and
 Terminals lists each shell this computer has (bash, zsh, PowerShell 7, Windows
 PowerShell 5.1) with its startup file and whether the title line is in it.
 Editors lists each editor (Vim, Neovim, Emacs, GDB, DaVinci Resolve, the JetBrains
-IDEs, FreeCAD, Blender, Maya, QGIS, Bitwig Studio, VS Code, Cursor, Windsurf,
+IDEs, FreeCAD, Blender, Maya, QGIS, Bitwig Studio, VS Code, Cursor, Windsurf, VSCodium,
 JupyterLab, Godot, Unity, Obsidian) with the folder or init file its plugin goes
 to. The status runs on a thread because asking PowerShell for ``$PROFILE``
 starts a PowerShell process, and VS Code for its extensions starts ``code``.
@@ -84,6 +84,7 @@ def editor_label(editor):
             editor_plugins.VSCODE: "VS Code",
             editor_plugins.CURSOR: "Cursor",
             editor_plugins.WINDSURF: "Windsurf",
+            editor_plugins.VSCODIUM: "VSCodium",
             editor_plugins.JUPYTERLAB: "JupyterLab",
             editor_plugins.GODOT: "Godot",
             editor_plugins.UNITY: "Unity",

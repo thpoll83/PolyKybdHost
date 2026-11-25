@@ -34,7 +34,7 @@ RES = Path(__file__).resolve().parents[2] / "polyhost" / "res"
 MAPPING = RES / "overlay-mapping.poly.yaml"
 # mapping key -> (token the extension sends, app-set stem per OS)
 APPS = {
-    "code,com.microsoft.vscode": ("vscode", {"windows": "vscode_template", "macos": "vscode_mac_template",
+    "code,com.microsoft.vscode,code - insiders,code-insiders,vscodium,codium,code-oss": ("vscode", {"windows": "vscode_template", "macos": "vscode_mac_template",
                         "linux": "vscode_linux_template"}),
     "cursor": ("cursor", {"windows": "cursor_template", "macos": "cursor_mac_template",
                           "linux": "cursor_linux_template"}),
@@ -116,7 +116,7 @@ class VscodeRoutingTest(unittest.TestCase):
 
     def _route(self, key, url, os_name):
         entry = self.mapping[key.split(",")[0]]
-        title = TITLE if key.startswith("code") else "main.py - project"
+        title = TITLE if key.split(",")[0] == "code" else "main.py - project"
         return find_matching_entry(title, entry, url, os_name)
 
     def test_each_mode_gets_its_debug_set_on_every_os(self):
@@ -139,6 +139,26 @@ class VscodeRoutingTest(unittest.TestCase):
                 got = _names(self._route(key, None, os_name))
                 self.assertEqual(got[0], f"{stem}.mods.png", (key, os_name))
                 self.assertEqual(got[-1], "vscode_debug_fallback.mods.png", (key, os_name))
+
+    def test_the_forks_use_the_vscode_entry_on_windows_and_linux(self):
+        """Insiders, VSCodium and Code - OSS pass the `title:` gate of `code`."""
+        titles = {"code - insiders": "main.py - project - Visual Studio Code - Insiders",
+                  "code-insiders": "main.py - project - Visual Studio Code - Insiders",
+                  "vscodium": "main.py - project - VSCodium",
+                  "codium": "main.py - project - VSCodium",
+                  "code-oss": "main.py - project - Code - OSS",
+                  # An empty window: the title is the product name alone.
+                  "code": "Visual Studio Code"}
+        titles = [*titles.items(), ("vscodium", "VSCodium"), ("code-oss", "Code - OSS")]
+        for name, title in titles:
+            for os_name, stem in (("windows", "vscode_template"),
+                                  ("linux", "vscode_linux_template")):
+                # No URL: a matching urls-contains route skips the title gate,
+                # so only a call without a report tests the `title:` regex.
+                for url in (None, "vscode://edit"):
+                    got = find_matching_entry(title, self.mapping[name], url, os_name)
+                    self.assertIsNotNone(got, (name, os_name, url))
+                    self.assertEqual(_names(got)[0], f"{stem}.mods.png", (name, os_name, url))
 
     def test_a_mode_replaces_the_fallback(self):
         got = self._route("code", "vscode://debug/stopped", "windows")

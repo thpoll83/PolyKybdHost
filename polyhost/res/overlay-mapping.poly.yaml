@@ -881,6 +881,29 @@ nxplayer:
 mstsc:
   remote: true
   title: ' - Remote Desktop Connection$'
+# Virtual machines and remote-control viewers. A forwarder (python -m polyhost
+# --host <IP>) inside the guest or on the remote computer reports its focused
+# window, and this computer shows that window's overlay. Without a forwarder
+# report the keycaps go dark while the viewer is in front.
+# VirtualBox draws each VM in its own `VirtualBoxVM` process (Windows and
+# Linux since 6.0; macOS reports `VirtualBox VM`). The VirtualBox Manager is
+# the separate `virtualbox` process and is not listed, so it is no session.
+virtualboxvm,virtualbox vm,virtualbox machine:
+  remote: true
+# VMware Workstation (`vmware`), Workstation Player (`vmplayer`), Remote
+# Console (`vmrc`) and Fusion on macOS. No `title:` gate: the session window
+# titles were not measured, so the library and Home tab also count as a
+# session. Add a gate here once the titles are known.
+vmware,vmplayer,vmrc,vmware fusion:
+  remote: true
+# AnyDesk and TeamViewer: Windows `AnyDesk.exe` / `TeamViewer.exe`, the same
+# names on Linux and macOS. No `title:` gate, for the same reason as VMware:
+# the main window (which also accepts incoming sessions) counts as a session
+# until the session window titles are measured.
+anydesk:
+  remote: true
+teamviewer:
+  remote: true
 # GIMP 2.10 is `gimp-2.10.exe` on Windows, which the host cuts at the first dot
 # to `gimp-2`, and `gimp-2.10` on Linux. Neither was listed, so 2.10 loaded nothing.
 gimp-2.0,gimp-2.8,gimp-2,gimp-2.10,gimp-3.0,gimp,gimp-3,org.gimp.GIMP:
@@ -1446,7 +1469,15 @@ capture:
   overlay: [orcad_capture_template.mods.png, orcad_capture_template.combo.mods.png]
 # `com.microsoft.vscode` is the app id a Linux forwarder on GNOME/Wayland sends
 # (its Window Reporter extension reports the Wayland app id, not the X11 class `Code`).
-code,com.microsoft.vscode:
+code,com.microsoft.vscode,code - insiders,code-insiders,vscodium,codium,code-oss:
+  # VS Code Insiders, VSCodium and Code - OSS share this entry: their default
+  # keys are VS Code's, and the extension reports `vscode` for each of them
+  # (appToken in vscode-extension/src/core.ts). Names: Windows `Code -
+  # Insiders.exe` and `VSCodium.exe`, Linux `code-insiders`, `codium` and
+  # `code-oss`, macOS `Code - Insiders` and `VSCodium`. Their window titles end
+  # in `Visual Studio Code - Insiders`, `VSCodium` and `Code - OSS`, so the
+  # `title:` regex below lists all three products. `^|` accepts a title that
+  # is the product name alone: an empty window (no folder, no editor) has it.
   # The debug keys are a separate set shared with Cursor and Windsurf
   # (overlay_sources/vscode/debug_*.yaml). The mode reporter (vscode-extension/)
   # sends vscode://edit, vscode://debug/running or vscode://debug/stopped and
@@ -1466,7 +1497,7 @@ code,com.microsoft.vscode:
   # entry, so a constraint left outside it is dropped. The routes are repeated
   # in each branch for the same reason.
   overlay: [vscode_template.mods.png, vscode_template.combo.mods.png, vscode_debug_fallback.mods.png]
-  title: .* Visual Studio Code
+  title: (^|.* )(Visual Studio Code|VSCodium|Code - OSS)
   layer: false
   urls-contains:
     "vscode://debug/stopped/diff": { overlay: [vscode_template.mods.png, vscode_template.combo.mods.png, vscode_debug_stopped.mods.png, vscode_debug_stopped.combo.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
@@ -1499,7 +1530,7 @@ code,com.microsoft.vscode:
     # macOS cells. Same bindings file, so the three sets cannot drift.
     linux:
       overlay: [vscode_linux_template.mods.png, vscode_linux_template.combo.mods.png, vscode_debug_fallback.mods.png]
-      title: .* Visual Studio Code
+      title: (^|.* )(Visual Studio Code|VSCodium|Code - OSS)
       layer: false
       urls-contains:
         "vscode://debug/stopped/diff": { overlay: [vscode_linux_template.mods.png, vscode_linux_template.combo.mods.png, vscode_debug_stopped.mods.png, vscode_debug_stopped.combo.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }

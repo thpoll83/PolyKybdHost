@@ -80,6 +80,23 @@ class TestFindTheCli(unittest.TestCase):
             # A test's home never finds /usr/share/code.
             self.assertIsNone(et.vscode_cli("vscode", none, h, {}, "Linux"))
 
+    def test_vscodium_is_codium(self):
+        found = et.vscode_cli("vscodium", which=lambda n: "/usr/bin/" + n, home="/h", env={},
+                              system="Linux")
+        self.assertEqual(found, Path("/usr/bin/codium"))
+        with tempfile.TemporaryDirectory() as tmp:
+            h = Path(tmp)
+            none = lambda _n: None   # noqa: E731
+            win = h / "AppData/Local/Programs/VSCodium/bin/codium.cmd"
+            mac = h / "Applications/VSCodium.app/Contents/Resources/app/bin/codium"
+            for f in (win, mac):
+                f.parent.mkdir(parents=True)
+                f.write_text("", encoding="utf-8")
+            self.assertEqual(et.vscode_cli("vscodium", none, h, {}, "Windows"), win)
+            self.assertEqual(et.vscode_cli("vscodium", none, h, {}, "Darwin"), mac)
+            # A test's home never finds /usr/share/codium or /snap/bin/codium.
+            self.assertIsNone(et.vscode_cli("vscodium", none, h, {}, "Linux"))
+
     def test_parse_the_list(self):
         out = "ms-python.python@2026.1.0\nPolyKybd.polykybd-mode-reporter@1.0.0\n"
         self.assertEqual(et.parse_extension_list(out), "1.0.0")
@@ -198,6 +215,21 @@ class TestVsCode(CliFixture):
         r = ep.install([ep.VSCODE], statuses=[st], **self.kw())
         self.assertFalse(r[0].ok)
         self.assertIn("boom", r[0].message)
+
+    def test_vscodium_installs_through_codium(self):
+        kw = self.kw(which=lambda n: "/usr/bin/codium" if n == "codium" else None)
+        st = ep.status([ep.VSCODE, ep.VSCODIUM], **kw)
+        self.assertEqual([(s.state, s.target) for s in st],
+                         [(ep.STATE_NOT_PRESENT, None),
+                          (ep.STATE_NOT_INSTALLED, Path("/usr/bin/codium"))])
+        r = ep.install([ep.VSCODIUM], **kw)
+        self.assertTrue(r[0].ok and r[0].changed, r)
+        self.assertIn(["--install-extension", str(self.vsix), "--force"], self.cli.calls)
+        self.assertEqual(ep.status([ep.VSCODIUM], **kw)[0].state, ep.STATE_INSTALLED)
+        # Recorded per editor: VS Code's record stays empty.
+        state = et.State(self.state_file)
+        self.assertIsNotNone(state.cli_digest(ep.VSCODIUM))
+        self.assertIsNone(state.cli_digest(ep.VSCODE))
 
     def test_the_refresh_starts_no_cli_where_this_app_installed_nothing(self):
         self.assertEqual(ep.refresh_installed(**self.kw()), [])
@@ -325,6 +357,19 @@ class TestBlockedByPolicy(unittest.TestCase):
             f.write_text('{"extensions.allowed": {"*": false}}')
             self.assertEqual(et.extension_policy_reason("vscode", "", home=d, env={}, system="Linux"),
                              "settings")
+
+    def test_vscodium_settings_and_snap_settings(self):
+        for rel in (".config/VSCodium/User/settings.json",
+                    "snap/codium/current/.config/VSCodium/User/settings.json"):
+            with tempfile.TemporaryDirectory() as d:
+                f = Path(d) / rel
+                f.parent.mkdir(parents=True)
+                f.write_text('{"extensions.allowed": {"*": false}}', encoding="utf-8")
+                self.assertEqual(et.extension_policy_reason("vscodium", "", home=d, env={},
+                                                            system="Linux"), "settings", rel)
+                # VS Code's settings are another file.
+                self.assertIsNone(et.extension_policy_reason("vscode", "", home=d, env={},
+                                                             system="Linux"), rel)
 
     def test_the_word_policy_alone_is_not_a_refusal(self):
         self.assertIsNone(et.extension_policy_reason("vscode", "proxy policy error", home="/nonexistent",
