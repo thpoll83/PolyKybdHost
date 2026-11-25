@@ -64,6 +64,16 @@ def _warn_once(msg, *args):
         _warned = True
 
 
+def _warn_payload_once(type_name, length):
+    """Warn once that a reply was valid JSON but not an object. The type and the length
+    only, never the content, which can hold a window title."""
+    global _warned_payload
+    if not _warned_payload:
+        _warned_payload = True
+        _log.warning("GNOME/Wayland: the window reporter answered with a JSON %s, not an "
+                     "object (length %d); treated as unavailable.", type_name, length)
+
+
 def _pywinctl_fallback():
     """Lazily import pywinctl as an XWayland fallback, guarded.
 
@@ -159,12 +169,7 @@ def _query_extension():
         # extension while GNOME Shell reloads it. `GnomeWin(str)` raised AttributeError
         # and ended the forwarder (bundle 2026-11-25). Log the type, never the content,
         # which can hold a window title.
-        global _warned_payload
-        if not _warned_payload:
-            _warned_payload = True
-            _log.warning("GNOME/Wayland: the window reporter answered with a JSON %s, not "
-                         "an object (length %d); treated as unavailable.",
-                         type(win).__name__, len(payload))
+        _warn_payload_once(type(win).__name__, len(payload))
         return _UNAVAILABLE
     return GnomeWin(win)
 
