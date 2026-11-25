@@ -212,7 +212,8 @@ def _linux_entry(exe: str, app_name: str) -> dict:
     5. the stem equal to the bus name of a D-Bus activation file that starts
        `/proc/<pid>/exe` (`_dbus_activated_names`): GNOME Terminal's
        `gnome-terminal-server` and its `org.gnome.Terminal.desktop`. Last, so
-       no application that resolved before this rank existed moves.
+       no application that resolved before this rank existed moves. With no
+       process, the app name is used in place of the exe.
 
     ⚠️ Rank 3 exists because rank 4 TIES and the tie is broken by readdir order.
     Measured on a stock Xfce install: `org.xfce.mousepad.desktop` and
@@ -267,7 +268,14 @@ def _linux_entry(exe: str, app_name: str) -> dict:
         if by_exec:
             return by_exec, "4/Exec-vs-exe"
         if bus_names is None:
-            bus_names = _dbus_activated_names(exe_stem)
+            # ⚠️ With no process (GNOME on Wayland: the extension reports no pid, so
+            # `exe` is "") the app name stands in for the program name. A D-Bus
+            # activated app is often called by its server's name, so
+            # `gnome-terminal-server` still finds `org.gnome.Terminal`. Field,
+            # 2026-11-25: the same forwarder resolved it from the exe on a NoMachine
+            # X11 session ("Terminal [match 5/dbus-activation]", icon, names) and
+            # found nothing on an RDP Wayland session, so the ESC mark was gone.
+            bus_names = _dbus_activated_names(exe_stem or wanted)
         if bus_names:
             for path, entry in entries:
                 if require_icon and not entry.get("Icon", ""):
