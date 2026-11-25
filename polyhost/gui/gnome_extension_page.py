@@ -106,7 +106,8 @@ class GnomePage(RowsPage):
         if not st.wayland:
             info.append(_("This is an X11 session: the keyboard sees every window without "
                           "the extension. It is needed in a Wayland session."))
-        elif done and st.active is False and not st.user_off:
+        elif done and st.active is False and not st.user_off and st.shell_supported:
+            # On an unsupported Shell another login cannot start it.
             info.append(_("Log out and back in to start the extension."))
         self.set_info("\n".join(info))
 
