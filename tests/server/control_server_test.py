@@ -309,7 +309,8 @@ class ControlServerTest(unittest.TestCase):
         for req_id, (method, params) in enumerate(
                 [(p.M_LANG_SET, ["deDE"]), (p.M_STATUS_GET, 1),
                  (p.M_AGENTS_CLOUD_JOIN, "code"), (p.M_STATUS_GET, []),
-                 (p.M_STATUS_GET, False), (p.M_STATUS_GET, 0), (p.M_STATUS_GET, "")],
+                 (p.M_STATUS_GET, None), (p.M_STATUS_GET, False), (p.M_STATUS_GET, 0),
+                 (p.M_STATUS_GET, "")],
                 start=20):
             with self.subTest(method=method, params=params):
                 p.send_message(conn, {"jsonrpc": "2.0", "id": req_id, "method": method,
@@ -319,6 +320,14 @@ class ControlServerTest(unittest.TestCase):
                 self.assertEqual(resp["error"]["code"], p.ERR_INVALID_PARAMS)
                 self.assertEqual(resp["error"]["message"], "params must be an object")
         self.assertEqual(self.core.calls, [])
+
+    def test_omitted_params_means_no_params(self):
+        conn = self._connect()
+        self._hello_then(conn)
+        p.send_message(conn, {"jsonrpc": "2.0", "id": 30, "method": p.M_STATUS_GET})
+        resp = self._recv(conn)
+        self.assertEqual(resp["id"], 30)
+        self.assertEqual(resp["result"], self.core.get_status())
 
     def test_overlay_send_queued(self):
         conn = self._connect()

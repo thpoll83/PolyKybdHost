@@ -244,12 +244,10 @@ class MpcListenerServer:
     def _dispatch(self, conn, msg):
         req_id = msg.get("id") if isinstance(msg, dict) else None
         method = msg.get("method") if isinstance(msg, dict) else None
-        params = msg.get("params") if isinstance(msg, dict) else None
-        if params is None:
-            # Only an omitted (or null) params means "no params". A false, 0, "" or []
-            # stays as sent, so a server's params check sees it (ControlServer refuses
-            # every params that is not an object).
-            params = {}
+        # Only an omitted params means "no params". A null, false, 0, "" or [] stays
+        # as sent, so a server's params check sees it (ControlServer refuses every
+        # params that is not an object).
+        params = msg.get("params", {}) if isinstance(msg, dict) else {}
         if req_id is None:
             # A notification. Nothing client->server is expected as one, and
             # answering would desync every following response id — drop it.

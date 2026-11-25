@@ -26,8 +26,7 @@ JSON = st.recursive(
     | st.dictionaries(st.text(max_size=8), inner, max_size=5),
     max_leaves=20)
 
-# null counts as omitted params; false, 0, "" and [] are refused like any other.
-NOT_AN_OBJECT = JSON.filter(lambda v: not isinstance(v, dict) and v is not None)
+NOT_AN_OBJECT = JSON.filter(lambda v: not isinstance(v, dict))
 
 
 class _Log:
