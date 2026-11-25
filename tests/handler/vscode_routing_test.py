@@ -140,9 +140,12 @@ class VscodeRoutingTest(unittest.TestCase):
         for name, title in titles:
             for os_name, stem in (("windows", "vscode_template"),
                                   ("linux", "vscode_linux_template")):
-                got = find_matching_entry(title, self.mapping[name], "vscode://edit", os_name)
-                self.assertIsNotNone(got, (name, os_name))
-                self.assertEqual(_names(got)[0], f"{stem}.mods.png", (name, os_name))
+                # No URL: a matching urls-contains route skips the title gate,
+                # so only a call without a report tests the `title:` regex.
+                for url in (None, "vscode://edit"):
+                    got = find_matching_entry(title, self.mapping[name], url, os_name)
+                    self.assertIsNotNone(got, (name, os_name, url))
+                    self.assertEqual(_names(got)[0], f"{stem}.mods.png", (name, os_name, url))
 
     def test_a_mode_replaces_the_fallback(self):
         got = self._route("code", "vscode://debug/stopped", "windows")
