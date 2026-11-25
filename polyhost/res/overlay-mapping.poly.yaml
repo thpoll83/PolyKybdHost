@@ -1467,7 +1467,9 @@ x2,dxp:
 # editor's keys. Windows only; Capture.exe, not checked on an install.
 capture:
   overlay: [orcad_capture_template.mods.png, orcad_capture_template.combo.mods.png]
-code,code - insiders,code-insiders,vscodium,codium,code-oss:
+# `com.microsoft.vscode` is the app id a Linux forwarder on GNOME/Wayland sends
+# (its Window Reporter extension reports the Wayland app id, not the X11 class `Code`).
+code,com.microsoft.vscode,code - insiders,code-insiders,vscodium,codium,code-oss:
   # VS Code Insiders, VSCodium and Code - OSS share this entry: their default
   # keys are VS Code's, and the extension reports `vscode` for each of them
   # (appToken in vscode-extension/src/core.ts). Names: Windows `Code -

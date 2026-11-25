@@ -7,6 +7,8 @@ category's page on the right. Each page installs and removes its own parts:
 - Terminals: the title line in each shell's startup file (services/shell_title.py)
 - Editors: the Vim, Neovim, Emacs and GDB plugins and the FreeCAD add-on (services/editor_plugins.py)
 - Browser: the browser extension folder (services/browser_extension.py)
+- GNOME: the Window Reporter GNOME Shell extension (services/gnome_extension.py),
+  shown only on a GNOME desktop
 
 All of it is a local file change on the computer the app runs on. It needs no
 keyboard and no daemon, so it works the same in client mode and in the
@@ -35,8 +37,9 @@ AGENTS = "agents"
 TERMINALS = "terminals"
 EDITORS = "editors"
 BROWSER = "browser"
-# Sidebar order.
-CATEGORIES = (AGENTS, TERMINALS, EDITORS, BROWSER)
+GNOME = "gnome"
+# Sidebar order. GNOME is left out on other desktops (IntegrationsDialog).
+CATEGORIES = (AGENTS, TERMINALS, EDITORS, BROWSER, GNOME)
 
 
 class _StatusThread(QThread):
@@ -400,7 +403,7 @@ class AgentsPage(RowsPage):
 
 def category_title(category):
     return {AGENTS: _("AI agents"), TERMINALS: _("Terminals"), EDITORS: _("Editors"),
-            BROWSER: _("Browser")}[category]
+            BROWSER: _("Browser"), GNOME: "GNOME"}[category]
 
 
 class IntegrationsDialog(QDialog):
@@ -420,6 +423,8 @@ class IntegrationsDialog(QDialog):
             EDITORS: _editors_page,
             BROWSER: lambda: _browser_page(log),
         }
+        if _on_gnome():
+            factories[GNOME] = _gnome_page
         factories.update(page_factories or {})
         self.categories = [c for c in categories if c in factories]
         self.pages = {}
@@ -586,6 +591,16 @@ def _terminals_page():
 def _editors_page():
     from polyhost.gui.shell_editor_pages import EditorsPage
     return EditorsPage()
+
+
+def _on_gnome():
+    from polyhost.services.gnome_extension import is_gnome
+    return is_gnome()
+
+
+def _gnome_page():
+    from polyhost.gui.gnome_extension_page import GnomePage
+    return GnomePage()
 
 
 def _browser_page(log):

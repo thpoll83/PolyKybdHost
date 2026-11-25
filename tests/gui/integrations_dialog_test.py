@@ -58,7 +58,7 @@ class IntegrationsDialogTest(unittest.TestCase):
         dlg = idlg.IntegrationsDialog(mock.MagicMock(), page_factories=factories)
         self.addCleanup(dlg.deleteLater)
         self.assertEqual([dlg.nav.item(i).text() for i in range(dlg.nav.count())],
-                         ["AI agents", "Terminals", "Editors", "Browser"])
+                         ["AI agents", "Terminals", "Editors", "Browser", "GNOME"])
         self.assertEqual(dlg.current_category(), idlg.AGENTS)
         self.assertEqual(dlg.windowTitle(), "Integrations")
 
@@ -97,7 +97,8 @@ class IntegrationsDialogTest(unittest.TestCase):
         dlg = self._shown()
         bar = dlg.scroll.verticalScrollBar()
         bar.setValue(bar.maximum())
-        self.assertEqual(dlg.current_category(), idlg.BROWSER)
+        # The end of the column selects the last section.
+        self.assertEqual(dlg.current_category(), idlg.CATEGORIES[-1])
         bar.setValue(0)
         self.assertEqual(dlg.current_category(), idlg.AGENTS)
 

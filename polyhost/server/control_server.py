@@ -168,6 +168,10 @@ class ControlServer(MpcListenerServer):
         if handler is None:
             return p.make_error(
                 req_id, p.ERR_METHOD_NOT_FOUND, f"unknown method '{method}'")
+        if not isinstance(params, dict):
+            # A frame's params can be any JSON value. A list or a number reached
+            # params.get() and was answered as an internal error with a traceback.
+            return p.make_error(req_id, p.ERR_INVALID_PARAMS, "params must be an object")
         return p.make_response(req_id, handler(conn, params))
 
     def after_dispatch(self, conn, method):

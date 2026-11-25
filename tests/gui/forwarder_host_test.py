@@ -123,6 +123,36 @@ class ForwarderWatcherWiringTest(unittest.TestCase):
 
 @unittest.skipUnless(os.environ.get("DISPLAY"),
                      "GUI harness needs an X display: run under xvfb-run")
+class ForwarderNoHostTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.r = _results()
+
+    def test_a_report_that_found_no_host_is_sent_again_as_soon_as_one_exists(self):
+        self.assertTrue(self.r["resend_flag_set"])
+        self.assertEqual(self.r["sent_when_the_client_is_found"], [[77, "konsole"]])
+        self.assertFalse(self.r["resend_flag_cleared"])
+
+    def test_the_window_is_sent_again_once_and_not_on_every_tick(self):
+        self.assertEqual(self.r["sent_after_two_more_ticks"], 1)
+
+    def test_a_window_is_sent_once_when_the_host_was_never_missing(self):
+        self.assertEqual(self.r["sent_when_the_host_was_never_missing"], 1)
+
+    def test_waiting_for_the_first_client_is_not_logged_as_an_error(self):
+        self.assertEqual(self.r["levels_while_waiting_for_a_client"], ["INFO"])
+
+    def test_no_host_without_the_detection_is_still_an_error(self):
+        self.assertEqual(self.r["levels_without_detection"], ["ERROR"])
+        self.assertTrue(self.r["resend_flag_without_detection"])
+
+    def test_a_host_file_that_appears_later_gets_the_window_once(self):
+        self.assertTrue(self.r["resend_flag_without_a_host_file"])
+        self.assertEqual(self.r["sent_when_the_host_file_appears"], [[77, "konsole"]])
+
+
+@unittest.skipUnless(os.environ.get("DISPLAY"),
+                     "GUI harness needs an X display: run under xvfb-run")
 class ForwarderRelayTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -345,6 +375,69 @@ def _smoke():
         out["look_after_failed_send_named"] = send(
             False, host="10.0.0.1", detect=True, rpc=True, address="10.0.0.9")
         del app._send_to_host                          # the real transport again
+
+        # --- a report that found no host is sent again once a host exists --------------
+        app._note_agent_target = lambda host: None       # writes the user's hook target
+        real_rpc = fwd.PolyForwarder._send_via_rpc.__get__(app)
+        records = []
+
+        class _Collect(logging.Handler):
+            def emit(self, record):
+                records.append(record)
+        handler = _Collect()
+        app.log.addHandler(handler)
+        app.log.setLevel(logging.DEBUG)
+        rpc_sent = []
+
+        def fresh(**inputs):
+            setup(**inputs)
+            app._relay = fwd.RelayHealth()
+            app._resend_when_host = False
+            app.win = None
+            records.clear()
+            rpc_sent.clear()
+            app._send_via_rpc = real_rpc
+
+        def landing_levels():
+            return [r.levelname for r in records if "not landing" in r.getMessage()]
+
+        fresh(detect=True, rpc=True, address=None)
+        tick(False)                                    # a new window, no client found yet
+        out["resend_flag_set"] = app._resend_when_host
+        out["levels_while_waiting_for_a_client"] = landing_levels()
+        app._send_via_rpc = lambda handle, title, name, url=None: (
+            rpc_sent.append((handle, name)) or True)
+        app._client_watcher._address = "10.0.0.9"      # the watcher found the client
+        tick(False)                                    # same window, no heartbeat due
+        out["sent_when_the_client_is_found"] = [list(item) for item in rpc_sent]
+        out["resend_flag_cleared"] = app._resend_when_host
+        tick(False)
+        out["sent_after_two_more_ticks"] = len(rpc_sent)
+
+        fresh(detect=True, rpc=True, address="10.0.0.9")
+        app._send_via_rpc = lambda handle, title, name, url=None: (
+            rpc_sent.append((handle, name)) or True)
+        tick(False)
+        tick(False)
+        out["sent_when_the_host_was_never_missing"] = len(rpc_sent)
+
+        fresh(detect=False, rpc=True)                  # no detection, nothing named
+        tick(False)
+        out["levels_without_detection"] = landing_levels()
+        out["resend_flag_without_detection"] = app._resend_when_host
+
+        # A host file that appears later (a session starts) is a host that appears too.
+        fresh(file=host_file, text=None, rpc=True)      # no file yet: no active session
+        tick(False)
+        out["resend_flag_without_a_host_file"] = app._resend_when_host
+        app._send_via_rpc = lambda handle, title, name, url=None: (
+            rpc_sent.append((handle, name)) or True)
+        with open(host_file, "w") as handle:
+            handle.write("10.0.0.5\n")
+        tick(False)
+        out["sent_when_the_host_file_appears"] = [list(item) for item in rpc_sent]
+        app.log.removeHandler(handler)
+        app._send_via_rpc = real_rpc
 
         # --- the legacy relay, with a fake socket --------------------------------------
         out["tcp_port"] = fwd.TCP_PORT
