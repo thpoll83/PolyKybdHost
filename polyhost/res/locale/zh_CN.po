@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-24 13:44+0000\n"
+"POT-Creation-Date: 2026-11-25 08:11+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans_CN\n"
@@ -384,84 +384,84 @@ msgstr "正在转发到 {target}"
 msgid "Cannot reach {target}"
 msgstr "无法连接 {target}"
 
-#: polyhost/forwarder.py:599
+#: polyhost/forwarder.py:621
 msgid "The hooks are written, but this forwarder runs without --report-rpc, so it cannot pass agent reports on. Start it with --report-rpc to show this computer's agents on the keys."
 msgstr "钩子已写入，但此转发器未使用 --report-rpc 运行，因此无法转发智能体报告。请使用 --report-rpc 启动它，以便在按键上显示此电脑的智能体。"
 
-#: polyhost/forwarder.py:602
+#: polyhost/forwarder.py:624
 msgid "The hooks are written. On the keyboard computer, turn on Settings > AI agents > \"Agents from other computers\"."
 msgstr "钩子已写入。请在键盘所在的电脑上打开 设置 > AI 智能体 > “来自其他电脑的智能体”。"
 
-#: polyhost/forwarder.py:932
+#: polyhost/forwarder.py:956
 msgid "PolyForwarder settings"
 msgstr "PolyForwarder 设置"
 
-#: polyhost/forwarder.py:933
+#: polyhost/forwarder.py:957
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
 msgstr "设置无法保存到设置文件，因此不会生效。可能有其他程序正在占用该文件。请重试，或查看日志。"
 
-#: polyhost/forwarder.py:951
+#: polyhost/forwarder.py:975
 msgid "Paired. The forwarder uses the authenticated connection from its next start. Restart it now?"
 msgstr "已配对。转发器从下次启动起使用经过身份验证的连接。立即重新启动吗？"
 
-#: polyhost/forwarder.py:966
+#: polyhost/forwarder.py:990
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
 msgstr "经过身份验证的 RPC（端口 {port}）"
 
-#: polyhost/forwarder.py:968
+#: polyhost/forwarder.py:992
 msgid "legacy plaintext TCP relay"
 msgstr "旧版明文 TCP 中继"
 
-#: polyhost/forwarder.py:971
+#: polyhost/forwarder.py:995
 msgid "reaching the keyboard machine"
 msgstr "可连接到键盘所在的电脑"
 
-#: polyhost/forwarder.py:972
+#: polyhost/forwarder.py:996
 msgid "not reaching the keyboard machine"
 msgstr "无法连接到键盘所在的电脑"
 
-#: polyhost/forwarder.py:973
+#: polyhost/forwarder.py:997
 msgid "starting up"
 msgstr "正在启动"
 
-#: polyhost/forwarder.py:975
+#: polyhost/forwarder.py:999
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
 msgstr "<b>模式：</b>转发器 — 本机未连接键盘"
 
-#: polyhost/forwarder.py:976
+#: polyhost/forwarder.py:1000
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
 msgstr "<b>目标：</b>{target}"
 
-#: polyhost/forwarder.py:978
+#: polyhost/forwarder.py:1002
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
 msgstr "<b>窗口报告：</b>{transport}"
 
-#: polyhost/forwarder.py:981
+#: polyhost/forwarder.py:1005
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
 msgstr "<b>主机文件：</b>{path}"
 
-#: polyhost/forwarder.py:983
+#: polyhost/forwarder.py:1007
 msgid "<b>Keyboard computer:</b> found from the Remote Desktop or NoMachine connection"
 msgstr "<b>键盘所在的电脑：</b>从远程桌面或 NoMachine 连接中找到"
 
-#: polyhost/forwarder.py:1005
+#: polyhost/forwarder.py:1029
 msgid "About PolyKybdHost (forwarder)"
 msgstr "关于 PolyKybdHost（转发器）"
 
 #. TRANSLATORS: the run mode in the About dialog's environment line
-#: polyhost/forwarder.py:1012
+#: polyhost/forwarder.py:1036
 msgid "forwarder"
 msgstr "转发器"
 
-#: polyhost/forwarder.py:1014
+#: polyhost/forwarder.py:1038
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "转发器模式：本机没有连接键盘。它会监视本机的活动窗口，并将其转发给运行在连接键盘的电脑上的 PolyKybdHost。"
 
-#: polyhost/forwarder.py:1054
+#: polyhost/forwarder.py:1078
 msgid "Download, install, and restart the forwarder now?"
 msgstr "立即下载、安装并重新启动转发器吗？"
 
@@ -654,7 +654,7 @@ msgid "<b>Failed:</b> {reason}"
 msgstr "<b>失败：</b>{reason}"
 
 #: polyhost/gui/browser_extension_page.py:38
-#: polyhost/gui/integrations_dialog.py:403
+#: polyhost/gui/integrations_dialog.py:406
 msgid "Browser"
 msgstr "浏览器"
 
@@ -2032,7 +2032,7 @@ msgstr "与转发器配对"
 msgid "On the other computer, open the forwarder's menu, choose \"Pair with the Keyboard Computer…\" and enter this code. Anyone with this code can send window and agent reports to this computer, so pass it on only over a channel you trust. \"Accept forwarders\" must be on in Settings."
 msgstr "在另一台电脑上，打开转发器的菜单，选择“与键盘所在的电脑配对…”，然后输入此代码。任何拥有此代码的人都可以向此电脑发送窗口和智能体报告，因此请仅通过您信任的渠道传递。必须在“设置”中打开“接受转发器”。"
 
-#: polyhost/forwarder.py:950 polyhost/gui/forwarder_pairing.py:37
+#: polyhost/forwarder.py:974 polyhost/gui/forwarder_pairing.py:37
 #: polyhost/gui/forwarder_pairing.py:44 polyhost/gui/forwarder_pairing.py:51
 msgid "Pair with the Keyboard Computer"
 msgstr "与键盘所在的电脑配对"
@@ -2044,6 +2044,112 @@ msgstr "请输入键盘所在的电脑上“与转发器配对…”（托盘菜
 #: polyhost/gui/forwarder_pairing.py:45
 msgid "That is not a pairing code: it has 64 letters and digits (a to f, 0 to 9), in groups of 8."
 msgstr "这不是配对代码：配对代码由 64 个字母和数字（a 到 f，0 到 9）组成，每 8 个一组。"
+
+#: polyhost/gui/gnome_extension_page.py:16
+msgid "Not installed"
+msgstr "未安装"
+
+#: polyhost/gui/gnome_extension_page.py:18
+msgid "Another version is installed. Install replaces it with the version this app uses."
+msgstr "已安装其他版本。点击“安装”会将其替换为此应用使用的版本。"
+
+#: polyhost/gui/gnome_extension_page.py:21
+msgid "Installed, but not enabled"
+msgstr "已安装，但未启用"
+
+#: polyhost/gui/gnome_extension_page.py:23
+msgid "Installed and active"
+msgstr "已安装并已运行"
+
+#: polyhost/gui/gnome_extension_page.py:25
+msgid "Installed, but GNOME loads no user extension (see below)"
+msgstr "已安装，但 GNOME 不加载任何用户扩展（见下文）"
+
+#: polyhost/gui/gnome_extension_page.py:27
+msgid "Installed. GNOME starts it at the next login."
+msgstr "已安装。GNOME 会在下次登录时启动它。"
+
+#: polyhost/gui/gnome_extension_page.py:28
+msgid "Installed"
+msgstr "已安装"
+
+#: polyhost/gui/gnome_extension_page.py:35
+#, python-brace-format
+msgid "Window Reporter: installed in {path}"
+msgstr "Window Reporter：已安装到 {path}"
+
+#: polyhost/gui/gnome_extension_page.py:36
+#, python-brace-format
+msgid "Window Reporter: replaced with the version this app uses ({path})"
+msgstr "Window Reporter：已替换为此应用使用的版本（{path}）"
+
+#: polyhost/gui/gnome_extension_page.py:38
+#, python-brace-format
+msgid "Window Reporter: already installed ({path})"
+msgstr "Window Reporter：已安装（{path}）"
+
+#: polyhost/gui/gnome_extension_page.py:40
+msgid "Window Reporter: removed"
+msgstr "Window Reporter：已移除"
+
+#: polyhost/gui/gnome_extension_page.py:41
+msgid "Window Reporter: was not installed"
+msgstr "Window Reporter：未曾安装"
+
+#: polyhost/gui/gnome_extension_page.py:42
+msgid "User extensions: switched on"
+msgstr "用户扩展：已打开"
+
+#: polyhost/gui/gnome_extension_page.py:43
+#: polyhost/gui/integrations_dialog.py:272
+#: polyhost/gui/integrations_dialog.py:390
+#, python-brace-format
+msgid "The change failed: {error}"
+msgstr "更改失败：{error}"
+
+#: polyhost/gui/gnome_extension_page.py:54
+msgid ""
+"On GNOME with Wayland, the keyboard shows the keys of the focused app only with the PolyKybd Window Reporter extension. Without it, only apps that run under XWayland are seen. The extension reports the focused window's name and title and cannot change any window.\n"
+"\n"
+"Install downloads a fixed version of the extension from github.com/thpoll83/gnome-wayland-winreader, checks it, copies it to GNOME's extensions folder and enables it. GNOME starts a new extension only at login, so log out and back in after installing."
+msgstr ""
+"在使用 Wayland 的 GNOME 上，只有安装 PolyKybd Window Reporter 扩展后，键盘才能显示当前焦点应用的按键。没有该扩展时，只能识别在 XWayland 下运行的应用。该扩展只报告当前焦点窗口的名称和标题，不能更改任何窗口。\n"
+"\n"
+"“安装”会从 github.com/thpoll83/gnome-wayland-winreader 下载固定版本的扩展，对其进行检查，复制到 GNOME 的扩展文件夹并启用它。GNOME 只在登录时启动新扩展，因此安装后请注销并重新登录。"
+
+#: polyhost/gui/gnome_extension_page.py:69
+#, python-brace-format
+msgid "The extension could not be checked: {error}"
+msgstr "无法检查该扩展：{error}"
+
+#: polyhost/gui/gnome_extension_page.py:84
+msgid "Off, and locked by an administrator: GNOME loads no user extension, so the Window Reporter cannot run."
+msgstr "关闭，且已被管理员锁定：GNOME 不加载任何用户扩展，因此 Window Reporter 无法运行。"
+
+#: polyhost/gui/gnome_extension_page.py:87
+msgid "Off: GNOME loads no user extension, so the Window Reporter cannot run. Install with this row selected switches on every user extension, not only this one."
+msgstr "关闭：GNOME 不加载任何用户扩展，因此 Window Reporter 无法运行。选中此行时点击“安装”会打开所有用户扩展，而不只是这一个。"
+
+#: polyhost/gui/gnome_extension_page.py:92
+msgid "User extensions"
+msgstr "用户扩展"
+
+#: polyhost/gui/gnome_extension_page.py:97
+#, python-brace-format
+msgid "GNOME's settings could not be read: {error}"
+msgstr "无法读取 GNOME 的设置：{error}"
+
+#: polyhost/gui/gnome_extension_page.py:99
+msgid "This is an X11 session: the keyboard sees every window without the extension. It is needed in a Wayland session."
+msgstr "这是 X11 会话：无需该扩展，键盘即可识别所有窗口。在 Wayland 会话中才需要该扩展。"
+
+#: polyhost/gui/gnome_extension_page.py:102
+msgid "Log out and back in to start the extension."
+msgstr "请注销并重新登录以启动该扩展。"
+
+#: polyhost/gui/gnome_extension_page.py:114
+msgid "Log out and back in: GNOME starts a new extension only at login."
+msgstr "请注销并重新登录：GNOME 只在登录时启动新扩展。"
 
 #: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:2981
 #: polyhost/host.py:3022 polyhost/host.py:3054
@@ -2089,56 +2195,50 @@ msgstr "语言"
 msgid "The new language is used after a restart. Restart now?"
 msgstr "新语言将在重新启动后生效。立即重新启动吗？"
 
-#: polyhost/gui/integrations_dialog.py:98
+#: polyhost/gui/integrations_dialog.py:101
 msgid "Checking…"
 msgstr "正在检查…"
 
-#: polyhost/gui/integrations_dialog.py:113
+#: polyhost/gui/integrations_dialog.py:116
 msgid "Install"
 msgstr "安装"
 
-#: polyhost/gui/integrations_dialog.py:117
+#: polyhost/gui/integrations_dialog.py:120
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:149
 msgid "Remove"
 msgstr "移除"
 
-#: polyhost/gui/integrations_dialog.py:138
+#: polyhost/gui/integrations_dialog.py:141
 #, python-brace-format
 msgid "The check failed: {error}"
 msgstr "检查失败：{error}"
 
-#: polyhost/gui/integrations_dialog.py:269
-#: polyhost/gui/integrations_dialog.py:387
-#, python-brace-format
-msgid "The change failed: {error}"
-msgstr "更改失败：{error}"
-
-#: polyhost/gui/integrations_dialog.py:300
+#: polyhost/gui/integrations_dialog.py:303
 #: polyhost/gui/shell_editor_pages.py:46 polyhost/gui/shell_editor_pages.py:153
 msgid "Set up"
 msgstr "已设置"
 
-#: polyhost/gui/integrations_dialog.py:302
+#: polyhost/gui/integrations_dialog.py:305
 msgid "Set up for another copy of the app, or an older version. Install updates it."
 msgstr "已为本应用的另一个副本或旧版本设置。“安装”会更新它。"
 
-#: polyhost/gui/integrations_dialog.py:307
+#: polyhost/gui/integrations_dialog.py:310
 #, python-brace-format
 msgid "The file cannot be read: {error}"
 msgstr "无法读取该文件：{error}"
 
-#: polyhost/gui/integrations_dialog.py:308
+#: polyhost/gui/integrations_dialog.py:311
 #: polyhost/gui/shell_editor_pages.py:50 polyhost/gui/shell_editor_pages.py:155
 msgid "Not set up"
 msgstr "未设置"
 
-#: polyhost/gui/integrations_dialog.py:327
-#: polyhost/gui/integrations_dialog.py:361
-#: polyhost/gui/integrations_dialog.py:402 polyhost/gui/settings_dialog.py:103
+#: polyhost/gui/integrations_dialog.py:330
+#: polyhost/gui/integrations_dialog.py:364
+#: polyhost/gui/integrations_dialog.py:405 polyhost/gui/settings_dialog.py:103
 msgid "AI agents"
 msgstr "AI 智能体"
 
-#: polyhost/gui/integrations_dialog.py:328
+#: polyhost/gui/integrations_dialog.py:331
 msgid ""
 "An agent's key shows whether the agent works, waits for you or is finished only when the agent runs the PolyKybd hook.\n"
 "\n"
@@ -2148,45 +2248,45 @@ msgstr ""
 "\n"
 "“安装”会将钩子添加到智能体的设置文件中。您自己的钩子和设置会保留，并且每个文件的副本会保存为 <file>.polykybd.bak。“移除”只会移除 PolyKybd 钩子。请重新启动智能体，使更改生效。"
 
-#: polyhost/gui/integrations_dialog.py:375
+#: polyhost/gui/integrations_dialog.py:378
 msgid "Nothing to change."
 msgstr "没有需要更改的内容。"
 
-#: polyhost/gui/integrations_dialog.py:377
+#: polyhost/gui/integrations_dialog.py:380
 #, python-brace-format
 msgid "Write the PolyKybd hooks into {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
 msgstr "将 PolyKybd 钩子写入 {files} 吗？您自己的钩子会保留，并且每个文件的副本会保存为 <file>.polykybd.bak。"
 
-#: polyhost/gui/integrations_dialog.py:380
+#: polyhost/gui/integrations_dialog.py:383
 #, python-brace-format
 msgid "Remove the PolyKybd hooks from {files}? Your own hooks are kept, and a copy of each file is saved as <file>.polykybd.bak."
 msgstr "从 {files} 中移除 PolyKybd 钩子吗？您自己的钩子会保留，并且每个文件的副本会保存为 <file>.polykybd.bak。"
 
-#: polyhost/gui/integrations_dialog.py:390
+#: polyhost/gui/integrations_dialog.py:393
 #, python-brace-format
 msgid "Changed: {path}"
 msgstr "已更改：{path}"
 
-#: polyhost/gui/integrations_dialog.py:395
+#: polyhost/gui/integrations_dialog.py:398
 msgid "Restart the agent for the change to take effect."
 msgstr "请重新启动智能体，使更改生效。"
 
-#: polyhost/gui/integrations_dialog.py:402
+#: polyhost/gui/integrations_dialog.py:405
 #: polyhost/gui/shell_editor_pages.py:180
 msgid "Terminals"
 msgstr "终端"
 
-#: polyhost/gui/integrations_dialog.py:402
+#: polyhost/gui/integrations_dialog.py:405
 #: polyhost/gui/shell_editor_pages.py:271
 #: polyhost/gui/shell_editor_pages.py:291
 msgid "Editors"
 msgstr "编辑器"
 
-#: polyhost/gui/integrations_dialog.py:414
+#: polyhost/gui/integrations_dialog.py:417
 msgid "Integrations"
 msgstr "集成"
 
-#: polyhost/gui/integrations_dialog.py:497
+#: polyhost/gui/integrations_dialog.py:502
 msgid "Changes apply to the program after it restarts."
 msgstr "更改将在程序重新启动后生效。"
 
@@ -4798,7 +4898,7 @@ msgstr ""
 "所有随附的字体分包都已在键盘上。\n"
 "如果键帽仍显示错误，可通过“开发者 → 字体包 → 重新刷写所有分包”强制重新发送。"
 
-#: polyhost/forwarder.py:893 polyhost/host.py:1105
+#: polyhost/forwarder.py:917 polyhost/host.py:1105
 msgid "Config folder"
 msgstr "配置文件夹"
 
@@ -4922,7 +5022,7 @@ msgstr "独立运行"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:970 polyhost/host.py:2020
+#: polyhost/forwarder.py:994 polyhost/host.py:2020
 msgid "paused"
 msgstr "已暂停"
 
@@ -4984,17 +5084,17 @@ msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>叠加图标映射：</b>{n} 个应用"
 
-#: polyhost/forwarder.py:990 polyhost/host.py:2059
+#: polyhost/forwarder.py:1014 polyhost/host.py:2059
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>配置：</b>{path}"
 
-#: polyhost/forwarder.py:991 polyhost/host.py:2060
+#: polyhost/forwarder.py:1015 polyhost/host.py:2060
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>日志：</b>{path}"
 
-#: polyhost/forwarder.py:1009 polyhost/host.py:2114
+#: polyhost/forwarder.py:1033 polyhost/host.py:2114
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "HID 协议 P{protocol}"
@@ -5094,8 +5194,8 @@ msgstr "PolyKybd 叠加图标映射（*.poly.yaml）"
 msgid "Update firmware to v{version}…"
 msgstr "将固件更新到 v{version}…"
 
-#: polyhost/forwarder.py:1048 polyhost/forwarder.py:1059
-#: polyhost/forwarder.py:1065 polyhost/host.py:2477 polyhost/host.py:2598
+#: polyhost/forwarder.py:1072 polyhost/forwarder.py:1083
+#: polyhost/forwarder.py:1089 polyhost/host.py:2477 polyhost/host.py:2598
 #: polyhost/host.py:2602
 msgid "Check for updates..."
 msgstr "检查更新..."
@@ -5105,8 +5205,8 @@ msgstr "检查更新..."
 msgid "Update to v{version} available"
 msgstr "有可用更新：v{version}"
 
-#: polyhost/forwarder.py:1061 polyhost/forwarder.py:1067
-#: polyhost/forwarder.py:1078 polyhost/host.py:2556 polyhost/host.py:2596
+#: polyhost/forwarder.py:1085 polyhost/forwarder.py:1091
+#: polyhost/forwarder.py:1102 polyhost/host.py:2556 polyhost/host.py:2596
 #: polyhost/host.py:2603 polyhost/host.py:2626
 msgid "PolyKybdHost Update"
 msgstr "PolyKybdHost 更新"
@@ -5116,7 +5216,7 @@ msgstr "PolyKybdHost 更新"
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "版本 {version} 已可用。点击托盘图标进行更新。"
 
-#: polyhost/forwarder.py:1035 polyhost/host.py:2582
+#: polyhost/forwarder.py:1059 polyhost/host.py:2582
 msgid "Checking for updates..."
 msgstr "正在检查更新..."
 
@@ -5124,12 +5224,12 @@ msgstr "正在检查更新..."
 msgid "No updates available"
 msgstr "没有可用的更新"
 
-#: polyhost/forwarder.py:1062 polyhost/host.py:2597
+#: polyhost/forwarder.py:1086 polyhost/host.py:2597
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "您正在运行最新版本（v{version}）。"
 
-#: polyhost/forwarder.py:1068 polyhost/host.py:2604
+#: polyhost/forwarder.py:1092 polyhost/host.py:2604
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -5149,12 +5249,12 @@ msgstr ""
 msgid "Released: {date}"
 msgstr "发布日期：{date}"
 
-#: polyhost/forwarder.py:1049 polyhost/host.py:2610
+#: polyhost/forwarder.py:1073 polyhost/host.py:2610
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "版本 {version} 已可用。"
 
-#: polyhost/forwarder.py:1050 polyhost/host.py:2611
+#: polyhost/forwarder.py:1074 polyhost/host.py:2611
 msgid "Update PolyKybdHost"
 msgstr "更新 PolyKybdHost"
 
@@ -5162,20 +5262,20 @@ msgstr "更新 PolyKybdHost"
 msgid "Download, install, and restart now?"
 msgstr "立即下载、安装并重新启动吗？"
 
-#: polyhost/forwarder.py:1077 polyhost/host.py:2626
+#: polyhost/forwarder.py:1101 polyhost/host.py:2626
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "正在下载 v{version}…"
 
-#: polyhost/forwarder.py:1119 polyhost/host.py:2751
+#: polyhost/forwarder.py:1143 polyhost/host.py:2751
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "无法启动更新中继程序；更新未完成。详细信息请查看日志。"
 
-#: polyhost/forwarder.py:1131 polyhost/host.py:2766
+#: polyhost/forwarder.py:1155 polyhost/host.py:2766
 msgid "Update failed"
 msgstr "更新失败"
 
-#: polyhost/forwarder.py:1131 polyhost/host.py:2766
+#: polyhost/forwarder.py:1155 polyhost/host.py:2766
 msgid "The update did not finish."
 msgstr "更新未完成。"
 
