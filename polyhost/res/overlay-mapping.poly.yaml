@@ -148,6 +148,22 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     # with a player (/watch, /live/, /embed/). The home page and search results
     # keep the browser set. The gate also leaves out music.youtube.com and
     # studio.youtube.com, which have other keys.
+    # WhatsApp Web, X and Mastodon (sources: overlay_sources/social/).
+    # The X needle is also a substring of other hosts (max.com, dropbox.com),
+    # so its `url:` gate names the host. Mastodon runs on many servers: the
+    # `https://` needle matches any secure URL and the `url:` gate lists the 20
+    # servers with the most weekly active users in the joinmastodon.org
+    # directory (2026-11-25); a URL on any other host falls through to the
+    # next needle.
+    web.whatsapp.com:
+      url: '^https?://web\.whatsapp\.com/'
+      overlay: [whatsapp_web_template.mods.png, whatsapp_web_template.combo.mods.png, whatsapp_web_template.extra.mods.png]
+    x.com:
+      url: '^https?://(www\.|mobile\.)?x\.com/'
+      overlay: x_template.mods.png
+    https://:
+      url: '^https?://(mastodon\.social|mstdn\.jp|infosec\.exchange|mstdn\.social|hachyderm\.io|piaille\.fr|mastodon\.world|social\.vivaldi\.net|troet\.cafe|mastodon\.uno|mastodon\.gamedev\.place|mathstodon\.xyz|mastodon\.nl|social\.tchncs\.de|techhub\.social|occm\.cc|norden\.social|kolektiva\.social|o3o\.ca|organica\.social)/'
+      overlay: mastodon_template.mods.png
     youtube.com:
       url: '^https?://(www\.|m\.)?youtube\.com/(watch[?/]|live/|embed/)'
       overlay: youtube_template.mods.png
@@ -541,6 +557,15 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [trello_template_mac.mods.png, trello_template_mac.combo.mods.png]
         meet.google.com:
           overlay: [meet_template_mac.mods.png, meet_template_mac.combo.mods.png, meet_template_mac.extra.mods.png]
+        web.whatsapp.com:
+          url: '^https?://web\.whatsapp\.com/'
+          overlay: [whatsapp_web_template_mac.mods.png, whatsapp_web_template_mac.combo.mods.png, whatsapp_web_template_mac.extra.mods.png, whatsapp_web_template_mac.gui.mods.png]
+        x.com:
+          url: '^https?://(www\.|mobile\.)?x\.com/'
+          overlay: [x_template_mac.mods.png, x_template_mac.combo.mods.png]
+        https://:
+          url: '^https?://(mastodon\.social|mstdn\.jp|infosec\.exchange|mstdn\.social|hachyderm\.io|piaille\.fr|mastodon\.world|social\.vivaldi\.net|troet\.cafe|mastodon\.uno|mastodon\.gamedev\.place|mathstodon\.xyz|mastodon\.nl|social\.tchncs\.de|techhub\.social|occm\.cc|norden\.social|kolektiva\.social|o3o\.ca|organica\.social)/'
+          overlay: mastodon_template.mods.png
         youtube.com:
           url: '^https?://(www\.|m\.)?youtube\.com/(watch[?/]|live/|embed/)'
           overlay: youtube_template_mac.mods.png
@@ -4847,3 +4872,12 @@ overwatch,steam_app_2357570:
 # registry value.
 genshinimpact,yuanshen:
   overlay: genshin_template.mods.png
+# WhatsApp desktop (sources: overlay_sources/social/whatsapp.yaml): the Windows
+# app's WhatsApp.Root.exe (cut at the first dot to `whatsapp`) and the macOS app
+# "WhatsApp". Neither name was checked on an install, and the keys come from no
+# official list. WhatsApp has no Linux app.
+whatsapp:
+  overlay: [whatsapp_template.mods.png, whatsapp_template.combo.mods.png, whatsapp_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [whatsapp_template_mac.mods.png, whatsapp_template_mac.combo.mods.png, whatsapp_template_mac.extra.mods.png]

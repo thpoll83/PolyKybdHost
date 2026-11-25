@@ -1,0 +1,57 @@
+# X (x.com) shortcut overlays for PolyKybd. See SOURCES.md.
+#
+# Keys: X's shortcut list (press ? on x.com). X's help page (help.x.com) refused
+# automated access, so every key here is one that at least two independent
+# shortcut lists agree on (SOURCES.md names them, read 2026-11-25). The single
+# keys act when no text field has focus.
+#
+# Left out:
+# * B and X: older lists give B = block, newer ones B = bookmark and X = block.
+#   Add them once X's own ? list has been read.
+# * The two-key "g then <key>" navigation (g h home, g n notifications ...): a
+#   cell shows what one key press does.
+# * Video keys (k / Space play, m mute) that replace the timeline keys only
+#   while a video is selected.
+#
+# Regenerate (from the repo root, with the project venv):
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/social/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/social/x.yaml --preview /tmp/x_preview
+app: x
+match: [x]
+output: x_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+program_icon: x.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- timeline ---
+  - { key: J,     icon: nextpost.png, label: "Next post" }
+  - { key: K,     icon: prevpost.png, label: "Previous post" }
+  - { key: SPACE, icon: pagedown.png, label: "Page down" }
+  - { key: ".",   icon: loadnew.png,  label: "Load new posts" }
+  - { key: ENTER, icon: openpost.png, label: "Open post" }
+  - { key: O,     icon: media.png,    label: "Expand photo" }
+  # --- the selected post ---
+  - { key: L, icon: like.png,        label: "Like" }
+  - { key: R, icon: reply.png,       label: "Reply" }
+  - { key: T, icon: repost.png,      label: "Repost" }
+  - { key: S, icon: share.png,       label: "Share post" }
+  - { key: U, icon: muteaccount.png, label: "Mute account" }
+  # --- anywhere ---
+  - { key: N,   icon: newpost.png, label: "New post" }
+  - { key: M,   icon: newdm.png,   label: "New message" }
+  - { key: "/", icon: search.png, label: "Search" }
+  - { key: "/", mods: [SHIFT], icon: help.png, label: "Shortcut list" }
+  # --- composer ---
+  - { key: ENTER, mods: [CMDCTRL], icon: send.png, label: "Send post" }
