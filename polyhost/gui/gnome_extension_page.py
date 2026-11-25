@@ -119,7 +119,11 @@ class GnomePage(RowsPage):
         else:
             results = self._remove_fn()
         lines = [result_line(r) for r in results]
-        if install and any(r.changed for r in results):
+        # Only a newly written or enabled extension needs a login. GNOME applies
+        # disable-user-extensions at once, and a refused install changed nothing.
+        started = (gnome_extension.MSG_INSTALLED, gnome_extension.MSG_UPDATED,
+                   gnome_extension.MSG_UP_TO_DATE)
+        if install and any(r.changed and r.message in started for r in results):
             lines.append(_("Log out and back in: GNOME starts a new extension only at "
                            "login."))
         return lines

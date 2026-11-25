@@ -120,6 +120,19 @@ class GnomePageTest(unittest.TestCase):
         _settle(self.app, page)
         install.assert_called_once_with(extension=True, user_extensions=False)
 
+    def test_user_extensions_alone_ask_for_no_login(self):
+        install = mock.MagicMock(return_value=[
+            ge.Result(ge.MSG_UNSUPPORTED, "44.2"),
+            ge.Result(ge.MSG_USER_ON, changed=True)])
+        page = self._page(_status(user_off=True, shell_version="44.2"), install=install)
+        page.boxes()[gp.USER_EXTENSIONS].setChecked(True)
+        page._apply(True)
+        _settle(self.app, page)
+        install.assert_called_once_with(extension=False, user_extensions=True)
+        self.assertIn("User extensions: switched on", page.results.text())
+        self.assertIn("44.2", page.results.text())
+        self.assertNotIn("Log out", page.results.text())
+
     def test_remove_never_touches_user_extensions(self):
         remove = mock.MagicMock(return_value=[ge.Result(ge.MSG_REMOVED, str(FOLDER),
                                                         changed=True)])
