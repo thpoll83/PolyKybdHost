@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-25 08:11+0000\n"
+"POT-Creation-Date: 2026-11-25 08:38+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: tr\n"
@@ -2046,68 +2046,78 @@ msgid "That is not a pairing code: it has 64 letters and digits (a to f, 0 to 9)
 msgstr "Bu bir eşleştirme kodu değil: eşleştirme kodu, 8'li gruplar halinde 64 harf ve rakamdan (a ile f arası, 0 ile 9 arası) oluşur."
 
 #: polyhost/gui/gnome_extension_page.py:16
+#, python-brace-format
+msgid "GNOME Shell {version} is not supported. The extension runs on GNOME Shell {versions}."
+msgstr "GNOME Shell {version} desteklenmiyor. Uzantı GNOME Shell {versions} üzerinde çalışır."
+
+#: polyhost/gui/gnome_extension_page.py:20
 msgid "Not installed"
 msgstr "Yüklü değil"
 
-#: polyhost/gui/gnome_extension_page.py:18
+#: polyhost/gui/gnome_extension_page.py:22
 msgid "Another version is installed. Install replaces it with the version this app uses."
 msgstr "Başka bir sürüm yüklü. \"Yükle\" onu bu uygulamanın kullandığı sürümle değiştirir."
 
-#: polyhost/gui/gnome_extension_page.py:21
+#: polyhost/gui/gnome_extension_page.py:25
 msgid "Installed, but not enabled"
 msgstr "Yüklü, ancak etkin değil"
 
-#: polyhost/gui/gnome_extension_page.py:23
+#: polyhost/gui/gnome_extension_page.py:27
 msgid "Installed and active"
 msgstr "Yüklü ve etkin"
 
-#: polyhost/gui/gnome_extension_page.py:25
+#: polyhost/gui/gnome_extension_page.py:29
 msgid "Installed, but GNOME loads no user extension (see below)"
 msgstr "Yüklü, ancak GNOME hiçbir kullanıcı uzantısını yüklemiyor (aşağıya bakın)"
 
-#: polyhost/gui/gnome_extension_page.py:27
+#: polyhost/gui/gnome_extension_page.py:31
 msgid "Installed. GNOME starts it at the next login."
 msgstr "Yüklendi. GNOME onu bir sonraki oturum açışta başlatır."
 
-#: polyhost/gui/gnome_extension_page.py:28
+#: polyhost/gui/gnome_extension_page.py:32
 msgid "Installed"
 msgstr "Yüklü"
 
-#: polyhost/gui/gnome_extension_page.py:35
+#: polyhost/gui/gnome_extension_page.py:39
 #, python-brace-format
 msgid "Window Reporter: installed in {path}"
 msgstr "Window Reporter: {path} konumuna yüklendi"
 
-#: polyhost/gui/gnome_extension_page.py:36
+#: polyhost/gui/gnome_extension_page.py:40
 #, python-brace-format
 msgid "Window Reporter: replaced with the version this app uses ({path})"
 msgstr "Window Reporter: bu uygulamanın kullandığı sürümle değiştirildi ({path})"
 
-#: polyhost/gui/gnome_extension_page.py:38
+#: polyhost/gui/gnome_extension_page.py:42
 #, python-brace-format
 msgid "Window Reporter: already installed ({path})"
 msgstr "Window Reporter: zaten yüklü ({path})"
 
-#: polyhost/gui/gnome_extension_page.py:40
+#: polyhost/gui/gnome_extension_page.py:44
 msgid "Window Reporter: removed"
 msgstr "Window Reporter: kaldırıldı"
 
-#: polyhost/gui/gnome_extension_page.py:41
+#: polyhost/gui/gnome_extension_page.py:45
 msgid "Window Reporter: was not installed"
 msgstr "Window Reporter: yüklü değildi"
 
-#: polyhost/gui/gnome_extension_page.py:42
+#: polyhost/gui/gnome_extension_page.py:46
 msgid "User extensions: switched on"
 msgstr "Kullanıcı uzantıları: açıldı"
 
-#: polyhost/gui/gnome_extension_page.py:43
+#: polyhost/gui/gnome_extension_page.py:47
+#, python-brace-format
+msgid "Window Reporter: not installed, GNOME Shell {version} is not supported"
+msgstr "Window Reporter: yüklenmedi, GNOME Shell {version} desteklenmiyor"
+
+#: polyhost/gui/gnome_extension_page.py:49
 #: polyhost/gui/integrations_dialog.py:272
 #: polyhost/gui/integrations_dialog.py:390
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "Değişiklik başarısız oldu: {error}"
 
-#: polyhost/gui/gnome_extension_page.py:54
+#: polyhost/gui/gnome_extension_page.py:60
 msgid ""
 "On GNOME with Wayland, the keyboard shows the keys of the focused app only with the PolyKybd Window Reporter extension. Without it, only apps that run under XWayland are seen. The extension reports the focused window's name and title and cannot change any window.\n"
 "\n"
@@ -2117,37 +2127,37 @@ msgstr ""
 "\n"
 "\"Yükle\", uzantının sabit bir sürümünü github.com/thpoll83/gnome-wayland-winreader adresinden indirir, denetler, GNOME'un uzantı klasörüne kopyalar ve etkinleştirir. GNOME yeni bir uzantıyı yalnızca oturum açarken başlatır; bu yüzden yükledikten sonra oturumu kapatıp yeniden açın."
 
-#: polyhost/gui/gnome_extension_page.py:69
+#: polyhost/gui/gnome_extension_page.py:75
 #, python-brace-format
 msgid "The extension could not be checked: {error}"
 msgstr "Uzantı denetlenemedi: {error}"
 
-#: polyhost/gui/gnome_extension_page.py:84
+#: polyhost/gui/gnome_extension_page.py:92
 msgid "Off, and locked by an administrator: GNOME loads no user extension, so the Window Reporter cannot run."
 msgstr "Kapalı ve bir yönetici tarafından kilitli: GNOME hiçbir kullanıcı uzantısını yüklemiyor, bu yüzden Window Reporter çalışamaz."
 
-#: polyhost/gui/gnome_extension_page.py:87
+#: polyhost/gui/gnome_extension_page.py:95
 msgid "Off: GNOME loads no user extension, so the Window Reporter cannot run. Install with this row selected switches on every user extension, not only this one."
 msgstr "Kapalı: GNOME hiçbir kullanıcı uzantısını yüklemiyor, bu yüzden Window Reporter çalışamaz. Bu satır seçiliyken \"Yükle\", yalnızca bu uzantıyı değil, tüm kullanıcı uzantılarını açar."
 
-#: polyhost/gui/gnome_extension_page.py:92
+#: polyhost/gui/gnome_extension_page.py:100
 msgid "User extensions"
 msgstr "Kullanıcı uzantıları"
 
-#: polyhost/gui/gnome_extension_page.py:97
+#: polyhost/gui/gnome_extension_page.py:105
 #, python-brace-format
 msgid "GNOME's settings could not be read: {error}"
 msgstr "GNOME ayarları okunamadı: {error}"
 
-#: polyhost/gui/gnome_extension_page.py:99
+#: polyhost/gui/gnome_extension_page.py:107
 msgid "This is an X11 session: the keyboard sees every window without the extension. It is needed in a Wayland session."
 msgstr "Bu bir X11 oturumu: klavye uzantı olmadan her pencereyi görür. Uzantı bir Wayland oturumunda gereklidir."
 
-#: polyhost/gui/gnome_extension_page.py:102
+#: polyhost/gui/gnome_extension_page.py:110
 msgid "Log out and back in to start the extension."
 msgstr "Uzantıyı başlatmak için oturumu kapatıp yeniden açın."
 
-#: polyhost/gui/gnome_extension_page.py:114
+#: polyhost/gui/gnome_extension_page.py:122
 msgid "Log out and back in: GNOME starts a new extension only at login."
 msgstr "Oturumu kapatıp yeniden açın: GNOME yeni bir uzantıyı yalnızca oturum açarken başlatır."
 

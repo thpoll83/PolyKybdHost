@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-25 08:11+0000\n"
+"POT-Creation-Date: 2026-11-25 08:38+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -2046,68 +2046,78 @@ msgid "That is not a pairing code: it has 64 letters and digits (a to f, 0 to 9)
 msgstr "페어링 코드가 아닙니다. 페어링 코드는 64개의 문자와 숫자(a~f, 0~9)로 이루어지며 8개씩 묶여 있습니다."
 
 #: polyhost/gui/gnome_extension_page.py:16
+#, python-brace-format
+msgid "GNOME Shell {version} is not supported. The extension runs on GNOME Shell {versions}."
+msgstr "GNOME Shell {version}은(는) 지원되지 않습니다. 이 확장 프로그램은 GNOME Shell {versions}에서 실행됩니다."
+
+#: polyhost/gui/gnome_extension_page.py:20
 msgid "Not installed"
 msgstr "설치되지 않음"
 
-#: polyhost/gui/gnome_extension_page.py:18
+#: polyhost/gui/gnome_extension_page.py:22
 msgid "Another version is installed. Install replaces it with the version this app uses."
 msgstr "다른 버전이 설치되어 있습니다. “설치”를 누르면 이 앱이 사용하는 버전으로 바꿉니다."
 
-#: polyhost/gui/gnome_extension_page.py:21
+#: polyhost/gui/gnome_extension_page.py:25
 msgid "Installed, but not enabled"
 msgstr "설치됨, 사용 안 함"
 
-#: polyhost/gui/gnome_extension_page.py:23
+#: polyhost/gui/gnome_extension_page.py:27
 msgid "Installed and active"
 msgstr "설치됨, 실행 중"
 
-#: polyhost/gui/gnome_extension_page.py:25
+#: polyhost/gui/gnome_extension_page.py:29
 msgid "Installed, but GNOME loads no user extension (see below)"
 msgstr "설치됨, 하지만 GNOME이 사용자 확장 프로그램을 로드하지 않음(아래 참조)"
 
-#: polyhost/gui/gnome_extension_page.py:27
+#: polyhost/gui/gnome_extension_page.py:31
 msgid "Installed. GNOME starts it at the next login."
 msgstr "설치되었습니다. GNOME은 다음 로그인 때 이 확장 프로그램을 시작합니다."
 
-#: polyhost/gui/gnome_extension_page.py:28
+#: polyhost/gui/gnome_extension_page.py:32
 msgid "Installed"
 msgstr "설치됨"
 
-#: polyhost/gui/gnome_extension_page.py:35
+#: polyhost/gui/gnome_extension_page.py:39
 #, python-brace-format
 msgid "Window Reporter: installed in {path}"
 msgstr "Window Reporter: {path}에 설치됨"
 
-#: polyhost/gui/gnome_extension_page.py:36
+#: polyhost/gui/gnome_extension_page.py:40
 #, python-brace-format
 msgid "Window Reporter: replaced with the version this app uses ({path})"
 msgstr "Window Reporter: 이 앱이 사용하는 버전으로 바꿈({path})"
 
-#: polyhost/gui/gnome_extension_page.py:38
+#: polyhost/gui/gnome_extension_page.py:42
 #, python-brace-format
 msgid "Window Reporter: already installed ({path})"
 msgstr "Window Reporter: 이미 설치됨({path})"
 
-#: polyhost/gui/gnome_extension_page.py:40
+#: polyhost/gui/gnome_extension_page.py:44
 msgid "Window Reporter: removed"
 msgstr "Window Reporter: 제거됨"
 
-#: polyhost/gui/gnome_extension_page.py:41
+#: polyhost/gui/gnome_extension_page.py:45
 msgid "Window Reporter: was not installed"
 msgstr "Window Reporter: 설치되어 있지 않았음"
 
-#: polyhost/gui/gnome_extension_page.py:42
+#: polyhost/gui/gnome_extension_page.py:46
 msgid "User extensions: switched on"
 msgstr "사용자 확장 프로그램: 켜짐"
 
-#: polyhost/gui/gnome_extension_page.py:43
+#: polyhost/gui/gnome_extension_page.py:47
+#, python-brace-format
+msgid "Window Reporter: not installed, GNOME Shell {version} is not supported"
+msgstr "Window Reporter: 설치되지 않음, GNOME Shell {version}은(는) 지원되지 않음"
+
+#: polyhost/gui/gnome_extension_page.py:49
 #: polyhost/gui/integrations_dialog.py:272
 #: polyhost/gui/integrations_dialog.py:390
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "변경하지 못했습니다: {error}"
 
-#: polyhost/gui/gnome_extension_page.py:54
+#: polyhost/gui/gnome_extension_page.py:60
 msgid ""
 "On GNOME with Wayland, the keyboard shows the keys of the focused app only with the PolyKybd Window Reporter extension. Without it, only apps that run under XWayland are seen. The extension reports the focused window's name and title and cannot change any window.\n"
 "\n"
@@ -2117,37 +2127,37 @@ msgstr ""
 "\n"
 "“설치”는 github.com/thpoll83/gnome-wayland-winreader에서 고정된 버전의 확장 프로그램을 다운로드하여 검사하고, GNOME의 확장 프로그램 폴더에 복사한 다음 사용하도록 설정합니다. GNOME은 새 확장 프로그램을 로그인할 때만 시작하므로, 설치한 후 로그아웃했다가 다시 로그인하십시오."
 
-#: polyhost/gui/gnome_extension_page.py:69
+#: polyhost/gui/gnome_extension_page.py:75
 #, python-brace-format
 msgid "The extension could not be checked: {error}"
 msgstr "확장 프로그램을 검사할 수 없습니다: {error}"
 
-#: polyhost/gui/gnome_extension_page.py:84
+#: polyhost/gui/gnome_extension_page.py:92
 msgid "Off, and locked by an administrator: GNOME loads no user extension, so the Window Reporter cannot run."
 msgstr "꺼짐, 관리자가 잠금: GNOME이 사용자 확장 프로그램을 로드하지 않으므로 Window Reporter를 실행할 수 없습니다."
 
-#: polyhost/gui/gnome_extension_page.py:87
+#: polyhost/gui/gnome_extension_page.py:95
 msgid "Off: GNOME loads no user extension, so the Window Reporter cannot run. Install with this row selected switches on every user extension, not only this one."
 msgstr "꺼짐: GNOME이 사용자 확장 프로그램을 로드하지 않으므로 Window Reporter를 실행할 수 없습니다. 이 행을 선택한 상태로 “설치”를 누르면 이 확장 프로그램만이 아니라 모든 사용자 확장 프로그램이 켜집니다."
 
-#: polyhost/gui/gnome_extension_page.py:92
+#: polyhost/gui/gnome_extension_page.py:100
 msgid "User extensions"
 msgstr "사용자 확장 프로그램"
 
-#: polyhost/gui/gnome_extension_page.py:97
+#: polyhost/gui/gnome_extension_page.py:105
 #, python-brace-format
 msgid "GNOME's settings could not be read: {error}"
 msgstr "GNOME 설정을 읽을 수 없습니다: {error}"
 
-#: polyhost/gui/gnome_extension_page.py:99
+#: polyhost/gui/gnome_extension_page.py:107
 msgid "This is an X11 session: the keyboard sees every window without the extension. It is needed in a Wayland session."
 msgstr "이 세션은 X11 세션입니다: 확장 프로그램 없이도 키보드가 모든 창을 인식합니다. 확장 프로그램은 Wayland 세션에서 필요합니다."
 
-#: polyhost/gui/gnome_extension_page.py:102
+#: polyhost/gui/gnome_extension_page.py:110
 msgid "Log out and back in to start the extension."
 msgstr "확장 프로그램을 시작하려면 로그아웃했다가 다시 로그인하십시오."
 
-#: polyhost/gui/gnome_extension_page.py:114
+#: polyhost/gui/gnome_extension_page.py:122
 msgid "Log out and back in: GNOME starts a new extension only at login."
 msgstr "로그아웃했다가 다시 로그인하십시오: GNOME은 새 확장 프로그램을 로그인할 때만 시작합니다."
 

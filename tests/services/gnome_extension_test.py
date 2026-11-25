@@ -20,7 +20,7 @@ class FakeGnome:
     """gsettings and gdbus, keyed on the command line."""
 
     def __init__(self, enabled=None, disabled=None, user_off=False, writable=True,
-                 active=False, gsettings=True, gdbus=True):
+                 active=False, gsettings=True, gdbus=True, shell="GNOME Shell 46.0"):
         self.values = {ge.KEY_ENABLED: ge.format_strv(enabled or []),
                        ge.KEY_DISABLED: ge.format_strv(disabled or []) if disabled
                        else "@as []",
@@ -29,6 +29,7 @@ class FakeGnome:
         self.active = active
         self.gsettings = gsettings
         self.gdbus = gdbus
+        self.shell = shell
         self.calls = []
 
     def __call__(self, cmd, **_kw):
@@ -46,6 +47,10 @@ class FakeGnome:
             if verb == "writable":
                 return subprocess.CompletedProcess(cmd, 0, "true\n" if self.writable
                                                    else "false\n", "")
+        if cmd[0] == "gnome-shell":
+            if self.shell is None:
+                raise FileNotFoundError("gnome-shell")
+            return subprocess.CompletedProcess(cmd, 0, self.shell + "\n", "")
         if cmd[0] == "gdbus":
             if not self.gdbus:
                 raise FileNotFoundError("gdbus")
@@ -189,6 +194,33 @@ class GnomeExtensionTest(unittest.TestCase):
         self.assertEqual(gnome.values[ge.KEY_USER_OFF], "false")
         self.assertFalse(any(c[:2] == ["gsettings", "set"] and c[3] == ge.KEY_USER_OFF
                              for c in gnome.calls))
+
+    def test_shell_versions_match_the_pinned_metadata(self):
+        # Keep SHELL_VERSIONS equal to metadata.json's "shell-version" at the pin.
+        self.assertEqual(ge.SHELL_VERSIONS, ("45", "46", "47", "48", "49"))
+        self.assertTrue(ge.shell_supported("46.0"))
+        self.assertTrue(ge.shell_supported("49.alpha"))
+        self.assertFalse(ge.shell_supported("44.2"))
+        self.assertFalse(ge.shell_supported("50.0"))
+        self.assertTrue(ge.shell_supported(None))
+
+    def test_install_refuses_an_unsupported_shell_and_changes_nothing(self):
+        gnome = FakeGnome(shell="GNOME Shell 44.2", user_off=True)
+        st = ge.status(env=self.env, run=gnome)
+        self.assertEqual(st.shell_version, "44.2")
+        self.assertFalse(st.shell_supported)
+        results = ge.install(env=self.env, run=gnome, fetch=self.fetch)
+        self.assertEqual([(r.message, r.detail, r.changed) for r in results],
+                         [(ge.MSG_UNSUPPORTED, "44.2", False)])
+        self.assertEqual(self.fetched, [])
+        self.assertFalse(self.folder.exists())
+        self.assertEqual(gnome.enabled(), [])
+
+    def test_unknown_shell_version_still_installs(self):
+        gnome = FakeGnome(shell=None)
+        self.assertIsNone(ge.status(env=self.env, run=gnome).shell_version)
+        results = ge.install(env=self.env, run=gnome, fetch=self.fetch)
+        self.assertEqual(results[0].message, ge.MSG_INSTALLED)
 
     def test_status_without_gsettings_or_gdbus(self):
         st = ge.status(env=self.env, run=FakeGnome(gsettings=False, gdbus=False))

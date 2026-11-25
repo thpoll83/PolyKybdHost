@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-25 08:11+0000\n"
+"POT-Creation-Date: 2026-11-25 08:38+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -2053,68 +2053,78 @@ msgid "That is not a pairing code: it has 64 letters and digits (a to f, 0 to 9)
 msgstr "Dit is geen koppelcode: een koppelcode heeft 64 letters en cijfers (a tot en met f, 0 tot en met 9), in groepen van 8."
 
 #: polyhost/gui/gnome_extension_page.py:16
+#, python-brace-format
+msgid "GNOME Shell {version} is not supported. The extension runs on GNOME Shell {versions}."
+msgstr "GNOME Shell {version} wordt niet ondersteund. De extensie werkt op GNOME Shell {versions}."
+
+#: polyhost/gui/gnome_extension_page.py:20
 msgid "Not installed"
 msgstr "Niet geïnstalleerd"
 
-#: polyhost/gui/gnome_extension_page.py:18
+#: polyhost/gui/gnome_extension_page.py:22
 msgid "Another version is installed. Install replaces it with the version this app uses."
 msgstr "Er is een andere versie geïnstalleerd. \"Installeren\" vervangt die door de versie die deze app gebruikt."
 
-#: polyhost/gui/gnome_extension_page.py:21
+#: polyhost/gui/gnome_extension_page.py:25
 msgid "Installed, but not enabled"
 msgstr "Geïnstalleerd, maar niet ingeschakeld"
 
-#: polyhost/gui/gnome_extension_page.py:23
+#: polyhost/gui/gnome_extension_page.py:27
 msgid "Installed and active"
 msgstr "Geïnstalleerd en actief"
 
-#: polyhost/gui/gnome_extension_page.py:25
+#: polyhost/gui/gnome_extension_page.py:29
 msgid "Installed, but GNOME loads no user extension (see below)"
 msgstr "Geïnstalleerd, maar GNOME laadt geen gebruikersextensies (zie hieronder)"
 
-#: polyhost/gui/gnome_extension_page.py:27
+#: polyhost/gui/gnome_extension_page.py:31
 msgid "Installed. GNOME starts it at the next login."
 msgstr "Geïnstalleerd. GNOME start hem bij de volgende aanmelding."
 
-#: polyhost/gui/gnome_extension_page.py:28
+#: polyhost/gui/gnome_extension_page.py:32
 msgid "Installed"
 msgstr "Geïnstalleerd"
 
-#: polyhost/gui/gnome_extension_page.py:35
+#: polyhost/gui/gnome_extension_page.py:39
 #, python-brace-format
 msgid "Window Reporter: installed in {path}"
 msgstr "Window Reporter: geïnstalleerd in {path}"
 
-#: polyhost/gui/gnome_extension_page.py:36
+#: polyhost/gui/gnome_extension_page.py:40
 #, python-brace-format
 msgid "Window Reporter: replaced with the version this app uses ({path})"
 msgstr "Window Reporter: vervangen door de versie die deze app gebruikt ({path})"
 
-#: polyhost/gui/gnome_extension_page.py:38
+#: polyhost/gui/gnome_extension_page.py:42
 #, python-brace-format
 msgid "Window Reporter: already installed ({path})"
 msgstr "Window Reporter: al geïnstalleerd ({path})"
 
-#: polyhost/gui/gnome_extension_page.py:40
+#: polyhost/gui/gnome_extension_page.py:44
 msgid "Window Reporter: removed"
 msgstr "Window Reporter: verwijderd"
 
-#: polyhost/gui/gnome_extension_page.py:41
+#: polyhost/gui/gnome_extension_page.py:45
 msgid "Window Reporter: was not installed"
 msgstr "Window Reporter: was niet geïnstalleerd"
 
-#: polyhost/gui/gnome_extension_page.py:42
+#: polyhost/gui/gnome_extension_page.py:46
 msgid "User extensions: switched on"
 msgstr "Gebruikersextensies: ingeschakeld"
 
-#: polyhost/gui/gnome_extension_page.py:43
+#: polyhost/gui/gnome_extension_page.py:47
+#, python-brace-format
+msgid "Window Reporter: not installed, GNOME Shell {version} is not supported"
+msgstr "Window Reporter: niet geïnstalleerd, GNOME Shell {version} wordt niet ondersteund"
+
+#: polyhost/gui/gnome_extension_page.py:49
 #: polyhost/gui/integrations_dialog.py:272
 #: polyhost/gui/integrations_dialog.py:390
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "De wijziging is mislukt: {error}"
 
-#: polyhost/gui/gnome_extension_page.py:54
+#: polyhost/gui/gnome_extension_page.py:60
 msgid ""
 "On GNOME with Wayland, the keyboard shows the keys of the focused app only with the PolyKybd Window Reporter extension. Without it, only apps that run under XWayland are seen. The extension reports the focused window's name and title and cannot change any window.\n"
 "\n"
@@ -2124,37 +2134,37 @@ msgstr ""
 "\n"
 "\"Installeren\" downloadt een vaste versie van de extensie van github.com/thpoll83/gnome-wayland-winreader, controleert die, kopieert die naar de extensiemap van GNOME en schakelt die in. GNOME start een nieuwe extensie alleen bij het aanmelden, dus meld je na het installeren af en weer aan."
 
-#: polyhost/gui/gnome_extension_page.py:69
+#: polyhost/gui/gnome_extension_page.py:75
 #, python-brace-format
 msgid "The extension could not be checked: {error}"
 msgstr "De extensie kon niet worden gecontroleerd: {error}"
 
-#: polyhost/gui/gnome_extension_page.py:84
+#: polyhost/gui/gnome_extension_page.py:92
 msgid "Off, and locked by an administrator: GNOME loads no user extension, so the Window Reporter cannot run."
 msgstr "Uit, en vergrendeld door een beheerder: GNOME laadt geen gebruikersextensies, dus de Window Reporter kan niet draaien."
 
-#: polyhost/gui/gnome_extension_page.py:87
+#: polyhost/gui/gnome_extension_page.py:95
 msgid "Off: GNOME loads no user extension, so the Window Reporter cannot run. Install with this row selected switches on every user extension, not only this one."
 msgstr "Uit: GNOME laadt geen gebruikersextensies, dus de Window Reporter kan niet draaien. \"Installeren\" met deze rij geselecteerd schakelt alle gebruikersextensies in, niet alleen deze."
 
-#: polyhost/gui/gnome_extension_page.py:92
+#: polyhost/gui/gnome_extension_page.py:100
 msgid "User extensions"
 msgstr "Gebruikersextensies"
 
-#: polyhost/gui/gnome_extension_page.py:97
+#: polyhost/gui/gnome_extension_page.py:105
 #, python-brace-format
 msgid "GNOME's settings could not be read: {error}"
 msgstr "De instellingen van GNOME konden niet worden gelezen: {error}"
 
-#: polyhost/gui/gnome_extension_page.py:99
+#: polyhost/gui/gnome_extension_page.py:107
 msgid "This is an X11 session: the keyboard sees every window without the extension. It is needed in a Wayland session."
 msgstr "Dit is een X11-sessie: het toetsenbord ziet elk venster zonder de extensie. Die is nodig in een Wayland-sessie."
 
-#: polyhost/gui/gnome_extension_page.py:102
+#: polyhost/gui/gnome_extension_page.py:110
 msgid "Log out and back in to start the extension."
 msgstr "Meld je af en weer aan om de extensie te starten."
 
-#: polyhost/gui/gnome_extension_page.py:114
+#: polyhost/gui/gnome_extension_page.py:122
 msgid "Log out and back in: GNOME starts a new extension only at login."
 msgstr "Meld je af en weer aan: GNOME start een nieuwe extensie alleen bij het aanmelden."
 

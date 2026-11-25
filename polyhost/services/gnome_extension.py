@@ -48,6 +48,9 @@ EXTENSION_FILES = {
     "extension.js": "a25d92eba890ffc9c68313d5f912682441386ccf4c95be2980ee49580863de27",
     "metadata.json": "541fb42918a89b9303f370743ed5e4dff691c4379ca1457ab1bbabf25dbf3655",
 }
+# The "shell-version" list in metadata.json at EXTENSION_COMMIT. GNOME refuses to
+# load the extension on any other major version, so Install refuses too.
+SHELL_VERSIONS = ("45", "46", "47", "48", "49")
 # Larger than either file by far; a bigger answer is not the extension.
 MAX_FILE_BYTES = 64 * 1024
 DOWNLOAD_TIMEOUT_S = 15
@@ -69,6 +72,7 @@ MSG_UP_TO_DATE = "up-to-date"
 MSG_REMOVED = "removed"
 MSG_NOT_INSTALLED = "not-installed"
 MSG_USER_ON = "user-extensions-on"
+MSG_UNSUPPORTED = "unsupported-shell"
 MSG_FAILED = "failed"
 
 
@@ -113,6 +117,12 @@ class Status:
     active: bool | None         # the D-Bus object answers; None: gdbus missing
     wayland: bool
     error: str = ""             # why a gsettings read failed
+    shell_version: str | None = None   # "46.0"; None: gnome-shell did not answer
+
+    @property
+    def shell_supported(self):
+        """False only for a known version outside SHELL_VERSIONS."""
+        return shell_supported(self.shell_version)
 
 
 @dataclass
@@ -155,6 +165,25 @@ def _set(key, value, run):
         raise RuntimeError((cp.stderr or cp.stdout or "gsettings failed").strip())
 
 
+def shell_version(run=subprocess.run):
+    """The running GNOME Shell's version ("46.0"), or None. ``gnome-shell
+    --version`` prints "GNOME Shell 46.0"."""
+    try:
+        cp = _run(["gnome-shell", "--version"], run)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    words = (cp.stdout or "").split()
+    return words[-1] if cp.returncode == 0 and words else None
+
+
+def shell_supported(version):
+    """True or unknown (None) -> may install; False only for a version that is
+    known and not in SHELL_VERSIONS."""
+    if not version:
+        return True
+    return version.split(".")[0] in SHELL_VERSIONS
+
+
 def _files_state(folder):
     present = [folder / name for name in EXTENSION_FILES]
     if not any(p.exists() for p in present):
@@ -193,7 +222,7 @@ def status(home=None, env=None, run=subprocess.run):
         error = str(exc)
     return Status(folder=folder, files=_files_state(folder), enabled=enabled,
                   user_off=user_off, user_off_writable=writable, active=_active(run),
-                  wayland=is_wayland(env), error=error)
+                  wayland=is_wayland(env), error=error, shell_version=shell_version(run))
 
 
 def download(name, fetch=None):
@@ -229,6 +258,12 @@ def install(extension=True, user_extensions=False, home=None, env=None,
             run=subprocess.run, fetch=None):
     """Install the extension and/or switch user extensions on. Returns Results."""
     results = []
+    version = shell_version(run) if extension else None
+    if extension and not shell_supported(version):
+        # Nothing is downloaded or changed: GNOME would refuse the extension, and
+        # another login cannot fix that.
+        results.append(Result(MSG_UNSUPPORTED, version))
+        extension = False
     if extension:
         folder = extension_dir(home, env)
         before = _files_state(folder)

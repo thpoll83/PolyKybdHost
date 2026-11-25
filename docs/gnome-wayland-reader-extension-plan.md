@@ -15,6 +15,12 @@ the extension, so no clone and no `gsettings` by hand:
   inside GNOME Shell, so the host installs only the reviewed version. **A change to
   the extension reaches users only when the pin moves:** update both constants
   together and run `tests/services/gnome_extension_test.py`.
+- It first reads `gnome-shell --version` and refuses on a major version outside
+  `SHELL_VERSIONS` (the pinned `metadata.json`'s `shell-version` list, 45–49):
+  GNOME would not load the extension there, and another login cannot change that.
+  An unknown version (no `gnome-shell` on the PATH) does not block the install.
+  Moving the pin to a commit that supports a new GNOME means updating
+  `SHELL_VERSIONS` too.
 - It writes them to `$XDG_DATA_HOME/gnome-shell/extensions/window-reporter@polykybd.org/`
   and adds the uuid to `org.gnome.shell enabled-extensions` directly.
   `gnome-extensions enable` asks the running shell, which on Wayland refuses an

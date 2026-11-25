@@ -78,6 +78,17 @@ class GnomePageTest(unittest.TestCase):
         self.assertIn("next login", gp.extension_state_text(page._status))
         self.assertIn("Log out", page.info.text())
 
+    def test_unsupported_shell_cannot_be_installed(self):
+        page = self._page(_status(shell_version="44.2"))
+        box = page.boxes()[gp.EXTENSION]
+        self.assertFalse(box.isEnabled())
+        self.assertFalse(box.isChecked())
+        self.assertIn("44.2", gp.extension_state_text(page._status))
+
+    def test_unsupported_shell_still_allows_remove(self):
+        page = self._page(_status(shell_version="50.0", files="current", enabled=True))
+        self.assertTrue(page.boxes()[gp.EXTENSION].isEnabled())
+
     def test_x11_session_says_it_is_not_needed(self):
         page = self._page(_status(wayland=False))
         self.assertIn("X11", page.info.text())

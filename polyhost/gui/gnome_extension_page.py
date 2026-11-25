@@ -12,6 +12,10 @@ USER_EXTENSIONS = "user-extensions"
 
 def extension_state_text(st):
     """The extension row's state, translated."""
+    if not st.shell_supported:
+        return _f("GNOME Shell {version} is not supported. The extension runs on GNOME "
+                  "Shell {versions}.", version=st.shell_version,
+                  versions=", ".join(gnome_extension.SHELL_VERSIONS))
     if st.files == "missing":
         return _("Not installed")
     if st.files == "other":
@@ -40,6 +44,8 @@ def result_line(r):
         m.MSG_REMOVED: lambda: _("Window Reporter: removed"),
         m.MSG_NOT_INSTALLED: lambda: _("Window Reporter: was not installed"),
         m.MSG_USER_ON: lambda: _("User extensions: switched on"),
+        m.MSG_UNSUPPORTED: lambda: _f("Window Reporter: not installed, GNOME Shell "
+                                      "{version} is not supported", version=r.detail),
     }.get(r.message, lambda: _f("The change failed: {error}", error=r.detail))()
 
 
@@ -77,7 +83,9 @@ class GnomePage(RowsPage):
         self.clear_rows()
         done = st.files == "current" and st.enabled
         self.add_row(EXTENSION, "Window Reporter", str(st.folder), extension_state_text(st),
-                     checked=old.get(EXTENSION, not done))
+                     checked=old.get(EXTENSION, not done) and st.shell_supported,
+                     # On an unsupported Shell only Remove is useful.
+                     enabled=st.shell_supported or st.files != "missing")
         info = []
         if st.user_off:
             if st.user_off_writable is False:
