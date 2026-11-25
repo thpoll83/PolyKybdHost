@@ -133,8 +133,11 @@ class VscodeRoutingTest(unittest.TestCase):
                   "code-insiders": "main.py - project - Visual Studio Code - Insiders",
                   "vscodium": "main.py - project - VSCodium",
                   "codium": "main.py - project - VSCodium",
-                  "code-oss": "main.py - project - Code - OSS"}
-        for name, title in titles.items():
+                  "code-oss": "main.py - project - Code - OSS",
+                  # An empty window: the title is the product name alone.
+                  "code": "Visual Studio Code"}
+        titles = [*titles.items(), ("vscodium", "VSCodium"), ("code-oss", "Code - OSS")]
+        for name, title in titles:
             for os_name, stem in (("windows", "vscode_template"),
                                   ("linux", "vscode_linux_template")):
                 got = find_matching_entry(title, self.mapping[name], "vscode://edit", os_name)

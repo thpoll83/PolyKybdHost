@@ -1474,7 +1474,8 @@ code,code - insiders,code-insiders,vscodium,codium,code-oss:
   # Insiders.exe` and `VSCodium.exe`, Linux `code-insiders`, `codium` and
   # `code-oss`, macOS `Code - Insiders` and `VSCodium`. Their window titles end
   # in `Visual Studio Code - Insiders`, `VSCodium` and `Code - OSS`, so the
-  # `title:` regex below lists all three products.
+  # `title:` regex below lists all three products. `^|` accepts a title that
+  # is the product name alone: an empty window (no folder, no editor) has it.
   # The debug keys are a separate set shared with Cursor and Windsurf
   # (overlay_sources/vscode/debug_*.yaml). The mode reporter (vscode-extension/)
   # sends vscode://edit, vscode://debug/running or vscode://debug/stopped and
@@ -1494,7 +1495,7 @@ code,code - insiders,code-insiders,vscodium,codium,code-oss:
   # entry, so a constraint left outside it is dropped. The routes are repeated
   # in each branch for the same reason.
   overlay: [vscode_template.mods.png, vscode_template.combo.mods.png, vscode_debug_fallback.mods.png]
-  title: .* (Visual Studio Code|VSCodium|Code - OSS)
+  title: (^|.* )(Visual Studio Code|VSCodium|Code - OSS)
   layer: false
   urls-contains:
     "vscode://debug/stopped/diff": { overlay: [vscode_template.mods.png, vscode_template.combo.mods.png, vscode_debug_stopped.mods.png, vscode_debug_stopped.combo.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
@@ -1527,7 +1528,7 @@ code,code - insiders,code-insiders,vscodium,codium,code-oss:
     # macOS cells. Same bindings file, so the three sets cannot drift.
     linux:
       overlay: [vscode_linux_template.mods.png, vscode_linux_template.combo.mods.png, vscode_debug_fallback.mods.png]
-      title: .* (Visual Studio Code|VSCodium|Code - OSS)
+      title: (^|.* )(Visual Studio Code|VSCodium|Code - OSS)
       layer: false
       urls-contains:
         "vscode://debug/stopped/diff": { overlay: [vscode_linux_template.mods.png, vscode_linux_template.combo.mods.png, vscode_debug_stopped.mods.png, vscode_debug_stopped.combo.mods.png, vscode_diff.mods.png, vscode_diff.combo.mods.png] }
