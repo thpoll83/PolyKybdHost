@@ -100,6 +100,17 @@ class GnomeExtensionTest(unittest.TestCase):
         self.assertEqual(st.folder, self.folder)
         self.assertTrue(st.wayland)
 
+    def test_listed_in_both_lists_is_not_enabled_and_install_repairs_it(self):
+        gnome = FakeGnome(enabled=[ge.UUID], disabled=[ge.UUID])
+        ge.install(env=self.env, run=gnome, fetch=self.fetch)
+        gnome.values[ge.KEY_DISABLED] = ge.format_strv([ge.UUID])
+        self.assertFalse(ge.status(env=self.env, run=gnome).enabled)
+        results = ge.install(env=self.env, run=gnome, fetch=self.fetch)
+        self.assertEqual([(r.message, r.changed) for r in results],
+                         [(ge.MSG_UP_TO_DATE, True)])
+        self.assertEqual(ge.parse_strv(gnome.values[ge.KEY_DISABLED]), [])
+        self.assertTrue(ge.status(env=self.env, run=gnome).enabled)
+
     def test_install_writes_the_pinned_files_and_enables(self):
         gnome = FakeGnome(enabled=["ding@rastersoft.com"], disabled=[ge.UUID])
         results = ge.install(env=self.env, run=gnome, fetch=self.fetch)

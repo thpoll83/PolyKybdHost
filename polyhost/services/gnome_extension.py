@@ -105,7 +105,9 @@ class Status:
     # The files in the folder: "missing", "current" (the pinned version) or
     # "other" (another version, or edited).
     files: str
-    enabled: bool | None        # uuid in enabled-extensions; None: gsettings failed
+    # In enabled-extensions and not in disabled-extensions (GNOME does not run an
+    # extension listed in both). None: gsettings failed.
+    enabled: bool | None
     user_off: bool | None       # disable-user-extensions; None: gsettings failed
     user_off_writable: bool | None
     active: bool | None         # the D-Bus object answers; None: gdbus missing
@@ -182,7 +184,8 @@ def status(home=None, env=None, run=subprocess.run):
     enabled = user_off = writable = None
     error = ""
     try:
-        enabled = UUID in parse_strv(_get(KEY_ENABLED, run))
+        enabled = (UUID in parse_strv(_get(KEY_ENABLED, run))
+                   and UUID not in parse_strv(_get(KEY_DISABLED, run)))
         user_off = _get(KEY_USER_OFF, run) == "true"
         cp = _run(["gsettings", "writable", SCHEMA, KEY_USER_OFF], run)
         writable = cp.returncode == 0 and cp.stdout.strip() == "true"
@@ -245,7 +248,7 @@ def install(extension=True, user_extensions=False, home=None, env=None,
                 _set(KEY_DISABLED, format_strv([d for d in disabled if d != UUID]), run)
             if before == "current":
                 results.append(Result(MSG_UP_TO_DATE, str(folder),
-                                      changed=UUID not in enabled))
+                                      changed=UUID not in enabled or UUID in disabled))
             else:
                 results.append(Result(MSG_INSTALLED if before == "missing" else MSG_UPDATED,
                                       str(folder), changed=True))
