@@ -24,7 +24,7 @@ def _gdbus_out(payload):
 class TestGnomeWaylandReporter(unittest.TestCase):
     def setUp(self):
         gw._warned = False  # reset the once-only warning latch between tests
-        gw._warned_payload = False
+        gw._warned_kinds.clear()
         # Reset the lazily-imported pywinctl fallback cache between tests.
         gw._pywinctl = None
         gw._pywinctl_tried = False
@@ -44,7 +44,7 @@ class TestGnomeWaylandReporter(unittest.TestCase):
         # 2026-11-25: the extension answered with a JSON string while GNOME Shell reloaded
         # it, `GnomeWin("...")` raised AttributeError, and the forwarder died.
         for payload in ('"oops"', '[1, 2]', '42', 'true', '""'):
-            gw._warned_payload = False
+            gw._warned_kinds.clear()
             with mock.patch.object(subprocess, "run",
                                    return_value=_proc(_gdbus_out(payload))), \
                     mock.patch.object(gw, "_pywinctl_fallback", return_value=None):
