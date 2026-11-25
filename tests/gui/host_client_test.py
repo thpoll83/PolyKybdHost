@@ -387,7 +387,7 @@ def _switch_to_forwarder_scenarios(app, shutdowns=None):
     """What "Switch to Forwarder…" does for a given answer and save result."""
     import unittest.mock as mock
     from polyhost.services import start_mode
-    import polyhost.host as host_mod
+    from polyhost import host as host_mod
     results = {}
     calls, quits, warned = [], [], []
 

@@ -2,7 +2,7 @@
 import os
 import tempfile
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 from polyhost.services import start_mode as sm
 
