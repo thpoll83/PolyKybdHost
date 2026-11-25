@@ -40,6 +40,7 @@ _IFACE = "org.polykybd.WindowReporter"
 _TIMEOUT = 1.5
 
 _warned = False  # warn at most once that the extension is missing/unreachable
+_warned_kinds = set()  # other warnings already logged, one per kind (cleared by the tests)
 
 # Lazily-imported pywinctl fallback (see _pywinctl_fallback). Module-level so the
 # import is attempted once, not on every poll.
@@ -61,6 +62,15 @@ def _warn_once(msg, *args):
                      "extensions are switched off), or use an Xorg session for full "
                      "coverage.", *args)
         _warned = True
+
+
+def _warn_payload_once(type_name, length):
+    """Warn once that a reply was valid JSON but not an object. The type and the length
+    only, never the content, which can hold a window title."""
+    if "payload" not in _warned_kinds:
+        _warned_kinds.add("payload")
+        _log.warning("GNOME/Wayland: the window reporter answered with a JSON %s, not an "
+                     "object (length %d); treated as unavailable.", type_name, length)
 
 
 def _pywinctl_fallback():
@@ -152,6 +162,13 @@ def _query_extension():
         win = json.loads(payload)
     except (ValueError, TypeError) as e:
         _log.debug("GNOME/Wayland: malformed focused-window payload (transient): %s", e)
+        return _UNAVAILABLE
+    if not isinstance(win, dict):
+        # Valid JSON that is not an object (a string, a list, a number): seen from the
+        # extension while GNOME Shell reloads it. `GnomeWin(str)` raised AttributeError
+        # and ended the forwarder (bundle 2026-11-25). Log the type, never the content,
+        # which can hold a window title.
+        _warn_payload_once(type(win).__name__, len(payload))
         return _UNAVAILABLE
     return GnomeWin(win)
 
