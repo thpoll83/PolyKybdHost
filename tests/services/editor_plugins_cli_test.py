@@ -91,7 +91,7 @@ class TestFindTheCli(unittest.TestCase):
             mac = h / "Applications/VSCodium.app/Contents/Resources/app/bin/codium"
             for f in (win, mac):
                 f.parent.mkdir(parents=True)
-                f.write_text("")
+                f.write_text("", encoding="utf-8")
             self.assertEqual(et.vscode_cli("vscodium", none, h, {}, "Windows"), win)
             self.assertEqual(et.vscode_cli("vscodium", none, h, {}, "Darwin"), mac)
             # A test's home never finds /usr/share/codium or /snap/bin/codium.
@@ -364,7 +364,7 @@ class TestBlockedByPolicy(unittest.TestCase):
             with tempfile.TemporaryDirectory() as d:
                 f = Path(d) / rel
                 f.parent.mkdir(parents=True)
-                f.write_text('{"extensions.allowed": {"*": false}}')
+                f.write_text('{"extensions.allowed": {"*": false}}', encoding="utf-8")
                 self.assertEqual(et.extension_policy_reason("vscodium", "", home=d, env={},
                                                             system="Linux"), "settings", rel)
                 # VS Code's settings are another file.
