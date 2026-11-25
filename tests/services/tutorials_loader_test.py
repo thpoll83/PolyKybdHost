@@ -118,6 +118,9 @@ class ParseTest(unittest.TestCase):
             "two wait kinds": _step(wait={"seconds": 1, "layer": "Fn"}),
             "seconds not above 0": _step(wait={"seconds": 0}),
             "seconds as bool": _step(wait={"seconds": True}),
+            "seconds NaN": _step(wait={"seconds": float("nan")}),
+            "seconds infinite": _step(wait={"seconds": float("inf")}),
+            "seconds too large for a float": _step(wait={"seconds": 10 ** 400}),
             "missing id": {k: v for k, v in _script().items() if k != "id"},
             "upper-case id": _script(id="Demo"),
             "unknown category": _script(category="games"),
@@ -137,6 +140,15 @@ class ParseTest(unittest.TestCase):
         }
         for why, raw in bad.items():
             with self.subTest(why), self.assertRaises(ScriptError):
+                parse_script(raw)
+
+    def test_an_unknown_field_that_is_not_a_string(self):
+        # YAML reads `1: x` with an int key. Naming the unknown fields joined
+        # them as strings and raised TypeError instead of ScriptError (found by
+        # tests/fuzz/tutorial_script_fuzz_test.py).
+        for raw in ({**_script(), 1: "x"}, _script(steps=[{1: "x"}]),
+                    {**_script(), None: 1, "colour": 2}):
+            with self.subTest(raw=raw), self.assertRaisesRegex(ScriptError, "unknown field"):
                 parse_script(raw)
 
     def test_the_error_names_the_step(self):
@@ -219,6 +231,17 @@ class LoadAllTest(unittest.TestCase):
         self.assertEqual(found["a"].title, {"en": "First"})
         self.assertEqual(len(errors), 1)
         self.assertIn("2.yaml", errors[0]["path"])
+
+    def test_an_impossible_date_is_a_listed_error(self):
+        # PyYAML builds a date from `2001-13-01` and raises the datetime
+        # ValueError, not a YAMLError; load_all() let it through and listed
+        # nothing (found by tests/fuzz/tutorial_script_fuzz_test.py).
+        self._write(self.user, "good.yaml", self._yaml("good", "Good"))
+        self._write(self.user, "date.yaml", self._yaml("date", "D") + "summary: 2001-13-01\n")
+        found, errors = loader.load_all(self.shipped, self.user)
+        self.assertEqual(sorted(found), ["good"])
+        self.assertEqual([os.path.basename(e["path"]) for e in errors], ["date.yaml"])
+        self.assertIn("not valid YAML", errors[0]["error"])
 
     def test_a_missing_folder_is_empty(self):
         found, errors = loader.load_all(os.path.join(self.shipped, "nope"), None)

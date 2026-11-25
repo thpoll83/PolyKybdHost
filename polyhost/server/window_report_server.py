@@ -111,6 +111,11 @@ class WindowReportServer(MpcListenerServer):
                 req_id, p.ERR_METHOD_NOT_FOUND,
                 "only " + ", ".join(f"'{m}'" for m in self._served_methods())
                 + " served on the network endpoint")
+        if not isinstance(params, dict):
+            # A frame's params can be any JSON value. Without this check a list
+            # or a number reached params.get() and was answered as an internal
+            # error, with a traceback in the log, for a malformed frame.
+            return p.make_error(req_id, p.ERR_INVALID_PARAMS, "params must be an object")
         try:
             icon = self._decode_icon(params.get("icon"))
         except ValueError as err:

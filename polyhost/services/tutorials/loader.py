@@ -11,6 +11,7 @@ Qt-free. The texts stay ``{language code: text}`` dicts; the GUI picks one with
 """
 from __future__ import annotations
 
+import math
 import os
 import re
 from dataclasses import dataclass, field
@@ -280,9 +281,15 @@ def _wait(value, where: str) -> Wait:
                           f"{{press: KEYCODE}}, {{key: {{keycode: ...}}}}, {{leave: NAME}}")
     kind, v = next(iter(value.items()))
     if kind == "seconds":
-        if isinstance(v, bool) or not isinstance(v, (int, float)) or v <= 0:
+        # A NaN passes `v <= 0`, and a NaN or infinite deadline is never reached. An int
+        # too large for a float raises OverflowError in float().
+        try:
+            seconds = float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+        except OverflowError:
+            seconds = None
+        if seconds is None or not math.isfinite(seconds) or seconds <= 0:
             raise ScriptError(f"{where}.seconds: a number above 0")
-        return Wait(kind, float(v))
+        return Wait(kind, seconds)
     if kind in ("layer", "leave"):
         return Wait(kind, _layer_name(v, f"{where}.{kind}"))
     if kind == "key":
@@ -313,7 +320,7 @@ def _step(raw, where: str) -> Step:
         raise ScriptError(f"{where}: a map of step fields")
     unknown = set(raw) - _STEP_KEYS
     if unknown:
-        raise ScriptError(f"{where}: unknown field(s) {', '.join(sorted(unknown))}")
+        raise ScriptError(f"{where}: unknown field(s) {', '.join(sorted(map(str, unknown)))}")
     if "point" in raw and "guide_to_layer" in raw:
         raise ScriptError(f"{where}: point and guide_to_layer both ring; give one")
     return Step(
@@ -333,7 +340,7 @@ def parse_script(raw, path: str = "", user: bool = False) -> Tutorial:
         raise ScriptError("the file is not a map of script fields")
     unknown = set(raw) - _SCRIPT_KEYS
     if unknown:
-        raise ScriptError(f"unknown field(s) {', '.join(sorted(unknown))}")
+        raise ScriptError(f"unknown field(s) {', '.join(sorted(map(str, unknown)))}")
     for key in ("id", "category", "title", "steps"):
         if key not in raw:
             raise ScriptError(f"{key}: missing")
@@ -363,7 +370,9 @@ def load_file(path: str, user: bool = False) -> Tutorial:
             raw = yaml.safe_load(f)
     except OSError as e:
         raise ScriptError(f"cannot read: {e}") from None
-    except yaml.YAMLError as e:
+    except (yaml.YAMLError, ValueError) as e:
+        # ValueError: PyYAML builds a date from `2001-13-01` and lets the
+        # datetime error through instead of a YAMLError.
         raise ScriptError(f"not valid YAML: {e}") from None
     return parse_script(raw, path, user)
 
