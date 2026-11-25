@@ -295,6 +295,12 @@ def summarize(rec: CrashRecord) -> str:
     elif rec.phase == 4:
         text += f" (transaction id {rec.phase_arg})"
     text += "."
+    if rec.kind == "halt" and rec.phase == 7:
+        # The stuck-suspend watch (qmk keys_com/power.c). The arg is
+        # the time the board spent suspended, in seconds (0xFFFF = 18 h or more).
+        secs = "18 h or more" if rec.phase_arg == 0xFFFF else f"{rec.phase_arg} s"
+        text += (f" The PC was sending USB traffic, but the keyboard was still in USB "
+                 f"suspend after {secs}, so it restarted to reconnect.")
     if rec.consecutive > 1:
         text += f" This is crash number {rec.consecutive} in a row."
     if rec.kind in ("hardfault", "unhandled") and rec.pc:

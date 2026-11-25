@@ -196,6 +196,20 @@ class TextTest(unittest.TestCase):
         self.assertIn("0x10012345", text)
         self.assertIn("addr2line", text)
 
+    def test_stuck_suspend_halt_says_why_it_restarted(self):
+        rec = cr.parse_crash_line(LINE.replace("kind=hardfault", "kind=halt")
+                                  .replace("phase=3:0x0015", "phase=7:0x8ca0"))
+        text = cr.summarize(rec)
+        self.assertIn("still in USB suspend after 36000 s", text)
+        self.assertIn("restarted to reconnect", text)
+        self.assertNotIn("addr2line", text)
+        capped = cr.parse_crash_line(LINE.replace("kind=hardfault", "kind=halt")
+                                     .replace("phase=3:0x0015", "phase=7:0xffff"))
+        self.assertIn("after 18 h or more", cr.summarize(capped))
+        # A HALT in any other phase keeps the plain text.
+        other = cr.parse_crash_line(LINE.replace("kind=hardfault", "kind=halt"))
+        self.assertNotIn("USB suspend", cr.summarize(other))
+
     def test_report_text_carries_the_raw_line_and_diagnostics(self):
         rec = cr.parse_crash_line(LINE)
         text = cr.compose_report_text([rec], "PolyKybdHost 1.2.3\nOS: x", "1.2.3")
