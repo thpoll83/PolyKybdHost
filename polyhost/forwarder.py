@@ -60,6 +60,8 @@ else:
 
 UPDATE_CYCLE_MSEC = 250
 HEARTBEAT_MSEC = 15000  # resend current window state periodically so the host can catch up
+# The reason a report fails while the forwarder has no host to send to yet.
+NO_HOST_REASON = "no host to report to"
 # While this machine has agents on the keyboard's keys, the host asks for a report
 # every second: a key press for one of them reaches this forwarder only in a reply
 # (services/agents/remote.py), so the heartbeat is the raise's latency.
@@ -231,6 +233,10 @@ class PolyForwarder(QApplication):
         # and never logs it itself.
         self._relay = RelayHealth()
         self._send_error = None
+        # True after a report failed for lack of a host (no host file yet, or no
+        # remote-desktop client found yet): the current window is sent again as soon as
+        # a host exists, not at the next window change or heartbeat.
+        self._resend_when_host = False
         # app name -> what the local OS says it is. One lookup per app; see
         # _identity_for. Unbounded is fine here: the keys are app names from
         # THIS machine's own window manager, not remote input.
@@ -537,6 +543,14 @@ class PolyForwarder(QApplication):
             self.host, bool(self.host_file), self._host_file_text(),
             self._detect_enabled(), self._watcher(), authenticated=self._report_rpc)
 
+    def _waiting_for_found_address(self):
+        """True when the target is meant to come from the remote-desktop connection and
+        none has been found yet."""
+        from polyhost.services import session_peer
+        return bool(self._detect_enabled() and self._report_rpc
+                    and not session_peer.named_host(
+                        self.host, bool(self.host_file), self._host_file_text()))
+
     def _found_address_in_use(self):
         """True when reports go to an address found from the connection."""
         from polyhost.services import session_peer
@@ -558,7 +572,7 @@ class PolyForwarder(QApplication):
             if self._report_session is not None:
                 self._report_session.close()
             self._note_agent_target(None)
-            return self._note_send_failure("no host to report to")
+            return self._note_send_failure(NO_HOST_REASON)
         ident = self._identity_for(name)
         try:
             result = self._report_session.report(
@@ -800,6 +814,8 @@ class PolyForwarder(QApplication):
         ok = self._send_to_host(handle, title, name, url=url)
         if not ok and self._found_address_in_use():
             self._client_watcher.request_look()    # the client may have changed
+        if not ok and self._send_error == NO_HOST_REASON:
+            self._resend_when_host = True
         self._say(self._relay.note(ok, now, self._send_error))
         if ok != self.relay_ok:
             self.relay_ok = ok
@@ -811,6 +827,9 @@ class PolyForwarder(QApplication):
         if not verdict:
             return
         level, message = verdict
+        if level == "error" and self._send_error == NO_HOST_REASON \
+                and self._waiting_for_found_address():
+            level = "info"      # expected until the first remote-desktop client is found
         getattr(self.log, level)(
             "Window %s (%s)", message, self._resolve_host() or "no host set")
 
@@ -824,7 +843,7 @@ class PolyForwarder(QApplication):
             return self._send_via_rpc(handle, title, name, url=url)
         host = self._resolve_host()
         if not host:
-            return self._note_send_failure("no host to report to")
+            return self._note_send_failure(NO_HOST_REASON)
         try:
             ip = ipaddress.ip_address(host)
         except ValueError:
@@ -1236,7 +1255,15 @@ class PolyForwarder(QApplication):
                     )
                     heartbeat = (AGENT_HEARTBEAT_MSEC if getattr(self, "_agents_fast", False)
                                  else HEARTBEAT_MSEC)
-                    if changed or self.heartbeat_msec >= heartbeat:
+                    resend = False
+                    if self._resend_when_host and self._resolve_host():
+                        # A host exists now, and the last report found none: send this
+                        # window at once. The relay's backoff is cleared on purpose,
+                        # because the host it was waiting for has just appeared.
+                        self._resend_when_host = False
+                        self._relay.reset()
+                        resend = True
+                    if changed or resend or self.heartbeat_msec >= heartbeat:
                         self.win = win
                         self.title = win.title
                         self._url_dirty = False
