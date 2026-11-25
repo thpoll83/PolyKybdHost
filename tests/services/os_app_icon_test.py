@@ -333,8 +333,31 @@ class DbusActivatedEntryTest(unittest.TestCase):
                 self.assertEqual(entry.get("Icon"), "org.gnome.Terminal")
                 self.assertIn("5/dbus-activation", info.call_args.args[-1])
 
-    def test_without_the_exe_nothing_matches(self):
-        self.assertEqual(osi._linux_entry("", "gnome-terminal-server"), {})
+    def test_without_the_exe_the_app_name_stands_in_for_it(self):
+        # GNOME on Wayland reports no pid, so `exe` is "". The same window, named by
+        # its server, still finds its launcher (bundle 2026-11-25: NoMachine X11
+        # resolved it, RDP Wayland did not, and the ESC mark was gone).
+        with mock.patch.object(osi.log, "info") as info:
+            entry = osi._linux_entry("", "gnome-terminal-server")
+        self.assertEqual(entry.get("Name"), "Terminal")
+        self.assertEqual(entry.get("Icon"), "org.gnome.Terminal")
+        self.assertIn("5/dbus-activation", info.call_args.args[-1])
+
+    def test_without_the_exe_the_names_reach_the_identity(self):
+        # `names` is what the keyboard host builds the ESC mark's catalog candidates
+        # from; it was `<none>` on Wayland.
+        found = osi._linux_identity(0, "gnome-terminal-server")
+        self.assertEqual(found.names, ("Terminal",))
+
+    def test_without_the_exe_a_name_that_starts_no_service_matches_nothing(self):
+        for app_name in ("gjs", "google-chrome", "python3", ""):
+            self.assertEqual(osi._linux_entry("", app_name), {}, app_name)
+
+    def test_a_name_that_matches_a_lower_rank_does_not_move(self):
+        # Rank 1 (StartupWMClass) still wins over the D-Bus rank for a window that
+        # names its class, with or without a process.
+        entry = osi._linux_entry("", "Gnome-terminal")
+        self.assertEqual(entry.get("Name"), "Terminal")
 
     def test_a_runtime_exe_never_reads_the_service_files(self):
         # A Python or Java app's exe is the interpreter, which names no app.
