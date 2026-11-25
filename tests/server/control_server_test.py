@@ -308,7 +308,9 @@ class ControlServerTest(unittest.TestCase):
         self._hello_then(conn)
         for req_id, (method, params) in enumerate(
                 [(p.M_LANG_SET, ["deDE"]), (p.M_STATUS_GET, 1),
-                 (p.M_AGENTS_CLOUD_JOIN, "code")], start=20):
+                 (p.M_AGENTS_CLOUD_JOIN, "code"), (p.M_STATUS_GET, []),
+                 (p.M_STATUS_GET, False), (p.M_STATUS_GET, 0), (p.M_STATUS_GET, "")],
+                start=20):
             with self.subTest(method=method, params=params):
                 p.send_message(conn, {"jsonrpc": "2.0", "id": req_id, "method": method,
                                       "params": params})
