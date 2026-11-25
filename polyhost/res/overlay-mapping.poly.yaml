@@ -1444,7 +1444,9 @@ x2,dxp:
 # editor's keys. Windows only; Capture.exe, not checked on an install.
 capture:
   overlay: [orcad_capture_template.mods.png, orcad_capture_template.combo.mods.png]
-code:
+# `com.microsoft.vscode` is the app id a Linux forwarder on GNOME/Wayland sends
+# (its Window Reporter extension reports the Wayland app id, not the X11 class `Code`).
+code,com.microsoft.vscode:
   # The debug keys are a separate set shared with Cursor and Windsurf
   # (overlay_sources/vscode/debug_*.yaml). The mode reporter (vscode-extension/)
   # sends vscode://edit, vscode://debug/running or vscode://debug/stopped and

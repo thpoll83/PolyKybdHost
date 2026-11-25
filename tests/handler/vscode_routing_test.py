@@ -34,7 +34,7 @@ RES = Path(__file__).resolve().parents[2] / "polyhost" / "res"
 MAPPING = RES / "overlay-mapping.poly.yaml"
 # mapping key -> (token the extension sends, app-set stem per OS)
 APPS = {
-    "code": ("vscode", {"windows": "vscode_template", "macos": "vscode_mac_template",
+    "code,com.microsoft.vscode": ("vscode", {"windows": "vscode_template", "macos": "vscode_mac_template",
                         "linux": "vscode_linux_template"}),
     "cursor": ("cursor", {"windows": "cursor_template", "macos": "cursor_mac_template",
                           "linux": "cursor_linux_template"}),
@@ -59,6 +59,19 @@ class VscodeMappingFileTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.raw = yaml.safe_load(MAPPING.read_text(encoding="utf-8"))
+
+    def test_a_gnome_wayland_forwarder_name_reaches_the_code_entry(self):
+        """Bundle 2026-11-25: a forwarder on GNOME/Wayland sends VS Code as
+        `com.microsoft.VSCode`. The keyboard host lowercases it and tries the whole
+        name first, so that name has to be a key, and its debug-mode route too."""
+        from polyhost.handler.browser_url import context_reporter_for
+        from polyhost.handler.common import mapping_key
+        mapping = {n.strip().lower(): entry for key, entry in self.raw.items()
+                   for n in str(key).split(",")}
+        key = mapping_key("com.microsoft.vscode", mapping)
+        self.assertEqual(key, "com.microsoft.vscode")
+        self.assertIs(mapping[key], mapping["code"])
+        self.assertEqual(context_reporter_for("com.microsoft.VSCode"), "vscode")
 
     def test_names_are_the_context_reporter_allow_list(self):
         for key, (token, _) in APPS.items():
@@ -103,7 +116,7 @@ class VscodeRoutingTest(unittest.TestCase):
 
     def _route(self, key, url, os_name):
         entry = self.mapping[key.split(",")[0]]
-        title = TITLE if key == "code" else "main.py - project"
+        title = TITLE if key.startswith("code") else "main.py - project"
         return find_matching_entry(title, entry, url, os_name)
 
     def test_each_mode_gets_its_debug_set_on_every_os(self):
