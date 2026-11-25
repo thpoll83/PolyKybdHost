@@ -169,6 +169,10 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
                              'NoMachine (port 4000) or Remote Desktop (port 3389) connection '
                              'to this computer. Use it instead of --host or --host-file; '
                              'with one of them, it only fills in when they name no host.')
+    parser.add_argument('--no-forwarder', default=False, action='store_true',
+                        help='Ignore the start_as_forwarder setting for this run and start in '
+                             'keyboard mode. --host, --host-file and --detect-host still '
+                             'start a forwarder.')
     parser.add_argument('--report-rpc', default=False, action='store_true',
                         help='Forwarder: push the active window over the authenticated, '
                              'version-gated window-report network endpoint (H4d) instead of the '
@@ -183,9 +187,6 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
                              'copied from the keyboard machine). Required across machines; if '
                              "omitted, this machine's local key is used (same-machine only).")
     args=parser.parse_args()
-    # A forwarder: it reports to a keyboard computer named, or found, by one of these.
-    forwarder_mode = bool(args.host or args.host_file or args.detect_host)
-
     # Developer mode + log verbosity (see resolve_dev): the flag overrides the
     # persisted developer_mode and log_detail settings in both directions; with
     # no flag each setting decides its own half. A GUI-spawned daemon gets no
@@ -193,6 +194,17 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     # the file-only helper — PolySettings() would create/rewrite the config and
     # dump every key before we even know the launch path.
     from polyhost.settings import read_setting  # Qt-free
+    # A forwarder: it reports to a keyboard computer named, or found, by one of these,
+    # or because the start_as_forwarder setting is on and no option names a mode
+    # (services/start_mode.py). ⚠️ Decided before anything reads forwarder_mode.
+    from polyhost.services import start_mode
+    forwarder_by_setting = start_mode.forwarder_from_setting(
+        host=args.host, host_file=args.host_file, detect_host=args.detect_host,
+        headless=args.headless, connect=args.connect, no_forwarder=args.no_forwarder,
+        setting=read_setting(start_mode.SETTING, False))
+    if forwarder_by_setting:
+        args.detect_host = True
+    forwarder_mode = bool(args.host or args.host_file or args.detect_host)
     verbosity, developer, dev_source = resolve_dev(
         args.dev, args.debug_legacy, read_setting("developer_mode", False),
         read_setting("log_detail", "normal"))
@@ -478,7 +490,8 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
         app = PolyForwarder(log_level_for(verbosity), args.host, args.host_file,
                             report_rpc=report_rpc, report_port=args.report_port,
                             report_authkey_file=authkey_file,
-                            detect_host=args.detect_host)
+                            detect_host=args.detect_host,
+                            launched_by_setting=forwarder_by_setting)
     else:
         from polyhost.host import PolyHost
         # Spawn the deferred daemon now — AFTER the heavy GUI imports above, so

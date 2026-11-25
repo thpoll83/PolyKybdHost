@@ -89,7 +89,8 @@ SECTIONS = (
     ("connections", N_("Connections"), (
         (N_("Browser extension"), ("browser_report_local_enabled",
                                    "browser_report_port", "browser_report_token")),
-        (N_("Forwarders"), ("window_report_network_enabled", "forwarder_detect_host")),
+        (N_("Forwarders"), ("window_report_network_enabled", "forwarder_detect_host",
+                            "start_as_forwarder")),
         (N_("USB transport"), ("hid_reconnect_retries", "max_hid_message_before_delay",
                                "delay_time_after_max_hid_messages")),
     )),
@@ -178,6 +179,7 @@ SETTING_LABELS = {
     "daemon_mode": N_("Background service"),
     "window_report_network_enabled": N_("Accept forwarders"),
     "forwarder_detect_host": N_("Find the keyboard computer from the connection"),
+    "start_as_forwarder": N_("Start as a forwarder"),
     "fontpack_auto_flash": N_("Send font packs on connect"),
     "emoji_search_dict": N_("Search language"),
     "emoji_search_dict_file": N_("Own dictionary file"),
@@ -389,6 +391,12 @@ SETTING_DESCRIPTIONS = {
         "found from the connection on port 4000 or 3389. It is used when no host or "
         "host file names an address, and only over the paired connection (or "
         "--report-rpc). Applies within a few seconds."),
+    "start_as_forwarder": N_(
+        "Start this computer as a forwarder instead of the tray app for a keyboard: it "
+        "reports its windows to the keyboard computer, found from the NoMachine or Remote "
+        "Desktop connection. The tray's Switch to Forwarder and Switch to Keyboard Mode "
+        "set it and restart. A start option such as --host or --headless wins over it. "
+        "Applies after a restart."),
     "emoji_search_dict": N_(
         "The language of the words the keyboard's emoji search matches. The "
         "dictionary is sent to the keyboard when you click OK, and when it connects "

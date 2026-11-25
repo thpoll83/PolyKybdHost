@@ -209,6 +209,12 @@ DEFAULT_SETTINGS = {
         # (port 3389) connection to this computer (services/session_peer.py). Same as
         # starting the forwarder with --detect-host.
         "forwarder_detect_host": False,
+        # A plain launch (no --host, --host-file, --detect-host, --headless or
+        # --connect) starts as a forwarder: it reports this computer's windows to the
+        # keyboard computer, found from the NoMachine or Remote Desktop connection.
+        # The tray's "Switch to Forwarder" / "Switch to Keyboard mode" write it and
+        # restart; `--no-forwarder` ignores it for one run (services/start_mode.py).
+        "start_as_forwarder": False,
         # On a forwarder's computer: this computer's agents report no title, no
         # folder and no path-based session id to the keyboard's computer, so the keys
         # show the vendor's name ("Claude Code 1", "Claude Code 2"). The computer's
