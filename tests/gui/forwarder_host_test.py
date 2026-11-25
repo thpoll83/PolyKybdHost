@@ -153,6 +153,20 @@ class ForwarderNoHostTest(unittest.TestCase):
 
 @unittest.skipUnless(os.environ.get("DISPLAY"),
                      "GUI harness needs an X display: run under xvfb-run")
+class ForwarderReporterGuardTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.r = _results()
+
+    def test_a_window_backend_that_raises_does_not_end_the_forwarder(self):
+        self.assertTrue(self.r["reporter_survives_a_failing_backend"])
+
+    def test_the_reporter_loop_is_armed_again_after_a_failed_tick(self):
+        self.assertEqual(self.r["reporter_rearmed_after_a_failure"], 1)
+
+
+@unittest.skipUnless(os.environ.get("DISPLAY"),
+                     "GUI harness needs an X display: run under xvfb-run")
 class ForwarderRelayTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -438,6 +452,19 @@ def _smoke():
         out["sent_when_the_host_file_appears"] = [list(item) for item in rpc_sent]
         app.log.removeHandler(handler)
         app._send_via_rpc = real_rpc
+
+        # --- one failing tick must not end the reporter loop ---------------------------
+        armed = []
+        survived = True
+        with mock.patch.object(fwd.pwc, "getActiveWindow", side_effect=ValueError("boom")), \
+                mock.patch.object(fwd.QTimer, "singleShot",
+                                  lambda ms, callback: armed.append(ms)):
+            try:
+                app.active_window_reporter()
+            except Exception:  # noqa: BLE001 - the thing being tested
+                survived = False
+        out["reporter_survives_a_failing_backend"] = survived
+        out["reporter_rearmed_after_a_failure"] = len(armed)
 
         # --- the legacy relay, with a fake socket --------------------------------------
         out["tcp_port"] = fwd.TCP_PORT

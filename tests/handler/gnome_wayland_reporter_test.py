@@ -24,6 +24,7 @@ def _gdbus_out(payload):
 class TestGnomeWaylandReporter(unittest.TestCase):
     def setUp(self):
         gw._warned = False  # reset the once-only warning latch between tests
+        gw._warned_payload = False
         # Reset the lazily-imported pywinctl fallback cache between tests.
         gw._pywinctl = None
         gw._pywinctl_tried = False
@@ -38,6 +39,34 @@ class TestGnomeWaylandReporter(unittest.TestCase):
         self.assertEqual(win.getHandle(), 200)
         self.assertEqual(win.getAppName(), "firefox")
         self.assertEqual(win.title, "Mozilla Firefox")
+
+    def test_a_reply_that_is_not_a_json_object_is_unavailable_not_a_crash(self):
+        # 2026-11-25: the extension answered with a JSON string while GNOME Shell reloaded
+        # it, `GnomeWin("...")` raised AttributeError, and the forwarder died.
+        for payload in ('"oops"', '[1, 2]', '42', 'true', '""'):
+            gw._warned_payload = False
+            with mock.patch.object(subprocess, "run",
+                                   return_value=_proc(_gdbus_out(payload))), \
+                    mock.patch.object(gw, "_pywinctl_fallback", return_value=None):
+                self.assertIsNone(gw.getActiveWindow(), payload)   # fell back, no raise
+
+    def test_a_non_object_reply_falls_back_to_pywinctl(self):
+        pwc = mock.Mock()
+        pwc.getActiveWindow.return_value = "x11-window"
+        with mock.patch.object(subprocess, "run", return_value=_proc(_gdbus_out('"oops"'))), \
+                mock.patch.object(gw, "_pywinctl_fallback", return_value=pwc):
+            self.assertEqual(gw.getActiveWindow(), "x11-window")
+
+    def test_a_non_object_reply_warns_once_with_the_type_and_not_the_content(self):
+        with mock.patch.object(subprocess, "run",
+                               return_value=_proc(_gdbus_out('"secret title"'))), \
+                mock.patch.object(gw, "_pywinctl_fallback", return_value=None), \
+                self.assertLogs("PolyHost", "WARNING") as logs:
+            gw.getActiveWindow()
+            gw.getActiveWindow()
+        self.assertEqual(len(logs.records), 1)
+        self.assertIn("JSON str", logs.output[0])
+        self.assertNotIn("secret title", logs.output[0])
 
     def test_null_payload_returns_none(self):
         # Extension is up but nothing is focused -> the JSON literal 'null'.

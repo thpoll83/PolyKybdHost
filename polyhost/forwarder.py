@@ -1191,6 +1191,27 @@ class PolyForwarder(QApplication):
         self.quit()
 
     def active_window_reporter(self):
+        """One tick of the window reporter, which never raises.
+
+        ⚠️ This is a self-re-arming QTimer loop. PyQt5 turns an exception in a slot into
+        `sys.excepthook` and then `qFatal()`, and the re-arm sits at the END of the tick,
+        so one exception ended the forwarder for good: 2026-11-25, the GNOME/Wayland
+        reporter returned a reply the window backend could not read, the call at the top
+        of the tick raised, and the process died at 11:26:49 with the keyboard machine
+        left on the last window."""
+        try:
+            self._active_window_tick()
+        except Exception as e:  # noqa: BLE001 - one bad tick must not end the loop
+            now = time.monotonic()
+            if now - getattr(self, "_reporter_error_at", float("-inf")) >= 60.0:
+                self._reporter_error_at = now
+                self.log.warning("Window reporter tick failed: %s: %s "
+                                 "(logged at most once a minute)", type(e).__name__, e,
+                                 exc_info=True)
+            if not self.is_closing:
+                QTimer.singleShot(UPDATE_CYCLE_MSEC, self.active_window_reporter)
+
+    def _active_window_tick(self):
         if self.paused:
             # Keep the timer alive but send nothing. The window state is
             # deliberately NOT tracked while paused: self.win/self.title stay
