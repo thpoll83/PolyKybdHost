@@ -595,8 +595,12 @@ def os_detail() -> str:
     return f"{system} {platform.release()}".strip()
 
 
-def session_detail() -> str | None:
+def session_detail(include_slow: bool = False) -> str | None:
     """Linux desktop + session type, and the window backend they select.
+
+    ``include_slow`` adds the GNOME extension's state, which runs gsettings and
+    gdbus (up to five calls with a 3 s timeout each), so only a worker thread
+    asks for it (see :func:`environment_text`).
 
     This is the single most load-bearing environment fact for a Linux report:
     ``XDG_CURRENT_DESKTOP``/``XDG_SESSION_TYPE`` choose between the KDE D-Bus
@@ -611,8 +615,8 @@ def session_detail() -> str | None:
     if desktop == "KDE":
         backend = "kde_win_reporter (KWin script)"
     elif session == "wayland":
-        backend = ("gnome_wayland_reporter (needs the Window Reporter extension: "
-                   + gnome_extension_detail() + ")")
+        backend = "gnome_wayland_reporter (needs the Window Reporter extension"
+        backend += (": " + gnome_extension_detail() + ")") if include_slow else ")"
     else:
         backend = "pywinctl (X11)"
     return f"{desktop} / {session} -> {backend}"
@@ -662,7 +666,8 @@ def environment_text(include_slow: bool = False,
                      log_dir: Path | str | None = None) -> str:
     """Environment block, available without Qt or a running daemon.
 
-    ``include_slow`` adds probes that may shell out (autostart). Callers on the
+    ``include_slow`` adds probes that may shell out (autostart, the GNOME
+    extension's state). Callers on the
     GUI thread leave it off; :func:`build_bundle` turns it on because it runs on
     a worker.
     """
@@ -690,7 +695,7 @@ def environment_text(include_slow: bool = False,
                      + importlib.metadata.version("PyWinCtl"))
     except Exception:  # noqa: BLE001 — diagnostics must never break the bundle
         pass
-    session = session_detail()
+    session = session_detail(include_slow=include_slow)
     if session:
         lines.append(f"Desktop session  : {session}")
     if include_slow:

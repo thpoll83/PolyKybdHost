@@ -106,6 +106,21 @@ class EnvironmentDetailTest(unittest.TestCase):
                                                 "XDG_SESSION_TYPE": "x11"}):
                 self.assertIn("pywinctl", lb.session_detail())
 
+    def test_gnome_extension_state_only_on_the_slow_path(self):
+        """The extension probe runs gsettings and gdbus; the problem-report
+        dialog calls environment_text() on the GUI thread without include_slow,
+        so the probe must not run there."""
+        env = {"XDG_CURRENT_DESKTOP": "ubuntu:GNOME", "XDG_SESSION_TYPE": "wayland"}
+        with mock.patch("platform.system", return_value="Linux"), \
+                mock.patch.dict("os.environ", env), \
+                mock.patch.object(lb, "gnome_extension_detail",
+                                  return_value="not installed, user extensions OFF") as probe:
+            self.assertNotIn("user extensions OFF", lb.environment_text())
+            probe.assert_not_called()
+            self.assertIn("not installed, user extensions OFF",
+                          lb.environment_text(include_slow=True))
+            probe.assert_called_once_with()
+
     def test_session_detail_is_linux_only(self):
         for system in ("Windows", "Darwin"):
             with mock.patch("platform.system", return_value=system):
