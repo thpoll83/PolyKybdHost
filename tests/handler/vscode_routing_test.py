@@ -103,7 +103,7 @@ class VscodeRoutingTest(unittest.TestCase):
 
     def _route(self, key, url, os_name):
         entry = self.mapping[key.split(",")[0]]
-        title = TITLE if key.startswith("code,") else "main.py - project"
+        title = TITLE if key.split(",")[0] == "code" else "main.py - project"
         return find_matching_entry(title, entry, url, os_name)
 
     def test_each_mode_gets_its_debug_set_on_every_os(self):
