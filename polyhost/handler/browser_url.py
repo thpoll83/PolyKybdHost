@@ -135,7 +135,7 @@ CONTEXT_REPORTERS = {
     ), "jetbrains"),
     "obsidian": "obsidian",       # obsidian-plugin/: obsidian://<view>[/<vim mode>]
     # VS Code and its forks: vscode-extension/ sends <token>://<debug mode>.
-    "code": "vscode", "cursor": "cursor",
+    "code": "vscode", "com.microsoft.vscode": "vscode", "cursor": "cursor",
     "windsurf": "windsurf", "devin": "windsurf", "devin-desktop": "windsurf",
     # Bitwig Studio's controller extension (bitwig-extension/): the names of the
     # mapping's `bitwig studio` entry.
