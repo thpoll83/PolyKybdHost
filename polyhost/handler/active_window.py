@@ -50,8 +50,8 @@ if IS_PLASMA:
     import polyhost.handler.kde_win_reporter as pwc
 elif _IS_WAYLAND:
     _BACKEND_NAME = "gnome_wayland_reporter"
-    # pywinctl can't see native Wayland windows; use the GNOME Shell extension
-    # reporter (untested — needs the 'Window Calls' extension). X11 is unaffected.
+    # pywinctl can't see native Wayland windows; use the PolyKybd Window Reporter
+    # GNOME Shell extension (Integrations -> GNOME installs it). X11 is unaffected.
     import polyhost.handler.gnome_wayland_reporter as pwc
 else:
     _BACKEND_NAME = "pywinctl"

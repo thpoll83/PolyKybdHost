@@ -57,9 +57,9 @@ def _warn_once(msg, *args):
         _log.warning("GNOME/Wayland window reporter: " + msg + " — the 'PolyKybd Window "
                      "Reporter' GNOME Shell extension is unavailable; falling back to "
                      "X11/XWayland (native Wayland windows won't be tracked). Install it "
-                     "from https://github.com/thpoll83/gnome-wayland-winreader and run "
-                     "'gnome-extensions enable window-reporter@polykybd.org', or use an "
-                     "Xorg session for full coverage.", *args)
+                     "with Integrations -> GNOME (it also shows whether GNOME's user "
+                     "extensions are switched off), or use an Xorg session for full "
+                     "coverage.", *args)
         _warned = True
 
 

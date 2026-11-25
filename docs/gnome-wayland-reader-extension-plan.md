@@ -1,8 +1,37 @@
 # Plan: a minimal, read-only GNOME Shell extension for active-window reporting
 
-**Status:** planned (not started). Captured for a follow-up session.
-**Owner:** —
-**Related code:** `polyhost/handler/gnome_wayland_reporter.py`, `polyhost/handler/active_window.py`, `polyhost/forwarder.py`
+**Status:** done. The extension is https://github.com/thpoll83/gnome-wayland-winreader,
+and Integrations -> GNOME installs it (see *Installing from the host* below).
+**Related code:** `polyhost/handler/gnome_wayland_reporter.py`, `polyhost/handler/active_window.py`, `polyhost/forwarder.py`, `polyhost/services/gnome_extension.py`, `polyhost/gui/gnome_extension_page.py`
+
+## Installing from the host
+
+Integrations -> GNOME (shown only when `XDG_CURRENT_DESKTOP` names GNOME) installs
+the extension, so no clone and no `gsettings` by hand:
+
+- It downloads `extension.js` and `metadata.json` from the extension repo at the
+  commit pinned in `services/gnome_extension.py` (`EXTENSION_COMMIT`) and refuses a
+  file whose SHA-256 is not the pinned one (`EXTENSION_FILES`). The extension runs
+  inside GNOME Shell, so the host installs only the reviewed version. **A change to
+  the extension reaches users only when the pin moves:** update both constants
+  together and run `tests/services/gnome_extension_test.py`.
+- It first reads `gnome-shell --version` and refuses on a major version outside
+  `SHELL_VERSIONS` (the pinned `metadata.json`'s `shell-version` list, 45–49):
+  GNOME would not load the extension there, and another login cannot change that.
+  An unknown version (no `gnome-shell` on the PATH) does not block the install.
+  Moving the pin to a commit that supports a new GNOME means updating
+  `SHELL_VERSIONS` too.
+- It writes them to `$XDG_DATA_HOME/gnome-shell/extensions/window-reporter@polykybd.org/`
+  and adds the uuid to `org.gnome.shell enabled-extensions` directly.
+  `gnome-extensions enable` asks the running shell, which on Wayland refuses an
+  extension it has not loaded yet. GNOME starts it at the next login.
+- When `org.gnome.shell disable-user-extensions` is true, a second row offers to
+  switch user extensions on. It is never ticked by default, because the setting
+  covers every user extension, and Remove never switches it off again.
+- The log bundle's desktop line names the state: not installed, another version,
+  enabled, user extensions off, active. A missing extension and user extensions
+  switched off give the same one warning in the logs; on 2026-11-25 both were the
+  case on one machine at once.
 
 ## Why
 
