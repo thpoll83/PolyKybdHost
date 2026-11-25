@@ -2331,8 +2331,8 @@ def build_parser():
                     "(FreeCAD); for Emacs and GDB also a "
                     "marked block in the init file, saved first. Blender, Maya and "
                     "QGIS get a copy per version or profile found, Bitwig Studio "
-                    "the .bwextension in its Extensions folder; VS Code, Cursor and "
-                    "Windsurf get the .vsix through their command line program "
+                    "the .bwextension in its Extensions folder; VS Code, Cursor, "
+                    "Windsurf and VSCodium get the .vsix through their command line program "
                     "(code --install-extension). Godot, Unity and Obsidian are per "
                     "project: name the project or vault folder with --project once, "
                     "it is remembered. JupyterLab is a pip install into the Python "
@@ -2348,7 +2348,8 @@ def build_parser():
         p.add_argument("--editor", action="append",
                        choices=("vim", "neovim", "emacs", "gdb", "ida", "binaryninja", "resolve",
                                 "ableton", "houdini", "jetbrains", "freecad", "blender", "maya",
-                                "qgis", "bitwig", "vscode", "cursor", "windsurf", "jupyterlab",
+                                "qgis", "bitwig", "vscode", "cursor", "windsurf", "vscodium",
+                                "jupyterlab",
                                 "godot", "unity", "obsidian"),
                        help="only this editor (repeat for more)")
     for p in (ep_install, ep_remove):

@@ -1,6 +1,7 @@
 """Where the programs of Integrations > Editors load a PolyKybd plugin from,
 for the programs added after JetBrains and FreeCAD: Blender, Maya, QGIS,
-Bitwig Studio, VS Code and its forks, JupyterLab, Godot, Unity and Obsidian.
+Bitwig Studio, VS Code and its forks (Cursor, Windsurf, VSCodium), JupyterLab,
+Godot, Unity and Obsidian.
 
 Only paths and lookups, no copying: :mod:`polyhost.services.editor_plugins`
 does the copying and the stamps. Every function takes ``home``, ``env`` and
@@ -215,9 +216,11 @@ def bitwig_extensions_dir(home=None, env=None, system=None):
     return base / "Extensions" if base.is_dir() else None
 
 
-# --- VS Code, Cursor, Windsurf -------------------------------------------------
+# --- VS Code, Cursor, Windsurf, VSCodium -----------------------------------------
 
 VSCODE_EXTENSION_ID = "polykybd.polykybd-mode-reporter"
+# The command line program's name where it is not the editor's id.
+_CLI_NAME = {"vscode": "code", "vscodium": "codium"}
 
 
 def _cli_candidates(editor, home, env, system):
@@ -255,17 +258,30 @@ def _cli_candidates(editor, home, env, system):
             absolute = [Path("/Applications") / tail]
         else:
             absolute = [Path("/usr/share/windsurf/bin/windsurf")]
+    elif editor == "vscodium":
+        # VSCodium's own installers: the user and system setups on Windows,
+        # the app bundle on macOS, the .deb/.rpm and the Snap on Linux. The
+        # Flatpak has no command line program outside its sandbox.
+        if system == "Windows":
+            user = [local / "Programs" / "VSCodium" / "bin" / "codium.cmd"]
+            absolute = [Path(r"C:\Program Files\VSCodium\bin\codium.cmd")]
+        elif system == "Darwin":
+            tail = Path("VSCodium.app/Contents/Resources/app/bin/codium")
+            user = [h / "Applications" / tail]
+            absolute = [Path("/Applications") / tail]
+        else:
+            absolute = [Path("/usr/share/codium/bin/codium"), Path("/snap/bin/codium")]
     return user + (absolute if home is None else [])
 
 
 def vscode_cli(editor, which=None, home=None, env=None, system=None):
-    """The command line program of VS Code (``code``), Cursor (``cursor``) or
-    Windsurf (``windsurf``): on PATH, else in the standard install folder.
-    None when none is found."""
+    """The command line program of VS Code (``code``), Cursor (``cursor``),
+    Windsurf (``windsurf``) or VSCodium (``codium``): on PATH, else in the
+    standard install folder. None when none is found."""
     env = os.environ if env is None else env
     system = system or platform.system()
     which = which or shutil.which
-    found = which(editor if editor != "vscode" else "code")
+    found = which(_CLI_NAME.get(editor, editor))
     if found:
         return Path(found)
     for p in _cli_candidates(editor, home, env, system):
@@ -278,8 +294,16 @@ def vscode_cli(editor, which=None, home=None, env=None, system=None):
 # The bare word "policy" is left out: other errors use it too.
 _POLICY_WORDS = re.compile(r"allowed list|not allowed|extensions\.allowed", re.I)
 
-_USER_FOLDER = {"vscode": "Code", "cursor": "Cursor", "windsurf": "Windsurf"}
-_POLICY_KEY = {"vscode": "VSCode", "cursor": "Cursor", "windsurf": "Windsurf"}
+_USER_FOLDER = {"vscode": "Code", "cursor": "Cursor", "windsurf": "Windsurf",
+                "vscodium": "VSCodium"}
+# The policy key is SOFTWARE\Policies\Microsoft\<win32RegValueName in the
+# editor's product.json>. VSCodium's value is "VSCodium".
+_POLICY_KEY = {"vscode": "VSCode", "cursor": "Cursor", "windsurf": "Windsurf",
+               "vscodium": "VSCodium"}
+
+
+# The Snap's name, for the Snap's own settings folder on Linux.
+_SNAP_NAME = {"vscode": "code", "vscodium": "codium"}
 
 
 def _user_settings_files(editor, home, env, system):
@@ -294,8 +318,9 @@ def _user_settings_files(editor, home, env, system):
     xdg = env.get("XDG_CONFIG_HOME")
     base = Path(xdg) if xdg else h / ".config"
     files = [base / name / "User" / "settings.json"]
-    if editor == "vscode":
-        files.append(h / "snap" / "code" / "current" / ".config" / name / "User" / "settings.json")
+    if editor in _SNAP_NAME:
+        files.append(h / "snap" / _SNAP_NAME[editor] / "current" / ".config" / name / "User"
+                     / "settings.json")
     return files
 
 

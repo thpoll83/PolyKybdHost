@@ -48,8 +48,8 @@ their folders) work in three ways:
   before), Maya (``maya-plugin/``, a module in ``<MAYA_APP_DIR>/<version>/
   modules``), QGIS (``qgis-plugin/``, ``python/plugins`` of each profile) and
   Bitwig Studio (the built ``.bwextension`` in the Extensions folder).
-- Through the editor's own command line program: VS Code, Cursor and
-  Windsurf (``code --install-extension`` with the ``.vsix`` in
+- Through the editor's own command line program: VS Code, Cursor, Windsurf
+  and VSCodium (``code --install-extension`` with the ``.vsix`` in
   ``polyhost/res/vscode/``, built from ``vscode-extension/``).
 - Per project: Godot (``addons/``), Unity (an embedded package in
   ``Packages/``) and Obsidian (``.obsidian/plugins/``). The project folders
@@ -136,25 +136,26 @@ BITWIG = "bitwig"
 VSCODE = "vscode"
 CURSOR = "cursor"
 WINDSURF = "windsurf"
+VSCODIUM = "vscodium"
 JUPYTERLAB = "jupyterlab"
 GODOT = "godot"
 UNITY = "unity"
 OBSIDIAN = "obsidian"
 EDITORS = (VIM, NEOVIM, EMACS, GDB, IDA, BINARYNINJA, RESOLVE, ABLETON, HOUDINI, JETBRAINS, FREECAD,
-           BLENDER, MAYA, QGIS, BITWIG, VSCODE, CURSOR, WINDSURF, JUPYTERLAB, GODOT, UNITY,
-           OBSIDIAN)
+           BLENDER, MAYA, QGIS, BITWIG, VSCODE, CURSOR, WINDSURF, VSCODIUM, JUPYTERLAB, GODOT,
+           UNITY, OBSIDIAN)
 # One copy per version or profile found (like JETBRAINS, see _change_multi).
 COPY_EDITORS = (BLENDER, MAYA, QGIS, BITWIG)
 # One copy per project folder the user chose.
 PROJECT_EDITORS = (GODOT, UNITY, OBSIDIAN)
 MULTI_EDITORS = COPY_EDITORS + PROJECT_EDITORS
 # Installed with the editor's command line program.
-CLI_EDITORS = (VSCODE, CURSOR, WINDSURF)
+CLI_EDITORS = (VSCODE, CURSOR, WINDSURF, VSCODIUM)
 # The editors added with editor_targets; their sources come in ``sources``.
 NEW_EDITORS = MULTI_EDITORS + CLI_EDITORS + (JUPYTERLAB,)
 _NEW_SOURCES = {BLENDER: BLENDER_SOURCE, MAYA: MAYA_SOURCE, QGIS: QGIS_SOURCE,
                 BITWIG: BITWIG_SOURCE, VSCODE: VSCODE_SOURCE, CURSOR: VSCODE_SOURCE,
-                WINDSURF: VSCODE_SOURCE, JUPYTERLAB: JUPYTERLAB_SOURCE, GODOT: GODOT_SOURCE,
+                WINDSURF: VSCODE_SOURCE, VSCODIUM: VSCODE_SOURCE, JUPYTERLAB: JUPYTERLAB_SOURCE, GODOT: GODOT_SOURCE,
                 UNITY: UNITY_SOURCE, OBSIDIAN: OBSIDIAN_SOURCE}
 # The ones loaded through a marked block in an init file, beside a copy.
 INIT_EDITORS = (EMACS, GDB)
@@ -1290,7 +1291,7 @@ def _status_one(editor, home, env, which, system, source):
 
 # English names for the messages (the dialog has its own, editor_label()).
 EDITOR_NAMES = {BLENDER: "Blender", MAYA: "Maya", QGIS: "QGIS", BITWIG: "Bitwig Studio",
-                VSCODE: "VS Code", CURSOR: "Cursor", WINDSURF: "Windsurf",
+                VSCODE: "VS Code", CURSOR: "Cursor", WINDSURF: "Windsurf", VSCODIUM: "VSCodium",
                 JUPYTERLAB: "JupyterLab", GODOT: "Godot", UNITY: "Unity", OBSIDIAN: "Obsidian"}
 # The Extensions folder holds every Bitwig extension: a stamp of its own name.
 BITWIG_STAMP_NAME = ".polykybd-host-bitwig.json"
@@ -1591,8 +1592,8 @@ def _run_cli(argv, timeout):
     if platform.system() == "Windows":
         kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
     # Audit (Sourcery dangerous-subprocess-use): argv is a list, no shell
-    # parses it. argv[0] is what vscode_cli() found for code, cursor or
-    # windsurf; the other items are fixed options, the extension id and the
+    # parses it. argv[0] is what vscode_cli() found for code, cursor,
+    # windsurf or codium; the other items are fixed options, the extension id and the
     # .vsix path inside this installation.
     # nosemgrep
     proc = subprocess.run(argv, capture_output=True, timeout=timeout, **kwargs)
