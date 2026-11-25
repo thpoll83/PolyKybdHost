@@ -829,7 +829,7 @@ class PolyForwarder(QApplication):
         level, message = verdict
         if level == "error" and self._send_error == NO_HOST_REASON \
                 and self._waiting_for_found_address():
-            level = "info"      # expected until the first remote-desktop client is found
+            level = "info"      # expected while no remote-desktop client is connected
         getattr(self.log, level)(
             "Window %s (%s)", message, self._resolve_host() or "no host set")
 

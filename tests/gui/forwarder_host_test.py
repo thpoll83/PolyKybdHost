@@ -144,6 +144,11 @@ class ForwarderNoHostTest(unittest.TestCase):
 
     def test_no_host_without_the_detection_is_still_an_error(self):
         self.assertEqual(self.r["levels_without_detection"], ["ERROR"])
+        self.assertTrue(self.r["resend_flag_without_detection"])
+
+    def test_a_host_file_that_appears_later_gets_the_window_once(self):
+        self.assertTrue(self.r["resend_flag_without_a_host_file"])
+        self.assertEqual(self.r["sent_when_the_host_file_appears"], [[77, "konsole"]])
 
 
 @unittest.skipUnless(os.environ.get("DISPLAY"),
@@ -420,6 +425,17 @@ def _smoke():
         tick(False)
         out["levels_without_detection"] = landing_levels()
         out["resend_flag_without_detection"] = app._resend_when_host
+
+        # A host file that appears later (a session starts) is a host that appears too.
+        fresh(file=host_file, text=None, rpc=True)      # no file yet: no active session
+        tick(False)
+        out["resend_flag_without_a_host_file"] = app._resend_when_host
+        app._send_via_rpc = lambda handle, title, name, url=None: (
+            rpc_sent.append((handle, name)) or True)
+        with open(host_file, "w") as handle:
+            handle.write("10.0.0.5\n")
+        tick(False)
+        out["sent_when_the_host_file_appears"] = [list(item) for item in rpc_sent]
         app.log.removeHandler(handler)
         app._send_via_rpc = real_rpc
 
