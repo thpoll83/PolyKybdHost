@@ -143,7 +143,7 @@ class GnomeCategoryTest(unittest.TestCase):
         with mock.patch.object(idlg, "_on_gnome", return_value=True), \
                 mock.patch.object(idlg, "_gnome_page",
                                   side_effect=lambda: gp.GnomePage(
-                                      status_fn=lambda: _status())):
+                                      status_fn=_status)):
             self.assertEqual(self._nav()[-1], "GNOME")
 
 
