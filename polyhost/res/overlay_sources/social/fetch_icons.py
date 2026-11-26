@@ -30,6 +30,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from PIL import Image  # noqa: E402
+
 import brand_marks, icon_fetch, number_badge  # noqa: E402
 
 FLUENT = {
@@ -44,6 +46,7 @@ FLUENT = {
     "media": "Image",
     "back": "Arrow Left",
     "help": "Question Circle",
+    "goprefix": "ms:more_horiz",
     "search": "Search",
     # --- post actions ---
     "reply": "Arrow Reply",
@@ -108,6 +111,10 @@ def main() -> int:
     n = icon_fetch.fluent(FLUENT, out)
     n += number_badge.numbered(out / "_columnbase.png", "123456789", out, "column",
                                size=0.50, centre=(0.50, 0.50))
+    # The three dots sit in the middle of a padded 24 px canvas; cropped to
+    # their ink they fill the key's icon width instead of a third of it.
+    dots = Image.open(out / "goprefix.png")
+    dots.crop(dots.getbbox()).save(out / "goprefix.png")
     for slug in ("whatsapp", "x", "mastodon"):
         brand_marks.ensure(out / f"{slug}.png", slug)
     print(f"Wrote {n} icons to {out}")

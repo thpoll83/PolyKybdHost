@@ -12,8 +12,9 @@
 # fedi.tips lists the same keys for an older version; its Alt+X (content
 # warning field) and Up / Down are no longer in the source and are not drawn.
 #
-# Left out: the two-key "g then <key>" navigation (g h home, g n notifications
-# ...), because a cell shows what one key press does; Alt+PageDown / Alt+PageUp,
+# Left out: the second keys of the two-key "g then <key>" navigation (g h home,
+# g n notifications ...), because a cell shows what one key press does (G itself
+# shows a prefix mark); Alt+PageDown / Alt+PageUp,
 # which repeat J / K; and the "cheat" sequence.
 #
 # Regenerate (from the repo root, with the project venv):
@@ -76,3 +77,7 @@ bindings:
   # --- compose box: the shared TextArea submits its form on Ctrl+Enter, Cmd+Enter
   # on macOS (components/form_fields/text_area_field.tsx) ---
   - { key: ENTER, mods: [CMDCTRL], icon: send.png, label: "Publish post" }
+  # --- G starts the two-key "go to" sequences (g h home, g n notifications ...).
+  # The second keys are not drawn; the mark only says that G is a prefix
+  # (maintainer, 2026-11-26) ---
+  - { key: G, icon: goprefix.png, label: "Go to ... (then a second key)", shared: false }

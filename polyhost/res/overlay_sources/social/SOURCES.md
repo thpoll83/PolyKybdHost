@@ -82,7 +82,9 @@ lists:
 B (bookmark) and X (report) come from X's own `?` list, read by the maintainer
 on 2026-11-26; the third-party lists disagree on both keys.
 
-Left out: the "g then <key>" navigation, and the video keys that replace the
+G shows a "go to" prefix mark (three dots); the second keys of the "g then
+<key>" navigation are not drawn (maintainer, 2026-11-26). Left out: the video
+keys that replace the
 timeline keys while a video is selected.
 
 ### Mastodon (official)
@@ -100,7 +102,9 @@ keyboard shortcuts) lists the same keys for an older Mastodon; its Alt+X
 (content warning field) and Up / Down (move) are not in the current source and
 are not drawn.
 
-Left out: the "g then <key>" navigation, Alt+PageDown / Alt+PageUp (the same as
+G shows a "go to" prefix mark (three dots); the second keys of the "g then
+<key>" navigation are not drawn (maintainer, 2026-11-26). Left out: Alt+PageDown /
+Alt+PageUp (the same as
 J / K) and the "cheat" sequence.
 
 ## Icons
@@ -127,6 +131,7 @@ Fetched by `fetch_icons.py`:
 | `media.png` | Fluent `Image` | MIT |
 | `back.png` | Fluent `Arrow Left` | MIT |
 | `help.png` | Fluent `Question Circle` | MIT |
+| `goprefix.png` | Material Symbols `more_horiz`, cropped to its ink by `fetch_icons.py` | Apache-2.0 |
 | `search.png` | Fluent `Search` | MIT |
 | `reply.png` | Fluent `Arrow Reply` | MIT |
 | `like.png` | Fluent `Heart` | MIT |

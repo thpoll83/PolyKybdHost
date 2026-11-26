@@ -7,8 +7,9 @@
 # The single keys act when no text field has focus.
 #
 # Left out:
-# * The two-key "g then <key>" navigation (g h home, g n notifications ...): a
-#   cell shows what one key press does.
+# * The second keys of the two-key "g then <key>" navigation (g h home, g n
+#   notifications ...): a cell shows what one key press does. G itself shows a
+#   prefix mark.
 # * Video keys (k / Space play, m mute) that replace the timeline keys only
 #   while a video is selected.
 #
@@ -57,3 +58,7 @@ bindings:
   # --- the selected post: B and X from X's own ? list ---
   - { key: B, icon: bookmark.png,    label: "Bookmark" }
   - { key: X, icon: report.png,      label: "Report post" }
+  # --- G starts the two-key "go to" sequences (g h home, g n notifications ...).
+  # The second keys are not drawn; the mark only says that G is a prefix
+  # (maintainer, 2026-11-26) ---
+  - { key: G, icon: goprefix.png, label: "Go to ... (then a second key)", shared: false }
