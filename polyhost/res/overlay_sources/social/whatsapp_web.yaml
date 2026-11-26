@@ -43,6 +43,8 @@ bindings:
   - { key: E, mods: [GUI, CTRL, SHIFT], icon: archive.png,  label: "Archive chat",   only: [macos] }
   - { key: P, mods: [GUI, CTRL, SHIFT], icon: pin.png,      label: "Pin chat",       only: [macos] }
   - { key: N, mods: [GUI, CTRL, SHIFT], icon: newgroup.png, label: "New group",      only: [macos] }
+  # The help page's one chord that is not a straight Ctrl+Alt -> Cmd+Ctrl copy:
+  # Search in chat is Ctrl+Alt+Shift+F on Windows and Linux, Cmd+Ctrl+/ on macOS.
   - { key: "/", mods: [GUI, CTRL],      icon: searchchat.png, label: "Search in chat", only: [macos] }
   # --- app (Windows, Linux: Ctrl+Alt; macOS: Cmd+Ctrl) ---
   - { key: N, mods: [CTRL, ALT], icon: newchat.png, label: "New chat",         except: [macos] }
