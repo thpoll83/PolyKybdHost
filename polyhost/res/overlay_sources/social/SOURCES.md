@@ -94,10 +94,75 @@ publish key in the source, so none is drawn.
 
 ## Icons
 
-| Icons | Source | Licence |
+Fetched by `fetch_icons.py` from pinned commits:
+
+- Fluent `<Name>`: Microsoft Fluent UI System Icons (MIT),
+  `https://raw.githubusercontent.com/microsoft/fluentui-system-icons/67e6dec1ee956af3ab4c746a2b3bb6a2e5520a44/assets/<Name>/SVG/ic_fluent_<name>_<size>_regular.svg`
+  (`../icon_fetch.py` takes the first size that exists).
+- Material Symbols `<name>`: Google Material Symbols (Apache-2.0),
+  `https://raw.githubusercontent.com/google/material-design-icons/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/symbols/web/<name>/materialsymbolsoutlined/<name>_24px.svg`.
+- Simple Icons `<slug>`: `https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/<slug>.svg`
+  (artwork CC0-1.0; the marks are trademarks of their owners, used to name the app the set is for).
+
+| File | Source | Licence |
 |---|---|---|
-| Action icons (by Fluent folder name in `fetch_icons.py`) | Microsoft Fluent UI System Icons, `microsoft/fluentui-system-icons` | MIT |
-| Action icons with an `ms:` name | Google Material Symbols | Apache-2.0 |
-| `chat1.png` .. `chat9.png` | Fluent "Chat Empty" with the digit drawn in (`../number_badge.py`) | MIT |
-| `column1.png` .. `column9.png` | Material Symbols `crop_portrait` with the digit drawn in | Apache-2.0 |
-| `whatsapp.png`, `x.png`, `mastodon.png` (ESC marks) | Simple Icons (`../brand_marks.py`) | artwork CC0-1.0; the marks are trademarks of their owners, used to name the app the set is for |
+| `nextpost.png` | Fluent `Arrow Down` | MIT |
+| `prevpost.png` | Fluent `Arrow Up` | MIT |
+| `pagedown.png` | Material Symbols `keyboard_double_arrow_down` | Apache-2.0 |
+| `top.png` | Material Symbols `vertical_align_top` | Apache-2.0 |
+| `loadnew.png` | Material Symbols `dynamic_feed` | Apache-2.0 |
+| `loadmore.png` | Material Symbols `expand_circle_down` | Apache-2.0 |
+| `openpost.png` | Fluent `Open` | MIT |
+| `media.png` | Fluent `Image` | MIT |
+| `back.png` | Fluent `Arrow Left` | MIT |
+| `help.png` | Fluent `Question Circle` | MIT |
+| `search.png` | Fluent `Search` | MIT |
+| `zoomreset.png` | Material Symbols `fit_screen` | Apache-2.0 |
+| `reply.png` | Fluent `Arrow Reply` | MIT |
+| `like.png` | Fluent `Heart` | MIT |
+| `favourite.png` | Fluent `Star` | MIT |
+| `repost.png` | Fluent `Arrow Repeat All` | MIT |
+| `quote.png` | Material Symbols `format_quote` | Apache-2.0 |
+| `mention.png` | Material Symbols `alternate_email` | Apache-2.0 |
+| `share.png` | Fluent `Share` | MIT |
+| `muteaccount.png` | Fluent `Speaker Mute` | MIT |
+| `profile.png` | Fluent `Person Circle` | MIT |
+| `translate.png` | Fluent `Translate` | MIT |
+| `contentwarning.png` | Fluent `Eye Off` | MIT |
+| `sensitive.png` | Material Symbols `hide_image` | Apache-2.0 |
+| `newpost.png` | Fluent `Compose` | MIT |
+| `newdm.png` | Fluent `Mail Add` | MIT |
+| `send.png` | Fluent `Send` | MIT |
+| `unread.png` | Material Symbols `mark_chat_unread` | Apache-2.0 |
+| `mutechat.png` | Fluent `Alert Off` | MIT |
+| `archive.png` | Fluent `Archive` | MIT |
+| `pin.png` | Fluent `Pin` | MIT |
+| `deletechat.png` | Fluent `Delete` | MIT |
+| `block.png` | Fluent `Person Prohibited` | MIT |
+| `newchat.png` | Fluent `Chat Add` | MIT |
+| `newgroup.png` | Fluent `People Add` | MIT |
+| `searchchat.png` | Material Symbols `manage_search` | Apache-2.0 |
+| `extsearch.png` | Material Symbols `travel_explore` | Apache-2.0 |
+| `nextchat.png` | Fluent `Arrow Circle Down` | MIT |
+| `prevchat.png` | Fluent `Arrow Circle Up` | MIT |
+| `chatinfo.png` | Fluent `Info` | MIT |
+| `lock.png` | Fluent `Lock Closed` | MIT |
+| `emoji.png` | Fluent `Emoji` | MIT |
+| `gif.png` | Fluent `Gif` | MIT |
+| `sticker.png` | Fluent `Sticker` | MIT |
+| `replyprivate.png` | Material Symbols `quickreply` | Apache-2.0 |
+| `forward.png` | Fluent `Arrow Forward` | MIT |
+| `editlast.png` | Fluent `Edit` | MIT |
+| `star.png` | Fluent `Star Add` | MIT |
+| `attach.png` | Fluent `Attach` | MIT |
+| `recordvoice.png` | Fluent `Mic` | MIT |
+| `pausevoice.png` | Material Symbols `pause_circle` | Apache-2.0 |
+| `speedup.png` | Material Symbols `speed` | Apache-2.0 |
+| `speeddown.png` | Material Symbols `slow_motion_video` | Apache-2.0 |
+| `_chatbase.png` | Fluent `Chat Empty` | MIT |
+| `_columnbase.png` | Material Symbols `crop_portrait` | Apache-2.0 |
+| `chat1.png .. chat9.png` | `_chatbase.png` (Fluent `Chat Empty`) with the digit drawn in by `../number_badge.py` | MIT |
+| `column1.png .. column9.png` | `_columnbase.png` (Material Symbols `crop_portrait`) with the digit drawn in by `../number_badge.py` | Apache-2.0 |
+| `whatsapp.png` | Simple Icons `whatsapp` (`../brand_marks.py`) | CC0-1.0 |
+| `x.png` | Simple Icons `x` (`../brand_marks.py`) | CC0-1.0 |
+| `mastodon.png` | Simple Icons `mastodon` (`../brand_marks.py`) | CC0-1.0 |

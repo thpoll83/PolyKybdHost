@@ -26,6 +26,25 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
   # overlay). Keys match whole title words; a key of several words (Claude
   # Code) matches them adjacent, and is tried before a shorter key (Claude).
   urls-contains: &web_urls
+    # WhatsApp Web, X and Mastodon (sources: overlay_sources/social/). They MUST
+    # stay first, here and in &web_urls_mac: the needles are tried in order
+    # against the whole URL, query included, so an ungated needle above them
+    # (github.com, notion.so) would claim x.com/search?q=github.com.
+    # The X needle is also a substring of other hosts (max.com, dropbox.com),
+    # so its `url:` gate names the host. Mastodon runs on many servers: the
+    # `https://` needle matches any secure URL and the `url:` gate lists the 20
+    # servers with the most weekly active users in the joinmastodon.org
+    # directory (2026-11-25); a URL on any other host falls through to the
+    # next needle.
+    web.whatsapp.com:
+      url: '^https?://web\.whatsapp\.com/'
+      overlay: [whatsapp_web_template.mods.png, whatsapp_web_template.combo.mods.png, whatsapp_web_template.extra.mods.png]
+    x.com:
+      url: '^https?://(www\.|mobile\.)?x\.com/'
+      overlay: x_template.mods.png
+    https://:
+      url: '^https?://(mastodon\.social|mstdn\.jp|infosec\.exchange|mstdn\.social|hachyderm\.io|piaille\.fr|mastodon\.world|social\.vivaldi\.net|troet\.cafe|mastodon\.uno|mastodon\.gamedev\.place|mathstodon\.xyz|mastodon\.nl|social\.tchncs\.de|techhub\.social|occm\.cc|norden\.social|kolektiva\.social|o3o\.ca|organica\.social)/'
+      overlay: mastodon_template.mods.png
     miro.com:
       overlay: miro_template.mods.png
     # Photopea (sources: overlay_sources/webapps/photopea.yaml). The editor
@@ -148,22 +167,6 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     # with a player (/watch, /live/, /embed/). The home page and search results
     # keep the browser set. The gate also leaves out music.youtube.com and
     # studio.youtube.com, which have other keys.
-    # WhatsApp Web, X and Mastodon (sources: overlay_sources/social/).
-    # The X needle is also a substring of other hosts (max.com, dropbox.com),
-    # so its `url:` gate names the host. Mastodon runs on many servers: the
-    # `https://` needle matches any secure URL and the `url:` gate lists the 20
-    # servers with the most weekly active users in the joinmastodon.org
-    # directory (2026-11-25); a URL on any other host falls through to the
-    # next needle.
-    web.whatsapp.com:
-      url: '^https?://web\.whatsapp\.com/'
-      overlay: [whatsapp_web_template.mods.png, whatsapp_web_template.combo.mods.png, whatsapp_web_template.extra.mods.png]
-    x.com:
-      url: '^https?://(www\.|mobile\.)?x\.com/'
-      overlay: x_template.mods.png
-    https://:
-      url: '^https?://(mastodon\.social|mstdn\.jp|infosec\.exchange|mstdn\.social|hachyderm\.io|piaille\.fr|mastodon\.world|social\.vivaldi\.net|troet\.cafe|mastodon\.uno|mastodon\.gamedev\.place|mathstodon\.xyz|mastodon\.nl|social\.tchncs\.de|techhub\.social|occm\.cc|norden\.social|kolektiva\.social|o3o\.ca|organica\.social)/'
-      overlay: mastodon_template.mods.png
     youtube.com:
       url: '^https?://(www\.|m\.)?youtube\.com/(watch[?/]|live/|embed/)'
       overlay: youtube_template.mods.png
@@ -464,6 +467,15 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     macos:
       overlay: [chrome_template_mac.mods.png, chrome_template_mac.combo.mods.png, chrome_template_mac.extra.mods.png]
       urls-contains: &web_urls_mac
+        web.whatsapp.com:
+          url: '^https?://web\.whatsapp\.com/'
+          overlay: [whatsapp_web_template_mac.mods.png, whatsapp_web_template_mac.combo.mods.png, whatsapp_web_template_mac.extra.mods.png, whatsapp_web_template_mac.gui.mods.png]
+        x.com:
+          url: '^https?://(www\.|mobile\.)?x\.com/'
+          overlay: [x_template_mac.mods.png, x_template_mac.combo.mods.png]
+        https://:
+          url: '^https?://(mastodon\.social|mstdn\.jp|infosec\.exchange|mstdn\.social|hachyderm\.io|piaille\.fr|mastodon\.world|social\.vivaldi\.net|troet\.cafe|mastodon\.uno|mastodon\.gamedev\.place|mathstodon\.xyz|mastodon\.nl|social\.tchncs\.de|techhub\.social|occm\.cc|norden\.social|kolektiva\.social|o3o\.ca|organica\.social)/'
+          overlay: mastodon_template.mods.png
         miro.com:
           overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
         photopea.com:
@@ -557,15 +569,6 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [trello_template_mac.mods.png, trello_template_mac.combo.mods.png]
         meet.google.com:
           overlay: [meet_template_mac.mods.png, meet_template_mac.combo.mods.png, meet_template_mac.extra.mods.png]
-        web.whatsapp.com:
-          url: '^https?://web\.whatsapp\.com/'
-          overlay: [whatsapp_web_template_mac.mods.png, whatsapp_web_template_mac.combo.mods.png, whatsapp_web_template_mac.extra.mods.png, whatsapp_web_template_mac.gui.mods.png]
-        x.com:
-          url: '^https?://(www\.|mobile\.)?x\.com/'
-          overlay: [x_template_mac.mods.png, x_template_mac.combo.mods.png]
-        https://:
-          url: '^https?://(mastodon\.social|mstdn\.jp|infosec\.exchange|mstdn\.social|hachyderm\.io|piaille\.fr|mastodon\.world|social\.vivaldi\.net|troet\.cafe|mastodon\.uno|mastodon\.gamedev\.place|mathstodon\.xyz|mastodon\.nl|social\.tchncs\.de|techhub\.social|occm\.cc|norden\.social|kolektiva\.social|o3o\.ca|organica\.social)/'
-          overlay: mastodon_template.mods.png
         youtube.com:
           url: '^https?://(www\.|m\.)?youtube\.com/(watch[?/]|live/|embed/)'
           overlay: youtube_template_mac.mods.png
