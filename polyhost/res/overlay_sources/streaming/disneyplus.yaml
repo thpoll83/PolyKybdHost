@@ -1,0 +1,30 @@
+# Disney+'s ESC mark, for PolyKybd. Loaded on top of player.yaml, which has
+# every Disney+ key the sources name. See SOURCES.md.
+#
+# Disney+ publishes no shortcut list. How-To Geek (2020) and tutorialtactic
+# (2025) agree on Space, F, Esc, Left/Right and M, all in player.yaml. Neither
+# names a volume key, so none is drawn. The ESC mark is the logo's words in a
+# free font: Simple Icons has no Disney+ logo.
+#
+# Regenerate (from the repo root, with the project venv):
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/streaming/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/streaming/disneyplus.yaml --preview /tmp/disneyplus_preview
+app: disneyplus
+match: [disneyplus]
+output: disneyplus_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+program_icon: disneyplus.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings: []
