@@ -57,10 +57,35 @@ because the ESC key carries the program mark.
 
 ## Icons
 
-| Icons | Source | Licence |
+Fetched by `fetch_icons.py`:
+
+- Fluent `<Name>`, pinned commit: Microsoft Fluent UI System Icons (MIT),
+  `https://raw.githubusercontent.com/microsoft/fluentui-system-icons/67e6dec1ee956af3ab4c746a2b3bb6a2e5520a44/assets/<Name>/SVG/ic_fluent_<name>_<size>_regular.svg`
+  (`../icon_fetch.py` takes the first size that exists).
+- Material Symbols `<name>`, pinned commit: Google Material Symbols (Apache-2.0),
+  `https://raw.githubusercontent.com/google/material-design-icons/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/symbols/web/<name>/materialsymbolsoutlined/<name>_wght300_24px.svg` (`../icon_fetch.py` renders Material Symbols at weight 300).
+- Simple Icons `<slug>`: `https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/<slug>.svg`, NOT pinned (`../brand_marks.py` reads the `develop` branch); the committed PNG is kept on a re-run, so it is the source of truth
+  (artwork CC0-1.0; the marks are trademarks of their owners, used to name the site the set is for).
+
+| File | Source | Licence |
 |---|---|---|
-| Action icons (by Fluent folder name in `fetch_icons.py`) | Microsoft Fluent UI System Icons | MIT |
-| Action icons with an `ms:` name | Google Material Symbols | Apache-2.0 |
-| `netflix.png`, `twitch.png` (ESC marks) | Simple Icons (`../brand_marks.py`) | artwork CC0-1.0; the marks are trademarks of their owners, used to name the site the set is for |
-| `primevideo.png` (ESC mark) | "prime video" set in Nunito (google/fonts, pinned commit) with a drawn smile | font SIL OFL 1.1 |
-| `disneyplus.png` (ESC mark) | "Disney+" set in Dancing Script (google/fonts, pinned commit) | font SIL OFL 1.1 |
+| `playpause.png` | Material Symbols `play_pause` | Apache-2.0 |
+| `back10.png` | Material Symbols `replay_10` | Apache-2.0 |
+| `fwd10.png` | Material Symbols `forward_10` | Apache-2.0 |
+| `mute.png` | Fluent `Speaker Mute` | MIT |
+| `fullscreen.png` | Fluent `Full Screen Maximize` | MIT |
+| `volup.png` | Material Symbols `volume_up` | Apache-2.0 |
+| `voldown.png` | Material Symbols `volume_down` | Apache-2.0 |
+| `skipintro.png` | Material Symbols `skip_next` | Apache-2.0 |
+| `slower.png` | Material Symbols `slow_motion_video` | Apache-2.0 |
+| `faster.png` | Material Symbols `speed` | Apache-2.0 |
+| `theatre.png` | Material Symbols `theaters` | Apache-2.0 |
+| `chat.png` | Material Symbols `chat` | Apache-2.0 |
+| `clip.png` | Material Symbols `content_cut` | Apache-2.0 |
+| `shortcuts.png` | Fluent `Keyboard` | MIT |
+| `captions.png` | Fluent `Closed Caption` | MIT |
+| `audiotrack.png` | Material Symbols `record_voice_over` | Apache-2.0 |
+| `netflix.png` | Simple Icons `netflix` (`../brand_marks.py`) | CC0-1.0 |
+| `twitch.png` | Simple Icons `twitch` (`../brand_marks.py`) | CC0-1.0 |
+| `primevideo.png` | "prime video" set in Nunito (google/fonts commit `e7db6ca6`, `ofl/nunito/Nunito[wght].ttf`) with a drawn smile, by `fetch_icons.py` | font SIL OFL 1.1 |
+| `disneyplus.png` | "Disney+" set in Dancing Script (google/fonts commit `e7db6ca6`, `ofl/dancingscript/DancingScript[wght].ttf`), by `fetch_icons.py` | font SIL OFL 1.1 |
