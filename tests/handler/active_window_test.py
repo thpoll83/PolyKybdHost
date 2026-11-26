@@ -1974,6 +1974,9 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
             ("https://www.disneyplus.com/play/8f6e2a1c-1234", "disneyplus"),
             ("https://www.disneyplus.com/en-gb/play/8f6e2a1c-1234", "disneyplus"),
             ("https://www.disneyplus.com/video/8f6e2a1c-1234", "disneyplus"),
+            # Query text naming another site's host must not claim the route.
+            ("https://www.twitch.tv/somestreamer?ref=github.com", "twitch"),
+            ("https://www.netflix.com/watch/1?trackId=miro.com", "netflix"),
         )
         other = ("https://www.netflix.com/browse",
                  "https://www.twitch.tv/",
