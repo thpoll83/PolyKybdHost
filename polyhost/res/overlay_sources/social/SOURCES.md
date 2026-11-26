@@ -44,23 +44,26 @@ Cmd+Ctrl. The page prints the Windows Settings chord as "Ctrl Alt" with no key;
 the set uses "," from the macOS column. Extended search is Alt+K (Cmd+K on
 macOS).
 
-### WhatsApp desktop (not checked against the apps)
+### WhatsApp desktop
 
 WhatsApp publishes no shortcut list for its desktop apps: the Help Center
 article's Windows tab says "This feature isn't available on this platform".
 
-- **Windows:** "WhatsApp for Windows Accessibility Guide" (2025-12-19), which
-  reproduces the app's own list:
-  https://www.mail-archive.com/accessindia@accessindia.org.in/msg149459/WhatsApp_for_Windows_Accessibility_Guide.docx.
-  Older lists for the UWP app (Ctrl+N, Ctrl+Shift+[ ...) are out of date.
-- **macOS:** XDA Developers (2023-02,
+- **Windows:** the app's own list (Settings > Keyboard shortcuts), German
+  build, read by the maintainer on 2026-11-26. It replaced an earlier list from
+  an accessibility guide, which had several keys wrong (Ctrl+Shift instead of
+  Ctrl+Alt+Shift for unread, mute, archive and new group, and Ctrl+1..9 and the
+  zoom keys, which the app does not list).
+- **macOS (not checked against the app):** XDA Developers (2023-02,
   https://www.xda-developers.com/whatsapp-keyboard-shortcuts/) and androidayuda
   (2024, https://en.androidayuda.com/applications/general/whatsapp-web-keyboard-shortcuts/),
   which agree on every key drawn.
 
-Left out: Esc (close chat; the ESC key carries the program mark), next and
-previous chat on macOS (XDA gives Ctrl+Tab, androidayuda Cmd+Tab), and plain
-Enter in the composer.
+Left out: Esc (close chat; the ESC key carries the program mark); the Windows
+call keys Reactions (Ctrl+Alt+R) and Share screen (Ctrl+Alt+S), which reuse the
+chat chords of Reply privately and the sticker panel; next and previous chat on
+macOS (XDA gives Ctrl+Tab, androidayuda Cmd+Tab); and plain Enter in the
+composer.
 
 ### X (third-party lists)
 
@@ -119,7 +122,6 @@ Fetched by `fetch_icons.py`:
 | `back.png` | Fluent `Arrow Left` | MIT |
 | `help.png` | Fluent `Question Circle` | MIT |
 | `search.png` | Fluent `Search` | MIT |
-| `zoomreset.png` | Material Symbols `fit_screen` | Apache-2.0 |
 | `reply.png` | Fluent `Arrow Reply` | MIT |
 | `like.png` | Fluent `Heart` | MIT |
 | `favourite.png` | Fluent `Star` | MIT |
@@ -151,6 +153,11 @@ Fetched by `fetch_icons.py`:
 | `prevchat.png` | Fluent `Arrow Circle Up` | MIT |
 | `chatinfo.png` | Fluent `Info` | MIT |
 | `lock.png` | Fluent `Lock Closed` | MIT |
+| `addtolist.png` | Material Symbols `playlist_add` | Apache-2.0 |
+| `camera.png` | Fluent `Video` | MIT |
+| `micmute.png` | Fluent `Mic Off` | MIT |
+| `raisehand.png` | Material Symbols `back_hand` | Apache-2.0 |
+| `endcall.png` | Fluent `Call End` | MIT |
 | `emoji.png` | Fluent `Emoji` | MIT |
 | `gif.png` | Fluent `Gif` | MIT |
 | `sticker.png` | Fluent `Sticker` | MIT |
@@ -163,9 +170,7 @@ Fetched by `fetch_icons.py`:
 | `pausevoice.png` | Material Symbols `pause_circle` | Apache-2.0 |
 | `speedup.png` | Material Symbols `speed` | Apache-2.0 |
 | `speeddown.png` | Material Symbols `slow_motion_video` | Apache-2.0 |
-| `_chatbase.png` | Fluent `Chat Empty` | MIT |
 | `_columnbase.png` | Material Symbols `crop_portrait` | Apache-2.0 |
-| `chat1.png .. chat9.png` | `_chatbase.png` (Fluent `Chat Empty`) with the digit drawn in by `../number_badge.py` | MIT |
 | `column1.png .. column9.png` | `_columnbase.png` (Material Symbols `crop_portrait`) with the digit drawn in by `../number_badge.py` | Apache-2.0 |
 | `whatsapp.png` | Simple Icons `whatsapp` (`../brand_marks.py`) | CC0-1.0 |
 | `x.png` | Simple Icons `x` (`../brand_marks.py`) | CC0-1.0 |

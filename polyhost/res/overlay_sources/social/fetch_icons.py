@@ -13,9 +13,8 @@ Three kinds of icon are in `icons/`:
 
 * Fetched: Microsoft Fluent UI System Icons (MIT) by folder name, or Google
   Material Symbols (Apache-2.0) for an `ms:` name. A re-run may overwrite them.
-* Numbered: `chat1.png` .. `chat9.png` (WhatsApp Ctrl+1..9, chat by position)
-  and `column1.png` .. `column9.png` (Mastodon 1..9, focus column), drawn with
-  `../number_badge.py`.
+* Numbered: `column1.png` .. `column9.png` (Mastodon 1..9, focus column),
+  drawn with `../number_badge.py`.
 * The ESC program marks `whatsapp.png`, `x.png` and `mastodon.png`: each
   brand's monochrome logo from Simple Icons (artwork CC0-1.0,
   `../brand_marks.py`). A committed file is left as-is.
@@ -46,7 +45,6 @@ FLUENT = {
     "back": "Arrow Left",
     "help": "Question Circle",
     "search": "Search",
-    "zoomreset": "ms:fit_screen",
     # --- post actions ---
     "reply": "Arrow Reply",
     "like": "Heart",
@@ -80,6 +78,12 @@ FLUENT = {
     "prevchat": "Arrow Circle Up",
     "chatinfo": "Info",
     "lock": "Lock Closed",
+    "addtolist": "ms:playlist_add",
+    # --- calls (WhatsApp desktop) ---
+    "camera": "Video",
+    "micmute": "Mic Off",
+    "raisehand": "ms:back_hand",
+    "endcall": "Call End",
     "emoji": "Emoji",
     "gif": "Gif",
     "sticker": "Sticker",
@@ -94,7 +98,6 @@ FLUENT = {
     "speedup": "ms:speed",
     "speeddown": "ms:slow_motion_video",
     # base glyphs of the numbered sets (not bound themselves)
-    "_chatbase": "Chat Empty",
     "_columnbase": "ms:crop_portrait",
 }
 
@@ -102,8 +105,6 @@ FLUENT = {
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
-    n += number_badge.numbered(out / "_chatbase.png", "123456789", out, "chat",
-                               size=0.50, centre=(0.53, 0.47))
     n += number_badge.numbered(out / "_columnbase.png", "123456789", out, "column",
                                size=0.50, centre=(0.50, 0.50))
     for slug in ("whatsapp", "x", "mastodon"):
