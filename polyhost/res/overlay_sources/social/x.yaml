@@ -2,12 +2,11 @@
 #
 # Keys: X's shortcut list (press ? on x.com). X's help page (help.x.com) refused
 # automated access, so every key here is one that at least two independent
-# shortcut lists agree on (SOURCES.md names them, read 2026-11-25). The single
-# keys act when no text field has focus.
+# shortcut lists agree on (SOURCES.md names them, read 2026-11-25). B (bookmark)
+# and X (report) were read from X's own ? list by the maintainer (2026-11-26).
+# The single keys act when no text field has focus.
 #
 # Left out:
-# * B and X: older lists give B = block, newer ones B = bookmark and X = block.
-#   Add them once X's own ? list has been read.
 # * The two-key "g then <key>" navigation (g h home, g n notifications ...): a
 #   cell shows what one key press does.
 # * Video keys (k / Space play, m mute) that replace the timeline keys only
@@ -55,3 +54,6 @@ bindings:
   - { key: "/", mods: [SHIFT], icon: help.png, label: "Shortcut list" }
   # --- composer ---
   - { key: ENTER, mods: [CMDCTRL], icon: send.png, label: "Send post" }
+  # --- the selected post: B and X from X's own ? list ---
+  - { key: B, icon: bookmark.png,    label: "Bookmark" }
+  - { key: X, icon: report.png,      label: "Report post" }

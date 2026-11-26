@@ -55,6 +55,8 @@ FLUENT = {
     "quote": "ms:format_quote",
     "mention": "ms:alternate_email",
     "share": "Share",
+    "bookmark": "Bookmark",
+    "report": "ms:report",
     "muteaccount": "Speaker Mute",
     "profile": "Person Circle",
     "translate": "Translate",

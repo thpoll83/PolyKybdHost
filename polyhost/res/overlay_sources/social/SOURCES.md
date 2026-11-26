@@ -76,8 +76,10 @@ lists:
 - pie-menu.com/shortcuts/x
 - martech.zone/twitter-keyboard-shortcuts (2026-11)
 
-Left out: B and X (older lists give B = block, newer ones B = bookmark and
-X = block), the "g then <key>" navigation, and the video keys that replace the
+B (bookmark) and X (report) come from X's own `?` list, read by the maintainer
+on 2026-11-26; the third-party lists disagree on both keys.
+
+Left out: the "g then <key>" navigation, and the video keys that replace the
 timeline keys while a video is selected.
 
 ### Mastodon (official)
@@ -125,6 +127,8 @@ Fetched by `fetch_icons.py`:
 | `quote.png` | Material Symbols `format_quote` | Apache-2.0 |
 | `mention.png` | Material Symbols `alternate_email` | Apache-2.0 |
 | `share.png` | Fluent `Share` | MIT |
+| `bookmark.png` | Fluent `Bookmark` | MIT |
+| `report.png` | Material Symbols `report` | Apache-2.0 |
 | `muteaccount.png` | Fluent `Speaker Mute` | MIT |
 | `profile.png` | Fluent `Person Circle` | MIT |
 | `translate.png` | Fluent `Translate` | MIT |
