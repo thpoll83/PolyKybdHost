@@ -94,14 +94,14 @@ publish key in the source, so none is drawn.
 
 ## Icons
 
-Fetched by `fetch_icons.py` from pinned commits:
+Fetched by `fetch_icons.py`:
 
-- Fluent `<Name>`: Microsoft Fluent UI System Icons (MIT),
+- Fluent `<Name>`, pinned commit: Microsoft Fluent UI System Icons (MIT),
   `https://raw.githubusercontent.com/microsoft/fluentui-system-icons/67e6dec1ee956af3ab4c746a2b3bb6a2e5520a44/assets/<Name>/SVG/ic_fluent_<name>_<size>_regular.svg`
   (`../icon_fetch.py` takes the first size that exists).
-- Material Symbols `<name>`: Google Material Symbols (Apache-2.0),
-  `https://raw.githubusercontent.com/google/material-design-icons/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/symbols/web/<name>/materialsymbolsoutlined/<name>_24px.svg`.
-- Simple Icons `<slug>`: `https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/<slug>.svg`
+- Material Symbols `<name>`, pinned commit: Google Material Symbols (Apache-2.0),
+  `https://raw.githubusercontent.com/google/material-design-icons/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/symbols/web/<name>/materialsymbolsoutlined/<name>_wght300_24px.svg` (`../icon_fetch.py` renders Material Symbols at weight 300).
+- Simple Icons `<slug>`: `https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/<slug>.svg`, NOT pinned (`../brand_marks.py` reads the `develop` branch); the committed PNG is kept on a re-run, so it is the source of truth
   (artwork CC0-1.0; the marks are trademarks of their owners, used to name the app the set is for).
 
 | File | Source | Licence |
