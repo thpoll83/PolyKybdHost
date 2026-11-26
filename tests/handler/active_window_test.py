@@ -1966,14 +1966,14 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
             ("https://web.whatsapp.com/", "whatsapp_web_template", "whatsapp_web_template_mac"),
             ("https://x.com/home", "x_template", "x_template_mac"),
             ("https://x.com/someone/status/1", "x_template", "x_template_mac"),
-            ("https://mastodon.social/home", "mastodon_template", "mastodon_template"),
-            ("https://hachyderm.io/@someone/1", "mastodon_template", "mastodon_template"),
-            ("https://mstdn.jp/explore", "mastodon_template", "mastodon_template"),
+            ("https://mastodon.social/home", "mastodon_template", "mastodon_template_mac"),
+            ("https://hachyderm.io/@someone/1", "mastodon_template", "mastodon_template_mac"),
+            ("https://mstdn.jp/explore", "mastodon_template", "mastodon_template_mac"),
             # Query text naming another site's host must not claim the route.
             ("https://x.com/search?q=github.com", "x_template", "x_template_mac"),
             ("https://web.whatsapp.com/?ref=notion.so", "whatsapp_web_template",
              "whatsapp_web_template_mac"),
-            ("https://mastodon.social/tags/miro.com", "mastodon_template", "mastodon_template"),
+            ("https://mastodon.social/tags/miro.com", "mastodon_template", "mastodon_template_mac"),
         )
         other = ("https://www.max.com/",
                  "https://www.dropbox.com/home",

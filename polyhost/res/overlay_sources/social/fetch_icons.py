@@ -61,6 +61,7 @@ FLUENT = {
     "contentwarning": "Eye Off",
     "sensitive": "ms:hide_image",
     "newpost": "Compose",
+    "startpost": "ms:post_add",
     "newdm": "Mail Add",
     "send": "Send",
     # --- chats (WhatsApp) ---

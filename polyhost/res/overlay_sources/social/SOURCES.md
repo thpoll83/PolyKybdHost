@@ -8,7 +8,7 @@
 | `whatsapp_web.yaml` | `whatsapp_web_template` (3 files), `_mac` (4 files) | web.whatsapp.com in a browser |
 | `whatsapp.yaml` | `whatsapp_template` (3 files), `_mac` (3 files) | the WhatsApp desktop apps, Windows and macOS |
 | `x.yaml` | `x_template` (1 file), `_mac` (2 files) | x.com in a browser |
-| `mastodon.yaml` | `mastodon_template` (1 file) | Mastodon's web app on 20 servers, every OS |
+| `mastodon.yaml` | `mastodon_template` (1 file), `_mac` (2 files) | Mastodon's web app on 20 servers |
 
 `whatsapp.yaml` also writes `whatsapp_template_linux.mods.png`, which holds only
 the ESC mark because every Windows key is scoped `only: [windows]`. WhatsApp has
@@ -93,9 +93,15 @@ Mastodon's own source, mastodon/mastodon (AGPL-3.0), commit
 `just()` keys act with no Ctrl, Alt or Cmd held; `optionPlus()` is Alt (Option
 on macOS). Each binding's `command:` is the map's name for it.
 
+Ctrl+Enter (Cmd+Enter on macOS) publishes: the compose box is the shared
+`TextArea` of `app/javascript/mastodon/components/form_fields/text_area_field.tsx`,
+which submits its form on that key. fedi.tips (https://fedi.tips, Mastodon
+keyboard shortcuts) lists the same keys for an older Mastodon; its Alt+X
+(content warning field) and Up / Down (move) are not in the current source and
+are not drawn.
+
 Left out: the "g then <key>" navigation, Alt+PageDown / Alt+PageUp (the same as
-J / K) and the "cheat" sequence. The current compose box has no Ctrl+Enter
-publish key in the source, so none is drawn.
+J / K) and the "cheat" sequence.
 
 ## Icons
 
@@ -137,6 +143,7 @@ Fetched by `fetch_icons.py`:
 | `contentwarning.png` | Fluent `Eye Off` | MIT |
 | `sensitive.png` | Material Symbols `hide_image` | Apache-2.0 |
 | `newpost.png` | Fluent `Compose` | MIT |
+| `startpost.png` | Material Symbols `post_add` | Apache-2.0 |
 | `newdm.png` | Fluent `Mail Add` | MIT |
 | `send.png` | Fluent `Send` | MIT |
 | `unread.png` | Material Symbols `mark_chat_unread` | Apache-2.0 |

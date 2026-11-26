@@ -475,7 +475,7 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [x_template_mac.mods.png, x_template_mac.combo.mods.png]
         https://:
           url: '^https?://(mastodon\.social|mstdn\.jp|infosec\.exchange|mstdn\.social|hachyderm\.io|piaille\.fr|mastodon\.world|social\.vivaldi\.net|troet\.cafe|mastodon\.uno|mastodon\.gamedev\.place|mathstodon\.xyz|mastodon\.nl|social\.tchncs\.de|techhub\.social|occm\.cc|norden\.social|kolektiva\.social|o3o\.ca|organica\.social)/'
-          overlay: mastodon_template.mods.png
+          overlay: [mastodon_template_mac.mods.png, mastodon_template_mac.combo.mods.png]
         miro.com:
           overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
         photopea.com:

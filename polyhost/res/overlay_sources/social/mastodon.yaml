@@ -8,6 +8,10 @@
 # Mastodon runs on many servers. The mapping routes the 20 servers with the
 # most weekly active users in the joinmastodon.org server directory (SOURCES.md).
 #
+# Ctrl+Enter (publish) is in the compose box's own handler, not in the map.
+# fedi.tips lists the same keys for an older version; its Alt+X (content
+# warning field) and Up / Down are no longer in the source and are not drawn.
+#
 # Left out: the two-key "g then <key>" navigation (g h home, g n notifications
 # ...), because a cell shows what one key press does; Alt+PageDown / Alt+PageUp,
 # which repeat J / K; and the "cheat" sequence.
@@ -63,9 +67,12 @@ bindings:
   - { key: X, icon: contentwarning.png, label: "Show or hide content warning", command: toggleHidden }
   - { key: H, icon: sensitive.png,      label: "Show or hide media", command: toggleSensitive }
   # --- anywhere ---
-  - { key: N, icon: newpost.png, label: "New post", command: new }
-  - { key: N, mods: [ALT], icon: newpost.png, label: "New post", command: forceNew }
+  - { key: N, icon: newpost.png, label: "Focus compose box", command: new }
+  - { key: N, mods: [ALT], icon: startpost.png, label: "Start new post", command: forceNew }
   - { key: M, mods: [ALT], icon: newdm.png,   label: "New private mention", command: newMessage }
   - { key: S,   icon: search.png, label: "Search", command: search }
   - { key: "/", icon: search.png, label: "Search", command: search }
   - { key: "/", mods: [SHIFT], icon: help.png, label: "Shortcut list", command: help }
+  # --- compose box: the shared TextArea submits its form on Ctrl+Enter, Cmd+Enter
+  # on macOS (components/form_fields/text_area_field.tsx) ---
+  - { key: ENTER, mods: [CMDCTRL], icon: send.png, label: "Publish post" }
