@@ -165,16 +165,20 @@ These are the ones that have produced wrong diagnoses:
   firmware's display-off at `TURN_OFF_TIME` (20 min after the last activity,
   so ~19 min of `Eden idle` lines), and `Eden start … welcome said` followed
   by `Tutorial …` is a manual Eden run, not the idle path.
-- ⚠️ **A fully dark board is not a boot hang.** The firmware draws the boot splash
-  first thing in `keyboard_pre_init_user()`, so a boot hang leaves the splash on
-  screen. Dark keycaps with the power LEDs lit, `'No Interface'` in `daemon.txt`,
+- ⚠️ **A fully dark board is more often a stuck USB suspend than a boot hang.** The
+  firmware draws the boot splash first thing in `keyboard_pre_init_user()`, so a
+  visible splash points at a boot hang. A dark board does not rule one out: the
+  splash render clears the displays first, and a stall in that render leaves them
+  dark. Dark keycaps with the power LEDs lit, `'No Interface'` in `daemon.txt`,
   an empty `keyboard-console.txt` and a replug that fixes it (`reset: cause=power-on`)
   point at a board stuck in USB suspend: a powered hub keeps VBUS up while the PC is
   off, so the board never reboots at PC start. Ask about the hub and what the keys
   showed before naming a cause (2026-11-25: first misread as a boot hang). Do not
   tell the user to read the crash record before replugging: the read needs the raw
   HID interface that is missing. Firmware with qmk#481 restarts such a board by
-  itself and records `kind=halt phase=7:<seconds suspended>`.
+  itself and records `kind=halt phase=7:<seconds suspended>`, but only while the
+  host sends USB frames (SOF). With no SOF the board stays dark with no restart and
+  no record, so a missing record does not rule out a stuck suspend.
 - ⚠️ **`Firmware restart detected` is usually the KEYBOARD rebooting, and an empty
   crash record does not make it harmless.** The host logs that line when GET_ID
   carries the fresh-boot marker `*`. A boot sets it, and so does leaving DOOM (the
