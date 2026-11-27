@@ -260,8 +260,10 @@ Nothing in version 2 needs a firmware change or a protocol version increase.
    the shipped file, so a name in both places uses the user's file and the log says
    so once.
 2. **A user mapping file**, `user_overlays/overlay-mapping.poly.yaml`. The core
-   loads it after the shipped mapping and puts its entries in front, so a user
-   entry for an app replaces the shipped entry for that app. The tools write only
+   loads it after the shipped mapping. A user entry for an app that has a shipped
+   entry is laid over it. The send keeps the LAST image per key and modifier
+   (`send_overlays_mru`, "a later source wins a key"), so the files go out in this
+   order: the `"*"` set, the shipped set, the user's set for the app. The tools write only
    the entries they created (each carries `source: mcp`) and leave every other
    line of the file as it is. A user who edits the file by hand keeps their edits.
 3. **New control methods in the host** (`user_overlay.set`, `user_overlay.remove`,
@@ -279,7 +281,7 @@ Nothing in version 2 needs a firmware change or a protocol version increase.
 | `find_icons(query)` | Searches the icon library names (`res/fontpack/icon_ids.yaml`, 3556 entries such as `concept:material:content_copy`) and returns up to 20, each with its size in pixels. |
 | `list_overlay_keys()` | The 90 keys that can have an image, by key name, and which physical keys send each one on layer 0. |
 | `create_overlay(app, bindings)` | Writes or replaces the user set for `app`. `bindings` is a list of `{key, mods, label, icon, drawing, legend}`; it is the generator's binding format plus `drawing`. Returns the placed keys and the keys it could not place, with the reason. |
-| `draw_key(app, key, drawing, mods=[], legend=true)` | Adds or replaces one binding in the user set for `app` (`"*"` for every app, see below) and regenerates it. |
+| `draw_key(app, key, drawing, mods=[], legend=true, follow="keycode")` | Adds or replaces one binding in the user set for `app` (`"*"` for every app, see below) and regenerates it. `follow` applies to `"*"` only. |
 | `clear_key(app, key, mods=[])`, `delete_overlay(app)` | Remove one binding, or the whole user set and its mapping entry. Only sets in `user_overlays/` can be removed. |
 | `preview_overlay(app, mods=[])` | Both halves with every key's image at 2× scale, as an MCP image, with the keycode name on keys that have no image. A key drawn with its legend is marked, and the cut the firmware makes into the legend is shown as a 3 px outline. |
 
@@ -340,12 +342,43 @@ shapes, drawn in order:
 
 ### Every app, or one app
 
-A drawn key belongs to one app's set, because the firmware shows overlays per
-focused app. For "always show this on that key", `app` `"*"` writes a set that the
-host adds to every send: the matched app's images first, then the `"*"` images on
-keys the app's set leaves empty. With no app matched the `"*"` set is the only
-one. A key can then show an app's icon in one program and the user's drawing in
-every other.
+- **An app's set follows the keycode**, as every overlay does today.
+- **The `"*"` set holds drawings for every app.** The host adds it to every overlay
+  send: the focused app's images first (shipped and user), then the `"*"` images on
+  the keys they leave empty. With no app matched, the `"*"` set is the only one.
+- **A `"*"` drawing chooses how it is addressed**, with `follow`:
+  - `"keycode"` (version 2a): like an app overlay. It shows on every key that sends
+    that keycode, on any layer, and works on today's firmware.
+  - `"key"` (version 2b): on one physical key, whatever it sends, on any layer, also
+    on a key that sends `MO(5)` or a PolyKybd keycode. It needs the firmware change
+    below.
+
+### Version 2b: images per physical key (firmware)
+
+Today the firmware finds a key's image by keycode: `copy_overlay_to_buffer()` turns
+the keycode and the held modifiers into one of 810 display positions, and
+`display_to_pool[]` (set by cmd 33, bridged to the other half, repaired after a lost
+bridge report) turns that into one of the 600 pool images. A physical key has no
+entry in that chain.
+
+- **A second, small table:** for each of the 74 physical keys, a pool slot or none,
+  and a no-legend flag. A new HID command sets and clears it, version-gated
+  (`FEATURE_MIN_PROTOCOL`, a protocol version increase on both sides, the
+  `add-gated-hid-command` skill). The master bridges it to the other half like the
+  overlay mapping and repairs it the same way after a lost report.
+- **Drawing order in `update_displays()`:** the keycode image first, as today. When
+  the keycode has none, the physical key's image. So an app's own icon stays on top,
+  as for keycode drawings.
+- **One image per physical key, in every modifier state** where the keycode has no
+  image. Per-modifier images per physical key would need 74 × 16 entries; nobody has
+  asked for that.
+- **The images use the same pool and upload path.** The host's MRU claim pass must
+  reserve their slots, and the send loop must agree with it
+  (`tests/device/mru_claim_test.py`): the rule in the host rules file.
+- **The host decides by protocol:** on older firmware a `follow: "key"` drawing is
+  refused with the firmware version it needs, not drawn by keycode instead.
+
+Version 2a is built first. 2b needs a firmware release, then the host release.
 
 ### Rules
 
@@ -358,14 +391,14 @@ every other.
 - `mcp_enabled` gates these tools like the others. New control methods go on the
   allow-list, and the frozen test changes with them.
 
-### Questions for the maintainer
+### Decided (2026-11-27, maintainer)
 
-1. Is `app` `"*"` (a drawing on every app's keys) wanted, or only per app?
-2. Should a user set for an app that has a shipped set REPLACE it (simpler, the
-   user's set is complete) or be laid OVER it (the user's keys first, the shipped
-   keys on the rest)?
-3. Should the tray get a page that lists the user sets, with Remove, so a user can
-   undo what an assistant made without the assistant?
+- An app's set follows the keycode. A `"*"` drawing chooses `follow: "keycode"` or
+  `follow: "key"`; the second waits for version 2b.
+- The `"*"` set is wanted.
+- A user set for an app that has a shipped set is laid OVER it: the user's keys
+  first, the shipped images on every other key.
+- The tray gets a page that lists the user sets, with Remove.
 
 ## Not planned: live values on keys
 
