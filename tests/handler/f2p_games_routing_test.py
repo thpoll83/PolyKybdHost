@@ -21,6 +21,11 @@ ROUTES = {
     "genshin_template.mods.png": ("GenshinImpact.exe", "YuanShen.exe"),
     "poe2_template.mods.png": ("steam_app_2694490",),
 }
+# The MMO sets have a .combo file for their two-modifier keys.
+MMO_ROUTES = {
+    "wow_template": ("Wow.exe", "World of Warcraft"),
+    "ffxiv_template": ("ffxiv_dx11.exe", "steam_app_39210"),
+}
 POE_EXES = ("PathOfExile.exe", "PathOfExile_x64.exe", "PathOfExileSteam.exe",
             "PathOfExile_x64Steam.exe", "PathOfExile_KG.exe", "PathOfExile_x64_KG.exe")
 
@@ -43,6 +48,15 @@ class F2pGamesRoutingTest(unittest.TestCase):
         for overlay, processes in ROUTES.items():
             for process in processes:
                 self.assertEqual(self._route(process, "Game"), overlay, process)
+
+    def test_each_mmo_process_loads_its_set_and_combo_file(self):
+        for stem, processes in MMO_ROUTES.items():
+            for process in processes:
+                self.assertEqual(self._route(process, "Game"),
+                                 [f"{stem}.mods.png", f"{stem}.combo.mods.png"], process)
+
+    def test_wow_classic_gets_no_retail_set(self):
+        self.assertIsNone(self._route("WowClassic.exe", "World of Warcraft"))
 
     def test_path_of_exile_1_and_2_by_title(self):
         for exe in POE_EXES:
