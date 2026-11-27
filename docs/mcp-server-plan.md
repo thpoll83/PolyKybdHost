@@ -84,6 +84,12 @@ tool that takes a key resolves a key reference, and two tools describe the board
 
   The cells with `.` have no key. The thumb keys are `6.5`, `7.4`, `7.5`, `8.4`
   and `8.5` on each half.
+- **Aliases count across the middle.** `X` may go on past 8 into the other half,
+  so a key can be named from either side: `L:X.Y` with `X` from 9 to 16 is
+  `R:(17 - X).Y`, and `R:X.Y` with `X` from 9 to 16 is `L:(17 - X).Y`. For example
+  `L:9.4` is `R:8.4` and `L:10.4` is `R:7.4`. An alias of a place with no key (for
+  example `L:12.5`, which would be `R:5.5`) is an error. Tools accept aliases and
+  always return the canonical name, the one from the key's own half.
 - **The names are a frozen table**, generated once from the boards and shipped
   (for example `res/key_positions.yaml`, name → matrix `row,col`), not computed at
   runtime, so a later board revision or KLE correction does not rename a key. A
@@ -96,7 +102,8 @@ tool that takes a key resolves a key reference, and two tools describe the board
   cell instead of the matrix position, like the drawings in the firmware's
   `keymap.c`. An assistant reads positions ("the two keys left of the space bar")
   more reliably from a drawing than from a list.
-- **A key reference** in a write tool is one of `"L:1.1"`,
+- **A key reference** in a write tool is one of `"L:1.1"` (or an alias such as
+  `"L:9.4"`),
   `{"base": "KC_Q"}` (the key that sends Q on layer 0) or
   `{"row": 2, "col": 3}`. A `base` reference that matches no key, or more than
   one, returns an error that lists the candidates. The server never guesses a key.
@@ -225,7 +232,8 @@ time. It needs its own plan, with a measurement on hardware.
 - **A result-field test**: no tool result has a key outside its field list.
 - **A key-identification test**: the frozen table has 74 different names, every
   `row,col` of the KLE file exactly once, and the same set of names on both halves;
-  a `base` reference to a keycode that is on two keys returns an error, not one of
+  every alias resolves to the same key as its canonical name, and an alias of an
+  empty place is an error; a `base` reference to a keycode that is on two keys returns an error, not one of
   them.
 - **One run with a real MCP client** before merging, per the repo rule to run the
   real entry point once.
