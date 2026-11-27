@@ -111,6 +111,12 @@ a replaced half. A half moved from one keyboard to another links the two
 keyboards into one group, so the count can be too low and the replacement count
 too high. A shared half alone does not prove a replacement.
 
+The keyboard name and hardware version in a report are compiled into the
+firmware, so any RP2040 board flashed with it reports as a PolyKybd. The
+dashboard therefore counts a keyboard only when both halves have sent an ID at
+least once. A group that only ever sent one ID is shown as a single controller:
+a bare RP2040 board, one half, or a keyboard whose other half never answered.
+
 The dashboard leaves out every install that ever reported the emulated keyboard
 (device name `PolyKybdMock`) and lists those installs only in its table. An
 install counts as active when it sent at least one report in the 7 or 30 days
