@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-25 08:38+0000\n"
+"POT-Creation-Date: 2026-11-27 07:00+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fa\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.18.0\n"
+"Generated-By: Babel 2.19.0\n"
 
 #: polyhost/device/command_ids.py:183
 #, python-brace-format
@@ -327,141 +327,141 @@ msgstr ""
 msgid "{prefix} — the USB half answered, but the other keyboard half did not confirm that it had erased the {what} within 90 s. Check the cable between the two halves. If the other half stays dark, it is not running firmware and needs the firmware .uf2 copied onto it by hand."
 msgstr "{prefix} — نیمهٔ USB پاسخ داد، اما نیمهٔ دیگر صفحه‌کلید تأیید نکرد که {what} را در 90 s پاک کرده است. کابل بین دو نیمه را بررسی کنید. اگر نیمهٔ دیگر خاموش بماند، میان‌افزاری اجرا نمی‌کند و باید فایل .uf2 میان‌افزار را به‌صورت دستی روی آن کپی کرد."
 
-#: polyhost/forwarder.py:269
+#: polyhost/forwarder.py:275
 msgid "Press to pause forwarding"
 msgstr "برای مکث ارسال کلیک کنید"
 
-#: polyhost/forwarder.py:276
+#: polyhost/forwarder.py:282
 msgid "Stop sending this machine's active window to the keyboard machine."
 msgstr "ارسال پنجرهٔ فعال این رایانه به رایانهٔ صفحه‌کلید متوقف شود."
 
-#: polyhost/forwarder.py:289
+#: polyhost/forwarder.py:295
 msgid "Check for host update…"
 msgstr "بررسی به‌روزرسانی میزبان…"
 
-#: polyhost/forwarder.py:305
+#: polyhost/forwarder.py:311
 msgid "Pair with the Keyboard Computer…"
 msgstr "جفت‌سازی با رایانهٔ صفحه‌کلید…"
 
-#: polyhost/forwarder.py:399
+#: polyhost/forwarder.py:405
 msgid "no host (finding the keyboard computer needs a paired forwarder)"
 msgstr "بدون میزبان (پیدا کردن رایانهٔ صفحه‌کلید به forwarder جفت‌شده نیاز دارد)"
 
-#: polyhost/forwarder.py:400
+#: polyhost/forwarder.py:406
 msgid "no host (waiting for a Remote Desktop or NoMachine connection)"
 msgstr "بدون میزبان (در انتظار اتصال دسکتاپ از راه دور یا NoMachine)"
 
-#: polyhost/forwarder.py:402
+#: polyhost/forwarder.py:408
 #, python-brace-format
 msgid "no host (waiting for {path})"
 msgstr "بدون میزبان (در انتظار {path})"
 
-#: polyhost/forwarder.py:403
+#: polyhost/forwarder.py:409
 msgid "no host configured"
 msgstr "میزبانی پیکربندی نشده است"
 
-#: polyhost/forwarder.py:406
+#: polyhost/forwarder.py:412
 #, python-brace-format
 msgid "PolyKybdHost {version} (forwarder) → {target}"
 msgstr "PolyKybdHost {version} (ارسال‌کننده) → {target}"
 
-#: polyhost/forwarder.py:411
+#: polyhost/forwarder.py:417
 msgid "Forwarding paused"
 msgstr "ارسال متوقف شد"
 
-#: polyhost/forwarder.py:414
+#: polyhost/forwarder.py:420
 #, python-brace-format
 msgid "Forwarding to {target}…"
 msgstr "در حال ارسال به {target}…"
 
-#: polyhost/forwarder.py:416
+#: polyhost/forwarder.py:422
 #, python-brace-format
 msgid "Forwarding to {target}"
 msgstr "ارسال به {target}"
 
-#: polyhost/forwarder.py:417
+#: polyhost/forwarder.py:423
 #, python-brace-format
 msgid "Cannot reach {target}"
 msgstr "دسترسی به {target} ممکن نیست"
 
-#: polyhost/forwarder.py:621
+#: polyhost/forwarder.py:635
 msgid "The hooks are written, but this forwarder runs without --report-rpc, so it cannot pass agent reports on. Start it with --report-rpc to show this computer's agents on the keys."
 msgstr "هوک‌ها نوشته شدند، اما این ارسال‌کننده بدون --report-rpc اجرا می‌شود و بنابراین نمی‌تواند گزارش‌های عامل‌ها را منتقل کند. برای نمایش عامل‌های این رایانه روی کلیدها، آن را با --report-rpc اجرا کنید."
 
-#: polyhost/forwarder.py:624
+#: polyhost/forwarder.py:638
 msgid "The hooks are written. On the keyboard computer, turn on Settings > AI agents > \"Agents from other computers\"."
 msgstr "هوک‌ها نوشته شدند. روی رایانهٔ صفحه‌کلید، تنظیمات > عامل‌های هوش مصنوعی > «عامل‌های رایانه‌های دیگر» را روشن کنید."
 
-#: polyhost/forwarder.py:956
+#: polyhost/forwarder.py:975
 msgid "PolyForwarder settings"
 msgstr "تنظیمات PolyForwarder"
 
-#: polyhost/forwarder.py:957
+#: polyhost/forwarder.py:976
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
 msgstr "تنظیمات در فایل تنظیمات ذخیره نشد، بنابراین اعمال نخواهد شد. ممکن است برنامهٔ دیگری آن را باز نگه داشته باشد. دوباره تلاش کنید یا لاگ را ببینید."
 
-#: polyhost/forwarder.py:975
+#: polyhost/forwarder.py:994
 msgid "Paired. The forwarder uses the authenticated connection from its next start. Restart it now?"
 msgstr "جفت شد. ارسال‌کننده از اجرای بعدی خود از اتصال احراز هویت‌شده استفاده می‌کند. اکنون دوباره راه‌اندازی شود؟"
 
-#: polyhost/forwarder.py:990
+#: polyhost/forwarder.py:1009
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
 msgstr "RPC احراز هویت‌شده (درگاه {port})"
 
-#: polyhost/forwarder.py:992
+#: polyhost/forwarder.py:1011
 msgid "legacy plaintext TCP relay"
 msgstr "رلهٔ قدیمی TCP متن ساده"
 
-#: polyhost/forwarder.py:995
+#: polyhost/forwarder.py:1014
 msgid "reaching the keyboard machine"
 msgstr "در ارتباط با رایانهٔ صفحه‌کلید"
 
-#: polyhost/forwarder.py:996
+#: polyhost/forwarder.py:1015
 msgid "not reaching the keyboard machine"
 msgstr "بدون ارتباط با رایانهٔ صفحه‌کلید"
 
-#: polyhost/forwarder.py:997
+#: polyhost/forwarder.py:1016
 msgid "starting up"
 msgstr "در حال راه‌اندازی"
 
-#: polyhost/forwarder.py:999
+#: polyhost/forwarder.py:1018
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
 msgstr "<b>حالت:</b> ارسال‌کننده — هیچ صفحه‌کلیدی به این رایانه وصل نیست"
 
-#: polyhost/forwarder.py:1000
+#: polyhost/forwarder.py:1019
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
 msgstr "<b>مقصد:</b> {target}"
 
-#: polyhost/forwarder.py:1002
+#: polyhost/forwarder.py:1021
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
 msgstr "<b>گزارش‌های پنجره:</b> {transport}"
 
-#: polyhost/forwarder.py:1005
+#: polyhost/forwarder.py:1024
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
 msgstr "<b>فایل میزبان:</b> {path}"
 
-#: polyhost/forwarder.py:1007
+#: polyhost/forwarder.py:1026
 msgid "<b>Keyboard computer:</b> found from the Remote Desktop or NoMachine connection"
 msgstr "<b>رایانهٔ صفحه‌کلید:</b> از اتصال دسکتاپ از راه دور یا NoMachine پیدا شد"
 
-#: polyhost/forwarder.py:1029
+#: polyhost/forwarder.py:1048
 msgid "About PolyKybdHost (forwarder)"
 msgstr "دربارهٔ PolyKybdHost (ارسال‌کننده)"
 
 #. TRANSLATORS: the run mode in the About dialog's environment line
-#: polyhost/forwarder.py:1036
+#: polyhost/forwarder.py:1055
 msgid "forwarder"
 msgstr "ارسال‌کننده"
 
-#: polyhost/forwarder.py:1038
+#: polyhost/forwarder.py:1057
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "حالت ارسال‌کننده: این رایانه صفحه‌کلید ندارد. پنجرهٔ فعال اینجا را دنبال می‌کند و آن را به PolyKybdHost در حال اجرا روی رایانه‌ای که صفحه‌کلید به آن وصل است می‌فرستد."
 
-#: polyhost/forwarder.py:1078
+#: polyhost/forwarder.py:1097
 msgid "Download, install, and restart the forwarder now?"
 msgstr "ارسال‌کننده اکنون بارگیری، نصب و دوباره راه‌اندازی شود؟"
 
@@ -506,7 +506,7 @@ msgstr "هم‌پوشانی‌ها"
 msgid "An overlay is a set of icons for one app. While that app is in front and you hold a modifier such as Ctrl, each key shows what its shortcut does: here Ctrl+S saves in GIMP. PolyKybdHost comes with overlays for many apps. For other apps it reads the shortcuts from the app's menus (Settings, Keycap icons)."
 msgstr "هم‌پوشانی مجموعه‌ای از نمادها برای یک برنامه است. وقتی آن برنامه در جلو است و یک اصلاح‌گر مانند Ctrl را نگه می‌دارید، هر کلید نشان می‌دهد میان‌بر آن چه کاری می‌کند: اینجا Ctrl+S در GIMP ذخیره می‌کند. PolyKybdHost برای بسیاری از برنامه‌ها هم‌پوشانی دارد. برای برنامه‌های دیگر، میان‌برها را از منوهای همان برنامه می‌خواند («تنظیمات»، «نمادهای کلاهک کلید»)."
 
-#: polyhost/gui/about_dialog.py:126 polyhost/gui/settings_dialog.py:86
+#: polyhost/gui/about_dialog.py:126 polyhost/gui/settings_dialog.py:87
 msgid "Font packs"
 msgstr "بسته‌های فونت"
 
@@ -547,7 +547,7 @@ msgstr ""
 "(این رایانه)"
 
 #: polyhost/gui/about_dialog.py:201 polyhost/gui/settings_dialog.py:81
-#: polyhost/host.py:2030
+#: polyhost/host.py:2042
 msgid "Keyboard"
 msgstr "صفحه‌کلید"
 
@@ -555,7 +555,7 @@ msgstr "صفحه‌کلید"
 msgid "About PolyKybdHost"
 msgstr "دربارهٔ PolyKybdHost"
 
-#: polyhost/forwarder.py:333 polyhost/gui/about_dialog.py:285
+#: polyhost/forwarder.py:339 polyhost/gui/about_dialog.py:285
 #: polyhost/host.py:393
 msgid "About"
 msgstr "درباره"
@@ -770,7 +770,7 @@ msgstr "اسکریپت راه‌اندازی"
 
 #: polyhost/gui/cloud_sessions_dialog.py:82
 #: polyhost/gui/cloud_sessions_dialog.py:103
-#: polyhost/gui/forwarder_pairing.py:26 polyhost/gui/shell_editor_pages.py:380
+#: polyhost/gui/forwarder_pairing.py:26 polyhost/gui/shell_editor_pages.py:381
 msgid "Copy"
 msgstr "کپی"
 
@@ -1130,7 +1130,7 @@ msgid "ok"
 msgstr "سالم"
 
 #. TRANSLATORS: font-pack bundle state in a status table
-#: polyhost/gui/cmd_menu.py:486 polyhost/host.py:2238
+#: polyhost/gui/cmd_menu.py:486 polyhost/host.py:2250
 msgid "stale"
 msgstr "قدیمی"
 
@@ -1150,7 +1150,7 @@ msgstr "همراه برنامه"
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "فرمان‌های PolyKybd (*.poly.cmd)"
 
-#: polyhost/gui/cmd_menu.py:497 polyhost/host.py:2370
+#: polyhost/gui/cmd_menu.py:497 polyhost/host.py:2382
 msgid "Open file"
 msgstr "باز کردن فایل"
 
@@ -1359,7 +1359,7 @@ msgid "pick one from Source fonts below, or Browse…"
 msgstr "یکی را از «فونت‌های منبع» در پایین انتخاب کنید، یا مرور…"
 
 #: polyhost/gui/fontpack_extend_dialog.py:120
-#: polyhost/gui/settings_dialog.py:1351 polyhost/gui/settings_dialog.py:1352
+#: polyhost/gui/settings_dialog.py:1410 polyhost/gui/settings_dialog.py:1411
 msgid "Browse…"
 msgstr "مرور…"
 
@@ -2032,7 +2032,7 @@ msgstr "جفت‌سازی یک ارسال‌کننده"
 msgid "On the other computer, open the forwarder's menu, choose \"Pair with the Keyboard Computer…\" and enter this code. Anyone with this code can send window and agent reports to this computer, so pass it on only over a channel you trust. \"Accept forwarders\" must be on in Settings."
 msgstr "روی رایانهٔ دیگر، منوی ارسال‌کننده را باز کنید، «جفت‌سازی با رایانهٔ صفحه‌کلید…» را انتخاب کنید و این کد را وارد کنید. هر کسی که این کد را داشته باشد می‌تواند گزارش‌های پنجره و عامل را به این رایانه بفرستد، پس آن را فقط از راه کانالی که به آن اعتماد دارید منتقل کنید. «پذیرش ارسال‌کننده‌ها» باید در تنظیمات روشن باشد."
 
-#: polyhost/forwarder.py:974 polyhost/gui/forwarder_pairing.py:37
+#: polyhost/forwarder.py:993 polyhost/gui/forwarder_pairing.py:37
 #: polyhost/gui/forwarder_pairing.py:44 polyhost/gui/forwarder_pairing.py:51
 msgid "Pair with the Keyboard Computer"
 msgstr "جفت‌سازی با رایانهٔ صفحه‌کلید"
@@ -2153,16 +2153,16 @@ msgstr "تنظیمات GNOME خوانده نشد: {error}"
 msgid "This is an X11 session: the keyboard sees every window without the extension. It is needed in a Wayland session."
 msgstr "این یک نشست X11 است: صفحه‌کلید بدون افزونه هر پنجره‌ای را می‌بیند. افزونه در نشست Wayland لازم است."
 
-#: polyhost/gui/gnome_extension_page.py:110
+#: polyhost/gui/gnome_extension_page.py:111
 msgid "Log out and back in to start the extension."
 msgstr "برای اجرای افزونه، از حساب خارج شوید و دوباره وارد شوید."
 
-#: polyhost/gui/gnome_extension_page.py:122
+#: polyhost/gui/gnome_extension_page.py:127
 msgid "Log out and back in: GNOME starts a new extension only at login."
 msgstr "از حساب خارج شوید و دوباره وارد شوید: GNOME افزونهٔ جدید را فقط هنگام ورود اجرا می‌کند."
 
-#: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:2981
-#: polyhost/host.py:3022 polyhost/host.py:3054
+#: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:2993
+#: polyhost/host.py:3034 polyhost/host.py:3066
 msgid "Firmware Update"
 msgstr "به‌روزرسانی میان‌افزار"
 
@@ -2175,7 +2175,7 @@ msgstr "<b>فایل:</b> {path}"
 msgid "Applying staged firmware…"
 msgstr "در حال اعمال میان‌افزار آماده‌شده…"
 
-#: polyhost/forwarder.py:268 polyhost/gui/hid_fw_up_dialog.py:181
+#: polyhost/forwarder.py:274 polyhost/gui/hid_fw_up_dialog.py:181
 msgid "Starting…"
 msgstr "در حال شروع…"
 
@@ -2197,7 +2197,7 @@ msgstr "در حال اعمال — فعال‌سازی میان‌افزار آ�
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "در حال لغو — منتظر پایان قطعهٔ کنونی…"
 
-#: polyhost/gui/i18n_qt.py:89 polyhost/gui/settings_dialog.py:168
+#: polyhost/gui/i18n_qt.py:89 polyhost/gui/settings_dialog.py:177
 msgid "Language"
 msgstr "زبان"
 
@@ -2224,7 +2224,7 @@ msgid "The check failed: {error}"
 msgstr "بررسی ناموفق بود: {error}"
 
 #: polyhost/gui/integrations_dialog.py:303
-#: polyhost/gui/shell_editor_pages.py:46 polyhost/gui/shell_editor_pages.py:153
+#: polyhost/gui/shell_editor_pages.py:46 polyhost/gui/shell_editor_pages.py:154
 msgid "Set up"
 msgstr "تنظیم شده"
 
@@ -2238,13 +2238,13 @@ msgid "The file cannot be read: {error}"
 msgstr "فایل را نمی‌توان خواند: {error}"
 
 #: polyhost/gui/integrations_dialog.py:311
-#: polyhost/gui/shell_editor_pages.py:50 polyhost/gui/shell_editor_pages.py:155
+#: polyhost/gui/shell_editor_pages.py:50 polyhost/gui/shell_editor_pages.py:156
 msgid "Not set up"
 msgstr "تنظیم نشده"
 
 #: polyhost/gui/integrations_dialog.py:330
 #: polyhost/gui/integrations_dialog.py:364
-#: polyhost/gui/integrations_dialog.py:405 polyhost/gui/settings_dialog.py:103
+#: polyhost/gui/integrations_dialog.py:405 polyhost/gui/settings_dialog.py:104
 msgid "AI agents"
 msgstr "عامل‌های هوش مصنوعی"
 
@@ -2282,13 +2282,13 @@ msgid "Restart the agent for the change to take effect."
 msgstr "برای اعمال تغییر، عامل را دوباره راه‌اندازی کنید."
 
 #: polyhost/gui/integrations_dialog.py:405
-#: polyhost/gui/shell_editor_pages.py:180
+#: polyhost/gui/shell_editor_pages.py:181
 msgid "Terminals"
 msgstr "پایانه‌ها"
 
 #: polyhost/gui/integrations_dialog.py:405
-#: polyhost/gui/shell_editor_pages.py:271
-#: polyhost/gui/shell_editor_pages.py:291
+#: polyhost/gui/shell_editor_pages.py:272
+#: polyhost/gui/shell_editor_pages.py:292
 msgid "Editors"
 msgstr "ویرایشگرها"
 
@@ -2300,130 +2300,130 @@ msgstr "یکپارچه‌سازی‌ها"
 msgid "Changes apply to the program after it restarts."
 msgstr "تغییرات پس از راه‌اندازی دوبارهٔ برنامه اعمال می‌شوند."
 
-#: polyhost/gui/keyboard_settings.py:30
+#: polyhost/gui/keyboard_settings.py:31
 msgid "Standard (normal legends)"
 msgstr "استاندارد (نوشته‌های عادی)"
 
-#: polyhost/gui/keyboard_settings.py:31
+#: polyhost/gui/keyboard_settings.py:32
 msgid "Tengwar (fantasy)"
 msgstr "تنگوار (فانتزی)"
 
-#: polyhost/gui/keyboard_settings.py:32
+#: polyhost/gui/keyboard_settings.py:33
 msgid "Elder Futhark runes"
 msgstr "رونهای فوتارک کهن"
 
-#: polyhost/gui/keyboard_settings.py:33
+#: polyhost/gui/keyboard_settings.py:34
 msgid "Aurebesh (sci-fi)"
 msgstr "اوربش (علمی-تخیلی)"
 
-#: polyhost/gui/keyboard_settings.py:34
+#: polyhost/gui/keyboard_settings.py:35
 msgid "Standard Galactic"
 msgstr "Standard Galactic"
 
-#: polyhost/gui/keyboard_settings.py:35
+#: polyhost/gui/keyboard_settings.py:36
 msgid "Cirth / Angerthas"
 msgstr "کیرث / انگرتاس"
 
-#: polyhost/gui/keyboard_settings.py:36
+#: polyhost/gui/keyboard_settings.py:37
 msgid "IBM VGA / CP437"
 msgstr "IBM VGA / CP437"
 
-#: polyhost/gui/keyboard_settings.py:37
+#: polyhost/gui/keyboard_settings.py:38
 msgid "Commodore 64 (screen)"
 msgstr "Commodore 64 (صفحه‌نمایش)"
 
-#: polyhost/gui/keyboard_settings.py:38
+#: polyhost/gui/keyboard_settings.py:39
 msgid "Commodore 64 (keycap)"
 msgstr "Commodore 64 (کلاهک کلید)"
 
-#: polyhost/gui/keyboard_settings.py:39 polyhost/gui/keyboard_settings.py:55
+#: polyhost/gui/keyboard_settings.py:40 polyhost/gui/keyboard_settings.py:56
 msgid "Amiga Topaz"
 msgstr "Amiga Topaz"
 
-#: polyhost/gui/keyboard_settings.py:40
+#: polyhost/gui/keyboard_settings.py:41
 msgid "APL"
 msgstr "APL"
 
-#: polyhost/gui/keyboard_settings.py:41
+#: polyhost/gui/keyboard_settings.py:42
 msgid "Braille"
 msgstr "بریل"
 
-#: polyhost/gui/keyboard_settings.py:47
+#: polyhost/gui/keyboard_settings.py:48
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:252
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:262
 msgid "Standard"
 msgstr "استاندارد"
 
-#: polyhost/gui/keyboard_settings.py:48
+#: polyhost/gui/keyboard_settings.py:49
 msgid "Tengwar"
 msgstr "تنگوار"
 
-#: polyhost/gui/keyboard_settings.py:49
+#: polyhost/gui/keyboard_settings.py:50
 msgid "Runes"
 msgstr "رون‌ها"
 
-#: polyhost/gui/keyboard_settings.py:50
+#: polyhost/gui/keyboard_settings.py:51
 msgid "Aurebesh"
 msgstr "اوربش"
 
-#: polyhost/gui/keyboard_settings.py:51
+#: polyhost/gui/keyboard_settings.py:52
 msgid "Cirth"
 msgstr "کیرث"
 
-#: polyhost/gui/keyboard_settings.py:52
+#: polyhost/gui/keyboard_settings.py:53
 msgid "IBM VGA"
 msgstr "IBM VGA"
 
-#: polyhost/gui/keyboard_settings.py:53
+#: polyhost/gui/keyboard_settings.py:54
 msgid "C64 screen"
 msgstr "C64 صفحه‌نمایش"
 
-#: polyhost/gui/keyboard_settings.py:54
+#: polyhost/gui/keyboard_settings.py:55
 msgid "C64 keycap"
 msgstr "C64 کلاهک کلید"
 
-#: polyhost/gui/keyboard_settings.py:60
+#: polyhost/gui/keyboard_settings.py:61
 msgid "Small (standard)"
 msgstr "کوچک (استاندارد)"
 
-#: polyhost/gui/keyboard_settings.py:61 polyhost/gui/keyboard_settings.py:280
+#: polyhost/gui/keyboard_settings.py:62 polyhost/gui/keyboard_settings.py:327
 msgid "Medium"
 msgstr "متوسط"
 
-#: polyhost/gui/keyboard_settings.py:62 polyhost/gui/keyboard_settings.py:281
+#: polyhost/gui/keyboard_settings.py:63 polyhost/gui/keyboard_settings.py:328
 msgid "Large"
 msgstr "بزرگ"
 
-#: polyhost/gui/keyboard_settings.py:66
+#: polyhost/gui/keyboard_settings.py:67
 msgid "Pulse"
 msgstr "تپش"
 
-#: polyhost/gui/keyboard_settings.py:67
+#: polyhost/gui/keyboard_settings.py:68
 msgid "Jitter"
 msgstr "لرزش"
 
-#: polyhost/gui/keyboard_settings.py:69
+#: polyhost/gui/keyboard_settings.py:70
 msgid "Eden"
 msgstr "عدن"
 
 #. TRANSLATORS: shown in the Flow Tap spin box when its value is 0.
-#: polyhost/gui/keyboard_settings.py:78 polyhost/gui/settings_dialog.py:1182
+#: polyhost/gui/keyboard_settings.py:79 polyhost/gui/settings_dialog.py:1225
 msgid "Off"
 msgstr "خاموش"
 
-#: polyhost/gui/keyboard_settings.py:268 polyhost/gui/settings_dialog.py:54
+#: polyhost/gui/keyboard_settings.py:315 polyhost/gui/settings_dialog.py:54
 msgid "Automatic"
 msgstr "خودکار"
 
-#: polyhost/gui/keyboard_settings.py:280
+#: polyhost/gui/keyboard_settings.py:327
 msgid "Small"
 msgstr "کوچک"
 
-#: polyhost/gui/keyboard_settings.py:292
+#: polyhost/gui/keyboard_settings.py:339
 msgid "Centred on the keycap"
 msgstr "در وسط کلید"
 
-#: polyhost/gui/keyboard_settings.py:293
+#: polyhost/gui/keyboard_settings.py:340
 msgid "In the top-left corner"
 msgstr "در گوشهٔ بالا سمت چپ"
 
@@ -2699,7 +2699,7 @@ msgstr "داده‌ای برای پیش‌نمایش نیست (نه همراه �
 msgid "the shipped language table is missing"
 msgstr "جدول زبان همراه برنامه موجود نیست"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:596 polyhost/host.py:2997
+#: polyhost/gui/layout_dialog/keycap_preview.py:596 polyhost/host.py:3009
 msgid "unknown"
 msgstr "نامشخص"
 
@@ -3352,7 +3352,7 @@ msgstr "موردی یافت نشد"
 msgid "{index} of {total}"
 msgstr "{index} از {total}"
 
-#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1920
+#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1932
 msgid "Mock keyboard"
 msgstr "صفحه‌کلید شبیه‌سازی‌شده"
 
@@ -3647,666 +3647,730 @@ msgstr "نمایش در حالت بیکاری"
 msgid "Keycaps"
 msgstr "کلاهک‌ها"
 
-#: polyhost/gui/settings_dialog.py:84 polyhost/host.py:1705
+#: polyhost/gui/settings_dialog.py:84 polyhost/host.py:1717
 msgid "Tap-Hold Timing"
 msgstr "زمان‌بندی ضربه و نگه‌داشتن"
 
-#: polyhost/gui/settings_dialog.py:85
+#: polyhost/gui/settings_dialog.py:85 polyhost/host.py:1713
+msgid "Key lighting"
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:86
 msgid "Unicode input"
 msgstr "ورودی یونیکد"
 
-#: polyhost/gui/settings_dialog.py:87
+#: polyhost/gui/settings_dialog.py:88
 msgid "Emoji search"
 msgstr "جستجوی ایموجی"
 
-#: polyhost/gui/settings_dialog.py:89
+#: polyhost/gui/settings_dialog.py:90
 msgid "Connections"
 msgstr "اتصال‌ها"
 
-#: polyhost/gui/settings_dialog.py:90
+#: polyhost/gui/settings_dialog.py:91
 msgid "Browser extension"
 msgstr "افزونهٔ مرورگر"
 
-#: polyhost/gui/settings_dialog.py:92
+#: polyhost/gui/settings_dialog.py:93
 msgid "Forwarders"
 msgstr "ارسال‌کننده‌ها"
 
-#: polyhost/gui/settings_dialog.py:93
+#: polyhost/gui/settings_dialog.py:94
 msgid "USB transport"
 msgstr "انتقال USB"
 
-#: polyhost/gui/settings_dialog.py:96
+#: polyhost/gui/settings_dialog.py:97
 msgid "Keycap icons"
 msgstr "نمادهای کلاهک کلید"
 
-#: polyhost/gui/settings_dialog.py:99
+#: polyhost/gui/settings_dialog.py:100
 msgid "Apps with their own overlay"
 msgstr "برنامه‌های دارای هم‌پوشانی اختصاصی"
 
-#: polyhost/gui/settings_dialog.py:101
+#: polyhost/gui/settings_dialog.py:102
 msgid "Linux"
 msgstr "Linux"
 
-#: polyhost/gui/settings_dialog.py:110
+#: polyhost/gui/settings_dialog.py:111
 msgid "Games"
 msgstr "بازی‌ها"
 
-#: polyhost/gui/settings_dialog.py:112
+#: polyhost/gui/settings_dialog.py:113
 msgid "Installed games"
 msgstr "بازی‌های نصب‌شده"
 
-#: polyhost/gui/settings_dialog.py:114
+#: polyhost/gui/settings_dialog.py:115
 msgid "Privacy and diagnostics"
 msgstr "حریم خصوصی و عیب‌یابی"
 
-#: polyhost/gui/settings_dialog.py:115
+#: polyhost/gui/settings_dialog.py:116
 msgid "Usage report"
 msgstr "گزارش استفاده"
 
-#: polyhost/gui/settings_dialog.py:116
+#: polyhost/gui/settings_dialog.py:117
 msgid "Problem detection"
 msgstr "تشخیص مشکل"
 
-#: polyhost/gui/settings_dialog.py:117
+#: polyhost/gui/settings_dialog.py:118
 msgid "Logs"
 msgstr "لاگ‌ها"
 
-#: polyhost/gui/settings_dialog.py:119 polyhost/host.py:686
+#: polyhost/gui/settings_dialog.py:120 polyhost/host.py:686
 msgid "Developer"
 msgstr "توسعه‌دهنده"
 
-#: polyhost/gui/settings_dialog.py:123 polyhost/gui/tutorials_dialog.py:38
+#: polyhost/gui/settings_dialog.py:124 polyhost/gui/tutorials_dialog.py:38
 #: polyhost/services/lang_regions.py:148
 msgid "Other"
 msgstr "سایر"
 
-#: polyhost/gui/settings_dialog.py:140
+#: polyhost/gui/settings_dialog.py:142
 msgid "Send Unicode input mode"
 msgstr "ارسال حالت ورودی یونیکد"
 
-#: polyhost/gui/settings_dialog.py:141 polyhost/host.py:1701
+#: polyhost/gui/settings_dialog.py:143 polyhost/host.py:1709
 msgid "Keycap brightness"
 msgstr "روشنایی کلاهک‌ها"
 
-#: polyhost/gui/settings_dialog.py:142
+#: polyhost/gui/settings_dialog.py:144
 msgid "Idle animation"
 msgstr "پویانمایی حالت بیکاری"
 
-#: polyhost/gui/settings_dialog.py:143 polyhost/host.py:1663
+#: polyhost/gui/settings_dialog.py:145 polyhost/host.py:1671
 msgid "Idle After"
 msgstr "بیکاری پس از"
 
-#: polyhost/gui/settings_dialog.py:144 polyhost/host.py:1664
+#: polyhost/gui/settings_dialog.py:146 polyhost/host.py:1672
 msgid "Keycap Script"
 msgstr "خط کلاهک"
 
-#: polyhost/gui/settings_dialog.py:145 polyhost/host.py:1665
+#: polyhost/gui/settings_dialog.py:147 polyhost/host.py:1673
 msgid "Script placement"
 msgstr "جای خط"
 
-#: polyhost/gui/settings_dialog.py:146 polyhost/host.py:1666
+#: polyhost/gui/settings_dialog.py:148 polyhost/host.py:1674
 msgid "Keycap Size"
 msgstr "اندازهٔ کلاهک"
 
 #: polyhost/gui/layout_dialog/combo_tab.py:372
-#: polyhost/gui/settings_dialog.py:147
+#: polyhost/gui/settings_dialog.py:149
 msgid "Tapping term"
 msgstr "زمان ضربه"
 
-#: polyhost/gui/settings_dialog.py:148
+#: polyhost/gui/settings_dialog.py:150
 msgid "Flow Tap term"
 msgstr "زمان Flow Tap"
 
-#: polyhost/gui/settings_dialog.py:149
+#: polyhost/gui/settings_dialog.py:151
 msgid "Auto Shift"
 msgstr "Auto Shift"
 
-#: polyhost/gui/settings_dialog.py:150
+#: polyhost/gui/settings_dialog.py:152
 msgid "Auto Shift timeout"
 msgstr "مهلت Auto Shift"
 
-#: polyhost/gui/settings_dialog.py:151
+#: polyhost/gui/settings_dialog.py:153
+msgid "Lights on"
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:154
+msgid "Lighting brightness"
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:155
+msgid "Lighting effect"
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:156
+msgid "Effect speed"
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:157
+msgid "Lighting hue"
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:158
+msgid "Lighting saturation"
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:159
+msgid "Find this keyboard"
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:160
 msgid "Follow daylight"
 msgstr "پیروی از نور روز"
 
-#: polyhost/gui/settings_dialog.py:152
+#: polyhost/gui/settings_dialog.py:161
 msgid "Online sunlight data"
 msgstr "داده‌های آنلاین نور خورشید"
 
-#: polyhost/gui/settings_dialog.py:153
+#: polyhost/gui/settings_dialog.py:162
 msgid "Online location lookup"
 msgstr "جستجوی آنلاین موقعیت"
 
-#: polyhost/gui/settings_dialog.py:154
+#: polyhost/gui/settings_dialog.py:163
 msgid "Sunlight at dimmest"
 msgstr "نور خورشید در کم‌نورترین حالت"
 
-#: polyhost/gui/settings_dialog.py:155
+#: polyhost/gui/settings_dialog.py:164
 msgid "Sunlight at brightest"
 msgstr "نور خورشید در روشن‌ترین حالت"
 
-#: polyhost/gui/settings_dialog.py:156
+#: polyhost/gui/settings_dialog.py:165
 msgid "Sunlight scale"
 msgstr "ضریب نور خورشید"
 
-#: polyhost/gui/settings_dialog.py:157
+#: polyhost/gui/settings_dialog.py:166
 msgid "Curve gamma"
 msgstr "گامای منحنی"
 
-#: polyhost/gui/settings_dialog.py:158
+#: polyhost/gui/settings_dialog.py:167
 msgid "Icons for apps without an overlay"
 msgstr "نمادها برای برنامه‌های بدون هم‌پوشانی"
 
-#: polyhost/gui/settings_dialog.py:159
+#: polyhost/gui/settings_dialog.py:168
 msgid "Add the Escape mark"
 msgstr "افزودن نشان Escape"
 
-#: polyhost/gui/settings_dialog.py:160
+#: polyhost/gui/settings_dialog.py:169
 msgid "Fill blank keys from the app's menus"
 msgstr "پر کردن کلیدهای خالی از منوهای برنامه"
 
-#: polyhost/gui/settings_dialog.py:161
+#: polyhost/gui/settings_dialog.py:170
 msgid "Read shortcuts from app menus"
 msgstr "خواندن میان‌برها از منوی برنامه‌ها"
 
-#: polyhost/gui/settings_dialog.py:162
+#: polyhost/gui/settings_dialog.py:171
 msgid "Download icons from the internet"
 msgstr "بارگیری نمادها از اینترنت"
 
-#: polyhost/gui/settings_dialog.py:163
+#: polyhost/gui/settings_dialog.py:172
 msgid "Turn on accessibility"
 msgstr "روشن کردن دسترس‌پذیری"
 
-#: polyhost/gui/settings_dialog.py:164
+#: polyhost/gui/settings_dialog.py:173
 msgid "Messages before a pause"
 msgstr "پیام‌ها پیش از مکث"
 
-#: polyhost/gui/settings_dialog.py:165
+#: polyhost/gui/settings_dialog.py:174
 msgid "Pause length (s)"
 msgstr "مدت مکث (ثانیه)"
 
-#: polyhost/gui/settings_dialog.py:166
+#: polyhost/gui/settings_dialog.py:175
 msgid "ID requests before reconnect"
 msgstr "درخواست‌های ID پیش از اتصال مجدد"
 
-#: polyhost/gui/settings_dialog.py:167
+#: polyhost/gui/settings_dialog.py:176
 msgid "Theme"
 msgstr "پوسته"
 
-#: polyhost/gui/settings_dialog.py:169
+#: polyhost/gui/settings_dialog.py:178
 msgid "Developer mode"
 msgstr "حالت توسعه‌دهنده"
 
-#: polyhost/gui/settings_dialog.py:170
+#: polyhost/gui/settings_dialog.py:179
 msgid "Log detail"
 msgstr "جزئیات لاگ"
 
-#: polyhost/gui/settings_dialog.py:171
+#: polyhost/gui/settings_dialog.py:180
 msgid "Add a simulated keyboard"
 msgstr "افزودن صفحه‌کلید شبیه‌سازی‌شده"
 
-#: polyhost/gui/settings_dialog.py:172
+#: polyhost/gui/settings_dialog.py:181
 msgid "Simulated keyboard only"
 msgstr "فقط صفحه‌کلید شبیه‌سازی‌شده"
 
-#: polyhost/gui/settings_dialog.py:173
+#: polyhost/gui/settings_dialog.py:182
 msgid "Simulated protocol version"
 msgstr "نسخهٔ پروتکل شبیه‌سازی‌شده"
 
-#: polyhost/gui/settings_dialog.py:174
+#: polyhost/gui/settings_dialog.py:183
 msgid "Track windows without a keyboard"
 msgstr "ردیابی پنجره‌ها بدون صفحه‌کلید"
 
-#: polyhost/gui/settings_dialog.py:175
+#: polyhost/gui/settings_dialog.py:184
 msgid "Native Windows language switch"
 msgstr "تغییر زبان بومی Windows"
 
-#: polyhost/gui/settings_dialog.py:176
+#: polyhost/gui/settings_dialog.py:185
 msgid "Legacy plaintext relay"
 msgstr "رلهٔ قدیمی متن ساده"
 
-#: polyhost/gui/settings_dialog.py:177
+#: polyhost/gui/settings_dialog.py:186
 msgid "Force the HID link"
 msgstr "اجبار پیوند HID"
 
-#: polyhost/gui/settings_dialog.py:178
+#: polyhost/gui/settings_dialog.py:187
 msgid "Background service"
 msgstr "سرویس پس‌زمینه"
 
-#: polyhost/gui/settings_dialog.py:179
+#: polyhost/gui/settings_dialog.py:188
 msgid "Accept forwarders"
 msgstr "پذیرش ارسال‌کننده‌ها"
 
-#: polyhost/gui/settings_dialog.py:180
+#: polyhost/gui/settings_dialog.py:189
 msgid "Find the keyboard computer from the connection"
 msgstr "پیدا کردن رایانهٔ صفحه‌کلید از روی اتصال"
 
-#: polyhost/gui/settings_dialog.py:181
+#: polyhost/gui/settings_dialog.py:190
 msgid "Send font packs on connect"
 msgstr "ارسال بسته‌های فونت هنگام اتصال"
 
-#: polyhost/gui/settings_dialog.py:182
+#: polyhost/gui/settings_dialog.py:191
 msgid "Search language"
 msgstr "زبان جستجو"
 
-#: polyhost/gui/settings_dialog.py:183
+#: polyhost/gui/settings_dialog.py:192
 msgid "Own dictionary file"
 msgstr "فایل واژه‌نامه شخصی"
 
-#: polyhost/gui/settings_dialog.py:184
+#: polyhost/gui/settings_dialog.py:193
 msgid "Font pack file"
 msgstr "فایل بستهٔ فونت"
 
-#: polyhost/gui/settings_dialog.py:185
+#: polyhost/gui/settings_dialog.py:194
 msgid "Match the website in the browser"
 msgstr "تطبیق وب‌سایت در مرورگر"
 
-#: polyhost/gui/settings_dialog.py:186
+#: polyhost/gui/settings_dialog.py:195
 msgid "Receive browser reports"
 msgstr "دریافت گزارش‌های مرورگر"
 
-#: polyhost/gui/settings_dialog.py:187
+#: polyhost/gui/settings_dialog.py:196
 msgid "Receiver port"
 msgstr "درگاه گیرنده"
 
-#: polyhost/gui/settings_dialog.py:188
+#: polyhost/gui/settings_dialog.py:197
 msgid "Receiver token"
 msgstr "توکن گیرنده"
 
-#: polyhost/gui/settings_dialog.py:189
+#: polyhost/gui/settings_dialog.py:198
 msgid "Send usage report"
 msgstr "ارسال گزارش استفاده"
 
-#: polyhost/gui/settings_dialog.py:190
+#: polyhost/gui/settings_dialog.py:199
 msgid "Report address"
 msgstr "نشانی گزارش"
 
-#: polyhost/gui/settings_dialog.py:191
+#: polyhost/gui/settings_dialog.py:200
 msgid "Installation ID"
 msgstr "شناسهٔ نصب (ID)"
 
-#: polyhost/gui/settings_dialog.py:192
+#: polyhost/gui/settings_dialog.py:201
 msgid "Watch the keyboard's messages"
 msgstr "پایش پیام‌های صفحه‌کلید"
 
-#: polyhost/gui/settings_dialog.py:193
+#: polyhost/gui/settings_dialog.py:202
 msgid "Watch this app's log"
 msgstr "پایش لاگ این برنامه"
 
-#: polyhost/gui/settings_dialog.py:194
+#: polyhost/gui/settings_dialog.py:203
 msgid "What counts as a problem"
 msgstr "چه چیزی مشکل به حساب می‌آید"
 
-#: polyhost/gui/settings_dialog.py:195
+#: polyhost/gui/settings_dialog.py:204
 msgid "Art from installed games"
 msgstr "تصاویر از بازی‌های نصب‌شده"
 
-#: polyhost/gui/settings_dialog.py:196
+#: polyhost/gui/settings_dialog.py:205
 msgid "Show on the number row"
 msgstr "نمایش روی ردیف اعداد"
 
-#: polyhost/gui/settings_dialog.py:197
+#: polyhost/gui/settings_dialog.py:206
 msgid "Find by window title"
 msgstr "یافتن از روی عنوان پنجره"
 
-#: polyhost/gui/settings_dialog.py:198
+#: polyhost/gui/settings_dialog.py:207
 msgid "Download fonts for agent titles"
 msgstr "دانلود فونت برای عنوان عامل‌ها"
 
-#: polyhost/gui/settings_dialog.py:199
+#: polyhost/gui/settings_dialog.py:208
 msgid "Dictation shortcut"
 msgstr "میان‌بر دیکته"
 
-#: polyhost/gui/settings_dialog.py:200
+#: polyhost/gui/settings_dialog.py:209
 msgid "Agents from other computers"
 msgstr "عامل‌های رایانه‌های دیگر"
 
-#: polyhost/gui/settings_dialog.py:201
+#: polyhost/gui/settings_dialog.py:210
 msgid "Raise agent windows on this computer"
 msgstr "آوردن پنجره‌های عامل به جلو در این رایانه"
 
-#: polyhost/gui/settings_dialog.py:202
+#: polyhost/gui/settings_dialog.py:211
 msgid "Hide agent titles and folders"
 msgstr "پنهان کردن عنوان و پوشه‌ی عامل‌ها"
 
-#: polyhost/gui/settings_dialog.py:203
+#: polyhost/gui/settings_dialog.py:212
 msgid "Stale after (minutes)"
 msgstr "کهنه شدن پس از (دقیقه)"
 
-#: polyhost/gui/settings_dialog.py:204
+#: polyhost/gui/settings_dialog.py:213
 msgid "Remove idle agents after (minutes)"
 msgstr "حذف عامل‌های بیکار پس از (دقیقه)"
 
-#: polyhost/gui/settings_dialog.py:213
+#: polyhost/gui/settings_dialog.py:222
 msgid "Sets the brightness of the keycaps when you click OK. A level stays until you choose Automatic, which follows the daylight when Follow daylight is on, and otherwise returns to the keyboard's own stored level. The keyboard does not report its level, so no picture is selected when this dialog opens."
 msgstr "روشنایی کلاهک‌ها را هنگام کلیک روی تأیید تنظیم می‌کند. سطح انتخاب‌شده تا وقتی خودکار را انتخاب کنید باقی می‌ماند. خودکار وقتی پیروی از نور روز روشن است از نور روز پیروی می‌کند و در غیر این صورت به سطح ذخیره‌شده در خود صفحه‌کلید برمی‌گردد. صفحه‌کلید سطح خود را گزارش نمی‌دهد، پس هنگام باز شدن این پنجره هیچ تصویری انتخاب نشده است."
 
-#: polyhost/gui/settings_dialog.py:218
+#: polyhost/gui/settings_dialog.py:227
 msgid "What the keycaps show when you have not typed for a while. A moving picture protects the displays from burn-in."
 msgstr "آنچه کلاهک‌های کلید نشان می‌دهند وقتی مدتی تایپ نکرده‌اید. تصویر متحرک از سوختن صفحه‌نمایش‌ها (ماندن رد تصویر روی آن‌ها) جلوگیری می‌کند."
 
-#: polyhost/gui/settings_dialog.py:220
+#: polyhost/gui/settings_dialog.py:229
 msgid "How long the keyboard waits before the idle display starts."
 msgstr "مدتی که صفحه‌کلید پیش از شروع نمایش حالت بیکاری صبر می‌کند."
 
-#: polyhost/gui/settings_dialog.py:222
+#: polyhost/gui/settings_dialog.py:231
 msgid "Draws the letters and digits on the keycaps in another script, for example runes or a retro computer font. The keys still type the same characters. Standard shows the normal legends of your language."
 msgstr "حروف و اعداد روی کلاهک‌های کلید را با خطی دیگر نشان می‌دهد، برای نمونه حروف رونی یا فونت یک رایانهٔ قدیمی. کلیدها همچنان همان نویسه‌ها را تایپ می‌کنند. «استاندارد» نوشته‌های عادی زبان شما را نشان می‌دهد."
 
-#: polyhost/gui/settings_dialog.py:226
+#: polyhost/gui/settings_dialog.py:235
 msgid "Where the script's letters sit on the keycap. The top-left corner leaves room for an app icon."
 msgstr "جای حروف خط روی کلاهک. گوشهٔ بالا سمت چپ برای نماد برنامه جا باز می‌گذارد."
 
-#: polyhost/gui/settings_dialog.py:229
+#: polyhost/gui/settings_dialog.py:238
 msgid "The size of the large letter or digit in the middle of each keycap. Medium and Large apply to Latin letters and digits; other scripts, such as Arabic or Chinese, stay Small."
 msgstr "اندازهٔ حرف یا عدد بزرگ در وسط هر کلاهک کلید. «متوسط» و «بزرگ» برای حروف لاتین و اعداد اعمال می‌شوند؛ خط‌های دیگر، مانند عربی یا چینی، «کوچک» می‌مانند."
 
-#: polyhost/gui/settings_dialog.py:233
+#: polyhost/gui/settings_dialog.py:242
 msgid "A key with a tap and a hold action types its tap action when you release it before this time, and acts as its hold action when you hold it longer."
 msgstr "کلیدی که یک کنش ضربه و یک کنش نگه‌داشتن دارد، اگر پیش از این زمان رهایش کنید کنش ضربه را تایپ می‌کند و اگر بیشتر نگهش دارید کنش نگه‌داشتن را انجام می‌دهد."
 
-#: polyhost/gui/settings_dialog.py:236
+#: polyhost/gui/settings_dialog.py:245
 msgid "A tap-hold key pressed within this time after the previous key always types its tap action, so fast typing does not trigger a modifier. 0 turns Flow Tap off."
 msgstr "کلید ضربه/نگه‌داشتن که در این زمان پس از کلید قبلی فشرده شود همیشه کنش ضربه را تایپ می‌کند، تا تایپ سریع کلید تغییردهنده را فعال نکند. مقدار 0 Flow Tap را خاموش می‌کند."
 
-#: polyhost/gui/settings_dialog.py:239
+#: polyhost/gui/settings_dialog.py:248
 msgid "With Auto Shift on, holding a letter, digit or symbol key longer than the Auto Shift timeout types its shifted character."
 msgstr "با روشن بودن Auto Shift، نگه داشتن کلید حرف، رقم یا نماد بیشتر از زمان Auto Shift نویسهٔ آن را با Shift تایپ می‌کند."
 
-#: polyhost/gui/settings_dialog.py:241
+#: polyhost/gui/settings_dialog.py:250
 msgid "How long you hold a key before Auto Shift types its shifted character."
 msgstr "مدتی که کلیدی را نگه می‌دارید تا Auto Shift نویسهٔ Shift‌دار آن را تایپ کند."
 
-#: polyhost/gui/settings_dialog.py:244
+#: polyhost/gui/settings_dialog.py:253
+msgid "Switches the LEDs under the keys on or off. The keyboard keeps the change until it restarts, then uses its stored setting again. Needs keyboard firmware with protocol 39."
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:257
+msgid "How bright the LEDs under the keys are, from 0 to 255. The keyboard keeps the change until it restarts."
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:260
+msgid "The number of the lighting animation, from 1. The keyboard uses the nearest one it has. It keeps the change until it restarts."
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:263
+msgid "How fast the lighting animation runs, from 0 to 255. The keyboard keeps the change until it restarts."
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:266
+msgid "The colour of the lighting, from 0 to 255 around the colour wheel. The keyboard keeps the change until it restarts."
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:269
+msgid "How strong the lighting colour is, from 0 (white) to 255. The keyboard keeps the change until it restarts."
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:272
+msgid "Blinks the LEDs under the keys three times, so you can see which keyboard this dialog changes."
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:275
 msgid "Shows the state of AI coding agents on the number row and, while the AI key is pressed, one card per agent. Needs keyboard firmware with protocol 31. Takes effect at the next keyboard connect."
 msgstr "وضعیت عامل‌های برنامه‌نویسی هوش مصنوعی را روی ردیف اعداد نشان می‌دهد و تا وقتی کلید AI فشرده است، برای هر عامل یک کارت. به میان‌افزار صفحه‌کلید با پروتکل 31 نیاز دارد. از اتصال بعدی صفحه‌کلید اعمال می‌شود."
 
-#: polyhost/gui/settings_dialog.py:248
+#: polyhost/gui/settings_dialog.py:279
 msgid "Also finds agents that run in a terminal from the window title, without a hook. Not on macOS."
 msgstr "عامل‌هایی را هم که در یک ترمینال اجرا می‌شوند، بدون هوک و از روی عنوان پنجره پیدا می‌کند. در macOS کار نمی‌کند."
 
-#: polyhost/gui/settings_dialog.py:251
+#: polyhost/gui/settings_dialog.py:282
 msgid "Downloads a font the first time an agent title needs one: Chinese, Hindi, Thai, Armenian, Hebrew or Arabic. The fonts come from GitHub and www.polykybd.org. Off: nothing is downloaded; fonts downloaded before are still used, and a title in a script without a font shows boxes."
 msgstr "اولین باری که عنوان یک عامل به فونتی نیاز دارد، آن را دانلود می‌کند: چینی، هندی، تایلندی، ارمنی، عبری یا عربی. فونت‌ها از GitHub و www.polykybd.org می‌آیند. خاموش: چیزی دانلود نمی‌شود؛ فونت‌هایی که قبلاً دانلود شده‌اند همچنان استفاده می‌شوند و عنوانی با خطی که فونت ندارد به‌صورت مربع نمایش داده می‌شود."
 
-#: polyhost/gui/settings_dialog.py:256
+#: polyhost/gui/settings_dialog.py:287
 msgid "Also shows agents that run on a computer with the forwarder. A key press brings forward the remote-desktop viewer that shows that computer (NoMachine, Remote Desktop, VNC). They report over the network endpoint for forwarders, which must be on too. Off: only this computer's agents."
 msgstr "عامل‌هایی را هم نشان می‌دهد که روی رایانه‌ای با ارسال‌کننده اجرا می‌شوند. فشردن کلید، نمایشگر میز کار راه دوری را که آن رایانه را نشان می‌دهد (NoMachine، Remote Desktop، VNC) به جلو می‌آورد. این عامل‌ها از راه نقطهٔ پایانی شبکه برای ارسال‌کننده‌ها گزارش می‌دهند که آن هم باید روشن باشد. در حالت خاموش: فقط عامل‌های این رایانه."
 
-#: polyhost/gui/settings_dialog.py:261
+#: polyhost/gui/settings_dialog.py:292
 msgid "On a computer with the forwarder: a key press on one of this computer's agents also brings the agent's own window forward here. Off: only the viewer on the keyboard's computer comes forward."
 msgstr "روی رایانه‌ای با ارسال‌کننده: فشردن کلید یکی از عامل‌های این رایانه، پنجرهٔ خود آن عامل را هم اینجا به جلو می‌آورد. در حالت خاموش: فقط نمایشگر روی رایانهٔ صفحه‌کلید به جلو می‌آید."
 
-#: polyhost/gui/settings_dialog.py:265
+#: polyhost/gui/settings_dialog.py:296
 msgid "On a computer with the forwarder: this computer's agents send no title, no folder name and no path to the keyboard's computer, so their keys show only the agent's name. The computer's name still goes with the report. Applies to agents that start after the change."
 msgstr "در رایانه‌ای که forwarder دارد: عامل‌های این رایانه هیچ عنوان، نام پوشه یا مسیری به رایانهٔ صفحه‌کلید نمی‌فرستند، پس کلیدهایشان فقط نام عامل را نشان می‌دهند. نام رایانه همچنان همراه گزارش فرستاده می‌شود. برای عامل‌هایی اعمال می‌شود که پس از تغییر شروع می‌شوند."
 
-#: polyhost/gui/settings_dialog.py:270
+#: polyhost/gui/settings_dialog.py:301
 msgid "A working agent that reports nothing for this many minutes shows as stale (dim white). 0: never."
 msgstr "عاملی در حال کار که به این تعداد دقیقه هیچ گزارشی ندهد، کهنه (سفید کم‌رنگ) نشان داده می‌شود. 0: هرگز."
 
-#: polyhost/gui/settings_dialog.py:273
+#: polyhost/gui/settings_dialog.py:304
 msgid "An idle or stale agent that reports nothing for this many minutes is removed and frees its key. An agent whose process ends is removed at once. 0: never."
 msgstr "عامل بیکار یا کهنه‌ای که به این تعداد دقیقه هیچ گزارشی ندهد حذف می‌شود و کلیدش آزاد می‌شود. عاملی که فرایندش پایان یابد بی‌درنگ حذف می‌شود. 0: هرگز."
 
-#: polyhost/gui/settings_dialog.py:276
+#: polyhost/gui/settings_dialog.py:307
 msgid "The shortcut the minus key sends in AI mode to start dictation, for example <cmd>+h or <ctrl>+<alt>+d. Empty: Win+H on Windows, nothing on macOS and Linux."
 msgstr "میان‌بری که کلید منها در حالت AI برای شروع دیکته می‌فرستد، برای نمونه <cmd>+h یا <ctrl>+<alt>+d. خالی: Win+H در Windows، و هیچ چیز در macOS و Linux."
 
-#: polyhost/gui/settings_dialog.py:280
+#: polyhost/gui/settings_dialog.py:311
 msgid "Tells the keyboard which Unicode input method this computer uses (for example WinCompose on Windows), when it connects and whenever the method changes. The keyboard needs it to type characters that are not on your layout, such as emoji. Off: the keyboard keeps the method it has stored."
 msgstr "به صفحه‌کلید می‌گوید این رایانه از کدام روش ورودی یونیکد استفاده می‌کند (برای نمونه WinCompose در Windows)، هنگام اتصال و هر بار که روش تغییر می‌کند. صفحه‌کلید برای تایپ نویسه‌هایی که در چیدمان شما نیستند، مانند ایموجی، به آن نیاز دارد. در حالت خاموش: صفحه‌کلید روشی را که ذخیره کرده نگه می‌دارد."
 
-#: polyhost/gui/settings_dialog.py:285
+#: polyhost/gui/settings_dialog.py:316
 msgid "Sets the keycap brightness from the daylight at your location, every ten minutes."
 msgstr "روشنایی کلاهک‌های کلید را هر ده دقیقه بر اساس نور روز در موقعیت شما تنظیم می‌کند."
 
-#: polyhost/gui/settings_dialog.py:288
+#: polyhost/gui/settings_dialog.py:319
 msgid "Asks open-meteo.com for this hour's sunlight at your location, including clouds. Off: the host computes a cloudless-sky value from the location and time."
 msgstr "نور خورشید این ساعت را در موقعیت شما، با در نظر گرفتن ابرها، از open-meteo.com می‌پرسد. در حالت خاموش: میزبان از روی موقعیت و زمان، مقداری برای آسمان بی‌ابر محاسبه می‌کند."
 
-#: polyhost/gui/settings_dialog.py:292
+#: polyhost/gui/settings_dialog.py:323
 msgid "Looks up your approximate location from your IP address (ip-api.com), once per run. Off: the brightness follows the hour of the day."
 msgstr "موقعیت تقریبی شما را از نشانی IP شما (ip-api.com) پیدا می‌کند، یک بار در هر اجرا. در حالت خاموش: روشنایی از ساعت روز پیروی می‌کند."
 
-#: polyhost/gui/settings_dialog.py:295
+#: polyhost/gui/settings_dialog.py:326
 msgid "The sunlight value at which the keycaps are at their dimmest. Less sunlight keeps them at the dimmest level."
 msgstr "مقدار نور خورشید که در آن کلاهک‌های کلید در کم‌نورترین حالت هستند. با نور خورشید کمتر، در کم‌نورترین سطح می‌مانند."
 
-#: polyhost/gui/settings_dialog.py:298
+#: polyhost/gui/settings_dialog.py:329
 msgid "The sunlight value at which the keycaps are at their brightest. Lower it to reach full brightness on a cloudy day."
 msgstr "مقدار نور خورشید که در آن کلاهک‌های کلید در روشن‌ترین حالت هستند. آن را پایین بیاورید تا در روز ابری به روشنایی کامل برسید."
 
-#: polyhost/gui/settings_dialog.py:301
+#: polyhost/gui/settings_dialog.py:332
 msgid "Multiplies the sunlight value before it is compared with Sunlight at dimmest and Sunlight at brightest. Below 1 makes the keycaps dimmer for the same daylight."
 msgstr "مقدار نور خورشید را پیش از مقایسه با «نور خورشید در کم‌نورترین حالت» و «نور خورشید در روشن‌ترین حالت» در این عدد ضرب می‌کند. مقدار کمتر از 1 کلاهک‌های کلید را با همان نور روز کم‌نورتر می‌کند."
 
-#: polyhost/gui/settings_dialog.py:305
+#: polyhost/gui/settings_dialog.py:336
 msgid "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, below 1 brighter. The dimmest and brightest levels do not change."
 msgstr "شکل منحنی نور روز را تعیین می‌کند. بالاتر از 1 میانهٔ روز کم‌نورتر می‌شود و پایین‌تر از 1 روشن‌تر. کم‌نورترین و روشن‌ترین سطح تغییر نمی‌کنند."
 
-#: polyhost/gui/settings_dialog.py:308
+#: polyhost/gui/settings_dialog.py:339
 msgid "Draws icons for apps that have no overlay of their own: the app's logo on the Escape key and an icon on each shortcut key. Off: these apps get no icons. Apps with their own overlay are not affected."
 msgstr "برای برنامه‌هایی که هم‌پوشانی اختصاصی ندارند نماد می‌کشد: لوگوی برنامه روی کلید Escape و یک نماد روی هر کلید میان‌بر. در حالت خاموش: این برنامه‌ها نمادی نمی‌گیرند. برنامه‌های دارای هم‌پوشانی اختصاصی تغییری نمی‌کنند."
 
-#: polyhost/gui/settings_dialog.py:312
+#: polyhost/gui/settings_dialog.py:343
 msgid "An app with its own overlay also gets its logo on the Escape key, when its overlay leaves Escape blank."
 msgstr "برنامه‌ای که هم‌پوشانی اختصاصی دارد نیز لوگوی خود را روی کلید Escape می‌گیرد، وقتی هم‌پوشانی‌اش کلید Escape را خالی می‌گذارد."
 
-#: polyhost/gui/settings_dialog.py:315
+#: polyhost/gui/settings_dialog.py:346
 msgid "Only for an app that comes with its own overlay: the keys its overlay leaves blank also get icons from the app's menus. Off: such an app shows only its overlay. Needs Read shortcuts from app menus."
 msgstr "فقط برای برنامه‌ای که هم‌پوشانی اختصاصی خودش را دارد: کلیدهایی که هم‌پوشانی‌اش خالی می‌گذارد نیز از منوهای برنامه نماد می‌گیرند. در حالت خاموش: چنین برنامه‌ای فقط هم‌پوشانی خودش را نشان می‌دهد. به روشن بودن «خواندن میان‌برها از منوی برنامه‌ها» نیاز دارد."
 
-#: polyhost/gui/settings_dialog.py:319
+#: polyhost/gui/settings_dialog.py:350
 msgid "The main switch for shortcut icons. On: an app without its own overlay also gets icons on its shortcut keys, when its menus can be read. PolyKybdHost reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system. The reading runs in the background, one app at a time, so the other keycaps do not wait for it. It stops after 3 minutes on Windows, and after 4,000 parts of the app's window on Linux (3,000 on macOS). The shortcuts stay on this computer. Off: no app's menus are read, and an app that comes with its own overlay still shows it."
 msgstr "کلید اصلی نمادهای میان‌بر. در حالت روشن: برنامه‌ای که هم‌پوشانی اختصاصی ندارد نیز روی کلیدهای میان‌برش نماد می‌گیرد، وقتی بتوان منوهایش را خواند. PolyKybdHost میان‌برهای فهرست‌شده در منوهای برنامهٔ فعال را از راه رابط دسترس‌پذیری سیستم‌عامل می‌خواند. خواندن در پس‌زمینه و هر بار برای یک برنامه انجام می‌شود، تا کلاهک‌های دیگر منتظر آن نمانند. خواندن در Windows پس از ۳ دقیقه، و در Linux پس از ۴٬۰۰۰ بخش از پنجرهٔ برنامه (در macOS پس از ۳٬۰۰۰) متوقف می‌شود. میان‌برها روی همین رایانه می‌مانند. در حالت خاموش: منوهای هیچ برنامه‌ای خوانده نمی‌شوند، و برنامه‌ای که هم‌پوشانی اختصاصی خودش را دارد همچنان آن را نشان می‌دهد."
 
-#: polyhost/gui/settings_dialog.py:329
+#: polyhost/gui/settings_dialog.py:360
 msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."
 msgstr "لوگوی برنامه‌ها و نمادهای میان‌بر را که هنوز روی این رایانه نیستند از اینترنت بارگیری می‌کند (simple-icons و Iconify). آن‌ها روی این رایانه ذخیره می‌شوند. در حالت خاموش: نمادهایی که قبلاً بارگیری شده‌اند همچنان کار می‌کنند، و برنامه‌ای که نماد ذخیره‌شده ندارد نمادی نمی‌گیرد."
 
-#: polyhost/gui/settings_dialog.py:334
+#: polyhost/gui/settings_dialog.py:365
 msgid "Linux only. Turns on the desktop's accessibility switch, so Qt and KDE apps list their shortcuts for Read shortcuts from app menus. Off: only apps that list them anyway (GTK) are read."
 msgstr "فقط Linux. کلید دسترس‌پذیری میز کار را روشن می‌کند تا برنامه‌های Qt و KDE میان‌برهای خود را برای «خواندن میان‌برها از منوی برنامه‌ها» فهرست کنند. در حالت خاموش: فقط برنامه‌هایی خوانده می‌شوند که در هر حال میان‌برهایشان را فهرست می‌کنند (GTK)."
 
-#: polyhost/gui/settings_dialog.py:338
+#: polyhost/gui/settings_dialog.py:369
 msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
 msgstr "انتقال USB: چند پیام تصویر پیش از یک مکث کوتاه فرستاده می‌شود، تا صفحه‌کلید همچنان به تایپ واکنش نشان دهد. فقط وقتی تغییرش دهید که هنگام گزارش یک مشکل از شما خواسته شود."
 
-#: polyhost/gui/settings_dialog.py:342
+#: polyhost/gui/settings_dialog.py:373
 msgid "USB transport: the length of that pause, in seconds. Change it only when asked to while reporting a problem."
 msgstr "انتقال USB: طول این مکث، به ثانیه. فقط وقتی تغییرش دهید که هنگام گزارش یک مشکل از شما خواسته شود."
 
-#: polyhost/gui/settings_dialog.py:345
+#: polyhost/gui/settings_dialog.py:376
 msgid "How many times the app asks the keyboard for its ID without an answer before it closes and reopens the USB connection. Change it only when asked to while reporting a problem."
 msgstr "تعداد دفعاتی که برنامه شناسهٔ صفحه‌کلید را از آن می‌پرسد و پاسخی نمی‌گیرد، پیش از آنکه اتصال USB را ببندد و دوباره باز کند. فقط وقتی آن را تغییر دهید که هنگام گزارش مشکل از شما خواسته شود."
 
-#: polyhost/gui/settings_dialog.py:349
+#: polyhost/gui/settings_dialog.py:380
 msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
 msgstr "ظاهر منوی سینی سیستم و پنجره‌های گفت‌وگو. «خودکار» از تنظیم روشن یا تیرهٔ میز کار پیروی می‌کند."
 
-#: polyhost/gui/settings_dialog.py:352
+#: polyhost/gui/settings_dialog.py:383
 msgid "The language of the menus and dialogs. Applies when the tray app restarts."
 msgstr "زبان منوها و پنجره‌های گفت‌وگو. هنگام راه‌اندازی دوبارهٔ برنامهٔ سینی سیستم اعمال می‌شود."
 
-#: polyhost/gui/settings_dialog.py:354
+#: polyhost/gui/settings_dialog.py:385
 msgid "Shows the developer settings in this dialog, and the Developer submenu in the tray menu after a restart."
 msgstr "تنظیمات توسعه‌دهنده را در این پنجره، و پس از راه‌اندازی مجدد زیرمنوی «توسعه‌دهنده» را در منوی سینی سیستم نشان می‌دهد."
 
-#: polyhost/gui/settings_dialog.py:357
+#: polyhost/gui/settings_dialog.py:388
 msgid "How much the app writes to its log. Debug and Detailed help when you report a problem, and make the log grow faster. Applies after a restart."
 msgstr "میزان نوشتن برنامه در لاگ خود. «اشکال‌زدایی» و «مفصل» هنگام گزارش مشکل کمک می‌کنند و لاگ را سریع‌تر بزرگ می‌کنند. پس از راه‌اندازی مجدد اعمال می‌شود."
 
-#: polyhost/gui/settings_dialog.py:359
+#: polyhost/gui/settings_dialog.py:390
 msgid "Adds a simulated keyboard next to the real one."
 msgstr "یک صفحه‌کلید شبیه‌سازی‌شده کنار صفحه‌کلید واقعی اضافه می‌کند."
 
-#: polyhost/gui/settings_dialog.py:361
+#: polyhost/gui/settings_dialog.py:392
 msgid "Uses a simulated keyboard instead of a real one, so the app runs without hardware."
 msgstr "به جای صفحه‌کلید واقعی از یک صفحه‌کلید شبیه‌سازی‌شده استفاده می‌کند، تا برنامه بدون سخت‌افزار اجرا شود."
 
-#: polyhost/gui/settings_dialog.py:364
+#: polyhost/gui/settings_dialog.py:395
 msgid "The protocol version the simulated keyboard reports. 0 uses the newest version this host knows."
 msgstr "نسخهٔ پروتکلی که صفحه‌کلید شبیه‌سازی‌شده گزارش می‌کند. 0 جدیدترین نسخه‌ای را که این میزبان می‌شناسد به کار می‌برد."
 
-#: polyhost/gui/settings_dialog.py:367
+#: polyhost/gui/settings_dialog.py:398
 msgid "Tracks the active window even when no keyboard is connected."
 msgstr "پنجرهٔ فعال را حتی وقتی هیچ صفحه‌کلیدی وصل نیست دنبال می‌کند."
 
-#: polyhost/gui/settings_dialog.py:369
+#: polyhost/gui/settings_dialog.py:400
 msgid "Windows only, experimental. Switches the input language with Win32 calls instead of the standard method, and falls back to it on a failure."
 msgstr "فقط Windows، آزمایشی. زبان ورودی را به جای روش استاندارد با فراخوانی‌های Win32 تغییر می‌دهد و در صورت شکست به همان روش برمی‌گردد."
 
-#: polyhost/gui/settings_dialog.py:372
+#: polyhost/gui/settings_dialog.py:403
 msgid "Uses the USB HID channel only, as if the keyboard had no fast link: firmware updates go over HID. For testing the HID path by hand."
 msgstr "فقط از کانال USB HID استفاده می‌کند، انگار صفحه‌کلید پیوند سریع ندارد: به‌روزرسانی‌های میان‌افزار از طریق HID انجام می‌شود. برای آزمایش دستی مسیر HID."
 
-#: polyhost/gui/settings_dialog.py:375
+#: polyhost/gui/settings_dialog.py:406
 msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
 msgstr "گزارش‌های پنجره را از ارسال‌کننده‌های قدیمی از راه TCP رمزنگاری‌نشده و بدون احراز هویت (درگاه 50162) روی همهٔ رابط‌های شبکه می‌پذیرد. فقط برای یک ارسال‌کنندهٔ قدیمی روشنش کنید."
 
-#: polyhost/gui/settings_dialog.py:379
+#: polyhost/gui/settings_dialog.py:410
 msgid "Runs the keyboard connection in a background process that the tray app connects to, so the connection stays up when the tray app restarts."
 msgstr "اتصال صفحه‌کلید را در یک فرایند پس‌زمینه اجرا می‌کند که برنامهٔ سینی سیستم به آن وصل می‌شود، تا اتصال هنگام راه‌اندازی دوبارهٔ برنامهٔ سینی سیستم برقرار بماند."
 
-#: polyhost/gui/settings_dialog.py:382
+#: polyhost/gui/settings_dialog.py:413
 msgid "Accepts reports of the focused window from the forwarder app on another computer, for example one you use through remote desktop, so the keyboard shows the icons of that computer's apps. Opens a network port. Applies after a restart."
 msgstr "گزارش‌های پنجرهٔ فعال را از برنامهٔ ارسال‌کننده روی رایانه‌ای دیگر می‌پذیرد، برای نمونه رایانه‌ای که از راه دسکتاپ از راه دور با آن کار می‌کنید، تا صفحه‌کلید نمادهای برنامه‌های آن رایانه را نشان دهد. یک درگاه شبکه باز می‌کند. پس از راه‌اندازی مجدد اعمال می‌شود."
 
-#: polyhost/gui/settings_dialog.py:387
+#: polyhost/gui/settings_dialog.py:418
 msgid "On a computer with the forwarder that you reach through NoMachine or Remote Desktop: the forwarder reports to the computer that is connected to this one, found from the connection on port 4000 or 3389. It is used when no host or host file names an address, and only over the paired connection (or --report-rpc). Applies within a few seconds."
 msgstr "در رایانه‌ای که forwarder دارد و از طریق NoMachine یا دسکتاپ از راه دور به آن وصل می‌شوید: forwarder به رایانه‌ای گزارش می‌دهد که به این رایانه وصل است و از روی اتصال در درگاه ۴۰۰۰ یا ۳۳۸۹ پیدا می‌شود. وقتی هیچ میزبان یا فایل میزبانی نشانی‌ای نمی‌دهد و فقط از طریق اتصال جفت‌شده (یا --report-rpc) استفاده می‌شود. ظرف چند ثانیه اعمال می‌شود."
 
-#: polyhost/gui/settings_dialog.py:393
+#: polyhost/gui/settings_dialog.py:424
 msgid "The language of the words the keyboard's emoji search matches. The dictionary is sent to the keyboard when you click OK, and when it connects if Send font packs on connect is on. Own dictionary file, when set, is used instead."
 msgstr "زبان واژه‌هایی که جستجوی ایموجی صفحه‌کلید با آن‌ها تطبیق می‌دهد. واژه‌نامه وقتی روی «تأیید» کلیک می‌کنید به صفحه‌کلید فرستاده می‌شود، و نیز هنگام اتصال صفحه‌کلید اگر «ارسال بسته‌های فونت هنگام اتصال» روشن باشد. اگر «فایل واژه‌نامه شخصی» تنظیم شده باشد، به جای آن استفاده می‌شود."
 
-#: polyhost/gui/settings_dialog.py:398
+#: polyhost/gui/settings_dialog.py:429
 msgid "A dictionary file you built yourself (.plyd), sent to the keyboard instead of the Search language dictionary. Empty: the dictionary for the Search language is used."
 msgstr "فایل واژه‌نامه‌ای که خودتان ساخته‌اید (.plyd) و به جای واژه‌نامهٔ «زبان جستجو» به صفحه‌کلید فرستاده می‌شود. خالی: واژه‌نامهٔ «زبان جستجو» استفاده می‌شود."
 
-#: polyhost/gui/settings_dialog.py:402
+#: polyhost/gui/settings_dialog.py:433
 msgid "When the keyboard connects, sends it the font packs it is missing or has in an older version. Font packs hold the characters for languages, symbols and emoji."
 msgstr "هنگام اتصال صفحه‌کلید، بسته‌های فونتی را که ندارد یا نسخهٔ قدیمی‌تری از آن‌ها دارد برایش می‌فرستد. بسته‌های فونت نویسه‌های زبان‌ها، نمادها و ایموجی‌ها را در خود دارند."
 
-#: polyhost/gui/settings_dialog.py:406
+#: polyhost/gui/settings_dialog.py:437
 msgid "A font-pack file (.plyf) to send to the keyboard instead of the one that comes with this app. Empty: the font pack that comes with this app is used."
 msgstr "یک فایل بستهٔ فونت (.plyf) که به جای بستهٔ همراه این برنامه به صفحه‌کلید فرستاده می‌شود. خالی: بستهٔ فونت همراه این برنامه استفاده می‌شود."
 
-#: polyhost/gui/settings_dialog.py:409
+#: polyhost/gui/settings_dialog.py:440
 msgid "Chooses a website's overlay from the address of the focused browser tab. The address comes from the PolyKybd browser extension; on macOS, Safari and Chromium browsers such as Chrome also give it without the extension. Off: a website's overlay is chosen from the window title only."
 msgstr "هم‌پوشانی وب‌سایت را از نشانی زبانهٔ فعال مرورگر انتخاب می‌کند. نشانی از افزونهٔ مرورگر PolyKybd می‌آید؛ در macOS، Safari و مرورگرهای Chromium مانند Chrome آن را بدون افزونه هم می‌دهند. در حالت خاموش: هم‌پوشانی وب‌سایت فقط از عنوان پنجره انتخاب می‌شود."
 
-#: polyhost/gui/settings_dialog.py:414
+#: polyhost/gui/settings_dialog.py:445
 msgid "Runs the receiver that the PolyKybd browser extension sends the address of the focused tab to. It accepts connections from this computer only (127.0.0.1)."
 msgstr "گیرنده‌ای را اجرا می‌کند که افزونهٔ مرورگر PolyKybd نشانی زبانهٔ فعال را به آن می‌فرستد. فقط اتصال‌های همین رایانه را می‌پذیرد (127.0.0.1)."
 
-#: polyhost/gui/settings_dialog.py:418
+#: polyhost/gui/settings_dialog.py:449
 msgid "The receiver's port. It must match the Host port in the browser extension."
 msgstr "درگاه گیرنده. باید با Host port در افزونهٔ مرورگر یکی باشد."
 
-#: polyhost/gui/settings_dialog.py:420
+#: polyhost/gui/settings_dialog.py:451
 msgid "A shared secret. When set, the browser extension must send the same token."
 msgstr "یک رمز مشترک. اگر تنظیم شود، افزونهٔ مرورگر باید همان توکن را بفرستد."
 
-#: polyhost/gui/settings_dialog.py:422
+#: polyhost/gui/settings_dialog.py:453
 msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
 msgstr "روزی یک گزارش استفادهٔ ناشناس می‌فرستد: نسخه‌ها، سیستم‌عامل و چند شمارنده. هرگز عنوان پنجره‌ها یا نام برنامه‌ها را نمی‌فرستد."
 
-#: polyhost/gui/settings_dialog.py:425
+#: polyhost/gui/settings_dialog.py:456
 msgid "The web address the usage report is sent to. Empty: no report is sent."
 msgstr "نشانی وبی که گزارش استفاده به آن فرستاده می‌شود. خالی: هیچ گزارشی فرستاده نمی‌شود."
 
-#: polyhost/gui/settings_dialog.py:427
+#: polyhost/gui/settings_dialog.py:458
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
 msgstr "شناسهٔ (ID) تصادفی این نصب که با نخستین گزارش ساخته می‌شود. آن را پاک کنید تا به عنوان یک نصب جدید شمرده شوید."
 
-#: polyhost/gui/settings_dialog.py:430
+#: polyhost/gui/settings_dialog.py:461
 msgid "Watches the messages the keyboard sends over USB for known failures, and offers to report a problem."
 msgstr "پیام‌هایی را که صفحه‌کلید از راه USB می‌فرستد برای یافتن خطاهای شناخته‌شده پایش می‌کند و پیشنهاد می‌دهد مشکل را گزارش کنید."
 
-#: polyhost/gui/settings_dialog.py:433
+#: polyhost/gui/settings_dialog.py:464
 msgid "Watches this app's own log for known failure messages, and offers to report a problem."
 msgstr "لاگ خود این برنامه را برای یافتن پیام‌های خطای شناخته‌شده پایش می‌کند و پیشنهاد می‌دهد مشکل را گزارش کنید."
 
-#: polyhost/gui/settings_dialog.py:435
+#: polyhost/gui/settings_dialog.py:466
 msgid "What counts as a problem: errors only, or errors and warnings."
 msgstr "چه چیزی مشکل به شمار می‌آید: فقط خطاها، یا خطاها و هشدارها."
 
-#: polyhost/gui/settings_dialog.py:437
+#: polyhost/gui/settings_dialog.py:468
 msgid "Draws some game overlays from the game's own files when the game is installed on this computer. The images stay on this computer. Off: the shipped overlays are used."
 msgstr "وقتی بازی روی این رایانه نصب باشد، برخی از پوشش‌های بازی را از پرونده‌های خود بازی می‌کشد. تصاویر روی این رایانه می‌مانند. خاموش: پوشش‌های همراه برنامه استفاده می‌شوند."
 
-#: polyhost/gui/settings_dialog.py:914
+#: polyhost/gui/settings_dialog.py:945
 msgid "Advanced"
 msgstr "پیشرفته"
 
-#: polyhost/gui/settings_dialog.py:923
+#: polyhost/gui/settings_dialog.py:954
 msgid "Shows the settings that most people never change."
 msgstr "تنظیماتی را نشان می‌دهد که بیشتر افراد هرگز تغییر نمی‌دهند."
 
-#: polyhost/gui/settings_dialog.py:954 polyhost/host.py:1680
+#: polyhost/gui/settings_dialog.py:988 polyhost/host.py:1688
 msgid "PolyKybd Settings"
 msgstr "تنظیمات PolyKybd"
 
-#: polyhost/gui/settings_dialog.py:1023
+#: polyhost/gui/settings_dialog.py:1057
 msgid "Search settings"
 msgstr "جستجوی تنظیمات"
 
-#: polyhost/gui/settings_dialog.py:1075
+#: polyhost/gui/settings_dialog.py:1109
 msgid "An overlay is a set of icons for one app. Help & About, Basics shows an example."
 msgstr "هم‌پوشانی مجموعه‌ای از نمادها برای یک برنامه است. «راهنما & درباره»، «مبانی» یک نمونه نشان می‌دهد."
 
-#: polyhost/gui/settings_dialog.py:1079
+#: polyhost/gui/settings_dialog.py:1113
 msgid "Reading the settings stored on the keyboard…"
 msgstr "در حال خواندن تنظیمات ذخیره‌شده روی صفحه‌کلید…"
 
-#: polyhost/gui/settings_dialog.py:1083
+#: polyhost/gui/settings_dialog.py:1117
 msgid "No setting matches the search."
 msgstr "هیچ تنظیمی با جستجو مطابقت ندارد."
 
-#: polyhost/gui/settings_dialog.py:1098
+#: polyhost/gui/settings_dialog.py:1132
 msgid "Some settings might need a restart to take effect."
 msgstr "برخی تنظیمات ممکن است برای اعمال به راه‌اندازی مجدد نیاز داشته باشند."
 
-#: polyhost/gui/settings_dialog.py:1133
+#: polyhost/gui/settings_dialog.py:1167
 #, python-brace-format
 msgid "Set by {flag} for this run. This setting applies when the app starts without it."
 msgstr "برای این اجرا با {flag} تنظیم شده است. این تنظیم وقتی اعمال می‌شود که برنامه بدون آن شروع شود."
+
+#: polyhost/gui/settings_dialog.py:1188
+msgid "Blink"
+msgstr ""
 
 #. TRANSLATORS: unit after a number of milliseconds in a spin box.
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
 #: polyhost/gui/layout_dialog/combo_tab.py:371
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
-#: polyhost/gui/settings_dialog.py:1179
+#: polyhost/gui/settings_dialog.py:1222
 msgid " ms"
 msgstr " ms"
 
-#: polyhost/gui/settings_dialog.py:1226
+#: polyhost/gui/settings_dialog.py:1275
 msgid "This keyboard's firmware does not have this setting."
 msgstr "میان‌افزار این صفحه‌کلید این تنظیم را ندارد."
 
-#: polyhost/gui/settings_dialog.py:1228
+#: polyhost/gui/settings_dialog.py:1277
 msgid "Could not read this setting from the keyboard."
 msgstr "خواندن این تنظیم از صفحه‌کلید ممکن نشد."
 
-#: polyhost/gui/settings_dialog.py:1236
+#: polyhost/gui/settings_dialog.py:1291
 msgid "Connect the keyboard to change the settings stored on it."
 msgstr "برای تغییر تنظیمات ذخیره‌شده روی صفحه‌کلید، آن را وصل کنید."
 
-#: polyhost/gui/settings_dialog.py:1238
+#: polyhost/gui/settings_dialog.py:1293
 msgid "Some settings could not be read from the keyboard. Update the keyboard firmware to change them here."
 msgstr "برخی تنظیمات از صفحه‌کلید خوانده نشدند. برای تغییر آن‌ها در اینجا، میان‌افزار صفحه‌کلید را به‌روز کنید."
 
-#: polyhost/gui/settings_dialog.py:1289
+#: polyhost/gui/settings_dialog.py:1348
 msgid "These developer settings are not at their default, so they stay in effect while developer mode is off."
 msgstr "این تنظیمات توسعه‌دهنده در مقدار پیش‌فرض خود نیستند، پس وقتی حالت توسعه‌دهنده خاموش است همچنان اعمال می‌شوند."
 
-#: polyhost/gui/settings_dialog.py:1359
+#: polyhost/gui/settings_dialog.py:1418
 msgid "Generate"
 msgstr "ایجاد"
 
-#: polyhost/gui/settings_dialog.py:1360
+#: polyhost/gui/settings_dialog.py:1419
 msgid "Fills in a new random token and copies it. Paste it into the browser extension's Options and save both."
 msgstr "یک توکن تصادفی جدید وارد و کپی می‌کند. آن را در گزینه‌های افزونهٔ مرورگر بچسبانید و هر دو را ذخیره کنید."
 
@@ -4314,12 +4378,12 @@ msgstr "یک توکن تصادفی جدید وارد و کپی می‌کند. آ
 msgid "Shows the command without setup. Install adds only the Codex option."
 msgstr "فرمان را بدون تنظیم نشان می‌دهد. «نصب» فقط گزینهٔ Codex را اضافه می‌کند."
 
-#: polyhost/gui/shell_editor_pages.py:52 polyhost/gui/shell_editor_pages.py:161
+#: polyhost/gui/shell_editor_pages.py:52 polyhost/gui/shell_editor_pages.py:162
 #, python-brace-format
 msgid "Set up for another copy of the app: {path}"
 msgstr "برای نسخهٔ دیگری از برنامه تنظیم شده: {path}"
 
-#: polyhost/gui/shell_editor_pages.py:54 polyhost/gui/shell_editor_pages.py:170
+#: polyhost/gui/shell_editor_pages.py:54 polyhost/gui/shell_editor_pages.py:171
 msgid "Not found"
 msgstr "پیدا نشد"
 
@@ -4337,87 +4401,87 @@ msgstr "سیاست اجرای PowerShell ({policy}) اسکریپت‌های پر
 msgid "Shows the command without setup"
 msgstr "فرمان را بدون تنظیم نشان می‌دهد"
 
-#: polyhost/gui/shell_editor_pages.py:97
+#: polyhost/gui/shell_editor_pages.py:98
 msgid "Live shows Session View or Arrangement View keys with this script. After Install, restart Live and choose PolyKybd as a Control Surface in Settings > Link, Tempo & MIDI."
 msgstr "با این اسکریپت، Live کلیدهای Session View یا Arrangement View را نشان می‌دهد. پس از نصب، Live را دوباره اجرا کنید و در Settings > Link, Tempo & MIDI گزینه PolyKybd را به‌عنوان Control Surface انتخاب کنید."
 
-#: polyhost/gui/shell_editor_pages.py:101
+#: polyhost/gui/shell_editor_pages.py:102
 msgid "Restart the IDE after Install."
 msgstr "پس از «نصب»، IDE را دوباره راه‌اندازی کنید."
 
-#: polyhost/gui/shell_editor_pages.py:103
+#: polyhost/gui/shell_editor_pages.py:104
 msgid "After Install, restart Blender (or use Refresh Local in the menu of Edit > Preferences > Add-ons) and enable PolyKybd Context Reporter in Edit > Preferences > Add-ons. Install copies it for each Blender version found."
 msgstr "پس از نصب، Blender را دوباره اجرا کنید (یا از Refresh Local در منوی Edit > Preferences > Add-ons استفاده کنید) و PolyKybd Context Reporter را در Edit > Preferences > Add-ons فعال کنید. «نصب» آن را برای هر نسخه‌ی پیداشده‌ی Blender کپی می‌کند."
 
-#: polyhost/gui/shell_editor_pages.py:108
+#: polyhost/gui/shell_editor_pages.py:109
 msgid "After Install, restart Maya and tick Loaded and Auto load for polykybd_mode_reporter.py in Windows > Settings/Preferences > Plug-in Manager. Install copies it for each Maya version found."
 msgstr "پس از نصب، Maya را دوباره اجرا کنید و برای polykybd_mode_reporter.py گزینه‌های Loaded و Auto load را در Windows > Settings/Preferences > Plug-in Manager علامت بزنید. «نصب» آن را برای هر نسخه‌ی پیداشده‌ی Maya کپی می‌کند."
 
-#: polyhost/gui/shell_editor_pages.py:112
+#: polyhost/gui/shell_editor_pages.py:113
 msgid "After Install, restart QGIS and enable PolyKybd Context Reporter in Plugins > Manage and Install Plugins > Installed. Install copies it to each QGIS profile."
 msgstr "پس از نصب، QGIS را دوباره اجرا کنید و PolyKybd Context Reporter را در Plugins > Manage and Install Plugins > Installed فعال کنید. «نصب» آن را در هر نمایه‌ی QGIS کپی می‌کند."
 
-#: polyhost/gui/shell_editor_pages.py:116
+#: polyhost/gui/shell_editor_pages.py:117
 msgid "After Install, restart Bitwig Studio and add the controller in Settings > Controllers > Add Controller: vendor PolyKybd, model Context Reporter."
 msgstr "پس از نصب، Bitwig Studio را دوباره اجرا کنید و کنترلر را در Settings > Controllers > Add Controller اضافه کنید: سازنده PolyKybd، مدل Context Reporter."
 
-#: polyhost/gui/shell_editor_pages.py:119
+#: polyhost/gui/shell_editor_pages.py:120
 #, python-brace-format
 msgid "Install runs the program's command line tool. Restart {app} afterwards. For Remote SSH, WSL and container windows, also install {path} in the remote window: Extensions view > ... > Install from VSIX."
 msgstr "«نصب» ابزار خط فرمان برنامه را اجرا می‌کند. سپس {app} را دوباره اجرا کنید. برای پنجره‌های Remote SSH، WSL و کانتینر، {path} را هم در پنجره‌ی راه دور نصب کنید: Extensions view > ... > Install from VSIX."
 
-#: polyhost/gui/shell_editor_pages.py:124
+#: polyhost/gui/shell_editor_pages.py:125
 msgid "This app cannot know which Python environment runs JupyterLab, so it does not install the extension. Run this command with that environment's Python (JupyterLab Desktop: Settings > Server > Python environment), then restart JupyterLab:"
 msgstr "این برنامه نمی‌تواند بداند کدام محیط Python برنامه‌ی JupyterLab را اجرا می‌کند، پس افزونه را نصب نمی‌کند. این فرمان را با Python همان محیط اجرا کنید (JupyterLab Desktop: Settings > Server > Python environment)، سپس JupyterLab را دوباره اجرا کنید:"
 
-#: polyhost/gui/shell_editor_pages.py:129
+#: polyhost/gui/shell_editor_pages.py:130
 msgid "The plugin is installed per project. Install asks for the project folder (the one with project.godot) if none was chosen. Then tick PolyKybd Reporter in Project > Project Settings > Plugins."
 msgstr "افزونه برای هر پروژه جداگانه نصب می‌شود. اگر پوشه‌ای انتخاب نشده باشد، «نصب» پوشه‌ی پروژه (پوشه‌ای که project.godot دارد) را می‌پرسد. سپس PolyKybd Reporter را در Project > Project Settings > Plugins علامت بزنید."
 
-#: polyhost/gui/shell_editor_pages.py:133
+#: polyhost/gui/shell_editor_pages.py:134
 msgid "The package is installed per project. Install asks for the project folder (the one with Packages/manifest.json) if none was chosen, and copies the package into its Packages folder. Unity loads it when it next has focus."
 msgstr "بسته برای هر پروژه جداگانه نصب می‌شود. اگر پوشه‌ای انتخاب نشده باشد، «نصب» پوشه‌ی پروژه (پوشه‌ای که Packages/manifest.json دارد) را می‌پرسد و بسته را در پوشه‌ی Packages آن کپی می‌کند. Unity دفعه‌ی بعد که فوکوس بگیرد آن را بارگذاری می‌کند."
 
-#: polyhost/gui/shell_editor_pages.py:137
+#: polyhost/gui/shell_editor_pages.py:138
 msgid "The plugin is installed per vault. Install asks for the vault folder (the one with .obsidian) if none was chosen. Then turn on PolyKybd Mode Reporter in Settings > Community plugins (Restricted mode must be off)."
 msgstr "افزونه برای هر گاوصندوق (vault) جداگانه نصب می‌شود. اگر پوشه‌ای انتخاب نشده باشد، «نصب» پوشه‌ی گاوصندوق (پوشه‌ای که .obsidian دارد) را می‌پرسد. سپس PolyKybd Mode Reporter را در Settings > Community plugins روشن کنید (Restricted mode باید خاموش باشد)."
 
-#: polyhost/gui/shell_editor_pages.py:146
+#: polyhost/gui/shell_editor_pages.py:147
 msgid "Add a vault…"
 msgstr "افزودن گاوصندوق…"
 
-#: polyhost/gui/shell_editor_pages.py:147
+#: polyhost/gui/shell_editor_pages.py:148
 msgid "Add a project folder…"
 msgstr "افزودن پوشه‌ی پروژه…"
 
-#: polyhost/gui/shell_editor_pages.py:157
+#: polyhost/gui/shell_editor_pages.py:158
 msgid "Set up with older plugin files. Install copies the current ones."
 msgstr "با فایل‌های قدیمی‌تر افزونه تنظیم شده. «نصب» فایل‌های فعلی را کپی می‌کند."
 
-#: polyhost/gui/shell_editor_pages.py:159
+#: polyhost/gui/shell_editor_pages.py:160
 msgid "Set up, and changed by hand since. This app leaves it alone."
 msgstr "تنظیم شده و پس از آن به‌صورت دستی تغییر کرده است. این برنامه آن را تغییر نمی‌دهد."
 
-#: polyhost/gui/shell_editor_pages.py:163
+#: polyhost/gui/shell_editor_pages.py:164
 #, python-brace-format
 msgid "The plugin is already loaded from {path}."
 msgstr "افزونه هم‌اکنون از {path} بارگذاری می‌شود."
 
-#: polyhost/gui/shell_editor_pages.py:165
-#: polyhost/services/editor_plugins.py:214
+#: polyhost/gui/shell_editor_pages.py:166
+#: polyhost/services/editor_plugins.py:215
 #, python-brace-format
 msgid "This installation has no plugin files ({path})."
 msgstr "این نصب فایل‌های افزونه را ندارد ({path})."
 
-#: polyhost/gui/shell_editor_pages.py:167
+#: polyhost/gui/shell_editor_pages.py:168
 msgid "No project folder chosen yet."
 msgstr "هنوز پوشه‌ی پروژه‌ای انتخاب نشده است."
 
-#: polyhost/gui/shell_editor_pages.py:169
+#: polyhost/gui/shell_editor_pages.py:170
 msgid "Installed with a command, see below."
 msgstr "با یک فرمان نصب می‌شود، پایین را ببینید."
 
-#: polyhost/gui/shell_editor_pages.py:181
+#: polyhost/gui/shell_editor_pages.py:182
 msgid ""
 "The keyboard shows the shortcuts of a program running in a terminal (nano, for example) only when the terminal's window title names the program. bash, zsh and PowerShell do not do this without setup.\n"
 "\n"
@@ -4427,39 +4491,39 @@ msgstr ""
 "\n"
 "«نصب» یک خط بین دو توضیح نشانه به فایل آغازین هر پوستهٔ انتخاب‌شده اضافه می‌کند و پیش از آن یک نسخه از فایل را کنار آن ذخیره می‌کند. «حذف» این خط‌ها را پاک می‌کند. تغییر برای پنجره‌های ترمینالی اعمال می‌شود که پس از آن باز شوند. برای تغییر گزینهٔ Codex، پوسته‌ها را انتخاب کنید و دوباره «نصب» را بزنید."
 
-#: polyhost/gui/shell_editor_pages.py:196
+#: polyhost/gui/shell_editor_pages.py:197
 msgid "Also show Codex in the title (wraps the codex command)"
 msgstr "نمایش Codex در عنوان هم (فرمان codex را می‌پوشاند)"
 
-#: polyhost/gui/shell_editor_pages.py:198
+#: polyhost/gui/shell_editor_pages.py:199
 msgid "Codex replaces the terminal title with the thread and project name, so the keyboard cannot tell that it is running. With this option the codex command starts Codex with a title that begins with \"codex\". A codex alias or function of your own, and a title set in Codex's config.toml, are kept."
 msgstr "Codex عنوان ترمینال را با نام رشته و پروژه جایگزین می‌کند، پس صفحه‌کلید نمی‌فهمد که در حال اجراست. با این گزینه فرمان codex برنامهٔ Codex را با عنوانی اجرا می‌کند که با \"codex\" شروع می‌شود. نام مستعار یا تابع codex خودتان و عنوانی که در config.toml مربوط به Codex تنظیم کرده‌اید حفظ می‌شوند."
 
-#: polyhost/gui/shell_editor_pages.py:210
+#: polyhost/gui/shell_editor_pages.py:211
 #, python-brace-format
 msgid "The shells could not be checked: {error}"
 msgstr "پوسته‌ها بررسی نشدند: {error}"
 
-#: polyhost/gui/shell_editor_pages.py:227
+#: polyhost/gui/shell_editor_pages.py:228
 #, python-brace-format
 msgid "{shell}: shows the command without setup."
 msgstr "{shell}: فرمان را بدون تنظیم نشان می‌دهد."
 
-#: polyhost/gui/shell_editor_pages.py:239
+#: polyhost/gui/shell_editor_pages.py:240
 msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "bash، zsh یا PowerShell روی این رایانه پیدا نشد."
 
-#: polyhost/gui/shell_editor_pages.py:256
-#: polyhost/gui/shell_editor_pages.py:450
+#: polyhost/gui/shell_editor_pages.py:257
+#: polyhost/gui/shell_editor_pages.py:451
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "نسخهٔ فایل قبلی: {path}"
 
-#: polyhost/gui/shell_editor_pages.py:258
+#: polyhost/gui/shell_editor_pages.py:259
 msgid "Open a new terminal window for the change to take effect."
 msgstr "برای اعمال تغییر، یک پنجرهٔ ترمینال تازه باز کنید."
 
-#: polyhost/gui/shell_editor_pages.py:272
+#: polyhost/gui/shell_editor_pages.py:273
 msgid ""
 "Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin. GDB shows whether the program runs or waits at the prompt only with it.\n"
 "\n"
@@ -4469,49 +4533,49 @@ msgstr ""
 "\n"
 "«نصب» افزونه را از این نصب به جایی کپی می‌کند که برنامه آن را از آنجا بارگذاری می‌کند. برای Emacs و GDB همچنین خط‌هایی را که افزونه را بارگذاری می‌کنند بین دو توضیح نشانه به فایل init اضافه می‌کند و پیش از آن یک نسخه از فایل را ذخیره می‌کند. وقتی این برنامه به‌روزرسانی شود، در اجرای بعدی خود فایل‌های جدید افزونه را کپی می‌کند. برای اعمال تغییر، برنامه را دوباره راه‌اندازی کنید."
 
-#: polyhost/gui/shell_editor_pages.py:293
+#: polyhost/gui/shell_editor_pages.py:294
 msgid "FreeCAD shows the keys of the active workbench only with the PolyKybd add-on. Install copies it to FreeCAD's Mod folder."
 msgstr "FreeCAD فقط با افزونهٔ PolyKybd کلیدهای میز کار فعال را نشان می‌دهد. «نصب» آن را در پوشهٔ Mod در FreeCAD کپی می‌کند."
 
-#: polyhost/gui/shell_editor_pages.py:305
+#: polyhost/gui/shell_editor_pages.py:306
 #, python-brace-format
 msgid "The editors could not be checked: {error}"
 msgstr "ویرایشگرها بررسی نشدند: {error}"
 
-#: polyhost/gui/shell_editor_pages.py:346
+#: polyhost/gui/shell_editor_pages.py:347
 msgid "No Vim, Neovim or Emacs was found on this computer."
 msgstr "هیچ Vim، Neovim یا Emacs روی این رایانه پیدا نشد."
 
-#: polyhost/gui/shell_editor_pages.py:352
+#: polyhost/gui/shell_editor_pages.py:353
 #, python-brace-format
 msgid "This app listens on port {port} and requires a token. The plugins use port 50164 and no token: set g:polykybd_port and g:polykybd_token in Vim, or polykybd-port and polykybd-token in Emacs, to the same values."
 msgstr "این برنامه روی درگاه {port} گوش می‌دهد و به توکن نیاز دارد. افزونه‌ها از درگاه 50164 و بدون توکن استفاده می‌کنند: g:polykybd_port و g:polykybd_token را در Vim، یا polykybd-port و polykybd-token را در Emacs، روی همین مقدارها تنظیم کنید."
 
-#: polyhost/gui/shell_editor_pages.py:357
+#: polyhost/gui/shell_editor_pages.py:358
 #, python-brace-format
 msgid "This app listens on port {port}. The plugins use port 50164: set g:polykybd_port in Vim, or polykybd-port in Emacs, to the same value."
 msgstr "این برنامه روی درگاه {port} گوش می‌دهد. افزونه‌ها از درگاه 50164 استفاده می‌کنند: g:polykybd_port را در Vim، یا polykybd-port را در Emacs، روی همین مقدار تنظیم کنید."
 
-#: polyhost/gui/shell_editor_pages.py:389
+#: polyhost/gui/shell_editor_pages.py:390
 msgid "Copied"
 msgstr "کپی شد"
 
-#: polyhost/gui/shell_editor_pages.py:392
+#: polyhost/gui/shell_editor_pages.py:393
 msgid "Choose the Obsidian vault folder"
 msgstr "پوشه‌ی گاوصندوق Obsidian را انتخاب کنید"
 
-#: polyhost/gui/shell_editor_pages.py:393
+#: polyhost/gui/shell_editor_pages.py:394
 #, python-brace-format
 msgid "Choose the {program} project folder"
 msgstr "پوشه‌ی پروژه‌ی {program} را انتخاب کنید"
 
-#: polyhost/gui/shell_editor_pages.py:403
-#: polyhost/services/editor_plugins.py:222
+#: polyhost/gui/shell_editor_pages.py:404
+#: polyhost/services/editor_plugins.py:223
 #, python-brace-format
 msgid "{path} is not a {editor} project folder: it has no {marker}."
 msgstr "{path} پوشه‌ی پروژه‌ی {editor} نیست: {marker} ندارد."
 
-#: polyhost/gui/shell_editor_pages.py:452
+#: polyhost/gui/shell_editor_pages.py:453
 msgid "Restart the editor for the change to take effect."
 msgstr "برای اعمال تغییر، ویرایشگر را دوباره راه‌اندازی کنید."
 
@@ -4568,7 +4632,7 @@ msgstr "{prefix} — میزبان v{host_version} در دسترس است"
 msgid "{prefix} — firmware v{fw_version} available"
 msgstr "{prefix} — میان‌افزار v{fw_version} در دسترس است"
 
-#: polyhost/forwarder.py:286 polyhost/gui/tray_notify.py:81
+#: polyhost/forwarder.py:292 polyhost/gui/tray_notify.py:81
 #: polyhost/host.py:553
 msgid "Updates"
 msgstr "به‌روزرسانی‌ها"
@@ -4751,7 +4815,7 @@ msgstr "در انتظار PolyKybd..."
 msgid "Press to pause connection"
 msgstr "برای مکث اتصال کلیک کنید"
 
-#: polyhost/forwarder.py:366 polyhost/host.py:379
+#: polyhost/forwarder.py:372 polyhost/host.py:379
 msgid "Quit"
 msgstr "خروج"
 
@@ -4759,23 +4823,23 @@ msgstr "خروج"
 msgid "Quit && stop background daemon"
 msgstr "خروج && توقف سرویس پس‌زمینه"
 
-#: polyhost/forwarder.py:316 polyhost/host.py:401
+#: polyhost/forwarder.py:322 polyhost/host.py:401
 msgid "Integrations…"
 msgstr "یکپارچه‌سازی‌ها…"
 
-#: polyhost/forwarder.py:322 polyhost/host.py:406
+#: polyhost/forwarder.py:328 polyhost/host.py:406
 msgid "Settings..."
 msgstr "تنظیمات..."
 
-#: polyhost/forwarder.py:337 polyhost/host.py:410
+#: polyhost/forwarder.py:343 polyhost/host.py:410
 msgid "Log file..."
 msgstr "فایل لاگ..."
 
-#: polyhost/forwarder.py:343 polyhost/host.py:419
+#: polyhost/forwarder.py:349 polyhost/host.py:419
 msgid "Report a Problem..."
 msgstr "گزارش مشکل..."
 
-#: polyhost/forwarder.py:349 polyhost/host.py:438
+#: polyhost/forwarder.py:355 polyhost/host.py:438
 msgid "Collect logs..."
 msgstr "جمع‌آوری لاگ‌ها..."
 
@@ -4792,7 +4856,7 @@ msgid "Inspect Font Packs..."
 msgstr "بررسی بسته‌های فونت..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
-#: polyhost/forwarder.py:274 polyhost/forwarder.py:428 polyhost/host.py:468
+#: polyhost/forwarder.py:280 polyhost/forwarder.py:434 polyhost/host.py:468
 #: polyhost/host.py:1230
 msgid "Pause"
 msgstr "مکث"
@@ -4821,8 +4885,8 @@ msgstr "آموزش‌ها…"
 msgid "Check for host update..."
 msgstr "بررسی به‌روزرسانی میزبان..."
 
-#: polyhost/host.py:594 polyhost/host.py:2459 polyhost/host.py:2994
-#: polyhost/host.py:3172
+#: polyhost/host.py:594 polyhost/host.py:2471 polyhost/host.py:3006
+#: polyhost/host.py:3184
 msgid "Check for firmware update…"
 msgstr "بررسی به‌روزرسانی میان‌افزار…"
 
@@ -4858,11 +4922,11 @@ msgstr "تازه‌سازی حالت ورودی یونیکد"
 msgid "Save MRU cache now"
 msgstr "ذخیرهٔ حافظهٔ نهان MRU اکنون"
 
-#: polyhost/forwarder.py:359 polyhost/host.py:727
+#: polyhost/forwarder.py:365 polyhost/host.py:727
 msgid "Help && About"
 msgstr "راهنما && درباره"
 
-#: polyhost/forwarder.py:355 polyhost/host.py:735
+#: polyhost/forwarder.py:361 polyhost/host.py:735
 msgid "Open config folder"
 msgstr "باز کردن پوشهٔ پیکربندی"
 
@@ -4908,7 +4972,7 @@ msgstr ""
 "همهٔ مجموعه‌های فونت همراه برنامه از قبل روی صفحه‌کلید هستند.\n"
 "اگر کلاهک‌ها هنوز نادرست نمایش داده می‌شوند، توسعه‌دهنده ← بستهٔ فونت ← فلش دوبارهٔ همهٔ مجموعه‌ها ارسال دوباره را اجباری می‌کند."
 
-#: polyhost/forwarder.py:917 polyhost/host.py:1105
+#: polyhost/forwarder.py:936 polyhost/host.py:1105
 msgid "Config folder"
 msgstr "پوشهٔ پیکربندی"
 
@@ -4937,7 +5001,7 @@ msgid "Reconnect"
 msgstr "اتصال مجدد"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:428 polyhost/host.py:1225
+#: polyhost/forwarder.py:434 polyhost/host.py:1225
 msgid "Resume"
 msgstr "ازسرگیری"
 
@@ -4968,33 +5032,33 @@ msgstr "فلش میان‌افزار ناموفق بود"
 msgid "Selected Language: {language} {country}"
 msgstr "زبان انتخاب‌شده: {language} {country}"
 
-#: polyhost/host.py:1644
+#: polyhost/host.py:1645
 msgid "PolyHost settings"
 msgstr "تنظیمات PolyHost"
 
-#: polyhost/host.py:1645
+#: polyhost/host.py:1646
 msgid "The settings are applied, but they could not be saved to the settings file. Another program may be holding it open. Change a setting again later to retry, or see the log."
 msgstr "تنظیمات اعمال شدند، اما در فایل تنظیمات ذخیره نشدند. ممکن است برنامهٔ دیگری آن را باز نگه داشته باشد. برای تلاش دوباره بعداً یک تنظیم را دوباره تغییر دهید، یا لاگ را ببینید."
 
-#: polyhost/host.py:1662
+#: polyhost/host.py:1670
 msgid "Idle Display"
 msgstr "نمایش در حالت بیکاری"
 
-#: polyhost/host.py:1681
+#: polyhost/host.py:1689
 #, python-brace-format
 msgid "The keyboard did not accept this setting: {setting}"
 msgstr "صفحه‌کلید این تنظیم را نپذیرفت: {setting}"
 
-#: polyhost/host.py:1802
+#: polyhost/host.py:1814
 #, python-brace-format
 msgid "{side}: unreadable record {record}"
 msgstr "{side}: سابقهٔ ناخوانا {record}"
 
-#: polyhost/host.py:1805
+#: polyhost/host.py:1817
 msgid "Neither keyboard half holds a crash record."
 msgstr "هیچ‌یک از دو نیمهٔ صفحه‌کلید سابقهٔ خرابی ندارد."
 
-#: polyhost/host.py:1807
+#: polyhost/host.py:1819
 #, python-brace-format
 msgid ""
 "Could not read the crash record.\n"
@@ -5005,115 +5069,115 @@ msgstr ""
 "\n"
 "{errors}"
 
-#: polyhost/host.py:1809
+#: polyhost/host.py:1821
 msgid "Keyboard crash record"
 msgstr "سابقهٔ خرابی صفحه‌کلید"
 
-#: polyhost/host.py:1818
+#: polyhost/host.py:1830
 #, python-brace-format
 msgid "Copied to the clipboard. Not read: {errors}"
 msgstr "در کلیپ‌بورد کپی شد. خوانده نشد: {errors}"
 
-#: polyhost/host.py:1910
+#: polyhost/host.py:1922
 msgid "MRU Cache"
 msgstr "حافظهٔ نهان MRU"
 
-#: polyhost/host.py:1910
+#: polyhost/host.py:1922
 msgid "MRU cache is not active (device not connected or MRU mode disabled)."
 msgstr "حافظهٔ نهان MRU فعال نیست (دستگاه متصل نیست یا حالت MRU غیرفعال است)."
 
-#: polyhost/host.py:1962
+#: polyhost/host.py:1974
 msgid "daemon client"
 msgstr "کلاینت سرویس پس‌زمینه"
 
-#: polyhost/host.py:1962
+#: polyhost/host.py:1974
 msgid "standalone"
 msgstr "مستقل"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:994 polyhost/host.py:2020
+#: polyhost/forwarder.py:1013 polyhost/host.py:2032
 msgid "paused"
 msgstr "مکث‌شده"
 
-#: polyhost/host.py:2022
+#: polyhost/host.py:2034
 msgid "connected"
 msgstr "متصل"
 
-#: polyhost/host.py:2023
+#: polyhost/host.py:2035
 msgid "present — not connected (protocol/version)"
 msgstr "موجود — متصل نیست (پروتکل/نسخه)"
 
-#: polyhost/host.py:2031
+#: polyhost/host.py:2043
 msgid "No keyboard connected."
 msgstr "هیچ صفحه‌کلیدی متصل نیست."
 
-#: polyhost/host.py:2035
+#: polyhost/host.py:2047
 msgid "⚠ mismatch"
 msgstr "⚠ ناهمخوانی"
 
-#: polyhost/host.py:2037
+#: polyhost/host.py:2049
 #, python-brace-format
 msgid "{n} languages loaded"
 msgid_plural "{n} languages loaded"
 msgstr[0] "{n} زبان بارگذاری شد"
 
-#: polyhost/host.py:2040
+#: polyhost/host.py:2052
 #, python-brace-format
 msgid "<b>Connected keyboard:</b> {name} {state}"
 msgstr "<b>صفحه‌کلید متصل:</b> {name} {state}"
 
-#: polyhost/host.py:2042
+#: polyhost/host.py:2054
 #, python-brace-format
 msgid "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
 msgstr "<b>میان‌افزار:</b> {firmware} &nbsp;·&nbsp; پروتکل {protocol}"
 
-#: polyhost/host.py:2044
+#: polyhost/host.py:2056
 #, python-brace-format
 msgid "<b>Hardware:</b> {hardware}"
 msgstr "<b>سخت‌افزار:</b> {hardware}"
 
-#: polyhost/host.py:2045
+#: polyhost/host.py:2057
 #, python-brace-format
 msgid "<b>Language:</b> {language}"
 msgstr "<b>زبان:</b> {language}"
 
-#: polyhost/host.py:2048
+#: polyhost/host.py:2060
 #, python-brace-format
 msgid "<b>Link:</b> {link}"
 msgstr "<b>پیوند:</b> {link}"
 
-#: polyhost/host.py:2055
+#: polyhost/host.py:2067
 #, python-brace-format
 msgid "<b>Uptime:</b> {uptime}"
 msgstr "<b>مدت کارکرد:</b> {uptime}"
 
-#: polyhost/host.py:2057
+#: polyhost/host.py:2069
 #, python-brace-format
 msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>نگاشت‌های هم‌پوشانی:</b> {n} برنامه"
 
-#: polyhost/forwarder.py:1014 polyhost/host.py:2059
+#: polyhost/forwarder.py:1033 polyhost/host.py:2071
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>پیکربندی:</b> {path}"
 
-#: polyhost/forwarder.py:1015 polyhost/host.py:2060
+#: polyhost/forwarder.py:1034 polyhost/host.py:2072
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>لاگ‌ها:</b> {path}"
 
-#: polyhost/forwarder.py:1033 polyhost/host.py:2114
+#: polyhost/forwarder.py:1052 polyhost/host.py:2126
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "پروتکل HID P{protocol}"
 
-#: polyhost/host.py:2119
+#: polyhost/host.py:2131
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
 msgstr "نرم‌افزار میزبان برای صفحه‌کلید دوتکهٔ PolyKybd با نمایشگرهای OLED روی هر کلاهک — پنجرهٔ فعال را دنبال می‌کند و هم‌پوشانی‌ها، زبان و به‌روزرسانی‌های نقشهٔ کلید را به صفحه‌کلید می‌فرستد."
 
-#: polyhost/host.py:2145
+#: polyhost/host.py:2157
 #, python-brace-format
 msgid ""
 "Changing input language to '{language}' failed with:\n"
@@ -5122,124 +5186,124 @@ msgstr ""
 "تغییر زبان ورودی به «{language}» با این خطا ناموفق بود:\n"
 "\"{error}\""
 
-#: polyhost/host.py:2165 polyhost/host.py:2182
+#: polyhost/host.py:2177 polyhost/host.py:2194
 #, python-brace-format
 msgid "Could not set {language}: {error}"
 msgstr "تنظیم {language} ممکن نشد: {error}"
 
-#: polyhost/host.py:2196
+#: polyhost/host.py:2208
 msgid "Show on the Number Row"
 msgstr "نمایش روی ردیف اعداد"
 
-#: polyhost/host.py:2205
+#: polyhost/host.py:2217
 msgid "Remove Agent"
 msgstr "حذف عامل"
 
-#: polyhost/host.py:2210
+#: polyhost/host.py:2222
 msgid "Set Up Hooks…"
 msgstr "تنظیم هوک‌ها…"
 
-#: polyhost/host.py:2215
+#: polyhost/host.py:2227
 msgid "Pair a Forwarder…"
 msgstr "جفت‌سازی یک ارسال‌کننده…"
 
-#: polyhost/host.py:2219
+#: polyhost/host.py:2231
 msgid "Connect Cloud Sessions…"
 msgstr "اتصال نشست‌های ابری…"
 
-#: polyhost/host.py:2234
+#: polyhost/host.py:2246
 msgid "No agents reported"
 msgstr "هیچ عاملی گزارش نشده است"
 
-#: polyhost/host.py:2237
+#: polyhost/host.py:2249
 msgid "working"
 msgstr "در حال کار"
 
-#: polyhost/host.py:2237
+#: polyhost/host.py:2249
 msgid "waiting"
 msgstr "در انتظار"
 
-#: polyhost/host.py:2237
+#: polyhost/host.py:2249
 msgid "done"
 msgstr "تمام‌شده"
 
-#: polyhost/host.py:2238
+#: polyhost/host.py:2250
 msgid "idle"
 msgstr "بیکار"
 
-#: polyhost/host.py:2241
+#: polyhost/host.py:2253
 #, python-brace-format
 msgid "Key {key}: {name}, {state}, {title}"
 msgstr "کلید {key}: {name}، {state}، {title}"
 
-#: polyhost/host.py:2246
+#: polyhost/host.py:2258
 #, python-brace-format
 msgid "Page {page}, {text}"
 msgstr "صفحهٔ {page}، {text}"
 
-#: polyhost/host.py:2269
+#: polyhost/host.py:2281
 msgid "Remove All Inactive"
 msgstr "حذف همهٔ عامل‌های غیرفعال"
 
-#: polyhost/host.py:2331
+#: polyhost/host.py:2343
 msgid "Open Cloud Session"
 msgstr "باز کردن نشست ابری"
 
-#: polyhost/host.py:2332
+#: polyhost/host.py:2344
 #, python-brace-format
 msgid "No browser tab or Claude app window shows the cloud session \"{title}\". Open it in the browser?"
 msgstr "هیچ زبانهٔ مرورگر یا پنجرهٔ برنامهٔ Claude نشست ابری «{title}» را نشان نمی‌دهد. آن را در مرورگر باز کنید؟"
 
-#: polyhost/host.py:2339
+#: polyhost/host.py:2351
 msgid "Open in Browser"
 msgstr "باز کردن در مرورگر"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-#: polyhost/host.py:2369
+#: polyhost/host.py:2381
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "نگاشت هم‌پوشانی PolyKybd (*.poly.yaml)"
 
-#: polyhost/host.py:2457 polyhost/host.py:2953 polyhost/host.py:3101
+#: polyhost/host.py:2469 polyhost/host.py:2965 polyhost/host.py:3113
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "به‌روزرسانی میان‌افزار به v{version}…"
 
-#: polyhost/forwarder.py:1072 polyhost/forwarder.py:1083
-#: polyhost/forwarder.py:1089 polyhost/host.py:2477 polyhost/host.py:2598
-#: polyhost/host.py:2602
+#: polyhost/forwarder.py:1091 polyhost/forwarder.py:1102
+#: polyhost/forwarder.py:1108 polyhost/host.py:2489 polyhost/host.py:2610
+#: polyhost/host.py:2614
 msgid "Check for updates..."
 msgstr "بررسی به‌روزرسانی‌ها..."
 
-#: polyhost/host.py:2545
+#: polyhost/host.py:2557
 #, python-brace-format
 msgid "Update to v{version} available"
 msgstr "به‌روزرسانی به v{version} در دسترس است"
 
-#: polyhost/forwarder.py:1085 polyhost/forwarder.py:1091
-#: polyhost/forwarder.py:1102 polyhost/host.py:2556 polyhost/host.py:2596
-#: polyhost/host.py:2603 polyhost/host.py:2626
+#: polyhost/forwarder.py:1104 polyhost/forwarder.py:1110
+#: polyhost/forwarder.py:1121 polyhost/host.py:2568 polyhost/host.py:2608
+#: polyhost/host.py:2615 polyhost/host.py:2638
 msgid "PolyKybdHost Update"
 msgstr "به‌روزرسانی PolyKybdHost"
 
-#: polyhost/host.py:2557
+#: polyhost/host.py:2569
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "نسخهٔ {version} در دسترس است. برای به‌روزرسانی روی نماد سینی سیستم کلیک کنید."
 
-#: polyhost/forwarder.py:1059 polyhost/host.py:2582
+#: polyhost/forwarder.py:1078 polyhost/host.py:2594
 msgid "Checking for updates..."
 msgstr "در حال بررسی به‌روزرسانی‌ها..."
 
-#: polyhost/host.py:2595
+#: polyhost/host.py:2607
 msgid "No updates available"
 msgstr "به‌روزرسانی‌ای در دسترس نیست"
 
-#: polyhost/forwarder.py:1086 polyhost/host.py:2597
+#: polyhost/forwarder.py:1105 polyhost/host.py:2609
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "شما آخرین نسخه (v{version}) را اجرا می‌کنید."
 
-#: polyhost/forwarder.py:1092 polyhost/host.py:2604
+#: polyhost/forwarder.py:1111 polyhost/host.py:2616
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -5254,69 +5318,69 @@ msgstr ""
 "\n"
 "برای جزئیات با --dev 1 اجرا کنید."
 
-#: polyhost/host.py:2609 polyhost/host.py:3026
+#: polyhost/host.py:2621 polyhost/host.py:3038
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "تاریخ انتشار: {date}"
 
-#: polyhost/forwarder.py:1073 polyhost/host.py:2610
+#: polyhost/forwarder.py:1092 polyhost/host.py:2622
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "نسخهٔ {version} در دسترس است."
 
-#: polyhost/forwarder.py:1074 polyhost/host.py:2611
+#: polyhost/forwarder.py:1093 polyhost/host.py:2623
 msgid "Update PolyKybdHost"
 msgstr "به‌روزرسانی PolyKybdHost"
 
-#: polyhost/host.py:2615
+#: polyhost/host.py:2627
 msgid "Download, install, and restart now?"
 msgstr "اکنون بارگیری، نصب و راه‌اندازی مجدد شود؟"
 
-#: polyhost/forwarder.py:1101 polyhost/host.py:2626
+#: polyhost/forwarder.py:1120 polyhost/host.py:2638
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "در حال بارگیری v{version}…"
 
-#: polyhost/forwarder.py:1143 polyhost/host.py:2751
+#: polyhost/forwarder.py:1162 polyhost/host.py:2763
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "رلهٔ به‌روزرسانی شروع نشد؛ به‌روزرسانی ناقص است. برای جزئیات لاگ را ببینید."
 
-#: polyhost/forwarder.py:1155 polyhost/host.py:2766
+#: polyhost/forwarder.py:1174 polyhost/host.py:2778
 msgid "Update failed"
 msgstr "به‌روزرسانی ناموفق بود"
 
-#: polyhost/forwarder.py:1155 polyhost/host.py:2766
+#: polyhost/forwarder.py:1174 polyhost/host.py:2778
 msgid "The update did not finish."
 msgstr "به‌روزرسانی کامل نشد."
 
-#: polyhost/host.py:2913
+#: polyhost/host.py:2925
 #, python-brace-format
 msgid "{n} keyboard font bundle is out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
 msgid_plural "{n} keyboard font bundles are out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
 msgstr[0] "{n} بستهٔ فونت صفحه‌کلید قدیمی است و فلش خودکار خاموش است. از به‌روزرسانی‌ها ← به‌روزرسانی فونت‌های صفحه‌کلید استفاده کنید."
 
-#: polyhost/host.py:2964
+#: polyhost/host.py:2976
 msgid "PolyKybd Firmware Update"
 msgstr "به‌روزرسانی میان‌افزار PolyKybd"
 
-#: polyhost/host.py:2965
+#: polyhost/host.py:2977
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "میان‌افزار جدید v{version} در دسترس است. برای به‌روزرسانی روی نماد سینی سیستم کلیک کنید."
 
-#: polyhost/host.py:2982 polyhost/host.py:3023
+#: polyhost/host.py:2994 polyhost/host.py:3035
 msgid "The keyboard must be connected to update the firmware."
 msgstr "برای به‌روزرسانی میان‌افزار، صفحه‌کلید باید متصل باشد."
 
-#: polyhost/host.py:2988
+#: polyhost/host.py:3000
 msgid "Checking for firmware update…"
 msgstr "در حال بررسی به‌روزرسانی میان‌افزار…"
 
-#: polyhost/host.py:3002 polyhost/host.py:3012 polyhost/host.py:3015
+#: polyhost/host.py:3014 polyhost/host.py:3024 polyhost/host.py:3027
 msgid "PolyKybd Firmware"
 msgstr "میان‌افزار PolyKybd"
 
-#: polyhost/host.py:3003
+#: polyhost/host.py:3015
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -5327,63 +5391,63 @@ msgstr ""
 "\n"
 "صفحه‌کلید شما روی v{current} است. معمولاً این یعنی ساخت نسخهٔ انتشار ناموفق بوده است — پس از رفع آن، فایل میان‌افزار به صفحهٔ انتشار افزوده می‌شود."
 
-#: polyhost/host.py:3013
+#: polyhost/host.py:3025
 msgid "No firmware release could be found."
 msgstr "هیچ نسخهٔ منتشرشده‌ای از میان‌افزار پیدا نشد."
 
-#: polyhost/host.py:3016
+#: polyhost/host.py:3028
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "شما آخرین میان‌افزار (v{version}) را اجرا می‌کنید."
 
-#: polyhost/host.py:3028
+#: polyhost/host.py:3040
 #, python-brace-format
 msgid "Installed: v{version}"
 msgstr "نصب‌شده: v{version}"
 
-#: polyhost/host.py:3029
+#: polyhost/host.py:3041
 msgid "Installed: unknown (the keyboard did not report its version)"
 msgstr "نصب‌شده: نامشخص (صفحه‌کلید نسخهٔ خود را گزارش نکرد)"
 
-#: polyhost/host.py:3030
+#: polyhost/host.py:3042
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "میان‌افزار {version} در دسترس است."
 
-#: polyhost/host.py:3032
+#: polyhost/host.py:3044
 msgid "Both halves update over HID and reboot automatically."
 msgstr "هر دو نیمه از طریق HID به‌روز شده و خودکار دوباره راه‌اندازی می‌شوند."
 
-#: polyhost/host.py:3035
+#: polyhost/host.py:3047
 msgid "This update changes your stored keymap once:"
 msgstr "این به‌روزرسانی نقشهٔ کلید ذخیره‌شدهٔ شما را یک بار تغییر می‌دهد:"
 
-#: polyhost/host.py:3037
+#: polyhost/host.py:3049
 msgid "Keys you remapped and your macros stay as they are."
 msgstr "کلیدهایی که دوباره تخصیص داده‌اید و ماکروهای شما همان‌طور باقی می‌مانند."
 
-#: polyhost/host.py:3038
+#: polyhost/host.py:3050
 msgid "Update PolyKybd Firmware"
 msgstr "به‌روزرسانی میان‌افزار PolyKybd"
 
-#: polyhost/host.py:3042
+#: polyhost/host.py:3054
 msgid "Download and flash now?"
 msgstr "اکنون بارگیری و فلش شود؟"
 
-#: polyhost/host.py:3053
+#: polyhost/host.py:3065
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "در حال بارگیری میان‌افزار v{version}…"
 
-#: polyhost/host.py:3075 polyhost/host.py:3376
+#: polyhost/host.py:3087 polyhost/host.py:3388
 msgid "Cancelling…"
 msgstr "در حال لغو…"
 
-#: polyhost/host.py:3112
+#: polyhost/host.py:3124
 msgid "Firmware Update Failed"
 msgstr "به‌روزرسانی میان‌افزار ناموفق بود"
 
-#: polyhost/host.py:3113
+#: polyhost/host.py:3125
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -5394,11 +5458,11 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3219 polyhost/host.py:3261 polyhost/host.py:3269
+#: polyhost/host.py:3231 polyhost/host.py:3273 polyhost/host.py:3281
 msgid "Allow access to the keyboard"
 msgstr "اجازهٔ دسترسی به صفحه‌کلید"
 
-#: polyhost/host.py:3220
+#: polyhost/host.py:3232
 msgid ""
 "On Linux a udev rule lets this app open the keyboard without root: its HID interface, and its serial port for faster firmware and font-pack updates. The rule file is /etc/udev/rules.d/99-hid.rules.\n"
 "\n"
@@ -5408,7 +5472,7 @@ msgstr ""
 "\n"
 "سیستم گذرواژهٔ شما را می‌پرسد (PolicyKit). سپس صفحه‌کلید را جدا کنید و دوباره وصل کنید."
 
-#: polyhost/host.py:3262
+#: polyhost/host.py:3274
 msgid ""
 "The udev rule is installed.\n"
 "\n"
@@ -5418,11 +5482,11 @@ msgstr ""
 "\n"
 "صفحه‌کلید را جدا کنید و دوباره وصل کنید تا مجوزهای جدید اعمال شوند."
 
-#: polyhost/host.py:3270
+#: polyhost/host.py:3282
 msgid "The udev rule was not installed."
 msgstr "قانون udev نصب نشد."
 
-#: polyhost/host.py:3271
+#: polyhost/host.py:3283
 #, python-brace-format
 msgid ""
 "{error}\n"
@@ -5435,12 +5499,12 @@ msgstr ""
 "همچنین می‌توانید این فرمان‌ها را در ترمینال اجرا کنید:\n"
 "{commands}"
 
-#: polyhost/host.py:3340 polyhost/host.py:3354 polyhost/host.py:3400
-#: polyhost/host.py:3409 polyhost/host.py:3415
+#: polyhost/host.py:3352 polyhost/host.py:3366 polyhost/host.py:3412
+#: polyhost/host.py:3421 polyhost/host.py:3427
 msgid "Install WinCompose"
 msgstr "نصب WinCompose"
 
-#: polyhost/host.py:3341
+#: polyhost/host.py:3353
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -5450,11 +5514,11 @@ msgstr ""
 "\n"
 "نسخهٔ PolyKybd از WinCompose از GitHub بارگیری و نصب‌کنندهٔ آن اجرا می‌شود (Windows از شما تأیید می‌خواهد)."
 
-#: polyhost/host.py:3354
+#: polyhost/host.py:3366
 msgid "Looking for the latest WinCompose release…"
 msgstr "در حال جست‌وجوی آخرین نسخهٔ WinCompose…"
 
-#: polyhost/host.py:3401
+#: polyhost/host.py:3413
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -5464,7 +5528,7 @@ msgstr ""
 "\n"
 "صفحهٔ انتشارها در مرورگر شما باز می‌شود — برنامهٔ نصب را از آنجا بارگیری و اجرا کنید."
 
-#: polyhost/host.py:3410
+#: polyhost/host.py:3422
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -5475,7 +5539,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3416
+#: polyhost/host.py:3428
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -5492,76 +5556,76 @@ msgstr ""
 "در این مسیر ذخیره شد:\n"
 "{path}"
 
-#: polyhost/host.py:3424
+#: polyhost/host.py:3436
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "نصب‌کنندهٔ WinCompose اجرا شد. پس از پایان نصب و اجرای WinCompose، PolyKybd خودکار به آن تغییر می‌کند."
 
-#: polyhost/services/editor_plugins.py:208
+#: polyhost/services/editor_plugins.py:209
 #, python-brace-format
 msgid "Copied the plugin to {path}."
 msgstr "افزونه در {path} کپی شد."
 
-#: polyhost/services/editor_plugins.py:209
+#: polyhost/services/editor_plugins.py:210
 #, python-brace-format
 msgid "Replaced the plugin in {path} with the one from this installation."
 msgstr "افزونه در {path} با افزونهٔ این نصب جایگزین شد."
 
-#: polyhost/services/editor_plugins.py:211
+#: polyhost/services/editor_plugins.py:212
 #, python-brace-format
 msgid "Removed the plugin from {path}."
 msgstr "افزونه از {path} حذف شد."
 
-#: polyhost/services/editor_plugins.py:213
+#: polyhost/services/editor_plugins.py:214
 #, python-brace-format
 msgid "{editor} was not found on this computer."
 msgstr "{editor} روی این رایانه پیدا نشد."
 
-#: polyhost/services/editor_plugins.py:215
+#: polyhost/services/editor_plugins.py:216
 #, python-brace-format
 msgid "{path} was changed by hand. Remove or update it by hand."
 msgstr "{path} به‌صورت دستی تغییر کرده است. آن را دستی حذف یا به‌روزرسانی کنید."
 
-#: polyhost/services/editor_plugins.py:218
+#: polyhost/services/editor_plugins.py:219
 #, python-brace-format
 msgid "Copied the plugin to {path} and added the lines that load it to {init}."
 msgstr "افزونه در {path} کپی شد و خط‌هایی که آن را بارگذاری می‌کنند به {init} اضافه شد."
 
-#: polyhost/services/editor_plugins.py:219
+#: polyhost/services/editor_plugins.py:220
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}."
 msgstr "خط‌هایی که افزونه را بارگذاری می‌کنند از {init} حذف شد."
 
-#: polyhost/services/editor_plugins.py:220
+#: polyhost/services/editor_plugins.py:221
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}, and the plugin from {path}."
 msgstr "خط‌هایی که افزونه را بارگذاری می‌کنند از {init} و خود افزونه از {path} حذف شد."
 
-#: polyhost/services/editor_plugins.py:221
+#: polyhost/services/editor_plugins.py:222
 #, python-brace-format
 msgid "{path} has a copy of the plugin that this app did not write. It is left alone."
 msgstr "{path} یک کپی از افزونه دارد که این برنامه ننوشته است. دست‌نخورده می‌ماند."
 
-#: polyhost/services/editor_plugins.py:223
+#: polyhost/services/editor_plugins.py:224
 #, python-brace-format
 msgid "No {editor} project folder was chosen."
 msgstr "هیچ پوشه‌ی پروژه‌ی {editor} انتخاب نشد."
 
-#: polyhost/services/editor_plugins.py:224
+#: polyhost/services/editor_plugins.py:225
 #, python-brace-format
 msgid "Installed the extension with {command}."
 msgstr "افزونه با {command} نصب شد."
 
-#: polyhost/services/editor_plugins.py:225
+#: polyhost/services/editor_plugins.py:226
 #, python-brace-format
 msgid "Removed the extension with {command}."
 msgstr "افزونه با {command} حذف شد."
 
-#: polyhost/services/editor_plugins.py:226
+#: polyhost/services/editor_plugins.py:227
 #, python-brace-format
 msgid "{command} failed: {error}"
 msgstr "{command} ناموفق بود: {error}"
 
-#: polyhost/services/editor_plugins.py:227
+#: polyhost/services/editor_plugins.py:228
 #, python-brace-format
 msgid ""
 "{command} failed: {error}\n"
@@ -5570,27 +5634,27 @@ msgstr ""
 "{command} ناموفق بود: {error}\n"
 "{reason}"
 
-#: polyhost/services/editor_plugins.py:228
+#: polyhost/services/editor_plugins.py:229
 #, python-brace-format
 msgid "{editor} is restricted by a policy (the setting extensions.allowed, or a rule of your organization), so it did not install the extension. Ask your administrator to allow {extension}."
 msgstr "{editor} با یک سیاست محدود شده است (تنظیم extensions.allowed یا قانونی در سازمان شما)، بنابراین افزونه را نصب نکرد. از مدیر بخواهید {extension} را مجاز کند."
 
-#: polyhost/services/editor_plugins.py:231
+#: polyhost/services/editor_plugins.py:232
 #, python-brace-format
 msgid "{editor} has the extension {extension} from another source. It is left alone."
 msgstr "{editor} افزونه‌ی {extension} را از منبع دیگری دارد. دست‌نخورده می‌ماند."
 
-#: polyhost/services/editor_plugins.py:232
+#: polyhost/services/editor_plugins.py:233
 #, python-brace-format
 msgid "The change was made, but {path} could not be written, so this app does not remember it."
 msgstr "تغییر انجام شد، اما {path} نوشته نشد، پس این برنامه آن را به خاطر نمی‌سپارد."
 
-#: polyhost/services/editor_plugins.py:235
+#: polyhost/services/editor_plugins.py:236
 #, python-brace-format
 msgid "The plugin is installed, but {path} could not be written, so this app does not remember this folder."
 msgstr "افزونه نصب شده است، اما {path} نوشته نشد، پس این برنامه این پوشه را به خاطر نمی‌سپارد."
 
-#: polyhost/services/editor_plugins.py:237
+#: polyhost/services/editor_plugins.py:238
 #, python-brace-format
 msgid "Run this command in the Python environment that runs JupyterLab: {command}"
 msgstr "این فرمان را در محیط Python که JupyterLab را اجرا می‌کند اجرا کنید: {command}"
@@ -5819,7 +5883,7 @@ msgstr "خط به {path} اضافه شد."
 msgid "Replaced the line in {path} with one for this installation."
 msgstr "خط در {path} با خطی برای این نصب جایگزین شد."
 
-#: polyhost/services/editor_plugins.py:210 polyhost/services/shell_title.py:109
+#: polyhost/services/editor_plugins.py:211 polyhost/services/shell_title.py:109
 #, python-brace-format
 msgid "Already set up in {path}."
 msgstr "از قبل در {path} تنظیم شده است."
@@ -5839,7 +5903,7 @@ msgstr "عنوان Codex در {path} خاموش شد."
 msgid "Removed the line from {path}."
 msgstr "خط از {path} حذف شد."
 
-#: polyhost/services/editor_plugins.py:212 polyhost/services/shell_title.py:113
+#: polyhost/services/editor_plugins.py:213 polyhost/services/shell_title.py:113
 #, python-brace-format
 msgid "Nothing to remove in {path}."
 msgstr "چیزی برای حذف در {path} نیست."
@@ -5859,12 +5923,12 @@ msgstr "{shell} مسیر پروفایل خود را گزارش نکرد: {error}
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts. Run 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' in PowerShell first."
 msgstr "سیاست اجرای PowerShell ({policy}) اسکریپت‌های پروفایل را اجرا نمی‌کند. ابتدا 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' را در PowerShell اجرا کنید."
 
-#: polyhost/services/editor_plugins.py:216 polyhost/services/shell_title.py:118
+#: polyhost/services/editor_plugins.py:217 polyhost/services/shell_title.py:118
 #, python-brace-format
 msgid "{path} has a start marker without an end marker. Remove the block by hand."
 msgstr "{path} نشانهٔ آغاز بدون نشانهٔ پایان دارد. بلوک را دستی حذف کنید."
 
-#: polyhost/services/editor_plugins.py:217 polyhost/services/shell_title.py:119
+#: polyhost/services/editor_plugins.py:218 polyhost/services/shell_title.py:119
 #, python-brace-format
 msgid "Could not change {path}: {error}"
 msgstr "تغییر {path} ممکن نشد: {error}"

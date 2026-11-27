@@ -110,7 +110,8 @@ class WireTest(unittest.TestCase):
 
     def test_bad_arguments_send_nothing(self):
         kb, fw = _keyboard(39)
-        for kw in ({"brightness": 256}, {"hue": 1}, {"enabled": False, "effect": 2}, {}):
+        for kw in ({"brightness": 256}, {"hue": 1}, {"enabled": False, "effect": 2},
+                   {"enabled": True, "effect": 0}, {}):
             self.assertFalse(kb.set_rgb_matrix(**kw)[0], kw)
         self.assertEqual(_via_writes(fw), [])
 
@@ -121,6 +122,16 @@ class WireTest(unittest.TestCase):
             read = kb.get_rgb_matrix()[1]["brightness"]
             kb.set_rgb_matrix(brightness=read)
             self.assertEqual(fw.rgb["val"], stored, read)
+
+    def test_a_reboot_restores_the_stored_rgb_and_restarts_uptime(self):
+        clock = _Clock()
+        kb, fw = _keyboard(39, clock)
+        kb.set_rgb_matrix(effect=7, brightness=255)
+        clock.t += 10
+        fw.reboot()
+        self.assertEqual(fw.rgb, fw.rgb_stored)
+        clock.t += 1
+        self.assertEqual(kb.get_uptime_ms(), (True, 1000))
 
     def test_device_indication_toggles(self):
         kb, fw = _keyboard(39)

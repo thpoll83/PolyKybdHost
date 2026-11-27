@@ -3360,6 +3360,45 @@ class PolyCore(Observable):
         """The flash unique IDs of both halves (cmd 50, v37+), read now."""
         return self._device_call("hw_ids_get", lambda c: self.keeb.get_hw_ids())
 
+    # --- VIA values (legacy raw HID ids, protocol v39+) ---------------------
+
+    # VIA's device indication: six toggles, 200 ms apart, so the RGB matrix ends
+    # as it started.
+    INDICATE_TOGGLES = 6
+    INDICATE_INTERVAL_S = 0.2
+
+    def get_rgb_matrix(self):
+        """The RGB matrix state: enabled, effect, brightness, speed, hue, sat."""
+        return self._device_call("rgb_matrix_get", lambda c: self.keeb.get_rgb_matrix())
+
+    def set_rgb_matrix(self, values):
+        """Change the RGB matrix in RAM. ``values`` is a dict of enabled, effect,
+        brightness, speed, hue, sat (PolyKybd.set_rgb_matrix). A reboot restores the
+        stored settings."""
+        values = dict(values)
+        return self._device_call("rgb_matrix_set", lambda c: self.keeb.set_rgb_matrix(**values))
+
+    def get_uptime_ms(self):
+        """Milliseconds since boot of the half the host talks to."""
+        return self._device_call("uptime_get", lambda c: self.keeb.get_uptime_ms())
+
+    def indicate_device(self):
+        """Blink the RGB matrix so the user can see which keyboard this is."""
+        def blink(c):
+            for i in range(self.INDICATE_TOGGLES):
+                if i:
+                    time.sleep(self.INDICATE_INTERVAL_S)
+                ok, msg = self.keeb.indicate_device(i)
+                if not ok:
+                    return False, msg
+            return True, "ok"
+        return self._device_call("indicate_device", blink)
+
+    def get_switch_matrix(self):
+        """Which keys are down, one int per matrix row. The keyboard answers only
+        while its debug mode is on."""
+        return self._device_call("switch_matrix_get", lambda c: self.keeb.get_switch_matrix())
+
     # Reads per connection: the first, plus retries after a failed read or when
     # the other half appears later (a slave that joins after the master).
     HW_ID_READS_PER_CONNECTION = 4

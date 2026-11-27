@@ -1595,6 +1595,8 @@ class PolyKybd:
             return False, "hue and sat must be set together"
         if enabled is False and effect:
             return False, "enabled=False contradicts a non-zero effect"
+        if enabled is True and effect == 0:
+            return False, "enabled=True contradicts effect 0 (off)"
         turn_on = False
         if enabled is True and effect is None:
             ok, reply = self._via_request(

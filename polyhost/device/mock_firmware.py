@@ -366,7 +366,9 @@ class MockFirmware:
         self.hw_uid_own: bytes | None = bytes.fromhex("e66038b7c32f5a2c")
         # v39 VIA values (hid_com.c legacy_command_kb). RAM state of the RGB matrix,
         # the firmware's debug_enable (gates the switch matrix read) and the rows.
-        self.rgb = {"enabled": True, "mode": 1, "val": 20, "speed": 128, "hue": 0, "sat": 255}
+        # rgb_stored: the EEPROM settings a reboot restores (the VIA setters are RAM only).
+        self.rgb_stored = {"enabled": True, "mode": 1, "val": 20, "speed": 128, "hue": 0, "sat": 255}
+        self.rgb = dict(self.rgb_stored)
         self.rgb_max_brightness = 100     # RGB_MATRIX_MAXIMUM_BRIGHTNESS (both variants)
         self.rgb_effect_max = 40          # RGB_MATRIX_EFFECT_MAX
         self.debug_enable = False
@@ -504,6 +506,9 @@ class MockFirmware:
             self.fw_staged_valid = False
             self._apply_pending = False
         self._deaf_until = 0.0
+        # v39 VIA values: RAM-only RGB changes go, uptime starts again from 0.
+        self.rgb = dict(self.rgb_stored)
+        self._boot_time = self.clock()
         # Runtime combos: RAM goes, the flash sector stays (firmware poly_combos_init).
         if hasattr(self, "combo_records"):
             from polyhost.device.command_ids import Combos

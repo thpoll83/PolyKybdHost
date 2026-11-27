@@ -3,7 +3,7 @@ import os
 import re
 import string
 
-from PyQt5.QtCore import QRectF, QSize, Qt
+from PyQt5.QtCore import QRectF, QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QColor, QCursor, QFont, QGuiApplication, QPainter, QPalette, QPen
 from PyQt5.QtWidgets import (
     QAbstractScrollArea, QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog, QFrame,
@@ -82,6 +82,7 @@ SECTIONS = (
         (N_("Idle display"), (kbd.IDLE_STYLE, kbd.IDLE_TIMEOUT)),
         (N_("Keycaps"), (kbd.GLYPH_SCRIPT, kbd.GLYPH_PLACEMENT, kbd.GLYPH_SIZE)),
         (N_("Tap-Hold Timing"), kbd.TAP_KEYS),
+        (N_("Key lighting"), kbd.RGB_KEYS),
         (N_("Unicode input"), ("unicode_send_composition_mode",)),
         (N_("Font packs"), ("fontpack_auto_flash", "fontpack_path")),
         (N_("Emoji search"), ("emoji_search_dict", "emoji_search_dict_file")),
@@ -128,6 +129,7 @@ OTHER_SECTION = ("other", N_("Other"))
 ADVANCED_SETTINGS = frozenset((
     "irradiance_min", "irradiance_max", "irradiance_prescaler", "brightness_gamma",
     kbd.GLYPH_PLACEMENT, kbd.FLOW_TAP_TERM, kbd.AUTO_SHIFT_MS,
+    kbd.RGB_EFFECT, kbd.RGB_SPEED, kbd.RGB_HUE, kbd.RGB_SAT,
     "fontpack_path", "emoji_search_dict_file",
     "browser_report_port", "browser_report_token", "hid_reconnect_retries",
     "max_hid_message_before_delay", "delay_time_after_max_hid_messages",
@@ -148,6 +150,13 @@ SETTING_LABELS = {
     kbd.FLOW_TAP_TERM: N_("Flow Tap term"),
     kbd.AUTO_SHIFT: N_("Auto Shift"),
     kbd.AUTO_SHIFT_MS: N_("Auto Shift timeout"),
+    kbd.RGB_ENABLED: N_("Lights on"),
+    kbd.RGB_BRIGHTNESS: N_("Lighting brightness"),
+    kbd.RGB_EFFECT: N_("Lighting effect"),
+    kbd.RGB_SPEED: N_("Effect speed"),
+    kbd.RGB_HUE: N_("Lighting hue"),
+    kbd.RGB_SAT: N_("Lighting saturation"),
+    kbd.RGB_INDICATE: N_("Find this keyboard"),
     "brightness_set_daylight_dependent": N_("Follow daylight"),
     "brightness_allow_online_irradiance_request": N_("Online sunlight data"),
     "brightness_allow_online_location_lookup": N_("Online location lookup"),
@@ -240,6 +249,28 @@ SETTING_DESCRIPTIONS = {
         "Auto Shift timeout types its shifted character."),
     kbd.AUTO_SHIFT_MS: N_("How long you hold a key before Auto Shift types its shifted "
                           "character."),
+    kbd.RGB_ENABLED: N_(
+        "Switches the LEDs under the keys on or off. The keyboard keeps the change until "
+        "it restarts, then uses its stored setting again. Needs keyboard firmware with "
+        "protocol 39."),
+    kbd.RGB_BRIGHTNESS: N_(
+        "How bright the LEDs under the keys are, from 0 to 255. The keyboard keeps the "
+        "change until it restarts."),
+    kbd.RGB_EFFECT: N_(
+        "The number of the lighting animation, from 1. The keyboard uses the nearest one "
+        "it has. It keeps the change until it restarts."),
+    kbd.RGB_SPEED: N_(
+        "How fast the lighting animation runs, from 0 to 255. The keyboard keeps the "
+        "change until it restarts."),
+    kbd.RGB_HUE: N_(
+        "The colour of the lighting, from 0 to 255 around the colour wheel. The keyboard "
+        "keeps the change until it restarts."),
+    kbd.RGB_SAT: N_(
+        "How strong the lighting colour is, from 0 (white) to 255. The keyboard keeps the "
+        "change until it restarts."),
+    kbd.RGB_INDICATE: N_(
+        "Blinks the LEDs under the keys three times, so you can see which keyboard this "
+        "dialog changes."),
     "agents_enabled": N_(
         "Shows the state of AI coding agents on the number row and, while the AI key "
         "is pressed, one card per agent. Needs keyboard firmware with protocol 31. "
@@ -945,6 +976,9 @@ class _Section(ColorSection):
 
 
 class SettingsDialog(QDialog):
+    # The Find this keyboard button was clicked (Settings > Keyboard > Key lighting).
+    indicate_requested = pyqtSignal()
+
     # The sections whose Advanced switch is on, kept while the app runs, so
     # the next Settings window opens the same way.
     advanced_sections = set()
@@ -1149,8 +1183,17 @@ class SettingsDialog(QDialog):
         self._rows[key] = row
         return row
 
-    @staticmethod
-    def _keyboard_editor(key):
+    def _keyboard_editor(self, key):
+        if key == kbd.RGB_INDICATE:
+            button = QPushButton(_("Blink"))
+            button.clicked.connect(lambda _c=False: self.indicate_requested.emit())
+            return button
+        if key == kbd.RGB_ENABLED:
+            return ToggleSwitch()
+        if key in kbd.RGB_RANGES:
+            spin = SettingSpinBox()
+            spin.setRange(*kbd.RGB_RANGES[key])
+            return spin
         if key == kbd.BRIGHTNESS:
             return kbd.make_brightness_editor()
         if key == kbd.IDLE_STYLE:
@@ -1186,7 +1229,11 @@ class SettingsDialog(QDialog):
         return spin
 
     @staticmethod
-    def _keyboard_value(editor):
+    def _keyboard_value(editor, key=None):
+        if isinstance(editor, QPushButton):
+            return None                       # an action, not a value
+        if key in kbd.RGB_RANGES:
+            return editor.value()             # a byte, not a time on the 10 ms grid
         if isinstance(editor, kbd.TileChoice):
             return editor.value()
         if isinstance(editor, QComboBox):
@@ -1218,6 +1265,8 @@ class SettingsDialog(QDialog):
                     editor.setCurrentIndex(index)
                 elif isinstance(editor, QCheckBox):
                     editor.setChecked(bool(value))
+                elif isinstance(editor, QPushButton):
+                    pass
                 else:
                     editor.setValue(int(value))
                 editor.setEnabled(True)
@@ -1231,6 +1280,12 @@ class SettingsDialog(QDialog):
         if auto is not None and auto_ms is not None and kbd.AUTO_SHIFT in values:
             auto_ms.setEnabled(auto.isChecked())
             auto.toggled.connect(auto_ms.setEnabled)
+        rgb_on = self.keyboard_widgets.get(kbd.RGB_ENABLED)
+        effect = self.keyboard_widgets.get(kbd.RGB_EFFECT)
+        if rgb_on is not None and effect is not None and kbd.RGB_ENABLED in values:
+            # The effect is the animation of a lit matrix; switched off it reads 0.
+            effect.setEnabled(rgb_on.isChecked())
+            rgb_on.toggled.connect(effect.setEnabled)
         if self._keyboard_section is not None:
             if not values:
                 note = _("Connect the keyboard to change the settings stored on it.")
@@ -1241,6 +1296,10 @@ class SettingsDialog(QDialog):
                 note = ""
             self._keyboard_section.set_note(note)
 
+    def keyboard_read(self):
+        """{pseudo key: value} as read from the keyboard when the dialog opened."""
+        return dict(self._keyboard_read)
+
     def keyboard_changes(self):
         """{pseudo key: new value} for each keyboard row the user changed."""
         out = {}
@@ -1248,7 +1307,7 @@ class SettingsDialog(QDialog):
             editor = self.keyboard_widgets.get(key)
             if editor is None:
                 continue
-            value = self._keyboard_value(editor)
+            value = self._keyboard_value(editor, key)
             if value is not None and value != before:
                 out[key] = value
         return out
