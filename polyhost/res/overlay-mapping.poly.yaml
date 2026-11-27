@@ -4285,6 +4285,26 @@ widelands,widelands.exe,org.widelands.widelands:
   os:
     macos:
       overlay: [widelands_template_mac.mods.png, widelands_template_mac.combo.mods.png]
+# Cyberpunk 2077 (overlay_sources/action/cyberpunk.yaml). bin/x64/Cyberpunk2077.exe;
+# steam_app_1091500 covers Proton. The macOS build's process name is not known.
+# Names not checked on an install. Default keys only.
+cyberpunk2077,steam_app_1091500:
+  overlay: cyberpunk_template.mods.png
+# Helldivers 2 (overlay_sources/action/helldivers2.yaml). bin/helldivers2.exe;
+# steam_app_553850 covers Proton. Names not checked on an install. Default keys
+# only.
+helldivers2,steam_app_553850:
+  overlay: helldivers2_template.mods.png
+# Elden Ring (overlay_sources/action/eldenring.yaml). Game/eldenring.exe, started
+# through the anti-cheat launcher; steam_app_1245620 covers Proton. Names not
+# checked on an install. Default keys only: the key config is in the binary save.
+eldenring,steam_app_1245620:
+  overlay: eldenring_template.mods.png
+# Baldur's Gate 3 (overlay_sources/action/bg3.yaml). bin/bg3.exe (Vulkan) and
+# bin/bg3_dx11.exe; the macOS app is "Baldur's Gate 3"; steam_app_1086940
+# covers Proton. Names not checked on an install. Default keys only.
+"bg3,bg3_dx11,baldur's gate 3,steam_app_1086940":
+  overlay: bg3_template.mods.png
 # League of Legends (overlay_sources/lol/lol.yaml), the in-game window only. The
 # game is `League of Legends.exe` on Windows and the `LeagueofLegends` app on
 # macOS. The lobby client (LeagueClient, LeagueClientUx) is a different process

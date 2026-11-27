@@ -1,0 +1,73 @@
+# Helldivers 2 overlay for PolyKybd. See SOURCES.md.
+#
+# Keys: Arrowhead's own input help page with the list of default values
+# (content.thehelldiversgame.com/help/inputs.md, last modified 2024-05-16, read
+# 2026-11-27). Each binding names the page's `Group.Action` (`command:`), the
+# name the player's input_settings.config uses for an override. The page is
+# older than the vehicles; later defaults are not in it.
+#
+# Holding Left Ctrl opens the stratagem menu; W A S D then enter the code. The
+# Ctrl layer of W A S D shows the stratagem input.
+#
+# Keys with a tap and a long-press action show the tap: Q ping (long press:
+# communication wheel), R reload (long press: weapon function menu).
+#
+# Left out: the modifier keys (Left Shift sprint, Left Alt dive, Left Ctrl
+# stratagem menu), the menu-only keys, and Esc (program mark).
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/action/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/action/helldivers2.yaml --preview /tmp/helldivers2_preview
+app: helldivers 2
+match: [helldivers2, steam_app_553850]
+output: helldivers2_template
+icon_dir: icons
+fit: contain
+mode: auto
+threshold: 150
+anchor: right
+region: [40, 40]
+margin: 0
+
+program_icon: helldivers2.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Movement
+  - { key: W, command: Avatar.MoveForward, icon: forward.png, label: "Move forward" }
+  - { key: S, command: Avatar.MoveBackward, icon: back.png, label: "Move back" }
+  - { key: A, command: Avatar.MoveLeft, icon: left.png, label: "Move left" }
+  - { key: D, command: Avatar.MoveRight, icon: right.png, label: "Move right" }
+  - { key: SPACE, command: Avatar.Climb, icon: climb.png, label: "Climb or vault" }
+  - { key: C, command: Avatar.Crouch, icon: crouch.png, label: "Crouch" }
+  - { key: Z, command: Avatar.Prone, icon: prone.png, label: "Prone" }
+
+  # Stratagem code (Left Ctrl held)
+  - { key: W, mods: [CTRL], command: Stratagem.Up, icon: stratup.png, label: "Stratagem: up" }
+  - { key: S, mods: [CTRL], command: Stratagem.Down, icon: stratdown.png, label: "Stratagem: down" }
+  - { key: A, mods: [CTRL], command: Stratagem.Left, icon: stratleft.png, label: "Stratagem: left" }
+  - { key: D, mods: [CTRL], command: Stratagem.Right, icon: stratright.png, label: "Stratagem: right" }
+
+  # Equipment and actions
+  - { key: "1", command: Avatar.ChangeEquipmentPrimary, icon: primary.png, label: "Primary weapon" }
+  - { key: "2", command: Avatar.ChangeEquipmentSecondary, icon: secondary.png, label: "Secondary weapon" }
+  - { key: "3", command: Avatar.ChangeEquipmentSupport, icon: support.png, label: "Support weapon" }
+  - { key: "4", command: Avatar.ChangeEquipmentGrenade, icon: grenadeslot.png, label: "Grenade slot" }
+  - { key: "5", command: Avatar.BackpackFunction, icon: backpack.png, label: "Backpack function" }
+  - { key: G, command: Avatar.ChangeEquipmentQuickGrenade, icon: grenade.png, label: "Quick grenade" }
+  - { key: E, command: Avatar.Use, icon: interact.png, label: "Interact" }
+  - { key: R, command: Avatar.Reload, icon: reload.png, label: "Reload", shared: false }
+  - { key: F, command: Avatar.Melee, icon: melee.png, label: "Melee" }
+  - { key: V, command: Avatar.QuickStim, icon: stim.png, label: "Stim" }
+  - { key: X, command: Avatar.DropOpen, icon: drop.png, label: "Drop menu" }
+
+  # Map and communication
+  - { key: TAB, command: Avatar.Map, icon: map.png, label: "Map" }
+  - { key: Q, command: Player.CommunicationSpot, icon: ping.png, label: "Ping" }
+  - { key: B, command: Player.Emote, icon: emote.png, label: "Emote" }
+  - { key: CAPS, command: Player.VoicePushToTalk, icon: talk.png, label: "Push to talk" }

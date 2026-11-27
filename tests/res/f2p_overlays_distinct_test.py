@@ -1,4 +1,4 @@
-"""In each free-to-play game overlay, two keys show the same picture only when
+"""In each game overlay in SPECS, two keys show the same picture only when
 they run the same action: a numbered slot (weapon, flask, party member, quick
 chat) carries its number in the icon. Compared on the generated cells, so a
 picture the shared concept renderer draws counts too."""
@@ -11,8 +11,9 @@ from polyhost.services.game_assets.build import RES, modifier
 from tests.services.game_assets_ra_test import cells
 
 SPECS = ("tf2/tf2", "apex/apex", "rocketleague/rocketleague", "poe/poe", "poe/poe2",
-         "overwatch/overwatch", "genshin/genshin")
-FIRST_PERSON = ("tf2/tf2", "apex/apex", "overwatch/overwatch")
+         "overwatch/overwatch", "genshin/genshin", "action/cyberpunk", "action/helldivers2",
+         "action/eldenring", "action/bg3")
+FIRST_PERSON = ("tf2/tf2", "apex/apex", "overwatch/overwatch", "action/cyberpunk")
 
 
 def spec(name):

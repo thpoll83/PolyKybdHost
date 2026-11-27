@@ -1,0 +1,101 @@
+# Baldur's Gate 3 overlay for PolyKybd. See SOURCES.md.
+#
+# Keys: two guides that agree (bg3.wiki "Controls", Shacknews 2023-08-03, read
+# 2026-11-27); photo mode F9 from three guides on Patch 8 (2025-04-15). The
+# game's own default input data is inside its .pak files and no public copy
+# was found, so every key is UNCONFIRMED.
+#
+# The hotbar holds what the player puts there, so its icons only carry the
+# slot number. W A S D move the camera; the arrow keys repeat them.
+#
+# Left out: Y (short rest: bg3.wiki gives Y, Shacknews has it unbound), the
+# modifier keys (Left Ctrl main attack, Left Alt item labels, Left Shift sneak
+# cones), Ctrl+Shift+Q (one source), the mouse, and Esc (program mark).
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/action/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/action/bg3.yaml --preview /tmp/bg3_preview
+app: baldur's gate 3
+match: [bg3, bg3_dx11, baldur's gate 3, steam_app_1086940]
+output: bg3_template
+icon_dir: icons
+fit: contain
+mode: auto
+threshold: 150
+anchor: right
+region: [40, 40]
+margin: 0
+
+program_icon: bg3.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Camera
+  - { key: W, icon: forward.png, label: "Camera forward", undrawn: [UP] }
+  - { key: S, icon: back.png, label: "Camera back", undrawn: [DOWN] }
+  - { key: A, icon: left.png, label: "Camera left", undrawn: [LEFT] }
+  - { key: D, icon: right.png, label: "Camera right", undrawn: [RIGHT] }
+  - { key: Q, icon: rotleft.png, label: "Rotate camera left" }
+  - { key: E, icon: rotright.png, label: "Rotate camera right" }
+  - { key: PGUP, icon: zoomin.png, label: "Zoom in", shared: false }
+  - { key: PGDN, icon: zoomout.png, label: "Zoom out", shared: false }
+  - { key: HOME, icon: center.png, label: "Centre on character" }
+  - { key: O, icon: tactical.png, label: "Tactical camera" }
+
+  # Actions
+  - { key: Z, icon: jump.png, label: "Jump" }
+  - { key: C, icon: sneak.png, label: "Sneak" }
+  - { key: C, mods: [SHIFT], icon: groupsneak.png, label: "Group sneak" }
+  - { key: V, icon: shove.png, label: "Shove" }
+  - { key: X, icon: throw.png, label: "Throw" }
+  - { key: F, icon: weaponset.png, label: "Switch weapon set" }
+  - { key: R, icon: dualwield.png, label: "Toggle dual wielding" }
+  - { key: U, icon: holster.png, label: "Sheathe or unsheathe" }
+  - { key: G, icon: groupmode.png, label: "Group mode" }
+  - { key: SPACE, icon: endturn.png, label: "End turn" }
+  - { key: SPACE, mods: [SHIFT], icon: turnbased.png, label: "Turn-based mode" }
+  - { key: GRAVE, icon: highlight.png, label: "Highlight characters" }
+  - { key: T, icon: examine.png, label: "Examine" }
+
+  # Panels
+  - { key: N, icon: character.png, label: "Character sheet" }
+  - { key: I, icon: inventory.png, label: "Inventory" }
+  - { key: TAB, icon: party.png, label: "Party view" }
+  - { key: K, icon: spellbook.png, label: "Spellbook" }
+  - { key: B, icon: illithid.png, label: "Illithid powers" }
+  - { key: L, icon: reactions.png, label: "Reactions" }
+  - { key: J, icon: journal.png, label: "Journal" }
+  - { key: M, icon: map.png, label: "Map" }
+  - { key: P, icon: inspiration.png, label: "Inspiration" }
+  - { key: H, icon: alchemy.png, label: "Alchemy" }
+
+  # Hotbar and party
+  - { key: "1", icon: hotbar1.png, label: "Hotbar slot 1" }
+  - { key: "2", icon: hotbar2.png, label: "Hotbar slot 2" }
+  - { key: "3", icon: hotbar3.png, label: "Hotbar slot 3" }
+  - { key: "4", icon: hotbar4.png, label: "Hotbar slot 4" }
+  - { key: "5", icon: hotbar5.png, label: "Hotbar slot 5" }
+  - { key: "6", icon: hotbar6.png, label: "Hotbar slot 6" }
+  - { key: "7", icon: hotbar7.png, label: "Hotbar slot 7" }
+  - { key: "8", icon: hotbar8.png, label: "Hotbar slot 8" }
+  - { key: "9", icon: hotbar9.png, label: "Hotbar slot 9" }
+  - { key: "0", icon: hotbar10.png, label: "Hotbar slot 10" }
+  - { key: MINUS, icon: hotbar11.png, label: "Hotbar slot 11" }
+  - { key: EQUAL, icon: hotbar12.png, label: "Hotbar slot 12" }
+  - { key: F1, icon: member1.png, label: "Select character 1", region: [34, 40] }
+  - { key: F2, icon: member2.png, label: "Select character 2", region: [34, 40] }
+  - { key: F3, icon: member3.png, label: "Select character 3", region: [34, 40] }
+  - { key: F4, icon: member4.png, label: "Select character 4", region: [34, 40] }
+  - { key: RBRACKET, icon: nextchar.png, label: "Next character" }
+  - { key: LBRACKET, icon: prevchar.png, label: "Previous character" }
+
+  # System
+  - { key: F5, icon: quicksave.png, label: "Quick save", region: [34, 40] }
+  - { key: F8, icon: quickload.png, label: "Quick load", region: [34, 40] }
+  - { key: F9, icon: photo.png, label: "Photo mode", region: [34, 40] }
+  - { key: F10, icon: hideui.png, label: "Hide or show UI", region: [34, 40] }
