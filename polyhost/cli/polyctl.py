@@ -1777,6 +1777,11 @@ def _cmd_rgb(client, args):
             print("rgb set: give at least one of --effect --brightness --speed --hue/--sat",
                   file=sys.stderr)
             return 2
+        if ("hue" in values) != ("sat" in values):
+            # The firmware takes hue and saturation together: keep the other as it is.
+            now = client.call(protocol.M_RGB_MATRIX_GET, {}) or {}
+            values.setdefault("hue", now.get("hue", 0))
+            values.setdefault("sat", now.get("sat", 0))
         client.call(protocol.M_RGB_MATRIX_SET, values)
     state = client.call(protocol.M_RGB_MATRIX_GET, {}) or {}
     print(f"rgb:         {'on' if state.get('enabled') else 'off'}")

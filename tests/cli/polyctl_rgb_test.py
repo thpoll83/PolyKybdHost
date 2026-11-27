@@ -28,6 +28,12 @@ class RgbCliTest(unittest.TestCase):
         self.assertEqual(dict(server.received)[protocol.M_RGB_MATRIX_SET],
                          {"brightness": 200, "hue": 5, "sat": 9})
 
+    def test_hue_alone_sends_the_current_saturation(self):
+        rc, _, _, server = run_main(["rgb", "set", "--hue", "40"],
+                                    {protocol.M_RGB_MATRIX_SET: "ok", protocol.M_RGB_MATRIX_GET: STATE})
+        self.assertEqual(rc, 0)
+        self.assertEqual(dict(server.received)[protocol.M_RGB_MATRIX_SET], {"hue": 40, "sat": STATE["sat"]})
+
     def test_set_without_values_is_an_error(self):
         rc, _, err, server = run_main(["rgb", "set"], {})
         self.assertEqual(rc, 2)

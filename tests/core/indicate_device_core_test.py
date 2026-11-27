@@ -30,8 +30,9 @@ class _Keeb:
         return True, "ok"
 
 
-def _core(keeb):
-    core = types.SimpleNamespace(keeb=keeb, INDICATE_TOGGLES=6, INDICATE_INTERVAL_S=0)
+def _core(keeb, safe_mode=False):
+    core = types.SimpleNamespace(keeb=keeb, INDICATE_TOGGLES=6, INDICATE_INTERVAL_S=0,
+                                 safe_mode=safe_mode)
     core._device_call = lambda name, fn: fn(None)
     return core
 
@@ -57,6 +58,21 @@ class IndicateTest(unittest.TestCase):
         self.assertFalse(ok)
         self.assertTrue(keeb.enabled)
         self.assertIn(("set", {"enabled": True}), keeb.calls)
+
+
+class SafeModeTest(unittest.TestCase):
+    def test_every_via_call_is_refused_without_device_io(self):
+        from polyhost.core.poly_core import SAFE_MODE_REFUSAL
+        keeb = _Keeb()
+        core = _core(keeb, safe_mode=True)
+        for call in (lambda: PolyCore.get_rgb_matrix(core),
+                     lambda: PolyCore.set_rgb_matrix(core, {"enabled": False}),
+                     lambda: PolyCore.get_uptime_ms(core),
+                     lambda: PolyCore.indicate_device(core),
+                     lambda: PolyCore.get_switch_matrix(core)):
+            self.assertEqual(call(), (False, SAFE_MODE_REFUSAL))
+        self.assertEqual(keeb.calls, [])
+        self.assertTrue(keeb.enabled)
 
 
 if __name__ == "__main__":

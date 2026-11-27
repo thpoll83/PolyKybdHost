@@ -3369,21 +3369,29 @@ class PolyCore(Observable):
 
     def get_rgb_matrix(self):
         """The RGB matrix state: enabled, effect, brightness, speed, hue, sat."""
+        if self.safe_mode:
+            return False, SAFE_MODE_REFUSAL
         return self._device_call("rgb_matrix_get", lambda c: self.keeb.get_rgb_matrix())
 
     def set_rgb_matrix(self, values):
         """Change the RGB matrix in RAM. ``values`` is a dict of enabled, effect,
         brightness, speed, hue, sat (PolyKybd.set_rgb_matrix). A reboot restores the
         stored settings."""
+        if self.safe_mode:
+            return False, SAFE_MODE_REFUSAL
         values = dict(values)
         return self._device_call("rgb_matrix_set", lambda c: self.keeb.set_rgb_matrix(**values))
 
     def get_uptime_ms(self):
         """Milliseconds since boot of the half the host talks to."""
+        if self.safe_mode:
+            return False, SAFE_MODE_REFUSAL
         return self._device_call("uptime_get", lambda c: self.keeb.get_uptime_ms())
 
     def indicate_device(self):
         """Blink the RGB matrix so the user can see which keyboard this is."""
+        if self.safe_mode:
+            return False, SAFE_MODE_REFUSAL
         def blink(c):
             ok, before = self.keeb.get_rgb_matrix()
             if not ok:
@@ -3405,6 +3413,8 @@ class PolyCore(Observable):
     def get_switch_matrix(self):
         """Which keys are down, one int per matrix row. The keyboard answers only
         while its debug mode is on."""
+        if self.safe_mode:
+            return False, SAFE_MODE_REFUSAL
         return self._device_call("switch_matrix_get", lambda c: self.keeb.get_switch_matrix())
 
     # Reads per connection: the first, plus retries after a failed read or when
