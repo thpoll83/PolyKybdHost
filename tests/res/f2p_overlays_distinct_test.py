@@ -1,4 +1,4 @@
-"""In each free-to-play game overlay, two keys show the same picture only when
+"""In each game overlay in SPECS, two keys show the same picture only when
 they run the same action: a numbered slot (weapon, flask, party member, quick
 chat) carries its number in the icon. Compared on the generated cells, so a
 picture the shared concept renderer draws counts too."""
@@ -11,7 +11,7 @@ from polyhost.services.game_assets.build import RES, modifier
 from tests.services.game_assets_ra_test import cells
 
 SPECS = ("tf2/tf2", "apex/apex", "rocketleague/rocketleague", "poe/poe", "poe/poe2",
-         "overwatch/overwatch", "genshin/genshin")
+         "overwatch/overwatch", "genshin/genshin", "mmo/wow", "mmo/ffxiv")
 FIRST_PERSON = ("tf2/tf2", "apex/apex", "overwatch/overwatch")
 
 
@@ -25,10 +25,15 @@ class DistinctIconsTest(unittest.TestCase):
     def test_one_picture_per_action(self):
         for name in SPECS:
             s = spec(name)
-            png = RES / "overlays" / f"{s['output']}.mods.png"
-            by_picture = {}
+            by_picture, cache = {}, {}
             for b in s["bindings"]:
-                data = cells(png, modifier(b.get("mods"))).get(resolve_key(b["key"]).value)
+                # A binding with two or more modifiers is in the .combo file.
+                tier = ".combo" if len(b.get("mods") or []) > 1 else ""
+                png = RES / "overlays" / f"{s['output']}{tier}.mods.png"
+                mod = modifier(b.get("mods"))
+                if (png, mod) not in cache:
+                    cache[png, mod] = cells(png, mod)
+                data = cache[png, mod].get(resolve_key(b["key"]).value)
                 self.assertIsNotNone(data, f"{name}: {b['key']} has no picture")
                 by_picture.setdefault(data, set()).add(b.get("command", b["label"]))
             shared = [sorted(a) for a in by_picture.values() if len(a) > 1]

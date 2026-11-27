@@ -1,0 +1,159 @@
+# Final Fantasy XIV overlay for PolyKybd (keyboard mode). See SOURCES.md.
+#
+# Keys: the official Game Manual, "Keyboard Controls"
+# (na.finalfantasyxiv.com/game_manual/operation/, updated 2026-04-28, read
+# 2026-11-27). On a Mac the manual writes Ctrl as control and Alt as option;
+# the keys are the same.
+#
+# Not in the manual, from two or more player guides (marked unconfirmed in
+# SOURCES.md): hotbar 1 on 1 to =, Shift+1 to Shift+3 (switch hotbar), and
+# Shift+Up / Shift+Down (cycle hotbars). Hotbar 1 holds what the player puts
+# there, so its icons only carry the slot number.
+#
+# The player's bindings are in KEYBIND.DAT, a file format no public source
+# describes in full, so the overlay draws the defaults only.
+#
+# Left out:
+# - Keys with no keycap cell: the number pad (confirm, cancel, sub-menu, main
+#   menu, enmity and alliance lists, lock-on, run/walk) and the mouse.
+# - Free Company (the ":" key of a Japanese keyboard; the manual gives no key
+#   for other layouts).
+# - Esc (close window, system menu): the ESC key carries the program mark.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/mmo/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/mmo/ffxiv.yaml --preview /tmp/ffxiv_preview
+app: final fantasy xiv
+match: [ffxiv_dx11, steam_app_39210]
+output: ffxiv_template
+icon_dir: icons
+fit: contain
+mode: auto
+threshold: 150
+anchor: right
+region: [40, 40]
+margin: 0
+
+program_icon: ffxiv.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Movement
+  - { key: W, icon: forward.png, label: "Move forward" }
+  - { key: S, icon: back.png, label: "Move back" }
+  - { key: A, icon: turnleft.png, label: "Turn left" }
+  - { key: D, icon: turnright.png, label: "Turn right" }
+  - { key: Q, icon: strafeleft.png, label: "Strafe left" }
+  - { key: E, icon: straferight.png, label: "Strafe right" }
+  - { key: SPACE, icon: jump.png, label: "Jump, ascend" }
+  - { key: SPACE, mods: [CTRL], icon: descend.png, label: "Descend, dive" }
+  - { key: R, icon: autorun.png, label: "Auto-run" }
+  - { key: Z, icon: sheathe.png, label: "Draw or sheathe weapon, dismount" }
+
+  # Camera
+  - { key: UP, icon: camup.png, label: "Camera up" }
+  - { key: DOWN, icon: camdown.png, label: "Camera down" }
+  - { key: LEFT, icon: camleft.png, label: "Camera left" }
+  - { key: RIGHT, icon: camright.png, label: "Camera right" }
+  - { key: UP, mods: [CTRL], icon: tiltup.png, label: "Tilt camera up" }
+  - { key: DOWN, mods: [CTRL], icon: tiltdown.png, label: "Tilt camera down" }
+  - { key: PGUP, icon: zoomin.png, label: "Zoom in", shared: false }
+  - { key: PGDN, icon: zoomout.png, label: "Zoom out", shared: false }
+  - { key: HOME, icon: changecamera.png, label: "Change camera" }
+  - { key: END, icon: returncamera.png, label: "Return to saved camera" }
+  - { key: END, mods: [CTRL], icon: savecamera.png, label: "Save camera" }
+  - { key: END, mods: [CTRL, SHIFT], icon: defaultcamera.png, label: "Default camera" }
+  - { key: V, icon: flipcamera.png, label: "Flip camera" }
+  - { key: PAUSE, icon: facecamera.png, label: "Face camera" }
+
+  # Targeting
+  - { key: TAB, icon: targetenemy.png, label: "Cycle enemies, near to far" }
+  - { key: TAB, mods: [SHIFT], icon: prevenemy.png, label: "Cycle enemies, far to near" }
+  - { key: F, icon: facetarget.png, label: "Face target" }
+  - { key: F, mods: [SHIFT], icon: focustarget.png, label: "Set or clear focus target" }
+  - { key: F1, icon: targetself.png, label: "Target self", region: [34, 40] }
+  - { key: F2, icon: party2.png, label: "Target party member 2", region: [34, 40] }
+  - { key: F3, icon: party3.png, label: "Target party member 3", region: [34, 40] }
+  - { key: F4, icon: party4.png, label: "Target party member 4", region: [34, 40] }
+  - { key: F5, icon: party5.png, label: "Target party member 5", region: [34, 40] }
+  - { key: F6, icon: party6.png, label: "Target party member 6", region: [34, 40] }
+  - { key: F7, icon: party7.png, label: "Target party member 7", region: [34, 40] }
+  - { key: F8, icon: party8.png, label: "Target party member 8", region: [34, 40] }
+  - { key: F9, icon: targetpet.png, label: "Target pet", region: [34, 40] }
+  - { key: F10, icon: targetfocus.png, label: "Target focus target", region: [34, 40] }
+  - { key: F11, icon: nearestenemy.png, label: "Target nearest enemy", region: [34, 40] }
+  - { key: F12, icon: nearestnpc.png, label: "Target nearest NPC or object", region: [34, 40] }
+  - { key: T, icon: targetoftarget.png, label: "Target of target" }
+  - { key: T, mods: [SHIFT], icon: attacker.png, label: "Target enemy attacking you" }
+  - { key: X, icon: targetfilter.png, label: "Target filter" }
+
+  # Hotbar 1 (unconfirmed, see the header)
+  - { key: "1", icon: action1.png, label: "Hotbar 1, slot 1" }
+  - { key: "2", icon: action2.png, label: "Hotbar 1, slot 2" }
+  - { key: "3", icon: action3.png, label: "Hotbar 1, slot 3" }
+  - { key: "4", icon: action4.png, label: "Hotbar 1, slot 4" }
+  - { key: "5", icon: action5.png, label: "Hotbar 1, slot 5" }
+  - { key: "6", icon: action6.png, label: "Hotbar 1, slot 6" }
+  - { key: "7", icon: action7.png, label: "Hotbar 1, slot 7" }
+  - { key: "8", icon: action8.png, label: "Hotbar 1, slot 8" }
+  - { key: "9", icon: action9.png, label: "Hotbar 1, slot 9" }
+  - { key: "0", icon: action10.png, label: "Hotbar 1, slot 10" }
+  - { key: MINUS, icon: action11.png, label: "Hotbar 1, slot 11" }
+  - { key: EQUAL, icon: action12.png, label: "Hotbar 1, slot 12" }
+  - { key: "1", mods: [SHIFT], icon: hotbarset1.png, label: "Switch to hotbar 1" }
+  - { key: "2", mods: [SHIFT], icon: hotbarset2.png, label: "Switch to hotbar 2" }
+  - { key: "3", mods: [SHIFT], icon: hotbarset3.png, label: "Switch to hotbar 3" }
+  - { key: UP, mods: [SHIFT], icon: hotbarup.png, label: "Previous hotbar" }
+  - { key: DOWN, mods: [SHIFT], icon: hotbardown.png, label: "Next hotbar" }
+
+  # Chat. Alt+<key> sets the chat mode; with Shift it cycles back.
+  - { key: ENTER, icon: chat.png, label: "Open chat" }
+  - { key: SLASH, icon: slash.png, label: "Text command" }
+  - { key: R, mods: [ALT], icon: reply.png, label: "Reply to tell" }
+  - { key: R, mods: [ALT, SHIFT], icon: replyback.png, label: "Reply, cycle back" }
+  - { key: S, mods: [ALT], icon: say.png, label: "Chat mode: Say" }
+  - { key: H, mods: [ALT], icon: shout.png, label: "Chat mode: Shout" }
+  - { key: P, mods: [ALT], icon: partychat.png, label: "Chat mode: Party" }
+  - { key: Y, mods: [ALT], icon: yell.png, label: "Chat mode: Yell" }
+  - { key: F, mods: [ALT], icon: fcchat.png, label: "Chat mode: Free Company" }
+  - { key: T, mods: [ALT], icon: pvpchat.png, label: "Chat mode: PvP team" }
+  - { key: A, mods: [ALT], icon: alliancechat.png, label: "Chat mode: Alliance" }
+  - { key: N, mods: [ALT], icon: novicechat.png, label: "Chat mode: Novice Network" }
+  - { key: L, mods: [ALT], icon: lschat.png, label: "Chat mode: next linkshell" }
+  - { key: L, mods: [ALT, SHIFT], icon: lschatback.png, label: "Chat mode: previous linkshell" }
+  - { key: C, mods: [ALT], icon: cwlschat.png, label: "Chat mode: next cross-world linkshell" }
+  - { key: C, mods: [ALT, SHIFT], icon: cwlschatback.png, label: "Chat mode: previous cross-world linkshell" }
+
+  # Menus
+  - { key: C, icon: character.png, label: "Character" }
+  - { key: C, mods: [CTRL], icon: currency.png, label: "Currency" }
+  - { key: I, icon: backpack.png, label: "Inventory" }
+  - { key: I, mods: [CTRL], icon: armoury.png, label: "Armoury chest" }
+  - { key: I, mods: [CTRL, SHIFT], icon: saddlebag.png, label: "Saddlebag" }
+  - { key: L, icon: linkshells.png, label: "Linkshells" }
+  - { key: M, icon: worldmap.png, label: "Map" }
+  - { key: M, mods: [SHIFT], icon: signs.png, label: "Signs" }
+  - { key: M, mods: [CTRL], icon: waymarks.png, label: "Waymarks" }
+  - { key: P, icon: spellbook.png, label: "Actions and traits" }
+  - { key: O, icon: social.png, label: "Social" }
+  - { key: O, mods: [CTRL], icon: orchestrion.png, label: "Orchestrion" }
+  - { key: U, icon: dungeons.png, label: "Duty finder" }
+  - { key: U, mods: [CTRL], icon: timers.png, label: "Timers" }
+  - { key: J, icon: questlog.png, label: "Journal" }
+  - { key: K, icon: charconfig.png, label: "Character configuration" }
+  - { key: K, mods: [CTRL], icon: sysconfig.png, label: "System configuration" }
+  - { key: N, icon: craftlog.png, label: "Crafting log" }
+  - { key: B, icon: gatherlog.png, label: "Gathering log" }
+  - { key: H, icon: huntlog.png, label: "Hunting log" }
+  - { key: Y, icon: fishlog.png, label: "Fishing log" }
+  - { key: Y, mods: [CTRL], icon: fishguide.png, label: "Fish guide" }
+
+  # System
+  - { key: SCROLLLOCK, icon: toggleui.png, label: "Hide or show UI", region: [34, 40] }
+  - { key: PRTSC, icon: screenshot.png, label: "Screenshot", region: [34, 40] }
+  - { key: HOME, mods: [CTRL], icon: windowsize.png, label: "Window size" }

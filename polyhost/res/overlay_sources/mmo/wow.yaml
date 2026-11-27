@@ -1,0 +1,173 @@
+# World of Warcraft (retail) overlay for PolyKybd. See SOURCES.md.
+#
+# Keys: the client's own default bindings, `WTF/DefaultBindings.wtf` in the
+# game's CASC storage (FileDataID 841796), build 12.1.5.70961, read
+# 2026-11-27. Each binding names its action (`command:`) as the file writes it
+# (`bind W MOVEFORWARD`), so a later reader of the player's
+# `bindings-cache.wtf` can move the icons to the player's own keys.
+#
+# Action bar 1 (1 to =), the bonus bar (Ctrl+1 to Ctrl+0) and the stance bar
+# (Ctrl+F1 to Ctrl+F10) hold what the player puts there, so their icons only
+# carry the slot number.
+#
+# Left out:
+# - Keys with no keycap cell: the number pad (jump, run/walk, minimap zoom,
+#   vehicle seats) and the mouse buttons and wheel.
+# - The housing editor's own keys (1 to 5, X, C, V, R, Q, E, W A S D, [ ] , .
+#   while the editor is open): the overlay cannot tell the editor from play.
+# - Ctrl+Q, Ctrl+W, Ctrl+E, Ctrl+T, Ctrl+A, Ctrl+Y, Alt+B, Alt+O, Ctrl+Alt+O,
+#   Ctrl+Shift+M: debug actions (`Bindings_Standard.xml` marks them debug and
+#   hidden).
+# - Movie recording (Ctrl+[, Shift+[, Ctrl+], Ctrl+'): macOS only.
+# - Esc (game menu): the ESC key carries the program mark.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/mmo/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/mmo/wow.yaml --preview /tmp/wow_preview
+app: world of warcraft
+match: [wow, world of warcraft]
+output: wow_template
+icon_dir: icons
+fit: contain
+mode: auto
+threshold: 150
+anchor: right
+region: [40, 40]
+margin: 0
+
+program_icon: wow.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Movement. The arrow keys repeat W, S, Q and E.
+  - { key: W, command: MOVEFORWARD, icon: forward.png, label: "Move forward", undrawn: [UP] }
+  - { key: S, command: MOVEBACKWARD, icon: back.png, label: "Move back", undrawn: [DOWN] }
+  - { key: A, command: STRAFELEFT, icon: strafeleft.png, label: "Strafe left" }
+  - { key: D, command: STRAFERIGHT, icon: straferight.png, label: "Strafe right" }
+  - { key: Q, command: TURNLEFT, icon: turnleft.png, label: "Turn left", undrawn: [LEFT] }
+  - { key: E, command: TURNRIGHT, icon: turnright.png, label: "Turn right", undrawn: [RIGHT] }
+  - { key: SPACE, command: JUMP, icon: jump.png, label: "Jump" }
+  - { key: NUMLOCK, command: TOGGLEAUTORUN, icon: autorun.png, label: "Auto-run" }
+  - { key: X, command: SITORSTAND, icon: sit.png, label: "Sit or stand" }
+  - { key: Z, command: TOGGLESHEATH, icon: sheathe.png, label: "Draw or sheathe weapon" }
+  - { key: INSERT, command: PITCHUP, icon: pitchup.png, label: "Pitch up" }
+  - { key: DELETE, command: PITCHDOWN, icon: pitchdown.png, label: "Pitch down" }
+
+  # Targeting
+  - { key: TAB, command: TARGETNEARESTENEMY, icon: targetenemy.png, label: "Target nearest enemy" }
+  - { key: TAB, mods: [SHIFT], command: TARGETPREVIOUSENEMY, icon: prevenemy.png, label: "Target previous enemy" }
+  - { key: TAB, mods: [CTRL], command: TARGETNEARESTFRIEND, icon: targetfriend.png, label: "Target nearest friend" }
+  - { key: TAB, mods: [CTRL, SHIFT], command: TARGETPREVIOUSFRIEND, icon: prevfriend.png, label: "Target previous friend" }
+  - { key: F1, command: TARGETSELF, icon: targetself.png, label: "Target self", region: [34, 40] }
+  - { key: F2, command: TARGETPARTYMEMBER1, icon: party1.png, label: "Target party member 1", region: [34, 40] }
+  - { key: F3, command: TARGETPARTYMEMBER2, icon: party2.png, label: "Target party member 2", region: [34, 40] }
+  - { key: F4, command: TARGETPARTYMEMBER3, icon: party3.png, label: "Target party member 3", region: [34, 40] }
+  - { key: F5, command: TARGETPARTYMEMBER4, icon: party4.png, label: "Target party member 4", region: [34, 40] }
+  - { key: F1, mods: [SHIFT], command: TARGETPET, icon: targetpet.png, label: "Target pet", region: [34, 40] }
+  - { key: F2, mods: [SHIFT], command: TARGETPARTYPET1, icon: partypet1.png, label: "Target party pet 1", region: [34, 40] }
+  - { key: F3, mods: [SHIFT], command: TARGETPARTYPET2, icon: partypet2.png, label: "Target party pet 2", region: [34, 40] }
+  - { key: F4, mods: [SHIFT], command: TARGETPARTYPET3, icon: partypet3.png, label: "Target party pet 3", region: [34, 40] }
+  - { key: F5, mods: [SHIFT], command: TARGETPARTYPET4, icon: partypet4.png, label: "Target party pet 4", region: [34, 40] }
+  - { key: F, command: INTERACTTARGET, icon: interact.png, label: "Interact with target" }
+  - { key: G, command: TOGGLEPINGLISTENER, icon: ping.png, label: "Ping" }
+  - { key: V, command: NAMEPLATES, icon: nameplates.png, label: "Enemy nameplates" }
+  - { key: V, mods: [SHIFT], command: FRIENDNAMEPLATES, icon: friendplates.png, label: "Friendly nameplates" }
+  - { key: V, mods: [CTRL], command: ALLNAMEPLATES, icon: allplates.png, label: "All nameplates" }
+  - { key: T, mods: [SHIFT], command: PETATTACK, icon: petattack.png, label: "Pet attack" }
+
+  # Action bar 1, bonus bar, stance bar
+  - { key: "1", command: ACTIONBUTTON1, icon: action1.png, label: "Action button 1" }
+  - { key: "2", command: ACTIONBUTTON2, icon: action2.png, label: "Action button 2" }
+  - { key: "3", command: ACTIONBUTTON3, icon: action3.png, label: "Action button 3" }
+  - { key: "4", command: ACTIONBUTTON4, icon: action4.png, label: "Action button 4" }
+  - { key: "5", command: ACTIONBUTTON5, icon: action5.png, label: "Action button 5" }
+  - { key: "6", command: ACTIONBUTTON6, icon: action6.png, label: "Action button 6" }
+  - { key: "7", command: ACTIONBUTTON7, icon: action7.png, label: "Action button 7" }
+  - { key: "8", command: ACTIONBUTTON8, icon: action8.png, label: "Action button 8" }
+  - { key: "9", command: ACTIONBUTTON9, icon: action9.png, label: "Action button 9" }
+  - { key: "0", command: ACTIONBUTTON10, icon: action10.png, label: "Action button 10" }
+  - { key: MINUS, command: ACTIONBUTTON11, icon: action11.png, label: "Action button 11" }
+  - { key: EQUAL, command: ACTIONBUTTON12, icon: action12.png, label: "Action button 12" }
+  - { key: "1", mods: [CTRL], command: BONUSACTIONBUTTON1, icon: bonus1.png, label: "Bonus action 1" }
+  - { key: "2", mods: [CTRL], command: BONUSACTIONBUTTON2, icon: bonus2.png, label: "Bonus action 2" }
+  - { key: "3", mods: [CTRL], command: BONUSACTIONBUTTON3, icon: bonus3.png, label: "Bonus action 3" }
+  - { key: "4", mods: [CTRL], command: BONUSACTIONBUTTON4, icon: bonus4.png, label: "Bonus action 4" }
+  - { key: "5", mods: [CTRL], command: BONUSACTIONBUTTON5, icon: bonus5.png, label: "Bonus action 5" }
+  - { key: "6", mods: [CTRL], command: BONUSACTIONBUTTON6, icon: bonus6.png, label: "Bonus action 6" }
+  - { key: "7", mods: [CTRL], command: BONUSACTIONBUTTON7, icon: bonus7.png, label: "Bonus action 7" }
+  - { key: "8", mods: [CTRL], command: BONUSACTIONBUTTON8, icon: bonus8.png, label: "Bonus action 8" }
+  - { key: "9", mods: [CTRL], command: BONUSACTIONBUTTON9, icon: bonus9.png, label: "Bonus action 9" }
+  - { key: "0", mods: [CTRL], command: BONUSACTIONBUTTON10, icon: bonus10.png, label: "Bonus action 10" }
+  - { key: F1, mods: [CTRL], command: SHAPESHIFTBUTTON1, icon: stance1.png, label: "Stance 1", region: [34, 40] }
+  - { key: F2, mods: [CTRL], command: SHAPESHIFTBUTTON2, icon: stance2.png, label: "Stance 2", region: [34, 40] }
+  - { key: F3, mods: [CTRL], command: SHAPESHIFTBUTTON3, icon: stance3.png, label: "Stance 3", region: [34, 40] }
+  - { key: F4, mods: [CTRL], command: SHAPESHIFTBUTTON4, icon: stance4.png, label: "Stance 4", region: [34, 40] }
+  - { key: F5, mods: [CTRL], command: SHAPESHIFTBUTTON5, icon: stance5.png, label: "Stance 5", region: [34, 40] }
+  - { key: F6, mods: [CTRL], command: SHAPESHIFTBUTTON6, icon: stance6.png, label: "Stance 6", region: [34, 40] }
+  - { key: F7, mods: [CTRL], command: SHAPESHIFTBUTTON7, icon: stance7.png, label: "Stance 7", region: [34, 40] }
+  - { key: F8, mods: [CTRL], command: SHAPESHIFTBUTTON8, icon: stance8.png, label: "Stance 8", region: [34, 40] }
+  - { key: F9, mods: [CTRL], command: SHAPESHIFTBUTTON9, icon: stance9.png, label: "Stance 9", region: [34, 40] }
+  - { key: F10, mods: [CTRL], command: SHAPESHIFTBUTTON10, icon: stance10.png, label: "Stance 10", region: [34, 40] }
+
+  # Bags. F12 repeats Shift+B.
+  - { key: B, command: OPENALLBAGS, icon: allbags.png, label: "Open all bags" }
+  - { key: B, mods: [SHIFT], command: TOGGLEBACKPACK, icon: backpack.png, label: "Backpack", undrawn: [F12] }
+  - { key: F8, command: TOGGLEBAG1, icon: bag1.png, label: "Bag 1", region: [34, 40] }
+  - { key: F9, command: TOGGLEBAG2, icon: bag2.png, label: "Bag 2", region: [34, 40] }
+  - { key: F10, command: TOGGLEBAG3, icon: bag3.png, label: "Bag 3", region: [34, 40] }
+  - { key: F11, command: TOGGLEBAG4, icon: bag4.png, label: "Bag 4", region: [34, 40] }
+
+  # Panels
+  - { key: C, command: TOGGLECHARACTER0, icon: character.png, label: "Character" }
+  - { key: C, mods: [SHIFT], command: ITEMCOMPARISONCYCLING, icon: itemcompare.png, label: "Cycle item comparison" }
+  - { key: P, command: TOGGLESPELLBOOK, icon: spellbook.png, label: "Spellbook" }
+  - { key: I, mods: [SHIFT], command: TOGGLEPETBOOK, icon: petbook.png, label: "Pet spellbook" }
+  - { key: P, mods: [SHIFT], command: TOGGLECOLLECTIONS, icon: collections.png, label: "Collections" }
+  - { key: N, command: TOGGLETALENTS, icon: talents.png, label: "Talents" }
+  - { key: N, mods: [SHIFT], command: TOGGLECHARACTER4, icon: pvp.png, label: "Player vs. player" }
+  - { key: U, command: TOGGLECHARACTER2, icon: reputation.png, label: "Reputation" }
+  - { key: K, command: TOGGLEPROFESSIONBOOK, icon: professions.png, label: "Professions" }
+  - { key: O, command: TOGGLESOCIAL, icon: social.png, label: "Social" }
+  - { key: O, mods: [SHIFT], command: TOGGLECHANNELPULLOUT, icon: channelpullout.png, label: "Chat channel pullout" }
+  - { key: J, command: TOGGLEGUILDTAB, icon: guild.png, label: "Guild and communities" }
+  - { key: J, mods: [SHIFT], command: TOGGLEENCOUNTERJOURNAL, icon: adventureguide.png, label: "Adventure guide" }
+  - { key: I, command: TOGGLEGROUPFINDER, icon: groupfinder.png, label: "Group finder" }
+  - { key: I, mods: [CTRL], command: TOGGLEDUNGEONSANDRAIDS, icon: dungeons.png, label: "Dungeons and raids" }
+  - { key: Y, command: TOGGLEACHIEVEMENT, icon: achievements.png, label: "Achievements" }
+  - { key: Y, mods: [SHIFT], command: TOGGLESTATISTICS, icon: statistics.png, label: "Statistics" }
+  - { key: L, command: TOGGLEQUESTLOG, icon: questlog.png, label: "Quest log" }
+  - { key: M, command: TOGGLEWORLDMAP, icon: worldmap.png, label: "World map" }
+  - { key: M, mods: [SHIFT], command: TOGGLEBATTLEFIELDMINIMAP, icon: minimap.png, label: "Zone map" }
+  - { key: H, command: TOGGLEHOUSINGDASHBOARD, icon: housing.png, label: "Housing dashboard" }
+  - { key: Z, mods: [SHIFT], command: HOUSING_TOGGLEEDITOR, icon: housingeditor.png, label: "Housing editor" }
+  - { key: G, mods: [SHIFT], command: TOGGLEGEARSETS, icon: equipment.png, label: "Equipment manager" }
+  - { key: T, command: TOGGLECHATTAB, icon: chatchannels.png, label: "Chat channels" }
+  - { key: SPACE, mods: [SHIFT], command: TOGGLEWORLDSTATESCORES, icon: scoreboard.png, label: "Scoreboard" }
+
+  # Chat
+  - { key: ENTER, command: OPENCHAT, icon: chat.png, label: "Open chat" }
+  - { key: SLASH, command: OPENCHATSLASH, icon: slash.png, label: "Chat command" }
+  - { key: R, command: REPLY, icon: reply.png, label: "Reply to whisper" }
+  - { key: R, mods: [SHIFT], command: REPLY2, icon: replyback.png, label: "Whisper again" }
+  - { key: PGUP, command: CHATPAGEUP, icon: chatup.png, label: "Chat page up" }
+  - { key: PGDN, command: CHATPAGEDOWN, icon: chatdown.png, label: "Chat page down" }
+  - { key: PGDN, mods: [SHIFT], command: CHATBOTTOM, icon: chatbottom.png, label: "Chat bottom" }
+  - { key: PGUP, mods: [CTRL], command: COMBATLOGPAGEUP, icon: logup.png, label: "Combat log page up" }
+  - { key: PGDN, mods: [CTRL], command: COMBATLOGPAGEDOWN, icon: logdown.png, label: "Combat log page down" }
+  - { key: PGDN, mods: [CTRL, SHIFT], command: COMBATLOGBOTTOM, icon: logbottom.png, label: "Combat log bottom" }
+
+  # Camera and system
+  - { key: END, command: NEXTVIEW, icon: nextview.png, label: "Next camera view" }
+  - { key: HOME, command: PREVVIEW, icon: prevview.png, label: "Previous camera view" }
+  - { key: PRTSC, command: SCREENSHOT, icon: screenshot.png, label: "Screenshot", region: [34, 40] }
+  - { key: Z, mods: [ALT], command: TOGGLEUI, icon: toggleui.png, label: "Hide or show UI", region: [34, 40] }
+  - { key: R, mods: [CTRL], command: TOGGLEFPS, icon: fps.png, label: "Frame rate" }
+  - { key: M, mods: [CTRL], command: TOGGLEMUSIC, icon: music.png, label: "Music on or off" }
+  - { key: S, mods: [CTRL], command: TOGGLESOUND, icon: sound.png, label: "Sound on or off" }
+  - { key: EQUAL, mods: [CTRL], command: MASTERVOLUMEUP, icon: volup.png, label: "Volume up" }
+  - { key: MINUS, mods: [CTRL], command: MASTERVOLUMEDOWN, icon: voldown.png, label: "Volume down" }

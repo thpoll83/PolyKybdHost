@@ -4875,6 +4875,19 @@ overwatch,steam_app_2357570:
 # registry value.
 genshinimpact,yuanshen:
   overlay: genshin_template.mods.png
+# World of Warcraft, retail (overlay_sources/mmo/wow.yaml). Wow.exe in _retail_
+# on Windows; the macOS app is "World of Warcraft". The Classic clients
+# (WowClassic.exe) have other default keys and get no overlay. Names not
+# checked on an install. Default keys only: the player's bindings-cache.wtf
+# holds only the changes from the defaults and is synced to Blizzard's servers.
+wow,world of warcraft:
+  overlay: [wow_template.mods.png, wow_template.combo.mods.png]
+# Final Fantasy XIV (overlay_sources/mmo/ffxiv.yaml). ffxiv_dx11.exe on Windows,
+# and the same executable inside the macOS app's Wine wrapper; steam_app_39210
+# covers Proton. Names not checked on an install. Default keys only: no public
+# source describes KEYBIND.DAT.
+ffxiv_dx11,steam_app_39210:
+  overlay: [ffxiv_template.mods.png, ffxiv_template.combo.mods.png]
 # WhatsApp desktop (sources: overlay_sources/social/whatsapp.yaml): the Windows
 # app's WhatsApp.Root.exe (cut at the first dot to `whatsapp`) and the macOS app
 # "WhatsApp". Neither name was checked on an install, and the keys come from no
