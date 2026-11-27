@@ -77,4 +77,4 @@ bindings:
   # System
   - { key: F5, command: QuickSave_Button, icon: quicksave.png, label: "Quick save", region: [34, 40] }
   - { key: F9, command: QuickLoad_Button, icon: quickload.png, label: "Quick load", region: [34, 40] }
-  - { key: N, command: TogglePhotoModeButton, icon: photo.png, label: "Photo mode" }
+  - { key: N, command: TogglePhotoModeButton, icon: photo.png, label: "Photo mode", region: [34, 40] }
