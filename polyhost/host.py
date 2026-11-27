@@ -547,16 +547,6 @@ class PolyHost(QApplication):
         self.tutorial_panel = None
         self.menu.addAction(self.tutorials_action)
 
-        # Overlay sets an AI assistant made (gui/user_overlays_dialog.py), so the
-        # user can remove them without the assistant. Core calls go through
-        # _core_click, like the tutorials.
-        self.user_overlays_action = QAction(get_icon("edit.svg"),
-                                            _("Overlays made by AI assistants…"), parent=self)
-        # noinspection PyUnresolvedReferences
-        self.user_overlays_action.triggered.connect(self.open_user_overlays)
-        self.user_overlays_dialog = None
-        self.menu.addAction(self.user_overlays_action)
-
         self.menu.addSeparator()
 
         # --- Updates: every "get something newer" path in one place -------------
@@ -754,9 +744,18 @@ class PolyHost(QApplication):
                                                   _("Switch to Forwarder…"), parent=self)
         # noinspection PyUnresolvedReferences
         self.switch_to_forwarder_action.triggered.connect(self._switch_to_forwarder)
+        # Overlay sets an AI assistant made (gui/user_overlays_dialog.py), so the
+        # user can remove them without the assistant. Under Maintenance: the top
+        # level stays the simplified set (tests/gui/host_client_test.py). Core
+        # calls go through _core_click; no device I/O, so always enabled.
+        self.user_overlays_action = QAction(get_icon("edit.svg"),
+                                            _("Overlays made by AI assistants…"), parent=self)
+        # noinspection PyUnresolvedReferences
+        self.user_overlays_action.triggered.connect(self.open_user_overlays)
+        self.user_overlays_dialog = None
         self.cmdMenu.add_always_enabled_maintenance_action(
             self.crash_record_action, self.open_config_action,
-            self.switch_to_forwarder_action)
+            self.switch_to_forwarder_action, self.user_overlays_action)
 
         if self.exit_with_daemon is not None:
             # Client mode has two quit rows. The GUI-only one was misclicked for
@@ -1149,7 +1148,6 @@ class PolyHost(QApplication):
         self.layout_editor.setEnabled(True)
         self.settings_dialog.setEnabled(True)
         self.integrations_action.setEnabled(True)    # local files only
-        self.user_overlays_action.setEnabled(True)   # host files only, no device I/O
         self.log_dialog.setEnabled(True)
         self.fontpack_inspector_action.setEnabled(True)   # inspects shipped bundles offline
         self.update_action.setEnabled(True)

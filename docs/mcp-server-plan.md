@@ -409,7 +409,9 @@ Version 2a is built first. 2b needs a firmware release, then the host release.
 - A user set for an app that has a shipped set is laid OVER it: the user's keys
   first, the shipped images on every other key.
 - The tray gets a page that lists the user sets, with Remove. Built as a dialog,
-  *Overlays made by AI assistants…* in the tray menu, not as a Settings page:
+  *Maintenance > Overlays made by AI assistants…* in the tray menu (the top level
+  stays the simplified set `tests/gui/host_client_test.py` pins), not as a Settings
+  page:
   `tests/gui/settings_dialog_test.py` allows no push button in Settings besides OK,
   Cancel and Generate.
 
