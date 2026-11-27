@@ -203,6 +203,13 @@ M_WINDOW_REPORT = "window.report"
 # connection only while the `mcp_enabled` setting is on (ERR_MCP_DISABLED), and
 # only the methods polyhost.mcp.tools.ALLOWED_METHODS lists. It is a gate for an
 # honest client: a process that can read the authkey can skip it.
+# The user's overlay sets (services/user_overlays, docs/mcp-server-plan.md v2). No
+# device I/O except the preview, which reads layer 0 of the keymap.
+M_USER_OVERLAY_LIST = "user_overlay.list"        # {} -> [{app, keys}]
+M_USER_OVERLAY_GET = "user_overlay.get"          # {"app"} -> [binding] | None
+M_USER_OVERLAY_SET = "user_overlay.set"          # {"app", "bindings", "merge"?} -> {placed, files}
+M_USER_OVERLAY_CLEAR = "user_overlay.clear"      # {"app", "key"?, "mods"?} -> {removed}
+M_USER_OVERLAY_PREVIEW = "user_overlay.preview"  # {"app", "mods"?} -> {png_base64}
 M_CLIENT_IDENTIFY = "client.identify"  # {"client": "mcp"} -> {"client": "mcp", "allowed": bool}
 MCP_SETTING = "mcp_enabled"
 

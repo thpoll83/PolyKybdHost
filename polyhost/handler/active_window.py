@@ -1082,6 +1082,13 @@ class OverlayHandler:
         # changed" and returns before the re-match this exists to force.
         self._macos_resolved = False
 
+    def set_mapping(self, mapping):
+        """Use a new overlay mapping (the user's overlay sets changed) and send
+        the focused window's overlays again on the next tick."""
+        self.mapping = self.annotate(mapping.items())
+        self.remote_handler.mapping = self.mapping
+        self.force_resend()
+
     def force_resend(self):
         """Reset window tracking so the next cycle triggers a fresh OFF_ON resend."""
         self.win = None

@@ -36,6 +36,14 @@ FROZEN_TOOL_METHODS = {
     "set_glyph_script": {"glyph.script.set"},
     "set_key": {"status.get", "keymap.layer_count", "keymap.buffer", "keymap.set"},
     "set_overlays": {"overlay.enable", "overlay.disable"},
+    "find_icons": set(),
+    "list_overlay_keys": {"status.get", "keymap.layer_count", "keymap.buffer"},
+    "list_user_overlays": {"user_overlay.list"},
+    "create_overlay": {"status.get", "keymap.layer_count", "keymap.buffer", "user_overlay.set"},
+    "draw_key": {"status.get", "keymap.layer_count", "keymap.buffer", "user_overlay.set"},
+    "clear_key": {"status.get", "keymap.layer_count", "keymap.buffer", "user_overlay.clear"},
+    "delete_overlay": {"user_overlay.clear"},
+    "preview_overlay": {"user_overlay.preview"},
 }
 
 # docs/mcp-server-plan.md -> Not exposed, on purpose.
@@ -105,7 +113,8 @@ class AllowListTest(unittest.TestCase):
 
     def test_read_tools_are_read_only_and_write_tools_say_what_they_do(self):
         reads = {"get_status", "list_languages", "get_keymap", "list_app_overlays",
-                 "list_keys", "show_layout"}
+                 "list_keys", "show_layout", "find_icons", "list_overlay_keys",
+                 "list_user_overlays", "preview_overlay"}
         for entry in tools.tool_list():
             ann = entry["annotations"]
             if entry["name"] in reads:

@@ -27,7 +27,9 @@ INSTRUCTIONS = (
     "named L:X.Y or R:X.Y (half, column from the outer edge, row from the top); "
     "call show_layout or list_keys before changing a key. A keycode is not the "
     "legend the user sees: with a German layout KC_Y shows Z. Ask the user when "
-    "the language matters.")
+    "the language matters. Overlay images (draw_key, create_overlay) belong to "
+    "keycodes and show while their app is focused; call preview_overlay after a "
+    "change.")
 
 ERR_PARSE = -32700
 ERR_INVALID_REQUEST = -32600
@@ -82,8 +84,7 @@ class McpServer:
         result, error = tools.call_tool(self.link, name, arguments)
         if error is not None:
             return {"content": [{"type": "text", "text": error}], "isError": True}
-        return {"content": [{"type": "text", "text": tools.result_text(result)}],
-                "isError": False}
+        return {"content": tools.result_content(result), "isError": False}
 
 
 def _result(req_id, result):

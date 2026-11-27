@@ -283,6 +283,14 @@ class ControlServer(MpcListenerServer):
         c = self.core
         return {
             p.M_CLIENT_IDENTIFY: self._identify,
+            p.M_USER_OVERLAY_LIST: lambda conn, params: _unwrap(c.user_overlay_list()),
+            p.M_USER_OVERLAY_GET: lambda conn, params: _unwrap(c.user_overlay_get(params["app"])),
+            p.M_USER_OVERLAY_SET: lambda conn, params: _unwrap(c.user_overlay_set(
+                params["app"], params["bindings"], merge=_opt_bool_param(params, "merge"))),
+            p.M_USER_OVERLAY_CLEAR: lambda conn, params: _unwrap(c.user_overlay_clear(
+                params["app"], params.get("key"), params.get("mods"))),
+            p.M_USER_OVERLAY_PREVIEW: lambda conn, params: _unwrap(c.user_overlay_preview(
+                params["app"], params.get("mods"))),
             p.M_STATUS_GET: lambda conn, params: c.get_status(),
             p.M_LANG_LIST: lambda conn, params: c.list_languages(),
             p.M_LANG_SET: lambda conn, params: _unwrap(c.set_language(params["lang"])),

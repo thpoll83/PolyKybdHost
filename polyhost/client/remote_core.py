@@ -536,6 +536,13 @@ class RemoteCore(Observable):
     def macro_clear(self, macro_id):
         return self._device(p.M_MACRO_CLEAR, {"id": macro_id})
 
+    # The user's overlay sets: the tray's list page works in client mode too.
+    def user_overlay_list(self):
+        return self._device(p.M_USER_OVERLAY_LIST)
+
+    def user_overlay_clear(self, app, key=None, mods=None):
+        return self._device(p.M_USER_OVERLAY_CLEAR, {"app": app, "key": key, "mods": mods})
+
     # -- commands / firmware / update --------------------------------------
     def execute_commands(self, lines):
         try:

@@ -347,6 +347,155 @@ def set_overlays(link, args):
 
 
 # ---------------------------------------------------------------------------
+# Version 2: the user's overlay sets and keys drawn freely
+# ---------------------------------------------------------------------------
+
+_PHYSICAL = ("L:", "R:", "l:", "r:")
+
+
+def _overlay_key(link, ref):
+    """(keycode name, physical keys that send it on layer 0) for a key reference.
+
+    A physical reference ("L:3.2", {"base": ...}, {"row", "col"}) is turned into its
+    layer-0 keycode; anything else is read as a keycode name ("KC_F5", "F5")."""
+    from polyhost.services import user_overlays
+    physical = isinstance(ref, dict) or (isinstance(ref, str) and ref.strip().startswith(_PHYSICAL))
+    table = _table(link)
+    _count, buffer = _keymap(link, 0)
+    base = {pos: _code_at(buffer, 0, *pos) for pos in table.by_pos}
+    if physical:
+        try:
+            name = table.resolve(ref, base, parse_keycode)
+        except KeyRefError as exc:
+            raise ToolError(str(exc)) from None
+        code = base[table.by_name[name]]
+    else:
+        try:
+            code = parse_keycode(str(ref))
+        except ValueError as exc:
+            raise ToolError(str(exc)) from None
+    try:
+        kc = user_overlays.check_key(_name(code))
+    except user_overlays.UserOverlayError as exc:
+        raise ToolError(f"{exc}. Images belong to keycodes, and this key sends "
+                        f"{_name(code)}.") from None
+    shows_on = sorted((table.by_pos[pos] for pos, c in base.items() if c == kc.value),
+                      key=table.names().index)
+    return kc.name, shows_on
+
+
+def _app_arg(args):
+    from polyhost.services import user_overlays
+    try:
+        return user_overlays.check_app(args.get("app"))
+    except user_overlays.UserOverlayError as exc:
+        raise ToolError(str(exc)) from None
+
+
+def _binding(link, b):
+    """A binding for the host, with its key resolved and its drawing checked here,
+    so a bad shape is reported before anything is written."""
+    from polyhost.services import key_drawing
+    if not isinstance(b, dict):
+        raise ToolError("a binding is an object with key, drawing, mods and legend")
+    extra = set(b) - {"key", "drawing", "mods", "legend"}
+    if extra:
+        raise ToolError(f"unknown binding fields: {sorted(extra)}")
+    key, shows_on = _overlay_key(link, b.get("key"))
+    try:
+        _mask, notes = key_drawing.render(b.get("drawing"))
+    except key_drawing.DrawingError as exc:
+        raise ToolError(f"{key}: {exc}") from None
+    out = {"key": key, "drawing": b["drawing"], "mods": b.get("mods") or [],
+           "legend": b.get("legend", True)}
+    return out, shows_on, [f"{key}: {n}" for n in notes]
+
+
+def find_icons(link, args):
+    from polyhost.services import key_drawing
+    query = args.get("query")
+    if not isinstance(query, str) or not query.strip():
+        raise ToolError("query is one or more words, for example \"copy\"")
+    return {"icons": key_drawing.find_icons(query)}
+
+
+def list_overlay_keys(link, args):
+    from polyhost.services import user_overlays
+    table = _table(link)
+    _count, buffer = _keymap(link, 0)
+    keys = {}
+    for name in table.names():
+        code = _code_at(buffer, 0, *table.by_name[name])
+        try:
+            kc = user_overlays.check_key(_name(code))
+        except user_overlays.UserOverlayError:
+            continue
+        keys.setdefault(kc.name, []).append(name)
+    return {"keys": [{"keycode": k, "on_layer_0": v} for k, v in keys.items()]}
+
+
+def list_user_overlays(link, args):
+    sets = link.call(p.M_USER_OVERLAY_LIST)
+    return {"sets": [{"app": str(s.get("app")), "keys": int(s.get("keys", 0))} for s in sets]}
+
+
+def create_overlay(link, args):
+    app = _app_arg(args)
+    bindings = args.get("bindings")
+    if not isinstance(bindings, list) or not bindings:
+        raise ToolError("bindings is a non-empty list")
+    clean, notes = [], []
+    for b in bindings:
+        cb, _shows_on, n = _binding(link, b)
+        clean.append(cb)
+        notes += n
+    result = link.call(p.M_USER_OVERLAY_SET, {"app": app, "bindings": clean, "merge": False})
+    return {"app": app, "placed": _placed(result), "notes": notes}
+
+
+def draw_key(link, args):
+    app = _app_arg(args)
+    follow = args.get("follow", "keycode")
+    if follow == "key":
+        raise ToolError("follow \"key\" (an image on one physical key) needs firmware "
+                        "support that is not released yet; use follow \"keycode\"")
+    if follow != "keycode":
+        raise ToolError("follow is \"keycode\" or \"key\"")
+    binding = {k: args[k] for k in ("key", "drawing", "mods", "legend") if k in args}
+    cb, shows_on, notes = _binding(link, binding)
+    result = link.call(p.M_USER_OVERLAY_SET, {"app": app, "bindings": [cb], "merge": True})
+    placed = [x for x in _placed(result) if x["key"] == cb["key"]]
+    return {"app": app, "key": cb["key"], "mods": placed[0]["mods"] if placed else cb["mods"],
+            "legend": cb["legend"], "shows_on": shows_on, "notes": notes}
+
+
+def clear_key(link, args):
+    app = _app_arg(args)
+    key, _shows_on = _overlay_key(link, args.get("key"))
+    result = link.call(p.M_USER_OVERLAY_CLEAR,
+                       {"app": app, "key": key, "mods": args.get("mods") or []})
+    return {"app": app, "key": key, "removed": bool(result.get("removed"))}
+
+
+def delete_overlay(link, args):
+    app = _app_arg(args)
+    result = link.call(p.M_USER_OVERLAY_CLEAR, {"app": app})
+    return {"app": app, "removed": bool(result.get("removed"))}
+
+
+def preview_overlay(link, args):
+    app = _app_arg(args)
+    mods = args.get("mods") or []
+    result = link.call(p.M_USER_OVERLAY_PREVIEW, {"app": app, "mods": mods})
+    return {"app": app, "mods": mods, "image": str(result.get("png_base64", ""))}
+
+
+def _placed(result):
+    return [{"key": str(x.get("key")), "mods": list(x.get("mods") or []),
+             "legend": bool(x.get("legend", True))} for x in (result or {}).get("placed", [])]
+
+
+# ---------------------------------------------------------------------------
 # Definitions, the allow-list and the result fields
 # ---------------------------------------------------------------------------
 
@@ -366,6 +515,37 @@ _KEY_REF = {
         {"type": "object", "properties": {"row": {"type": "integer"}, "col": {"type": "integer"}},
          "required": ["row", "col"], "additionalProperties": False},
     ],
+}
+
+
+_WRITE = {"readOnlyHint": False, "destructiveHint": True, "idempotentHint": True,
+          "openWorldHint": False}
+_APP = {"type": "string",
+        "description": "The app's process name in lowercase (see list_app_overlays), "
+                       "or \"*\" for every app."}
+DRAWING_HELP = (
+    "A drawing is a list of shapes on the 72x40 px key, drawn in order, [0,0] top "
+    "left: {\"rect\": [x,y,w,h], \"fill\": bool, \"width\": n}, {\"ellipse\": [x,y,w,h], "
+    "...}, {\"line\": [x0,y0,x1,y1], \"width\": n}, {\"polygon\": [[x,y],...]}, "
+    "{\"text\": \"F5\", \"at\": [x,y], \"size\": 6-40, \"align\": "
+    "\"left|center|right\"} (Latin letters only), {\"icon\": name from find_icons, "
+    "\"at\": [x,y]}, {\"bitmap\": [\"#..#\", ...], \"at\": [x,y], \"scale\": 1-4}; "
+    "add \"erase\": true to draw black. With legend true the key's legend stays and "
+    "the firmware cuts 3 px around the drawing; keep the drawing to one side then. "
+    "Call preview_overlay to see the result.")
+_BINDING = {
+    "type": "object",
+    "properties": {
+        "key": {"description": "A physical key (\"L:3.2\", {\"base\": \"KC_Q\"}) or a "
+                               "keycode name (\"KC_F5\")."},
+        "drawing": {"type": "array", "items": {"type": "object"}},
+        "mods": {"type": "array", "items": {"type": "string",
+                                            "enum": ["CTRL", "SHIFT", "ALT", "GUI"]},
+                 "description": "Show the drawing while these modifiers are held."},
+        "legend": {"type": "boolean", "default": True,
+                   "description": "false: the drawing replaces the key's legend."},
+    },
+    "required": ["key", "drawing"],
 }
 
 
@@ -428,6 +608,47 @@ TOOLS = {
     "set_overlays": (set_overlays,
                      "Turn the per-application keycap overlays on or off.",
                      _schema({"enabled": {"type": "boolean"}}, ["enabled"]), _SET),
+    "find_icons": (find_icons,
+                   "Search the keyboard's icon library by words (\"copy\", \"play\"). "
+                   "Returns icon names for an {\"icon\": name} shape, with their size.",
+                   _schema({"query": {"type": "string"}}, ["query"]), _READ),
+    "list_overlay_keys": (list_overlay_keys,
+                          "The keycodes that can have an image, with the physical keys that "
+                          "send each on layer 0. An image belongs to a keycode: it shows on "
+                          "every key that sends it.", _schema(), _READ),
+    "list_user_overlays": (list_user_overlays,
+                           "The overlay sets the user or an assistant made, by app.",
+                           _schema(), _READ),
+    "create_overlay": (create_overlay,
+                       "Make the user's overlay set for an app, replacing the set made "
+                       "before. It is laid over the app's shipped icons: the user's keys "
+                       "win, the shipped icons stay on the others. " + DRAWING_HELP,
+                       _schema({"app": _APP, "bindings": {"type": "array", "items": _BINDING}},
+                               ["app", "bindings"]), _WRITE),
+    "draw_key": (draw_key,
+                 "Draw a picture on one key, for one app or for every app (app \"*\"), "
+                 "with or without the key's legend. Replaces an earlier drawing on that "
+                 "key and modifiers. " + DRAWING_HELP,
+                 _schema({"app": _APP, **_BINDING["properties"],
+                          "follow": {"type": "string", "enum": ["keycode", "key"],
+                                     "default": "keycode",
+                                     "description": "keycode: on every key that sends "
+                                                    "this keycode. key: on this physical "
+                                                    "key only (needs newer firmware)."}},
+                         ["app", "key", "drawing"]), _WRITE),
+    "clear_key": (clear_key,
+                  "Remove the drawing on one key (and modifiers) from an app's user set.",
+                  _schema({"app": _APP, "key": _BINDING["properties"]["key"],
+                           "mods": _BINDING["properties"]["mods"]}, ["app", "key"]), _WRITE),
+    "delete_overlay": (delete_overlay,
+                       "Remove an app's whole user overlay set. Shipped sets stay.",
+                       _schema({"app": _APP}, ["app"]), _WRITE),
+    "preview_overlay": (preview_overlay,
+                        "A picture of both halves with the image each key shows for an app "
+                        "(layer 0). Keys show their keycode name in grey where the legend "
+                        "stays; the real legend depends on the language.",
+                        _schema({"app": _APP, "mods": _BINDING["properties"]["mods"]},
+                                ["app"]), _READ),
 }
 
 # The control methods each tool may reach. Frozen by tests/mcp/tools_test.py.
@@ -444,6 +665,17 @@ TOOL_METHODS = {
     "set_glyph_script": {p.M_GLYPH_SCRIPT_SET},
     "set_key": {p.M_STATUS_GET, p.M_KEYMAP_LAYER_COUNT, p.M_KEYMAP_BUFFER, p.M_KEYMAP_SET},
     "set_overlays": {p.M_OVERLAY_ENABLE, p.M_OVERLAY_DISABLE},
+    "find_icons": set(),
+    "list_overlay_keys": {p.M_STATUS_GET, p.M_KEYMAP_LAYER_COUNT, p.M_KEYMAP_BUFFER},
+    "list_user_overlays": {p.M_USER_OVERLAY_LIST},
+    "create_overlay": {p.M_STATUS_GET, p.M_KEYMAP_LAYER_COUNT, p.M_KEYMAP_BUFFER,
+                       p.M_USER_OVERLAY_SET},
+    "draw_key": {p.M_STATUS_GET, p.M_KEYMAP_LAYER_COUNT, p.M_KEYMAP_BUFFER,
+                 p.M_USER_OVERLAY_SET},
+    "clear_key": {p.M_STATUS_GET, p.M_KEYMAP_LAYER_COUNT, p.M_KEYMAP_BUFFER,
+                  p.M_USER_OVERLAY_CLEAR},
+    "delete_overlay": {p.M_USER_OVERLAY_CLEAR},
+    "preview_overlay": {p.M_USER_OVERLAY_PREVIEW},
 }
 ALLOWED_METHODS = frozenset().union(*TOOL_METHODS.values())
 
@@ -462,6 +694,14 @@ RESULT_FIELDS = {
     "set_glyph_script": {"glyph_script"},
     "set_key": {"key", "layer", "keycode", "previous", "note"},
     "set_overlays": {"overlays"},
+    "find_icons": {"icons"},
+    "list_overlay_keys": {"keys"},
+    "list_user_overlays": {"sets"},
+    "create_overlay": {"app", "placed", "notes"},
+    "draw_key": {"app", "key", "mods", "legend", "shows_on", "notes"},
+    "clear_key": {"app", "key", "removed"},
+    "delete_overlay": {"app", "removed"},
+    "preview_overlay": {"app", "mods", "image"},
 }
 LIST_KEYS_FIELDS = {"key", "row", "col", "thumb", "has_display", "keycode", "base"}
 
@@ -483,8 +723,14 @@ def call_tool(link, name, arguments):
         return None, str(exc)
 
 
-def result_text(result):
-    """The text content of a result: the layout drawing as is, everything else JSON."""
+def result_content(result):
+    """The MCP content items of a result: an "image" field as a PNG image item, the
+    layout drawing as plain text, everything else as JSON text."""
     if set(result) == {"layer", "layout"}:
-        return result["layout"]
-    return json.dumps(result, ensure_ascii=False, indent=1)
+        return [{"type": "text", "text": result["layout"]}]
+    items = []
+    if "image" in result:
+        result = dict(result)
+        items.append({"type": "image", "data": result.pop("image"), "mimeType": "image/png"})
+    items.append({"type": "text", "text": json.dumps(result, ensure_ascii=False, indent=1)})
+    return items
