@@ -738,8 +738,15 @@ class PolyHost(QApplication):
         # Maintenance, not Help & About: Help is help, About, a report and the
         # logs. Open config folder works with no keyboard, so it keeps the
         # Maintenance parent enabled; the crash record has its own gate.
+        # A computer with no keyboard, reached through NoMachine or Remote Desktop, runs
+        # the forwarder instead (services/start_mode.py).
+        self.switch_to_forwarder_action = QAction(get_icon("sync_alt.svg"),
+                                                  _("Switch to Forwarder…"), parent=self)
+        # noinspection PyUnresolvedReferences
+        self.switch_to_forwarder_action.triggered.connect(self._switch_to_forwarder)
         self.cmdMenu.add_always_enabled_maintenance_action(
-            self.crash_record_action, self.open_config_action)
+            self.crash_record_action, self.open_config_action,
+            self.switch_to_forwarder_action)
 
         if self.exit_with_daemon is not None:
             # Client mode has two quit rows. The GUI-only one was misclicked for
@@ -1715,6 +1722,40 @@ class PolyHost(QApplication):
         if tap is not None:
             self._core_click(lambda: self.core.set_tap_terms(*tap),
                              done_for(kbd.TAPPING_TERM, _("Tap-Hold Timing")))
+
+    def _switch_to_forwarder(self):
+        """Set start_as_forwarder and restart: this computer then reports its windows to
+        the keyboard computer instead of controlling a keyboard. A background daemon that
+        owns the keyboard is stopped too, because the forwarder has no use for it."""
+        from polyhost.services import start_mode
+        answer = QMessageBox.question(
+            None, _("Switch to Forwarder"),
+            _("Use this computer as a forwarder? It will stop controlling a keyboard, and "
+              "report its windows to the keyboard computer instead. This is for a computer "
+              "with no keyboard, reached through NoMachine or Remote Desktop. Restart now?"))
+        if answer != QMessageBox.Yes:
+            return
+        if not start_mode.set_start_as_forwarder(self.poly_settings, True,
+                                                 source="Switch to Forwarder"):
+            message_box.warning(
+                None, _("Switch to Forwarder"),
+                _("The settings could not be saved to the settings file, so they will not take "
+                  "effect. Another program may be holding it open. Try again, or see the "
+                  "log."))
+            return
+        self.log.info("Switching to forwarder mode: restarting.")
+        if self.exit_with_daemon is not None:
+            try:
+                result = self.core.request_host_shutdown()
+                if isinstance(result, dict) and result.get("error"):
+                    self.log.warning("Daemon shutdown request returned: %s", result["error"])
+            except Exception as e:  # noqa: BLE001 - best effort; restart regardless
+                self.log.warning("Could not ask the core daemon to shut down: %s", e)
+        # The relaunch repeats this run's options. --connect and --no-forwarder would
+        # make the new process a keyboard client again, so drop them for this restart.
+        sys.argv[1:] = start_mode.strip_options(sys.argv[1:], connect=True)
+        self.wants_restart = True
+        self.quit_app()
 
     def _restart_for_language(self):
         """Restart the tray (main_app re-execs once the loop unwinds). In

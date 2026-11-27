@@ -78,7 +78,7 @@ AGENT_HEARTBEAT_MSEC = 1000
 FORWARDER_SETTING_KEYS = ("ui_theme", "ui_language", "shortcut_icons_enabled",
                           "shortcut_enable_accessibility", "log_detail",
                           "agents_raise_here", "agents_anonymize",
-                          "forwarder_detect_host") + tuple(_URL_SETTINGS)
+                          "forwarder_detect_host", "start_as_forwarder") + tuple(_URL_SETTINGS)
 
 from polyhost.util.log_util import DEBUG_DETAILED, make_stream_handler, make_collapse_handler  # noqa: F401  (registers debug_detailed on import)
 from polyhost.handler.active_window import log_env_info
@@ -99,7 +99,7 @@ class _UpdateBridge(QObject):
 class PolyForwarder(QApplication):
     def __init__(self, log_level, host=None, host_file=None,
                  report_rpc=False, report_port=None, report_authkey_file=None,
-                 detect_host=False):
+                 detect_host=False, launched_by_setting=False):
         super().__init__(sys.argv)
         # Tray-only app: keep it out of the macOS Dock (no-op elsewhere).
         from polyhost.util.macos_ui import hide_dock_icon
@@ -118,6 +118,11 @@ class PolyForwarder(QApplication):
         # computer (services/session_peer.py): --detect-host, or the setting
         # forwarder_detect_host. The watcher is made on first use.
         self._detect_flag = bool(detect_host)
+        # True when this is a forwarder only because the start_as_forwarder setting is on
+        # (services/start_mode.py). Then "Switch to Keyboard Mode" can undo it; a
+        # forwarder started with --host, --host-file or --detect-host is switched back by
+        # taking the option out of the startup command.
+        self._launched_by_setting = bool(launched_by_setting)
         self._detect_checked = (0.0, False)
         self._client_watcher = None
 
@@ -314,6 +319,14 @@ class PolyForwarder(QApplication):
         self.pair_action.triggered.connect(self._pair_clicked)
         self.menu.addAction(self.pair_action)
 
+        self.keyboard_mode_action = None
+        if self._launched_by_setting:
+            self.keyboard_mode_action = QAction(get_icon("keyboard.svg"),
+                                                _("Switch to Keyboard Mode…"), parent=self)
+            # noinspection PyUnresolvedReferences
+            self.keyboard_mode_action.triggered.connect(self._switch_to_keyboard_mode)
+            self.menu.addAction(self.keyboard_mode_action)
+
         # The same Integrations dialog as the tray app, for THIS computer: the
         # forwarder reports its window titles and the browser URL from its own
         # BrowserUrlSource, and its agents' hooks report to the keyboard
@@ -391,6 +404,11 @@ class PolyForwarder(QApplication):
         self.refresh_status()
 
         QTimer.singleShot(1000, self.active_window_reporter)
+        if self._launched_by_setting:
+            from polyhost.services import start_mode
+            # Always consumed, offered only while unpaired.
+            if start_mode.take_pair_prompt() and not self._report_rpc:
+                QTimer.singleShot(1500, self._offer_to_pair)
 
     # ------------------------------------------------------------------
     # Status row, tray tooltip and the pause switch
@@ -997,6 +1015,41 @@ class PolyForwarder(QApplication):
             self.log.info("Restarting the forwarder to use the pairing.")
             self.wants_restart = True
             self.quit_app()
+
+    def _switch_to_keyboard_mode(self):
+        """Clear start_as_forwarder and restart: this computer then starts as the tray app
+        that owns a keyboard (main_app re-execs once the loop unwinds)."""
+        from polyhost.services import start_mode
+        from polyhost.settings import PolySettings
+        answer = QMessageBox.question(
+            None, _("Switch to Keyboard Mode"),
+            _("This computer will stop reporting its windows to a keyboard computer, and "
+              "start as the PolyKybd tray app for a keyboard plugged in here. Restart now?"))
+        if answer != QMessageBox.Yes:
+            return
+        if not start_mode.set_start_as_forwarder(PolySettings(), False,
+                                                 source="Switch to Keyboard Mode"):
+            message_box.warning(
+                None, _("Switch to Keyboard Mode"),
+                _("The settings could not be saved to the settings file, so they will not take "
+                  "effect. Another program may be holding it open. Try again, or see the "
+                  "log."))
+            return
+        self.log.info("Switching to keyboard mode: restarting.")
+        self.wants_restart = True
+        self.quit_app()
+
+    def _offer_to_pair(self):
+        """After "Switch to Forwarder": a forwarder finds the keyboard computer only over
+        the paired connection, so offer to pair now instead of leaving the status row at
+        "needs a paired forwarder"."""
+        answer = QMessageBox.question(
+            None, _("Pair with the Keyboard Computer"),
+            _("This computer now reports its windows to a keyboard computer. Pair it with "
+              "that computer now? You need the code from AI Agents → Pair a Forwarder… in "
+              "the keyboard computer's tray menu."))
+        if answer == QMessageBox.Yes:
+            self._pair_clicked()
 
     def _restart_for_language(self):
         """Restart the forwarder (main_app re-execs once the loop unwinds)."""

@@ -18,6 +18,7 @@ The subprocess entrypoints live at the bottom (`python host_client_test.py
 {client|default}`); the QT platform is forced to `offscreen` there so no real
 display surface is needed beyond pynput's X requirement.
 """
+import json
 import os
 import subprocess
 import sys
@@ -52,6 +53,19 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertIn("SMOKE OK", proc.stdout)
         self.assertIn("CORE_TYPE PolyCore", proc.stdout)
         self.assertIn("DAEMON_QUIT_ACTION absent", proc.stdout)
+        # Switch to Forwarder… (services/start_mode.py): under Maintenance, and it asks,
+        # sets the setting, then restarts; declining or a failed save changes nothing.
+        self.assertIn("SWITCH_ITEM True Switch to Forwarder…", proc.stdout)
+        scenarios = json.loads(_grab(proc.stdout, "SWITCH_SCENARIOS"))
+        self.assertEqual(scenarios["yes"]["calls"], [[True, "Switch to Forwarder"]])
+        self.assertEqual((scenarios["yes"]["restart"], scenarios["yes"]["quit"]), (True, 1))
+        # The relaunch must not repeat --connect (with its endpoint) or --no-forwarder,
+        # which would start a keyboard client again. Other options stay.
+        self.assertEqual(scenarios["yes"]["relaunch_args"], ["--dev"])
+        self.assertEqual(scenarios["no"]["calls"], [])
+        self.assertEqual((scenarios["no"]["restart"], scenarios["no"]["quit"]), (False, 0))
+        self.assertEqual((scenarios["not_saved"]["restart"], scenarios["not_saved"]["quit"],
+                          scenarios["not_saved"]["warned"]), (False, 0, 1))
         self.assertIn("SUPPORT_ACTION absent", proc.stdout)
         self.assertIn("ABOUT_OK True", proc.stdout)
 
@@ -236,6 +250,12 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertEqual(top[-1], "Quit && stop background daemon")
         self.assertNotIn("Quit", top)
         self.assertIn("CLIENT_MAINT_LAST Only quit GUI", proc.stdout)
+        # In client mode the background daemon that owns the keyboard is stopped too,
+        # but only when the switch is confirmed and saved.
+        client = json.loads(_grab(proc.stdout, "CLIENT_SWITCH_SCENARIOS"))
+        self.assertEqual(client["yes"]["daemon_stopped"], 1)
+        self.assertEqual(client["no"]["daemon_stopped"], 0)
+        self.assertEqual(client["not_saved"]["daemon_stopped"], 0)
         self.assertIn("CLIENT_QUIT_GUI_REACHABLE_OFFLINE True", proc.stdout)
         self.assertIn("UPDATE_ROUTED_TO_DAEMON True", proc.stdout)
         self.assertIn("CLIENT_ABOUT_OK True", proc.stdout)
@@ -366,6 +386,48 @@ def _smoke_forwarder():
     print("SMOKE OK")
 
 
+def _switch_to_forwarder_scenarios(app, shutdowns=None):
+    """What "Switch to Forwarder…" does for a given answer and save result."""
+    import unittest.mock as mock
+    from polyhost.services import start_mode
+    from polyhost import host as host_mod
+    results = {}
+    calls, quits, warned = [], [], []
+
+    def run(label, answer, saved):
+        calls.clear()
+        quits.clear()
+        warned.clear()
+        app.wants_restart = False
+        saved_argv = list(sys.argv)
+        sys.argv[1:] = ["--dev", "--connect", "/tmp/x.sock", "--no-forwarder"]
+
+        def fake_set(settings, enabled, source):
+            calls.append([enabled, source])
+            return saved
+        with mock.patch.object(start_mode, "set_start_as_forwarder", fake_set), \
+                mock.patch.object(host_mod.QMessageBox, "question", return_value=answer), \
+                mock.patch.object(host_mod.message_box, "warning",
+                                  lambda *a, **k: warned.append(1)), \
+                mock.patch.object(app, "quit_app", lambda: quits.append(1)):
+            app._switch_to_forwarder()
+        relaunch_args = sys.argv[1:]
+        sys.argv[:] = saved_argv
+        results[label] = {"calls": [list(c) for c in calls], "restart": app.wants_restart,
+                          "relaunch_args": relaunch_args,
+                          "quit": len(quits), "warned": len(warned),
+                          "daemon_stopped": len(shutdowns) if shutdowns is not None else None}
+    yes_button, no_button = host_mod.QMessageBox.Yes, host_mod.QMessageBox.No
+    if shutdowns is not None:
+        shutdowns.clear()
+    run("yes", yes_button, True)
+    if shutdowns is not None:
+        shutdowns.clear()
+    run("no", no_button, True)
+    run("not_saved", yes_button, False)
+    return results
+
+
 def _smoke_default():
     import logging
     from unittest import mock
@@ -406,6 +468,10 @@ def _smoke_default():
               and has_env and has_ok and has_copy and has_diag)
         about.deleteLater()
         print("TOPLEVEL", _toplevel(app))
+        maint_menu = next(a for a in app.menu.actions() if a.text() == "Maintenance").menu()
+        print("SWITCH_ITEM", app.switch_to_forwarder_action in maint_menu.actions(),
+              app.switch_to_forwarder_action.text())
+        print("SWITCH_SCENARIOS", json.dumps(_switch_to_forwarder_scenarios(app)))
         # Contextual row: built, but invisible until the core reports safe mode.
         print("NEWER_FW_ROW", app.newer_fw_action.isVisible())
         about_parent = app.help_menu.title()
@@ -696,6 +762,12 @@ def _smoke_client():
             maint = next(a for a in app.menu.actions() if a.text() == "Maintenance")
             print("CLIENT_MAINT_LAST", [a for a in maint.menu().actions()
                                         if not a.isSeparator()][-1].text())
+            # Switching to forwarder stops the daemon that owns the keyboard.
+            stops = []
+            with mock.patch.object(app.core, "request_host_shutdown",
+                                   lambda: stops.append(1) or {}):
+                print("CLIENT_SWITCH_SCENARIOS",
+                      json.dumps(_switch_to_forwarder_scenarios(app, stops)))
             # With no keyboard (unplugged: not connected, not present) the row
             # must stay reachable: parent and row enabled.
             app.connected = False

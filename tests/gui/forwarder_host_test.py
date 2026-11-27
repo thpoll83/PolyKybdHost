@@ -22,12 +22,12 @@ import unittest
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-def _run_smoke():
+def _run_smoke(*mode):
     env = dict(os.environ)
     env["PYTHONPATH"] = _REPO_ROOT + os.pathsep + env.get("PYTHONPATH", "")
     env["QT_QPA_PLATFORM"] = "offscreen"
     with tempfile.TemporaryDirectory() as workdir:
-        return subprocess.run([sys.executable, os.path.abspath(__file__), "run"],
+        return subprocess.run([sys.executable, os.path.abspath(__file__), *(mode or ("run",))],
                               capture_output=True, text=True, env=env, timeout=120,
                               cwd=workdir)
 
@@ -47,6 +47,24 @@ def _results():
                 _RESULT.update(json.loads(line[len("RESULT "):]))
         assert _RESULT, f"no RESULT line:\n{proc.stdout}\n{proc.stderr}"
     return _RESULT
+
+
+_SWITCH = {}
+
+
+def _switch_results(mode):
+    """The "Switch to ..." scenarios of one subprocess: `switch` (unpaired forwarder) or
+    `switch-paired`."""
+    if mode not in _SWITCH:
+        proc = _run_smoke(mode)
+        if "SMOKE SKIP" in proc.stdout:
+            raise unittest.SkipTest("pywinctl not installed: the forwarder cannot be imported")
+        assert proc.returncode == 0, f"stdout={proc.stdout}\nstderr={proc.stderr}"
+        for line in proc.stdout.splitlines():
+            if line.startswith("RESULT "):
+                _SWITCH[mode] = json.loads(line[len("RESULT "):])
+        assert mode in _SWITCH, f"no RESULT line:\n{proc.stdout}\n{proc.stderr}"
+    return _SWITCH[mode]
 
 
 @unittest.skipUnless(os.environ.get("DISPLAY"),
@@ -167,6 +185,42 @@ class ForwarderReporterGuardTest(unittest.TestCase):
 
 @unittest.skipUnless(os.environ.get("DISPLAY"),
                      "GUI harness needs an X display: run under xvfb-run")
+class ForwarderSwitchTest(unittest.TestCase):
+    """A forwarder that started because of the start_as_forwarder setting."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.r = _switch_results("switch")
+        cls.paired = _switch_results("switch-paired")
+
+    def test_the_menu_has_switch_to_keyboard_mode_only_for_a_setting_launch(self):
+        self.assertEqual(self.r["menu_item"], "Switch to Keyboard Mode…")
+        self.assertIsNone(_results()["keyboard_mode_item_when_started_by_option"])
+
+    def test_confirming_clears_the_setting_and_restarts(self):
+        self.assertEqual(self.r["yes"], {"calls": [[False, "Switch to Keyboard Mode"]],
+                                         "restart": True, "quit": 1})
+
+    def test_declining_changes_nothing(self):
+        self.assertEqual(self.r["no"], {"calls": [], "restart": False, "quit": 0})
+
+    def test_a_setting_that_cannot_be_saved_does_not_restart(self):
+        self.assertEqual(self.r["not_saved"]["restart"], False)
+        self.assertEqual(self.r["not_saved"]["quit"], 0)
+        self.assertEqual(self.r["not_saved"]["warned"], 1)
+
+    def test_an_unpaired_forwarder_offers_to_pair_once_after_the_switch(self):
+        self.assertEqual(self.r["offer_scheduled"], 1)
+        self.assertEqual(self.r["offer_yes_pairs"], 1)
+        self.assertEqual(self.r["offer_no_pairs"], 0)
+
+    def test_a_paired_forwarder_does_not_offer_but_still_consumes_the_marker(self):
+        self.assertEqual(self.paired["offer_scheduled"], 0)
+        self.assertEqual(self.paired["marker_taken"], 1)
+
+
+@unittest.skipUnless(os.environ.get("DISPLAY"),
+                     "GUI harness needs an X display: run under xvfb-run")
 class ForwarderRelayTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -277,6 +331,8 @@ def _smoke():
         import polyhost.forwarder as fwd
         out["browser_listener_stubbed"] = fwd.BrowserUrlSource is _NoBrowserUrlSource
         app = fwd.PolyForwarder(logging.CRITICAL, host="10.0.0.1")
+        out["keyboard_mode_item_when_started_by_option"] = (
+            None if app.keyboard_mode_action is None else app.keyboard_mode_action.text())
         host_file = os.path.join(os.getcwd(), "host_ip")
 
         def setup(host=None, file=None, text=None, detect=False, rpc=False, address=None):
@@ -487,8 +543,86 @@ def _smoke():
     print("RESULT " + json.dumps(out))
 
 
+def _smoke_switch(paired):
+    """A forwarder that started because of the start_as_forwarder setting."""
+    import logging
+    import unittest.mock as mock
+    try:
+        importlib.import_module("pywinctl")
+    except Exception:  # noqa: BLE001
+        print("SMOKE SKIP no-pywinctl")
+        return
+    out = {}
+    scheduled = []
+    taken = []
+    keyfile = os.path.join(os.getcwd(), "authkey")      # so no key is made in the config dir
+    with open(keyfile, "wb") as handle:
+        handle.write(b"test-key")
+    with mock.patch("polyhost.input.linux_gnome_helper.LinuxGnomeInputHelper"), \
+            mock.patch("polyhost.handler.browser_url_source.BrowserUrlSource",
+                       _NoBrowserUrlSource), \
+            mock.patch("polyhost.services.editor_plugins.start_refresh_thread"), \
+            mock.patch("polyhost.services.browser_extension.update_if_outdated"):
+        import polyhost.forwarder as fwd
+        from polyhost.services import start_mode
+        # Timers are recorded, not run: nothing here may start the reporter loop.
+        with mock.patch.object(fwd.QTimer, "singleShot",
+                               lambda ms, callback: scheduled.append(
+                                   getattr(callback, "__name__", "?"))), \
+                mock.patch.object(start_mode, "take_pair_prompt",
+                                  lambda: taken.append(1) or True):
+            app = fwd.PolyForwarder(logging.CRITICAL, detect_host=True,
+                                    report_rpc=paired, report_authkey_file=keyfile,
+                                    launched_by_setting=True)
+        out["menu_item"] = app.keyboard_mode_action.text()
+        out["offer_scheduled"] = scheduled.count("_offer_to_pair")
+        out["marker_taken"] = len(taken)
+
+        calls, quits, warned = [], [], []
+        app.quit_app = lambda: quits.append(1)
+
+        def switch(answer, saved):
+            calls.clear()
+            quits.clear()
+            warned.clear()
+            app.wants_restart = False
+
+            def fake_set(settings, enabled, source):
+                calls.append([enabled, source])
+                return saved
+            with mock.patch.object(start_mode, "set_start_as_forwarder", fake_set), \
+                    mock.patch("polyhost.settings.PolySettings", mock.MagicMock()), \
+                    mock.patch.object(fwd.QMessageBox, "question", return_value=answer), \
+                    mock.patch.object(fwd.message_box, "warning",
+                                      lambda *a, **k: warned.append(1)):
+                app._switch_to_keyboard_mode()
+            return {"calls": [list(c) for c in calls], "restart": app.wants_restart,
+                    "quit": len(quits), "warned": len(warned)}
+
+        yes = switch(fwd.QMessageBox.Yes, True)
+        out["yes"] = {k: yes[k] for k in ("calls", "restart", "quit")}
+        no = switch(fwd.QMessageBox.No, True)
+        out["no"] = {k: no[k] for k in ("calls", "restart", "quit")}
+        out["not_saved"] = switch(fwd.QMessageBox.Yes, False)
+
+        pairs = []
+        with mock.patch.object(app, "_pair_clicked", lambda: pairs.append(1)):
+            with mock.patch.object(fwd.QMessageBox, "question",
+                                   return_value=fwd.QMessageBox.Yes):
+                app._offer_to_pair()
+            out["offer_yes_pairs"] = len(pairs)
+            pairs.clear()
+            with mock.patch.object(fwd.QMessageBox, "question",
+                                   return_value=fwd.QMessageBox.No):
+                app._offer_to_pair()
+            out["offer_no_pairs"] = len(pairs)
+    print("RESULT " + json.dumps(out))
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "run":
         _smoke()
+    elif len(sys.argv) > 1 and sys.argv[1] in ("switch", "switch-paired"):
+        _smoke_switch(sys.argv[1] == "switch-paired")
     else:
         unittest.main()
