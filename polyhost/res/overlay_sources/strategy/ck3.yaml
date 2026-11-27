@@ -1,0 +1,98 @@
+# Crusader Kings III overlay for PolyKybd. See SOURCES.md.
+#
+# Keys: the game's own `game/gui/shortcuts.shortcuts`, version 1.21.0.3. Each
+# binding names the file's shortcut (`command:`). CK3 has no in-game
+# rebinding.
+#
+# 1.21 moved the F keys: F5 is Trade, F6 Court (1.16 had Court on F5).
+#
+# Left out: about 30 more map modes on Shift and Ctrl (secondary faith,
+# culture and house, de jure counties, terrain, trade ...), the army and
+# county keys (they act on the selection), the ledger and event-option keys
+# (they act on the open window), Ctrl+Alt+R (personal beliefs; three
+# modifiers), and Esc (program mark).
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/strategy/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/strategy/ck3.yaml --preview /tmp/ck3_preview
+
+app: crusader kings iii
+match: [ck3, steam_app_1158310]
+output: ck3_template
+icon_dir: icons
+fit: contain
+mode: auto
+threshold: 150
+anchor: right
+region: [40, 40]
+margin: 0
+
+program_icon: ck3.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Time
+  - { key: SPACE, command: pause, icon: pause.png, label: "Pause" }
+  - { key: EQUAL, command: increase_speed_4, icon: faster.png, label: "Faster", undrawn: [X] }
+  - { key: MINUS, command: decrease_speed_3, icon: slower.png, label: "Slower", undrawn: [Z] }
+  - { key: "1", command: speed_1, icon: speed1.png, label: "Speed 1" }
+  - { key: "2", command: speed_2, icon: speed2.png, label: "Speed 2" }
+  - { key: "3", command: speed_3, icon: speed3.png, label: "Speed 3" }
+  - { key: "4", command: speed_4, icon: speed4.png, label: "Speed 4" }
+  - { key: "5", command: speed_5, icon: speed5.png, label: "Speed 5" }
+
+  # Windows
+  - { key: F1, command: character_window, icon: character.png, label: "Character", region: [34, 40] }
+  - { key: F2, command: my_realm_window, icon: realm.png, label: "My realm", region: [34, 40] }
+  - { key: F3, command: military_window, icon: military.png, label: "Military", region: [34, 40] }
+  - { key: F4, command: council_window, icon: council.png, label: "Council", region: [34, 40] }
+  - { key: F5, command: trade_window, icon: trade.png, label: "Trade", region: [34, 40] }
+  - { key: F6, command: court_window, icon: court.png, label: "Court", region: [34, 40] }
+  - { key: F7, command: intrigue_window, icon: intrigue.png, label: "Intrigue", region: [34, 40] }
+  - { key: F8, command: factions_window, icon: factions.png, label: "Factions", region: [34, 40] }
+  - { key: F9, command: decision_window, icon: decisions.png, label: "Decisions", region: [34, 40] }
+  - { key: F10, command: encyclopedia, icon: encyclopedia.png, label: "Encyclopedia", region: [34, 40] }
+  - { key: F1, mods: [SHIFT], command: ledger_window, icon: ledger.png, label: "Ledger", region: [34, 40] }
+  - { key: F2, mods: [SHIFT], command: royal_court, icon: royalcourt.png, label: "Royal court", region: [34, 40] }
+  - { key: F1, mods: [ALT], command: government_hud, icon: government.png, label: "Government", region: [34, 40] }
+  - { key: "0", command: situations, icon: situation.png, label: "Situations" }
+  - { key: Q, command: outliner, icon: outliner.png, label: "Outliner" }
+  - { key: TAB, command: action_list, icon: actionlist.png, label: "Action list" }
+  - { key: S, mods: [ALT], command: open_capital, icon: openholding.png, label: "Open capital" }
+  - { key: D, mods: [ALT], command: domicile, icon: domicile.png, label: "Domicile" }
+  - { key: R, mods: [ALT], command: hud_faith, icon: religion.png, label: "Faith" }
+  - { key: T, mods: [ALT], command: hud_culture, icon: culture.png, label: "Culture" }
+  - { key: A, mods: [ALT], command: activity_shortcut, icon: activities.png, label: "Activities" }
+  - { key: W, mods: [ALT], command: war_view, icon: warview.png, label: "War view" }
+
+  # Finding
+  - { key: C, command: character_finder, icon: charfinder.png, label: "Character finder" }
+  - { key: V, command: find_title_shortcut, icon: findtitle.png, label: "Find title" }
+  - { key: HOME, command: go_to_capital, icon: capital.png, label: "Go to capital" }
+  - { key: B, command: go_back, icon: back.png, label: "Back", undrawn: [BSPC] }
+  - { key: N, command: go_next, icon: forward.png, label: "Forward" }
+  - { key: Z, mods: [CTRL], command: undo, icon: undo.png, label: "Undo", shared: false }
+  - { key: Y, mods: [CTRL], command: redo, icon: redo.png, label: "Redo", shared: false }
+  - { key: PGUP, command: zoom_out, icon: zoomout.png, label: "Zoom out", shared: false }
+  - { key: PGDN, command: zoom_in, icon: zoomin.png, label: "Zoom in", shared: false }
+
+  # Map modes
+  - { key: E, command: map_mode_realms, icon: map_realms.png, label: "Map: realms" }
+  - { key: R, command: map_mode_religions, icon: map_religions.png, label: "Map: religions" }
+  - { key: T, command: map_mode_cultures, icon: map_cultures.png, label: "Map: cultures" }
+  - { key: Y, command: map_mode_houses, icon: map_houses.png, label: "Map: houses" }
+  - { key: Q, mods: [SHIFT], command: map_mode_dejure_duchies, icon: map_duchies.png, label: "Map: de jure duchies" }
+  - { key: W, mods: [SHIFT], command: map_mode_dejure_kingdoms, icon: map_kingdoms.png, label: "Map: de jure kingdoms" }
+  - { key: E, mods: [SHIFT], command: map_mode_dejure_empires, icon: map_empires.png, label: "Map: de jure empires" }
+  - { key: H, mods: [SHIFT], command: map_mode_dejure_hegemonies, icon: map_hegemonies.png, label: "Map: de jure hegemonies" }
+  - { key: P, command: explore_plagues, icon: map_plagues.png, label: "Map: plagues" }
+  - { key: L, command: explore_legends, icon: map_legends.png, label: "Map: legends" }
+
+  # Screenshots
+  - { key: F11, command: screenshot, icon: screenshot.png, label: "Screenshot", region: [34, 40] }
+  - { key: F11, mods: [SHIFT], command: screenshot_map, icon: mapshot.png, label: "Map screenshot", region: [34, 40] }

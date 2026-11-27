@@ -1,0 +1,83 @@
+# Hearts of Iron IV overlay for PolyKybd. See SOURCES.md.
+#
+# Keys: the game's interface files (`interface/topbar.gui`,
+# `interface/mapmodes_interface.gui`). No clean vanilla copy was found, so
+# each key is the value most of 40 mod copies of the file agree on (Kaiserreich
+# for 1.20.1 and Millennium Dawn give the same), checked against the Paradox
+# wiki. Pause/zoom/capital/screenshot keys are engine keys from the wiki.
+# HOI4 has no in-game rebinding.
+#
+# Left out: the army, navy and air keys (they act on the selected units), the
+# control groups (Ctrl+1-0 assigns, 1-0 recalls: they depend on what the
+# player stored), Alt+Q national focus (only in some mods), the number pad,
+# and Esc (program mark).
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/strategy/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/strategy/hoi4.yaml --preview /tmp/hoi4_preview
+
+app: hearts of iron iv
+match: [hoi4, steam_app_394360]
+output: hoi4_template
+icon_dir: icons
+fit: contain
+mode: auto
+threshold: 150
+anchor: right
+region: [40, 40]
+margin: 0
+
+program_icon: hoi4.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Time
+  - { key: SPACE, icon: pause.png, label: "Pause" }
+
+  # Top bar
+  - { key: Q, icon: country.png, label: "Government", region: [34, 40] }
+  - { key: Q, mods: [SHIFT], icon: decisions.png, label: "Decisions", region: [34, 40] }
+  - { key: Q, mods: [CTRL], icon: faction.png, label: "Faction" }
+  - { key: W, icon: technology.png, label: "Research", region: [34, 40] }
+  - { key: W, mods: [SHIFT], icon: intel.png, label: "Intelligence agency" }
+  - { key: E, icon: market.png, label: "International market", region: [34, 40] }
+  - { key: E, mods: [SHIFT], icon: warview.png, label: "Officer corps" }
+  - { key: R, icon: trade.png, label: "Trade", region: [34, 40] }
+  - { key: T, icon: construction.png, label: "Construction" }
+  - { key: Y, icon: production.png, label: "Production", region: [34, 40] }
+  - { key: U, icon: recruit.png, label: "Recruit and deploy" }
+  - { key: I, icon: logistics.png, label: "Logistics" }
+  - { key: O, icon: military.png, label: "Army overview", region: [34, 40] }
+  - { key: P, icon: navy.png, label: "Navy overview" }
+  - { key: L, icon: air.png, label: "Air overview" }
+
+  # Map modes
+  - { key: F1, icon: map_default.png, label: "Map: default", region: [34, 40] }
+  - { key: F2, icon: map_naval.png, label: "Map: naval", region: [34, 40] }
+  - { key: F3, icon: map_air.png, label: "Map: air", region: [34, 40] }
+  - { key: F4, icon: map_supply.png, label: "Map: supply", region: [34, 40] }
+  - { key: F5, icon: map_terrain.png, label: "Map: terrain", region: [34, 40] }
+  - { key: F6, icon: map_resistance.png, label: "Map: resistance", region: [34, 40] }
+  - { key: F7, icon: map_compliance.png, label: "Map: compliance", region: [34, 40] }
+  - { key: F8, icon: map_resource.png, label: "Map: resources", region: [34, 40] }
+  - { key: F9, icon: map_infrastructure.png, label: "Map: infrastructure", region: [34, 40] }
+  - { key: F10, icon: map_factions.png, label: "Map: factions", region: [34, 40] }
+  - { key: F1, mods: [CTRL], icon: mapmenu.png, label: "All map modes", region: [34, 40] }
+  - { key: M, icon: map_counters.png, label: "Unit counters" }
+  - { key: COMMA, icon: map_colours.png, label: "Counter colours" }
+  - { key: DOT, icon: map_battleplans.png, label: "Allied battleplans" }
+  - { key: N, icon: map_daynight.png, label: "Day and night" }
+
+  # Camera and system
+  - { key: F, icon: find.png, label: "Search" }
+  - { key: BSPC, icon: capital.png, label: "Go to capital" }
+  - { key: HOME, icon: zoomin.png, label: "Zoom in", shared: false }
+  - { key: END, icon: zoomout.png, label: "Zoom out", shared: false }
+  - { key: F9, mods: [CTRL], icon: hidegui.png, label: "Hide interface", region: [34, 40] }
+  - { key: F10, mods: [CTRL], icon: mapshot.png, label: "Save political map", region: [34, 40] }
+  - { key: F11, icon: screenshot.png, label: "Screenshot", region: [34, 40] }

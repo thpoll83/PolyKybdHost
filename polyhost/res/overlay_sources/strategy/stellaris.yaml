@@ -1,0 +1,73 @@
+# Stellaris overlay for PolyKybd. See SOURCES.md.
+#
+# Keys: the map modes from the game's own `common/map_modes/00_map_modes.txt`
+# (3.10 and 3.12 copies); the outliner, search, home and help keys from
+# `interface/outliner.gui` and `interface/main_bottom.gui` (the value all mod
+# copies agree on); the rest from the Paradox wiki. Stellaris has no in-game
+# rebinding.
+#
+# Left out: F1-F10 (the player orders the navigation menu, so each key's
+# meaning differs), the control groups (they depend on what the player
+# stored), the outliner-tab keys (Ctrl+Q/W/E/R, Ctrl+A/D), the planet, ship and
+# starbase letters (they act on the selection), and Esc (program mark).
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/strategy/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/strategy/stellaris.yaml --preview /tmp/stellaris_preview
+
+app: stellaris
+match: [stellaris, steam_app_281990]
+output: stellaris_template
+icon_dir: icons
+fit: contain
+mode: auto
+threshold: 150
+anchor: right
+region: [40, 40]
+margin: 0
+
+program_icon: stellaris.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Time
+  - { key: SPACE, icon: pause.png, label: "Pause" }
+  - { key: EQUAL, icon: faster.png, label: "Faster (+)" }
+  - { key: MINUS, icon: slower.png, label: "Slower" }
+  - { key: DOT, icon: nextday.png, label: "Advance one day" }
+
+  # Map modes
+  - { key: Z, mods: [CTRL], command: default_map_mode, icon: map_empire.png, label: "Map: empires" }
+  - { key: X, mods: [CTRL], command: diplomatic_map_mode, icon: map_diplomatic.png, label: "Map: diplomatic" }
+  - { key: C, mods: [CTRL], command: opinion_map_mode, icon: map_opinion.png, label: "Map: opinion" }
+  - { key: V, mods: [CTRL], command: attitude_map_mode, icon: map_attitude.png, label: "Map: AI attitude" }
+  - { key: B, mods: [CTRL], command: neighbor_map_mode, icon: map_neighbor.png, label: "Map: neighbours" }
+  - { key: N, mods: [CTRL], command: intel_map_mode, icon: map_intel.png, label: "Map: intel" }
+
+  # Views and tools
+  - { key: E, icon: galaxy.png, label: "Galaxy map", undrawn: [M] }
+  - { key: O, icon: outliner.png, label: "Outliner" }
+  - { key: F, icon: find.png, label: "System search" }
+  - { key: HOME, icon: capital.png, label: "Home system", undrawn: [BSPC] }
+  - { key: L, icon: chat.png, label: "Multiplayer chat" }
+  - { key: B, mods: [ALT], icon: help.png, label: "Help", shared: false }
+  - { key: TAB, icon: cycle.png, label: "Cycle star systems" }
+
+  # Camera
+  - { key: W, icon: panup.png, label: "Pan camera up", undrawn: [UP] }
+  - { key: S, icon: pandown.png, label: "Pan camera down", undrawn: [DOWN] }
+  - { key: A, icon: panleft.png, label: "Pan camera left", undrawn: [LEFT] }
+  - { key: D, icon: panright.png, label: "Pan camera right", undrawn: [RIGHT] }
+  - { key: Q, icon: focus.png, label: "Focus on selection" }
+  - { key: R, icon: rotation.png, label: "Reset camera rotation" }
+  - { key: PGUP, icon: zoomin.png, label: "Zoom in", shared: false }
+  - { key: PGDN, icon: zoomout.png, label: "Zoom out", shared: false }
+
+  # System
+  - { key: F9, mods: [CTRL], icon: hidegui.png, label: "Hide interface", region: [34, 40] }
+  - { key: F11, icon: screenshot.png, label: "Screenshot", region: [34, 40] }

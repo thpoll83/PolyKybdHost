@@ -15,8 +15,9 @@ Exile 1 and 2, Overwatch 2, Genshin Impact) call this module instead:
 - Each icon is drawn at exactly its key area (`sizes`, default 40 x 40), so
   the generator places it 1:1. An icon in `ink` fills that smaller box at the
   bottom right of its area.
-- `numbered` is ``{stem: (source stem, digit text[, box])}``: the source
-  icon in `box` (default 28 x 40) at the bottom right of a 40 x 40 area,
+- `numbered` is ``{stem: (source stem, digit text[, box[, area]])}``: the
+  source icon in `box` (default 28 x 40) at the bottom right of `area`
+  (default 40 x 40; 34 x 40 for an F key),
   with the digits in the top-left corner, as the CS2 radio wheels. A source
   whose stem starts with ``src_`` is deleted afterwards: no key draws it.
 - The ESC mark: `mark` set in Bebas Neue (SIL OFL 1.1) at the largest size
@@ -55,12 +56,15 @@ def flat_icons(out: Path, icons: dict, sizes: dict, ink: dict) -> None:
 
 
 def numbered_icons(out: Path, numbered: dict) -> None:
-    """``{stem: (source stem, text[, box])}``: the source icon with `text` in the
-    top-left corner. Returns the source stems."""
+    """``{stem: (source stem, text[, box[, area]])}``: the source icon with
+    `text` in the top-left corner of `area` (default 40 x 40; 34 x 40 for an
+    F key). Returns the source stems."""
     sources = set()
-    for stem, (src, text, *box) in numbered.items():
+    for stem, (src, text, *rest) in numbered.items():
         sources.add(src)
-        m = zeroad._flat(out / f"{src}.png", AREA, box[0] if box else NUMBER_BOX)
+        box = rest[0] if rest else NUMBER_BOX
+        area = rest[1] if len(rest) > 1 else AREA
+        m = zeroad._flat(out / f"{src}.png", area, box)
         d = zeroad._digit(text, DIGIT_PX)
         m[0:d.shape[0], 0:d.shape[1]] |= d
         cnc._save_mask(m, out / f"{stem}.png")
