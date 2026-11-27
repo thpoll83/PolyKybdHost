@@ -1604,12 +1604,13 @@ class PolyHost(QApplication):
         # the GUI thread; the answer goes to the dialog that is open when it
         # arrives (a stalled read from an earlier dialog fills this one).
         self._settings_dlg = dlg
+        dlg.indicate_requested.connect(self._indicate_clicked)
         self._menu_fetch.fetch("keyboard_settings", lambda: keyboard_settings.read_all(self.core),
                                self._apply_keyboard_reads)
         accepted = dlg.exec_() == QDialog.Accepted
         self._settings_dlg = None
         if accepted:
-            self._send_keyboard_changes(dlg.keyboard_changes())
+            self._send_keyboard_changes(dlg.keyboard_changes(), dlg.keyboard_read())
             updated = dlg.get_updated_settings()
             saved = True
             if self.client_mode:
@@ -1654,7 +1655,14 @@ class PolyHost(QApplication):
         if dlg is not None:
             dlg.set_keyboard_reads(reads)
 
-    def _send_keyboard_changes(self, changes):
+    def _indicate_clicked(self):
+        """Settings > Keyboard > Find this keyboard: blink the key lighting."""
+        def done(ok, msg):
+            if not ok:
+                self.report_device_result("Error", f"Could not blink the key lighting: {msg}")
+        self._core_click(lambda: self.core.indicate_device(), done)
+
+    def _send_keyboard_changes(self, changes, read=None):
         """Send the Settings > Keyboard changes, one core call each, in order
         (the tap-hold values in one call). A refusal is reported like the tray
         menus did."""
@@ -1699,6 +1707,10 @@ class PolyHost(QApplication):
                     if level == kbd.BRIGHTNESS_AUTO else
                     (lambda: self.core.set_brightness(level)))
             self._core_click(call, done_for(kbd.BRIGHTNESS, _("Keycap brightness")))
+        rgb = kbd.rgb_matrix_call(changes, read or {})
+        if rgb is not None:
+            self._core_click(lambda: self.core.set_rgb_matrix(rgb),
+                             done_for(kbd.RGB_ENABLED, _("Key lighting")))
         tap = kbd.tap_terms_call(changes)
         if tap is not None:
             self._core_click(lambda: self.core.set_tap_terms(*tap),
