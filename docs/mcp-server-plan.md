@@ -119,7 +119,10 @@ tool that takes a key resolves a key reference, and two tools describe the board
 ## Version 1: tools over existing methods
 
 No new HID command, so no protocol version increase. Every tool uses existing
-control methods only.
+control methods. Three tools also read a file: `list_app_overlays` reads the
+user's overlay mapping file, and `list_keys` and `show_layout` read the frozen
+key table (see *Identifying a key*), which every tool that takes a key also uses
+to resolve it.
 
 | Tool | Control method | Kind |
 |---|---|---|
@@ -131,7 +134,7 @@ control methods only.
 | `set_brightness(value \| "default")` | `brightness.set`, `brightness.daylight_refresh` | write |
 | `set_idle_style(style)` | `idle.style.set` | write |
 | `set_glyph_script(script)` | `glyph.script.set` | write |
-| `list_keys(layer)`, `show_layout(layer)` | `keymap.buffer` and the KLE file | read |
+| `list_keys(layer)`, `show_layout(layer)` | `keymap.buffer` and the key table | read |
 | `set_key(layer, key, keycode)` | `keymap.buffer`, then `keymap.set` | write, stored in EEPROM |
 | `set_overlays(enabled)` | `overlay.enable`, `overlay.disable` | write |
 
