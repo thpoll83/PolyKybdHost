@@ -20,6 +20,10 @@ ROUTES = {
     "overwatch_template.mods.png": ("Overwatch.exe", "steam_app_2357570"),
     "genshin_template.mods.png": ("GenshinImpact.exe", "YuanShen.exe"),
     "poe2_template.mods.png": ("steam_app_2694490",),
+    "cyberpunk_template.mods.png": ("Cyberpunk2077.exe", "steam_app_1091500"),
+    "helldivers2_template.mods.png": ("helldivers2.exe", "steam_app_553850"),
+    "eldenring_template.mods.png": ("eldenring.exe", "steam_app_1245620"),
+    "bg3_template.mods.png": ("bg3.exe", "bg3_dx11.exe", "Baldur's Gate 3", "steam_app_1086940"),
 }
 POE_EXES = ("PathOfExile.exe", "PathOfExile_x64.exe", "PathOfExileSteam.exe",
             "PathOfExile_x64Steam.exe", "PathOfExile_KG.exe", "PathOfExile_x64_KG.exe")

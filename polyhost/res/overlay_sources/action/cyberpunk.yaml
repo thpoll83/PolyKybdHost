@@ -1,0 +1,80 @@
+# Cyberpunk 2077 overlay for PolyKybd (on foot). See SOURCES.md.
+#
+# Keys: the game's own `r6/config/inputUserMappings.xml` (a 2.x copy in
+# jackhumbert/cyberpunk2077-input-loader, `fallback/inputUserMappings.xml`,
+# commit 2fb5d55, read 2026-11-27). Each binding names the file's mapping
+# (`command:`), the id the player's UserSettings.json uses for a rebind.
+#
+# Keys with two actions in the file show the on-foot one: F interact (not
+# quickhack), R reload, Q quick melee, E iconic cyberware (not lean), T phone,
+# Z pocket radio, C crouch (not the character panel).
+#
+# Left out: the modifier keys (Left Ctrl dodge, Left Shift sprint, Left Alt
+# weapon wheel, Right Ctrl / Right Shift crouch and sprint hold), Caps Lock
+# (scanner toggle, the same as Tab held), the vehicle, braindance and photo
+# mode keys (the overlay cannot tell those modes from walking), and Esc
+# (program mark).
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/action/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/action/cyberpunk.yaml --preview /tmp/cyberpunk_preview
+app: cyberpunk 2077
+match: [cyberpunk2077, steam_app_1091500]
+output: cyberpunk_template
+icon_dir: icons
+fit: contain
+mode: auto
+threshold: 150
+anchor: right
+region: [40, 40]
+margin: 0
+
+program_icon: cyberpunk.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Movement
+  - { key: W, command: Forward_Button, icon: forward.png, label: "Move forward" }
+  - { key: S, command: Back_Button, icon: back.png, label: "Move back" }
+  - { key: A, command: Left_Button, icon: left.png, label: "Move left" }
+  - { key: D, command: Right_Button, icon: right.png, label: "Move right" }
+  - { key: SPACE, command: Jump_Button, icon: jump.png, label: "Jump" }
+  - { key: C, command: ToggleCrouch_Button, icon: crouch.png, label: "Crouch" }
+  - { key: G, command: ToggleWalk_Button, icon: walk.png, label: "Walk" }
+
+  # Combat and actions
+  - { key: F, command: Choice1, icon: interact.png, label: "Interact" }
+  - { key: R, command: Reload_Button, icon: reload.png, label: "Reload", shared: false }
+  - { key: Q, command: QuickMelee_Button, icon: melee.png, label: "Quick melee" }
+  - { key: X, command: UseConsumable_Button, icon: heal.png, label: "Use consumable" }
+  - { key: B, command: HolsterWeapon_Button, icon: holster.png, label: "Holster weapon" }
+  - { key: "1", command: WeaponSlot1_Button, icon: weapon1.png, label: "Weapon slot 1" }
+  - { key: "2", command: WeaponSlot2_Button, icon: weapon2.png, label: "Weapon slot 2" }
+  - { key: "3", command: WeaponSlot3_Button, icon: weapon3.png, label: "Weapon slot 3" }
+  - { key: "4", command: WeaponSlot4_Button, icon: weapon4.png, label: "Weapon slot 4" }
+  - { key: TAB, command: Vision_Hold_Button, icon: scanner.png, label: "Scanner (hold)" }
+  - { key: E, command: IconicCyberware_Button, icon: cyberware.png, label: "Iconic cyberware" }
+
+  # Phone, vehicle, radio
+  - { key: T, command: PhoneInteract_Button, icon: phone.png, label: "Phone" }
+  - { key: V, command: CallVehicle_Button, icon: callvehicle.png, label: "Call vehicle" }
+  - { key: Z, command: PocketRadio_Button, icon: radio.png, label: "Pocket radio" }
+  - { key: Y, command: SceneFastForward_Button, icon: skipscene.png, label: "Skip scene" }
+
+  # Menus
+  - { key: H, command: OpenHubMenu_Button, icon: hub.png, label: "Hub menu" }
+  - { key: M, command: OpenMapMenu_Button, icon: map.png, label: "Map" }
+  - { key: J, command: OpenJournalMenu_Button, icon: journal.png, label: "Journal" }
+  - { key: I, command: OpenInventoryMenu_Button, icon: inventory.png, label: "Inventory" }
+  - { key: P, command: OpenPerksMenu_Button, icon: perks.png, label: "Perks" }
+  - { key: K, command: OpenCraftingMenu_Button, icon: crafting.png, label: "Crafting" }
+
+  # System
+  - { key: F5, command: QuickSave_Button, icon: quicksave.png, label: "Quick save", region: [34, 40] }
+  - { key: F9, command: QuickLoad_Button, icon: quickload.png, label: "Quick load", region: [34, 40] }
+  - { key: N, command: TogglePhotoModeButton, icon: photo.png, label: "Photo mode" }
