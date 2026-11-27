@@ -205,9 +205,11 @@ def rgb_matrix_call(changes, read):
     if "hue" in out or "sat" in out:
         out.setdefault("hue", read.get(RGB_HUE, 0))
         out.setdefault("sat", read.get(RGB_SAT, 0))
-    if out.get("enabled") is False:
+    # The switch's final state: changed, or as read. A matrix that ends off takes no
+    # effect (on firmware a non-zero effect switches the matrix on).
+    if not changes.get(RGB_ENABLED, read.get(RGB_ENABLED, True)):
         out.pop("effect", None)
-    return out
+    return out or None
 
 
 def tap_terms_call(changes):

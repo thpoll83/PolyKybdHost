@@ -3385,11 +3385,19 @@ class PolyCore(Observable):
     def indicate_device(self):
         """Blink the RGB matrix so the user can see which keyboard this is."""
         def blink(c):
+            ok, before = self.keeb.get_rgb_matrix()
+            if not ok:
+                return False, before
             for i in range(self.INDICATE_TOGGLES):
                 if i:
                     time.sleep(self.INDICATE_INTERVAL_S)
                 ok, msg = self.keeb.indicate_device(i)
                 if not ok:
+                    # A refused or lost reply can follow an applied toggle: read the
+                    # state and switch it back only if it differs, never toggle blind.
+                    ok_now, now = self.keeb.get_rgb_matrix()
+                    if ok_now and now.get("enabled") != before.get("enabled"):
+                        self.keeb.set_rgb_matrix(enabled=bool(before.get("enabled")))
                     return False, msg
             return True, "ok"
         return self._device_call("indicate_device", blink)

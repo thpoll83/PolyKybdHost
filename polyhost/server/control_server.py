@@ -40,6 +40,9 @@ def _rgb_params(params):
     extra = set(params) - set(_RGB_KEYS)
     if extra:
         raise RpcError(p.ERR_INVALID_PARAMS, f"unknown rgb keys: {sorted(extra)}")
+    # PolyKybd.set_rgb_matrix tests `enabled is False`: a 0 would leave the lights on.
+    if params.get("enabled") is not None and not isinstance(params["enabled"], bool):
+        raise RpcError(p.ERR_INVALID_PARAMS, "enabled must be true or false")
     return {k: params[k] for k in _RGB_KEYS if k in params}
 
 

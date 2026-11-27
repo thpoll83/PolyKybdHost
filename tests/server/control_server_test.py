@@ -303,6 +303,13 @@ class ControlServerTest(unittest.TestCase):
         self.assertEqual(resp["error"]["code"], p.ERR_INVALID_PARAMS)
         self.assertFalse([c for c in self.core.calls if c[0] == "set_rgb_matrix"])
 
+    def test_rgb_set_refuses_a_non_bool_enabled(self):
+        conn = self._connect()
+        self._hello_then(conn)
+        resp = self._call(conn, 13, p.M_RGB_MATRIX_SET, {"enabled": 0, "brightness": 50})
+        self.assertEqual(resp["error"]["code"], p.ERR_INVALID_PARAMS)
+        self.assertFalse([c for c in self.core.calls if c[0] == "set_rgb_matrix"])
+
     def test_unknown_method(self):
         conn = self._connect()
         self._hello_then(conn)

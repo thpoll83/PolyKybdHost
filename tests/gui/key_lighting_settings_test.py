@@ -43,6 +43,12 @@ class CallTest(unittest.TestCase):
         self.assertEqual(kbd.rgb_matrix_call({kbd.RGB_ENABLED: False, kbd.RGB_EFFECT: 5}, {}),
                          {"enabled": False})
 
+    def test_an_effect_is_dropped_while_the_switch_stays_off(self):
+        # Switched on, effect changed, switched off again: `enabled` is not a change.
+        self.assertIsNone(kbd.rgb_matrix_call({kbd.RGB_EFFECT: 5}, {kbd.RGB_ENABLED: False}))
+        self.assertEqual(kbd.rgb_matrix_call({kbd.RGB_EFFECT: 5, kbd.RGB_SPEED: 9},
+                                             {kbd.RGB_ENABLED: False}), {"speed": 9})
+
     def test_values_go_in_one_call(self):
         self.assertEqual(kbd.rgb_matrix_call({kbd.RGB_ENABLED: True, kbd.RGB_BRIGHTNESS: 255,
                                               kbd.RGB_SPEED: 3}, {}),
