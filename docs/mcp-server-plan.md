@@ -52,45 +52,50 @@ The split72 has no F-row and no printed legends, and the firmware addresses a ke
 matrix row and column, which means nothing to the user or the assistant. So every
 tool that takes a key resolves a key reference, and two tools describe the board.
 
-- **Every key has logical coordinates `(x, y)` from its physical place.** `x`
-  counts columns from left to right across both halves (0 to 15), `y` counts rows
-  from the top (0 to 5). They come from the key's centre in the KLE file the layout
-  editor uses (`res/polykybd-split72.json`, see
-  [`layout-editor.md`](layout-editor.md)), in key units, with the rotation of the
-  thumb keys applied: `x = round(centre_x) - 1`, `y = floor(centre_y)`, and the
-  four empty columns between the halves removed (right half `x - 4`). The space
-  between the halves is not a fixed distance, so it has no columns.
-- **The result was checked on the current KLE file:** all 74 keys get a different
-  `(x, y)`, and the board is symmetric: the mirror of `(x, y)` on the other half is
-  `(15 - x, y)`. The grid, with each key's matrix `row,col`:
+- **Every key has a name from its place on the PCB: `L:X.Y` or `R:X.Y`.** `L` is
+  the left half and `R` the right half. `X` counts the columns from the outer edge
+  towards the middle, and `Y` the rows from the top, both from 1. Examples: Esc is
+  `L:1.1`, Tab below it `L:1.2`, and the AI key `R:1.1`.
+- **`X` and `Y` come from the switch positions in the KiCad boards**
+  (`PolyKybd/poly_kybd/poly_kybd_split72_left.kicad_pcb` and `_right`, footprints
+  `SW_K_<n>`), not from the KLE file, because the PCB is the authority for key
+  positions ([`layout-editor.md`](layout-editor.md)). Each switch takes the
+  nearest column (the outer column, then 1.25U to the next, then 1U, 19.05 mm) and
+  the nearest row (19.05 mm from the top row of the outer column). The rotated
+  thumb keys get the column and row nearest to their centre.
+- **Checked on the current boards (2026-11-27):** the 36 switches of each half get
+  36 different names, and both halves give the same set of names, so `L:X.Y` and
+  `R:X.Y` are always the same place on each side. The KLE file has 37 keys per
+  half; the extra one is `L:8.3` / `R:8.3`, the key over the expansion port, which
+  has no `SW_K` switch footprint and no display. The grid, with each key's matrix
+  `row,col` (the two halves drawn as they sit on the desk):
 
   ```
-    y\x    0    1    2    3    4    5    6    7    8    9   10   11   12   13   14   15
-      0  0,0  0,1  0,2  0,3  0,4  0,5  0,6    .    .  5,1  5,2  5,3  5,4  5,5  5,6  5,7
-      1  1,0  1,1  1,2  1,3  1,4  1,5  1,6    .    .  6,1  6,2  6,3  6,4  6,5  6,6  6,7
-      2  2,0  2,1  2,2  2,3  2,4  2,5  2,6    .    .  7,1  7,2  7,3  7,4  7,5  7,6  7,7
-      3  3,0  3,1  3,2  3,3  3,4  3,5    .  3,7  8,0    .  8,2  8,3  8,4  8,5  8,6  8,7
-      4  4,0  4,1  4,2  4,3    .    .  3,6  4,7  9,0  8,1    .    .  9,4  9,5  9,6  9,7
-      5    .    .    .    .    .  4,4  4,5  4,6  9,1  9,2  9,3    .    .    .    .    .
+         Left half (X from the left edge)             Right half (X from the right edge)
+    Y\X     1    2    3    4    5    6    7    8   |    8    7    6    5    4    3    2    1
+      1   0,0  0,1  0,2  0,3  0,4  0,5  0,6    .   |    .  5,1  5,2  5,3  5,4  5,5  5,6  5,7
+      2   1,0  1,1  1,2  1,3  1,4  1,5  1,6    .   |    .  6,1  6,2  6,3  6,4  6,5  6,6  6,7
+      3   2,0  2,1  2,2  2,3  2,4  2,5  2,6  3,7   |  8,0  7,1  7,2  7,3  7,4  7,5  7,6  7,7
+      4   3,0  3,1  3,2  3,3  3,4  3,5  3,6    .   |    .  8,1  8,2  8,3  8,4  8,5  8,6  8,7
+      5   4,0  4,1  4,2  4,3    .  4,4  4,5  4,7   |  9,0  9,2  9,3    .  9,4  9,5  9,6  9,7
+      6     .    .    .    .    .    .    .  4,6   |  9,1    .    .    .    .    .    .    .
   ```
 
-  Rows 0 to 3 hold the main block of each half (row 3 has six keys), row 4 the four
-  keys of the bottom row on each side, and the thumb clusters take columns 5 to 10
-  in rows 3 to 5. The cells with `.` have no key.
-- **The coordinates are a frozen table**, generated once from the KLE file and
-  shipped (for example `res/key_positions.yaml`), not computed at runtime. A later
-  correction of the KLE geometry (its outer column is a drawing simplification,
-  see `layout-editor.md`) must not move a key the user or an assistant already
-  refers to. A test compares the table with the KLE file's `row,col` labels.
-- **`list_keys(layer=0)`** returns the 74 keys with, for each key: `x`, `y`, the
-  matrix `row` and `col` the control methods use, `side`, `thumb`,
+  The cells with `.` have no key. The thumb keys are `6.5`, `7.4`, `7.5`, `8.5`
+  and `8.6` on each half.
+- **The names are a frozen table**, generated once from the boards and shipped
+  (for example `res/key_positions.yaml`, name → matrix `row,col`), not computed at
+  runtime, so a later board revision or KLE correction does not rename a key. A
+  test compares the table with the KLE file's `row,col` labels.
+- **`list_keys(layer=0)`** returns the 74 keys with, for each key: its name
+  (`L:1.1`), the matrix `row` and `col` the control methods use, `thumb`,
   `has_display` (false for the two keys over the expansion ports), and the
   `keycode` on the requested layer and `base` on layer 0, as names.
 - **`show_layout(layer)`** returns the grid above with each key's keycode in its
-  cell, like the drawings in the firmware's `keymap.c`. An assistant reads
-  positions ("the two keys left of the space bar") more reliably from a drawing
-  than from a list.
-- **A key reference** in a write tool is one of `{"x": 5, "y": 5}`,
+  cell instead of the matrix position, like the drawings in the firmware's
+  `keymap.c`. An assistant reads positions ("the two keys left of the space bar")
+  more reliably from a drawing than from a list.
+- **A key reference** in a write tool is one of `"L:1.1"`,
   `{"base": "KC_Q"}` (the key that sends Q on layer 0) or
   `{"row": 2, "col": 3}`. A `base` reference that matches no key, or more than
   one, returns an error that lists the candidates. The server never guesses a key.
@@ -217,8 +222,8 @@ time. It needs its own plan, with a measurement on hardware.
 - **Tool tests against the mock keyboard** (`dev_mock_primary`) through a real
   `ControlServer`, as `tests/server/control_server_test.py` does.
 - **A result-field test**: no tool result has a key outside its field list.
-- **A key-identification test**: the frozen table has 74 different `(x, y)`, every
-  `row,col` of the KLE file exactly once, and the mirror of every key is a key;
+- **A key-identification test**: the frozen table has 74 different names, every
+  `row,col` of the KLE file exactly once, and the same set of names on both halves;
   a `base` reference to a keycode that is on two keys returns an error, not one of
   them.
 - **One run with a real MCP client** before merging, per the repo rule to run the
@@ -241,8 +246,8 @@ time. It needs its own plan, with a measurement on hardware.
    the agent hooks.
 5. **The name of a user overlay that equals a shipped one.** The resolver order
    above uses the user's file; a warning in the log may be enough.
-6. **The coordinates for the split42.** It needs its own KLE file and its own
-   frozen table before the key tools support it.
+6. **The names for the split42.** Its boards give the same scheme; it needs its
+   own KLE file and its own frozen table before the key tools support it.
 7. **The legend a key shows in the current language.** The host can read it only
    through a new HID query (version-gated, a firmware change). Without it the
    assistant works with keycodes and asks the user when the language matters.
