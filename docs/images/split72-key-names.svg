@@ -1,0 +1,377 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="487" viewBox="0 0 1000 487" font-family="DejaVu Sans, Arial, sans-serif">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="20" y="32" font-size="22" font-weight="bold" fill="#222">PolyKybd Split72: key names and aliases from the PCB switch positions</text>
+<text x="20" y="56" font-size="14" fill="#555">Name L/R:X.Y: X counts columns from the outer edge towards the middle, Y counts rows from the top.</text><text x="20" y="76" font-size="14" fill="#555">Second line: the alias, counted across the middle from the other half (X 9 to 16). Small text: matrix row,col and footprint (K = SW_K_).</text><text x="20" y="96" font-size="14" fill="#555">Dashed: expansion-port key, no switch footprint, position from the KLE file.</text>
+<g transform="translate(213.0,162.0) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:4.1</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:13.1</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">0,3  K4</text>
+</g>
+<g transform="translate(312.0,323.0) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:6.4</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:11.4</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">3,5  K27</text>
+</g>
+<g transform="translate(312.0,223.9) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:6.2</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:11.2</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">1,5  K13</text>
+</g>
+<g transform="translate(262.5,217.7) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:5.2</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:12.2</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">1,4  K12</text>
+</g>
+<g transform="translate(312.0,174.4) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:6.1</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:11.1</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">0,5  K6</text>
+</g>
+<g transform="translate(425.9,355.9) rotate(20.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:8.4</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:9.4</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">4,7  K29</text>
+</g>
+<g transform="translate(361.6,174.4) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:7.1</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:10.1</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">0,6  K7</text>
+</g>
+<g transform="translate(52.0,174.4) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#d4f5d4" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:1.1</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:16.1</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">0,0  K1</text>
+</g>
+<g transform="translate(312.0,273.4) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:6.3</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:11.3</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">2,5  K20</text>
+</g>
+<g transform="translate(291.8,385.1) rotate(5.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:6.5</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:11.5</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">4,4  K34</text>
+</g>
+<g transform="translate(113.9,372.5) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:2.5</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:15.5</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">4,1  K31</text>
+</g>
+<g transform="translate(52.0,273.4) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:1.3</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:16.3</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">2,0  K15</text>
+</g>
+<g transform="translate(361.6,223.9) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:7.2</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:10.2</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">1,6  K14</text>
+</g>
+<g transform="translate(404.9,409.7) rotate(20.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:8.5</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:9.5</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">4,6  K36</text>
+</g>
+<g transform="translate(163.4,217.7) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:3.2</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:14.2</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">1,2  K10</text>
+</g>
+<g transform="translate(365.0,337.8) rotate(13.5)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:7.4</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:10.4</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">3,6  K28</text>
+</g>
+<g transform="translate(213.0,360.1) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:4.5</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:13.5</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">4,3  K33</text>
+</g>
+<g transform="translate(113.9,223.9) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:2.2</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:15.2</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">1,1  K9</text>
+</g>
+<g transform="translate(213.0,261.1) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:4.3</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:13.3</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">2,3  K18</text>
+</g>
+<g transform="translate(213.0,211.5) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:4.2</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:13.2</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">1,3  K11</text>
+</g>
+<g transform="translate(113.9,323.0) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:2.4</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:15.4</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">3,1  K23</text>
+</g>
+<g transform="translate(113.9,174.4) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:2.1</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:15.1</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">0,1  K2</text>
+</g>
+<g transform="translate(52.0,223.9) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:1.2</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:16.2</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">1,0  K8</text>
+</g>
+<g transform="translate(163.4,168.2) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:3.1</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:14.1</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">0,2  K3</text>
+</g>
+<g transform="translate(64.4,372.5) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:1.5</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:16.5</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">4,0  K30</text>
+</g>
+<g transform="translate(361.6,273.4) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:7.3</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:10.3</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">2,6  K21</text>
+</g>
+<g transform="translate(113.9,273.4) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:2.3</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:15.3</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">2,1  K16</text>
+</g>
+<g transform="translate(163.4,267.3) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:3.3</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:14.3</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">2,2  K17</text>
+</g>
+<g transform="translate(163.4,316.8) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:3.4</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:14.4</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">3,2  K24</text>
+</g>
+<g transform="translate(262.5,168.2) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:5.1</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:12.1</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">0,4  K5</text>
+</g>
+<g transform="translate(262.5,316.8) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:5.4</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:12.4</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">3,4  K26</text>
+</g>
+<g transform="translate(262.5,267.3) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:5.3</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:12.3</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">2,4  K19</text>
+</g>
+<g transform="translate(350.2,394.2) rotate(13.5)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:7.5</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:10.5</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">4,5  K35</text>
+</g>
+<g transform="translate(163.4,366.3) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:3.5</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:14.5</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">4,2  K32</text>
+</g>
+<g transform="translate(52.0,323.0) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:1.4</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:16.4</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">3,0  K22</text>
+</g>
+<g transform="translate(213.0,310.6) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#e8f0fb" stroke="#2b5797" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:4.4</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:13.4</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">3,3  K25</text>
+</g>
+<g transform="translate(426.5,291.4) rotate(15.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#f4f4f4" stroke="#2b5797" stroke-width="2" stroke-dasharray="6,4"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">L:8.3</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#b35a1f">= R:9.3</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">3,7  -</text>
+</g>
+<g transform="translate(745.7,162.0) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:4.1</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:13.1</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">5,4  K4</text>
+</g>
+<g transform="translate(844.8,323.0) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:2.4</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:15.4</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">8,6  K27</text>
+</g>
+<g transform="translate(844.8,223.9) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:2.2</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:15.2</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">6,6  K13</text>
+</g>
+<g transform="translate(795.2,217.7) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:3.2</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:14.2</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">6,5  K12</text>
+</g>
+<g transform="translate(844.8,174.4) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:2.1</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:15.1</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">5,6  K6</text>
+</g>
+<g transform="translate(533.0,355.9) rotate(-20.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:8.4</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:9.4</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">9,0  K29</text>
+</g>
+<g transform="translate(906.7,174.4) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#d4f5d4" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:1.1</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:16.1</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">5,7  K7</text>
+</g>
+<g transform="translate(597.1,174.4) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:7.1</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:10.1</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">5,1  K1</text>
+</g>
+<g transform="translate(844.8,273.4) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:2.3</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:15.3</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">7,6  K20</text>
+</g>
+<g transform="translate(795.2,366.3) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:3.5</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:14.5</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">9,5  K34</text>
+</g>
+<g transform="translate(608.6,394.1) rotate(-13.5)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:7.5</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:10.5</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">9,2  K31</text>
+</g>
+<g transform="translate(597.1,273.4) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:7.3</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:10.3</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">7,1  K15</text>
+</g>
+<g transform="translate(906.7,223.9) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:1.2</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:16.2</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">6,7  K14</text>
+</g>
+<g transform="translate(894.3,372.5) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:1.5</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:16.5</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">9,7  K36</text>
+</g>
+<g transform="translate(696.2,217.7) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:5.2</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:12.2</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">6,3  K10</text>
+</g>
+<g transform="translate(906.7,323.0) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:1.4</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:16.4</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">8,7  K28</text>
+</g>
+<g transform="translate(745.7,360.1) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:4.5</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:13.5</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">9,4  K33</text>
+</g>
+<g transform="translate(646.6,223.9) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:6.2</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:11.2</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">6,2  K9</text>
+</g>
+<g transform="translate(745.7,261.1) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:4.3</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:13.3</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">7,4  K18</text>
+</g>
+<g transform="translate(745.7,211.5) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:4.2</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:13.2</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">6,4  K11</text>
+</g>
+<g transform="translate(646.6,323.0) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:6.4</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:11.4</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">8,2  K23</text>
+</g>
+<g transform="translate(646.6,174.4) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:6.1</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:11.1</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">5,2  K2</text>
+</g>
+<g transform="translate(597.1,223.9) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:7.2</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:10.2</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">6,1  K8</text>
+</g>
+<g transform="translate(696.2,168.2) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:5.1</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:12.1</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">5,3  K3</text>
+</g>
+<g transform="translate(554.1,409.6) rotate(-20.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:8.5</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:9.5</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">9,1  K30</text>
+</g>
+<g transform="translate(906.7,273.4) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:1.3</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:16.3</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">7,7  K21</text>
+</g>
+<g transform="translate(646.6,273.4) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:6.3</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:11.3</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">7,2  K16</text>
+</g>
+<g transform="translate(696.2,267.3) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:5.3</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:12.3</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">7,3  K17</text>
+</g>
+<g transform="translate(795.2,168.2) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:3.1</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:14.1</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">5,5  K5</text>
+</g>
+<g transform="translate(696.2,316.8) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:5.4</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:12.4</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">8,3  K24</text>
+</g>
+<g transform="translate(795.2,316.8) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:3.4</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:14.4</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">8,5  K26</text>
+</g>
+<g transform="translate(795.2,267.3) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:3.3</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:14.3</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">7,5  K19</text>
+</g>
+<g transform="translate(844.8,372.5) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:2.5</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:15.5</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">9,6  K35</text>
+</g>
+<g transform="translate(667.0,385.1) rotate(-5.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:6.5</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:11.5</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">9,3  K32</text>
+</g>
+<g transform="translate(593.8,337.7) rotate(-13.5)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:7.4</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:10.4</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">8,1  K22</text>
+</g>
+<g transform="translate(745.7,310.6) rotate(-0.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#fbeee6" stroke="#b35a1f" stroke-width="2"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:4.4</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:13.4</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">8,4  K25</text>
+</g>
+<g transform="translate(532.1,291.4) rotate(-15.0)">
+<rect x="-23.4" y="-23.4" width="46.8" height="46.8" rx="5" fill="#f4f4f4" stroke="#b35a1f" stroke-width="2" stroke-dasharray="6,4"/>
+<text x="0" y="-6" font-size="15" font-weight="bold" text-anchor="middle" fill="#111">R:8.3</text>
+<text x="0" y="8" font-size="10" font-weight="bold" text-anchor="middle" fill="#2b5797">= L:9.3</text><text x="0" y="20" font-size="8.5" text-anchor="middle" fill="#666">8,0  -</text>
+</g>
+<text x="238" y="472" font-size="18" text-anchor="middle" fill="#2b5797" font-weight="bold">Left half (L) — X counts →</text>
+<text x="719" y="472" font-size="18" text-anchor="middle" fill="#b35a1f" font-weight="bold">← X counts — Right half (R)</text>
+</svg>

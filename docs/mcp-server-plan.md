@@ -84,6 +84,8 @@ tool that takes a key resolves a key reference, and two tools describe the board
 
   The cells with `.` have no key. The thumb keys are `6.5`, `7.4`, `7.5`, `8.4`
   and `8.5` on each half.
+
+  ![Split72 key names and aliases, drawn at the PCB switch positions](images/split72-key-names.svg)
 - **Aliases count across the middle.** `X` may go on past 8 into the other half,
   so a key can be named from either side: `L:X.Y` with `X` from 9 to 16 is
   `R:(17 - X).Y`, and `R:X.Y` with `X` from 9 to 16 is `L:(17 - X).Y`. For example
