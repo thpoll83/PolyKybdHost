@@ -7,7 +7,7 @@
 
 Let an AI assistant (Claude, ChatGPT, Gemini, Cursor, Codex and others) read and
 change the keyboard's state when the user asks in plain language: "switch the
-keyboard to Greek", "put the meeting controls on F1 to F4", "make keys for my
+keyboard to Greek", "put mute on the outer left thumb key", "make keys for my
 app". The assistant talks to a small MCP server (Model Context Protocol), and the
 server talks to the host through the control socket that `polyctl` already uses.
 
@@ -46,6 +46,40 @@ user's request.
   as in `res/overlay_sources/<app>/bindings.yaml`, the icon library in
   `res/fontpack/icon_ids.yaml`). Version 2 uses it.
 
+## Identifying a key
+
+The split72 has no F-row and no printed legends, and the firmware addresses a key by
+matrix row and column, which means nothing to the user or the assistant. So every
+tool that takes a key resolves a key reference, and two tools describe the board.
+
+- **`list_keys(layer=0)`** returns the 74 keys with, for each key:
+  - `id`: a name from the key's place on the board, for example `L2.3` (left half,
+    hand row 2 from the top, key 3 from the outer edge) or `RT1` (right thumb
+    cluster, key 1 from the inside);
+  - `row`, `col`: the matrix position the control methods use;
+  - `side`, `hand_row`, `from_outer_edge`, `thumb`, `width`, `has_display`;
+  - `keycode` on the requested layer and `base` on layer 0, as names.
+
+  The positions come from the KLE file the layout editor uses
+  (`res/polykybd-split72.json`, see [`layout-editor.md`](layout-editor.md)):
+  each key has its `row,col` label and its geometry, rows 0 to 4 are the left half
+  and rows 5 to 9 the right half, and the rotated keys are the thumb clusters.
+  `has_display` is false for the two keys over the expansion ports.
+- **`show_layout(layer)`** returns the board as text, the two halves side by side
+  with each key's `id` and keycode, like the drawings in the firmware's
+  `keymap.c`. An assistant reads positions ("the two keys left of the space bar")
+  more reliably from a drawing than from a list.
+- **A key reference** in a write tool is one of `{"id": "LT2"}`,
+  `{"base": "KC_Q"}` (the key that sends Q on layer 0) or `{"row": 2, "col": 3}`.
+  A `base` reference that matches no key, or more than one, returns an error that
+  lists the candidates. The server never guesses a key.
+- ⚠️ **A keycode is not the legend the user sees.** With a German layout `KC_Y`
+  shows Z. The legend for each language is in the firmware's table, which the host
+  does not have, so "the key with the Z" resolves only through the assistant
+  asking the user, or through a new query (see *Open questions*).
+- **Only the split72 has a KLE file.** The split42 needs its own before these tools
+  support it; until then they return an error when `get_status` names a split42.
+
 ## Version 1: tools over existing methods
 
 No new HID command, so no protocol version increase. Every tool maps to one
@@ -61,7 +95,8 @@ existing control method.
 | `set_brightness(value \| "auto")` | `brightness.set`, `brightness.daylight_refresh` | write |
 | `set_idle_style(style)` | `idle.style.set` | write |
 | `set_glyph_script(script)` | `glyph.script.set` | write |
-| `set_key(layer, row, col, keycode)` | `keymap.set` | write, stored in EEPROM |
+| `list_keys(layer)`, `show_layout(layer)` | `keymap.buffer` and the KLE file | read |
+| `set_key(layer, key, keycode)` | `keymap.set` | write, stored in EEPROM |
 | `set_overlays(enabled)` | `overlay.enable`, `overlay.disable` | write |
 
 - **`set_key` returns the previous keycode**, so the assistant can undo the change.
@@ -161,6 +196,9 @@ time. It needs its own plan, with a measurement on hardware.
 - **Tool tests against the mock keyboard** (`dev_mock_primary`) through a real
   `ControlServer`, as `tests/server/control_server_test.py` does.
 - **A result-field test**: no tool result has a key outside its field list.
+- **A key-identification test**: `list_keys` returns 74 keys with unique ids, every
+  `row,col` of the KLE file exactly once, and a `base` reference to a keycode that
+  is on two keys returns an error, not one of them.
 - **One run with a real MCP client** before merging, per the repo rule to run the
   real entry point once.
 
@@ -181,3 +219,9 @@ time. It needs its own plan, with a measurement on hardware.
    the agent hooks.
 5. **The name of a user overlay that equals a shipped one.** The resolver order
    above uses the user's file; a warning in the log may be enough.
+6. **The key `id` scheme.** `L2.3` / `RT1` is a proposal. It must stay the same
+   when the KLE file is corrected, so it is derived from the hand row and the order
+   from the outer edge, not from KLE coordinates.
+7. **The legend a key shows in the current language.** The host can read it only
+   through a new HID query (version-gated, a firmware change). Without it the
+   assistant works with keycodes and asks the user when the language matters.
