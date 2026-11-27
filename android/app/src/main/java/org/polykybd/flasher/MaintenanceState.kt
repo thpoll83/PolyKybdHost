@@ -3,6 +3,7 @@ package org.polykybd.flasher
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 
 /**
  * Maintenance menu state: the GitHub sign-in and the release runs. Held here, like
@@ -26,7 +27,11 @@ object MaintenanceState {
     private lateinit var store: TokenStore
     private lateinit var github: GitHub
     @Volatile private var tokens: GitHub.Tokens? = null
-    @Volatile private var signInCancelled = false
+    /** For waits and deadlines: counts deep sleep, and a change of the phone's time does not move it. */
+    private fun elapsedMs() = SystemClock.elapsedRealtime()
+    private val pollGate = PollGate(::elapsedMs)
+    private const val WAITING_FOR_NETWORK =
+        "Waiting for the network to reach GitHub. Your code is still valid; this continues by itself."
 
     private val main = Handler(Looper.getMainLooper())
     private val listeners = mutableSetOf<() -> Unit>()
@@ -50,23 +55,30 @@ object MaintenanceState {
 
     /** Starts the device flow; [show] gets the code to enter and the page to enter it on. */
     fun signIn(show: (GitHub.DeviceCode) -> Unit) {
-        signInCancelled = false
+        pollGate.reset()
         background("Asking GitHub for a sign-in code…") {
             val code = github.requestDeviceCode()
             pendingCode = code
             message = "Enter the code on GitHub. This screen continues by itself."
             changed()
             main.post { show(code) }
-            val deadline = System.currentTimeMillis() + code.expiresInSec * 1000L
+            val deadline = elapsedMs() + code.expiresInSec * 1000L
             var interval = code.intervalSec
             var done: GitHub.Tokens? = null
             while (done == null) {
-                Thread.sleep(interval * 1000L)
-                if (signInCancelled) { message = "Sign-in cancelled."; return@background }
-                if (System.currentTimeMillis() > deadline) throw GitHub.GitHubException("The code expired. Sign in again.")
-                when (val p = github.pollToken(code, System.currentTimeMillis())) {
+                // Measured from the end of the previous request, so it is never too early.
+                if (!pollGate.waitUntil(elapsedMs() + interval * 1000L)) {
+                    message = "Sign-in cancelled."; return@background
+                }
+                if (elapsedMs() > deadline) throw GitHub.GitHubException("The code expired. Sign in again.")
+                when (val p = github.pollToken(code, System.currentTimeMillis(), interval)) {
                     is GitHub.Poll.Done -> done = p.tokens
                     is GitHub.Poll.Pending -> interval = p.intervalSec
+                    // Keep the code: it is still valid, only the network is away.
+                    is GitHub.Poll.Offline -> if (message != WAITING_FOR_NETWORK) {
+                        message = WAITING_FOR_NETWORK
+                        changed()
+                    }
                     is GitHub.Poll.Failed -> throw GitHub.GitHubException(p.message)
                 }
             }
@@ -77,7 +89,7 @@ object MaintenanceState {
     }
 
     fun cancelSignIn() {
-        signInCancelled = true
+        pollGate.cancel()
         pendingCode = null
         changed()
     }
@@ -123,8 +135,8 @@ object MaintenanceState {
                 var run = withToken { github.dispatch(it, status, dryRun, System.currentTimeMillis()) }
                 runs[repo] = run
                 changed()
-                val until = System.currentTimeMillis() + RUN_WATCH_MS
-                while (!run.finished && System.currentTimeMillis() < until) {
+                val until = elapsedMs() + RUN_WATCH_MS
+                while (!run.finished && elapsedMs() < until) {
                     Thread.sleep(RUN_POLL_MS)
                     run = withToken { github.run(it, repo, run.id) }
                     runs[repo] = run

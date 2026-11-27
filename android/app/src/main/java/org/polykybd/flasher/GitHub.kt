@@ -99,6 +99,12 @@ class GitHub(private val http: Http = Http.Default, private val clientId: String
         /** The user has not entered the code yet; ask again after [intervalSec]. */
         data class Pending(val intervalSec: Int) : Poll()
         data class Failed(val message: String) : Poll()
+        /**
+         * GitHub could not be reached. Not a sign-in failure: Android cuts network access
+         * for apps in the background (battery saver, Data Saver) while the user is in the
+         * browser entering the code, and the code stays valid. Ask again.
+         */
+        data class Offline(val intervalSec: Int, val reason: String) : Poll()
     }
 
     fun requestDeviceCode(): DeviceCode {
@@ -116,13 +122,17 @@ class GitHub(private val http: Http = Http.Default, private val clientId: String
         )
     }
 
-    fun pollToken(code: DeviceCode, nowMs: Long): Poll {
-        val r = http.request("POST", ACCESS_TOKEN_URL, FORM_HEADERS, form(
-            "client_id" to clientId,
-            "device_code" to code.deviceCode,
-            "grant_type" to "urn:ietf:params:oauth:grant-type:device_code",
-        ))
-        return parsePoll(r, code.intervalSec, nowMs)
+    fun pollToken(code: DeviceCode, nowMs: Long, intervalSec: Int = code.intervalSec): Poll {
+        val r = try {
+            http.request("POST", ACCESS_TOKEN_URL, FORM_HEADERS, form(
+                "client_id" to clientId,
+                "device_code" to code.deviceCode,
+                "grant_type" to "urn:ietf:params:oauth:grant-type:device_code",
+            ))
+        } catch (e: java.io.IOException) {
+            return Poll.Offline(intervalSec, e.message ?: e.javaClass.simpleName)
+        }
+        return parsePoll(r, intervalSec, nowMs)
     }
 
     /** Swaps a refresh token for new tokens. A device-flow token needs no client secret. */
@@ -135,7 +145,7 @@ class GitHub(private val http: Http = Http.Default, private val clientId: String
         ))
         return when (val p = parsePoll(r, 5, nowMs)) {
             is Poll.Done -> p.tokens
-            is Poll.Pending -> throw GitHubException("GitHub did not refresh the sign-in.")
+            is Poll.Pending, is Poll.Offline -> throw GitHubException("GitHub did not refresh the sign-in.")
             is Poll.Failed -> throw GitHubException("Signed out: ${p.message} Sign in again.")
         }
     }
@@ -157,7 +167,13 @@ class GitHub(private val http: Http = Http.Default, private val clientId: String
         val preparedPublished: Boolean,
         /** Tag of the release GitHub calls "latest", or null. */
         val latestTag: String?,
-    )
+    ) {
+        /**
+         * True when there is something new to publish. Once the newest prepared tag is
+         * released, Dry run and Publish stay off until the next notes are prepared.
+         */
+        val canPublish get() = workflowPresent && prepared != null && !preparedPublished
+    }
 
     data class Run(val id: Long, val status: String, val conclusion: String?, val htmlUrl: String) {
         val finished get() = status == "completed"
