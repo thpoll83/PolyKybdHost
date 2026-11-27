@@ -1955,6 +1955,49 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                         self.assertEqual(f"canva_template{suffix}.mods.png" in files,
                                          url in editor, files)
 
+    def test_SOCIAL_sites_route_by_host(self):
+        """WhatsApp Web, X and Mastodon route by the tab's host. The X needle is
+        also a substring of other hosts, and Mastodon's `https://` needle matches
+        every secure URL, so each `url:` gate must name the host."""
+        from polyhost.device.command_ids import OsType
+        from polyhost.handler.common import find_matching_entry, mapping_key
+        # (url, Windows set, macOS set)
+        routed = (
+            ("https://web.whatsapp.com/", "whatsapp_web_template", "whatsapp_web_template_mac"),
+            ("https://x.com/home", "x_template", "x_template_mac"),
+            ("https://x.com/someone/status/1", "x_template", "x_template_mac"),
+            ("https://mastodon.social/home", "mastodon_template", "mastodon_template_mac"),
+            ("https://hachyderm.io/@someone/1", "mastodon_template", "mastodon_template_mac"),
+            ("https://mstdn.jp/explore", "mastodon_template", "mastodon_template_mac"),
+            # Query text naming another site's host must not claim the route.
+            ("https://x.com/search?q=github.com", "x_template", "x_template_mac"),
+            ("https://web.whatsapp.com/?ref=notion.so", "whatsapp_web_template",
+             "whatsapp_web_template_mac"),
+            ("https://mastodon.social/tags/miro.com", "mastodon_template", "mastodon_template_mac"),
+        )
+        other = ("https://www.max.com/",
+                 "https://www.dropbox.com/home",
+                 "https://pro.x.com/",
+                 "https://www.whatsapp.com/download",
+                 "https://mastodon.example.org/home",
+                 "https://www.google.com/search?q=mastodon.social")
+        for browser in ("chrome", "firefox"):
+            entry = self.handler.mapping[mapping_key(browser, self.handler.mapping)]
+            for os_name, index in (("WINDOWS", 1), ("MACOS", 2)):
+                for case in routed:
+                    with self.subTest(browser=browser, os=os_name, url=case[0]):
+                        got = find_matching_entry("x", entry, case[0], OsType[os_name],
+                                                  title_known=True)
+                        self.assertIn(f"{case[index]}.mods.png",
+                                      [str(f) for f in got["overlay"]])
+                for url in other:
+                    with self.subTest(browser=browser, os=os_name, url=url):
+                        got = find_matching_entry("x", entry, url, OsType[os_name],
+                                                  title_known=True)
+                        files = [str(f) for f in got["overlay"]]
+                        self.assertFalse(any(f.startswith(s) for f in files for s in
+                                             ("whatsapp_", "x_template", "mastodon_")), files)
+
     def test_JUPYTER_and_WEB_TOOLS_route_by_gated_url_and_title(self):
         from polyhost.device.command_ids import OsType
         from polyhost.handler.common import find_matching_entry, mapping_key

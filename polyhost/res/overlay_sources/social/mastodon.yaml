@@ -1,0 +1,83 @@
+# Mastodon web app shortcut overlays for PolyKybd. See SOURCES.md.
+#
+# Keys: Mastodon's own source (mastodon/mastodon, AGPL-3.0, commit 6c29cb4b,
+# read 2026-11-25), `app/javascript/mastodon/components/hotkeys/index.tsx`,
+# the `hotkeyMatcherMap`. A `just()` key acts with no Ctrl, Alt or Cmd held and
+# no text field focused; `optionPlus()` is Alt (Option on macOS).
+#
+# Mastodon runs on many servers. The mapping routes the 20 servers with the
+# most weekly active users in the joinmastodon.org server directory (SOURCES.md).
+#
+# Ctrl+Enter (publish) is in the compose box's own handler, not in the map.
+# fedi.tips lists the same keys for an older version; its Alt+X (content
+# warning field) and Up / Down are no longer in the source and are not drawn.
+#
+# Left out: the second keys of the two-key "g then <key>" navigation (g h home,
+# g n notifications ...), because a cell shows what one key press does (G itself
+# shows a prefix mark); Alt+PageDown / Alt+PageUp,
+# which repeat J / K; and the "cheat" sequence.
+#
+# Regenerate (from the repo root, with the project venv):
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/social/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/social/mastodon.yaml --preview /tmp/mastodon_preview
+app: mastodon
+match: [mastodon]
+output: mastodon_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+program_icon: mastodon.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- timeline ---
+  - { key: J,     icon: nextpost.png, label: "Next post",     command: moveDown }
+  - { key: K,     icon: prevpost.png, label: "Previous post", command: moveUp }
+  - { key: "0",   icon: top.png,      label: "Top of column", command: moveToTop }
+  - { key: L,     icon: loadmore.png, label: "Load more",     command: focusLoadMore }
+  - { key: O,     icon: openpost.png, label: "Open post",     command: open }
+  - { key: ENTER, icon: openpost.png, label: "Open post",     command: open }
+  - { key: BACKSPACE, icon: back.png, label: "Back",   command: back }
+  - { key: "1", icon: column1.png, label: "Column 1", command: focusColumn }
+  - { key: "2", icon: column2.png, label: "Column 2", command: focusColumn }
+  - { key: "3", icon: column3.png, label: "Column 3", command: focusColumn }
+  - { key: "4", icon: column4.png, label: "Column 4", command: focusColumn }
+  - { key: "5", icon: column5.png, label: "Column 5", command: focusColumn }
+  - { key: "6", icon: column6.png, label: "Column 6", command: focusColumn }
+  - { key: "7", icon: column7.png, label: "Column 7", command: focusColumn }
+  - { key: "8", icon: column8.png, label: "Column 8", command: focusColumn }
+  - { key: "9", icon: column9.png, label: "Column 9", command: focusColumn }
+  # --- the selected post ---
+  - { key: R, icon: reply.png,          label: "Reply",          command: reply }
+  - { key: F, icon: favourite.png,      label: "Favourite",      command: favourite }
+  - { key: B, icon: repost.png,         label: "Boost",          command: boost }
+  - { key: Q, icon: quote.png,          label: "Quote",          command: quote }
+  - { key: M, icon: mention.png,        label: "Mention author", command: mention }
+  - { key: P, icon: profile.png,        label: "Author profile", command: openProfile }
+  - { key: E, icon: media.png,          label: "Open media",     command: openMedia }
+  - { key: T, icon: translate.png,      label: "Translate",      command: onTranslate }
+  - { key: X, icon: contentwarning.png, label: "Show or hide content warning", command: toggleHidden }
+  - { key: H, icon: sensitive.png,      label: "Show or hide media", command: toggleSensitive }
+  # --- anywhere ---
+  - { key: N, icon: newpost.png, label: "Focus compose box", command: new }
+  - { key: N, mods: [ALT], icon: startpost.png, label: "Start new post", command: forceNew }
+  - { key: M, mods: [ALT], icon: newdm.png,   label: "New private mention", command: newMessage }
+  - { key: S,   icon: search.png, label: "Search", command: search }
+  - { key: "/", icon: search.png, label: "Search", command: search }
+  - { key: "/", mods: [SHIFT], icon: help.png, label: "Shortcut list", command: help }
+  # --- compose box: the shared TextArea submits its form on Ctrl+Enter, Cmd+Enter
+  # on macOS (components/form_fields/text_area_field.tsx) ---
+  - { key: ENTER, mods: [CMDCTRL], icon: send.png, label: "Publish post" }
+  # --- G starts the two-key "go to" sequences (g h home, g n notifications ...).
+  # The second keys are not drawn; the mark only says that G is a prefix
+  # (maintainer, 2026-11-26) ---
+  - { key: G, icon: goprefix.png, label: "Go to ... (then a second key)", shared: false }
