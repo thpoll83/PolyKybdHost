@@ -118,8 +118,8 @@ tool that takes a key resolves a key reference, and two tools describe the board
 
 ## Version 1: tools over existing methods
 
-No new HID command, so no protocol version increase. Every tool maps to one
-existing control method.
+No new HID command, so no protocol version increase. Every tool uses existing
+control methods only.
 
 | Tool | Control method | Kind |
 |---|---|---|
@@ -128,16 +128,27 @@ existing control method.
 | `get_keymap(layer)` | `keymap.layer_count`, `keymap.buffer` | read, keycodes as names |
 | `list_app_overlays` | the overlay mapping file | read, application names only |
 | `set_language(lang)` | `lang.set` | write |
-| `set_brightness(value \| "auto")` | `brightness.set`, `brightness.daylight_refresh` | write |
+| `set_brightness(value \| "default")` | `brightness.set`, `brightness.daylight_refresh` | write |
 | `set_idle_style(style)` | `idle.style.set` | write |
 | `set_glyph_script(script)` | `glyph.script.set` | write |
 | `list_keys(layer)`, `show_layout(layer)` | `keymap.buffer` and the KLE file | read |
-| `set_key(layer, key, keycode)` | `keymap.set` | write, stored in EEPROM |
+| `set_key(layer, key, keycode)` | `keymap.buffer`, then `keymap.set` | write, stored in EEPROM |
 | `set_overlays(enabled)` | `overlay.enable`, `overlay.disable` | write |
 
 - **`set_key` returns the previous keycode**, so the assistant can undo the change.
-  The keyboard stores a keymap edit in EEPROM at once, so the change survives a
-  restart.
+  `keymap.set` reports only whether the write worked, so the tool reads the key's
+  current keycode with `keymap.buffer` right before it writes, and returns that
+  value as `previous`. If another client (the layout editor, `polyctl`) changes the
+  same key between the read and the write, `previous` is the value the tool read,
+  not the one it overwrote; the result says so. The keyboard stores a keymap edit
+  in EEPROM at once, so the change survives a restart.
+- **`set_brightness("default")` clears a manual brightness** and returns to the
+  mode the user configured, as the tray's *Back to automatic* row does
+  (`brightness.daylight_refresh`): daylight-dependent brightness when the host
+  setting `brightness_set_daylight_dependent` is on, otherwise the keyboard's own
+  stored level (`AUTO_OFF`). It cannot switch the daylight mode on: that is a
+  setting, and `settings.set` is not exposed. The tool says which mode it
+  returned to.
 - **`get_keymap` returns names** (`KC_A`, `MO(1)`), not numbers, because an
   assistant reads names correctly and numbers it does not.
 - **Every write tool has the MCP annotation `destructiveHint` or `idempotentHint`,
