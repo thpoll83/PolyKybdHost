@@ -165,7 +165,7 @@ bindings:
   - { key: END, command: NEXTVIEW, icon: nextview.png, label: "Next camera view" }
   - { key: HOME, command: PREVVIEW, icon: prevview.png, label: "Previous camera view" }
   - { key: PRTSC, command: SCREENSHOT, icon: screenshot.png, label: "Screenshot", region: [34, 40] }
-  - { key: Z, mods: [ALT], command: TOGGLEUI, icon: toggleui.png, label: "Hide or show UI" }
+  - { key: Z, mods: [ALT], command: TOGGLEUI, icon: toggleui.png, label: "Hide or show UI", region: [34, 40] }
   - { key: R, mods: [CTRL], command: TOGGLEFPS, icon: fps.png, label: "Frame rate" }
   - { key: M, mods: [CTRL], command: TOGGLEMUSIC, icon: music.png, label: "Music on or off" }
   - { key: S, mods: [CTRL], command: TOGGLESOUND, icon: sound.png, label: "Sound on or off" }

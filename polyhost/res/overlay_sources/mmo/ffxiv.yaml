@@ -154,6 +154,6 @@ bindings:
   - { key: Y, mods: [CTRL], icon: fishguide.png, label: "Fish guide" }
 
   # System
-  - { key: SCROLLLOCK, icon: toggleui.png, label: "Hide or show UI" }
+  - { key: SCROLLLOCK, icon: toggleui.png, label: "Hide or show UI", region: [34, 40] }
   - { key: PRTSC, icon: screenshot.png, label: "Screenshot", region: [34, 40] }
   - { key: HOME, mods: [CTRL], icon: windowsize.png, label: "Window size" }
