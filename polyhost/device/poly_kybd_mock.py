@@ -822,6 +822,30 @@ class PolyKybdMock:
         self._log_call("clear_crash_record")
         return self._wire.clear_crash_record()
 
+    def get_rgb_matrix(self) -> tuple[bool, Any]:
+        self._log_call("get_rgb_matrix")
+        return self._wire.get_rgb_matrix()
+
+    def set_rgb_matrix(self, *, enabled: bool | None = None, effect: int | None = None,
+                       brightness: int | None = None, speed: int | None = None,
+                       hue: int | None = None, sat: int | None = None) -> tuple[bool, str]:
+        self._log_call("set_rgb_matrix", enabled=enabled, effect=effect, brightness=brightness,
+                       speed=speed, hue=hue, sat=sat)
+        return self._wire.set_rgb_matrix(enabled=enabled, effect=effect, brightness=brightness,
+                                         speed=speed, hue=hue, sat=sat)
+
+    def get_uptime_ms(self) -> tuple[bool, Any]:
+        self._log_call("get_uptime_ms")
+        return self._wire.get_uptime_ms()
+
+    def indicate_device(self, index: int = 0) -> tuple[bool, str]:
+        self._log_call("indicate_device", index)
+        return self._wire.indicate_device(index)
+
+    def get_switch_matrix(self) -> tuple[bool, Any]:
+        self._log_call("get_switch_matrix")
+        return self._wire.get_switch_matrix()
+
     def get_hw_ids(self) -> tuple[bool, Any]:
         self._log_call("get_hw_ids")
         ok, ids = self._wire.get_hw_ids()

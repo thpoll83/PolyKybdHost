@@ -190,6 +190,12 @@ def bundle_slot_count(protocol: int) -> int:
     return 9 if protocol >= ICON_BUNDLE_MIN else 8
 
 
+# VIA ids the v39 firmware answers in legacy_command_kb (keyboards/polykybd/lib/hid/
+# hid_com.c): get/set keyboard value, custom set/get value.
+_VIA_VALUE_IDS = frozenset({0x02, 0x03, 0x07, 0x08})
+VIA_VALUES_MIN = 39
+
+
 def _pad(data: bytes) -> bytes:
     return bytes(data[:REPORT_SIZE]) + bytes(max(0, REPORT_SIZE - len(data)))
 
@@ -358,6 +364,14 @@ class MockFirmware:
         # cmd 50 (v37): the flash unique IDs of the half the host talks to and of the
         # other half. None = no usable ID (flag bit clear). Tests set them.
         self.hw_uid_own: bytes | None = bytes.fromhex("e66038b7c32f5a2c")
+        # v39 VIA values (hid_com.c legacy_command_kb). RAM state of the RGB matrix,
+        # the firmware's debug_enable (gates the switch matrix read) and the rows.
+        self.rgb = {"enabled": True, "mode": 1, "val": 20, "speed": 128, "hue": 0, "sat": 255}
+        self.rgb_max_brightness = 100     # RGB_MATRIX_MAXIMUM_BRIGHTNESS (both variants)
+        self.rgb_effect_max = 40          # RGB_MATRIX_EFFECT_MAX
+        self.debug_enable = False
+        self.matrix_rows = [0] * 10
+        self._boot_time = clock()
         self.hw_uid_other: bytes | None = bytes.fromhex("e66038b7c3284d26")
         self.state_generation = 0
         self._reset_agent_keys()
@@ -516,6 +530,8 @@ class MockFirmware:
         if not p:
             return None
         if p[0] != POLY:
+            if p[0] in _VIA_VALUE_IDS:
+                return self._via_value(p)
             return _pad(p)          # dynamic keymap (VIA ids): the firmware echoes
         cmd = p[1]
         self.reports[cmd] += 1
@@ -536,6 +552,64 @@ class MockFirmware:
         if handler is None:
             return _reply(cmd)       # accepted, nothing modelled beyond the ACK
         return handler(self, p)
+
+    def _via_value(self, p: bytes) -> bytes | None:
+        """VIA's ids 0x02 / 0x03 / 0x07 / 0x08 (v39). Older firmware sends no reply."""
+        if self.protocol < VIA_VALUES_MIN:
+            self._refuse(p[0], f"legacy id {p[0]:#04x} (needs protocol {VIA_VALUES_MIN}) "
+                               f"sent to a protocol-{self.protocol} keyboard")
+            return None
+        r = bytearray(_pad(p))
+        ok = False
+        if r[0] == 0x02 and r[1] == 0x01:             # uptime, big-endian ms
+            ms = int((self.clock() - self._boot_time) * 1000) & 0xFFFFFFFF
+            r[2:6] = ms.to_bytes(4, "big")
+            ok = True
+        elif r[0] == 0x02 and r[1] == 0x03 and self.debug_enable:   # switch matrix
+            off = r[2]
+            for i, row in enumerate(self.matrix_rows[off:off + 28]):
+                r[3 + i] = row & 0xFF
+            ok = True
+        elif r[0] == 0x03 and r[1] == 0x05:           # device indication
+            self.rgb["enabled"] = not self.rgb["enabled"]
+            ok = True
+        elif r[0] in (0x07, 0x08) and r[1] == 3:
+            ok = self._via_rgb(r[0] == 0x07, r)
+        if not ok:
+            r[0] = 0xFF                               # id_unhandled
+        return bytes(r)
+
+    def _via_rgb(self, set_: bool, r: bytearray) -> bool:
+        g, v = self.rgb, r[3:]
+        vid = r[2]
+        if vid == 1:
+            if set_:
+                g["val"] = (v[0] * (self.rgb_max_brightness + 1)) >> 8
+            else:
+                m = self.rgb_max_brightness   # rounded up (hid_com.c)
+                r[3] = (min(g["val"], m) * 255 + m - 1) // m
+        elif vid == 2:
+            if set_:
+                if v[0] == 0:
+                    g["enabled"] = False
+                else:
+                    g["enabled"] = True
+                    g["mode"] = min(max(v[0], 1), self.rgb_effect_max - 1)
+            else:
+                r[3] = g["mode"] if g["enabled"] else 0
+        elif vid == 3:
+            if set_:
+                g["speed"] = v[0]
+            else:
+                r[3] = g["speed"]
+        elif vid == 4:
+            if set_:
+                g["hue"], g["sat"] = v[0], v[1]
+            else:
+                r[3], r[4] = g["hue"], g["sat"]
+        else:
+            return False
+        return True
 
     def _end_burst(self) -> None:
         plan = self.faults.deaf_after_images
