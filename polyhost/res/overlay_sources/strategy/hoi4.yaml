@@ -40,19 +40,19 @@ bindings:
   - { key: SPACE, icon: pause.png, label: "Pause" }
 
   # Top bar
-  - { key: Q, icon: country.png, label: "Government" }
-  - { key: Q, mods: [SHIFT], icon: decisions.png, label: "Decisions" }
+  - { key: Q, icon: country.png, label: "Government", region: [34, 40] }
+  - { key: Q, mods: [SHIFT], icon: decisions.png, label: "Decisions", region: [34, 40] }
   - { key: Q, mods: [CTRL], icon: faction.png, label: "Faction" }
-  - { key: W, icon: technology.png, label: "Research" }
+  - { key: W, icon: technology.png, label: "Research", region: [34, 40] }
   - { key: W, mods: [SHIFT], icon: intel.png, label: "Intelligence agency" }
-  - { key: E, icon: market.png, label: "International market" }
+  - { key: E, icon: market.png, label: "International market", region: [34, 40] }
   - { key: E, mods: [SHIFT], icon: warview.png, label: "Officer corps" }
-  - { key: R, icon: trade.png, label: "Trade" }
+  - { key: R, icon: trade.png, label: "Trade", region: [34, 40] }
   - { key: T, icon: construction.png, label: "Construction" }
-  - { key: Y, icon: production.png, label: "Production" }
+  - { key: Y, icon: production.png, label: "Production", region: [34, 40] }
   - { key: U, icon: recruit.png, label: "Recruit and deploy" }
   - { key: I, icon: logistics.png, label: "Logistics" }
-  - { key: O, icon: military.png, label: "Army overview" }
+  - { key: O, icon: military.png, label: "Army overview", region: [34, 40] }
   - { key: P, icon: navy.png, label: "Navy overview" }
   - { key: L, icon: air.png, label: "Air overview" }
 

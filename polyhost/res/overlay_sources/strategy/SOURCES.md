@@ -55,7 +55,9 @@ F-key legends). Every icon is drawn at exactly its area by `game_set.py`, so
 the generator places it 1:1.
 
 Numbered keys (speed 1-5, EU5 control groups, EU4 map-mode slots) carry their
-number in the icon, so no two actions share a picture
+number in the icon, set in DejaVu Sans Bold (Bitstream Vera licence) from
+[matplotlib @ a254b68](https://raw.githubusercontent.com/matplotlib/matplotlib/a254b687df97cda8c6affa37a1dfcf213f8e6c3a/lib/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf)
+(`cnc_remastered/fetch_icons.py`, `DIGIT_FONT_URL`), so no two actions share a picture
 (`tests/res/f2p_overlays_distinct_test.py`).
 
 ESC shows each game's name in Cinzel, a serif close to the Paradox logos'

@@ -58,11 +58,11 @@ bindings:
   - { key: F10, command: open_population, icon: population.png, label: "Population", region: [34, 40] }
   - { key: F1, mods: [SHIFT], command: open_companies, icon: companies.png, label: "Companies", region: [34, 40] }
   - { key: J, command: open_journal, icon: journal.png, label: "Journal" }
-  - { key: Q, command: map_list, icon: ledger.png, label: "Ledger" }
+  - { key: Q, command: map_list, icon: ledger.png, label: "Ledger", region: [34, 40] }
   - { key: B, command: construction_queue, icon: construction.png, label: "Construction queue" }
   - { key: B, mods: [CTRL], command: toggle_construction_queue_pause, icon: queuepause.png, label: "Pause construction queue" }
   - { key: E, command: current_situation, icon: situation.png, label: "Current situation" }
-  - { key: R, command: country_panel, icon: country.png, label: "Country details" }
+  - { key: R, command: country_panel, icon: country.png, label: "Country details", region: [34, 40] }
 
   # Lenses
   - { key: "1", mods: [ALT], command: production_lens, icon: lens_production.png, label: "Production lens" }

@@ -73,7 +73,7 @@ bindings:
   - { key: S, icon: pandown.png, label: "Pan camera down", undrawn: [DOWN] }
   - { key: A, icon: panleft.png, label: "Pan camera left", undrawn: [LEFT] }
   - { key: D, icon: panright.png, label: "Pan camera right", undrawn: [RIGHT] }
-  - { key: M, command: mapmode_menu, icon: mapmenu.png, label: "Map mode menu" }
+  - { key: M, command: mapmode_menu, icon: mapmenu.png, label: "Map mode menu", region: [34, 40] }
   - { key: F, command: find_province, icon: find.png, label: "Find province" }
   - { key: HOME, command: go_to_capital, icon: capital.png, label: "Go to capital" }
   - { key: TAB, command: max_zoom_out, icon: maxzoom.png, label: "Zoom all the way out" }

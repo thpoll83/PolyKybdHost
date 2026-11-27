@@ -44,18 +44,18 @@ bindings:
 
   # Country view (F1) and its tabs
   - { key: F1, icon: country.png, label: "Country view", region: [34, 40] }
-  - { key: "1", icon: court.png, label: "Court" }
-  - { key: "2", icon: government.png, label: "Government" }
-  - { key: "3", icon: diplomacy.png, label: "Diplomacy" }
-  - { key: "4", icon: economy.png, label: "Economy" }
-  - { key: "5", icon: trade.png, label: "Trade" }
-  - { key: "6", icon: technology.png, label: "Technology" }
-  - { key: "7", icon: ideas.png, label: "Ideas" }
-  - { key: "8", icon: missions.png, label: "Missions" }
-  - { key: "9", icon: decisions.png, label: "Decisions" }
+  - { key: "1", icon: court.png, label: "Court", region: [34, 40] }
+  - { key: "2", icon: government.png, label: "Government", region: [34, 40] }
+  - { key: "3", icon: diplomacy.png, label: "Diplomacy", region: [34, 40] }
+  - { key: "4", icon: economy.png, label: "Economy", region: [34, 40] }
+  - { key: "5", icon: trade.png, label: "Trade", region: [34, 40] }
+  - { key: "6", icon: technology.png, label: "Technology", region: [34, 40] }
+  - { key: "7", icon: ideas.png, label: "Ideas", region: [34, 40] }
+  - { key: "8", icon: missions.png, label: "Missions", region: [34, 40] }
+  - { key: "9", icon: decisions.png, label: "Decisions", region: [34, 40] }
   - { key: "0", icon: stability.png, label: "Stability and expansion" }
   - { key: COMMA, icon: religion.png, label: "Religion" }
-  - { key: DOT, icon: military.png, label: "Military" }
+  - { key: DOT, icon: military.png, label: "Military", region: [34, 40] }
   - { key: QUOTE, icon: subjects.png, label: "Subjects" }
   - { key: K, icon: estates.png, label: "Estates" }
 
@@ -72,7 +72,7 @@ bindings:
   - { key: P, icon: mapslot10.png, label: "Map mode slot 10" }
 
   # Tools
-  - { key: L, icon: ledger.png, label: "Ledger" }
+  - { key: L, icon: ledger.png, label: "Ledger", region: [34, 40] }
   - { key: F, icon: find.png, label: "Find province" }
   - { key: B, icon: macro.png, label: "Macro builder" }
   - { key: A, mods: [SHIFT], icon: age.png, label: "Age panel" }
