@@ -26,6 +26,18 @@ class StripOptionsTest(unittest.TestCase):
         self.assertEqual(sm.strip_options(["--connect=/tmp/x.sock", "--dev"], connect=True),
                          ["--dev"])
 
+    def test_abbreviations_argparse_accepts_are_dropped_too(self):
+        self.assertEqual(sm.strip_options(["--no-for", "--dev"]), ["--dev"])
+        self.assertEqual(sm.strip_options(["--no-forw", "--dev"]), ["--dev"])
+        self.assertEqual(sm.strip_options(["--conn", "/tmp/x.sock", "--dev"], connect=True),
+                         ["--dev"])
+        self.assertEqual(sm.strip_options(["--conn=/tmp/x.sock", "--dev"], connect=True),
+                         ["--dev"])
+
+    def test_other_options_that_share_a_prefix_are_kept(self):
+        argv = ["--no-daemon", "--no-autostart", "--host", "h", "--"]
+        self.assertEqual(sm.strip_options(argv, connect=True), argv)
+
     def test_the_input_is_not_changed(self):
         argv = ["--no-forwarder", "--dev"]
         sm.strip_options(argv)

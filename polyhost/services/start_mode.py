@@ -38,24 +38,31 @@ def forwarder_from_setting(*, host=None, host_file=None, detect_host=False,
     return bool(setting) and not explicit and not no_forwarder
 
 
+def _is_option(arg: str, full: str) -> bool:
+    """True when `arg` is `full` or an abbreviation of it, with or without `=value`.
+
+    argparse accepts any unambiguous prefix (`--no-for`), and `argv` reached here only
+    after it parsed, so a prefix of `full` that parsed was not ambiguous."""
+    name = arg.split("=", 1)[0]
+    return len(name) > 2 and name.startswith("--") and full.startswith(name)
+
+
 def strip_options(argv, *, connect=False, no_forwarder=True):
     """A copy of `argv` without the options that must not outlive one run.
 
     `--no-forwarder` ("ignore the setting for this run") must not reach a launcher or a
     relaunch that is meant to follow the setting. `--connect [ENDPOINT]` makes a keyboard
-    client, which the switch to a forwarder replaces."""
+    client, which the switch to a forwarder replaces. Abbreviations of both count."""
     out, skip_value = [], False
     for arg in argv:
         if skip_value:
             skip_value = False
             if not arg.startswith("-"):
                 continue            # the endpoint that followed --connect
-        if no_forwarder and arg == "--no-forwarder":
+        if no_forwarder and _is_option(arg, "--no-forwarder"):
             continue
-        if connect and arg == "--connect":
-            skip_value = True       # nargs="?": an endpoint may follow
-            continue
-        if connect and arg.startswith("--connect="):
+        if connect and _is_option(arg, "--connect"):
+            skip_value = "=" not in arg     # nargs="?": an endpoint may follow
             continue
         out.append(arg)
     return out
