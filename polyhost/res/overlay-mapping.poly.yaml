@@ -45,6 +45,29 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     https://:
       url: '^https?://(mastodon\.social|mstdn\.jp|infosec\.exchange|mstdn\.social|hachyderm\.io|piaille\.fr|mastodon\.world|social\.vivaldi\.net|troet\.cafe|mastodon\.uno|mastodon\.gamedev\.place|mathstodon\.xyz|mastodon\.nl|social\.tchncs\.de|techhub\.social|occm\.cc|norden\.social|kolektiva\.social|o3o\.ca|organica\.social)/'
       overlay: mastodon_template.mods.png
+    # Streaming players (sources: overlay_sources/streaming/): the shared player
+    # keys under each site's own set, on the player pages only. Twitch's
+    # gate takes a bare channel name, a video or a clip, and leaves out
+    # Twitch's own pages (/directory, /settings ...). Prime Video plays over
+    # the detail page, on primevideo.com and in /gp/video/ on Amazon stores.
+    # These routes MUST stay above the ungated needles, here and in
+    # &web_urls_mac: the needles are tried in order against the whole URL,
+    # query included, so github.com would claim twitch.tv/x?ref=github.com.
+    netflix.com:
+      url: '^https?://(www\.)?netflix\.com/watch/'
+      overlay: [streaming_player_template.mods.png, netflix_template.mods.png]
+    twitch.tv:
+      url: '^https?://((www\.|m\.)?twitch\.tv/(videos/\d+|(?!(directory|settings|search|downloads|jobs|turbo|subscriptions|wallet|inventory|drops|friends|messages|following|login|signup|p|store|prime|privacy|legal|moderator)([/?#]|$))[A-Za-z0-9_]{3,25}(/clip/[^/?#]+)?/?([?#]|$))|clips\.twitch\.tv/[^/?#]+)'
+      overlay: [streaming_player_template.mods.png, twitch_template.mods.png]
+    primevideo.com:
+      url: '^https?://(www\.)?primevideo\.com/(-/[A-Za-z]{2}(_[A-Za-z]{2})?/)?(region/(na|eu|fe)/)?((gp/video/)?detail|watch)/'
+      overlay: [streaming_player_template.mods.png, primevideo_template.mods.png]
+    /gp/video/detail/:
+      url: '^https?://(www\.)?amazon\.[a-z.]+/gp/video/detail/'
+      overlay: [streaming_player_template.mods.png, primevideo_template.mods.png]
+    disneyplus.com:
+      url: '^https?://(www\.)?disneyplus\.com/(([^/?#]+/)?play/|video/)'
+      overlay: [streaming_player_template.mods.png, disneyplus_template.mods.png]
     miro.com:
       overlay: miro_template.mods.png
     # Photopea (sources: overlay_sources/webapps/photopea.yaml). The editor
@@ -476,6 +499,21 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         https://:
           url: '^https?://(mastodon\.social|mstdn\.jp|infosec\.exchange|mstdn\.social|hachyderm\.io|piaille\.fr|mastodon\.world|social\.vivaldi\.net|troet\.cafe|mastodon\.uno|mastodon\.gamedev\.place|mathstodon\.xyz|mastodon\.nl|social\.tchncs\.de|techhub\.social|occm\.cc|norden\.social|kolektiva\.social|o3o\.ca|organica\.social)/'
           overlay: [mastodon_template_mac.mods.png, mastodon_template_mac.combo.mods.png]
+        netflix.com:
+          url: '^https?://(www\.)?netflix\.com/watch/'
+          overlay: [streaming_player_template.mods.png, netflix_template.mods.png]
+        twitch.tv:
+          url: '^https?://((www\.|m\.)?twitch\.tv/(videos/\d+|(?!(directory|settings|search|downloads|jobs|turbo|subscriptions|wallet|inventory|drops|friends|messages|following|login|signup|p|store|prime|privacy|legal|moderator)([/?#]|$))[A-Za-z0-9_]{3,25}(/clip/[^/?#]+)?/?([?#]|$))|clips\.twitch\.tv/[^/?#]+)'
+          overlay: [streaming_player_template.mods.png, twitch_template.mods.png]
+        primevideo.com:
+          url: '^https?://(www\.)?primevideo\.com/(-/[A-Za-z]{2}(_[A-Za-z]{2})?/)?(region/(na|eu|fe)/)?((gp/video/)?detail|watch)/'
+          overlay: [streaming_player_template.mods.png, primevideo_template.mods.png]
+        /gp/video/detail/:
+          url: '^https?://(www\.)?amazon\.[a-z.]+/gp/video/detail/'
+          overlay: [streaming_player_template.mods.png, primevideo_template.mods.png]
+        disneyplus.com:
+          url: '^https?://(www\.)?disneyplus\.com/(([^/?#]+/)?play/|video/)'
+          overlay: [streaming_player_template.mods.png, disneyplus_template.mods.png]
         miro.com:
           overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
         photopea.com:

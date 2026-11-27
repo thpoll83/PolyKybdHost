@@ -1,0 +1,41 @@
+# Twitch's own player and watch-page keys and ESC mark, for PolyKybd. Loaded on
+# top of player.yaml. See SOURCES.md.
+#
+# Keys: the player's own "Keyboard Shortcuts" list (press ? in the player), read
+# from Twitch's player script on 2026-11-26, and the watch page's key bindings in
+# the same script (alt+t theatre mode, alt+r chat, alt+x clip). Alt is Option on
+# macOS. J, L and the speed keys act on videos and clips, not on live streams.
+#
+# Regenerate (from the repo root, with the project venv):
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/streaming/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/streaming/twitch.yaml --preview /tmp/twitch_preview
+app: twitch
+match: [twitch]
+output: twitch_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+program_icon: twitch.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  - { key: K,   icon: playpause.png, label: "Play or pause" }
+  - { key: J,   icon: back10.png,    label: "Back 10 s" }
+  - { key: L,   icon: fwd10.png,     label: "Forward 10 s" }
+  - { key: ",", icon: slower.png,    label: "Slower" }
+  - { key: ".", icon: faster.png,    label: "Faster" }
+  - { key: UP,   mods: [SHIFT], icon: volup.png,   label: "Volume up" }
+  - { key: DOWN, mods: [SHIFT], icon: voldown.png, label: "Volume down" }
+  - { key: "/",  mods: [SHIFT], icon: shortcuts.png, label: "Shortcut list" }
+  - { key: T, mods: [ALT], icon: theatre.png, label: "Theatre mode" }
+  - { key: R, mods: [ALT], icon: chat.png,    label: "Show or hide chat" }
+  - { key: X, mods: [ALT], icon: clip.png,    label: "Create clip" }

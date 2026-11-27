@@ -1998,6 +1998,60 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                         self.assertFalse(any(f.startswith(s) for f in files for s in
                                              ("whatsapp_", "x_template", "mastodon_")), files)
 
+    def test_STREAMING_players_route_only_on_player_pages(self):
+        """Netflix, Twitch, Prime Video and Disney+ load the shared player set
+        under the site's own set, on player pages only. Browse pages, Twitch's
+        own pages and Amazon shop pages keep the browser set."""
+        from polyhost.device.command_ids import OsType
+        from polyhost.handler.common import find_matching_entry, mapping_key
+        player = (
+            ("https://www.netflix.com/watch/80100172?trackId=1", "netflix"),
+            ("https://www.twitch.tv/somestreamer", "twitch"),
+            ("https://www.twitch.tv/videos/2283491234", "twitch"),
+            ("https://www.twitch.tv/somestreamer/clip/FunnyClipSlug-abc", "twitch"),
+            ("https://clips.twitch.tv/FunnyClipSlug-abc", "twitch"),
+            ("https://www.primevideo.com/detail/0ABCDEF/ref=atv_hm", "primevideo"),
+            ("https://www.primevideo.com/region/eu/detail/0ABCDEF/", "primevideo"),
+            ("https://www.primevideo.com/-/fr/detail/0ABCDEF/", "primevideo"),
+            ("https://www.primevideo.com/-/pt_BR/region/na/detail/0ABCDEF/", "primevideo"),
+            ("https://www.amazon.com/gp/video/detail/B0ABCDEF/", "primevideo"),
+            ("https://www.amazon.de/gp/video/detail/B0ABCDEF/", "primevideo"),
+            ("https://www.disneyplus.com/play/8f6e2a1c-1234", "disneyplus"),
+            ("https://www.disneyplus.com/en-gb/play/8f6e2a1c-1234", "disneyplus"),
+            ("https://www.disneyplus.com/video/8f6e2a1c-1234", "disneyplus"),
+            # Query text naming another site's host must not claim the route.
+            ("https://www.twitch.tv/somestreamer?ref=github.com", "twitch"),
+            ("https://www.netflix.com/watch/1?trackId=miro.com", "netflix"),
+        )
+        other = ("https://www.netflix.com/browse",
+                 "https://www.twitch.tv/",
+                 "https://www.twitch.tv/directory",
+                 "https://www.twitch.tv/directory/category/chess",
+                 "https://www.twitch.tv/settings/profile",
+                 "https://www.twitch.tv/moderator",
+                 "https://www.twitch.tv/somestreamer/videos",
+                 "https://www.primevideo.com/storefront/home",
+                 "https://www.primevideo.com/-/fr/storefront",
+                 "https://www.amazon.com/dp/B0ABCDEF",
+                 "https://www.disneyplus.com/home",
+                 "https://www.google.com/search?q=netflix.com/watch/1")
+        for browser in ("chrome", "firefox"):
+            entry = self.handler.mapping[mapping_key(browser, self.handler.mapping)]
+            for os_name in ("WINDOWS", "MACOS"):
+                for url, site in player:
+                    with self.subTest(browser=browser, os=os_name, url=url):
+                        got = find_matching_entry("x", entry, url, OsType[os_name],
+                                                  title_known=True)
+                        files = [str(f) for f in got["overlay"]]
+                        self.assertIn("streaming_player_template.mods.png", files)
+                        self.assertIn(f"{site}_template.mods.png", files)
+                for url in other:
+                    with self.subTest(browser=browser, os=os_name, url=url):
+                        got = find_matching_entry("x", entry, url, OsType[os_name],
+                                                  title_known=True)
+                        files = [str(f) for f in got["overlay"]]
+                        self.assertNotIn("streaming_player_template.mods.png", files)
+
     def test_JUPYTER_and_WEB_TOOLS_route_by_gated_url_and_title(self):
         from polyhost.device.command_ids import OsType
         from polyhost.handler.common import find_matching_entry, mapping_key

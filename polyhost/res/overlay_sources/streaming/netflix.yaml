@@ -1,0 +1,32 @@
+# Netflix's own player keys and ESC mark, for PolyKybd. Loaded on top of
+# player.yaml. See SOURCES.md.
+#
+# Keys: Netflix Help Center, "How to use keyboard shortcuts"
+# (help.netflix.com/en/node/24855, read 2026-11-26).
+#
+# Regenerate (from the repo root, with the project venv):
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/streaming/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/streaming/netflix.yaml --preview /tmp/netflix_preview
+app: netflix
+match: [netflix]
+output: netflix_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+program_icon: netflix.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  - { key: ENTER, icon: playpause.png, label: "Play or pause" }
+  - { key: S,     icon: skipintro.png, label: "Skip intro" }
+  - { key: UP,    icon: volup.png,     label: "Volume up" }
+  - { key: DOWN,  icon: voldown.png,   label: "Volume down" }

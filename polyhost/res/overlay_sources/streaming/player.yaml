@@ -1,0 +1,32 @@
+# The player keys Netflix, Twitch, Prime Video and Disney+ share, for PolyKybd.
+# See SOURCES.md.
+#
+# This set has no ESC mark. The mapping loads it under each site's own set
+# (netflix.yaml, twitch.yaml, primevideo.yaml, disneyplus.yaml), which adds that
+# site's keys and its mark. Every key here is in each site's list: Netflix and
+# Prime Video help pages, Twitch's in-player list, and two lists for Disney+.
+# On a Twitch live stream the arrow keys do not seek; they do on videos and clips.
+#
+# Left out: Esc (exit full screen), because the ESC key carries the program mark.
+#
+# Regenerate (from the repo root, with the project venv):
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/streaming/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/streaming/player.yaml --preview /tmp/player_preview
+app: streaming-player
+match: [streaming-player]
+output: streaming_player_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+bindings:
+  - { key: SPACE, icon: playpause.png,  label: "Play or pause" }
+  - { key: F,     icon: fullscreen.png, label: "Full screen" }
+  - { key: M,     icon: mute.png,       label: "Mute", shared: false }
+  - { key: LEFT,  icon: back10.png,     label: "Back 10 s" }
+  - { key: RIGHT, icon: fwd10.png,      label: "Forward 10 s" }
