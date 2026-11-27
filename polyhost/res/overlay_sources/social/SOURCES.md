@@ -1,0 +1,198 @@
+# Social and messaging overlays: sources
+
+`scripts/generate_app_overlays.py` renders each spec; `fetch_icons.py` rebuilds
+`icons/`.
+
+| Spec | Set | Loads for |
+|---|---|---|
+| `whatsapp_web.yaml` | `whatsapp_web_template` (3 files), `_mac` (4 files) | web.whatsapp.com in a browser |
+| `whatsapp.yaml` | `whatsapp_template` (3 files), `_mac` (3 files) | the WhatsApp desktop apps, Windows and macOS |
+| `x.yaml` | `x_template` (1 file), `_mac` (2 files) | x.com in a browser |
+| `mastodon.yaml` | `mastodon_template` (1 file), `_mac` (2 files) | Mastodon's web app on 20 servers |
+
+`whatsapp.yaml` also writes `whatsapp_template_linux.mods.png`, which holds only
+the ESC mark because every Windows key is scoped `only: [windows]`. WhatsApp has
+no Linux app and no mapping entry names that file, so it is not committed.
+
+## App names and URLs
+
+- **WhatsApp desktop:** `whatsapp`. The Windows app's executable is
+  `WhatsApp.Root.exe` in the Store package `5319275A.WhatsAppDesktop` (a path in
+  a Microsoft Q&A post, 2025-12-28); the window handler cuts it at the first dot.
+  The macOS app is "WhatsApp" (App Store). Neither was checked on an install.
+- **WhatsApp Web:** `^https?://web\.whatsapp\.com/`.
+- **X:** `^https?://(www\.|mobile\.)?x\.com/`. twitter.com redirects to x.com.
+  X Pro (pro.x.com) has other keys and is not routed.
+- **Mastodon:** the 20 servers with the most weekly active users in the
+  joinmastodon.org directory (`https://api.joinmastodon.org/servers`, read
+  2026-11-25): mastodon.social, mstdn.jp, infosec.exchange, mstdn.social,
+  hachyderm.io, piaille.fr, mastodon.world, social.vivaldi.net, troet.cafe,
+  mastodon.uno, mastodon.gamedev.place, mathstodon.xyz, mastodon.nl,
+  social.tchncs.de, techhub.social, occm.cc, norden.social, kolektiva.social,
+  o3o.ca, organica.social. The directory lists only servers that opted in, so a
+  large server outside it is missing. Users of other servers keep the browser
+  set.
+
+## Shortcut references
+
+### WhatsApp Web (official)
+
+WhatsApp Help Center, "About keyboard shortcuts",
+https://faq.whatsapp.com/6204576529560565/?cms_platform=web (read 2026-11-25).
+Windows and Linux add Alt (Ctrl+Alt+key, Ctrl+Alt+Shift+key); macOS uses
+Cmd+Ctrl. The page prints the Windows Settings chord as "Ctrl Alt" with no key;
+the set uses "," from the macOS column. Extended search is Alt+K (Cmd+K on
+macOS).
+
+On macOS, WhatsApp Web's own Keyboard shortcuts dialog (read by the maintainer
+on 2026-11-27) is the source too. It shows that the help page's macOS "Search
+Chat" chord, Cmd+Ctrl+/, is the general Search; Search chat is Cmd+Shift+F. It
+adds next and previous chat (Cmd+Ctrl+Tab, Cmd+Ctrl+Shift+Tab), Add chat to list,
+Block chat (Ctrl+Shift+B), the voice message keys, Edit last message (Cmd+Up)
+and the call keys; Screen share (Cmd+Ctrl+S) reuses the sticker panel's chord
+and is left out. The Windows and Linux keys stay as the help page gives them.
+
+### WhatsApp desktop
+
+WhatsApp publishes no shortcut list for its desktop apps: the Help Center
+article's Windows tab says "This feature isn't available on this platform".
+
+- **Windows:** the app's own list (Settings > Keyboard shortcuts), German
+  build, read by the maintainer on 2026-11-26. It replaced an earlier list from
+  an accessibility guide, which had several keys wrong (Ctrl+Shift instead of
+  Ctrl+Alt+Shift for unread, mute, archive and new group, and Ctrl+1..9 and the
+  zoom keys, which the app does not list).
+- **macOS (not checked against the app):** XDA Developers (2023-02,
+  https://www.xda-developers.com/whatsapp-keyboard-shortcuts/) and androidayuda
+  (2024, https://en.androidayuda.com/applications/general/whatsapp-web-keyboard-shortcuts/),
+  which agree on every key drawn.
+
+Left out: Esc (close chat; the ESC key carries the program mark); the Windows
+call keys Reactions (Ctrl+Alt+R) and Share screen (Ctrl+Alt+S), which reuse the
+chat chords of Reply privately and the sticker panel; next and previous chat on
+macOS (XDA gives Ctrl+Tab, androidayuda Cmd+Tab); and plain Enter in the
+composer.
+
+### X (third-party lists)
+
+help.x.com refused automated access (403 behind a bot check), so X's own list
+(press `?` on x.com) was not read. Every key drawn is in at least two of these
+lists:
+
+- webnots.com/twitter-keyboard-shortcuts (2023-04)
+- utilitycove.com/tools/twitter-shortcuts (2026)
+- xautopilot.app/blog/x-keyboard-shortcuts (2026-09)
+- tutorialtactic.com/blog/twitter-shortcuts (2026-08)
+- techbloat.com/complete-list-of-keyboard-shortcuts-for-twitter.html (2026-05)
+- pie-menu.com/shortcuts/x
+- martech.zone/twitter-keyboard-shortcuts (2026-11)
+
+B (bookmark) and X (report) come from X's own `?` list, read by the maintainer
+on 2026-11-26; the third-party lists disagree on both keys.
+
+G shows a "go to" prefix mark (three dots); the second keys of the "g then
+<key>" navigation are not drawn (maintainer, 2026-11-26). Left out: the video
+keys that replace the
+timeline keys while a video is selected.
+
+### Mastodon (official)
+
+Mastodon's own source, mastodon/mastodon (AGPL-3.0), commit
+`6c29cb4b9c1f8b3f9a1be23f0efb9c5ac64155a3` (2026-11-25):
+`app/javascript/mastodon/components/hotkeys/index.tsx`, `hotkeyMatcherMap`.
+`just()` keys act with no Ctrl, Alt or Cmd held; `optionPlus()` is Alt (Option
+on macOS). Each binding's `command:` is the map's name for it.
+
+Ctrl+Enter (Cmd+Enter on macOS) publishes: the compose box is the shared
+`TextArea` of `app/javascript/mastodon/components/form_fields/text_area_field.tsx`,
+which submits its form on that key. fedi.tips (https://fedi.tips, Mastodon
+keyboard shortcuts) lists the same keys for an older Mastodon; its Alt+X
+(content warning field) and Up / Down (move) are not in the current source and
+are not drawn.
+
+G shows a "go to" prefix mark (three dots); the second keys of the "g then
+<key>" navigation are not drawn (maintainer, 2026-11-26). Left out: Alt+PageDown /
+Alt+PageUp (the same as
+J / K) and the "cheat" sequence.
+
+## Icons
+
+Fetched by `fetch_icons.py`:
+
+- Fluent `<Name>`, pinned commit: Microsoft Fluent UI System Icons (MIT),
+  `https://raw.githubusercontent.com/microsoft/fluentui-system-icons/67e6dec1ee956af3ab4c746a2b3bb6a2e5520a44/assets/<Name>/SVG/ic_fluent_<name>_<size>_regular.svg`
+  (`../icon_fetch.py` takes the first size that exists).
+- Material Symbols `<name>`, pinned commit: Google Material Symbols (Apache-2.0),
+  `https://raw.githubusercontent.com/google/material-design-icons/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/symbols/web/<name>/materialsymbolsoutlined/<name>_wght300_24px.svg` (`../icon_fetch.py` renders Material Symbols at weight 300).
+- Simple Icons `<slug>`: `https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/<slug>.svg`, NOT pinned (`../brand_marks.py` reads the `develop` branch); the committed PNG is kept on a re-run, so it is the source of truth
+  (artwork CC0-1.0; the marks are trademarks of their owners, used to name the app the set is for).
+
+| File | Source | Licence |
+|---|---|---|
+| `nextpost.png` | Fluent `Arrow Down` | MIT |
+| `prevpost.png` | Fluent `Arrow Up` | MIT |
+| `pagedown.png` | Material Symbols `keyboard_double_arrow_down` | Apache-2.0 |
+| `top.png` | Material Symbols `vertical_align_top` | Apache-2.0 |
+| `loadnew.png` | Material Symbols `dynamic_feed` | Apache-2.0 |
+| `loadmore.png` | Material Symbols `expand_circle_down` | Apache-2.0 |
+| `openpost.png` | Fluent `Open` | MIT |
+| `media.png` | Fluent `Image` | MIT |
+| `back.png` | Fluent `Arrow Left` | MIT |
+| `help.png` | Fluent `Question Circle` | MIT |
+| `goprefix.png` | Material Symbols `more_horiz`, cropped to its ink by `fetch_icons.py` | Apache-2.0 |
+| `search.png` | Fluent `Search` | MIT |
+| `reply.png` | Fluent `Arrow Reply` | MIT |
+| `like.png` | Fluent `Heart` | MIT |
+| `favourite.png` | Fluent `Star` | MIT |
+| `repost.png` | Fluent `Arrow Repeat All` | MIT |
+| `quote.png` | Material Symbols `format_quote` | Apache-2.0 |
+| `mention.png` | Material Symbols `alternate_email` | Apache-2.0 |
+| `share.png` | Fluent `Share` | MIT |
+| `bookmark.png` | Fluent `Bookmark` | MIT |
+| `report.png` | Material Symbols `report` | Apache-2.0 |
+| `muteaccount.png` | Fluent `Speaker Mute` | MIT |
+| `profile.png` | Fluent `Person Circle` | MIT |
+| `translate.png` | Fluent `Translate` | MIT |
+| `contentwarning.png` | Fluent `Eye Off` | MIT |
+| `sensitive.png` | Material Symbols `hide_image` | Apache-2.0 |
+| `newpost.png` | Fluent `Compose` | MIT |
+| `startpost.png` | Material Symbols `post_add` | Apache-2.0 |
+| `newdm.png` | Fluent `Mail Add` | MIT |
+| `send.png` | Fluent `Send` | MIT |
+| `unread.png` | Material Symbols `mark_chat_unread` | Apache-2.0 |
+| `mutechat.png` | Fluent `Alert Off` | MIT |
+| `archive.png` | Fluent `Archive` | MIT |
+| `pin.png` | Fluent `Pin` | MIT |
+| `deletechat.png` | Fluent `Delete` | MIT |
+| `block.png` | Fluent `Person Prohibited` | MIT |
+| `newchat.png` | Fluent `Chat Add` | MIT |
+| `newgroup.png` | Fluent `People Add` | MIT |
+| `searchchat.png` | Material Symbols `manage_search` | Apache-2.0 |
+| `extsearch.png` | Material Symbols `travel_explore` | Apache-2.0 |
+| `nextchat.png` | Fluent `Arrow Circle Down` | MIT |
+| `prevchat.png` | Fluent `Arrow Circle Up` | MIT |
+| `chatinfo.png` | Fluent `Info` | MIT |
+| `lock.png` | Fluent `Lock Closed` | MIT |
+| `addtolist.png` | Material Symbols `playlist_add` | Apache-2.0 |
+| `camera.png` | Fluent `Video` | MIT |
+| `micmute.png` | Fluent `Mic Off` | MIT |
+| `raisehand.png` | Material Symbols `back_hand` | Apache-2.0 |
+| `reactions.png` | Fluent `Emoji Add` | MIT |
+| `endcall.png` | Fluent `Call End` | MIT |
+| `emoji.png` | Fluent `Emoji` | MIT |
+| `gif.png` | Fluent `Gif` | MIT |
+| `sticker.png` | Fluent `Sticker` | MIT |
+| `replyprivate.png` | Material Symbols `quickreply` | Apache-2.0 |
+| `forward.png` | Fluent `Arrow Forward` | MIT |
+| `editlast.png` | Fluent `Edit` | MIT |
+| `star.png` | Fluent `Star Add` | MIT |
+| `attach.png` | Fluent `Attach` | MIT |
+| `recordvoice.png` | Fluent `Mic` | MIT |
+| `pausevoice.png` | Material Symbols `pause_circle` | Apache-2.0 |
+| `speedup.png` | Material Symbols `speed` | Apache-2.0 |
+| `speeddown.png` | Material Symbols `slow_motion_video` | Apache-2.0 |
+| `_columnbase.png` | Material Symbols `crop_portrait` | Apache-2.0 |
+| `column1.png .. column9.png` | `_columnbase.png` (Material Symbols `crop_portrait`) with the digit drawn in by `../number_badge.py` | Apache-2.0 |
+| `whatsapp.png` | Simple Icons `whatsapp` (`../brand_marks.py`) | CC0-1.0 |
+| `x.png` | Simple Icons `x` (`../brand_marks.py`) | CC0-1.0 |
+| `mastodon.png` | Simple Icons `mastodon` (`../brand_marks.py`) | CC0-1.0 |
