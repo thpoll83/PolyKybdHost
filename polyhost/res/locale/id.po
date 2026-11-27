@@ -3670,7 +3670,7 @@ msgstr "Waktu Ketuk-Tahan"
 
 #: polyhost/gui/settings_dialog.py:85 polyhost/host.py:1713
 msgid "Key lighting"
-msgstr ""
+msgstr "Lampu tombol"
 
 #: polyhost/gui/settings_dialog.py:86
 msgid "Unicode input"
@@ -3788,31 +3788,31 @@ msgstr "Batas waktu Auto Shift"
 
 #: polyhost/gui/settings_dialog.py:153
 msgid "Lights on"
-msgstr ""
+msgstr "Lampu menyala"
 
 #: polyhost/gui/settings_dialog.py:154
 msgid "Lighting brightness"
-msgstr ""
+msgstr "Kecerahan lampu"
 
 #: polyhost/gui/settings_dialog.py:155
 msgid "Lighting effect"
-msgstr ""
+msgstr "Efek lampu"
 
 #: polyhost/gui/settings_dialog.py:156
 msgid "Effect speed"
-msgstr ""
+msgstr "Kecepatan efek"
 
 #: polyhost/gui/settings_dialog.py:157
 msgid "Lighting hue"
-msgstr ""
+msgstr "Rona lampu"
 
 #: polyhost/gui/settings_dialog.py:158
 msgid "Lighting saturation"
-msgstr ""
+msgstr "Saturasi lampu"
 
 #: polyhost/gui/settings_dialog.py:159
 msgid "Find this keyboard"
-msgstr ""
+msgstr "Temukan keyboard ini"
 
 #: polyhost/gui/settings_dialog.py:160
 msgid "Follow daylight"
@@ -4068,31 +4068,31 @@ msgstr "Berapa lama Anda menahan tombol sebelum Auto Shift mengetikkan karakter 
 
 #: polyhost/gui/settings_dialog.py:253
 msgid "Switches the LEDs under the keys on or off. The keyboard keeps the change until it restarts, then uses its stored setting again. Needs keyboard firmware with protocol 39."
-msgstr ""
+msgstr "Menyalakan atau mematikan LED di bawah tombol. Keyboard menyimpan perubahan ini sampai dimulai ulang, lalu kembali memakai pengaturan tersimpannya. Memerlukan firmware keyboard dengan protokol 39."
 
 #: polyhost/gui/settings_dialog.py:257
 msgid "How bright the LEDs under the keys are, from 0 to 255. The keyboard keeps the change until it restarts."
-msgstr ""
+msgstr "Seberapa terang LED di bawah tombol, dari 0 sampai 255. Keyboard menyimpan perubahan ini sampai dimulai ulang."
 
 #: polyhost/gui/settings_dialog.py:260
 msgid "The number of the lighting animation, from 1. The keyboard uses the nearest one it has. It keeps the change until it restarts."
-msgstr ""
+msgstr "Nomor animasi lampu, mulai dari 1. Keyboard memakai animasi terdekat yang dimilikinya. Perubahan ini disimpan sampai keyboard dimulai ulang."
 
 #: polyhost/gui/settings_dialog.py:263
 msgid "How fast the lighting animation runs, from 0 to 255. The keyboard keeps the change until it restarts."
-msgstr ""
+msgstr "Seberapa cepat animasi lampu berjalan, dari 0 sampai 255. Keyboard menyimpan perubahan ini sampai dimulai ulang."
 
 #: polyhost/gui/settings_dialog.py:266
 msgid "The colour of the lighting, from 0 to 255 around the colour wheel. The keyboard keeps the change until it restarts."
-msgstr ""
+msgstr "Warna lampu, dari 0 sampai 255 mengelilingi roda warna. Keyboard menyimpan perubahan ini sampai dimulai ulang."
 
 #: polyhost/gui/settings_dialog.py:269
 msgid "How strong the lighting colour is, from 0 (white) to 255. The keyboard keeps the change until it restarts."
-msgstr ""
+msgstr "Seberapa kuat warna lampu, dari 0 (putih) sampai 255. Keyboard menyimpan perubahan ini sampai dimulai ulang."
 
 #: polyhost/gui/settings_dialog.py:272
 msgid "Blinks the LEDs under the keys three times, so you can see which keyboard this dialog changes."
-msgstr ""
+msgstr "Mengedipkan LED di bawah tombol tiga kali, agar Anda dapat melihat keyboard mana yang diubah oleh dialog ini."
 
 #: polyhost/gui/settings_dialog.py:275
 msgid "Shows the state of AI coding agents on the number row and, while the AI key is pressed, one card per agent. Needs keyboard firmware with protocol 31. Takes effect at the next keyboard connect."
@@ -4353,7 +4353,7 @@ msgstr "Diatur oleh {flag} untuk sesi ini. Pengaturan ini berlaku saat aplikasi 
 
 #: polyhost/gui/settings_dialog.py:1188
 msgid "Blink"
-msgstr ""
+msgstr "Kedipkan"
 
 #. TRANSLATORS: unit after a number of milliseconds in a spin box.
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).

@@ -3670,7 +3670,7 @@ msgstr "Tik-vasthoudtijden"
 
 #: polyhost/gui/settings_dialog.py:85 polyhost/host.py:1713
 msgid "Key lighting"
-msgstr ""
+msgstr "Toetsverlichting"
 
 #: polyhost/gui/settings_dialog.py:86
 msgid "Unicode input"
@@ -3788,31 +3788,31 @@ msgstr "Auto Shift-vertraging"
 
 #: polyhost/gui/settings_dialog.py:153
 msgid "Lights on"
-msgstr ""
+msgstr "Verlichting aan"
 
 #: polyhost/gui/settings_dialog.py:154
 msgid "Lighting brightness"
-msgstr ""
+msgstr "Helderheid verlichting"
 
 #: polyhost/gui/settings_dialog.py:155
 msgid "Lighting effect"
-msgstr ""
+msgstr "Verlichtingseffect"
 
 #: polyhost/gui/settings_dialog.py:156
 msgid "Effect speed"
-msgstr ""
+msgstr "Effectsnelheid"
 
 #: polyhost/gui/settings_dialog.py:157
 msgid "Lighting hue"
-msgstr ""
+msgstr "Tint verlichting"
 
 #: polyhost/gui/settings_dialog.py:158
 msgid "Lighting saturation"
-msgstr ""
+msgstr "Verzadiging verlichting"
 
 #: polyhost/gui/settings_dialog.py:159
 msgid "Find this keyboard"
-msgstr ""
+msgstr "Dit toetsenbord zoeken"
 
 #: polyhost/gui/settings_dialog.py:160
 msgid "Follow daylight"
@@ -4068,31 +4068,31 @@ msgstr "Hoe lang u een toets vasthoudt voordat Auto Shift het teken met Shift ty
 
 #: polyhost/gui/settings_dialog.py:253
 msgid "Switches the LEDs under the keys on or off. The keyboard keeps the change until it restarts, then uses its stored setting again. Needs keyboard firmware with protocol 39."
-msgstr ""
+msgstr "Zet de leds onder de toetsen aan of uit. Het toetsenbord houdt de wijziging vast tot het opnieuw start en gebruikt daarna weer de opgeslagen instelling. Vereist toetsenbordfirmware met protocol 39."
 
 #: polyhost/gui/settings_dialog.py:257
 msgid "How bright the LEDs under the keys are, from 0 to 255. The keyboard keeps the change until it restarts."
-msgstr ""
+msgstr "Hoe fel de leds onder de toetsen branden, van 0 tot 255. Het toetsenbord houdt de wijziging vast tot het opnieuw start."
 
 #: polyhost/gui/settings_dialog.py:260
 msgid "The number of the lighting animation, from 1. The keyboard uses the nearest one it has. It keeps the change until it restarts."
-msgstr ""
+msgstr "Het nummer van de verlichtingsanimatie, vanaf 1. Het toetsenbord gebruikt de dichtstbijzijnde die het heeft. Het houdt de wijziging vast tot het opnieuw start."
 
 #: polyhost/gui/settings_dialog.py:263
 msgid "How fast the lighting animation runs, from 0 to 255. The keyboard keeps the change until it restarts."
-msgstr ""
+msgstr "Hoe snel de verlichtingsanimatie loopt, van 0 tot 255. Het toetsenbord houdt de wijziging vast tot het opnieuw start."
 
 #: polyhost/gui/settings_dialog.py:266
 msgid "The colour of the lighting, from 0 to 255 around the colour wheel. The keyboard keeps the change until it restarts."
-msgstr ""
+msgstr "De kleur van de verlichting, van 0 tot 255 rond de kleurencirkel. Het toetsenbord houdt de wijziging vast tot het opnieuw start."
 
 #: polyhost/gui/settings_dialog.py:269
 msgid "How strong the lighting colour is, from 0 (white) to 255. The keyboard keeps the change until it restarts."
-msgstr ""
+msgstr "Hoe sterk de kleur van de verlichting is, van 0 (wit) tot 255. Het toetsenbord houdt de wijziging vast tot het opnieuw start."
 
 #: polyhost/gui/settings_dialog.py:272
 msgid "Blinks the LEDs under the keys three times, so you can see which keyboard this dialog changes."
-msgstr ""
+msgstr "Laat de leds onder de toetsen drie keer knipperen, zodat u ziet welk toetsenbord dit venster wijzigt."
 
 #: polyhost/gui/settings_dialog.py:275
 msgid "Shows the state of AI coding agents on the number row and, while the AI key is pressed, one card per agent. Needs keyboard firmware with protocol 31. Takes effect at the next keyboard connect."
@@ -4353,7 +4353,7 @@ msgstr "Ingesteld door {flag} voor deze sessie. Deze instelling geldt wanneer de
 
 #: polyhost/gui/settings_dialog.py:1188
 msgid "Blink"
-msgstr ""
+msgstr "Knipperen"
 
 #. TRANSLATORS: unit after a number of milliseconds in a spin box.
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).

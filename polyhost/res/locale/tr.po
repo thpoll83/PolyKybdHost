@@ -3653,7 +3653,7 @@ msgstr "Dokunma-Basılı Tutma Süreleri"
 
 #: polyhost/gui/settings_dialog.py:85 polyhost/host.py:1713
 msgid "Key lighting"
-msgstr ""
+msgstr "Tuş aydınlatması"
 
 #: polyhost/gui/settings_dialog.py:86
 msgid "Unicode input"
@@ -3771,31 +3771,31 @@ msgstr "Auto Shift zaman aşımı"
 
 #: polyhost/gui/settings_dialog.py:153
 msgid "Lights on"
-msgstr ""
+msgstr "Işıklar açık"
 
 #: polyhost/gui/settings_dialog.py:154
 msgid "Lighting brightness"
-msgstr ""
+msgstr "Aydınlatma parlaklığı"
 
 #: polyhost/gui/settings_dialog.py:155
 msgid "Lighting effect"
-msgstr ""
+msgstr "Aydınlatma efekti"
 
 #: polyhost/gui/settings_dialog.py:156
 msgid "Effect speed"
-msgstr ""
+msgstr "Efekt hızı"
 
 #: polyhost/gui/settings_dialog.py:157
 msgid "Lighting hue"
-msgstr ""
+msgstr "Aydınlatma tonu"
 
 #: polyhost/gui/settings_dialog.py:158
 msgid "Lighting saturation"
-msgstr ""
+msgstr "Aydınlatma doygunluğu"
 
 #: polyhost/gui/settings_dialog.py:159
 msgid "Find this keyboard"
-msgstr ""
+msgstr "Bu klavyeyi bul"
 
 #: polyhost/gui/settings_dialog.py:160
 msgid "Follow daylight"
@@ -4051,31 +4051,31 @@ msgstr "Auto Shift büyük harfli (Shift) karakteri yazmadan önce bir tuşu ne 
 
 #: polyhost/gui/settings_dialog.py:253
 msgid "Switches the LEDs under the keys on or off. The keyboard keeps the change until it restarts, then uses its stored setting again. Needs keyboard firmware with protocol 39."
-msgstr ""
+msgstr "Tuşların altındaki LED'leri açar veya kapatır. Klavye bu değişikliği yeniden başlatılana kadar korur, ardından kayıtlı ayarını yeniden kullanır. Protokol 39'a sahip klavye ürün yazılımı gerektirir."
 
 #: polyhost/gui/settings_dialog.py:257
 msgid "How bright the LEDs under the keys are, from 0 to 255. The keyboard keeps the change until it restarts."
-msgstr ""
+msgstr "Tuşların altındaki LED'lerin ne kadar parlak olduğu, 0 ile 255 arasında. Klavye bu değişikliği yeniden başlatılana kadar korur."
 
 #: polyhost/gui/settings_dialog.py:260
 msgid "The number of the lighting animation, from 1. The keyboard uses the nearest one it has. It keeps the change until it restarts."
-msgstr ""
+msgstr "Aydınlatma animasyonunun numarası, 1'den başlar. Klavye, sahip olduğu en yakın animasyonu kullanır. Bu değişikliği yeniden başlatılana kadar korur."
 
 #: polyhost/gui/settings_dialog.py:263
 msgid "How fast the lighting animation runs, from 0 to 255. The keyboard keeps the change until it restarts."
-msgstr ""
+msgstr "Aydınlatma animasyonunun ne kadar hızlı çalıştığı, 0 ile 255 arasında. Klavye bu değişikliği yeniden başlatılana kadar korur."
 
 #: polyhost/gui/settings_dialog.py:266
 msgid "The colour of the lighting, from 0 to 255 around the colour wheel. The keyboard keeps the change until it restarts."
-msgstr ""
+msgstr "Aydınlatmanın rengi, renk çarkı üzerinde 0 ile 255 arasında. Klavye bu değişikliği yeniden başlatılana kadar korur."
 
 #: polyhost/gui/settings_dialog.py:269
 msgid "How strong the lighting colour is, from 0 (white) to 255. The keyboard keeps the change until it restarts."
-msgstr ""
+msgstr "Aydınlatma renginin ne kadar güçlü olduğu, 0 (beyaz) ile 255 arasında. Klavye bu değişikliği yeniden başlatılana kadar korur."
 
 #: polyhost/gui/settings_dialog.py:272
 msgid "Blinks the LEDs under the keys three times, so you can see which keyboard this dialog changes."
-msgstr ""
+msgstr "Bu iletişim kutusunun hangi klavyeyi değiştirdiğini görebilmeniz için tuşların altındaki LED'leri üç kez yakıp söndürür."
 
 #: polyhost/gui/settings_dialog.py:275
 msgid "Shows the state of AI coding agents on the number row and, while the AI key is pressed, one card per agent. Needs keyboard firmware with protocol 31. Takes effect at the next keyboard connect."
@@ -4336,7 +4336,7 @@ msgstr "Bu çalıştırma için {flag} ile ayarlandı. Bu ayar, uygulama onsuz b
 
 #: polyhost/gui/settings_dialog.py:1188
 msgid "Blink"
-msgstr ""
+msgstr "Yakıp söndür"
 
 #. TRANSLATORS: unit after a number of milliseconds in a spin box.
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
