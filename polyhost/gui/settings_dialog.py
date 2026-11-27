@@ -92,6 +92,7 @@ SECTIONS = (
                                    "browser_report_port", "browser_report_token")),
         (N_("Forwarders"), ("window_report_network_enabled", "forwarder_detect_host",
                             "start_as_forwarder")),
+        (N_("AI assistants"), ("mcp_enabled",)),
         (N_("USB transport"), ("hid_reconnect_retries", "max_hid_message_before_delay",
                                "delay_time_after_max_hid_messages")),
     )),
@@ -187,6 +188,7 @@ SETTING_LABELS = {
     "dev_force_hid_link": N_("Force the HID link"),
     "daemon_mode": N_("Background service"),
     "window_report_network_enabled": N_("Accept forwarders"),
+    "mcp_enabled": N_("Allow AI assistants (MCP)"),
     "forwarder_detect_host": N_("Find the keyboard computer from the connection"),
     "start_as_forwarder": N_("Start as a forwarder"),
     "fontpack_auto_flash": N_("Send font packs on connect"),
@@ -411,6 +413,12 @@ SETTING_DESCRIPTIONS = {
     "daemon_mode": N_(
         "Runs the keyboard connection in a background process that the tray app "
         "connects to, so the connection stays up when the tray app restarts."),
+    "mcp_enabled": N_(
+        "Lets an AI assistant such as Claude or ChatGPT change the keyboard's "
+        "language, brightness, idle style, glyph script, overlays and single keys "
+        "when you ask it to, through the MCP server (polyctl mcp) that you add to "
+        "the assistant. It cannot update the firmware or turn on network features. "
+        "Applies at once."),
     "window_report_network_enabled": N_(
         "Accepts reports of the focused window from the forwarder app on another "
         "computer, for example one you use through remote desktop, so the keyboard "

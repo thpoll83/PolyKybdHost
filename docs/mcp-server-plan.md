@@ -7,8 +7,9 @@ why it waits. Security record: HOST-9 in `polykybd-ctnd/docs/SECURITY_AUDIT.md`.
 
 ## Using it
 
-Start PolyKybdHost (tray or daemon), then add the server to the AI client. For
-Claude Code:
+Start PolyKybdHost (tray or daemon) and turn on *Settings > Connections > Allow AI
+assistants (MCP)* (`polyctl settings set mcp_enabled true`). It is off by default.
+Then add the server to the AI client. For Claude Code:
 
 ```bash
 claude mcp add polykybd -- polyctl mcp
@@ -17,7 +18,26 @@ claude mcp add polykybd -- polyctl mcp
 Any client that starts a local MCP server over stdio takes the same command
 (`polyctl mcp`, or `python -m polyhost.mcp` where `polyctl` is not on the `PATH`).
 The server starts and lists its tools while the host is not running; each tool then
-answers "PolyKybdHost is not running".
+answers "PolyKybdHost is not running". While the setting is off, each tool answers
+that AI assistants are turned off, and names the setting.
+
+## The `mcp_enabled` setting
+
+- **The MCP server names its connection.** Right after the `hello` it sends
+  `client.identify {"client": "mcp"}`. From then on `ControlServer.dispatch()`
+  refuses every request on that connection with `ERR_MCP_DISABLED` while
+  `mcp_enabled` is off. The setting is read on every request, so a change applies
+  at once, also to a server that is already running.
+- **The host checks the allow-list a second time.** On an MCP connection it refuses
+  a method that `tools.ALLOWED_METHODS` does not list, and `settings.get` for any
+  other key than `brightness_set_daylight_dependent`, even when the MCP server
+  itself did not check.
+- **It gates an honest client only.** A connection that does not identify itself
+  (`polyctl`, the tray app) is not gated, and a process that can read the authkey
+  can open such a connection. The setting stops an assistant that a user added to a
+  client; it is not a security boundary against code that runs as the user.
+- **A host older than the method** answers "unknown method", and the MCP server
+  goes on without the gate: that host has no setting to apply.
 
 ## Goal
 
@@ -281,18 +301,16 @@ time. It needs its own plan, with a measurement on hardware.
 Decided on 2026-11-27 by the maintainer: the server is a stdlib implementation
 (`polyhost/mcp/server.py`: `initialize`, `ping`, `tools/list`, `tools/call`, protocol
 versions 2024-11-05 to 2025-11-25), not the `mcp` SDK, which would add pydantic,
-anyio, httpx and starlette to every install. `set_key` is in version 1.
+anyio, httpx and starlette to every install. `set_key` is in version 1. A host
+setting turns the server off, and it is off by default (`mcp_enabled`, see above).
 
-1. **A host setting to turn the server off** (`mcp_enabled`). The client config
-   starts the server, so a setting only matters if the control server can tell an
-   MCP client from `polyctl`, for example by a field in `hello`.
-2. **Which clients to document**, and whether a `polyctl mcp install <client>`
+1. **Which clients to document**, and whether a `polyctl mcp install <client>`
    command writes their config files, as `polyctl agents hooks install` does for
    the agent hooks.
-3. **The name of a user overlay that equals a shipped one.** The resolver order
+2. **The name of a user overlay that equals a shipped one.** The resolver order
    above uses the user's file; a warning in the log may be enough.
-4. **The names for the split42.** Its boards give the same scheme; it needs its
+3. **The names for the split42.** Its boards give the same scheme; it needs its
    own KLE file and its own frozen table before the key tools support it.
-5. **The legend a key shows in the current language.** The host can read it only
+4. **The legend a key shows in the current language.** The host can read it only
    through a new HID query (version-gated, a firmware change). Without it the
    assistant works with keycodes and asks the user when the language matters.

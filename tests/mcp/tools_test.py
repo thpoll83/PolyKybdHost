@@ -59,6 +59,8 @@ class FakeClient:
         self.closed = False
 
     def call(self, method, params=None):
+        if method == p.M_CLIENT_IDENTIFY and method not in self.replies:
+            return {"client": "mcp", "allowed": True}
         self.calls.append((method, params))
         if self.fail:
             exc, self.fail = self.fail, None
@@ -116,6 +118,18 @@ class AllowListTest(unittest.TestCase):
 
 
 class HostLinkTest(unittest.TestCase):
+
+    def test_the_connection_names_itself_first(self):
+        client = FakeClient({p.M_CLIENT_IDENTIFY: {"client": "mcp", "allowed": True},
+                             p.M_LANG_LIST: []})
+        tools.HostLink(connect=lambda: client).call(p.M_LANG_LIST)
+        self.assertEqual([m for m, _ in client.calls], [p.M_CLIENT_IDENTIFY, p.M_LANG_LIST])
+
+    def test_a_host_without_client_identify_still_works(self):
+        def identify(params):
+            raise polyctl.RpcError(p.ERR_METHOD_NOT_FOUND, "unknown method")
+        client = FakeClient({p.M_CLIENT_IDENTIFY: identify, p.M_LANG_LIST: ["enUS"]})
+        self.assertEqual(tools.HostLink(connect=lambda: client).call(p.M_LANG_LIST), ["enUS"])
 
     def test_no_host_running_is_a_tool_error_not_a_crash(self):
         def refuse():
@@ -186,8 +200,9 @@ class MockKeyboardTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         real_get = PolySettings.get
-        values = {"dev_mock_primary": True, "dev_mock_protocol": 0, "dev_force_hid_link": False,
-                  tools.DAYLIGHT_SETTING: False}
+        cls.values = values = {"dev_mock_primary": True, "dev_mock_protocol": 0,
+                               "dev_force_hid_link": False, tools.DAYLIGHT_SETTING: False,
+                               p.MCP_SETTING: True}
         cls._patches = [
             mock.patch.object(PolySettings, "get",
                               lambda s, name: values[name] if name in values else real_get(s, name)),
@@ -253,6 +268,43 @@ class MockKeyboardTest(unittest.TestCase):
         self.assertEqual(self.run_tool("get_keymap", layer=1)["keys"]["R:8.4"], done["keycode"])
         self.run_tool("set_key", layer=1, key="R:8.4", keycode=done["previous"])
         self.assertEqual(self.run_tool("get_keymap", layer=1)["keys"]["R:8.4"], before)
+
+    def test_the_setting_off_refuses_every_tool_and_on_allows_again(self):
+        self.values[p.MCP_SETTING] = False
+        try:
+            for name in ("get_status", "list_languages", "set_overlays"):
+                result, error = tools.call_tool(self.link, name, {"enabled": True}
+                                                if name == "set_overlays" else {})
+                self.assertIsNone(result, name)
+                self.assertIn("turned off", error)
+        finally:
+            self.values[p.MCP_SETTING] = True
+        self.run_tool("get_status")  # the same connection, no restart
+
+    def test_the_host_refuses_an_mcp_connection_a_method_off_the_list(self):
+        # A changed or older MCP server that skips its own check meets the host's.
+        client = polyctl.connect(self.address, b"mcp-test")
+        self.addCleanup(client.close)
+        self.assertEqual(client.call(p.M_CLIENT_IDENTIFY, {"client": "mcp"}),
+                         {"client": "mcp", "allowed": True})
+        for method, params in ((p.M_RESET_DYNAMIC_KEYMAP, {}), (p.M_SETTINGS_LIST, {}),
+                               (p.M_SETTINGS_GET, {"key": "telemetry_enabled"})):
+            with self.assertRaises(polyctl.RpcError, msg=method) as ctx:
+                client.call(method, params)
+            self.assertEqual(ctx.exception.code, p.ERR_METHOD_NOT_FOUND)
+        self.assertIsInstance(client.call(p.M_STATUS_GET), dict)
+
+    def test_a_connection_that_does_not_identify_is_not_gated(self):
+        # polyctl and the tray app: the setting does not touch them.
+        self.values[p.MCP_SETTING] = False
+        try:
+            client = polyctl.connect(self.address, b"mcp-test")
+            self.addCleanup(client.close)
+            self.assertIsInstance(client.call(p.M_SETTINGS_LIST), dict)
+            with self.assertRaises(polyctl.RpcError):
+                client.call(p.M_CLIENT_IDENTIFY, {"client": "other"})
+        finally:
+            self.values[p.MCP_SETTING] = True
 
     def test_bad_arguments_are_tool_errors(self):
         for name, arguments in (

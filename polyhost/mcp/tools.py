@@ -7,6 +7,9 @@ does, so it can do only what polyctl can do for this user, and less:
 * `TOOL_METHODS` is the allow-list. `HostLink.call()` refuses every method that is
   not on it before anything is sent. tests/mcp/tools_test.py freezes it.
 * `settings.get` is allowed for the keys in `READABLE_SETTINGS` only.
+* The connection names itself with `client.identify`, and the host then refuses
+  it while its `mcp_enabled` setting is off, and checks the same allow-list again
+  (ControlServer._mcp_refusal).
 * Every result is built field by field from `RESULT_FIELDS`, never by passing a
   host reply through, so a field added to `status.get` later is not returned.
 """
@@ -90,12 +93,23 @@ class HostLink:
         if self._client is None:
             from polyhost.cli.polyctl import RpcError
             try:
-                self._client = self._connect()
+                client = self._connect()
             except RpcError as exc:
                 # A host of another control-protocol version: say so, not "not running".
                 raise ToolError(exc.message) from None
             except (EOFError, OSError):
                 raise HostUnavailable() from None
+            try:
+                # Name this connection, so the host applies its mcp_enabled setting.
+                client.call(p.M_CLIENT_IDENTIFY, {"client": "mcp"})
+            except RpcError as exc:
+                if exc.code != p.ERR_METHOD_NOT_FOUND:  # a host older than the setting
+                    client.close()
+                    raise ToolError(exc.message) from None
+            except (EOFError, OSError):
+                client.close()
+                raise HostUnavailable() from None
+            self._client = client
         return self._client
 
     def close(self):

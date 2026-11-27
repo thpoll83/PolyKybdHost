@@ -32,6 +32,10 @@ from polyhost.server import protocol as p
 from polyhost.server.mpc_listener import MpcListenerServer, RpcError
 
 
+MCP_DISABLED_MESSAGE = ("AI assistants are turned off in PolyKybdHost. Turn on "
+                        "Settings > Connections > Allow AI assistants (MCP), or run "
+                        "`polyctl settings set mcp_enabled true`.")
+
 _RGB_KEYS = ("enabled", "effect", "brightness", "speed", "hue", "sat")
 
 
@@ -101,6 +105,9 @@ class ControlServer(MpcListenerServer):
         # the on_connection_added / _dropped hooks.
         self._conn_locks = {}
         self._subscribed = set()
+        # Connections that sent client.identify {"client": "mcp"}: gated by the
+        # mcp_enabled setting and the MCP allow-list on every later request.
+        self._mcp_conns = set()
 
         # Core events are handed off to this queue and sent by a dedicated
         # thread; the emitting core/worker thread must never do socket I/O (a
@@ -153,6 +160,7 @@ class ControlServer(MpcListenerServer):
         with self._lock:
             self._conn_locks.pop(conn, None)
             self._subscribed.discard(conn)
+            self._mcp_conns.discard(conn)
 
     def send(self, conn, obj):
         """Serialize writes per connection so the handler thread and the event
@@ -186,7 +194,45 @@ class ControlServer(MpcListenerServer):
             # A frame's params can be any JSON value. A list or a number reached
             # params.get() and was answered as an internal error with a traceback.
             return p.make_error(req_id, p.ERR_INVALID_PARAMS, "params must be an object")
+        with self._lock:
+            is_mcp = conn in self._mcp_conns
+        if is_mcp and method != p.M_CLIENT_IDENTIFY:
+            refused = self._mcp_refusal(method, params)
+            if refused is not None:
+                return p.make_error(req_id, *refused)
         return p.make_response(req_id, handler(conn, params))
+
+    # ------------------------------------------------------------------
+    # MCP clients (polyhost/mcp, docs/mcp-server-plan.md)
+    # ------------------------------------------------------------------
+
+    def _mcp_allowed(self):
+        """The mcp_enabled setting, read on every request so a change applies at once."""
+        try:
+            return self.core.settings_get(p.MCP_SETTING) is True
+        except Exception:  # noqa: BLE001 -- an unreadable setting refuses
+            return False
+
+    def _mcp_refusal(self, method, params):
+        """(code, message) when an MCP connection may not call `method`, else None.
+
+        The MCP server checks the same allow-list before it sends; this second
+        check keeps a changed or older MCP server inside it too."""
+        if not self._mcp_allowed():
+            return p.ERR_MCP_DISABLED, MCP_DISABLED_MESSAGE
+        from polyhost.mcp.tools import ALLOWED_METHODS, READABLE_SETTINGS
+        if method not in ALLOWED_METHODS or (
+                method == p.M_SETTINGS_GET and params.get("key") not in READABLE_SETTINGS):
+            return p.ERR_METHOD_NOT_FOUND, f"'{method}' is not available to AI assistants"
+        return None
+
+    def _identify(self, conn, params):
+        client = params.get("client")
+        if client != "mcp":
+            raise RpcError(p.ERR_INVALID_PARAMS, "'client' must be \"mcp\"")
+        with self._lock:
+            self._mcp_conns.add(conn)
+        return {"client": client, "allowed": self._mcp_allowed()}
 
     def after_dispatch(self, conn, method):
         # host.shutdown defers teardown to here so the reply is on the wire
@@ -236,6 +282,7 @@ class ControlServer(MpcListenerServer):
     def _build_registry(self):
         c = self.core
         return {
+            p.M_CLIENT_IDENTIFY: self._identify,
             p.M_STATUS_GET: lambda conn, params: c.get_status(),
             p.M_LANG_LIST: lambda conn, params: c.list_languages(),
             p.M_LANG_SET: lambda conn, params: _unwrap(c.set_language(params["lang"])),
