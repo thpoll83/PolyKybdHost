@@ -1,7 +1,8 @@
 """Settings > Keyboard: the settings stored on the keyboard itself.
 
-Idle display, idle timeout, keycap script and its placement, keycap size and the
-tap-hold terms are not in settings.yaml. The keyboard stores them, so the
+Idle display, idle timeout, keycap script and its placement, keycap size, the
+tap-hold terms and the key lighting (RGB matrix, firmware v39+) are not in
+settings.yaml. The keyboard stores them, so the
 Settings dialog reads them from the keyboard when it opens (off the GUI thread,
 ``PolyHost.open_settings``) and sends only what changed when the user clicks OK.
 
@@ -87,14 +88,31 @@ TAPPING_TERM = "kbd_tapping_term"
 FLOW_TAP_TERM = "kbd_flow_tap_term"
 AUTO_SHIFT = "kbd_auto_shift"
 AUTO_SHIFT_MS = "kbd_auto_shift_ms"
+# Key lighting (the RGB matrix, firmware v39+). The keyboard keeps a change in RAM:
+# it lasts until the keyboard restarts. RGB_INDICATE is a button, not a value.
+RGB_ENABLED = "kbd_rgb_enabled"
+RGB_BRIGHTNESS = "kbd_rgb_brightness"
+RGB_EFFECT = "kbd_rgb_effect"
+RGB_SPEED = "kbd_rgb_speed"
+RGB_HUE = "kbd_rgb_hue"
+RGB_SAT = "kbd_rgb_sat"
+RGB_INDICATE = "kbd_rgb_indicate"
+RGB_KEYS = (RGB_ENABLED, RGB_BRIGHTNESS, RGB_EFFECT, RGB_SPEED, RGB_HUE, RGB_SAT, RGB_INDICATE)
+# The byte rows and their range (VIA's scale; effect 0 is "off", which the switch sets).
+RGB_RANGES = {RGB_BRIGHTNESS: (0, 255), RGB_EFFECT: (1, 255), RGB_SPEED: (0, 255),
+              RGB_HUE: (0, 255), RGB_SAT: (0, 255)}
+# pseudo key -> PolyKybd.set_rgb_matrix keyword
+_RGB_ARGS = {RGB_ENABLED: "enabled", RGB_BRIGHTNESS: "brightness", RGB_EFFECT: "effect",
+             RGB_SPEED: "speed", RGB_HUE: "hue", RGB_SAT: "sat"}
+
 KEYS = (BRIGHTNESS, IDLE_STYLE, IDLE_TIMEOUT, GLYPH_SCRIPT, GLYPH_PLACEMENT, GLYPH_SIZE,
-        TAPPING_TERM, FLOW_TAP_TERM, AUTO_SHIFT, AUTO_SHIFT_MS)
+        TAPPING_TERM, FLOW_TAP_TERM, AUTO_SHIFT, AUTO_SHIFT_MS) + RGB_KEYS
 TAP_KEYS = (TAPPING_TERM, FLOW_TAP_TERM, AUTO_SHIFT, AUTO_SHIFT_MS)
 
 # The core getter for each read. The dialog asks all of them in one background
 # call, see read_all().
 READS = ("idle_style", "idle_timeout", "glyph_script", "glyph_placement", "glyph_size",
-         "tap_terms")
+         "tap_terms", "rgb_matrix")
 
 
 def read_all(core):
@@ -142,6 +160,19 @@ def values_from_reads(reads):
     ok, value = _ok_value(reads.get("idle_timeout"))
     # (preset index, seconds); the preset is what the host sends back.
     put(IDLE_TIMEOUT, ok and bool(value), int(value[0]) if ok and value else value)
+    ok, rgb = _ok_value(reads.get("rgb_matrix"))
+    if ok and isinstance(rgb, dict):
+        values[RGB_ENABLED] = bool(rgb.get("enabled"))
+        # A get reads effect 0 while the matrix is off; the row then shows 1 and
+        # stays disabled with the switch, so it is not sent unless changed.
+        values[RGB_EFFECT] = max(1, int(rgb.get("effect", 1)))
+        for key, name in ((RGB_BRIGHTNESS, "brightness"), (RGB_SPEED, "speed"),
+                          (RGB_HUE, "hue"), (RGB_SAT, "sat")):
+            values[key] = int(rgb.get(name, 0))
+        values[RGB_INDICATE] = None
+    else:
+        for key in RGB_KEYS:
+            failed[key] = str(rgb)
     ok, terms = _ok_value(reads.get("tap_terms"))
     if not ok or not isinstance(terms, dict):
         for key in TAP_KEYS:
@@ -161,6 +192,24 @@ def snap_ms(value):
     nearest step, as the old Tap-Hold Timing dialog did."""
     step = TapTerms.STEP_MS
     return int(round(value / step)) * step
+
+
+def rgb_matrix_call(changes, read):
+    """The set_rgb_matrix values for the changed key-lighting rows, or None when
+    none changed. ``read`` is what the dialog read: the firmware takes hue and
+    saturation together, so a change of one sends the other as read. An effect
+    change is dropped while the switch is off (the row is disabled then)."""
+    out = {_RGB_ARGS[k]: v for k, v in changes.items() if k in _RGB_ARGS}
+    if not out:
+        return None
+    if "hue" in out or "sat" in out:
+        out.setdefault("hue", read.get(RGB_HUE, 0))
+        out.setdefault("sat", read.get(RGB_SAT, 0))
+    # The switch's final state: changed, or as read. A matrix that ends off takes no
+    # effect (on firmware a non-zero effect switches the matrix on).
+    if not changes.get(RGB_ENABLED, read.get(RGB_ENABLED, True)):
+        out.pop("effect", None)
+    return out or None
 
 
 def tap_terms_call(changes):

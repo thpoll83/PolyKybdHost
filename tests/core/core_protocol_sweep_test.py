@@ -29,6 +29,8 @@ CORE_CALLS = {
     "activate_bootloader": (), "set_handedness": (True, True),
     "clear_crash_record": (), "get_crash_record": (0,),
     "get_hw_ids": (),
+    "get_rgb_matrix": (), "set_rgb_matrix": ({"enabled": False, "brightness": 50},),
+    "get_uptime_ms": (), "indicate_device": (), "get_switch_matrix": (),
     "fontpack_bundle_status": (), "emoji_search_status": (), "emoji_search_choose": ("en",),
     "get_fw_version": (),
     "apply_staged_firmware": (),

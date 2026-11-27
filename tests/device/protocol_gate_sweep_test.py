@@ -67,6 +67,13 @@ def _each_encoding(kb):
     return kb.send_smallest_overlay(KeyCode.KC_C.value, Modifier.NO_MOD, ov)
 
 
+def _rgb_forms(kb):
+    # keyword-only: every wire form (on, off, effect, brightness, speed, colour)
+    kb.set_rgb_matrix(enabled=True)
+    kb.set_rgb_matrix(enabled=False)
+    return kb.set_rgb_matrix(effect=3, brightness=200, speed=50, hue=10, sat=255)
+
+
 # method -> list of argument tuples, or a callable(kb) for a whole scenario.
 CALLS = {
     "connect": [()],
@@ -120,6 +127,9 @@ CALLS = {
     "get_glyph_placement": [()],
     "get_crash_record": [(0,), (1,)], "clear_crash_record": [()],
     "get_hw_ids": [()],
+    "get_rgb_matrix": [()],
+    "set_rgb_matrix": _rgb_forms,
+    "get_uptime_ms": [()], "indicate_device": [(), (5,)], "get_switch_matrix": [()],
     "get_layer_names": [()],
     "get_macro_info": [()], "read_macro_buffer": [(64,)],
     "write_macro_buffer": [(b"hi\x00",)], "get_macro_look": [(0,)],

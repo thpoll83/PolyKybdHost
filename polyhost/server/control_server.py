@@ -32,6 +32,20 @@ from polyhost.server import protocol as p
 from polyhost.server.mpc_listener import MpcListenerServer, RpcError
 
 
+_RGB_KEYS = ("enabled", "effect", "brightness", "speed", "hue", "sat")
+
+
+def _rgb_params(params):
+    """The RGB matrix keys of an M_RGB_MATRIX_SET request; anything else is refused."""
+    extra = set(params) - set(_RGB_KEYS)
+    if extra:
+        raise RpcError(p.ERR_INVALID_PARAMS, f"unknown rgb keys: {sorted(extra)}")
+    # PolyKybd.set_rgb_matrix tests `enabled is False`: a 0 would leave the lights on.
+    if params.get("enabled") is not None and not isinstance(params["enabled"], bool):
+        raise RpcError(p.ERR_INVALID_PARAMS, "enabled must be true or false")
+    return {k: params[k] for k in _RGB_KEYS if k in params}
+
+
 def _unwrap(result):
     """Normalize a PolyCore ``(ok, payload)`` return to a JSON-RPC result.
 
@@ -277,6 +291,11 @@ class ControlServer(MpcListenerServer):
             p.M_CRASH_GET: lambda conn, params: _unwrap(c.get_crash_record(params.get("which", 0))),
             p.M_CRASH_CLEAR: lambda conn, params: _unwrap(c.clear_crash_record()),
             p.M_HW_IDS_GET: lambda conn, params: _unwrap(c.get_hw_ids()),
+            p.M_RGB_MATRIX_GET: lambda conn, params: _unwrap(c.get_rgb_matrix()),
+            p.M_RGB_MATRIX_SET: lambda conn, params: _unwrap(c.set_rgb_matrix(_rgb_params(params))),
+            p.M_UPTIME_GET: lambda conn, params: _unwrap(c.get_uptime_ms()),
+            p.M_INDICATE: lambda conn, params: _unwrap(c.indicate_device()),
+            p.M_SWITCH_MATRIX_GET: lambda conn, params: _unwrap(c.get_switch_matrix()),
             p.M_REBOOT: lambda conn, params: _unwrap(c.reboot_keyboard()),
             p.M_BOOT_LOOP_START: lambda conn, params: _unwrap(
                 c.start_boot_loop(params.get("rounds", c.BOOT_LOOP_DEFAULT_ROUNDS))),

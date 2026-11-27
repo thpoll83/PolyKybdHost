@@ -187,6 +187,22 @@ HW_ID_MIN_PROTOCOL = 37
 # unicode mode with F20 held instead of Option, so the host's event tap types the
 # character (polyhost/input/mac_compose.py). Older firmware NACKs value 6.
 MAC_COMPOSE_MIN_PROTOCOL = 38
+# Minimum firmware PROTOCOL_VERSION for the VIA values ported into the firmware's
+# legacy raw HID handler: the RGB matrix channel on ids 0x07 / 0x08 (on/off, effect,
+# brightness, speed, colour, RAM only), uptime (0x02 value 0x01), device indication
+# (0x03 value 0x05) and switch matrix state (0x02 value 0x03, only while the
+# keyboard's debug mode is on). Older firmware sends no reply to these ids.
+VIA_VALUES_MIN_PROTOCOL = 39
+# VIA value ids (qmk quantum/via.h).
+VIA_ID_UNHANDLED = 0xFF
+VIA_UPTIME = 0x01
+VIA_SWITCH_MATRIX_STATE = 0x03
+VIA_DEVICE_INDICATION = 0x05
+VIA_RGB_MATRIX_CHANNEL = 3
+VIA_RGB_MATRIX_BRIGHTNESS = 1
+VIA_RGB_MATRIX_EFFECT = 2
+VIA_RGB_MATRIX_SPEED = 3
+VIA_RGB_MATRIX_COLOR = 4
 HW_ID_LEN = 8
 AGENT_KEY_COUNT = 10
 # Card slots: the 10 number keys, then '-' (dictation) and '+' (next waiting agent).
@@ -245,6 +261,7 @@ FEATURE_MIN_PROTOCOL = {
     "host_tutorial": HOST_TUTORIAL_MIN_PROTOCOL,
     "hw_id": HW_ID_MIN_PROTOCOL,
     "mac_compose": MAC_COMPOSE_MIN_PROTOCOL,
+    "via_values": VIA_VALUES_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -1509,6 +1526,144 @@ class PolyKybd:
         ids = decode_hw_ids(bytes(reply))
         self.hw_ids = ids
         return True, ids
+
+    # -- VIA values (legacy raw HID ids, v39+) --------------------------------
+
+    def _via_too_old(self, what: str) -> tuple[bool, str] | None:
+        if self.supports("via_values"):
+            return None
+        return False, (f"Firmware protocol too old for {what} "
+                       f"(need v{VIA_VALUES_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+
+    def _via_request(self, data: list[int], prefix_len: int,
+                     timeout: int = 200) -> tuple[bool, bytearray | None]:
+        """Send a VIA-format report; the reply is the same report with the value
+        filled in. A refusal comes back with data[0] = 0xFF (id_unhandled), so the
+        prefix check rejects it and this returns (False, None)."""
+        report = bytearray(data)
+        try:
+            ok, reply = self.hid.send_and_read_validate(
+                report, timeout, report[:prefix_len])
+        except Exception as e:  # noqa: BLE001 — surfaced as a plain failure
+            self.log.warning("VIA request %s failed: %s", report[:3].hex(), e)
+            return False, None
+        if not ok or len(reply) < len(report):
+            return False, None
+        return True, reply
+
+    def get_rgb_matrix(self) -> tuple[bool, Any]:
+        """Read the RGB matrix state (VIA channel 3, v39+).
+
+        Returns (True, {"enabled", "effect", "brightness", "speed", "hue", "sat"}).
+        "effect" is 0 when the matrix is off; brightness is 0..255 on VIA's scale."""
+        if (refusal := self._via_too_old("the RGB matrix commands")):
+            return refusal
+        out: dict[str, Any] = {}
+        for value_id in (VIA_RGB_MATRIX_EFFECT, VIA_RGB_MATRIX_BRIGHTNESS,
+                         VIA_RGB_MATRIX_SPEED, VIA_RGB_MATRIX_COLOR):
+            ok, reply = self._via_request(
+                [HidId.ID_CUSTOM_GET_VALUE.value, VIA_RGB_MATRIX_CHANNEL, value_id, 0, 0], 3)
+            if not ok:
+                return False, f"RGB matrix read (value {value_id}) was refused by the keyboard."
+            if value_id == VIA_RGB_MATRIX_EFFECT:
+                out["effect"] = reply[3]
+                out["enabled"] = reply[3] != 0
+            elif value_id == VIA_RGB_MATRIX_BRIGHTNESS:
+                out["brightness"] = reply[3]
+            elif value_id == VIA_RGB_MATRIX_SPEED:
+                out["speed"] = reply[3]
+            else:
+                out["hue"], out["sat"] = reply[3], reply[4]
+        return True, out
+
+    def set_rgb_matrix(self, *, enabled: bool | None = None, effect: int | None = None,
+                       brightness: int | None = None, speed: int | None = None,
+                       hue: int | None = None, sat: int | None = None) -> tuple[bool, str]:
+        """Change the RGB matrix in RAM (VIA channel 3, v39+); a reboot restores the
+        stored settings. ``enabled=False`` switches the matrix off (effect 0).
+        ``enabled=True`` without ``effect`` switches it on with the effect it had: a
+        get reads 0 while the matrix is off, so this sends one device indication
+        (0x03 value 0x05), which toggles the matrix and keeps its effect. ``hue`` and
+        ``sat`` go together."""
+        if (refusal := self._via_too_old("the RGB matrix commands")):
+            return refusal
+        for name, v in (("effect", effect), ("brightness", brightness), ("speed", speed),
+                        ("hue", hue), ("sat", sat)):
+            if v is not None and not 0 <= v <= 255:
+                return False, f"{name} must be 0..255, got {v}"
+        if (hue is None) != (sat is None):
+            return False, "hue and sat must be set together"
+        if enabled is False and effect:
+            return False, "enabled=False contradicts a non-zero effect"
+        if enabled is True and effect == 0:
+            return False, "enabled=True contradicts effect 0 (off)"
+        turn_on = False
+        if enabled is True and effect is None:
+            ok, reply = self._via_request(
+                [HidId.ID_CUSTOM_GET_VALUE.value, VIA_RGB_MATRIX_CHANNEL, VIA_RGB_MATRIX_EFFECT, 0], 3)
+            if not ok:
+                return False, "RGB matrix read was refused by the keyboard."
+            turn_on = reply[3] == 0
+        elif enabled is False:
+            effect = 0
+        if turn_on:
+            ok, msg = self.indicate_device(0)
+            if not ok:
+                return False, msg
+        sets = []
+        if effect is not None:
+            sets.append([VIA_RGB_MATRIX_EFFECT, effect])
+        if brightness is not None:
+            sets.append([VIA_RGB_MATRIX_BRIGHTNESS, brightness])
+        if speed is not None:
+            sets.append([VIA_RGB_MATRIX_SPEED, speed])
+        if hue is not None:
+            sets.append([VIA_RGB_MATRIX_COLOR, hue, sat])
+        if not sets and enabled is None:
+            return False, "nothing to set"
+        for value in sets:
+            ok, _ = self._via_request(
+                [HidId.ID_CUSTOM_SET_VALUE.value, VIA_RGB_MATRIX_CHANNEL, *value], 3)
+            if not ok:
+                return False, f"RGB matrix set (value {value[0]}) was refused by the keyboard."
+        return True, "ok"
+
+    def get_uptime_ms(self) -> tuple[bool, Any]:
+        """Milliseconds since boot of the half the host talks to (v39+). The
+        firmware's timer_read32() wraps after about 49.7 days."""
+        if (refusal := self._via_too_old("the uptime read")):
+            return refusal
+        ok, reply = self._via_request(
+            [HidId.ID_GET_KEYBOARD_VALUE.value, VIA_UPTIME, 0, 0, 0, 0], 2)
+        if not ok:
+            return False, "Uptime read was refused by the keyboard."
+        return True, int.from_bytes(reply[2:6], "big")
+
+    def indicate_device(self, index: int = 0) -> tuple[bool, str]:
+        """Toggle the RGB matrix once, RAM only (VIA's device indication, v39+).
+        VIA sends it six times, 200 ms apart (index 0..5), so the matrix ends as it
+        started. The caller does the timing."""
+        if (refusal := self._via_too_old("device indication")):
+            return refusal
+        if not 0 <= index <= 255:
+            return False, f"index must be 0..255, got {index}"
+        ok, _ = self._via_request(
+            [HidId.ID_SET_KEYBOARD_VALUE.value, VIA_DEVICE_INDICATION, index], 2)
+        return (True, "ok") if ok else (False, "Device indication was refused by the keyboard.")
+
+    def get_switch_matrix(self) -> tuple[bool, Any]:
+        """Read which keys are down: one int per matrix row, both halves, bit n =
+        column n (v39+). The firmware answers only while its debug mode is on
+        (DB_TOGG, or a POLYKYBD_DEBUG build), because the read works as a keylogger."""
+        if (refusal := self._via_too_old("the switch matrix read")):
+            return refusal
+        ok, reply = self._via_request(
+            [HidId.ID_GET_KEYBOARD_VALUE.value, VIA_SWITCH_MATRIX_STATE, 0], 2)
+        if not ok:
+            return False, ("Switch matrix read was refused by the keyboard "
+                           "(it needs the keyboard's debug mode on).")
+        # Matrix columns fit one byte per row on both variants (8 and 6 columns).
+        return True, list(reply[3:3 + min(28, self.device_settings.MATRIX_ROWS)])
 
     def clear_crash_record(self) -> tuple[bool, Any]:
         """Erase the keyboard's crash archive (cmd 39 sub-op 2)."""

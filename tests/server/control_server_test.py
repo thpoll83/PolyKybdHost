@@ -128,6 +128,10 @@ class FakeCore:
         self.calls.append(("fontpack_bundle_status",))
         return (True, {"shipped": True, "bundles": []})
 
+    def set_rgb_matrix(self, values):
+        self.calls.append(("set_rgb_matrix", values))
+        return True, "ok"
+
     def reset_dynamic_keymap(self):
         return (True, "keymap reset")
 
@@ -284,6 +288,27 @@ class ControlServerTest(unittest.TestCase):
         self.assertIn("error", resp)
         self.assertEqual(resp["error"]["code"], p.ERR_DEVICE)
         self.assertEqual(resp["error"]["message"], "device busy")
+
+    def test_rgb_set_passes_only_the_rgb_keys(self):
+        conn = self._connect()
+        self._hello_then(conn)
+        resp = self._call(conn, 11, p.M_RGB_MATRIX_SET, {"enabled": False, "brightness": 9})
+        self.assertEqual(resp["result"], "ok")
+        self.assertIn(("set_rgb_matrix", {"enabled": False, "brightness": 9}), self.core.calls)
+
+    def test_rgb_set_refuses_an_unknown_key(self):
+        conn = self._connect()
+        self._hello_then(conn)
+        resp = self._call(conn, 12, p.M_RGB_MATRIX_SET, {"colour": 3})
+        self.assertEqual(resp["error"]["code"], p.ERR_INVALID_PARAMS)
+        self.assertFalse([c for c in self.core.calls if c[0] == "set_rgb_matrix"])
+
+    def test_rgb_set_refuses_a_non_bool_enabled(self):
+        conn = self._connect()
+        self._hello_then(conn)
+        resp = self._call(conn, 13, p.M_RGB_MATRIX_SET, {"enabled": 0, "brightness": 50})
+        self.assertEqual(resp["error"]["code"], p.ERR_INVALID_PARAMS)
+        self.assertFalse([c for c in self.core.calls if c[0] == "set_rgb_matrix"])
 
     def test_unknown_method(self):
         conn = self._connect()

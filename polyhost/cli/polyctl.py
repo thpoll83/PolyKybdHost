@@ -1760,6 +1760,55 @@ def _cmd_hwid(client, args):
     return 0
 
 
+def _cmd_rgb(client, args):
+    """Read or change the RGB matrix (firmware v39+). Changes are RAM only: a
+    reboot restores the stored settings."""
+    action = args.rgb_action
+    if action == "indicate":
+        client.call(protocol.M_INDICATE, {})
+        print("indicated")
+        return 0
+    if action in ("on", "off"):
+        client.call(protocol.M_RGB_MATRIX_SET, {"enabled": action == "on"})
+    elif action == "set":
+        values = {k: getattr(args, k) for k in ("effect", "brightness", "speed", "hue", "sat")
+                  if getattr(args, k) is not None}
+        if not values:
+            print("rgb set: give at least one of --effect --brightness --speed --hue/--sat",
+                  file=sys.stderr)
+            return 2
+        if ("hue" in values) != ("sat" in values):
+            # The firmware takes hue and saturation together: keep the other as it is.
+            now = client.call(protocol.M_RGB_MATRIX_GET, {}) or {}
+            values.setdefault("hue", now.get("hue", 0))
+            values.setdefault("sat", now.get("sat", 0))
+        client.call(protocol.M_RGB_MATRIX_SET, values)
+    state = client.call(protocol.M_RGB_MATRIX_GET, {}) or {}
+    print(f"rgb:         {'on' if state.get('enabled') else 'off'}")
+    for key in ("effect", "brightness", "speed", "hue", "sat"):
+        print(f"{key + ':':<13}{state.get(key)}")
+    return 0
+
+
+def _cmd_uptime(client, args):
+    """Print the keyboard's time since boot (firmware v39+)."""
+    ms = int(client.call(protocol.M_UPTIME_GET, {}))
+    s, rest = divmod(ms // 1000, 60)
+    h, m = divmod(s, 60)
+    print(f"uptime: {h}:{m:02d}:{rest:02d} ({ms} ms)")
+    return 0
+
+
+def _cmd_matrix(client, args):
+    """Print which keys are down, one row per line (firmware v39+, only while the
+    keyboard's debug mode is on: DB_TOGG or a POLYKYBD_DEBUG build)."""
+    rows = client.call(protocol.M_SWITCH_MATRIX_GET, {}) or []
+    for i, row in enumerate(rows):
+        # Column 0 is the lowest bit; print it first so a column reads left to right.
+        print(f"row {i:2d}: " + "".join("x" if row >> c & 1 else "." for c in range(8)))
+    return 0
+
+
 def _fmt_time(ts):
     if not ts:
         return "never"
@@ -2225,6 +2274,23 @@ def build_parser():
         "hwid", help="show the flash unique IDs of both halves and their telemetry hashes "
                      "(firmware v37+)")
     p_hwid.set_defaults(func=_cmd_hwid)
+
+    p_rgb = sub.add_parser(
+        "rgb", help="show or change the RGB matrix, RAM only (firmware v39+)")
+    p_rgb.add_argument("rgb_action", nargs="?", choices=["status", "on", "off", "set", "indicate"],
+                       default="status",
+                       help="status (default) | on | off | set (with the options below) | "
+                            "indicate (blink to find the keyboard)")
+    for opt in ("effect", "brightness", "speed", "hue", "sat"):
+        p_rgb.add_argument(f"--{opt}", type=int, default=None, metavar="0..255")
+    p_rgb.set_defaults(func=_cmd_rgb)
+
+    p_up = sub.add_parser("uptime", help="show the keyboard's time since boot (firmware v39+)")
+    p_up.set_defaults(func=_cmd_uptime)
+
+    p_mx = sub.add_parser(
+        "matrix", help="show which keys are down (firmware v39+, keyboard debug mode only)")
+    p_mx.set_defaults(func=_cmd_matrix)
 
     p_set = sub.add_parser("settings", help="get or set a settings key")
     set_sub = p_set.add_subparsers(dest="settings_action", required=True)

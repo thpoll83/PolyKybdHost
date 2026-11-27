@@ -459,6 +459,21 @@ class RemoteCore(Observable):
     def get_hw_ids(self):
         return self._device(p.M_HW_IDS_GET)
 
+    def get_rgb_matrix(self):
+        return self._device(p.M_RGB_MATRIX_GET)
+
+    def set_rgb_matrix(self, values):
+        return self._device(p.M_RGB_MATRIX_SET, dict(values))
+
+    def get_uptime_ms(self):
+        return self._device(p.M_UPTIME_GET)
+
+    def indicate_device(self):
+        return self._device(p.M_INDICATE)
+
+    def get_switch_matrix(self):
+        return self._device(p.M_SWITCH_MATRIX_GET)
+
     # -- overlays -----------------------------------------------------------
     def send_overlay_data(self, files):
         # The core takes one name or a list; list("sublime") would be its letters.

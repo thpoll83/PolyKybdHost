@@ -114,6 +114,12 @@ M_CRASH_GET = "crash.get"                # {"which": 0|1} -> (ok, record|None)
 M_CRASH_CLEAR = "crash.clear"            # {} -> (ok, payload)
 # Hardware IDs (cmd 50, protocol v37+): the flash unique IDs of both halves, raw.
 M_HW_IDS_GET = "device.hwids"            # {} -> (ok, {"own": hex|None, "other": hex|None})
+# VIA values (protocol v39+), on the firmware's legacy raw HID ids. RGB changes are RAM only.
+M_RGB_MATRIX_GET = "rgb.get"             # {} -> (ok, {enabled, effect, brightness, speed, hue, sat})
+M_RGB_MATRIX_SET = "rgb.set"             # {enabled?, effect?, brightness?, speed?, hue?, sat?} -> (ok, payload)
+M_UPTIME_GET = "device.uptime"           # {} -> (ok, ms)
+M_INDICATE = "device.indicate"           # {} -> (ok, payload)  blink the RGB matrix
+M_SWITCH_MATRIX_GET = "device.matrix"    # {} -> (ok, [row, ...])  only with the keyboard's debug on
 M_REBOOT = "device.reboot"               # {} -> "rebooting" (cmd 43, protocol v22+)
 # Boot-loop diagnostic: progress and the verdict arrive as boot_loop_* events.
 M_BOOT_LOOP_START = "bootloop.start"     # {"rounds": 1..50} -> {"rounds": n}
