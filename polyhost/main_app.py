@@ -374,7 +374,9 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
 
         def _register_autostart():
             try:
-                method = setup_autostart_for_app(__file__, sys.argv[1:])
+                from polyhost.services import start_mode
+                method = setup_autostart_for_app(
+                    __file__, start_mode.strip_options(sys.argv[1:]))
                 slog.info("Autostart registration: %s", method)
             except Exception:
                 slog.exception("Autostart registration failed")

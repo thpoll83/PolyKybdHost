@@ -7,6 +7,31 @@ import unittest.mock as mock
 from polyhost.services import start_mode as sm
 
 
+class StripOptionsTest(unittest.TestCase):
+    def test_no_forwarder_is_dropped_by_default(self):
+        self.assertEqual(sm.strip_options(["--dev", "--no-forwarder"]), ["--dev"])
+
+    def test_connect_is_kept_unless_asked(self):
+        argv = ["--connect", "/tmp/x.sock", "--dev"]
+        self.assertEqual(sm.strip_options(argv), argv)
+
+    def test_connect_with_its_endpoint_is_dropped(self):
+        self.assertEqual(sm.strip_options(["--connect", "/tmp/x.sock", "--dev"], connect=True),
+                         ["--dev"])
+
+    def test_connect_without_an_endpoint_keeps_the_next_option(self):
+        self.assertEqual(sm.strip_options(["--connect", "--dev"], connect=True), ["--dev"])
+
+    def test_connect_equals_form_is_dropped(self):
+        self.assertEqual(sm.strip_options(["--connect=/tmp/x.sock", "--dev"], connect=True),
+                         ["--dev"])
+
+    def test_the_input_is_not_changed(self):
+        argv = ["--no-forwarder", "--dev"]
+        sm.strip_options(argv)
+        self.assertEqual(argv, ["--no-forwarder", "--dev"])
+
+
 class PrecedenceTest(unittest.TestCase):
     def test_the_setting_alone_makes_a_plain_launch_a_forwarder(self):
         self.assertTrue(sm.forwarder_from_setting(setting=True))

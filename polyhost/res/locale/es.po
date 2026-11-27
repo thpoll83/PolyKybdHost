@@ -4273,7 +4273,7 @@ msgstr "En un equipo con el forwarder al que accede mediante NoMachine o Escrito
 
 #: polyhost/gui/settings_dialog.py:426
 msgid "Start this computer as a forwarder instead of the tray app for a keyboard: it reports its windows to the keyboard computer, found from the NoMachine or Remote Desktop connection. The tray's Switch to Forwarder and Switch to Keyboard Mode set it and restart. A start option such as --host or --headless wins over it. Applies after a restart."
-msgstr "Inicia este equipo como reenviador en lugar de como la aplicación de la bandeja del sistema para un teclado: informa de sus ventanas al equipo del teclado, que se encuentra a partir de la conexión de NoMachine o Escritorio remoto. Cambiar al reenviador y Cambiar al modo teclado, en el menú de la bandeja del sistema, la activan y reinician. Una opción de inicio como --host o --headless tiene prioridad. Se aplica tras un reinicio."
+msgstr "Inicia este equipo como reenviador en lugar de como la aplicación de la bandeja del sistema para un teclado: informa de sus ventanas al equipo del teclado, que se encuentra a partir de la conexión de NoMachine o Escritorio remoto. Cambiar al reenviador y Cambiar al modo teclado, en el menú de la bandeja del sistema, cambian este ajuste y reinician. Una opción de inicio como --host o --headless tiene prioridad. Se aplica tras un reinicio."
 
 #: polyhost/gui/settings_dialog.py:432
 msgid "The language of the words the keyboard's emoji search matches. The dictionary is sent to the keyboard when you click OK, and when it connects if Send font packs on connect is on. Own dictionary file, when set, is used instead."

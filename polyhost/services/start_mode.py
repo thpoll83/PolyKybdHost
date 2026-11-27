@@ -38,6 +38,29 @@ def forwarder_from_setting(*, host=None, host_file=None, detect_host=False,
     return bool(setting) and not explicit and not no_forwarder
 
 
+def strip_options(argv, *, connect=False, no_forwarder=True):
+    """A copy of `argv` without the options that must not outlive one run.
+
+    `--no-forwarder` ("ignore the setting for this run") must not reach a launcher or a
+    relaunch that is meant to follow the setting. `--connect [ENDPOINT]` makes a keyboard
+    client, which the switch to a forwarder replaces."""
+    out, skip_value = [], False
+    for arg in argv:
+        if skip_value:
+            skip_value = False
+            if not arg.startswith("-"):
+                continue            # the endpoint that followed --connect
+        if no_forwarder and arg == "--no-forwarder":
+            continue
+        if connect and arg == "--connect":
+            skip_value = True       # nargs="?": an endpoint may follow
+            continue
+        if connect and arg.startswith("--connect="):
+            continue
+        out.append(arg)
+    return out
+
+
 def set_start_as_forwarder(settings, enabled: bool, source: str) -> bool:
     """Write the setting through `settings` (a PolySettings). Returns whether it was
     saved. Switching on also leaves the one-shot "offer to pair" marker."""

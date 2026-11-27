@@ -59,6 +59,9 @@ class TestPolyHostModes(unittest.TestCase):
         scenarios = json.loads(_grab(proc.stdout, "SWITCH_SCENARIOS"))
         self.assertEqual(scenarios["yes"]["calls"], [[True, "Switch to Forwarder"]])
         self.assertEqual((scenarios["yes"]["restart"], scenarios["yes"]["quit"]), (True, 1))
+        # The relaunch must not repeat --connect (with its endpoint) or --no-forwarder,
+        # which would start a keyboard client again. Other options stay.
+        self.assertEqual(scenarios["yes"]["relaunch_args"], ["--dev"])
         self.assertEqual(scenarios["no"]["calls"], [])
         self.assertEqual((scenarios["no"]["restart"], scenarios["no"]["quit"]), (False, 0))
         self.assertEqual((scenarios["not_saved"]["restart"], scenarios["not_saved"]["quit"],
@@ -396,6 +399,8 @@ def _switch_to_forwarder_scenarios(app, shutdowns=None):
         quits.clear()
         warned.clear()
         app.wants_restart = False
+        saved_argv = list(sys.argv)
+        sys.argv[1:] = ["--dev", "--connect", "/tmp/x.sock", "--no-forwarder"]
 
         def fake_set(settings, enabled, source):
             calls.append([enabled, source])
@@ -406,7 +411,10 @@ def _switch_to_forwarder_scenarios(app, shutdowns=None):
                                   lambda *a, **k: warned.append(1)), \
                 mock.patch.object(app, "quit_app", lambda: quits.append(1)):
             app._switch_to_forwarder()
+        relaunch_args = sys.argv[1:]
+        sys.argv[:] = saved_argv
         results[label] = {"calls": [list(c) for c in calls], "restart": app.wants_restart,
+                          "relaunch_args": relaunch_args,
                           "quit": len(quits), "warned": len(warned),
                           "daemon_stopped": len(shutdowns) if shutdowns is not None else None}
     yes_button, no_button = host_mod.QMessageBox.Yes, host_mod.QMessageBox.No

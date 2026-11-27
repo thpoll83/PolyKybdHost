@@ -1751,6 +1751,9 @@ class PolyHost(QApplication):
                     self.log.warning("Daemon shutdown request returned: %s", result["error"])
             except Exception as e:  # noqa: BLE001 - best effort; restart regardless
                 self.log.warning("Could not ask the core daemon to shut down: %s", e)
+        # The relaunch repeats this run's options. --connect and --no-forwarder would
+        # make the new process a keyboard client again, so drop them for this restart.
+        sys.argv[1:] = start_mode.strip_options(sys.argv[1:], connect=True)
         self.wants_restart = True
         self.quit_app()
 
