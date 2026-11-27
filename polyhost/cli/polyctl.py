@@ -1827,6 +1827,15 @@ def _cmd_window_report(client, args):
         "url": args.url}))
 
 
+def _cmd_mcp(client, args):
+    """The MCP server for AI assistants, on stdin/stdout (docs/mcp-server-plan.md).
+
+    Local: it connects to the host for each tool call itself, so it starts and
+    lists its tools while no host runs. Imported only here: polyctl stays stdlib-only."""
+    from polyhost.mcp.server import main as mcp_main
+    return mcp_main()
+
+
 def _cmd_shutdown(client, args):
     _print_result(client.call(protocol.M_HOST_SHUTDOWN))
     return 0
@@ -1848,6 +1857,9 @@ def build_parser():
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("status", help="print device/host status").set_defaults(func=_cmd_status)
+    sub.add_parser(
+        "mcp", help="run the MCP server for AI assistants on stdin/stdout "
+                    "(claude mcp add polykybd -- polyctl mcp)").set_defaults(func=_cmd_mcp)
 
     p_lang = sub.add_parser("lang", help="list or set the keyboard language")
     lang_sub = p_lang.add_subparsers(dest="lang_action", required=True)
@@ -2468,10 +2480,12 @@ def _is_offline_command(args) -> bool:
 def _is_local_command(args) -> bool:
     """True for commands that never talk to the host: ``shell-integration``,
     ``editor-plugins``, ``agents hooks`` and ``forwarder`` (pairing) edit the user's
-    own files and have nothing to ask it."""
+    own files and have nothing to ask it. ``mcp`` opens its own connection for each
+    tool call, so it starts while no host runs."""
     if getattr(args, "command", None) == "agents":
         return getattr(args, "agents_cmd", None) == "hooks"
-    return getattr(args, "command", None) in ("shell-integration", "editor-plugins", "forwarder")
+    return getattr(args, "command", None) in ("shell-integration", "editor-plugins", "forwarder",
+                                                    "mcp")
 
 
 def main(argv=None):

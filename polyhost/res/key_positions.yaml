@@ -1,0 +1,93 @@
+# Key names for the split72, for the MCP server's key tools
+# (docs/mcp-server-plan.md -> Identifying a key). Read by services/key_names.py.
+#
+# FROZEN. Written once on 2026-11-27 from the KiCad boards
+# (PolyKybd/poly_kybd/poly_kybd_split72_left.kicad_pcb and _right, footprints
+# SW_K_<n>) and checked against the KLE file res/polykybd-split72.json. Never
+# rename a key, also not after a board revision: an assistant or a user may have
+# written a name down. tests/services/key_names_test.py compares this file with
+# the KLE file's row,col labels.
+#
+# A name is <half>:<X>.<Y>. L is the left half, R the right half. X counts the
+# columns from the outer edge towards the middle, Y the rows from the top of that
+# column, both from 1. Column 8 starts at row 3 (the key over the expansion port).
+# The value is the matrix [row, col] that the control socket's keymap methods use.
+split72:
+  keys:
+    "L:1.1": [0, 0]
+    "L:2.1": [0, 1]
+    "L:3.1": [0, 2]
+    "L:4.1": [0, 3]
+    "L:5.1": [0, 4]
+    "L:6.1": [0, 5]
+    "L:7.1": [0, 6]
+    "L:1.2": [1, 0]
+    "L:2.2": [1, 1]
+    "L:3.2": [1, 2]
+    "L:4.2": [1, 3]
+    "L:5.2": [1, 4]
+    "L:6.2": [1, 5]
+    "L:7.2": [1, 6]
+    "L:1.3": [2, 0]
+    "L:2.3": [2, 1]
+    "L:3.3": [2, 2]
+    "L:4.3": [2, 3]
+    "L:5.3": [2, 4]
+    "L:6.3": [2, 5]
+    "L:7.3": [2, 6]
+    "L:8.3": [3, 7]
+    "L:1.4": [3, 0]
+    "L:2.4": [3, 1]
+    "L:3.4": [3, 2]
+    "L:4.4": [3, 3]
+    "L:5.4": [3, 4]
+    "L:6.4": [3, 5]
+    "L:7.4": [3, 6]
+    "L:8.4": [4, 7]
+    "L:1.5": [4, 0]
+    "L:2.5": [4, 1]
+    "L:3.5": [4, 2]
+    "L:4.5": [4, 3]
+    "L:6.5": [4, 4]
+    "L:7.5": [4, 5]
+    "L:8.5": [4, 6]
+    "R:1.1": [5, 7]
+    "R:2.1": [5, 6]
+    "R:3.1": [5, 5]
+    "R:4.1": [5, 4]
+    "R:5.1": [5, 3]
+    "R:6.1": [5, 2]
+    "R:7.1": [5, 1]
+    "R:1.2": [6, 7]
+    "R:2.2": [6, 6]
+    "R:3.2": [6, 5]
+    "R:4.2": [6, 4]
+    "R:5.2": [6, 3]
+    "R:6.2": [6, 2]
+    "R:7.2": [6, 1]
+    "R:1.3": [7, 7]
+    "R:2.3": [7, 6]
+    "R:3.3": [7, 5]
+    "R:4.3": [7, 4]
+    "R:5.3": [7, 3]
+    "R:6.3": [7, 2]
+    "R:7.3": [7, 1]
+    "R:8.3": [8, 0]
+    "R:1.4": [8, 7]
+    "R:2.4": [8, 6]
+    "R:3.4": [8, 5]
+    "R:4.4": [8, 4]
+    "R:5.4": [8, 3]
+    "R:6.4": [8, 2]
+    "R:7.4": [8, 1]
+    "R:8.4": [9, 0]
+    "R:1.5": [9, 7]
+    "R:2.5": [9, 6]
+    "R:3.5": [9, 5]
+    "R:4.5": [9, 4]
+    "R:6.5": [9, 3]
+    "R:7.5": [9, 2]
+    "R:8.5": [9, 1]
+  # The two keys over the expansion ports have no display and no switch footprint.
+  no_display: ["L:8.3", "R:8.3"]
+  thumb: ["L:6.5", "L:7.4", "L:7.5", "L:8.4", "L:8.5", "R:6.5", "R:7.4", "R:7.5", "R:8.4", "R:8.5"]

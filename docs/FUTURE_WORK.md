@@ -430,22 +430,18 @@ write-only total that is a large part of the wall time.
 
 ---
 
-## An MCP server for AI assistants
+## An MCP server for AI assistants: version 2
 
-**Status:** designed, not built (2026-11-27). An MCP server, started by the AI
-client over stdio, that lets an assistant read and change the keyboard on the
-user's request (language, brightness, idle style, glyph script, single keys,
-overlays) through the control socket. A frozen allow-list keeps firmware, flash,
-settings and raw commands out of reach. Version 2 adds overlays made from a
-description, in a new user overlay folder. The plan, with the tool list, the
-security model and the open questions, is in
-[`mcp-server-plan.md`](mcp-server-plan.md). It is separate from the agent keys,
-which report agent state through hooks.
+**Status:** version 1 is built (2026-11-27): `polyctl mcp` lets an assistant read and
+change the keyboard on the user's request (language, brightness, idle style, glyph
+script, single keys, the overlay switch) through the control socket, behind a frozen
+allow-list. Version 2, overlays made from a description in a new user overlay folder,
+is designed and not built. The plan is in [`mcp-server-plan.md`](mcp-server-plan.md).
+It is separate from the agent keys, which report agent state through hooks.
 
-**Why it waits.** No user has asked for it. The prompt-injection risk needs the
-allow-list and a SECURITY_AUDIT entry first, and the version-2 overlays need the
-user overlay folder, which does not exist yet.
+**Why it waits.** It needs the user overlay folder, which does not exist yet, and
+nobody has used version 1 yet.
 
-**What would settle it.** Users ask for it, or the campaign shows that buyers
-compare it with keyboards that have one (Keysible 69 advertises a built-in MCP
-server).
+**What would settle it.** Users of version 1 ask for overlays from a description, or
+the campaign shows that buyers compare it with keyboards that have one (Keysible 69
+advertises a built-in MCP server).

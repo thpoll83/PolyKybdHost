@@ -1,7 +1,23 @@
 # MCP server for AI assistants: plan
 
-**Status:** designed, not built (2026-11-27). The entry in
-[`FUTURE_WORK.md`](FUTURE_WORK.md) says why it waits.
+**Status:** version 1 built (2026-11-27): `polyhost/mcp/`, `polyctl mcp`, the key
+table `res/key_positions.yaml` and `services/key_names.py`. Version 2 (overlays from
+a description) is not built; the entry in [`FUTURE_WORK.md`](FUTURE_WORK.md) says
+why it waits. Security record: HOST-9 in `polykybd-ctnd/docs/SECURITY_AUDIT.md`.
+
+## Using it
+
+Start PolyKybdHost (tray or daemon), then add the server to the AI client. For
+Claude Code:
+
+```bash
+claude mcp add polykybd -- polyctl mcp
+```
+
+Any client that starts a local MCP server over stdio takes the same command
+(`polyctl mcp`, or `python -m polyhost.mcp` where `polyctl` is not on the `PATH`).
+The server starts and lists its tools while the host is not running; each tool then
+answers "PolyKybdHost is not running".
 
 ## Goal
 
@@ -93,15 +109,18 @@ tool that takes a key resolves a key reference, and two tools describe the board
   example `L:12.5`, which would be `R:5.5`) is an error. Tools accept aliases and
   always return the canonical name, the one from the key's own half.
 - **The names are a frozen table**, generated once from the boards and shipped
-  (for example `res/key_positions.yaml`, name → matrix `row,col`), not computed at
-  runtime, so a later board revision or KLE correction does not rename a key. A
-  test compares the table with the KLE file's `row,col` labels.
+  (`res/key_positions.yaml`, name → matrix `row,col`), not computed at runtime, so a
+  later board revision or KLE correction does not rename a key.
+  `tests/services/key_names_test.py` compares the table with the KLE file's `row,col`
+  labels. When the table was written, every switch's centre was within 4.9 mm of the
+  KLE key with the same `row,col` (key pitch 19.05 mm).
 - **`list_keys(layer=0)`** returns the 74 keys with, for each key: its name
   (`L:1.1`), the matrix `row` and `col` the control methods use, `thumb`,
   `has_display` (false for the two keys over the expansion ports), and the
   `keycode` on the requested layer and `base` on layer 0, as names.
 - **`show_layout(layer)`** returns the grid above with each key's keycode in its
-  cell instead of the matrix position, like the drawings in the firmware's
+  cell instead of the matrix position, as the shortest QMK name without `KC_`
+  (`ESC`, `MO(5)`), like the drawings in the firmware's
   `keymap.c`. An assistant reads positions ("the two keys left of the space bar")
   more reliably from a drawing than from a list.
 - **A key reference** in a write tool is one of `"L:1.1"` (or an alias such as
@@ -120,7 +139,8 @@ tool that takes a key resolves a key reference, and two tools describe the board
 
 No new HID command, so no protocol version increase. Every tool uses existing
 control methods. Three tools also read a file: `list_app_overlays` reads the
-user's overlay mapping file, and `list_keys` and `show_layout` read the frozen
+shipped overlay mapping file (`res/overlay-mapping.poly.yaml`; there is no user
+mapping file yet), and `list_keys` and `show_layout` read the frozen
 key table (see *Identifying a key*), which every tool that takes a key also uses
 to resolve it.
 
@@ -145,13 +165,15 @@ to resolve it.
   same key between the read and the write, `previous` is the value the tool read,
   not the one it overwrote; the result says so. The keyboard stores a keymap edit
   in EEPROM at once, so the change survives a restart.
+- **The key tools also call `status.get`**, to refuse a split42.
 - **`set_brightness("default")` clears a manual brightness** and returns to the
   mode the user configured, as the tray's *Back to automatic* row does
   (`brightness.daylight_refresh`): daylight-dependent brightness when the host
   setting `brightness_set_daylight_dependent` is on, otherwise the keyboard's own
   stored level (`AUTO_OFF`). It cannot switch the daylight mode on: that is a
   setting, and `settings.set` is not exposed. The tool says which mode it
-  returned to.
+  returned to; to know it, it reads that one setting with `settings.get`, the only
+  key the server may read.
 - **`get_keymap` returns names** (`KC_A`, `MO(1)`), not numbers, because an
   assistant reads names correctly and numbers it does not.
 - **Every write tool has the MCP annotation `destructiveHint` or `idempotentHint`,
@@ -233,8 +255,7 @@ time. It needs its own plan, with a measurement on hardware.
   titles, URLs, agent session titles and file paths are never returned.
   `status.get` has none of them today, and the field list keeps it that way when it
   grows.
-- **Record it in `polykybd-ctnd/docs/SECURITY_AUDIT.md`** as a new HOST entry
-  before it ships.
+- **Recorded in `polykybd-ctnd/docs/SECURITY_AUDIT.md` as HOST-9.**
 
 ## Tests
 
@@ -244,7 +265,8 @@ time. It needs its own plan, with a measurement on hardware.
   `tests/services/telemetry_test.py`).
 - **A test per excluded method**: calling it through the server is refused.
 - **Tool tests against the mock keyboard** (`dev_mock_primary`) through a real
-  `ControlServer`, as `tests/server/control_server_test.py` does.
+  `ControlServer`, as `tests/server/control_server_test.py` does. Each tool's
+  control methods are recorded and must be a subset of its allow-list entry.
 - **A result-field test**: no tool result has a key outside its field list.
 - **A key-identification test**: the frozen table has 74 different names, every
   `row,col` of the KLE file exactly once, and the same set of names on both halves;
@@ -256,23 +278,21 @@ time. It needs its own plan, with a measurement on hardware.
 
 ## Open questions
 
-1. **The official `mcp` Python SDK or a small stdlib implementation.** The SDK
-   follows the protocol as it changes and adds a dependency. The stdlib version
-   (JSON-RPC over stdio, `initialize`, `tools/list`, `tools/call`) is about 200
-   lines and has to follow protocol changes by hand.
-2. **Whether `set_key` belongs in version 1.** It is reversible, but it writes
-   EEPROM, and a wrong key can make the keyboard hard to use until the assistant
-   or the user changes it back.
-3. **A host setting to turn the server off** (`mcp_enabled`). The client config
+Decided on 2026-11-27 by the maintainer: the server is a stdlib implementation
+(`polyhost/mcp/server.py`: `initialize`, `ping`, `tools/list`, `tools/call`, protocol
+versions 2024-11-05 to 2025-11-25), not the `mcp` SDK, which would add pydantic,
+anyio, httpx and starlette to every install. `set_key` is in version 1.
+
+1. **A host setting to turn the server off** (`mcp_enabled`). The client config
    starts the server, so a setting only matters if the control server can tell an
    MCP client from `polyctl`, for example by a field in `hello`.
-4. **Which clients to document**, and whether a `polyctl mcp install <client>`
+2. **Which clients to document**, and whether a `polyctl mcp install <client>`
    command writes their config files, as `polyctl agents hooks install` does for
    the agent hooks.
-5. **The name of a user overlay that equals a shipped one.** The resolver order
+3. **The name of a user overlay that equals a shipped one.** The resolver order
    above uses the user's file; a warning in the log may be enough.
-6. **The names for the split42.** Its boards give the same scheme; it needs its
+4. **The names for the split42.** Its boards give the same scheme; it needs its
    own KLE file and its own frozen table before the key tools support it.
-7. **The legend a key shows in the current language.** The host can read it only
+5. **The legend a key shows in the current language.** The host can read it only
    through a new HID query (version-gated, a firmware change). Without it the
    assistant works with keycodes and asks the user when the language matters.
