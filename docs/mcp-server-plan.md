@@ -2,7 +2,7 @@
 
 **Status:** version 1 built (2026-11-27): `polyhost/mcp/`, `polyctl mcp`, the key
 table `res/key_positions.yaml` and `services/key_names.py`. Version 2 (overlays from
-a description) is not built; the entry in [`FUTURE_WORK.md`](FUTURE_WORK.md) says
+a description, and keys drawn freely) is a concept; the entry in [`FUTURE_WORK.md`](FUTURE_WORK.md) says
 why it waits. Security record: HOST-9 in `polykybd-ctnd/docs/SECURITY_AUDIT.md`.
 
 ## Using it
@@ -216,29 +216,156 @@ fixes it (see *Tests*).
 | `overlay.mapping_send`, `overlay.reset_*` | low-level state the matcher owns |
 | `window.report`, `agents.*`, `telemetry.*` | other features' inputs |
 
-## Version 2: overlays from a description
+## Version 2: overlays from a description, and keys drawn freely
 
-The most useful request is "make keys for my app". It needs three new host pieces.
+**Status:** concept (2026-11-27), not built. Two requests:
 
-1. **A user overlay folder.** Overlays load only from `res/overlays/` or from a
-   game's local copy (`get_overlay_path()` in `core/poly_core.py`). A new folder
-   in the config directory (`user_overlays/`) holds overlays the user or the
-   assistant made, and the resolver checks it after the game copy and before the
-   shipped file. A name that exists in both places uses the user's file.
-2. **`create_overlay(app, bindings)`.** The assistant passes the same binding
-   format as `res/overlay_sources/<app>/bindings.yaml`: key, modifier, label or
-   icon. The tool writes the binding file to `user_overlays/<app>/`, runs the
-   generator in-process, and adds an entry to the user's
-   `overlay-mapping.poly.yaml`. It changes only that entry and leaves the rest of
-   the file as it is. Icons come from the icon library by id, or as text labels;
-   the tool downloads nothing.
-3. **`preview_overlay(app)`.** Returns the generated 72×40 cells as an MCP image,
-   so the user sees the keys before the overlay is used.
+- "Make keys for my app": an overlay set for one application, from a list of
+  shortcuts.
+- "Draw this on that key": any picture on one key, with or without the key's
+  legend.
 
-This is per-application configuration that the user asked for. It does not change
-the rule of [`generic-icons-plan.md`](generic-icons-plan.md): the automatic
-shortcut harvest still uses no per-application configuration, and a user overlay is
-used only for the app it names.
+Both write the same thing, an overlay set in a user folder, so they share one
+pipeline. A drawn key is one binding whose picture the assistant drew.
+
+### What the firmware already does
+
+Nothing in version 2 needs a firmware change or a protocol version increase.
+
+- **An overlay image is 72×40 px, 1 bit**, one per keycode and modifier
+  combination (`res/overlay_specification.md`). The firmware draws the legend
+  first, cuts a 3 px margin around the image's ink out of it, and draws the image
+  on top (`copy_overlay_to_buffer()` in qmk `keys_com/key_render_helpers.c`).
+- **"Without glyph" exists since protocol v25.** A key listed in the overlay file's
+  `polykybd-no-legend` PNG chunk is drawn with the image only: the firmware clears
+  the whole keycap first. The generator writes the chunk for a binding with
+  `legend: false` (`scripts/generate_app_overlays.py`), and the send path passes it
+  to `send_overlay_mapping(no_legend=...)`. On firmware older than v25 the legend
+  stays.
+- ⚠️ **An overlay belongs to a KEYCODE, not to a physical key.** An image for
+  `KC_ENT` shows on every key that sends Enter on the active layer. Only 90
+  keycodes have an overlay slot: the letters, digits, F1 to F12, the navigation and
+  editing keys, the punctuation keys and the eight modifiers. A key that sends
+  `MO(5)`, `TO(12)` or a PolyKybd keycode (`0x7FA8`) cannot get an image. Images
+  per physical key would need a new firmware slot table; that is not in this plan.
+- **An overlay shows only while its app is focused**, chosen by the window matcher
+  from `overlay-mapping.poly.yaml`. One switch shows at most 600 distinct images
+  (`OVERLAY_POOL_CAPACITY`).
+
+### The pieces
+
+1. **A user overlay folder**, `user_overlays/` in the config directory, with one
+   subfolder per set: the binding file `bindings.yaml`, the generated PNGs and a
+   mapping stanza. `get_overlay_path()` checks it after the game copy and before
+   the shipped file, so a name in both places uses the user's file and the log says
+   so once.
+2. **A user mapping file**, `user_overlays/overlay-mapping.poly.yaml`. The core
+   loads it after the shipped mapping and puts its entries in front, so a user
+   entry for an app replaces the shipped entry for that app. The tools write only
+   the entries they created (each carries `source: mcp`) and leave every other
+   line of the file as it is. A user who edits the file by hand keeps their edits.
+3. **New control methods in the host** (`user_overlay.set`, `user_overlay.remove`,
+   `user_overlay.preview`). The host, not the MCP server, checks the request, writes
+   the files, runs the generator in-process and reloads the mapping, so
+   `mcp_enabled` and the allow-list apply to every write, and a change shows at the
+   next window switch, or at once when the app is focused. The MCP server writes no
+   file.
+4. **The tools** below.
+
+### Tools
+
+| Tool | What it does |
+|---|---|
+| `find_icons(query)` | Searches the icon library names (`res/fontpack/icon_ids.yaml`, 3556 entries such as `concept:material:content_copy`) and returns up to 20, each with its size in pixels. |
+| `list_overlay_keys()` | The 90 keys that can have an image, by key name, and which physical keys send each one on layer 0. |
+| `create_overlay(app, bindings)` | Writes or replaces the user set for `app`. `bindings` is a list of `{key, mods, label, icon, drawing, legend}`; it is the generator's binding format plus `drawing`. Returns the placed keys and the keys it could not place, with the reason. |
+| `draw_key(app, key, drawing, mods=[], legend=true)` | Adds or replaces one binding in the user set for `app` (`"*"` for every app, see below) and regenerates it. |
+| `clear_key(app, key, mods=[])`, `delete_overlay(app)` | Remove one binding, or the whole user set and its mapping entry. Only sets in `user_overlays/` can be removed. |
+| `preview_overlay(app, mods=[])` | Both halves with every key's image at 2× scale, as an MCP image, with the keycode name on keys that have no image. A key drawn with its legend is marked, and the cut the firmware makes into the legend is shown as a 3 px outline. |
+
+- **`key`** is a key reference as in version 1 (`"L:3.2"`, `{"base": "KC_Q"}`) or a
+  keycode name (`"KC_F5"`). A physical key resolves to its keycode on layer 0. The
+  result names every other physical key that sends the same keycode, because the
+  image shows there too.
+- **`legend`** false draws the picture without the key's legend.
+- **`app`** is a name from `list_app_overlays`, or any process name the window
+  matcher sees (the lowercased name up to the first dot).
+
+### The drawing format
+
+The assistant describes the picture; the host draws it on a 72×40 1-bit canvas with
+PIL, which is a runtime dependency on every platform. A drawing is a list of
+shapes, drawn in order:
+
+```json
+[
+  {"rect": [0, 0, 72, 40], "fill": false, "width": 2},
+  {"line": [6, 34, 66, 6], "width": 3},
+  {"ellipse": [24, 8, 48, 32], "fill": true},
+  {"polygon": [[36, 4], [60, 36], [12, 36]], "fill": false},
+  {"text": "F5", "at": [36, 20], "size": 18, "align": "center"},
+  {"icon": "concept:material:content_copy", "at": [44, 12]},
+  {"bitmap": ["..##..", ".####.", "######"], "at": [0, 0], "scale": 2},
+  {"erase": true, "rect": [30, 0, 12, 40]}
+]
+```
+
+- Coordinates are pixels, `[0, 0]` at the top left. Every shape is clipped to the
+  canvas; a shape outside it draws nothing and the result says so.
+- `text` is drawn with Pillow's built-in scalable font (Aileron, Pillow 10.1 or
+  newer, `ImageFont.load_default(size)`), without anti-aliasing. It is the same on
+  every platform and needs no file. It has Latin letters only: Greek, Cyrillic or
+  CJK text draws as boxes, and the tool refuses it. The keyboard's own Latin faces
+  are compiled into the firmware and are not in the shipped font packs, so the host
+  cannot draw with them without a qmk_firmware checkout.
+- `icon` draws one of the 3556 icons of the shipped icon library
+  (`res/fontpack/icons.plyi`, named in `icon_ids.yaml`, read with
+  `services/icon_library.parse()`), at its own size. `at` moves its top-left
+  corner; without `at` it stays where the library puts it. An icon left in its
+  library position is a library frame, so the keyboard draws it from its own flash
+  and it costs no upload. Icons are not scaled: a scaled 1-bit icon loses lines.
+- `bitmap` is rows of `#` and `.`, for exact pixel art.
+- `"erase": true` draws in black, to cut a gap into earlier shapes.
+- **Why a shape list, not SVG:** the host's SVG rasteriser
+  (`services/svg_raster.py`) draws only flat `<path>` icons, without strokes or
+  text, and `cairosvg` does not install on Windows. A shape list renders the same
+  on every platform, and every shape is a call the host checks.
+- **Limits:** at most 200 shapes, 2000 points in total and 64 characters of text per
+  drawing; a `bitmap` is at most 40 rows of 72 columns.
+- With `legend` true, the firmware cuts a 3 px margin around the drawing's ink out
+  of the legend. A drawing that fills the key leaves no legend; the preview shows
+  that cut. The preview cannot show the legend itself: the host has neither the
+  firmware's Latin faces nor the legend table of each language (see *Identifying a
+  key*).
+
+### Every app, or one app
+
+A drawn key belongs to one app's set, because the firmware shows overlays per
+focused app. For "always show this on that key", `app` `"*"` writes a set that the
+host adds to every send: the matched app's images first, then the `"*"` images on
+keys the app's set leaves empty. With no app matched the `"*"` set is the only
+one. A key can then show an app's icon in one program and the user's drawing in
+every other.
+
+### Rules
+
+- This is per-application configuration that the user asked for. It does not change
+  the rule of [`generic-icons-plan.md`](generic-icons-plan.md): the automatic
+  shortcut harvest still uses no per-application configuration.
+- The tools write only inside `user_overlays/`, with file names the host makes from
+  the app name (letters, digits, `-` and `_`; anything else is refused). They read
+  no file the assistant names and download nothing.
+- `mcp_enabled` gates these tools like the others. New control methods go on the
+  allow-list, and the frozen test changes with them.
+
+### Questions for the maintainer
+
+1. Is `app` `"*"` (a drawing on every app's keys) wanted, or only per app?
+2. Should a user set for an app that has a shipped set REPLACE it (simpler, the
+   user's set is complete) or be laid OVER it (the user's keys first, the shipped
+   keys on the rest)?
+3. Should the tray get a page that lists the user sets, with Remove, so a user can
+   undo what an assistant made without the assistant?
 
 ## Not planned: live values on keys
 
