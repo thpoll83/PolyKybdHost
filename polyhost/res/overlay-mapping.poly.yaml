@@ -57,10 +57,10 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       url: '^https?://(www\.)?netflix\.com/watch/'
       overlay: [streaming_player_template.mods.png, netflix_template.mods.png]
     twitch.tv:
-      url: '^https?://((www\.|m\.)?twitch\.tv/(videos/\d+|(?!(directory|settings|search|downloads|jobs|turbo|subscriptions|wallet|inventory|drops|friends|messages|following|login|signup|p|store|prime|privacy|legal)([/?#]|$))[A-Za-z0-9_]{3,25}(/clip/[^/?#]+)?/?([?#]|$))|clips\.twitch\.tv/[^/?#]+)'
+      url: '^https?://((www\.|m\.)?twitch\.tv/(videos/\d+|(?!(directory|settings|search|downloads|jobs|turbo|subscriptions|wallet|inventory|drops|friends|messages|following|login|signup|p|store|prime|privacy|legal|moderator)([/?#]|$))[A-Za-z0-9_]{3,25}(/clip/[^/?#]+)?/?([?#]|$))|clips\.twitch\.tv/[^/?#]+)'
       overlay: [streaming_player_template.mods.png, twitch_template.mods.png]
     primevideo.com:
-      url: '^https?://(www\.)?primevideo\.com/(region/(na|eu|fe)/)?((gp/video/)?detail|watch)/'
+      url: '^https?://(www\.)?primevideo\.com/(-/[A-Za-z]{2}(_[A-Za-z]{2})?/)?(region/(na|eu|fe)/)?((gp/video/)?detail|watch)/'
       overlay: [streaming_player_template.mods.png, primevideo_template.mods.png]
     /gp/video/detail/:
       url: '^https?://(www\.)?amazon\.[a-z.]+/gp/video/detail/'
@@ -503,10 +503,10 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           url: '^https?://(www\.)?netflix\.com/watch/'
           overlay: [streaming_player_template.mods.png, netflix_template.mods.png]
         twitch.tv:
-          url: '^https?://((www\.|m\.)?twitch\.tv/(videos/\d+|(?!(directory|settings|search|downloads|jobs|turbo|subscriptions|wallet|inventory|drops|friends|messages|following|login|signup|p|store|prime|privacy|legal)([/?#]|$))[A-Za-z0-9_]{3,25}(/clip/[^/?#]+)?/?([?#]|$))|clips\.twitch\.tv/[^/?#]+)'
+          url: '^https?://((www\.|m\.)?twitch\.tv/(videos/\d+|(?!(directory|settings|search|downloads|jobs|turbo|subscriptions|wallet|inventory|drops|friends|messages|following|login|signup|p|store|prime|privacy|legal|moderator)([/?#]|$))[A-Za-z0-9_]{3,25}(/clip/[^/?#]+)?/?([?#]|$))|clips\.twitch\.tv/[^/?#]+)'
           overlay: [streaming_player_template.mods.png, twitch_template.mods.png]
         primevideo.com:
-          url: '^https?://(www\.)?primevideo\.com/(region/(na|eu|fe)/)?((gp/video/)?detail|watch)/'
+          url: '^https?://(www\.)?primevideo\.com/(-/[A-Za-z]{2}(_[A-Za-z]{2})?/)?(region/(na|eu|fe)/)?((gp/video/)?detail|watch)/'
           overlay: [streaming_player_template.mods.png, primevideo_template.mods.png]
         /gp/video/detail/:
           url: '^https?://(www\.)?amazon\.[a-z.]+/gp/video/detail/'

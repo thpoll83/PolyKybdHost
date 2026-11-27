@@ -25,9 +25,10 @@ set. The page patterns come from each site's app-link list
 - **Twitch:** a channel (`twitch.tv/<channel>`), a video (`/videos/<id>`) and a
   clip (`/<channel>/clip/<slug>`, `clips.twitch.tv/<slug>`). These are Twitch's
   public URLs, not a document. Twitch's own top-level pages (`/directory`,
-  `/settings`, `/search` and others in the mapping's list) are left out.
+  `/settings`, `/search`, `/moderator` and others in the mapping's list) are left out.
 - **Prime Video:** the player opens over the detail page:
-  `primevideo.com/[region/{na,eu,fe}/][gp/video/]detail/…` and `/watch/…`, and
+  `primevideo.com/[-/<locale>/][region/{na,eu,fe}/][gp/video/]detail/…` and
+  `/watch/…` (`-/fr/`: the language prefix of a non-English page), and
   `/gp/video/detail/<ASIN>` on any Amazon store (the commonly used URL; the
   app-link files do not list it).
 - **Disney+:** `disneyplus.com/play/<id>`, `/<locale>/play/<id>`, and the older
@@ -46,7 +47,9 @@ set. The page patterns come from each site's app-link list
   tech sites but not in the script, so it is not drawn.
 - **Prime Video (official):** Prime Video Help, "Keyboard shortcuts",
   https://www.primevideo.com/help?nodeId=GE4VW9VWJD7FM6DR (read 2026-11-26). It
-  names the web player and the Windows and macOS apps.
+  names the web player and the Windows and macOS apps. Under F (full screen) it adds "on
+  macOS the shortcut is the FN key and F". The overlay has no Fn layer, so F
+  shows full screen on macOS too; the cell is the same key.
 - **Disney+ (not official):** Disney+ publishes no list. How-To Geek
   (howtogeek.com/456101, 2020) and tutorialtactic
   (tutorialtactic.com/blog/disney-plus-shortcuts, 2025) agree on Space, F, Esc,
