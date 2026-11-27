@@ -407,9 +407,28 @@ def keyboard_counts(rows: list[dict]) -> tuple[int, int, int]:
     return len(set(group.values())), len(pairs), replaced
 
 
+def keyboard_kinds(rows: list[dict]) -> tuple[int, int]:
+    """(complete keyboards, single controllers) among the hash groups.
+
+    A group with at least one pair has had both halves answer: a split
+    keyboard. A group that never had a pair has only ever sent one ID. That
+    can be any RP2040 board flashed with the firmware (a Pico, a dev board), a
+    single half, or a split keyboard whose other half never answered. The
+    firmware's name and hardware version are compiled in, so they cannot tell
+    these apart; the second ID is the only signal that needs real hardware.
+    """
+    group, pairs = _keyboard_groups(rows)
+    paired = {group[a] for a, _ in pairs}
+    roots = set(group.values())
+    return len(roots & paired), len(roots - paired)
+
+
 def daily_keyboards(rows: list[dict], window: list[str]) -> list[tuple[str, int]]:
-    """Distinct keyboards (hash groups) attached to a reporting host on each day."""
-    group, _ = _keyboard_groups(rows)
+    """Distinct complete keyboards (hash groups with a pair) attached to a
+    reporting host on each day. A complete keyboard that sent one ID that day
+    (its other half not answering) still counts."""
+    group, pairs = _keyboard_groups(rows)
+    paired = {group[a] for a, _ in pairs}
     seen: dict[str, set] = defaultdict(set)
     for r in rows:
         # A ping sent after the keyboard was unplugged still has the IDs read
@@ -417,7 +436,8 @@ def daily_keyboards(rows: list[dict], window: list[str]) -> list[tuple[str, int]
         if not r.get("device_present"):
             continue
         for h in _row_hashes(r):
-            seen[str(r.get("day") or "")].add(group[h])
+            if group[h] in paired:
+                seen[str(r.get("day") or "")].add(group[h])
     return [(d, len(seen.get(d, ()))) for d in window]
 
 
@@ -768,14 +788,15 @@ def render(rows: list[dict], days: int | None, generated: str) -> str:
     end_label = end.isoformat() if end else "no data"
     test_note = f", not counting {len(test_ids)} test install(s)" if test_ids else ""
 
-    kb_groups, _, kb_replaced = keyboard_counts(rows)
+    _, _, kb_replaced = keyboard_counts(rows)
+    kb_complete, kb_single = keyboard_kinds(rows)
     with_kb = sum(1 for r in latest if r.get("device_present"))
     no_id = keyboards_without_id(latest)
     active7, active30 = active_installs(rows, end, 7), active_installs(rows, end, 30)
 
     summary = "".join([
-        _big("kb", kb_groups, "keyboards identified",
-             "Counted by hardware ID. Only host 1.28.12+ with firmware 1.13.11+ sends one."),
+        _big("kb", kb_complete, "keyboards identified",
+             "Both halves sent a hardware ID. Only host 1.28.12+ with firmware 1.13.11+ sends one."),
         _big("inst", active7, "active installs, 7 days", f"At least one report in the 7 days to {end_label}."),
         _big("inst", active30, "active installs, 30 days", f"At least one report in the 30 days to {end_label}."),
         _big("inst", len(latest), "installs ever seen", "Every install that has sent a report."),
@@ -783,7 +804,8 @@ def render(rows: list[dict], days: int | None, generated: str) -> str:
 
     keyboards = _section("kb", "Keyboards", "Hardware that reports to a host", "".join([
         '<div class="kpis">',
-        _kpi(kb_groups, "keyboards identified by hardware ID"),
+        _kpi(kb_complete, "keyboards identified: both halves sent an ID"),
+        _kpi(kb_single, "single controllers: one ID only (a bare RP2040 board, one half, or the other half never answered)"),
         _kpi(no_id, "installs with a keyboard but no ID (older host or firmware)"),
         _kpi(with_kb, "installs with a keyboard at their last report"),
         _kpi(kb_replaced, "half replacements, inferred from hash pairs"),
@@ -865,7 +887,7 @@ keyboards a report is not lost in a crowd either. Nothing on this page left your
 
 
 def _keyboard_chart(rows: list[dict], window: list[str]) -> str:
-    """Keyboards per day, from the first day any keyboard sent an ID. The days
+    """Complete keyboards per day, from the first day one sent its IDs. The days
     before it are not zero keyboards; no host could send an ID then."""
     series = daily_keyboards(rows, window)
     first = next((i for i, (_, n) in enumerate(series) if n), None)

@@ -303,10 +303,10 @@ class SectionCounts(unittest.TestCase):
         self.assertEqual(dash.mock_install_ids(rows), {"m"})
 
     def test_mock_installs_are_left_out_of_the_counts_but_listed(self):
-        m, a = "m" * 32, "a" * 32
-        rows = [row("m", "2026-11-19", device_name="PolyKybdMock", hw_id_a=m,
+        m, n, a, b = "m" * 32, "n" * 32, "a" * 32, "b" * 32
+        rows = [row("m", "2026-11-19", device_name="PolyKybdMock", hw_id_a=m, hw_id_b=n,
                     counters='{"sessions": 7}'),
-                row("r", "2026-11-19", hw_id_a=a, counters='{"sessions": 2}')]
+                row("r", "2026-11-19", hw_id_a=a, hw_id_b=b, counters='{"sessions": 2}')]
         out = dash.render(rows, 30, "now")
         self.assertIn('<b>1</b><span class="what">installs ever seen</span>', out)
         self.assertIn('<b>1</b><span class="what">keyboards identified</span>', out)
@@ -332,9 +332,31 @@ class SectionCounts(unittest.TestCase):
         self.assertEqual(dash.daily_keyboards(rows, ["2026-11-17", "2026-11-18", "2026-11-19"]),
                          [("2026-11-17", 0), ("2026-11-18", 0), ("2026-11-19", 1)])
 
+    def test_a_single_controller_is_not_a_keyboard_per_day(self):
+        p = "p" * 32
+        rows = [row("pico", "2026-11-19", hw_id_a=p)]
+        self.assertEqual(dash.daily_keyboards(rows, ["2026-11-19"]), [("2026-11-19", 0)])
+
+    def test_keyboard_kinds_split_pairs_from_single_ids(self):
+        a, b, c, p = "a" * 32, "b" * 32, "c" * 32, "p" * 32
+        rows = [row("i1", "2026-11-18", hw_id_a=a, hw_id_b=b),
+                row("i1", "2026-11-19", hw_id_a=a, hw_id_b=""),   # slave not answering
+                row("i2", "2026-11-19", hw_id_a=c, hw_id_b=c),    # same hash twice: one half
+                row("i3", "2026-11-19", hw_id_a=p),               # a bare RP2040 board
+                row("i4", "2026-11-19")]                           # older host: no IDs
+        self.assertEqual(dash.keyboard_kinds(rows), (1, 2))
+        self.assertEqual(dash.keyboard_counts(rows)[0], 3)        # all groups
+
+    def test_the_summary_counts_only_complete_keyboards(self):
+        a, b, p = "a" * 32, "b" * 32, "p" * 32
+        out = dash.render([row("i1", "2026-11-19", hw_id_a=a, hw_id_b=b),
+                           row("i2", "2026-11-19", hw_id_a=p)], 30, "now")
+        self.assertIn('<b>1</b><span class="what">keyboards identified</span>', out)
+        self.assertIn("<b>1</b><span>single controllers: one ID only", out)
+
     def test_keyboard_chart_starts_at_the_first_id(self):
-        a = "a" * 32
-        rows = [row("i1", "2026-11-01"), row("i1", "2026-11-19", hw_id_a=a)]
+        a, b = "a" * 32, "b" * 32
+        rows = [row("i1", "2026-11-01"), row("i1", "2026-11-19", hw_id_a=a, hw_id_b=b)]
         out = dash._keyboard_chart(rows, dash.day_range(rows, None))
         self.assertIn("2026-11-19: 1", out)
         self.assertNotIn("2026-11-01:", out)
