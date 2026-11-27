@@ -892,7 +892,7 @@ def _keyboard_chart(rows: list[dict], window: list[str]) -> str:
     series = daily_keyboards(rows, window)
     first = next((i for i, (_, n) in enumerate(series) if n), None)
     if first is None:
-        return '<p class="empty">No keyboard sent a hardware ID in this window.</p>'
+        return '<p class="empty">No complete keyboard reported in this window.</p>'
     return svg_bars(series[first:], values=len(series) - first <= 45)
 
 
