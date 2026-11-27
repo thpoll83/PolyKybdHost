@@ -1,0 +1,84 @@
+# Europa Universalis IV overlay for PolyKybd. See SOURCES.md.
+#
+# Keys: the game's own interface files (`interface/*.gui`, `shortcut = "..."`),
+# vanilla 1.36.2. Pause, speed, capital, chat and screenshot are engine keys
+# that no file defines; they are from the Paradox wiki (last verified 1.24).
+#
+# Q to P are the ten map-mode slots; the player can change what each slot
+# shows, so the icons carry the slot number. 1 to 0 and , . ' K open the
+# country-view tabs.
+#
+# Left out: the army and fleet letters (they act on the selection), the
+# province and diplomacy view letters, the ledger section keys, "<" (minimap
+# panel, a key the ANSI board does not have), the console, and Esc (program
+# mark).
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/strategy/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/strategy/eu4.yaml --preview /tmp/eu4_preview
+
+app: europa universalis iv
+match: [eu4, steam_app_236850]
+output: eu4_template
+icon_dir: icons
+fit: contain
+mode: auto
+threshold: 150
+anchor: right
+region: [40, 40]
+margin: 0
+
+program_icon: eu4.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Time
+  - { key: SPACE, icon: pause.png, label: "Pause" }
+  - { key: EQUAL, icon: faster.png, label: "Faster (+)" }
+  - { key: MINUS, icon: slower.png, label: "Slower" }
+
+  # Country view (F1) and its tabs
+  - { key: F1, icon: country.png, label: "Country view", region: [34, 40] }
+  - { key: "1", icon: court.png, label: "Court" }
+  - { key: "2", icon: government.png, label: "Government" }
+  - { key: "3", icon: diplomacy.png, label: "Diplomacy" }
+  - { key: "4", icon: economy.png, label: "Economy" }
+  - { key: "5", icon: trade.png, label: "Trade" }
+  - { key: "6", icon: technology.png, label: "Technology" }
+  - { key: "7", icon: ideas.png, label: "Ideas" }
+  - { key: "8", icon: missions.png, label: "Missions" }
+  - { key: "9", icon: decisions.png, label: "Decisions" }
+  - { key: "0", icon: stability.png, label: "Stability and expansion" }
+  - { key: COMMA, icon: religion.png, label: "Religion" }
+  - { key: DOT, icon: military.png, label: "Military" }
+  - { key: QUOTE, icon: subjects.png, label: "Subjects" }
+  - { key: K, icon: estates.png, label: "Estates" }
+
+  # Map-mode slots
+  - { key: Q, icon: mapslot1.png, label: "Map mode slot 1" }
+  - { key: W, icon: mapslot2.png, label: "Map mode slot 2" }
+  - { key: E, icon: mapslot3.png, label: "Map mode slot 3" }
+  - { key: R, icon: mapslot4.png, label: "Map mode slot 4" }
+  - { key: T, icon: mapslot5.png, label: "Map mode slot 5" }
+  - { key: Y, icon: mapslot6.png, label: "Map mode slot 6" }
+  - { key: U, icon: mapslot7.png, label: "Map mode slot 7" }
+  - { key: I, icon: mapslot8.png, label: "Map mode slot 8" }
+  - { key: O, icon: mapslot9.png, label: "Map mode slot 9" }
+  - { key: P, icon: mapslot10.png, label: "Map mode slot 10" }
+
+  # Tools
+  - { key: L, icon: ledger.png, label: "Ledger" }
+  - { key: F, icon: find.png, label: "Find province" }
+  - { key: B, icon: macro.png, label: "Macro builder" }
+  - { key: A, mods: [SHIFT], icon: age.png, label: "Age panel" }
+  - { key: G, mods: [SHIFT], icon: greatpowers.png, label: "Great powers" }
+  - { key: H, icon: help.png, label: "Hints" }
+  - { key: BSPC, icon: capital.png, label: "Go to capital" }
+  - { key: TAB, icon: chat.png, label: "Multiplayer chat" }
+  - { key: F10, icon: mapshot.png, label: "Map screenshot", region: [34, 40] }
+  - { key: F11, icon: screenshot.png, label: "Screenshot", region: [34, 40] }

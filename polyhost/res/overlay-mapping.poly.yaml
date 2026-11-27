@@ -3969,6 +3969,23 @@ reliccardinal,steam_app_1466860:
 # does not change when they open. Names not checked on an install.
 openttd,openttd.exe,org.openttd.openttd,steam_app_1536610:
   overlay: [openttd_template.mods.png, openttd_template.combo.mods.png]
+# Paradox grand-strategy games (overlay_sources/strategy/). Executable names
+# from launcher-settings.json copies and modding tools: eu4, hoi4 and stellaris
+# in the game folder, eu5/ck3/victoria3 in binaries/, the same names on Linux
+# and inside the macOS .app bundles; steam_app_<id> covers Proton. Not checked
+# on an install. Default keys only (SOURCES.md, The player's bindings).
+eu4,steam_app_236850:
+  overlay: eu4_template.mods.png
+eu5,steam_app_3450310:
+  overlay: eu5_template.mods.png
+ck3,steam_app_1158310:
+  overlay: ck3_template.mods.png
+hoi4,steam_app_394360:
+  overlay: hoi4_template.mods.png
+stellaris,steam_app_281990:
+  overlay: stellaris_template.mods.png
+victoria3,steam_app_529340:
+  overlay: vic3_template.mods.png
 # Civilization IV: Beyond the Sword 3.19 (overlay_sources/civ4/civ4_bts.yaml).
 # Civ4BeyondSword.exe on Windows (civ4beyondsword); under Wine the WM_CLASS keeps
 # the `.exe`. steam_app_8800 is Steam under Proton. The executable names are from

@@ -1,0 +1,87 @@
+# Victoria 3 overlay for PolyKybd. See SOURCES.md.
+#
+# Keys: the game's own `game/input_profile/default.profile` and
+# `gui/shortcuts.shortcuts`, version 1.15. Each binding names the profile's
+# action (`command:`). The profile binds physical key positions (USB HID
+# scancodes), so the icons stay on the same key on every layout. The player
+# can rebind keys in Settings > Input bindings; where the game saves them is
+# not known yet, so the overlay draws the defaults.
+#
+# Left out: the outliner-tab keys (Ctrl+1-6), the window-tab keys (Shift+1-5,
+# they act on the open window), the hovered-item keys (C, G, M, X, Z), the
+# number pad and music keys, the debug key (O), and Esc (program mark).
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/strategy/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/strategy/vic3.yaml --preview /tmp/vic3_preview
+
+app: victoria 3
+match: [victoria3, steam_app_529340]
+output: vic3_template
+icon_dir: icons
+fit: contain
+mode: auto
+threshold: 150
+anchor: right
+region: [40, 40]
+margin: 0
+
+program_icon: vic3.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Time
+  - { key: SPACE, command: pause, icon: pause.png, label: "Pause" }
+  - { key: EQUAL, command: increase_speed, icon: faster.png, label: "Faster" }
+  - { key: MINUS, command: decrease_speed, icon: slower.png, label: "Slower" }
+  - { key: "1", command: speed_1, icon: speed1.png, label: "Speed 1" }
+  - { key: "2", command: speed_2, icon: speed2.png, label: "Speed 2" }
+  - { key: "3", command: speed_3, icon: speed3.png, label: "Speed 3" }
+  - { key: "4", command: speed_4, icon: speed4.png, label: "Speed 4" }
+  - { key: "5", command: speed_5, icon: speed5.png, label: "Speed 5" }
+
+  # Panels
+  - { key: F1, command: open_politics, icon: government.png, label: "Politics", region: [34, 40] }
+  - { key: F2, command: open_budget, icon: budget.png, label: "Budget", region: [34, 40] }
+  - { key: F3, command: open_buildings, icon: buildings.png, label: "Buildings", region: [34, 40] }
+  - { key: F4, command: open_market, icon: market.png, label: "Market", region: [34, 40] }
+  - { key: F5, command: open_military, icon: military.png, label: "Military", region: [34, 40] }
+  - { key: F6, command: open_power_bloc, icon: powerbloc.png, label: "Power bloc", region: [34, 40] }
+  - { key: F7, command: open_diplomatic, icon: diplomacy.png, label: "Diplomatic", region: [34, 40] }
+  - { key: F8, command: open_technology, icon: technology.png, label: "Technology", region: [34, 40] }
+  - { key: F9, command: open_society, icon: society.png, label: "Society", region: [34, 40] }
+  - { key: F10, command: open_population, icon: population.png, label: "Population", region: [34, 40] }
+  - { key: F1, mods: [SHIFT], command: open_companies, icon: companies.png, label: "Companies", region: [34, 40] }
+  - { key: J, command: open_journal, icon: journal.png, label: "Journal" }
+  - { key: Q, command: map_list, icon: ledger.png, label: "Ledger" }
+  - { key: B, command: construction_queue, icon: construction.png, label: "Construction queue" }
+  - { key: B, mods: [CTRL], command: toggle_construction_queue_pause, icon: queuepause.png, label: "Pause construction queue" }
+  - { key: E, command: current_situation, icon: situation.png, label: "Current situation" }
+  - { key: R, command: country_panel, icon: country.png, label: "Country details" }
+
+  # Lenses
+  - { key: "1", mods: [ALT], command: production_lens, icon: lens_production.png, label: "Production lens" }
+  - { key: "2", mods: [ALT], command: political_lens, icon: lens_political.png, label: "Political lens" }
+  - { key: "3", mods: [ALT], command: diplomatic_lens, icon: lens_diplomatic.png, label: "Diplomatic lens" }
+  - { key: "4", mods: [ALT], command: military_lens, icon: lens_military.png, label: "Military lens" }
+  - { key: "5", mods: [ALT], command: trade_lens, icon: lens_trade.png, label: "Trade lens" }
+
+  # Camera and finding
+  - { key: W, icon: panup.png, label: "Pan camera up", undrawn: [UP] }
+  - { key: S, icon: pandown.png, label: "Pan camera down", undrawn: [DOWN] }
+  - { key: A, icon: panleft.png, label: "Pan camera left", undrawn: [LEFT] }
+  - { key: D, icon: panright.png, label: "Pan camera right", undrawn: [RIGHT] }
+  - { key: F, command: location_finder, icon: find.png, label: "Location finder" }
+  - { key: F, mods: [CTRL], icon: searchfocus.png, label: "Focus search field" }
+  - { key: HOME, icon: capital.png, label: "Centre on capital" }
+  - { key: PGUP, command: scroll_up, icon: scrollup.png, label: "Scroll up" }
+  - { key: PGDN, command: scroll_down, icon: scrolldown.png, label: "Scroll down" }
+
+  # Screenshots
+  - { key: F11, icon: screenshot.png, label: "Screenshot", region: [34, 40] }
+  - { key: F11, mods: [SHIFT], icon: mapshot.png, label: "Map screenshot", region: [34, 40] }

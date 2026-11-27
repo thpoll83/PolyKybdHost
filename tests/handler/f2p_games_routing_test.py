@@ -20,6 +20,12 @@ ROUTES = {
     "overwatch_template.mods.png": ("Overwatch.exe", "steam_app_2357570"),
     "genshin_template.mods.png": ("GenshinImpact.exe", "YuanShen.exe"),
     "poe2_template.mods.png": ("steam_app_2694490",),
+    "eu4_template.mods.png": ("eu4.exe", "eu4", "steam_app_236850"),
+    "eu5_template.mods.png": ("eu5.exe", "steam_app_3450310"),
+    "ck3_template.mods.png": ("ck3.exe", "ck3", "steam_app_1158310"),
+    "hoi4_template.mods.png": ("hoi4.exe", "hoi4", "steam_app_394360"),
+    "stellaris_template.mods.png": ("stellaris.exe", "stellaris", "steam_app_281990"),
+    "vic3_template.mods.png": ("victoria3.exe", "victoria3", "steam_app_529340"),
 }
 POE_EXES = ("PathOfExile.exe", "PathOfExile_x64.exe", "PathOfExileSteam.exe",
             "PathOfExile_x64Steam.exe", "PathOfExile_KG.exe", "PathOfExile_x64_KG.exe")

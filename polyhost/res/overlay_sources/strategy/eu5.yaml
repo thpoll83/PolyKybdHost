@@ -1,0 +1,88 @@
+# Europa Universalis V overlay for PolyKybd. See SOURCES.md.
+#
+# Keys: the game's own `loading_screen/input_profile/default.profile`
+# (snapshot of 2026-10, build not stated), the `map` context; panel names
+# from `in_game/gui/panels/left_panel/left_panel.gui`. The profile binds
+# physical key positions (USB HID scancodes), so the icons stay on the same
+# key on every layout. The player can rebind keys in Settings > Input bindings;
+# where the game saves them is not known yet, so the overlay draws the
+# defaults.
+#
+# The number row selects control groups (speed 1-5 is on the number pad).
+#
+# Left out: F10 and Shift+F1..F10 (bound, but no interface file uses them),
+# the number pad, the unit keys (they act on the selection), the console, and
+# Esc (program mark).
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/strategy/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/strategy/eu5.yaml --preview /tmp/eu5_preview
+
+app: europa universalis v
+match: [eu5, steam_app_3450310]
+output: eu5_template
+icon_dir: icons
+fit: contain
+mode: auto
+threshold: 150
+anchor: right
+region: [40, 40]
+margin: 0
+
+program_icon: eu5.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Time
+  - { key: SPACE, command: toggle_pause, icon: pause.png, label: "Pause or unpause" }
+  - { key: LBRACKET, command: pause, icon: pauseonly.png, label: "Pause" }
+  - { key: RBRACKET, command: unpause, icon: unpause.png, label: "Unpause" }
+  - { key: EQUAL, command: increase_speed, icon: faster.png, label: "Faster" }
+  - { key: MINUS, command: decrease_speed, icon: slower.png, label: "Slower" }
+
+  # Panels
+  - { key: F1, command: top_left_1, icon: government.png, label: "Government", region: [34, 40] }
+  - { key: F2, command: top_left_2, icon: economy.png, label: "Economy", region: [34, 40] }
+  - { key: F3, command: top_left_3, icon: production.png, label: "Production", region: [34, 40] }
+  - { key: F4, command: top_left_4, icon: society.png, label: "Society", region: [34, 40] }
+  - { key: F5, command: top_left_5, icon: diplomacy.png, label: "Diplomacy", region: [34, 40] }
+  - { key: F6, command: top_left_6, icon: military.png, label: "Military", region: [34, 40] }
+  - { key: F7, command: top_left_7, icon: geography.png, label: "Geography", region: [34, 40] }
+  - { key: F8, command: top_left_8, icon: technology.png, label: "Advances", region: [34, 40] }
+  - { key: F9, command: top_left_9, icon: content.png, label: "Country content", region: [34, 40] }
+
+  # Control groups
+  - { key: "1", command: control_group_1, icon: group1.png, label: "Control group 1" }
+  - { key: "2", command: control_group_2, icon: group2.png, label: "Control group 2" }
+  - { key: "3", command: control_group_3, icon: group3.png, label: "Control group 3" }
+  - { key: "4", command: control_group_4, icon: group4.png, label: "Control group 4" }
+  - { key: "5", command: control_group_5, icon: group5.png, label: "Control group 5" }
+  - { key: "6", command: control_group_6, icon: group6.png, label: "Control group 6" }
+  - { key: "7", command: control_group_7, icon: group7.png, label: "Control group 7" }
+  - { key: "8", command: control_group_8, icon: group8.png, label: "Control group 8" }
+  - { key: "9", command: control_group_9, icon: group9.png, label: "Control group 9" }
+  - { key: "0", command: control_group_0, icon: group0.png, label: "Control group 0" }
+
+  # Camera and map
+  - { key: W, icon: panup.png, label: "Pan camera up", undrawn: [UP] }
+  - { key: S, icon: pandown.png, label: "Pan camera down", undrawn: [DOWN] }
+  - { key: A, icon: panleft.png, label: "Pan camera left", undrawn: [LEFT] }
+  - { key: D, icon: panright.png, label: "Pan camera right", undrawn: [RIGHT] }
+  - { key: M, command: mapmode_menu, icon: mapmenu.png, label: "Map mode menu" }
+  - { key: F, command: find_province, icon: find.png, label: "Find province" }
+  - { key: HOME, command: go_to_capital, icon: capital.png, label: "Go to capital" }
+  - { key: TAB, command: max_zoom_out, icon: maxzoom.png, label: "Zoom all the way out" }
+  - { key: E, command: toggle_alert_stash, icon: alerts.png, label: "Alerts" }
+
+  # Dialogs and system
+  - { key: C, command: confirm, icon: confirm.png, label: "Confirm" }
+  - { key: Z, command: decline, icon: decline.png, label: "Decline" }
+  - { key: F11, command: screenshot, icon: screenshot.png, label: "Screenshot", region: [34, 40] }
+  - { key: F11, mods: [SHIFT], command: screenshot_map, icon: mapshot.png, label: "Map screenshot", region: [34, 40] }
+  - { key: F9, mods: [CTRL], command: disable_gui, icon: hidegui.png, label: "Hide interface", region: [34, 40] }
+  - { key: F10, mods: [CTRL], command: lock_camera, icon: lockcam.png, label: "Lock camera", region: [34, 40] }
