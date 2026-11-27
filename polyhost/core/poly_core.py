@@ -681,9 +681,23 @@ class PolyCore(Observable):
         """On the tick thread: give the handler a mapping the user's overlay sets
         changed, and drop the generic set's dedupe so a changed "*" set is sent."""
         mapping, self._pending_mapping = getattr(self, "_pending_mapping", None), None
-        if mapping is not None and handler is not None:
-            handler.set_mapping(mapping)
-            self._generic_on_device = None
+        if mapping is None or handler is None:
+            return
+        # Read BEFORE set_mapping: its force_resend forgets the matched entry.
+        had_template = bool(handler.get_overlay_data())
+        handler.set_mapping(mapping)
+        self._generic_on_device = None
+        if had_template or not self.connected or self.safe_mode:
+            return      # the template's resend carries the "*" set (_with_star_set)
+        # ⚠️ No template for the window in front (often the terminal the assistant
+        # runs in). The handler sees no change there, and a DISABLE on a board it
+        # already thinks is off is dropped as redundant, so a changed "*" set would
+        # wait for the next app switch. Send it now, or take a removed one down.
+        if self.send_overlay_files([]):
+            self._note_overlay_state(True)
+        else:
+            self.submit_overlay_cmd(OverlayCommand.DISABLE)
+            self._note_overlay_state(False)
 
     def _with_star_set(self, files):
         """`files` with the user's "*" set in FRONT: the send keeps the last image

@@ -1,8 +1,10 @@
 # MCP server for AI assistants: plan
 
-**Status:** version 1 built (2026-11-27): `polyhost/mcp/`, `polyctl mcp`, the key
-table `res/key_positions.yaml` and `services/key_names.py`. Version 2 (overlays from
-a description, and keys drawn freely) is a concept; the entry in [`FUTURE_WORK.md`](FUTURE_WORK.md) says
+**Status:** version 1 and version 2a built (2026-11-27): `polyhost/mcp/`,
+`polyctl mcp`, the key table `res/key_positions.yaml` and `services/key_names.py`;
+for 2a `services/key_drawing.py`, `services/user_overlays.py`,
+`services/overlay_preview.py` and `gui/user_overlays_dialog.py`. Version 2b (images
+per physical key) needs a firmware change and is not built; the entry in [`FUTURE_WORK.md`](FUTURE_WORK.md) says
 why it waits. Security record: HOST-9 in `polykybd-ctnd/docs/SECURITY_AUDIT.md`.
 
 ## Using it
@@ -218,7 +220,7 @@ fixes it (see *Tests*).
 
 ## Version 2: overlays from a description, and keys drawn freely
 
-**Status:** concept (2026-11-27), not built. Two requests:
+**Status:** 2a built (2026-11-27); 2b (per physical key) not built. Two requests:
 
 - "Make keys for my app": an overlay set for one application, from a list of
   shortcuts.
@@ -255,19 +257,25 @@ Nothing in version 2 needs a firmware change or a protocol version increase.
 ### The pieces
 
 1. **A user overlay folder**, `user_overlays/` in the config directory, with one
-   subfolder per set: the binding file `bindings.yaml`, the generated PNGs and a
-   mapping stanza. `get_overlay_path()` checks it after the game copy and before
-   the shipped file, so a name in both places uses the user's file and the log says
-   so once.
-2. **A user mapping file**, `user_overlays/overlay-mapping.poly.yaml`. The core
-   loads it after the shipped mapping. A user entry for an app that has a shipped
-   entry is laid over it. The send keeps the LAST image per key and modifier
-   (`send_overlays_mru`, "a later source wins a key"), so the files go out in this
-   order: the `"*"` set, the shipped set, the user's set for the app. The tools write only
+   subfolder per set: `set.yaml` (app, bindings) and the drawn PNGs
+   `user_<app>.mods.png` (and `.combo`, `.extra`, `.gui`), written by
+   `services/user_overlays.py` with the no-legend chunk. The `"*"` set is the folder
+   `_all`. No separate user mapping file: the sets themselves are the mapping.
+2. **The merge.** At load and after every change, `merged_mapping()` lays each set
+   over the shipped entry for its app: its files (absolute paths) are appended to
+   every `overlay` list of the entry, its URL, title and OS routes included. An app
+   with no shipped entry gets a new one. The send keeps the LAST image per key and
+   modifier (`send_overlays_mru`, "a later source wins a key"), so the files go out
+   in this order: the `"*"` set, the shipped set, the user's set for the app.
+   `PolyCore._with_star_set()` puts the `"*"` set in front of all three sends (the
+   template send, the generic set and its clear). Where a window has no overlay, the
+   core sends the `"*"` set alone instead of a DISABLE, and a changed set is sent at
+   once rather than at the next app switch. The generic icons skip the keys the
+   `"*"` set draws, because it is a real source and they are synthetic ones. The tools write only
    the entries they created (each carries `source: mcp`) and leave every other
    line of the file as it is. A user who edits the file by hand keeps their edits.
-3. **New control methods in the host** (`user_overlay.set`, `user_overlay.remove`,
-   `user_overlay.preview`). The host, not the MCP server, checks the request, writes
+3. **New control methods in the host** (`user_overlay.list`, `.get`, `.set`,
+   `.clear`, `.preview`). The host, not the MCP server, checks the request, writes
    the files, runs the generator in-process and reloads the mapping, so
    `mcp_enabled` and the allow-list apply to every write, and a change shows at the
    next window switch, or at once when the app is focused. The MCP server writes no
@@ -280,7 +288,8 @@ Nothing in version 2 needs a firmware change or a protocol version increase.
 |---|---|
 | `find_icons(query)` | Searches the icon library names (`res/fontpack/icon_ids.yaml`, 3556 entries such as `concept:material:content_copy`) and returns up to 20, each with its size in pixels. |
 | `list_overlay_keys()` | The 90 keys that can have an image, by key name, and which physical keys send each one on layer 0. |
-| `create_overlay(app, bindings)` | Writes or replaces the user set for `app`. `bindings` is a list of `{key, mods, label, icon, drawing, legend}`; it is the generator's binding format plus `drawing`. Returns the placed keys and the keys it could not place, with the reason. |
+| `create_overlay(app, bindings)` | Writes or replaces the user set for `app`. `bindings` is a list of `{key, drawing, mods, legend}`; a label or an icon is a `text` or `icon` shape. Returns the placed keys; any refused binding refuses the whole call, with the reason. |
+| `list_user_overlays()` | The user's sets, by app, with their key counts. |
 | `draw_key(app, key, drawing, mods=[], legend=true, follow="keycode")` | Adds or replaces one binding in the user set for `app` (`"*"` for every app, see below) and regenerates it. `follow` applies to `"*"` only. |
 | `clear_key(app, key, mods=[])`, `delete_overlay(app)` | Remove one binding, or the whole user set and its mapping entry. Only sets in `user_overlays/` can be removed. |
 | `preview_overlay(app, mods=[])` | Both halves with every key's image at 2× scale, as an MCP image, with the keycode name on keys that have no image. A key drawn with its legend is marked, and the cut the firmware makes into the legend is shown as a 3 px outline. |
@@ -303,7 +312,7 @@ shapes, drawn in order:
 [
   {"rect": [0, 0, 72, 40], "fill": false, "width": 2},
   {"line": [6, 34, 66, 6], "width": 3},
-  {"ellipse": [24, 8, 48, 32], "fill": true},
+  {"ellipse": [24, 8, 24, 24], "fill": true},
   {"polygon": [[36, 4], [60, 36], [12, 36]], "fill": false},
   {"text": "F5", "at": [36, 20], "size": 18, "align": "center"},
   {"icon": "concept:material:content_copy", "at": [44, 12]},
@@ -312,8 +321,9 @@ shapes, drawn in order:
 ]
 ```
 
-- Coordinates are pixels, `[0, 0]` at the top left. Every shape is clipped to the
-  canvas; a shape outside it draws nothing and the result says so.
+- Coordinates are pixels, `[0, 0]` at the top left. `rect` and `ellipse` take
+  `[x, y, w, h]`. Every shape is clipped to the canvas; a shape outside it draws
+  nothing and the result says so.
 - `text` is drawn with Pillow's built-in scalable font (Aileron, Pillow 10.1 or
   newer, `ImageFont.load_default(size)`), without anti-aliasing. It is the same on
   every platform and needs no file. It has Latin letters only: Greek, Cyrillic or
@@ -398,7 +408,10 @@ Version 2a is built first. 2b needs a firmware release, then the host release.
 - The `"*"` set is wanted.
 - A user set for an app that has a shipped set is laid OVER it: the user's keys
   first, the shipped images on every other key.
-- The tray gets a page that lists the user sets, with Remove.
+- The tray gets a page that lists the user sets, with Remove. Built as a dialog,
+  *Overlays made by AI assistants…* in the tray menu, not as a Settings page:
+  `tests/gui/settings_dialog_test.py` allows no push button in Settings besides OK,
+  Cancel and Generate.
 
 ## Not planned: live values on keys
 

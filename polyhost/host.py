@@ -547,6 +547,16 @@ class PolyHost(QApplication):
         self.tutorial_panel = None
         self.menu.addAction(self.tutorials_action)
 
+        # Overlay sets an AI assistant made (gui/user_overlays_dialog.py), so the
+        # user can remove them without the assistant. Core calls go through
+        # _core_click, like the tutorials.
+        self.user_overlays_action = QAction(get_icon("edit.svg"),
+                                            _("Overlays made by AI assistants…"), parent=self)
+        # noinspection PyUnresolvedReferences
+        self.user_overlays_action.triggered.connect(self.open_user_overlays)
+        self.user_overlays_dialog = None
+        self.menu.addAction(self.user_overlays_action)
+
         self.menu.addSeparator()
 
         # --- Updates: every "get something newer" path in one place -------------
@@ -1139,6 +1149,7 @@ class PolyHost(QApplication):
         self.layout_editor.setEnabled(True)
         self.settings_dialog.setEnabled(True)
         self.integrations_action.setEnabled(True)    # local files only
+        self.user_overlays_action.setEnabled(True)   # host files only, no device I/O
         self.log_dialog.setEnabled(True)
         self.fontpack_inspector_action.setEnabled(True)   # inspects shipped bundles offline
         self.update_action.setEnabled(True)
@@ -1581,6 +1592,16 @@ class PolyHost(QApplication):
                                                 self._show_tutorial_panel)
         self.tutorials_dialog.show()
         self.tutorials_dialog.load()
+
+    def open_user_overlays(self):
+        from polyhost.gui.user_overlays_dialog import UserOverlaysDialog
+        if self.user_overlays_dialog is not None and self.user_overlays_dialog.isVisible():
+            self.user_overlays_dialog.raise_()
+            self.user_overlays_dialog.activateWindow()
+            return
+        self.user_overlays_dialog = UserOverlaysDialog(self.core, self._core_click)
+        self.user_overlays_dialog.show()
+        self.user_overlays_dialog.load()
 
     def _show_tutorial_panel(self, state):
         """Open (or reuse) the step panel for a started tutorial."""

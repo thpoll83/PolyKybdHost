@@ -163,12 +163,40 @@ class StarSetCoreTest(unittest.TestCase):
         user_overlays.remove_set("*")
         self.assertEqual(core._with_star_set(["a.mods.png"]), ["a.mods.png"])
 
-    def test_the_pending_mapping_reaches_the_handler_on_the_tick(self):
-        core = self._core()
+    def _pending(self, core, template):
         core._shipped_mapping = {"app": {"overlay": ["a.mods.png"]}}
         core._generic_on_device = ("sig",)
+        core.connected, core.safe_mode = True, False
+        core.send_overlay_files = mock.MagicMock(return_value=bool(user_overlays.star_files()))
+        core.submit_overlay_cmd = mock.MagicMock()
+        core._note_overlay_state = mock.MagicMock()
         core._apply_user_overlays()
         handler = mock.MagicMock()
+        handler.get_overlay_data.return_value = ["a.mods.png"] if template else None
+        return handler
+
+    def test_a_changed_star_set_is_sent_at_once_where_no_template_is_up(self):
+        user_overlays.save_set("*", [{"key": "KC_Q", "drawing": BOX}])
+        core = self._core()
+        core._take_pending_mapping(self._pending(core, template=False))
+        core.send_overlay_files.assert_called_once_with([])
+        core.submit_overlay_cmd.assert_not_called()
+
+    def test_a_removed_star_set_comes_down_where_no_template_is_up(self):
+        core = self._core()
+        core._take_pending_mapping(self._pending(core, template=False))
+        core.submit_overlay_cmd.assert_called_once_with(OverlayCommand.DISABLE)
+
+    def test_a_template_resend_carries_the_star_set_so_nothing_else_is_sent(self):
+        user_overlays.save_set("*", [{"key": "KC_Q", "drawing": BOX}])
+        core = self._core()
+        core._take_pending_mapping(self._pending(core, template=True))
+        core.send_overlay_files.assert_not_called()
+        core.submit_overlay_cmd.assert_not_called()
+
+    def test_the_pending_mapping_reaches_the_handler_on_the_tick(self):
+        core = self._core()
+        handler = self._pending(core, template=True)
         core._take_pending_mapping(handler)
         handler.set_mapping.assert_called_once_with(core.mapping)
         self.assertIsNone(core._generic_on_device)
