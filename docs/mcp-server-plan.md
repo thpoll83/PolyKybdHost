@@ -59,10 +59,12 @@ tool that takes a key resolves a key reference, and two tools describe the board
 - **`X` and `Y` come from the switch positions in the KiCad boards**
   (`PolyKybd/poly_kybd/poly_kybd_split72_left.kicad_pcb` and `_right`, footprints
   `SW_K_<n>`), not from the KLE file, because the PCB is the authority for key
-  positions ([`layout-editor.md`](layout-editor.md)). Each switch takes the
-  nearest column (the outer column, then 1.25U to the next, then 1U, 19.05 mm) and
-  the nearest row (19.05 mm from the top row of the outer column). The rotated
-  thumb keys get the column and row nearest to their centre.
+  positions ([`layout-editor.md`](layout-editor.md)). `X` is the column nearest
+  to the switch (the outer column, then 1.25U to the next, then 1U, 19.05 mm),
+  for the rotated thumb keys too. `Y` counts the keys of that column from the top,
+  starting at the row nearest to the column's top key: row 1 for columns 1 to 7,
+  row 3 for column 8, whose top key is the expansion-port key. So the outer thumb
+  pair is `8.4` and `8.5`, not the rows their centres are nearest to.
 - **Checked on the current boards (2026-11-27):** the 36 switches of each half get
   36 different names, and both halves give the same set of names, so `L:X.Y` and
   `R:X.Y` are always the same place on each side. The KLE file has 37 keys per
@@ -76,13 +78,12 @@ tool that takes a key resolves a key reference, and two tools describe the board
       1   0,0  0,1  0,2  0,3  0,4  0,5  0,6    .   |    .  5,1  5,2  5,3  5,4  5,5  5,6  5,7
       2   1,0  1,1  1,2  1,3  1,4  1,5  1,6    .   |    .  6,1  6,2  6,3  6,4  6,5  6,6  6,7
       3   2,0  2,1  2,2  2,3  2,4  2,5  2,6  3,7   |  8,0  7,1  7,2  7,3  7,4  7,5  7,6  7,7
-      4   3,0  3,1  3,2  3,3  3,4  3,5  3,6    .   |    .  8,1  8,2  8,3  8,4  8,5  8,6  8,7
-      5   4,0  4,1  4,2  4,3    .  4,4  4,5  4,7   |  9,0  9,2  9,3    .  9,4  9,5  9,6  9,7
-      6     .    .    .    .    .    .    .  4,6   |  9,1    .    .    .    .    .    .    .
+      4   3,0  3,1  3,2  3,3  3,4  3,5  3,6  4,7   |  9,0  8,1  8,2  8,3  8,4  8,5  8,6  8,7
+      5   4,0  4,1  4,2  4,3    .  4,4  4,5  4,6   |  9,1  9,2  9,3    .  9,4  9,5  9,6  9,7
   ```
 
-  The cells with `.` have no key. The thumb keys are `6.5`, `7.4`, `7.5`, `8.5`
-  and `8.6` on each half.
+  The cells with `.` have no key. The thumb keys are `6.5`, `7.4`, `7.5`, `8.4`
+  and `8.5` on each half.
 - **The names are a frozen table**, generated once from the boards and shipped
   (for example `res/key_positions.yaml`, name → matrix `row,col`), not computed at
   runtime, so a later board revision or KLE correction does not rename a key. A
