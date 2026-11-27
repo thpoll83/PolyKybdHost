@@ -87,6 +87,7 @@ FLUENT = {
     "camera": "Video",
     "micmute": "Mic Off",
     "raisehand": "ms:back_hand",
+    "reactions": "Emoji Add",
     "endcall": "Call End",
     "emoji": "Emoji",
     "gif": "Gif",

@@ -44,6 +44,14 @@ Cmd+Ctrl. The page prints the Windows Settings chord as "Ctrl Alt" with no key;
 the set uses "," from the macOS column. Extended search is Alt+K (Cmd+K on
 macOS).
 
+On macOS, WhatsApp Web's own Keyboard shortcuts dialog (read by the maintainer
+on 2026-11-27) is the source too. It shows that the help page's macOS "Search
+Chat" chord, Cmd+Ctrl+/, is the general Search; Search chat is Cmd+Shift+F. It
+adds next and previous chat (Cmd+Ctrl+Tab, Cmd+Ctrl+Shift+Tab), Add chat to list,
+Block chat (Ctrl+Shift+B), the voice message keys, Edit last message (Cmd+Up)
+and the call keys; Screen share (Cmd+Ctrl+S) reuses the sticker panel's chord
+and is left out. The Windows and Linux keys stay as the help page gives them.
+
 ### WhatsApp desktop
 
 WhatsApp publishes no shortcut list for its desktop apps: the Help Center
@@ -169,6 +177,7 @@ Fetched by `fetch_icons.py`:
 | `camera.png` | Fluent `Video` | MIT |
 | `micmute.png` | Fluent `Mic Off` | MIT |
 | `raisehand.png` | Material Symbols `back_hand` | Apache-2.0 |
+| `reactions.png` | Fluent `Emoji Add` | MIT |
 | `endcall.png` | Fluent `Call End` | MIT |
 | `emoji.png` | Fluent `Emoji` | MIT |
 | `gif.png` | Fluent `Gif` | MIT |

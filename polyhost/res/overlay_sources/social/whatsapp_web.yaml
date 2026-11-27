@@ -1,7 +1,9 @@
 # WhatsApp Web (web.whatsapp.com) shortcut overlays for PolyKybd. See SOURCES.md.
 #
 # Keys: WhatsApp's own Help Center article "About keyboard shortcuts"
-# (faq.whatsapp.com/6204576529560565, web tab, read 2026-11-25). WhatsApp Web
+# (faq.whatsapp.com/6204576529560565, web tab, read 2026-11-25). On macOS also
+# WhatsApp Web's own Keyboard shortcuts dialog, read by the maintainer
+# (2026-11-27), which adds keys the help page leaves out. WhatsApp Web
 # adds Alt to its Windows and Linux chords so they do not collide with the
 # browser's own Ctrl keys, and writes them as Cmd+Ctrl on macOS. That is not
 # the CMDCTRL token (Cmd for Ctrl only), so each chord is written twice: once
@@ -43,9 +45,16 @@ bindings:
   - { key: E, mods: [GUI, CTRL, SHIFT], icon: archive.png,  label: "Archive chat",   only: [macos] }
   - { key: P, mods: [GUI, CTRL, SHIFT], icon: pin.png,      label: "Pin chat",       only: [macos] }
   - { key: N, mods: [GUI, CTRL, SHIFT], icon: newgroup.png, label: "New group",      only: [macos] }
-  # The help page's one chord that is not a straight Ctrl+Alt -> Cmd+Ctrl copy:
-  # Search in chat is Ctrl+Alt+Shift+F on Windows and Linux, Cmd+Ctrl+/ on macOS.
-  - { key: "/", mods: [GUI, CTRL],      icon: searchchat.png, label: "Search in chat", only: [macos] }
+  # macOS from here on: WhatsApp Web's own Keyboard shortcuts dialog
+  # (Settings > Keyboard shortcuts) on a Mac, read by the maintainer
+  # (2026-11-27). The help page calls Cmd+Ctrl+/ "Search Chat"; the dialog
+  # shows it is the general Search, and Search chat is Cmd+Shift+F.
+  - { key: "/", mods: [GUI, CTRL],      icon: search.png,     label: "Search",         only: [macos] }
+  - { key: F, mods: [GUI, SHIFT],       icon: searchchat.png, label: "Search in chat", only: [macos] }
+  - { key: TAB, mods: [GUI, CTRL],        icon: nextchat.png,  label: "Next chat",        only: [macos] }
+  - { key: TAB, mods: [GUI, CTRL, SHIFT], icon: prevchat.png,  label: "Previous chat",    only: [macos] }
+  - { key: L, mods: [GUI, CTRL, SHIFT],   icon: addtolist.png, label: "Add chat to list", only: [macos] }
+  - { key: B, mods: [CTRL, SHIFT],        icon: block.png,     label: "Block chat",       only: [macos] }
   # --- app (Windows, Linux: Ctrl+Alt; macOS: Cmd+Ctrl) ---
   - { key: N, mods: [CTRL, ALT], icon: newchat.png, label: "New chat",         except: [macos] }
   - { key: P, mods: [CTRL, ALT], icon: profile.png, label: "Profile and about", except: [macos] }
@@ -66,3 +75,15 @@ bindings:
   # --- extended search: Alt+K, and Cmd+K on macOS ---
   - { key: K, mods: [ALT], icon: extsearch.png, label: "Extended search", except: [macos] }
   - { key: K, mods: [GUI], icon: extsearch.png, label: "Extended search", only: [macos] }
+  # --- macOS only (WhatsApp Web's own dialog): voice messages and editing ---
+  - { key: ".", mods: [SHIFT],     icon: speedup.png,   label: "Faster playback",    only: [macos] }
+  - { key: ",", mods: [SHIFT],     icon: speeddown.png, label: "Slower playback",    only: [macos] }
+  - { key: ENTER, mods: [CTRL],    icon: send.png,      label: "Send voice message", only: [macos] }
+  - { key: UP, mods: [GUI],        icon: editlast.png,  label: "Edit last message",  only: [macos] }
+  # --- macOS calls. Screen share (Cmd+Ctrl+S) is the sticker panel's chord and
+  # is left out; the overlay cannot tell a call from a chat ---
+  - { key: V, mods: [GUI, CTRL],   icon: camera.png,    label: "Camera on or off",     only: [macos] }
+  - { key: M, mods: [GUI, CTRL],   icon: micmute.png,   label: "Microphone on or off", only: [macos] }
+  - { key: R, mods: [GUI, CTRL],   icon: reactions.png, label: "Reactions",            only: [macos] }
+  - { key: H, mods: [GUI, CTRL],   icon: raisehand.png, label: "Raise hand",           only: [macos] }
+  - { key: W, mods: [GUI, CTRL],   icon: endcall.png,   label: "End call",             only: [macos] }
