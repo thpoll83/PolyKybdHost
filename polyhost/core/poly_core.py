@@ -686,8 +686,10 @@ class PolyCore(Observable):
     def _take_pending_mapping(self, handler):
         """On the tick thread: give the handler a mapping the user's overlay sets
         changed, and drop the generic set's dedupe so a changed "*" set is sent."""
+        if getattr(self, "_pending_mapping", None) is None:
+            return      # nothing stored; one stored now is taken on the next tick
         with self._pending_mapping_lock:   # a newer mapping stored meanwhile is never lost
-            mapping, self._pending_mapping = getattr(self, "_pending_mapping", None), None
+            mapping, self._pending_mapping = self._pending_mapping, None
         if mapping is None or handler is None:
             return
         # Read BEFORE set_mapping: its force_resend forgets the matched entry.
