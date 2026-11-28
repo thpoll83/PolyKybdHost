@@ -40,6 +40,22 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(len(bindings), 1)
         self.assertFalse(bindings[0]["legend"])
 
+    def test_the_limit_counts_the_set_that_results_from_a_merge(self):
+        full = [{"key": k, "drawing": BOX} for k in ("KC_Q", "KC_W", "KC_E")]
+        with mock.patch.object(uo, "MAX_BINDINGS", 3):
+            uo.save_set("x", full, self.root)
+            keep = uo.load_set("x", self.root)["bindings"]
+            # A replacement in a full set leaves 3 bindings: accepted.
+            uo.save_set("x", [{"key": "KC_W", "drawing": BOX, "legend": False}], self.root,
+                        keep=keep)
+            bindings = uo.load_set("x", self.root)["bindings"]
+            self.assertEqual([b["key"] for b in bindings], ["KC_Q", "KC_W", "KC_E"])
+            self.assertFalse(bindings[1]["legend"])
+            # A 4th distinct binding is refused, and the stored set stays.
+            with self.assertRaises(uo.UserOverlayError):
+                uo.save_set("x", [{"key": "KC_R", "drawing": BOX}], self.root, keep=bindings)
+        self.assertEqual(len(uo.load_set("x", self.root)["bindings"]), 3)
+
     def test_an_empty_set_is_removed(self):
         uo.save_set("x", [{"key": "KC_Q", "drawing": BOX}], self.root)
         uo.save_set("x", [], self.root)
