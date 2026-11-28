@@ -73,9 +73,13 @@ def check_app(app) -> str:
 
 
 def slug(app: str) -> str:
+    """The folder name of `app`'s set. Reversible, so "my.tool" and "my-tool" get
+    different folders: every character but a-z, 0-9 and "_" becomes "-" and its
+    two hex digits. "*" is "_all", which no app name can be (they start with a
+    letter or digit)."""
     if app == ALL_APPS:
         return "_all"
-    return re.sub(r"[^a-z0-9_-]", "-", app)
+    return re.sub(r"[^a-z0-9_]", lambda m: f"-{ord(m.group(0)):02x}", app)
 
 
 def set_dir(app: str, root: str | None = None) -> str:
@@ -171,12 +175,14 @@ def list_sets(root: str | None = None) -> list[dict]:
         try:
             with open(path, encoding="utf-8") as f:
                 data = yaml.safe_load(f) or {}
+            if not isinstance(data, dict) or not isinstance(data.get("bindings"), list):
+                continue    # one malformed set must not hide the others
             app = check_app(data.get("app"))
         except (OSError, yaml.YAMLError, UserOverlayError):
             continue
         if slug(app) != name:
             continue
-        out.append({"app": app, "keys": len(data.get("bindings") or [])})
+        out.append({"app": app, "keys": len(data["bindings"])})
     out.sort(key=lambda s: (s["app"] != ALL_APPS, s["app"]))
     return out
 
@@ -208,12 +214,24 @@ def save_set(app: str, bindings: list, root: str | None = None) -> dict:
     folder = set_dir(app, root)
     os.makedirs(folder, exist_ok=True)
     import yaml
+    # Draw every file first, then publish: an error while drawing leaves the
+    # previous set and its files as they were (the caller holds the core's lock,
+    # so no second writer shares these temp names).
+    staged = _write_files(app, clean, folder)
     tmp = os.path.join(folder, SET_FILE + ".tmp")
     with open(tmp, "w", encoding="utf-8") as f:
         yaml.safe_dump({"app": app, "source": "mcp", "bindings": clean}, f,
                        allow_unicode=True, sort_keys=False)
-    os.replace(tmp, os.path.join(folder, SET_FILE))
-    files = _write_files(app, clean, folder)
+    staged.append((tmp, os.path.join(folder, SET_FILE)))
+    files = []
+    for src, dst in staged:
+        if src is None:
+            if os.path.exists(dst):
+                os.remove(dst)      # a tier this set no longer draws
+            continue
+        os.replace(src, dst)
+        if dst.endswith(".png"):
+            files.append(dst)
     return {"placed": [{"key": b["key"], "mods": b["mods"], "legend": b["legend"]}
                        for b in clean], "files": files}
 
@@ -256,12 +274,11 @@ def _write_files(app, bindings, folder) -> list[str]:
         if not b["legend"]:
             no_legend[tier].add((mod.value, kc.value))
     stem = "user_" + slug(app)
-    written = []
+    staged = []     # (temp file or None for "remove", final path)
     for tier, suffix, _chans in TIERS:
         path = os.path.join(folder, stem + suffix)
         if not arrays[tier].any():
-            if os.path.exists(path):
-                os.remove(path)
+            staged.append((None, path))
             continue
         info = None
         if no_legend[tier]:
@@ -269,9 +286,8 @@ def _write_files(app, bindings, folder) -> list[str]:
             info.add_text(NO_LEGEND_CHUNK, " ".join(f"{m}:{k}" for m, k in sorted(no_legend[tier])))
         tmp = path + ".tmp"
         Image.fromarray(arrays[tier], mode="RGBA").save(tmp, format="PNG", pnginfo=info)
-        os.replace(tmp, path)
-        written.append(path)
-    return written
+        staged.append((tmp, path))
+    return staged
 
 
 # -- the mapping ------------------------------------------------------------------

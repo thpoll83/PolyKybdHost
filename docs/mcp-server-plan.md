@@ -39,7 +39,8 @@ that AI assistants are turned off, and names the setting.
   can open such a connection. The setting stops an assistant that a user added to a
   client; it is not a security boundary against code that runs as the user.
 - **A host older than the method** answers "unknown method", and the MCP server
-  goes on without the gate: that host has no setting to apply.
+  refuses to work with it (fails closed): that host could apply neither the setting
+  nor its allow-list check. The assistant is told to update PolyKybdHost.
 
 ## Goal
 
@@ -414,6 +415,16 @@ Version 2a is built first. 2b needs a firmware release, then the host release.
   page:
   `tests/gui/settings_dialog_test.py` allows no push button in Settings besides OK,
   Cancel and Generate.
+
+## Version 3: notifications (concept)
+
+An assistant can say what it learned ("the tests failed") only by calling a tool,
+and the agent keys cannot know that from hooks. Version 3 adds `notify`,
+`clear_notification`, `list_notifications` and `report_state` (the MCP shim for
+agents without hooks), on a notification area that the agent keys, the MCP server,
+`polyctl notify` and the host's own events share. The plan, with how the agent
+keys, the MCP server and drawn keys work together, is
+[`notification-area-plan.md`](notification-area-plan.md).
 
 ## Not planned: live values on keys
 

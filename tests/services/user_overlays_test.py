@@ -4,6 +4,7 @@ import os
 import shutil
 import tempfile
 import unittest
+import unittest.mock as mock
 
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.im_converter import ImageConverter
@@ -76,6 +77,28 @@ class StoreTest(unittest.TestCase):
             with self.assertRaises(uo.UserOverlayError, msg=repr(b)):
                 uo.save_set("x", [b], self.root)
         self.assertEqual(os.listdir(self.root), [])
+
+    def test_names_that_differ_only_in_punctuation_get_their_own_sets(self):
+        uo.save_set("my.tool", [{"key": "KC_Q", "drawing": BOX}], self.root)
+        uo.save_set("my-tool", [{"key": "KC_W", "drawing": BOX}], self.root)
+        self.assertEqual(uo.list_sets(self.root), [{"app": "my-tool", "keys": 1},
+                                                   {"app": "my.tool", "keys": 1}])
+        self.assertNotEqual(uo.slug("my.tool"), uo.slug("my-tool"))
+        self.assertNotEqual(uo.slug("_all"[1:]), uo.slug("*"))
+
+    def test_a_malformed_set_file_hides_no_other_set(self):
+        uo.save_set("good", [{"key": "KC_Q", "drawing": BOX}], self.root)
+        os.makedirs(os.path.join(self.root, "bad"))
+        with open(os.path.join(self.root, "bad", uo.SET_FILE), "w", encoding="utf-8") as f:
+            f.write("- just\n- a list\n")
+        self.assertEqual(uo.list_sets(self.root), [{"app": "good", "keys": 1}])
+
+    def test_a_failed_draw_leaves_the_previous_set(self):
+        uo.save_set("x", [{"key": "KC_Q", "drawing": BOX}], self.root)
+        with mock.patch.object(uo, "_write_files", side_effect=OSError("disk full")):
+            with self.assertRaises(OSError):
+                uo.save_set("x", [{"key": "KC_W", "drawing": BOX}], self.root)
+        self.assertEqual(uo.load_set("x", self.root)["bindings"][0]["key"], "KC_Q")
 
     def test_an_app_name_stays_inside_the_folder(self):
         uo.save_set("my tool.exe", [{"key": "KC_Q", "drawing": BOX}], self.root)

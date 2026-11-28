@@ -138,5 +138,7 @@ def main(argv=None):
         try:
             stream.reconfigure(encoding="utf-8", newline="\n")
         except (AttributeError, ValueError):
-            pass
+            # A replaced stream (a test's StringIO, a wrapper) has no reconfigure()
+            # or refuses it; it already carries str, so it works as it is.
+            continue
     return serve()

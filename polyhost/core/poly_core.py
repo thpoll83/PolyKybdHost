@@ -293,6 +293,11 @@ class PolyCore(Observable):
         # combos_set reads, writes and commits the keyboard's RAM records in several
         # calls; a second save in between would see and restore the first one's records.
         self._combos_lock = threading.Lock()
+        # The user's overlay sets: one read-modify-write at a time (control-socket
+        # connections each run on their own thread), and the hand-over of a changed
+        # mapping to the tick thread.
+        self._user_overlay_lock = threading.Lock()
+        self._pending_mapping_lock = threading.Lock()
         # When THIS PROCESS started, which is what the logon race is measured
         # against — not when the keyboard connected. See _unicode_mode_is_ambiguous.
         self._started_at = time.monotonic()
@@ -675,12 +680,14 @@ class PolyCore(Observable):
         # ⚠️ Not handed to the window handler here: a control-socket thread calls
         # this while the tick thread may be inside handle_active_window. The next
         # tick takes it (`_take_pending_mapping`) on the thread that owns the handler.
-        self._pending_mapping = self.mapping
+        with self._pending_mapping_lock:
+            self._pending_mapping = self.mapping
 
     def _take_pending_mapping(self, handler):
         """On the tick thread: give the handler a mapping the user's overlay sets
         changed, and drop the generic set's dedupe so a changed "*" set is sent."""
-        mapping, self._pending_mapping = getattr(self, "_pending_mapping", None), None
+        with self._pending_mapping_lock:   # a newer mapping stored meanwhile is never lost
+            mapping, self._pending_mapping = getattr(self, "_pending_mapping", None), None
         if mapping is None or handler is None:
             return
         # Read BEFORE set_mapping: its force_resend forgets the matched entry.
@@ -4067,10 +4074,13 @@ class PolyCore(Observable):
         modifiers replaces the old one) and send it if that app is in front."""
         from polyhost.services import user_overlays
         try:
-            if merge:
-                old = (user_overlays.load_set(app) or {}).get("bindings") or []
-                bindings = list(old) + list(bindings or [])
-            result = user_overlays.save_set(app, bindings)
+            # The whole load-merge-save under one lock: two connections merging at
+            # once would otherwise both read the old set and one binding be lost.
+            with self._user_overlay_lock:
+                if merge:
+                    old = (user_overlays.load_set(app) or {}).get("bindings") or []
+                    bindings = list(old) + list(bindings or [])
+                result = user_overlays.save_set(app, bindings)
         except user_overlays.UserOverlayError as e:
             return False, str(e)
         except OSError as e:
@@ -4082,16 +4092,8 @@ class PolyCore(Observable):
         """Remove one binding of `app`'s set, or the whole set when `key` is None."""
         from polyhost.services import user_overlays
         try:
-            if key is None:
-                removed = user_overlays.remove_set(app)
-            else:
-                kc = user_overlays.check_key(key).name
-                mod = user_overlays.mod_names(user_overlays.modifier(mods))
-                old = (user_overlays.load_set(app) or {}).get("bindings") or []
-                keep = [b for b in old if not (b.get("key") == kc and b.get("mods", []) == mod)]
-                removed = len(keep) != len(old)
-                if removed:
-                    user_overlays.save_set(app, keep)
+            with self._user_overlay_lock:
+                removed = self._user_overlay_clear_locked(user_overlays, app, key, mods)
         except user_overlays.UserOverlayError as e:
             return False, str(e)
         except OSError as e:
@@ -4099,6 +4101,20 @@ class PolyCore(Observable):
         if removed:
             self._apply_user_overlays()
         return True, {"removed": removed}
+
+    @staticmethod
+    def _user_overlay_clear_locked(user_overlays, app, key, mods):
+        """Remove `app`'s set, or one binding of it. Call with _user_overlay_lock held."""
+        if key is None:
+            return user_overlays.remove_set(app)
+        kc = user_overlays.check_key(key).name
+        mod = user_overlays.mod_names(user_overlays.modifier(mods))
+        old = (user_overlays.load_set(app) or {}).get("bindings") or []
+        keep = [b for b in old if not (b.get("key") == kc and b.get("mods", []) == mod)]
+        if len(keep) == len(old):
+            return False
+        user_overlays.save_set(app, keep)
+        return True
 
     def user_overlay_preview(self, app, mods=None):
         """PNG bytes (base64) of both halves as `app` would show them: the image of

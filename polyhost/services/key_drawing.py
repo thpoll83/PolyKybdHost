@@ -219,7 +219,8 @@ def render(shapes) -> tuple[np.ndarray, list[str]]:
             x, y = _ints(shape.get("at", [0, 0]), 2, "at")
             size = _int(shape.get("size", 14), "size", *TEXT_SIZES)
             align = shape.get("align", "left")
-            anchor = {"left": "lm", "center": "mm", "right": "rm"}.get(align)
+            anchor = ({"left": "lm", "center": "mm", "right": "rm"}.get(align)
+                      if isinstance(align, str) else None)
             if anchor is None:
                 raise DrawingError("align is left, center or right")
             draw.text((x, y), text, fill=ink, font=_font(size), anchor=anchor)

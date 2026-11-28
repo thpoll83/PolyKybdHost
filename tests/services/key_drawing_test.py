@@ -60,6 +60,7 @@ class RenderTest(unittest.TestCase):
                        [{"rect": [True, 0, 5, 5]}], [{"line": [0, 0, 5, 5], "width": 11}],
                        [{"text": "Ωmega"}], [{"text": ""}], [{"text": "x" * 65}],
                        [{"text": "a", "size": 41}], [{"text": "a", "align": "top"}],
+                       [{"text": "a", "align": []}],
                        [{"icon": "no:such:icon"}], [{"bitmap": ["#x"]}], [{"bitmap": ["#"] * 41}],
                        [{"bitmap": ["#"], "scale": 5}], [{"polygon": [[0, 0], [1, 1]]}],
                        [{"rect": [0, 0, 1, 1]}] * 201):
