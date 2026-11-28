@@ -48,7 +48,8 @@ def _channel_for(path, mod):
 
 def key_images(files, mod: Modifier) -> dict[int, tuple[np.ndarray, bool]]:
     """{keycode: (40x72 bool mask, legend kept)} for modifier `mod`; the last file
-    that draws a key wins, as in the overlay send."""
+    that draws a key wins, as in the overlay send. `.keys.png` files are skipped
+    (physical_key_images)."""
     from PIL import Image
     from polyhost.device.im_converter import NO_LEGEND_CHUNK, parse_no_legend
     out = {}
@@ -70,6 +71,31 @@ def key_images(files, mod: Modifier) -> dict[int, tuple[np.ndarray, bool]]:
             cell = arr[row * SLOT_H:(row + 1) * SLOT_H, col * SLOT_W:(col + 1) * SLOT_W] > 127
             if cell.any():
                 out[kc.value] = (cell, (mod.value, kc.value) not in no_legend)
+    return out
+
+
+def physical_key_images(files) -> dict[int, tuple[np.ndarray, bool]]:
+    """{matrix index: (mask, legend kept)} from the `.keys.png` files (v40)."""
+    from PIL import Image
+    from polyhost.device.im_converter import NO_LEGEND_CHUNK, parse_no_legend
+    from polyhost.device.key_images import KEY_OVERLAY_COUNT, is_key_image_file
+    from polyhost.res.overlay_layout import GRID_X
+    out = {}
+    for path in files:
+        if not is_key_image_file(path):
+            continue
+        try:
+            with Image.open(str(path)) as im:
+                im.load()
+                no_legend = parse_no_legend(im.info.get(NO_LEGEND_CHUNK))
+                arr = np.asarray(im.convert("L"), dtype=np.uint8)
+        except OSError:
+            continue
+        for idx in range(KEY_OVERLAY_COUNT):
+            row, col = divmod(idx, GRID_X)
+            cell = arr[row * SLOT_H:(row + 1) * SLOT_H, col * SLOT_W:(col + 1) * SLOT_W] > 127
+            if cell.any():
+                out[idx] = (cell, (Modifier.NO_MOD.value, idx) not in no_legend)
     return out
 
 
@@ -101,6 +127,7 @@ def render_board(files, buffer, mod: Modifier = Modifier.NO_MOD) -> bytes:
 
     table = load_table("split72")
     images = key_images(files, mod)
+    per_key = physical_key_images(files)
     rows = 5
     width = 2 * COLUMNS_PER_HALF * (SLOT_W + GAP) + HALF_GAP
     height = rows * (SLOT_H + GAP)
@@ -115,6 +142,9 @@ def render_board(files, buffer, mod: Modifier = Modifier.NO_MOD) -> bytes:
         code = buffer[row * MATRIX_COLUMNS + col] if row * MATRIX_COLUMNS + col < len(buffer) else 0
         cell = np.zeros((SLOT_H, SLOT_W), dtype=np.uint8)
         hit = images.get(code)
+        if hit is None:
+            # v40: the key's own image, where its keycode has none.
+            hit = per_key.get(row * MATRIX_COLUMNS + col)
         if hit is None or hit[1]:
             labels.append((left, top, _short(code), hit[0] if hit else None))
         if hit is not None:

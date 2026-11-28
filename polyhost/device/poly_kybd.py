@@ -7,7 +7,7 @@ import time
 from typing import Any
 
 from polyhost.device.device_settings import DeviceSettings
-from polyhost.device import bulk_pipe
+from polyhost.device import bulk_pipe, key_images
 from polyhost.input.unicode_input import InputMethod
 from polyhost.settings import PolySettings
 from polyhost.device.bit_packing import (pack_report, pairs_per_report,
@@ -193,6 +193,11 @@ MAC_COMPOSE_MIN_PROTOCOL = 38
 # (0x03 value 0x05) and switch matrix state (0x02 value 0x03, only while the
 # keyboard's debug mode is on). Older firmware sends no reply to these ids.
 VIA_VALUES_MIN_PROTOCOL = 39
+# Minimum firmware PROTOCOL_VERSION for an overlay image per PHYSICAL key: a cmd 33
+# mapping `from` of KEY_OVERLAY_BASE + matrix index (device/key_images.py). The key
+# draws it where its keycode has no image. Older firmware ignores such a `from` as
+# padding, so the host leaves the `.keys.png` files out below v40.
+KEY_OVERLAY_MIN_PROTOCOL = 40
 # VIA value ids (qmk quantum/via.h).
 VIA_ID_UNHANDLED = 0xFF
 VIA_UPTIME = 0x01
@@ -262,6 +267,7 @@ FEATURE_MIN_PROTOCOL = {
     "hw_id": HW_ID_MIN_PROTOCOL,
     "mac_compose": MAC_COMPOSE_MIN_PROTOCOL,
     "via_values": VIA_VALUES_MIN_PROTOCOL,
+    "key_overlay": KEY_OVERLAY_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -352,6 +358,22 @@ CONSOLE_PARTIAL_LINE_HOLD_S = 1.0
 COMBO_COMMIT_NO_ANSWER = "The keyboard did not answer the combo commit"
 COMBO_COMMIT_REFUSED = ("The keyboard refused the commit: a firmware update is running, its "
                         "flash write failed, or this build has no combo support")
+
+
+def _overlay_position(converter, modifier, keycode):
+    """The send loop's key for one image: (modifier value, keycode), or for a
+    physical-key image (device/key_images.py, v40) (KEY_POSITION, matrix index)."""
+    if getattr(converter, "physical_keys", False) is True:
+        return (key_images.KEY_POSITION, keycode)
+    return (modifier.value, keycode)
+
+
+def _display_position(cache, converter, modifier, keycode):
+    """The cmd 33 `from` of one image: the flat keycode position, or for a
+    physical-key image KEY_OVERLAY_BASE + matrix index."""
+    if getattr(converter, "physical_keys", False) is True:
+        return key_images.mapping_from(keycode)
+    return cache.display_flat_idx(keycode, modifier)
 
 
 class PolyKybd:
@@ -2518,13 +2540,25 @@ class PolyKybd:
         # keyboard with no overlays until the next program switch. Validating up
         # front makes a bad request a no-op on the device.
         synthetic = synthetic or {}
+        # Images per physical key (device/key_images.py) need v40: older firmware
+        # ignores their mapping, so they are not uploaded there at all.
+        if not self.supports("key_overlay"):
+            skipped = [f for f in filenames if key_images.is_key_image_file(f)]
+            if skipped:
+                self.log.info("%s need firmware protocol v%d; not sent.",
+                              ", ".join(map(str, skipped)), KEY_OVERLAY_MIN_PROTOCOL)
+                filenames = [f for f in filenames if not key_images.is_key_image_file(f)]
         converters = []
         for filename in filenames:
             self.log.info("Send Overlay MRU '%s'...", filename)
             if filename in synthetic:
                 converters.append(synthetic[filename])
                 continue
-            converter = ImageConverter(self.device_settings)
+            if key_images.is_key_image_file(filename):
+                # Images per physical key (v40); dropped above on older firmware.
+                converter = key_images.KeyImageConverter(self.device_settings)
+            else:
+                converter = ImageConverter(self.device_settings)
             if not converter.open(filename):
                 self.log.warning("Unable to read %s", filename)
                 return False
@@ -2715,10 +2749,10 @@ class PolyKybd:
             # a slot nothing shows, and on a full pool leave a new image's key
             # blank (review, CodeRabbit).
             final: dict[tuple[int, int], tuple] = {}
-            for filename, _, source_is_synthetic, invariant, maps in extracted:
+            for filename, converter, source_is_synthetic, invariant, maps in extracted:
                 for modifier, overlay_map in maps:
                     for keycode, overlay_data in overlay_map.items():
-                        position = (modifier.value, keycode)
+                        position = _overlay_position(converter, modifier, keycode)
                         if source_is_synthetic and position in final:
                             continue
                         key_modifier = MODIFIER_ANY if invariant else modifier.value
@@ -2735,13 +2769,14 @@ class PolyKybd:
                             self.log.debug_detailed("send_overlays_mru cancelled")
                             discard_all()
                             return False
-                        if source_is_synthetic and (modifier.value, keycode) in covered:
+                        position = _overlay_position(converter, modifier, keycode)
+                        if source_is_synthetic and position in covered:
                             self.log.debug_detailed(
                                 "%s: 0x%x/%s is drawn by a template already",
                                 filename, keycode, modifier)
                             deferred.setdefault(filename, []).append((keycode, modifier))
                             continue
-                        covered.add((modifier.value, keycode))
+                        covered.add(position)
                         key_modifier = MODIFIER_ANY if invariant else modifier.value
                         content_key = (os.path.basename(filename), key_modifier, keycode)
                         pool_slot, is_hit = cache.get_or_allocate(content_key, filename, overlay_data.all_bytes)
@@ -2753,11 +2788,11 @@ class PolyKybd:
                             # switch put on the same key: a later source overrides
                             # it (last one wins), so keeping it would show e.g. the
                             # browser's icon under a website's shortcut.
-                            refused_idx = cache.display_flat_idx(keycode, modifier)
+                            refused_idx = _display_position(cache, converter, modifier, keycode)
                             display_to_pool.pop(refused_idx, None)
                             dim_positions.discard(refused_idx)
                             no_legend_positions.discard(refused_idx)
-                            covered.discard((modifier.value, keycode))
+                            covered.discard(position)
                             pool_full.append((filename, keycode, modifier))
                             continue
 
@@ -2797,13 +2832,13 @@ class PolyKybd:
                             self.log.debug_detailed(
                                 "MRU hit: 0x%x/%s already in pool slot %d", keycode, modifier, pool_slot)
 
-                        display_idx = cache.display_flat_idx(keycode, modifier)
+                        display_idx = _display_position(cache, converter, modifier, keycode)
                         display_to_pool[display_idx] = pool_slot
                         if getattr(filename, "underlay", False) and keycode != KeyCode.KC_ESCAPE.value:
                             dim_positions.add(display_idx)
                         else:
                             dim_positions.discard(display_idx)
-                        if (modifier.value, keycode) in getattr(converter, "no_legend", ()):
+                        if position in getattr(converter, "no_legend", ()):
                             no_legend_positions.add(display_idx)
                         else:
                             no_legend_positions.discard(display_idx)

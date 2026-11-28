@@ -4085,13 +4085,8 @@ class PolyCore(Observable):
             if key is None:
                 removed = user_overlays.remove_set(app)
             else:
-                kc = user_overlays.check_key(key).name
-                mod = user_overlays.mod_names(user_overlays.modifier(mods))
-                old = (user_overlays.load_set(app) or {}).get("bindings") or []
-                keep = [b for b in old if not (b.get("key") == kc and b.get("mods", []) == mod)]
-                removed = len(keep) != len(old)
-                if removed:
-                    user_overlays.save_set(app, keep)
+                # A keycode name with mods, or a physical key name (follow "key").
+                removed = user_overlays.remove_binding(app, key, mods)
         except user_overlays.UserOverlayError as e:
             return False, str(e)
         except OSError as e:

@@ -4,7 +4,8 @@
 `polyctl mcp`, the key table `res/key_positions.yaml` and `services/key_names.py`;
 for 2a `services/key_drawing.py`, `services/user_overlays.py`,
 `services/overlay_preview.py` and `gui/user_overlays_dialog.py`. Version 2b (images
-per physical key) needs a firmware change and is not built; the entry in [`FUTURE_WORK.md`](FUTURE_WORK.md) says
+per physical key) is built on both sides and waits for firmware protocol 40
+(qmk_firmware#493; host: `device/key_images.py`); the entry in [`FUTURE_WORK.md`](FUTURE_WORK.md) says
 why it waits. Security record: HOST-9 in `polykybd-ctnd/docs/SECURITY_AUDIT.md`.
 
 ## Using it
@@ -220,7 +221,8 @@ fixes it (see *Tests*).
 
 ## Version 2: overlays from a description, and keys drawn freely
 
-**Status:** 2a built (2026-11-27); 2b (per physical key) not built. Two requests:
+**Status:** 2a built (2026-11-27); 2b (per physical key) built on both sides
+(2026-11-28), shipping with firmware protocol 40. Two requests:
 
 - "Make keys for my app": an overlay set for one application, from a list of
   shortcuts.
@@ -389,6 +391,23 @@ entry in that chain.
   refused with the firmware version it needs, not drawn by keycode instead.
 
 Version 2a is built first. 2b needs a firmware release, then the host release.
+
+**As built (2026-11-28).**
+- The wire range is the one this section proposed as a new command: no command
+  and no byte were added. A cmd 33 `from` of 1456 + matrix index (`row * 8 + col`)
+  names a physical key; 1440..1455 stay free for the host's 1440/1440 padding.
+  Older firmware ignores every `from` from 1440 up. qmk_firmware#493 stores the 80
+  entries after the keycode positions, so the slave repair, the no-legend offset
+  and the dim flag cover them unchanged.
+- Host: a `"*"` binding with `follow: "key"` is written to `user__all.keys.png`
+  (cell = matrix index, white on black). `device/key_images.KeyImageConverter`
+  reads it, and `send_overlays_mru` maps its images to `KEY_OVERLAY_BASE + index`
+  in the same claim pass and send loop as every other image, so the MRU cache
+  holds them like any image. Below protocol 40 (`FEATURE_MIN_PROTOCOL["key_overlay"]`)
+  the file is not sent, and `draw_key` refuses `follow: "key"` with the protocol
+  it needs. The emulated keyboard refuses a physical-key `from` below v40, so the
+  protocol sweeps catch an ungated send.
+- One image per physical key, in every modifier state, `mods` refused.
 
 ### Rules
 

@@ -48,6 +48,7 @@ import time
 from collections import Counter, deque
 from dataclasses import dataclass, field
 
+from polyhost.device.key_images import KEY_OVERLAY_BASE, KEY_OVERLAY_COUNT
 from polyhost.device import hid_fontpack as fp
 from polyhost.device import hid_fw_up as fw
 from polyhost.device.command_ids import Cmd, HidId
@@ -166,6 +167,10 @@ MAPPING_DIM_MIN = 23
 # A mapping `to` offset by the pool capacity is drawn without the legend (v25).
 # Older firmware rejects it as out of pool, and the key stays blank.
 MAPPING_NO_LEGEND_MIN = 25
+# A mapping `from` of KEY_OVERLAY_BASE + matrix index is an image per physical key
+# (v40, device/key_images.py). Older firmware ignores it as padding, so the key stays
+# without the image; the emulator records that as a refusal.
+KEY_OVERLAY_MIN = 40
 # cmd 25's board-flag byte (v24). Older firmware ignores it and sets only the side.
 SPLIT_VBUS_FLAG_MIN = 24
 GLYPH_PLACEMENT_MIN = 26
@@ -1031,6 +1036,25 @@ class MockFirmware:
                          and capacity <= to < 2 * capacity)
             if no_legend:
                 to -= capacity
+            if KEY_OVERLAY_BASE <= frm < KEY_OVERLAY_BASE + KEY_OVERLAY_COUNT:
+                if self.protocol < KEY_OVERLAY_MIN:
+                    self._refuse(Cmd.SEND_OVERLAY_MAPPING_W.value,
+                                 f"mapping {frm} -> {to}: a physical-key image needs v40")
+                    continue
+                if to >= capacity:
+                    self._refuse(Cmd.SEND_OVERLAY_MAPPING_W.value,
+                                 f"mapping {frm} -> {to}: to out of pool")
+                    continue
+                if no_legend:
+                    self.no_legend_positions.add(frm)
+                else:
+                    self.no_legend_positions.discard(frm)
+                self.sim.set_mapping(frm, to)
+                if dim:
+                    self.dim_positions.add(frm)
+                else:
+                    self.dim_positions.discard(frm)
+                continue
             if frm < self._map_index_count() and to >= capacity:
                 self._refuse(Cmd.SEND_OVERLAY_MAPPING_W.value,
                              f"mapping {frm} -> {to}: to out of pool")
