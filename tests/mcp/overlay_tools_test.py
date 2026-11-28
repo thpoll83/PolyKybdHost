@@ -171,6 +171,15 @@ class OverlayToolsTest(unittest.TestCase):
             self.assertIn("follow", error)
         self.assertEqual(len(user_overlays.load_set("*", self.root)["bindings"]), 1)
 
+    def test_a_physical_clear_takes_the_same_limits_as_the_physical_draw(self):
+        self.run_tool("draw_key", app="*", key="L:1.1", follow="key", drawing=BOX)
+        for arguments in ({"app": "*", "key": "L:1.1", "follow": "key", "mods": ["CTRL"]},
+                          {"app": "blender", "key": "L:1.1", "follow": "key"}):
+            result, error = tools.call_tool(self.link, "clear_key", arguments)
+            self.assertIsNone(result, arguments)
+            self.assertTrue(error, arguments)
+        self.assertEqual(len(user_overlays.load_set("*", self.root)["bindings"]), 1)
+
     def test_follow_key_refusals(self):
         for arguments in ({"app": "blender", "key": "L:1.1", "follow": "key", "drawing": BOX},
                           {"app": "*", "key": "KC_Q", "follow": "key", "drawing": BOX},

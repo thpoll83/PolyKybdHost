@@ -525,6 +525,11 @@ def clear_key(link, args):
     if follow not in ("keycode", "key"):
         raise ToolError("follow is \"keycode\" or \"key\"")
     if follow == "key":
+        if app != "*":
+            raise ToolError("follow \"key\" is for app \"*\" (every app); an app's own "
+                            "set follows the keycode")
+        if args.get("mods"):
+            raise ToolError("a drawing on a physical key shows with every modifier; leave mods out")
         table = _table(link)
         ref = args.get("key")
         if isinstance(ref, str) and not ref.strip().startswith(_PHYSICAL):
