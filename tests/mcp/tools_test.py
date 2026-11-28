@@ -134,11 +134,16 @@ class HostLinkTest(unittest.TestCase):
         tools.HostLink(connect=lambda: client).call(p.M_LANG_LIST)
         self.assertEqual([m for m, _ in client.calls], [p.M_CLIENT_IDENTIFY, p.M_LANG_LIST])
 
-    def test_a_host_without_client_identify_still_works(self):
+    def test_a_host_without_client_identify_is_refused(self):
+        # Fail closed: that host could not apply mcp_enabled or its allow-list.
         def identify(params):
             raise polyctl.RpcError(p.ERR_METHOD_NOT_FOUND, "unknown method")
         client = FakeClient({p.M_CLIENT_IDENTIFY: identify, p.M_LANG_LIST: ["enUS"]})
-        self.assertEqual(tools.HostLink(connect=lambda: client).call(p.M_LANG_LIST), ["enUS"])
+        with self.assertRaises(tools.ToolError) as ctx:
+            tools.HostLink(connect=lambda: client).call(p.M_LANG_LIST)
+        self.assertEqual(str(ctx.exception), tools.OLD_HOST)
+        self.assertEqual([m for m, _ in client.calls], [p.M_CLIENT_IDENTIFY])
+        self.assertTrue(client.closed)
 
     def test_no_host_running_is_a_tool_error_not_a_crash(self):
         def refuse():

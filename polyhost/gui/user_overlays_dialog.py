@@ -90,5 +90,10 @@ class UserOverlaysDialog(QDialog):
 
     def _removed(self, ok, result):
         if not ok:
+            # Keep the error visible: a refresh would overwrite it. The row's button
+            # is enabled again by reloading the list only after a success.
             self.status.setText(_f("Cannot remove the overlay set: {error}", error=result))
+            for button in self.scroll.widget().findChildren(QPushButton):
+                button.setEnabled(True)
+            return
         self.load()

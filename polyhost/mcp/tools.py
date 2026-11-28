@@ -9,7 +9,8 @@ does, so it can do only what polyctl can do for this user, and less:
 * `settings.get` is allowed for the keys in `READABLE_SETTINGS` only.
 * The connection names itself with `client.identify`, and the host then refuses
   it while its `mcp_enabled` setting is off, and checks the same allow-list again
-  (ControlServer._mcp_refusal).
+  (ControlServer._mcp_refusal). A host that does not know `client.identify` is
+  refused (OLD_HOST): it could apply neither check.
 * Every result is built field by field from `RESULT_FIELDS`, never by passing a
   host reply through, so a field added to `status.get` later is not returned.
 """
@@ -39,6 +40,8 @@ IDLE_STYLES = {s.name.lower(): s.value for s in IdleStyle}
 GLYPH_SCRIPTS = {s.name.lower(): s.value for s in GlyphScript}
 
 NOT_RUNNING = "PolyKybdHost is not running. Start it, then try again."
+OLD_HOST = ("The running PolyKybdHost is older than this MCP server and cannot apply "
+            "its AI-assistant setting. Update PolyKybdHost, then try again.")
 
 
 class ToolError(Exception):
@@ -103,9 +106,12 @@ class HostLink:
                 # Name this connection, so the host applies its mcp_enabled setting.
                 client.call(p.M_CLIENT_IDENTIFY, {"client": "mcp"})
             except RpcError as exc:
-                if exc.code != p.ERR_METHOD_NOT_FOUND:  # a host older than the setting
-                    client.close()
-                    raise ToolError(exc.message) from None
+                client.close()
+                if exc.code == p.ERR_METHOD_NOT_FOUND:
+                    # Fail closed: a host older than client.identify cannot apply the
+                    # mcp_enabled setting or its own allow-list check.
+                    raise ToolError(OLD_HOST) from None
+                raise ToolError(exc.message) from None
             except (EOFError, OSError):
                 client.close()
                 raise HostUnavailable() from None
@@ -353,16 +359,22 @@ def set_overlays(link, args):
 _PHYSICAL = ("L:", "R:", "l:", "r:")
 
 
-def _overlay_key(link, ref):
+def _layer0(link):
+    """(key table, {(row, col): layer-0 keycode}): one keymap read."""
+    table = _table(link)
+    _count, buffer = _keymap(link, 0)
+    return table, {pos: _code_at(buffer, 0, *pos) for pos in table.by_pos}
+
+
+def _overlay_key(link, ref, snapshot=None):
     """(keycode name, physical keys that send it on layer 0) for a key reference.
 
     A physical reference ("L:3.2", {"base": ...}, {"row", "col"}) is turned into its
-    layer-0 keycode; anything else is read as a keycode name ("KC_F5", "F5")."""
+    layer-0 keycode; anything else is read as a keycode name ("KC_F5", "F5").
+    `snapshot` is a `_layer0()` result to reuse."""
     from polyhost.services import user_overlays
     physical = isinstance(ref, dict) or (isinstance(ref, str) and ref.strip().startswith(_PHYSICAL))
-    table = _table(link)
-    _count, buffer = _keymap(link, 0)
-    base = {pos: _code_at(buffer, 0, *pos) for pos in table.by_pos}
+    table, base = snapshot or _layer0(link)
     if physical:
         try:
             name = table.resolve(ref, base, parse_keycode)
@@ -392,7 +404,7 @@ def _app_arg(args):
         raise ToolError(str(exc)) from None
 
 
-def _binding(link, b):
+def _binding(link, b, snapshot=None):
     """A binding for the host, with its key resolved and its drawing checked here,
     so a bad shape is reported before anything is written."""
     from polyhost.services import key_drawing
@@ -401,7 +413,7 @@ def _binding(link, b):
     extra = set(b) - {"key", "drawing", "mods", "legend"}
     if extra:
         raise ToolError(f"unknown binding fields: {sorted(extra)}")
-    key, shows_on = _overlay_key(link, b.get("key"))
+    key, shows_on = _overlay_key(link, b.get("key"), snapshot)
     try:
         _mask, notes = key_drawing.render(b.get("drawing"))
     except key_drawing.DrawingError as exc:
@@ -420,18 +432,16 @@ def find_icons(link, args):
 
 
 def list_overlay_keys(link, args):
-    from polyhost.services import user_overlays
+    from polyhost.device.keys import KeyCode
+    from polyhost.res.overlay_layout import _has_cell
     table = _table(link)
     _count, buffer = _keymap(link, 0)
-    keys = {}
+    on_base = {}
     for name in table.names():
-        code = _code_at(buffer, 0, *table.by_name[name])
-        try:
-            kc = user_overlays.check_key(_name(code))
-        except user_overlays.UserOverlayError:
-            continue
-        keys.setdefault(kc.name, []).append(name)
-    return {"keys": [{"keycode": k, "on_layer_0": v} for k, v in keys.items()]}
+        on_base.setdefault(_code_at(buffer, 0, *table.by_name[name]), []).append(name)
+    # Every keycode with an overlay slot, also those only other layers use (F5 on Fn).
+    return {"keys": [{"keycode": kc.name, "on_layer_0": on_base.get(kc.value, [])}
+                     for kc in KeyCode if _has_cell(kc)]}
 
 
 def list_user_overlays(link, args):
@@ -445,8 +455,9 @@ def create_overlay(link, args):
     if not isinstance(bindings, list) or not bindings:
         raise ToolError("bindings is a non-empty list")
     clean, notes = [], []
+    snapshot = _layer0(link)        # one keymap read for the whole set
     for b in bindings:
-        cb, _shows_on, n = _binding(link, b)
+        cb, _shows_on, n = _binding(link, b, snapshot)
         clean.append(cb)
         notes += n
     result = link.call(p.M_USER_OVERLAY_SET, {"app": app, "bindings": clean, "merge": False})
@@ -501,7 +512,9 @@ def draw_key(link, args):
     binding = {k: args[k] for k in ("key", "drawing", "mods", "legend") if k in args}
     cb, shows_on, notes = _binding(link, binding)
     result = link.call(p.M_USER_OVERLAY_SET, {"app": app, "bindings": [cb], "merge": True})
-    placed = [x for x in _placed(result) if x["key"] == cb["key"]]
+    from polyhost.services.user_overlays import mod_names, modifier
+    want = mod_names(modifier(cb["mods"]))
+    placed = [x for x in _placed(result) if x["key"] == cb["key"] and x["mods"] == want]
     return {"app": app, "key": cb["key"], "mods": placed[0]["mods"] if placed else cb["mods"],
             "legend": cb["legend"], "shows_on": shows_on, "notes": notes}
 

@@ -97,6 +97,22 @@ class OverlayToolsTest(unittest.TestCase):
         self.assertEqual(made["placed"], [{"key": "KC_E", "mods": [], "legend": True}])
         self.assertEqual(self.run_tool("list_user_overlays")["sets"], [{"app": "x", "keys": 1}])
 
+    def test_draw_key_reports_the_modifiers_it_wrote(self):
+        self.run_tool("draw_key", app="x", key="KC_Q", drawing=BOX)
+        done = self.run_tool("draw_key", app="x", key="KC_Q", drawing=BOX, mods=["CTRL"])
+        self.assertEqual(done["mods"], ["CTRL"])
+
+    def test_concurrent_merges_lose_no_binding(self):
+        keys = ["KC_Q", "KC_W", "KC_E", "KC_R", "KC_T", "KC_Y"]
+        threads = [threading.Thread(target=self.core.user_overlay_set,
+                                    args=("x", [{"key": k, "drawing": BOX}]),
+                                    kwargs={"merge": True}) for k in keys]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join(30)
+        self.assertEqual(len(user_overlays.load_set("x", self.root)["bindings"]), len(keys))
+
     def test_clear_key_and_delete_overlay(self):
         self.run_tool("draw_key", app="x", key="KC_Q", drawing=BOX)
         self.run_tool("draw_key", app="x", key="KC_W", drawing=BOX)
@@ -120,6 +136,8 @@ class OverlayToolsTest(unittest.TestCase):
     def test_list_overlay_keys_and_find_icons(self):
         keys = {k["keycode"]: k["on_layer_0"] for k in self.run_tool("list_overlay_keys")["keys"]}
         self.assertEqual(keys["KC_ESCAPE"], ["L:1.1"])
+        self.assertEqual(keys["KC_F5"], [])      # only on another layer: still drawable
+        self.assertEqual(len(keys), 90)
         self.assertNotIn("MO(5)", keys)
         self.assertTrue(self.run_tool("find_icons", query="copy")["icons"])
 
@@ -190,6 +208,7 @@ class StarSetCoreTest(unittest.TestCase):
     def _core(self):
         core = PolyCore.__new__(PolyCore)
         core.log = mock.MagicMock()
+        core._pending_mapping_lock = threading.Lock()   # as __init__ builds it
         return core
 
     def test_the_star_set_goes_first_and_only_once(self):
@@ -231,6 +250,17 @@ class StarSetCoreTest(unittest.TestCase):
         core._take_pending_mapping(self._pending(core, template=True))
         core.send_overlay_files.assert_not_called()
         core.submit_overlay_cmd.assert_not_called()
+
+    def test_a_new_mapping_keeps_the_handlers_device_state(self):
+        from tests.handler.lab_tools_routing_test import _overlay_handler_class
+        OverlayHandler = _overlay_handler_class()   # skips without a display
+        handler = OverlayHandler.__new__(OverlayHandler)
+        handler.overlays_enabled = True
+        handler.remote_handler = mock.MagicMock()
+        handler.annotate = lambda items, return_copy=True: dict(items)
+        handler.force_resend = lambda: setattr(handler, "overlays_enabled", False)
+        handler.set_mapping({"a": {"overlay": ["x.mods.png"]}})
+        self.assertTrue(handler.overlays_enabled)   # a later DISABLE still goes out
 
     def test_the_pending_mapping_reaches_the_handler_on_the_tick(self):
         core = self._core()
