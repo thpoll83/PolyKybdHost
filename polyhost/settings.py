@@ -297,6 +297,11 @@ DEFAULT_SETTINGS = {
         # using a forwarder with `--report-rpc`. The device-control surface
         # is never exposed (separate registry + separate authkey).
         "window_report_network_enabled": False,
+        # The MCP server for AI assistants (`polyctl mcp`, docs/mcp-server-plan.md):
+        # while False the control server refuses every request on a connection
+        # that named itself an MCP client. Off by default, because text an
+        # assistant reads elsewhere can make it call a tool (SECURITY_AUDIT HOST-9).
+        "mcp_enabled": False,
         # Font pack auto-flash: when True, on a fresh keyboard connect the
         # host compares the keyboard's loaded "PlyF" font pack content_version
         # against the pack bundled with this host release and, if the keyboard

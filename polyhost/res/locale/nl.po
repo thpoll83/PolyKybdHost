@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-27 07:30+0000\n"
+"POT-Creation-Date: 2026-11-27 22:49+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.18.0\n"
+"Generated-By: Babel 2.19.0\n"
 
 #: polyhost/device/command_ids.py:183
 #, python-brace-format
@@ -559,7 +559,7 @@ msgstr ""
 "(deze computer)"
 
 #: polyhost/gui/about_dialog.py:201 polyhost/gui/settings_dialog.py:81
-#: polyhost/host.py:2080
+#: polyhost/host.py:2104
 msgid "Keyboard"
 msgstr "Toetsenbord"
 
@@ -637,6 +637,7 @@ msgstr "Kopiëren naar klembord"
 #: polyhost/gui/hid_fw_up_dialog.py:487 polyhost/gui/log_viewer.py:263
 #: polyhost/gui/mru_inspector_dialog.py:102
 #: polyhost/gui/split_link_dialog.py:96 polyhost/gui/tutorials_dialog.py:89
+#: polyhost/gui/user_overlays_dialog.py:44
 msgid "Close"
 msgstr "Sluiten"
 
@@ -1143,7 +1144,7 @@ msgid "ok"
 msgstr "ok"
 
 #. TRANSLATORS: font-pack bundle state in a status table
-#: polyhost/gui/cmd_menu.py:486 polyhost/host.py:2288
+#: polyhost/gui/cmd_menu.py:486 polyhost/host.py:2312
 msgid "stale"
 msgstr "verouderd"
 
@@ -1163,7 +1164,7 @@ msgstr "meegeleverd"
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "PolyKybd-opdrachten (*.poly.cmd)"
 
-#: polyhost/gui/cmd_menu.py:497 polyhost/host.py:2420
+#: polyhost/gui/cmd_menu.py:497 polyhost/host.py:2444
 msgid "Open file"
 msgstr "Bestand openen"
 
@@ -1374,7 +1375,7 @@ msgid "pick one from Source fonts below, or Browse…"
 msgstr "kies er een uit Bronlettertypen hieronder, of Bladeren…"
 
 #: polyhost/gui/fontpack_extend_dialog.py:120
-#: polyhost/gui/settings_dialog.py:1418 polyhost/gui/settings_dialog.py:1419
+#: polyhost/gui/settings_dialog.py:1426 polyhost/gui/settings_dialog.py:1427
 msgid "Browse…"
 msgstr "Bladeren…"
 
@@ -2181,8 +2182,8 @@ msgstr "Meld je af en weer aan om de extensie te starten."
 msgid "Log out and back in: GNOME starts a new extension only at login."
 msgstr "Meld je af en weer aan: GNOME start een nieuwe extensie alleen bij het aanmelden."
 
-#: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:3031
-#: polyhost/host.py:3072 polyhost/host.py:3104
+#: polyhost/gui/hid_fw_up_dialog.py:167 polyhost/host.py:3055
+#: polyhost/host.py:3096 polyhost/host.py:3128
 msgid "Firmware Update"
 msgstr "Firmware-update"
 
@@ -2217,7 +2218,7 @@ msgstr "Toepassen — de klaargezette firmware wordt geactiveerd…"
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "Annuleren — wachten tot het huidige blok klaar is…"
 
-#: polyhost/gui/i18n_qt.py:89 polyhost/gui/settings_dialog.py:178
+#: polyhost/gui/i18n_qt.py:89 polyhost/gui/settings_dialog.py:179
 msgid "Language"
 msgstr "Taal"
 
@@ -2235,6 +2236,7 @@ msgstr "Installeren"
 
 #: polyhost/gui/integrations_dialog.py:120
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:149
+#: polyhost/gui/user_overlays_dialog.py:78
 msgid "Remove"
 msgstr "Verwijderen"
 
@@ -2264,7 +2266,7 @@ msgstr "Niet ingesteld"
 
 #: polyhost/gui/integrations_dialog.py:330
 #: polyhost/gui/integrations_dialog.py:364
-#: polyhost/gui/integrations_dialog.py:405 polyhost/gui/settings_dialog.py:105
+#: polyhost/gui/integrations_dialog.py:405 polyhost/gui/settings_dialog.py:106
 msgid "AI agents"
 msgstr "AI-agents"
 
@@ -2427,7 +2429,7 @@ msgid "Eden"
 msgstr "Eden"
 
 #. TRANSLATORS: shown in the Flow Tap spin box when its value is 0.
-#: polyhost/gui/keyboard_settings.py:79 polyhost/gui/settings_dialog.py:1233
+#: polyhost/gui/keyboard_settings.py:79 polyhost/gui/settings_dialog.py:1241
 msgid "Off"
 msgstr "Uit"
 
@@ -2719,7 +2721,7 @@ msgstr "geen voorbeeldgegevens (meegeleverd of checkout)"
 msgid "the shipped language table is missing"
 msgstr "de meegeleverde taaltabel ontbreekt"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:596 polyhost/host.py:3047
+#: polyhost/gui/layout_dialog/keycap_preview.py:596 polyhost/host.py:3071
 msgid "unknown"
 msgstr "onbekend"
 
@@ -3380,7 +3382,7 @@ msgstr "Geen resultaten"
 msgid "{index} of {total}"
 msgstr "{index} van {total}"
 
-#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1970
+#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1994
 msgid "Mock keyboard"
 msgstr "Mock-toetsenbord"
 
@@ -3677,11 +3679,11 @@ msgstr "Inactiviteitsweergave"
 msgid "Keycaps"
 msgstr "Toetskappen"
 
-#: polyhost/gui/settings_dialog.py:84 polyhost/host.py:1724
+#: polyhost/gui/settings_dialog.py:84 polyhost/host.py:1745
 msgid "Tap-Hold Timing"
 msgstr "Tik-vasthoudtijden"
 
-#: polyhost/gui/settings_dialog.py:85 polyhost/host.py:1720
+#: polyhost/gui/settings_dialog.py:85 polyhost/host.py:1741
 msgid "Key lighting"
 msgstr "Toetsverlichting"
 
@@ -3706,673 +3708,685 @@ msgid "Forwarders"
 msgstr "Forwarders"
 
 #: polyhost/gui/settings_dialog.py:95
+msgid "AI assistants"
+msgstr "AI-assistenten"
+
+#: polyhost/gui/settings_dialog.py:96
 msgid "USB transport"
 msgstr "USB-transport"
 
-#: polyhost/gui/settings_dialog.py:98
+#: polyhost/gui/settings_dialog.py:99
 msgid "Keycap icons"
 msgstr "Toetskappictogrammen"
 
-#: polyhost/gui/settings_dialog.py:101
+#: polyhost/gui/settings_dialog.py:102
 msgid "Apps with their own overlay"
 msgstr "Apps met een eigen overlay"
 
-#: polyhost/gui/settings_dialog.py:103
+#: polyhost/gui/settings_dialog.py:104
 msgid "Linux"
 msgstr "Linux"
 
-#: polyhost/gui/settings_dialog.py:112
+#: polyhost/gui/settings_dialog.py:113
 msgid "Games"
 msgstr "Spellen"
 
-#: polyhost/gui/settings_dialog.py:114
+#: polyhost/gui/settings_dialog.py:115
 msgid "Installed games"
 msgstr "Geïnstalleerde spellen"
 
-#: polyhost/gui/settings_dialog.py:116
+#: polyhost/gui/settings_dialog.py:117
 msgid "Privacy and diagnostics"
 msgstr "Privacy en diagnose"
 
-#: polyhost/gui/settings_dialog.py:117
+#: polyhost/gui/settings_dialog.py:118
 msgid "Usage report"
 msgstr "Gebruiksrapport"
 
-#: polyhost/gui/settings_dialog.py:118
+#: polyhost/gui/settings_dialog.py:119
 msgid "Problem detection"
 msgstr "Probleemdetectie"
 
-#: polyhost/gui/settings_dialog.py:119
+#: polyhost/gui/settings_dialog.py:120
 msgid "Logs"
 msgstr "Logbestanden"
 
-#: polyhost/gui/settings_dialog.py:121 polyhost/host.py:686
+#: polyhost/gui/settings_dialog.py:122 polyhost/host.py:696
 msgid "Developer"
 msgstr "Ontwikkelaar"
 
-#: polyhost/gui/settings_dialog.py:125 polyhost/gui/tutorials_dialog.py:38
+#: polyhost/gui/settings_dialog.py:126 polyhost/gui/tutorials_dialog.py:38
 #: polyhost/services/lang_regions.py:148
 msgid "Other"
 msgstr "Overig"
 
-#: polyhost/gui/settings_dialog.py:143
+#: polyhost/gui/settings_dialog.py:144
 msgid "Send Unicode input mode"
 msgstr "Unicode-invoermodus verzenden"
 
-#: polyhost/gui/settings_dialog.py:144 polyhost/host.py:1716
+#: polyhost/gui/settings_dialog.py:145 polyhost/host.py:1737
 msgid "Keycap brightness"
 msgstr "Toetskaphelderheid"
 
-#: polyhost/gui/settings_dialog.py:145
+#: polyhost/gui/settings_dialog.py:146
 msgid "Idle animation"
 msgstr "Inactiviteitsanimatie"
 
-#: polyhost/gui/settings_dialog.py:146 polyhost/host.py:1678
+#: polyhost/gui/settings_dialog.py:147 polyhost/host.py:1699
 msgid "Idle After"
 msgstr "Inactief na"
 
-#: polyhost/gui/settings_dialog.py:147 polyhost/host.py:1679
+#: polyhost/gui/settings_dialog.py:148 polyhost/host.py:1700
 msgid "Keycap Script"
 msgstr "Toetskapschrift"
 
-#: polyhost/gui/settings_dialog.py:148 polyhost/host.py:1680
+#: polyhost/gui/settings_dialog.py:149 polyhost/host.py:1701
 msgid "Script placement"
 msgstr "Plaatsing van het schrift"
 
-#: polyhost/gui/settings_dialog.py:149 polyhost/host.py:1681
+#: polyhost/gui/settings_dialog.py:150 polyhost/host.py:1702
 msgid "Keycap Size"
 msgstr "Toetskapgrootte"
 
 #: polyhost/gui/layout_dialog/combo_tab.py:372
-#: polyhost/gui/settings_dialog.py:150
+#: polyhost/gui/settings_dialog.py:151
 msgid "Tapping term"
 msgstr "Tiktijd"
 
-#: polyhost/gui/settings_dialog.py:151
+#: polyhost/gui/settings_dialog.py:152
 msgid "Flow Tap term"
 msgstr "Flow Tap-tijd"
 
-#: polyhost/gui/settings_dialog.py:152
+#: polyhost/gui/settings_dialog.py:153
 msgid "Auto Shift"
 msgstr "Auto Shift"
 
-#: polyhost/gui/settings_dialog.py:153
+#: polyhost/gui/settings_dialog.py:154
 msgid "Auto Shift timeout"
 msgstr "Auto Shift-vertraging"
 
-#: polyhost/gui/settings_dialog.py:154
+#: polyhost/gui/settings_dialog.py:155
 msgid "Lights on"
 msgstr "Verlichting aan"
 
-#: polyhost/gui/settings_dialog.py:155
+#: polyhost/gui/settings_dialog.py:156
 msgid "Lighting brightness"
 msgstr "Helderheid verlichting"
 
-#: polyhost/gui/settings_dialog.py:156
+#: polyhost/gui/settings_dialog.py:157
 msgid "Lighting effect"
 msgstr "Verlichtingseffect"
 
-#: polyhost/gui/settings_dialog.py:157
+#: polyhost/gui/settings_dialog.py:158
 msgid "Effect speed"
 msgstr "Effectsnelheid"
 
-#: polyhost/gui/settings_dialog.py:158
+#: polyhost/gui/settings_dialog.py:159
 msgid "Lighting hue"
 msgstr "Tint verlichting"
 
-#: polyhost/gui/settings_dialog.py:159
+#: polyhost/gui/settings_dialog.py:160
 msgid "Lighting saturation"
 msgstr "Verzadiging verlichting"
 
-#: polyhost/gui/settings_dialog.py:160
+#: polyhost/gui/settings_dialog.py:161
 msgid "Find this keyboard"
 msgstr "Dit toetsenbord zoeken"
 
-#: polyhost/gui/settings_dialog.py:161
+#: polyhost/gui/settings_dialog.py:162
 msgid "Follow daylight"
 msgstr "Daglicht volgen"
 
-#: polyhost/gui/settings_dialog.py:162
+#: polyhost/gui/settings_dialog.py:163
 msgid "Online sunlight data"
 msgstr "Online zonlichtgegevens"
 
-#: polyhost/gui/settings_dialog.py:163
+#: polyhost/gui/settings_dialog.py:164
 msgid "Online location lookup"
 msgstr "Online locatie opzoeken"
 
-#: polyhost/gui/settings_dialog.py:164
+#: polyhost/gui/settings_dialog.py:165
 msgid "Sunlight at dimmest"
 msgstr "Zonlicht bij laagste stand"
 
-#: polyhost/gui/settings_dialog.py:165
+#: polyhost/gui/settings_dialog.py:166
 msgid "Sunlight at brightest"
 msgstr "Zonlicht bij hoogste stand"
 
-#: polyhost/gui/settings_dialog.py:166
+#: polyhost/gui/settings_dialog.py:167
 msgid "Sunlight scale"
 msgstr "Zonlichtschaal"
 
-#: polyhost/gui/settings_dialog.py:167
+#: polyhost/gui/settings_dialog.py:168
 msgid "Curve gamma"
 msgstr "Curvegamma"
 
-#: polyhost/gui/settings_dialog.py:168
+#: polyhost/gui/settings_dialog.py:169
 msgid "Icons for apps without an overlay"
 msgstr "Pictogrammen voor apps zonder overlay"
 
-#: polyhost/gui/settings_dialog.py:169
+#: polyhost/gui/settings_dialog.py:170
 msgid "Add the Escape mark"
 msgstr "Logo op Escape toevoegen"
 
-#: polyhost/gui/settings_dialog.py:170
+#: polyhost/gui/settings_dialog.py:171
 msgid "Fill blank keys from the app's menus"
 msgstr "Lege toetsen aanvullen uit de menu's van de app"
 
-#: polyhost/gui/settings_dialog.py:171
+#: polyhost/gui/settings_dialog.py:172
 msgid "Read shortcuts from app menus"
 msgstr "Sneltoetsen uit app-menu's lezen"
 
-#: polyhost/gui/settings_dialog.py:172
+#: polyhost/gui/settings_dialog.py:173
 msgid "Download icons from the internet"
 msgstr "Pictogrammen van internet downloaden"
 
-#: polyhost/gui/settings_dialog.py:173
+#: polyhost/gui/settings_dialog.py:174
 msgid "Turn on accessibility"
 msgstr "Toegankelijkheid inschakelen"
 
-#: polyhost/gui/settings_dialog.py:174
+#: polyhost/gui/settings_dialog.py:175
 msgid "Messages before a pause"
 msgstr "Berichten vóór een pauze"
 
-#: polyhost/gui/settings_dialog.py:175
+#: polyhost/gui/settings_dialog.py:176
 msgid "Pause length (s)"
 msgstr "Pauzeduur (s)"
 
-#: polyhost/gui/settings_dialog.py:176
+#: polyhost/gui/settings_dialog.py:177
 msgid "ID requests before reconnect"
 msgstr "ID-aanvragen vóór opnieuw verbinden"
 
-#: polyhost/gui/settings_dialog.py:177
+#: polyhost/gui/settings_dialog.py:178
 msgid "Theme"
 msgstr "Thema"
 
-#: polyhost/gui/settings_dialog.py:179
+#: polyhost/gui/settings_dialog.py:180
 msgid "Developer mode"
 msgstr "Ontwikkelaarsmodus"
 
-#: polyhost/gui/settings_dialog.py:180
+#: polyhost/gui/settings_dialog.py:181
 msgid "Log detail"
 msgstr "Logniveau"
 
-#: polyhost/gui/settings_dialog.py:181
+#: polyhost/gui/settings_dialog.py:182
 msgid "Add a simulated keyboard"
 msgstr "Gesimuleerd toetsenbord toevoegen"
 
-#: polyhost/gui/settings_dialog.py:182
+#: polyhost/gui/settings_dialog.py:183
 msgid "Simulated keyboard only"
 msgstr "Alleen gesimuleerd toetsenbord"
 
-#: polyhost/gui/settings_dialog.py:183
+#: polyhost/gui/settings_dialog.py:184
 msgid "Simulated protocol version"
 msgstr "Gesimuleerde protocolversie"
 
-#: polyhost/gui/settings_dialog.py:184
+#: polyhost/gui/settings_dialog.py:185
 msgid "Track windows without a keyboard"
 msgstr "Vensters volgen zonder toetsenbord"
 
-#: polyhost/gui/settings_dialog.py:185
+#: polyhost/gui/settings_dialog.py:186
 msgid "Native Windows language switch"
 msgstr "Native taalwissel van Windows"
 
-#: polyhost/gui/settings_dialog.py:186
+#: polyhost/gui/settings_dialog.py:187
 msgid "Legacy plaintext relay"
 msgstr "Verouderde plaintext-relay"
 
-#: polyhost/gui/settings_dialog.py:187
+#: polyhost/gui/settings_dialog.py:188
 msgid "Force the HID link"
 msgstr "HID-verbinding afdwingen"
 
-#: polyhost/gui/settings_dialog.py:188
+#: polyhost/gui/settings_dialog.py:189
 msgid "Background service"
 msgstr "Achtergrondservice"
 
-#: polyhost/gui/settings_dialog.py:189
+#: polyhost/gui/settings_dialog.py:190
 msgid "Accept forwarders"
 msgstr "Forwarders accepteren"
 
-#: polyhost/gui/settings_dialog.py:190
+#: polyhost/gui/settings_dialog.py:191
+msgid "Allow AI assistants (MCP)"
+msgstr "AI-assistenten toestaan (MCP)"
+
+#: polyhost/gui/settings_dialog.py:192
 msgid "Find the keyboard computer from the connection"
 msgstr "Toetsenbordcomputer zoeken via de verbinding"
 
-#: polyhost/gui/settings_dialog.py:191
+#: polyhost/gui/settings_dialog.py:193
 msgid "Start as a forwarder"
 msgstr "Starten als forwarder"
 
-#: polyhost/gui/settings_dialog.py:192
+#: polyhost/gui/settings_dialog.py:194
 msgid "Send font packs on connect"
 msgstr "Lettertypepakketten verzenden bij verbinden"
 
-#: polyhost/gui/settings_dialog.py:193
+#: polyhost/gui/settings_dialog.py:195
 msgid "Search language"
 msgstr "Zoektaal"
 
-#: polyhost/gui/settings_dialog.py:194
+#: polyhost/gui/settings_dialog.py:196
 msgid "Own dictionary file"
 msgstr "Eigen woordenboekbestand"
 
-#: polyhost/gui/settings_dialog.py:195
+#: polyhost/gui/settings_dialog.py:197
 msgid "Font pack file"
 msgstr "Lettertypepakketbestand"
 
-#: polyhost/gui/settings_dialog.py:196
+#: polyhost/gui/settings_dialog.py:198
 msgid "Match the website in the browser"
 msgstr "Website in de browser herkennen"
 
-#: polyhost/gui/settings_dialog.py:197
+#: polyhost/gui/settings_dialog.py:199
 msgid "Receive browser reports"
 msgstr "Browserrapporten ontvangen"
 
-#: polyhost/gui/settings_dialog.py:198
+#: polyhost/gui/settings_dialog.py:200
 msgid "Receiver port"
 msgstr "Ontvangerpoort"
 
-#: polyhost/gui/settings_dialog.py:199
+#: polyhost/gui/settings_dialog.py:201
 msgid "Receiver token"
 msgstr "Ontvangertoken"
 
-#: polyhost/gui/settings_dialog.py:200
+#: polyhost/gui/settings_dialog.py:202
 msgid "Send usage report"
 msgstr "Gebruiksrapport verzenden"
 
-#: polyhost/gui/settings_dialog.py:201
+#: polyhost/gui/settings_dialog.py:203
 msgid "Report address"
 msgstr "Rapportadres"
 
-#: polyhost/gui/settings_dialog.py:202
+#: polyhost/gui/settings_dialog.py:204
 msgid "Installation ID"
 msgstr "Installatie-ID"
 
-#: polyhost/gui/settings_dialog.py:203
+#: polyhost/gui/settings_dialog.py:205
 msgid "Watch the keyboard's messages"
 msgstr "Berichten van het toetsenbord bewaken"
 
-#: polyhost/gui/settings_dialog.py:204
+#: polyhost/gui/settings_dialog.py:206
 msgid "Watch this app's log"
 msgstr "Log van deze app volgen"
 
-#: polyhost/gui/settings_dialog.py:205
+#: polyhost/gui/settings_dialog.py:207
 msgid "What counts as a problem"
 msgstr "Wat telt als probleem"
 
-#: polyhost/gui/settings_dialog.py:206
+#: polyhost/gui/settings_dialog.py:208
 msgid "Art from installed games"
 msgstr "Afbeeldingen uit geïnstalleerde spellen"
 
-#: polyhost/gui/settings_dialog.py:207
+#: polyhost/gui/settings_dialog.py:209
 msgid "Show on the number row"
 msgstr "Tonen op de cijferrij"
 
-#: polyhost/gui/settings_dialog.py:208
+#: polyhost/gui/settings_dialog.py:210
 msgid "Find by window title"
 msgstr "Zoeken via venstertitel"
 
-#: polyhost/gui/settings_dialog.py:209
+#: polyhost/gui/settings_dialog.py:211
 msgid "Download fonts for agent titles"
 msgstr "Lettertypen voor agenttitels downloaden"
 
-#: polyhost/gui/settings_dialog.py:210
+#: polyhost/gui/settings_dialog.py:212
 msgid "Dictation shortcut"
 msgstr "Sneltoets voor dicteren"
 
-#: polyhost/gui/settings_dialog.py:211
+#: polyhost/gui/settings_dialog.py:213
 msgid "Agents from other computers"
 msgstr "Agents van andere computers"
 
-#: polyhost/gui/settings_dialog.py:212
+#: polyhost/gui/settings_dialog.py:214
 msgid "Raise agent windows on this computer"
 msgstr "Agentvensters op deze computer naar voren halen"
 
-#: polyhost/gui/settings_dialog.py:213
+#: polyhost/gui/settings_dialog.py:215
 msgid "Hide agent titles and folders"
 msgstr "Titels en mappen van agents verbergen"
 
-#: polyhost/gui/settings_dialog.py:214
+#: polyhost/gui/settings_dialog.py:216
 msgid "Stale after (minutes)"
 msgstr "Verouderd na (minuten)"
 
-#: polyhost/gui/settings_dialog.py:215
+#: polyhost/gui/settings_dialog.py:217
 msgid "Remove idle agents after (minutes)"
 msgstr "Inactieve agents verwijderen na (minuten)"
 
-#: polyhost/gui/settings_dialog.py:224
+#: polyhost/gui/settings_dialog.py:226
 msgid "Sets the brightness of the keycaps when you click OK. A level stays until you choose Automatic, which follows the daylight when Follow daylight is on, and otherwise returns to the keyboard's own stored level. The keyboard does not report its level, so no picture is selected when this dialog opens."
 msgstr "Stelt de helderheid van de toetskappen in wanneer u op OK klikt. Een niveau blijft staan totdat u Automatisch kiest. Automatisch volgt het daglicht als Daglicht volgen aan staat, en gaat anders terug naar het niveau dat in het toetsenbord is opgeslagen. Het toetsenbord meldt zijn niveau niet, dus er is geen afbeelding geselecteerd wanneer dit venster opent."
 
-#: polyhost/gui/settings_dialog.py:229
+#: polyhost/gui/settings_dialog.py:231
 msgid "What the keycaps show when you have not typed for a while. A moving picture protects the displays from burn-in."
 msgstr "Wat de toetskappen tonen als je een tijdje niet hebt getypt. Een bewegend beeld beschermt de displays tegen inbranden."
 
-#: polyhost/gui/settings_dialog.py:231
+#: polyhost/gui/settings_dialog.py:233
 msgid "How long the keyboard waits before the idle display starts."
 msgstr "Hoe lang het toetsenbord wacht voordat de inactiviteitsweergave start."
 
-#: polyhost/gui/settings_dialog.py:233
+#: polyhost/gui/settings_dialog.py:235
 msgid "Draws the letters and digits on the keycaps in another script, for example runes or a retro computer font. The keys still type the same characters. Standard shows the normal legends of your language."
 msgstr "Tekent de letters en cijfers op de toetskappen in een ander schrift, bijvoorbeeld runen of een retro computerlettertype. De toetsen typen nog steeds dezelfde tekens. Standaard toont de normale legenda's van je taal."
 
-#: polyhost/gui/settings_dialog.py:237
+#: polyhost/gui/settings_dialog.py:239
 msgid "Where the script's letters sit on the keycap. The top-left corner leaves room for an app icon."
 msgstr "Waar de letters van het schrift op de toetskap staan. De linkerbovenhoek laat ruimte voor een app-pictogram."
 
-#: polyhost/gui/settings_dialog.py:240
+#: polyhost/gui/settings_dialog.py:242
 msgid "The size of the large letter or digit in the middle of each keycap. Medium and Large apply to Latin letters and digits; other scripts, such as Arabic or Chinese, stay Small."
 msgstr "De grootte van de grote letter of het grote cijfer in het midden van elke toetskap. Middel en Groot gelden voor Latijnse letters en cijfers; andere schriften, zoals Arabisch of Chinees, blijven Klein."
 
-#: polyhost/gui/settings_dialog.py:244
+#: polyhost/gui/settings_dialog.py:246
 msgid "A key with a tap and a hold action types its tap action when you release it before this time, and acts as its hold action when you hold it longer."
 msgstr "Een toets met een tik- en een vasthoudactie typt zijn tikactie als u hem vóór deze tijd loslaat, en werkt als zijn vasthoudactie als u hem langer vasthoudt."
 
-#: polyhost/gui/settings_dialog.py:247
+#: polyhost/gui/settings_dialog.py:249
 msgid "A tap-hold key pressed within this time after the previous key always types its tap action, so fast typing does not trigger a modifier. 0 turns Flow Tap off."
 msgstr "Een tik-vasthoudtoets die binnen deze tijd na de vorige toets wordt ingedrukt, typt altijd zijn tikactie, zodat snel typen geen modifier activeert. 0 schakelt Flow Tap uit."
 
-#: polyhost/gui/settings_dialog.py:250
+#: polyhost/gui/settings_dialog.py:252
 msgid "With Auto Shift on, holding a letter, digit or symbol key longer than the Auto Shift timeout types its shifted character."
 msgstr "Met Auto Shift aan typt een letter-, cijfer- of symbooltoets die langer dan de Auto Shift-tijd wordt ingedrukt zijn teken met Shift."
 
-#: polyhost/gui/settings_dialog.py:252
+#: polyhost/gui/settings_dialog.py:254
 msgid "How long you hold a key before Auto Shift types its shifted character."
 msgstr "Hoe lang u een toets vasthoudt voordat Auto Shift het teken met Shift typt."
 
-#: polyhost/gui/settings_dialog.py:255
+#: polyhost/gui/settings_dialog.py:257
 msgid "Switches the LEDs under the keys on or off. The keyboard keeps the change until it restarts, then uses its stored setting again. Needs keyboard firmware with protocol 39."
 msgstr "Zet de leds onder de toetsen aan of uit. Het toetsenbord houdt de wijziging vast tot het opnieuw start en gebruikt daarna weer de opgeslagen instelling. Vereist toetsenbordfirmware met protocol 39."
 
-#: polyhost/gui/settings_dialog.py:259
+#: polyhost/gui/settings_dialog.py:261
 msgid "How bright the LEDs under the keys are, from 0 to 255. The keyboard keeps the change until it restarts."
 msgstr "Hoe fel de leds onder de toetsen branden, van 0 tot 255. Het toetsenbord houdt de wijziging vast tot het opnieuw start."
 
-#: polyhost/gui/settings_dialog.py:262
+#: polyhost/gui/settings_dialog.py:264
 msgid "The number of the lighting animation, from 1. The keyboard uses the nearest one it has. It keeps the change until it restarts."
 msgstr "Het nummer van de verlichtingsanimatie, vanaf 1. Het toetsenbord gebruikt de dichtstbijzijnde die het heeft. Het houdt de wijziging vast tot het opnieuw start."
 
-#: polyhost/gui/settings_dialog.py:265
+#: polyhost/gui/settings_dialog.py:267
 msgid "How fast the lighting animation runs, from 0 to 255. The keyboard keeps the change until it restarts."
 msgstr "Hoe snel de verlichtingsanimatie loopt, van 0 tot 255. Het toetsenbord houdt de wijziging vast tot het opnieuw start."
 
-#: polyhost/gui/settings_dialog.py:268
+#: polyhost/gui/settings_dialog.py:270
 msgid "The colour of the lighting, from 0 to 255 around the colour wheel. The keyboard keeps the change until it restarts."
 msgstr "De kleur van de verlichting, van 0 tot 255 rond de kleurencirkel. Het toetsenbord houdt de wijziging vast tot het opnieuw start."
 
-#: polyhost/gui/settings_dialog.py:271
+#: polyhost/gui/settings_dialog.py:273
 msgid "How strong the lighting colour is, from 0 (white) to 255. The keyboard keeps the change until it restarts."
 msgstr "Hoe sterk de kleur van de verlichting is, van 0 (wit) tot 255. Het toetsenbord houdt de wijziging vast tot het opnieuw start."
 
-#: polyhost/gui/settings_dialog.py:274
+#: polyhost/gui/settings_dialog.py:276
 msgid "Blinks the LEDs under the keys three times, so you can see which keyboard this dialog changes."
 msgstr "Laat de leds onder de toetsen drie keer knipperen, zodat u ziet welk toetsenbord dit venster wijzigt."
 
-#: polyhost/gui/settings_dialog.py:277
+#: polyhost/gui/settings_dialog.py:279
 msgid "Shows the state of AI coding agents on the number row and, while the AI key is pressed, one card per agent. Needs keyboard firmware with protocol 31. Takes effect at the next keyboard connect."
 msgstr "Toont de status van AI-programmeeragents op de cijferrij en, zolang de AI-toets ingedrukt is, één kaart per agent. Vereist toetsenbordfirmware met protocol 31. Wordt actief bij de volgende verbinding met het toetsenbord."
 
-#: polyhost/gui/settings_dialog.py:281
+#: polyhost/gui/settings_dialog.py:283
 msgid "Also finds agents that run in a terminal from the window title, without a hook. Not on macOS."
 msgstr "Vindt via de venstertitel ook agents die in een terminal draaien, zonder hook. Niet op macOS."
 
-#: polyhost/gui/settings_dialog.py:284
+#: polyhost/gui/settings_dialog.py:286
 msgid "Downloads a font the first time an agent title needs one: Chinese, Hindi, Thai, Armenian, Hebrew or Arabic. The fonts come from GitHub and www.polykybd.org. Off: nothing is downloaded; fonts downloaded before are still used, and a title in a script without a font shows boxes."
 msgstr "Downloadt een lettertype de eerste keer dat een agenttitel het nodig heeft: Chinees, Hindi, Thai, Armeens, Hebreeuws of Arabisch. De lettertypen komen van GitHub en www.polykybd.org. Uit: er wordt niets gedownload; eerder gedownloade lettertypen blijven in gebruik, en een titel in een schrift zonder lettertype toont vakjes."
 
-#: polyhost/gui/settings_dialog.py:289
+#: polyhost/gui/settings_dialog.py:291
 msgid "Also shows agents that run on a computer with the forwarder. A key press brings forward the remote-desktop viewer that shows that computer (NoMachine, Remote Desktop, VNC). They report over the network endpoint for forwarders, which must be on too. Off: only this computer's agents."
 msgstr "Toont ook agents die draaien op een computer met de forwarder. Een toetsdruk haalt de remote-desktopviewer naar voren die die computer toont (NoMachine, Remote Desktop, VNC). Deze agents rapporteren via het netwerkeindpunt voor forwarders, dat ook ingeschakeld moet zijn. Uit: alleen de agents van deze computer."
 
-#: polyhost/gui/settings_dialog.py:294
+#: polyhost/gui/settings_dialog.py:296
 msgid "On a computer with the forwarder: a key press on one of this computer's agents also brings the agent's own window forward here. Off: only the viewer on the keyboard's computer comes forward."
 msgstr "Op een computer met de forwarder: een toetsdruk op een agent van deze computer haalt hier ook het eigen venster van de agent naar voren. Uit: alleen de viewer op de toetsenbordcomputer komt naar voren."
 
-#: polyhost/gui/settings_dialog.py:298
+#: polyhost/gui/settings_dialog.py:300
 msgid "On a computer with the forwarder: this computer's agents send no title, no folder name and no path to the keyboard's computer, so their keys show only the agent's name. The computer's name still goes with the report. Applies to agents that start after the change."
 msgstr "Op een computer met de forwarder: de agents op deze computer sturen geen titel, geen mapnaam en geen pad naar de toetsenbordcomputer, dus hun toetsen tonen alleen de naam van de agent. De naam van de computer gaat nog steeds mee met het rapport. Geldt voor agents die na de wijziging starten."
 
-#: polyhost/gui/settings_dialog.py:303
+#: polyhost/gui/settings_dialog.py:305
 msgid "A working agent that reports nothing for this many minutes shows as stale (dim white). 0: never."
 msgstr "Een actieve agent die dit aantal minuten niets rapporteert, wordt als verouderd getoond (gedimd wit). 0: nooit."
 
-#: polyhost/gui/settings_dialog.py:306
+#: polyhost/gui/settings_dialog.py:308
 msgid "An idle or stale agent that reports nothing for this many minutes is removed and frees its key. An agent whose process ends is removed at once. 0: never."
 msgstr "Een inactieve of verouderde agent die dit aantal minuten niets rapporteert, wordt verwijderd en geeft zijn toets vrij. Een agent waarvan het proces stopt, wordt meteen verwijderd. 0: nooit."
 
-#: polyhost/gui/settings_dialog.py:309
+#: polyhost/gui/settings_dialog.py:311
 msgid "The shortcut the minus key sends in AI mode to start dictation, for example <cmd>+h or <ctrl>+<alt>+d. Empty: Win+H on Windows, nothing on macOS and Linux."
 msgstr "De sneltoets die de mintoets in AI-modus stuurt om dicteren te starten, bijvoorbeeld <cmd>+h of <ctrl>+<alt>+d. Leeg: Win+H op Windows, niets op macOS en Linux."
 
-#: polyhost/gui/settings_dialog.py:313
+#: polyhost/gui/settings_dialog.py:315
 msgid "Tells the keyboard which Unicode input method this computer uses (for example WinCompose on Windows), when it connects and whenever the method changes. The keyboard needs it to type characters that are not on your layout, such as emoji. Off: the keyboard keeps the method it has stored."
 msgstr "Vertelt het toetsenbord welke Unicode-invoermethode deze computer gebruikt (bijvoorbeeld WinCompose op Windows), bij het verbinden en telkens als de methode verandert. Het toetsenbord heeft dit nodig om tekens te typen die niet op je indeling staan, zoals emoji. Uit: het toetsenbord houdt de methode die het heeft opgeslagen."
 
-#: polyhost/gui/settings_dialog.py:318
+#: polyhost/gui/settings_dialog.py:320
 msgid "Sets the keycap brightness from the daylight at your location, every ten minutes."
 msgstr "Stelt de helderheid van de toetskappen in op basis van het daglicht op uw locatie, elke tien minuten."
 
-#: polyhost/gui/settings_dialog.py:321
+#: polyhost/gui/settings_dialog.py:323
 msgid "Asks open-meteo.com for this hour's sunlight at your location, including clouds. Off: the host computes a cloudless-sky value from the location and time."
 msgstr "Vraagt open-meteo.com om het zonlicht van dit uur op uw locatie, inclusief bewolking. Uit: de host berekent een waarde voor een onbewolkte hemel op basis van locatie en tijd."
 
-#: polyhost/gui/settings_dialog.py:325
+#: polyhost/gui/settings_dialog.py:327
 msgid "Looks up your approximate location from your IP address (ip-api.com), once per run. Off: the brightness follows the hour of the day."
 msgstr "Bepaalt uw geschatte locatie op basis van uw IP-adres (ip-api.com), eenmaal per sessie. Uit: de helderheid volgt het uur van de dag."
 
-#: polyhost/gui/settings_dialog.py:328
+#: polyhost/gui/settings_dialog.py:330
 msgid "The sunlight value at which the keycaps are at their dimmest. Less sunlight keeps them at the dimmest level."
 msgstr "De zonlichtwaarde waarbij de toetskappen het minst fel zijn. Bij minder zonlicht blijven ze op het laagste niveau."
 
-#: polyhost/gui/settings_dialog.py:331
+#: polyhost/gui/settings_dialog.py:333
 msgid "The sunlight value at which the keycaps are at their brightest. Lower it to reach full brightness on a cloudy day."
 msgstr "De zonlichtwaarde waarbij de toetskappen het felst zijn. Verlaag deze waarde om op een bewolkte dag de volle helderheid te bereiken."
 
-#: polyhost/gui/settings_dialog.py:334
+#: polyhost/gui/settings_dialog.py:336
 msgid "Multiplies the sunlight value before it is compared with Sunlight at dimmest and Sunlight at brightest. Below 1 makes the keycaps dimmer for the same daylight."
 msgstr "Vermenigvuldigt de zonlichtwaarde voordat die wordt vergeleken met Zonlicht bij laagste stand en Zonlicht bij hoogste stand. Onder 1 worden de toetskappen bij hetzelfde daglicht donkerder."
 
-#: polyhost/gui/settings_dialog.py:338
+#: polyhost/gui/settings_dialog.py:340
 msgid "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, below 1 brighter. The dimmest and brightest levels do not change."
 msgstr "Bepaalt de vorm van de daglichtcurve. Boven 1 wordt het midden van de dag donkerder, onder 1 helderder. Het laagste en hoogste niveau veranderen niet."
 
-#: polyhost/gui/settings_dialog.py:341
+#: polyhost/gui/settings_dialog.py:343
 msgid "Draws icons for apps that have no overlay of their own: the app's logo on the Escape key and an icon on each shortcut key. Off: these apps get no icons. Apps with their own overlay are not affected."
 msgstr "Tekent pictogrammen voor apps die geen eigen overlay hebben: het logo van de app op de Escape-toets en een pictogram op elke sneltoets. Uit: deze apps krijgen geen pictogrammen. Apps met een eigen overlay veranderen niet."
 
-#: polyhost/gui/settings_dialog.py:345
+#: polyhost/gui/settings_dialog.py:347
 msgid "An app with its own overlay also gets its logo on the Escape key, when its overlay leaves Escape blank."
 msgstr "Een app met een eigen overlay krijgt ook zijn logo op de Escape-toets, als zijn overlay Escape leeg laat."
 
-#: polyhost/gui/settings_dialog.py:348
+#: polyhost/gui/settings_dialog.py:350
 msgid "Only for an app that comes with its own overlay: the keys its overlay leaves blank also get icons from the app's menus. Off: such an app shows only its overlay. Needs Read shortcuts from app menus."
 msgstr "Alleen voor een app die een eigen overlay heeft: de toetsen die zijn overlay leeg laat, krijgen ook pictogrammen uit de menu's van de app. Uit: zo'n app toont alleen zijn overlay. Vereist de instelling ‘Sneltoetsen uit app-menu's lezen’."
 
-#: polyhost/gui/settings_dialog.py:352
+#: polyhost/gui/settings_dialog.py:354
 msgid "The main switch for shortcut icons. On: an app without its own overlay also gets icons on its shortcut keys, when its menus can be read. PolyKybdHost reads the shortcuts listed in the focused app's menus, through the accessibility interface of the operating system. The reading runs in the background, one app at a time, so the other keycaps do not wait for it. It stops after 3 minutes on Windows, and after 4,000 parts of the app's window on Linux (3,000 on macOS). The shortcuts stay on this computer. Off: no app's menus are read, and an app that comes with its own overlay still shows it."
 msgstr "De hoofdschakelaar voor sneltoetspictogrammen. Aan: ook een app zonder eigen overlay krijgt pictogrammen op zijn sneltoetsen, als zijn menu's gelezen kunnen worden. PolyKybdHost leest de sneltoetsen in de menu's van de actieve app via de toegankelijkheidsinterface van het besturingssysteem. Het lezen gebeurt op de achtergrond, één app tegelijk, zodat de andere toetsen er niet op wachten. Het stopt na 3 minuten op Windows, en na 4.000 onderdelen van het app-venster op Linux (3.000 op macOS). De sneltoetsen blijven op deze computer. Uit: de menu's van geen enkele app worden gelezen, en een app die een eigen overlay heeft, toont die nog steeds."
 
-#: polyhost/gui/settings_dialog.py:362
+#: polyhost/gui/settings_dialog.py:364
 msgid "Downloads app logos and shortcut icons that this computer does not have yet from the internet (simple-icons and Iconify). They are stored on this computer. Off: icons already downloaded keep working, and an app without a stored icon gets none."
 msgstr "Downloadt app-logo's en sneltoetspictogrammen die deze computer nog niet heeft van internet (simple-icons en Iconify). Ze worden op deze computer opgeslagen. Uit: al gedownloade pictogrammen blijven werken, en een app zonder opgeslagen pictogram krijgt er geen."
 
-#: polyhost/gui/settings_dialog.py:367
+#: polyhost/gui/settings_dialog.py:369
 msgid "Linux only. Turns on the desktop's accessibility switch, so Qt and KDE apps list their shortcuts for Read shortcuts from app menus. Off: only apps that list them anyway (GTK) are read."
 msgstr "Alleen Linux. Zet de toegankelijkheidsschakelaar van de desktop aan, zodat Qt- en KDE-apps hun sneltoetsen tonen voor Sneltoetsen uit app-menu's lezen. Uit: alleen apps die ze toch al tonen (GTK) worden gelezen."
 
-#: polyhost/gui/settings_dialog.py:371
+#: polyhost/gui/settings_dialog.py:373
 msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
 msgstr "USB-overdracht: hoeveel afbeeldingsberichten worden verzonden vóór een korte pauze, zodat het toetsenbord blijft reageren op typen. Wijzig dit alleen als daarom wordt gevraagd bij het melden van een probleem."
 
-#: polyhost/gui/settings_dialog.py:375
+#: polyhost/gui/settings_dialog.py:377
 msgid "USB transport: the length of that pause, in seconds. Change it only when asked to while reporting a problem."
 msgstr "USB-overdracht: de lengte van die pauze, in seconden. Wijzig dit alleen als daarom wordt gevraagd bij het melden van een probleem."
 
-#: polyhost/gui/settings_dialog.py:378
+#: polyhost/gui/settings_dialog.py:380
 msgid "How many times the app asks the keyboard for its ID without an answer before it closes and reopens the USB connection. Change it only when asked to while reporting a problem."
 msgstr "Hoe vaak de app het toetsenbord zonder antwoord om zijn ID vraagt voordat de USB-verbinding wordt gesloten en opnieuw geopend. Wijzig dit alleen als iemand je daarom vraagt bij het melden van een probleem."
 
-#: polyhost/gui/settings_dialog.py:382
+#: polyhost/gui/settings_dialog.py:384
 msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
 msgstr "Het uiterlijk van het systeemvakmenu en de dialoogvensters. Automatisch volgt de lichte of donkere instelling van het bureaublad."
 
-#: polyhost/gui/settings_dialog.py:385
+#: polyhost/gui/settings_dialog.py:387
 msgid "The language of the menus and dialogs. Applies when the tray app restarts."
 msgstr "De taal van de menu's en dialoogvensters. Wordt toegepast wanneer de systeemvak-app opnieuw start."
 
-#: polyhost/gui/settings_dialog.py:387
+#: polyhost/gui/settings_dialog.py:389
 msgid "Shows the developer settings in this dialog, and the Developer submenu in the tray menu after a restart."
 msgstr "Toont de ontwikkelaarsinstellingen in dit venster, en na een herstart het submenu Ontwikkelaar in het systeemvakmenu."
 
-#: polyhost/gui/settings_dialog.py:390
+#: polyhost/gui/settings_dialog.py:392
 msgid "How much the app writes to its log. Debug and Detailed help when you report a problem, and make the log grow faster. Applies after a restart."
 msgstr "Hoeveel de app naar zijn log schrijft. Debug en Gedetailleerd helpen als je een probleem meldt, en laten het log sneller groeien. Geldt na een herstart."
 
-#: polyhost/gui/settings_dialog.py:392
+#: polyhost/gui/settings_dialog.py:394
 msgid "Adds a simulated keyboard next to the real one."
 msgstr "Voegt een gesimuleerd toetsenbord toe naast het echte."
 
-#: polyhost/gui/settings_dialog.py:394
+#: polyhost/gui/settings_dialog.py:396
 msgid "Uses a simulated keyboard instead of a real one, so the app runs without hardware."
 msgstr "Gebruikt een gesimuleerd toetsenbord in plaats van een echt, zodat de app zonder hardware werkt."
 
-#: polyhost/gui/settings_dialog.py:397
+#: polyhost/gui/settings_dialog.py:399
 msgid "The protocol version the simulated keyboard reports. 0 uses the newest version this host knows."
 msgstr "De protocolversie die het gesimuleerde toetsenbord meldt. 0 gebruikt de nieuwste versie die deze host kent."
 
-#: polyhost/gui/settings_dialog.py:400
+#: polyhost/gui/settings_dialog.py:402
 msgid "Tracks the active window even when no keyboard is connected."
 msgstr "Volgt het actieve venster, ook als er geen toetsenbord is verbonden."
 
-#: polyhost/gui/settings_dialog.py:402
+#: polyhost/gui/settings_dialog.py:404
 msgid "Windows only, experimental. Switches the input language with Win32 calls instead of the standard method, and falls back to it on a failure."
 msgstr "Alleen Windows, experimenteel. Wisselt de invoertaal met Win32-aanroepen in plaats van de standaardmethode, en valt bij een fout terug op die methode."
 
-#: polyhost/gui/settings_dialog.py:405
+#: polyhost/gui/settings_dialog.py:407
 msgid "Uses the USB HID channel only, as if the keyboard had no fast link: firmware updates go over HID. For testing the HID path by hand."
 msgstr "Gebruikt alleen het USB-HID-kanaal, alsof het toetsenbord geen snelle verbinding heeft: firmware-updates gaan via HID. Om het HID-pad handmatig te testen."
 
-#: polyhost/gui/settings_dialog.py:408
+#: polyhost/gui/settings_dialog.py:410
 msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
 msgstr "Accepteert vensterrapporten van oude forwarders via onversleutelde, niet-geauthenticeerde TCP (poort 50162) op elke netwerkinterface. Schakel dit alleen in voor een oude forwarder."
 
-#: polyhost/gui/settings_dialog.py:412
+#: polyhost/gui/settings_dialog.py:414
 msgid "Runs the keyboard connection in a background process that the tray app connects to, so the connection stays up when the tray app restarts."
 msgstr "Voert de toetsenbordverbinding uit in een achtergrondproces waarmee de systeemvak-app verbinding maakt, zodat de verbinding blijft bestaan wanneer de systeemvak-app opnieuw start."
 
-#: polyhost/gui/settings_dialog.py:415
+#: polyhost/gui/settings_dialog.py:417
+msgid "Lets an AI assistant such as Claude or ChatGPT change the keyboard's language, brightness, idle style, glyph script, overlays and single keys when you ask it to, through the MCP server (polyctl mcp) that you add to the assistant. It cannot update the firmware or turn on network features. Applies at once."
+msgstr "Laat een AI-assistent zoals Claude of ChatGPT op jouw verzoek de taal, helderheid, inactiviteitsstijl, glyph-schrift, overlays en losse toetsen van het toetsenbord wijzigen, via de MCP-server (polyctl mcp) die je aan de assistent toevoegt. Hij kan de firmware niet bijwerken en geen netwerkfuncties inschakelen. Geldt meteen."
+
+#: polyhost/gui/settings_dialog.py:423
 msgid "Accepts reports of the focused window from the forwarder app on another computer, for example one you use through remote desktop, so the keyboard shows the icons of that computer's apps. Opens a network port. Applies after a restart."
 msgstr "Accepteert meldingen over het actieve venster van de forwarder-app op een andere computer, bijvoorbeeld een die je via extern bureaublad gebruikt, zodat het toetsenbord de pictogrammen van de apps van die computer toont. Opent een netwerkpoort. Geldt na een herstart."
 
-#: polyhost/gui/settings_dialog.py:420
+#: polyhost/gui/settings_dialog.py:428
 msgid "On a computer with the forwarder that you reach through NoMachine or Remote Desktop: the forwarder reports to the computer that is connected to this one, found from the connection on port 4000 or 3389. It is used when no host or host file names an address, and only over the paired connection (or --report-rpc). Applies within a few seconds."
 msgstr "Op een computer met de forwarder die u bereikt via NoMachine of Extern bureaublad: de forwarder rapporteert aan de computer die met deze is verbonden, gevonden via de verbinding op poort 4000 of 3389. Wordt gebruikt wanneer geen host of hostbestand een adres noemt, en alleen via de gekoppelde verbinding (of --report-rpc). Werkt binnen enkele seconden."
 
-#: polyhost/gui/settings_dialog.py:426
+#: polyhost/gui/settings_dialog.py:434
 msgid "Start this computer as a forwarder instead of the tray app for a keyboard: it reports its windows to the keyboard computer, found from the NoMachine or Remote Desktop connection. The tray's Switch to Forwarder and Switch to Keyboard Mode set it and restart. A start option such as --host or --headless wins over it. Applies after a restart."
 msgstr "Start deze computer als forwarder in plaats van als app in het systeemvak voor een toetsenbord: hij meldt zijn vensters aan de toetsenbordcomputer, die wordt gevonden via de NoMachine- of Extern bureaublad-verbinding. \"Overschakelen naar forwarder\" en \"Overschakelen naar toetsenbordmodus\" in het systeemvak stellen dit in en starten opnieuw. Een startoptie zoals --host of --headless heeft voorrang. Geldt na een herstart."
 
-#: polyhost/gui/settings_dialog.py:432
+#: polyhost/gui/settings_dialog.py:440
 msgid "The language of the words the keyboard's emoji search matches. The dictionary is sent to the keyboard when you click OK, and when it connects if Send font packs on connect is on. Own dictionary file, when set, is used instead."
 msgstr "De taal van de woorden waarop de emoji-zoekfunctie van het toetsenbord zoekt. Het woordenboek wordt naar het toetsenbord verzonden als je op OK klikt, en bij het verbinden als Lettertypepakketten verzenden bij verbinden aan staat. Als Eigen woordenboekbestand is ingesteld, wordt dat in plaats daarvan gebruikt."
 
-#: polyhost/gui/settings_dialog.py:437
+#: polyhost/gui/settings_dialog.py:445
 msgid "A dictionary file you built yourself (.plyd), sent to the keyboard instead of the Search language dictionary. Empty: the dictionary for the Search language is used."
 msgstr "Een woordenboekbestand dat je zelf hebt gemaakt (.plyd) en dat naar het toetsenbord wordt verzonden in plaats van het woordenboek van Zoektaal. Leeg: het woordenboek voor Zoektaal wordt gebruikt."
 
-#: polyhost/gui/settings_dialog.py:441
+#: polyhost/gui/settings_dialog.py:449
 msgid "When the keyboard connects, sends it the font packs it is missing or has in an older version. Font packs hold the characters for languages, symbols and emoji."
 msgstr "Verzendt bij het verbinden van het toetsenbord de lettertypepakketten die het mist of in een oudere versie heeft. Lettertypepakketten bevatten de tekens voor talen, symbolen en emoji."
 
-#: polyhost/gui/settings_dialog.py:445
+#: polyhost/gui/settings_dialog.py:453
 msgid "A font-pack file (.plyf) to send to the keyboard instead of the one that comes with this app. Empty: the font pack that comes with this app is used."
 msgstr "Een lettertypepakketbestand (.plyf) dat naar het toetsenbord wordt verzonden in plaats van het pakket dat bij deze app hoort. Leeg: het lettertypepakket dat bij deze app hoort, wordt gebruikt."
 
-#: polyhost/gui/settings_dialog.py:448
+#: polyhost/gui/settings_dialog.py:456
 msgid "Chooses a website's overlay from the address of the focused browser tab. The address comes from the PolyKybd browser extension; on macOS, Safari and Chromium browsers such as Chrome also give it without the extension. Off: a website's overlay is chosen from the window title only."
 msgstr "Kiest de overlay van een website aan de hand van het adres van het actieve browsertabblad. Het adres komt van de PolyKybd-browserextensie; op macOS geven Safari en Chromium-browsers zoals Chrome het ook zonder de extensie. Uit: de overlay van een website wordt alleen op basis van de venstertitel gekozen."
 
-#: polyhost/gui/settings_dialog.py:453
+#: polyhost/gui/settings_dialog.py:461
 msgid "Runs the receiver that the PolyKybd browser extension sends the address of the focused tab to. It accepts connections from this computer only (127.0.0.1)."
 msgstr "Start de ontvanger waarnaar de PolyKybd-browserextensie het adres van het actieve tabblad verzendt. Hij accepteert alleen verbindingen van deze computer (127.0.0.1)."
 
-#: polyhost/gui/settings_dialog.py:457
+#: polyhost/gui/settings_dialog.py:465
 msgid "The receiver's port. It must match the Host port in the browser extension."
 msgstr "De poort van de ontvanger. Deze moet overeenkomen met Host port in de browserextensie."
 
-#: polyhost/gui/settings_dialog.py:459
+#: polyhost/gui/settings_dialog.py:467
 msgid "A shared secret. When set, the browser extension must send the same token."
 msgstr "Een gedeeld geheim. Indien ingesteld moet de browserextensie hetzelfde token verzenden."
 
-#: polyhost/gui/settings_dialog.py:461
+#: polyhost/gui/settings_dialog.py:469
 msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
 msgstr "Verzendt één anoniem gebruiksrapport per dag: versies, besturingssysteem en enkele tellers. Nooit venstertitels of app-namen."
 
-#: polyhost/gui/settings_dialog.py:464
+#: polyhost/gui/settings_dialog.py:472
 msgid "The web address the usage report is sent to. Empty: no report is sent."
 msgstr "Het webadres waarnaar het gebruiksrapport wordt verzonden. Leeg: er wordt geen rapport verzonden."
 
-#: polyhost/gui/settings_dialog.py:466
+#: polyhost/gui/settings_dialog.py:474
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
 msgstr "De willekeurige ID van deze installatie, aangemaakt bij het eerste rapport. Verwijder deze om als nieuwe installatie te tellen."
 
-#: polyhost/gui/settings_dialog.py:469
+#: polyhost/gui/settings_dialog.py:477
 msgid "Watches the messages the keyboard sends over USB for known failures, and offers to report a problem."
 msgstr "Controleert de berichten die het toetsenbord via USB verzendt op bekende fouten, en biedt aan een probleem te melden."
 
-#: polyhost/gui/settings_dialog.py:472
+#: polyhost/gui/settings_dialog.py:480
 msgid "Watches this app's own log for known failure messages, and offers to report a problem."
 msgstr "Controleert het eigen log van deze app op bekende foutmeldingen, en biedt aan een probleem te melden."
 
-#: polyhost/gui/settings_dialog.py:474
+#: polyhost/gui/settings_dialog.py:482
 msgid "What counts as a problem: errors only, or errors and warnings."
 msgstr "Wat als probleem telt: alleen fouten, of fouten en waarschuwingen."
 
-#: polyhost/gui/settings_dialog.py:476
+#: polyhost/gui/settings_dialog.py:484
 msgid "Draws some game overlays from the game's own files when the game is installed on this computer. The images stay on this computer. Off: the shipped overlays are used."
 msgstr "Tekent sommige spel-overlays uit de eigen bestanden van het spel als het spel op deze computer is geïnstalleerd. De afbeeldingen blijven op deze computer. Uit: de meegeleverde overlays worden gebruikt."
 
-#: polyhost/gui/settings_dialog.py:953
+#: polyhost/gui/settings_dialog.py:961
 msgid "Advanced"
 msgstr "Geavanceerd"
 
-#: polyhost/gui/settings_dialog.py:962
+#: polyhost/gui/settings_dialog.py:970
 msgid "Shows the settings that most people never change."
 msgstr "Toont de instellingen die de meeste mensen nooit wijzigen."
 
-#: polyhost/gui/settings_dialog.py:996 polyhost/host.py:1695
+#: polyhost/gui/settings_dialog.py:1004 polyhost/host.py:1716
 msgid "PolyKybd Settings"
 msgstr "PolyKybd-instellingen"
 
-#: polyhost/gui/settings_dialog.py:1065
+#: polyhost/gui/settings_dialog.py:1073
 msgid "Search settings"
 msgstr "Instellingen zoeken"
 
-#: polyhost/gui/settings_dialog.py:1117
+#: polyhost/gui/settings_dialog.py:1125
 msgid "An overlay is a set of icons for one app. Help & About, Basics shows an example."
 msgstr "Een overlay is een set pictogrammen voor één app. Help & Over, Basis toont een voorbeeld."
 
-#: polyhost/gui/settings_dialog.py:1121
+#: polyhost/gui/settings_dialog.py:1129
 msgid "Reading the settings stored on the keyboard…"
 msgstr "Instellingen lezen die op het toetsenbord zijn opgeslagen…"
 
-#: polyhost/gui/settings_dialog.py:1125
+#: polyhost/gui/settings_dialog.py:1133
 msgid "No setting matches the search."
 msgstr "Geen instelling komt overeen met de zoekopdracht."
 
-#: polyhost/gui/settings_dialog.py:1140
+#: polyhost/gui/settings_dialog.py:1148
 msgid "Some settings might need a restart to take effect."
 msgstr "Sommige instellingen worden mogelijk pas na een herstart van kracht."
 
-#: polyhost/gui/settings_dialog.py:1175
+#: polyhost/gui/settings_dialog.py:1183
 #, python-brace-format
 msgid "Set by {flag} for this run. This setting applies when the app starts without it."
 msgstr "Ingesteld door {flag} voor deze sessie. Deze instelling geldt wanneer de app zonder deze vlag start."
 
-#: polyhost/gui/settings_dialog.py:1196
+#: polyhost/gui/settings_dialog.py:1204
 msgid "Blink"
 msgstr "Knipperen"
 
@@ -4380,35 +4394,35 @@ msgstr "Knipperen"
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
 #: polyhost/gui/layout_dialog/combo_tab.py:371
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:359
-#: polyhost/gui/settings_dialog.py:1230
+#: polyhost/gui/settings_dialog.py:1238
 msgid " ms"
 msgstr " ms"
 
-#: polyhost/gui/settings_dialog.py:1283
+#: polyhost/gui/settings_dialog.py:1291
 msgid "This keyboard's firmware does not have this setting."
 msgstr "De firmware van dit toetsenbord heeft deze instelling niet."
 
-#: polyhost/gui/settings_dialog.py:1285
+#: polyhost/gui/settings_dialog.py:1293
 msgid "Could not read this setting from the keyboard."
 msgstr "Kan deze instelling niet van het toetsenbord lezen."
 
-#: polyhost/gui/settings_dialog.py:1299
+#: polyhost/gui/settings_dialog.py:1307
 msgid "Connect the keyboard to change the settings stored on it."
 msgstr "Sluit het toetsenbord aan om de instellingen te wijzigen die erop zijn opgeslagen."
 
-#: polyhost/gui/settings_dialog.py:1301
+#: polyhost/gui/settings_dialog.py:1309
 msgid "Some settings could not be read from the keyboard. Update the keyboard firmware to change them here."
 msgstr "Sommige instellingen konden niet van het toetsenbord worden gelezen. Werk de firmware van het toetsenbord bij om ze hier te wijzigen."
 
-#: polyhost/gui/settings_dialog.py:1356
+#: polyhost/gui/settings_dialog.py:1364
 msgid "These developer settings are not at their default, so they stay in effect while developer mode is off."
 msgstr "Deze ontwikkelaarsinstellingen staan niet op hun standaardwaarde en blijven dus van kracht terwijl de ontwikkelaarsmodus uit staat."
 
-#: polyhost/gui/settings_dialog.py:1426
+#: polyhost/gui/settings_dialog.py:1434
 msgid "Generate"
 msgstr "Genereren"
 
-#: polyhost/gui/settings_dialog.py:1427
+#: polyhost/gui/settings_dialog.py:1435
 msgid "Fills in a new random token and copies it. Paste it into the browser extension's Options and save both."
 msgstr "Vult een nieuw willekeurig token in en kopieert het. Plak het in de opties van de browserextensie (\"Options\") en sla beide op."
 
@@ -4671,7 +4685,7 @@ msgid "{prefix} — firmware v{fw_version} available"
 msgstr "{prefix} — firmware v{fw_version} beschikbaar"
 
 #: polyhost/forwarder.py:297 polyhost/gui/tray_notify.py:81
-#: polyhost/host.py:553
+#: polyhost/host.py:563
 msgid "Updates"
 msgstr "Updates"
 
@@ -4793,6 +4807,46 @@ msgstr "Opnieuw starten om de update te voltooien…"
 msgid "Updating from v{current} to v{version}"
 msgstr "Bijwerken van v{current} naar v{version}"
 
+#: polyhost/gui/user_overlays_dialog.py:18
+msgid "Every app"
+msgstr "Alle apps"
+
+#: polyhost/gui/user_overlays_dialog.py:27
+msgid "Overlays made by AI assistants"
+msgstr "Overlays van AI-assistenten"
+
+#: polyhost/gui/user_overlays_dialog.py:32
+msgid "Key drawings and overlay sets that an AI assistant made through the MCP server. A set for an app is drawn over that app's own icons; the set for every app fills the keys an app leaves empty."
+msgstr "Toetstekeningen en overlaysets die een AI-assistent via de MCP-server heeft gemaakt. Een set voor een app wordt over de eigen pictogrammen van die app getekend; de set voor alle apps vult de toetsen die een app leeg laat."
+
+#: polyhost/gui/user_overlays_dialog.py:51
+msgid "Reading the overlay sets..."
+msgstr "Overlaysets lezen..."
+
+#: polyhost/gui/user_overlays_dialog.py:56
+#, python-brace-format
+msgid "Cannot read the overlay sets: {error}"
+msgstr "Kan de overlaysets niet lezen: {error}"
+
+#: polyhost/gui/user_overlays_dialog.py:62
+msgid "There are no overlay sets. Ask an AI assistant that has the PolyKybd MCP server to draw on a key."
+msgstr "Er zijn geen overlaysets. Vraag een AI-assistent die de PolyKybd MCP-server heeft om op een toets te tekenen."
+
+#: polyhost/gui/user_overlays_dialog.py:74
+#, python-brace-format
+msgid "Keys: {n}"
+msgstr "Toetsen: {n}"
+
+#: polyhost/gui/user_overlays_dialog.py:79
+#, python-brace-format
+msgid "Remove the overlay set for {app}."
+msgstr "De overlayset voor {app} verwijderen."
+
+#: polyhost/gui/user_overlays_dialog.py:93
+#, python-brace-format
+msgid "Cannot remove the overlay set: {error}"
+msgstr "Kan de overlayset niet verwijderen: {error}"
+
 #: polyhost/host.py:163
 msgid "Updating keyboard font pack — please wait, do not unplug…"
 msgstr "Het lettertypepakket van het toetsenbord wordt bijgewerkt — even geduld, niet loskoppelen…"
@@ -4847,11 +4901,11 @@ msgstr "Het enginepakket van het toetsenbord is actueel."
 msgid "Engine pack update failed: {error}"
 msgstr "Bijwerken van het enginepakket mislukt: {error}"
 
-#: polyhost/host.py:375 polyhost/host.py:1388
+#: polyhost/host.py:375 polyhost/host.py:1399
 msgid "Waiting for PolyKybd..."
 msgstr "Wachten op PolyKybd..."
 
-#: polyhost/host.py:376 polyhost/host.py:1235
+#: polyhost/host.py:376 polyhost/host.py:1246
 msgid "Press to pause connection"
 msgstr "Klik om de verbinding te pauzeren"
 
@@ -4897,7 +4951,7 @@ msgstr "Lettertypepakketten inspecteren..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
 #: polyhost/forwarder.py:285 polyhost/forwarder.py:452 polyhost/host.py:468
-#: polyhost/host.py:1237
+#: polyhost/host.py:1248
 msgid "Pause"
 msgstr "Pauzeren"
 
@@ -4921,96 +4975,100 @@ msgstr "Keymap configureren"
 msgid "Tutorials…"
 msgstr "Tutorials…"
 
-#: polyhost/host.py:555
+#: polyhost/host.py:554
+msgid "Overlays made by AI assistants…"
+msgstr "Overlays van AI-assistenten…"
+
+#: polyhost/host.py:565
 msgid "Check for host update..."
 msgstr "Controleren op host-update..."
 
-#: polyhost/host.py:594 polyhost/host.py:2509 polyhost/host.py:3044
-#: polyhost/host.py:3222
+#: polyhost/host.py:604 polyhost/host.py:2533 polyhost/host.py:3068
+#: polyhost/host.py:3246
 msgid "Check for firmware update…"
 msgstr "Controleren op firmware-update…"
 
-#: polyhost/host.py:603
+#: polyhost/host.py:613
 msgid "Keyboard fonts"
 msgstr "Toetsenbordlettertypen"
 
-#: polyhost/host.py:638
+#: polyhost/host.py:648
 msgid "Install WinCompose…"
 msgstr "WinCompose installeren…"
 
-#: polyhost/host.py:660
+#: polyhost/host.py:670
 msgid "Allow access to the keyboard (udev rule)…"
 msgstr "Toegang tot het toetsenbord toestaan (udev-regel)…"
 
-#: polyhost/host.py:688
+#: polyhost/host.py:698
 msgid "Change System Input Language"
 msgstr "Invoertaal van het systeem wijzigen"
 
-#: polyhost/host.py:694
+#: polyhost/host.py:704
 msgid "Inspect MRU Cache..."
 msgstr "MRU-cache inspecteren..."
 
-#: polyhost/host.py:700
+#: polyhost/host.py:710
 msgid "Mock Keyboard..."
 msgstr "Mock-toetsenbord..."
 
-#: polyhost/host.py:708
+#: polyhost/host.py:718
 msgid "Refresh unicode input mode"
 msgstr "Unicode-invoermodus vernieuwen"
 
-#: polyhost/host.py:712
+#: polyhost/host.py:722
 msgid "Save MRU cache now"
 msgstr "MRU-cache nu opslaan"
 
-#: polyhost/forwarder.py:378 polyhost/host.py:727
+#: polyhost/forwarder.py:378 polyhost/host.py:737
 msgid "Help && About"
 msgstr "Help && Over"
 
-#: polyhost/forwarder.py:374 polyhost/host.py:735
+#: polyhost/forwarder.py:374 polyhost/host.py:745
 msgid "Open config folder"
 msgstr "Configuratiemap openen"
 
-#: polyhost/host.py:744
+#: polyhost/host.py:754
 msgid "Switch to Forwarder…"
 msgstr "Overschakelen naar forwarder…"
 
-#: polyhost/host.py:755
+#: polyhost/host.py:765
 msgid "Only quit GUI"
 msgstr "Alleen de interface afsluiten"
 
-#: polyhost/host.py:865
+#: polyhost/host.py:875
 msgid "System language query not supported for this platform."
 msgstr "Opvragen van de systeemtaal wordt op dit platform niet ondersteund."
 
-#: polyhost/host.py:1060
+#: polyhost/host.py:1070
 #, python-brace-format
 msgid "Retry keyboard fonts ({n} failed)…"
 msgid_plural "Retry keyboard fonts ({n} failed)…"
 msgstr[0] "Toetsenbordlettertypen opnieuw proberen ({n} mislukt)…"
 msgstr[1] "Toetsenbordlettertypen opnieuw proberen ({n} mislukt)…"
 
-#: polyhost/host.py:1062
+#: polyhost/host.py:1072
 #, python-brace-format
 msgid "Re-flash the font bundles whose last attempt failed: {bundles}"
 msgstr "De lettertypebundels opnieuw flashen waarvan de laatste poging is mislukt: {bundles}"
 
-#: polyhost/host.py:1068
+#: polyhost/host.py:1078
 #, python-brace-format
 msgid "Update keyboard fonts ({n})…"
 msgid_plural "Update keyboard fonts ({n})…"
 msgstr[0] "Toetsenbordlettertypen bijwerken ({n})…"
 msgstr[1] "Toetsenbordlettertypen bijwerken ({n})…"
 
-#: polyhost/host.py:1070
+#: polyhost/host.py:1080
 #, python-brace-format
 msgid "Flash the font bundles the keyboard is missing, behind on, or failed to take: {bundles}"
 msgstr "De lettertypebundels flashen die op het toetsenbord ontbreken, verouderd zijn of niet zijn overgenomen: {bundles}"
 
-#: polyhost/host.py:1075
+#: polyhost/host.py:1085
 msgid "Keyboard fonts: up to date"
 msgstr "Toetsenbordlettertypen: actueel"
 
-#: polyhost/host.py:1076
+#: polyhost/host.py:1086
 msgid ""
 "Every shipped font bundle is already on the keyboard.\n"
 "Developer → Font Pack → Re-flash all bundles forces a re-send if the keycaps still render wrong."
@@ -5018,105 +5076,105 @@ msgstr ""
 "Elke meegeleverde lettertypebundel staat al op het toetsenbord.\n"
 "Ontwikkelaar → Lettertypepakket → ALLE bundels opnieuw flashen forceert opnieuw verzenden als de toetskappen nog steeds verkeerd worden weergegeven."
 
-#: polyhost/forwarder.py:954 polyhost/host.py:1112
+#: polyhost/forwarder.py:954 polyhost/host.py:1122
 msgid "Config folder"
 msgstr "Configuratiemap"
 
 #. TRANSLATORS: {rate} is like "0.6 MB/s"; the fast USB link's measured speed.
-#: polyhost/host.py:1204
+#: polyhost/host.py:1215
 #, python-brace-format
 msgid "{rate} link"
 msgstr "{rate}-verbinding"
 
 #. TRANSLATORS: {kbps} is the HID channel's ceiling in KB/s (64).
-#: polyhost/host.py:1206
+#: polyhost/host.py:1217
 #, python-brace-format
 msgid "HID link, up to {kbps} KB/s"
 msgstr "HID-verbinding, tot {kbps} KB/s"
 
 #. TRANSLATORS: tray tooltip line; {link} is "0.6 MB/s link" or "HID link, up
 #. to 64 KB/s".
-#: polyhost/host.py:1213
+#: polyhost/host.py:1224
 #, python-brace-format
 msgid "Connected: {link}"
 msgstr "Verbonden: {link}"
 
 #. TRANSLATORS: status row while paused; clicking it reconnects (verb).
-#: polyhost/host.py:1229
+#: polyhost/host.py:1240
 msgid "Reconnect"
 msgstr "Opnieuw verbinden"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:452 polyhost/host.py:1232
+#: polyhost/forwarder.py:452 polyhost/host.py:1243
 msgid "Resume"
 msgstr "Hervatten"
 
-#: polyhost/host.py:1315 polyhost/host.py:1380
+#: polyhost/host.py:1326 polyhost/host.py:1391
 #, python-brace-format
 msgid "Could not change OS language {language}."
 msgstr "Kan de OS-taal {language} niet wijzigen."
 
 #. TRANSLATORS: file-dialog filter; keep "(*.bin)" unchanged.
-#: polyhost/host.py:1404
+#: polyhost/host.py:1415
 msgid "Firmware image (*.bin)"
 msgstr "Firmware-image (*.bin)"
 
-#: polyhost/host.py:1405
+#: polyhost/host.py:1416
 msgid "Select firmware .bin"
 msgstr "Firmware-.bin selecteren"
 
-#: polyhost/host.py:1456
+#: polyhost/host.py:1467
 msgid "Firmware apply failed"
 msgstr "Toepassen van firmware mislukt"
 
-#: polyhost/host.py:1457
+#: polyhost/host.py:1468
 msgid "Firmware flash failed"
 msgstr "Flashen van firmware mislukt"
 
-#: polyhost/host.py:1505 polyhost/host.py:1558
+#: polyhost/host.py:1516 polyhost/host.py:1569
 #, python-brace-format
 msgid "Selected Language: {language} {country}"
 msgstr "Geselecteerde taal: {language} {country}"
 
-#: polyhost/host.py:1652
+#: polyhost/host.py:1673
 msgid "PolyHost settings"
 msgstr "PolyHost-instellingen"
 
-#: polyhost/host.py:1653
+#: polyhost/host.py:1674
 msgid "The settings are applied, but they could not be saved to the settings file. Another program may be holding it open. Change a setting again later to retry, or see the log."
 msgstr "De instellingen zijn toegepast, maar konden niet in het instellingenbestand worden opgeslagen. Mogelijk houdt een ander programma het bestand open. Wijzig later opnieuw een instelling om het nogmaals te proberen, of bekijk het logbestand."
 
-#: polyhost/host.py:1677
+#: polyhost/host.py:1698
 msgid "Idle Display"
 msgstr "Inactiviteitsweergave"
 
-#: polyhost/host.py:1696
+#: polyhost/host.py:1717
 #, python-brace-format
 msgid "The keyboard did not accept this setting: {setting}"
 msgstr "Het toetsenbord heeft deze instelling niet geaccepteerd: {setting}"
 
-#: polyhost/host.py:1732 polyhost/host.py:1741
+#: polyhost/host.py:1753 polyhost/host.py:1762
 msgid "Switch to Forwarder"
 msgstr "Overschakelen naar forwarder"
 
-#: polyhost/host.py:1733
+#: polyhost/host.py:1754
 msgid "Use this computer as a forwarder? It will stop controlling a keyboard, and report its windows to the keyboard computer instead. This is for a computer with no keyboard, reached through NoMachine or Remote Desktop. Restart now?"
 msgstr "Deze computer als forwarder gebruiken? Hij stopt met het bedienen van een toetsenbord en meldt zijn vensters aan de toetsenbordcomputer. Dit is voor een computer zonder toetsenbord, bereikt via NoMachine of Extern bureaublad. Nu opnieuw starten?"
 
-#: polyhost/forwarder.py:994 polyhost/forwarder.py:1034 polyhost/host.py:1742
+#: polyhost/forwarder.py:994 polyhost/forwarder.py:1034 polyhost/host.py:1763
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
 msgstr "De instellingen konden niet in het instellingenbestand worden opgeslagen en worden dus niet toegepast. Mogelijk houdt een ander programma het bestand open. Probeer het opnieuw of bekijk het logbestand."
 
-#: polyhost/host.py:1852
+#: polyhost/host.py:1876
 #, python-brace-format
 msgid "{side}: unreadable record {record}"
 msgstr "{side}: onleesbaar record {record}"
 
-#: polyhost/host.py:1855
+#: polyhost/host.py:1879
 msgid "Neither keyboard half holds a crash record."
 msgstr "Geen van beide toetsenbordhelften bevat een crashrecord."
 
-#: polyhost/host.py:1857
+#: polyhost/host.py:1881
 #, python-brace-format
 msgid ""
 "Could not read the crash record.\n"
@@ -5127,117 +5185,117 @@ msgstr ""
 "\n"
 "{errors}"
 
-#: polyhost/host.py:1859
+#: polyhost/host.py:1883
 msgid "Keyboard crash record"
 msgstr "Crashrecord van toetsenbord"
 
-#: polyhost/host.py:1868
+#: polyhost/host.py:1892
 #, python-brace-format
 msgid "Copied to the clipboard. Not read: {errors}"
 msgstr "Gekopieerd naar het klembord. Niet gelezen: {errors}"
 
-#: polyhost/host.py:1960
+#: polyhost/host.py:1984
 msgid "MRU Cache"
 msgstr "MRU-cache"
 
-#: polyhost/host.py:1960
+#: polyhost/host.py:1984
 msgid "MRU cache is not active (device not connected or MRU mode disabled)."
 msgstr "MRU-cache is niet actief (apparaat niet verbonden of MRU-modus uitgeschakeld)."
 
-#: polyhost/host.py:2012
+#: polyhost/host.py:2036
 msgid "daemon client"
 msgstr "daemon-client"
 
-#: polyhost/host.py:2012
+#: polyhost/host.py:2036
 msgid "standalone"
 msgstr "zelfstandig"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:1066 polyhost/host.py:2070
+#: polyhost/forwarder.py:1066 polyhost/host.py:2094
 msgid "paused"
 msgstr "gepauzeerd"
 
-#: polyhost/host.py:2072
+#: polyhost/host.py:2096
 msgid "connected"
 msgstr "verbonden"
 
-#: polyhost/host.py:2073
+#: polyhost/host.py:2097
 msgid "present — not connected (protocol/version)"
 msgstr "aanwezig — niet verbonden (protocol/versie)"
 
-#: polyhost/host.py:2081
+#: polyhost/host.py:2105
 msgid "No keyboard connected."
 msgstr "Geen toetsenbord verbonden."
 
-#: polyhost/host.py:2085
+#: polyhost/host.py:2109
 msgid "⚠ mismatch"
 msgstr "⚠ komt niet overeen"
 
-#: polyhost/host.py:2087
+#: polyhost/host.py:2111
 #, python-brace-format
 msgid "{n} languages loaded"
 msgid_plural "{n} languages loaded"
 msgstr[0] "{n} taal geladen"
 msgstr[1] "{n} talen geladen"
 
-#: polyhost/host.py:2090
+#: polyhost/host.py:2114
 #, python-brace-format
 msgid "<b>Connected keyboard:</b> {name} {state}"
 msgstr "<b>Verbonden toetsenbord:</b> {name} {state}"
 
-#: polyhost/host.py:2092
+#: polyhost/host.py:2116
 #, python-brace-format
 msgid "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
 msgstr "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
 
-#: polyhost/host.py:2094
+#: polyhost/host.py:2118
 #, python-brace-format
 msgid "<b>Hardware:</b> {hardware}"
 msgstr "<b>Hardware:</b> {hardware}"
 
-#: polyhost/host.py:2095
+#: polyhost/host.py:2119
 #, python-brace-format
 msgid "<b>Language:</b> {language}"
 msgstr "<b>Taal:</b> {language}"
 
-#: polyhost/host.py:2098
+#: polyhost/host.py:2122
 #, python-brace-format
 msgid "<b>Link:</b> {link}"
 msgstr "<b>Verbinding:</b> {link}"
 
-#: polyhost/host.py:2105
+#: polyhost/host.py:2129
 #, python-brace-format
 msgid "<b>Uptime:</b> {uptime}"
 msgstr "<b>Actief sinds:</b> {uptime}"
 
-#: polyhost/host.py:2107
+#: polyhost/host.py:2131
 #, python-brace-format
 msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>Overlaytoewijzingen:</b> {n} app"
 msgstr[1] "<b>Overlaytoewijzingen:</b> {n} apps"
 
-#: polyhost/forwarder.py:1086 polyhost/host.py:2109
+#: polyhost/forwarder.py:1086 polyhost/host.py:2133
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>Configuratie:</b> {path}"
 
-#: polyhost/forwarder.py:1087 polyhost/host.py:2110
+#: polyhost/forwarder.py:1087 polyhost/host.py:2134
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>Logbestanden:</b> {path}"
 
-#: polyhost/forwarder.py:1105 polyhost/host.py:2164
+#: polyhost/forwarder.py:1105 polyhost/host.py:2188
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "HID-protocol P{protocol}"
 
-#: polyhost/host.py:2169
+#: polyhost/host.py:2193
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
 msgstr "Hostsoftware voor het gesplitste PolyKybd-toetsenbord met een OLED-display per toetskap — volgt het actieve venster en stuurt overlays, taal- en keymap-updates naar het toetsenbord."
 
-#: polyhost/host.py:2195
+#: polyhost/host.py:2219
 #, python-brace-format
 msgid ""
 "Changing input language to '{language}' failed with:\n"
@@ -5246,124 +5304,124 @@ msgstr ""
 "Wijzigen van de invoertaal naar '{language}' is mislukt met:\n"
 "\"{error}\""
 
-#: polyhost/host.py:2215 polyhost/host.py:2232
+#: polyhost/host.py:2239 polyhost/host.py:2256
 #, python-brace-format
 msgid "Could not set {language}: {error}"
 msgstr "Kan {language} niet instellen: {error}"
 
-#: polyhost/host.py:2246
+#: polyhost/host.py:2270
 msgid "Show on the Number Row"
 msgstr "Tonen op de cijferrij"
 
-#: polyhost/host.py:2255
+#: polyhost/host.py:2279
 msgid "Remove Agent"
 msgstr "Agent verwijderen"
 
-#: polyhost/host.py:2260
+#: polyhost/host.py:2284
 msgid "Set Up Hooks…"
 msgstr "Hooks instellen…"
 
-#: polyhost/host.py:2265
+#: polyhost/host.py:2289
 msgid "Pair a Forwarder…"
 msgstr "Een forwarder koppelen…"
 
-#: polyhost/host.py:2269
+#: polyhost/host.py:2293
 msgid "Connect Cloud Sessions…"
 msgstr "Cloudsessies verbinden…"
 
-#: polyhost/host.py:2284
+#: polyhost/host.py:2308
 msgid "No agents reported"
 msgstr "Geen agents gemeld"
 
-#: polyhost/host.py:2287
+#: polyhost/host.py:2311
 msgid "working"
 msgstr "bezig"
 
-#: polyhost/host.py:2287
+#: polyhost/host.py:2311
 msgid "waiting"
 msgstr "wacht"
 
-#: polyhost/host.py:2287
+#: polyhost/host.py:2311
 msgid "done"
 msgstr "klaar"
 
-#: polyhost/host.py:2288
+#: polyhost/host.py:2312
 msgid "idle"
 msgstr "inactief"
 
-#: polyhost/host.py:2291
+#: polyhost/host.py:2315
 #, python-brace-format
 msgid "Key {key}: {name}, {state}, {title}"
 msgstr "Toets {key}: {name}, {state}, {title}"
 
-#: polyhost/host.py:2296
+#: polyhost/host.py:2320
 #, python-brace-format
 msgid "Page {page}, {text}"
 msgstr "Pagina {page}, {text}"
 
-#: polyhost/host.py:2319
+#: polyhost/host.py:2343
 msgid "Remove All Inactive"
 msgstr "Alle inactieve verwijderen"
 
-#: polyhost/host.py:2381
+#: polyhost/host.py:2405
 msgid "Open Cloud Session"
 msgstr "Cloudsessie openen"
 
-#: polyhost/host.py:2382
+#: polyhost/host.py:2406
 #, python-brace-format
 msgid "No browser tab or Claude app window shows the cloud session \"{title}\". Open it in the browser?"
 msgstr "Geen browsertabblad of venster van de Claude-app toont de cloudsessie “{title}”. In de browser openen?"
 
-#: polyhost/host.py:2389
+#: polyhost/host.py:2413
 msgid "Open in Browser"
 msgstr "Openen in browser"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-#: polyhost/host.py:2419
+#: polyhost/host.py:2443
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "PolyKybd-overlaytoewijzing (*.poly.yaml)"
 
-#: polyhost/host.py:2507 polyhost/host.py:3003 polyhost/host.py:3151
+#: polyhost/host.py:2531 polyhost/host.py:3027 polyhost/host.py:3175
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "Firmware bijwerken naar v{version}…"
 
 #: polyhost/forwarder.py:1144 polyhost/forwarder.py:1155
-#: polyhost/forwarder.py:1161 polyhost/host.py:2527 polyhost/host.py:2648
-#: polyhost/host.py:2652
+#: polyhost/forwarder.py:1161 polyhost/host.py:2551 polyhost/host.py:2672
+#: polyhost/host.py:2676
 msgid "Check for updates..."
 msgstr "Controleren op updates..."
 
-#: polyhost/host.py:2595
+#: polyhost/host.py:2619
 #, python-brace-format
 msgid "Update to v{version} available"
 msgstr "Update naar v{version} beschikbaar"
 
 #: polyhost/forwarder.py:1157 polyhost/forwarder.py:1163
-#: polyhost/forwarder.py:1174 polyhost/host.py:2606 polyhost/host.py:2646
-#: polyhost/host.py:2653 polyhost/host.py:2676
+#: polyhost/forwarder.py:1174 polyhost/host.py:2630 polyhost/host.py:2670
+#: polyhost/host.py:2677 polyhost/host.py:2700
 msgid "PolyKybdHost Update"
 msgstr "PolyKybdHost-update"
 
-#: polyhost/host.py:2607
+#: polyhost/host.py:2631
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "Versie {version} is beschikbaar. Klik op het pictogram in het systeemvak om bij te werken."
 
-#: polyhost/forwarder.py:1131 polyhost/host.py:2632
+#: polyhost/forwarder.py:1131 polyhost/host.py:2656
 msgid "Checking for updates..."
 msgstr "Controleren op updates..."
 
-#: polyhost/host.py:2645
+#: polyhost/host.py:2669
 msgid "No updates available"
 msgstr "Geen updates beschikbaar"
 
-#: polyhost/forwarder.py:1158 polyhost/host.py:2647
+#: polyhost/forwarder.py:1158 polyhost/host.py:2671
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "U gebruikt de nieuwste versie (v{version})."
 
-#: polyhost/forwarder.py:1164 polyhost/host.py:2654
+#: polyhost/forwarder.py:1164 polyhost/host.py:2678
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -5378,70 +5436,70 @@ msgstr ""
 "\n"
 "Start met --dev 1 voor details."
 
-#: polyhost/host.py:2659 polyhost/host.py:3076
+#: polyhost/host.py:2683 polyhost/host.py:3100
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "Uitgebracht: {date}"
 
-#: polyhost/forwarder.py:1145 polyhost/host.py:2660
+#: polyhost/forwarder.py:1145 polyhost/host.py:2684
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "Versie {version} is beschikbaar."
 
-#: polyhost/forwarder.py:1146 polyhost/host.py:2661
+#: polyhost/forwarder.py:1146 polyhost/host.py:2685
 msgid "Update PolyKybdHost"
 msgstr "PolyKybdHost bijwerken"
 
-#: polyhost/host.py:2665
+#: polyhost/host.py:2689
 msgid "Download, install, and restart now?"
 msgstr "Nu downloaden, installeren en opnieuw starten?"
 
-#: polyhost/forwarder.py:1173 polyhost/host.py:2676
+#: polyhost/forwarder.py:1173 polyhost/host.py:2700
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "v{version} downloaden…"
 
-#: polyhost/forwarder.py:1215 polyhost/host.py:2801
+#: polyhost/forwarder.py:1215 polyhost/host.py:2825
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "Kan de update-relay niet starten; de update is onvolledig. Zie het logbestand voor details."
 
-#: polyhost/forwarder.py:1227 polyhost/host.py:2816
+#: polyhost/forwarder.py:1227 polyhost/host.py:2840
 msgid "Update failed"
 msgstr "Update mislukt"
 
-#: polyhost/forwarder.py:1227 polyhost/host.py:2816
+#: polyhost/forwarder.py:1227 polyhost/host.py:2840
 msgid "The update did not finish."
 msgstr "De update is niet voltooid."
 
-#: polyhost/host.py:2963
+#: polyhost/host.py:2987
 #, python-brace-format
 msgid "{n} keyboard font bundle is out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
 msgid_plural "{n} keyboard font bundles are out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
 msgstr[0] "{n} lettertypepakket van het toetsenbord is verouderd en Automatisch flashen staat uit. Gebruik Updates → Toetsenbordlettertypen bijwerken."
 msgstr[1] "{n} lettertypepakketten van het toetsenbord zijn verouderd en Automatisch flashen staat uit. Gebruik Updates → Toetsenbordlettertypen bijwerken."
 
-#: polyhost/host.py:3014
+#: polyhost/host.py:3038
 msgid "PolyKybd Firmware Update"
 msgstr "PolyKybd-firmware-update"
 
-#: polyhost/host.py:3015
+#: polyhost/host.py:3039
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "Nieuwe firmware v{version} is beschikbaar. Klik op het pictogram in het systeemvak om bij te werken."
 
-#: polyhost/host.py:3032 polyhost/host.py:3073
+#: polyhost/host.py:3056 polyhost/host.py:3097
 msgid "The keyboard must be connected to update the firmware."
 msgstr "Het toetsenbord moet verbonden zijn om de firmware bij te werken."
 
-#: polyhost/host.py:3038
+#: polyhost/host.py:3062
 msgid "Checking for firmware update…"
 msgstr "Controleren op firmware-update…"
 
-#: polyhost/host.py:3052 polyhost/host.py:3062 polyhost/host.py:3065
+#: polyhost/host.py:3076 polyhost/host.py:3086 polyhost/host.py:3089
 msgid "PolyKybd Firmware"
 msgstr "PolyKybd-firmware"
 
-#: polyhost/host.py:3053
+#: polyhost/host.py:3077
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -5452,63 +5510,63 @@ msgstr ""
 "\n"
 "Uw toetsenbord gebruikt v{current}. Meestal betekent dit dat de releasebuild is mislukt — de releasepagina krijgt de firmware zodra dat is opgelost."
 
-#: polyhost/host.py:3063
+#: polyhost/host.py:3087
 msgid "No firmware release could be found."
 msgstr "Er is geen firmware-release gevonden."
 
-#: polyhost/host.py:3066
+#: polyhost/host.py:3090
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "U gebruikt de nieuwste firmware (v{version})."
 
-#: polyhost/host.py:3078
+#: polyhost/host.py:3102
 #, python-brace-format
 msgid "Installed: v{version}"
 msgstr "Geïnstalleerd: v{version}"
 
-#: polyhost/host.py:3079
+#: polyhost/host.py:3103
 msgid "Installed: unknown (the keyboard did not report its version)"
 msgstr "Geïnstalleerd: onbekend (het toetsenbord heeft zijn versie niet gemeld)"
 
-#: polyhost/host.py:3080
+#: polyhost/host.py:3104
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "Firmware {version} is beschikbaar."
 
-#: polyhost/host.py:3082
+#: polyhost/host.py:3106
 msgid "Both halves update over HID and reboot automatically."
 msgstr "Beide helften worden via HID bijgewerkt en starten automatisch opnieuw op."
 
-#: polyhost/host.py:3085
+#: polyhost/host.py:3109
 msgid "This update changes your stored keymap once:"
 msgstr "Deze update wijzigt je opgeslagen keymap één keer:"
 
-#: polyhost/host.py:3087
+#: polyhost/host.py:3111
 msgid "Keys you remapped and your macros stay as they are."
 msgstr "Toetsen die je anders hebt toegewezen en je macro's blijven zoals ze zijn."
 
-#: polyhost/host.py:3088
+#: polyhost/host.py:3112
 msgid "Update PolyKybd Firmware"
 msgstr "PolyKybd-firmware bijwerken"
 
-#: polyhost/host.py:3092
+#: polyhost/host.py:3116
 msgid "Download and flash now?"
 msgstr "Nu downloaden en flashen?"
 
-#: polyhost/host.py:3103
+#: polyhost/host.py:3127
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "Firmware v{version} downloaden…"
 
-#: polyhost/host.py:3125 polyhost/host.py:3426
+#: polyhost/host.py:3149 polyhost/host.py:3450
 msgid "Cancelling…"
 msgstr "Annuleren…"
 
-#: polyhost/host.py:3162
+#: polyhost/host.py:3186
 msgid "Firmware Update Failed"
 msgstr "Firmware-update mislukt"
 
-#: polyhost/host.py:3163
+#: polyhost/host.py:3187
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -5519,11 +5577,11 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3269 polyhost/host.py:3311 polyhost/host.py:3319
+#: polyhost/host.py:3293 polyhost/host.py:3335 polyhost/host.py:3343
 msgid "Allow access to the keyboard"
 msgstr "Toegang tot het toetsenbord toestaan"
 
-#: polyhost/host.py:3270
+#: polyhost/host.py:3294
 msgid ""
 "On Linux a udev rule lets this app open the keyboard without root: its HID interface, and its serial port for faster firmware and font-pack updates. The rule file is /etc/udev/rules.d/99-hid.rules.\n"
 "\n"
@@ -5533,7 +5591,7 @@ msgstr ""
 "\n"
 "Het systeem vraagt om uw wachtwoord (PolicyKit). Koppel daarna het toetsenbord los en sluit het opnieuw aan."
 
-#: polyhost/host.py:3312
+#: polyhost/host.py:3336
 msgid ""
 "The udev rule is installed.\n"
 "\n"
@@ -5543,11 +5601,11 @@ msgstr ""
 "\n"
 "Koppel het toetsenbord los en sluit het opnieuw aan zodat de nieuwe rechten van kracht worden."
 
-#: polyhost/host.py:3320
+#: polyhost/host.py:3344
 msgid "The udev rule was not installed."
 msgstr "De udev-regel is niet geïnstalleerd."
 
-#: polyhost/host.py:3321
+#: polyhost/host.py:3345
 #, python-brace-format
 msgid ""
 "{error}\n"
@@ -5560,12 +5618,12 @@ msgstr ""
 "U kunt deze opdrachten ook in een terminal uitvoeren:\n"
 "{commands}"
 
-#: polyhost/host.py:3390 polyhost/host.py:3404 polyhost/host.py:3450
-#: polyhost/host.py:3459 polyhost/host.py:3465
+#: polyhost/host.py:3414 polyhost/host.py:3428 polyhost/host.py:3474
+#: polyhost/host.py:3483 polyhost/host.py:3489
 msgid "Install WinCompose"
 msgstr "WinCompose installeren"
 
-#: polyhost/host.py:3391
+#: polyhost/host.py:3415
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -5575,11 +5633,11 @@ msgstr ""
 "\n"
 "De WinCompose-build van PolyKybd wordt van GitHub gedownload en het installatieprogramma wordt gestart (Windows vraagt u om te bevestigen)."
 
-#: polyhost/host.py:3404
+#: polyhost/host.py:3428
 msgid "Looking for the latest WinCompose release…"
 msgstr "Zoeken naar de nieuwste WinCompose-release…"
 
-#: polyhost/host.py:3451
+#: polyhost/host.py:3475
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -5589,7 +5647,7 @@ msgstr ""
 "\n"
 "De releasepagina wordt in uw browser geopend — download en start de installatie vanaf daar."
 
-#: polyhost/host.py:3460
+#: polyhost/host.py:3484
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -5600,7 +5658,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3466
+#: polyhost/host.py:3490
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -5617,7 +5675,7 @@ msgstr ""
 "Het is opgeslagen in:\n"
 "{path}"
 
-#: polyhost/host.py:3474
+#: polyhost/host.py:3498
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Het installatieprogramma van WinCompose is gestart. Zodra het klaar is en WinCompose draait, schakelt PolyKybd er automatisch naar over."
 

@@ -430,22 +430,30 @@ write-only total that is a large part of the wall time.
 
 ---
 
-## An MCP server for AI assistants
+## An MCP server for AI assistants: images per physical key (version 2b)
 
-**Status:** designed, not built (2026-11-27). An MCP server, started by the AI
-client over stdio, that lets an assistant read and change the keyboard on the
-user's request (language, brightness, idle style, glyph script, single keys,
-overlays) through the control socket. A frozen allow-list keeps firmware, flash,
-settings and raw commands out of reach. Version 2 adds overlays made from a
-description, in a new user overlay folder. The plan, with the tool list, the
-security model and the open questions, is in
-[`mcp-server-plan.md`](mcp-server-plan.md). It is separate from the agent keys,
-which report agent state through hooks.
+**Status:** versions 1 and 2a are built (2026-11-27): `polyctl mcp` lets an assistant
+read and change the keyboard on the user's request, and make overlay sets and drawn
+keys in `user_overlays/` (laid over an app's shipped set, or for every app with
+`"*"`). Version 2b, a drawing on one PHYSICAL key whatever it sends, waits for
+firmware protocol 40 (qmk_firmware#493, PolyKybdHost#1077). The plan is in
+[`mcp-server-plan.md`](mcp-server-plan.md). It is separate from the agent keys, which
+report agent state through hooks.
 
-**Why it waits.** No user has asked for it. The prompt-injection risk needs the
-allow-list and a SECURITY_AUDIT entry first, and the version-2 overlays need the
-user overlay folder, which does not exist yet.
+**Why it waits.** It needs a firmware release with protocol 40 and a hardware round;
+the host side must be released first.
 
-**What would settle it.** Users ask for it, or the campaign shows that buyers
-compare it with keyboards that have one (Keysible 69 advertises a built-in MCP
-server).
+**What would settle it.** The firmware PR passes its hardware round.
+
+## A general notification area
+
+**Status:** concept (2026-11-28), not built. The agent keys become one source of a
+notification area on the number row; the MCP server (`notify`), `polyctl notify` and
+the host's own events are the others. Phase N1 needs no firmware change. The plan is
+in [`notification-area-plan.md`](notification-area-plan.md).
+
+**Why it waits.** The agent keys are not tested on a keyboard yet, and the open
+questions (which key, which host events) need the maintainer.
+
+**What would settle it.** The agent keys pass a hardware round and the maintainer
+answers the open questions.

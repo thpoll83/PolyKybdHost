@@ -42,6 +42,7 @@ ERR_INTERNAL = -32603
 ERR_DEVICE = -32000          # device command returned failure
 ERR_UNAVAILABLE = -32001     # worker suspended / device busy
 ERR_VERSION_MISMATCH = -32002
+ERR_MCP_DISABLED = -32003    # an MCP client while the `mcp_enabled` setting is off
 
 HELLO = "hello"
 EVENTS_SUBSCRIBE = "events.subscribe"
@@ -197,6 +198,21 @@ M_WINDOW_REPORT = "window.report"
 # Anonymous usage census (polyhost/services/telemetry.py). Status/preview are
 # reads; enabling is just the settings key, exposed separately so `polyctl
 # telemetry` reads as one feature rather than three settings pokes.
+# The MCP server for AI assistants (polyhost/mcp, docs/mcp-server-plan.md) names
+# its connection with this first. From then on the control server answers that
+# connection only while the `mcp_enabled` setting is on (ERR_MCP_DISABLED), and
+# only the methods polyhost.mcp.tools.ALLOWED_METHODS lists. It is a gate for an
+# honest client: a process that can read the authkey can skip it.
+# The user's overlay sets (services/user_overlays, docs/mcp-server-plan.md v2). No
+# device I/O except the preview, which reads layer 0 of the keymap.
+M_USER_OVERLAY_LIST = "user_overlay.list"        # {} -> [{app, keys}]
+M_USER_OVERLAY_GET = "user_overlay.get"          # {"app"} -> [binding] | None
+M_USER_OVERLAY_SET = "user_overlay.set"          # {"app", "bindings", "merge"?} -> {placed, files}
+M_USER_OVERLAY_CLEAR = "user_overlay.clear"      # {"app", "key"?, "mods"?} -> {removed}
+M_USER_OVERLAY_PREVIEW = "user_overlay.preview"  # {"app", "mods"?} -> {png_base64}
+M_CLIENT_IDENTIFY = "client.identify"  # {"client": "mcp"} -> {"client": "mcp", "allowed": bool}
+MCP_SETTING = "mcp_enabled"
+
 M_TELEMETRY_STATUS = "telemetry.status"    # {} -> {"enabled","endpoint","install_id",...}
 M_TELEMETRY_PREVIEW = "telemetry.preview"  # {} -> the exact payload that would be sent
 M_TELEMETRY_SET = "telemetry.set"          # {"enabled": bool} -> (ok, payload)

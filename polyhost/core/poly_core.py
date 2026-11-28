@@ -293,6 +293,11 @@ class PolyCore(Observable):
         # combos_set reads, writes and commits the keyboard's RAM records in several
         # calls; a second save in between would see and restore the first one's records.
         self._combos_lock = threading.Lock()
+        # The user's overlay sets: one read-modify-write at a time (control-socket
+        # connections each run on their own thread), and the hand-over of a changed
+        # mapping to the tick thread.
+        self._user_overlay_lock = threading.Lock()
+        self._pending_mapping_lock = threading.Lock()
         # When THIS PROCESS started, which is what the logon race is measured
         # against — not when the keyboard connected. See _unicode_mode_is_ambiguous.
         self._started_at = time.monotonic()
@@ -389,6 +394,7 @@ class PolyCore(Observable):
             on_change=self._on_browser_url_changed)
         self.load_overlay_mapping(str(_RES_DIR / "overlay-mapping.poly.yaml"))
         self._create_overlay_handler()
+        self._pending_mapping = None     # the handler was just built with it
         self.browser_url_source.start()
 
         self.sunlight = Sunlight(
@@ -651,18 +657,74 @@ class PolyCore(Observable):
             if not isinstance(loaded, dict):
                 self.log.warning("Overlay mapping %s is not a mapping; ignoring.", path)
                 loaded = {}
-            self.mapping = loaded
         except (OSError, yaml.YAMLError) as e:
             self.log.warning("Could not read overlay mapping %s: %s", path, e)
-            self.mapping = {}
+            loaded = {}
+        # The file as read; the user's overlay sets are laid over a copy of it.
+        self._shipped_mapping = loaded
+        self._apply_user_overlays()
+
+    def _apply_user_overlays(self):
+        """Lay the user's overlay sets (services/user_overlays) over the loaded
+        mapping and hand the result to the window handler, which then re-sends
+        the focused app's overlays. Called at load and after a set changes."""
+        from polyhost.services import game_assets, user_overlays
+        try:
+            self.mapping = user_overlays.merged_mapping(
+                getattr(self, "_shipped_mapping", {}) or {}, log=self.log)
+        except Exception as e:  # noqa: BLE001 -- a broken user set must not stop the app
+            self.log.warning("User overlay sets not applied: %s", e)
+            self.mapping = dict(getattr(self, "_shipped_mapping", {}) or {})
         # Entries with `game_assets:` are redrawn from installed games on first send.
-        from polyhost.services import game_assets
         game_assets.register_mapping(self.mapping)
+        # ⚠️ Not handed to the window handler here: a control-socket thread calls
+        # this while the tick thread may be inside handle_active_window. The next
+        # tick takes it (`_take_pending_mapping`) on the thread that owns the handler.
+        with self._pending_mapping_lock:
+            self._pending_mapping = self.mapping
+
+    def _take_pending_mapping(self, handler):
+        """On the tick thread: give the handler a mapping the user's overlay sets
+        changed, and drop the generic set's dedupe so a changed "*" set is sent."""
+        if getattr(self, "_pending_mapping", None) is None:
+            return      # nothing stored; one stored now is taken on the next tick
+        with self._pending_mapping_lock:   # a newer mapping stored meanwhile is never lost
+            mapping, self._pending_mapping = self._pending_mapping, None
+        if mapping is None or handler is None:
+            return
+        # Read BEFORE set_mapping: its force_resend forgets the matched entry.
+        had_template = bool(handler.get_overlay_data())
+        handler.set_mapping(mapping)
+        self._generic_on_device = None
+        if had_template or not self.connected or self.safe_mode:
+            return      # the template's resend carries the "*" set (_with_star_set)
+        # ⚠️ No template for the window in front (often the terminal the assistant
+        # runs in). The handler sees no change there, and a DISABLE on a board it
+        # already thinks is off is dropped as redundant, so a changed "*" set would
+        # wait for the next app switch. Send it now, or take a removed one down.
+        if self.send_overlay_files([]):
+            self._note_overlay_state(True)
+        else:
+            self.submit_overlay_cmd(OverlayCommand.DISABLE)
+            self._note_overlay_state(False)
+
+    def _with_star_set(self, files):
+        """`files` with the user's "*" set in FRONT: the send keeps the last image
+        per key, so every app image wins over it and it fills the keys they leave
+        empty (docs/mcp-server-plan.md, version 2)."""
+        from polyhost.services import user_overlays
+        try:
+            star = user_overlays.star_files()
+        except Exception as e:  # noqa: BLE001
+            self.log.warning("The user's \"*\" overlay set is not sent: %s", e)
+            star = []
+        return star + [f for f in files if f not in star]
 
     def save_overlay_mapping(self, path):
         import yaml
         with open(path, "w", encoding="utf-8") as f:
-            f.write(yaml.dump(self.mapping))
+            # The loaded file, without the user's sets laid over it.
+            f.write(yaml.dump(getattr(self, "_shipped_mapping", self.mapping)))
 
     def _create_overlay_handler(self):
         try:
@@ -695,6 +757,16 @@ class PolyCore(Observable):
     # ------------------------------------------------------------------
     # Overlay jobs (HID worker)
     # ------------------------------------------------------------------
+
+    def send_overlay_files(self, files):
+        """Queue a (coalesced) overlay send of resolved paths. With the user's "*"
+        set an empty list still sends that set; with no "*" set it sends nothing."""
+        if not self._with_star_set(list(files)):
+            return False
+        self.emit("overlay_activity", {"state": "thinking"})
+        self.worker.submit("overlay", lambda cancel: self._overlay_send_job(list(files), cancel),
+                           coalesce_key="overlay", on_done=self.emit)
+        return True
 
     def send_overlay_data(self, data):
         """Queue a (coalesced) overlay send for one or more template names."""
@@ -791,6 +863,7 @@ class PolyCore(Observable):
         handler = self.overlay_handler
         if handler is None:
             return
+        self._take_pending_mapping(handler)
         # safe_mode (newer firmware, user chose restricted): connected but no
         # operational overlay/OS traffic — only firmware-update + debugging.
         if self.connected and not self.safe_mode:
@@ -835,6 +908,16 @@ class PolyCore(Observable):
                 # the next real ENABLE.
                 self._note_overlay_state(True)
                 cmd = OverlayCommand.NONE
+            if cmd == OverlayCommand.DISABLE and self._with_star_set([]):
+                # ⚠️ No overlay for this window, but the user's "*" set draws on
+                # every app: send it alone instead of blanking the keycaps. The
+                # generic path below still runs and, when it has icons, sends a
+                # superset that carries the "*" set too (`_with_star_set`). The
+                # handler recorded the DISABLE as sent, so tell it the board is on.
+                self._generic_on_device = None
+                self._note_overlay_state(True)
+                cmd = OverlayCommand.NONE
+                self.send_overlay_files([])
             if cmd in (OverlayCommand.DISABLE, OverlayCommand.ENABLE):
                 if cmd == OverlayCommand.DISABLE:
                     # ⚠️ A DISABLE blanks the keycaps, so whatever generic set we
@@ -1325,6 +1408,8 @@ class PolyCore(Observable):
 
     def _generic_clear_job(self, previous, cancel, template_files=()):
         """Worker-thread half of `_clear_generic_overlays`. Mirrors the send."""
+        # The user's "*" set stays up when the generic set comes down.
+        files = self._with_star_set(list(template_files))
         try:
             for entry in self.device_mgr.all_entries:
                 if cancel.is_set():
@@ -1335,8 +1420,8 @@ class PolyCore(Observable):
                     # would make the superseding set look stale.
                     return
                 entry.device.send_overlays_mru(
-                    list(template_files), entry.cache, cancel, synthetic={})
-            self._note_overlay_state(bool(template_files))
+                    files, entry.cache, cancel, synthetic={})
+            self._note_overlay_state(bool(files))
         except Exception as e:
             # ⚠️ NOT `previous`, and not `None` either -- see
             # GENERIC_STATE_UNKNOWN. With two keyboards attached the first can
@@ -1553,7 +1638,9 @@ class PolyCore(Observable):
                     # re-sent for this app.
                     self._generic_on_device = None
                     return
-                filenames = list(template_files) + [name for name, _ in sources]
+                # The user's "*" set is a real source in front: the generic icons
+                # (synthetic) skip the keys it draws, the templates win over it.
+                filenames = self._with_star_set(list(template_files)) + [name for name, _ in sources]
                 entry.device.send_overlays_mru(
                     filenames, entry.cache, cancel,
                     synthetic=dict(sources))
@@ -1883,7 +1970,7 @@ class PolyCore(Observable):
             for entry in self.device_mgr.all_entries:
                 if cancel.is_set():
                     return
-                entry.device.send_overlays_mru(files, entry.cache, cancel)
+                entry.device.send_overlays_mru(self._with_star_set(files), entry.cache, cancel)
         except Exception as e:
             msg = f"Failed to send overlays '{files}': {e}"
             self.log.warning(msg)
@@ -3965,6 +4052,101 @@ class PolyCore(Observable):
                 entry.device.execute_commands(list(lines), cancel)
         self.worker.submit("execute_commands", _job)
         return True
+
+    # ------------------------------------------------------------------
+    # User overlay sets (services/user_overlays, docs/mcp-server-plan.md v2)
+    # ------------------------------------------------------------------
+
+    def user_overlay_list(self):
+        """[{app, keys}] of the user's overlay sets. No device I/O."""
+        from polyhost.services import user_overlays
+        return True, user_overlays.list_sets()
+
+    def user_overlay_get(self, app):
+        """The bindings of `app`'s set, or None when it has none."""
+        from polyhost.services import user_overlays
+        try:
+            data = user_overlays.load_set(app)
+        except user_overlays.UserOverlayError as e:
+            return False, str(e)
+        return True, (data or {}).get("bindings")
+
+    def user_overlay_set(self, app, bindings, merge=False):
+        """Write `app`'s set (merge: add to it, a binding for the same key and
+        modifiers replaces the old one) and send it if that app is in front."""
+        from polyhost.services import user_overlays
+        try:
+            # The whole load-merge-save under one lock: two connections merging at
+            # once would otherwise both read the old set and one binding be lost.
+            # The rebuild is under the lock too, so two edits publish their
+            # mappings in the order they wrote their sets.
+            with self._user_overlay_lock:
+                keep = None
+                if merge:
+                    keep = (user_overlays.load_set(app) or {}).get("bindings") or []
+                    bindings = list(bindings or [])
+                result = user_overlays.save_set(app, bindings, keep=keep)
+                self._apply_user_overlays()
+        except user_overlays.UserOverlayError as e:
+            return False, str(e)
+        except OSError as e:
+            return False, f"cannot write the overlay set: {e}"
+        return True, result
+
+    def user_overlay_clear(self, app, key=None, mods=None):
+        """Remove one binding of `app`'s set, or the whole set when `key` is None."""
+        from polyhost.services import user_overlays
+        try:
+            with self._user_overlay_lock:
+                removed = self._user_overlay_clear_locked(user_overlays, app, key, mods)
+                if removed:
+                    self._apply_user_overlays()
+        except user_overlays.UserOverlayError as e:
+            return False, str(e)
+        except OSError as e:
+            return False, f"cannot change the overlay set: {e}"
+        return True, {"removed": removed}
+
+    @staticmethod
+    def _user_overlay_clear_locked(user_overlays, app, key, mods):
+        """Remove `app`'s set, or one binding of it. Call with _user_overlay_lock held."""
+        if key is None:
+            return user_overlays.remove_set(app)
+        kc = user_overlays.check_key(key).name
+        mod = user_overlays.mod_names(user_overlays.modifier(mods))
+        old = (user_overlays.load_set(app) or {}).get("bindings") or []
+        keep = [b for b in old if not (b.get("key") == kc and b.get("mods", []) == mod)]
+        if len(keep) == len(old):
+            return False
+        user_overlays.save_set(app, keep)
+        return True
+
+    def user_overlay_preview(self, app, mods=None):
+        """PNG bytes (base64) of both halves as `app` would show them: the image of
+        every key, layer 0. Reads the keymap from the keyboard."""
+        from polyhost.services import user_overlays, overlay_preview
+        try:
+            app = user_overlays.check_app(app)
+            mod = user_overlays.modifier(mods)
+        except user_overlays.UserOverlayError as e:
+            return False, str(e)
+        ok, buffer = self.keymap_buffer()
+        if not ok:
+            return False, buffer
+        files = []
+        if app != user_overlays.ALL_APPS:
+            entry = self.mapping.get(overlay_preview.entry_key(app, self.mapping) or "", {})
+            names = entry.get("overlay") or []
+            names = [names] if isinstance(names, str) else list(names)
+            files = [get_overlay_path(n) for n in names]
+        files = self._with_star_set(files)
+        try:
+            png = overlay_preview.render_board(files, list(buffer or []), mod)
+        except Exception as e:  # noqa: BLE001 -- a preview must not take the core down
+            self.log.warning("Overlay preview failed: %s", e)
+            return False, f"the preview failed: {e}"
+        import base64
+        return True, {"png_base64": base64.b64encode(png).decode("ascii")}
 
     def settings_get(self, key):
         return self.poly_settings.get(key)

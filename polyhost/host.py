@@ -744,9 +744,18 @@ class PolyHost(QApplication):
                                                   _("Switch to Forwarder…"), parent=self)
         # noinspection PyUnresolvedReferences
         self.switch_to_forwarder_action.triggered.connect(self._switch_to_forwarder)
+        # Overlay sets an AI assistant made (gui/user_overlays_dialog.py), so the
+        # user can remove them without the assistant. Under Maintenance: the top
+        # level stays the simplified set (tests/gui/host_client_test.py). Core
+        # calls go through _core_click; no device I/O, so always enabled.
+        self.user_overlays_action = QAction(get_icon("edit.svg"),
+                                            _("Overlays made by AI assistants…"), parent=self)
+        # noinspection PyUnresolvedReferences
+        self.user_overlays_action.triggered.connect(self.open_user_overlays)
+        self.user_overlays_dialog = None
         self.cmdMenu.add_always_enabled_maintenance_action(
             self.crash_record_action, self.open_config_action,
-            self.switch_to_forwarder_action)
+            self.switch_to_forwarder_action, self.user_overlays_action)
 
         if self.exit_with_daemon is not None:
             # Client mode has two quit rows. The GUI-only one was misclicked for
@@ -1581,6 +1590,16 @@ class PolyHost(QApplication):
                                                 self._show_tutorial_panel)
         self.tutorials_dialog.show()
         self.tutorials_dialog.load()
+
+    def open_user_overlays(self):
+        from polyhost.gui.user_overlays_dialog import UserOverlaysDialog
+        if self.user_overlays_dialog is not None and self.user_overlays_dialog.isVisible():
+            self.user_overlays_dialog.raise_()
+            self.user_overlays_dialog.activateWindow()
+            return
+        self.user_overlays_dialog = UserOverlaysDialog(self.core, self._core_click)
+        self.user_overlays_dialog.show()
+        self.user_overlays_dialog.load()
 
     def _show_tutorial_panel(self, state):
         """Open (or reuse) the step panel for a started tutorial."""

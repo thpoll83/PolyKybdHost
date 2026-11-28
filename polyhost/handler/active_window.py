@@ -1082,6 +1082,19 @@ class OverlayHandler:
         # changed" and returns before the re-match this exists to force.
         self._macos_resolved = False
 
+    def set_mapping(self, mapping):
+        """Use a new overlay mapping (the user's overlay sets changed) and send
+        the focused window's overlays again on the next tick."""
+        self.mapping = self.annotate(mapping.items())
+        self.remote_handler.mapping = self.mapping
+        # A new mapping does not change what the DEVICE shows, so keep its state:
+        # force_resend() marks overlays off, and a DISABLE for a window the new
+        # mapping no longer matches would then be dropped as redundant, leaving a
+        # removed user set's images on the keys.
+        enabled = self.overlays_enabled
+        self.force_resend()
+        self.overlays_enabled = enabled
+
     def force_resend(self):
         """Reset window tracking so the next cycle triggers a fresh OFF_ON resend."""
         self.win = None
