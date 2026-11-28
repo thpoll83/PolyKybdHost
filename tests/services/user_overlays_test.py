@@ -24,8 +24,9 @@ class StoreTest(unittest.TestCase):
     def test_save_list_load_remove(self):
         r = uo.save_set("Blender", [{"key": "F5", "drawing": BOX, "legend": False},
                                     {"key": "KC_A", "mods": ["ctrl"], "drawing": BOX}], self.root)
-        self.assertEqual(r["placed"], [{"key": "KC_F5", "mods": [], "legend": False},
-                                       {"key": "KC_A", "mods": ["CTRL"], "legend": True}])
+        self.assertEqual(r["placed"], [
+            {"key": "KC_F5", "mods": [], "legend": False, "follow": "keycode"},
+            {"key": "KC_A", "mods": ["CTRL"], "legend": True, "follow": "keycode"}])
         self.assertEqual(uo.list_sets(self.root), [{"app": "blender", "keys": 2}])
         self.assertEqual(len(uo.load_set("blender", self.root)["bindings"]), 2)
         self.assertTrue(uo.remove_set("blender", self.root))

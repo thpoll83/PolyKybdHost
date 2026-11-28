@@ -464,14 +464,51 @@ def create_overlay(link, args):
     return {"app": app, "placed": _placed(result), "notes": notes}
 
 
+KEY_OVERLAY_PROTOCOL = 40   # device/poly_kybd.py KEY_OVERLAY_MIN_PROTOCOL
+
+
+def _physical_binding(link, args):
+    """A follow-"key" binding: one physical key of the "*" set (firmware v40+)."""
+    from polyhost.services import key_drawing
+    status = link.call(p.M_STATUS_GET)
+    protocol = status.get("protocol") or 0
+    if protocol < KEY_OVERLAY_PROTOCOL:
+        raise ToolError(f"a drawing on one physical key needs keyboard firmware with "
+                        f"protocol {KEY_OVERLAY_PROTOCOL}; this keyboard has {protocol}. "
+                        f"Use follow \"keycode\", or update the firmware.")
+    if args.get("mods"):
+        raise ToolError("a drawing on a physical key shows with every modifier; leave mods out")
+    table = _table(link)
+    ref = args.get("key")
+    if isinstance(ref, str) and not ref.strip().startswith(_PHYSICAL):
+        raise ToolError("follow \"key\" needs a physical key, for example \"L:1.1\"")
+    _count, buffer = _keymap(link, 0)
+    base = {pos: _code_at(buffer, 0, *pos) for pos in table.by_pos}
+    try:
+        name = table.resolve(ref, base, parse_keycode)
+    except KeyRefError as exc:
+        raise ToolError(str(exc)) from None
+    try:
+        _mask, notes = key_drawing.render(args.get("drawing"))
+    except key_drawing.DrawingError as exc:
+        raise ToolError(f"{name}: {exc}") from None
+    return ({"key": name, "follow": "key", "drawing": args["drawing"],
+             "legend": args.get("legend", True)}, [f"{name}: {n}" for n in notes])
+
+
 def draw_key(link, args):
     app = _app_arg(args)
     follow = args.get("follow", "keycode")
-    if follow == "key":
-        raise ToolError("follow \"key\" (an image on one physical key) needs firmware "
-                        "support that is not released yet; use follow \"keycode\"")
-    if follow != "keycode":
+    if follow not in ("keycode", "key"):
         raise ToolError("follow is \"keycode\" or \"key\"")
+    if follow == "key":
+        if app != "*":
+            raise ToolError("follow \"key\" is for app \"*\" (every app); an app's own "
+                            "set follows the keycode")
+        cb, notes = _physical_binding(link, args)
+        link.call(p.M_USER_OVERLAY_SET, {"app": app, "bindings": [cb], "merge": True})
+        return {"app": app, "key": cb["key"], "mods": [], "legend": cb["legend"],
+                "shows_on": [cb["key"]], "notes": notes}
     binding = {k: args[k] for k in ("key", "drawing", "mods", "legend") if k in args}
     cb, shows_on, notes = _binding(link, binding)
     result = link.call(p.M_USER_OVERLAY_SET, {"app": app, "bindings": [cb], "merge": True})
@@ -484,6 +521,27 @@ def draw_key(link, args):
 
 def clear_key(link, args):
     app = _app_arg(args)
+    follow = args.get("follow", "keycode")
+    if follow not in ("keycode", "key"):
+        raise ToolError("follow is \"keycode\" or \"key\"")
+    if follow == "key":
+        if app != "*":
+            raise ToolError("follow \"key\" is for app \"*\" (every app); an app's own "
+                            "set follows the keycode")
+        if args.get("mods"):
+            raise ToolError("a drawing on a physical key shows with every modifier; leave mods out")
+        table = _table(link)
+        ref = args.get("key")
+        if isinstance(ref, str) and not ref.strip().startswith(_PHYSICAL):
+            raise ToolError("follow \"key\" needs a physical key, for example \"L:1.1\"")
+        _count, buffer = _keymap(link, 0)
+        base = {pos: _code_at(buffer, 0, *pos) for pos in table.by_pos}
+        try:
+            key = table.resolve(ref, base, parse_keycode)
+        except KeyRefError as exc:
+            raise ToolError(str(exc)) from None
+        result = link.call(p.M_USER_OVERLAY_CLEAR, {"app": app, "key": key})
+        return {"app": app, "key": key, "removed": bool(result.get("removed"))}
     key, _shows_on = _overlay_key(link, args.get("key"))
     result = link.call(p.M_USER_OVERLAY_CLEAR,
                        {"app": app, "key": key, "mods": args.get("mods") or []})
@@ -647,12 +705,16 @@ TOOLS = {
                                      "default": "keycode",
                                      "description": "keycode: on every key that sends "
                                                     "this keycode. key: on this physical "
-                                                    "key only (needs newer firmware)."}},
+                                                    "key only, app \"*\" only, keyboard "
+                                                    "firmware protocol 40 or newer."}},
                          ["app", "key", "drawing"]), _WRITE),
     "clear_key": (clear_key,
-                  "Remove the drawing on one key (and modifiers) from an app's user set.",
+                  "Remove the drawing on one key (and modifiers) from an app's user set. "
+                  "With follow \"key\", the drawing on that physical key.",
                   _schema({"app": _APP, "key": _BINDING["properties"]["key"],
-                           "mods": _BINDING["properties"]["mods"]}, ["app", "key"]), _WRITE),
+                           "mods": _BINDING["properties"]["mods"],
+                           "follow": {"type": "string", "enum": ["keycode", "key"],
+                                      "default": "keycode"}}, ["app", "key"]), _WRITE),
     "delete_overlay": (delete_overlay,
                        "Remove an app's whole user overlay set. Shipped sets stay.",
                        _schema({"app": _APP}, ["app"]), _WRITE),

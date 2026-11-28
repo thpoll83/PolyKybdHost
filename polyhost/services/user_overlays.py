@@ -10,6 +10,11 @@ A binding is {"key": "KC_F5", "mods": ["CTRL"], "drawing": [shapes], "legend": t
 `key` is a keycode name with an overlay slot: an overlay belongs to a keycode, not
 to a physical key. The drawing format is services/key_drawing.py.
 
+Since firmware protocol v40 a binding of the "*" set can instead follow one
+PHYSICAL key: {"key": "L:1.1", "follow": "key", "drawing": [...], "legend": ...}, no
+mods. Those go into `user__all.keys.png` (device/key_images.py), cell = matrix index,
+and the keyboard draws them where the key's keycode has no image.
+
 How the sets reach the keyboard (PolyCore):
 
 * An app's set is LAID OVER the shipped entry for that app: `merged_mapping()`
@@ -123,23 +128,77 @@ def mod_names(mod: Modifier) -> list[str]:
     return [n for n, b in (("CTRL", 1), ("SHIFT", 2), ("ALT", 4), ("GUI", 8)) if mod.value & b]
 
 
-def check_binding(b) -> dict:
+FOLLOW_KEYCODE = "keycode"
+FOLLOW_KEY = "key"
+
+
+def physical_key(name) -> tuple[str, int]:
+    """(canonical key name, matrix index) of a physical key name such as "L:1.1"."""
+    from polyhost.device.key_images import matrix_index
+    from polyhost.services.key_names import KeyRefError, load_table
+    table = load_table("split72")
+    try:
+        canonical = table.canonical(name)
+    except KeyRefError as exc:
+        raise UserOverlayError(str(exc)) from None
+    return canonical, matrix_index(*table.by_name[canonical])
+
+
+def check_binding(b, app=None) -> dict:
     """A clean copy of binding `b`, with its drawing checked. Raises UserOverlayError."""
     if not isinstance(b, dict):
         raise UserOverlayError("a binding is an object with key, mods, drawing and legend")
-    extra = set(b) - {"key", "mods", "drawing", "legend"}
+    extra = set(b) - {"key", "mods", "drawing", "legend", "follow"}
     if extra:
         raise UserOverlayError(f"unknown binding fields: {sorted(extra)}")
-    kc = check_key(b.get("key"))
-    mod = modifier(b.get("mods"))
+    follow = b.get("follow", FOLLOW_KEYCODE)
+    if follow not in (FOLLOW_KEYCODE, FOLLOW_KEY):
+        raise UserOverlayError('follow is "keycode" or "key"')
     legend = b.get("legend", True)
     if not isinstance(legend, bool):
         raise UserOverlayError("legend must be true or false")
+    if follow == FOLLOW_KEY:
+        if app is not None and app != ALL_APPS:
+            raise UserOverlayError('only the set for every app ("*") can follow a physical key')
+        if b.get("mods"):
+            raise UserOverlayError("a drawing on a physical key shows with every modifier; "
+                                   "leave mods empty")
+        name, _idx = physical_key(b.get("key"))
+        label, out = name, {"key": name, "follow": FOLLOW_KEY}
+    else:
+        kc = check_key(b.get("key"))
+        label, out = kc.name, {"key": kc.name, "mods": mod_names(modifier(b.get("mods")))}
     try:
         key_drawing.render(b.get("drawing"))
     except key_drawing.DrawingError as exc:
-        raise UserOverlayError(f"{kc.name}: {exc}") from None
-    return {"key": kc.name, "mods": mod_names(mod), "drawing": b["drawing"], "legend": legend}
+        raise UserOverlayError(f"{label}: {exc}") from None
+    out.update({"drawing": b["drawing"], "legend": legend})
+    return out
+
+
+def binding_place(b) -> tuple:
+    """What a binding occupies: a later binding with the same place replaces it."""
+    if b.get("follow") == FOLLOW_KEY:
+        return (FOLLOW_KEY, b["key"])
+    return (FOLLOW_KEYCODE, b["key"], tuple(b.get("mods") or ()))
+
+
+def remove_binding(app: str, key, mods=None, root: str | None = None) -> bool:
+    """Remove the binding of `app`'s set on `key` (a keycode name with `mods`, or a
+    physical key name for a follow-"key" binding). Returns whether one was removed."""
+    data = load_set(app, root)
+    if not data:
+        return False
+    if isinstance(key, str) and key.strip()[:2].upper() in ("L:", "R:"):
+        place = (FOLLOW_KEY, physical_key(key)[0])
+    else:
+        place = (FOLLOW_KEYCODE, check_key(key).name, tuple(mod_names(modifier(mods))))
+    old = data.get("bindings") or []
+    keep = [b for b in old if binding_place(b) != place]
+    if len(keep) == len(old):
+        return False
+    save_set(app, keep, root)
+    return True
 
 
 # -- the store ------------------------------------------------------------------
@@ -191,7 +250,7 @@ def save_set(app: str, bindings: list, root: str | None = None, keep=None) -> di
     """Write `bindings` as the whole set for `app` and draw its files.
 
     `keep` (a merge) is the stored set's bindings, placed first; a binding in
-    `bindings` for the same key and modifiers replaces its entry. The limit
+    `bindings` for the same place (binding_place) replaces its entry. The limit
     counts the set that results, so a replacement in a full set is accepted.
     Returns {"placed": [...], "files": [...]}. An empty result removes the set."""
     app = check_app(app)
@@ -201,8 +260,8 @@ def save_set(app: str, bindings: list, root: str | None = None, keep=None) -> di
         raise UserOverlayError(f"a set has at most {MAX_BINDINGS} bindings")
     clean, seen = [], {}
     for b in list(keep or []) + bindings:
-        cb = check_binding(b)
-        where = (cb["key"], tuple(cb["mods"]))
+        cb = check_binding(b, app)
+        where = binding_place(cb)
         if where in seen:
             clean[seen[where]] = cb      # the later binding for a key wins
         else:
@@ -232,13 +291,14 @@ def save_set(app: str, bindings: list, root: str | None = None, keep=None) -> di
     for src, dst in staged:
         if src is None:
             if os.path.exists(dst):
-                os.remove(dst)      # a tier this set no longer draws
+                os.remove(dst)      # a file this set no longer draws
             continue
         os.replace(src, dst)
         if dst.endswith(".png"):
             files.append(dst)
-    return {"placed": [{"key": b["key"], "mods": b["mods"], "legend": b["legend"]}
-                       for b in clean], "files": files}
+    return {"placed": [{"key": b["key"], "mods": b.get("mods", []), "legend": b["legend"],
+                        "follow": b.get("follow", FOLLOW_KEYCODE)} for b in clean],
+            "files": files}
 
 
 def remove_set(app: str, root: str | None = None) -> bool:
@@ -250,10 +310,13 @@ def remove_set(app: str, root: str | None = None) -> bool:
 
 
 def files_for(app: str, root: str | None = None) -> list[str]:
-    """The drawn files of `app`'s set, absolute, in tier order. [] for no set."""
+    """The drawn files of `app`'s set, absolute, in tier order, the physical-key
+    file last. [] for no set."""
+    from polyhost.device.key_images import KEY_IMAGE_SUFFIX
     folder = set_dir(app, root)
     stem = "user_" + slug(check_app(app))
-    return [p for p in (os.path.join(folder, stem + suffix) for _t, suffix, _c in TIERS)
+    suffixes = [suffix for _t, suffix, _c in TIERS] + [KEY_IMAGE_SUFFIX]
+    return [p for p in (os.path.join(folder, stem + suffix) for suffix in suffixes)
             if os.path.isfile(p)]
 
 
@@ -265,9 +328,25 @@ def _write_files(app, bindings, folder) -> list[str]:
     from PIL import Image
     from PIL.PngImagePlugin import PngInfo
     from polyhost.device.im_converter import NO_LEGEND_CHUNK
+    from polyhost.device.key_images import KEY_IMAGE_SUFFIX
+    from polyhost.res.overlay_layout import GRID_X
     arrays = {t: np.zeros((IMG_H, IMG_W, 4), dtype=np.uint8) for t, _s, _c in TIERS}
     no_legend = {t: set() for t, _s, _c in TIERS}
+    keys = np.zeros((IMG_H, IMG_W, 4), dtype=np.uint8)
+    keys_no_legend = set()
     for b in bindings:
+        if b.get("follow") == FOLLOW_KEY:
+            # Cell = matrix index, white on black (device/key_images.py): the loader
+            # reads a file without ".mods." in its name as one grayscale image.
+            _name, idx = physical_key(b["key"])
+            mask, _notes = key_drawing.render(b["drawing"])
+            row, col = divmod(idx, GRID_X)
+            block = keys[row * SLOT_H:(row + 1) * SLOT_H, col * SLOT_W:(col + 1) * SLOT_W, :3]
+            block[:] = 0
+            block[mask] = 255
+            if not b["legend"]:
+                keys_no_legend.add((Modifier.NO_MOD.value, idx))
+            continue
         kc, mod = KeyCode[b["key"]], modifier(b["mods"])
         tier, channel = next((t, chans[mod]) for t, _s, chans in TIERS if mod in chans)
         mask, _notes = key_drawing.render(b["drawing"])
@@ -280,17 +359,21 @@ def _write_files(app, bindings, folder) -> list[str]:
             no_legend[tier].add((mod.value, kc.value))
     stem = "user_" + slug(app)
     staged = []     # (temp file or None for "remove", final path)
-    for tier, suffix, _chans in TIERS:
+    outputs = [(suffix, arrays[tier], no_legend[tier]) for tier, suffix, _c in TIERS]
+    if keys.any():
+        keys[..., CH["A"]] = 255         # opaque: the grayscale read uses RGB
+    outputs.append((KEY_IMAGE_SUFFIX, keys, keys_no_legend))
+    for suffix, array, flagged in outputs:
         path = os.path.join(folder, stem + suffix)
-        if not arrays[tier].any():
+        if not array.any():
             staged.append((None, path))
             continue
         info = None
-        if no_legend[tier]:
+        if flagged:
             info = PngInfo()
-            info.add_text(NO_LEGEND_CHUNK, " ".join(f"{m}:{k}" for m, k in sorted(no_legend[tier])))
+            info.add_text(NO_LEGEND_CHUNK, " ".join(f"{m}:{k}" for m, k in sorted(flagged)))
         tmp = path + ".tmp"
-        Image.fromarray(arrays[tier], mode="RGBA").save(tmp, format="PNG", pnginfo=info)
+        Image.fromarray(array, mode="RGBA").save(tmp, format="PNG", pnginfo=info)
         staged.append((tmp, path))
     return staged
 

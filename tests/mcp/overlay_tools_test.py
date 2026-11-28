@@ -154,10 +154,60 @@ class OverlayToolsTest(unittest.TestCase):
         self.assertNotIn("MO(5)", keys)
         self.assertTrue(self.run_tool("find_icons", query="copy")["icons"])
 
+    def test_follow_key_draws_on_one_physical_key_even_a_layer_key(self):
+        # L:1.3 sends MO(5): no keycode image can reach it, a physical-key one can.
+        done = self.run_tool("draw_key", app="*", key="L:1.3", follow="key", drawing=BOX,
+                             legend=False)
+        self.assertEqual((done["key"], done["shows_on"]), ("L:1.3", ["L:1.3"]))
+        bindings = user_overlays.load_set("*", self.root)["bindings"]
+        self.assertEqual(bindings[0]["follow"], "key")
+        self.assertTrue(any(f.endswith(".keys.png") for f in user_overlays.star_files(self.root)))
+        result, error = tools.call_tool(self.link, "preview_overlay", {"app": "*"})
+        self.assertIsNone(error)
+        self.assertTrue(result["image"])
+        self.assertTrue(self.run_tool("clear_key", app="*", key="L:1.3", follow="key")["removed"])
+        self.assertEqual(user_overlays.list_sets(self.root), [])
+
+    def test_clear_key_takes_every_reference_form_draw_key_takes(self):
+        self.run_tool("draw_key", app="*", key="L:1.1", follow="key", drawing=BOX)
+        table = tools._table(self.link)
+        row, col = next(pos for pos, name in table.by_pos.items() if name == "L:1.1")
+        done = self.run_tool("clear_key", app="*", key={"row": row, "col": col}, follow="key")
+        self.assertEqual((done["key"], done["removed"]), ("L:1.1", True))
+
+    def test_clear_key_refuses_an_unknown_follow_and_removes_nothing(self):
+        self.run_tool("draw_key", app="*", key="KC_Q", drawing=BOX)
+        for follow in ("keys", "", None):
+            result, error = tools.call_tool(self.link, "clear_key",
+                                            {"app": "*", "key": "KC_Q", "follow": follow})
+            self.assertIsNone(result, follow)
+            self.assertIn("follow", error)
+        self.assertEqual(len(user_overlays.load_set("*", self.root)["bindings"]), 1)
+
+    def test_a_physical_clear_takes_the_same_limits_as_the_physical_draw(self):
+        self.run_tool("draw_key", app="*", key="L:1.1", follow="key", drawing=BOX)
+        for arguments in ({"app": "*", "key": "L:1.1", "follow": "key", "mods": ["CTRL"]},
+                          {"app": "blender", "key": "L:1.1", "follow": "key"}):
+            result, error = tools.call_tool(self.link, "clear_key", arguments)
+            self.assertIsNone(result, arguments)
+            self.assertTrue(error, arguments)
+        self.assertEqual(len(user_overlays.load_set("*", self.root)["bindings"]), 1)
+
+    def test_follow_key_refusals(self):
+        for arguments in ({"app": "blender", "key": "L:1.1", "follow": "key", "drawing": BOX},
+                          {"app": "*", "key": "KC_Q", "follow": "key", "drawing": BOX},
+                          {"app": "*", "key": "L:1.1", "follow": "key", "drawing": BOX,
+                           "mods": ["CTRL"]},
+                          {"app": "*", "key": "L:5.5", "follow": "key", "drawing": BOX}):
+            result, error = tools.call_tool(self.link, "draw_key", arguments)
+            self.assertIsNone(result, arguments)
+            self.assertTrue(error, arguments)
+
     def test_refusals_are_tool_errors_and_write_nothing(self):
         for name, arguments in (
                 ("draw_key", {"app": "x", "key": "L:1.3", "drawing": BOX}),    # MO(5)
                 ("draw_key", {"app": "x", "key": "KC_Q", "drawing": BOX, "follow": "key"}),
+                ("draw_key", {"app": "x", "key": "KC_Q", "drawing": BOX, "follow": "other"}),
                 ("draw_key", {"app": "x", "key": "KC_Q", "drawing": [{"text": "Ω"}]}),
                 ("draw_key", {"app": "../x", "key": "KC_Q", "drawing": BOX}),
                 ("create_overlay", {"app": "x", "bindings": []}),
@@ -167,6 +217,19 @@ class OverlayToolsTest(unittest.TestCase):
             self.assertIsNone(result, name)
             self.assertTrue(error, name)
         self.assertEqual(user_overlays.list_sets(self.root), [])
+
+
+class FollowKeyNeedsV40Test(unittest.TestCase):
+
+    def test_older_firmware_is_named_in_the_refusal(self):
+        from tests.mcp.tools_test import FakeClient
+        client = FakeClient({p.M_STATUS_GET: {"name": "Split72", "protocol": 39}})
+        result, error = tools.call_tool(tools.HostLink(connect=lambda: client), "draw_key",
+                                        {"app": "*", "key": "L:1.1", "follow": "key",
+                                         "drawing": BOX})
+        self.assertIsNone(result)
+        self.assertIn("protocol 40", error)
+        self.assertNotIn(p.M_USER_OVERLAY_SET, [m for m, _ in client.calls])
 
 
 class StarSetCoreTest(unittest.TestCase):

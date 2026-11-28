@@ -4112,14 +4112,8 @@ class PolyCore(Observable):
         """Remove `app`'s set, or one binding of it. Call with _user_overlay_lock held."""
         if key is None:
             return user_overlays.remove_set(app)
-        kc = user_overlays.check_key(key).name
-        mod = user_overlays.mod_names(user_overlays.modifier(mods))
-        old = (user_overlays.load_set(app) or {}).get("bindings") or []
-        keep = [b for b in old if not (b.get("key") == kc and b.get("mods", []) == mod)]
-        if len(keep) == len(old):
-            return False
-        user_overlays.save_set(app, keep)
-        return True
+        # A keycode name with mods, or a physical key name (follow "key").
+        return user_overlays.remove_binding(app, key, mods)
 
     def user_overlay_preview(self, app, mods=None):
         """PNG bytes (base64) of both halves as `app` would show them: the image of
