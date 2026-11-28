@@ -361,8 +361,15 @@ class SectionCounts(unittest.TestCase):
         self.assertIn("2026-11-19: 1", out)
         self.assertNotIn("2026-11-01:", out)
         self.assertIn('class="val"', out)    # the value is printed above the bar
-        self.assertIn("No keyboard sent a hardware ID in this window",
+        self.assertIn("No complete keyboard reported in this window",
                       dash._keyboard_chart(rows, ["2026-11-01"]))
+
+    def test_keyboard_chart_with_only_a_single_controller(self):
+        # The board sent an ID, so the message must not say that none was sent.
+        rows = [row("pico", "2026-11-19", hw_id_a="p" * 32)]
+        out = dash._keyboard_chart(rows, ["2026-11-19"])
+        self.assertIn("No complete keyboard reported in this window", out)
+        self.assertNotIn("sent a hardware ID", out)
 
     def test_keyboards_without_id(self):
         latest = [row("a", "2026-11-19"), row("b", "2026-11-19", hw_id_a="a" * 32),
