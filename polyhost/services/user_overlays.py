@@ -187,17 +187,20 @@ def list_sets(root: str | None = None) -> list[dict]:
     return out
 
 
-def save_set(app: str, bindings: list, root: str | None = None) -> dict:
+def save_set(app: str, bindings: list, root: str | None = None, keep=None) -> dict:
     """Write `bindings` as the whole set for `app` and draw its files.
 
-    Returns {"placed": [...], "files": [...]}. An empty list removes the set."""
+    `keep` (a merge) is the stored set's bindings, placed first; a binding in
+    `bindings` for the same key and modifiers replaces its entry. The limit
+    counts the set that results, so a replacement in a full set is accepted.
+    Returns {"placed": [...], "files": [...]}. An empty result removes the set."""
     app = check_app(app)
-    if not isinstance(bindings, list):
+    if not isinstance(bindings, list) or not isinstance(keep or [], list):
         raise UserOverlayError("bindings must be a list")
     if len(bindings) > MAX_BINDINGS:
         raise UserOverlayError(f"a set has at most {MAX_BINDINGS} bindings")
     clean, seen = [], {}
-    for b in bindings:
+    for b in list(keep or []) + bindings:
         cb = check_binding(b)
         where = (cb["key"], tuple(cb["mods"]))
         if where in seen:
@@ -205,6 +208,8 @@ def save_set(app: str, bindings: list, root: str | None = None) -> dict:
         else:
             seen[where] = len(clean)
             clean.append(cb)
+    if len(clean) > MAX_BINDINGS:
+        raise UserOverlayError(f"a set has at most {MAX_BINDINGS} bindings")
     if not clean:
         remove_set(app, root)
         return {"placed": [], "files": []}

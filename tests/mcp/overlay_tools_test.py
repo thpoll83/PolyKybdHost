@@ -113,6 +113,19 @@ class OverlayToolsTest(unittest.TestCase):
             t.join(30)
         self.assertEqual(len(user_overlays.load_set("x", self.root)["bindings"]), len(keys))
 
+    def test_the_mapping_is_rebuilt_while_the_write_still_holds_the_lock(self):
+        # Two edits then publish their mappings in the order they wrote their sets.
+        held = []
+        rebuild = self.core._apply_user_overlays
+        def record():
+            held.append(self.core._user_overlay_lock.locked())
+            rebuild()
+        self.core._apply_user_overlays = record
+        self.core.user_overlay_set("x", [{"key": "KC_Q", "drawing": BOX}], merge=True)
+        self.core.user_overlay_clear("x", "KC_Q")
+        self.core.user_overlay_clear("x", "KC_Q")      # removes nothing: no rebuild
+        self.assertEqual(held, [True, True])
+
     def test_clear_key_and_delete_overlay(self):
         self.run_tool("draw_key", app="x", key="KC_Q", drawing=BOX)
         self.run_tool("draw_key", app="x", key="KC_W", drawing=BOX)

@@ -4078,16 +4078,19 @@ class PolyCore(Observable):
         try:
             # The whole load-merge-save under one lock: two connections merging at
             # once would otherwise both read the old set and one binding be lost.
+            # The rebuild is under the lock too, so two edits publish their
+            # mappings in the order they wrote their sets.
             with self._user_overlay_lock:
+                keep = None
                 if merge:
-                    old = (user_overlays.load_set(app) or {}).get("bindings") or []
-                    bindings = list(old) + list(bindings or [])
-                result = user_overlays.save_set(app, bindings)
+                    keep = (user_overlays.load_set(app) or {}).get("bindings") or []
+                    bindings = list(bindings or [])
+                result = user_overlays.save_set(app, bindings, keep=keep)
+                self._apply_user_overlays()
         except user_overlays.UserOverlayError as e:
             return False, str(e)
         except OSError as e:
             return False, f"cannot write the overlay set: {e}"
-        self._apply_user_overlays()
         return True, result
 
     def user_overlay_clear(self, app, key=None, mods=None):
@@ -4096,12 +4099,12 @@ class PolyCore(Observable):
         try:
             with self._user_overlay_lock:
                 removed = self._user_overlay_clear_locked(user_overlays, app, key, mods)
+                if removed:
+                    self._apply_user_overlays()
         except user_overlays.UserOverlayError as e:
             return False, str(e)
         except OSError as e:
             return False, f"cannot change the overlay set: {e}"
-        if removed:
-            self._apply_user_overlays()
         return True, {"removed": removed}
 
     @staticmethod
