@@ -521,10 +521,18 @@ def draw_key(link, args):
 
 def clear_key(link, args):
     app = _app_arg(args)
-    if args.get("follow") == "key":
+    follow = args.get("follow", "keycode")
+    if follow not in ("keycode", "key"):
+        raise ToolError("follow is \"keycode\" or \"key\"")
+    if follow == "key":
         table = _table(link)
+        ref = args.get("key")
+        if isinstance(ref, str) and not ref.strip().startswith(_PHYSICAL):
+            raise ToolError("follow \"key\" needs a physical key, for example \"L:1.1\"")
+        _count, buffer = _keymap(link, 0)
+        base = {pos: _code_at(buffer, 0, *pos) for pos in table.by_pos}
         try:
-            key = table.canonical(args.get("key"))
+            key = table.resolve(ref, base, parse_keycode)
         except KeyRefError as exc:
             raise ToolError(str(exc)) from None
         result = link.call(p.M_USER_OVERLAY_CLEAR, {"app": app, "key": key})

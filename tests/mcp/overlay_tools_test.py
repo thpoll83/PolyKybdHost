@@ -155,6 +155,22 @@ class OverlayToolsTest(unittest.TestCase):
         self.assertTrue(self.run_tool("clear_key", app="*", key="L:1.3", follow="key")["removed"])
         self.assertEqual(user_overlays.list_sets(self.root), [])
 
+    def test_clear_key_takes_every_reference_form_draw_key_takes(self):
+        self.run_tool("draw_key", app="*", key="L:1.1", follow="key", drawing=BOX)
+        table = tools._table(self.link)
+        row, col = next(pos for pos, name in table.by_pos.items() if name == "L:1.1")
+        done = self.run_tool("clear_key", app="*", key={"row": row, "col": col}, follow="key")
+        self.assertEqual((done["key"], done["removed"]), ("L:1.1", True))
+
+    def test_clear_key_refuses_an_unknown_follow_and_removes_nothing(self):
+        self.run_tool("draw_key", app="*", key="KC_Q", drawing=BOX)
+        for follow in ("keys", "", None):
+            result, error = tools.call_tool(self.link, "clear_key",
+                                            {"app": "*", "key": "KC_Q", "follow": follow})
+            self.assertIsNone(result, follow)
+            self.assertIn("follow", error)
+        self.assertEqual(len(user_overlays.load_set("*", self.root)["bindings"]), 1)
+
     def test_follow_key_refusals(self):
         for arguments in ({"app": "blender", "key": "L:1.1", "follow": "key", "drawing": BOX},
                           {"app": "*", "key": "KC_Q", "follow": "key", "drawing": BOX},
